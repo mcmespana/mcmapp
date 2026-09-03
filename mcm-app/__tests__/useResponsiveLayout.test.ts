@@ -1,13 +1,19 @@
 /**
  * Test de `hooks/useResponsiveLayout.ts`.
  *
- * Único hook de breakpoints "de verdad" que consumen las pantallas para
- * decidir columnas de grid y max-width (móvil/iPad portrait/iPad
- * landscape-desktop). Un umbral desalineado deja el grid mal en iPad.
+ * ÚNICO hook de breakpoints de la app: lo consumen las pantallas para decidir
+ * columnas de grid y max-width (móvil / tablet vertical / tablet horizontal y
+ * escritorio). Un umbral desalineado deja el grid mal en iPad.
+ *
+ * Había un segundo hook (`useResponsive`) con sus propios umbrales y cero usos
+ * en la app; se borró en 2026-08. Si alguien vuelve a crear uno paralelo, el
+ * primer test de aquí abajo es el que avisa de que los cortes ya no salen de
+ * `constants/breakpoints.ts`.
  */
 import { renderHook } from '@testing-library/react-native';
 import { useWindowDimensions } from 'react-native';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { breakpoints } from '@/constants/breakpoints';
 
 jest.mock('react-native', () => {
   const actual = jest.requireActual('react-native');
@@ -23,6 +29,22 @@ function setDims(width: number, height: number) {
 }
 
 describe('useResponsiveLayout', () => {
+  it('los cortes salen de constants/breakpoints.ts, no de números sueltos', async () => {
+    for (const [key, size] of [
+      [breakpoints.sm, 'sm'],
+      [breakpoints.md, 'md'],
+      [breakpoints.lg, 'lg'],
+    ] as const) {
+      setDims(key, 900);
+      const { result } = await renderHook(() => useResponsiveLayout());
+      expect(result.current.size).toBe(size);
+      // Un píxel por debajo del corte todavía NO es ese tamaño.
+      setDims(key - 1, 900);
+      const { result: below } = await renderHook(() => useResponsiveLayout());
+      expect(below.current.size).not.toBe(size);
+    }
+  });
+
   it('móvil portrait (< 480): size xs, 1 columna, maxWidth = width', async () => {
     setDims(390, 800);
     const { result } = await renderHook(() => useResponsiveLayout());

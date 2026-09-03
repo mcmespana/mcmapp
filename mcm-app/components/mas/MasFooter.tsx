@@ -11,6 +11,7 @@ import { LEGAL_LINKS } from '@/constants/legalLinks';
 import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import { VersionDisplay } from '@/components/VersionDisplay';
 import spacing from '@/constants/spacing';
+import typography from '@/constants/typography';
 
 /**
  * Pie de la pantalla "Más": versión, enlace de feedback, enlaces legales y el
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   feedbackText: {
-    fontSize: 13,
+    ...typography.caption,
     textDecorationLine: 'underline',
   },
   legalRow: {
@@ -104,14 +105,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   legalText: {
-    fontSize: 12,
+    ...typography.footnote,
     textDecorationLine: 'underline',
   },
   legalSeparator: {
-    fontSize: 12,
+    ...typography.footnote,
   },
   tagline: {
-    fontSize: 12,
+    ...typography.footnote,
     textAlign: 'center',
     paddingVertical: spacing.xs,
   },

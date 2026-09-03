@@ -15,6 +15,9 @@ import {
   Platform,
 } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import colors, { SwipeColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 export interface ConfirmChoiceAction {
   label: string;
@@ -103,8 +106,8 @@ const createStyles = (isDark: boolean) =>
     card: {
       width: '100%',
       maxWidth: 420,
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
-      borderRadius: 18,
+      backgroundColor: themeColors(isDark).background,
+      borderRadius: radii.xl,
       padding: 22,
       ...Platform.select({
         web: { boxShadow: '0 12px 40px rgba(0,0,0,0.25)' },
@@ -118,14 +121,14 @@ const createStyles = (isDark: boolean) =>
       }),
     },
     title: {
-      fontSize: 18,
+      ...typography.h3,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       marginBottom: 8,
     },
     description: {
-      fontSize: 14,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      ...typography.subhead,
+      color: themeColors(isDark).textSecondary,
       lineHeight: 20,
       marginBottom: 18,
     },
@@ -140,17 +143,17 @@ const createStyles = (isDark: boolean) =>
       justifyContent: 'center',
     },
     btnText: {
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
     },
     btnSecondary: {
       backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F2F2F7',
     },
     btnSecondaryText: {
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     btnPrimary: {
-      backgroundColor: '#253883',
+      backgroundColor: colors.primary,
     },
     btnPrimaryText: {
       color: '#fff',
@@ -160,7 +163,7 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: isDark ? '#3A1517' : '#FFE5E4',
     },
     btnDangerText: {
-      color: '#FF453A',
+      color: SwipeColors.remove,
       fontWeight: '700',
     },
   });

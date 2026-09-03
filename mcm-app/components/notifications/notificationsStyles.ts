@@ -5,7 +5,7 @@
  * 1225 del fichero. Mismo patrón que `components/grupos/gruposStyles.ts`.
  */
 import { StyleSheet } from 'react-native';
-import colors, { Colors } from '@/constants/colors';
+import colors, { themeColors, Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -42,7 +42,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     },
     emptyTitle: {
       ...(typography.h2 as any),
-      fontSize: 16,
+      ...typography.body,
       marginTop: spacing.lg,
       marginBottom: spacing.sm,
       textAlign: 'center',
@@ -61,16 +61,16 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       padding: spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
-      ...shadows.sm,
+      ...shadows.card,
     },
     unreadCard: {
       backgroundColor: scheme === 'dark' ? '#1a1a2e' : '#f0f4ff',
-      borderColor: colors.primary,
+      borderColor: themeColors(scheme === 'dark').link,
     },
     notificationIcon: {
       width: 44,
       height: 44,
-      borderRadius: 22,
+      borderRadius: radii.xl,
       marginRight: spacing.md,
       backgroundColor: colors.border,
       alignSelf: 'flex-start',
@@ -107,7 +107,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     },
     markAsReadButton: { padding: 2 },
     rightAction: {
-      backgroundColor: colors.success,
+      backgroundColor: colors.green,
       justifyContent: 'center',
       alignItems: 'flex-end',
       borderRadius: radii.md,
@@ -120,10 +120,10 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       color: '#fff',
       fontWeight: '600',
       marginTop: 4,
-      fontSize: 12,
+      ...typography.footnote,
     },
     notificationBody: {
-      fontSize: 13,
+      ...typography.caption,
       color: theme.icon,
       lineHeight: 19,
       marginBottom: 8,
@@ -136,7 +136,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 6,
     },
     notificationDate: {
-      fontSize: 11,
+      ...typography.micro,
       color: theme.icon,
     },
     chipsRow: {
@@ -152,14 +152,14 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 3,
       paddingVertical: 3,
       paddingHorizontal: 7,
-      borderRadius: radii.pill,
+      borderRadius: radii.xl,
       borderWidth: 1,
-      borderColor: hexAlpha(colors.primary, '60'),
-      backgroundColor: hexAlpha(colors.primary, '12'),
+      borderColor: hexAlpha(themeColors(scheme === 'dark').link, '60'),
+      backgroundColor: hexAlpha(themeColors(scheme === 'dark').link, '12'),
     },
     destinationChipText: {
       fontSize: 10,
-      color: colors.primary,
+      color: themeColors(scheme === 'dark').link,
       fontWeight: '600',
     },
     categoryChip: {
@@ -168,11 +168,11 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 3,
       paddingVertical: 3,
       paddingHorizontal: 7,
-      borderRadius: radii.pill,
+      borderRadius: radii.xl,
       borderWidth: 1,
     },
     categoryChipText: {
-      fontSize: 10,
+      ...typography.overline,
       fontWeight: '600',
     },
     actionChip: {
@@ -181,7 +181,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 3,
       paddingVertical: 3,
       paddingHorizontal: 8,
-      borderRadius: radii.pill,
+      borderRadius: radii.xl,
       backgroundColor: colors.primary,
       maxWidth: 140,
     },

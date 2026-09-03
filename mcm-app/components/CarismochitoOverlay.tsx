@@ -26,6 +26,9 @@ import {
   CarismochitoOnboarding,
   CarismochitoExitConfirm,
 } from '@/components/CarismochitoDialogs';
+import colors from '@/constants/colors';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /* Verdes del HUD del modo (distintos tonos). */
 const G = '#1B9E4B'; // verde principal
@@ -38,11 +41,11 @@ const CONFETTI_COLORS = [
   '#1B9E4B',
   '#5AE08A',
   '#9DE86B',
-  '#A3BD31',
+  colors.green,
   '#7AC943',
-  '#FCD200',
-  '#31AADF',
-  '#E15C62',
+  colors.yellow,
+  colors.info,
+  colors.accent,
 ];
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -534,7 +537,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: G_DARK,
-    borderRadius: 28,
+    borderRadius: radii.full,
     paddingVertical: 6,
     paddingLeft: 6,
     paddingRight: 16,
@@ -563,7 +566,7 @@ const styles = StyleSheet.create({
   badgeTitle: {
     color: G_LIGHT,
     fontWeight: '900',
-    fontSize: 12,
+    ...typography.footnote,
     letterSpacing: 1.4,
   },
   badgeSubtitle: {
@@ -616,7 +619,7 @@ const styles = StyleSheet.create({
   },
   activatingLabel: {
     color: G_LIGHT,
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     letterSpacing: 4,
     textTransform: 'uppercase',
@@ -657,7 +660,7 @@ const styles = StyleSheet.create({
   },
   subtle: {
     color: '#A3D86E',
-    fontSize: 13,
+    ...typography.caption,
     marginTop: 22,
     marginBottom: 28,
     textAlign: 'center',
@@ -687,7 +690,7 @@ const styles = StyleSheet.create({
   cancelText: {
     color: G_DARK,
     fontWeight: '800',
-    fontSize: 16,
+    ...typography.body,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },

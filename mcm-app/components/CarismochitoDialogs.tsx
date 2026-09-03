@@ -12,6 +12,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import CarismochitoMascot from '@/components/CarismochitoMascot';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /* Verdes del modo (en línea con CarismochitoOverlay). */
 const G = '#1B9E4B';
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 380,
-    borderRadius: 28,
+    borderRadius: radii.full,
     paddingHorizontal: 24,
     paddingTop: 28,
     paddingBottom: 24,
@@ -245,7 +247,7 @@ const styles = StyleSheet.create({
   teaser: {
     marginTop: 16,
     backgroundColor: 'rgba(90, 224, 138, 0.12)',
-    borderRadius: 16,
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: 'rgba(90, 224, 138, 0.3)',
     paddingHorizontal: 16,
@@ -253,7 +255,7 @@ const styles = StyleSheet.create({
   },
   teaserText: {
     color: G_LIGHT,
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 21,
     textAlign: 'center',
   },
@@ -263,7 +265,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     color: '#A3D86E',
-    fontSize: 12,
+    ...typography.footnote,
     textAlign: 'center',
     marginTop: 16,
     opacity: 0.85,
@@ -278,7 +280,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: G_DARK,
     fontWeight: '900',
-    fontSize: 16,
+    ...typography.body,
     letterSpacing: 0.5,
   },
   row: {

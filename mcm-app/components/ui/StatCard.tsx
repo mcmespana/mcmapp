@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { radii } from '@/constants/uiStyles';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import typography from '@/constants/typography';
 
 interface StatCardProps {
   /** Emoji or short icon string (1–2 chars). For real icons use the `iconNode` prop. */
@@ -64,7 +65,7 @@ export default function StatCard({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     paddingVertical: 14,
     paddingHorizontal: 8,
     alignItems: 'center',
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   label: {
-    fontSize: 10,
+    ...typography.overline,
     fontWeight: '600',
     letterSpacing: 0.4,
     textAlign: 'center',

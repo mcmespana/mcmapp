@@ -27,6 +27,7 @@ import SocialLoginSection from '@/components/SocialLoginSection';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -524,12 +525,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   } as ViewStyle,
   backLabel: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '500',
   } as TextStyle,
 
   sectionLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.8,
     marginBottom: spacing.sm,
@@ -553,11 +554,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   } as ViewStyle,
   surfaceLabel: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   } as TextStyle,
   surfaceHint: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 2,
     opacity: 0.75,
   } as TextStyle,
@@ -578,7 +579,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
   } as ViewStyle,
   themeOptionText: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
   } as TextStyle,
 
@@ -599,7 +600,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontWeight: '700',
-    fontSize: 16,
+    ...typography.body,
   } as TextStyle,
 
   optionRow: {
@@ -627,7 +628,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   } as TextStyle,
   optionDesc: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 2,
     opacity: 0.8,
     lineHeight: 16,

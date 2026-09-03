@@ -5,7 +5,7 @@
  * 1175 del fichero. Mismo patrón que `components/grupos/gruposStyles.ts`.
  */
 import { Platform, StyleSheet } from 'react-native';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -17,7 +17,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     // Cuerpo centrado en pantallas anchas (iPad). En móvil ocupa todo el ancho.
     bodyWrap: {
@@ -79,8 +79,8 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       marginHorizontal: 16,
       marginTop: 8,
       marginBottom: 12,
-      borderRadius: 20,
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      borderRadius: radii.xl,
+      backgroundColor: themeColors(isDark).background,
       overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
       ...Platform.select({
         ios: {
@@ -115,7 +115,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     filterChip: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
       borderRadius: 100,
       paddingHorizontal: 12,
       paddingVertical: 7,
@@ -132,9 +132,9 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       borderRadius: radii.xs,
     },
     chipLabel: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '500',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
     },
 
     // Event section (calendar view)
@@ -155,14 +155,14 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 5,
       paddingHorizontal: 10,
       paddingVertical: 6,
-      borderRadius: radii.pill,
+      borderRadius: radii.xl,
       backgroundColor: hexAlpha(colors.info, '12'),
       borderWidth: 1,
       borderColor: hexAlpha(colors.info, '30'),
       alignSelf: 'flex-start',
     },
     backToTodayLabel: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
       color: colors.info,
       letterSpacing: -0.1,
@@ -187,13 +187,13 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       fontVariant: ['tabular-nums'],
     },
     eventSectionWeekday: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '500',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
       textTransform: 'capitalize',
     },
     eventSectionCount: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '500',
       color: isDark ? '#636366' : '#AEAEB2',
       marginTop: 1,
@@ -202,7 +202,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     // Event card
     eventCard: {
       flexDirection: 'row',
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
       borderRadius: radii.lg,
       marginBottom: 8,
       overflow: 'hidden',
@@ -241,9 +241,9 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 8,
     },
     eventTitle: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '600',
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       flex: 1,
       letterSpacing: -0.2,
     },
@@ -262,7 +262,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       borderRadius: 3,
     },
     calendarBadgeText: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '600',
     },
     eventMeta: {
@@ -271,12 +271,12 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 4,
     },
     eventLocation: {
-      fontSize: 13,
+      ...typography.caption,
       color: '#8E8E93',
       flex: 1,
     },
     eventDuration: {
-      fontSize: 13,
+      ...typography.caption,
       color: '#8E8E93',
     },
 
@@ -299,14 +299,14 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     agendaNavBtn: {
       width: 40,
       height: 40,
-      borderRadius: radii.pill,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
     },
     monthLabel: {
       fontSize: 20,
       fontWeight: '700',
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       minWidth: 180,
       textAlign: 'center',
       letterSpacing: -0.3,
@@ -335,12 +335,12 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     sectionDay: {
       fontSize: 26,
       fontWeight: '700',
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       lineHeight: 30,
       fontVariant: ['tabular-nums'],
     },
     sectionWeekday: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       color: '#8E8E93',
       textTransform: 'uppercase',
@@ -363,7 +363,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       alignItems: 'center',
     },
     sectionBadgeText: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
       color: isDark ? '#8E8E93' : '#636366',
       fontVariant: ['tabular-nums'],

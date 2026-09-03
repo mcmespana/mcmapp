@@ -230,7 +230,7 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
       paddingBottom: Platform.OS === 'ios' ? 100 : spacing.xl,
     },
     card: {
-      borderRadius: 16,
+      borderRadius: radii.lg,
       paddingVertical: spacing.xl,
       paddingHorizontal: spacing.md,
       justifyContent: 'center',

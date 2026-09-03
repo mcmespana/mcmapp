@@ -67,6 +67,7 @@ import {
 } from '@/contexts/VersionGateContext';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
+import colors from '@/constants/colors';
 
 function RootLayout() {
   return (
@@ -271,7 +272,7 @@ function InnerLayout() {
           options={{
             headerShown: false,
             presentation: 'fullScreenModal',
-            contentStyle: { backgroundColor: '#253883' },
+            contentStyle: { backgroundColor: colors.primary },
           }}
         />
         <Stack.Screen

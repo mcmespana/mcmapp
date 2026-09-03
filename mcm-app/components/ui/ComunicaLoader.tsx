@@ -29,6 +29,7 @@ import brand from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { durations, reaEasings } from '@/constants/animations';
+import typography from '@/constants/typography';
 
 interface ComunicaLoaderProps {
   /** Tema resuelto por la app (no el del sistema). */
@@ -396,7 +397,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: spacing.xs,
-    fontSize: 14,
+    ...typography.subhead,
     textAlign: 'center',
   },
   track: {
@@ -421,7 +422,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: 10,
     paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
   },
   retryLabel: {
     color: '#FFFFFF',
@@ -443,7 +444,7 @@ const styles = StyleSheet.create({
   },
   skeletonButton: {
     height: 46,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     width: '55%',
   },
 });

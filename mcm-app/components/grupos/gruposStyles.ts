@@ -1,6 +1,7 @@
 import { Platform, StyleSheet } from 'react-native';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 /**
  * Estilos de la pantalla de Grupos y sus subcomponentes. Extraído de
@@ -26,7 +27,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     catCard: {
       height: 120,
-      borderRadius: 16,
+      borderRadius: radii.lg,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -34,12 +35,12 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     catLabel: { fontSize: 18, fontWeight: 'bold', color: colors.white },
     catCount: {
       marginTop: 2,
-      fontSize: 12,
+      ...typography.footnote,
       color: 'rgba(255,255,255,0.85)',
       fontWeight: '600',
     },
     sectionHeader: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: 'bold',
       color: theme.text,
       paddingHorizontal: 4,
@@ -49,7 +50,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     groupContainer: { paddingHorizontal: 16 },
     iconBtn: {
       padding: 8,
-      borderRadius: 20,
+      borderRadius: radii.xl,
     },
     searchContainer: {
       marginHorizontal: 16,
@@ -63,14 +64,14 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       gap: 10,
       minHeight: 52,
       paddingHorizontal: 16,
-      borderRadius: radii.pill,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      borderRadius: radii.xl,
+      backgroundColor: themeColors(isDark).backgroundSunken,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: isDark ? '#48484A' : '#E0E0E5',
     },
     searchInput: {
       flex: 1,
-      fontSize: 16,
+      ...typography.body,
       color: theme.text,
       paddingVertical: Platform.OS === 'ios' ? 14 : 10,
     },
@@ -85,7 +86,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: colors.primary,
       paddingHorizontal: 18,
       paddingVertical: 12,
-      borderRadius: radii.pill,
+      borderRadius: radii.xl,
       ...Platform.select({
         web: { boxShadow: '0 2px 8px rgba(37,56,131,0.35)' },
         default: {
@@ -105,8 +106,8 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     resultsMeta: {
       paddingHorizontal: 18,
       paddingBottom: 6,
-      fontSize: 12,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      ...typography.footnote,
+      color: themeColors(isDark).textSecondary,
       fontWeight: '500',
     },
     searchSectionHeader: {
@@ -115,18 +116,18 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       paddingHorizontal: 18,
       paddingVertical: 6,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     searchSectionHeaderText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       letterSpacing: 0.3,
       textTransform: 'uppercase',
     },
     searchSectionCount: {
-      fontSize: 12,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      ...typography.footnote,
+      color: themeColors(isDark).textSecondary,
       fontWeight: '600',
     },
     hitRow: {
@@ -134,9 +135,9 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       paddingHorizontal: 16,
       paddingVertical: 12,
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      backgroundColor: themeColors(isDark).background,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderBottomColor: themeColors(isDark).separator,
       gap: 12,
     },
     hitRowMe: {
@@ -159,8 +160,8 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '700',
     },
     hitMeta: {
-      fontSize: 12,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      ...typography.footnote,
+      color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
     grupoCard: {
@@ -168,7 +169,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       padding: 14,
       borderRadius: radii.lg,
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      backgroundColor: themeColors(isDark).background,
       gap: 10,
       ...Platform.select({
         web: {
@@ -191,13 +192,13 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     grupoCardMain: { flex: 1, minWidth: 0 },
     grupoCardTitle: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '700',
       color: theme.text,
     },
     grupoCardSubtitle: {
-      fontSize: 13,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      ...typography.caption,
+      color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
     grupoCardMetaRow: {
@@ -207,8 +208,8 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       flexWrap: 'wrap',
     },
     grupoCardMeta: {
-      fontSize: 12,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      ...typography.footnote,
+      color: themeColors(isDark).textSecondary,
     },
     memberRow: {
       flexDirection: 'row',
@@ -216,7 +217,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingHorizontal: 16,
       paddingVertical: 11,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderBottomColor: themeColors(isDark).separator,
       gap: 12,
     },
     memberRowMe: {
@@ -225,7 +226,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     dot: {
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: radii.xs,
     },
     memberText: {
       flex: 1,
@@ -238,11 +239,11 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     youBadge: {
       backgroundColor: colors.accent,
       color: colors.white,
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: radii.pill,
+      borderRadius: radii.xl,
       overflow: 'hidden',
       textTransform: 'lowercase',
     },
@@ -259,7 +260,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     quoteText: {
       flex: 1,
-      fontSize: 16,
+      ...typography.body,
       fontStyle: 'italic',
       color: isDark ? '#CCCCCC' : '#666',
       lineHeight: 22,
@@ -271,15 +272,15 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       gap: 4,
     },
     filterCount: {
-      fontSize: 12,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      ...typography.footnote,
+      color: themeColors(isDark).textSecondary,
       paddingHorizontal: 4,
     },
     emptyInline: {
       paddingHorizontal: 16,
       paddingVertical: 24,
       textAlign: 'center',
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       fontStyle: 'italic',
     },
   });

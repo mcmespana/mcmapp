@@ -70,7 +70,7 @@ export default function HorarioScreen() {
 
   // Calculate progressive green color based on day index
   const getProgressiveGreenColor = (dayIndex: number, totalDays: number) => {
-    if (totalDays <= 1) return colors.success;
+    if (totalDays <= 1) return colors.green;
 
     // Base green color: #A3BD31
     const baseR = 163;
@@ -148,7 +148,7 @@ export default function HorarioScreen() {
 
   const currentColor = horarioData
     ? getProgressiveGreenColor(index, horarioData.length)
-    : colors.success;
+    : colors.green;
 
   // Handle navigation to materials with specific day
   const handleNavigateToMateriales = (dayIndex: number) => {
@@ -302,7 +302,7 @@ const createDynamicStyles = (
     titleWrapper: {
       backgroundColor: currentColor,
       padding: spacing.md,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       marginBottom: spacing.xs,
       ...Platform.select({
         web: {

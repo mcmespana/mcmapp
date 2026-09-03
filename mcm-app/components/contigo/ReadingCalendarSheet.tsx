@@ -13,6 +13,8 @@ import { hasHighlights, type StoredBookmark } from '@/utils/contigoBookmarks';
 import { HIGHLIGHT_COLORS } from '@/utils/highlightRanges';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface ReadingCalendarSheetProps {
   visible: boolean;
@@ -254,7 +256,7 @@ const styles = StyleSheet.create({
   navBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -271,7 +273,7 @@ const styles = StyleSheet.create({
   weekday: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -296,7 +298,7 @@ const styles = StyleSheet.create({
     opacity: 0.28,
   },
   dayText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
@@ -315,7 +317,7 @@ const styles = StyleSheet.create({
   legendSquare: {
     width: 11,
     height: 11,
-    borderRadius: 4,
+    borderRadius: radii.xs,
   },
   legend: {
     flexDirection: 'row',
@@ -331,7 +333,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   legendText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '600',
   },
   todayBtn: {
@@ -343,10 +345,10 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingHorizontal: 18,
     paddingVertical: 9,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
   },
   todayText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '800',
   },
 });

@@ -11,8 +11,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { Calendar, CalendarProps } from 'react-native-calendars';
-import colors from '@/constants/colors';
+import colors, { themeColors } from '@/constants/colors';
 import { h } from '@/utils/haptics';
+import { radii } from '@/constants/uiStyles';
 
 interface SwipeableMonthCalendarProps {
   /** Mes visible, en formato `YYYY-MM-DD` (normalmente el día 1). */
@@ -139,9 +140,9 @@ export default function SwipeableMonthCalendar({
             enableSwipeMonths={false}
             style={styles.calendar}
             theme={{
-              calendarBackground: isDark ? '#2C2C2E' : '#FFFFFF',
-              dayTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
-              monthTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
+              calendarBackground: themeColors(isDark).background,
+              dayTextColor: themeColors(isDark).textStrong,
+              monthTextColor: themeColors(isDark).textStrong,
               textSectionTitleColor: '#8E8E93',
               selectedDayBackgroundColor: colors.info,
               selectedDayTextColor: colors.white,
@@ -162,10 +163,10 @@ export default function SwipeableMonthCalendar({
 const styles = StyleSheet.create({
   // Recorta la rejilla que sale de cuadro mientras se desliza.
   clip: {
-    borderRadius: 20,
+    borderRadius: radii.xl,
     overflow: 'hidden',
   },
   calendar: {
-    borderRadius: 20,
+    borderRadius: radii.xl,
   },
 });

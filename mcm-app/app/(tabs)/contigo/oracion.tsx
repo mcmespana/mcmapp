@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useContigoHabits, Emotion } from '@/hooks/useContigoHabits';
-import { Colors } from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -25,6 +25,8 @@ import {
 } from '@/components/contigo/LiturgicalBadge';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { styles } from '@/components/contigo/oracionStyles';
+import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
+import { radii } from '@/constants/uiStyles';
 
 // ── Screen geometry ──
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -37,10 +39,10 @@ const CELL_SIZE = Math.floor((effectiveW - 72 - 30) / 7);
 // ── Warm palette (aligned with redesign tokens) ──
 const WARM = {
   light: {
-    accent: '#C4922A',
+    accent: WARM_LIGHT.accent,
     accentGlow: 'rgba(196,146,42,0.28)',
-    bg1: '#FAF6F0',
-    bg2: '#F2EAD9',
+    bg1: WARM_LIGHT.bg,
+    bg2: WARM_LIGHT.bgDeep,
     bg3: '#EDE4D3',
     surface: 'rgba(255,252,245,0.90)',
     border: 'rgba(196,146,42,0.10)',
@@ -49,16 +51,16 @@ const WARM = {
     title: '#3D3225',
   },
   dark: {
-    accent: '#DAA520',
+    accent: WARM_DARK.accent,
     accentGlow: 'rgba(218,165,32,0.25)',
-    bg1: '#1A1712',
+    bg1: WARM_DARK.bg,
     bg2: '#131210',
     bg3: '#0A0907',
     surface: 'rgba(28,26,23,0.92)',
     border: 'rgba(218,165,32,0.10)',
     borderSubtle: 'rgba(255,255,255,0.07)',
     warmGray: '#A09A94',
-    title: '#F5EFE3',
+    title: WARM_DARK.text,
   },
 };
 
@@ -455,12 +457,12 @@ export default function OracionScreen() {
             <MaterialIcons
               name="check-circle"
               size={15}
-              color={isDark ? '#A3BD31' : '#3A7D44'}
+              color={isDark ? colors.green : WARM_LIGHT.green}
             />
             <Text
               style={[
                 styles.completedText,
-                { color: isDark ? '#A3BD31' : '#3A7D44' },
+                { color: isDark ? colors.green : WARM_LIGHT.green },
               ]}
             >
               Día completado — puedes modificar tu registro
@@ -696,12 +698,12 @@ export default function OracionScreen() {
                 <MaterialIcons
                   name="check-circle"
                   size={22}
-                  color={isDark ? '#A3BD31' : '#3A7D44'}
+                  color={isDark ? colors.green : WARM_LIGHT.green}
                 />
                 <Text
                   style={[
                     styles.saveBtnText,
-                    { color: isDark ? '#A3BD31' : '#3A7D44' },
+                    { color: isDark ? colors.green : WARM_LIGHT.green },
                   ]}
                 >
                   Actualizar mi rato de oración
@@ -709,7 +711,7 @@ export default function OracionScreen() {
               </View>
             ) : (
               <LinearGradient
-                colors={['#E8A838', '#C4922A']}
+                colors={['#E8A838', WARM_LIGHT.accent]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.saveBtnGradient}
@@ -814,7 +816,7 @@ export default function OracionScreen() {
                       {
                         width: CELL_SIZE,
                         height: CELL_SIZE,
-                        borderRadius: 8,
+                        borderRadius: radii.sm,
                         backgroundColor: cellBg,
                         borderWidth: isToday ? 2 : isSelected ? 1.5 : 0,
                         borderColor: isToday

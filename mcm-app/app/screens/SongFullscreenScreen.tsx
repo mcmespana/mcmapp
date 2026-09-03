@@ -35,6 +35,8 @@ import {
   AUTO_SCROLL_CONTROLLER_JS,
   useAutoScroller,
 } from '@/hooks/useAutoScroller';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
@@ -385,7 +387,7 @@ export default function SongFullscreenScreen({
         accessibilityLabel="Cerrar pantalla completa"
       >
         <PressableFeedback.Scale />
-        <TranslucentBg isDark={isDark} style={{ borderRadius: 20 }} />
+        <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
         <MaterialIcons name="close" color="#FFFFFF" size={22} />
       </PressableFeedback>
 
@@ -422,7 +424,7 @@ const styles = StyleSheet.create({
     right: 16,
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -455,7 +457,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.22)',
@@ -472,11 +474,11 @@ const styles = StyleSheet.create({
     }),
   },
   speedPanelBg: {
-    borderRadius: 22,
+    borderRadius: radii.xl,
   },
   speedHeading: {
     color: 'rgba(255,255,255,0.92)',
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
@@ -504,7 +506,7 @@ const styles = StyleSheet.create({
   },
   segmentText: {
     color: 'rgba(255,255,255,0.78)',
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
   },
   segmentTextSelected: {
@@ -514,7 +516,7 @@ const styles = StyleSheet.create({
   playButton: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radii.full,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -532,7 +534,7 @@ const styles = StyleSheet.create({
     }),
   },
   playButtonBg: {
-    borderRadius: 28,
+    borderRadius: radii.full,
   },
   /* Pequeño badge con el nivel actual sobre el botón de play */
   levelBadge: {
@@ -541,7 +543,7 @@ const styles = StyleSheet.create({
     right: 4,
     minWidth: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     paddingHorizontal: 4,
     backgroundColor: 'rgba(255,255,255,0.92)',
     justifyContent: 'center',

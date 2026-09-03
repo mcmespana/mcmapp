@@ -11,6 +11,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { radii } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import typography from '@/constants/typography';
 
 interface TeaserCardProps {
   /** Small uppercase label above the title (e.g. "EVANGELIO DEL DÍA", "PRÓXIMO EVENTO"). */
@@ -163,7 +164,7 @@ export default function TeaserCard({
 
 const styles = StyleSheet.create({
   outer: {
-    borderRadius: radii.xxl,
+    borderRadius: radii.xl,
     backgroundColor: 'transparent',
     ...Platform.select({
       ios: {
@@ -177,7 +178,7 @@ const styles = StyleSheet.create({
     }),
   },
   clip: {
-    borderRadius: radii.xxl,
+    borderRadius: radii.xl,
     overflow: 'hidden',
     borderWidth: 1,
   },
@@ -190,14 +191,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   kicker: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '800',
     letterSpacing: 0.5,
     marginBottom: 3,
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '800',
     letterSpacing: -0.3,
     lineHeight: 20,

@@ -26,6 +26,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { h } from '@/utils/haptics';
 import { toDrivePreviewUrl } from '@/utils/googleDrive';
+import typography from '@/constants/typography';
 
 export interface SongLinkSource {
   /** 'drive' → documento de Drive · 'otro' → cualquier web o PDF. */
@@ -208,7 +209,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
-    fontSize: 15.5,
+    ...typography.button,
     fontWeight: '700',
     letterSpacing: -0.2,
     color: '#F5F5F7',
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(11,11,12,0.92)',
   },
   errorText: {
-    fontSize: 14,
+    ...typography.subhead,
     color: '#C7C7CC',
     textAlign: 'center',
     paddingHorizontal: 32,
@@ -245,7 +246,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F7',
   },
   errorBtnText: {
-    fontSize: 13.5,
+    ...typography.caption,
     fontWeight: '700',
     color: '#0B0B0C',
   },

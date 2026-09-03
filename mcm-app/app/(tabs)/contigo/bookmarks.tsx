@@ -15,9 +15,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { warm, formatDateLong } from '@/components/contigo/theme';
+import {
+  WARM_DARK,
+  WARM_LIGHT,
+  formatDateLong,
+  warm,
+} from '@/components/contigo/theme';
 import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
 import { countHighlights } from '@/utils/contigoBookmarks';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function BookmarksScreen() {
   // Subruta de Contigo: se registra con la clave del tab (gana el último
@@ -67,8 +75,8 @@ export default function BookmarksScreen() {
       <LinearGradient
         colors={
           isDark
-            ? (['#1A1712', '#100F0C'] as const)
-            : (['#FAF6F0', '#F0E8D8'] as const)
+            ? ([WARM_DARK.bg, WARM_DARK.bgDeep] as const)
+            : ([WARM_LIGHT.bg, '#F0E8D8'] as const)
         }
         style={StyleSheet.absoluteFill}
       />
@@ -79,13 +87,14 @@ export default function BookmarksScreen() {
         </View>
       ) : bookmarks.length === 0 ? (
         <View style={styles.center}>
-          <Text style={{ fontSize: 48 }}>🔖</Text>
-          <Text style={[styles.emptyTitle, { color: W.text }]}>
-            Sin guardados aún
-          </Text>
-          <Text style={[styles.emptyText, { color: W.textSec }]}>
-            Guarda evangelios para releerlos cuando quieras
-          </Text>
+          <EmptyState
+            emoji="🔖"
+            title="Sin guardados aún"
+            subtitle="Guarda evangelios para releerlos cuando quieras"
+            accentColor={W.accent}
+            titleColor={W.text}
+            subtitleColor={W.textSec}
+          />
         </View>
       ) : (
         <Animated.ScrollView
@@ -131,7 +140,7 @@ export default function BookmarksScreen() {
                   ]}
                 >
                   <LinearGradient
-                    colors={['#E8A838', '#C4922A']}
+                    colors={['#E8A838', WARM_LIGHT.accent]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.cardBar}
@@ -247,14 +256,14 @@ const styles = StyleSheet.create({
   iconBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
   subtitle: { fontSize: 12, marginTop: 2 },
   countLabel: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '600',
     marginBottom: 12,
     paddingHorizontal: 4,
@@ -267,15 +276,13 @@ const styles = StyleSheet.create({
     padding: 32,
     gap: 12,
   },
-  emptyTitle: { fontSize: 17, fontWeight: '700' },
-  emptyText: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
 
   listWrap: {
     padding: 16,
     gap: 12,
   },
   card: {
-    borderRadius: 18,
+    borderRadius: radii.xl,
     overflow: 'hidden',
     borderWidth: 1,
   },
@@ -299,7 +306,7 @@ const styles = StyleSheet.create({
   removeBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 10,
@@ -311,14 +318,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   preview: {
-    fontSize: 13,
+    ...typography.caption,
     lineHeight: 20,
     fontStyle: 'italic',
     marginBottom: 12,
   },
   openBtn: {
     alignSelf: 'flex-start',
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,

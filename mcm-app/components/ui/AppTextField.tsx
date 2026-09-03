@@ -1,8 +1,9 @@
 import React, { forwardRef, useState } from 'react';
 import { TextInput, TextInputProps, StyleSheet, Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
+import { Colors, SwipeColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 /**
  * Campo de texto unificado (Fase 2 de PLAN_UI_NATIVA).
@@ -23,8 +24,8 @@ interface AppTextFieldProps extends TextInputProps {
   error?: boolean;
 }
 
-const ACCENT = '#34C759'; // verde "completado" de iOS
-const ERROR = '#FF453A'; // rojo de error de iOS
+const ACCENT = SwipeColors.add; // verde "completado" de iOS
+const ERROR = SwipeColors.remove; // rojo de error de iOS
 
 const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
   function AppTextField(
@@ -45,8 +46,8 @@ const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
     const [focused, setFocused] = useState(false);
     const theme = Colors[isDark ? 'dark' : 'light'];
 
-    const bg = isDark ? '#2C2C2E' : '#F2F2F7';
-    const neutralBorder = isDark ? '#3A3A3C' : '#E5E5EA';
+    const bg = themeColors(isDark).background;
+    const neutralBorder = themeColors(isDark).separator;
     const filled = accentWhenFilled && !!(value && String(value).trim());
     const borderColor = error
       ? ERROR
@@ -59,7 +60,7 @@ const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
         ref={ref}
         value={value}
         multiline={multiline}
-        placeholderTextColor={isDark ? '#8E8E93' : '#9A9A9E'}
+        placeholderTextColor={themeColors(isDark).textMuted}
         onFocus={(e) => {
           setFocused(true);
           onFocus?.(e);
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === 'ios' ? 12 : 9,
-    fontSize: 16,
+    ...typography.body,
   },
   multiline: {
     minHeight: 96,

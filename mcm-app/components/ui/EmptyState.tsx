@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { radii } from '@/constants/uiStyles';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { hexAlpha } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -21,6 +22,18 @@ interface EmptyStateProps {
   onAction?: () => void;
   /** Accent color for icon and CTA. Defaults to muted text. */
   accentColor?: string;
+  /**
+   * Color del título. Por defecto, el del tema institucional.
+   *
+   * Existe porque este componente vive en `components/ui/`, y ahí el contrato
+   * es ser AGNÓSTICO DE PALETA (`design.md` §2). Lo era a medias: `accentColor`
+   * solo tocaba el icono y el CTA, mientras que el título y el subtítulo se
+   * cogían del tema institucional — o sea que en Contigo salían grises fríos
+   * sobre fondo crema.
+   */
+  titleColor?: string;
+  /** Color del subtítulo. Por defecto, el gris del tema institucional. */
+  subtitleColor?: string;
 }
 
 /**
@@ -36,10 +49,14 @@ export default function EmptyState({
   actionLabel,
   onAction,
   accentColor,
+  titleColor,
+  subtitleColor,
 }: EmptyStateProps) {
-  const textColor = useThemeColor({}, 'text');
-  const mutedColor = useThemeColor({}, 'icon');
-  const tone = accentColor ?? mutedColor;
+  const themeText = useThemeColor({}, 'text');
+  const themeMuted = useThemeColor({}, 'icon');
+  const textColor = titleColor ?? themeText;
+  const mutedColor = subtitleColor ?? themeMuted;
+  const tone = accentColor ?? themeMuted;
 
   return (
     <View style={styles.root}>
@@ -93,7 +110,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   subtitle: {
-    fontSize: 14,
+    ...typography.subhead,
     textAlign: 'center',
     lineHeight: 20,
     marginTop: 2,
@@ -103,7 +120,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 18,
     paddingVertical: 10,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
   },
   ctaText: { fontSize: 14, fontWeight: '700' },
 });

@@ -5,11 +5,13 @@
  * 1095 del fichero. Mismo patrón que `components/grupos/gruposStyles.ts`.
  */
 import { Platform, StyleSheet } from 'react-native';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 export const styles = StyleSheet.create({
   // Hero — outer carries the shadow, inner clips the gradient corners.
   heroOuter: {
-    borderRadius: 28,
+    borderRadius: radii.full,
     backgroundColor: 'transparent',
     ...Platform.select({
       ios: {
@@ -23,7 +25,7 @@ export const styles = StyleSheet.create({
     }),
   },
   heroClip: {
-    borderRadius: 28,
+    borderRadius: radii.full,
     overflow: 'hidden',
   },
   heroGrad: { padding: 22, minHeight: 138 },
@@ -51,7 +53,7 @@ export const styles = StyleSheet.create({
     lineHeight: 28,
   },
   heroRingNumSm: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
     color: 'rgba(255,255,255,0.55)',
   },
@@ -70,7 +72,7 @@ export const styles = StyleSheet.create({
     marginBottom: 5,
   },
   heroSubtitle: {
-    fontSize: 12,
+    ...typography.footnote,
     color: 'rgba(255,255,255,0.5)',
     lineHeight: 16,
     marginBottom: 12,
@@ -81,13 +83,13 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: 'rgba(255,255,255,0.13)',
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     paddingHorizontal: 9,
     paddingVertical: 4,
   },
   heroChipEmoji: { fontSize: 11 },
   heroChipText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     color: 'rgba(255,255,255,0.9)',
   },
@@ -96,7 +98,7 @@ export const styles = StyleSheet.create({
   tileWrap: {
     flex: 1,
     minHeight: 92,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     backgroundColor: 'transparent',
     ...Platform.select({
       ios: {
@@ -111,7 +113,7 @@ export const styles = StyleSheet.create({
   tileClip: {
     flex: 1,
     minHeight: 92,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     overflow: 'hidden',
   },
   tileWrapEmpty: {
@@ -133,7 +135,7 @@ export const styles = StyleSheet.create({
     right: 6,
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     backgroundColor: 'rgba(255,255,255,0.28)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.45)',
@@ -141,7 +143,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tileLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.2,
     textAlign: 'center',
@@ -149,7 +151,7 @@ export const styles = StyleSheet.create({
 
   // Teaser — outer holds shadow, inner clips border + bar.
   teaser: {
-    borderRadius: 22,
+    borderRadius: radii.xl,
     backgroundColor: 'transparent',
     ...Platform.select({
       ios: {
@@ -161,7 +163,7 @@ export const styles = StyleSheet.create({
     }),
   },
   teaserClip: {
-    borderRadius: 22,
+    borderRadius: radii.xl,
     overflow: 'hidden',
     borderWidth: 1,
   },
@@ -174,26 +176,26 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
   },
   teaserKicker: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '800',
     letterSpacing: 0.5,
     marginBottom: 3,
   },
   teaserTitle: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '800',
     letterSpacing: -0.3,
     lineHeight: 20,
   },
   teaserCita: {
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   teaserCitaText: { fontSize: 12, fontWeight: '800' },
   teaserPreviewWrap: { position: 'relative', marginBottom: 14 },
   teaserPreview: {
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 22,
     fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
   },
@@ -212,7 +214,7 @@ export const styles = StyleSheet.create({
   teaserCta: {
     flex: 1,
     height: 38,
-    borderRadius: 12,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -221,7 +223,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     paddingHorizontal: 11,
     paddingVertical: 5,
     marginLeft: 8,
@@ -262,7 +264,7 @@ export const styles = StyleSheet.create({
   // Stat
   statCard: {
     flex: 1,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     paddingVertical: 14,
     paddingHorizontal: 8,
     alignItems: 'center',
@@ -284,7 +286,7 @@ export const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 10,
+    ...typography.overline,
     fontWeight: '600',
     letterSpacing: 0.4,
     textAlign: 'center',

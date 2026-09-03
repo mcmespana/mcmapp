@@ -19,6 +19,7 @@ import { warm } from '@/components/contigo/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -345,7 +346,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sectionLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
@@ -357,7 +358,7 @@ const styles = StyleSheet.create({
   sizeBtn: {
     width: 46,
     height: 46,
-    borderRadius: 12,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -399,12 +400,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   percentLabel: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
   },
   themeSegment: {
     flexDirection: 'row',
-    borderRadius: 12,
+    borderRadius: radii.md,
     padding: 4,
     gap: 4,
   },
@@ -418,7 +419,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
   },
   themeOptionText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '700',
   },
 });

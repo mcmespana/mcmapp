@@ -9,6 +9,8 @@
 import { StyleSheet } from 'react-native';
 import { radii } from '@/constants/uiStyles';
 import { FRAME_SIZE } from './QrScanFrame';
+import colors from '@/constants/colors';
+import typography from '@/constants/typography';
 
 /** Penumbra que rodea el hueco de escaneo. */
 const DIM = 'rgba(0,0,0,0.62)';
@@ -56,7 +58,7 @@ export const styles = StyleSheet.create({
     width: 76,
     height: 76,
     borderRadius: 38,
-    backgroundColor: '#A3BD31',
+    backgroundColor: colors.green,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -83,7 +85,7 @@ export const styles = StyleSheet.create({
   closeBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.14)',
@@ -112,7 +114,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,69,58,0.35)',
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     overflow: 'hidden',
   },
   foundText: {
@@ -125,14 +127,14 @@ export const styles = StyleSheet.create({
   // --- Permiso denegado ----------------------------------------------------
   deniedTitle: {
     color: '#F5F5F7',
-    fontSize: 18,
+    ...typography.h3,
     fontWeight: '700',
     marginTop: 6,
     textAlign: 'center',
   },
   deniedText: {
     color: '#AEAEB2',
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 20,
     textAlign: 'center',
   },
@@ -141,7 +143,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 22,
     borderRadius: radii.md,
-    backgroundColor: '#253883',
+    backgroundColor: colors.primary,
   },
   deniedBtnText: {
     color: '#FFFFFF',

@@ -6,6 +6,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors from '@/constants/colors';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /**
  * Conmutador de 2-3 opciones (Fase 2 de PLAN_UI_NATIVA).
@@ -124,19 +126,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   segmentCompact: {
     paddingVertical: 4,
     gap: 5,
   },
   label: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     color: '#8E8E93',
   },
   labelCompact: {
-    fontSize: 13,
+    ...typography.caption,
   },
   labelActive: {
     color: '#FFFFFF',

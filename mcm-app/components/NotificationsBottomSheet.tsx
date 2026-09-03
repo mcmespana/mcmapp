@@ -13,7 +13,7 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import colors, { Colors } from '@/constants/colors';
+import colors, { themeColors, Colors } from '@/constants/colors';
 import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -33,6 +33,7 @@ import BottomSheet from './BottomSheet';
 import NotificationDetail from './notifications/NotificationDetail';
 import NotificationListItem from './notifications/NotificationListItem';
 import { normalizeRoute } from './notifications/notificationDisplay';
+import typography from '@/constants/typography';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_GAP = 80; // space below safe-area (notch / Dynamic Island)
@@ -252,8 +253,19 @@ export default function NotificationsBottomSheet({
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         style={sheetStyles.markAllHeaderBtn}
       >
-        <MaterialIcons name="done-all" size={18} color={colors.primary} />
-        <Text style={sheetStyles.markAllHeaderText}>Marcar todo</Text>
+        <MaterialIcons
+          name="done-all"
+          size={18}
+          color={themeColors(isDark).link}
+        />
+        <Text
+          style={[
+            sheetStyles.markAllHeaderText,
+            { color: themeColors(isDark).link },
+          ]}
+        >
+          Marcar todo
+        </Text>
       </TouchableOpacity>
     ) : undefined;
 
@@ -338,8 +350,8 @@ const sheetStyles = StyleSheet.create({
     borderRadius: radii.md,
   },
   markAllHeaderText: {
-    fontSize: 12,
-    color: colors.primary,
+    ...typography.footnote,
+    // El color va inline: el azul de marca sobre fondo oscuro es 1,3:1.
     fontWeight: '600',
   },
   empty: {
@@ -350,12 +362,12 @@ const sheetStyles = StyleSheet.create({
     gap: spacing.sm,
   },
   emptyTitle: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     textAlign: 'center',
   },
   emptyText: {
-    fontSize: 14,
+    ...typography.subhead,
     textAlign: 'center',
     lineHeight: 22,
     opacity: 0.7,

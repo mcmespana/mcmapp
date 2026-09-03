@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { radii, shadows } from '@/constants/uiStyles';
 import GlassSurface from './GlassSurface';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import { UIColors } from '@/constants/colors';
 
 interface GlassFABProps {
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -24,7 +25,7 @@ interface GlassFABProps {
 export default function GlassFAB({
   icon,
   onPress,
-  tintColor = '#f4c11e',
+  tintColor = UIColors.accentYellow,
   iconColor = '#222',
   size = 24,
   label,
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
     zIndex: 1000,
-    ...(shadows.lg as ViewStyle),
+    ...(shadows.overlay as ViewStyle),
   },
   pill: {
     width: undefined,

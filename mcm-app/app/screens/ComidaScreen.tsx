@@ -16,6 +16,7 @@ import typography from '@/constants/typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { MasStackParamList } from '../(tabs)/mas';
+import { radii } from '@/constants/uiStyles';
 
 interface Option {
   label: string;
@@ -113,7 +114,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     item: {
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: 16,
+      borderRadius: radii.lg,
       backgroundColor: '#FF8A65',
     },
     icon: {

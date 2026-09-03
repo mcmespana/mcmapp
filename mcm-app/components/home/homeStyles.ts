@@ -8,6 +8,7 @@ import { StyleSheet, type TextStyle, type ViewStyle } from 'react-native';
 import colors from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 export const styles = StyleSheet.create({
   safeArea: { flex: 1 } as ViewStyle,
@@ -24,7 +25,7 @@ export const styles = StyleSheet.create({
     borderRadius: radii.sm + 2, // 10
   } as ViewStyle,
   logoText: {
-    fontSize: 34,
+    ...typography.h0,
     fontWeight: '800',
     letterSpacing: -1.4,
     lineHeight: 38,
@@ -33,7 +34,7 @@ export const styles = StyleSheet.create({
   headerBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -100,7 +101,7 @@ export const styles = StyleSheet.create({
     borderRadius: radii.xl,
     borderWidth: 1,
     padding: spacing.md + 2,
-    ...shadows.md,
+    ...shadows.raised,
   } as ViewStyle,
   notifRow: {
     flexDirection: 'row',
@@ -151,7 +152,7 @@ export const styles = StyleSheet.create({
     gap: 3,
     paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     borderWidth: 1,
   } as ViewStyle,
   destinationChipText: {
@@ -164,10 +165,10 @@ export const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
   } as ViewStyle,
   actionBtnText: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
   } as TextStyle,
   arrowPill: {
@@ -218,7 +219,7 @@ export const styles = StyleSheet.create({
     borderLeftWidth: 4,
     padding: spacing.sm + 4,
     marginBottom: spacing.sm,
-    ...shadows.sm,
+    ...shadows.card,
   } as ViewStyle,
   eventDateBox: {
     width: 44,
@@ -235,7 +236,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.3,
   } as TextStyle,
   eventDay: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '800',
     lineHeight: 18,
     fontVariant: ['tabular-nums'],
@@ -276,7 +277,7 @@ export const styles = StyleSheet.create({
     borderRadius: radii.lg,
   } as ViewStyle,
   weekSeparator: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '600',
     marginTop: spacing.sm + 2,
     marginBottom: spacing.xs,
@@ -306,11 +307,11 @@ export const styles = StyleSheet.create({
     marginBottom: spacing.md,
   } as ViewStyle,
   onboardingBannerTitle: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '700',
   } as TextStyle,
   onboardingBannerBody: {
-    fontSize: 11,
+    ...typography.micro,
     marginTop: 2,
     lineHeight: 15,
     opacity: 0.8,
@@ -324,12 +325,12 @@ export const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radii.xl,
     marginBottom: spacing.md,
-    ...shadows.md,
+    ...shadows.raised,
   } as ViewStyle,
   evalCtaIcon: {
     width: 46,
     height: 46,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.22)',
@@ -343,7 +344,7 @@ export const styles = StyleSheet.create({
     letterSpacing: -0.2,
   } as TextStyle,
   evalCtaBody: {
-    fontSize: 12,
+    ...typography.footnote,
     lineHeight: 16,
     marginTop: 2,
     color: 'rgba(255,255,255,0.9)',
@@ -355,11 +356,11 @@ export const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     flexShrink: 0,
   } as ViewStyle,
   evalCtaBtnText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '800',
   } as TextStyle,
 
@@ -376,17 +377,17 @@ export const styles = StyleSheet.create({
   eventBannerIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radii.md,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
   } as ViewStyle,
   eventBannerTitle: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '700',
   } as TextStyle,
   eventBannerBody: {
-    fontSize: 11,
+    ...typography.micro,
     marginTop: 2,
     lineHeight: 15,
     opacity: 0.8,
@@ -397,7 +398,7 @@ export const styles = StyleSheet.create({
   feedbackLink: { padding: spacing.sm, marginTop: 4 } as ViewStyle,
   feedbackText: { fontSize: 12, opacity: 0.6 } as TextStyle,
   tagline: {
-    fontSize: 11,
+    ...typography.micro,
     opacity: 0.3,
     marginTop: spacing.sm,
     letterSpacing: 0.2,

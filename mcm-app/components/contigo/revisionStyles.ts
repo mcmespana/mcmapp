@@ -5,6 +5,8 @@
  * 892 del fichero. Mismo patrón que `components/grupos/gruposStyles.ts`.
  */
 import { Platform, StyleSheet, type TextStyle } from 'react-native';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /**
  * Tipografía ÚNICA para todo lo que el usuario escribe (los tres campos de los
@@ -15,7 +17,7 @@ import { Platform, StyleSheet, type TextStyle } from 'react-native';
  */
 export const WRITING_FONT: TextStyle = {
   fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
-  fontSize: 16,
+  ...typography.body,
   // Android mete un padding vertical fantasma en TextInput que descuadra el
   // centrado; con esto el texto queda donde toca en ambas plataformas.
   includeFontPadding: false,
@@ -38,7 +40,7 @@ export const styles = StyleSheet.create({
   headerBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -67,7 +69,7 @@ export const styles = StyleSheet.create({
     gap: 2,
   },
   navTitleText: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     maxWidth: 200,
   },
@@ -77,7 +79,7 @@ export const styles = StyleSheet.create({
     minWidth: 160,
   },
   dateTitle: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '700',
     letterSpacing: -0.3,
   },
@@ -99,7 +101,7 @@ export const styles = StyleSheet.create({
   stepDot: { height: 4, borderRadius: 2 },
   stepLabel: {
     textAlign: 'center',
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '600',
     letterSpacing: 0.3,
     marginTop: 2,
@@ -113,7 +115,7 @@ export const styles = StyleSheet.create({
     lineHeight: 26,
   },
   helpText: {
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 22,
     marginBottom: 18,
   },
@@ -133,13 +135,13 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: 52,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
     paddingHorizontal: 14,
     gap: 10,
   },
   gratStar: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '800',
     includeFontPadding: false,
   },
@@ -155,7 +157,7 @@ export const styles = StyleSheet.create({
   removeBtn: {
     width: 46,
     height: 46,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     alignItems: 'center',
@@ -164,7 +166,7 @@ export const styles = StyleSheet.create({
   addBtn: {
     flex: 1,
     height: 46,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     flexDirection: 'row',
@@ -174,7 +176,7 @@ export const styles = StyleSheet.create({
   },
   textarea: {
     minHeight: 200,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
     padding: 16,
     ...WRITING_FONT,
@@ -197,14 +199,14 @@ export const styles = StyleSheet.create({
   backBtn: {
     width: 52,
     height: 52,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   nextBtn: {
     height: 52,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },

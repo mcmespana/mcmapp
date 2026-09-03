@@ -27,11 +27,11 @@ import { h } from '@/utils/haptics';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import {
-  warm,
-  offsetDate,
-  formatDateLong,
   WARM_DARK,
   WARM_LIGHT,
+  formatDateLong,
+  offsetDate,
+  warm,
 } from '@/components/contigo/theme';
 import { BreathingPhase } from '@/components/contigo/BreathingPhase';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
@@ -41,6 +41,7 @@ import {
   fetchContigoRevisions,
 } from '@/utils/authHelpers';
 import { styles } from '@/components/contigo/revisionStyles';
+import typography from '@/constants/typography';
 
 const REVISION_STORAGE = '@contigo_revision_';
 
@@ -246,7 +247,7 @@ export default function RevisionScreen() {
   const bgColors = useMemo(
     () =>
       isDark
-        ? (['#1A1712', '#100F0C'] as const)
+        ? ([WARM_DARK.bg, WARM_DARK.bgDeep] as const)
         : (['#FBF7F1', '#F0E8D8'] as const),
     [isDark],
   );
@@ -537,7 +538,7 @@ function GratefulStep({
             >
               <Text
                 style={{
-                  fontSize: 13,
+                  ...typography.caption,
                   fontWeight: '700',
                   color: active ? purple : W.textMuted,
                 }}

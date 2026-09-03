@@ -3,6 +3,8 @@ import Animated, { Easing, FadeIn, FadeInUp } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /**
  * Pantalla de bienvenida del wizard (icono, título, intro y meta "N preguntas ·
@@ -73,7 +75,7 @@ const welcomeStyles = StyleSheet.create({
   welcomeIcon: {
     width: 92,
     height: 92,
-    borderRadius: 28,
+    borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -91,7 +93,7 @@ const welcomeStyles = StyleSheet.create({
     maxWidth: 320,
   },
   welcomeMeta: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
     marginTop: 4,
     opacity: 0.8,

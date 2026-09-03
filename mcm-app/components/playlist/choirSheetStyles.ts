@@ -5,8 +5,10 @@
  */
 import { StyleSheet } from 'react-native';
 import { radii } from '@/constants/uiStyles';
+import { KeyPillColors, SwipeColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
-export const accent = (isDark: boolean) => (isDark ? '#7AB3FF' : '#253883');
+export const accent = (isDark: boolean) => themeColors(isDark).link;
 
 export const createStyles = (isDark: boolean) =>
   StyleSheet.create({
@@ -22,7 +24,7 @@ export const createStyles = (isDark: boolean) =>
       paddingVertical: 10,
       paddingHorizontal: 12,
       borderRadius: radii.md,
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     choirIcon: {
       width: 34,
@@ -34,16 +36,16 @@ export const createStyles = (isDark: boolean) =>
     },
     choirTextBlock: { flex: 1 },
     choirLabel: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
     },
     choirName: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     linkBtn: {
       paddingVertical: 6,
@@ -51,7 +53,7 @@ export const createStyles = (isDark: boolean) =>
       borderRadius: radii.sm,
     },
     linkBtnText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       color: accent(isDark),
     },
@@ -69,19 +71,19 @@ export const createStyles = (isDark: boolean) =>
     heroIcon: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'rgba(255,255,255,0.2)',
     },
     heroTextBlock: { flex: 1 },
     heroTitle: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '800',
       color: '#fff',
     },
     heroSubtitle: {
-      fontSize: 13,
+      ...typography.caption,
       color: 'rgba(255,255,255,0.85)',
       marginTop: 2,
     },
@@ -99,22 +101,22 @@ export const createStyles = (isDark: boolean) =>
     rowIcon: {
       width: 36,
       height: 36,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     rowIconLive: {
       backgroundColor: isDark ? '#123A2A' : '#DFF5E9',
     },
     rowTextBlock: { flex: 1 },
     rowLabel: {
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     rowDescription: {
-      fontSize: 13,
+      ...typography.caption,
       color: '#8E8E93',
       marginTop: 2,
     },
@@ -131,21 +133,21 @@ export const createStyles = (isDark: boolean) =>
       gap: 12,
     },
     listItemActive: {
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     listTitle: {
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     listMeta: {
-      fontSize: 12,
+      ...typography.footnote,
       color: '#8E8E93',
       marginTop: 2,
     },
     /* El código pasa a ser un detalle pequeñito, no el protagonista. */
     codeChip: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       color: isDark ? '#8E8E93' : '#8A8A8E',
       fontVariant: ['tabular-nums'],
@@ -153,11 +155,11 @@ export const createStyles = (isDark: boolean) =>
 
     /* --- Varios --- */
     sectionTitle: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       paddingHorizontal: 12,
       paddingTop: 6,
     },
@@ -168,19 +170,19 @@ export const createStyles = (isDark: boolean) =>
       marginHorizontal: 12,
     },
     description: {
-      fontSize: 14,
+      ...typography.subhead,
       lineHeight: 20,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       paddingHorizontal: 12,
     },
     error: {
-      fontSize: 13,
-      color: '#FF453A',
+      ...typography.caption,
+      color: SwipeColors.remove,
       paddingHorizontal: 12,
       fontWeight: '600',
     },
     empty: {
-      fontSize: 14,
+      ...typography.subhead,
       color: '#8E8E93',
       textAlign: 'center',
       paddingVertical: 22,
@@ -194,9 +196,9 @@ export const createStyles = (isDark: boolean) =>
       gap: 6,
     },
     fieldLabel: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
@@ -218,8 +220,8 @@ export const createStyles = (isDark: boolean) =>
     btnDisabled: { opacity: 0.45 },
     btnPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '700' },
     btnSecondaryText: {
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
-      fontSize: 15,
+      color: themeColors(isDark).textStrong,
+      ...typography.button,
       fontWeight: '600',
     },
     backRow: {
@@ -230,7 +232,7 @@ export const createStyles = (isDark: boolean) =>
       paddingBottom: 2,
     },
     backText: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '600',
       color: accent(isDark),
     },

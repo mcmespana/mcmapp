@@ -3,6 +3,9 @@ import { View, Text, StyleSheet } from 'react-native';
 import liturgicalCalendar from '@/assets/calendario-liturgico.json';
 import { getBrightness } from '@/components/ui/glass';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { LiturgicalColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface LiturgicalBadgeProps {
   dateStr: string; // YYYY-MM-DD
@@ -18,7 +21,7 @@ export function getLiturgicalInfo(dateStr: string) {
     return {
       color: 'success' as ChipColor,
       name: 'Tiempo Ordinario',
-      hex: '#3A7D44',
+      hex: LiturgicalColors.green,
     };
 
   // Check special dates first
@@ -54,7 +57,7 @@ export function getLiturgicalInfo(dateStr: string) {
         calYear.domingos_adviento?.[2] === dateStr
           ? 'Adviento (Gaudete)'
           : 'Cuaresma (Laetare)',
-      hex: '#D4A0A7',
+      hex: LiturgicalColors.rose,
     };
   }
 
@@ -62,18 +65,18 @@ export function getLiturgicalInfo(dateStr: string) {
   for (const tiempo of calYear.tiempos) {
     if (dateStr >= tiempo.inicio && dateStr <= tiempo.fin) {
       let color: ChipColor = 'success';
-      let hex = '#3A7D44';
+      let hex: string = LiturgicalColors.green;
       if (tiempo.id === 'adviento' || tiempo.id === 'cuaresma') {
         color = 'accent';
-        hex = '#6B3FA0';
+        hex = LiturgicalColors.purple;
       } else if (tiempo.id === 'navidad' || tiempo.id === 'pascua') {
         // 'warning' (golden) renders readable in both light and dark mode;
         // 'default' renders with dark foreground text that's invisible on dark backgrounds.
         color = 'warning';
-        hex = '#D4A070';
+        hex = LiturgicalColors.gold;
       } else if (tiempo.id === 'semana_santa') {
         color = 'danger';
-        hex = '#C41E3A';
+        hex = LiturgicalColors.red;
       }
       return { color, name: tiempo.nombre, hex };
     }
@@ -82,7 +85,7 @@ export function getLiturgicalInfo(dateStr: string) {
   return {
     color: 'success' as ChipColor,
     name: 'Tiempo Ordinario',
-    hex: '#3A7D44',
+    hex: LiturgicalColors.green,
   };
 }
 
@@ -102,7 +105,7 @@ export function LiturgicalBadge({ dateStr }: LiturgicalBadgeProps) {
     return (
       <View style={styles.pillPlain}>
         <Text
-          style={[styles.label, { color: isDark ? '#FFFFFF' : '#1C1C1E' }]}
+          style={[styles.label, { color: themeColors(isDark).textStrong }]}
           numberOfLines={1}
         >
           {info.name}
@@ -126,7 +129,7 @@ const styles = StyleSheet.create({
   pill: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     alignSelf: 'flex-start',
   },
   pillPlain: {
@@ -135,6 +138,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontWeight: '700',
-    fontSize: 12,
+    ...typography.footnote,
   },
 });

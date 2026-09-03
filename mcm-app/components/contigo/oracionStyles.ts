@@ -6,6 +6,7 @@
  */
 import { StyleSheet } from 'react-native';
 import { radii, shadows } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 export const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -27,7 +28,7 @@ export const styles = StyleSheet.create({
   frostedBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -52,11 +53,11 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: radii.xl,
     borderWidth: 1,
-    ...shadows.sm,
+    ...shadows.card,
   },
   navBtn: {
     padding: 10,
-    borderRadius: 14,
+    borderRadius: radii.lg,
   },
   dateCenter: {
     flex: 1,
@@ -64,7 +65,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   dateText: {
-    fontSize: 18,
+    ...typography.h3,
     fontWeight: '700',
     letterSpacing: -0.3,
     textTransform: 'capitalize',
@@ -79,12 +80,12 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     borderWidth: 1,
     gap: 8,
   },
   completedText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
     flex: 1,
     lineHeight: 18,
@@ -101,10 +102,10 @@ export const styles = StyleSheet.create({
     borderRadius: radii.xl,
     borderWidth: 1,
     padding: 20,
-    ...shadows.sm,
+    ...shadows.card,
   },
   sectionLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 18,
@@ -129,7 +130,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emotionLabel: {
-    fontSize: 11,
+    ...typography.micro,
     letterSpacing: 0.1,
   },
 
@@ -143,13 +144,13 @@ export const styles = StyleSheet.create({
   bucketPill: {
     paddingHorizontal: 17,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1,
     minWidth: '30%',
     alignItems: 'center',
   },
   bucketText: {
-    fontSize: 14,
+    ...typography.subhead,
     letterSpacing: -0.1,
   },
 
@@ -162,7 +163,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
   },
   customLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 18,
@@ -175,7 +176,7 @@ export const styles = StyleSheet.create({
   stepperBtn: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radii.full,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -220,7 +221,7 @@ export const styles = StyleSheet.create({
     borderRadius: 100,
   },
   saveBtnText: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
@@ -233,7 +234,7 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
   calMonthTitle: {
-    fontSize: 18,
+    ...typography.h3,
     fontWeight: '700',
     letterSpacing: -0.4,
     marginTop: 2,
@@ -248,7 +249,7 @@ export const styles = StyleSheet.create({
     marginTop: 2,
   },
   statText: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
   },
   weekdayRow: {
@@ -260,7 +261,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   weekdayText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
@@ -275,10 +276,10 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   calDay: {
-    fontSize: 12,
+    ...typography.footnote,
   },
   calDayDone: {
-    fontSize: 12,
+    ...typography.footnote,
   },
 
   // Legend
@@ -300,7 +301,7 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
   },
   legendText: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '500',
   },
 });

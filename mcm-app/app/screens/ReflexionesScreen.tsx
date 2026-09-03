@@ -27,7 +27,7 @@ import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { getBrightness } from '@/components/ui/glass';
@@ -44,6 +44,7 @@ import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import type { EventStackParamList } from './eventStackScreens';
+import typography from '@/constants/typography';
 
 interface Grupo {
   nombre: string;
@@ -80,10 +81,10 @@ const WEEKDAYS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 // forma DETERMINISTA según el id de cada reflexión, así cada tarjeta tiene
 // "su" color estable entre renders.
 const CARD_PALETTE = [
-  '#E15C62', // rojo MIC
+  colors.accent, // rojo MIC
   '#3478C7', // azul
   '#7B9A1E', // verde oliva
-  '#9D1E74', // morado
+  colors.purple, // morado
   '#E0702F', // naranja
   '#2F8FB3', // azul petróleo
   '#9C4FB0', // violeta
@@ -427,7 +428,7 @@ export default function ReflexionesScreen() {
               icon="auto-stories"
               title="Aún no hay reflexiones"
               subtitle="Pulsa el botón + de arriba para compartir la primera."
-              accentColor={colors.success}
+              accentColor={colors.green}
             />
           }
           initialNumToRender={12}
@@ -460,7 +461,7 @@ export default function ReflexionesScreen() {
                   <MaterialIcons
                     name="auto-stories"
                     size={20}
-                    color={colors.success}
+                    color={colors.green}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -477,7 +478,7 @@ export default function ReflexionesScreen() {
                   value={titulo}
                   onChangeText={setTitulo}
                   placeholder="Un título breve"
-                  accentColor={colors.success}
+                  accentColor={colors.green}
                   accentWhenFilled
                 />
               </View>
@@ -489,7 +490,7 @@ export default function ReflexionesScreen() {
                   onChangeText={setContenido}
                   placeholder="Escribe aquí lo que quieras"
                   multiline
-                  accentColor={colors.success}
+                  accentColor={colors.green}
                   accentWhenFilled
                 />
               </View>
@@ -503,7 +504,7 @@ export default function ReflexionesScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Elegir fecha"
               >
-                <MaterialIcons name="event" size={20} color={colors.success} />
+                <MaterialIcons name="event" size={20} color={colors.green} />
                 <Text style={styles.dateFieldLabel}>Fecha</Text>
                 <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
                 <MaterialIcons
@@ -521,7 +522,7 @@ export default function ReflexionesScreen() {
                   value={autor}
                   onChangeText={setAutor}
                   placeholder="Cómo quieres firmar"
-                  accentColor={colors.success}
+                  accentColor={colors.green}
                   accentWhenFilled
                 />
               </View>
@@ -592,7 +593,7 @@ export default function ReflexionesScreen() {
       {saving && (
         <View style={[StyleSheet.absoluteFill, styles.modalOverlay]}>
           <View style={styles.savingModal}>
-            <Spinner size="lg" color={colors.success} />
+            <Spinner size="lg" color={colors.green} />
             <Text style={styles.savingText}>Enviando...</Text>
           </View>
         </View>
@@ -643,10 +644,10 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginBottom: spacing.md,
       borderRadius: radii.xl,
       overflow: 'hidden',
-      ...(shadows.sm as object),
+      ...(shadows.card as object),
     },
     cardSurface: {
-      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#FFFFFF',
+      backgroundColor: themeColors(scheme === 'dark').background,
     },
     accentBar: {
       position: 'absolute',
@@ -679,7 +680,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     cardAuthor: { fontSize: 15, fontWeight: '700', color: theme.text },
     cardDate: { fontSize: 12, color: theme.icon, marginTop: 1 },
     cardTitle: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '700',
       color: theme.text,
       marginBottom: 4,
@@ -699,7 +700,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginTop: 4,
     },
     emptyText: {
-      fontSize: 14,
+      ...typography.subhead,
       color: theme.icon,
       textAlign: 'center',
     },
@@ -718,21 +719,21 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     sheetIcon: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor:
         scheme === 'dark' ? 'rgba(163,189,49,0.18)' : 'rgba(163,189,49,0.12)',
     },
     sheetSubtitle: {
-      fontSize: 13,
+      ...typography.caption,
       color: theme.icon,
       marginTop: 2,
     },
     field: { marginBottom: spacing.md },
     inputLabel: {
-      fontSize: 12,
-      color: colors.success,
+      ...typography.footnote,
+      color: colors.green,
       fontWeight: '700',
       letterSpacing: 0.2,
       marginBottom: 6,
@@ -744,10 +745,10 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginBottom: spacing.md,
       borderWidth: 1,
       borderColor: scheme === 'dark' ? '#48484A' : '#D8DCC8',
-      borderRadius: 12,
+      borderRadius: radii.md,
       paddingHorizontal: 14,
       paddingVertical: 13,
-      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(scheme === 'dark').background,
     },
     pressed: { opacity: 0.7 },
     dateFieldLabel: {
@@ -756,7 +757,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '500',
       color: theme.text,
     },
-    dateValue: { fontSize: 15, fontWeight: '600', color: colors.success },
+    dateValue: { fontSize: 15, fontWeight: '600', color: colors.green },
     dateModalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.45)',
@@ -768,7 +769,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       width: '100%',
       maxWidth: 360,
       backgroundColor: theme.background,
-      borderRadius: 20,
+      borderRadius: radii.xl,
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.lg,
       paddingBottom: spacing.md,
@@ -788,8 +789,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     datePicker: { alignSelf: 'stretch' },
     dateDoneBtn: {
       alignSelf: 'stretch',
-      backgroundColor: colors.success,
-      borderRadius: 14,
+      backgroundColor: colors.green,
+      borderRadius: radii.lg,
       paddingVertical: 13,
       alignItems: 'center',
       marginTop: spacing.sm,
@@ -800,15 +801,15 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 8,
-      backgroundColor: colors.success,
-      borderRadius: 14,
+      backgroundColor: colors.green,
+      borderRadius: radii.lg,
       paddingVertical: 15,
       marginTop: spacing.md,
       marginBottom: spacing.lg,
     },
     saveBtnLabel: {
       color: '#fff',
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '700',
       letterSpacing: 0.2,
     },
@@ -816,7 +817,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: theme.background,
       padding: spacing.lg,
       margin: spacing.md,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       alignItems: 'center',
     },
     savingText: {

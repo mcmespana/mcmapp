@@ -16,7 +16,13 @@ import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import { useDailyReadings } from '@/hooks/useDailyReadings';
-import { warm, formatDateLong, MONTHS_CAP } from '@/components/contigo/theme';
+import {
+  MONTHS_CAP,
+  WARM_DARK,
+  WARM_LIGHT,
+  formatDateLong,
+  warm,
+} from '@/components/contigo/theme';
 import {
   HabitTile,
   HeroCard,
@@ -31,6 +37,8 @@ import { useContigoDayMenu } from '@/hooks/useContigoDayMenu';
 import LoginNudgeBanner from '@/components/LoginNudgeBanner';
 import { useAuth } from '@/contexts/AuthContext';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 export default function ContigoScreen() {
   const insets = useSafeAreaInsets();
@@ -108,8 +116,8 @@ export default function ContigoScreen() {
     useContigoDayMenu();
 
   const bgGradient = isDark
-    ? (['#1A1712', '#100F0C'] as const)
-    : (['#FAF6F0', '#F0E8D8'] as const);
+    ? ([WARM_DARK.bg, WARM_DARK.bgDeep] as const)
+    : ([WARM_LIGHT.bg, '#F0E8D8'] as const);
 
   return (
     <View style={styles.container}>
@@ -121,9 +129,9 @@ export default function ContigoScreen() {
           headerTitle: 'Contigo',
           headerTransparent: true,
           headerShadowVisible: false,
-          headerTintColor: isDark ? '#F5EFE3' : '#2A1E0E',
+          headerTintColor: isDark ? WARM_DARK.text : '#2A1E0E',
           headerTitleStyle: {
-            color: isDark ? '#F5EFE3' : '#2A1E0E',
+            color: isDark ? WARM_DARK.text : '#2A1E0E',
             fontWeight: '700',
             fontSize: 17,
           },
@@ -388,13 +396,13 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   title: {
-    fontSize: 34,
+    ...typography.h0,
     fontWeight: '800',
     letterSpacing: -1.4,
     lineHeight: 38,
   },
   subtitle: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
     marginTop: 4,
   },
@@ -410,7 +418,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   dateLine: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
     paddingHorizontal: 20,
     marginBottom: 4,
@@ -419,7 +427,7 @@ const styles = StyleSheet.create({
   headerBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -434,11 +442,11 @@ const styles = StyleSheet.create({
   },
   cardSurface: {
     borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     padding: 16,
   },
   smallLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 10,
@@ -466,7 +474,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   monthBadge: {
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },

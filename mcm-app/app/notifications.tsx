@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -52,6 +52,7 @@ import ContextMenuSheet, {
   ContextMenuAction,
 } from '@/components/ContextMenuSheet';
 import { createStyles } from '@/components/notifications/notificationsStyles';
+import typography from '@/constants/typography';
 
 // Mapeo de rutas internas a nombres legibles
 const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
@@ -142,6 +143,7 @@ function NotificationRow({
   ) => void;
   onLongPress: (n: NotificationData | ReceivedNotification) => void;
 }) {
+  const isDark = useColorScheme() === 'dark';
   const ctx = useContextMenu(() => onLongPress(notification));
   const date = new Date(
     'receivedAt' in notification
@@ -233,7 +235,7 @@ function NotificationRow({
                     <MaterialIcons
                       name="check-circle-outline"
                       size={20}
-                      color={colors.primary}
+                      color={themeColors(isDark).link}
                     />
                   </Pressable>
                 )}
@@ -597,7 +599,11 @@ export default function NotificationsScreen() {
             accessibilityLabel="Marcar todas como leídas"
             accessibilityRole="button"
           >
-            <MaterialIcons name="done-all" size={22} color={colors.primary} />
+            <MaterialIcons
+              name="done-all"
+              size={22}
+              color={themeColors(scheme === 'dark').link}
+            />
           </TouchableOpacity>
         ) : (
           <View style={styles.headerRight} />
@@ -854,21 +860,26 @@ function NotificationDetailModal({
                     onPress={handleEventRoute}
                     style={[
                       dStyles.routeButton,
-                      { borderColor: colors.primary },
+                      { borderColor: themeColors(scheme === 'dark').link },
                     ]}
                   >
                     <MaterialIcons
                       name="event"
                       size={20}
-                      color={colors.primary}
+                      color={themeColors(scheme === 'dark').link}
                     />
-                    <Button.Label style={{ color: colors.primary, flex: 1 }}>
+                    <Button.Label
+                      style={{
+                        color: themeColors(scheme === 'dark').link,
+                        flex: 1,
+                      }}
+                    >
                       {eventTitle ? `Ir a ${eventTitle}` : 'Ir al evento'}
                     </Button.Label>
                     <MaterialIcons
                       name="arrow-forward-ios"
                       size={14}
-                      color={colors.primary}
+                      color={themeColors(scheme === 'dark').link}
                     />
                   </Button>
                 )}
@@ -880,21 +891,26 @@ function NotificationDetailModal({
                     onPress={handleInternalRoute}
                     style={[
                       dStyles.routeButton,
-                      { borderColor: colors.primary },
+                      { borderColor: themeColors(scheme === 'dark').link },
                     ]}
                   >
                     <MaterialIcons
                       name={(routeInfo?.icon ?? 'launch') as any}
                       size={20}
-                      color={colors.primary}
+                      color={themeColors(scheme === 'dark').link}
                     />
-                    <Button.Label style={{ color: colors.primary, flex: 1 }}>
+                    <Button.Label
+                      style={{
+                        color: themeColors(scheme === 'dark').link,
+                        flex: 1,
+                      }}
+                    >
                       {routeInfo ? `Ir a ${routeInfo.label}` : 'Abrir sección'}
                     </Button.Label>
                     <MaterialIcons
                       name="arrow-forward-ios"
                       size={14}
-                      color={colors.primary}
+                      color={themeColors(scheme === 'dark').link}
                     />
                   </Button>
                 )}
@@ -909,13 +925,23 @@ function NotificationDetailModal({
                     style={[
                       dStyles.actionButton,
                       idx > 0 && dStyles.actionButtonSecondary,
+                      idx > 0 && {
+                        backgroundColor: hexAlpha(
+                          themeColors(scheme === 'dark').link,
+                          '12',
+                        ),
+                        borderColor: themeColors(scheme === 'dark').link,
+                      },
                     ]}
                   >
                     <Button.Label
                       style={
                         idx === 0
                           ? dStyles.actionButtonText
-                          : dStyles.actionButtonTextSecondary
+                          : [
+                              dStyles.actionButtonTextSecondary,
+                              { color: themeColors(scheme === 'dark').link },
+                            ]
                       }
                     >
                       {button.text}
@@ -923,7 +949,9 @@ function NotificationDetailModal({
                     <MaterialIcons
                       name={button.isInternal ? 'arrow-forward' : 'open-in-new'}
                       size={18}
-                      color={idx === 0 ? '#fff' : colors.primary}
+                      color={
+                        idx === 0 ? '#fff' : themeColors(scheme === 'dark').link
+                      }
                     />
                   </Button>
                 ))}
@@ -958,7 +986,7 @@ const dStyles = StyleSheet.create({
     gap: 4,
     paddingVertical: 4,
     paddingHorizontal: 10,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     borderWidth: 1,
     marginTop: -spacing.sm,
     marginBottom: spacing.lg,
@@ -987,7 +1015,7 @@ const dStyles = StyleSheet.create({
   },
   routeButtonText: {
     flex: 1,
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   actionButton: {
@@ -1000,20 +1028,23 @@ const dStyles = StyleSheet.create({
     borderRadius: radii.lg,
     gap: 10,
     marginBottom: spacing.md,
-    ...shadows.lg,
+    ...shadows.overlay,
     shadowColor: colors.primary,
   },
   actionButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  // Ojo: los valores de aquí son los de MODO CLARO. El azul de marca sobre
+  // fondo oscuro da 1,3:1 (invisible), así que quien use estos estilos los
+  // sobrescribe con `themeColors(isDark).link`. Ver `design.md` §3.
   actionButtonSecondary: {
     backgroundColor: hexAlpha(colors.primary, '12'),
     borderWidth: 1.5,
     borderColor: colors.primary,
-    ...shadows.sm,
+    ...shadows.card,
     shadowColor: colors.primary,
   },
   actionButtonTextSecondary: {
     color: colors.primary,
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
   },
 });

@@ -37,6 +37,7 @@ import type { QrTarget } from '@/utils/qrScan';
 import { h } from '@/utils/haptics';
 import BottomSheet from '../BottomSheet';
 import { createStyles } from './codeInputModalStyles';
+import { themeColors } from '@/constants/colors';
 
 export type CodeDialogVariant =
   | 'cloud-upload'
@@ -272,7 +273,7 @@ const CodeInputModal: React.FC<Props> = ({
                 onChangeText={setName}
                 placeholder="Ej. Eucaristía domingo 7 abril 2031"
                 editable={!submitting}
-                accentColor={isDark ? '#7AB3FF' : '#253883'}
+                accentColor={themeColors(isDark).link}
                 accentWhenFilled
               />
             </View>
@@ -350,7 +351,7 @@ const CodeInputModal: React.FC<Props> = ({
                 <MaterialIcons
                   name="casino"
                   size={16}
-                  color={isDark ? '#7AB3FF' : '#253883'}
+                  color={themeColors(isDark).link}
                 />
                 <Text style={styles.suggestText}>Aleatorio</Text>
               </TouchableOpacity>
@@ -362,7 +363,7 @@ const CodeInputModal: React.FC<Props> = ({
                 <MaterialIcons
                   name="event"
                   size={16}
-                  color={isDark ? '#7AB3FF' : '#253883'}
+                  color={themeColors(isDark).link}
                 />
                 <Text style={styles.suggestText}>Hoy (DDMM)</Text>
               </TouchableOpacity>

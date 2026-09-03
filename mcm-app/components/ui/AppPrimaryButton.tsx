@@ -9,9 +9,10 @@ import {
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
-import { radii } from '@/constants/uiStyles';
+import { UIColors, Colors, themeColors } from '@/constants/colors';
+import { focusRing, radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
 
 /**
  * Botón CTA unificado (Fase 2 de PLAN_UI_NATIVA).
@@ -43,7 +44,7 @@ interface AppPrimaryButtonProps {
   accessibilityLabel?: string;
 }
 
-const DEFAULT_COLOR = '#007AFF'; // azul de acción de iOS
+const DEFAULT_COLOR = UIColors.iosBlue;
 
 export default function AppPrimaryButton({
   label,
@@ -60,8 +61,12 @@ export default function AppPrimaryButton({
   const isDark = useColorScheme() === 'dark';
   const theme = Colors[isDark ? 'dark' : 'light'];
   const isDisabled = disabled || loading;
+  // El foco de teclado solo existe en web y con teclado externo; en móvil esto
+  // nunca se activa. Ver `design.md` §5: el foco no puede distinguirse solo por
+  // color, tiene que verse el grosor.
+  const [focused, setFocused] = React.useState(false);
 
-  const bg = isDisabled ? (isDark ? '#3A3A3C' : '#E5E5EA') : color;
+  const bg = isDisabled ? themeColors(isDark).separator : color;
   const fg = isDisabled ? theme.icon : textColor;
 
   return (
@@ -75,7 +80,17 @@ export default function AppPrimaryButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
-      style={[styles.button, { backgroundColor: bg }, style]}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={[
+        styles.button,
+        { backgroundColor: bg },
+        // El borde existe SIEMPRE en transparente para que enfocar no mueva el
+        // botón: solo cambia de color. Se usa el color del texto, que siempre
+        // contrasta con el fondo del propio botón.
+        focused && { borderColor: fg },
+        style,
+      ]}
     >
       <PressableFeedback.Scale />
       {loading ? (
@@ -100,9 +115,11 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: radii.md,
+    borderWidth: focusRing.borderWidth,
+    borderColor: 'transparent',
   },
   label: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
   },
 });

@@ -22,6 +22,8 @@ import { radii } from '@/constants/uiStyles';
 import { isEventArchived } from '@/constants/events';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { MasStackParamList } from '../(tabs)/mas';
+import { themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 /**
  * "Eventos pasados": lista los eventos archivados como tarjetas que abren su
@@ -71,7 +73,7 @@ export default function EventosPasadosScreen() {
               key={event.id}
               style={[
                 styles.card,
-                { backgroundColor: isDark ? '#2C2C2E' : '#fff' },
+                { backgroundColor: themeColors(isDark).background },
                 Platform.OS !== 'web'
                   ? {
                       shadowColor: event.tintColor,
@@ -110,7 +112,7 @@ export default function EventosPasadosScreen() {
                 <Text
                   style={[
                     styles.cardTitle,
-                    { color: isDark ? '#fff' : '#1C1C1E' },
+                    { color: themeColors(isDark).textStrong },
                   ]}
                   numberOfLines={2}
                 >
@@ -152,7 +154,7 @@ const createStyles = (isDark: boolean) =>
   StyleSheet.create<Styles>({
     safeArea: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     container: {
       flex: 1,
@@ -183,14 +185,14 @@ const createStyles = (isDark: boolean) =>
     },
     cardTitle: {
       flex: 1,
-      fontSize: 18,
+      ...typography.h3,
       fontWeight: '700',
       letterSpacing: -0.3,
     },
     arrowCircle: {
       width: 36,
       height: 36,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       justifyContent: 'center',
       alignItems: 'center',
       flexShrink: 0,

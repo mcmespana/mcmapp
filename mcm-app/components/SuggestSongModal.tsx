@@ -12,11 +12,12 @@ import BottomSheet from './BottomSheet';
 import AppTextField from '@/components/ui/AppTextField';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Colors } from '@/constants/colors';
+import { Colors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { pushWithRetry, setWithRetry } from '@/services/firebaseWrites';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import typography from '@/constants/typography';
 
 interface SuggestSongModalProps {
   visible: boolean;
@@ -198,14 +199,10 @@ export default function SuggestSongModal({
                       ? isDark
                         ? '#1A3A6E'
                         : '#E8F0FE'
-                      : isDark
-                        ? '#2C2C2E'
-                        : '#F2F2F7',
+                      : themeColors(isDark).background,
                     borderColor: isSelected
                       ? '#4A90D9'
-                      : isDark
-                        ? '#3A3A3C'
-                        : '#E5E5EA',
+                      : themeColors(isDark).separator,
                   },
                 ]}
                 onPress={() => setCategoria(cat)}
@@ -262,18 +259,18 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   fieldLabel: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     marginBottom: 6,
     marginTop: 16,
   },
   fieldSublabel: {
-    fontSize: 12,
+    ...typography.footnote,
     marginBottom: 8,
     marginTop: -4,
   },
   charCount: {
-    fontSize: 11,
+    ...typography.micro,
     textAlign: 'right',
     marginTop: 6,
   },
@@ -296,7 +293,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   categoryPillText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
   },
   errorRow: {
@@ -308,7 +305,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FF3B30',
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
   },
   submitBtn: {
@@ -316,7 +313,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   disclaimer: {
-    fontSize: 12,
+    ...typography.footnote,
     lineHeight: 18,
     textAlign: 'center',
   },

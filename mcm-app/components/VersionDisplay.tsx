@@ -6,6 +6,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import { usePreviewChannel } from '@/contexts/PreviewChannelContext';
+import typography from '@/constants/typography';
 
 export const VersionDisplay: React.FC<{ style?: any }> = ({ style }) => {
   const scheme = useColorScheme();
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   versionText: {
-    fontSize: 11,
+    ...typography.micro,
     opacity: 0.7,
     fontFamily: 'System',
     fontWeight: '400',

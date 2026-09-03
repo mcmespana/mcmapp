@@ -15,13 +15,14 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useToast } from '@/contexts/AppToastContext';
 import { h } from '@/utils/haptics';
 import BottomSheet from '@/components/BottomSheet';
-import brand from '@/constants/colors';
+import brand, { themeColors } from '@/constants/colors';
 import { extractDriveFileId, toDrivePreviewUrl } from '@/utils/googleDrive';
 import type { MediaLink, SongMedia } from '@/types/songMedia';
 import { songExtraLinks } from '@/types/songMedia';
 import TagChip from '@/components/song-tags/TagChip';
 import type { ResolvedTag } from '@/utils/songTags';
 import type { FloatingMediaSource } from '@/components/song-media/FloatingMediaPlayer';
+import typography from '@/constants/typography';
 import type { SongLinkSource } from '@/components/song-media/SongLinkViewer';
 
 interface SongMediaSheetProps {
@@ -330,7 +331,7 @@ export default function SongMediaSheet({
               <MaterialIcons
                 name="smart-display"
                 size={15}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.secHeadText}>Vídeos</Text>
             </View>
@@ -354,7 +355,7 @@ export default function SongMediaSheet({
               <MaterialIcons
                 name="headphones"
                 size={15}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.secHeadText}>Audios</Text>
               <Text style={styles.secHint}>reproductor flotante</Text>
@@ -386,7 +387,7 @@ export default function SongMediaSheet({
               <MaterialIcons
                 name="info-outline"
                 size={15}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.secHeadText}>Ficha</Text>
             </View>
@@ -439,7 +440,7 @@ export default function SongMediaSheet({
                   <MaterialIcons
                     name="open-in-new"
                     size={15}
-                    color={isDark ? '#8E8E93' : '#8E8E93'}
+                    color={themeColors(isDark).textMuted}
                   />
                 </TouchableOpacity>
               ) : (
@@ -485,7 +486,7 @@ const createStyles = (isDark: boolean) =>
       paddingHorizontal: 4,
     },
     secHeadText: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '800',
       letterSpacing: 0.9,
       textTransform: 'uppercase',
@@ -493,7 +494,7 @@ const createStyles = (isDark: boolean) =>
     },
     secHint: {
       marginLeft: 'auto',
-      fontSize: 10,
+      ...typography.overline,
       fontWeight: '600',
       fontStyle: 'italic',
       color: isDark ? '#7C7C80' : '#A8A8AD',
@@ -536,13 +537,13 @@ const createStyles = (isDark: boolean) =>
       minWidth: 0,
     },
     mTitle: {
-      fontSize: 14.5,
+      ...typography.subhead,
       fontWeight: '600',
       letterSpacing: -0.2,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     mMeta: {
-      fontSize: 11.5,
+      ...typography.micro,
       color: '#8E8E93',
       marginTop: 1,
     },
@@ -595,14 +596,14 @@ const createStyles = (isDark: boolean) =>
       color: '#8E8E93',
     },
     fv: {
-      fontSize: 13.5,
+      ...typography.caption,
       fontWeight: '600',
       letterSpacing: -0.2,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       marginTop: 2,
     },
     fichaComment: {
-      fontSize: 13.5,
+      ...typography.caption,
       lineHeight: 20,
       color: isDark ? '#D0D0D2' : '#48484A',
       marginHorizontal: 4,
@@ -630,7 +631,7 @@ const createStyles = (isDark: boolean) =>
     },
     fichaSourceText: {
       flex: 1,
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
       color: isDark ? '#9FD3F5' : brand.primary,
     },

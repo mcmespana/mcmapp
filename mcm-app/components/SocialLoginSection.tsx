@@ -26,6 +26,7 @@ import { useToast } from '@/contexts/AppToastContext';
 import { authErrorMessage } from '@/utils/authErrors';
 import { isAppleSignInAvailable } from '@/utils/platformAuth';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
 
 /** Pide confirmación para eliminar la cuenta. Multiplataforma: usa Alert en
  *  nativo y window.confirm en web. Devuelve true si el usuario confirma. */
@@ -353,7 +354,7 @@ export default function SocialLoginSection({
               {
                 borderColor: onDarkBackground
                   ? 'rgba(255,255,255,0.25)'
-                  : hexAlpha('#E15C62', '50'),
+                  : hexAlpha(brandColors.accent, '50'),
               },
             ]}
             accessibilityRole="button"
@@ -363,7 +364,9 @@ export default function SocialLoginSection({
               style={[
                 styles.signOutLabel,
                 {
-                  color: onDarkBackground ? 'rgba(255,255,255,0.8)' : '#E15C62',
+                  color: onDarkBackground
+                    ? 'rgba(255,255,255,0.8)'
+                    : brandColors.accent,
                 },
               ]}
             >
@@ -569,7 +572,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   } as ViewStyle,
   socialBtnLabel: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
     letterSpacing: -0.2,
   } as TextStyle,
@@ -595,26 +598,26 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   } as TextStyle,
   authName: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     letterSpacing: -0.2,
   } as TextStyle,
   authEmail: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 1,
   } as TextStyle,
   authProvider: {
-    fontSize: 11,
+    ...typography.micro,
     marginTop: 2,
   } as TextStyle,
   signOutBtn: {
     borderWidth: 1,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     paddingHorizontal: 10,
     paddingVertical: 5,
   } as ViewStyle,
   signOutLabel: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
   } as TextStyle,
 });

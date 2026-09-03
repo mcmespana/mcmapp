@@ -12,9 +12,15 @@ import { PressableFeedback } from 'heroui-native';
 import { h } from '@/utils/haptics';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
-import { Colors } from '@/constants/colors';
+import {
+  Colors,
+  HighlightColors,
+  UIColors,
+  themeColors,
+} from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -281,7 +287,7 @@ export default function TransposeBottomSheet({
               <MaterialIcons
                 name="refresh"
                 size={18}
-                color={isDark ? '#AEAEB2' : '#636366'}
+                color={themeColors(isDark).textSecondary}
               />
             </PressableFeedback>
           </View>
@@ -327,8 +333,8 @@ export default function TransposeBottomSheet({
                   {
                     color: isTransposed
                       ? isDark
-                        ? '#F4C11E'
-                        : '#7A5A00'
+                        ? UIColors.accentYellow
+                        : HighlightColors.light.fg
                       : isDark
                         ? '#EBEBF0'
                         : '#1C1C1E',
@@ -383,9 +389,7 @@ export default function TransposeBottomSheet({
                         ? isDark
                           ? '#FFB74D'
                           : '#C77700'
-                        : isDark
-                          ? '#8E8E93'
-                          : '#8E8E93',
+                        : themeColors(isDark).textMuted,
                     },
                   ]}
                 >
@@ -414,7 +418,7 @@ export default function TransposeBottomSheet({
                 <MaterialIcons
                   name="refresh"
                   size={18}
-                  color={isDark ? '#AEAEB2' : '#636366'}
+                  color={themeColors(isDark).textSecondary}
                 />
               </PressableFeedback>
             </View>
@@ -465,8 +469,8 @@ export default function TransposeBottomSheet({
                     {
                       color: isCapoOverridden
                         ? isDark
-                          ? '#F4C11E'
-                          : '#7A5A00'
+                          ? UIColors.accentYellow
+                          : HighlightColors.light.fg
                         : isDark
                           ? '#EBEBF0'
                           : '#1C1C1E',
@@ -530,7 +534,7 @@ const styles = StyleSheet.create({
     minHeight: 28,
   },
   cardLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '800',
     letterSpacing: 1.2,
     color: '#8E8E93',
@@ -540,13 +544,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardValue: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
   },
   resetIconBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
@@ -555,7 +559,7 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   cardHint: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '500',
     color: '#8E8E93',
   },
@@ -604,12 +608,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
   },
   toneDisplayActive: {
-    backgroundColor: '#FFF4DA',
-    borderColor: '#F4C11E',
+    backgroundColor: HighlightColors.light.bg,
+    borderColor: UIColors.accentYellow,
   },
   toneDisplayActiveDark: {
-    backgroundColor: '#3A2D0A',
-    borderColor: '#7A5A00',
+    backgroundColor: HighlightColors.dark.bg,
+    borderColor: HighlightColors.light.fg,
   },
   toneDisplayValue: {
     fontSize: 22,
@@ -659,15 +663,15 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
   },
   capoDisplayOverridden: {
-    backgroundColor: '#FFF4DA',
-    borderColor: '#F4C11E',
+    backgroundColor: HighlightColors.light.bg,
+    borderColor: UIColors.accentYellow,
   },
   capoDisplayOverriddenDark: {
-    backgroundColor: '#3A2D0A',
-    borderColor: '#7A5A00',
+    backgroundColor: HighlightColors.dark.bg,
+    borderColor: HighlightColors.light.fg,
   },
   capoDisplayValue: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     letterSpacing: -0.2,
   },

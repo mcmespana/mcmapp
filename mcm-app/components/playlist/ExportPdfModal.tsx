@@ -33,6 +33,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
+import { KeyPillColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 export interface PdfExportConfig {
   playlistName: string;
@@ -96,7 +98,7 @@ const toggleStyles = StyleSheet.create({
   track: {
     width: 48,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     padding: 2,
     justifyContent: 'center',
   },
@@ -317,7 +319,7 @@ const createStyles = (isDark: boolean) =>
       width: '100%',
       maxWidth: 440,
       backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-      borderRadius: 18,
+      borderRadius: radii.xl,
       padding: 20,
       ...Platform.select({
         web: { boxShadow: '0 10px 30px rgba(0,0,0,0.2)' },
@@ -336,18 +338,18 @@ const createStyles = (isDark: boolean) =>
       gap: 8,
     },
     title: {
-      fontSize: 18,
+      ...typography.h3,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     subtitle: {
-      fontSize: 12,
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      ...typography.footnote,
+      color: themeColors(isDark).textSecondary,
       marginTop: 4,
       marginBottom: 14,
     },
     label: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
@@ -364,17 +366,17 @@ const createStyles = (isDark: boolean) =>
       gap: 12,
       paddingVertical: 10,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderTopColor: themeColors(isDark).separator,
     },
     rowText: { flex: 1 },
     rowTitle: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '600',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     rowDesc: {
       fontSize: 11.5,
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
     fontRow: {
@@ -386,18 +388,18 @@ const createStyles = (isDark: boolean) =>
       paddingVertical: 8,
       paddingHorizontal: 12,
       borderRadius: 10,
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
       borderWidth: 1,
       borderColor: 'transparent',
     },
     fontChipActive: {
-      backgroundColor: isDark ? '#1A2744' : '#E8EEFF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : '#E8EEFF',
       borderColor: '#0055A4',
     },
     fontChipText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
     },
     fontChipTextActive: {
       color: isDark ? '#7AB3FF' : '#0055A4',
@@ -421,11 +423,11 @@ const createStyles = (isDark: boolean) =>
       fontWeight: '700',
     },
     btnSecondary: {
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
     },
     btnSecondaryText: {
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
-      fontSize: 15,
+      color: themeColors(isDark).textStrong,
+      ...typography.button,
       fontWeight: '600',
     },
     btnDisabled: { opacity: 0.5 },

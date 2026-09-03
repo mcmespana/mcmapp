@@ -8,6 +8,9 @@ import {
   Appearance,
   TouchableOpacity,
 } from 'react-native';
+import colors, { themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface Props {
   children: ReactNode;
@@ -43,7 +46,9 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <View style={dynamicStyles.container}>
           <Text style={styles.emoji}>😵</Text>
-          <Text style={styles.title}>Algo ha ido mal</Text>
+          <Text style={[styles.title, { color: themeColors(isDark).link }]}>
+            Algo ha ido mal
+          </Text>
           <Text style={dynamicStyles.subtitle}>
             La app ha encontrado un error inesperado.
           </Text>
@@ -72,10 +77,10 @@ const getDynamicStyles = (isDark: boolean) =>
       justifyContent: 'center',
       alignItems: 'center',
       padding: 32,
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
     },
     subtitle: {
-      fontSize: 16,
+      ...typography.body,
       color: isDark ? '#aaa' : '#666',
       textAlign: 'center',
       marginBottom: 24,
@@ -85,7 +90,7 @@ const getDynamicStyles = (isDark: boolean) =>
       maxHeight: 200,
       width: '100%',
       backgroundColor: isDark ? '#3a3a3c' : '#f5f5f5',
-      borderRadius: 8,
+      borderRadius: radii.sm,
       padding: 12,
     },
   });
@@ -96,24 +101,24 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 22,
+    ...typography.h2,
     fontWeight: '700',
-    color: '#253883',
+    // El color va inline: el azul de marca sobre el fondo oscuro es 1,3:1.
     marginBottom: 8,
   },
   button: {
-    backgroundColor: '#253883',
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '600',
   },
   errorText: {
-    fontSize: 12,
+    ...typography.footnote,
     fontFamily: 'monospace',
     color: '#c00',
   },

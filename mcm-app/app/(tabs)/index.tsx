@@ -665,7 +665,7 @@ export default function Home() {
                           <MaterialIcons
                             name="system-update"
                             size={22}
-                            color={colors.success}
+                            color={colors.green}
                           />
                         ),
                       },

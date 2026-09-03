@@ -18,6 +18,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import brand, { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import typography from '@/constants/typography';
 
 interface OTAUpdatePromptProps {
   visible: boolean;
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
     maxWidth: 420,
   },
   card: {
-    borderRadius: radii.xxl,
+    borderRadius: radii.xl,
     paddingHorizontal: 24,
     paddingTop: 28,
     paddingBottom: 18,
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: brand.primary,
     paddingVertical: 14,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     marginBottom: 6,
   },
   primaryButtonDisabled: {
@@ -352,7 +353,7 @@ const styles = StyleSheet.create({
   },
   primaryLabel: {
     color: '#FFFFFF',
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
@@ -362,11 +363,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   secondaryLabel: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   fineprint: {
-    fontSize: 12,
+    ...typography.footnote,
     textAlign: 'center',
     marginTop: 4,
     opacity: 0.85,

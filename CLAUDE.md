@@ -6,6 +6,7 @@
 
 ```
 /                           ← Raíz del monorepo
+├── design.md               🎨 Guía de diseño PRESCRIPTIVA para agentes — léela antes de tocar UI
 ├── mcm-app/                ← App principal (Expo/React Native) — LEE mcm-app/CLAUDE.md
 │   ├── CLAUDE.md           Referencia técnica completa (arquitectura, convenciones, Firebase)
 │   ├── TODO.md             Tareas pendientes de mantenimiento y mejora
@@ -39,7 +40,15 @@
 9. **Antes de retomar o priorizar cualquier plan/tarea de fondo, lee `docs/planes/BACKLOG.md` ENTERO** — es la fuente única de verdad del orden de ejecución, qué está bloqueado por una decisión pendiente del usuario, y el protocolo de trabajo (qué hacer cuando dicen "seguimos" o "me sobran tokens"). No priorices desde cero ni mires un solo `PLAN_*.md` suelto sin pasar antes por ahí.
 10. **Un plan dentro de `docs/planes/archivo/` está HECHO o ANULADO: NO lo re-ejecutes.** El índice de qué sigue vivo es `docs/planes/README.md`. Al terminar un plan, muévelo a `archivo/` **en el mismo commit** que cierra el trabajo — dejarlo en su sitio con una cabecera de "✅ hecho" no basta, ya provocó que dos sesiones ejecutaran los mismos 15 planes en paralelo.
 11. **Antes de "arreglar los warnings" del linter, lee `docs/desarrollo/WARNINGS.md`** — los 51 que quedan están clasificados y justificados uno a uno; casi todos son falsos positivos de Reanimated o del patrón de "ref al último callback". Lo que sí se pide es no añadir warnings NUEVOS.
-12. **Los archivos gigantes se quedan gigantes** (decisión del usuario, 2026-08-15). No trocees por tamaño; trocea solo por testabilidad. Razonamiento en `docs/planes/PLAN_CALIDAD.md` §0.
+12. **Antes de tocar interfaz, lee [`design.md`](design.md)** (raíz del
+    monorepo). Es la guía **prescriptiva** de diseño para agentes: criterio,
+    orden de prioridad cuando dos requisitos chocan, los tres territorios
+    visuales, antipatrones que no se envían y la API aprobada de componentes.
+    `docs/desarrollo/DESIGN.md` sigue siendo el **inventario** de valores, y
+    los tokens del código (`mcm-app/constants/*.ts`) mandan sobre ambos. Las
+    incoherencias de diseño ya detectadas, con su destino decidido, están en
+    `docs/planes/PLAN_DISENO.md` — no las arregles de paso: anótalas ahí.
+13. **Los archivos gigantes se quedan gigantes** (decisión del usuario, 2026-08-15). No trocees por tamaño; trocea solo por testabilidad. Razonamiento en `docs/planes/PLAN_CALIDAD.md` §0.
 
 ## Comandos rápidos (desde mcm-app/)
 
@@ -67,6 +76,8 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 
 | Tema                                                                     | Documento                                                                    |
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| **🎨 Reglas de diseño para agentes (★ antes de tocar UI)**               | **`design.md`** (raíz) — inventario en `docs/desarrollo/DESIGN.md`           |
+| Incoherencias de diseño pendientes de unificar                           | `docs/planes/PLAN_DISENO.md`                                                 |
 | Notificaciones push (sistema completo)                                   | `docs/funcionalidades/NOTIFICACIONES.md`                                     |
 | Contrato de notificaciones con el panel                                  | `docs/contratos/NOTIFICACIONES_CONTRATO.md`                                  |
 | Eventos (Jubileo, encuentros, retiros…)                                  | `docs/funcionalidades/EVENTOS.md`                                            |
@@ -85,5 +96,4 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Sistema de diseño / tabs                                                 | `docs/desarrollo/DESIGN.md` + `docs/desarrollo/TABS_MAINTENANCE.md`          |
 | Build de tienda de agosto 2026 (paso a paso)                             | `docs/desarrollo/BUILD_AGOSTO_2026.md`                                       |
 | Arreglos del cantoral (`{arr:}`)                                         | `docs/funcionalidades/ARREGLOS.md`                                           |
-| Etiquetas del cantoral (`{tags:}`)                                       | `docs/funcionalidades/ETIQUETAS.md`                                          |
 | Subrayado de lecturas (Contigo)                                          | `docs/funcionalidades/SUBRAYADO.md`                                          |

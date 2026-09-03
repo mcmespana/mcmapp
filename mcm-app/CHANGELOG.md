@@ -18,6 +18,299 @@
 
 ---
 
+## 2026-09-03 01:55 — Arreglado: en modo oscuro, Notificaciones tenía los controles invisibles
+
+PLAN_DISENO §H4. Esto empezó como una mejora anotada ("los colores de marca no
+tienen variante oscura") y al medirlo resultó ser un **bug de verdad**.
+
+Sobre el fondo oscuro (`#2C2C2E`), el azul de marca `#253883` da **1,31:1**. No
+es "poco contraste": es invisible. Y ese azul se usaba como color de iconos,
+bordes y etiquetas de botón en **toda la pantalla de Notificaciones**, que sí
+cambia de fondo con el tema. En modo oscuro, el botón de "marcar como leída",
+los chips de destino, los botones de acción y los de "Ir a…" estaban ahí sin
+verse.
+
+- Arreglado en `notifications.tsx`, `NotificationListItem`, `NotificationDetail`
+  y `notificationsStyles` usando `themeColors(isDark).link`: el mismo azul de
+  marca en claro, y `#7AB3FF` en oscuro.
+- **No hizo falta ninguna paleta nueva.** El rol ya existía; solo que se
+  llamaba `link` y nadie lo asociaba con iconos y botones. Ahora está
+  documentado como lo que es: el `tintColor` de iOS, que en el sistema cubre
+  enlaces, iconos de acción y etiquetas de botón con un único color.
+- Los rellenos (`backgroundColor: colors.primary` con texto blanco encima) se
+  quedan: ahí el azul de marca está bien en los dos modos.
+
+La regla queda escrita en `design.md` §3, con la tabla de qué color de marca
+sirve de primer plano en cada fondo: en oscuro valen `secondary` (8,5),
+`yellow` (9,5), `green` (6,6) e `info` (5,3), y NO valen `text` (1,1),
+`primary` (1,3) ni `purple` (1,9).
+
+**El barrido del resto encontró tres sitios más con el mismo bug** (§H4-bis):
+el título de `ErrorBoundary` —la pantalla de error, ilegible justo cuando más
+falta hace leerla—, el spinner de `SurveyScreen`, y el icono y el texto de
+"Marcar todo" de `NotificationsBottomSheet`. Más `FormattedContent`, donde la
+clase `color-primary` del contenido en BBCode la elige **quien escribe desde el
+panel**, así que no podía quedarse fija.
+
+`SongControls` no era un bug: ya tenía el par a mano (`#253883`/`#7AB3FF`), que
+es exactamente `link`; tokenizado. Y `GruposScreen` tampoco: ahí el azul es un
+relleno de tarjeta con texto blanco encima, y como relleno está bien.
+
+---
+
+## 2026-09-03 01:25 — EmptyState cumple por fin su contrato, y el foco de los botones
+
+PLAN_DISENO §H2, §H1-bis y §A2-bis.
+
+**`EmptyState` no era agnóstico de paleta**, que es justo lo que `design.md` §2
+exige a todo lo que vive en `components/ui/`. Lo era a medias: `accentColor`
+tocaba el icono y el CTA, pero el título y el subtítulo se cogían del tema
+institucional — o sea que en Contigo salían grises fríos sobre fondo crema. Por
+eso los dos vacíos de Contigo llevaban meses "pendientes de verificar" en el
+plan: no era que hubiera que verlos, es que el componente no servía ahí.
+
+- Añadidos `titleColor` y `subtitleColor`. Por defecto hacen lo de antes, así
+  que los 11 sitios que ya usaban el componente no cambian.
+- Migrados los dos que lo esperaban: **Contigo → marcadores** ("Sin guardados
+  aún") y **Contigo → evangelio** ("No se encontraron lecturas para este día",
+  con su botón de "Volver a hoy"). Los dos con la paleta cálida.
+
+**Foco de teclado** (web y teclado externo):
+
+- `AppPrimaryButton` no tenía ningún indicador. Ahora lleva un borde permanente
+  en transparente que solo cambia de color al enfocar, así el botón no se
+  mueve. Usa el color de su texto, que siempre contrasta con su propio fondo.
+- **Revertido en `AppTextField`**: el engorde a 2 px que había puesto
+  desplazaba el campo 1 px justo al empezar a escribir, y el salto se nota más
+  que la mejora. Su foco sigue siendo el cambio de color de todo el borde.
+
+**Los dos amarillos, documentados**: `brand.yellow` (#FCD200) es el de MARCA
+—estrellas de valoración, categorías, tab de la Visita del Papa— y
+`UIColors.accentYellow` (#f4c11e) el del CANTORAL —su tab, su FAB y el
+destacado ámbar—. Están a cuatro puntos y hacen cosas distintas.
+
+---
+
+## 2026-09-03 01:00 — Los pesos tipográficos, ajustados a lo que la app hace
+
+PLAN_DISENO §C4. Segunda vez que el token resulta ser el raro y no el código.
+
+La escala de pesos que había escrito —500 para acciones, 600 para secciones— me
+la había inventado yo. Contando: a 15 px la app usa 600 o 700 en **53 sitios**
+y 500 en **3**. Lo mismo con 17 y 18 px, que van a 700. Y había una
+incoherencia de escalera: `h2` (22 px) a 800 pesaba más que `h1` (28 px) a 700,
+o sea peso subiendo al bajar de tamaño.
+
+- Pesos del token ajustados: `h2` y `h3` a 700, `button` a 600. La escalera
+  queda `h0 800 · h1/h2/h3 700 · title/button/overline 600 · resto normal`,
+  bajando con el tamaño y sin superar nunca al nivel de arriba.
+- Con eso, 45 sitios más pasan a token **sin cambiar de aspecto**: de 321
+  `fontSize` a mano a **276**.
+- `design.md` §4 y el inventario corregidos.
+
+**Cambian de peso 5 sitios**, los que heredaban del token sin declarar el suyo:
+`ComidaScreen` (label de acción), `ScreenHero` en modo compacto, el `subtitle`
+de `ThemedText` y la cabecera de notificaciones. De 600 a 700 y de 500 a 600 —
+en la dirección de lo que ya hace el resto de la app.
+
+Los 276 que quedan son tamaños fuera de escala (26, 20, 30, 9, 48…) o
+combinaciones con un peso que no es el del token: ahí ya no hay regla general
+que aplicar (§C6).
+
+---
+
+## 2026-09-03 00:35 — El texto tenue del cantoral ahora se lee, y tres decisiones cerradas
+
+**Corrijo un diagnóstico mío de la entrada anterior**: dije que tres pares
+claro/oscuro estaban "del revés" porque el hex de modo oscuro era más oscuro
+que el de modo claro. Eso no significa nada — cada color se mide contra SU
+fondo. Medidos bien estaban deliberadamente igualados (placeholder 2,92 en
+claro y 2,84 en oscuro; leyenda 2,16 y 2,67). No había ningún ternario
+intercambiado.
+
+Lo que sí era verdad, aunque no por el motivo que yo daba: **esos valores están
+por debajo del mínimo legible** (4,5:1), y es el buscador y la leyenda del
+cantoral, la pantalla más usada de la app.
+
+- `Colors.light.textMuted` sube de `#8E8E93` a `#6E6E73`, el primer gris de la
+  escala que pasa: 4,54:1 sobre el gris de los campos y 5,07 sobre blanco. En
+  oscuro `#8E8E93` ya pasaba y se queda. 10 sitios migrados al token.
+- `designTokens.test.ts` gana **tests de contraste** de todos los roles de
+  texto contra las superficies donde se pintan de verdad, y `design.md` §5 un
+  aviso para que nadie repita mi error de comparar los dos hex entre sí.
+- `UIColors`: `activePrimary`/`secondaryText` no eran "el azul activo" y "el
+  gris secundario" de la UI — están en el HTML que genera `useSongProcessor`,
+  pintando los acordes. Renombrados a `chordBlue` y `chordSecondaryText`.
+  Cuatro claves más no las usaba nadie: borradas.
+- `design.md` §5 recoge la **regla del radio anidado** (el interior es el
+  exterior menos el hueco), que es por qué `SegmentedControl` lleva un 10 con
+  `padding: 2` y por qué eso no es deuda.
+
+**Tres decisiones cerradas, para que no se vuelvan a proponer:**
+
+- **Anchuras máximas / layout de iPad: no se tocan.** Decisión del usuario.
+- **Capas de superficie en modo oscuro: no.** Dar color propio a las cards
+  (`#3A3A3C`) dejaría el texto terciario encima en 3,48:1. Lo de ahora —plano
+  con hairline— se lee. Queda un test que avisa si alguien lo intenta.
+- **`borderRadius: 10`: no es deuda, es geometría.** Es la regla del radio
+  anidado; ahora está escrita.
+
+---
+
+## 2026-09-03 00:05 — Segunda tanda de colores, y un posible bug de contraste anotado
+
+PLAN_DISENO §A5.4 y §A5.5.
+
+- El **destacado ámbar** (la canción o playlist marcada) pasa a `HighlightColors`:
+  27 literales en `PlaylistRow`, `SongListItem`, `TransposeBottomSheet`,
+  `SongFontBottomSheet` y `TagChip`. Unificada de paso la deriva que tenían
+  entre ellos (`#3A2800` en uno, `#3A2D0A` en otro, para el mismo papel).
+- **Aquí se acaba el barrido mecánico** (§A5.5). Lo que queda son hex cuyo VALOR
+  coincide con un token pero cuyo PAPEL no: el mismo `#1C1C1E` es un gris de
+  superficie en un sitio y "texto casi negro" en otro. Cambiarlo por un token
+  mal nombrado es peor que dejarlo, porque el nombre pasa a mentir — que es lo
+  que este plan vino a arreglar. A partir de aquí hay que abrir el fichero.
+
+**Hallazgo pendiente de mirar en dispositivo (§H11)**: tres pares claro/oscuro
+parecen estar del revés — el color de modo oscuro es más oscuro que el de modo
+claro. Afecta al placeholder de búsqueda del cantoral y a texto tenue de
+`PlaylistRow`, `SongListItem` y `CommandPalette`, con contraste por debajo de
+3:1 en ambos modos. Puede ser un tenue deliberado o un ternario intercambiado al
+copiar; no se ha tocado nada.
+
+---
+
+## 2026-09-02 23:45 — Los radios a mano bajan de 300 a 122
+
+PLAN_DISENO §E2. Complementa el colapso de la escala de radios del commit
+anterior.
+
+- 114 sustituciones **byte-idénticas** (4, 8, 12, 16, 20, 28 y 999 ya coincidían
+  con la escala).
+- 64 de los valores que la escala colapsó (14, 18, 22), migrados **a propósito**:
+  dejarlos a mano creaba el peor de los mundos, la misma card con 14 px si el
+  fichero hardcodeaba y 16 si usaba el token. Son 2 px.
+- `__tests__/noNewMagicNumbers.test.ts` suma el tercer trinquete: colores,
+  tamaños de letra y ahora radios.
+
+Los 122 que quedan son valores que no están en la escala (10 con 23 usos, y
+luego 3, 6, 100, 5, 2, 13, 26…): unos son decorativos de un sitio concreto y
+otros son un escalón inventado. Hay que mirarlos uno a uno (§E3).
+
+---
+
+## 2026-09-02 23:25 — La escala tipográfica ahora cubre los tamaños que la app usa
+
+PLAN_DISENO §C. `constants/typography.ts` existía desde siempre y **solo lo
+importaban 6 ficheros**, con 666 `fontSize` escritos a mano por toda la app.
+
+La causa no era desidia: la escala declaraba siete tamaños (10/13/15/16/22/28/34)
+y los cinco más usados del repo —12 con 100 usos, 14 con 71, 11 con 71, 17 con
+22 y 18 con 25— **no estaban**. Un token que no cubre tu caso no se usa, se
+rodea.
+
+- Escala ampliada con los nombres de iOS, que es de donde vienen los tamaños:
+  `h3` 18, `title` 17, `subhead` 14, `footnote` 12, `micro` 11.
+- Un token solo trae `fontWeight` cuando el rol lo implica, para poder
+  sobrescribirlo sin sorpresas.
+- Migrados 345 `fontSize`: **de 666 a 321**, y de 6 ficheros importando el token
+  a 96. Solo se tocaron los tokens sin peso propio (byte-equivalentes); los que
+  llevan peso, únicamente donde el peso declarado ya coincidía.
+- La escala de pesos queda escrita en `design.md` §4: 800 en `h0`, kickers y
+  badges · 700 en títulos de card · 600 en secciones · 500 en acciones · normal
+  en cuerpo.
+- `__tests__/noNewMagicNumbers.test.ts` (antes `noNewHardcodedColors`) suma un
+  trinquete de `fontSize` al que ya tenía de colores.
+
+Los 321 que quedan llevan un `fontWeight` al lado que no coincide con el del
+token: hay que mirarlos uno a uno y decidir si el sitio se equivoca de peso o si
+el token no le vale. Es revisión, no trabajo mecánico (§C4).
+
+- **Archivos**: `constants/typography.ts`, `__tests__/noNewMagicNumbers.test.ts`
+  y 85 ficheros de `app/` y `components/`.
+
+---
+
+## 2026-09-02 22:55 — Unificación de tokens de diseño: los nombres ya no mienten
+
+Primera pasada de [`docs/planes/PLAN_DISENO.md`](../docs/planes/PLAN_DISENO.md).
+Sin cambios de comportamiento; los cambios visuales son tres, pequeños y
+deliberados, y están listados abajo para verificarlos en dispositivo.
+
+- **Colores de marca**: `brand` pasa a ser una paleta **cromática**
+  (`success`→`green`, `warning`→`yellow`, `danger`→`purple`). El código dictó el
+  alcance: el verde pintaba la pantalla de Reflexiones y el amarillo las
+  estrellas de valoración — no eran estados. `accent` se queda, porque sí se usa
+  como acento. El estado sigue en `ToastColors` y `SwipeColors`.
+- **Roles de color que faltaban**: `textStrong`, `textSecondary`, `textMuted`,
+  `link`, `backgroundSunken` y `separator` en `Colors.light`/`Colors.dark`, con
+  `themeColors(isDark)` para resolverlos (mismo patrón que `warm(isDark)` de
+  Contigo). Más `SystemGray`, `HighlightColors`, `CarismoColors` y
+  `LiturgicalColors` (los colores del tiempo litúrgico, que estaban escritos a
+  mano dentro de `LiturgicalBadge`).
+- **De 1.363 hex literales a 793**: 202 ternarios `isDark ? '#X' : '#Y'` a
+  roles, 126 literales a su token de siempre, 50 de la paleta cálida de Contigo.
+- **Sombras** renombradas por función (`card`/`raised`/`hero`/`overlay`): con
+  nombres de talla el orden mentía, `lg` (0.3) era más marcada que `xl` (0.18).
+- **Radios** colapsados de nueve escalones a siete, en la rejilla de 4 px.
+- **Responsive**: había **dos** hooks con umbrales distintos y el que
+  documentaba `DESIGN.md` tenía cero usos; borrado. `useResponsiveLayout` es el
+  único, y sus cortes salen ya de `constants/breakpoints.ts`.
+- **Foco**: nuevo `focusRing` y aplicado en `AppTextField` — el foco no puede
+  distinguirse solo por color.
+- **Panel** (repo `mcmpanel`): `src/lib/brandTokens.ts`, espejo de
+  `constants/colors.ts`, para que lo que representa datos de la app se pinte con
+  los colores de la app. Y el panel queda declarado oscuro-only.
+- **Guardarraíl**: `__tests__/designTokens.test.ts` comprueba que `global.css` no
+  se desincroniza de `constants/colors.ts`, que ningún token de marca se llame
+  como un estado, y que las escalas siguen siendo monótonas.
+
+**Pendiente de ver en un dispositivo** (`PLAN_DISENO` §H9): la sombra de toasts
+y FABs (0.30 → 0.22), los radios (`lg` 14→16, destacadas 18→20, hero 22→20) y el
+gris de texto secundario, unificado en el par con más contraste de los dos que
+había.
+
+- **Archivos**: `constants/colors.ts`, `constants/uiStyles.ts`,
+  `constants/breakpoints.ts`, `global.css`, `hooks/useResponsiveLayout.ts`
+  (borrado `hooks/useResponsive.ts`), `__tests__/designTokens.test.ts` y ~95
+  ficheros de `app/` y `components/`.
+
+---
+
+## 2026-09-02 22:20 — `design.md`: guía de diseño prescriptiva para agentes (+ plan de unificación)
+
+- **Qué es**: nuevo [`design.md`](../design.md) en la raíz del monorepo,
+  inspirado en el `design.md` público de Vercel. No es un catálogo: es el
+  **criterio** con el que un agente construye interfaz — qué se prioriza cuando
+  dos requisitos chocan, los tres territorios visuales (institucional, Contigo,
+  evento) y qué se comparte entre ellos, la API de componentes que ya existen,
+  los antipatrones que no se envían y la checklist previa a dar una pantalla
+  por buena.
+- **Reparto de papeles**: `design.md` = reglas (prescriptivo) ·
+  `docs/desarrollo/DESIGN.md` = inventario de valores (descriptivo) ·
+  `mcm-app/constants/*.ts` = fuente de verdad. Anotado en la cabecera de ambos
+  documentos para que no vuelvan a divergir sin que se note.
+- **`mcmpanel/design.md`** (repo `mcmpanel`): el panel mantiene su estética
+  oscura tipo consola, pero queda por escrito lo que sí comparte con la app —
+  pintar con los colores reales de MCM lo que representa datos de la app,
+  espejar catálogos en vez de reinventarlos, vocabulario común y la forma de los
+  datos por encima de la estética.
+- **`docs/planes/PLAN_DISENO.md`** (nuevo): las incoherencias reales detectadas
+  con evidencia (entre otras: `accent`/`danger` significan cosas distintas en la
+  capa RN y en la capa CSS; 1.363 hex hardcodeados, casi todos grises de sistema
+  que no existen como token; los nombres de `shadows` no siguen el orden de
+  intensidad) más las mejoras propuestas, cada una con destino decidido y
+  ejecutable en un commit. Registrado en `BACKLOG.md` §2.G y en
+  `docs/planes/README.md`.
+- **Archivos**: `design.md`, `docs/planes/PLAN_DISENO.md`,
+  `docs/desarrollo/DESIGN.md`, `docs/README.md`, `docs/planes/README.md`,
+  `docs/planes/BACKLOG.md`, `CLAUDE.md`, `mcm-app/AGENTS.md`. Sin cambios de
+  código.
+
+---
+
+---
+
 ## 2026-09-01 20:30 — Enlaces de canción: Spotify, partituras de Drive y otras webs
 
 - **Qué**: soporte de los tres campos nuevos del cantoral (`spotifyLinks`,

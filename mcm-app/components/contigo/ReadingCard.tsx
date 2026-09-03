@@ -13,6 +13,8 @@ import {
 import type { HighlightRange } from '@/utils/highlightRanges';
 
 import useFontScale from '@/hooks/useFontScale';
+import { WARM_DARK } from '@/components/contigo/theme';
+import typography from '@/constants/typography';
 
 interface ReadingCardProps {
   title: string;
@@ -33,7 +35,7 @@ interface ReadingCardProps {
 
 // Warm amber accent for Contigo section
 const WARM_ACCENT_LIGHT = '#B8860B';
-const WARM_ACCENT_DARK = '#DAA520';
+const WARM_ACCENT_DARK = WARM_DARK.accent;
 
 export function ReadingCard({
   title,
@@ -148,7 +150,7 @@ export function ReadingCard({
 const styles = StyleSheet.create({
   wrapper: {
     marginBottom: 10,
-    ...shadows.sm,
+    ...shadows.card,
   },
   card: {
     borderRadius: radii.lg,
@@ -185,7 +187,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
   citaText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
   },
   body: {

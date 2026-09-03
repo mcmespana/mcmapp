@@ -25,6 +25,12 @@ import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import colors, {
+  KeyPillColors,
+  SwipeColors,
+  themeColors,
+} from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 
 interface FontOption {
   name: string;
@@ -102,12 +108,8 @@ function ActionButton({
         size={18}
         color={
           isActive
-            ? isDark
-              ? '#7AB3FF'
-              : '#253883'
-            : isDark
-              ? '#AEAEB2'
-              : '#636366'
+            ? themeColors(isDark).link
+            : themeColors(isDark).textSecondary
         }
       />
       <Text
@@ -363,14 +365,14 @@ const SongControls: React.FC<SongControlsProps> = ({
             {Platform.OS === 'ios' && (
               <GlassSurface
                 variant="regular"
-                tintColor={showActionButtons ? '#FF453A' : undefined}
+                tintColor={showActionButtons ? SwipeColors.remove : undefined}
               />
             )}
             <Animated.View style={fabIconStyle}>
               <MaterialIcons
                 name={showActionButtons ? 'add' : 'tune'}
                 size={22}
-                color={isDark ? '#fff' : '#1C1C1E'}
+                color={themeColors(isDark).textStrong}
               />
             </Animated.View>
           </TouchableOpacity>
@@ -444,7 +446,7 @@ const styles = StyleSheet.create({
   menuContainer: {
     marginBottom: 12,
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: radii.lg,
     paddingVertical: 8,
     paddingHorizontal: 4,
     minWidth: 200,
@@ -494,7 +496,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F0FE',
   },
   actionButtonActiveDark: {
-    backgroundColor: '#1A2744',
+    backgroundColor: KeyPillColors.bgDark,
   },
   actionButtonText: {
     marginLeft: 10,
@@ -506,11 +508,11 @@ const styles = StyleSheet.create({
     color: '#EBEBF0',
   },
   actionButtonTextActive: {
-    color: '#253883',
+    color: themeColors(false).link,
     fontWeight: '600',
   },
   actionButtonTextActiveDark: {
-    color: '#7AB3FF',
+    color: themeColors(true).link,
     fontWeight: '600',
   },
   fabMain: {
@@ -542,13 +544,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#2C2C2E',
   },
   fabMainOpen: {
-    backgroundColor: '#FF453A',
+    backgroundColor: SwipeColors.remove,
   },
   badge: {
     position: 'absolute',
     right: -1,
     top: -1,
-    backgroundColor: '#FF453A',
+    backgroundColor: SwipeColors.remove,
     borderRadius: 6,
     width: 12,
     height: 12,
@@ -565,7 +567,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: -1,
     top: -1,
-    backgroundColor: '#E15C62',
+    backgroundColor: colors.accent,
     borderRadius: 6,
     width: 12,
     height: 12,

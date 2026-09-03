@@ -6,6 +6,7 @@
  */
 import { StyleSheet } from 'react-native';
 import { radii, shadows } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 export const styles = StyleSheet.create({
   container: {
@@ -40,7 +41,7 @@ export const styles = StyleSheet.create({
   frostedBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -52,7 +53,7 @@ export const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     padding: 4,
-    borderRadius: 14,
+    borderRadius: radii.lg,
   },
   segmentButton: {
     flex: 1,
@@ -84,7 +85,7 @@ export const styles = StyleSheet.create({
   },
   dateNavBtn: {
     padding: 10,
-    borderRadius: 14,
+    borderRadius: radii.lg,
   },
   dateDisplay: {
     alignItems: 'center',
@@ -111,16 +112,16 @@ export const styles = StyleSheet.create({
     marginTop: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     borderWidth: 1,
   },
   todayMiniLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: -0.1,
   },
   diaLiturgico: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 6,
     fontWeight: '700',
     textAlign: 'center',
@@ -128,7 +129,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   tituloLiturgico: {
-    fontSize: 13,
+    ...typography.caption,
     marginTop: 4,
     fontWeight: '500',
     textAlign: 'center',
@@ -168,7 +169,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
     marginBottom: 20,
-    ...shadows.sm,
+    ...shadows.card,
   },
   cardContent: {
     padding: 20,
@@ -183,7 +184,7 @@ export const styles = StyleSheet.create({
     marginBottom: 20,
   },
   citaText: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '700',
   },
   bodyText: {
@@ -192,7 +193,7 @@ export const styles = StyleSheet.create({
     fontWeight: '400',
   },
   authorText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
     marginTop: 24,
     textAlign: 'right',
@@ -207,7 +208,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sourceText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
     marginRight: 4,
   },
@@ -218,7 +219,7 @@ export const styles = StyleSheet.create({
   },
   trackerBtnWrap: {
     width: '100%',
-    borderRadius: 16,
+    borderRadius: radii.lg,
     minHeight: 54,
   },
   trackerGradient: {
@@ -226,7 +227,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
+    borderRadius: radii.lg,
   },
   statusChip: {
     flexDirection: 'row',
@@ -235,11 +236,11 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: 11,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     marginTop: 8,
   },
   statusChipText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
@@ -254,7 +255,7 @@ export const styles = StyleSheet.create({
     marginLeft: 10,
   },
   trackerNote: {
-    fontSize: 12,
+    ...typography.footnote,
     textAlign: 'center',
     marginTop: 10,
     paddingHorizontal: 20,
@@ -270,7 +271,7 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
   otherReadingsTitle: {
-    fontSize: 18,
+    ...typography.h3,
     fontWeight: '700',
     letterSpacing: -0.3,
     marginBottom: 16,

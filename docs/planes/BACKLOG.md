@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-08-15.
+> Última actualización: 2026-08-31 (añadido §2.G — diseño).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
 > [`docs/planes/README.md`](README.md). Si un plan está en `archivo/`, está
@@ -40,7 +40,7 @@
 | **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                              |
 | **⚠️ Roto y sin dueño**      | **El CI no ejecuta nada desde el 2026-04-10.** Ningún PR se verifica de verdad; hasta arreglarlo, pasa los 4 pasos de `verify.yml` en local antes de mergear. Detalle en `mcm-app/TODO.md` §0 |
 | **Después de la build**      | UI Nativa Fase 2 → Integración D → Carismochito                                                                                                                                               |
-| **Oportunista**              | Integraciones resto. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                        |
+| **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                    |
 | **Futuro lejano, sin prisa** | Widget de Contigo · Panel Pañuelo (§1 notas)                                                                                                                                                  |
 | **Cerrado**                  | Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                              |
 
@@ -69,6 +69,10 @@
    preguntar. Es mecánica, segura (solo añade ficheros a `__tests__/`) y está
    escrita para Sonnet. Si el usuario prefiere otra cosa, enséñale la Bolsa
    Oportunista (§2) y que elija.
+   **Si dice "diseño"** (o "unificar la UI", "los colores", "los tokens") →
+   `docs/planes/PLAN_DISENO.md`, y empieza por su "Orden sugerido". Es la
+   segunda tarea mecánica de esta casa: tareas sueltas, cada una en un commit,
+   sin decisiones nuevas salvo las marcadas 🔒.
 4. **Nunca ejecutes un ítem 🔒 sin preguntar primero**, aunque parezca
    evidente qué elegir. Son decisiones de producto/seguridad del usuario, no
    del ejecutor.
@@ -259,6 +263,32 @@ patrón oficial de "ref al último callback". Perseguirlos empeora el código.
 
 **Lo que sí se pide:** no añadir warnings NUEVOS. Si un cambio tuyo sube la
 cuenta por encima de 51, ese es tuyo y se arregla.
+
+### G. Diseño — unificar tokens y quitar incoherencias
+
+**Documento: [`PLAN_DISENO.md`](PLAN_DISENO.md).** Creado el 2026-08-31 al
+escribir [`design.md`](../../design.md), que es ahora la guía prescriptiva de
+diseño para agentes.
+
+Es la **tarea por defecto cuando el usuario pide diseño** en un hueco
+oportunista. Sus tareas son independientes y caben en un commit cada una.
+
+**Primera pasada ejecutada el 2026-08-31**: renombrados los tokens de marca que
+mentían, sombras y radios renombrados/colapsados, los roles de color que
+faltaban (de 1.363 hex literales a 793), un solo hook responsive, espejo de
+tokens en el panel y `__tests__/designTokens.test.ts` para que no se
+desincronice otra vez.
+
+Lo que queda, por si hay que priorizar sin abrir el documento:
+
+- **A5.3** — el guardarraíl que impida hex NUEVOS (lo demás del test ya está).
+- **A5.4 / E2** — segunda tanda de hex y los `borderRadius` inline.
+- **C** — tipografía: `constants/typography.ts` sigue casi sin importarse y no
+  hay escala de pesos aplicada.
+- **F4** — cuatro anchuras máximas distintas conviviendo (640/760/960/1200).
+- **H8–H10** — hallazgos que necesitan **verse en un dispositivo**: en modo
+  oscuro las cards se pintan con el color de fondo (no hay capas), y hay tres
+  cambios ya hechos (sombra de toasts, radios, gris secundario) sin verificar.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 

@@ -11,6 +11,8 @@ import type {
   PreviewChannelStatus,
 } from '@/contexts/PreviewChannelContext';
 import type { UnsupportedReason } from '@/services/previewChannel';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /**
  * Panel de estado del Laboratorio Alpha.
@@ -185,7 +187,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   banner: {
-    borderRadius: 18,
+    borderRadius: radii.xl,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
@@ -207,13 +209,13 @@ const styles = StyleSheet.create({
   },
   bannerBody: {
     color: 'rgba(255,255,255,0.92)',
-    fontSize: 13,
+    ...typography.caption,
     lineHeight: 19,
   },
   restartButton: {
     alignItems: 'center',
     paddingVertical: 16,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
     borderColor: 'rgba(0,0,0,0.15)',
@@ -225,7 +227,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   diagBox: {
-    borderRadius: 16,
+    borderRadius: radii.lg,
     paddingVertical: 10,
     paddingHorizontal: 14,
     backgroundColor: 'rgba(0,0,0,0.38)',
@@ -241,7 +243,7 @@ const styles = StyleSheet.create({
   },
   diagLabel: {
     color: 'rgba(255,255,255,0.6)',
-    fontSize: 11,
+    ...typography.micro,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     fontWeight: '700',
@@ -249,7 +251,7 @@ const styles = StyleSheet.create({
   diagValue: {
     flexShrink: 1,
     color: 'rgba(255,255,255,0.95)',
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
     fontFamily: Platform.select({
       ios: 'Menlo',

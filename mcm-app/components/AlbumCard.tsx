@@ -12,6 +12,8 @@ import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 interface AlbumCardProps {
   album: {
     id: string;
@@ -113,7 +115,7 @@ const createStyles = (screenWidth: number) =>
     card: {
       width: '100%',
       aspectRatio: screenWidth > 600 ? 1.6 : 1.8,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       marginBottom: 14,
       backgroundColor: '#2C2C2E',
       ...(Platform.OS === 'web'
@@ -131,7 +133,7 @@ const createStyles = (screenWidth: number) =>
     cardContent: {
       flex: 1,
       overflow: 'hidden',
-      borderRadius: 18,
+      borderRadius: radii.xl,
     },
     imageBackground: {
       flex: 1,
@@ -163,7 +165,7 @@ const createStyles = (screenWidth: number) =>
       alignItems: 'center',
     },
     metaText: {
-      fontSize: 13,
+      ...typography.caption,
       color: 'rgba(255,255,255,0.85)',
       fontWeight: '500',
     },

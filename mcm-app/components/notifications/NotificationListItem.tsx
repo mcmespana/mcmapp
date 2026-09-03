@@ -8,12 +8,13 @@ import {
 } from 'react-native';
 import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
-import colors, { Colors } from '@/constants/colors';
+import colors, { themeColors, Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
 import { getRouteLabel, formatDate } from './notificationDisplay';
+import typography from '@/constants/typography';
 
 type Notification = NotificationData | ReceivedNotification;
 type ActionButton = NonNullable<Notification['actionButton']>;
@@ -97,7 +98,7 @@ export default function NotificationListItem({
             },
             isUnread && {
               backgroundColor: scheme === 'dark' ? '#1a1a2e' : '#f0f4ff',
-              borderColor: colors.primary,
+              borderColor: themeColors(isDark).link,
             },
           ]}
           onPress={() => onPress(notification)}
@@ -132,7 +133,7 @@ export default function NotificationListItem({
                     <MaterialIcons
                       name="check-circle-outline"
                       size={20}
-                      color={colors.primary}
+                      color={themeColors(isDark).link}
                     />
                   </Pressable>
                 )}
@@ -153,19 +154,33 @@ export default function NotificationListItem({
               <View style={listStyles.chipsRow}>
                 {routeInfo && notification.internalRoute && (
                   <Pressable
-                    style={listStyles.destChip}
+                    style={[
+                      listStyles.destChip,
+                      {
+                        borderColor: hexAlpha(themeColors(isDark).link, '60'),
+                        backgroundColor: hexAlpha(
+                          themeColors(isDark).link,
+                          '12',
+                        ),
+                      },
+                    ]}
                     onPress={() =>
                       onDestinationPress(notification.internalRoute!)
                     }
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Text style={listStyles.destChipText}>
+                    <Text
+                      style={[
+                        listStyles.destChipText,
+                        { color: themeColors(isDark).link },
+                      ]}
+                    >
                       {routeInfo.label}
                     </Text>
                     <MaterialIcons
                       name="chevron-right"
                       size={13}
-                      color={colors.primary}
+                      color={themeColors(isDark).link}
                     />
                   </Pressable>
                 )}
@@ -204,12 +219,12 @@ const listStyles = StyleSheet.create({
     borderRadius: radii.md,
     padding: spacing.md,
     borderWidth: 1,
-    ...shadows.sm,
+    ...shadows.card,
   },
   icon: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     marginRight: spacing.md,
     backgroundColor: colors.border,
     alignSelf: 'flex-start',
@@ -237,11 +252,11 @@ const listStyles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radii.xs,
     backgroundColor: colors.primary,
   },
   body: {
-    fontSize: 13,
+    ...typography.caption,
     lineHeight: 19,
     marginBottom: 8,
   },
@@ -266,7 +281,7 @@ const listStyles = StyleSheet.create({
     gap: 2,
     paddingVertical: 3,
     paddingHorizontal: 8,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: hexAlpha(colors.primary, '60'),
     backgroundColor: hexAlpha(colors.primary, '12'),
@@ -282,7 +297,7 @@ const listStyles = StyleSheet.create({
     gap: 3,
     paddingVertical: 3,
     paddingHorizontal: 8,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     backgroundColor: colors.primary,
     maxWidth: 140,
   },
@@ -293,7 +308,7 @@ const listStyles = StyleSheet.create({
     flexShrink: 1,
   },
   rightAction: {
-    backgroundColor: colors.success,
+    backgroundColor: colors.green,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radii.md,
@@ -305,6 +320,6 @@ const listStyles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     marginTop: 4,
-    fontSize: 12,
+    ...typography.footnote,
   },
 });

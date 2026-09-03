@@ -12,6 +12,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import colors from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import LoginSheet from '@/components/LoginSheet';
+import typography from '@/constants/typography';
 
 export default function LoginNudgeBanner() {
   const { user } = useAuth();
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   } as ViewStyle,
   text: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '500',
     flex: 1,
   } as TextStyle,

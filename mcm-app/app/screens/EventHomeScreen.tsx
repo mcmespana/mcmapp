@@ -44,8 +44,9 @@ import {
   getEventFirebasePath,
   isEventArchived,
 } from '@/constants/events';
-
-const WIDE_BREAKPOINT = 700;
+import { themeColors } from '@/constants/colors';
+import { breakpoints } from '@/constants/breakpoints';
+import typography from '@/constants/typography';
 
 /**
  * Hub genérico de un evento (Jubileo, encuentros, retiros, etc.).
@@ -131,7 +132,7 @@ export default function EventHomeScreen() {
   ]);
 
   const { width } = useWindowDimensions();
-  const isWide = width >= WIDE_BREAKPOINT;
+  const isWide = width >= breakpoints.md;
   const columns = isWide ? 3 : 2;
   const containerPadding = spacing.md;
   const gap = spacing.md;
@@ -348,7 +349,7 @@ function SectionCard({
         styles.card,
         {
           width,
-          backgroundColor: isDark ? '#2C2C2E' : '#fff',
+          backgroundColor: themeColors(isDark).background,
         },
         Platform.OS !== 'web'
           ? {
@@ -387,7 +388,7 @@ function SectionCard({
         </View>
 
         <Text
-          style={[styles.cardTitle, { color: isDark ? '#fff' : '#1C1C1E' }]}
+          style={[styles.cardTitle, { color: themeColors(isDark).textStrong }]}
           numberOfLines={1}
         >
           {section.label}
@@ -462,7 +463,7 @@ const createStyles = (isDark: boolean) =>
   StyleSheet.create<Styles>({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     scrollView: {
       flex: 1,
@@ -474,19 +475,19 @@ const createStyles = (isDark: boolean) =>
     hero: {
       width: '100%',
       maxWidth: 1100,
-      borderRadius: radii.xxl,
+      borderRadius: radii.xl,
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.lg,
       marginBottom: spacing.xs,
       overflow: 'hidden',
       ...(Platform.OS === 'web'
         ? ({ boxShadow: '0 10px 30px rgba(0,0,0,0.16)' } as ViewStyle)
-        : (shadows.xl as ViewStyle)),
+        : (shadows.hero as ViewStyle)),
     },
     heroEmblem: {
       width: 52,
       height: 52,
-      borderRadius: 16,
+      borderRadius: radii.lg,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.md,
@@ -504,7 +505,7 @@ const createStyles = (isDark: boolean) =>
       lineHeight: 30,
     },
     heroSubtitle: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '500',
       lineHeight: 19,
       marginTop: 6,
@@ -516,7 +517,7 @@ const createStyles = (isDark: boolean) =>
       right: spacing.md,
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -530,12 +531,12 @@ const createStyles = (isDark: boolean) =>
       paddingHorizontal: spacing.md,
       borderRadius: radii.lg,
       borderWidth: StyleSheet.hairlineWidth * 2,
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
     },
     suggestIcon: {
       width: 40,
       height: 40,
-      borderRadius: 12,
+      borderRadius: radii.md,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -544,12 +545,12 @@ const createStyles = (isDark: boolean) =>
       gap: 2,
     },
     suggestTitle: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '700',
       letterSpacing: -0.2,
     },
     suggestSubtitle: {
-      fontSize: 12,
+      ...typography.footnote,
       lineHeight: 16,
     },
     suggestActions: {
@@ -562,7 +563,7 @@ const createStyles = (isDark: boolean) =>
       borderRadius: radii.md,
     },
     suggestBtnText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
     },
     suggestDismiss: {
@@ -570,7 +571,7 @@ const createStyles = (isDark: boolean) =>
       paddingVertical: 2,
     },
     suggestDismissText: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
     },
     motto: {
@@ -587,7 +588,7 @@ const createStyles = (isDark: boolean) =>
       borderRadius: 1,
     },
     mottoText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       fontStyle: 'italic',
       letterSpacing: 0.3,
@@ -619,7 +620,7 @@ const createStyles = (isDark: boolean) =>
     iconCircle: {
       width: 52,
       height: 52,
-      borderRadius: 16,
+      borderRadius: radii.lg,
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 4,
@@ -633,7 +634,7 @@ const createStyles = (isDark: boolean) =>
       letterSpacing: -0.3,
     },
     cardSubtitle: {
-      fontSize: 12,
+      ...typography.footnote,
       lineHeight: 16,
     },
     arrowPill: {
@@ -642,7 +643,7 @@ const createStyles = (isDark: boolean) =>
       right: spacing.sm,
       width: 28,
       height: 28,
-      borderRadius: 14,
+      borderRadius: radii.lg,
       justifyContent: 'center',
       alignItems: 'center',
     },
