@@ -18,7 +18,7 @@
 
 ---
 
-## 2026-09-01 02:30 — Arreglado: en modo oscuro, Notificaciones tenía los controles invisibles
+## 2026-09-03 01:55 — Arreglado: en modo oscuro, Notificaciones tenía los controles invisibles
 
 PLAN_DISENO §H4. Esto empezó como una mejora anotada ("los colores de marca no
 tienen variante oscura") y al medirlo resultó ser un **bug de verdad**.
@@ -58,7 +58,7 @@ relleno de tarjeta con texto blanco encima, y como relleno está bien.
 
 ---
 
-## 2026-09-01 01:40 — EmptyState cumple por fin su contrato, y el foco de los botones
+## 2026-09-03 01:25 — EmptyState cumple por fin su contrato, y el foco de los botones
 
 PLAN_DISENO §H2, §H1-bis y §A2-bis.
 
@@ -91,7 +91,7 @@ destacado ámbar—. Están a cuatro puntos y hacen cosas distintas.
 
 ---
 
-## 2026-09-01 00:30 — Los pesos tipográficos, ajustados a lo que la app hace
+## 2026-09-03 01:00 — Los pesos tipográficos, ajustados a lo que la app hace
 
 PLAN_DISENO §C4. Segunda vez que el token resulta ser el raro y no el código.
 
@@ -119,7 +119,7 @@ que aplicar (§C6).
 
 ---
 
-## 2026-08-31 23:10 — El texto tenue del cantoral ahora se lee, y tres decisiones cerradas
+## 2026-09-03 00:35 — El texto tenue del cantoral ahora se lee, y tres decisiones cerradas
 
 **Corrijo un diagnóstico mío de la entrada anterior**: dije que tres pares
 claro/oscuro estaban "del revés" porque el hex de modo oscuro era más oscuro
@@ -157,7 +157,7 @@ cantoral, la pantalla más usada de la app.
 
 ---
 
-## 2026-08-31 21:50 — Segunda tanda de colores, y un posible bug de contraste anotado
+## 2026-09-03 00:05 — Segunda tanda de colores, y un posible bug de contraste anotado
 
 PLAN_DISENO §A5.4 y §A5.5.
 
@@ -180,7 +180,7 @@ copiar; no se ha tocado nada.
 
 ---
 
-## 2026-08-31 21:05 — Los radios a mano bajan de 300 a 122
+## 2026-09-02 23:45 — Los radios a mano bajan de 300 a 122
 
 PLAN_DISENO §E2. Complementa el colapso de la escala de radios del commit
 anterior.
@@ -199,7 +199,7 @@ otros son un escalón inventado. Hay que mirarlos uno a uno (§E3).
 
 ---
 
-## 2026-08-31 20:15 — La escala tipográfica ahora cubre los tamaños que la app usa
+## 2026-09-02 23:25 — La escala tipográfica ahora cubre los tamaños que la app usa
 
 PLAN_DISENO §C. `constants/typography.ts` existía desde siempre y **solo lo
 importaban 6 ficheros**, con 666 `fontSize` escritos a mano por toda la app.
@@ -231,7 +231,7 @@ el token no le vale. Es revisión, no trabajo mecánico (§C4).
 
 ---
 
-## 2026-08-31 18:40 — Unificación de tokens de diseño: los nombres ya no mienten
+## 2026-09-02 22:55 — Unificación de tokens de diseño: los nombres ya no mienten
 
 Primera pasada de [`docs/planes/PLAN_DISENO.md`](../docs/planes/PLAN_DISENO.md).
 Sin cambios de comportamiento; los cambios visuales son tres, pequeños y
@@ -277,7 +277,7 @@ había.
 
 ---
 
-## 2026-08-31 12:10 — `design.md`: guía de diseño prescriptiva para agentes (+ plan de unificación)
+## 2026-09-02 22:20 — `design.md`: guía de diseño prescriptiva para agentes (+ plan de unificación)
 
 - **Qué es**: nuevo [`design.md`](../design.md) en la raíz del monorepo,
   inspirado en el `design.md` público de Vercel. No es un catálogo: es el
@@ -308,6 +308,34 @@ había.
   código.
 
 ---
+
+---
+
+## 2026-09-01 20:30 — Enlaces de canción: Spotify, partituras de Drive y otras webs
+
+- **Qué**: soporte de los tres campos nuevos del cantoral (`spotifyLinks`,
+  `driveLinks`, `otherLinks`), que se pintan en una sección **Enlaces** de la
+  hoja de multimedia. Antes solo existían vídeos y audios, así que un enlace de
+  Spotify o una partitura no tenían dónde ir.
+- **La distinción que importa**: `spotifyLinks` es el único que SALE de la app
+  (con Spotify no hay embed posible: abre su app y el usuario vuelve a mano).
+  `driveLinks` y `otherLinks` se abren a **pantalla completa dentro** de la app,
+  en un visor nuevo. Un enlace de Drive en `audioLinks` sigue sonando en el
+  reproductor flotante: el tipo lo decide el campo, no la URL — no hay
+  auto-detección por dominio.
+- **Visor** (`SongLinkViewer`): `Modal` a pantalla completa con WebView (iframe
+  en web). Drive se carga por `/preview` (el `/view` de compartir no se deja
+  embeber) y al abrirlo fuera va la URL original, que es la que captura la app
+  de Drive. Si el embed falla, ofrece abrirlo fuera en vez de dejar la pantalla
+  en blanco. No usa el reproductor flotante a propósito: una partitura se lee
+  mientras se toca, y el PiP está pensado para lo contrario.
+- **Archivos**: `types/songMedia.ts`, `components/song-media/SongLinkViewer.tsx`
+  (nuevo), `components/song-media/SongMediaSheet.tsx`,
+  `app/screens/SongDetailScreen.tsx`, `components/SongListItem.tsx` (indicador
+  🔗 en la fila), `app/screens/SongListScreen.tsx`,
+  `__tests__/songLinks.test.tsx` (nuevo).
+- **Docs**: `docs/funcionalidades/ENLACES_CANCION.md`. Contrato de los campos:
+  `docs/CAMPOS_CANCIONES.md` §3.1 del repo `mcmapp-cantoral`.
 
 ## 2026-08-30 13:49 — Los ajustes de lectura del evangelio se quedaban sin scroll (y sin control de tamaño)
 

@@ -18,10 +18,12 @@ import BottomSheet from '@/components/BottomSheet';
 import brand, { themeColors } from '@/constants/colors';
 import { extractDriveFileId, toDrivePreviewUrl } from '@/utils/googleDrive';
 import type { MediaLink, SongMedia } from '@/types/songMedia';
+import { songExtraLinks } from '@/types/songMedia';
 import TagChip from '@/components/song-tags/TagChip';
 import type { ResolvedTag } from '@/utils/songTags';
 import type { FloatingMediaSource } from '@/components/song-media/FloatingMediaPlayer';
 import typography from '@/constants/typography';
+import type { SongLinkSource } from '@/components/song-media/SongLinkViewer';
 
 interface SongMediaSheetProps {
   visible: boolean;
@@ -31,6 +33,13 @@ interface SongMediaSheetProps {
   songTitle?: string;
   /** Abre el reproductor flotante con la fuente indicada (vídeo o audio). */
   onPlayMedia: (source: FloatingMediaSource) => void;
+  /**
+   * Abre un enlace a pantalla completa dentro de la app (partitura de Drive u
+   * otra web). Como con `onPlayMedia`, solo se apunta: el visor nace cuando la
+   * hoja ya está desmontada, porque en iOS esta hoja es un Modal de verdad y
+   * cualquier cosa presentada debajo nace tapada.
+   */
+  onOpenLink?: (source: SongLinkSource) => void;
   /**
    * Se llama cuando la hoja ya está DESMONTADA del todo (no solo cerrándose).
    * Es el gancho para mostrar el reproductor: en iOS la hoja es un `Modal` de
@@ -48,6 +57,7 @@ interface SongMediaSheetProps {
 }
 
 const YT_RED = '#FF3B30';
+const SPOTIFY_GREEN = '#1DB954';
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 /** ¿El texto parece una URL / dominio que tenga sentido abrir en el navegador? */
@@ -63,12 +73,36 @@ function toHref(value: string): string {
   return /^https?:\/\//i.test(v) ? v : `https://${v}`;
 }
 
+/** ¿Es un enlace de Spotify (web o URI de la app)? */
+function isSpotifyUrl(value: string): boolean {
+  return /^spotify:|(?:^|\/\/|\.)(?:open\.)?spotify\.com\//i.test(value.trim());
+}
+
+/** Icono, color y texto de cada tipo de enlace de la sección «Enlaces». */
+const LINK_KIND_META: Record<
+  'spotify' | 'drive' | 'otro',
+  { icon: keyof typeof MaterialIcons.glyphMap; meta: string; tint: string }
+> = {
+  spotify: {
+    icon: 'library-music',
+    meta: 'Spotify · abre la app',
+    tint: SPOTIFY_GREEN,
+  },
+  drive: {
+    icon: 'description',
+    meta: 'Partitura · pantalla completa',
+    tint: '',
+  },
+  otro: { icon: 'link', meta: 'Enlace · pantalla completa', tint: '' },
+};
+
 export default function SongMediaSheet({
   visible,
   onClose,
   media,
   songTitle,
   onPlayMedia,
+  onOpenLink,
   onCloseComplete,
   tags = [],
   onTagPress,
@@ -88,6 +122,7 @@ export default function SongMediaSheet({
     media.videoEmbed || (media.youtubeLinks && media.youtubeLinks.length > 0),
   );
   const hasAudios = Boolean(media.audioLinks && media.audioLinks.length > 0);
+  const extraLinks = songExtraLinks(media);
   const fichaChips: { label: string; value: string }[] = [
     media.rhythm ? { label: 'Ritmo', value: media.rhythm } : null,
     media.album ? { label: 'Álbum', value: media.album } : null,
@@ -101,12 +136,16 @@ export default function SongMediaSheet({
 
   const openExternal = async (url: string) => {
     h.tap();
-    // Los enlaces de Drive van por Linking (no por el navegador in-app):
-    // así el universal/app link lo captura la app de Google Drive si está
-    // instalada. WebBrowser abriría un Safari/Chrome embebido y se la
-    // saltaría siempre.
-    if (extractDriveFileId(url)) {
-      toast.show({ label: 'Abriendo en Google Drive…' });
+    // Los enlaces de Drive y de Spotify van por Linking (no por el navegador
+    // in-app): así el universal/app link lo captura su app si está instalada.
+    // WebBrowser abriría un Safari/Chrome embebido y se la saltaría siempre.
+    const ownApp = extractDriveFileId(url)
+      ? 'Google Drive'
+      : isSpotifyUrl(url)
+        ? 'Spotify'
+        : null;
+    if (ownApp) {
+      toast.show({ label: `Abriendo en ${ownApp}…` });
       try {
         await Linking.openURL(url);
       } catch {
@@ -220,6 +259,59 @@ export default function SongMediaSheet({
     );
   };
 
+  // Spotify se abre FUERA (no hay embed); Drive y «otros» se ven a pantalla
+  // completa dentro de la app. Ver `songExtraLinks` en types/songMedia.ts.
+  const renderLinkRow = (
+    entry: {
+      kind: 'spotify' | 'drive' | 'otro';
+      link: MediaLink;
+      external: boolean;
+    },
+    index: number,
+  ) => {
+    const meta = LINK_KIND_META[entry.kind];
+    return (
+      <TouchableOpacity
+        key={`link-${entry.kind}-${index}`}
+        style={styles.mRow}
+        activeOpacity={0.7}
+        onPress={() => {
+          if (entry.external || !onOpenLink) {
+            void openExternal(entry.link.url);
+            return;
+          }
+          h.tap();
+          onOpenLink({
+            kind: entry.kind === 'drive' ? 'drive' : 'otro',
+            url: entry.link.url,
+            label: entry.link.label || defaultLinkLabel(entry.kind),
+          });
+        }}
+      >
+        <View style={[styles.mIco, styles.mIcoDrive]}>
+          <MaterialIcons
+            name={meta.icon}
+            size={20}
+            color={meta.tint || driveTint(isDark)}
+          />
+        </View>
+        <View style={styles.mMain}>
+          <Text style={styles.mTitle} numberOfLines={1}>
+            {entry.link.label || defaultLinkLabel(entry.kind)}
+          </Text>
+          <Text style={styles.mMeta}>{meta.meta}</Text>
+        </View>
+        <View style={styles.mGo}>
+          <MaterialIcons
+            name={entry.external ? 'open-in-new' : 'fullscreen'}
+            size={entry.external ? 17 : 20}
+            color={entry.external ? '#8E8E93' : brand.primary}
+          />
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <BottomSheet
       visible={visible}
@@ -269,6 +361,22 @@ export default function SongMediaSheet({
               <Text style={styles.secHint}>reproductor flotante</Text>
             </View>
             {media.audioLinks?.map(renderAudioRow)}
+          </View>
+        )}
+
+        {/* ── ENLACES (Spotify · partituras · otras webs) ── */}
+        {extraLinks.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.secHead}>
+              <MaterialIcons name="link" size={15} color="#8E8E93" />
+              <Text style={styles.secHeadText}>Enlaces</Text>
+              <Text style={styles.secHint}>
+                {extraLinks.every((e) => e.external)
+                  ? 'salen de la app'
+                  : 'pantalla completa'}
+              </Text>
+            </View>
+            {extraLinks.map(renderLinkRow)}
           </View>
         )}
 
@@ -354,6 +462,13 @@ function driveTint(isDark: boolean): string {
   return isDark ? brand.secondary : brand.primary;
 }
 
+/** Texto del botón cuando quien puso el enlace no le dio etiqueta. */
+function defaultLinkLabel(kind: 'spotify' | 'drive' | 'otro'): string {
+  if (kind === 'spotify') return 'Escuchar en Spotify';
+  if (kind === 'drive') return 'Partitura';
+  return 'Ver enlace';
+}
+
 const createStyles = (isDark: boolean) =>
   StyleSheet.create({
     scrollContent: {
@@ -422,13 +537,13 @@ const createStyles = (isDark: boolean) =>
       minWidth: 0,
     },
     mTitle: {
-      fontSize: 14.5,
+      ...typography.subhead,
       fontWeight: '600',
       letterSpacing: -0.2,
       color: themeColors(isDark).textStrong,
     },
     mMeta: {
-      fontSize: 11.5,
+      ...typography.micro,
       color: '#8E8E93',
       marginTop: 1,
     },
@@ -481,14 +596,14 @@ const createStyles = (isDark: boolean) =>
       color: '#8E8E93',
     },
     fv: {
-      fontSize: 13.5,
+      ...typography.caption,
       fontWeight: '600',
       letterSpacing: -0.2,
       color: themeColors(isDark).textStrong,
       marginTop: 2,
     },
     fichaComment: {
-      fontSize: 13.5,
+      ...typography.caption,
       lineHeight: 20,
       color: isDark ? '#D0D0D2' : '#48484A',
       marginHorizontal: 4,
