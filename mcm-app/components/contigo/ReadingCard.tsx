@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   citaBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
   },
   citaText: {
     ...typography.micro,

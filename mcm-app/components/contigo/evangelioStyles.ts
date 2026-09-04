@@ -153,7 +153,7 @@ export const styles = StyleSheet.create({
     marginTop: 20,
     paddingHorizontal: 24,
     paddingVertical: 10,
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
   },
   todayBtnText: {
     fontSize: 15,
@@ -180,7 +180,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
     marginBottom: 20,
   },
   citaText: {

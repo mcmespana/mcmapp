@@ -9,6 +9,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 import { reaEasings } from '@/constants/animations';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 const BREATH_MS = 2100;
 
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 200,
     height: 200,
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(196,146,42,0.10)',
   },
   ring2: {

@@ -18,6 +18,7 @@ import { pushWithRetry, setWithRetry } from '@/services/firebaseWrites';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface SuggestSongModalProps {
   visible: boolean;
@@ -289,7 +290,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
     borderWidth: 1.5,
   },
   categoryPillText: {

@@ -55,6 +55,7 @@ import {
 import { defaultPlaylistName } from '@/utils/playlistCodes';
 import { formatRelativeDate } from '@/utils/playlistSync';
 import { accent, createStyles } from './choirSheetStyles';
+import EmptyState from '@/components/ui/EmptyState';
 
 export type ChoirSheetStep = 'choose' | 'create' | 'home' | 'browse' | 'save';
 
@@ -340,9 +341,12 @@ const ChoirSheet: React.FC<Props> = ({
             </TouchableOpacity>
           ))}
           {choirs && choirs.length === 0 ? (
-            <Text style={styles.empty}>
-              Todavía no hay ningún coro. Crea el primero.
-            </Text>
+            <EmptyState
+              compact
+              icon="groups"
+              title="Todavía no hay ningún coro. Crea el primero."
+              accentColor={accent(isDark)}
+            />
           ) : null}
         </ScrollView>
       )}
@@ -561,7 +565,12 @@ const ChoirSheet: React.FC<Props> = ({
             </TouchableOpacity>
           ))}
           {entries.length === 0 ? (
-            <Text style={styles.empty}>Este coro aún no tiene playlists.</Text>
+            <EmptyState
+              compact
+              icon="queue-music"
+              title="Este coro aún no tiene playlists."
+              accentColor={accent(isDark)}
+            />
           ) : null}
         </ScrollView>
       )}

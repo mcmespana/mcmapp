@@ -24,6 +24,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { h } from '@/utils/haptics';
 import type { ResolvedTag } from '@/utils/songTags';
 import { HighlightColors, UIColors, themeColors } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 
 export type TagChipVariant = 'cloud' | 'active' | 'outline';
 
@@ -162,7 +163,7 @@ const createStyles = (isDark: boolean, variant: TagChipVariant) => {
       backgroundColor: background,
       borderWidth: isActive ? 0 : 1,
       borderColor: border,
-      borderRadius: 100,
+      borderRadius: radii.pillFull,
       paddingHorizontal: variant === 'cloud' ? 16 : 12,
       paddingVertical: variant === 'cloud' ? 11 : 7,
       ...chipShadow,

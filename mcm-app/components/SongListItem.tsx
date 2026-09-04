@@ -27,6 +27,7 @@ import {
 import { durations } from '@/constants/animations';
 import { extractSongMedia, mediaKinds } from '@/types/songMedia';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 // Type for song data
 interface Song {
@@ -365,7 +366,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     categoryPill: {
       paddingHorizontal: 7,
       paddingVertical: 2,
-      borderRadius: 100,
+      borderRadius: radii.pillFull,
       backgroundColor: themeColors(isDark).separator,
       borderWidth: 1,
       borderColor: isDark ? '#48484A' : '#D1D1D6',

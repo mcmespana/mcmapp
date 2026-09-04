@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import liturgicalCalendar from '@/assets/calendario-liturgico.json';
-import { getBrightness } from '@/components/ui/glass';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { LiturgicalColors, themeColors } from '@/constants/colors';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
+import { onColor } from '@/utils/colorUtils';
 
 interface LiturgicalBadgeProps {
   dateStr: string; // YYYY-MM-DD
@@ -114,7 +114,7 @@ export function LiturgicalBadge({ dateStr }: LiturgicalBadgeProps) {
     );
   }
 
-  const textColor = getBrightness(info.hex) > 160 ? '#1A1A1A' : '#FFFFFF';
+  const textColor = onColor(info.hex);
 
   return (
     <View style={[styles.pill, { backgroundColor: info.hex }]}>

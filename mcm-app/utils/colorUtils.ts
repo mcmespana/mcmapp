@@ -41,3 +41,27 @@ export const darkenHex = (hex: string, ratio: number): string => {
   const b = Math.round(parseInt(full.slice(5, 7), 16) * f);
   return `rgb(${r}, ${g}, ${b})`;
 };
+
+/**
+ * Color de texto legible SOBRE un fondo de color.
+ *
+ * Existía cinco veces, con cinco umbrales distintos de brillo puestos a ojo
+ * —150, 160, 170, 175 y 200— y tres parejas de blanco/negro diferentes. La
+ * misma pregunta con cinco respuestas.
+ *
+ * Aquí se decide por **razón de contraste real** (WCAG), no por un número
+ * estimado: se calcula contra los dos candidatos y gana el que más contrasta.
+ * Determinista y sin umbral que afinar.
+ */
+export const onColor = (background: string): string => {
+  const full = expandHex(background);
+  const channel = (i: number) => {
+    const c = parseInt(full.slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance =
+    0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+  const contrastWithDark = (luminance + 0.05) / (0.0114 + 0.05); // #1C1C1E
+  const contrastWithLight = (1 + 0.05) / (luminance + 0.05); // #FFFFFF
+  return contrastWithDark >= contrastWithLight ? '#1C1C1E' : '#FFFFFF';
+};

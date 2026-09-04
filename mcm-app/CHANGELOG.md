@@ -18,6 +18,39 @@
 
 ---
 
+## 2026-09-03 19:30 — Un solo criterio para "qué texto va sobre este fondo", y el resto de la cola de diseño
+
+Cierre de PLAN_DISENO: §A6-bis, §E4, §G1.4, §H2-bis.
+
+**`onColor()`** (`utils/colorUtils.ts`). La pregunta "¿qué color de texto va
+sobre este fondo?" estaba resuelta **cinco veces con cinco umbrales de brillo
+puestos a ojo** —150, 160, 170, 175 y 200— y tres parejas distintas de
+blanco/negro. Ahora se decide por **razón de contraste real**: se calcula
+contra los dos candidatos y gana el que más contrasta. Sin umbral que afinar.
+
+De paso sale un dato que ningún umbral acertaba: **sobre el rojo MIC gana el
+texto oscuro** (4,79:1); el blanco se queda en 3,55:1. Con tests que comprueban
+que sobre todos los colores de marca y litúrgicos el resultado llega a 4,5:1.
+
+**`EmptyState` compacto** (§H2-bis). Los vacíos de `ChoirSheet` se habían
+escrito a mano porque el padding de 48 px del componente desbordaba la hoja.
+Ahora hay una prop `compact` y los dos usan el componente. `ShareQrModal` no se
+migra: no es un vacío, es un aviso con su botón al lado.
+
+**`borderRadius: 100` → `radii.pillFull`** (§E4, 12 usos). Siempre significaba
+"hazlo redondo" y funcionaba de chiripa: RN recorta el radio a la mitad de la
+dimensión. `pillFull` pinta igual y deja de depender de que el elemento siga
+siendo pequeño.
+
+**Panel** (§G1.4): la "Vista previa móvil" del compositor de notificaciones
+pintaba el icono de la app y los chips de acción con el cian del panel — el
+admin veía una notificación que no se parecía a la que iba a recibir la gente.
+Ahora salen del espejo de tokens de marca.
+
+Topes de los trinquetes bajados: hex 231→218 y 409→406, radios 107→95.
+
+---
+
 ## 2026-09-03 01:55 — Arreglado: en modo oscuro, Notificaciones tenía los controles invisibles
 
 PLAN_DISENO §H4. Esto empezó como una mejora anotada ("los colores de marca no

@@ -30,7 +30,6 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { Colors, themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
-import { getBrightness } from '@/components/ui/glass';
 import { useFirebaseData, withRetry } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -45,6 +44,7 @@ import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import type { EventStackParamList } from './eventStackScreens';
 import typography from '@/constants/typography';
+import { onColor } from '@/utils/colorUtils';
 
 interface Grupo {
   nombre: string;
@@ -352,7 +352,7 @@ export default function ReflexionesScreen() {
     const filled = i % 2 === 0;
     const name = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
     const initials = getInitials(name);
-    const onColor = getBrightness(color) > 150 ? '#1a1a1a' : '#fff';
+    const fg = onColor(color);
     return (
       <LongPressable key={r.id} onLongPress={() => setMenuReflexion(r)}>
         <View
@@ -381,15 +381,11 @@ export default function ReflexionesScreen() {
             <View style={styles.cardHead}>
               <View style={[styles.avatar, { backgroundColor: color }]}>
                 {initials ? (
-                  <Text style={[styles.avatarText, { color: onColor }]}>
+                  <Text style={[styles.avatarText, { color: fg }]}>
                     {initials}
                   </Text>
                 ) : (
-                  <MaterialIcons
-                    name="auto-stories"
-                    size={16}
-                    color={onColor}
-                  />
+                  <MaterialIcons name="auto-stories" size={16} color={fg} />
                 )}
               </View>
               <View style={{ flex: 1 }}>

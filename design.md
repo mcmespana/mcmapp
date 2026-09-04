@@ -252,6 +252,13 @@ porque te parece que está del revés, **para**: los dos hex son deliberadamente
 distintos porque cada uno se mide contra SU fondo, y comparar uno con otro no
 dice nada. Mide la razón de contraste.
 
+**Texto sobre un fondo de color** (un chip de categoría, el acento de un
+evento, un color litúrgico): `onColor(fondo)` de `utils/colorUtils.ts`. Decide
+por contraste real, no por un umbral de brillo. No te inventes el umbral —
+estaba resuelto cinco veces en el repo con cinco números distintos, y ninguno
+acertaba que **sobre el rojo MIC gana el texto oscuro** (4,79:1) y no el
+blanco (3,55:1).
+
 ---
 
 ## 6. Glass, plataforma y movimiento

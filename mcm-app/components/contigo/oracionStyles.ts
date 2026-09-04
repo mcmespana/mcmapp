@@ -199,7 +199,7 @@ export const styles = StyleSheet.create({
 
   // Save button
   saveBtnWrap: {
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
     minHeight: 56,
   },
   saveBtnInner: {
@@ -209,7 +209,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 17,
     gap: 10,
     width: '100%',
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
   },
   saveBtnGradient: {
     flexDirection: 'row',
@@ -218,7 +218,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 17,
     gap: 10,
     width: '100%',
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
   },
   saveBtnText: {
     ...typography.body,
@@ -245,7 +245,7 @@ export const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 11,
     paddingVertical: 5,
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
     marginTop: 2,
   },
   statText: {

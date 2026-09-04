@@ -116,7 +116,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: themeColors(isDark).background,
-      borderRadius: 100,
+      borderRadius: radii.pillFull,
       paddingHorizontal: 12,
       paddingVertical: 7,
       gap: 6,

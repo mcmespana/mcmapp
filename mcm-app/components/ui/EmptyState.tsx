@@ -5,6 +5,7 @@ import { radii } from '@/constants/uiStyles';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { hexAlpha } from '@/utils/colorUtils';
 import typography from '@/constants/typography';
+import spacing from '@/constants/spacing';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -34,6 +35,16 @@ interface EmptyStateProps {
   titleColor?: string;
   /** Color del subtítulo. Por defecto, el gris del tema institucional. */
   subtitleColor?: string;
+  /**
+   * Versión compacta, para vacíos que viven DENTRO de una hoja, un desplegable
+   * o una lista corta.
+   *
+   * El padding de 48 px del vacío normal desborda un bottom sheet, y por eso
+   * `CommandPalette` y `ChoirSheet` se habían hecho su propio `<Text>` a mano
+   * en vez de usar este componente. Compacto: sin icono grande, menos aire y
+   * el título al tamaño del cuerpo.
+   */
+  compact?: boolean;
 }
 
 /**
@@ -51,6 +62,7 @@ export default function EmptyState({
   accentColor,
   titleColor,
   subtitleColor,
+  compact = false,
 }: EmptyStateProps) {
   const themeText = useThemeColor({}, 'text');
   const themeMuted = useThemeColor({}, 'icon');
@@ -59,17 +71,29 @@ export default function EmptyState({
   const tone = accentColor ?? themeMuted;
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, compact && styles.rootCompact]}>
       {emoji ? (
-        <Text style={styles.emoji}>{emoji}</Text>
-      ) : icon ? (
+        <Text style={[styles.emoji, compact && styles.emojiCompact]}>
+          {emoji}
+        </Text>
+      ) : icon && !compact ? (
         <View
           style={[styles.iconWrap, { backgroundColor: hexAlpha(tone, '1A') }]}
         >
           <MaterialIcons name={icon} size={32} color={tone} />
         </View>
+      ) : icon ? (
+        <MaterialIcons name={icon} size={20} color={tone} />
       ) : null}
-      <Text style={[styles.title, { color: textColor }]}>{title}</Text>
+      <Text
+        style={[
+          styles.title,
+          compact && styles.titleCompact,
+          { color: textColor },
+        ]}
+      >
+        {title}
+      </Text>
       {subtitle ? (
         <Text style={[styles.subtitle, { color: mutedColor }]}>{subtitle}</Text>
       ) : null}
@@ -94,7 +118,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 8,
   },
+  rootCompact: { paddingVertical: 20, paddingHorizontal: spacing.md, gap: 4 },
   emoji: { fontSize: 48, marginBottom: 4 },
+  emojiCompact: { ...typography.h1, marginBottom: 0 },
   iconWrap: {
     width: 64,
     height: 64,
@@ -109,6 +135,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: -0.2,
   },
+  titleCompact: { ...typography.subhead, fontWeight: '600' },
   subtitle: {
     ...typography.subhead,
     textAlign: 'center',

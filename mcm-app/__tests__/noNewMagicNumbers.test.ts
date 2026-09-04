@@ -80,8 +80,8 @@ function countIn(relDir: string): {
  * Histórico: 1.363 hex en total antes de la unificación de agosto de 2026.
  */
 const BUDGET = {
-  app: 231,
-  components: 409,
+  app: 218,
+  components: 406,
 };
 
 describe('no se añaden colores a mano', () => {
@@ -174,11 +174,11 @@ describe('no se añaden tamaños de letra a mano', () => {
  */
 const RADIUS_BUDGET = {
   app: 17,
-  // 105 → 107 al mergear main (PR #342, enlaces de canción). Los dos que
-  // entran son geometría, no dejadez: un `borderRadius: 17` sobre un botón de
-  // 34×34 es "hazlo redondo", y el chip de ficha lleva su propio radio. Ver la
-  // excepción de radio anidado en `design.md` §5.
-  components: 107,
+  // Bajó de 107 a 95 al migrar los `borderRadius: 100`. Ese 100 era siempre
+  // "hazlo redondo" y funcionaba de chiripa: RN recorta el radio a la mitad de
+  // la dimensión, así que `radii.pillFull` (999) pinta exactamente igual y no
+  // depende de que el elemento siga siendo pequeño.
+  components: 95,
 };
 
 const INLINE_RADIUS = /borderRadius: \d+/g;

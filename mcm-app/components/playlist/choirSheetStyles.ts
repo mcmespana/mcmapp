@@ -181,13 +181,6 @@ export const createStyles = (isDark: boolean) =>
       paddingHorizontal: 12,
       fontWeight: '600',
     },
-    empty: {
-      ...typography.subhead,
-      color: '#8E8E93',
-      textAlign: 'center',
-      paddingVertical: 22,
-      paddingHorizontal: 12,
-    },
     loading: {
       paddingVertical: 26,
     },
