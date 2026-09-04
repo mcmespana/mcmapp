@@ -3,7 +3,7 @@
 > **Lee esto antes de abrir ningún `PLAN_*.md`.** Su único trabajo es que no
 > vuelvas a ejecutar algo que ya está hecho.
 >
-> Última actualización: 2026-08-31.
+> Última actualización: 2026-09-02.
 
 ## La regla, en una línea
 
@@ -22,13 +22,13 @@ El coste de mantener esta tabla al día es mucho menor que el de repetirlo.
 
 ## 🟢 Vivos — pueden ejecutarse
 
-| Plan                                             | Estado real                                                                                                                              | Dónde manda el orden                                  |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| [`PLAN_UI_NATIVA.md`](PLAN_UI_NATIVA.md)         | 🟡 En curso — Fase 1 ✅, Fase 2 ~65-70%                                                                                                  | `BACKLOG.md` §1 fila 4                                |
-| [`PLAN_INTEGRACIONES.md`](PLAN_INTEGRACIONES.md) | 🟡 Solo queda **Integración D** (reglas Firebase). A, B, C, E cerrados el 2026-08-12                                                     | `BACKLOG.md` §1 fila 5 — 🔒 bloqueado por decisión D2 |
-| [`PLAN_CALIDAD.md`](PLAN_CALIDAD.md)             | 🟡 Parcial — Fase 0 (guardarraíles) ✅. **Fase 1 (trocear gigantes) descartada por decisión del usuario** el 2026-08-15, ver abajo       | `BACKLOG.md` §2.A                                     |
-| [`PLAN_CARISMOCHITO.md`](PLAN_CARISMOCHITO.md)   | ⏳ Sin empezar (§1–4)                                                                                                                    | `BACKLOG.md` §1 fila 7                                |
-| [`PLAN_DISENO.md`](PLAN_DISENO.md)               | 🟡 En curso — primera pasada hecha (§A1, A4, A5 parcial, D, E, F, G1, G2, H1, H7). Queda §A5.3/A5.4, §C, §E2, §F4 y los hallazgos H8–H10 | `BACKLOG.md` §2.G                                     |
+| Plan                                             | Estado real                                                                                                                                                                                    | Dónde manda el orden                                  |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [`PLAN_UI_NATIVA.md`](PLAN_UI_NATIVA.md)         | 🟡 En curso — Fase 1 ✅, Fase 2 ~65-70%                                                                                                                                                        | `BACKLOG.md` §1 fila 4                                |
+| [`PLAN_INTEGRACIONES.md`](PLAN_INTEGRACIONES.md) | 🟡 Solo queda **Integración D** (reglas Firebase). A, B, C, E cerrados el 2026-08-12                                                                                                           | `BACKLOG.md` §1 fila 5 — 🔒 bloqueado por decisión D2 |
+| [`PLAN_CALIDAD.md`](PLAN_CALIDAD.md)             | 🟡 Parcial — Fase 0 (guardarraíles) ✅. **Fase 1 (trocear gigantes) descartada por decisión del usuario** el 2026-08-15, ver abajo                                                             | `BACKLOG.md` §2.A                                     |
+| [`PLAN_CARISMOCHITO.md`](PLAN_CARISMOCHITO.md)   | ⏳ Sin empezar (§1–4)                                                                                                                                                                          | `BACKLOG.md` §1 fila 7                                |
+| [`PLAN_DISENO.md`](PLAN_DISENO.md)               | 🟡 En curso — dos pasadas hechas (tokens, tipografía, radios, sombras, responsive, panel) + 3 bugs de contraste arreglados. Lo que queda necesita **dispositivo** o revisión fichero a fichero | `BACKLOG.md` §2.G                                     |
 
 ## 🔵 Futuro lejano — no se tocan hasta que el usuario lo pida
 

@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-08-31 (añadido §2.G — diseño).
+> Última actualización: 2026-09-02 (añadido §2.G — diseño).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
 > [`docs/planes/README.md`](README.md). Si un plan está en `archivo/`, está
@@ -266,29 +266,37 @@ cuenta por encima de 51, ese es tuyo y se arregla.
 
 ### G. Diseño — unificar tokens y quitar incoherencias
 
-**Documento: [`PLAN_DISENO.md`](PLAN_DISENO.md).** Creado el 2026-08-31 al
+**Documento: [`PLAN_DISENO.md`](PLAN_DISENO.md).** Creado el 2026-09-02 al
 escribir [`design.md`](../../design.md), que es ahora la guía prescriptiva de
 diseño para agentes.
 
 Es la **tarea por defecto cuando el usuario pide diseño** en un hueco
 oportunista. Sus tareas son independientes y caben en un commit cada una.
 
-**Primera pasada ejecutada el 2026-08-31**: renombrados los tokens de marca que
-mentían, sombras y radios renombrados/colapsados, los roles de color que
-faltaban (de 1.363 hex literales a 793), un solo hook responsive, espejo de
-tokens en el panel y `__tests__/designTokens.test.ts` para que no se
-desincronice otra vez.
+**Dos pasadas ejecutadas el 2026-09-02/03.** Cerrado: tokens de marca,
+sombras, radios, roles de color (de 1.363 hex literales a 865), escala y pesos
+tipográficos (de 666 `fontSize` a 276), un solo hook responsive, espejo de
+tokens en el panel, y **tres bugs de contraste que estaban en producción**: el
+texto tenue del cantoral por debajo del mínimo legible, el azul de marca
+invisible sobre fondo oscuro en cinco pantallas (Notificaciones entera, la de
+error, encuestas, la hoja de notificaciones y el contenido en BBCode), y la
+misma pregunta de "qué texto va sobre este fondo" resuelta cinco veces con
+cinco umbrales distintos.
 
-Lo que queda, por si hay que priorizar sin abrir el documento:
+Hay **cinco trinquetes de test** (colores, tamaños de letra, radios, contraste
+y marca-en-primer-plano) cuyos topes solo pueden bajar.
 
-- **A5.3** — el guardarraíl que impida hex NUEVOS (lo demás del test ya está).
-- **A5.4 / E2** — segunda tanda de hex y los `borderRadius` inline.
-- **C** — tipografía: `constants/typography.ts` sigue casi sin importarse y no
-  hay escala de pesos aplicada.
-- **F4** — cuatro anchuras máximas distintas conviviendo (640/760/960/1200).
-- **H8–H10** — hallazgos que necesitan **verse en un dispositivo**: en modo
-  oscuro las cards se pintan con el color de fondo (no hay capas), y hay tres
-  cambios ya hechos (sombra de toasts, radios, gris secundario) sin verificar.
+**Lo que queda, y lo que NO:**
+
+- 🔴 **Bloquea publicar**: verificar en dispositivo las cinco pantallas que
+  cambiaron de aspecto (`PLAN_DISENO` §H9). Nada más lo bloquea.
+- Otros dos ítems necesitan dispositivo: los tres dorados de Contigo (§A3) y si
+  `textStrong` sobra (§H10/H12).
+- El resto es abrir el fichero y decidir caso a caso: 865 hex, 276 `fontSize`,
+  radios sueltos.
+- ❌ **NO se tocan, decidido**: las anchuras máximas y el layout de iPad
+  (decisión del usuario) y las capas de superficie en oscuro (el contraste lo
+  desaconseja). No los propongas.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
