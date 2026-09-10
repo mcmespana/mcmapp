@@ -235,7 +235,11 @@ function buildSongList(
           if (titleMatch && titleMatch[1]) {
             numericPart = String(parseInt(titleMatch[1], 10));
           } else {
-            const filenameMatch = song.filename.match(/_(\d+)\.html$/);
+            // `filename` es OPCIONAL en `SongEntry`, y sin el `?.` una sola
+            // canción sin él tumbaba la categoría completa con «Error al
+            // cargar las canciones» (el mismo cálculo, 90 líneas más arriba,
+            // sí lo protegía). Visto el 2026-09-09 renderizando el cantoral.
+            const filenameMatch = song.filename?.match(/_(\d+)\.html$/);
             if (filenameMatch && filenameMatch[1]) {
               numericPart = String(parseInt(filenameMatch[1], 10));
             }
@@ -282,7 +286,9 @@ function buildSongList(
       if (titleMatch && titleMatch[1]) {
         numericPart = titleMatch[1].padStart(2, '0');
       } else {
-        const filenameMatch = song.filename.match(/_(\d+)\.html$/);
+        // Igual que arriba: `filename` es opcional y sin `?.` la lista entera
+        // se cae por una canción sin él.
+        const filenameMatch = song.filename?.match(/_(\d+)\.html$/);
         if (filenameMatch && filenameMatch[1]) {
           numericPart = filenameMatch[1].padStart(2, '0');
         }
@@ -812,7 +818,7 @@ export default function SongsListScreen({
             <Text
               style={[
                 styles.menuActionText,
-                { color: themeColors(isDark).textStrong },
+                { color: themeColors(isDark).text },
               ]}
             >
               {menuSongSelected ? 'Quitar de la lista' : 'Añadir a la lista'}
@@ -827,7 +833,7 @@ export default function SongsListScreen({
             <Text
               style={[
                 styles.menuActionText,
-                { color: themeColors(isDark).textStrong },
+                { color: themeColors(isDark).text },
               ]}
             >
               Compartir
@@ -933,7 +939,7 @@ const createStyles = (
     searchInput: {
       flex: 1,
       fontSize: isWide ? 17 : 16,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       padding: 0,
       margin: 0,
     },

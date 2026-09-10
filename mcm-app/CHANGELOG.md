@@ -18,6 +18,79 @@
 
 ---
 
+## 2026-09-10 02:05 — Cierre de la cola de diseño, y tres bugs que solo salen ejecutando la app
+
+Al verificar el §H9 de `PLAN_DISENO` (las cinco pantallas que cambiaron de
+aspecto, en claro y oscuro) **renderizando la app de verdad** —Chromium sobre
+`expo start --web`, con datos de cantoral inyectados en la caché local— salieron
+tres fallos que ninguna revisión de código había visto. El diseño está bien; lo
+que estaba roto era otra cosa.
+
+**Diseño (cierra `PLAN_DISENO` §H10/H12 y §A3):**
+
+- **Borrado el token `textStrong`.** Era "el texto que destaca" y contrastaba
+  MENOS que el cuerpo en los dos modos: en claro `#1C1C1E` contra el `#11181C`
+  de `text`, en oscuro `#F5F5F7` contra `#FFFFFF`. Un 1% de luminancia en la
+  dirección contraria a su nombre. Sus 43 usos pasan a `text`, que contrasta un
+  pelín más; los títulos se distinguen por tamaño y peso, como en iOS. Un token
+  menos, ningún caso nuevo.
+- **Un solo dorado para Contigo, y uno que se lee.** Había tres (`#B8860B` en la
+  raya de la pestaña, `#C4922A` en la paleta de la sección, `#B8860B` otra vez a
+  mano en `ReadingCard` y en cuatro sitios de `evangelio.tsx`). Pero el problema
+  gordo no era la incoherencia: el acento **pintaba texto** —el kicker
+  "EVANGELIO DEL DÍA", la cita, el CTA, el día de hoy del calendario— a
+  **2,60:1** sobre su propio fondo, por debajo del 4,5:1 mínimo y hasta del 3:1
+  de los elementos no textuales. Es el mismo fallo que el azul de marca en
+  oscuro (§H4): un color de marca vale como relleno, no como primer plano. Nace
+  `accentText` (`#876208`: mismo tono y saturación, menos luminosidad → 5,16:1
+  sobre `bg`, 5,55 sobre `bgCard`, 4,64 sobre `bgDeep`) y los rellenos se quedan
+  con `accent`. La raya de la pestaña ya es el dorado de la sección.
+- Dos trinquetes nuevos en `__tests__/designTokens.test.ts`: el contraste de
+  `accentText` sobre las tres superficies cálidas, y que la raya de la pestaña
+  siga siendo el mismo dorado que la sección.
+- Corregido un typo visible en Contigo: "¿Cuándo empeazmos?" → "empezamos".
+
+**Bugs encontrados al ejecutar (los tres, de verdad):**
+
+- **`useAnimatedValue` no existe en `react-native-web`.** RN lo exporta desde la
+  0.71 y la app lo adoptó en agosto para quitar los `useRef(new
+Animated.Value())` que marca el compilador de React — pero
+  `react-native-web@0.21.2` no lo trae, así que en web el import valía
+  `undefined` y **petaba todo `BottomSheet`**, y con él cualquier hoja de la app
+  en web, más `TransposeBottomSheet`, `ReaderSettingsSheet`,
+  `CarismochitoDialogs` y `OTAUpdatePrompt`. Sustituido por
+  `hooks/useAnimatedValue.ts` (inicializador perezoso de `useState`, mismo
+  contrato, funciona en las dos plataformas) + candado en
+  `__tests__/animatedValueWebSafety.test.ts`. Ni los tests ni `tsc` lo veían:
+  `jest-expo` resuelve el preset nativo y los tipos de RN sí declaran el hook.
+- **Faltaba la peer dependency `@gorhom/bottom-sheet`.** `heroui-native` la
+  declara "opcional", pero su `BottomSheet.Content` hace
+  `withUniwind(paquete?.default)` sin comprobar nada: sin el paquete es
+  `undefined` y **la pantalla entera revienta al montar** (ErrorBoundary), en
+  cualquier plataforma, no solo en web. Afectaba a **Notificaciones** y a
+  **Reflexiones**, las dos únicas que usan ese sheet. Se ve que la dependencia
+  se perdió en algún `npm install` (los comentarios del código dicen que ese
+  sheet funcionó y se afinó a mano). Instalada `@gorhom/bottom-sheet@^5.2.14`,
+  que es **solo JS** (usa reanimated + gesture-handler, ya presentes).
+- **Una canción sin `filename` tumbaba su categoría completa.** `filename` es
+  opcional en `SongEntry`, y de los tres sitios de `SongListScreen` que lo leen
+  para ordenar, uno usaba `?.` y los otros dos no: la lista entera se caía con
+  "Error al cargar las canciones, lo sentimos :(". Guardados los tres.
+- **`stripCategoryPrefix`** (`utils/songUtils.ts`, con tests): el regex que
+  quitaba el prefijo de ordenación de las categorías (`"C. Entrada"` →
+  `"Entrada"`) hacía el punto OPCIONAL, así que una categoría **sin** prefijo
+  perdía su primera letra ("Adoración" → "doración"). Hoy no salta porque todas
+  las reales traen su "X. ", pero basta con crear una desde el panel sin él.
+
+Verificado: `tsc` limpio (app y tests), 0 errores de lint (39 warnings, los
+mismos), **1.604 tests** en verde (9 nuevos), y las 8 pantallas renderizadas en
+claro y oscuro sin un solo ErrorBoundary.
+
+Lo que la web NO puede verificar y sigue pendiente de dispositivo: el glass de
+iOS 26, la barra nativa de pestañas y el tinte de las cabeceras nativas (§A6-quater).
+
+---
+
 ## 2026-09-10 00:20 — El CI estaba desactivado a mano: resucitado, y el scraper a la mitad de runs
 
 **La causa del "el CI no ejecuta nada desde abril" (§0 de `TODO.md`) era mucho
