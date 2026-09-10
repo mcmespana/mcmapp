@@ -540,7 +540,7 @@ const createStyles = (isDark: boolean) =>
       ...typography.subhead,
       fontWeight: '600',
       letterSpacing: -0.2,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     mMeta: {
       ...typography.micro,
@@ -599,7 +599,7 @@ const createStyles = (isDark: boolean) =>
       ...typography.caption,
       fontWeight: '600',
       letterSpacing: -0.2,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       marginTop: 2,
     },
     fichaComment: {

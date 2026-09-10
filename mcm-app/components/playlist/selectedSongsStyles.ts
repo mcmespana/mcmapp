@@ -236,7 +236,7 @@ export const createStyles = (
     modalTitle: {
       fontSize: 19,
       fontWeight: '700',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       letterSpacing: -0.3,
       marginBottom: 6,
     },
@@ -272,7 +272,7 @@ export const createStyles = (
     modalBtnSecondaryText: {
       ...typography.button,
       fontWeight: '600',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     modalBtnPrimary: {
       backgroundColor: colors.primary,

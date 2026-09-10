@@ -137,7 +137,7 @@ const createStyles = (isDark: boolean, variant: TagChipVariant) => {
       ? '#3A2C00'
       : '#FFFFFF'
     : variant === 'cloud'
-      ? themeColors(isDark).textStrong
+      ? themeColors(isDark).text
       : isDark
         ? '#E8E2D2'
         : '#6E6E73';

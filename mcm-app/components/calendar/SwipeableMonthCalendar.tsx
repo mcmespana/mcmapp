@@ -141,8 +141,8 @@ export default function SwipeableMonthCalendar({
             style={styles.calendar}
             theme={{
               calendarBackground: themeColors(isDark).background,
-              dayTextColor: themeColors(isDark).textStrong,
-              monthTextColor: themeColors(isDark).textStrong,
+              dayTextColor: themeColors(isDark).text,
+              monthTextColor: themeColors(isDark).text,
               textSectionTitleColor: '#8E8E93',
               selectedDayBackgroundColor: colors.info,
               selectedDayTextColor: colors.white,

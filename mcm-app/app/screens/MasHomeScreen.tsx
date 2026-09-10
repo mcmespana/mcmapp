@@ -276,7 +276,7 @@ export default function MasHomeScreen() {
                     <Text
                       style={[
                         styles.cardTitle,
-                        { color: themeColors(isDark).textStrong },
+                        { color: themeColors(isDark).text },
                       ]}
                       numberOfLines={1}
                     >

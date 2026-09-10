@@ -349,7 +349,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     songTitle: {
       ...typography.body,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       fontWeight: '500',
       letterSpacing: -0.2,
     },

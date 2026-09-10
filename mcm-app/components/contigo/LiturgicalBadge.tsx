@@ -105,7 +105,7 @@ export function LiturgicalBadge({ dateStr }: LiturgicalBadgeProps) {
     return (
       <View style={styles.pillPlain}>
         <Text
-          style={[styles.label, { color: themeColors(isDark).textStrong }]}
+          style={[styles.label, { color: themeColors(isDark).text }]}
           numberOfLines={1}
         >
           {info.name}

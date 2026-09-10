@@ -340,7 +340,7 @@ const createStyles = (isDark: boolean) =>
     title: {
       ...typography.h3,
       fontWeight: '700',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     subtitle: {
       ...typography.footnote,
@@ -372,7 +372,7 @@ const createStyles = (isDark: boolean) =>
     rowTitle: {
       ...typography.subhead,
       fontWeight: '600',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     rowDesc: {
       fontSize: 11.5,
@@ -426,7 +426,7 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: themeColors(isDark).background,
     },
     btnSecondaryText: {
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       ...typography.button,
       fontWeight: '600',
     },

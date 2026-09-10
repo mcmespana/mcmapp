@@ -588,8 +588,8 @@ export default function EvangelioScreen() {
                           color={
                             viewMode === 'lectura'
                               ? isDark
-                                ? WARM_DARK.accent
-                                : '#B8860B'
+                                ? WARM_DARK.accentText
+                                : WARM_LIGHT.accentText
                               : isDark
                                 ? '#A09A94'
                                 : '#888888'
@@ -602,8 +602,8 @@ export default function EvangelioScreen() {
                               color:
                                 viewMode === 'lectura'
                                   ? isDark
-                                    ? WARM_DARK.accent
-                                    : '#B8860B'
+                                    ? WARM_DARK.accentText
+                                    : WARM_LIGHT.accentText
                                   : isDark
                                     ? '#A09A94'
                                     : '#888888',
@@ -638,8 +638,8 @@ export default function EvangelioScreen() {
                           color={
                             viewMode === 'comentario'
                               ? isDark
-                                ? WARM_DARK.accent
-                                : '#B8860B'
+                                ? WARM_DARK.accentText
+                                : WARM_LIGHT.accentText
                               : isDark
                                 ? '#A09A94'
                                 : '#888888'
@@ -652,8 +652,8 @@ export default function EvangelioScreen() {
                               color:
                                 viewMode === 'comentario'
                                   ? isDark
-                                    ? WARM_DARK.accent
-                                    : '#B8860B'
+                                    ? WARM_DARK.accentText
+                                    : WARM_LIGHT.accentText
                                   : isDark
                                     ? '#A09A94'
                                     : '#888888',

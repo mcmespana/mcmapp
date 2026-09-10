@@ -112,7 +112,7 @@ export default function EventosPasadosScreen() {
                 <Text
                   style={[
                     styles.cardTitle,
-                    { color: themeColors(isDark).textStrong },
+                    { color: themeColors(isDark).text },
                   ]}
                   numberOfLines={2}
                 >

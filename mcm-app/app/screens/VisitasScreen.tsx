@@ -323,7 +323,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       ...typography.body,
       fontWeight: '700',
       letterSpacing: -0.2,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       marginBottom: 4,
     },
     subtitle: {
@@ -400,7 +400,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       fontSize: 20,
       fontWeight: '700',
       letterSpacing: -0.3,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     modalSubtitle: {
       fontSize: 15,

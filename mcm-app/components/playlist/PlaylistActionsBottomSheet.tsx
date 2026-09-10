@@ -166,7 +166,7 @@ const createStyles = (isDark: boolean) =>
     itemLabel: {
       ...typography.button,
       fontWeight: '600',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     itemLabelDanger: {
       color: SwipeColors.remove,

@@ -418,7 +418,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     name: {
       ...typography.body,
       fontWeight: '700',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       letterSpacing: -0.2,
     },
     role: {

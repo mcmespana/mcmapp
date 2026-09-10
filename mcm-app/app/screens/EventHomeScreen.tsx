@@ -388,7 +388,7 @@ function SectionCard({
         </View>
 
         <Text
-          style={[styles.cardTitle, { color: themeColors(isDark).textStrong }]}
+          style={[styles.cardTitle, { color: themeColors(isDark).text }]}
           numberOfLines={1}
         >
           {section.label}

@@ -354,7 +354,7 @@ const createStyles = (isDark: boolean) =>
     },
     songTitle: {
       ...typography.body,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       fontWeight: '500',
       letterSpacing: -0.2,
     },

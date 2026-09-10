@@ -148,8 +148,13 @@ que no se desincronizan.
 ### Roles por modo
 
 `themeColors(isDark)` resuelve la capa de roles, igual que `warm(isDark)` en
-Contigo: `text`, `textStrong`, `textSecondary`, `textMuted`, `link`,
-`background`, `backgroundSunken`, `card`, `separator`, `icon`.
+Contigo: `text`, `textSecondary`, `textMuted`, `link`, `background`,
+`backgroundSunken`, `card`, `separator`, `icon`.
+
+**No inventes un nivel por encima de `text`.** Hubo un `textStrong` y se borró
+el 2026-09-09: pintaba más CLARO que el cuerpo en los dos modos, o sea lo
+contrario de lo que prometía su nombre. Un título se distingue por tamaño y
+peso (§4), no por un 1% de luminancia.
 
 **Úsalos.** Un `isDark ? '#F5F5F7' : '#1C1C1E'` escrito a mano es exactamente lo
 que llenó la app de 1.363 hex literales: se copia, y al copiarse deriva.

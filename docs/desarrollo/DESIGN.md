@@ -80,7 +80,6 @@ Es la **única** capa de roles. Se resuelve con `themeColors(isDark)`, igual que
 ```
                    Claro          Oscuro
 text:              #11181C        #FFFFFF
-textStrong:        #1C1C1E        #F5EFE3 → #F5F5F7
 textSecondary:     #636366        #AEAEB2
 textMuted:         #8E8E93        #8E8E93
 link:              #253883        #7AB3FF
@@ -93,7 +92,11 @@ icon:              #687076        #C5C5C7
 shadow:            #000000        #000000
 ```
 
-Los seis roles de `textStrong` a `separator` se añadieron en agosto de 2026:
+`textStrong` (claro `#1C1C1E`, oscuro `#F5F5F7`) **se borró el 2026-09-09**:
+era "el texto fuerte" pero contrastaba MENOS que `text` en los dos modos. Sus
+43 usos pasaron a `text`. Detalle en `docs/planes/PLAN_DISENO.md` §H10/H12.
+
+Los cinco roles de `textSecondary` a `separator` se añadieron en agosto de 2026:
 no existían, y por eso se escribían a mano — había ~110 ternarios
 `isDark ? '#F5F5F7' : '#1C1C1E'` repartidos por la app, ya con deriva entre
 copias.

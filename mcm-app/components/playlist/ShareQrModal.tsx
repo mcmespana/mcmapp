@@ -282,7 +282,7 @@ const createStyles = (isDark: boolean) =>
     title: {
       fontSize: 17,
       fontWeight: '700',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       textAlign: 'center',
     },
     subtitle: {
@@ -380,7 +380,7 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: themeColors(isDark).background,
     },
     btnSecondaryText: {
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       ...typography.button,
       fontWeight: '600',
     },

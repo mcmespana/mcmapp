@@ -372,7 +372,7 @@ const SongControls: React.FC<SongControlsProps> = ({
               <MaterialIcons
                 name={showActionButtons ? 'add' : 'tune'}
                 size={22}
-                color={themeColors(isDark).textStrong}
+                color={themeColors(isDark).text}
               />
             </Animated.View>
           </TouchableOpacity>

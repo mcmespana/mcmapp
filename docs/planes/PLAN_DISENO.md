@@ -61,27 +61,29 @@ Y dos correcciones de diagnóstico mías, por si vuelven a aparecer:
 
 Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 
-| §      | Qué                   | Lo que se aprendió                                                                                  |
-| ------ | --------------------- | --------------------------------------------------------------------------------------------------- |
-| A1     | Marca cromática       | `accent` NO había que renombrarlo (sí se usa como acento). Los que mentían eran `success`/`warning` |
-| A2     | Los dos amarillos     | `#FCD200` es marca, `#f4c11e` es cantoral. Regla escrita                                            |
-| A4     | Docblock de `colors`  | Nombraba dos excepciones que no declaraba                                                           |
-| A5     | Roles de color        | Los hex no eran colores sueltos: eran **pares** claro/oscuro sin token. De 1.363 hex a 865          |
-| A6     | Colores sin dueño     | Eran roles: enlace, texto fuerte, secundario, destacado ámbar, verde de Carismochito                |
-| B      | Dos motores de estilo | `global.css` son nombres de HeroUI, no nuestro vocabulario. Test que impide que diverjan            |
-| C      | Tipografía            | Escala ampliada a lo que la app usa; pesos ajustados a la realidad. De 666 `fontSize` a 276         |
-| D      | Sombras               | El nombre mentía: `lg` (0,3) era más fuerte que `xl` (0,18). Renombradas por función                |
-| E      | Radios                | De nueve escalones a siete, en la rejilla de 4 px. El `10` NO es deuda: es radio anidado            |
-| F1–3   | Responsive            | Había **dos** hooks; el que documentaba `DESIGN.md` tenía cero usos                                 |
-| G1     | Espejo en el panel    | El selector de calendario ofrecía 20 pasteles con 3 colores de MCM enterrados                       |
-| G2     | Panel oscuro-only     | Declaraba `darkMode: class` sin bloque `.dark`                                                      |
-| H1     | Anillo de foco        | Puesto en `AppPrimaryButton`. **Revertido en `AppTextField`**: desplazaba el campo 1 px al escribir |
-| H2     | `EmptyState`          | No cumplía su propio contrato de paleta. Ahora sí, y tiene variante `compact`                       |
-| H3     | Home                  | ❌ Nada que hacer: la nota del TODO llevaba tiempo describiendo una Home que ya no existe           |
-| H4     | Marca en oscuro       | **Bug real**: el azul de marca da 1,31:1 sobre el fondo oscuro. Cinco pantallas afectadas           |
-| H7     | Guardarraíles         | Cinco trinquetes de test: colores, tamaños, radios, contraste y marca-en-primer-plano               |
-| H11    | Pares "del revés"     | ❌ Mi diagnóstico era falso. Pero el contraste real sí estaba por debajo del mínimo, y se subió     |
-| A6-bis | `onColor()`           | La misma pregunta resuelta **cinco veces con cinco umbrales a ojo**. Ahora, por contraste real      |
+| §       | Qué                   | Lo que se aprendió                                                                                                         |
+| ------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| A1      | Marca cromática       | `accent` NO había que renombrarlo (sí se usa como acento). Los que mentían eran `success`/`warning`                        |
+| A2      | Los dos amarillos     | `#FCD200` es marca, `#f4c11e` es cantoral. Regla escrita                                                                   |
+| A4      | Docblock de `colors`  | Nombraba dos excepciones que no declaraba                                                                                  |
+| A5      | Roles de color        | Los hex no eran colores sueltos: eran **pares** claro/oscuro sin token. De 1.363 hex a 865                                 |
+| A6      | Colores sin dueño     | Eran roles: enlace, texto fuerte, secundario, destacado ámbar, verde de Carismochito                                       |
+| B       | Dos motores de estilo | `global.css` son nombres de HeroUI, no nuestro vocabulario. Test que impide que diverjan                                   |
+| C       | Tipografía            | Escala ampliada a lo que la app usa; pesos ajustados a la realidad. De 666 `fontSize` a 276                                |
+| D       | Sombras               | El nombre mentía: `lg` (0,3) era más fuerte que `xl` (0,18). Renombradas por función                                       |
+| E       | Radios                | De nueve escalones a siete, en la rejilla de 4 px. El `10` NO es deuda: es radio anidado                                   |
+| F1–3    | Responsive            | Había **dos** hooks; el que documentaba `DESIGN.md` tenía cero usos                                                        |
+| G1      | Espejo en el panel    | El selector de calendario ofrecía 20 pasteles con 3 colores de MCM enterrados                                              |
+| G2      | Panel oscuro-only     | Declaraba `darkMode: class` sin bloque `.dark`                                                                             |
+| H1      | Anillo de foco        | Puesto en `AppPrimaryButton`. **Revertido en `AppTextField`**: desplazaba el campo 1 px al escribir                        |
+| H2      | `EmptyState`          | No cumplía su propio contrato de paleta. Ahora sí, y tiene variante `compact`                                              |
+| H3      | Home                  | ❌ Nada que hacer: la nota del TODO llevaba tiempo describiendo una Home que ya no existe                                  |
+| H4      | Marca en oscuro       | **Bug real**: el azul de marca da 1,31:1 sobre el fondo oscuro. Cinco pantallas afectadas                                  |
+| H7      | Guardarraíles         | Cinco trinquetes de test: colores, tamaños, radios, contraste y marca-en-primer-plano                                      |
+| H11     | Pares "del revés"     | ❌ Mi diagnóstico era falso. Pero el contraste real sí estaba por debajo del mínimo, y se subió                            |
+| A6-bis  | `onColor()`           | La misma pregunta resuelta **cinco veces con cinco umbrales a ojo**. Ahora, por contraste real                             |
+| H10/H12 | `textStrong`          | Confirmado: sobraba. El "fuerte" era más CLARO que el cuerpo en los dos modos. **Token borrado**, sus 43 usos a `text`     |
+| A3      | Los tres dorados      | No era cosmético: el acento pintaba TEXTO a 2,60:1. Nace `accentText`; la raya de la pestaña ya es el dorado de la sección |
 
 ---
 
@@ -106,26 +108,24 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 
 ### Necesita un dispositivo (no se puede hacer a ciegas)
 
-- [ ] **H9. Verificar lo que ya cambió.** Cinco pantallas, en claro y oscuro:
-      cantoral (texto tenue), **Notificaciones en oscuro** (era donde los
-      controles estaban invisibles), Contigo (vacíos y esquinas), playlists
-      (ámbar) y Contactos/Calendario/Grupos (grises). **Es lo único que bloquea
-      mover `production`.**
-- [ ] **A3. Tres dorados para Contigo.** `TabHeaderColors.contigo` (`#B8860B`)
-      no es el mismo que el acento de la pantalla que abre (`#C4922A`). Cambia
-      un color visible en la cabecera.
-- [ ] **H10 / H12. `text` y `textStrong` casi no se distinguen, y están
-      invertidos en los dos modos.** En claro `text` es `#11181C` y
-      `textStrong` `#1C1C1E` —el "fuerte" es más claro que el cuerpo—; en
-      oscuro, `#FFFFFF` contra `#F5F5F7`, también al revés.
-      En iOS no existe un nivel por encima del label primario: título y cuerpo
-      se distinguen por tamaño y peso, no por color. Lo más probable es que
-      `textStrong` sobre y haya que fundirlo con `text`, quedándose con lo que
-      la app usa más (claro `#1C1C1E`, oscuro `#F5F5F7`).
-      Cambia el color de TODO el texto de la app por un 1% de luminancia: se
-      mira antes. Si se confirma, es **borrar** un token, no añadir otro.
+- [x] **H9. Verificar lo que ya cambió — hecho el 2026-09-09 EN WEB.** Las
+      cinco pantallas, en claro y en oscuro, renderizadas de verdad (Chromium
+      sobre `expo start --web`, con datos de cantoral inyectados en la caché
+      local porque esta sesión no tiene credenciales de Firebase): cantoral
+      (lista y canción), Notificaciones, Contigo (home y evangelio), playlists,
+      Más y Calendario. **Todo legible en los dos modos**, incluidos los
+      controles de Notificaciones en oscuro, que era el bug de §H4.
+      Al hacerlo salieron **tres fallos que no eran de diseño** y que ninguna
+      revisión de código había visto: `useAnimatedValue` no existe en
+      `react-native-web` (se llevaba por delante TODO `BottomSheet` en web),
+      la peer dependency `@gorhom/bottom-sheet` de heroui no estaba instalada
+      (Notificaciones y Reflexiones petaban al montar, en cualquier
+      plataforma) y una canción sin `filename` tumbaba su categoría entera.
+      **Queda pendiente el repaso en un iPhone/Android físico** para lo que la
+      web no puede dar: el glass de iOS 26, la barra nativa de pestañas y las
+      cabeceras nativas.
 - [ ] **A6-quater. El tinte de las cabeceras nativas.** `isDark ? '#FFFFFF' :
-    '#1a1a1a'` a mano en ~8 sitios (cantoral, fotos, calendario, botones de
+  '#1a1a1a'` a mano en ~8 sitios (cantoral, fotos, calendario, botones de
       volver). No es byte-idéntico a ningún rol. O se le da uno propio o se
       alinea con `textStrong` — pero son cabeceras nativas.
 
@@ -160,10 +160,9 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 
 ## Orden sugerido si hay un hueco
 
-1. **H9** — verificar en dispositivo. Desbloquea todo lo demás de la lista de
-   arriba y es lo único que impide publicar.
-2. **H10/H12** y **A3** — los otros dos de dispositivo, en la misma sesión.
-3. **C6**, **A5.5**, **E5** — revisión fichero a fichero.
-4. **H1-ter**, **H5**, **H6** — mejoras.
+1. **A6-quater** — el único que sigue necesitando dispositivo (cabeceras
+   nativas). H9 se verificó en web el 2026-09-09; H10/H12 y A3 están hechos.
+2. **C6**, **A5.5**, **E5** — revisión fichero a fichero.
+3. **H1-ter**, **H5**, **H6** — mejoras.
 
 **No propongas F4 ni H8**: están decididos que no, con su motivo arriba.
