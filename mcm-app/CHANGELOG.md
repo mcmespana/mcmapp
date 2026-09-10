@@ -18,6 +18,50 @@
 
 ---
 
+## 2026-09-10 00:20 — El CI estaba desactivado a mano: resucitado, y el scraper a la mitad de runs
+
+**La causa del "el CI no ejecuta nada desde abril" (§0 de `TODO.md`) era mucho
+más tonta de lo que buscábamos:** el workflow `ci.yml` estaba en estado
+`disabled_manually` desde el 2026-05-25 — alguien le dio a "Disable workflow"
+en la pestaña Actions. Con ese estado GitHub **no crea el run**: no sale en
+rojo, no sale en gris, no sale. Por eso cada PR parecía "clean" al mergear y
+por eso los 4 errores de tipos de la #334 llegaron a `main` sin que saltara
+nada. No era la cuenta sin minutos ni un ajuste de organización: el repo es
+**público**, así que los runners estándar son gratis y no tocan la cuota de la
+cuenta.
+
+- **`.github/workflows/pr.yml` (nuevo)** — el mismo guardarraíl (llama a
+  `verify.yml`, que sigue siendo la única fuente de verdad de los 4 pasos) en
+  una **ruta nueva**. Es la parte importante: el estado "desactivado" va pegado
+  a la ruta del workflow, no a su contenido, así que en una ruta nueva nace
+  activo y no depende de que nadie entre en la web a reactivarlo. Afinado para
+  no gastar de más: solo en `pull_request`, `paths-ignore` de documentación y
+  portadas (muchas PRs de este repo son solo `.md`), y `concurrency` con
+  `cancel-in-progress` para que al empujar un commit nuevo a una PR se cancele
+  el run anterior.
+- **`.github/workflows/ci.yml` borrado** (era el desactivado) y
+  **`.github/workflows/disabled/` borrada** — tres archivos con `on: {}` que no
+  ejecutaban nada y que confundían a cualquiera que buscara "el CI".
+- **`verify.yml`: `timeout-minutes: 20`** — los 4 pasos tardan ~4 min; sin
+  timeout un job colgado ocupa un runner las **6 horas** que GitHub da por
+  defecto.
+- **Scraper de lecturas: de dos disparos diarios a uno.** Tenía dos crons (uno
+  para CET y otro para CEST, porque GitHub no entiende el cambio de hora) y un
+  job previo `check-time` que descartaba el sobrante. Resultado: dos runs al
+  día, uno siempre tirado a la basura, más un runner extra en el bueno. Con un
+  solo cron a las 00:10 UTC —01:10 en invierno, 02:10 en verano, las dos
+  después de la 1:00, que era lo único que se pedía— sobra el job entero. El
+  scraper ya resuelve por su cuenta qué día es en Europe/Madrid.
+
+Neto de Actions: **se gasta menos que antes** aun con el CI encendido.
+
+Archivos: `.github/workflows/pr.yml` (nuevo), `.github/workflows/ci.yml` y
+`.github/workflows/disabled/` (borrados), `.github/workflows/verify.yml`,
+`.github/workflows/scraper-lecturas.yml`, `mcm-app/TODO.md`,
+`docs/planes/BACKLOG.md`.
+
+---
+
 ## 2026-09-03 19:30 — Un solo criterio para "qué texto va sobre este fondo", y el resto de la cola de diseño
 
 Cierre de PLAN_DISENO: §A6-bis, §E4, §G1.4, §H2-bis.
