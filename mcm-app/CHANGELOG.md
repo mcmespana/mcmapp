@@ -18,6 +18,45 @@
 
 ---
 
+## 2026-09-10 22:30 — Un solo conmutador para toda la app (UI Nativa, Fase 2)
+
+Cierra el `SegmentedControl` de `PLAN_UI_NATIVA` §5, y de paso saca el mismo bug
+de contraste de dos sitios más.
+
+- **Cuatro conmutadores, un componente.** `SegmentedControl` (que solo usaba el
+  calendario) se adopta en **Lectura/Comentario** del Evangelio —eran 114 líneas
+  a mano, con el estado activo, el color del icono y el del texto repetidos en
+  cuatro sitios—, en **Tema** de los ajustes de la app y en **Tema** del lector
+  de Contigo. Los tres pasan a compartir forma, háptica y accesibilidad
+  (`accessibilityRole="tab"`), cada uno con su acento: celeste de marca, azul y
+  el dorado de Contigo.
+- **El componente compartido traía dentro el bug del §H4.** Pintaba la etiqueta
+  activa de `#FFFFFF` fijo, fuera cual fuese `accentColor`: con el celeste de
+  marca —que es el DEFECTO, el del Mes/Agenda del calendario— daba **2,64:1**, y
+  con el dorado de Contigo 2,80:1. La inactiva era un `#8E8E93` a mano: 2,60:1
+  sobre la pista clara. Arreglado ANTES de extenderlo, que era la parte
+  importante: la tinta la decide `onColor()` (contraste real) y la inactiva sale
+  de `textSecondary`. Con test que lo fija para todos los acentos de la casa.
+- **Y el mismo fallo en el botón "Listo"** de la barra de subrayado de Contigo:
+  blanco sobre el dorado, 2,24:1. Ahora también por `onColor()`.
+- **Lo que NO se migra, y no es deuda**: `SongFullscreen`. El censo del plan lo
+  contaba como conmutador, pero son botones redondos numerados (velocidad de
+  auto-scroll) en el panel translúcido del modo inmersivo. Otros dos de la lista
+  (`EventDetailsBottomSheet`, `SelectedSongsScreen`) eran falsos positivos del
+  grep: ahí `segment` es parseo de texto.
+- **`jest.config.js`: `heroui-native` y `uniwind` pasan por Babel.** Se
+  publican como ESM sin transpilar, así que cualquier suite que renderice un
+  componente que use heroui —aunque sea de rebote, como este
+  `SegmentedControl`— moría con «Unexpected token 'export'». Es el mismo muro
+  que se encontraría cualquier test de render de los que pide
+  `docs/desarrollo/COBERTURA.md`, así que queda desbloqueado para todos.
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (**38** warnings, uno
+menos que antes), 1.611 tests en verde, y los cuatro conmutadores fotografiados
+en claro y oscuro.
+
+---
+
 ## 2026-09-10 03:40 — Radios que no eran radios, el corte del onboarding y las fechas en español
 
 Sigue el cierre de `PLAN_DISENO`: §E5 (a medias), §F5 (hecho) y un fallo de

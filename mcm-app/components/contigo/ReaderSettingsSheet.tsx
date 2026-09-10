@@ -11,9 +11,11 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import useAnimatedValue from '@/hooks/useAnimatedValue';
-import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from '@/components/BottomSheet';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
+import SegmentedControl, {
+  type SegmentedOption,
+} from '@/components/ui/SegmentedControl';
 import useSectionFontScale from '@/hooks/useSectionFontScale';
 import { warm } from '@/components/contigo/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -30,10 +32,10 @@ interface Props {
   previewText?: string;
 }
 
-const THEME_OPTIONS: { key: ThemeScheme; icon: string; label: string }[] = [
-  { key: 'light', icon: 'light-mode', label: 'Claro' },
-  { key: 'dark', icon: 'dark-mode', label: 'Oscuro' },
-  { key: 'system', icon: 'brightness-auto', label: 'Auto' },
+const THEME_OPTIONS: SegmentedOption<ThemeScheme>[] = [
+  { value: 'light', icon: 'light-mode', label: 'Claro' },
+  { value: 'dark', icon: 'dark-mode', label: 'Oscuro' },
+  { value: 'system', icon: 'brightness-auto', label: 'Auto' },
 ];
 
 const DEFAULT_PREVIEW =
@@ -280,48 +282,13 @@ export default function ReaderSettingsSheet({
         >
           APARIENCIA
         </Text>
-        <View style={[styles.themeSegment, { backgroundColor: segmentBg }]}>
-          {THEME_OPTIONS.map((opt) => {
-            const selected = settings.theme === opt.key;
-            return (
-              <TouchableOpacity
-                key={opt.key}
-                onPress={() => {
-                  h.select();
-                  setSettings({ theme: opt.key });
-                }}
-                style={[
-                  styles.themeOption,
-                  selected && {
-                    backgroundColor: W.accent,
-                    shadowColor: W.accent,
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 5,
-                    elevation: 3,
-                  },
-                ]}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                accessibilityLabel={`Tema ${opt.label}`}
-              >
-                <MaterialIcons
-                  name={opt.icon as never}
-                  size={17}
-                  color={selected ? '#fff' : W.textSec}
-                />
-                <Text
-                  style={[
-                    styles.themeOptionText,
-                    { color: selected ? '#fff' : W.textSec },
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <SegmentedControl
+          options={THEME_OPTIONS}
+          value={settings.theme}
+          onChange={(theme) => setSettings({ theme })}
+          accentColor={W.accent}
+          accessibilityLabel="Tema del lector"
+        />
       </ScrollView>
     </BottomSheet>
   );
@@ -401,25 +368,6 @@ const styles = StyleSheet.create({
   },
   percentLabel: {
     ...typography.footnote,
-    fontWeight: '700',
-  },
-  themeSegment: {
-    flexDirection: 'row',
-    borderRadius: radii.md,
-    padding: 4,
-    gap: 4,
-  },
-  themeOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 11,
-    borderRadius: 9,
-  },
-  themeOptionText: {
-    ...typography.caption,
     fontWeight: '700',
   },
 });

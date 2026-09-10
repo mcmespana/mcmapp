@@ -7,6 +7,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
+import { onColor } from '@/utils/colorUtils';
 import {
   HIGHLIGHT_COLORS,
   HIGHLIGHT_COLOR_KEYS,
@@ -162,7 +163,14 @@ export function HighlightActionBar({
         style={[styles.doneBtn, { backgroundColor: warm(isDark).accent }]}
         accessibilityLabel="Terminar de subrayar"
       >
-        <Text style={styles.doneText}>Listo</Text>
+        {/* El color lo decide el contraste, no el modo: sobre el dorado de
+            Contigo el blanco daba 2,24:1. Mismo arreglo que §H4/§A6-bis de
+            PLAN_DISENO. */}
+        <Text
+          style={[styles.doneText, { color: onColor(warm(isDark).accent) }]}
+        >
+          Listo
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -226,7 +234,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.pillFull,
   },
   doneText: {
-    color: '#FFFFFF',
     ...typography.caption,
     fontWeight: '800',
   },

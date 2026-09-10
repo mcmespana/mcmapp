@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Card } from 'heroui-native';
@@ -54,12 +55,15 @@ import EmptyState from '@/components/ui/EmptyState';
 const WARM = {
   light: {
     accent: WARM_LIGHT.accent,
+    /** El acento cuando pinta texto o hace de relleno con texto encima. */
+    accentText: WARM_LIGHT.accentText,
     accentSoft: '#FFF8E7',
     surface: WARM_LIGHT.bg,
     warmGray: WARM_LIGHT.textSec,
   },
   dark: {
     accent: WARM_DARK.accent,
+    accentText: WARM_DARK.accentText,
     accentSoft: '#2A2112',
     surface: WARM_DARK.bg,
     warmGray: WARM_DARK.textSec,
@@ -79,6 +83,16 @@ const MONTHS = [
   'octubre',
   'noviembre',
   'diciembre',
+];
+
+/** Las dos vistas del evangelio del día. Fuera del componente: no cambian. */
+const EVANGELIO_VIEWS = [
+  { value: 'lectura' as const, label: 'Lectura', icon: 'menu-book' as const },
+  {
+    value: 'comentario' as const,
+    label: 'Comentario',
+    icon: 'lightbulb-outline' as const,
+  },
 ];
 
 function formatDateDisplay(dateStr: string) {
@@ -553,119 +567,20 @@ export default function EvangelioScreen() {
                   },
                 ]}
               >
-                {/* HeroUI Tabs — Lectura / Comentario */}
+                {/* Lectura / Comentario — `SegmentedControl` (Fase 2 de
+                    PLAN_UI_NATIVA §5). Antes eran 110 líneas de conmutador a
+                    mano: dos `TouchableOpacity` con el estado activo, el color
+                    del icono y el del texto repetidos en cuatro sitios. */}
                 {readings.evangelio.comentario ? (
                   <View>
-                    <View
-                      style={[
-                        styles.segmentedContainer,
-                        {
-                          backgroundColor: isDark
-                            ? 'rgba(255,255,255,0.06)'
-                            : 'rgba(0,0,0,0.04)',
-                        },
-                      ]}
-                    >
-                      <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={() => setViewMode('lectura')}
-                        style={[
-                          styles.segmentButton,
-                          viewMode === 'lectura' && [
-                            styles.segmentActive,
-                            {
-                              backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
-                              borderColor: isDark
-                                ? 'rgba(255,255,255,0.1)'
-                                : 'rgba(0,0,0,0.04)',
-                            },
-                          ],
-                        ]}
-                      >
-                        <MaterialIcons
-                          name="menu-book"
-                          size={16}
-                          color={
-                            viewMode === 'lectura'
-                              ? isDark
-                                ? WARM_DARK.accentText
-                                : WARM_LIGHT.accentText
-                              : isDark
-                                ? '#A09A94'
-                                : '#888888'
-                          }
-                        />
-                        <Text
-                          style={[
-                            styles.segmentText,
-                            {
-                              color:
-                                viewMode === 'lectura'
-                                  ? isDark
-                                    ? WARM_DARK.accentText
-                                    : WARM_LIGHT.accentText
-                                  : isDark
-                                    ? '#A09A94'
-                                    : '#888888',
-                              fontWeight:
-                                viewMode === 'lectura' ? '700' : '500',
-                            },
-                          ]}
-                        >
-                          Lectura
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={() => setViewMode('comentario')}
-                        style={[
-                          styles.segmentButton,
-                          viewMode === 'comentario' && [
-                            styles.segmentActive,
-                            {
-                              backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
-                              borderColor: isDark
-                                ? 'rgba(255,255,255,0.1)'
-                                : 'rgba(0,0,0,0.04)',
-                            },
-                          ],
-                        ]}
-                      >
-                        <MaterialIcons
-                          name="lightbulb-outline"
-                          size={16}
-                          color={
-                            viewMode === 'comentario'
-                              ? isDark
-                                ? WARM_DARK.accentText
-                                : WARM_LIGHT.accentText
-                              : isDark
-                                ? '#A09A94'
-                                : '#888888'
-                          }
-                        />
-                        <Text
-                          style={[
-                            styles.segmentText,
-                            {
-                              color:
-                                viewMode === 'comentario'
-                                  ? isDark
-                                    ? WARM_DARK.accentText
-                                    : WARM_LIGHT.accentText
-                                  : isDark
-                                    ? '#A09A94'
-                                    : '#888888',
-                              fontWeight:
-                                viewMode === 'comentario' ? '700' : '500',
-                            },
-                          ]}
-                        >
-                          Comentario
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                    <SegmentedControl
+                      options={EVANGELIO_VIEWS}
+                      value={viewMode}
+                      onChange={setViewMode}
+                      accentColor={warm.accentText}
+                      accessibilityLabel="Lectura o comentario"
+                      style={styles.segmentedContainer}
+                    />
 
                     <View style={styles.cardContent}>
                       {viewMode === 'lectura' ? (
