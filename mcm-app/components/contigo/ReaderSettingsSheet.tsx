@@ -8,9 +8,9 @@ import {
   Platform,
   PanResponder,
   TouchableOpacity,
-  useAnimatedValue,
   useWindowDimensions,
 } from 'react-native';
+import useAnimatedValue from '@/hooks/useAnimatedValue';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from '@/components/BottomSheet';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';

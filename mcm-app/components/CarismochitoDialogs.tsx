@@ -7,8 +7,8 @@ import {
   StyleSheet,
   Text,
   View,
-  useAnimatedValue,
 } from 'react-native';
+import useAnimatedValue from '@/hooks/useAnimatedValue';
 import { LinearGradient } from 'expo-linear-gradient';
 import CarismochitoMascot from '@/components/CarismochitoMascot';
 import { h } from '@/utils/haptics';

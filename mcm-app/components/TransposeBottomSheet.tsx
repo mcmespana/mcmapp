@@ -6,8 +6,8 @@ import {
   Platform,
   Pressable,
   Animated,
-  useAnimatedValue,
 } from 'react-native';
+import useAnimatedValue from '@/hooks/useAnimatedValue';
 import { PressableFeedback } from 'heroui-native';
 import { h } from '@/utils/haptics';
 import { MaterialIcons } from '@expo/vector-icons';

@@ -16,9 +16,9 @@ import {
   StyleSheet,
   Dimensions,
   Keyboard,
-  useAnimatedValue,
   useWindowDimensions,
 } from 'react-native';
+import useAnimatedValue from '@/hooks/useAnimatedValue';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UIColors, Colors } from '@/constants/colors';

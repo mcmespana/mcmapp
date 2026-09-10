@@ -9,8 +9,8 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useAnimatedValue,
 } from 'react-native';
+import useAnimatedValue from '@/hooks/useAnimatedValue';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { MaterialIcons } from '@expo/vector-icons';
