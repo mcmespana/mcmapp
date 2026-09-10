@@ -1,4 +1,5 @@
 import React from 'react';
+import { radii } from '@/constants/uiStyles';
 import {
   View,
   Text,
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: radii.pillFull,
     backgroundColor: '#c0392b',
     alignItems: 'center',
     justifyContent: 'center',

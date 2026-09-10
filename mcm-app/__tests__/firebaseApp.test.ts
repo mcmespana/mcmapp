@@ -70,9 +70,7 @@ describe('getFirebaseApp', () => {
       throw new Error('se esperaba que lanzara');
     } catch (err) {
       expect(err).toBeInstanceOf(FirebaseConfigError);
-      expect((err as Error).message).toContain(
-        'EXPO_PUBLIC_FIREBASE_APIKEY',
-      );
+      expect((err as Error).message).toContain('EXPO_PUBLIC_FIREBASE_APIKEY');
       expect((err as Error).message).toContain(
         'EXPO_PUBLIC_FIREBASE_PROJECTID',
       );

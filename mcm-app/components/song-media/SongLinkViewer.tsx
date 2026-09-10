@@ -11,6 +11,7 @@
  * `SongMediaSheet`).
  */
 import React from 'react';
+import { radii } from '@/constants/uiStyles';
 import {
   ActivityIndicator,
   Linking,
@@ -203,7 +204,7 @@ const styles = StyleSheet.create({
   headerBtn: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: radii.pillFull,
     alignItems: 'center',
     justifyContent: 'center',
   },

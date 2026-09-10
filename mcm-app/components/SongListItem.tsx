@@ -340,7 +340,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     selectedDot: {
       width: 6,
       height: 6,
-      borderRadius: 3,
+      borderRadius: radii.pillFull,
       backgroundColor: SwipeColors.add,
       marginRight: 10,
     },

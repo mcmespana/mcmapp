@@ -379,18 +379,18 @@ const styles = StyleSheet.create({
   track: {
     width: '100%',
     height: 6,
-    borderRadius: 3,
+    borderRadius: radii.pillFull,
     justifyContent: 'center',
   },
   trackFill: {
     height: 6,
-    borderRadius: 3,
+    borderRadius: radii.pillFull,
   },
   knob: {
     position: 'absolute',
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radii.pillFull,
     borderWidth: 2,
     marginLeft: -10,
     shadowColor: '#000',

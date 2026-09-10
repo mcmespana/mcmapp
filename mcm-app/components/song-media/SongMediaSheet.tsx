@@ -1,4 +1,5 @@
 import React from 'react';
+import { radii } from '@/constants/uiStyles';
 import {
   Dimensions,
   Linking,
@@ -562,7 +563,7 @@ const createStyles = (isDark: boolean) =>
     mGo: {
       width: 26,
       height: 26,
-      borderRadius: 13,
+      borderRadius: radii.pillFull,
       alignItems: 'center',
       justifyContent: 'center',
     },

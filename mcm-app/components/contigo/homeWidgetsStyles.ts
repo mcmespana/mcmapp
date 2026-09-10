@@ -248,7 +248,7 @@ export const styles = StyleSheet.create({
   },
   weekDay: { fontSize: 10 },
   weekDots: { flexDirection: 'row', gap: 2 },
-  weekDot: { width: 4, height: 4, borderRadius: 2 },
+  weekDot: { width: 4, height: 4, borderRadius: radii.pillFull },
   weekLegend: {
     flexDirection: 'row',
     flexWrap: 'wrap',

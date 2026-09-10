@@ -345,7 +345,7 @@ const createStyles = (isDark: boolean) =>
     dotPlaceholder: {
       width: 6,
       height: 6,
-      borderRadius: 3,
+      borderRadius: radii.pillFull,
       backgroundColor: SwipeColors.add,
       marginHorizontal: 11,
     },

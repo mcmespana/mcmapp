@@ -29,7 +29,7 @@ export const createStyles = (isDark: boolean) =>
     choirIcon: {
       width: 34,
       height: 34,
-      borderRadius: 17,
+      borderRadius: radii.pillFull,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: isDark ? '#2B3E68' : '#DCE7FF',

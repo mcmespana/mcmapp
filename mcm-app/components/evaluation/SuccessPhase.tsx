@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { radii } from '@/constants/uiStyles';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -144,12 +145,12 @@ const successStyles = StyleSheet.create({
     position: 'absolute',
     width: 110,
     height: 110,
-    borderRadius: 55,
+    borderRadius: radii.pillFull,
   },
   iconCircle: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: radii.pillFull,
     alignItems: 'center',
     justifyContent: 'center',
   },

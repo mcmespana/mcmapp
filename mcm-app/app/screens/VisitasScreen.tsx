@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { capitalizeFirst } from '@/utils/textCase';
 import {
   View,
   StyleSheet,
@@ -62,7 +63,12 @@ function formatDate(fecha?: string) {
   if (!fecha) return '';
   const d = new Date(fecha);
   if (isNaN(d.getTime())) return fecha;
-  return `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  // Mayúscula solo en la inicial: el mes va en minúscula en español, y el
+  // `textTransform: 'capitalize'` que había en los dos estilos que pintan esto
+  // ponía «Jueves 10 Septiembre».
+  return capitalizeFirst(
+    `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`,
+  );
 }
 
 export default function VisitasScreen() {
@@ -342,7 +348,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
       ...typography.caption,
       fontWeight: '600',
       color: themeColors(isDark).textSecondary,
-      textTransform: 'capitalize',
     },
     mapBtn: {
       width: 40,
@@ -387,7 +392,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       right: 12,
       width: 34,
       height: 34,
-      borderRadius: 17,
+      borderRadius: radii.pillFull,
       backgroundColor: 'rgba(0,0,0,0.5)',
       alignItems: 'center',
       justifyContent: 'center',
@@ -417,7 +422,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
       ...typography.caption,
       fontWeight: '600',
       color: themeColors(isDark).textSecondary,
-      textTransform: 'capitalize',
     },
     modalText: {
       fontSize: 15,

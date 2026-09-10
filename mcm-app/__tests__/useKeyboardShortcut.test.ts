@@ -55,7 +55,9 @@ describe('useKeyboardShortcut', () => {
     const handler = jest.fn();
     const preventDefault = jest.fn();
     await renderHook(() => useKeyboardShortcut('K', handler));
-    await act(async () => fakeWindow.fire('keydown', { key: 'k', preventDefault }));
+    await act(async () =>
+      fakeWindow.fire('keydown', { key: 'k', preventDefault }),
+    );
     expect(handler).toHaveBeenCalledTimes(1);
     expect(preventDefault).toHaveBeenCalled();
   });
@@ -76,9 +78,7 @@ describe('useKeyboardShortcut', () => {
 
   it('exige el modificador meta/ctrl cuando se pide', async () => {
     const handler = jest.fn();
-    await renderHook(() =>
-      useKeyboardShortcut('k', handler, { meta: true }),
-    );
+    await renderHook(() => useKeyboardShortcut('k', handler, { meta: true }));
     await act(async () => fakeWindow.fire('keydown', { key: 'k' }));
     expect(handler).not.toHaveBeenCalled();
 

@@ -21,7 +21,12 @@ jest.mock('expo-alternate-app-icons', () => ({
 }));
 
 jest.mock('@/utils/logger', () => ({
-  logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn(), debug: jest.fn() },
+  logger: {
+    warn: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+  },
 }));
 
 const mockModule = jest.requireMock('expo-alternate-app-icons') as {

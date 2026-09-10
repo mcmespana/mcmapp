@@ -1,4 +1,5 @@
 import { StyleSheet, ViewStyle } from 'react-native';
+import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 
 /**
@@ -32,7 +33,7 @@ export const createWizardStyles = (isDark: boolean) =>
     progressArea: { flex: 1, justifyContent: 'center' },
     progressTrack: {
       height: 6,
-      borderRadius: 3,
+      borderRadius: radii.pillFull,
       overflow: 'hidden',
       backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
     },

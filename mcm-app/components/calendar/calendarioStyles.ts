@@ -259,7 +259,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     calendarDot: {
       width: 6,
       height: 6,
-      borderRadius: 3,
+      borderRadius: radii.pillFull,
     },
     calendarBadgeText: {
       ...typography.micro,

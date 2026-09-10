@@ -255,7 +255,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     quoteBorder: {
       width: 4,
       backgroundColor: colors.info,
-      borderRadius: 2,
+      borderRadius: radii.pillFull,
       marginRight: 12,
     },
     quoteText: {

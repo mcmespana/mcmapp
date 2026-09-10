@@ -98,7 +98,7 @@ export const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 6,
   },
-  stepDot: { height: 4, borderRadius: 2 },
+  stepDot: { height: 4, borderRadius: radii.pillFull },
   stepLabel: {
     textAlign: 'center',
     ...typography.micro,

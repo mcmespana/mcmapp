@@ -57,7 +57,7 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     width: 76,
     height: 76,
-    borderRadius: 38,
+    borderRadius: radii.pillFull,
     backgroundColor: colors.green,
     alignItems: 'center',
     justifyContent: 'center',

@@ -61,29 +61,32 @@ Y dos correcciones de diagnóstico mías, por si vuelven a aparecer:
 
 Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 
-| §       | Qué                   | Lo que se aprendió                                                                                                         |
-| ------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| A1      | Marca cromática       | `accent` NO había que renombrarlo (sí se usa como acento). Los que mentían eran `success`/`warning`                        |
-| A2      | Los dos amarillos     | `#FCD200` es marca, `#f4c11e` es cantoral. Regla escrita                                                                   |
-| A4      | Docblock de `colors`  | Nombraba dos excepciones que no declaraba                                                                                  |
-| A5      | Roles de color        | Los hex no eran colores sueltos: eran **pares** claro/oscuro sin token. De 1.363 hex a 865                                 |
-| A6      | Colores sin dueño     | Eran roles: enlace, texto fuerte, secundario, destacado ámbar, verde de Carismochito                                       |
-| B       | Dos motores de estilo | `global.css` son nombres de HeroUI, no nuestro vocabulario. Test que impide que diverjan                                   |
-| C       | Tipografía            | Escala ampliada a lo que la app usa; pesos ajustados a la realidad. De 666 `fontSize` a 276                                |
-| D       | Sombras               | El nombre mentía: `lg` (0,3) era más fuerte que `xl` (0,18). Renombradas por función                                       |
-| E       | Radios                | De nueve escalones a siete, en la rejilla de 4 px. El `10` NO es deuda: es radio anidado                                   |
-| F1–3    | Responsive            | Había **dos** hooks; el que documentaba `DESIGN.md` tenía cero usos                                                        |
-| G1      | Espejo en el panel    | El selector de calendario ofrecía 20 pasteles con 3 colores de MCM enterrados                                              |
-| G2      | Panel oscuro-only     | Declaraba `darkMode: class` sin bloque `.dark`                                                                             |
-| H1      | Anillo de foco        | Puesto en `AppPrimaryButton`. **Revertido en `AppTextField`**: desplazaba el campo 1 px al escribir                        |
-| H2      | `EmptyState`          | No cumplía su propio contrato de paleta. Ahora sí, y tiene variante `compact`                                              |
-| H3      | Home                  | ❌ Nada que hacer: la nota del TODO llevaba tiempo describiendo una Home que ya no existe                                  |
-| H4      | Marca en oscuro       | **Bug real**: el azul de marca da 1,31:1 sobre el fondo oscuro. Cinco pantallas afectadas                                  |
-| H7      | Guardarraíles         | Cinco trinquetes de test: colores, tamaños, radios, contraste y marca-en-primer-plano                                      |
-| H11     | Pares "del revés"     | ❌ Mi diagnóstico era falso. Pero el contraste real sí estaba por debajo del mínimo, y se subió                            |
-| A6-bis  | `onColor()`           | La misma pregunta resuelta **cinco veces con cinco umbrales a ojo**. Ahora, por contraste real                             |
-| H10/H12 | `textStrong`          | Confirmado: sobraba. El "fuerte" era más CLARO que el cuerpo en los dos modos. **Token borrado**, sus 43 usos a `text`     |
-| A3      | Los tres dorados      | No era cosmético: el acento pintaba TEXTO a 2,60:1. Nace `accentText`; la raya de la pestaña ya es el dorado de la sección |
+| §       | Qué                   | Lo que se aprendió                                                                                                                        |
+| ------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| A1      | Marca cromática       | `accent` NO había que renombrarlo (sí se usa como acento). Los que mentían eran `success`/`warning`                                       |
+| A2      | Los dos amarillos     | `#FCD200` es marca, `#f4c11e` es cantoral. Regla escrita                                                                                  |
+| A4      | Docblock de `colors`  | Nombraba dos excepciones que no declaraba                                                                                                 |
+| A5      | Roles de color        | Los hex no eran colores sueltos: eran **pares** claro/oscuro sin token. De 1.363 hex a 865                                                |
+| A6      | Colores sin dueño     | Eran roles: enlace, texto fuerte, secundario, destacado ámbar, verde de Carismochito                                                      |
+| B       | Dos motores de estilo | `global.css` son nombres de HeroUI, no nuestro vocabulario. Test que impide que diverjan                                                  |
+| C       | Tipografía            | Escala ampliada a lo que la app usa; pesos ajustados a la realidad. De 666 `fontSize` a 276                                               |
+| D       | Sombras               | El nombre mentía: `lg` (0,3) era más fuerte que `xl` (0,18). Renombradas por función                                                      |
+| E       | Radios                | De nueve escalones a siete, en la rejilla de 4 px. El `10` NO es deuda: es radio anidado                                                  |
+| F1–3    | Responsive            | Había **dos** hooks; el que documentaba `DESIGN.md` tenía cero usos                                                                       |
+| G1      | Espejo en el panel    | El selector de calendario ofrecía 20 pasteles con 3 colores de MCM enterrados                                                             |
+| G2      | Panel oscuro-only     | Declaraba `darkMode: class` sin bloque `.dark`                                                                                            |
+| H1      | Anillo de foco        | Puesto en `AppPrimaryButton`. **Revertido en `AppTextField`**: desplazaba el campo 1 px al escribir                                       |
+| H2      | `EmptyState`          | No cumplía su propio contrato de paleta. Ahora sí, y tiene variante `compact`                                                             |
+| H3      | Home                  | ❌ Nada que hacer: la nota del TODO llevaba tiempo describiendo una Home que ya no existe                                                 |
+| H4      | Marca en oscuro       | **Bug real**: el azul de marca da 1,31:1 sobre el fondo oscuro. Cinco pantallas afectadas                                                 |
+| H7      | Guardarraíles         | Cinco trinquetes de test: colores, tamaños, radios, contraste y marca-en-primer-plano                                                     |
+| H11     | Pares "del revés"     | ❌ Mi diagnóstico era falso. Pero el contraste real sí estaba por debajo del mínimo, y se subió                                           |
+| A6-bis  | `onColor()`           | La misma pregunta resuelta **cinco veces con cinco umbrales a ojo**. Ahora, por contraste real                                            |
+| H10/H12 | `textStrong`          | Confirmado: sobraba. El "fuerte" era más CLARO que el cuerpo en los dos modos. **Token borrado**, sus 43 usos a `text`                    |
+| —       | `capitalize` español  | `textTransform: 'capitalize'` capitaliza CADA palabra: «Jueves, 10 De Septiembre De 2026 A Las 14:32» en 4 sitios. Nace `capitalizeFirst` |
+| E5      | Radios sueltos        | A medias: 53 de 112 eran círculos con el radio a mano (la mitad del lado). Los 60 que quedan hay que decidirlos uno a uno                 |
+| F5      | `screenW >= 640`      | El onboarding se creía "ancho" 80 px antes que el resto: su corte a mano era 640 y el del hook es 720                                     |
+| A3      | Los tres dorados      | No era cosmético: el acento pintaba TEXTO a 2,60:1. Nace `accentText`; la raya de la pestaña ya es el dorado de la sección                |
 
 ---
 
@@ -111,10 +114,15 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 - [x] **H9. Verificar lo que ya cambió — hecho el 2026-09-09 EN WEB.** Las
       cinco pantallas, en claro y en oscuro, renderizadas de verdad (Chromium
       sobre `expo start --web`, con datos de cantoral inyectados en la caché
-      local porque esta sesión no tiene credenciales de Firebase): cantoral
-      (lista y canción), Notificaciones, Contigo (home y evangelio), playlists,
-      Más y Calendario. **Todo legible en los dos modos**, incluidos los
-      controles de Notificaciones en oscuro, que era el bug de §H4.
+      local porque esta sesión no tiene credenciales de Firebase): Home,
+      cantoral (categorías, lista y canción con acordes), Notificaciones,
+      Contigo (home y evangelio), Más y Calendario. **Todo legible en los dos
+      modos**, incluidos los controles de Notificaciones en oscuro, que era el
+      bug de §H4.
+      **El ámbar de las playlists NO se ha verificado**: `/playlist` lleva al
+      cantoral y las playlists compartidas necesitan datos de nube que esta
+      sesión no tiene. Se queda pendiente, y es lo único del §H9 que sigue sin
+      mirar.
       Al hacerlo salieron **tres fallos que no eran de diseño** y que ninguna
       revisión de código había visto: `useAnimatedValue` no existe en
       `react-native-web` (se llevaba por delante TODO `BottomSheet` en web),
@@ -125,7 +133,7 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       web no puede dar: el glass de iOS 26, la barra nativa de pestañas y las
       cabeceras nativas.
 - [ ] **A6-quater. El tinte de las cabeceras nativas.** `isDark ? '#FFFFFF' :
-  '#1a1a1a'` a mano en ~8 sitios (cantoral, fotos, calendario, botones de
+'#1a1a1a'` a mano en ~8 sitios (cantoral, fotos, calendario, botones de
       volver). No es byte-idéntico a ningún rol. O se le da uno propio o se
       alinea con `textStrong` — pero son cabeceras nativas.
 
@@ -139,8 +147,24 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       `contigo/evangelio`, `onboarding`.
 - [ ] **C6. Los 276 `fontSize`.** Tamaños fuera de escala (26, 20, 30, 9, 48…)
       o combinaciones con un peso que no es el del token.
-- [ ] **E5. Los radios sueltos**: 3, 6, 5, 2, 13, 26, 30, 19.
-- [ ] **F5.** Los dos `screenW >= 640` de `onboarding.tsx`.
+- [ ] **E5. Los radios sueltos — a MEDIAS (2026-09-09).** Eran 112 (17 en
+      `app/`, 95 en `components/`), no los ocho valores que decía esta línea.
+      **53 cerrados**: los que no eran radios sino círculos, con el número
+      escrito a mano como la mitad del lado (`width: 38, borderRadius: 19`,
+      `height: 4, borderRadius: 2`). Todos a `radii.pillFull`, que pinta
+      idéntico —RN recorta el radio a la mitad de la dimensión— y además no se
+      rompe cuando el elemento cambia de tamaño. Verificado comparando las 20
+      capturas al píxel antes y después.
+      **Quedan 60** (6 en `app/`, 54 en `components/`) y son los de verdad
+      difíciles: valores como 5, 6 o 13 que NO son la mitad de nada y que hay
+      que decidir uno a uno entre el escalón de arriba y el de abajo — o dejar,
+      si son geometría anidada como el `10` del §E3. Los topes del trinquete ya
+      están bajados.
+- [x] **F5. Hecho (2026-09-09).** Los dos `screenW >= 640` de
+      `onboarding.tsx` pasan a `useResponsiveLayout().isWide`. Ojo al detalle
+      que no decía esta línea: el corte del hook es **720** (`breakpoints.md`),
+      así que el onboarding se creía "ancho" 80 px antes que el resto de la app
+      y ahora cambia de layout a la vez que las demás pantallas.
 - [ ] **G3.** Auditoría de vocabulario app ↔ panel ↔ contratos.
 
 ### Mejoras, sin prisa

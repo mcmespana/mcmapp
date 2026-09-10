@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
   halo: {
     width: 360,
     height: 360,
-    borderRadius: 180,
+    borderRadius: radii.pillFull,
     backgroundColor: G,
     opacity: 0.16,
     ...Platform.select({

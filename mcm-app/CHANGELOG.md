@@ -18,6 +18,47 @@
 
 ---
 
+## 2026-09-10 03:40 — Radios que no eran radios, el corte del onboarding y las fechas en español
+
+Sigue el cierre de `PLAN_DISENO`: §E5 (a medias), §F5 (hecho) y un fallo de
+copia que se vio en pantalla.
+
+- **53 radios a `radii.pillFull`** (§E5). No eran radios: en todos ellos el
+  número era exactamente **la mitad del lado** del elemento (`width: 38,
+borderRadius: 19`; `height: 4, borderRadius: 2`), o sea "hazlo redondo"
+  escrito a mano. `pillFull` (999) pinta idéntico —React Native recorta el
+  radio a la mitad de la dimensión— y además no se rompe si el elemento cambia
+  de tamaño, que es lo que sí pasaba con el número fijo. Verificado comparando
+  las 20 capturas **al píxel** antes y después: idénticas.
+  Los topes del trinquete bajan de 17 a 6 (`app/`) y de 95 a 54
+  (`components/`). Quedan 60, que son los difíciles: valores que no son la
+  mitad de nada y hay que decidirlos uno a uno.
+- **El onboarding cambiaba de layout antes que el resto de la app** (§F5).
+  Tenía dos `screenW >= 640` escritos a mano, y el corte del hook que usan las
+  demás pantallas (`useResponsiveLayout`, `breakpoints.md`) es **720**: el
+  onboarding se creía "ancho" 80 px antes. Ahora usa el hook.
+- **Las fechas en español no llevan mayúscula en cada palabra.**
+  `textTransform: 'capitalize'` de RN capitaliza TODAS las palabras, así que el
+  detalle de una notificación decía «Jueves, 10 De Septiembre De 2026 A Las
+  14:32», y el Evangelio del día «Jueves, 10 De Septiembre». Pasaba en cuatro
+  sitios (notificaciones, `NotificationDetail`, Evangelio, Oración y Visitas).
+  Nuevo `utils/textCase.ts` con `capitalizeFirst` y sus tests; el
+  `textTransform` se queda solo donde el texto es UNA palabra (el mes del
+  selector de fechas, el día de la semana de una cabecera), que es el único
+  caso en que acierta.
+
+Archivos: `utils/textCase.ts` (nuevo), `__tests__/textCase.test.ts` (nuevo),
+`app/onboarding.tsx`, `app/notifications.tsx`,
+`components/notifications/NotificationDetail.tsx`,
+`app/screens/VisitasScreen.tsx`, `components/contigo/evangelioStyles.ts`,
+`components/contigo/oracionStyles.ts`, más 20 ficheros de estilos por los
+radios y `__tests__/noNewMagicNumbers.test.ts` (topes).
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (39 warnings, los
+mismos), 1.610 tests en verde.
+
+---
+
 ## 2026-09-10 02:05 — Cierre de la cola de diseño, y tres bugs que solo salen ejecutando la app
 
 Al verificar el §H9 de `PLAN_DISENO` (las cinco pantallas que cambiaron de

@@ -1,4 +1,5 @@
 import { logger } from '@/utils/logger';
+import { capitalizeFirst } from '@/utils/textCase';
 import {
   View,
   StyleSheet,
@@ -76,14 +77,16 @@ export default function NotificationDetail({
         </Text>
 
         <Text style={[detailStyles.date, { color: theme.icon }]}>
-          {date.toLocaleDateString('es-ES', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
+          {capitalizeFirst(
+            date.toLocaleDateString('es-ES', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+          )}
         </Text>
 
         {notification.imageUrl && (
@@ -192,7 +195,7 @@ const detailStyles = StyleSheet.create({
   icon: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: radii.pillFull,
     marginBottom: spacing.md,
     alignSelf: 'center',
   },
@@ -205,7 +208,7 @@ const detailStyles = StyleSheet.create({
   date: {
     ...typography.caption,
     marginBottom: spacing.lg,
-    textTransform: 'capitalize',
+    // Sin `capitalize`: son varias palabras. Ver `utils/textCase.ts`.
   },
   image: {
     width: '100%',
