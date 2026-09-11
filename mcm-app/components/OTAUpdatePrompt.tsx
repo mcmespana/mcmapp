@@ -9,8 +9,8 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useAnimatedValue,
 } from 'react-native';
+import useAnimatedValue from '@/hooks/useAnimatedValue';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -294,13 +294,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 112,
     height: 112,
-    borderRadius: 56,
+    borderRadius: radii.pillFull,
     backgroundColor: brand.secondary,
   },
   heroBadge: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: radii.pillFull,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: brand.primary,

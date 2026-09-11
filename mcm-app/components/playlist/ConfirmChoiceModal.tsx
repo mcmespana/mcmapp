@@ -123,7 +123,7 @@ const createStyles = (isDark: boolean) =>
     title: {
       ...typography.h3,
       fontWeight: '700',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       marginBottom: 8,
     },
     description: {
@@ -150,7 +150,7 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F2F2F7',
     },
     btnSecondaryText: {
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     btnPrimary: {
       backgroundColor: colors.primary,

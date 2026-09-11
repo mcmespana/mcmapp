@@ -372,7 +372,7 @@ const SongControls: React.FC<SongControlsProps> = ({
               <MaterialIcons
                 name={showActionButtons ? 'add' : 'tune'}
                 size={22}
-                color={themeColors(isDark).textStrong}
+                color={themeColors(isDark).text}
               />
             </Animated.View>
           </TouchableOpacity>
@@ -524,14 +524,14 @@ const styles = StyleSheet.create({
       web: {
         width: 54,
         height: 54,
-        borderRadius: 27,
+        borderRadius: radii.pillFull,
         boxShadow: '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
         cursor: 'pointer',
       },
       default: {
         width: 48,
         height: 48,
-        borderRadius: 24,
+        borderRadius: radii.pillFull,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
     right: -1,
     top: -1,
     backgroundColor: SwipeColors.remove,
-    borderRadius: 6,
+    borderRadius: radii.pillFull,
     width: 12,
     height: 12,
     zIndex: 10,
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     left: -1,
     top: -1,
     backgroundColor: colors.accent,
-    borderRadius: 6,
+    borderRadius: radii.pillFull,
     width: 12,
     height: 12,
     zIndex: 10,

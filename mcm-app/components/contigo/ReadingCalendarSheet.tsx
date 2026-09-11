@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -102,7 +102,7 @@ export function ReadingCalendarSheet({
             style={[styles.navBtn, { backgroundColor: W.accentLight }]}
             accessibilityLabel="Mes anterior"
           >
-            <MaterialIcons name="chevron-left" size={24} color={W.accent} />
+            <MaterialIcons name="chevron-left" size={24} color={W.accentText} />
           </TouchableOpacity>
           <Text style={[styles.monthTitle, { color: W.text }]}>
             {MONTHS_CAP[month - 1]} {year}
@@ -112,7 +112,11 @@ export function ReadingCalendarSheet({
             style={[styles.navBtn, { backgroundColor: W.accentLight }]}
             accessibilityLabel="Mes siguiente"
           >
-            <MaterialIcons name="chevron-right" size={24} color={W.accent} />
+            <MaterialIcons
+              name="chevron-right"
+              size={24}
+              color={W.accentText}
+            />
           </TouchableOpacity>
         </View>
 
@@ -167,7 +171,7 @@ export function ReadingCalendarSheet({
                     style={[
                       styles.dayText,
                       { color: isSelected ? '#FFFFFF' : W.text },
-                      isToday && !isSelected && { color: W.accent },
+                      isToday && !isSelected && { color: W.accentText },
                     ]}
                   >
                     {day}
@@ -233,8 +237,10 @@ export function ReadingCalendarSheet({
           }}
           style={[styles.todayBtn, { backgroundColor: W.accentLight }]}
         >
-          <MaterialIcons name="today" size={16} color={W.accent} />
-          <Text style={[styles.todayText, { color: W.accent }]}>Ir a hoy</Text>
+          <MaterialIcons name="today" size={16} color={W.accentText} />
+          <Text style={[styles.todayText, { color: W.accentText }]}>
+            Ir a hoy
+          </Text>
         </TouchableOpacity>
       </View>
     </BottomSheet>

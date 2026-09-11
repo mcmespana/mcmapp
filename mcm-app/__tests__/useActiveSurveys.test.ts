@@ -35,7 +35,8 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   default: { multiGet: jest.fn(() => Promise.resolve([])) },
 }));
 
-const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+const AsyncStorage =
+  require('@react-native-async-storage/async-storage').default;
 
 const entry = (overrides: Partial<any> = {}) => ({
   id: 'encuesta-1',
@@ -59,9 +60,7 @@ beforeEach(() => {
 describe('normalización del índice', () => {
   it('acepta el índice como array', async () => {
     (useFirebaseData as jest.Mock).mockReturnValue({ data: [entry()] });
-    const { result } = await renderHook(() =>
-      useActiveSurveys('home-banner'),
-    );
+    const { result } = await renderHook(() => useActiveSurveys('home-banner'));
     await waitFor(() => expect(result.current).toHaveLength(1));
   });
 
@@ -69,17 +68,13 @@ describe('normalización del índice', () => {
     (useFirebaseData as jest.Mock).mockReturnValue({
       data: { 'encuesta-1': entry() },
     });
-    const { result } = await renderHook(() =>
-      useActiveSurveys('home-banner'),
-    );
+    const { result } = await renderHook(() => useActiveSurveys('home-banner'));
     await waitFor(() => expect(result.current).toHaveLength(1));
   });
 
   it('sin datos (null) devuelve una lista vacía sin reventar', async () => {
     (useFirebaseData as jest.Mock).mockReturnValue({ data: null });
-    const { result } = await renderHook(() =>
-      useActiveSurveys('home-banner'),
-    );
+    const { result } = await renderHook(() => useActiveSurveys('home-banner'));
     expect(result.current).toEqual([]);
   });
 });
@@ -92,10 +87,10 @@ describe('filtrado por placement', () => {
         entry({ id: 'settings', placement: { type: 'app-settings' } }),
       ],
     });
-    const { result } = await renderHook(() =>
-      useActiveSurveys('home-banner'),
+    const { result } = await renderHook(() => useActiveSurveys('home-banner'));
+    await waitFor(() =>
+      expect(result.current.map((e) => e.id)).toEqual(['home']),
     );
-    await waitFor(() => expect(result.current.map((e) => e.id)).toEqual(['home']));
   });
 
   it('event-banner además exige que el eventId coincida', async () => {
@@ -128,9 +123,7 @@ describe('audiencia (perfil/delegación/topics del usuario)', () => {
     (useFirebaseData as jest.Mock).mockReturnValue({
       data: [entry({ audience: { profileTypes: ['monitor'] } })],
     });
-    const { result } = await renderHook(() =>
-      useActiveSurveys('home-banner'),
-    );
+    const { result } = await renderHook(() => useActiveSurveys('home-banner'));
     expect(result.current).toEqual([]);
   });
 
@@ -141,9 +134,7 @@ describe('audiencia (perfil/delegación/topics del usuario)', () => {
     (useFirebaseData as jest.Mock).mockReturnValue({
       data: [entry({ audience: { topics: ['monitores'] } })],
     });
-    const { result } = await renderHook(() =>
-      useActiveSurveys('home-banner'),
-    );
+    const { result } = await renderHook(() => useActiveSurveys('home-banner'));
     await waitFor(() => expect(result.current).toHaveLength(1));
   });
 });
@@ -156,9 +147,7 @@ describe('encuestas ya respondidas (AsyncStorage)', () => {
     (AsyncStorage.multiGet as jest.Mock).mockResolvedValue([
       ['survey_done_encuesta-1', '1'],
     ]);
-    const { result } = await renderHook(() =>
-      useActiveSurveys('home-banner'),
-    );
+    const { result } = await renderHook(() => useActiveSurveys('home-banner'));
     await waitFor(() => expect(AsyncStorage.multiGet).toHaveBeenCalled());
     expect(result.current).toEqual([]);
   });
@@ -170,9 +159,7 @@ describe('encuestas ya respondidas (AsyncStorage)', () => {
     (AsyncStorage.multiGet as jest.Mock).mockResolvedValue([
       ['survey_done_encuesta-1', null],
     ]);
-    const { result } = await renderHook(() =>
-      useActiveSurveys('home-banner'),
-    );
+    const { result } = await renderHook(() => useActiveSurveys('home-banner'));
     await waitFor(() => expect(result.current).toHaveLength(1));
   });
 
@@ -187,9 +174,7 @@ describe('encuestas ya respondidas (AsyncStorage)', () => {
       data: [entry({ id: 'encuesta-1' })],
     });
     (AsyncStorage.multiGet as jest.Mock).mockRejectedValue(new Error('boom'));
-    const { result } = await renderHook(() =>
-      useActiveSurveys('home-banner'),
-    );
+    const { result } = await renderHook(() => useActiveSurveys('home-banner'));
     await waitFor(() => expect(result.current).toHaveLength(1));
   });
 });

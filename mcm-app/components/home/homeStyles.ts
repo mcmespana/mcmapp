@@ -54,7 +54,7 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     width: 12,
     height: 12,
-    borderRadius: 6,
+    borderRadius: radii.pillFull,
     backgroundColor: colors.primary,
   } as ViewStyle,
   dot: {
@@ -133,7 +133,7 @@ export const styles = StyleSheet.create({
   notifIconCircle: {
     width: 50,
     height: 50,
-    borderRadius: 25,
+    borderRadius: radii.pillFull,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
@@ -174,7 +174,7 @@ export const styles = StyleSheet.create({
   arrowPill: {
     width: 30,
     height: 30,
-    borderRadius: 15,
+    borderRadius: radii.pillFull,
     justifyContent: 'center',
     alignItems: 'center',
   } as ViewStyle,

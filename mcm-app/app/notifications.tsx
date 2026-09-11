@@ -23,6 +23,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import colors, { Colors, themeColors } from '@/constants/colors';
 import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
+import { capitalizeFirst } from '@/utils/textCase';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -788,14 +789,16 @@ function NotificationDetailModal({
 
                 {/* Fecha */}
                 <Text style={[dStyles.date, { color: theme.icon }]}>
-                  {date.toLocaleDateString('es-ES', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  {capitalizeFirst(
+                    date.toLocaleDateString('es-ES', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }),
+                  )}
                 </Text>
 
                 {/* Chip de categoría de negocio (data.category) */}
@@ -973,12 +976,15 @@ const dStyles = StyleSheet.create({
   icon: {
     width: 64,
     height: 64,
-    borderRadius: 32, // 64/2 — circle
+    borderRadius: radii.pillFull,
     marginBottom: spacing.md,
     alignSelf: 'center',
   },
   title: { fontSize: 22, fontWeight: '700', marginBottom: spacing.sm },
-  date: { fontSize: 13, marginBottom: spacing.lg, textTransform: 'capitalize' },
+  // Sin `textTransform: 'capitalize'`: la cadena tiene varias palabras y
+  // capitalize las pone TODAS en mayúscula («10 De Septiembre De 2026 A Las
+  // 14:32»). La inicial la pone `capitalizeFirst`.
+  date: { fontSize: 13, marginBottom: spacing.lg },
   categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',

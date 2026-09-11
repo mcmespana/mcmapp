@@ -68,7 +68,6 @@ export const styles = StyleSheet.create({
     ...typography.h3,
     fontWeight: '700',
     letterSpacing: -0.3,
-    textTransform: 'capitalize',
     textAlign: 'center',
   },
 
@@ -125,7 +124,7 @@ export const styles = StyleSheet.create({
   emotionCircle: {
     width: 62,
     height: 62,
-    borderRadius: 31,
+    borderRadius: radii.pillFull,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -298,7 +297,7 @@ export const styles = StyleSheet.create({
   legendDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: radii.pillFull,
   },
   legendText: {
     ...typography.footnote,

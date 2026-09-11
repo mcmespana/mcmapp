@@ -152,7 +152,7 @@ const createStyles = (isDark: boolean) =>
     iconWrap: {
       width: 38,
       height: 38,
-      borderRadius: 19,
+      borderRadius: radii.pillFull,
       backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
       alignItems: 'center',
       justifyContent: 'center',
@@ -166,7 +166,7 @@ const createStyles = (isDark: boolean) =>
     itemLabel: {
       ...typography.button,
       fontWeight: '600',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     itemLabelDanger: {
       color: SwipeColors.remove,

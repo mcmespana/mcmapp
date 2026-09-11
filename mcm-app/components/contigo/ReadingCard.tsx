@@ -13,7 +13,7 @@ import {
 import type { HighlightRange } from '@/utils/highlightRanges';
 
 import useFontScale from '@/hooks/useFontScale';
-import { WARM_DARK } from '@/components/contigo/theme';
+import { warm } from '@/components/contigo/theme';
 import typography from '@/constants/typography';
 
 interface ReadingCardProps {
@@ -33,9 +33,9 @@ interface ReadingCardProps {
   onNativeHighlightRequest?: (sel: ReadingSelection) => void;
 }
 
-// Warm amber accent for Contigo section
-const WARM_ACCENT_LIGHT = '#B8860B';
-const WARM_ACCENT_DARK = WARM_DARK.accent;
+// El acento cálido sale de `theme.ts` (`warm(isDark)`). Aquí había un
+// `#B8860B` escrito a mano que era un TERCER dorado, distinto del de la
+// sección y del de la cabecera (§A3 de PLAN_DISENO).
 
 export function ReadingCard({
   title,
@@ -52,7 +52,8 @@ export function ReadingCard({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
-  const accent = isDark ? WARM_ACCENT_DARK : WARM_ACCENT_LIGHT;
+  const accent = warm(isDark).accent;
+  const accentText = warm(isDark).accentText;
   const globalScale = useFontScale();
   const fontScale = scale ?? globalScale;
 
@@ -97,7 +98,7 @@ export function ReadingCard({
                     { backgroundColor: hexAlpha(accent, '12') },
                   ]}
                 >
-                  <Text style={[styles.citaText, { color: accent }]}>
+                  <Text style={[styles.citaText, { color: accentText }]}>
                     {cita}
                   </Text>
                 </View>

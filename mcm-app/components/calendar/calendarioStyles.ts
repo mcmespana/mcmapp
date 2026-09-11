@@ -243,7 +243,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     eventTitle: {
       ...typography.body,
       fontWeight: '600',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       flex: 1,
       letterSpacing: -0.2,
     },
@@ -259,7 +259,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     calendarDot: {
       width: 6,
       height: 6,
-      borderRadius: 3,
+      borderRadius: radii.pillFull,
     },
     calendarBadgeText: {
       ...typography.micro,
@@ -306,7 +306,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     monthLabel: {
       fontSize: 20,
       fontWeight: '700',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       minWidth: 180,
       textAlign: 'center',
       letterSpacing: -0.3,
@@ -335,7 +335,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     sectionDay: {
       fontSize: 26,
       fontWeight: '700',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       lineHeight: 30,
       fontVariant: ['tabular-nums'],
     },

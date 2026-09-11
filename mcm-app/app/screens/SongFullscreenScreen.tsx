@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   segment: {
     width: 26,
     height: 26,
-    borderRadius: 13,
+    borderRadius: radii.pillFull,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.10)',

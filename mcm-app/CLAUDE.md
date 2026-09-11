@@ -314,8 +314,11 @@ purple: '#9D1E74'; // Morado LC
 ```
 
 Roles por modo en `Colors.light`/`Colors.dark`, resueltos con
-`themeColors(isDark)`: `text`, `textStrong`, `textSecondary`, `textMuted`,
-`link`, `background`, `backgroundSunken`, `card`, `separator`, `icon`.
+`themeColors(isDark)`: `text`, `textSecondary`, `textMuted`, `link`,
+`background`, `backgroundSunken`, `card`, `separator`, `icon`. **No hay un
+nivel por encima de `text`**: `textStrong` existió y se borró (2026-09-09)
+porque era más claro que el cuerpo en los dos modos; los títulos se
+distinguen por tamaño y peso, como en iOS.
 Además: `SystemGray` (paleta cruda de Apple), `LiturgicalColors`,
 `HighlightColors`, `CarismoColors`, `EmotionColors`, `StateColors`.
 

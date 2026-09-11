@@ -96,7 +96,12 @@ function WaveBar({
   return (
     <Animated.View
       style={[
-        { width: 6, height, borderRadius: 3, backgroundColor: color },
+        {
+          width: 6,
+          height,
+          borderRadius: radii.pillFull,
+          backgroundColor: color,
+        },
         style,
       ]}
     />
@@ -362,7 +367,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 108,
     height: 108,
-    borderRadius: 54,
+    borderRadius: radii.pillFull,
     borderWidth: 2,
   },
   mark: {

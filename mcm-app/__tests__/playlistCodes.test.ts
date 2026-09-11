@@ -96,21 +96,15 @@ describe('defaultPlaylistName', () => {
   });
 
   it('usa el nombre correcto para cada mes', () => {
-    expect(defaultPlaylistName(new Date(2026, 0, 15))).toBe(
-      'Canciones 17 ene',
-    );
+    expect(defaultPlaylistName(new Date(2026, 0, 15))).toBe('Canciones 17 ene');
     expect(defaultPlaylistName(new Date(2026, 11, 25))).toBe(
       'Canciones 26 dic',
     );
   });
 
   it('si ya es fin de semana, mantiene esa fecha', () => {
-    expect(defaultPlaylistName(new Date(2026, 3, 11))).toBe(
-      'Canciones 11 abr',
-    ); // sábado
-    expect(defaultPlaylistName(new Date(2026, 3, 12))).toBe(
-      'Canciones 12 abr',
-    ); // domingo
+    expect(defaultPlaylistName(new Date(2026, 3, 11))).toBe('Canciones 11 abr'); // sábado
+    expect(defaultPlaylistName(new Date(2026, 3, 12))).toBe('Canciones 12 abr'); // domingo
   });
 
   it('usa "ahora" por defecto si no se pasa fecha', () => {

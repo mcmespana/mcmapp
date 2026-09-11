@@ -6,6 +6,27 @@ export const WARM_LIGHT = {
   bgDeep: '#F2EAD9',
   bgCard: '#FFFFFF',
   accent: '#C4922A',
+  /**
+   * El mismo dorado, oscurecido hasta que se puede LEER (2026-09-09).
+   *
+   * `accent` está pensado para rellenos: fondos de pastilla, bordes, el punto
+   * del calendario, la barra del teaser. Como color de texto no llega: da
+   * 2,60:1 sobre el fondo cálido de la sección, por debajo del 4,5:1 mínimo e
+   * incluso del 3:1 de los elementos no textuales — y aun así pintaba el
+   * kicker "EVANGELIO DEL DÍA", la cita, el CTA, el día de hoy del calendario
+   * y la cita de `ReadingCard`. Es el mismo fallo que el azul de marca en
+   * oscuro (§H4 de PLAN_DISENO): un color de marca vale como relleno y no como
+   * primer plano.
+   *
+   * `#876208` conserva tono (43°) y saturación y solo baja luminosidad, así
+   * que sigue siendo el dorado de Contigo: 5,16:1 sobre `bg`, 5,55:1 sobre
+   * `bgCard` y 4,64:1 sobre `bgDeep`. En oscuro no hacía falta tocar nada
+   * (`#DAA520` ya da 7,98:1), así que allí `accentText` es el propio `accent`
+   * y el par se usa igual en los dos modos.
+   *
+   * Hay un trinquete en `__tests__/designTokens.test.ts` que lo comprueba.
+   */
+  accentText: '#876208',
   accentLight: 'rgba(196,146,42,0.10)',
   accentMid: 'rgba(196,146,42,0.22)',
   blue: '#2563EB',
@@ -27,6 +48,8 @@ export const WARM_DARK = {
   bgDeep: '#100F0C',
   bgCard: '#26221C',
   accent: '#DAA520',
+  /** En oscuro el acento ya se lee (7,98:1): mismo color. Ver `WARM_LIGHT`. */
+  accentText: '#DAA520',
   accentLight: 'rgba(218,165,32,0.12)',
   accentMid: 'rgba(218,165,32,0.25)',
   blue: '#60A5FA',
@@ -48,6 +71,8 @@ export type WarmTheme = {
   bgDeep: string;
   bgCard: string;
   accent: string;
+  /** El acento cuando pinta TEXTO o iconos. Ver el docblock de `WARM_LIGHT`. */
+  accentText: string;
   accentLight: string;
   accentMid: string;
   blue: string;

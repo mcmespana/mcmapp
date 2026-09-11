@@ -100,8 +100,6 @@ describe('useColorScheme (web)', () => {
   it('no revienta si document no existe', async () => {
     (global as { document?: unknown }).document = undefined;
     (useRNColorScheme as jest.Mock).mockReturnValue('dark');
-    await expect(
-      renderHook(() => useColorScheme()),
-    ).resolves.toBeDefined();
+    await expect(renderHook(() => useColorScheme())).resolves.toBeDefined();
   });
 });

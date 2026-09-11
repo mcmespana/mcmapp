@@ -75,7 +75,7 @@ export const createStyles = (isDark: boolean) =>
     cellText: {
       fontSize: 26,
       fontWeight: '700',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       fontVariant: ['tabular-nums'],
     },
     scanBtn: {
@@ -139,7 +139,7 @@ export const createStyles = (isDark: boolean) =>
     btnSecondaryText: {
       ...typography.button,
       fontWeight: '600',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     btnPrimary: {
       backgroundColor: colors.primary,

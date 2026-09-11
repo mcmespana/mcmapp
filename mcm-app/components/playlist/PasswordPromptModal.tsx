@@ -160,7 +160,7 @@ const createStyles = (isDark: boolean) =>
     title: {
       fontSize: 17,
       fontWeight: '700',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     description: {
       fontSize: 13.5,
@@ -198,7 +198,7 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: themeColors(isDark).background,
     },
     btnSecondaryText: {
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       ...typography.button,
       fontWeight: '600',
     },

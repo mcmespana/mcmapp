@@ -33,6 +33,7 @@ import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import SuggestSongModal from '@/components/SuggestSongModal';
 import { filterSongsData } from '@/utils/filterSongsData';
+import { stripCategoryPrefix } from '@/utils/songUtils';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useSongTagIndex } from '@/hooks/useSongTags';
 import TagCloudSheet from '@/components/song-tags/TagCloudSheet';
@@ -265,7 +266,7 @@ export default function CategoriesScreen({
         : extractTrailingEmoji(item.name);
       const displayName = isSpecial
         ? cleanText
-        : cleanText.replace(/^\w\.?\s*/, '');
+        : stripCategoryPrefix(cleanText);
       const onPress = () => {
         if (item.id === SELECTED_SONGS_CATEGORY_ID) {
           navigation.navigate('SelectedSongs');
@@ -505,7 +506,7 @@ const createStyles = (
       fontWeight: '800',
       letterSpacing: -1.4,
       lineHeight: 38,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     headerSubtitle: {
       ...typography.caption,
@@ -584,7 +585,7 @@ const createStyles = (
     cardTitle: {
       ...typography.body,
       fontWeight: '600',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       letterSpacing: -0.2,
     },
     cardTitleSpecial: {
@@ -693,7 +694,7 @@ const createStyles = (
       fontSize: 17,
       fontWeight: '700',
       letterSpacing: -0.3,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       lineHeight: 21,
       marginBottom: 4,
     },

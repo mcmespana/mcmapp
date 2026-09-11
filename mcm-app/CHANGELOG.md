@@ -18,6 +18,203 @@
 
 ---
 
+## 2026-09-10 22:30 — Un solo conmutador para toda la app (UI Nativa, Fase 2)
+
+Cierra el `SegmentedControl` de `PLAN_UI_NATIVA` §5, y de paso saca el mismo bug
+de contraste de dos sitios más.
+
+- **Cuatro conmutadores, un componente.** `SegmentedControl` (que solo usaba el
+  calendario) se adopta en **Lectura/Comentario** del Evangelio —eran 114 líneas
+  a mano, con el estado activo, el color del icono y el del texto repetidos en
+  cuatro sitios—, en **Tema** de los ajustes de la app y en **Tema** del lector
+  de Contigo. Los tres pasan a compartir forma, háptica y accesibilidad
+  (`accessibilityRole="tab"`), cada uno con su acento: celeste de marca, azul y
+  el dorado de Contigo.
+- **El componente compartido traía dentro el bug del §H4.** Pintaba la etiqueta
+  activa de `#FFFFFF` fijo, fuera cual fuese `accentColor`: con el celeste de
+  marca —que es el DEFECTO, el del Mes/Agenda del calendario— daba **2,64:1**, y
+  con el dorado de Contigo 2,80:1. La inactiva era un `#8E8E93` a mano: 2,60:1
+  sobre la pista clara. Arreglado ANTES de extenderlo, que era la parte
+  importante: la tinta la decide `onColor()` (contraste real) y la inactiva sale
+  de `textSecondary`. Con test que lo fija para todos los acentos de la casa.
+- **Y el mismo fallo en el botón "Listo"** de la barra de subrayado de Contigo:
+  blanco sobre el dorado, 2,24:1. Ahora también por `onColor()`.
+- **Lo que NO se migra, y no es deuda**: `SongFullscreen`. El censo del plan lo
+  contaba como conmutador, pero son botones redondos numerados (velocidad de
+  auto-scroll) en el panel translúcido del modo inmersivo. Otros dos de la lista
+  (`EventDetailsBottomSheet`, `SelectedSongsScreen`) eran falsos positivos del
+  grep: ahí `segment` es parseo de texto.
+- **`jest.config.js`: `heroui-native` y `uniwind` pasan por Babel.** Se
+  publican como ESM sin transpilar, así que cualquier suite que renderice un
+  componente que use heroui —aunque sea de rebote, como este
+  `SegmentedControl`— moría con «Unexpected token 'export'». Es el mismo muro
+  que se encontraría cualquier test de render de los que pide
+  `docs/desarrollo/COBERTURA.md`, así que queda desbloqueado para todos.
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (**38** warnings, uno
+menos que antes), 1.611 tests en verde, y los cuatro conmutadores fotografiados
+en claro y oscuro.
+
+---
+
+## 2026-09-10 03:40 — Radios que no eran radios, el corte del onboarding y las fechas en español
+
+Sigue el cierre de `PLAN_DISENO`: §E5 (a medias), §F5 (hecho) y un fallo de
+copia que se vio en pantalla.
+
+- **53 radios a `radii.pillFull`** (§E5). No eran radios: en todos ellos el
+  número era exactamente **la mitad del lado** del elemento (`width: 38,
+borderRadius: 19`; `height: 4, borderRadius: 2`), o sea "hazlo redondo"
+  escrito a mano. `pillFull` (999) pinta idéntico —React Native recorta el
+  radio a la mitad de la dimensión— y además no se rompe si el elemento cambia
+  de tamaño, que es lo que sí pasaba con el número fijo. Verificado comparando
+  las 20 capturas **al píxel** antes y después: idénticas.
+  Los topes del trinquete bajan de 17 a 6 (`app/`) y de 95 a 54
+  (`components/`). Quedan 60, que son los difíciles: valores que no son la
+  mitad de nada y hay que decidirlos uno a uno.
+- **El onboarding cambiaba de layout antes que el resto de la app** (§F5).
+  Tenía dos `screenW >= 640` escritos a mano, y el corte del hook que usan las
+  demás pantallas (`useResponsiveLayout`, `breakpoints.md`) es **720**: el
+  onboarding se creía "ancho" 80 px antes. Ahora usa el hook.
+- **Las fechas en español no llevan mayúscula en cada palabra.**
+  `textTransform: 'capitalize'` de RN capitaliza TODAS las palabras, así que el
+  detalle de una notificación decía «Jueves, 10 De Septiembre De 2026 A Las
+  14:32», y el Evangelio del día «Jueves, 10 De Septiembre». Pasaba en cuatro
+  sitios (notificaciones, `NotificationDetail`, Evangelio, Oración y Visitas).
+  Nuevo `utils/textCase.ts` con `capitalizeFirst` y sus tests; el
+  `textTransform` se queda solo donde el texto es UNA palabra (el mes del
+  selector de fechas, el día de la semana de una cabecera), que es el único
+  caso en que acierta.
+
+Archivos: `utils/textCase.ts` (nuevo), `__tests__/textCase.test.ts` (nuevo),
+`app/onboarding.tsx`, `app/notifications.tsx`,
+`components/notifications/NotificationDetail.tsx`,
+`app/screens/VisitasScreen.tsx`, `components/contigo/evangelioStyles.ts`,
+`components/contigo/oracionStyles.ts`, más 20 ficheros de estilos por los
+radios y `__tests__/noNewMagicNumbers.test.ts` (topes).
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (39 warnings, los
+mismos), 1.610 tests en verde.
+
+---
+
+## 2026-09-10 02:05 — Cierre de la cola de diseño, y tres bugs que solo salen ejecutando la app
+
+Al verificar el §H9 de `PLAN_DISENO` (las cinco pantallas que cambiaron de
+aspecto, en claro y oscuro) **renderizando la app de verdad** —Chromium sobre
+`expo start --web`, con datos de cantoral inyectados en la caché local— salieron
+tres fallos que ninguna revisión de código había visto. El diseño está bien; lo
+que estaba roto era otra cosa.
+
+**Diseño (cierra `PLAN_DISENO` §H10/H12 y §A3):**
+
+- **Borrado el token `textStrong`.** Era "el texto que destaca" y contrastaba
+  MENOS que el cuerpo en los dos modos: en claro `#1C1C1E` contra el `#11181C`
+  de `text`, en oscuro `#F5F5F7` contra `#FFFFFF`. Un 1% de luminancia en la
+  dirección contraria a su nombre. Sus 43 usos pasan a `text`, que contrasta un
+  pelín más; los títulos se distinguen por tamaño y peso, como en iOS. Un token
+  menos, ningún caso nuevo.
+- **Un solo dorado para Contigo, y uno que se lee.** Había tres (`#B8860B` en la
+  raya de la pestaña, `#C4922A` en la paleta de la sección, `#B8860B` otra vez a
+  mano en `ReadingCard` y en cuatro sitios de `evangelio.tsx`). Pero el problema
+  gordo no era la incoherencia: el acento **pintaba texto** —el kicker
+  "EVANGELIO DEL DÍA", la cita, el CTA, el día de hoy del calendario— a
+  **2,60:1** sobre su propio fondo, por debajo del 4,5:1 mínimo y hasta del 3:1
+  de los elementos no textuales. Es el mismo fallo que el azul de marca en
+  oscuro (§H4): un color de marca vale como relleno, no como primer plano. Nace
+  `accentText` (`#876208`: mismo tono y saturación, menos luminosidad → 5,16:1
+  sobre `bg`, 5,55 sobre `bgCard`, 4,64 sobre `bgDeep`) y los rellenos se quedan
+  con `accent`. La raya de la pestaña ya es el dorado de la sección.
+- Dos trinquetes nuevos en `__tests__/designTokens.test.ts`: el contraste de
+  `accentText` sobre las tres superficies cálidas, y que la raya de la pestaña
+  siga siendo el mismo dorado que la sección.
+- Corregido un typo visible en Contigo: "¿Cuándo empeazmos?" → "empezamos".
+
+**Bugs encontrados al ejecutar (los tres, de verdad):**
+
+- **`useAnimatedValue` no existe en `react-native-web`.** RN lo exporta desde la
+  0.71 y la app lo adoptó en agosto para quitar los `useRef(new
+Animated.Value())` que marca el compilador de React — pero
+  `react-native-web@0.21.2` no lo trae, así que en web el import valía
+  `undefined` y **petaba todo `BottomSheet`**, y con él cualquier hoja de la app
+  en web, más `TransposeBottomSheet`, `ReaderSettingsSheet`,
+  `CarismochitoDialogs` y `OTAUpdatePrompt`. Sustituido por
+  `hooks/useAnimatedValue.ts` (inicializador perezoso de `useState`, mismo
+  contrato, funciona en las dos plataformas) + candado en
+  `__tests__/animatedValueWebSafety.test.ts`. Ni los tests ni `tsc` lo veían:
+  `jest-expo` resuelve el preset nativo y los tipos de RN sí declaran el hook.
+- **Faltaba la peer dependency `@gorhom/bottom-sheet`.** `heroui-native` la
+  declara "opcional", pero su `BottomSheet.Content` hace
+  `withUniwind(paquete?.default)` sin comprobar nada: sin el paquete es
+  `undefined` y **la pantalla entera revienta al montar** (ErrorBoundary), en
+  cualquier plataforma, no solo en web. Afectaba a **Notificaciones** y a
+  **Reflexiones**, las dos únicas que usan ese sheet. Se ve que la dependencia
+  se perdió en algún `npm install` (los comentarios del código dicen que ese
+  sheet funcionó y se afinó a mano). Instalada `@gorhom/bottom-sheet@^5.2.14`,
+  que es **solo JS** (usa reanimated + gesture-handler, ya presentes).
+- **Una canción sin `filename` tumbaba su categoría completa.** `filename` es
+  opcional en `SongEntry`, y de los tres sitios de `SongListScreen` que lo leen
+  para ordenar, uno usaba `?.` y los otros dos no: la lista entera se caía con
+  "Error al cargar las canciones, lo sentimos :(". Guardados los tres.
+- **`stripCategoryPrefix`** (`utils/songUtils.ts`, con tests): el regex que
+  quitaba el prefijo de ordenación de las categorías (`"C. Entrada"` →
+  `"Entrada"`) hacía el punto OPCIONAL, así que una categoría **sin** prefijo
+  perdía su primera letra ("Adoración" → "doración"). Hoy no salta porque todas
+  las reales traen su "X. ", pero basta con crear una desde el panel sin él.
+
+Verificado: `tsc` limpio (app y tests), 0 errores de lint (39 warnings, los
+mismos), **1.604 tests** en verde (9 nuevos), y las 8 pantallas renderizadas en
+claro y oscuro sin un solo ErrorBoundary.
+
+Lo que la web NO puede verificar y sigue pendiente de dispositivo: el glass de
+iOS 26, la barra nativa de pestañas y el tinte de las cabeceras nativas (§A6-quater).
+
+---
+
+## 2026-09-10 00:20 — El CI estaba desactivado a mano: resucitado, y el scraper a la mitad de runs
+
+**La causa del "el CI no ejecuta nada desde abril" (§0 de `TODO.md`) era mucho
+más tonta de lo que buscábamos:** el workflow `ci.yml` estaba en estado
+`disabled_manually` desde el 2026-05-25 — alguien le dio a "Disable workflow"
+en la pestaña Actions. Con ese estado GitHub **no crea el run**: no sale en
+rojo, no sale en gris, no sale. Por eso cada PR parecía "clean" al mergear y
+por eso los 4 errores de tipos de la #334 llegaron a `main` sin que saltara
+nada. No era la cuenta sin minutos ni un ajuste de organización: el repo es
+**público**, así que los runners estándar son gratis y no tocan la cuota de la
+cuenta.
+
+- **`.github/workflows/pr.yml` (nuevo)** — el mismo guardarraíl (llama a
+  `verify.yml`, que sigue siendo la única fuente de verdad de los 4 pasos) en
+  una **ruta nueva**. Es la parte importante: el estado "desactivado" va pegado
+  a la ruta del workflow, no a su contenido, así que en una ruta nueva nace
+  activo y no depende de que nadie entre en la web a reactivarlo. Afinado para
+  no gastar de más: solo en `pull_request`, `paths-ignore` de documentación y
+  portadas (muchas PRs de este repo son solo `.md`), y `concurrency` con
+  `cancel-in-progress` para que al empujar un commit nuevo a una PR se cancele
+  el run anterior.
+- **`.github/workflows/ci.yml` borrado** (era el desactivado) y
+  **`.github/workflows/disabled/` borrada** — tres archivos con `on: {}` que no
+  ejecutaban nada y que confundían a cualquiera que buscara "el CI".
+- **`verify.yml`: `timeout-minutes: 20`** — los 4 pasos tardan ~4 min; sin
+  timeout un job colgado ocupa un runner las **6 horas** que GitHub da por
+  defecto.
+- **Scraper de lecturas: de dos disparos diarios a uno.** Tenía dos crons (uno
+  para CET y otro para CEST, porque GitHub no entiende el cambio de hora) y un
+  job previo `check-time` que descartaba el sobrante. Resultado: dos runs al
+  día, uno siempre tirado a la basura, más un runner extra en el bueno. Con un
+  solo cron a las 00:10 UTC —01:10 en invierno, 02:10 en verano, las dos
+  después de la 1:00, que era lo único que se pedía— sobra el job entero. El
+  scraper ya resuelve por su cuenta qué día es en Europe/Madrid.
+
+Neto de Actions: **se gasta menos que antes** aun con el CI encendido.
+
+Archivos: `.github/workflows/pr.yml` (nuevo), `.github/workflows/ci.yml` y
+`.github/workflows/disabled/` (borrados), `.github/workflows/verify.yml`,
+`.github/workflows/scraper-lecturas.yml`, `mcm-app/TODO.md`,
+`docs/planes/BACKLOG.md`.
+
+---
+
 ## 2026-09-03 19:30 — Un solo criterio para "qué texto va sobre este fondo", y el resto de la cola de diseño
 
 Cierre de PLAN_DISENO: §A6-bis, §E4, §G1.4, §H2-bis.

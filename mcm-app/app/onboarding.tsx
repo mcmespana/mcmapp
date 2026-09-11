@@ -6,7 +6,6 @@ import {
   ScrollView,
   Pressable,
   Image,
-  useWindowDimensions,
   ViewStyle,
   TextStyle,
   Platform,
@@ -31,6 +30,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import colors, { themeColors } from '@/constants/colors';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -188,7 +188,7 @@ const dotsStyles = StyleSheet.create({
   },
   dot: {
     height: 6,
-    borderRadius: 3,
+    borderRadius: radii.pillFull,
   },
 });
 
@@ -610,7 +610,7 @@ const welcomeStyles = StyleSheet.create({
   logoCircle: {
     width: 124,
     height: 124,
-    borderRadius: 62,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.28)',
@@ -1099,13 +1099,13 @@ const successStyles = StyleSheet.create({
     position: 'absolute',
     width: 96,
     height: 96,
-    borderRadius: 48,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(163,189,49,0.18)',
   } as ViewStyle,
   iconCircle: {
     width: 88,
     height: 88,
-    borderRadius: 44,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(163,189,49,0.12)',
     borderWidth: 2,
     borderColor: 'rgba(163,189,49,0.28)',
@@ -1247,7 +1247,7 @@ const cardStyles = StyleSheet.create({
   iconCircle: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(37,56,131,0.09)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1329,8 +1329,7 @@ function LoginOnboardingScreen({
   totalSteps: number;
 }) {
   const Entering = animDir === 'back' ? SlideInLeft : SlideInRight;
-  const { width: screenW } = useWindowDimensions();
-  const isWide = screenW >= 640;
+  const { isWide } = useResponsiveLayout();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -1546,7 +1545,7 @@ const loginOnbStyles = StyleSheet.create({
   logoCircle: {
     width: 96,
     height: 96,
-    borderRadius: 48,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.28)',
@@ -1642,8 +1641,11 @@ export default function OnboardingScreen() {
   const { rawConfig } = useProfileConfigContext();
   const { setProfile } = useUserProfile();
   const TT = useThemeT();
-  const { width: screenW, height: screenH } = useWindowDimensions();
-  const isWide = screenW >= 640;
+  // El corte lo pone `useResponsiveLayout` (breakpoints.md = 720), que es el
+  // que usa el resto de la app; aquí había un `screenW >= 640` a mano, así que
+  // el onboarding se creía "ancho" 80 px antes que las demás pantallas
+  // (PLAN_DISENO §F5).
+  const { width: screenW, height: screenH, isWide } = useResponsiveLayout();
 
   const [step, setStep] = useState<Step>('welcome');
   const [animDir, setAnimDir] = useState<'forward' | 'back'>('forward');

@@ -10,12 +10,16 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    # Los cuatro pasos tardan ~4 min. El timeout está para que un job colgado
+    # (un test que espera un timer, npm ci sin red) muera pronto en vez de
+    # ocupar un runner las 6 horas que GitHub da por defecto.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: mcm-app/package-lock.json
       - run: npm ci
         working-directory: ./mcm-app

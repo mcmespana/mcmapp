@@ -4,7 +4,8 @@ import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import colors from '@/constants/colors';
+import colors, { themeColors } from '@/constants/colors';
+import { onColor } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
@@ -24,6 +25,20 @@ import { radii } from '@/constants/uiStyles';
  *
  * `accentColor` permite que Contigo (warm) y los eventos (color por evento)
  * mantengan su paleta sin dejar de compartir la forma.
+ *
+ * **El color del texto NO se elige aquí, lo decide el contraste** (2026-09-10).
+ * La primera versión pintaba la etiqueta activa de `#FFFFFF` fijo pasara lo que
+ * pasara con `accentColor`, y eso es ilegible en cuanto el acento es claro: con
+ * el celeste de marca —que es el DEFECTO, el del conmutador Mes/Agenda del
+ * calendario— daba **2,64:1**, y con el dorado de Contigo 2,80:1. Ahora lo
+ * resuelve `onColor()`, que compara los dos candidatos por contraste real: con
+ * el celeste elige negro (7,95:1). Es el mismo arreglo del §H4/§A6-bis de
+ * PLAN_DISENO, que ya había pasado en cinco pantallas.
+ *
+ * La etiqueta inactiva tampoco es un gris a mano: era `#8E8E93`, que sobre la
+ * pista clara da 2,60:1 (por debajo incluso del 3:1 de elementos no
+ * textuales). Ahora sale de `textSecondary`, que llega a 4,77:1 en claro y
+ * 6,30:1 en oscuro.
  */
 export interface SegmentedOption<T extends string> {
   value: T;
@@ -58,6 +73,10 @@ export default function SegmentedControl<T extends string>({
   accessibilityLabel,
 }: SegmentedControlProps<T>) {
   const isDark = useColorScheme() === 'dark';
+  const roles = themeColors(isDark);
+  // Sobre el relleno del segmento activo manda el contraste, no el modo.
+  const activeInk = onColor(accentColor);
+  const inactiveInk = roles.textSecondary;
 
   return (
     <View
@@ -92,14 +111,14 @@ export default function SegmentedControl<T extends string>({
               <MaterialIcons
                 name={option.icon}
                 size={16}
-                color={active ? '#FFFFFF' : '#8E8E93'}
+                color={active ? activeInk : inactiveInk}
               />
             ) : null}
             <Text
               style={[
                 styles.label,
                 compact && styles.labelCompact,
-                active ? styles.labelActive : null,
+                { color: active ? activeInk : inactiveInk },
               ]}
               numberOfLines={1}
             >
@@ -135,12 +154,8 @@ const styles = StyleSheet.create({
   label: {
     ...typography.subhead,
     fontWeight: '600',
-    color: '#8E8E93',
   },
   labelCompact: {
     ...typography.caption,
-  },
-  labelActive: {
-    color: '#FFFFFF',
   },
 });

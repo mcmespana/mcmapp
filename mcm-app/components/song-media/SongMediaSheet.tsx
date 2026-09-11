@@ -1,4 +1,5 @@
 import React from 'react';
+import { radii } from '@/constants/uiStyles';
 import {
   Dimensions,
   Linking,
@@ -540,7 +541,7 @@ const createStyles = (isDark: boolean) =>
       ...typography.subhead,
       fontWeight: '600',
       letterSpacing: -0.2,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     mMeta: {
       ...typography.micro,
@@ -562,7 +563,7 @@ const createStyles = (isDark: boolean) =>
     mGo: {
       width: 26,
       height: 26,
-      borderRadius: 13,
+      borderRadius: radii.pillFull,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -599,7 +600,7 @@ const createStyles = (isDark: boolean) =>
       ...typography.caption,
       fontWeight: '600',
       letterSpacing: -0.2,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       marginTop: 2,
     },
     fichaComment: {

@@ -230,7 +230,10 @@ describe('importByCode', () => {
     });
     const { result } = await mount();
     await act(async () => result.current.importByCode('5678'));
-    expect(mockSetChoir).toHaveBeenCalledWith({ id: 'coro-1', name: 'Coro Uno' });
+    expect(mockSetChoir).toHaveBeenCalledWith({
+      id: 'coro-1',
+      name: 'Coro Uno',
+    });
   });
 
   it('NO pisa el coro ya elegido aunque la playlist declare otro', async () => {
@@ -251,10 +254,10 @@ describe('importEntry', () => {
     (fetchCloudPlaylist as jest.Mock).mockResolvedValue(null);
     const { result } = await mount();
     await act(async () =>
-      result.current.importEntry(
-        { code: '0000', name: 'X' } as any,
-        { id: 'c1', name: 'Coro' },
-      ),
+      result.current.importEntry({ code: '0000', name: 'X' } as any, {
+        id: 'c1',
+        name: 'Coro',
+      }),
     );
     expect(mockToastShow).toHaveBeenCalledWith(
       expect.objectContaining({ variant: 'danger' }),
@@ -383,7 +386,9 @@ describe('saveUpdate', () => {
 describe('lead (dirigir en vivo)', () => {
   it('toma el mando directo si no hay sesión existente', async () => {
     const { result } = await mount();
-    await act(async () => result.current.lead({ id: 'c1', name: 'Coro' }, null));
+    await act(async () =>
+      result.current.lead({ id: 'c1', name: 'Coro' }, null),
+    );
     await waitFor(() => expect(mockStartAsMaster).toHaveBeenCalled());
   });
 
@@ -418,10 +423,10 @@ describe('joinLive / leaveLive', () => {
   it('joinLive reemplaza con la playlist del líder y se une como oyente', async () => {
     const { result } = await mount();
     await act(async () =>
-      result.current.joinLive(
-        { id: 'c1', name: 'Coro' },
-        { playlist: [song('e.cho')], master: { name: 'Líder' } } as any,
-      ),
+      result.current.joinLive({ id: 'c1', name: 'Coro' }, {
+        playlist: [song('e.cho')],
+        master: { name: 'Líder' },
+      } as any),
     );
     expect(mockReplaceAll).toHaveBeenCalledWith([song('e.cho')]);
     expect(mockJoinAsSlave).toHaveBeenCalledWith('c1');

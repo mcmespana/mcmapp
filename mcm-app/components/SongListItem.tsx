@@ -340,7 +340,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     selectedDot: {
       width: 6,
       height: 6,
-      borderRadius: 3,
+      borderRadius: radii.pillFull,
       backgroundColor: SwipeColors.add,
       marginRight: 10,
     },
@@ -349,7 +349,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     songTitle: {
       ...typography.body,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       fontWeight: '500',
       letterSpacing: -0.2,
     },

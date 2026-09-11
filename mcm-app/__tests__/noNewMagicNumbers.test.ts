@@ -80,8 +80,10 @@ function countIn(relDir: string): {
  * Histórico: 1.363 hex en total antes de la unificación de agosto de 2026.
  */
 const BUDGET = {
-  app: 218,
-  components: 406,
+  // Bajó de 218 a 214 y de 406 a 405 el 2026-09-09: los hex que se fueron con
+  // el borrado de `textStrong` y la unificación del dorado de Contigo.
+  app: 214,
+  components: 405,
 };
 
 describe('no se añaden colores a mano', () => {
@@ -173,12 +175,17 @@ describe('no se añaden tamaños de letra a mano', () => {
  * otros son un escalón inventado que debería caer al de al lado.
  */
 const RADIUS_BUDGET = {
-  app: 17,
-  // Bajó de 107 a 95 al migrar los `borderRadius: 100`. Ese 100 era siempre
-  // "hazlo redondo" y funcionaba de chiripa: RN recorta el radio a la mitad de
-  // la dimensión, así que `radii.pillFull` (999) pinta exactamente igual y no
-  // depende de que el elemento siga siendo pequeño.
-  components: 95,
+  // Bajó de 17 a 6 y de 95 a 54 el 2026-09-09 (PLAN_DISENO §E5): 53 radios
+  // que no eran radios. En todos ellos el número era **exactamente la mitad
+  // del lado** del elemento (`width: 38, borderRadius: 19`), o sea "hazlo
+  // redondo" escrito a mano. `radii.pillFull` (999) pinta idéntico —RN recorta
+  // el radio a la mitad de la dimensión— y además no se rompe si mañana el
+  // elemento cambia de tamaño, que es lo que sí pasaba con el número fijo.
+  //
+  // Antes de esto: 107 → 95 al migrar los `borderRadius: 100` (mismo caso), y
+  // 300 → 122 al colapsar la escala en agosto de 2026.
+  app: 6,
+  components: 54,
 };
 
 const INLINE_RADIUS = /borderRadius: \d+/g;

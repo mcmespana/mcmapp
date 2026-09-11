@@ -16,25 +16,30 @@
 
 > Orden propuesto (repriorízalo si no lo ves).
 
-### 0. ⚠️ El CI no ejecuta nada desde abril de 2026
+### 0. CI — ✅ ARREGLADO (2026-09-09)
 
-- [ ] **Averiguar por qué GitHub Actions está parado y volver a encenderlo.**
-      El último run de `ci.yml` es del **2026-04-10**; desde entonces
-      **ningún PR se ha verificado de verdad**, aunque el workflow siga en el
-      repo y la PR parezca "clean" al mergear.
+**La causa era que el workflow estaba desactivado a mano.** `ci.yml` figuraba en
+estado `disabled_manually` desde el 2026-05-25 (alguien le dio a "Disable
+workflow" en la pestaña Actions). Con ese estado GitHub **no crea el run**: no
+sale ni en rojo ni en gris, simplemente no existe, y la PR parece "clean" al
+mergear. No era la cuenta sin minutos (el repo es **público**: los runners
+estándar son gratis y no tocan la cuota) ni un ajuste de organización.
 
-Cómo se descubrió: el 2026-08-15, `npm run typecheck:tests` —que es uno de los
-cuatro pasos de `verify.yml`— llevaba fallando con 4 errores de tipos en `main`
-sin que saltara nadie. Se arreglaron en la #334, pero el problema de fondo es
-que **el guardarraíl está desenchufado**: mientras siga así, lo único que
-verifica el repo es lo que ejecute a mano quien esté trabajando.
+Arreglado registrando el guardarraíl en una ruta nueva —
+`.github/workflows/pr.yml`— porque el estado "desactivado" va pegado a la ruta
+del workflow, no a su contenido: en una ruta nueva nace activo, sin depender de
+entrar en la web. De paso se borró `.github/workflows/disabled/` (tres archivos
+con `on: {}` que no ejecutaban nada) y el scraper bajó de dos disparos diarios
+a uno.
 
-Sitios donde mirar: pestaña Actions del repo (¿deshabilitadas?), si la cuenta se
-quedó sin minutos, y si algún ajuste de la organización bloquea los workflows en
-PRs de ramas `claude/*`.
+**Verificado el 2026-09-10**: en la PR
+[#344](https://github.com/mcmespana/mcmapp/pull/344) apareció y corrió el check
+`verify / verify` — el primer run de verdad desde el 2026-04-10. Si algún día
+vuelve a "no ejecutarse nada", lo PRIMERO que hay que mirar es el estado del
+workflow (Actions → PR → "..." → Enable workflow), no el disparador.
 
-Mientras tanto, **antes de mergear cualquier cosa hay que pasar los cuatro pasos
-en local**:
+Aun así sigue siendo buena costumbre pasar los cuatro pasos en local antes de
+empujar, que es más rápido que esperar al runner:
 
 ```bash
 cd mcm-app
@@ -156,11 +161,11 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       Grupos migrados de sus versiones a mano).
 
       **Los `TextInput` que quedan NO se migran, y está decidido**: los
-                                          buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
-                                          de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
-                                          celdas del código; y los de Revisión quedaron, tras el refactor del examen
-                                          del día, como campos SIN borde dentro de una fila que sí lo tiene —
-                                          `AppTextField` les metería un borde dentro de otro.
+                                                  buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
+                                                  de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
+                                                  celdas del código; y los de Revisión quedaron, tras el refactor del examen
+                                                  del día, como campos SIN borde dentro de una fila que sí lo tiene —
+                                                  `AppTextField` les metería un borde dentro de otro.
 
 ## Modo Carismochito (ver `docs/planes/PLAN_CARISMOCHITO.md`)
 
@@ -213,22 +218,22 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       cada render) lo habría cazado un render test.
 
       Por dónde empezar, en orden de rentabilidad:
-                                                                  1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
-                                                                     Más): que monten sin reventar con datos vacíos, con datos y offline.
-                                                                  2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
-                                                                     hook con sus contextos).
-                                                                  3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
-                                                                     releer del bookmark.
-                                                                  4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
+                                                                          1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
+                                                                             Más): que monten sin reventar con datos vacíos, con datos y offline.
+                                                                          2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
+                                                                             hook con sus contextos).
+                                                                          3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
+                                                                             releer del bookmark.
+                                                                          4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
 
-                                                                  Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
-                                                                  lee la suite entera para tocar código: lee los tests del área que toca. Lo
-                                                                  que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
-                                                                  de en una build de 20 minutos— y evita iteraciones enteras como la del
-                                                                  tamaño de los iconos. El coste real de una suite grande es de
-                                                                  MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
-                                                                  detalles internos) que hay que reescribir en cada refactor. Por eso la
-                                                                  lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
+                                                                          Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
+                                                                          lee la suite entera para tocar código: lee los tests del área que toca. Lo
+                                                                          que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
+                                                                          de en una build de 20 minutos— y evita iteraciones enteras como la del
+                                                                          tamaño de los iconos. El coste real de una suite grande es de
+                                                                          MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
+                                                                          detalles internos) que hay que reescribir en cada refactor. Por eso la
+                                                                          lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
 - [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales, y (jun-2026) Fotos (`AlbumListScreen`/`AlbumCard`), Materiales, Comida, MasHome y `EventItem`. Horario es de solo lectura (sin interactivos). Pendiente: validar en dispositivo con VoiceOver/TalkBack y revisar pantallas/flujos secundarios.
 

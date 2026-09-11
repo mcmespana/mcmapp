@@ -29,7 +29,7 @@ export const createStyles = (isDark: boolean) =>
     choirIcon: {
       width: 34,
       height: 34,
-      borderRadius: 17,
+      borderRadius: radii.pillFull,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: isDark ? '#2B3E68' : '#DCE7FF',
@@ -45,7 +45,7 @@ export const createStyles = (isDark: boolean) =>
     choirName: {
       ...typography.body,
       fontWeight: '700',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     linkBtn: {
       paddingVertical: 6,
@@ -113,7 +113,7 @@ export const createStyles = (isDark: boolean) =>
     rowLabel: {
       ...typography.button,
       fontWeight: '600',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     rowDescription: {
       ...typography.caption,
@@ -138,7 +138,7 @@ export const createStyles = (isDark: boolean) =>
     listTitle: {
       ...typography.button,
       fontWeight: '600',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
     },
     listMeta: {
       ...typography.footnote,
@@ -213,7 +213,7 @@ export const createStyles = (isDark: boolean) =>
     btnDisabled: { opacity: 0.45 },
     btnPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '700' },
     btnSecondaryText: {
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       ...typography.button,
       fontWeight: '600',
     },

@@ -418,7 +418,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     name: {
       ...typography.body,
       fontWeight: '700',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       letterSpacing: -0.2,
     },
     role: {
@@ -433,7 +433,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     iconBtn: {
       width: 38,
       height: 38,
-      borderRadius: 19,
+      borderRadius: radii.pillFull,
       alignItems: 'center',
       justifyContent: 'center',
     },

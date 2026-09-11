@@ -121,7 +121,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     searchSectionHeaderText: {
       ...typography.caption,
       fontWeight: '700',
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       letterSpacing: 0.3,
       textTransform: 'uppercase',
     },
@@ -255,7 +255,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     quoteBorder: {
       width: 4,
       backgroundColor: colors.info,
-      borderRadius: 2,
+      borderRadius: radii.pillFull,
       marginRight: 12,
     },
     quoteText: {

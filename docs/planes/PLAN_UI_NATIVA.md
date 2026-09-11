@@ -12,11 +12,11 @@ Hoy conviven **varios sistemas en paralelo**. Conteos reales sobre `app/` +
 
 ### 1.1. Headers — 3 paradigmas distintos
 
-| Paradigma | Dónde | Nativo |
-| --- | --- | --- |
-| Header **nativo** (`native-stack`) | Cantoral (`cancionero.tsx`), `SongListScreen` (con large title + search nativos), Oración, Evangelio | ✅ |
-| **Floating glass custom** (hecho a mano) | Contigo (revisión, bookmarks, índice), eventos (`GlassHeader.ios`) | ❌ |
-| `headerShown:false` + cabecera propia | `index` (Inicio), `mas`, `SongDetail`, `eventStackScreens` | ❌ |
+| Paradigma                                | Dónde                                                                                                | Nativo |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------ |
+| Header **nativo** (`native-stack`)       | Cantoral (`cancionero.tsx`), `SongListScreen` (con large title + search nativos), Oración, Evangelio | ✅     |
+| **Floating glass custom** (hecho a mano) | Contigo (revisión, bookmarks, índice), eventos (`GlassHeader.ios`)                                   | ❌     |
+| `headerShown:false` + cabecera propia    | `index` (Inicio), `mas`, `SongDetail`, `eventStackScreens`                                           | ❌     |
 
 → 9 pantallas con `headerShown:false`. Resultado: el back/título/acciones se
 ven y se comportan distinto en cada zona. Solo el cantoral (y lo ya convertido)
@@ -24,12 +24,12 @@ tiene el efecto liquid-glass real de iOS 26.
 
 ### 1.2. Primitivas de botón — 4 mezcladas
 
-| Primitiva | Nº de ficheros |
-| --- | --- |
-| `TouchableOpacity` (RN) | 52 |
-| `Pressable` (RN) | 38 |
-| `Button` (heroui) | 21 |
-| `PressableFeedback` (heroui) | 24 |
+| Primitiva                    | Nº de ficheros |
+| ---------------------------- | -------------- |
+| `TouchableOpacity` (RN)      | 52             |
+| `Pressable` (RN)             | 38             |
+| `Button` (heroui)            | 21             |
+| `PressableFeedback` (heroui) | 24             |
 
 → No hay una convención. Cada pantalla elige una, con feedback de pulsación
 distinto (unas con opacidad, otras con highlight, otras nada). Ninguna en el
@@ -111,12 +111,12 @@ título + acciones como bar items → liquid glass en iOS 26). Ya hecho: cantora
 
 Censo real (`app/` + `components/`):
 
-| Categoría | Hoy | Problema |
-| --- | --- | --- |
+| Categoría | Hoy                                                                                  | Problema                                   |
+| --------- | ------------------------------------------------------------------------------------ | ------------------------------------------ |
 | Pulsables | `TouchableOpacity` 52 · `Pressable` 38 · heroui `Button` 21 · `PressableFeedback` 24 | 4 primitivas mezcladas → feedback distinto |
-| Inputs | `TextInput` crudo 14 · heroui `TextField` 0 | cada uno reinventa estilo |
-| Overlays | `Modal` RN 30 · `BottomSheet` 29 | dos sistemas para lo mismo |
-| Toggles | 13 custom (por el bug del `Switch` heroui en modales) | inconsistentes |
+| Inputs    | `TextInput` crudo 14 · heroui `TextField` 0                                          | cada uno reinventa estilo                  |
+| Overlays  | `Modal` RN 30 · `BottomSheet` 29                                                     | dos sistemas para lo mismo                 |
+| Toggles   | 13 custom (por el bug del `Switch` heroui en modales)                                | inconsistentes                             |
 
 **Plan (por lotes revertibles, validando en dispositivo):**
 
@@ -179,23 +179,23 @@ Tras revisar el código una a una, **no todas las cabeceras son convertibles "a
 ciegas"**: muchas llevan funcionalidad propia (steppers de fecha, campanas,
 acciones de evento). Clasificación:
 
-| Pantalla | Estado | Tipo de cabecera | Acción |
-| --- | --- | --- | --- |
-| Cantoral base (`CategoriesScreen`) | ✅ hecho | nativa: título pequeño + 2 bar items cristal | — |
-| Dentro de categoría (`SongListScreen`) | ✅ hecho | nativa + búsqueda nativa (`__ALL__`) | — |
-| Oración | ✅ hecho | nativa (back + título) | — |
-| Evangelio | ✅ hecho | nativa (back + guardar/ajustes) | — |
-| **Favoritos** (`bookmarks`) | ✅ hecho | nativa (back + título; contador al cuerpo) | — |
-| **Revisión** (`revision`) | ✅ hecho | navegador de fechas (‹ día ›) como **título custom dentro de la barra nativa** + cerrar nativo | — |
-| **Índice de Contigo** (`index`) | ✅ hecho | título pequeño nativo "Contigo" + badge litúrgico y favoritos en headerRight; fecha al cuerpo | — |
-| **EventHomeScreen** | ✅ hecho | header nativo (back nativo) + **campana SIEMPRE en el hero** (consistente entre Jubileo y Visita Papa) + auto-suscripción opt-out | — |
-| Sub-pantallas de evento (Horario, Materiales, Grupos, Visitas, Contactos, Profundiza…) | ✅ ya eran nativas | `eventScreenOptions` + `GlassHeader` de fondo. Back ahora **nativo** (sin cápsula doble) + solo icono | — |
-| **Inicio** (`index`) | ✅ híbrido | barra superior con `GlassActionGroup` (cápsula glass, campana animada intacta) + grid | El grid NO es nativo (contenido de diseño). |
-| `MasHome` | ⏸️ dashboard (custom) | `ScreenHero` "Más" | Beneficio bajo; se mantiene. |
-| **Calendario** | ✅ hecho | stack con header nativo **transparente** + "Calendario" + botón calendarios en headerRight | — |
-| **Eventos Pasados** | ✅ hecho | header transparente (stack de Más) + texto legible en oscuro | — |
-| **Canción** (`SongDetail`) | ✅ hecho | header nativo transparente (heredado) + **letra full-bleed** que scrollea bajo el header; FAB glass | Pulido fino del glass pendiente (ver TODO). |
-| Sub-pantallas de evento (hero) | ⏸️ pendiente | "floating header" opaco (`FloatingHeaderBackground`) | Transparentes como el cantoral = cambio mayor (cada hero su inset). Ver TODO. |
+| Pantalla                                                                               | Estado                | Tipo de cabecera                                                                                                                  | Acción                                                                        |
+| -------------------------------------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Cantoral base (`CategoriesScreen`)                                                     | ✅ hecho              | nativa: título pequeño + 2 bar items cristal                                                                                      | —                                                                             |
+| Dentro de categoría (`SongListScreen`)                                                 | ✅ hecho              | nativa + búsqueda nativa (`__ALL__`)                                                                                              | —                                                                             |
+| Oración                                                                                | ✅ hecho              | nativa (back + título)                                                                                                            | —                                                                             |
+| Evangelio                                                                              | ✅ hecho              | nativa (back + guardar/ajustes)                                                                                                   | —                                                                             |
+| **Favoritos** (`bookmarks`)                                                            | ✅ hecho              | nativa (back + título; contador al cuerpo)                                                                                        | —                                                                             |
+| **Revisión** (`revision`)                                                              | ✅ hecho              | navegador de fechas (‹ día ›) como **título custom dentro de la barra nativa** + cerrar nativo                                    | —                                                                             |
+| **Índice de Contigo** (`index`)                                                        | ✅ hecho              | título pequeño nativo "Contigo" + badge litúrgico y favoritos en headerRight; fecha al cuerpo                                     | —                                                                             |
+| **EventHomeScreen**                                                                    | ✅ hecho              | header nativo (back nativo) + **campana SIEMPRE en el hero** (consistente entre Jubileo y Visita Papa) + auto-suscripción opt-out | —                                                                             |
+| Sub-pantallas de evento (Horario, Materiales, Grupos, Visitas, Contactos, Profundiza…) | ✅ ya eran nativas    | `eventScreenOptions` + `GlassHeader` de fondo. Back ahora **nativo** (sin cápsula doble) + solo icono                             | —                                                                             |
+| **Inicio** (`index`)                                                                   | ✅ híbrido            | barra superior con `GlassActionGroup` (cápsula glass, campana animada intacta) + grid                                             | El grid NO es nativo (contenido de diseño).                                   |
+| `MasHome`                                                                              | ⏸️ dashboard (custom) | `ScreenHero` "Más"                                                                                                                | Beneficio bajo; se mantiene.                                                  |
+| **Calendario**                                                                         | ✅ hecho              | stack con header nativo **transparente** + "Calendario" + botón calendarios en headerRight                                        | —                                                                             |
+| **Eventos Pasados**                                                                    | ✅ hecho              | header transparente (stack de Más) + texto legible en oscuro                                                                      | —                                                                             |
+| **Canción** (`SongDetail`)                                                             | ✅ hecho              | header nativo transparente (heredado) + **letra full-bleed** que scrollea bajo el header; FAB glass                               | Pulido fino del glass pendiente (ver TODO).                                   |
+| Sub-pantallas de evento (hero)                                                         | ⏸️ pendiente          | "floating header" opaco (`FloatingHeaderBackground`)                                                                              | Transparentes como el cantoral = cambio mayor (cada hero su inset). Ver TODO. |
 
 > **Conclusión (2026-06-21)**: Fase 1 prácticamente completa. Queda **pulido fino
 > del glass de iOS 26** (con dispositivo delante) y, si se quiere, unificar los
@@ -211,38 +211,58 @@ Ya creados (reutilizar): `GlassActionGroup`, `AppIconButton`, `AppTextField`,
 > sueltos NUEVOS.
 
 - [~] Migrar los **~13 `TextInput`** restantes a `AppTextField`. Hechos:
-      SuggestSong (✓), AppFeedbackModal (✓), ReportBugsModal (✓),
-      PasswordPromptModal (✓), ArrangementInputModal (✓) (2026-07-22),
-      **Evaluation (QuestionInput, texto libre), SelectedSongs (nombre de
-      fichero al exportar), Reflexiones (título/contenido/autor),
-      CodeInputModal (campo `name`), ExportPdfModal (título/fecha)**
-      (2026-07-24). `AppTextField` ganó props `error` (borde rojo) y
-      `accentColor` (para respetar paletas propias — Arrangement usa el rojo
-      de marca, PDF el rojo, Reflexiones el verde).
-      Pendientes: Revisión de Contigo (paleta warm propia — como Evangelio,
-      requiere verificación en dispositivo antes de tocar el color de fondo),
-      Grupos (`SearchBar` es un compound component deliberadamente custom, no
-      un `TextInput` simple — descartado), SecretPanel (panel admin, 16
-      campos, superficie grande — último).
+  SuggestSong (✓), AppFeedbackModal (✓), ReportBugsModal (✓),
+  PasswordPromptModal (✓), ArrangementInputModal (✓) (2026-07-22),
+  **Evaluation (QuestionInput, texto libre), SelectedSongs (nombre de
+  fichero al exportar), Reflexiones (título/contenido/autor),
+  CodeInputModal (campo `name`), ExportPdfModal (título/fecha)**
+  (2026-07-24). `AppTextField` ganó props `error` (borde rojo) y
+  `accentColor` (para respetar paletas propias — Arrangement usa el rojo
+  de marca, PDF el rojo, Reflexiones el verde).
+  Pendientes: Revisión de Contigo (paleta warm propia — como Evangelio,
+  requiere verificación en dispositivo antes de tocar el color de fondo),
+  Grupos (`SearchBar` es un compound component deliberadamente custom, no
+  un `TextInput` simple — descartado), SecretPanel (panel admin, 16
+  campos, superficie grande — último).
 - [~] **`AppPrimaryButton`** (CTA "Enviar/Guardar/Aceptar") — **creado**
-      (`components/ui/AppPrimaryButton.tsx`, usa `PressableFeedback` + `Scale`,
-      prop `color` para paletas propias de Contigo/eventos). Migrados: **SuggestSong,
-      AppFeedback, ReportBugs** (2026-07-22). Pendientes: el resto de modales con
-      CTA (Evaluation, SecretPanel, export PDF, login…) — estructura distinta, uno
-      a uno.
-- [ ] **`SegmentedControl`** — unificar Mes/Agenda (Calendario), toggles de
-      ajustes, Evangelio, SongFullscreen (4-5 versiones distintas).
+  (`components/ui/AppPrimaryButton.tsx`, usa `PressableFeedback` + `Scale`,
+  prop `color` para paletas propias de Contigo/eventos). Migrados: **SuggestSong,
+  AppFeedback, ReportBugs** (2026-07-22). Pendientes: el resto de modales con
+  CTA (Evaluation, SecretPanel, export PDF, login…) — estructura distinta, uno
+  a uno.
+- [x] **`SegmentedControl`** — HECHO (2026-09-10). Adoptado en los cuatro
+      sitios que de verdad son un conmutador de 2-3 opciones: **Mes/Agenda**
+      del calendario (ya estaba), **Lectura/Comentario** del Evangelio (eran
+      114 líneas a mano con el estado, el color del icono y el del texto
+      repetidos en cuatro sitios), **Tema** de los ajustes de la app y **Tema**
+      del lector de Contigo.
+      Dos avisos para quien siga esta cola:
+      · **El censo del §2 se hizo con un grep y contaba de más.** De las "4-5
+      versiones", dos eran falsos positivos (`EventDetailsBottomSheet` y
+      `SelectedSongsScreen` usan la palabra `segment` para **parsear
+      texto**), y `SongFullscreen` NO es un conmutador: son botones redondos
+      numerados (velocidad de auto-scroll) sobre el panel translúcido del
+      modo inmersivo. **No se migra**, y no es deuda.
+      · **El componente tenía el bug del §H4 de PLAN_DISENO dentro.** Pintaba
+      la etiqueta activa de `#FFFFFF` fijo pasara lo que pasara con
+      `accentColor`: con el celeste de marca —el DEFECTO, el del
+      calendario— daba 2,64:1, y con el dorado de Contigo 2,80:1. La
+      inactiva era un `#8E8E93` a mano, 2,60:1 sobre la pista clara. Se
+      arregló ANTES de extenderlo (si no, se reparte el fallo a cuatro
+      pantallas más): la tinta la decide `onColor()` y la inactiva sale de
+      `textSecondary`. Hay un test que lo fija para todos los acentos de la
+      casa.
 - [~] **`EmptyState`** — adoptarlo en los ~20 sitios que reinventan "no hay…".
-      Hechos: SelectedSongs, Home (previos) + ReflexionesScreen,
-      notifications.tsx, NotificationsBottomSheet, EventosPasadosScreen,
-      ContactosScreen (2026-07-22/23), **Calendario (día seleccionado +
-      vista agenda, con icono dinámico según filtros)** (2026-07-24).
-      Pendientes: evangelio "no se encontraron lecturas" (paleta warm de
-      Contigo — requiere verificación en dispositivo), SongList "no se
-      encontraron canciones" (es un estado de ERROR en rojo con diagnóstico,
-      no un vacío neutro — descartado, no migrar). **NO** en
-      `CommandPalette` (dropdown compacto — el padding de EmptyState lo
-      desbordaría).
+  Hechos: SelectedSongs, Home (previos) + ReflexionesScreen,
+  notifications.tsx, NotificationsBottomSheet, EventosPasadosScreen,
+  ContactosScreen (2026-07-22/23), **Calendario (día seleccionado +
+  vista agenda, con icono dinámico según filtros)** (2026-07-24).
+  Pendientes: evangelio "no se encontraron lecturas" (paleta warm de
+  Contigo — requiere verificación en dispositivo), SongList "no se
+  encontraron canciones" (es un estado de ERROR en rojo con diagnóstico,
+  no un vacío neutro — descartado, no migrar). **NO** en
+  `CommandPalette` (dropdown compacto — el padding de EmptyState lo
+  desbordaría).
 - [ ] **Chips/pills** — estandarizar (mezcla de heroui `Chip` + pills custom).
 - [ ] **Tokens** (`radii`/`shadows`/`typography`) — migrar números mágicos.
 

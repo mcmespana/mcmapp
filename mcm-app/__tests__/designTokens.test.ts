@@ -16,8 +16,10 @@
 import fs from 'fs';
 import path from 'path';
 
-import brand, { Colors } from '@/constants/colors';
+import brand, { Colors, TabHeaderColors } from '@/constants/colors';
 import { radii, shadows } from '@/constants/uiStyles';
+import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
+import { onColor } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
 
 const cssPath = path.join(__dirname, '..', 'global.css');
@@ -172,11 +174,6 @@ describe('contraste de los roles de texto', () => {
   const cases: [string, string, string][] = [
     ['claro · text sobre fondo', Colors.light.text, Colors.light.background],
     [
-      'claro · textStrong sobre fondo',
-      Colors.light.textStrong,
-      Colors.light.background,
-    ],
-    [
       'claro · textSecondary sobre fondo',
       Colors.light.textSecondary,
       Colors.light.background,
@@ -194,11 +191,6 @@ describe('contraste de los roles de texto', () => {
     ['claro · textMuted sobre card', Colors.light.textMuted, Colors.light.card],
     ['claro · link sobre fondo', Colors.light.link, Colors.light.background],
     ['oscuro · text sobre fondo', Colors.dark.text, Colors.dark.background],
-    [
-      'oscuro · textStrong sobre fondo',
-      Colors.dark.textStrong,
-      Colors.dark.background,
-    ],
     [
       'oscuro · textSecondary sobre fondo',
       Colors.dark.textSecondary,
@@ -224,6 +216,53 @@ describe('contraste de los roles de texto', () => {
     expect(
       contrast(Colors.dark.textMuted, Colors.dark.background),
     ).toBeGreaterThan(4);
+  });
+
+  it('el acento de Contigo se lee sobre las tres superficies cálidas', () => {
+    // §A3 de PLAN_DISENO. `accent` (#C4922A) es un relleno: como TEXTO da
+    // 2,60:1 y aun así pintaba el kicker, la cita, el CTA y el día de hoy.
+    // `accentText` es el mismo dorado bajado de luminosidad hasta que se lee.
+    for (const surface of [
+      WARM_LIGHT.bg,
+      WARM_LIGHT.bgCard,
+      WARM_LIGHT.bgDeep,
+    ]) {
+      expect(contrast(WARM_LIGHT.accentText, surface)).toBeGreaterThanOrEqual(
+        4.5,
+      );
+    }
+    expect(contrast(WARM_DARK.accentText, WARM_DARK.bg)).toBeGreaterThanOrEqual(
+      4.5,
+    );
+  });
+
+  it('onColor da una tinta legible sobre todos los acentos que se usan', () => {
+    // `SegmentedControl` recibe el acento por props (celeste de marca en el
+    // calendario, azul en Ajustes, dorado en el lector de Contigo) y la tinta
+    // del segmento activo la decide `onColor`. Antes era `#FFFFFF` fijo: con
+    // el celeste —que es el DEFECTO— daba 2,64:1 y con el dorado 2,80:1.
+    // Este test cubre el contrato: para cualquier acento de la casa, la tinta
+    // elegida se lee.
+    const acentos = [
+      brand.info,
+      brand.primary,
+      brand.accent,
+      brand.green,
+      brand.purple,
+      WARM_LIGHT.accent,
+      WARM_LIGHT.accentText,
+      WARM_DARK.accent,
+    ];
+    for (const acento of acentos) {
+      expect(contrast(onColor(acento), acento)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('la raya de la pestaña Contigo es el mismo dorado que la sección', () => {
+    // Eran dos: #B8860B en la cabecera y #C4922A en la pantalla, uno pegado al
+    // otro. `constants/colors.ts` no puede importar de un componente, así que
+    // la coherencia se sostiene con este test.
+    expect(TabHeaderColors.contigo).toBe(WARM_LIGHT.accent);
   });
 
   it('avisa de que el terciario NO vale sobre una card oscura', () => {

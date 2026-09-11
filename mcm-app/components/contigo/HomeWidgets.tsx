@@ -90,7 +90,7 @@ export function HeroCard({
   isDark: boolean;
 }) {
   const motivs = [
-    '¿Cuándo empeazmos?',
+    '¿Cuándo empezamos?',
     '¿Buscamos un ratito más?',
     '¡Casi un día completo!',
     '¡Día completo! 🎉',
@@ -273,7 +273,7 @@ export function EvangelioTeaserCard({
         <View style={styles.teaserBody}>
           <View style={styles.teaserHeaderRow}>
             <View style={{ flex: 1, marginRight: 10 }}>
-              <Text style={[styles.teaserKicker, { color: W.accent }]}>
+              <Text style={[styles.teaserKicker, { color: W.accentText }]}>
                 EVANGELIO DEL DÍA
               </Text>
               <Text
@@ -294,7 +294,7 @@ export function EvangelioTeaserCard({
                   },
                 ]}
               >
-                <Text style={[styles.teaserCitaText, { color: W.accent }]}>
+                <Text style={[styles.teaserCitaText, { color: W.accentText }]}>
                   {cita}
                 </Text>
               </View>
@@ -341,7 +341,7 @@ export function EvangelioTeaserCard({
                 },
               ]}
             >
-              <Text style={[styles.teaserCtaText, { color: W.accent }]}>
+              <Text style={[styles.teaserCtaText, { color: W.accentText }]}>
                 Leer evangelio →
               </Text>
             </TouchableOpacity>
@@ -434,7 +434,7 @@ export function WeekStrip({
               <Text
                 style={[
                   styles.weekHdr,
-                  { color: isToday ? W.accent : W.textMuted },
+                  { color: isToday ? W.accentText : W.textMuted },
                 ]}
               >
                 {weekdayLetter(ds)}
@@ -457,7 +457,7 @@ export function WeekStrip({
                 style={[
                   styles.weekDay,
                   {
-                    color: isToday ? W.accent : W.textMuted,
+                    color: isToday ? W.accentText : W.textMuted,
                     fontWeight: isToday ? '800' : '400',
                   },
                 ]}
@@ -676,7 +676,7 @@ export function MonthHeatmap({
                   styles.heatmapDay,
                   {
                     color: isToday
-                      ? W.accent
+                      ? W.accentText
                       : rd || pd || rv
                         ? W.text
                         : W.textMuted,

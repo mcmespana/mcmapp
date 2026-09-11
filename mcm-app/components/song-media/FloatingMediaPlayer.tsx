@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   barBtn: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(255,255,255,0.14)',
     alignItems: 'center',
     justifyContent: 'center',

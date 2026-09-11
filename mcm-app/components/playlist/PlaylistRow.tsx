@@ -345,7 +345,7 @@ const createStyles = (isDark: boolean) =>
     dotPlaceholder: {
       width: 6,
       height: 6,
-      borderRadius: 3,
+      borderRadius: radii.pillFull,
       backgroundColor: SwipeColors.add,
       marginHorizontal: 11,
     },
@@ -354,7 +354,7 @@ const createStyles = (isDark: boolean) =>
     },
     songTitle: {
       ...typography.body,
-      color: themeColors(isDark).textStrong,
+      color: themeColors(isDark).text,
       fontWeight: '500',
       letterSpacing: -0.2,
     },

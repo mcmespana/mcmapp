@@ -668,7 +668,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     avatar: {
       width: 38,
       height: 38,
-      borderRadius: 19,
+      borderRadius: radii.pillFull,
       alignItems: 'center',
       justifyContent: 'center',
     },

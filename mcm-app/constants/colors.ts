@@ -28,12 +28,21 @@ const tintColorDark = '#fff';
  * `Surfaces` aparte ni un `TextColors` aparte, porque tener dos familias para
  * lo mismo es justo lo que se está quitando.
  *
- * Los seis roles de abajo del todo (`textStrong` … `separator`) se añadieron
- * en 2026-08 porque no existían y por eso se escribían a mano: había ~110
- * ternarios `isDark ? '#F5F5F7' : '#1C1C1E'` repartidos por la app, con la
- * deriva típica de copiar y pegar (dos grises distintos para el mismo papel:
- * `#A0A0A8`/`#6B6B70` y `#AEAEB2`/`#636366`). Se unificaron en el par con más
- * contraste de los dos.
+ * Los cinco roles de abajo del todo (`textSecondary` … `separator`) se
+ * añadieron en 2026-08 porque no existían y por eso se escribían a mano: había
+ * ~110 ternarios `isDark ? '#F5F5F7' : '#1C1C1E'` repartidos por la app, con
+ * la deriva típica de copiar y pegar (dos grises distintos para el mismo
+ * papel: `#A0A0A8`/`#6B6B70` y `#AEAEB2`/`#636366`). Se unificaron en el par
+ * con más contraste de los dos.
+ *
+ * **No hay un nivel por encima de `text`, y es a propósito** (2026-09-09).
+ * Existió `textStrong` para "títulos y texto que destaca", pero no destacaba:
+ * en claro era `#1C1C1E` contra el `#11181C` del cuerpo —el "fuerte" era más
+ * CLARO que el texto normal— y en oscuro `#F5F5F7` contra `#FFFFFF`, otra vez
+ * al revés. Un 1% de luminancia que nadie puede ver, en la dirección
+ * contraria a la que prometía el nombre. Es el modelo de iOS: hay un label
+ * primario y los títulos se distinguen por TAMAÑO y PESO, no por color. Sus 43
+ * usos pasaron a `text`, que además contrasta un pelín más.
  */
 export const Colors = {
   light: {
@@ -46,8 +55,6 @@ export const Colors = {
     shadow: '#000000',
     card: '#FFFFFF',
 
-    /** Títulos y texto que tiene que destacar sobre el cuerpo. */
-    textStrong: '#1C1C1E',
     /** Subtítulos, metadatos, texto de apoyo. */
     textSecondary: '#636366',
     /**
@@ -73,7 +80,6 @@ export const Colors = {
     shadow: '#000000',
     card: '#3A3A3C',
 
-    textStrong: '#F5F5F7',
     textSecondary: '#AEAEB2',
     /** Terciario. En oscuro `#8E8E93` ya pasa (5,2:1 sobre el gris de campo). */
     textMuted: '#8E8E93',
@@ -176,7 +182,14 @@ export const TabHeaderColors = {
   calendario: '#31AADF', // Celeste
   fotos: '#E15C62', // Rojo MIC
   comunica: 'rgba(157, 30, 116, 0.87)', // Morado LC con transparencia
-  contigo: '#B8860B', // Dorado cálido - Contigo
+  // Dorado cálido - Contigo. DEBE seguir siendo el mismo valor que
+  // `WARM_LIGHT.accent` de `components/contigo/theme.ts`: es la raya de 8 px
+  // que identifica la sección y se ve pegada al acento de la pantalla que
+  // abre. Eran dos dorados distintos (#B8860B aquí, #C4922A allí) y se
+  // notaba en el borde (§A3 de PLAN_DISENO). No se importa de `theme.ts`
+  // porque este archivo es la capa de abajo y no debe depender de un
+  // componente; en su lugar hay un test que compara los dos.
+  contigo: '#C4922A',
 };
 
 // Colores de toast — Material Design estándar

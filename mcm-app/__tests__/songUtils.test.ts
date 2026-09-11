@@ -9,6 +9,7 @@
 import {
   getCategoryFromFirebaseCategory,
   cleanSongTitle,
+  stripCategoryPrefix,
 } from '@/utils/songUtils';
 
 describe('getCategoryFromFirebaseCategory', () => {
@@ -59,5 +60,38 @@ describe('cleanSongTitle', () => {
 
   it('maneja cadena vacía', () => {
     expect(cleanSongTitle('')).toBe('');
+  });
+});
+
+describe('stripCategoryPrefix', () => {
+  it('quita el prefijo de ordenación con punto', () => {
+    expect(stripCategoryPrefix('C. Cantos de entrada')).toBe(
+      'Cantos de entrada',
+    );
+  });
+
+  it('quita el prefijo con paréntesis', () => {
+    expect(stripCategoryPrefix('A) Adoración')).toBe('Adoración');
+  });
+
+  it('quita el prefijo numérico', () => {
+    expect(stripCategoryPrefix('1. Entrada')).toBe('Entrada');
+  });
+
+  it('NO se come la primera letra de una categoría sin prefijo', () => {
+    // El bug que tenía la versión anterior (`/^\w\.?\s*/`, con el punto
+    // opcional): sin prefijo, se comía la inicial. Hoy no salta porque todas
+    // las categorías reales traen su «X. », pero basta una creada a mano.
+    expect(stripCategoryPrefix('Adoración')).toBe('Adoración');
+    expect(stripCategoryPrefix('Entrada')).toBe('Entrada');
+    expect(stripCategoryPrefix('María')).toBe('María');
+  });
+
+  it('deja en paz un título de una sola palabra corta', () => {
+    expect(stripCategoryPrefix('Santo')).toBe('Santo');
+  });
+
+  it('maneja cadena vacía', () => {
+    expect(stripCategoryPrefix('')).toBe('');
   });
 });
