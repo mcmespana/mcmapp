@@ -22,17 +22,8 @@ import { usePathname, useSegments, router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useStatusBarTheme } from '@/hooks/useStatusBarTheme';
-import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
-import { ProfileConfigProvider } from '@/contexts/ProfileConfigContext';
-import {
-  UserProfileProvider,
-  useUserProfile,
-} from '@/contexts/UserProfileContext';
-import {
-  SelectedSongsProvider,
-  useSelectedSongs,
-} from '@/contexts/SelectedSongsContext';
-import { ChoirSessionProvider } from '@/contexts/ChoirSessionContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useIncomingPlaylist } from '@/hooks/useIncomingPlaylist';
 import { useRegisterServiceWorker } from '@/hooks/useRegisterServiceWorker';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
@@ -44,74 +35,31 @@ import AddToHomeBanner from '@/components/AddToHomeBanner';
 import CommandPalette from '@/components/CommandPalette';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import MaintenanceScreen from '@/components/MaintenanceScreen';
-import { NotificationsProvider } from '@/contexts/NotificationsContext';
-import { EventSubscriptionsProvider } from '@/contexts/EventSubscriptionsContext';
-import { CalendarConfigProvider } from '@/contexts/CalendarConfigContext';
-import { OverlayStackProvider } from '@/contexts/OverlayStackContext';
-import UniwindThemeBridge from '@/components/UniwindThemeBridge';
-import { HeroUINativeProvider } from 'heroui-native';
-import { AppToastProvider, useToast } from '@/contexts/AppToastContext';
+import { useToast } from '@/contexts/AppToastContext';
 import OTAUpdatePrompt from '@/components/OTAUpdatePrompt';
-import { OTAProvider, useOTAContext } from '@/contexts/OTAContext';
-import { PreviewChannelProvider } from '@/contexts/PreviewChannelContext';
+import { useOTAContext } from '@/contexts/OTAContext';
 import { PreviewChannelModal } from '@/components/PreviewChannelModal';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { updateUserMCMData } from '@/utils/authHelpers';
 import FirebaseConfigErrorScreen from '@/components/FirebaseConfigErrorScreen';
-import { CarismochitoProvider } from '@/contexts/CarismochitoContext';
 import CarismochitoOverlay from '@/components/CarismochitoOverlay';
-import { ActiveEventProvider } from '@/contexts/ActiveEventContext';
-import {
-  VersionGateProvider,
-  useVersionGate,
-} from '@/contexts/VersionGateContext';
+import { useVersionGate } from '@/contexts/VersionGateContext';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
 import colors from '@/constants/colors';
+import AppProviders from '@/components/AppProviders';
 
 function RootLayout() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <HeroUINativeProvider
-            config={{ devInfo: { stylingPrinciples: false } }}
-          >
-            <AppToastProvider>
-              <OverlayStackProvider>
-                <ProfileConfigProvider>
-                  <AppSettingsProvider>
-                    <UniwindThemeBridge />
-                    <UserProfileProvider>
-                      <EventSubscriptionsProvider>
-                        <AuthProvider>
-                          <SelectedSongsProvider>
-                            <ChoirSessionProvider>
-                              <NotificationsProvider>
-                                <CalendarConfigProvider>
-                                  <PreviewChannelProvider>
-                                    <OTAProvider>
-                                      <CarismochitoProvider>
-                                        <ActiveEventProvider>
-                                          <VersionGateProvider>
-                                            <InnerLayout />
-                                          </VersionGateProvider>
-                                        </ActiveEventProvider>
-                                      </CarismochitoProvider>
-                                    </OTAProvider>
-                                  </PreviewChannelProvider>
-                                </CalendarConfigProvider>
-                              </NotificationsProvider>
-                            </ChoirSessionProvider>
-                          </SelectedSongsProvider>
-                        </AuthProvider>
-                      </EventSubscriptionsProvider>
-                    </UserProfileProvider>
-                  </AppSettingsProvider>
-                </ProfileConfigProvider>
-              </OverlayStackProvider>
-            </AppToastProvider>
-          </HeroUINativeProvider>
+          {/* La torre de providers vive en `components/AppProviders.tsx`:
+              el orden importa y hace falta montarla igual en los tests de
+              humo de pantallas. Ver el docblock de ese fichero. */}
+          <AppProviders>
+            <InnerLayout />
+          </AppProviders>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>

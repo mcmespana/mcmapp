@@ -18,6 +18,47 @@
 
 ---
 
+## 2026-09-18 21:15 — Red de humo: 14 pantallas montadas de verdad, en 3 escenarios
+
+Lo que faltaba después de la semana pasada. El 2026-09-09 la app tenía dos
+pantallas que **petaban al montar en cualquier plataforma** con `tsc` limpio,
+el lint limpio y 1.600 tests en verde, y se encontraron abriendo la app a mano.
+Esto convierte ese paseo en un test.
+
+- **`__tests__/screenSmoke.test.tsx`** — monta 14 pantallas en tres escenarios
+  (**vacía**, **con datos**, **offline**) y exige que monten y pinten algo. No
+  comprueba que estén bien: comprueba que existen y arrancan, que es el suelo
+  por debajo del cual no se publica. 42 tests nuevos que tardan ~1 s.
+- **Comprobado que caza lo que dice cazar**: retirando `@gorhom/bottom-sheet`
+  de `node_modules`, Reflexiones se pone roja en los tres escenarios. El bug que
+  llegó a `main` habría sido un test en rojo.
+- **`components/AppProviders.tsx` (nuevo)** — la torre de providers sale de
+  `app/_layout.tsx` a su propio componente. No es cosmético: el test monta las
+  pantallas DENTRO de los providers de verdad (varios de estos fallos solo
+  aparecen con el árbol real puesto), y teniéndolo en un sitio, añadir un
+  provider lo mete en la app y en el test a la vez. Si se copia otra vez en el
+  layout, el test empieza a mentir el día que cambie el orden.
+- **`jest.setup.js` (nuevo)** — mocks de los módulos NATIVOS para toda la
+  suite: `expo-alternate-app-icons`, `expo-haptics`, `expo-notifications`,
+  `expo-web-browser`, `expo-apple-authentication`, `expo-sensors`, el módulo
+  local de subrayado, Aptabase y Sentry. Un módulo de Expo con parte nativa
+  llama a `requireNativeModule()` al cargarse y mata la suite en el `import`,
+  aunque el test no lo use. Estaban descubriéndose uno a uno en cada intento:
+  ese era el muro que hacía que "añadir un test de pantalla" pareciera caro.
+- **`__mocks__/firebase-auth.ts` (nuevo)**, mapeado en `jest.config.js` como
+  ya lo estaban `firebase/app` y `firebase/database`: el paquete real es ESM y
+  cualquier test que monte `AuthProvider` moría con «Unexpected token
+  'export'». Estaba resuelto a mano y suelto en `authContext.test.tsx`.
+
+Con esto, el "no hay ni un test que renderice una pantalla" del §Mantenimiento
+de `TODO.md` deja de ser verdad, y el siguiente test de render no tiene que
+volver a pelearse con la infraestructura.
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (38 warnings),
+**1.653 tests** en verde.
+
+---
+
 ## 2026-09-10 22:30 — Un solo conmutador para toda la app (UI Nativa, Fase 2)
 
 Cierra el `SegmentedControl` de `PLAN_UI_NATIVA` §5, y de paso saca el mismo bug
