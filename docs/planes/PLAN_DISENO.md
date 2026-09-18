@@ -139,6 +139,15 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 
 ### Trabajo de abrir el fichero y decidir (sin regla general que aplicar)
 
+- [ ] **A6-quinquies. Los dos umbrales de brillo que quedan.**
+      `SurveyBanner` (`getBrightness(accent) > 200 → colors.primary`) y
+      `EventHomeScreen` (`> 175`). Son los últimos de la familia que cerró
+      §A6-bis, pero **la pregunta no es la misma**: ahí no se elige la tinta
+      sobre un fondo (eso ya lo hacen `onColor`/`readableOn`), se elige un
+      RELLENO, y sustituir el acento del evento por el azul de marca es una
+      decisión de diseño, no un cálculo. Mirar caso a caso si lo que se quiere
+      es oscurecer el acento (`readableOn`) o de verdad cambiarlo.
+
 - [ ] **A5.5. Los 865 hex que quedan.** Aquí se acabó lo mecánico: son hex cuyo
       VALOR coincide con un token pero cuyo PAPEL no (el mismo `#1C1C1E` es un
       gris de superficie en un sitio y "texto casi negro" en otro). Cambiarlo

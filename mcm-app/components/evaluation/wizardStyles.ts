@@ -59,6 +59,9 @@ export const createWizardStyles = (isDark: boolean) =>
       marginBottom: 24,
     },
     // Footer
+    // El CTA del pie ocupa todo el ancho, como el botón propio que tenía antes
+    // esta pantalla (ahora es `AppPrimaryButton`).
+    footerButton: { width: '100%' as const },
     footer: {
       paddingHorizontal: 24,
       paddingTop: 10,

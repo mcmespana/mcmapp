@@ -12,6 +12,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { UIColors, Colors, themeColors } from '@/constants/colors';
 import { focusRing, radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
+import { contrastRatio, onColor } from '@/utils/colorUtils';
 import typography from '@/constants/typography';
 
 /**
@@ -29,11 +30,24 @@ import typography from '@/constants/typography';
 interface AppPrimaryButtonProps {
   label: string;
   onPress: () => void;
-  /** Icono MaterialIcons a la izquierda del texto. */
+  /** Icono MaterialIcons junto al texto. */
   icon?: keyof typeof MaterialIcons.glyphMap;
+  /**
+   * De qué lado va el icono. `right` es el de "siguiente/continuar" (la flecha
+   * empuja hacia delante); `left` el de "guardar/enviar".
+   */
+  iconPosition?: 'left' | 'right';
   /** Color de fondo cuando está activo. Por defecto azul de acción de iOS. */
   color?: string;
-  /** Color del texto/icono cuando está activo. Por defecto blanco. */
+  /**
+   * Color del texto/icono cuando está activo. Si no se pasa, **lo decide el
+   * contraste**: blanco mientras llegue al 3:1 que pide un texto de este
+   * tamaño y peso sobre el relleno (el azul de acción de iOS da 3,86:1, y el
+   * blanco es la convención), y si no llega —un acento claro, el dorado, el
+   * amarillo de un evento— la tinta que más contraste dé. Antes era `#fff`
+   * fijo, y con `color` variable eso es ilegible: es el mismo fallo del §H4 de
+   * PLAN_DISENO.
+   */
   textColor?: string;
   disabled?: boolean;
   /** Muestra un spinner y deshabilita la pulsación. */
@@ -50,8 +64,9 @@ export default function AppPrimaryButton({
   label,
   onPress,
   icon,
+  iconPosition = 'left',
   color = DEFAULT_COLOR,
-  textColor = '#fff',
+  textColor,
   disabled = false,
   loading = false,
   haptic = true,
@@ -67,7 +82,10 @@ export default function AppPrimaryButton({
   const [focused, setFocused] = React.useState(false);
 
   const bg = isDisabled ? themeColors(isDark).separator : color;
-  const fg = isDisabled ? theme.icon : textColor;
+  const ink =
+    textColor ??
+    (contrastRatio('#FFFFFF', color) >= 3 ? '#fff' : onColor(color));
+  const fg = isDisabled ? theme.icon : ink;
 
   return (
     <PressableFeedback
@@ -95,13 +113,16 @@ export default function AppPrimaryButton({
       <PressableFeedback.Scale />
       {loading ? (
         <ActivityIndicator size="small" color={fg} />
-      ) : icon ? (
+      ) : icon && iconPosition === 'left' ? (
         <MaterialIcons name={icon} size={18} color={fg} />
       ) : null}
       {/* Mantener el texto visible también en loading para no “saltar” de ancho. */}
       <View>
         <Text style={[styles.label, { color: fg }]}>{label}</Text>
       </View>
+      {!loading && icon && iconPosition === 'right' ? (
+        <MaterialIcons name={icon} size={18} color={fg} />
+      ) : null}
     </PressableFeedback>
   );
 }

@@ -166,3 +166,26 @@ export const readableOn = (
   // blanco/negro que más contraste dé.
   return onColor(background);
 };
+
+/**
+ * Razón de contraste WCAG entre dos colores. 1 = idénticos, 21 = negro sobre
+ * blanco. Los mínimos: **4,5** para texto normal, **3** para texto grande y
+ * para elementos no textuales (iconos, bordes de control).
+ *
+ * Estaba calculada por dentro en `onColor`, en `readableOn` y a mano en varios
+ * tests. Se saca para que quien tenga que DECIDIR pueda preguntar el número en
+ * vez de estimarlo con un umbral de brillo, que es lo que llevó a tener cinco
+ * umbrales distintos puestos a ojo (§A6-bis de PLAN_DISENO).
+ */
+export const contrastRatio = (a: string, b: string): number => {
+  const lum = (hex: string) => {
+    const full = expandHex(hex);
+    const channel = (i: number) => {
+      const c = parseInt(full.slice(i, i + 2), 16) / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+  };
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};

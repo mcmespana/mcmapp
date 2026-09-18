@@ -16,7 +16,7 @@ import Animated, {
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
-import WizardButton from './WizardButton';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 
 /**
  * Pantalla de agradecimiento del wizard (envío recién hecho o ya evaluado
@@ -121,7 +121,7 @@ export default function SuccessPhase({
         entering={FadeInUp.delay(320).duration(420)}
         style={successStyles.cta}
       >
-        <WizardButton label="Hecho" color={accent} onPress={onDone} />
+        <AppPrimaryButton label="Hecho" color={accent} onPress={onDone} />
       </Animated.View>
     </View>
   );

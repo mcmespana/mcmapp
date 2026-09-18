@@ -18,6 +18,41 @@
 
 ---
 
+## 2026-09-19 01:10 — Un solo botón de CTA, y cae el umbral de brillo de la encuesta
+
+Cierra el `AppPrimaryButton` de `PLAN_UI_NATIVA` §5, con otra corrección del
+diagnóstico del plan.
+
+- **La evaluación no tenía "CTAs a mano": tenía su propio botón.**
+  `components/evaluation/WizardButton.tsx` era un duplicado de
+  `AppPrimaryButton` con `Pressable` + reanimated (la primitiva que §4 prohíbe
+  para código nuevo), texto `#fff` fijo y la flecha a la derecha. Sus cuatro
+  usos pasan al botón compartido —que gana `iconPosition` para la flecha de
+  "siguiente"— y el duplicado se borra.
+- **El texto del CTA ya no es `#fff` fijo**: lo decide el contraste. Se queda
+  en blanco mientras llegue al 3:1 que pide un texto de ese tamaño y peso sobre
+  el relleno (el azul de acción de iOS da 3,86:1, y el blanco es la convención),
+  y si no llega, lo elige `onColor`. Con `color` variable el blanco fijo era el
+  bug del §H4: sobre el amarillo del Vaticano da **1,25:1**.
+- **Cae un umbral de brillo a ojo.** La encuesta elegía su acento con
+  `getBrightness(tint) > 170` y, cuando saltaba, **cambiaba el color del evento
+  por el azul de marca**: el evento perdía su identidad en su propia encuesta.
+  Ahora es `readableOn`, que conserva el tono — el amarillo sigue siendo
+  amarillo, más oscuro. Quedan dos de esa familia (`SurveyBanner`,
+  `EventHomeScreen`) y NO se tocan de paso: ahí se elige un relleno, no una
+  tinta, y eso es una decisión de diseño. Anotados en `PLAN_DISENO`.
+- **`contrastRatio()` en `utils/colorUtils.ts`**: la razón de contraste WCAG,
+  que estaba calculada por dentro de `onColor`, de `readableOn` y a mano en
+  varios tests. Se saca para que quien tenga que decidir pueda preguntar el
+  número en vez de estimarlo con un umbral de brillo.
+- **SecretPanel y ExportPdfModal no tenían CTA que migrar**: su acción vive en
+  otra forma. Estaban en la lista del plan por inercia.
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (38 warnings),
+1.663 tests en verde, y el botón visto en pantalla en el modal de feedback.
+
+---
+
 ## 2026-09-18 23:40 — Un chip canónico, y cinco de seis categorías que no se leían
 
 Cierra los chips de `PLAN_UI_NATIVA` §5 y el §H5 de `PLAN_DISENO`.

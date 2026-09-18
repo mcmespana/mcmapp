@@ -22,12 +22,12 @@ import { useNavigation } from 'expo-router/react-navigation';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import colors, { Colors } from '@/constants/colors';
-import { getBrightness } from '@/components/ui/glass';
+import colors, { Colors, themeColors } from '@/constants/colors';
+import { readableOn } from '@/utils/colorUtils';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import type { EvaluationConfig } from '@/constants/evaluation';
-import WizardButton from '@/components/evaluation/WizardButton';
 import WelcomePhase from '@/components/evaluation/WelcomePhase';
 import QuestionInput from '@/components/evaluation/QuestionInput';
 import SuccessPhase from '@/components/evaluation/SuccessPhase';
@@ -71,15 +71,20 @@ export default function EvaluationWizard({
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
 
-  // Acento legible para botones/estructura (el tint del evento puede ser muy
-  // claro, p.ej. amarillo, e ilegible sobre blanco). Las estrellas mantienen
-  // su color dorado clásico.
-  const accentReadable =
-    getBrightness(accentColor) > 170
-      ? isDark
-        ? colors.secondary
-        : colors.primary
-      : accentColor;
+  // Acento legible para botones/estructura: el tint del evento puede ser muy
+  // claro (el amarillo del Vaticano, por ejemplo) e ilegible sobre blanco. Las
+  // estrellas mantienen su color dorado clásico.
+  //
+  // Antes esto era `getBrightness(accentColor) > 170`, y cuando saltaba
+  // **cambiaba el color del evento por el azul de marca**: el evento perdía su
+  // identidad justo en su propia encuesta. `readableOn` conserva el tono y solo
+  // mueve la luminosidad lo justo, así que el amarillo sigue siendo amarillo
+  // (más oscuro) en vez de volverse azul. Y el umbral a ojo —uno de los que
+  // quedaban, ver §A6-bis de PLAN_DISENO— desaparece.
+  const accentReadable = readableOn(
+    accentColor,
+    themeColors(isDark).background,
+  );
   const starColor = colors.yellow;
 
   const questions = config.questions;
@@ -335,25 +340,33 @@ export default function EvaluationWizard({
       {/* Footer: botón principal */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 14 }]}>
         {step < 0 ? (
-          <WizardButton
+          <AppPrimaryButton
             label="Empezar"
             color={accentReadable}
+            icon="arrow-forward"
+            iconPosition="right"
             onPress={goNext}
+            style={styles.footerButton}
           />
         ) : isLast ? (
-          <WizardButton
+          <AppPrimaryButton
             label={submitting ? 'Enviando…' : 'Enviar evaluación'}
             color={accentReadable}
+            icon="send"
             disabled={!canContinue || submitting}
             loading={submitting}
             onPress={finish}
+            style={styles.footerButton}
           />
         ) : (
-          <WizardButton
+          <AppPrimaryButton
             label={canContinue && !currentAnswered ? 'Saltar' : 'Continuar'}
             color={accentReadable}
+            icon="arrow-forward"
+            iconPosition="right"
             disabled={!canContinue}
             onPress={goNext}
+            style={styles.footerButton}
           />
         )}
       </View>

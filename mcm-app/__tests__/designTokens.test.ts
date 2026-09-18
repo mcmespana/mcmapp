@@ -16,7 +16,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import brand, { Colors, TabHeaderColors } from '@/constants/colors';
+import brand, { Colors, TabHeaderColors, UIColors } from '@/constants/colors';
 import { radii, shadows } from '@/constants/uiStyles';
 import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
 import { onColor, readableOn } from '@/utils/colorUtils';
@@ -286,6 +286,31 @@ describe('contraste de los roles de texto', () => {
           contrast(readableOn(visual!.color, fondo), fondo),
         ).toBeGreaterThanOrEqual(4.5);
       }
+    }
+  });
+
+  it('la tinta del CTA se lee sobre cualquier relleno de la casa', () => {
+    // `AppPrimaryButton` recibe el color por props: el azul de acción, el
+    // acento de Contigo, el tint del evento en la encuesta… Antes el texto era
+    // `#fff` fijo, que sobre el amarillo del Vaticano (#FCD200) da 1,25:1.
+    // Ahora se queda en blanco solo si llega al 3:1 que pide un texto de ese
+    // tamaño y peso, y si no, lo decide `onColor`. Este test recorre los
+    // rellenos que se usan de verdad.
+    const rellenos = [
+      UIColors.iosBlue,
+      brand.primary,
+      brand.info,
+      brand.accent,
+      brand.yellow,
+      brand.green,
+      brand.purple,
+      WARM_LIGHT.accent,
+      WARM_DARK.accent,
+    ];
+    for (const relleno of rellenos) {
+      const tinta =
+        contrast('#FFFFFF', relleno) >= 3 ? '#FFFFFF' : onColor(relleno);
+      expect(contrast(tinta, relleno)).toBeGreaterThanOrEqual(3);
     }
   });
 

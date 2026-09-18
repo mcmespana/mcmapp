@@ -224,12 +224,36 @@ Ya creados (reutilizar): `GlassActionGroup`, `AppIconButton`, `AppTextField`,
   Grupos (`SearchBar` es un compound component deliberadamente custom, no
   un `TextInput` simple — descartado), SecretPanel (panel admin, 16
   campos, superficie grande — último).
-- [~] **`AppPrimaryButton`** (CTA "Enviar/Guardar/Aceptar") — **creado**
-  (`components/ui/AppPrimaryButton.tsx`, usa `PressableFeedback` + `Scale`,
-  prop `color` para paletas propias de Contigo/eventos). Migrados: **SuggestSong,
-  AppFeedback, ReportBugs** (2026-07-22). Pendientes: el resto de modales con
-  CTA (Evaluation, SecretPanel, export PDF, login…) — estructura distinta, uno
-  a uno.
+- [x] **`AppPrimaryButton`** (CTA "Enviar/Guardar/Aceptar") — CERRADO
+      (2026-09-18). Creado en julio (`components/ui/AppPrimaryButton.tsx`,
+      `PressableFeedback` + `Scale`, prop `color` para paletas propias) y
+      adoptado en SuggestSong, AppFeedback, ReportBugs, PasswordPrompt y
+      Arrangement. El 2026-09-18 se cerró lo que faltaba, que resultó ser otra
+      cosa de la que decía este plan:
+      · **La evaluación no tenía "CTAs a mano": tenía su PROPIO botón**
+      (`components/evaluation/WizardButton.tsx`), un duplicado con
+      `Pressable` + reanimated, texto `#fff` fijo y la flecha a la derecha.
+      Sus 4 usos pasan a `AppPrimaryButton` (que gana `iconPosition`) y el
+      duplicado se borra. Era el último componente que usaba `Pressable`
+      suelto para un CTA, lo que la §4 prohíbe para código nuevo.
+      · **SecretPanel y ExportPdfModal no tienen CTA que migrar**: su acción
+      vive en otra forma (panel de admin y hoja de exportar). Estaban en la
+      lista por inercia.
+      · **El texto ya no es `#fff` fijo**: lo decide el contraste — blanco
+      mientras llegue al 3:1 sobre el relleno (el azul de acción da 3,86 y
+      el blanco es la convención de iOS), y si no, `onColor`. Con `color`
+      variable —el tint de un evento, el dorado— el blanco fijo era el bug
+      del §H4: sobre el amarillo del Vaticano da **1,25:1**. Con trinquete
+      en `designTokens.test.ts` sobre todos los rellenos de la casa.
+      · Y de paso cae **un umbral de brillo a ojo**: la encuesta elegía su
+      acento con `getBrightness(tint) > 170` y, cuando saltaba, **cambiaba el
+      color del evento por el azul de marca** (el evento perdía su identidad
+      en su propia encuesta). Ahora es `readableOn`, que conserva el tono: el
+      amarillo sigue siendo amarillo, más oscuro. Quedan dos umbrales de esa
+      familia, en `SurveyBanner` (>200) y `EventHomeScreen` (>175), y ahí la
+      pregunta es otra —elegir un RELLENO, no una tinta—, así que no se tocan
+      de paso: anotados en `PLAN_DISENO`.
+
 - [x] **`SegmentedControl`** — HECHO (2026-09-10). Adoptado en los cuatro
       sitios que de verdad son un conmutador de 2-3 opciones: **Mes/Agenda**
       del calendario (ya estaba), **Lectura/Comentario** del Evangelio (eran
