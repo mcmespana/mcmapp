@@ -9,7 +9,6 @@ import colors, { themeColors, Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { radii, shadows } from '@/constants/uiStyles';
-import { hexAlpha } from '@/utils/colorUtils';
 
 export const createStyles = (scheme: 'light' | 'dark') => {
   const theme = Colors[scheme ?? 'light'];
@@ -145,35 +144,6 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 6,
       flexShrink: 1,
       flexWrap: 'wrap',
-    },
-    destinationChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 3,
-      paddingVertical: 3,
-      paddingHorizontal: 7,
-      borderRadius: radii.xl,
-      borderWidth: 1,
-      borderColor: hexAlpha(themeColors(scheme === 'dark').link, '60'),
-      backgroundColor: hexAlpha(themeColors(scheme === 'dark').link, '12'),
-    },
-    destinationChipText: {
-      fontSize: 10,
-      color: themeColors(scheme === 'dark').link,
-      fontWeight: '600',
-    },
-    categoryChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 3,
-      paddingVertical: 3,
-      paddingHorizontal: 7,
-      borderRadius: radii.xl,
-      borderWidth: 1,
-    },
-    categoryChipText: {
-      ...typography.overline,
-      fontWeight: '600',
     },
     actionChip: {
       flexDirection: 'row',

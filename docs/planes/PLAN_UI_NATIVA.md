@@ -263,7 +263,26 @@ Ya creados (reutilizar): `GlassActionGroup`, `AppIconButton`, `AppTextField`,
   no un vacío neutro — descartado, no migrar). **NO** en
   `CommandPalette` (dropdown compacto — el padding de EmptyState lo
   desbordaría).
-- [ ] **Chips/pills** — estandarizar (mezcla de heroui `Chip` + pills custom).
+- [x] **Chips/pills** — HECHO (2026-09-18) con una corrección del diagnóstico:
+      "mezcla de heroui `Chip` + pills custom" juntaba tres cosas distintas.
+      Lo que de verdad se repetía cinco veces era el **chip informativo**
+      (categoría y destino de una notificación, en la lista, en el detalle y en
+      la campana de Inicio), siempre con la misma receta: relleno al 12-14 %
+      del color, borde al 60 % y el texto en el color a pelo. Eso es ahora
+      `components/ui/AppChip.tsx`.
+      **No se tocan, y no es deuda**: el chip de FILTRO del calendario (se
+      pulsa, tiene estado seleccionado y vive en UN sitio — un componente para
+      un uso es peor que el uso), el `TagChip` del cantoral (relleno sólido con
+      emoji, contador y botón de quitar; ya canónico para su función) y las
+      insignias de contador, que no son chips.
+      **El hallazgo**: el texto de esos chips era el color de la categoría a
+      pelo, y medido no se leía — `#9D1E74` a **1,91:1** sobre el fondo oscuro,
+      `#C62828` a 2,48, `#0E7490` a 2,60: **cinco de seis categorías
+      ilegibles en oscuro**, dos también en claro. `AppChip` pasa la etiqueta y
+      el icono por `readableOn()` (nuevo en `utils/colorUtils.ts`), que conserva
+      el tono y mueve la luminosidad lo justo, así que los colores que mande el
+      Panel mañana entran ya legibles sin tabla que mantener. Con trinquete en
+      `designTokens.test.ts`.
 - [ ] **Tokens** (`radii`/`shadows`/`typography`) — migrar números mágicos.
 
 ## 4. Decisiones de producto — ✅ TOMADAS (2026-07-22)

@@ -22,6 +22,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import colors, { Colors, themeColors } from '@/constants/colors';
 import EmptyState from '@/components/ui/EmptyState';
+import AppChip from '@/components/ui/AppChip';
 import { hexAlpha } from '@/utils/colorUtils';
 import { capitalizeFirst } from '@/utils/textCase';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -256,38 +257,14 @@ function NotificationRow({
                     categorías con significado propio; "general"/desconocida no
                     pinta chip. */}
                 {category && (
-                  <View
-                    style={[
-                      styles.categoryChip,
-                      {
-                        borderColor: hexAlpha(category.color, '60'),
-                        backgroundColor: hexAlpha(category.color, '14'),
-                      },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name={category.icon as any}
-                      size={11}
-                      color={category.color}
-                    />
-                    <Text
-                      style={[
-                        styles.categoryChipText,
-                        { color: category.color },
-                      ]}
-                    >
-                      {category.label}
-                    </Text>
-                  </View>
+                  <AppChip
+                    label={category.label}
+                    color={category.color}
+                    icon={category.icon as never}
+                  />
                 )}
                 {/* Chip de destino interno */}
-                {routeInfo && (
-                  <View style={styles.destinationChip}>
-                    <Text style={styles.destinationChipText}>
-                      {routeInfo.label}
-                    </Text>
-                  </View>
-                )}
+                {routeInfo && <AppChip label={routeInfo.label} />}
                 {/* Chips de botones de acción (hasta 3) — Pressable para
                     evitar <button> anidado en web */}
                 {actionButtons.map((button, idx) => (
@@ -803,29 +780,13 @@ function NotificationDetailModal({
 
                 {/* Chip de categoría de negocio (data.category) */}
                 {category && (
-                  <View
-                    style={[
-                      dStyles.categoryChip,
-                      {
-                        borderColor: hexAlpha(category.color, '60'),
-                        backgroundColor: hexAlpha(category.color, '14'),
-                      },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name={category.icon as any}
-                      size={13}
-                      color={category.color}
-                    />
-                    <Text
-                      style={[
-                        dStyles.categoryChipText,
-                        { color: category.color },
-                      ]}
-                    >
-                      {category.label}
-                    </Text>
-                  </View>
+                  <AppChip
+                    label={category.label}
+                    color={category.color}
+                    icon={category.icon as never}
+                    size="md"
+                    style={dStyles.detailChip}
+                  />
                 )}
 
                 {/* Imagen grande */}
@@ -985,19 +946,8 @@ const dStyles = StyleSheet.create({
   // capitalize las pone TODAS en mayúscula («10 De Septiembre De 2026 A Las
   // 14:32»). La inicial la pone `capitalizeFirst`.
   date: { fontSize: 13, marginBottom: spacing.lg },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    marginTop: -spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  categoryChipText: { fontSize: 12, fontWeight: '600' },
+  // El chip lo pinta `AppChip`; esto es solo su sitio en la columna.
+  detailChip: { marginTop: -spacing.sm, marginBottom: spacing.lg },
   image: {
     width: '100%',
     height: 200,

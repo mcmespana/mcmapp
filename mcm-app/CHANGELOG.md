@@ -18,6 +18,38 @@
 
 ---
 
+## 2026-09-18 23:40 — Un chip canónico, y cinco de seis categorías que no se leían
+
+Cierra los chips de `PLAN_UI_NATIVA` §5 y el §H5 de `PLAN_DISENO`.
+
+- **`components/ui/AppChip.tsx` (nuevo)** — el chip informativo teñido, que
+  estaba escrito **cinco veces**: la categoría y el destino de una notificación
+  en la lista, en el detalle y en la campana de Inicio, siempre con la misma
+  receta (relleno al 12-14 % del color, borde al 60 %, texto en el color).
+- **El bug que escondía, que es el de verdad**: los seis colores de categoría
+  son UN valor usado como texto en los dos modos, y medidos daban `#9D1E74` a
+  **1,91:1** sobre el fondo oscuro, `#C62828` a 2,48, `#0E7490` a 2,60 y
+  `#8A6D00` a 2,83 — **cinco de seis ilegibles en oscuro**, y dos también en
+  claro. Es la familia del §H4 otra vez.
+- **`readableOn()` en `utils/colorUtils.ts` (nuevo)** — el mismo color, movido
+  hasta que se lee: conserva tono y saturación y solo toca la luminosidad. Es
+  la versión automática de lo que se hizo a mano con `accentText` para el
+  dorado de Contigo, y hacía falta porque el Panel puede mandar colores de
+  categoría nuevos que nadie ha medido: una tabla de pares a mano se queda
+  corta el día que añadan una. Con 8 tests propios y un trinquete en
+  `designTokens.test.ts` que recorre las seis categorías en los dos modos.
+- **Lo que NO se migra, y no es deuda** (el censo del plan contaba de más): el
+  chip de FILTRO del calendario es pulsable, tiene estado seleccionado y vive
+  en un solo sitio; el `TagChip` del cantoral ya es canónico para su función
+  (relleno sólido con emoji, contador y botón de quitar); y las insignias de
+  contador no son chips.
+
+Verificado en pantalla: la lista y el detalle de notificaciones con las seis
+categorías, en claro y en oscuro. tsc limpio (app y tests), 0 errores de lint
+(38 warnings), **1.662 tests** en verde.
+
+---
+
 ## 2026-09-18 21:15 — Red de humo: 14 pantallas montadas de verdad, en 3 escenarios
 
 Lo que faltaba después de la semana pasada. El 2026-09-09 la app tenía dos

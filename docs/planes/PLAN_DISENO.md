@@ -174,8 +174,14 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       pensarlo, no copiar el patrón del botón.
 - [ ] **H2-bis.** `ShareQrModal` no se migró a `EmptyState` a propósito: no es
       un vacío, es un aviso con su botón al lado. Revisar si merece otro patrón.
-- [ ] **H5. Un `Chip` canónico.** Mezcla de `Chip` de heroui y pills custom
-      (pendiente también en `PLAN_UI_NATIVA.md` §5).
+- [x] **H5. Un `Chip` canónico — hecho el 2026-09-18** (`components/ui/AppChip.tsx`).
+      El censo contaba de más: eran tres patrones distintos y solo uno —el chip
+      informativo teñido— estaba repetido (cinco veces). Detalle y lo que NO se
+      migra, en `PLAN_UI_NATIVA.md` §5.
+      De paso salió un bug de contraste de la familia del §H4: el texto era el
+      color de la categoría a pelo y **cinco de seis no se leían en oscuro**
+      (el morado, a 1,91:1). Nace `readableOn()`, la versión automática de lo
+      que se hizo a mano con `accentText` en §A3.
 - [ ] **H6. Densidad de la lista de canciones.** Es la pantalla más usada y de
       las menos tokenizadas. Al migrarla (A5.5), revisar de paso altura de fila
       y jerarquía título/subtítulo/pill de tono.

@@ -19,7 +19,8 @@ import path from 'path';
 import brand, { Colors, TabHeaderColors } from '@/constants/colors';
 import { radii, shadows } from '@/constants/uiStyles';
 import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
-import { onColor } from '@/utils/colorUtils';
+import { onColor, readableOn } from '@/utils/colorUtils';
+import { categoryVisual } from '@/utils/notificationCategory';
 import spacing from '@/constants/spacing';
 
 const cssPath = path.join(__dirname, '..', 'global.css');
@@ -255,6 +256,36 @@ describe('contraste de los roles de texto', () => {
     ];
     for (const acento of acentos) {
       expect(contrast(onColor(acento), acento)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('todas las categorías de notificación se leen en los dos modos', () => {
+    // Los colores de categoría son UN valor usado como texto en claro Y en
+    // oscuro, y medidos daban `#9D1E74` a 1,91:1 sobre el fondo oscuro,
+    // `#C62828` a 2,48 y `#0E7490` a 2,60 — cinco de seis ilegibles en oscuro,
+    // dos también en claro. `AppChip` los pasa por `readableOn`, que conserva
+    // el tono y mueve la luminosidad lo justo. Este test cubre el contrato
+    // para las que hay Y para las que el Panel añada mañana: si alguien mete
+    // un color a pelo en el chip, se cae aquí.
+    // Las categorías que conoce la app hoy. La lista vive en
+    // `utils/notificationCategory.ts` y no se exporta a propósito (tolera
+    // strings desconocidos); aquí se nombran las que deben pintar chip.
+    const CATEGORIAS = [
+      'eventos',
+      'cancionero',
+      'fotos',
+      'urgente',
+      'mantenimiento',
+      'celebraciones',
+    ];
+    for (const categoria of CATEGORIAS) {
+      const visual = categoryVisual(categoria);
+      expect(visual).not.toBeNull();
+      for (const fondo of [Colors.light.background, Colors.dark.background]) {
+        expect(
+          contrast(readableOn(visual!.color, fondo), fondo),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
     }
   });
 

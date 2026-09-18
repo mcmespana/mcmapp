@@ -50,6 +50,7 @@ import { localISO } from '@/utils/localDate';
 import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
+import AppChip from '@/components/ui/AppChip';
 import GlassActionGroup from '@/components/ui/GlassActionGroup';
 import PressableScale from '@/components/ui/PressableScale';
 import {
@@ -1017,29 +1018,11 @@ export default function Home() {
                 <View style={styles.notifCtaRow}>
                   {/* Chip de destino (internalRoute) — solo indicador, la tarjeta lleva a /notifications */}
                   {internalRouteInfo && (
-                    <View
-                      style={[
-                        styles.destinationChip,
-                        {
-                          borderColor: hexAlpha(accentColor, '60'),
-                          backgroundColor: hexAlpha(accentColor, '10'),
-                        },
-                      ]}
-                    >
-                      <MaterialIcons
-                        name={internalRouteInfo.icon}
-                        size={12}
-                        color={accentColor}
-                      />
-                      <Text
-                        style={[
-                          styles.destinationChipText,
-                          { color: accentColor },
-                        ]}
-                      >
-                        {internalRouteInfo.label}
-                      </Text>
-                    </View>
+                    <AppChip
+                      label={internalRouteInfo.label}
+                      color={accentColor}
+                      icon={internalRouteInfo.icon}
+                    />
                   )}
 
                   {/* Botón de acción explícito — Pressable evita <button> anidado en web */}
