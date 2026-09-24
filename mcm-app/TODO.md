@@ -178,10 +178,15 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 - [ ] **Colección + contador** al tocar la mascota (animación especial); guardado
       por usuario y **solo con sesión iniciada** (si no, avisar de pérdida de
       progreso).
-- [ ] **Widget de los 3 hábitos diarios** (Evangelio/Oración/Revisión) con marca,
-      deep-link y recordatorio (notificación local / Carismochito). ⚠️ NATIVO
-      (WidgetKit iOS / App Widget Android) → build de tienda + App Group para
-      compartir el estado del día con el widget. Empezar por iOS.
+- [ ] **Widgets de Contigo — los TRES** (ampliado el 2026-09-19, ver
+      `docs/planes/PLAN_WIDGET_CONTIGO.md`): (1) los 3 hábitos diarios
+      (Evangelio/Oración/Revisión) con marca y deep-link; (2) **la racha**, con
+      un estado visual distinto por tramo (0 / 1-2 / 3-6 / 7+ / 30+ días);
+      (3) **el evangelio del día**, que enseña "Hoy, Lc 15, 1-10" con su icono y
+      lleva directo a la pantalla del evangelio. Más el recordatorio
+      (notificación local / Carismochito). ⚠️ NATIVO (WidgetKit iOS / App Widget
+      Android) → build de tienda + App Group. Los tres comparten target, payload
+      y deep links: se hacen juntos. Empezar por iOS.
 
 ## Notificaciones push — mejoras pendientes (alineación con MCM Panel)
 
@@ -289,6 +294,21 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 - Logo MCM grande arriba
 - Lista simple de secciones con subtítulo
 - Barra de búsqueda global
+
+---
+
+## Ideas de futuro (apuntadas, sin fecha)
+
+- [ ] **Mapa interactivo de obras y movimiento** (anotado 2026-09-19, idea del
+      usuario). Un mapa con los puntos donde hay presencia: hospitales,
+      residencias y colegios de las Hermanas de la Consolación, y los sitios
+      donde la gente se junta para hacer movimiento. Sin fecha ni plan todavía
+      — lo que hay que decidir antes de escribirlo: de dónde salen los datos
+      (¿nodo nuevo en RTDB mantenido desde el panel, o un JSON en el repo?),
+      qué se enseña de cada punto (ficha, foto, contacto, enlace a Comunica) y
+      si es solo consulta o también "apúntate al de tu zona". Ojo al coste
+      técnico: un mapa de verdad en la app son `react-native-maps` (nativo,
+      build de tienda) o un WebView con un mapa web (OTA, más pobre).
 
 ---
 

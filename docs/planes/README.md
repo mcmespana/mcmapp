@@ -3,7 +3,7 @@
 > **Lee esto antes de abrir ningún `PLAN_*.md`.** Su único trabajo es que no
 > vuelvas a ejecutar algo que ya está hecho.
 >
-> Última actualización: 2026-09-02.
+> Última actualización: 2026-09-19.
 
 ## La regla, en una línea
 
@@ -37,7 +37,7 @@ no entran en la bolsa oportunista, y no hace falta preguntar por ellos.
 
 | Plan                                               | Por qué espera                                                    |
 | -------------------------------------------------- | ----------------------------------------------------------------- |
-| [`PLAN_WIDGET_CONTIGO.md`](PLAN_WIDGET_CONTIGO.md) | Feature entera + build de tienda dedicada (WidgetKit + App Group) |
+| [`PLAN_WIDGET_CONTIGO.md`](PLAN_WIDGET_CONTIGO.md) | Feature entera + build de tienda dedicada (WidgetKit + App Group). Ampliado el 2026-09-19: son **tres** widgets (hábitos, racha, evangelio del día) |
 | [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md)   | Stub: todavía no hay plan funcional que ejecutar                  |
 
 ## 🗄️ Archivados — HECHOS o ANULADOS, no re-ejecutar

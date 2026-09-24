@@ -11,7 +11,8 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-09-10 (CI arreglado y verificado en la PR #344; UI Nativa: `SegmentedControl` cerrado).
+> Última actualización: 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
 > [`docs/planes/README.md`](README.md). Si un plan está en `archivo/`, está
@@ -41,7 +42,7 @@
 | **⚠️ Roto y sin dueño**      | Nada. El CI se arregló el 2026-09-09: estaba `disabled_manually` desde mayo, ahora vive en `.github/workflows/pr.yml`. Falta solo verlo verde en la primera PR (`mcm-app/TODO.md` §0) |
 | **Después de la build**      | UI Nativa Fase 2 → Integración D → Carismochito                                                                                                                                       |
 | **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                            |
-| **Futuro lejano, sin prisa** | Widget de Contigo · Panel Pañuelo (§1 notas)                                                                                                                                          |
+| **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio) · Panel Pañuelo (§1 notas)                                                                                                                                          |
 | **Cerrado**                  | Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                      |
 
 > **Ojo con el orden al publicar**: `production` dispara la OTA sola. No se
@@ -95,7 +96,7 @@
 | 6   | **Carismochito** (ejecutar bien §1–4)                                                   | Sonnet (Opus solo el icono nativo §5)        | No                                                                      | ⏳ Cierre final                                                                                                                                                                                                                                                                         | `docs/planes/PLAN_CARISMOCHITO.md`                   |
 
 **Fuera de la cola — futuro lejano (decisión del usuario, 2026-08-15):**
-**Widget de Contigo** y **Panel Pañuelo** salen de la Cola Principal. Son dos
+**Widgets de Contigo** (los tres) y **Panel Pañuelo** salen de la Cola Principal. Son dos
 funcionalidades "muy futuras": _ya se hará, no hay prisa_. No las propongas al
 decir "seguimos", no las metas en la bolsa oportunista y **no preguntes por
 ellas** — la decisión de cuándo es del usuario y ya la ha tomado: todavía no.
@@ -201,14 +202,14 @@ guardan para la siguiente build de tienda.
 
 | Qué                                                                    | Estado | Por qué se aplaza                                                                                                                                                                                                               |
 | ---------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Widget de Contigo** (WidgetKit iOS / App Widget Android + App Group) | 0%     | Es una feature entera, no un extra. `docs/planes/PLAN_WIDGET_CONTIGO.md`                                                                                                                                                        |
+| **Widgets de Contigo** — hábitos + racha + evangelio del día (WidgetKit iOS / App Widget Android + App Group) | 0%     | Es una feature entera, no un extra. Los tres comparten target, payload y deep links: se hacen juntos. `docs/planes/PLAN_WIDGET_CONTIGO.md`                                                                                                                                                        |
 | **Firebase App Check** (DeviceCheck / Play Integrity)                  | 0%     | Arrastra `@react-native-firebase` entero junto al SDK JS que ya se usa, y un _enforcement_ mal configurado deja sin datos a toda la base instalada. Además la Integración D (reglas) sigue abierta, que es el agujero de verdad |
 
 #### C.4 — Sigue bloqueado por una decisión tuya
 
 | Qué                                              | Qué falta decidir                                                                                |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| **Widget de Contigo** (`PLAN_WIDGET_CONTIGO.md`) | Es una build dedicada, no un extra de ésta: WidgetKit + App Group. ¿Se compromete y para cuándo? |
+| **Widgets de Contigo** (`PLAN_WIDGET_CONTIGO.md`) | Es una build dedicada, no un extra de ésta: WidgetKit + App Group. ¿Se compromete y para cuándo? |
 
 > **Paso a paso del día de la build**: `docs/desarrollo/BUILD_AGOSTO_2026.md`
 > — variables de Sentry, credenciales de la extensión y checklist de pruebas.
@@ -329,6 +330,32 @@ añadido en `archivo/tacticos/007-…` y estado marcado
 reglas** (no relacionado con esta visibilidad deseada del panel — p. ej. una
 ruta que debería estar protegida por otro motivo), evaluarlo aparte; no
 reabrir este plan tal cual, su premisa ya no aplica.
+
+### Pestaña de perfil de usuario
+
+**Descartada el 2026-09-19**, tras investigarlo a petición del usuario. No se
+vuelve a proponer ni a re-investigar.
+
+El motivo es aritmético, no de gusto: la barra admite **6 items**
+(`MAX_TAB_BAR_ITEMS`) y los perfiles del seed ya declaran **7 tabs**, así que
+Fotos ya vive como tarjeta en Más — y con un evento activo caen dos. Un tab
+"Perfil" añadido al final de `TABS_CONFIG` sería siempre el primero en caerse,
+o sea que acabaría siendo una tarjeta en Más: exactamente donde ya está el
+`SettingsBottomSheet`. Y el dashboard personal de verdad (racha, minutos,
+lecturas, calendario) ya existe dentro de Contigo.
+
+Lo que **sí** quedó como idea buena, barata y OTA, por si algún día se retoma:
+sacar el contenido del `SettingsBottomSheet` a una pantalla propia dentro del
+stack de Más (deep-linkable y con sitio para crecer), y cambiar el engranaje
+de la Home por el avatar/inicial cuando hay sesión.
+
+Hallazgo suelto de esa investigación, sin dueño: el Wordle se identifica con un
+id aleatorio de AsyncStorage (`hooks/useWordleStats.ts`), **no con el uid de
+Firebase** — estadísticas y ranking son por dispositivo. Contigo sí sincroniza
+contra `users/{uid}`. Habría que unificarlo antes de enseñar "tu racha" en
+ningún sitio compartido.
+
+---
 
 ---
 
