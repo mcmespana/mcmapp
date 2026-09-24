@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> Última actualización: 2026-09-24 (UI Nativa Fase 2 en pausa). Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
 > de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
@@ -40,7 +40,7 @@
 | **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`)                                                             |
 | **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                      |
 | **⚠️ Roto y sin dueño**      | Nada. El CI se arregló el 2026-09-09: estaba `disabled_manually` desde mayo, ahora vive en `.github/workflows/pr.yml`. Falta solo verlo verde en la primera PR (`mcm-app/TODO.md` §0) |
-| **Después de la build**      | UI Nativa Fase 2 → Integración D → Carismochito                                                                                                                                       |
+| **Después de la build**      | Integración D → Carismochito (UI Nativa Fase 2 **en pausa**, ver §1)                                                                                                                                     |
 | **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                            |
 | **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio) · Panel Pañuelo (§1 notas)                                                                                                                                          |
 | **Cerrado**                  | Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                      |
@@ -91,7 +91,7 @@
 | 1   | **Plan 004** — Contigo: sync bidireccional de hábitos/revisiones + tests `authHelpers`  | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `archivo/tacticos/004-…`                             |
 | 2   | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `archivo/tacticos/005-…`                             |
 | 3   | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate   | **Opus**                                     | No                                                                      | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `archivo/tacticos/008-…`                             |
-| 4   | **UI Nativa** — headers nativos + componentes unificados                                | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | 🟡 En curso — Fase 1 ✅, Fase 2 ~80% (`AppTextField`/`EmptyState` mayormente hechos, **`SegmentedControl` cerrado el 2026-09-10**, `AppPrimaryButton` parcial, chips sin empezar)                                                                                                       | `docs/planes/PLAN_UI_NATIVA.md`                      |
+| 4   | **UI Nativa** — headers nativos + componentes unificados                                | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | ⏸️ **EN PAUSA** (decisión del usuario, 2026-09-24): no se retoma hasta que lo diga. Fase 1 ✅, Fase 2 ~80% (`AppTextField`/`EmptyState` mayormente hechos, **`SegmentedControl` cerrado el 2026-09-10**, `AppPrimaryButton` parcial, chips sin empezar)                                                                                                       | `docs/planes/PLAN_UI_NATIVA.md`                      |
 | 5   | **Integración D** — Seguridad Firebase (+ A2)                                           | Opus                                         | **Sí** — D2 + repo `mcmpanel` (ver §4)                                  | ⏳ Pendiente, importante pero no urgente. **Es lo único que queda de PLAN_INTEGRACIONES**: el resto (A, B, C, E) se cerró el 2026-08-12                                                                                                                                                 | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" |
 | 6   | **Carismochito** (ejecutar bien §1–4)                                                   | Sonnet (Opus solo el icono nativo §5)        | No                                                                      | ⏳ Cierre final                                                                                                                                                                                                                                                                         | `docs/planes/PLAN_CARISMOCHITO.md`                   |
 
@@ -105,7 +105,8 @@ cuando toque.
 
 **Notas de orden:**
 
-- El **4** (UI Nativa) puede avanzar en lo no bloqueado (Fase 2: migrar
+- El **4** (UI Nativa) está **en pausa desde el 2026-09-24** por decisión del
+  usuario: "seguimos" lo salta. Cuando se reanude, puede avanzar en lo no bloqueado (Fase 2: migrar
   `TextInput`→`AppTextField`, `AppPrimaryButton`, `EmptyState`…) mientras se
   resuelven las 3 decisiones que sí bloquean partes concretas.
 - El **5** (Integración D) ya NO es la urgencia máxima de antes: la app está
