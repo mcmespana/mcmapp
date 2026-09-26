@@ -366,7 +366,7 @@ ningún sitio compartido.
 | ------------------------------------------------------------------------------------------ | ------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?" |
 | **Sacar la caza de Carismochitos del laboratorio**                                        | Carismochito  | `docs/funcionalidades/CARISMOCHITO.md`               | "¿Cuándo sale la caza para todo el mundo, y la colección se enlaza desde algún sitio o espera a la vista de perfil?"                                                 |
-| **Plan funcional del Panel Pañuelo**                                                       | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md` (stub)           | "¿Nos sentamos a diseñar la mecánica de chapas/modelo 3D, o seguimos esperando? La colección de Carismochitos ya existe (en el laboratorio) y el borrador del plan también."                                                           |
+| **Arrancar "Tu pañuelo"** (perfil con chapas, Carismochitos y logros)                      | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md` §9               | "¿Empezamos la Fase 0 (pantalla de perfil)? Y las 5 decisiones del §9: validación de chapas, quién crea las chapas, perfil vs. ajustes, sacar la caza, chapas especiales." |
 
 ---
 
