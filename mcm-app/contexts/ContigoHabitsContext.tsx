@@ -11,7 +11,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { syncContigoHabit, fetchContigoHabits } from '@/utils/authHelpers';
 import { mergeContigoHabits } from '@/utils/contigoMerge';
-import { localISO } from '@/utils/localDate';
+import { localISO, offsetISODate } from '@/utils/localDate';
+import { computeStreak } from '@/utils/contigoStreak';
 
 export type PrayerDuration =
   'less_than_1' | '2_to_4' | '5_to_10' | '10_to_15' | 'more_than_15';
@@ -251,34 +252,8 @@ export function ContigoHabitsProvider({
     return c;
   };
 
-  const getStreak = (habit: 'reading' | 'prayer' | 'revision'): number => {
-    const todayStr = localISO();
-    let currentStreak = 0;
-    let cursor = todayStr;
-
-    while (true) {
-      const record = records[cursor];
-      const isDone =
-        habit === 'reading'
-          ? record?.readingDone
-          : habit === 'prayer'
-            ? record?.prayerDone
-            : record?.revisionDone;
-
-      // If checking today and it's not done, it doesn't break the streak (yet)
-      // unless yesterday was also not done
-      if (cursor === todayStr && !isDone) {
-        // Skip today if not done yet
-      } else if (isDone) {
-        currentStreak++;
-      } else {
-        break;
-      }
-      cursor = offsetISODate(cursor, -1);
-    }
-
-    return currentStreak;
-  };
+  const getStreak = (habit: 'reading' | 'prayer' | 'revision'): number =>
+    computeStreak(records, habit, localISO());
 
   const todayStr = localISO();
   const todayRecord = getRecord(todayStr);
@@ -322,13 +297,6 @@ export function useContigoHabitsContext(): ContigoHabitsContextValue {
 // `localISO` vive en utils/localDate.ts (compartida con Home/Calendario/
 // Reflexiones — antes cada sitio calculaba "hoy" a su manera y varios lo
 // hacían mal con `toISOString()`, que convierte a UTC).
-
-function offsetISODate(base: string, delta: number): string {
-  const [y, m, d] = base.split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
-  dt.setDate(dt.getDate() + delta);
-  return localISO(dt);
-}
 
 /** Mon→Sun ISO-week dates that contain `dateStr` (local time). */
 function getMondayWeek(dateStr: string): string[] {

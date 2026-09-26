@@ -117,6 +117,19 @@ El más simple y probablemente el que más se queda puesto.
 
 ## 5. Pasos
 
+0. ✅ **Hecho el 2026-09-26 — el paquete de datos (solo JS).**
+   `utils/contigoWidgetPayload.ts` construye el payload de §2 ya fijado
+   (`version: 1`): hábitos de hoy, recuento, racha de oración con su tramo
+   (`apagado`/`chispa`/`llama`/`hoguera`/`leyenda`, los de §3.2) y hasta 3 días
+   de evangelio con cita, título y frase de gancho sin HTML. La racha sale de
+   `utils/contigoStreak.ts`, **la misma función que usa la pantalla de
+   Contigo** (antes vivía dentro del contexto), así que widget y app no pueden
+   discrepar. Tests en `__tests__/contigoWidgetPayload.test.ts`. Todavía **no
+   se escribe en ningún sitio**: eso es el paso 2, con el App Group.
+   Se dejó la parte nativa para después de publicar la build 2.1 a propósito:
+   un segundo target de iOS (con su App Group y su perfil de firma) encima de
+   la extensión de notificaciones que estrena esa build es otra cosa que puede
+   romper el día de compilar.
 1. Añadir el config plugin de targets (iOS primero) → build de desarrollo.
 2. App Group + escribir el payload de §2 al marcar un hábito y al refrescar
    lecturas.

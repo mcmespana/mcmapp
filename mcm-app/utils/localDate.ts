@@ -13,3 +13,15 @@ export function localISO(d: Date = new Date()): string {
     String(d.getDate()).padStart(2, '0'),
   ].join('-');
 }
+
+/**
+ * Suma `delta` días a una fecha `YYYY-MM-DD` en hora local. Pasa por `Date`
+ * local (no por milisegundos) para que un cambio de hora de marzo u octubre
+ * no se coma ni duplique un día.
+ */
+export function offsetISODate(base: string, delta: number): string {
+  const [y, m, d] = base.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + delta);
+  return localISO(dt);
+}
