@@ -1,11 +1,13 @@
-# Plan — "Tu pañuelo": perfil con chapas, Carismochitos y logros
+# Plan — Pañuelo (POR DEFINIR)
 
-> **Estado: 🔵 futuro lejano — NO ejecutar hasta que el usuario lo diga.**
-> Plan funcional escrito el 2026-09-26 a petición del usuario ("prepárame un
-> plan de cómo sería… hará falta una vista de perfil donde ver logros, chapas
-> y carismochitos; eso lo haremos más adelante"). Sustituye al stub del
-> 2026-07-22. Las decisiones que faltan están al final (§9) — sin ellas no se
-> empieza.
+> ## ⚠️ POR DEFINIR — el usuario explicará la idea
+>
+> **No ejecutar nada de aquí, ni tomarlo como decidido.** El 2026-09-26 el
+> usuario dijo que la idea del pañuelo la explicará él. Lo de abajo es una
+> **propuesta** que escribió Claude ese mismo día para tener algo sobre la
+> mesa (perfil con chapas, Carismochitos y logros); puede cambiar entera
+> cuando el usuario la cuente. Cuando la explique, se reescribe este plan
+> partiendo de lo que diga, no de esta propuesta.
 
 ## 1. Qué es, en una frase
 

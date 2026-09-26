@@ -37,7 +37,7 @@ no entran en la bolsa oportunista, y no hace falta preguntar por ellos.
 | Plan                                               | Por qué espera                                                    |
 | -------------------------------------------------- | ----------------------------------------------------------------- |
 | [`PLAN_WIDGET_CONTIGO.md`](PLAN_WIDGET_CONTIGO.md) | Feature entera + build de tienda dedicada (WidgetKit + App Group). Ampliado el 2026-09-19: son **tres** widgets (hábitos, racha, evangelio del día) |
-| [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md)   | Plan funcional escrito el 2026-09-26 ("Tu pañuelo": perfil con chapas, Carismochitos y logros). Espera a que el usuario lo arranque y a 5 decisiones (§9) |
+| [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md)   | ⚠️ **Por definir**: el usuario explicará la idea. Lo que hay escrito es solo una propuesta de Claude (2026-09-26), no un plan decidido |
 
 ## 🗄️ Archivados — HECHOS o ANULADOS, no re-ejecutar
 
