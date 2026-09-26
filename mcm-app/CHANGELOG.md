@@ -18,6 +18,19 @@
 
 ---
 
+## 2026-09-26 18:53 — Calendario: títulos con "\," y descripciones de alarma
+
+- **Bug 1.** Google escapa las comas y los punto y coma del `SUMMARY`
+  (`Retiro\, oración`) y el parser solo desescapaba `DESCRIPTION` y
+  `LOCATION`: el título salía con la barra invertida.
+- **Bug 2.** Las propiedades de un `VALARM` anidado se trataban como del
+  evento: la `DESCRIPTION:This is an event reminder` de la alarma pisaba la
+  descripción real (y un `SUMMARY` de alarma de correo, el título). Ahora se
+  ignora todo lo que va dentro de un subcomponente del `VEVENT`.
+- `utils/icsParser.ts` (compartido con la Cloud Function `cacheCalendarIcs`:
+  el nodo precacheado se corrige en el siguiente despliegue de functions).
+  Tests en `__tests__/icsParserFeed.test.ts`.
+
 ## 2026-09-26 18:49 — El PDF de la playlist no transponía los acordes
 
 - **Bug.** Al exportar una playlist a PDF con una canción transpuesta, la

@@ -124,17 +124,34 @@ export function parseICSPortable(text: string): PortableEvent[] {
 
   const events: PortableEvent[] = [];
   let current: Partial<PortableEvent> = {};
+  // Profundidad de subcomponentes dentro del VEVENT (p. ej. `VALARM`). Sus
+  // propiedades no son del evento: la `DESCRIPTION:This is an event reminder`
+  // de la alarma de Google pisaba la descripción real.
+  let nested = 0;
 
   for (const line of unfolded) {
     if (line.startsWith('BEGIN:VEVENT')) {
       current = {};
+      nested = 0;
     } else if (line.startsWith('END:VEVENT')) {
       if (current.startDate && current.title) {
         events.push(current as PortableEvent);
       }
       current = {};
+    } else if (line.startsWith('BEGIN:')) {
+      nested += 1;
+    } else if (line.startsWith('END:')) {
+      if (nested > 0) nested -= 1;
+    } else if (nested > 0) {
+      continue;
     } else if (line.startsWith('SUMMARY:')) {
-      current.title = line.slice('SUMMARY:'.length).trim();
+      // Mismo escape RFC 5545 que DESCRIPTION: Google escribe `\,` en
+      // cualquier título con coma.
+      current.title = line
+        .slice('SUMMARY:'.length)
+        .replace(/\\,/g, ',')
+        .replace(/\\;/g, ';')
+        .trim();
     } else if (line.startsWith('DESCRIPTION:')) {
       const raw = line
         .slice('DESCRIPTION:'.length)
