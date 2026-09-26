@@ -204,7 +204,9 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       `notifications/androidChannels.ts`, que está en `main` y no en
       `production`. Expo lo dice claro: un `channelId` que el dispositivo no
       tiene creado **no se muestra**. O sea: en Android solo llegan las de
-      categoría `general`. Salidas (decide el usuario):
+      categoría `general`. **Decisión del usuario (2026-09-26): no se hace OTA
+      a `production`; se arregla solo al publicar la build 2.1.** Las salidas que
+      había, por si se reconsidera:
       (1) **OTA a `production`** con `androidChannels.ts` — es solo JS
       (`expo-notifications` ya está en el binario); arregla a cada móvil la
       próxima vez que abra la app. Ojo: los canales se quedan en los ajustes del
