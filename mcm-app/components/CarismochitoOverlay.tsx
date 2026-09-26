@@ -469,10 +469,15 @@ function SidePeekMascot() {
     cancelAnimation(slide);
     slide.set(1);
     caught.set(
-      withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) }, () => {
-        'worklet';
-        scheduleOnRN(finishPeek);
-      }),
+      withTiming(
+        1,
+        { duration: 420, easing: Easing.out(Easing.cubic) },
+        (finished) => {
+          'worklet';
+          // Si una aparición forzada la interrumpe, no cerrar la nueva.
+          if (finished) scheduleOnRN(finishPeek);
+        },
+      ),
     );
     if (result) {
       const rarity = RARITY_LABEL[result.variant.rarity];
