@@ -126,8 +126,12 @@ caro y frágil, y el valor está en blindar reglas que se pueden romper sin
 enterarse (el razonamiento largo, en `docs/planes/PLAN_CALIDAD.md` §0).
 
 Objetivo razonable: **70% de sentencias** — ya superado. Estado el
-2026-08-22: **88.2%** (partiendo del 44% en agosto, 59% el 2026-08-15, 72%
-y 77% más tarde ese mismo día, 79.5% el 2026-08-20). Lo que queda sin cubrir
+2026-09-26: **91.2%** de sentencias y **85.3%** de ramas (partiendo del 44% en
+agosto, 59% el 2026-08-15, 72% y 77% más tarde ese mismo día, 79.5% el
+2026-08-20, 88.2% el 2026-08-22). Con las líneas ya saturadas, lo que más
+rinde ahora son las **ramas**: la pasada del 2026-09-26 (81.8% → 85.3%)
+destapó tres bugs silenciosos (PDF sin transponer, títulos del calendario con
+`\,` y alarmas `VALARM` que pisaban la descripción). Lo que queda sin cubrir
 es en su mayoría justo lo que esta guía dice que hay que saltarse: animación
 de Reanimated (`useAutoScroller`, `AppToastContext`), WebView
 (`useComunicaWebView`), y utilidades de estilo/tema sin lógica real
