@@ -19,6 +19,9 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 import { usePreviewChannel } from '@/contexts/PreviewChannelContext';
+import { useCarismochitoHunt } from '@/contexts/CarismochitoHuntContext';
+import { useSecretTap } from '@/hooks/useSecretTap';
+import { PressableFeedback } from 'heroui-native';
 import { AnimatedGradients } from '@/components/preview-channel/AnimatedGradients';
 import { FloatingParticle } from '@/components/preview-channel/FloatingParticle';
 import { ConfettiBurst } from '@/components/preview-channel/ConfettiBurst';
@@ -57,6 +60,10 @@ export function PreviewChannelModal() {
     restart,
   } = usePreviewChannel();
   const busy = status.kind === 'switching';
+  const { huntEnabled } = useCarismochitoHunt();
+  const [carismoRevealed, setCarismoRevealed] = useState(false);
+  const revealCarismo = useCallback(() => setCarismoRevealed(true), []);
+  const titleTap = useSecretTap(revealCarismo, { tapsRequired: 5 });
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const phase = useSharedValue(0);
@@ -146,7 +153,14 @@ export function PreviewChannelModal() {
           {/* Header */}
           <View style={styles.headerBlock}>
             <Sparkles />
-            <WobblingTitle>🧪 LABORATORIO ALPHA 🧪</WobblingTitle>
+            {/* 5 toques en el título destapan la caza de Carismochitos (ver
+                abajo). Sin feedback visual a propósito: no se tiene que notar. */}
+            <PressableFeedback
+              onPress={titleTap.onPress}
+              accessibilityRole="header"
+            >
+              <WobblingTitle>🧪 LABORATORIO ALPHA 🧪</WobblingTitle>
+            </PressableFeedback>
             <Text style={styles.subtitle}>
               Has descubierto el portal a las novedades del futuro
             </Text>
@@ -171,8 +185,12 @@ export function PreviewChannelModal() {
             onRestart={restart}
           />
 
-          {/* Caza de Carismochitos: su única puerta de entrada. */}
-          <CarismochitoLabPanel />
+          {/* Caza de Carismochitos: su única puerta de entrada, y escondida
+              también aquí dentro. Quien abre el laboratorio (los probadores)
+              no la ve hasta tocar 5 veces el título; una vez encendida, sale
+              siempre para quien la encendió. Decisión del usuario: que no se
+              note que se está preparando. */}
+          {huntEnabled || carismoRevealed ? <CarismochitoLabPanel /> : null}
 
           {/* Pergamino: el pacto */}
           <View style={styles.scrollCard}>

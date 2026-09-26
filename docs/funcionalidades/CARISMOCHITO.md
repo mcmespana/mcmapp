@@ -22,10 +22,18 @@ Código: `contexts/CarismochitoContext.tsx` (la máquina de estados),
 
 ## La caza y la colección (solo pruebas)
 
-**Escondida a propósito** (decisión del usuario, 2026-09-26): solo existe para
-quien la enciende en el **Laboratorio Alpha** (7 toques en la versión de la app,
-en Inicio o en Más → sección "Caza de Carismochitos"). No hay enlace desde
-ningún otro sitio. Sin encenderla, todo es como arriba.
+**Escondida a propósito, en dos niveles** (decisión del usuario, 2026-09-26/27):
+que no se note que se está preparando.
+
+1. Se entra al **Laboratorio Alpha** con 7 toques en la versión de la app
+   (Inicio o Más). Ahí entran también los probadores del canal preview.
+2. Dentro, la sección "Caza de Carismochitos" **no aparece** hasta tocar **5
+   veces el título "LABORATORIO ALPHA"**. Una vez encendida la caza, a quien la
+   encendió le sale siempre.
+
+No hay enlace desde ningún otro sitio. Sin encenderla, quien active el modo
+agitando el móvil ve exactamente lo de antes: el Carismochito clásico que se
+asoma, sin poder tocarlo, sin variantes y sin colección.
 
 Con la caza encendida y el modo activo:
 
