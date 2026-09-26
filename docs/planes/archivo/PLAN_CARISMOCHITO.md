@@ -1,5 +1,17 @@
 # Plan — Modo Carismochito (onboarding, colección y comportamiento)
 
+> ## ✅ HECHO (2026-09-26) — archivado, no re-ejecutar
+>
+> §1 y §2 ya estaban en el código; §3 y §4 se cerraron el 2026-09-26 (la caza,
+> las 8 variantes, la colección y las pantallas protegidas), **detrás de un
+> interruptor del Laboratorio Alpha** por decisión del usuario. §5 (icono
+> alternativo) está en `main` y sale con la build de tienda 2.1.
+> Cómo funciona hoy: [`docs/funcionalidades/CARISMOCHITO.md`](../../funcionalidades/CARISMOCHITO.md).
+> Lo único abierto — cuándo sale la caza del laboratorio — está en
+> `docs/planes/BACKLOG.md` §4.
+>
+> _Lo de abajo es el plan tal como se escribió._
+
 > **Pendiente de ejecutar bien** (§1–4, ver `docs/planes/BACKLOG.md` §1 — es
 > uno de los dos ítems de cierre de la cola, junto con el nuevo concepto
 > **Panel Pañuelo**: `docs/planes/PLAN_PANEL_PANUELO.md`, un espacio con

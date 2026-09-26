@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-09-24 (UI Nativa Fase 2 en pausa). Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> Última actualización: 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
 > de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
@@ -40,7 +40,7 @@
 | **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`)                                                             |
 | **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                      |
 | **⚠️ Roto y sin dueño**      | Nada. El CI se arregló el 2026-09-09: estaba `disabled_manually` desde mayo, ahora vive en `.github/workflows/pr.yml`. Falta solo verlo verde en la primera PR (`mcm-app/TODO.md` §0) |
-| **Después de la build**      | Integración D → Carismochito (UI Nativa Fase 2 **en pausa**, ver §1)                                                                                                                                     |
+| **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                     |
 | **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                            |
 | **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio) · Panel Pañuelo (§1 notas)                                                                                                                                          |
 | **Cerrado**                  | Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                      |
@@ -93,7 +93,7 @@
 | 3   | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate   | **Opus**                                     | No                                                                      | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `archivo/tacticos/008-…`                             |
 | 4   | **UI Nativa** — headers nativos + componentes unificados                                | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | ⏸️ **EN PAUSA** (decisión del usuario, 2026-09-24): no se retoma hasta que lo diga. Fase 1 ✅, Fase 2 ~80% (`AppTextField`/`EmptyState` mayormente hechos, **`SegmentedControl` cerrado el 2026-09-10**, `AppPrimaryButton` parcial, chips sin empezar)                                                                                                       | `docs/planes/PLAN_UI_NATIVA.md`                      |
 | 5   | **Integración D** — Seguridad Firebase (+ A2)                                           | Opus                                         | **Sí** — D2 + repo `mcmpanel` (ver §4)                                  | ⏳ Pendiente, importante pero no urgente. **Es lo único que queda de PLAN_INTEGRACIONES**: el resto (A, B, C, E) se cerró el 2026-08-12                                                                                                                                                 | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" |
-| 6   | **Carismochito** (ejecutar bien §1–4)                                                   | Sonnet (Opus solo el icono nativo §5)        | No                                                                      | ⏳ Cierre final                                                                                                                                                                                                                                                                         | `docs/planes/PLAN_CARISMOCHITO.md`                   |
+| 6   | **Carismochito** (§1–4)                                                                 | —                                            | Solo para sacarlo del laboratorio (§4)                                  | ✅ **DONE** (2026-09-26). La caza y la colección van **escondidas en el Laboratorio Alpha** por decisión del usuario                                                                                                                                                                    | `docs/funcionalidades/CARISMOCHITO.md`               |
 
 **Fuera de la cola — futuro lejano (decisión del usuario, 2026-08-15):**
 **Widgets de Contigo** (los tres) y **Panel Pañuelo** salen de la Cola Principal. Son dos
@@ -114,7 +114,7 @@ cuando toque.
   incidente inminente. Sigue siendo importante hacerlo bien antes de escalar
   a más usuarios — por eso se queda en la cola, pero sin prisa y bloqueado
   por D2.
-- El **6** (Carismochito) es deliberadamente el cierre: no bloquea a nada y
+- El **6** (Carismochito) está hecho (2026-09-26); era deliberadamente el cierre: no bloqueaba a nada y
   nada lo bloquea a él.
 
 ---
@@ -365,7 +365,8 @@ ningún sitio compartido.
 | Decisión                                                                                   | Bloquea       | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                    |
 | ------------------------------------------------------------------------------------------ | ------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?" |
-| **Plan funcional del Panel Pañuelo**                                                       | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md` (stub)           | "¿Nos sentamos a diseñar la mecánica de chapas/modelo 3D, o esperamos a después de Carismochito §1–4?"                                                           |
+| **Sacar la caza de Carismochitos del laboratorio**                                        | Carismochito  | `docs/funcionalidades/CARISMOCHITO.md`               | "¿Cuándo sale la caza para todo el mundo, y la colección se enlaza desde algún sitio o espera a la vista de perfil?"                                                 |
+| **Plan funcional del Panel Pañuelo**                                                       | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md` (stub)           | "¿Nos sentamos a diseñar la mecánica de chapas/modelo 3D, o seguimos esperando? La colección de Carismochitos ya existe (en el laboratorio) y el borrador del plan también."                                                           |
 
 ---
 

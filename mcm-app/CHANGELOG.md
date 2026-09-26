@@ -18,6 +18,33 @@
 
 ---
 
+## 2026-09-26 18:42 — Caza de Carismochitos y su colección (escondida en el Laboratorio Alpha)
+
+- **Qué hay nuevo.** Con el modo Carismochito activo, el que se asoma por los
+  bordes se puede **atrapar tocándolo**: sale en 8 variantes (común → legendario,
+  con pieles de los colores de marca), suma a una **colección** y avisa con un
+  toast ("¡Nuevo! Carismochito dorado · Legendario" / "… llevas 5").
+- **Solo para pruebas, decisión del usuario.** Todo va detrás de un interruptor
+  nuevo en el **Laboratorio Alpha** (7 toques en la versión). Sin encenderlo, la
+  app se comporta igual que antes. La pantalla de la colección
+  (`app/carismochito.tsx`) no tiene enlace desde ningún otro sitio, y si se
+  entra por enlace directo sin el interruptor, redirige a Inicio. Desde el
+  laboratorio también se puede forzar una aparición y borrar la colección.
+- **Datos.** AsyncStorage siempre; con sesión, además
+  `users/{uid}/carismochitos/{variantId} = { count, firstAt }` (lo cubre la
+  regla de `users/$uid` que ya existía). Se fusiona por el **máximo**, no la
+  suma, para que abrir la app no duplique capturas.
+- **Para todos, no solo con la caza:** Carismochito ya no se asoma en pantallas
+  de lectura y presentación (evangelio, oración, canción a pantalla completa,
+  materiales y profundiza) — `hooks/useSuppressCarismochito.ts`, por foco.
+- En web el brillo de la asomada sigue la silueta (`drop-shadow`) en vez de
+  pintar un rectángulo.
+- Analítica: evento nuevo `carismochito_atrapado { rareza, nuevo }`.
+- Archivos: `utils/carismochitoCollection.ts` (puro), `contexts/CarismochitoHuntContext.tsx`,
+  `components/preview-channel/CarismochitoLabPanel.tsx`, `components/CarismochitoOverlay.tsx`,
+  `components/CarismochitoMascot.tsx` (prop `palette`), `constants/colors.ts`
+  (`CarismochitoPalettes`), `utils/authHelpers.ts`. Tests: 39 nuevos.
+
 ## 2026-09-26 11:56 — Comunica pasa de `/aptest/` a `/ap/` (producción)
 
 - `COMUNICA_BASE_URL` (`utils/pendingComunicaLink.ts`) apuntaba todavía a la

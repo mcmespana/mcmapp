@@ -37,6 +37,7 @@ import {
 } from '@/hooks/useAutoScroller';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
@@ -248,6 +249,7 @@ export default function SongFullscreenScreen({
 }: {
   route: SongFullscreenRouteProp;
 }) {
+  useSuppressCarismochito();
   const { author, key, capo, content, title } = route.params;
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const scheme = useColorScheme();

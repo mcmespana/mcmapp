@@ -50,6 +50,7 @@ import { styles } from '@/components/contigo/evangelioStyles';
 import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
 import typography from '@/constants/typography';
 import EmptyState from '@/components/ui/EmptyState';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
 // ── Contigo warm palette (aligned with redesign tokens) ──
 const WARM = {
@@ -124,6 +125,7 @@ function addDays(dateStr: string, offset: number): string {
 }
 
 export default function EvangelioScreen() {
+  useSuppressCarismochito();
   // Subruta de Contigo: se registra con la clave del tab (gana el último
   // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');

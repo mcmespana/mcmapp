@@ -27,6 +27,7 @@ import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation'
 import { styles } from '@/components/contigo/oracionStyles';
 import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
 import { radii } from '@/constants/uiStyles';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
 // ── Screen geometry ──
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -225,6 +226,7 @@ function prayerFormFor(
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function OracionScreen() {
+  useSuppressCarismochito();
   // Subruta de Contigo: se registra con la clave del tab (gana el último
   // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');

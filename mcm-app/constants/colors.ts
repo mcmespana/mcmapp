@@ -264,6 +264,121 @@ export const CarismoColors = {
   dark: '#9DE86B',
 } as const;
 
+/** Las piezas de color del dibujo vectorial de Carismochito. */
+export interface CarismochitoPalette {
+  skin: string;
+  skinDark: string;
+  outline: string;
+  cap: string;
+  capDark: string;
+  mohawkA: string;
+  mohawkB: string;
+  iris: string;
+  mouth: string;
+}
+
+/**
+ * Pieles de las variantes coleccionables de Carismochito
+ * (`utils/carismochitoCollection.ts`). Es ilustración, no UI: por eso tiene
+ * sus propios tonos y no pasa por los roles de `themeColors`. Las pieles de
+ * las variantes de marca salen de `brand` para que se reconozcan como MCM.
+ *
+ * `silueta` es la de "todavía no lo has encontrado" en la colección: una sola
+ * tinta, sin detalle, para que no destripe cómo es.
+ */
+export const CarismochitoPalettes = {
+  verde: {
+    skin: '#4FA37A',
+    skinDark: '#2E6B4F',
+    outline: '#173A2A',
+    cap: '#7C7C82',
+    capDark: '#5C5C62',
+    mohawkA: '#E2342B',
+    mohawkB: '#F2D43B',
+    iris: '#5B86B5',
+    mouth: '#E2342B',
+  },
+  celeste: {
+    skin: brand.info,
+    skinDark: '#1E7FAE',
+    outline: '#0E3A55',
+    cap: '#7C7C82',
+    capDark: '#5C5C62',
+    mohawkA: brand.yellow,
+    mohawkB: '#FFFFFF',
+    iris: brand.primary,
+    mouth: brand.accent,
+  },
+  rojo: {
+    skin: brand.accent,
+    skinDark: '#A8383E',
+    outline: '#4A1417',
+    cap: '#7C7C82',
+    capDark: '#5C5C62',
+    mohawkA: brand.yellow,
+    mohawkB: '#FFFFFF',
+    iris: brand.primary,
+    mouth: '#7A1E22',
+  },
+  lima: {
+    skin: brand.green,
+    skinDark: '#6F8420',
+    outline: '#2E3A0C',
+    cap: '#7C7C82',
+    capDark: '#5C5C62',
+    mohawkA: brand.purple,
+    mohawkB: brand.yellow,
+    iris: brand.primary,
+    mouth: brand.accent,
+  },
+  morado: {
+    skin: brand.purple,
+    skinDark: '#6A124E',
+    outline: '#2E0822',
+    cap: '#7C7C82',
+    capDark: '#5C5C62',
+    mohawkA: brand.yellow,
+    mohawkB: brand.secondary,
+    iris: brand.secondary,
+    mouth: brand.yellow,
+  },
+  nocturno: {
+    skin: '#2C2C3E',
+    skinDark: '#16161F',
+    outline: '#0A0A10',
+    cap: '#44445A',
+    capDark: '#30303F',
+    mohawkA: '#5AE08A',
+    mohawkB: '#9DE86B',
+    iris: '#9DE86B',
+    mouth: '#5AE08A',
+  },
+  dorado: {
+    skin: '#E3B341',
+    skinDark: '#B08423',
+    outline: '#4A3508',
+    cap: '#8A6A1E',
+    capDark: '#6B5217',
+    mohawkA: '#FFF3B0',
+    mohawkB: '#FFFFFF',
+    iris: '#6B5217',
+    mouth: '#B08423',
+  },
+  silueta: {
+    skin: '#8E8E93',
+    skinDark: '#8E8E93',
+    outline: '#636366',
+    cap: '#8E8E93',
+    capDark: '#8E8E93',
+    mohawkA: '#8E8E93',
+    mohawkB: '#8E8E93',
+    iris: '#8E8E93',
+    mouth: '#8E8E93',
+  },
+} as const satisfies Record<string, CarismochitoPalette>;
+
+export type CarismochitoPaletteId = keyof typeof CarismochitoPalettes;
+
 /**
  * Colores litúrgicos. No son decoración: son los del tiempo litúrgico, y los
  * fija la Iglesia, no nosotros. Estaban escritos a mano dentro de

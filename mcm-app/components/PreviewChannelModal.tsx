@@ -29,6 +29,7 @@ import {
   WobblingTitle,
 } from '@/components/preview-channel/LabDecorations';
 import { LabStatusPanel } from '@/components/preview-channel/LabStatusPanel';
+import { CarismochitoLabPanel } from '@/components/preview-channel/CarismochitoLabPanel';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 
@@ -169,6 +170,9 @@ export function PreviewChannelModal() {
             diagnostics={diagnostics}
             onRestart={restart}
           />
+
+          {/* Caza de Carismochitos: su única puerta de entrada. */}
+          <CarismochitoLabPanel />
 
           {/* Pergamino: el pacto */}
           <View style={styles.scrollCard}>

@@ -82,8 +82,11 @@ function countIn(relDir: string): {
 const BUDGET = {
   // Bajó de 218 a 214 y de 406 a 405 el 2026-09-09: los hex que se fueron con
   // el borrado de `textStrong` y la unificación del dorado de Contigo.
-  app: 214,
-  components: 405,
+  // Y a 204 / 394 el 2026-09-26: `app/` ya estaba en 204 sin que nadie bajase
+  // el tope, y los nueve colores sueltos del dibujo de Carismochito pasaron a
+  // `CarismochitoPalettes` en constants/colors.ts.
+  app: 204,
+  components: 394,
 };
 
 describe('no se añaden colores a mano', () => {
@@ -128,7 +131,7 @@ describe('no se añaden colores a mano', () => {
  * hay que migrar uno a uno porque ahí el spread sí puede cambiar el render.
  */
 const FONT_SIZE_BUDGET = {
-  app: 83,
+  app: 82,
   components: 186,
 };
 

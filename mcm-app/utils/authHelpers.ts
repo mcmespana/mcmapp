@@ -3,6 +3,11 @@ import { getDatabase, ref, update, get, set, remove } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import type { DayRecord } from '@/hooks/useContigoHabits';
 import type { StoredBookmark } from '@/utils/contigoBookmarks';
+import {
+  sanitizeCollection,
+  type CarismochitoCollection,
+  type CollectionEntry,
+} from '@/utils/carismochitoCollection';
 
 function db() {
   return getDatabase(getFirebaseApp());
@@ -217,5 +222,44 @@ export async function fetchContigoRevisions(
   } catch (err) {
     logger.error('[authHelpers] fetchContigoRevisions:', err);
     return {};
+  }
+}
+
+/** Sube la entrada de UNA variante de la colección de Carismochitos
+ *  (`users/{uid}/carismochitos/{variantId}`). Una variante por escritura, no
+ *  la colección entera: así dos móviles no se pisan variantes ajenas. */
+export async function syncCarismochitoEntry(
+  uid: string,
+  variantId: string,
+  entry: CollectionEntry,
+): Promise<void> {
+  try {
+    const entryRef = ref(db(), `users/${uid}/carismochitos/${variantId}`);
+    await set(entryRef, { count: entry.count, firstAt: entry.firstAt });
+  } catch (err) {
+    logger.error('[authHelpers] syncCarismochitoEntry:', err);
+  }
+}
+
+/** Descarga la colección de Carismochitos del usuario, ya saneada. */
+export async function fetchCarismochitos(
+  uid: string,
+): Promise<CarismochitoCollection> {
+  try {
+    const snap = await get(ref(db(), `users/${uid}/carismochitos`));
+    if (!snap.exists()) return {};
+    return sanitizeCollection(snap.val());
+  } catch (err) {
+    logger.error('[authHelpers] fetchCarismochitos:', err);
+    return {};
+  }
+}
+
+/** Borra la colección de la nube (botón de "empezar de cero" del laboratorio). */
+export async function clearCarismochitos(uid: string): Promise<void> {
+  try {
+    await remove(ref(db(), `users/${uid}/carismochitos`));
+  } catch (err) {
+    logger.error('[authHelpers] clearCarismochitos:', err);
   }
 }

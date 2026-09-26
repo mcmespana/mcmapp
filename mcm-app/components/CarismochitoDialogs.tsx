@@ -74,9 +74,12 @@ function PopCard({ children }: { children: React.ReactNode }) {
 export function CarismochitoOnboarding({
   visible,
   onDismiss,
+  huntEnabled = false,
 }: {
   visible: boolean;
   onDismiss: () => void;
+  /** Con la caza del Laboratorio Alpha encendida ya se pueden atrapar. */
+  huntEnabled?: boolean;
 }) {
   return (
     <Modal
@@ -98,13 +101,21 @@ export function CarismochitoOnboarding({
           app. Échale un ojo: aparece y desaparece cuando menos lo esperas. 👀
         </Text>
 
-        {/* Teaser de futuro, sin destripar. */}
+        {/* Teaser de futuro, sin destripar — salvo con la caza encendida. */}
         <View style={styles.teaser}>
-          <Text style={styles.teaserText}>
-            ✨ Muy pronto podrás{' '}
-            <Text style={styles.teaserStrong}>coleccionarlos</Text>… y se
-            desvelará algo más. Mantente atento.
-          </Text>
+          {huntEnabled ? (
+            <Text style={styles.teaserText}>
+              ✨ Tócalo cuando se asome para{' '}
+              <Text style={styles.teaserStrong}>atraparlo</Text>. Hay más de
+              uno, y algunos cuesta verlos.
+            </Text>
+          ) : (
+            <Text style={styles.teaserText}>
+              ✨ Muy pronto podrás{' '}
+              <Text style={styles.teaserStrong}>coleccionarlos</Text>… y se
+              desvelará algo más. Mantente atento.
+            </Text>
+          )}
         </View>
 
         <Text style={styles.hint}>

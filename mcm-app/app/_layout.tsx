@@ -232,6 +232,11 @@ function InnerLayout() {
         />
         <Stack.Screen name="evaluacion-app" options={{ headerShown: false }} />
         <Stack.Screen name="encuesta/[id]" options={{ headerShown: false }} />
+        {/* Solo se llega desde el Laboratorio Alpha (ver app/carismochito.tsx). */}
+        <Stack.Screen
+          name="carismochito"
+          options={{ headerShown: true, title: 'Colección' }}
+        />
         <Stack.Screen
           name="playlist"
           options={{

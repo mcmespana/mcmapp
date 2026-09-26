@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -15,10 +15,19 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { useCarismochito } from '@/contexts/CarismochitoContext';
+import { useCarismochitoHunt } from '@/contexts/CarismochitoHuntContext';
+import { useToast } from '@/contexts/AppToastContext';
+import {
+  RARITY_LABEL,
+  pickVariant,
+  type CarismochitoVariant,
+} from '@/utils/carismochitoCollection';
+import { h } from '@/utils/haptics';
 import { useShakeDetector } from '@/hooks/useShakeDetector';
 import CarismochitoMascot from '@/components/CarismochitoMascot';
 import ChargeDots from '@/components/CarismochitoChargeDots';
@@ -242,9 +251,25 @@ const PEEK_HOLD_MS = 2200;
 const PEEK_MIN_GAP_MS = 45000;
 const PEEK_MAX_GAP_MS = 90000;
 
-function randomGap() {
-  return PEEK_MIN_GAP_MS + Math.random() * (PEEK_MAX_GAP_MS - PEEK_MIN_GAP_MS);
+/** Con la caza encendida se asoma más a menudo: si no, probarla es eterno. */
+const HUNT_MIN_GAP_MS = 20000;
+const HUNT_MAX_GAP_MS = 45000;
+/** Y se queda un poco más, para que dé tiempo a tocarlo. */
+const HUNT_HOLD_MS = 3000;
+
+function randomGap(hunting: boolean) {
+  const [min, max] = hunting
+    ? [HUNT_MIN_GAP_MS, HUNT_MAX_GAP_MS]
+    : [PEEK_MIN_GAP_MS, PEEK_MAX_GAP_MS];
+  return min + Math.random() * (max - min);
 }
+
+type Peek = {
+  side: 'left' | 'right';
+  topPct: number;
+  /** `null` = el de siempre, sin caza. */
+  variant: CarismochitoVariant | null;
+};
 
 /**
  * El cuerpo de la asomada. Va en su propio componente porque `hiddenX`/`shownX`
@@ -253,28 +278,50 @@ function randomGap() {
  */
 function PeekMascotBody({
   slide,
+  caught,
   isRight,
   hiddenX,
   shownX,
   topPct,
+  palette,
+  onCatch,
 }: {
   slide: SharedValue<number>;
+  caught: SharedValue<number>;
   isRight: boolean;
   hiddenX: number;
   shownX: number;
   topPct: number;
+  palette: CarismochitoVariant['palette'];
+  /** Solo con la caza encendida: sin esto, no se puede tocar. */
+  onCatch: (() => void) | null;
 }) {
-  const style = useAnimatedStyle(() => ({
-    opacity: slide.get(),
-    transform: [
-      { translateX: interpolate(slide.get(), [0, 1], [hiddenX, shownX]) },
-      // Girada 90°: asoma tumbada de lado desde el borde.
-      { rotate: isRight ? '-90deg' : '90deg' },
-    ],
-  }));
+  const style = useAnimatedStyle(() => {
+    // Al atraparlo: salta hacia dentro, crece y se desvanece.
+    const c = caught.get();
+    const inward = isRight ? -40 : 40;
+    return {
+      opacity: slide.get() * (1 - c),
+      transform: [
+        {
+          translateX:
+            interpolate(slide.get(), [0, 1], [hiddenX, shownX]) + inward * c,
+        },
+        // Girada 90°: asoma tumbada de lado desde el borde. Al atraparlo se
+        // endereza, como si saliera del escondite.
+        { rotate: `${(isRight ? -90 : 90) * (1 - c)}deg` },
+        { scale: 1 + 0.5 * c },
+      ],
+    };
+  });
+
+  const mascot = (
+    <CarismochitoMascot size={PEEK_SIZE} dance={1} palette={palette} />
+  );
 
   return (
     <Animated.View
+      pointerEvents={onCatch ? 'auto' : 'none'}
       style={[
         styles.peekMascot,
         isRight ? { right: 0 } : { left: 0 },
@@ -282,67 +329,161 @@ function PeekMascotBody({
         style,
       ]}
     >
-      <CarismochitoMascot size={PEEK_SIZE} dance={1} />
+      {onCatch ? (
+        <PressableFeedback
+          onPress={onCatch}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="¡Un Carismochito! Tócalo para atraparlo"
+        >
+          {mascot}
+        </PressableFeedback>
+      ) : (
+        mascot
+      )}
     </Animated.View>
   );
 }
 
 function SidePeekMascot() {
-  // 'left' | 'right' alternando; posición vertical algo aleatoria por asomada.
-  const [peek, setPeek] = useState<{
-    side: 'left' | 'right';
-    topPct: number;
-  } | null>(null);
+  const { huntEnabled, suppressed, summonToken, catchCarismochito } =
+    useCarismochitoHunt();
+  const { toast } = useToast();
+  const [peek, setPeek] = useState<Peek | null>(null);
   const slide = useSharedValue(0);
+  const caught = useSharedValue(0);
   const sideRef = useRef<'left' | 'right'>('right');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // El bucle de asomadas vive en un efecto; lo que cambia mientras corre se
+  // lee por ref para no reiniciar el bucle (y su primera asomada) cada vez.
+  const huntRef = useRef(huntEnabled);
+  const suppressedRef = useRef(suppressed);
+  const cancelledRef = useRef(false);
+  const startPeekRef = useRef<() => void>(() => {});
+  const catchingRef = useRef(false);
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+  }, []);
+
+  const scheduleNext = useCallback(
+    (delay: number) => {
+      clearTimer();
+      timerRef.current = setTimeout(() => {
+        if (cancelledRef.current) return;
+        startPeekRef.current();
+      }, delay);
+    },
+    [clearTimer],
+  );
+
+  const finishPeek = useCallback(() => {
+    if (cancelledRef.current) return;
+    catchingRef.current = false;
+    setPeek(null);
+    scheduleNext(randomGap(huntRef.current));
+  }, [scheduleNext]);
+
+  const startPeek = useCallback(() => {
+    // En una pantalla protegida (lectura, presentación) no se asoma: se
+    // vuelve a intentar más tarde, sin gastar la asomada.
+    if (suppressedRef.current) {
+      scheduleNext(randomGap(huntRef.current));
+      return;
+    }
+    const hunting = huntRef.current;
+    sideRef.current = sideRef.current === 'right' ? 'left' : 'right';
+    setPeek({
+      side: sideRef.current,
+      // Altura aleatoria, entre el 25% y el 60% de la pantalla.
+      topPct: 0.25 + Math.random() * 0.35,
+      variant: hunting ? pickVariant() : null,
+    });
+    caught.set(0);
+    slide.set(0);
+    slide.set(
+      withSequence(
+        withSpring(1, { stiffness: 70, damping: 9, mass: 1 }),
+        withDelay(
+          hunting ? HUNT_HOLD_MS : PEEK_HOLD_MS,
+          withTiming(
+            0,
+            { duration: 380, easing: Easing.in(Easing.cubic) },
+            (finished) => {
+              'worklet';
+              // Si se canceló porque lo han atrapado, el cierre lo lleva la
+              // animación de captura, no esta.
+              if (finished) scheduleOnRN(finishPeek);
+            },
+          ),
+        ),
+      ),
+    );
+  }, [caught, slide, scheduleNext, finishPeek]);
+  // Refs al día tras cada render (en un efecto, no durante el render). Se
+  // declara antes que los efectos que las leen, así que corre primero.
+  useEffect(() => {
+    huntRef.current = huntEnabled;
+    suppressedRef.current = suppressed;
+    startPeekRef.current = startPeek;
+  });
 
   useEffect(() => {
-    let cancelled = false;
-
-    const scheduleNext = (delay: number) => {
-      timerRef.current = setTimeout(() => {
-        if (cancelled) return;
-        // Alterna de lado y elige una altura aleatoria (entre 25% y 60%).
-        sideRef.current = sideRef.current === 'right' ? 'left' : 'right';
-        setPeek({
-          side: sideRef.current,
-          topPct: 0.25 + Math.random() * 0.35,
-        });
-        const done = () => {
-          if (cancelled) return;
-          setPeek(null);
-          scheduleNext(randomGap());
-        };
-        slide.set(0);
-        slide.set(
-          withSequence(
-            withSpring(1, { stiffness: 70, damping: 9, mass: 1 }),
-            withDelay(
-              PEEK_HOLD_MS,
-              withTiming(
-                0,
-                { duration: 380, easing: Easing.in(Easing.cubic) },
-                () => {
-                  'worklet';
-                  scheduleOnRN(done);
-                },
-              ),
-            ),
-          ),
-        );
-      }, delay);
-    };
-
+    cancelledRef.current = false;
     // Primera asomada relativamente pronto para dar señal de vida del modo.
     scheduleNext(6000 + Math.random() * 6000);
-
     return () => {
-      cancelled = true;
-      if (timerRef.current) clearTimeout(timerRef.current);
+      cancelledRef.current = true;
+      clearTimer();
       cancelAnimation(slide);
+      cancelAnimation(caught);
     };
-  }, [slide]);
+  }, [scheduleNext, clearTimer, slide, caught]);
+
+  // "Que aparezca ya", desde el laboratorio.
+  useEffect(() => {
+    if (summonToken === 0) return;
+    clearTimer();
+    cancelAnimation(slide);
+    catchingRef.current = false;
+    startPeekRef.current();
+  }, [summonToken, clearTimer, slide]);
+
+  // Si se entra en una pantalla protegida con él asomado, se esconde ya.
+  useEffect(() => {
+    if (!suppressed || !peek || catchingRef.current) return;
+    slide.set(
+      withTiming(0, { duration: 200 }, (finished) => {
+        'worklet';
+        if (finished) scheduleOnRN(finishPeek);
+      }),
+    );
+  }, [suppressed, peek, slide, finishPeek]);
+
+  const onCatch = useCallback(() => {
+    if (!peek?.variant || catchingRef.current) return;
+    catchingRef.current = true;
+    const result = catchCarismochito(peek.variant.id);
+    h.formSuccess();
+    cancelAnimation(slide);
+    slide.set(1);
+    caught.set(
+      withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) }, () => {
+        'worklet';
+        scheduleOnRN(finishPeek);
+      }),
+    );
+    if (result) {
+      const rarity = RARITY_LABEL[result.variant.rarity];
+      toast.show({
+        variant: 'success',
+        label: result.isNew
+          ? `¡Nuevo! ${result.variant.name} · ${rarity}`
+          : `${result.variant.name} atrapado · llevas ${result.count}`,
+      });
+    }
+  }, [peek, catchCarismochito, slide, caught, finishPeek, toast]);
 
   if (!peek) return null;
 
@@ -352,13 +493,16 @@ function SidePeekMascot() {
   const shownX = isRight ? PEEK_SIZE - PEEK_REVEAL : -(PEEK_SIZE - PEEK_REVEAL);
 
   return (
-    <View pointerEvents="none" style={styles.peekRoot}>
+    <View pointerEvents="box-none" style={styles.peekRoot}>
       <PeekMascotBody
         slide={slide}
+        caught={caught}
         isRight={isRight}
         hiddenX={hiddenX}
         shownX={shownX}
         topPct={peek.topPct}
+        palette={peek.variant?.palette ?? null}
+        onCatch={peek.variant ? onCatch : null}
       />
     </View>
   );
@@ -450,6 +594,8 @@ export default function CarismochitoOverlay() {
     cancelExit,
   } = useCarismochito();
 
+  const { huntEnabled } = useCarismochitoHunt();
+
   // Listener de shake siempre activo — el contexto decide qué hacer según estado.
   useShakeDetector(toggleByShake);
 
@@ -479,6 +625,7 @@ export default function CarismochitoOverlay() {
       <CarismochitoOnboarding
         visible={onboardingVisible}
         onDismiss={dismissOnboarding}
+        huntEnabled={huntEnabled}
       />
       {/* Confirmación antes de salir (tras un par de sacudidas fuertes). */}
       <CarismochitoExitConfirm
@@ -518,8 +665,10 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 12 },
       default: {
+        // `drop-shadow` y no `boxShadow`: el primero sigue la silueta del
+        // dibujo (como la sombra de iOS); el segundo pintaba la caja entera.
         // @ts-ignore - web only
-        boxShadow: `0px 0px 18px ${G_GLOW}`,
+        filter: `drop-shadow(0px 0px 10px ${G_GLOW})`,
       },
     }),
   },

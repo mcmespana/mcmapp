@@ -167,17 +167,18 @@ quede pegado a la barra de estado ni le falte respiro arriba.
                                                   del día, como campos SIN borde dentro de una fila que sí lo tiene —
                                                   `AppTextField` les metería un borde dentro de otro.
 
-## Modo Carismochito (ver `docs/planes/PLAN_CARISMOCHITO.md`)
+## Modo Carismochito (ver `docs/funcionalidades/CARISMOCHITO.md`)
 
 > Hecho (jun-2026, ver CHANGELOG): confirmar antes de desactivar + salir con un
 > par de sacudidas fuertes (sin semáforo), el badge ahora abre la explicación, y
 > onboarding persistido con teaser de futuro.
 
-- [ ] **Carismochito aparece en (casi) todas las pantallas** (overlay global),
-      excepto materiales/profundiza de evento y canción a pantalla completa.
-- [ ] **Colección + contador** al tocar la mascota (animación especial); guardado
-      por usuario y **solo con sesión iniciada** (si no, avisar de pérdida de
-      progreso).
+- [x] **Carismochito aparece en (casi) todas las pantallas**, excepto lectura y
+      presentación — hecho el 2026-09-26.
+- [x] **Colección + contador** al tocarlo — hecho el 2026-09-26, **escondido en
+      el Laboratorio Alpha**. Sin sesión se guarda en el móvil y se avisa.
+- [ ] **Sacar la caza del laboratorio** cuando el usuario lo decida
+      (`docs/planes/BACKLOG.md` §4).
 - [ ] **Widgets de Contigo — los TRES** (ampliado el 2026-09-19, ver
       `docs/planes/PLAN_WIDGET_CONTIGO.md`): (1) los 3 hábitos diarios
       (Evangelio/Oración/Revisión) con marca y deep-link; (2) **la racha**, con

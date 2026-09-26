@@ -7,6 +7,7 @@ import { AppToastProvider } from '@/contexts/AppToastContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CalendarConfigProvider } from '@/contexts/CalendarConfigContext';
 import { CarismochitoProvider } from '@/contexts/CarismochitoContext';
+import { CarismochitoHuntProvider } from '@/contexts/CarismochitoHuntContext';
 import { ChoirSessionProvider } from '@/contexts/ChoirSessionContext';
 import { EventSubscriptionsProvider } from '@/contexts/EventSubscriptionsContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
@@ -63,11 +64,13 @@ export default function AppProviders({
                             <PreviewChannelProvider>
                               <OTAProvider>
                                 <CarismochitoProvider>
-                                  <ActiveEventProvider>
-                                    <VersionGateProvider>
-                                      {children}
-                                    </VersionGateProvider>
-                                  </ActiveEventProvider>
+                                  <CarismochitoHuntProvider>
+                                    <ActiveEventProvider>
+                                      <VersionGateProvider>
+                                        {children}
+                                      </VersionGateProvider>
+                                    </ActiveEventProvider>
+                                  </CarismochitoHuntProvider>
                                 </CarismochitoProvider>
                               </OTAProvider>
                             </PreviewChannelProvider>
