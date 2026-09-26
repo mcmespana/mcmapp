@@ -15,6 +15,14 @@ const AsyncStorage = {
     delete store[key];
     return Promise.resolve();
   }),
+  // Sin esto, el código que descarta varias claves de golpe (p. ej. la caché
+  // corrupta de `useFirebaseData`) revienta con "multiRemove is not a
+  // function" solo bajo Jest, y el test mide ese TypeError en vez del
+  // comportamiento real.
+  multiRemove: jest.fn((keys: string[]) => {
+    keys.forEach((key) => delete store[key]);
+    return Promise.resolve();
+  }),
   clear: jest.fn(() => {
     Object.keys(store).forEach((key) => delete store[key]);
     return Promise.resolve();
