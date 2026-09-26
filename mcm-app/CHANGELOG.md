@@ -18,6 +18,11 @@
 
 ---
 
+## 2026-09-26 11:56 — OTA producción: Comunica pasa de `/aptest/` a `/ap/` (cherry-pick)
+
+- `COMUNICA_URL` (`hooks/useComunicaWebView.ts`) apuntaba a la ruta de
+  pruebas del portal (`/aptest/`); pasa a `/ap/`, la ruta de producción.
+
 ## 2026-08-30 14:20 — OTA producción: los ajustes de lectura del evangelio se quedaban sin scroll (cherry-pick)
 
 - **El problema**: en "Ajustes de lectura" (Contigo → evangelio) el contenido

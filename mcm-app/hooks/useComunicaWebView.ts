@@ -13,7 +13,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 
 export const COMUNICA_URL =
-  'https://comunica.movimientoconsolacion.com/aptest/?app=1';
+  'https://comunica.movimientoconsolacion.com/ap/?app=1';
 
 /**
  * Propaga el tema de la app (claro/oscuro) a la web embebida. Se manda por
