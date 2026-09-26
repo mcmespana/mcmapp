@@ -18,6 +18,18 @@
 
 ---
 
+## 2026-09-26 18:49 — El PDF de la playlist no transponía los acordes
+
+- **Bug.** Al exportar una playlist a PDF con una canción transpuesta, la
+  cabecera y el índice decían el tono nuevo (p. ej. "RE (orig. DO)") pero los
+  acordes del cuerpo salían en el tono original. `renderSongBody` anteponía una
+  directiva `{transpose: N}` al ChordPro, y `HtmlDivFormatter` de ChordSheetJS
+  no la aplica.
+- **Arreglo.** Se transpone con `Song.transpose()`, lo mismo que hace
+  `useSongProcessor` en pantalla. Las transposiciones negativas ahora bajan de
+  verdad (−2 desde DO da SIb, no LA#).
+- `utils/playlistPdfHtml.ts`, test nuevo en `__tests__/playlistPdfSongs.test.ts`.
+
 ## 2026-09-26 18:42 — Caza de Carismochitos y su colección (escondida en el Laboratorio Alpha)
 
 - **Qué hay nuevo.** Con el modo Carismochito activo, el que se asoma por los
