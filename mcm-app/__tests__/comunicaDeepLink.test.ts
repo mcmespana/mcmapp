@@ -7,7 +7,7 @@ import {
   consumePendingComunicaAuthUrl,
 } from '@/utils/pendingComunicaLink';
 
-const AREA = 'https://comunica.movimientoconsolacion.com/aptest/';
+const AREA = 'https://comunica.movimientoconsolacion.com/ap/';
 const BRIDGE = 'https://comunica.movimientoconsolacion.com/app/acceso';
 
 afterEach(() => {

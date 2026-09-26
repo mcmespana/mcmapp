@@ -15,7 +15,7 @@
 La app carga siempre la URL con `?app=1`:
 
 ```
-https://comunica.movimientoconsolacion.com/aptest/?app=1&theme=dark
+https://comunica.movimientoconsolacion.com/ap/?app=1&theme=dark
 ```
 
 En PHP:

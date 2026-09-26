@@ -18,6 +18,14 @@
 
 ---
 
+## 2026-09-26 11:56 — Comunica pasa de `/aptest/` a `/ap/` (producción)
+
+- `COMUNICA_BASE_URL` (`utils/pendingComunicaLink.ts`) apuntaba todavía a la
+  ruta de pruebas del portal (`/aptest/`); pasa a `/ap/`, la ruta de
+  producción.
+- Actualizado el test que fija esa URL (`__tests__/comunicaDeepLink.test.ts`)
+  y el ejemplo de `docs/contratos/COMUNICA_WEBVIEW.md`.
+
 ## 2026-09-19 01:10 — Un solo botón de CTA, y cae el umbral de brillo de la encuesta
 
 Cierra el `AppPrimaryButton` de `PLAN_UI_NATIVA` §5, con otra corrección del

@@ -19,7 +19,7 @@
 
 /** Base del área privada, sin query. */
 export const COMUNICA_BASE_URL =
-  'https://comunica.movimientoconsolacion.com/aptest/';
+  'https://comunica.movimientoconsolacion.com/ap/';
 
 /**
  * Parámetros de acceso que la app sabe reenviar a la web. Cualquier otro se
