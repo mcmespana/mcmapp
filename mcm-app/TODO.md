@@ -196,22 +196,27 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 > Estas mejoras requieren build nativo o trabajo nuevo y por eso quedaron fuera
 > de la entrega OTA de 2026-06-02.
 
-- [ ] **Channels Android — probar en dispositivo real antes de production** ⚠️ los
-      canales YA están implementados (2026-08-03): siete, uno por categoría del Panel,
-      en `constants/notificationChannels.ts` + `notifications/androidChannels.ts`.
-      Queda lo que siempre fue requisito y no se puede hacer a ciegas:
-      (a) **verificar en un Android real** el heads-up y el sonido de cada canal —
-      aparecen en los ajustes del sistema de TODOS los Android y las preferencias que
-      el usuario toque ya no se pueden revertir desde la app
-      (`deleteNotificationChannelAsync` no las borra);
-      (b) **que el Panel mande `channelId`** (cross-repo) — sin él todo cae en
-      `default` como hasta ahora, y con un `channelId` que la app no declare Android
-      **no entrega** la notificación. Tabla cerrada en
-      `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8.
-- [ ] **(Panel) Corregir el contrato** — que el MCM Panel use las rutas reales,
-      segmente por `topics`/`profileType`/`delegationId` (no `userType`/`delegacion`) y
-      desacople `categoryId` (solo iOS) de `data.category`. Detalle en
-      `docs/contratos/NOTIFICACIONES_CONTRATO.md`.
+- [ ] 🚨 **URGENTE — Android pierde las notificaciones con categoría** (visto el
+      2026-09-26). El Panel manda `channelId` desde el **2026-08-03**
+      (`mcmpanel/api/_lib/push.ts`, `resolveChannelId`: `urgente`, `eventos`,
+      `celebraciones`, `cancionero`, `fotos`, `mantenimiento`), pero la app de
+      `production` solo crea el canal `default`: los otros seis viven en
+      `notifications/androidChannels.ts`, que está en `main` y no en
+      `production`. Expo lo dice claro: un `channelId` que el dispositivo no
+      tiene creado **no se muestra**. O sea: en Android solo llegan las de
+      categoría `general`. Salidas (decide el usuario):
+      (1) **OTA a `production`** con `androidChannels.ts` — es solo JS
+      (`expo-notifications` ya está en el binario); arregla a cada móvil la
+      próxima vez que abra la app. Ojo: los canales se quedan en los ajustes del
+      sistema para siempre, así que la importancia de cada uno tiene que estar
+      bien a la primera;
+      (2) que el Panel mande `channelId: 'default'` hasta que salga la build 2.1.
+      Pendiente además: **verificar en un Android real** el heads-up y el sonido
+      de cada canal. Tabla en `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8.
+- [x] **(Panel) Corregir el contrato** — hecho en `mcmpanel` (comprobado el
+      2026-09-26 en `api/_lib/push.ts`): segmenta por `topics`/`profileType`/
+      `delegationId` con 4 ejes y AND/OR, y `categoryId` (iOS) va desacoplado
+      de `data.category` (`resolveCategoryId`).
 
 ---
 
@@ -376,7 +381,7 @@ activa a propósito agitando el móvil, quien entre ahí es porque quiere).
 
 ## Backend Firebase
 
-- [ ] **Completar backend de notificaciones push** — solo hay `purgeExpiredShares`. Falta función Cloud que lea trigger y use FCM Admin (`docs/funcionalidades/NOTIFICACIONES.md`). Idempotencia y audiencias por perfil/delegación. Ver MEJORAS.md §13.2.
+- [x] **Backend de notificaciones push** — no hacía falta una Cloud Function: el envío vive en el **Panel** (`mcmpanel/api/notifications/send.ts`, `schedule.ts` y `process-scheduled.ts` + `api/_lib/push.ts`): Expo Push API por lotes, audiencias por perfil/delegación/evento, programadas por cron y limpieza de tokens. Comprobado el 2026-09-26. Lo que queda de ese lado es seguridad (Integración D1/D5).
 - [ ] **Cleanup adicional**: reflexiones antiguas, notificaciones por usuario antiguas. Ver MEJORAS.md §13.3.
 - [ ] **Valorar Firestore** para `songs` y `compartiendo` cuando el dataset crezca (paginación, queries indexadas). Mantener RTDB para configuración y datos pequeños. Ver MEJORAS.md §13.1.
 
