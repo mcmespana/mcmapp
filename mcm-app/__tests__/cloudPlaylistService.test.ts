@@ -10,12 +10,14 @@
  */
 import { get, set, remove, update } from 'firebase/database';
 import {
+  allocateFreeCode,
   cloudPlaylistExists,
   fetchCloudPlaylist,
   uploadCloudPlaylist,
   changeCloudPlaylistCode,
 } from '@/services/cloudPlaylistService';
 import type { SelectedSong } from '@/contexts/SelectedSongsContext';
+import { __resetMockDb } from '@/__mocks__/firebase';
 
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 30 * 6;
 const VALID = '1234';
@@ -148,5 +150,40 @@ describe('changeCloudPlaylistCode', () => {
     expect(payload[VALID]).toBeNull();
     expect(set).not.toHaveBeenCalled();
     expect(remove).not.toHaveBeenCalled();
+  });
+});
+
+describe('allocateFreeCode', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+    // `mockResolvedValue` (sin Once) sobrevive a `clearAllMocks`.
+    __resetMockDb();
+  });
+
+  it('salta los códigos ocupados y devuelve el primero libre', async () => {
+    // 0.1234 → "1234" (ocupado), 0.5678 → "5678" (libre).
+    jest
+      .spyOn(Math, 'random')
+      .mockReturnValueOnce(0.1234)
+      .mockReturnValueOnce(0.5678);
+    (get as jest.Mock)
+      .mockResolvedValueOnce(snapshot({ songs: [] }))
+      .mockResolvedValueOnce(snapshot(null));
+
+    await expect(allocateFreeCode()).resolves.toBe(OTHER);
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  it('se rinde tras N intentos en vez de pisar la playlist de otro coro', async () => {
+    (get as jest.Mock).mockResolvedValue(snapshot({ songs: [] }));
+    await expect(allocateFreeCode(3)).rejects.toThrow(/código libre/);
+    expect(get).toHaveBeenCalledTimes(3);
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it('los códigos generados tienen siempre 4 dígitos (0.0042 → "0042")', async () => {
+    jest.spyOn(Math, 'random').mockReturnValueOnce(0.0042);
+    (get as jest.Mock).mockResolvedValueOnce(snapshot(null));
+    await expect(allocateFreeCode()).resolves.toBe('0042');
   });
 });

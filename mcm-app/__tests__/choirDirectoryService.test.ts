@@ -15,6 +15,7 @@ import {
   fetchChoir,
   listChoirs,
   removeChoirPlaylist,
+  renameChoir,
   upsertChoirPlaylist,
 } from '@/services/choirDirectoryService';
 
@@ -146,5 +147,71 @@ describe('índice de playlists', () => {
   it('deleteChoir sí borra el nodo entero', async () => {
     await deleteChoir(CHOIR_ID);
     expect(remove).toHaveBeenCalledTimes(1);
+  });
+
+  it('upsert sin `by` ni dueño no escribe esas claves (RTDB rechaza undefined)', async () => {
+    await upsertChoirPlaylist(CHOIR_ID, {
+      code: '1234',
+      name: 'Domingo',
+      createdAt: 50,
+      updatedAt: 60,
+      songCount: 3,
+    });
+    const entry = (update as jest.Mock).mock.calls[0][1]['playlists/1234'];
+    expect(entry).toEqual({
+      name: 'Domingo',
+      createdAt: 50,
+      updatedAt: 60,
+      songCount: 3,
+    });
+  });
+});
+
+describe('fetchChoir', () => {
+  it('un coro borrado desde el panel devuelve null (no un coro vacío)', async () => {
+    (get as jest.Mock).mockResolvedValueOnce(snapshot(null));
+    await expect(fetchChoir(CHOIR_ID)).resolves.toBeNull();
+  });
+
+  it('una playlist sin nombre en Firebase se muestra como "Playlist <código>"', async () => {
+    (get as jest.Mock).mockResolvedValueOnce(
+      snapshot({
+        name: 'Coro',
+        createdBy: { deviceId: 'd1', name: 'Ana' },
+        playlists: { '4321': { by: 'Ana', ownerDeviceId: 'd1' } },
+      }),
+    );
+    const choir = await fetchChoir(CHOIR_ID);
+    expect(choir!.playlists['4321']).toEqual({
+      code: '4321',
+      name: 'Playlist 4321',
+      createdAt: 0,
+      updatedAt: 0,
+      songCount: 0,
+      by: 'Ana',
+      ownerDeviceId: 'd1',
+    });
+    expect(choir!.createdBy).toEqual({ deviceId: 'd1', name: 'Ana' });
+  });
+
+  it('un coro creado a mano sin nombre usa su id, y su nameKey sirve para detectar duplicados', async () => {
+    (get as jest.Mock).mockResolvedValueOnce(snapshot({}));
+    const choir = await fetchChoir(CHOIR_ID);
+    expect(choir!.name).toBe(CHOIR_ID);
+    expect(choir!.nameKey).toBe(CHOIR_ID);
+  });
+});
+
+describe('renameChoir', () => {
+  it('recalcula el nameKey: si no, el nombre viejo seguiría bloqueando duplicados', async () => {
+    await renameChoir(CHOIR_ID, '  Coro   de Burriana ');
+    const payload = (update as jest.Mock).mock.calls[0][1];
+    expect(payload.name).toBe('Coro de Burriana');
+    expect(payload.nameKey).toBe('coro-de-burriana');
+  });
+
+  it('rechaza un nombre demasiado corto sin escribir', async () => {
+    await expect(renameChoir(CHOIR_ID, ' A ')).rejects.toThrow(/corto/i);
+    expect(update).not.toHaveBeenCalled();
   });
 });

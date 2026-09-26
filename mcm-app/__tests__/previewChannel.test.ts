@@ -181,4 +181,59 @@ describe('syncChannelOverride (arranque)', () => {
     });
     expect(syncChannelOverride(true)).toBe('build');
   });
+
+  it('un fallo que no es de cabecera se reporta como "disabled", no como "haz una build nueva"', () => {
+    mocked.setUpdateRequestHeadersOverride.mockImplementation(() => {
+      throw new Error('Updates module is not ready');
+    });
+    expect(syncChannelOverride(true)).toBe('disabled');
+  });
+});
+
+describe('diagnóstico de errores del binario', () => {
+  it('reconoce la cabecera ausente por el mensaje aunque falte el `code`', () => {
+    mocked.setUpdateRequestHeadersOverride.mockImplementation(() => {
+      throw new Error('Header expo-channel-name is not in the embedded config');
+    });
+    expect(applyChannel(true)).toEqual({
+      ok: false,
+      kind: 'unsupported',
+      reason: 'build',
+    });
+  });
+
+  it('un error cualquiera se devuelve como error con su mensaje (no como build antigua)', () => {
+    mocked.setUpdateRequestHeadersOverride.mockImplementation(() => {
+      throw new Error('disco lleno');
+    });
+    expect(applyChannel(true)).toEqual({
+      ok: false,
+      kind: 'error',
+      message: 'disco lleno',
+    });
+  });
+
+  it('un binario con expo-updates < 29 (sin override de cabeceras) pide build nueva', () => {
+    const original = mocked.setUpdateRequestHeadersOverride;
+    (
+      mocked as { setUpdateRequestHeadersOverride?: unknown }
+    ).setUpdateRequestHeadersOverride = undefined;
+    try {
+      expect(getUnsupportedReason()).toBe('build');
+    } finally {
+      mocked.setUpdateRequestHeadersOverride = original;
+    }
+  });
+
+  it('fetchUpdateAsync que devuelve isNew=false no pide reiniciar para nada', async () => {
+    mocked.checkForUpdateAsync.mockResolvedValue({
+      isAvailable: true,
+    } as Awaited<ReturnType<typeof Updates.checkForUpdateAsync>>);
+    mocked.fetchUpdateAsync.mockResolvedValue({ isNew: false } as Awaited<
+      ReturnType<typeof Updates.fetchUpdateAsync>
+    >);
+    await expect(fetchFromCurrentChannel()).resolves.toEqual({
+      kind: 'up-to-date',
+    });
+  });
 });
