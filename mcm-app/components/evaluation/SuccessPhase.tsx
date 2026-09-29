@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { radii } from '@/constants/uiStyles';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -15,7 +16,7 @@ import Animated, {
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
-import WizardButton from './WizardButton';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 
 /**
  * Pantalla de agradecimiento del wizard (envío recién hecho o ya evaluado
@@ -120,7 +121,7 @@ export default function SuccessPhase({
         entering={FadeInUp.delay(320).duration(420)}
         style={successStyles.cta}
       >
-        <WizardButton label="Hecho" color={accent} onPress={onDone} />
+        <AppPrimaryButton label="Hecho" color={accent} onPress={onDone} />
       </Animated.View>
     </View>
   );
@@ -144,12 +145,12 @@ const successStyles = StyleSheet.create({
     position: 'absolute',
     width: 110,
     height: 110,
-    borderRadius: 55,
+    borderRadius: radii.pillFull,
   },
   iconCircle: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: radii.pillFull,
     alignItems: 'center',
     justifyContent: 'center',
   },

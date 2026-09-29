@@ -21,6 +21,7 @@ import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { CalendarConfig } from '@/hooks/useCalendarConfigs';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -403,7 +404,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     gap: 6,
   } as ViewStyle,
   calendarDot: {
@@ -412,13 +413,13 @@ const styles = StyleSheet.create({
     borderRadius: radii.pillFull,
   } as ViewStyle,
   calendarName: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
     letterSpacing: 0.2,
   } as TextStyle,
 
   title: {
-    fontSize: 22,
+    ...typography.h2,
     fontWeight: '700',
     letterSpacing: -0.4,
     marginTop: spacing.xs,
@@ -444,15 +445,15 @@ const styles = StyleSheet.create({
     gap: 2,
   } as ViewStyle,
   infoPrimary: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   } as TextStyle,
   infoSecondary: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
   } as TextStyle,
   infoLink: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '600',
     marginTop: 2,
   } as TextStyle,
@@ -479,12 +480,12 @@ const styles = StyleSheet.create({
     gap: spacing.xs + 2,
   } as ViewStyle,
   sectionLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.5,
   } as TextStyle,
   descriptionText: {
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 20,
   } as TextStyle,
 
@@ -499,7 +500,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   } as ViewStyle,
   secondaryBtnLabel: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
   } as TextStyle,
 });

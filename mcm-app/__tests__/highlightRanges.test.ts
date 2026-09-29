@@ -1,6 +1,8 @@
 import {
   addHighlight,
   computeSpans,
+  highlightBg,
+  HIGHLIGHT_COLORS,
   normalizeHighlights,
   removeHighlight,
   selectionHighlight,
@@ -182,5 +184,81 @@ describe('selectionHighlight', () => {
       { start: 0, end: 3, color: 'sun', text: TEXT.slice(0, 3) },
     ];
     expect(selectionHighlight(mixed, 0, 15)?.color).toBe('mint');
+  });
+});
+
+describe('datos guardados de versiones anteriores o corruptos', () => {
+  it('un color que ya no existe en la paleta pinta el de por defecto (no fondo undefined)', () => {
+    const bg = highlightBg('naranja' as HighlightRange['color'], false);
+    expect(bg).toBe(HIGHLIGHT_COLORS.sun.light);
+    expect(highlightBg('naranja' as HighlightRange['color'], true)).toBe(
+      HIGHLIGHT_COLORS.sun.dark,
+    );
+  });
+
+  it('un rango guardado sin color se trata como el color por defecto', () => {
+    const [h] = normalizeHighlights(TEXT, [
+      { start: 0, end: 2 } as unknown as HighlightRange,
+    ]);
+    expect(h.color).toBe('sun');
+  });
+
+  it('si la lectura se acortó, el rango se recorta al texto y el que queda fuera se descarta', () => {
+    const out = normalizeHighlights(TEXT, [
+      r(TEXT.length - 4, TEXT.length + 20),
+      { start: TEXT.length + 5, end: TEXT.length + 9, color: 'sky', text: '' },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].end).toBe(TEXT.length);
+    expect(out[0].text).toBe(TEXT.slice(-4));
+  });
+
+  it('entradas basura (null, números en texto, rango invertido) se ignoran sin romper la lectura', () => {
+    const out = normalizeHighlights(TEXT, [
+      null,
+      { start: '1', end: '5', color: 'sun' },
+      { start: 10, end: 4, color: 'sun' },
+      r(0, 2),
+    ] as unknown as HighlightRange[]);
+    expect(out).toEqual([r(0, 2)]);
+  });
+});
+
+describe('computeSpans — rangos solapados guardados', () => {
+  it('dos rangos que se pisan no duplican texto en pantalla', () => {
+    const spans = computeSpans(TEXT, [r(0, 10, 'sun'), r(5, 15, 'sky')]);
+    expect(spans.map((s) => s.text).join('')).toBe(TEXT);
+    expect(spans.slice(0, 2)).toEqual([
+      { text: TEXT.slice(0, 10), color: 'sun' },
+      { text: TEXT.slice(10, 15), color: 'sky' },
+    ]);
+  });
+
+  it('un rango contenido en otro no se repite', () => {
+    const spans = computeSpans(TEXT, [r(0, 20, 'sun'), r(5, 8, 'mint')]);
+    expect(spans.map((s) => s.text).join('')).toBe(TEXT);
+    expect(spans.some((s) => s.color === 'mint')).toBe(false);
+  });
+
+  it('ordena por inicio aunque lleguen desordenados', () => {
+    const spans = computeSpans(TEXT, [r(20, 25, 'sky'), r(0, 3, 'sun')]);
+    expect(spans.map((s) => s.text).join('')).toBe(TEXT);
+    expect(spans[0]).toEqual({ text: TEXT.slice(0, 3), color: 'sun' });
+  });
+});
+
+describe('addHighlight — solapes del mismo color', () => {
+  it('pintar sobre un subrayado del mismo color lo amplía en uno solo (sin trozos)', () => {
+    const out = addHighlight(TEXT, [r(0, 10)], 5, 20, 'sun');
+    expect(out).toEqual([r(0, 20)]);
+  });
+
+  it('pintar dentro de otro color lo parte en tres, con el nuevo en medio', () => {
+    const out = addHighlight(TEXT, [r(0, 30, 'sky')], 10, 20, 'rose');
+    expect(out.map((x) => [x.start, x.end, x.color])).toEqual([
+      [0, 10, 'sky'],
+      [10, 20, 'rose'],
+      [20, 30, 'sky'],
+    ]);
   });
 });

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { capitalizeFirst } from '@/utils/textCase';
 import {
   View,
   StyleSheet,
@@ -14,7 +15,7 @@ import {
 } from 'react-native';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Colors } from '@/constants/colors';
+import { Colors, KeyPillColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import PageContainer from '@/components/ui/PageContainer';
@@ -23,6 +24,7 @@ import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
+import typography from '@/constants/typography';
 
 interface Visita {
   titulo: string;
@@ -61,7 +63,12 @@ function formatDate(fecha?: string) {
   if (!fecha) return '';
   const d = new Date(fecha);
   if (isNaN(d.getTime())) return fecha;
-  return `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  // Mayúscula solo en la inicial: el mes va en minúscula en español, y el
+  // `textTransform: 'capitalize'` que había en los dos estilos que pintan esto
+  // ponía «Jueves 10 Septiembre».
+  return capitalizeFirst(
+    `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`,
+  );
 }
 
 export default function VisitasScreen() {
@@ -150,7 +157,7 @@ export default function VisitasScreen() {
                       <MaterialIcons
                         name="calendar-today"
                         size={14}
-                        color={isDark ? '#A0A0A8' : '#7B7B82'}
+                        color={themeColors(isDark).textSecondary}
                       />
                       <Text style={styles.dateText} numberOfLines={1}>
                         {formatDate(v.fecha)}
@@ -171,7 +178,7 @@ export default function VisitasScreen() {
                     <MaterialIcons
                       name="map"
                       size={20}
-                      color={isDark ? '#7AB3FF' : '#2563EB'}
+                      color={themeColors(isDark).link}
                     />
                   </TouchableOpacity>
                 ) : null}
@@ -219,7 +226,7 @@ export default function VisitasScreen() {
                         <MaterialIcons
                           name="calendar-today"
                           size={15}
-                          color={isDark ? '#A0A0A8' : '#7B7B82'}
+                          color={themeColors(isDark).textSecondary}
                         />
                         <Text style={styles.modalDateText} numberOfLines={1}>
                           {formatDate(selected.fecha)}
@@ -240,7 +247,11 @@ export default function VisitasScreen() {
                       <TouchableOpacity
                         style={[
                           styles.dialogMapBtn,
-                          { backgroundColor: isDark ? '#1A2744' : '#E8F0FE' },
+                          {
+                            backgroundColor: isDark
+                              ? KeyPillColors.bgDark
+                              : '#E8F0FE',
+                          },
                         ]}
                         onPress={() => {
                           const url = selected.mapa;
@@ -251,12 +262,12 @@ export default function VisitasScreen() {
                         <MaterialIcons
                           name="map"
                           size={18}
-                          color={isDark ? '#7AB3FF' : '#2563EB'}
+                          color={themeColors(isDark).link}
                         />
                         <Text
                           style={[
                             styles.dialogMapBtnText,
-                            { color: isDark ? '#7AB3FF' : '#2563EB' },
+                            { color: themeColors(isDark).link },
                           ]}
                         >
                           Ver en mapa
@@ -285,8 +296,8 @@ const createStyles = (scheme: 'light' | 'dark') => {
       gap: 14,
     },
     card: {
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
-      borderRadius: 16,
+      backgroundColor: themeColors(isDark).background,
+      borderRadius: radii.lg,
       overflow: 'hidden',
       ...Platform.select({
         web: {
@@ -306,7 +317,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     image: {
       width: '100%',
       height: 160,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     cardContent: {
       flexDirection: 'row',
@@ -315,14 +326,14 @@ const createStyles = (scheme: 'light' | 'dark') => {
       gap: 12,
     },
     title: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '700',
       letterSpacing: -0.2,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).text,
       marginBottom: 4,
     },
     subtitle: {
-      fontSize: 14,
+      ...typography.subhead,
       color: isDark ? '#C7C7CC' : '#3A3A3C',
       marginBottom: 8,
       lineHeight: 19,
@@ -334,16 +345,15 @@ const createStyles = (scheme: 'light' | 'dark') => {
       marginTop: 2,
     },
     dateText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
-      color: isDark ? '#A0A0A8' : '#7B7B82',
-      textTransform: 'capitalize',
+      color: themeColors(isDark).textSecondary,
     },
     mapBtn: {
       width: 40,
       height: 40,
-      borderRadius: 20,
-      backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
+      borderRadius: radii.xl,
+      backgroundColor: isDark ? KeyPillColors.bgDark : '#E8F0FE',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -358,7 +368,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       width: '100%',
       maxWidth: 460,
       backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-      borderRadius: 20,
+      borderRadius: radii.xl,
       overflow: 'hidden',
       ...Platform.select({
         web: { boxShadow: '0 14px 44px rgba(0,0,0,0.3)' },
@@ -374,7 +384,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     modalImage: {
       width: '100%',
       height: 170,
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
     },
     modalClose: {
       position: 'absolute',
@@ -382,7 +392,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       right: 12,
       width: 34,
       height: 34,
-      borderRadius: 17,
+      borderRadius: radii.pillFull,
       backgroundColor: 'rgba(0,0,0,0.5)',
       alignItems: 'center',
       justifyContent: 'center',
@@ -395,7 +405,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       fontSize: 20,
       fontWeight: '700',
       letterSpacing: -0.3,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).text,
     },
     modalSubtitle: {
       fontSize: 15,
@@ -409,10 +419,9 @@ const createStyles = (scheme: 'light' | 'dark') => {
       gap: 6,
     },
     modalDateText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
-      color: isDark ? '#A0A0A8' : '#7B7B82',
-      textTransform: 'capitalize',
+      color: themeColors(isDark).textSecondary,
     },
     modalText: {
       fontSize: 15,
@@ -425,11 +434,11 @@ const createStyles = (scheme: 'light' | 'dark') => {
       justifyContent: 'center',
       gap: 8,
       paddingVertical: 12,
-      borderRadius: 12,
+      borderRadius: radii.md,
       marginTop: 4,
     },
     dialogMapBtnText: {
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
     },
   });

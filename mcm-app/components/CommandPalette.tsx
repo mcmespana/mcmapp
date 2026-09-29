@@ -13,8 +13,9 @@ import { router } from 'expo-router';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import { useEscapeToClose } from '@/hooks/useEscapeToClose';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
+import { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -175,7 +176,7 @@ export default function CommandPalette() {
                     <MaterialIcons
                       name={cmd.icon}
                       size={20}
-                      color={isDark ? '#AEAEB2' : '#636366'}
+                      color={themeColors(isDark).textSecondary}
                     />
                   </View>
                   <View style={styles.itemText}>
@@ -238,12 +239,12 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
     },
     itemTitle: {
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
       color: theme.text,
     },
     itemSubtitle: {
-      fontSize: 12,
+      ...typography.footnote,
       color: isDark ? '#AEAEB2' : '#8E8E93',
       marginTop: 2,
     },
@@ -252,8 +253,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
     },
     emptyText: {
-      fontSize: 14,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      ...typography.subhead,
+      color: themeColors(isDark).textMuted,
       fontStyle: 'italic',
     },
     footer: {
@@ -261,8 +262,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
     },
     footerHint: {
-      fontSize: 11,
-      color: isDark ? '#636366' : '#A0A0A8',
+      ...typography.micro,
+      color: themeColors(isDark).textMuted,
       letterSpacing: 0.3,
     },
   });

@@ -7,6 +7,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import { radii } from '@/constants/uiStyles';
 
 const DOT_SIZE = 10;
 const DOT_GAP = 8;
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(6, 33, 15, 0.7)',
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: 'rgba(90, 224, 138, 0.3)',
   },

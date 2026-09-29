@@ -122,3 +122,49 @@ describe('escrituras concurrentes (Plan 006 — withStorageLock)', () => {
     ]);
   });
 });
+
+describe('mergeRemoteBookmarks — conflictos', () => {
+  it('un guardado local más reciente que el remoto NO se pisa (subrayados recién hechos)', async () => {
+    await upsertLocalBookmark(
+      mk('2026-01-01', 500, { highlights: { evangelio: ['nuevo'] } }),
+    );
+    const merged = await mergeRemoteBookmarks([
+      mk('2026-01-01', 100, { highlights: { evangelio: ['viejo'] } }),
+    ]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].highlights?.evangelio).toEqual(['nuevo']);
+  });
+
+  it('el resultado queda persistido: al recargar se ve lo fundido, no lo local de antes', async () => {
+    await upsertLocalBookmark(mk('2026-01-01', 100));
+    await mergeRemoteBookmarks([mk('2026-03-03', 300)]);
+    const reloaded = await loadLocalBookmarks();
+    expect(reloaded.map((b) => b.date)).toEqual(['2026-03-03', '2026-01-01']);
+  });
+
+  it('merge sin remotos no borra los locales', async () => {
+    await upsertLocalBookmark(mk('2026-01-01', 100));
+    await expect(mergeRemoteBookmarks([])).resolves.toHaveLength(1);
+  });
+});
+
+describe('loadLocalBookmarks — almacenamiento dañado', () => {
+  it('JSON corrupto devuelve lista vacía en vez de romper la pantalla de Guardados', async () => {
+    await AsyncStorage.setItem(BOOKMARKS_KEY, '[{"date":');
+    await expect(loadLocalBookmarks()).resolves.toEqual([]);
+  });
+
+  it('un objeto suelto (no array) se trata como vacío', async () => {
+    await AsyncStorage.setItem(BOOKMARKS_KEY, '{"date":"2026-01-01"}');
+    await expect(loadLocalBookmarks()).resolves.toEqual([]);
+  });
+
+  it('descarta entradas sin fecha y conserva las buenas', async () => {
+    await AsyncStorage.setItem(
+      BOOKMARKS_KEY,
+      JSON.stringify([null, { bookmarkedAt: 1 }, mk('2026-01-01', 5)]),
+    );
+    const list = await loadLocalBookmarks();
+    expect(list.map((b) => b.date)).toEqual(['2026-01-01']);
+  });
+});

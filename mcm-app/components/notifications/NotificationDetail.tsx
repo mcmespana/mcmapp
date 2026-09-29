@@ -1,4 +1,5 @@
 import { logger } from '@/utils/logger';
+import { capitalizeFirst } from '@/utils/textCase';
 import {
   View,
   StyleSheet,
@@ -10,12 +11,13 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import colors, { Colors } from '@/constants/colors';
+import colors, { themeColors, Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
 import { getRouteLabel, normalizeRoute } from './notificationDisplay';
+import typography from '@/constants/typography';
 
 /**
  * Vista "en grande" de una notificación concreta (título, imagen, cuerpo y
@@ -75,14 +77,16 @@ export default function NotificationDetail({
         </Text>
 
         <Text style={[detailStyles.date, { color: theme.icon }]}>
-          {date.toLocaleDateString('es-ES', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
+          {capitalizeFirst(
+            date.toLocaleDateString('es-ES', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+          )}
         </Text>
 
         {notification.imageUrl && (
@@ -108,23 +112,29 @@ export default function NotificationDetail({
 
         {notification.internalRoute && (
           <Pressable
-            style={[detailStyles.routeBtn, { borderColor: colors.primary }]}
+            style={[
+              detailStyles.routeBtn,
+              { borderColor: themeColors(scheme === 'dark').link },
+            ]}
             onPress={() => navigateTo(notification.internalRoute!)}
           >
             <MaterialIcons
               name={(routeInfo?.icon ?? 'launch') as any}
               size={20}
-              color={colors.primary}
+              color={themeColors(scheme === 'dark').link}
             />
             <Text
-              style={[detailStyles.routeBtnText, { color: colors.primary }]}
+              style={[
+                detailStyles.routeBtnText,
+                { color: themeColors(scheme === 'dark').link },
+              ]}
             >
               {routeInfo ? `Ir a ${routeInfo.label}` : 'Abrir sección'}
             </Text>
             <MaterialIcons
               name="chevron-right"
               size={20}
-              color={colors.primary}
+              color={themeColors(scheme === 'dark').link}
             />
           </Pressable>
         )}
@@ -174,7 +184,7 @@ const detailStyles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -185,20 +195,20 @@ const detailStyles = StyleSheet.create({
   icon: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: radii.pillFull,
     marginBottom: spacing.md,
     alignSelf: 'center',
   },
   title: {
-    fontSize: 22,
+    ...typography.h2,
     fontWeight: '700',
     marginBottom: spacing.sm,
     lineHeight: 30,
   },
   date: {
-    fontSize: 13,
+    ...typography.caption,
     marginBottom: spacing.lg,
-    textTransform: 'capitalize',
+    // Sin `capitalize`: son varias palabras. Ver `utils/textCase.ts`.
   },
   image: {
     width: '100%',
@@ -207,7 +217,7 @@ const detailStyles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   body: {
-    fontSize: 16,
+    ...typography.body,
     lineHeight: 26,
     marginBottom: spacing.lg,
   },
@@ -227,7 +237,7 @@ const detailStyles = StyleSheet.create({
   },
   routeBtnText: {
     flex: 1,
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   actionBtn: {
@@ -239,7 +249,7 @@ const detailStyles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: radii.lg,
     gap: 10,
-    ...shadows.lg,
+    ...shadows.overlay,
   },
   actionBtnText: {
     color: '#fff',

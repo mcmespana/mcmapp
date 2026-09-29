@@ -3,11 +3,17 @@ import { View, Text, StyleSheet, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
-import { Colors } from '@/constants/colors';
+import {
+  Colors,
+  HighlightColors,
+  UIColors,
+  themeColors,
+} from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { DEFAULT_FONT_SIZE_EM } from '@/contexts/SettingsContext';
 import { getNativeFontFamily } from '@/utils/fontUtils';
+import typography from '@/constants/typography';
 
 interface FontOption {
   name: string;
@@ -82,9 +88,7 @@ export default function SongFontBottomSheet({
                       ? isDark
                         ? '#FFB74D'
                         : '#C77700'
-                      : isDark
-                        ? '#8E8E93'
-                        : '#8E8E93',
+                      : themeColors(isDark).textMuted,
                   },
                 ]}
               >
@@ -104,7 +108,7 @@ export default function SongFontBottomSheet({
               <MaterialIcons
                 name="refresh"
                 size={18}
-                color={isDark ? '#AEAEB2' : '#636366'}
+                color={themeColors(isDark).textSecondary}
               />
             </PressableFeedback>
           </View>
@@ -153,8 +157,8 @@ export default function SongFontBottomSheet({
                   {
                     color: isSizeModified
                       ? isDark
-                        ? '#F4C11E'
-                        : '#7A5A00'
+                        ? UIColors.accentYellow
+                        : HighlightColors.light.fg
                       : isDark
                         ? '#EBEBF0'
                         : '#1C1C1E',
@@ -182,7 +186,7 @@ export default function SongFontBottomSheet({
                   style={[
                     styles.previewText,
                     {
-                      color: isDark ? '#AEAEB2' : '#636366',
+                      color: themeColors(isDark).textSecondary,
                       ...(getNativeFontFamily(currentFontFamily) && {
                         fontFamily: getNativeFontFamily(currentFontFamily),
                       }),
@@ -234,9 +238,7 @@ export default function SongFontBottomSheet({
                       ? isDark
                         ? '#FFB74D'
                         : '#C77700'
-                      : isDark
-                        ? '#8E8E93'
-                        : '#8E8E93',
+                      : themeColors(isDark).textMuted,
                   },
                 ]}
               >
@@ -257,7 +259,7 @@ export default function SongFontBottomSheet({
               <MaterialIcons
                 name="refresh"
                 size={18}
-                color={isDark ? '#AEAEB2' : '#636366'}
+                color={themeColors(isDark).textSecondary}
               />
             </PressableFeedback>
           </View>
@@ -287,8 +289,8 @@ export default function SongFontBottomSheet({
                         ...(nativeFamily && { fontFamily: nativeFamily }),
                         color: isActive
                           ? isDark
-                            ? '#F4C11E'
-                            : '#7A5A00'
+                            ? UIColors.accentYellow
+                            : HighlightColors.light.fg
                           : isDark
                             ? '#EBEBF0'
                             : '#1C1C1E',
@@ -303,11 +305,9 @@ export default function SongFontBottomSheet({
                       {
                         color: isActive
                           ? isDark
-                            ? '#F4C11E'
-                            : '#7A5A00'
-                          : isDark
-                            ? '#AEAEB2'
-                            : '#636366',
+                            ? UIColors.accentYellow
+                            : HighlightColors.light.fg
+                          : themeColors(isDark).textSecondary,
                         fontWeight: isActive ? '700' : '500',
                       },
                     ]}
@@ -330,12 +330,12 @@ export default function SongFontBottomSheet({
             <MaterialIcons
               name="refresh"
               size={16}
-              color={isDark ? '#AEAEB2' : '#636366'}
+              color={themeColors(isDark).textSecondary}
             />
             <Text
               style={[
                 styles.resetAllText,
-                { color: isDark ? '#AEAEB2' : '#636366' },
+                { color: themeColors(isDark).textSecondary },
               ]}
             >
               Restablecer todo
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     minHeight: 28,
   },
   cardLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '800',
     letterSpacing: 1.2,
     color: '#8E8E93',
@@ -379,13 +379,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   cardValue: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
   },
   resetIconBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -431,12 +431,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
   },
   sizeDisplayActive: {
-    backgroundColor: '#FFF4DA',
-    borderColor: '#F4C11E',
+    backgroundColor: HighlightColors.light.bg,
+    borderColor: UIColors.accentYellow,
   },
   sizeDisplayActiveDark: {
-    backgroundColor: '#3A2D0A',
-    borderColor: '#7A5A00',
+    backgroundColor: HighlightColors.dark.bg,
+    borderColor: HighlightColors.light.fg,
   },
   sizePercent: {
     fontSize: 20,
@@ -476,12 +476,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
   },
   fontChipActive: {
-    backgroundColor: '#FFF4DA',
-    borderColor: '#F4C11E',
+    backgroundColor: HighlightColors.light.bg,
+    borderColor: UIColors.accentYellow,
   },
   fontChipActiveDark: {
-    backgroundColor: '#3A2D0A',
-    borderColor: '#7A5A00',
+    backgroundColor: HighlightColors.dark.bg,
+    borderColor: HighlightColors.light.fg,
   },
   fontChipPreview: {
     fontSize: 20,
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   fontChipLabel: {
-    fontSize: 11,
+    ...typography.micro,
     letterSpacing: 0.1,
     textAlign: 'center',
   },
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.dark.card,
   },
   resetAllText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
   },
 });

@@ -42,6 +42,8 @@ import {
   type SongTagIndex,
 } from '@/utils/songTags';
 import { h } from '@/utils/haptics';
+import { SwipeColors, UIColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 interface Song {
   title: string;
@@ -233,7 +235,11 @@ function buildSongList(
           if (titleMatch && titleMatch[1]) {
             numericPart = String(parseInt(titleMatch[1], 10));
           } else {
-            const filenameMatch = song.filename.match(/_(\d+)\.html$/);
+            // `filename` es OPCIONAL en `SongEntry`, y sin el `?.` una sola
+            // canción sin él tumbaba la categoría completa con «Error al
+            // cargar las canciones» (el mismo cálculo, 90 líneas más arriba,
+            // sí lo protegía). Visto el 2026-09-09 renderizando el cantoral.
+            const filenameMatch = song.filename?.match(/_(\d+)\.html$/);
             if (filenameMatch && filenameMatch[1]) {
               numericPart = String(parseInt(filenameMatch[1], 10));
             }
@@ -280,7 +286,9 @@ function buildSongList(
       if (titleMatch && titleMatch[1]) {
         numericPart = titleMatch[1].padStart(2, '0');
       } else {
-        const filenameMatch = song.filename.match(/_(\d+)\.html$/);
+        // Igual que arriba: `filename` es opcional y sin `?.` la lista entera
+        // se cae por una canción sin él.
+        const filenameMatch = song.filename?.match(/_(\d+)\.html$/);
         if (filenameMatch && filenameMatch[1]) {
           numericPart = filenameMatch[1].padStart(2, '0');
         }
@@ -479,7 +487,9 @@ export default function SongsListScreen({
               <MaterialIcons
                 name="sell"
                 size={22}
-                color={isIOS ? '#f4c11e' : isDark ? '#FFFFFF' : '#1a1a1a'}
+                color={
+                  isIOS ? UIColors.accentYellow : isDark ? '#FFFFFF' : '#1a1a1a'
+                }
               />
             </TouchableOpacity>
           )
@@ -498,7 +508,7 @@ export default function SongsListScreen({
                     size={24}
                     color={
                       isIOS
-                        ? '#f4c11e'
+                        ? UIColors.accentYellow
                         : Platform.OS === 'web'
                           ? '#1a1a1a'
                           : '#1a1a1a'
@@ -558,7 +568,7 @@ export default function SongsListScreen({
     () =>
       songs.some((s) => {
         const kinds = mediaKinds(extractSongMedia(s));
-        return kinds.video || kinds.audio;
+        return kinds.video || kinds.audio || kinds.links;
       }),
     [songs],
   );
@@ -646,12 +656,12 @@ export default function SongsListScreen({
               <MaterialIcons
                 name="search"
                 size={18}
-                color={isDark ? '#636366' : '#8E8E93'}
+                color={themeColors(isDark).textMuted}
               />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Busca por título, autor..."
-                placeholderTextColor={isDark ? '#636366' : '#8E8E93'}
+                placeholderTextColor={themeColors(isDark).textMuted}
                 value={search}
                 onChangeText={setSearch}
                 autoFocus={!isSearchAll}
@@ -666,7 +676,7 @@ export default function SongsListScreen({
                   <MaterialIcons
                     name="cancel"
                     size={16}
-                    color={isDark ? '#636366' : '#8E8E93'}
+                    color={themeColors(isDark).textMuted}
                   />
                 </TouchableOpacity>
               )}
@@ -690,14 +700,14 @@ export default function SongsListScreen({
               <MaterialIcons
                 name="play-arrow"
                 size={13}
-                color={isDark ? '#6C6C70' : '#B0B0B5'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.legendText}>vídeo</Text>
               <Text style={styles.legendDot}>·</Text>
               <MaterialIcons
                 name="headphones"
                 size={12}
-                color={isDark ? '#6C6C70' : '#B0B0B5'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.legendText}>audio</Text>
             </View>
@@ -803,12 +813,12 @@ export default function SongsListScreen({
             <MaterialIcons
               name={menuSongSelected ? 'playlist-remove' : 'playlist-add'}
               size={22}
-              color={isDark ? '#7AB3FF' : '#253883'}
+              color={themeColors(isDark).link}
             />
             <Text
               style={[
                 styles.menuActionText,
-                { color: isDark ? '#F5F5F7' : '#1C1C1E' },
+                { color: themeColors(isDark).text },
               ]}
             >
               {menuSongSelected ? 'Quitar de la lista' : 'Añadir a la lista'}
@@ -818,12 +828,12 @@ export default function SongsListScreen({
             <MaterialIcons
               name="share"
               size={22}
-              color={isDark ? '#7AB3FF' : '#253883'}
+              color={themeColors(isDark).link}
             />
             <Text
               style={[
                 styles.menuActionText,
-                { color: isDark ? '#F5F5F7' : '#1C1C1E' },
+                { color: themeColors(isDark).text },
               ]}
             >
               Compartir
@@ -906,7 +916,7 @@ const createStyles = (
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     headerButton: {
       padding: 8,
@@ -929,7 +939,7 @@ const createStyles = (
     searchInput: {
       flex: 1,
       fontSize: isWide ? 17 : 16,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).text,
       padding: 0,
       margin: 0,
     },
@@ -942,7 +952,7 @@ const createStyles = (
       paddingBottom: 2,
     },
     songCount: {
-      fontSize: 12,
+      ...typography.footnote,
       color: isDark ? '#636366' : '#AEAEB2',
       letterSpacing: 0.2,
     },
@@ -952,11 +962,11 @@ const createStyles = (
       gap: 3,
     },
     legendText: {
-      fontSize: 11,
-      color: isDark ? '#6C6C70' : '#B0B0B5',
+      ...typography.micro,
+      color: themeColors(isDark).textMuted,
     },
     legendDot: {
-      fontSize: 11,
+      ...typography.micro,
       color: isDark ? '#48484A' : '#D1D1D6',
       marginHorizontal: 1,
     },
@@ -968,7 +978,7 @@ const createStyles = (
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 10,
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
       paddingHorizontal: 16,
       paddingVertical: 9,
       marginTop: 8,
@@ -979,16 +989,16 @@ const createStyles = (
     },
     sectionHeaderText: {
       flex: 1,
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
     },
     sectionHeaderCount: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
     },
     listContent: {
@@ -1002,15 +1012,15 @@ const createStyles = (
         : null),
     },
     errorText: {
-      fontSize: 16,
-      color: '#FF453A',
+      ...typography.body,
+      color: SwipeColors.remove,
       textAlign: 'center',
       margin: 20,
       fontWeight: '600',
     },
     debugText: {
-      fontSize: 14,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      ...typography.subhead,
+      color: themeColors(isDark).textMuted,
       textAlign: 'center',
       margin: 10,
       fontFamily: 'monospace',
@@ -1027,7 +1037,7 @@ const createStyles = (
       borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
     },
     menuActionText: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '500',
     },
   });

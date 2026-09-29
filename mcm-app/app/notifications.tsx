@@ -20,9 +20,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import EmptyState from '@/components/ui/EmptyState';
+import AppChip from '@/components/ui/AppChip';
 import { hexAlpha } from '@/utils/colorUtils';
+import { capitalizeFirst } from '@/utils/textCase';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -52,6 +54,7 @@ import ContextMenuSheet, {
   ContextMenuAction,
 } from '@/components/ContextMenuSheet';
 import { createStyles } from '@/components/notifications/notificationsStyles';
+import typography from '@/constants/typography';
 
 // Mapeo de rutas internas a nombres legibles
 const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
@@ -142,6 +145,7 @@ function NotificationRow({
   ) => void;
   onLongPress: (n: NotificationData | ReceivedNotification) => void;
 }) {
+  const isDark = useColorScheme() === 'dark';
   const ctx = useContextMenu(() => onLongPress(notification));
   const date = new Date(
     'receivedAt' in notification
@@ -233,7 +237,7 @@ function NotificationRow({
                     <MaterialIcons
                       name="check-circle-outline"
                       size={20}
-                      color={colors.primary}
+                      color={themeColors(isDark).link}
                     />
                   </Pressable>
                 )}
@@ -253,38 +257,14 @@ function NotificationRow({
                     categorías con significado propio; "general"/desconocida no
                     pinta chip. */}
                 {category && (
-                  <View
-                    style={[
-                      styles.categoryChip,
-                      {
-                        borderColor: hexAlpha(category.color, '60'),
-                        backgroundColor: hexAlpha(category.color, '14'),
-                      },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name={category.icon as any}
-                      size={11}
-                      color={category.color}
-                    />
-                    <Text
-                      style={[
-                        styles.categoryChipText,
-                        { color: category.color },
-                      ]}
-                    >
-                      {category.label}
-                    </Text>
-                  </View>
+                  <AppChip
+                    label={category.label}
+                    color={category.color}
+                    icon={category.icon as never}
+                  />
                 )}
                 {/* Chip de destino interno */}
-                {routeInfo && (
-                  <View style={styles.destinationChip}>
-                    <Text style={styles.destinationChipText}>
-                      {routeInfo.label}
-                    </Text>
-                  </View>
-                )}
+                {routeInfo && <AppChip label={routeInfo.label} />}
                 {/* Chips de botones de acción (hasta 3) — Pressable para
                     evitar <button> anidado en web */}
                 {actionButtons.map((button, idx) => (
@@ -597,7 +577,11 @@ export default function NotificationsScreen() {
             accessibilityLabel="Marcar todas como leídas"
             accessibilityRole="button"
           >
-            <MaterialIcons name="done-all" size={22} color={colors.primary} />
+            <MaterialIcons
+              name="done-all"
+              size={22}
+              color={themeColors(scheme === 'dark').link}
+            />
           </TouchableOpacity>
         ) : (
           <View style={styles.headerRight} />
@@ -782,41 +766,27 @@ function NotificationDetailModal({
 
                 {/* Fecha */}
                 <Text style={[dStyles.date, { color: theme.icon }]}>
-                  {date.toLocaleDateString('es-ES', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  {capitalizeFirst(
+                    date.toLocaleDateString('es-ES', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }),
+                  )}
                 </Text>
 
                 {/* Chip de categoría de negocio (data.category) */}
                 {category && (
-                  <View
-                    style={[
-                      dStyles.categoryChip,
-                      {
-                        borderColor: hexAlpha(category.color, '60'),
-                        backgroundColor: hexAlpha(category.color, '14'),
-                      },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name={category.icon as any}
-                      size={13}
-                      color={category.color}
-                    />
-                    <Text
-                      style={[
-                        dStyles.categoryChipText,
-                        { color: category.color },
-                      ]}
-                    >
-                      {category.label}
-                    </Text>
-                  </View>
+                  <AppChip
+                    label={category.label}
+                    color={category.color}
+                    icon={category.icon as never}
+                    size="md"
+                    style={dStyles.detailChip}
+                  />
                 )}
 
                 {/* Imagen grande */}
@@ -854,21 +824,26 @@ function NotificationDetailModal({
                     onPress={handleEventRoute}
                     style={[
                       dStyles.routeButton,
-                      { borderColor: colors.primary },
+                      { borderColor: themeColors(scheme === 'dark').link },
                     ]}
                   >
                     <MaterialIcons
                       name="event"
                       size={20}
-                      color={colors.primary}
+                      color={themeColors(scheme === 'dark').link}
                     />
-                    <Button.Label style={{ color: colors.primary, flex: 1 }}>
+                    <Button.Label
+                      style={{
+                        color: themeColors(scheme === 'dark').link,
+                        flex: 1,
+                      }}
+                    >
                       {eventTitle ? `Ir a ${eventTitle}` : 'Ir al evento'}
                     </Button.Label>
                     <MaterialIcons
                       name="arrow-forward-ios"
                       size={14}
-                      color={colors.primary}
+                      color={themeColors(scheme === 'dark').link}
                     />
                   </Button>
                 )}
@@ -880,21 +855,26 @@ function NotificationDetailModal({
                     onPress={handleInternalRoute}
                     style={[
                       dStyles.routeButton,
-                      { borderColor: colors.primary },
+                      { borderColor: themeColors(scheme === 'dark').link },
                     ]}
                   >
                     <MaterialIcons
                       name={(routeInfo?.icon ?? 'launch') as any}
                       size={20}
-                      color={colors.primary}
+                      color={themeColors(scheme === 'dark').link}
                     />
-                    <Button.Label style={{ color: colors.primary, flex: 1 }}>
+                    <Button.Label
+                      style={{
+                        color: themeColors(scheme === 'dark').link,
+                        flex: 1,
+                      }}
+                    >
                       {routeInfo ? `Ir a ${routeInfo.label}` : 'Abrir sección'}
                     </Button.Label>
                     <MaterialIcons
                       name="arrow-forward-ios"
                       size={14}
-                      color={colors.primary}
+                      color={themeColors(scheme === 'dark').link}
                     />
                   </Button>
                 )}
@@ -909,13 +889,23 @@ function NotificationDetailModal({
                     style={[
                       dStyles.actionButton,
                       idx > 0 && dStyles.actionButtonSecondary,
+                      idx > 0 && {
+                        backgroundColor: hexAlpha(
+                          themeColors(scheme === 'dark').link,
+                          '12',
+                        ),
+                        borderColor: themeColors(scheme === 'dark').link,
+                      },
                     ]}
                   >
                     <Button.Label
                       style={
                         idx === 0
                           ? dStyles.actionButtonText
-                          : dStyles.actionButtonTextSecondary
+                          : [
+                              dStyles.actionButtonTextSecondary,
+                              { color: themeColors(scheme === 'dark').link },
+                            ]
                       }
                     >
                       {button.text}
@@ -923,7 +913,9 @@ function NotificationDetailModal({
                     <MaterialIcons
                       name={button.isInternal ? 'arrow-forward' : 'open-in-new'}
                       size={18}
-                      color={idx === 0 ? '#fff' : colors.primary}
+                      color={
+                        idx === 0 ? '#fff' : themeColors(scheme === 'dark').link
+                      }
                     />
                   </Button>
                 ))}
@@ -945,25 +937,17 @@ const dStyles = StyleSheet.create({
   icon: {
     width: 64,
     height: 64,
-    borderRadius: 32, // 64/2 — circle
+    borderRadius: radii.pillFull,
     marginBottom: spacing.md,
     alignSelf: 'center',
   },
   title: { fontSize: 22, fontWeight: '700', marginBottom: spacing.sm },
-  date: { fontSize: 13, marginBottom: spacing.lg, textTransform: 'capitalize' },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    marginTop: -spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  categoryChipText: { fontSize: 12, fontWeight: '600' },
+  // Sin `textTransform: 'capitalize'`: la cadena tiene varias palabras y
+  // capitalize las pone TODAS en mayúscula («10 De Septiembre De 2026 A Las
+  // 14:32»). La inicial la pone `capitalizeFirst`.
+  date: { fontSize: 13, marginBottom: spacing.lg },
+  // El chip lo pinta `AppChip`; esto es solo su sitio en la columna.
+  detailChip: { marginTop: -spacing.sm, marginBottom: spacing.lg },
   image: {
     width: '100%',
     height: 200,
@@ -987,7 +971,7 @@ const dStyles = StyleSheet.create({
   },
   routeButtonText: {
     flex: 1,
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   actionButton: {
@@ -1000,20 +984,23 @@ const dStyles = StyleSheet.create({
     borderRadius: radii.lg,
     gap: 10,
     marginBottom: spacing.md,
-    ...shadows.lg,
+    ...shadows.overlay,
     shadowColor: colors.primary,
   },
   actionButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  // Ojo: los valores de aquí son los de MODO CLARO. El azul de marca sobre
+  // fondo oscuro da 1,3:1 (invisible), así que quien use estos estilos los
+  // sobrescribe con `themeColors(isDark).link`. Ver `design.md` §3.
   actionButtonSecondary: {
     backgroundColor: hexAlpha(colors.primary, '12'),
     borderWidth: 1.5,
     borderColor: colors.primary,
-    ...shadows.sm,
+    ...shadows.card,
     shadowColor: colors.primary,
   },
   actionButtonTextSecondary: {
     color: colors.primary,
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
   },
 });

@@ -108,6 +108,7 @@ import {
   parseSongNumber,
   type FilenameResolver,
 } from '@/utils/offlinePlaylist';
+import { themeColors } from '@/constants/colors';
 
 interface Song {
   title: string;
@@ -1580,7 +1581,7 @@ const SelectedSongsScreen: React.FC = () => {
           <MaterialIcons
             name="groups"
             size={20}
-            color={isDark ? '#7AB3FF' : '#253883'}
+            color={themeColors(isDark).link}
           />
           <Text style={styles.importButtonText}>
             {sharing.myChoir
@@ -1596,7 +1597,7 @@ const SelectedSongsScreen: React.FC = () => {
           <MaterialIcons
             name="pin"
             size={20}
-            color={isDark ? '#7AB3FF' : '#253883'}
+            color={themeColors(isDark).link}
           />
           <Text style={styles.importButtonText}>Tengo un código o un QR</Text>
         </PressableFeedback>
@@ -1608,7 +1609,7 @@ const SelectedSongsScreen: React.FC = () => {
           <MaterialIcons
             name="file-download"
             size={20}
-            color={isDark ? '#7AB3FF' : '#253883'}
+            color={themeColors(isDark).link}
           />
           <Text style={styles.importButtonText}>Importar desde archivo</Text>
         </PressableFeedback>

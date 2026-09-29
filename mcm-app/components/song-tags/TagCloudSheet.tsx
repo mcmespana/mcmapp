@@ -13,6 +13,8 @@ import BottomSheet from '@/components/BottomSheet';
 import TagChip from '@/components/song-tags/TagChip';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { tagCloudBucket, type ResolvedTag } from '@/utils/songTags';
+import { themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 interface TagCloudSheetProps {
   visible: boolean;
@@ -90,8 +92,8 @@ export default function TagCloudSheet({
 const createStyles = (isDark: boolean) =>
   StyleSheet.create({
     subtitle: {
-      fontSize: 13,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      ...typography.caption,
+      color: themeColors(isDark).textMuted,
       paddingHorizontal: 18,
       paddingBottom: 16,
     },

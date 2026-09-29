@@ -12,7 +12,7 @@ import BottomSheet from './BottomSheet';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import AppTextField from '@/components/ui/AppTextField';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Colors } from '@/constants/colors';
+import { Colors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
 import { pushWithRetry } from '@/services/firebaseWrites';
@@ -22,6 +22,7 @@ import {
 } from '@/utils/songUtils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import typography from '@/constants/typography';
 
 interface ReportBugsModalProps {
   visible: boolean;
@@ -118,7 +119,7 @@ export default function ReportBugsModal({
           <View
             style={[
               styles.songBadge,
-              { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' },
+              { backgroundColor: themeColors(isDark).background },
             ]}
           >
             <MaterialIcons name="music-note" size={14} color={theme.icon} />
@@ -168,14 +169,14 @@ export default function ReportBugsModal({
           <View
             style={[
               styles.dividerLine,
-              { backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA' },
+              { backgroundColor: themeColors(isDark).separator },
             ]}
           />
           <Text style={[styles.dividerLabel, { color: theme.icon }]}>o</Text>
           <View
             style={[
               styles.dividerLine,
-              { backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA' },
+              { backgroundColor: themeColors(isDark).separator },
             ]}
           />
         </View>
@@ -184,7 +185,7 @@ export default function ReportBugsModal({
         <TouchableOpacity
           style={[
             styles.secretBtn,
-            { borderColor: isDark ? '#3A3A3C' : '#E5E5EA' },
+            { borderColor: themeColors(isDark).separator },
           ]}
           onPress={() => {
             openSecretAfterClose.current = true;
@@ -226,17 +227,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   songBadgeText: {
-    fontSize: 13,
+    ...typography.caption,
     fontStyle: 'italic',
     flex: 1,
   },
   label: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     marginBottom: 4,
   },
   sublabel: {
-    fontSize: 13,
+    ...typography.caption,
     marginBottom: 12,
     lineHeight: 18,
   },
@@ -245,7 +246,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   charCount: {
-    fontSize: 11,
+    ...typography.micro,
     textAlign: 'right',
     marginTop: 6,
     marginBottom: 20,
@@ -264,7 +265,7 @@ const styles = StyleSheet.create({
     height: 1,
   },
   dividerLabel: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
   },
   secretBtn: {
@@ -278,11 +279,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   secretBtnText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   disclaimer: {
-    fontSize: 12,
+    ...typography.footnote,
     lineHeight: 18,
     textAlign: 'center',
   },

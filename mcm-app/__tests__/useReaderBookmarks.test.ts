@@ -139,7 +139,9 @@ describe('toggleBookmark', () => {
       sampleBookmark('2026-08-20'),
     ]);
     const { result } = await renderHook(() => useReaderBookmarks());
-    await waitFor(() => expect(result.current.isBookmarked('2026-08-20')).toBe(true));
+    await waitFor(() =>
+      expect(result.current.isBookmarked('2026-08-20')).toBe(true),
+    );
 
     let saved: boolean | undefined;
     await act(async () => {
@@ -193,7 +195,9 @@ describe('setHighlights', () => {
     (loadLocalBookmarks as jest.Mock).mockResolvedValue([
       {
         ...sampleBookmark('2026-08-20'),
-        highlights: { evangelio: [{ start: 0, end: 5, color: 'yellow' } as any] },
+        highlights: {
+          evangelio: [{ start: 0, end: 5, color: 'yellow' } as any],
+        },
       },
     ]);
     const { result } = await renderHook(() => useReaderBookmarks());

@@ -29,8 +29,22 @@ export interface SongMedia {
   videoEmbed?: string;
   /** Vídeos alternativos de YouTube. */
   youtubeLinks?: MediaLink[];
-  /** Audios (normalmente enlaces de Google Drive). */
+  /** Audios (normalmente enlaces de Google Drive). Suenan DENTRO de la app. */
   audioLinks?: MediaLink[];
+  /**
+   * Enlaces de Spotify. Son los únicos que SALEN de la app: no hay embed
+   * posible, así que abren la app de Spotify (o Spotify Web) y el usuario
+   * tiene que volver a mano. Por eso no van con `audioLinks`.
+   */
+  spotifyLinks?: MediaLink[];
+  /**
+   * Documentos de Drive (partitura, PDF, imagen escaneada) para VER a pantalla
+   * completa dentro de la app. Ojo: no es lo mismo que un `audioLinks` que
+   * apunte a Drive — ese suena; este se mira.
+   */
+  driveLinks?: MediaLink[];
+  /** Cualquier otro enlace (partitura en una web externa…), a pantalla completa. */
+  otherLinks?: MediaLink[];
   /**
    * Etiquetas libres de la canción, en slug (ver `utils/songTags.ts`). Viajan
    * con la ficha para que el detalle pueda pintarlas sin descargar nada.
@@ -83,9 +97,44 @@ export function extractSongMedia(raw: unknown): SongMedia | null {
       url: toYouTubeEmbedUrl(link.url),
     })),
     audioLinks: cleanLinks(song.audioLinks),
+    spotifyLinks: cleanLinks(song.spotifyLinks),
+    driveLinks: cleanLinks(song.driveLinks),
+    otherLinks: cleanLinks(song.otherLinks),
   };
 
   return hasSongMedia(media) ? media : null;
+}
+
+/**
+ * Enlaces que NO son audio embebido, en el orden en que se muestran.
+ *
+ * `external: true` = sale de la app (Spotify). `external: false` = se abre a
+ * pantalla completa dentro de la app. Es la única distinción que hay que
+ * entender, y de aquí sale también el indicador de la lista.
+ */
+export function songExtraLinks(media: SongMedia | null | undefined): {
+  kind: 'spotify' | 'drive' | 'otro';
+  link: MediaLink;
+  external: boolean;
+}[] {
+  if (!media) return [];
+  return [
+    ...(media.spotifyLinks ?? []).map((link) => ({
+      kind: 'spotify' as const,
+      link,
+      external: true,
+    })),
+    ...(media.driveLinks ?? []).map((link) => ({
+      kind: 'drive' as const,
+      link,
+      external: false,
+    })),
+    ...(media.otherLinks ?? []).map((link) => ({
+      kind: 'otro' as const,
+      link,
+      external: false,
+    })),
+  ];
 }
 
 /** ¿La canción tiene algún contenido multimedia o de ficha que mostrar? */
@@ -100,7 +149,8 @@ export function hasSongMedia(media: SongMedia | null | undefined): boolean {
     (media.tags && media.tags.length > 0) ||
     media.videoEmbed ||
     (media.youtubeLinks && media.youtubeLinks.length > 0) ||
-    (media.audioLinks && media.audioLinks.length > 0),
+    (media.audioLinks && media.audioLinks.length > 0) ||
+    songExtraLinks(media).length > 0,
   );
 }
 
@@ -108,6 +158,7 @@ export function hasSongMedia(media: SongMedia | null | undefined): boolean {
 export function mediaKinds(media: SongMedia | null | undefined): {
   video: boolean;
   audio: boolean;
+  links: boolean;
 } {
   return {
     video: Boolean(
@@ -115,5 +166,6 @@ export function mediaKinds(media: SongMedia | null | undefined): {
       (media?.youtubeLinks && media.youtubeLinks.length > 0),
     ),
     audio: Boolean(media?.audioLinks && media.audioLinks.length > 0),
+    links: songExtraLinks(media).length > 0,
   };
 }

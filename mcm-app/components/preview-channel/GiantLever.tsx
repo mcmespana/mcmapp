@@ -7,6 +7,8 @@ import Animated, {
   useDerivedValue,
   withSpring,
 } from 'react-native-reanimated';
+import colors from '@/constants/colors';
+import typography from '@/constants/typography';
 
 // Palanca gigante MUNDANO ↔ ALPHA que activa/desactiva el canal preview.
 // Extraído de PreviewChannelModal.
@@ -78,7 +80,7 @@ export function GiantLever({
       <View style={styles.leverTrackBase}>
         <Animated.View style={[styles.leverTrackOn, trackOnStyle]}>
           <LinearGradient
-            colors={['#43E97B', '#FCD200', '#FE6B8B']}
+            colors={['#43E97B', colors.yellow, '#FE6B8B']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={StyleSheet.absoluteFill}
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
   },
   leverLabel: {
     color: '#FFFFFF',
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '900',
     letterSpacing: 1.6,
     textShadowColor: 'rgba(0,0,0,0.45)',

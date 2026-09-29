@@ -22,6 +22,9 @@ import {
   fetchContigoHabits,
   fetchContigoRevisions,
   fetchContigoBookmarks,
+  syncCarismochitoEntry,
+  fetchCarismochitos,
+  clearCarismochitos,
 } from '@/utils/authHelpers';
 import type { DayRecord } from '@/hooks/useContigoHabits';
 
@@ -320,5 +323,50 @@ describe('fetchContigoBookmarks', () => {
     (get as jest.Mock).mockRejectedValueOnce(new Error('offline'));
     await expect(fetchContigoBookmarks('u1')).resolves.toEqual([]);
     expect(errorSpy).toHaveBeenCalled();
+  });
+});
+
+describe('colección de Carismochitos', () => {
+  it('sube una variante suelta bajo users/{uid}/carismochitos/{id}', async () => {
+    await syncCarismochitoEntry('u1', 'dorado', { count: 2, firstAt: 7 });
+    expect(refPath()).toBe('users/u1/carismochitos/dorado');
+    expect(set).toHaveBeenCalledWith(expect.anything(), {
+      count: 2,
+      firstAt: 7,
+    });
+  });
+
+  it('un fallo de red al subir se loguea y no revienta la captura', async () => {
+    (set as jest.Mock).mockRejectedValueOnce(new Error('offline'));
+    await expect(
+      syncCarismochitoEntry('u1', 'rojo', { count: 1, firstAt: 1 }),
+    ).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalled();
+  });
+
+  it('al descargar, sanea lo que haya en la nube', async () => {
+    (get as jest.Mock).mockResolvedValueOnce(
+      snapshot({
+        rojo: { count: 3, firstAt: 10 },
+        basura: { count: 'mucho' },
+      }),
+    );
+    await expect(fetchCarismochitos('u1')).resolves.toEqual({
+      rojo: { count: 3, firstAt: 10 },
+    });
+    expect(refPath()).toBe('users/u1/carismochitos');
+  });
+
+  it('sin nodo en la nube, o sin red, la colección remota está vacía', async () => {
+    (get as jest.Mock).mockResolvedValueOnce(snapshot(null));
+    await expect(fetchCarismochitos('u1')).resolves.toEqual({});
+    (get as jest.Mock).mockRejectedValueOnce(new Error('offline'));
+    await expect(fetchCarismochitos('u1')).resolves.toEqual({});
+  });
+
+  it('borrar la colección quita el nodo entero del usuario', async () => {
+    await clearCarismochitos('u1');
+    expect(refPath()).toBe('users/u1/carismochitos');
+    expect(remove).toHaveBeenCalled();
   });
 });

@@ -1,0 +1,53 @@
+# .github/workflows/pr.yml
+#
+# El guardarraíl de las Pull Requests: typecheck + typecheck de tests + lint +
+# tests, llamando a verify.yml (única fuente de verdad de esos cuatro pasos,
+# compartida con los workflows de OTA y de deploy web).
+#
+# ─── Por qué este archivo se llama pr.yml y no ci.yml ────────────────────────
+# El anterior (`ci.yml`) llevaba desde el 2026-05-25 en estado
+# "disabled_manually": alguien lo desactivó desde la pestaña Actions. Con ese
+# estado GitHub NO crea el run — ni aparece en rojo ni en gris, simplemente no
+# existe—, así que desde entonces ninguna PR se verificó de verdad aunque el
+# archivo siguiera en el repo (era el §0 de mcm-app/TODO.md). El estado
+# desactivado va pegado a la RUTA del workflow, no a su contenido: la única
+# forma de resucitarlo sin entrar en la web es registrarlo en una ruta nueva,
+# que nace activa. De ahí el rename.
+#
+# Si algún día vuelve a "no correr nada", lo primero que hay que mirar es
+# precisamente eso (Actions → el workflow → menú "..." → Enable workflow), no
+# el disparador.
+#
+# ─── Criterios de gasto ─────────────────────────────────────────────────────
+# El repo es PÚBLICO, así que los minutos de runners estándar son gratis y no
+# tocan la cuota de la cuenta. Aun así el workflow está afinado para no
+# desperdiciar runners:
+#   - solo en Pull Request (no en cada push de rama), que es donde sirve;
+#   - `paths-ignore`: una PR que solo toca documentación o portadas no arranca
+#     nada (en este repo son muchas);
+#   - `concurrency` + `cancel-in-progress`: al empujar un commit nuevo a una PR
+#     se cancela el run anterior en vez de dejar los dos corriendo;
+#   - el timeout vive en verify.yml (20 min) para que un job colgado no se coma
+#     las 6 horas que GitHub da por defecto.
+# Coste típico: un run de ~4 min por PR de código.
+
+name: PR
+
+on:
+  pull_request:
+    branches: [main, production, preview]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "portadas-albumes/**"
+      - ".gitignore"
+      - ".prettierignore"
+  workflow_dispatch:
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml

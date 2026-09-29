@@ -12,6 +12,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
+import {
+  CarismochitoPalettes,
+  type CarismochitoPalette,
+  type CarismochitoPaletteId,
+} from '@/constants/colors';
 
 /* -------------------------------------------------------------------------- */
 /* PNG opcional                                                               */
@@ -28,17 +33,26 @@ const MASCOT_PNG: number | null = require('@/assets/carismochito.png');
 /* Carismochito vectorial (respaldo)                                          */
 /* -------------------------------------------------------------------------- */
 
-const SKIN = '#4FA37A';
-const SKIN_DARK = '#2E6B4F';
-const OUTLINE = '#173A2A';
-const CAP = '#7C7C82';
-const CAP_DARK = '#5C5C62';
-const MOHAWK_RED = '#E2342B';
-const MOHAWK_YEL = '#F2D43B';
-const IRIS = '#5B86B5';
-const MOUTH = '#E2342B';
-
-function CarismochitoFace({ size = 140 }: { size?: number }) {
+function CarismochitoFace({
+  size = 140,
+  palette,
+}: {
+  size?: number;
+  palette: CarismochitoPalette;
+}) {
+  const {
+    skin: SKIN,
+    skinDark: SKIN_DARK,
+    outline: OUTLINE,
+    cap: CAP,
+    capDark: CAP_DARK,
+    mohawkA: MOHAWK_RED,
+    mohawkB: MOHAWK_YEL,
+    iris: IRIS,
+    mouth: MOUTH,
+  } = palette;
+  // La silueta no lleva el blanco de los ojos ni los brillos: sin detalle.
+  const eyeWhite = palette === CarismochitoPalettes.silueta ? SKIN : '#ffffff';
   return (
     <Svg width={size} height={size} viewBox="0 0 130 140">
       {/* Cresta (mohawk) — pinchos rojos y amarillos */}
@@ -109,7 +123,7 @@ function CarismochitoFace({ size = 140 }: { size?: number }) {
         cy="74"
         rx="14"
         ry="17"
-        fill="#ffffff"
+        fill={eyeWhite}
         stroke={OUTLINE}
         strokeWidth={2}
       />
@@ -118,7 +132,7 @@ function CarismochitoFace({ size = 140 }: { size?: number }) {
         cy="74"
         rx="14"
         ry="17"
-        fill="#ffffff"
+        fill={eyeWhite}
         stroke={OUTLINE}
         strokeWidth={2}
       />
@@ -126,8 +140,8 @@ function CarismochitoFace({ size = 140 }: { size?: number }) {
       <Circle cx="82" cy="78" r="6.5" fill={IRIS} />
       <Circle cx="50" cy="78" r="3" fill={OUTLINE} />
       <Circle cx="82" cy="78" r="3" fill={OUTLINE} />
-      <Circle cx="52" cy="75" r="1.6" fill="#fff" />
-      <Circle cx="84" cy="75" r="1.6" fill="#fff" />
+      <Circle cx="52" cy="75" r="1.6" fill={eyeWhite} />
+      <Circle cx="84" cy="75" r="1.6" fill={eyeWhite} />
 
       {/* Sonrisa + lengua */}
       <Path
@@ -152,16 +166,23 @@ function CarismochitoFace({ size = 140 }: { size?: number }) {
 
 export default function CarismochitoMascot({
   size = 140,
-  /** Intensidad del baile: 1 = sutil (badge), 2 = enérgico (cuenta atrás). */
+  /** Intensidad del baile: 0 = quieto, 1 = sutil (badge), 2 = enérgico. */
   dance = 2,
+  /**
+   * Paleta de una variante de la colección. Sin ella, el Carismochito de
+   * siempre (el PNG). `silueta` es el de "todavía no lo has encontrado".
+   */
+  palette,
 }: {
   size?: number;
-  dance?: 1 | 2;
+  dance?: 0 | 1 | 2;
+  palette?: CarismochitoPaletteId | null;
 }) {
   const sway = useSharedValue(0); // rotación + balanceo lateral
   const bob = useSharedValue(0); // salto vertical + escala
 
   useEffect(() => {
+    if (dance === 0) return;
     const swayMs = dance === 2 ? 460 : 900;
     const bobMs = dance === 2 ? 300 : 700;
 
@@ -218,7 +239,9 @@ export default function CarismochitoMascot({
 
   return (
     <Animated.View style={danceStyle}>
-      {MASCOT_PNG != null ? (
+      {palette ? (
+        <CarismochitoFace size={size} palette={CarismochitoPalettes[palette]} />
+      ) : MASCOT_PNG != null ? (
         <Image
           source={MASCOT_PNG}
           style={[styles.png, { width: size, height: size }]}
@@ -226,7 +249,7 @@ export default function CarismochitoMascot({
           transition={150}
         />
       ) : (
-        <CarismochitoFace size={size} />
+        <CarismochitoFace size={size} palette={CarismochitoPalettes.verde} />
       )}
     </Animated.View>
   );

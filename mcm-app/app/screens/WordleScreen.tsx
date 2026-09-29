@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router/react-navigation';
-import { Colors } from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import BottomSheet from '@/components/BottomSheet';
@@ -34,6 +34,8 @@ import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import useWordleLeaderboard from '@/hooks/useWordleLeaderboard';
 import type { Guess } from '@/hooks/useWordleGame';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 const QWERTY = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -160,7 +162,7 @@ export default function WordleScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: 'Wordle Jubileo',
-      headerStyle: { backgroundColor: '#A3BD31' },
+      headerStyle: { backgroundColor: colors.green },
       headerTintColor: '#fff',
       headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
       headerTitleAlign: 'center',
@@ -639,7 +641,7 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
       height: Platform.OS === 'web' ? 50 : 60,
       marginHorizontal: 3,
       borderWidth: 2,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       justifyContent: 'center',
       alignItems: 'center',
       elevation: 2,
@@ -668,7 +670,7 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
       paddingVertical: Platform.OS === 'web' ? 12 : 16,
       paddingHorizontal: Platform.OS === 'web' ? 8 : 12,
       marginHorizontal: 3,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       backgroundColor: isDark ? '#555' : '#d3d6da',
       minWidth: Platform.OS === 'web' ? 28 : 32,
       justifyContent: 'center',
@@ -704,7 +706,7 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
       bottom: 60,
       left: 30,
       right: 30,
-      backgroundColor: '#A3BD31',
+      backgroundColor: colors.green,
       padding: 18,
       borderRadius: 25,
       alignItems: 'center',
@@ -731,7 +733,7 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
       textAlign: 'center',
       fontWeight: 'bold',
       color: theme.text,
-      fontSize: 14,
+      ...typography.subhead,
     },
     tabContainer: {
       flexDirection: 'row',
@@ -745,21 +747,21 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
       alignItems: 'center',
     },
     tabItemActive: {
-      borderBottomColor: '#A3BD31',
+      borderBottomColor: colors.green,
     },
     tabText: {
       fontWeight: 'bold',
       color: theme.text,
     },
     tabTextActive: {
-      color: '#A3BD31',
+      color: colors.green,
     },
     lockedGameMessage: {
       position: 'absolute',
       top: '50%',
       left: 20,
       right: 20,
-      backgroundColor: '#A3BD31',
+      backgroundColor: colors.green,
       padding: 20,
       borderRadius: 15,
       alignItems: 'center',
@@ -771,14 +773,14 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
     },
     lockedGameText: {
       color: '#fff',
-      fontSize: 18,
+      ...typography.h3,
       fontWeight: 'bold',
       textAlign: 'center',
       marginBottom: 8,
     },
     lockedGameSubtext: {
       color: '#fff',
-      fontSize: 14,
+      ...typography.subhead,
       textAlign: 'center',
       opacity: 0.9,
     },

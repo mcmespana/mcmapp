@@ -77,6 +77,17 @@ export interface AnalyticsEvents {
 
   /** Se activa el modo Carismochito agitando el móvil. */
   carismochito_activado: SinPropiedades;
+
+  /**
+   * Se atrapa un Carismochito tocándolo (la caza del Laboratorio Alpha).
+   * La rareza, no la variante: son pocas, pero así el gráfico se lee de un
+   * vistazo y el catálogo puede crecer sin romperlo.
+   */
+  carismochito_atrapado: {
+    rareza: 'comun' | 'poco_comun' | 'raro' | 'legendario';
+    /** Primera vez que esa persona atrapa esa variante. */
+    nuevo: boolean;
+  };
 }
 
 export type AnalyticsEventName = keyof AnalyticsEvents;

@@ -8,8 +8,18 @@ module.exports = {
   // fichero que acabe importando Reanimated —aunque sea de rebote, a través de
   // un contexto— tumba su suite entera.
   resolver: './node_modules/react-native-worklets/jest/resolver.js',
+  // Mocks de módulos nativos para toda la suite: sin ellos, cualquier test que
+  // monte una pantalla de verdad muere en el `import`. Ver `jest.setup.js`.
+  setupFiles: ['<rootDir>/jest.setup.js'],
+  // `heroui-native` y `uniwind` se publican como ESM sin transpilar, así que
+  // hay que pasarlos por Babel: sin esto, cualquier suite que renderice un
+  // componente que use heroui (aunque sea de rebote, como el
+  // `SegmentedControl` compartido) muere con «Unexpected token 'export'».
+  // Salió al migrar la hoja de ajustes del lector a `SegmentedControl`
+  // (2026-09-10) y es el mismo muro que se encontraría cualquier test de
+  // render de los que pide `docs/desarrollo/COBERTURA.md`.
   transformIgnorePatterns: [
-    'node_modules/(?!(jest-)?react-native|@react-native|expo(nent)?|@expo(nent)?|expo-router|@expo-google-fonts/.*|react-clone-referenced-element|@react-navigation/.*|chordsheetjs)',
+    'node_modules/(?!(jest-)?react-native|@react-native|expo(nent)?|@expo(nent)?|expo-router|@expo-google-fonts/.*|react-clone-referenced-element|@react-navigation/.*|chordsheetjs|heroui-native|uniwind)',
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
@@ -19,6 +29,9 @@ module.exports = {
     '^html2canvas$': '<rootDir>/mock-jspdf.js',
     '^firebase/app$': '<rootDir>/__mocks__/firebase.ts',
     '^firebase/database$': '<rootDir>/__mocks__/firebase.ts',
+    // ESM sin transpilar, igual que los otros dos: sin esto, cualquier test
+    // que monte `AuthProvider` muere con «Unexpected token 'export'».
+    '^firebase/auth$': '<rootDir>/__mocks__/firebase-auth.ts',
     '^expo-network$': '<rootDir>/__mocks__/expo-network.ts',
     '^@react-native-async-storage/async-storage$':
       '<rootDir>/__mocks__/@react-native-async-storage/async-storage.ts',

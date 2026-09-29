@@ -21,6 +21,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import colors from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 
 /** Lado del hueco transparente por el que se apunta al QR. */
 export const FRAME_SIZE = 250;
@@ -28,7 +30,7 @@ export const FRAME_SIZE = 250;
 const CORNER = 42;
 const BORDER = 4;
 const IDLE_COLOR = '#FFFFFF';
-const OK_COLOR = '#A3BD31';
+const OK_COLOR = colors.green;
 
 const CORNERS = [
   { top: 0, left: 0, rx: 0 },
@@ -164,7 +166,11 @@ function ScanLaser() {
   return (
     <Animated.View style={[styles.laser, style]} pointerEvents="none">
       <LinearGradient
-        colors={['rgba(149,210,242,0)', '#95d2f2', 'rgba(149,210,242,0)']}
+        colors={[
+          'rgba(149,210,242,0)',
+          colors.secondary,
+          'rgba(149,210,242,0)',
+        ]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.laserLine}
@@ -196,7 +202,7 @@ const styles = StyleSheet.create({
     width: FRAME_SIZE,
     height: FRAME_SIZE,
     overflow: 'hidden',
-    borderRadius: 28,
+    borderRadius: radii.full,
   },
   corner: {
     position: 'absolute',

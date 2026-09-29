@@ -7,11 +7,13 @@ import {
   StyleSheet,
   Text,
   View,
-  useAnimatedValue,
 } from 'react-native';
+import useAnimatedValue from '@/hooks/useAnimatedValue';
 import { LinearGradient } from 'expo-linear-gradient';
 import CarismochitoMascot from '@/components/CarismochitoMascot';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /* Verdes del modo (en línea con CarismochitoOverlay). */
 const G = '#1B9E4B';
@@ -72,9 +74,12 @@ function PopCard({ children }: { children: React.ReactNode }) {
 export function CarismochitoOnboarding({
   visible,
   onDismiss,
+  huntEnabled = false,
 }: {
   visible: boolean;
   onDismiss: () => void;
+  /** Con la caza del Laboratorio Alpha encendida ya se pueden atrapar. */
+  huntEnabled?: boolean;
 }) {
   return (
     <Modal
@@ -96,13 +101,21 @@ export function CarismochitoOnboarding({
           app. Échale un ojo: aparece y desaparece cuando menos lo esperas. 👀
         </Text>
 
-        {/* Teaser de futuro, sin destripar. */}
+        {/* Teaser de futuro, sin destripar — salvo con la caza encendida. */}
         <View style={styles.teaser}>
-          <Text style={styles.teaserText}>
-            ✨ Muy pronto podrás{' '}
-            <Text style={styles.teaserStrong}>coleccionarlos</Text>… y se
-            desvelará algo más. Mantente atento.
-          </Text>
+          {huntEnabled ? (
+            <Text style={styles.teaserText}>
+              ✨ Tócalo cuando se asome para{' '}
+              <Text style={styles.teaserStrong}>atraparlo</Text>. Hay más de
+              uno, y algunos cuesta verlos.
+            </Text>
+          ) : (
+            <Text style={styles.teaserText}>
+              ✨ Muy pronto podrás{' '}
+              <Text style={styles.teaserStrong}>coleccionarlos</Text>… y se
+              desvelará algo más. Mantente atento.
+            </Text>
+          )}
         </View>
 
         <Text style={styles.hint}>
@@ -200,7 +213,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 380,
-    borderRadius: 28,
+    borderRadius: radii.full,
     paddingHorizontal: 24,
     paddingTop: 28,
     paddingBottom: 24,
@@ -245,7 +258,7 @@ const styles = StyleSheet.create({
   teaser: {
     marginTop: 16,
     backgroundColor: 'rgba(90, 224, 138, 0.12)',
-    borderRadius: 16,
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: 'rgba(90, 224, 138, 0.3)',
     paddingHorizontal: 16,
@@ -253,7 +266,7 @@ const styles = StyleSheet.create({
   },
   teaserText: {
     color: G_LIGHT,
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 21,
     textAlign: 'center',
   },
@@ -263,7 +276,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     color: '#A3D86E',
-    fontSize: 12,
+    ...typography.footnote,
     textAlign: 'center',
     marginTop: 16,
     opacity: 0.85,
@@ -278,7 +291,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: G_DARK,
     fontWeight: '900',
-    fontSize: 16,
+    ...typography.body,
     letterSpacing: 0.5,
   },
   row: {

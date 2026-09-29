@@ -43,7 +43,12 @@ describe('hidratación', () => {
   it('ignora un código guardado con forma inválida', async () => {
     await AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ code: 'no-valido', signature: '', syncedAt: 0, owned: true }),
+      JSON.stringify({
+        code: 'no-valido',
+        signature: '',
+        syncedAt: 0,
+        owned: true,
+      }),
     );
     const { result } = await renderHook(() => usePlaylistLink());
     await waitFor(() => expect(result.current.isHydrated).toBe(true));
@@ -82,7 +87,12 @@ describe('hidratación', () => {
     await AsyncStorage.setItem(LEGACY_CODE_KEY, '9999');
     await AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ code: '1234', signature: 's', syncedAt: 1, owned: true }),
+      JSON.stringify({
+        code: '1234',
+        signature: 's',
+        syncedAt: 1,
+        owned: true,
+      }),
     );
     const { result } = await renderHook(() => usePlaylistLink());
     await waitFor(() => expect(result.current.isHydrated).toBe(true));

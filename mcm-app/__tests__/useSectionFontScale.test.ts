@@ -13,13 +13,19 @@ import useSectionFontScale, {
   SECTION_FONT_MAX,
 } from '@/hooks/useSectionFontScale';
 
-let mockSettings: { fontScale: number; sectionFontScales?: Record<string, number> };
+let mockSettings: {
+  fontScale: number;
+  sectionFontScales?: Record<string, number>;
+};
 const mockSetSettings = jest.fn((values: Record<string, unknown>) => {
   mockSettings = { ...mockSettings, ...values };
 });
 
 jest.mock('@/contexts/AppSettingsContext', () => ({
-  useAppSettings: () => ({ settings: mockSettings, setSettings: mockSetSettings }),
+  useAppSettings: () => ({
+    settings: mockSettings,
+    setSettings: mockSetSettings,
+  }),
 }));
 
 beforeEach(() => {
@@ -47,7 +53,9 @@ describe('useSectionFontScale', () => {
   });
 
   it('setScale fija un override propio para la sección, clamp incluido', async () => {
-    const { result } = await renderHook(() => useSectionFontScale('materiales'));
+    const { result } = await renderHook(() =>
+      useSectionFontScale('materiales'),
+    );
     await act(async () => result.current.setScale(5)); // por encima de MAX
     expect(mockSetSettings).toHaveBeenCalledWith({
       sectionFontScales: { materiales: SECTION_FONT_MAX },
@@ -55,7 +63,9 @@ describe('useSectionFontScale', () => {
   });
 
   it('setScale respeta el mínimo', async () => {
-    const { result } = await renderHook(() => useSectionFontScale('materiales'));
+    const { result } = await renderHook(() =>
+      useSectionFontScale('materiales'),
+    );
     await act(async () => result.current.setScale(0.1));
     expect(mockSetSettings).toHaveBeenCalledWith({
       sectionFontScales: { materiales: SECTION_FONT_MIN },

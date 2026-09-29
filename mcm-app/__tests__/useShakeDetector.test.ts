@@ -14,9 +14,8 @@ import { renderHook, act } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 import { useShakeDetector } from '@/hooks/useShakeDetector';
 
-let mockListener:
-  | ((data: { x: number; y: number; z: number }) => void)
-  | null = null;
+let mockListener: ((data: { x: number; y: number; z: number }) => void) | null =
+  null;
 const mockRemove = jest.fn();
 const mockSetUpdateInterval = jest.fn();
 const mockAddListener = jest.fn((...args: unknown[]) => {

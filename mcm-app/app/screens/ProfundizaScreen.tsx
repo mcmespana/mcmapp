@@ -14,6 +14,7 @@ import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
 interface Pagina {
   titulo: string;
@@ -106,6 +107,7 @@ function AccordionSection({
 }
 
 export default function ProfundizaScreen() {
+  useSuppressCarismochito();
   const scheme = useColorScheme();
   const fontScale = useFontScale(1.2);
   const styles = React.useMemo(
@@ -223,7 +225,7 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      borderRadius: 16,
+      borderRadius: radii.lg,
       paddingHorizontal: 16,
       paddingVertical: 14,
     },

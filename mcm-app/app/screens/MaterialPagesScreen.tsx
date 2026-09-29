@@ -17,6 +17,8 @@ import {
   ContentPageItem,
 } from '@/components/materiales/MaterialPageItems';
 import { MasStackParamList } from '../(tabs)/mas';
+import { radii } from '@/constants/uiStyles';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
 export interface Pagina {
   titulo?: string;
@@ -36,6 +38,7 @@ type RouteProps = RouteProp<MasStackParamList, 'MaterialPages'>;
 export type MaterialPagesStyles = ReturnType<typeof createStyles>;
 
 export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
+  useSuppressCarismochito();
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flatListRef = useRef<FlatList<any>>(null);
   const { actividad, fecha } = route.params;
@@ -219,7 +222,7 @@ const createStyles = (
     dot: {
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: radii.xs,
       backgroundColor: scheme === 'dark' ? '#555' : '#ccc',
     },
     dotActive: {

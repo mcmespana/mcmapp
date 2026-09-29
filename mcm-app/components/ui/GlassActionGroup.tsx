@@ -66,7 +66,7 @@ export default function GlassActionGroup({
   if (items.length === 0) return null;
 
   return (
-    <View style={[{ borderRadius: radius }, shadows.sm as ViewStyle, style]}>
+    <View style={[{ borderRadius: radius }, shadows.card as ViewStyle, style]}>
       <View
         style={[styles.group, { height, borderRadius: radius }]}
         pointerEvents="box-none"

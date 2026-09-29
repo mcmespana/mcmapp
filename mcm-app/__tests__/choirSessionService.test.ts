@@ -15,6 +15,7 @@ import { get, set, update, remove, onValue } from 'firebase/database';
 import {
   createChoirSession,
   fetchChoirSession,
+  fetchLiveChoirSession,
   choirSessionExists,
   publishChoirCurrent,
   publishChoirPlaylist,
@@ -253,5 +254,69 @@ describe('closeChoirSession', () => {
   it('borra la sesión', async () => {
     await closeChoirSession(VALID);
     expect(remove).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('subscribeChoirSession — sesiones caducadas', () => {
+  /** Llama al callback de datos que el servicio registró en `onValue`. */
+  const emit = (value: unknown) => {
+    const onData = (onValue as jest.Mock).mock.calls.at(-1)![1];
+    onData(snapshot(value));
+  };
+  const emitError = (err: Error) => {
+    const onErr = (onValue as jest.Mock).mock.calls.at(-1)![2];
+    onErr(err);
+  };
+
+  it('una sesión caducada llega como null: el oyente sale solo a las 24 h', () => {
+    const onChange = jest.fn();
+    subscribeChoirSession(VALID, onChange);
+    emit({ v: 1, expiresAt: Date.now() - 1 });
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('una sesión viva se entrega tal cual', () => {
+    const onChange = jest.fn();
+    subscribeChoirSession(VALID, onChange);
+    const live = { v: 1, expiresAt: Date.now() + 60_000 };
+    emit(live);
+    expect(onChange).toHaveBeenCalledWith(live);
+  });
+
+  it('un nodo borrado (cierre del líder) llega como null', () => {
+    const onChange = jest.fn();
+    subscribeChoirSession(VALID, onChange);
+    emit(null);
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('reenvía el error de Firebase al llamante (reglas, red)', () => {
+    const onError = jest.fn();
+    subscribeChoirSession(VALID, jest.fn(), onError);
+    const err = new Error('permission_denied');
+    emitError(err);
+    expect(onError).toHaveBeenCalledWith(err);
+  });
+});
+
+describe('fetchLiveChoirSession', () => {
+  it('una sesión caducada que sigue en Firebase (sin purgar) se trata como inexistente', async () => {
+    (get as jest.Mock).mockResolvedValueOnce(
+      snapshot({ v: 1, expiresAt: Date.now() - 1 }),
+    );
+    await expect(fetchLiveChoirSession(VALID)).resolves.toBeNull();
+  });
+
+  it('una sesión muy antigua con solo createdAt se mide desde createdAt', async () => {
+    (get as jest.Mock).mockResolvedValueOnce(
+      snapshot({ v: 1, createdAt: Date.now() - SESSION_TTL_MS - 1 }),
+    );
+    await expect(fetchLiveChoirSession(VALID)).resolves.toBeNull();
+  });
+
+  it('una sesión viva se devuelve', async () => {
+    const live = { v: 1, startedAt: Date.now() };
+    (get as jest.Mock).mockResolvedValueOnce(snapshot(live));
+    await expect(fetchLiveChoirSession(VALID)).resolves.toEqual(live);
   });
 });

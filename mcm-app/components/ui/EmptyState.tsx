@@ -4,6 +4,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { radii } from '@/constants/uiStyles';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { hexAlpha } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
+import spacing from '@/constants/spacing';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -21,6 +23,28 @@ interface EmptyStateProps {
   onAction?: () => void;
   /** Accent color for icon and CTA. Defaults to muted text. */
   accentColor?: string;
+  /**
+   * Color del título. Por defecto, el del tema institucional.
+   *
+   * Existe porque este componente vive en `components/ui/`, y ahí el contrato
+   * es ser AGNÓSTICO DE PALETA (`design.md` §2). Lo era a medias: `accentColor`
+   * solo tocaba el icono y el CTA, mientras que el título y el subtítulo se
+   * cogían del tema institucional — o sea que en Contigo salían grises fríos
+   * sobre fondo crema.
+   */
+  titleColor?: string;
+  /** Color del subtítulo. Por defecto, el gris del tema institucional. */
+  subtitleColor?: string;
+  /**
+   * Versión compacta, para vacíos que viven DENTRO de una hoja, un desplegable
+   * o una lista corta.
+   *
+   * El padding de 48 px del vacío normal desborda un bottom sheet, y por eso
+   * `CommandPalette` y `ChoirSheet` se habían hecho su propio `<Text>` a mano
+   * en vez de usar este componente. Compacto: sin icono grande, menos aire y
+   * el título al tamaño del cuerpo.
+   */
+  compact?: boolean;
 }
 
 /**
@@ -36,23 +60,40 @@ export default function EmptyState({
   actionLabel,
   onAction,
   accentColor,
+  titleColor,
+  subtitleColor,
+  compact = false,
 }: EmptyStateProps) {
-  const textColor = useThemeColor({}, 'text');
-  const mutedColor = useThemeColor({}, 'icon');
-  const tone = accentColor ?? mutedColor;
+  const themeText = useThemeColor({}, 'text');
+  const themeMuted = useThemeColor({}, 'icon');
+  const textColor = titleColor ?? themeText;
+  const mutedColor = subtitleColor ?? themeMuted;
+  const tone = accentColor ?? themeMuted;
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, compact && styles.rootCompact]}>
       {emoji ? (
-        <Text style={styles.emoji}>{emoji}</Text>
-      ) : icon ? (
+        <Text style={[styles.emoji, compact && styles.emojiCompact]}>
+          {emoji}
+        </Text>
+      ) : icon && !compact ? (
         <View
           style={[styles.iconWrap, { backgroundColor: hexAlpha(tone, '1A') }]}
         >
           <MaterialIcons name={icon} size={32} color={tone} />
         </View>
+      ) : icon ? (
+        <MaterialIcons name={icon} size={20} color={tone} />
       ) : null}
-      <Text style={[styles.title, { color: textColor }]}>{title}</Text>
+      <Text
+        style={[
+          styles.title,
+          compact && styles.titleCompact,
+          { color: textColor },
+        ]}
+      >
+        {title}
+      </Text>
       {subtitle ? (
         <Text style={[styles.subtitle, { color: mutedColor }]}>{subtitle}</Text>
       ) : null}
@@ -77,7 +118,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 8,
   },
+  rootCompact: { paddingVertical: 20, paddingHorizontal: spacing.md, gap: 4 },
   emoji: { fontSize: 48, marginBottom: 4 },
+  emojiCompact: { ...typography.h1, marginBottom: 0 },
   iconWrap: {
     width: 64,
     height: 64,
@@ -92,8 +135,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: -0.2,
   },
+  titleCompact: { ...typography.subhead, fontWeight: '600' },
   subtitle: {
-    fontSize: 14,
+    ...typography.subhead,
     textAlign: 'center',
     lineHeight: 20,
     marginTop: 2,
@@ -103,7 +147,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 18,
     paddingVertical: 10,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
   },
   ctaText: { fontSize: 14, fontWeight: '700' },
 });

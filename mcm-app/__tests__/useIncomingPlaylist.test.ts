@@ -55,7 +55,9 @@ describe('cold start (getInitialURL)', () => {
     );
     const onImport = jest.fn();
     await renderHook(() => useIncomingPlaylist(onImport));
-    await waitFor(() => expect(onImport).toHaveBeenCalledWith(['a.cho', 'b.cho']));
+    await waitFor(() =>
+      expect(onImport).toHaveBeenCalledWith(['a.cho', 'b.cho']),
+    );
   });
 
   it('ignora una URL que no sea file:// o content://', async () => {
@@ -102,7 +104,9 @@ describe('formatos del fichero', () => {
     );
     const onImport = jest.fn();
     await renderHook(() => useIncomingPlaylist(onImport));
-    await waitFor(() => expect(onImport).toHaveBeenCalledWith(['a.cho', 'b.cho']));
+    await waitFor(() =>
+      expect(onImport).toHaveBeenCalledWith(['a.cho', 'b.cho']),
+    );
   });
 
   it('un array vacío no dispara onImport', async () => {
@@ -114,7 +118,9 @@ describe('formatos del fichero', () => {
     );
     const onImport = jest.fn();
     await renderHook(() => useIncomingPlaylist(onImport));
-    await waitFor(() => expect(FileSystem.readAsStringAsync).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(FileSystem.readAsStringAsync).toHaveBeenCalled(),
+    );
     expect(onImport).not.toHaveBeenCalled();
   });
 
@@ -125,7 +131,9 @@ describe('formatos del fichero', () => {
     (FileSystem.readAsStringAsync as jest.Mock).mockResolvedValue('no-json');
     const onImport = jest.fn();
     await renderHook(() => useIncomingPlaylist(onImport));
-    await waitFor(() => expect(FileSystem.readAsStringAsync).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(FileSystem.readAsStringAsync).toHaveBeenCalled(),
+    );
     expect(onImport).not.toHaveBeenCalled();
   });
 });

@@ -83,7 +83,7 @@ const cleanTitle = (t: string) => t.replace(/^\d+\.\s*/, '').trim();
 
 /** Renderiza una canción a HTML usando ChordSheetJS, con transpose aplicado. */
 function renderSongBody(content: string, transpose: number): string {
-  let chordPro = preprocessArrangements(content)
+  const chordPro = preprocessArrangements(content)
     .replace(/\{sov\}/gi, '{start_of_verse}')
     .replace(/\{eov\}/gi, '{end_of_verse}')
     .replace(/\{soc\}/gi, '{start_of_chorus}')
@@ -92,13 +92,13 @@ function renderSongBody(content: string, transpose: number): string {
     .replace(/\{eob\}/gi, '{end_of_bridge}')
     .replace(/\{transpose:.*\}\n?/gi, '');
 
-  if (transpose && transpose !== 0) {
-    const v = transpose < 0 ? transpose + 12 : transpose;
-    if (v !== 0) chordPro = `{transpose: ${v}}\n${chordPro}`;
-  }
-
+  // Se transpone con `Song.transpose()`, igual que `useSongProcessor`. Antes
+  // se anteponía una directiva `{transpose: N}`, pero `HtmlDivFormatter` no la
+  // aplica: el PDF salía con la cabecera en el tono nuevo y los acordes del
+  // cuerpo en el original.
   const parser = new ChordProParser();
-  const parsed: ChordSong = parser.parse(chordPro);
+  let parsed: ChordSong = parser.parse(chordPro);
+  if (transpose) parsed = parsed.transpose(transpose);
   const formatter = new HtmlDivFormatter();
   let html = postProcessArrangementsHtml(formatter.format(parsed));
   // El formatter mete un <h1> con el título de la canción si está en el

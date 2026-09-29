@@ -9,9 +9,11 @@ import {
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
-import { radii } from '@/constants/uiStyles';
+import { UIColors, Colors, themeColors } from '@/constants/colors';
+import { focusRing, radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
+import { contrastRatio, onColor } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
 
 /**
  * Botón CTA unificado (Fase 2 de PLAN_UI_NATIVA).
@@ -28,11 +30,24 @@ import { h } from '@/utils/haptics';
 interface AppPrimaryButtonProps {
   label: string;
   onPress: () => void;
-  /** Icono MaterialIcons a la izquierda del texto. */
+  /** Icono MaterialIcons junto al texto. */
   icon?: keyof typeof MaterialIcons.glyphMap;
+  /**
+   * De qué lado va el icono. `right` es el de "siguiente/continuar" (la flecha
+   * empuja hacia delante); `left` el de "guardar/enviar".
+   */
+  iconPosition?: 'left' | 'right';
   /** Color de fondo cuando está activo. Por defecto azul de acción de iOS. */
   color?: string;
-  /** Color del texto/icono cuando está activo. Por defecto blanco. */
+  /**
+   * Color del texto/icono cuando está activo. Si no se pasa, **lo decide el
+   * contraste**: blanco mientras llegue al 3:1 que pide un texto de este
+   * tamaño y peso sobre el relleno (el azul de acción de iOS da 3,86:1, y el
+   * blanco es la convención), y si no llega —un acento claro, el dorado, el
+   * amarillo de un evento— la tinta que más contraste dé. Antes era `#fff`
+   * fijo, y con `color` variable eso es ilegible: es el mismo fallo del §H4 de
+   * PLAN_DISENO.
+   */
   textColor?: string;
   disabled?: boolean;
   /** Muestra un spinner y deshabilita la pulsación. */
@@ -43,14 +58,15 @@ interface AppPrimaryButtonProps {
   accessibilityLabel?: string;
 }
 
-const DEFAULT_COLOR = '#007AFF'; // azul de acción de iOS
+const DEFAULT_COLOR = UIColors.iosBlue;
 
 export default function AppPrimaryButton({
   label,
   onPress,
   icon,
+  iconPosition = 'left',
   color = DEFAULT_COLOR,
-  textColor = '#fff',
+  textColor,
   disabled = false,
   loading = false,
   haptic = true,
@@ -60,9 +76,16 @@ export default function AppPrimaryButton({
   const isDark = useColorScheme() === 'dark';
   const theme = Colors[isDark ? 'dark' : 'light'];
   const isDisabled = disabled || loading;
+  // El foco de teclado solo existe en web y con teclado externo; en móvil esto
+  // nunca se activa. Ver `design.md` §5: el foco no puede distinguirse solo por
+  // color, tiene que verse el grosor.
+  const [focused, setFocused] = React.useState(false);
 
-  const bg = isDisabled ? (isDark ? '#3A3A3C' : '#E5E5EA') : color;
-  const fg = isDisabled ? theme.icon : textColor;
+  const bg = isDisabled ? themeColors(isDark).separator : color;
+  const ink =
+    textColor ??
+    (contrastRatio('#FFFFFF', color) >= 3 ? '#fff' : onColor(color));
+  const fg = isDisabled ? theme.icon : ink;
 
   return (
     <PressableFeedback
@@ -75,18 +98,31 @@ export default function AppPrimaryButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
-      style={[styles.button, { backgroundColor: bg }, style]}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={[
+        styles.button,
+        { backgroundColor: bg },
+        // El borde existe SIEMPRE en transparente para que enfocar no mueva el
+        // botón: solo cambia de color. Se usa el color del texto, que siempre
+        // contrasta con el fondo del propio botón.
+        focused && { borderColor: fg },
+        style,
+      ]}
     >
       <PressableFeedback.Scale />
       {loading ? (
         <ActivityIndicator size="small" color={fg} />
-      ) : icon ? (
+      ) : icon && iconPosition === 'left' ? (
         <MaterialIcons name={icon} size={18} color={fg} />
       ) : null}
       {/* Mantener el texto visible también en loading para no “saltar” de ancho. */}
       <View>
         <Text style={[styles.label, { color: fg }]}>{label}</Text>
       </View>
+      {!loading && icon && iconPosition === 'right' ? (
+        <MaterialIcons name={icon} size={18} color={fg} />
+      ) : null}
     </PressableFeedback>
   );
 }
@@ -100,9 +136,11 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: radii.md,
+    borderWidth: focusRing.borderWidth,
+    borderColor: 'transparent',
   },
   label: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
   },
 });

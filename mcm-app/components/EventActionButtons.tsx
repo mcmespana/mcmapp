@@ -84,7 +84,7 @@ export default function EventActionButtons({
                   accessibilityLabel="Compartir reflexión"
                   hitSlop={6}
                 >
-                  <MaterialIcons name="add" size={24} color={colors.success} />
+                  <MaterialIcons name="add" size={24} color={colors.green} />
                 </Pressable>
                 <View style={[styles.divider, { backgroundColor: divider }]} />
               </>
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   anchor: { position: 'absolute', right: 14, zIndex: 1000 },
   shadow: {
     borderRadius: H / 2,
-    ...(shadows.sm as ViewStyle),
+    ...(shadows.card as ViewStyle),
   },
   group: {
     flexDirection: 'row',

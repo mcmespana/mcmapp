@@ -44,7 +44,10 @@ describe('parseo de la fuente activa', () => {
           vidaNuevaComentarista: 'P. Ejemplo',
           vidaNuevaURL: 'https://x',
         },
-        lectura1: { vidaNuevaLectura1Texto: 'Texto L1', vidaNuevaCita: 'Is 1,1' },
+        lectura1: {
+          vidaNuevaLectura1Texto: 'Texto L1',
+          vidaNuevaCita: 'Is 1,1',
+        },
         salmo: { vidaNuevaSalmoTexto: 'Salmo', vidaNuevaCita: 'Sal 1' },
       }),
     );
@@ -110,8 +113,19 @@ describe('parseo de la fuente activa', () => {
 
 describe('caché', () => {
   it('la respuesta de Firebase gana a lo cacheado y se vuelve a guardar', async () => {
-    const cached = { evangelio: { texto: 'viejo', cita: '', comentario: '', comentarista: '', url: '' } };
-    await AsyncStorage.setItem('@daily_readings_2026-08-23', JSON.stringify(cached));
+    const cached = {
+      evangelio: {
+        texto: 'viejo',
+        cita: '',
+        comentario: '',
+        comentarista: '',
+        url: '',
+      },
+    };
+    await AsyncStorage.setItem(
+      '@daily_readings_2026-08-23',
+      JSON.stringify(cached),
+    );
     (get as jest.Mock).mockResolvedValueOnce(
       snapshot({
         evangelio: {
@@ -135,7 +149,12 @@ describe('caché', () => {
     await AsyncStorage.setItem(
       '@contigo_bookmarks',
       JSON.stringify([
-        { date: '2026-08-24', readings: { info: { diaLiturgico: 'Lunes', titulo: 'De un bookmark' } } },
+        {
+          date: '2026-08-24',
+          readings: {
+            info: { diaLiturgico: 'Lunes', titulo: 'De un bookmark' },
+          },
+        },
       ]),
     );
     (get as jest.Mock).mockResolvedValueOnce(snapshot(null));

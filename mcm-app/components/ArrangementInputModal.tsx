@@ -9,9 +9,10 @@ import {
 import BottomSheet from './BottomSheet';
 import AppTextField from '@/components/ui/AppTextField';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
-import { Colors } from '@/constants/colors';
+import { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import typography from '@/constants/typography';
 
 interface ArrangementInputModalProps {
   visible: boolean;
@@ -72,7 +73,7 @@ export default function ArrangementInputModal({
           <View
             style={[
               styles.previewBox,
-              { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' },
+              { backgroundColor: themeColors(isDark).background },
             ]}
           >
             <Text
@@ -140,7 +141,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   hint: {
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 20,
     marginBottom: 8,
   },
@@ -155,19 +156,19 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   previewText: {
-    fontSize: 14,
+    ...typography.subhead,
     fontStyle: 'italic',
   },
   input: {
     minHeight: 52,
   },
   note: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 8,
     lineHeight: 16,
   },
   error: {
-    fontSize: 13,
+    ...typography.caption,
     marginTop: 8,
     color: '#C62828',
   },
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cancelText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
 });

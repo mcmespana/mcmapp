@@ -8,6 +8,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { reaEasings } from '@/constants/animations';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 const BREATH_MS = 2100;
 
@@ -130,7 +132,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   subtitle: {
-    fontSize: 13,
+    ...typography.caption,
     color: 'rgba(240,232,216,0.36)',
     marginTop: 8,
   },
@@ -144,21 +146,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 200,
     height: 200,
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(196,146,42,0.10)',
   },
   ring2: {
     position: 'absolute',
     width: 164,
     height: 164,
-    borderRadius: 82,
+    borderRadius: radii.pillFull,
     borderWidth: 1,
     borderColor: 'rgba(196,146,42,0.22)',
   },
   ring1: {
     width: 108,
     height: 108,
-    borderRadius: 54,
+    borderRadius: radii.pillFull,
     borderWidth: 1.5,
     borderColor: 'rgba(196,146,42,0.52)',
     backgroundColor: 'rgba(196,146,42,0.08)',
@@ -166,7 +168,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   phaseText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '600',
     color: 'rgba(240,232,216,0.65)',
     letterSpacing: 0.4,

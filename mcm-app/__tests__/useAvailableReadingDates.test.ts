@@ -43,9 +43,7 @@ afterEach(() => {
 
 describe('enabled=false', () => {
   it('no hace nada: ni caché ni red', async () => {
-    const { result } = await renderHook(() =>
-      useAvailableReadingDates(false),
-    );
+    const { result } = await renderHook(() => useAvailableReadingDates(false));
     expect(result.current).toBeNull();
     expect(global.fetch).not.toHaveBeenCalled();
   });
@@ -92,9 +90,7 @@ describe('sin caché', () => {
     const original = firebaseConfig.databaseURL;
     (firebaseConfig as { databaseURL?: string }).databaseURL = undefined;
     try {
-      const { result } = await renderHook(() =>
-        useAvailableReadingDates(true),
-      );
+      const { result } = await renderHook(() => useAvailableReadingDates(true));
       await waitFor(() => expect(AsyncStorage.getItem).toHaveBeenCalled());
       expect(global.fetch).not.toHaveBeenCalled();
       expect(result.current).toBeNull();

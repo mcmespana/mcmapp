@@ -29,7 +29,7 @@ export default function StarRating({
   onChange,
   max = 5,
   size = 36,
-  color = colors.warning,
+  color = colors.yellow,
   inactiveColor = 'rgba(140,140,140,0.35)',
   style,
 }: StarRatingProps) {

@@ -23,6 +23,8 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { h } from '@/utils/haptics';
 import type { ResolvedTag } from '@/utils/songTags';
+import { HighlightColors, UIColors, themeColors } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 
 export type TagChipVariant = 'cloud' | 'active' | 'outline';
 
@@ -114,12 +116,10 @@ const createStyles = (isDark: boolean, variant: TagChipVariant) => {
 
   const background = isActive
     ? isDark
-      ? '#F4C11E'
-      : '#7A5A00'
+      ? UIColors.accentYellow
+      : HighlightColors.light.fg
     : variant === 'cloud'
-      ? isDark
-        ? '#2C2C2E'
-        : '#FFFFFF'
+      ? themeColors(isDark).background
       : isDark
         ? 'rgba(244,193,30,0.10)'
         : '#FFFFFF';
@@ -127,9 +127,7 @@ const createStyles = (isDark: boolean, variant: TagChipVariant) => {
   const border = isActive
     ? 'transparent'
     : variant === 'cloud'
-      ? isDark
-        ? '#3A3A3C'
-        : '#E5E5EA'
+      ? themeColors(isDark).separator
       : isDark
         ? 'rgba(244,193,30,0.32)'
         : '#EBDCA8';
@@ -139,9 +137,7 @@ const createStyles = (isDark: boolean, variant: TagChipVariant) => {
       ? '#3A2C00'
       : '#FFFFFF'
     : variant === 'cloud'
-      ? isDark
-        ? '#F5F5F7'
-        : '#1C1C1E'
+      ? themeColors(isDark).text
       : isDark
         ? '#E8E2D2'
         : '#6E6E73';
@@ -167,7 +163,7 @@ const createStyles = (isDark: boolean, variant: TagChipVariant) => {
       backgroundColor: background,
       borderWidth: isActive ? 0 : 1,
       borderColor: border,
-      borderRadius: 100,
+      borderRadius: radii.pillFull,
       paddingHorizontal: variant === 'cloud' ? 16 : 12,
       paddingVertical: variant === 'cloud' ? 11 : 7,
       ...chipShadow,

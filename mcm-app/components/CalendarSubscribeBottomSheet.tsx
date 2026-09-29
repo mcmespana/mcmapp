@@ -26,6 +26,7 @@ import {
   buildGoogleCalendarSubscribeUrl,
   isValidIcsUrl,
 } from '@/utils/calendarSubscription';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -339,7 +340,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   subtitle: {
-    fontSize: 14,
+    ...typography.subhead,
     marginBottom: spacing.md,
     lineHeight: 20,
   } as TextStyle,
@@ -364,7 +365,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   calName: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
     flex: 1,
   } as TextStyle,
@@ -399,11 +400,11 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   actionBtnTextPrimary: {
     color: '#fff',
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
   } as TextStyle,
   actionBtnTextSecondary: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
   } as TextStyle,
 
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   } as ViewStyle,
   copyLabel: {
-    fontSize: 13,
+    ...typography.caption,
   } as TextStyle,
 
   instructionsSection: {
@@ -423,7 +424,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   } as ViewStyle,
   instructionsTitle: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.8,
     marginBottom: spacing.xs,
@@ -441,7 +442,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   accordionTitle: {
     flex: 1,
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '500',
   } as TextStyle,
 
@@ -458,18 +459,18 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   } as ViewStyle,
   stepNumber: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '700',
     width: 18,
   } as TextStyle,
   stepText: {
-    fontSize: 13,
+    ...typography.caption,
     lineHeight: 19,
     flex: 1,
   } as TextStyle,
 
   footer: {
-    fontSize: 12,
+    ...typography.footnote,
     lineHeight: 17,
     marginTop: spacing.md,
     textAlign: 'center',

@@ -10,6 +10,23 @@
  * `color-mix()`. Some runtime color helpers still expect RGB-compatible input,
  * which breaks outline/ghost buttons on web. We override the relevant tokens
  * with stable RGB/hex values and also expose an explicit app-controlled theme.
+ *
+ * ⚠️ ESTO NO ES UNA SEGUNDA PALETA DE MCM. Los nombres de estas variables son
+ * el CONTRATO DE HEROUI, no nuestro vocabulario, y no significan lo mismo que
+ * los tokens de `constants/colors.ts`:
+ *
+ *   --accent  = brand.primary (#253883, el azul MCM)   ← NO es brand.accent
+ *   --danger  = brand.accent  (#E15C62, el rojo MIC)   ← NO es un morado
+ *   --success = brand.green   (#A3BD31)
+ *   --warning = brand.yellow  (#FCD200)
+ *   --border  = brand.border  (#E0E0E0)
+ *   --focus / --link = brand.primary (claro) · brand.secondary (oscuro)
+ *   --background/--foreground/--surface* = Colors.light / Colors.dark
+ *
+ * Regla: los VALORES salen de `constants/colors.ts` y hay un test que lo
+ * comprueba (`__tests__/designTokens.test.ts`). Los NOMBRES no se tocan: son
+ * de HeroUI. Si estás escribiendo `className="bg-danger"` estás pidiendo el
+ * rojo; si escribes `colors.purple` estás pidiendo el morado. No son lo mismo.
  */
 :root,
 :root[data-theme='light'],

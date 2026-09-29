@@ -32,7 +32,11 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import ArrangementInputModal from '@/components/ArrangementInputModal';
 import * as Clipboard from 'expo-clipboard';
-import brandColors from '@/constants/colors';
+import brandColors, {
+  SwipeColors,
+  UIColors,
+  themeColors,
+} from '@/constants/colors';
 import { durations } from '@/constants/animations';
 import { h } from '@/utils/haptics';
 import { pushWithRetry } from '@/services/firebaseWrites';
@@ -43,11 +47,15 @@ import SongMediaSheet from '@/components/song-media/SongMediaSheet';
 import FloatingMediaPlayer, {
   type FloatingMediaSource,
 } from '@/components/song-media/FloatingMediaPlayer';
+import { radii } from '@/constants/uiStyles';
+import SongLinkViewer, {
+  type SongLinkSource,
+} from '@/components/song-media/SongLinkViewer';
 
 // Apple iOS system green — used as a "selected/done" tint inside the
 // add/remove song button. Not part of the MCM brand palette: it's an
 // intentional native iOS convention preserved for visual consistency.
-const APPLE_SYSTEM_GREEN = '#34C759';
+const APPLE_SYSTEM_GREEN = SwipeColors.add;
 
 const availableFonts = [
   {
@@ -271,6 +279,10 @@ export default function SongDetailScreen({
     useState<FloatingMediaSource | null>(null);
   // Fuente elegida en la hoja que espera a que la hoja termine de cerrarse.
   const pendingMediaRef = useRef<FloatingMediaSource | null>(null);
+  // Enlace (partitura de Drive u otra web) a ver a pantalla completa. Mismo
+  // baile que el reproductor: se apunta y nace cuando la hoja se desmonta.
+  const [linkSource, setLinkSource] = useState<SongLinkSource | null>(null);
+  const pendingLinkRef = useRef<SongLinkSource | null>(null);
 
   // Al cambiar de canción (swipe) se resetean los estados efímeros: se cierra
   // el cajón de multimedia —el reproductor flotante NO, que sobrevive porque es
@@ -282,6 +294,12 @@ export default function SongDetailScreen({
   const [lastSong, setLastSong] = useState({ filename, content });
   if (lastSong.filename !== filename) {
     setShowMediaSheet(false);
+    // El visor de enlaces SÍ se cierra (a diferencia del reproductor): lo que
+    // hay abierto es la partitura de la canción que acabas de dejar atrás.
+    // El ref pendiente no se toca aquí (no se puede escribir un ref durante el
+    // render), igual que pendingMediaRef/pendingTagRef: lo limpia quien lo
+    // consume en `onCloseComplete`.
+    setLinkSource(null);
   }
   if (lastSong.filename !== filename || lastSong.content !== content) {
     setLastSong({ filename, content });
@@ -296,7 +314,7 @@ export default function SongDetailScreen({
   // items; el back y la transparencia los pone el stack. Sin título para no
   // tapar letra. El FAB de abajo (SongControls) se queda.
   useLayoutEffect(() => {
-    const headerIconColor = isDark ? '#f4c11e' : '#3d79b9';
+    const headerIconColor = isDark ? UIColors.accentYellow : '#3d79b9';
     navigation.setOptions({
       headerShown: true,
       headerTitle: '',
@@ -591,7 +609,7 @@ export default function SongDetailScreen({
   // Mismo color que el fondo del HTML de la letra (`bodyBg` en useSongProcessor)
   // para que el header transparente y la letra full-bleed se vean como un único
   // fondo (sin el efecto de "dos fondos").
-  const screenBg = isDark ? '#2C2C2E' : '#FFFFFF';
+  const screenBg = themeColors(isDark).background;
 
   const slideStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: slideAnim.get() }],
@@ -686,6 +704,10 @@ export default function SongDetailScreen({
           pendingMediaRef.current = source;
           setShowMediaSheet(false);
         }}
+        onOpenLink={(source) => {
+          pendingLinkRef.current = source;
+          setShowMediaSheet(false);
+        }}
         onCloseComplete={() => {
           // La hoja ya está desmontada: aquí es donde se puede navegar o
           // presentar el reproductor sin que iOS se coma la transición.
@@ -698,6 +720,12 @@ export default function SongDetailScreen({
             });
             return;
           }
+          const pendingLink = pendingLinkRef.current;
+          if (pendingLink) {
+            pendingLinkRef.current = null;
+            setLinkSource(pendingLink);
+            return;
+          }
           const pending = pendingMediaRef.current;
           if (!pending) return;
           pendingMediaRef.current = null;
@@ -708,6 +736,7 @@ export default function SongDetailScreen({
         source={floatingMedia}
         onClose={() => setFloatingMedia(null)}
       />
+      <SongLinkViewer source={linkSource} onClose={() => setLinkSource(null)} />
       {isAdmin && (
         <ArrangementInputModal
           visible={arrModalVisible}
@@ -735,7 +764,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -757,7 +786,7 @@ const styles = StyleSheet.create({
     right: 7,
     width: 7,
     height: 7,
-    borderRadius: 4,
+    borderRadius: radii.xs,
     backgroundColor: brandColors.accent,
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.9)',

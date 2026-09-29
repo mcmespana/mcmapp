@@ -12,7 +12,7 @@ import SongFullscreenScreen from '../screens/SongFullscreenScreen';
 import SelectedSongsScreen from '../screens/SelectedSongsScreen';
 
 import { SettingsProvider } from '../../contexts/SettingsContext';
-import { TabHeaderColors } from '@/constants/colors';
+import { TabHeaderColors, UIColors, themeColors } from '@/constants/colors';
 import TabTintBar from '@/components/ui/TabTintBar';
 import { useChoirSession } from '../../contexts/ChoirSessionContext';
 import { extractSongMedia, type SongMedia } from '@/types/songMedia';
@@ -151,7 +151,7 @@ export default function CancioneroTab() {
                 : ({ backgroundColor: TabHeaderColors.cancionero } as any),
             headerTintColor: isIOS
               ? scheme === 'dark'
-                ? '#f4c11e'
+                ? UIColors.accentYellow
                 : '#3d79b9ff'
               : '#1a1a1a',
             headerTitleStyle: {
@@ -179,7 +179,10 @@ export default function CancioneroTab() {
             // gestures. headerTransparent:true makes the card itself transparent
             // so we must set an explicit background on the content area.
             contentStyle: isIOS
-              ? { backgroundColor: scheme === 'dark' ? '#1C1C1E' : '#F2F2F7' }
+              ? {
+                  backgroundColor: themeColors(scheme === 'dark')
+                    .backgroundSunken,
+                }
               : undefined,
           };
         }}

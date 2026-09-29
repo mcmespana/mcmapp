@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -13,6 +13,8 @@ import { hasHighlights, type StoredBookmark } from '@/utils/contigoBookmarks';
 import { HIGHLIGHT_COLORS } from '@/utils/highlightRanges';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface ReadingCalendarSheetProps {
   visible: boolean;
@@ -100,7 +102,7 @@ export function ReadingCalendarSheet({
             style={[styles.navBtn, { backgroundColor: W.accentLight }]}
             accessibilityLabel="Mes anterior"
           >
-            <MaterialIcons name="chevron-left" size={24} color={W.accent} />
+            <MaterialIcons name="chevron-left" size={24} color={W.accentText} />
           </TouchableOpacity>
           <Text style={[styles.monthTitle, { color: W.text }]}>
             {MONTHS_CAP[month - 1]} {year}
@@ -110,7 +112,11 @@ export function ReadingCalendarSheet({
             style={[styles.navBtn, { backgroundColor: W.accentLight }]}
             accessibilityLabel="Mes siguiente"
           >
-            <MaterialIcons name="chevron-right" size={24} color={W.accent} />
+            <MaterialIcons
+              name="chevron-right"
+              size={24}
+              color={W.accentText}
+            />
           </TouchableOpacity>
         </View>
 
@@ -165,7 +171,7 @@ export function ReadingCalendarSheet({
                     style={[
                       styles.dayText,
                       { color: isSelected ? '#FFFFFF' : W.text },
-                      isToday && !isSelected && { color: W.accent },
+                      isToday && !isSelected && { color: W.accentText },
                     ]}
                   >
                     {day}
@@ -231,8 +237,10 @@ export function ReadingCalendarSheet({
           }}
           style={[styles.todayBtn, { backgroundColor: W.accentLight }]}
         >
-          <MaterialIcons name="today" size={16} color={W.accent} />
-          <Text style={[styles.todayText, { color: W.accent }]}>Ir a hoy</Text>
+          <MaterialIcons name="today" size={16} color={W.accentText} />
+          <Text style={[styles.todayText, { color: W.accentText }]}>
+            Ir a hoy
+          </Text>
         </TouchableOpacity>
       </View>
     </BottomSheet>
@@ -254,7 +262,7 @@ const styles = StyleSheet.create({
   navBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -271,7 +279,7 @@ const styles = StyleSheet.create({
   weekday: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -296,7 +304,7 @@ const styles = StyleSheet.create({
     opacity: 0.28,
   },
   dayText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
@@ -315,7 +323,7 @@ const styles = StyleSheet.create({
   legendSquare: {
     width: 11,
     height: 11,
-    borderRadius: 4,
+    borderRadius: radii.xs,
   },
   legend: {
     flexDirection: 'row',
@@ -331,7 +339,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   legendText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '600',
   },
   todayBtn: {
@@ -343,10 +351,10 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingHorizontal: 18,
     paddingVertical: 9,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
   },
   todayText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '800',
   },
 });

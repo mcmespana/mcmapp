@@ -8,6 +8,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { radii } from '@/constants/uiStyles';
 
 export interface EventItemData {
   nombre: string;
@@ -146,7 +147,7 @@ const EventItem = React.memo(function EventItem({
                   <MaterialIcons
                     name="library-books"
                     size={15 * fontScale}
-                    color={colors.warning}
+                    color={colors.yellow}
                   />
                   <Button.Label style={styles.metaBtnLabel}>
                     Materiales
@@ -230,7 +231,7 @@ const createStyles = (
     dotOuter: {
       width: 16,
       height: 16,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       backgroundColor: hexAlpha(accentColor, isDark ? '33' : '22'),
       alignItems: 'center',
       justifyContent: 'center',
@@ -238,7 +239,7 @@ const createStyles = (
     dotInner: {
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: radii.xs,
       backgroundColor: accentColor,
     },
     // —— Tarjeta ——
@@ -247,7 +248,7 @@ const createStyles = (
       marginLeft: spacing.sm,
       marginBottom: spacing.md,
       backgroundColor: theme.background,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: hexAlpha(theme.text, isDark ? '14' : '0D'),
       ...Platform.select({
@@ -277,7 +278,7 @@ const createStyles = (
     iconContainer: {
       width: 44 * Math.min(scale, 1.3),
       height: 44 * Math.min(scale, 1.3),
-      borderRadius: 14,
+      borderRadius: radii.lg,
       backgroundColor: hexAlpha(accentColor, isDark ? '26' : '1A'),
       justifyContent: 'center',
       alignItems: 'center',
@@ -312,7 +313,7 @@ const createStyles = (
       gap: 3,
       paddingVertical: 5,
       paddingHorizontal: 10,
-      borderRadius: 999,
+      borderRadius: radii.pillFull,
       backgroundColor: hexAlpha(accentColor, isDark ? '1F' : '12'),
     },
     location: {

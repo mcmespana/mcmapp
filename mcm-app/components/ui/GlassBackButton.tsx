@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2,
-    ...(shadows.sm as ViewStyle),
+    ...(shadows.card as ViewStyle),
   },
   btn: {
     flex: 1,

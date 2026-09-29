@@ -6,7 +6,6 @@ import {
   ScrollView,
   Pressable,
   Image,
-  useWindowDimensions,
   ViewStyle,
   TextStyle,
   Platform,
@@ -30,7 +29,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import colors from '@/constants/colors';
+import colors, { themeColors } from '@/constants/colors';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -42,6 +42,8 @@ import {
 } from '@/constants/defaultProfileConfig';
 import type { ProfileType } from '@/types/profileConfig';
 import { setAnalyticsProfile, trackEvent } from '@/utils/analytics';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 type Step = 'welcome' | 'profile' | 'delegation' | 'login' | 'success';
 
@@ -90,7 +92,7 @@ const T = {
   primary: colors.primary,
   secondary: colors.secondary,
   accent: colors.accent,
-  success: colors.success,
+  success: colors.green,
   text: '#11181C',
   muted: '#687076',
   bg: '#ffffff',
@@ -104,11 +106,11 @@ function useThemeT() {
     primary: colors.primary,
     secondary: colors.secondary,
     accent: colors.accent,
-    success: colors.success,
+    success: colors.green,
     text: isDark ? '#FFFFFF' : '#11181C',
     muted: isDark ? '#8E8E93' : '#687076',
     bg: isDark ? '#1C1C1E' : '#ffffff',
-    card: isDark ? '#2C2C2E' : '#ffffff',
+    card: themeColors(isDark).background,
     border: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)',
     // Accent used for on-surface interactive elements (icons, selected text,
     // checks, links). In dark mode the deep primary blue is too low-contrast
@@ -186,7 +188,7 @@ const dotsStyles = StyleSheet.create({
   },
   dot: {
     height: 6,
-    borderRadius: 3,
+    borderRadius: radii.pillFull,
   },
 });
 
@@ -278,24 +280,24 @@ const btnStyles = StyleSheet.create({
     width: '100%',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#253883',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 14,
     elevation: 4,
     overflow: 'hidden',
   } as ViewStyle,
   label: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     letterSpacing: -0.2,
   } as TextStyle,
   shimmerWrap: {
     ...StyleSheet.absoluteFill,
     overflow: 'hidden',
-    borderRadius: 16,
+    borderRadius: radii.lg,
   } as ViewStyle,
   shimmer: {
     position: 'absolute',
@@ -341,13 +343,13 @@ const skipBtnStyles = StyleSheet.create({
     gap: 3,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     borderWidth: 1.5,
     borderColor: 'rgba(37,56,131,0.28)',
     backgroundColor: 'rgba(37,56,131,0.06)',
   } as ViewStyle,
   text: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '700',
     color: T.primary,
     letterSpacing: -0.1,
@@ -563,14 +565,14 @@ function WelcomeScreen({
 const welcomeStyles = StyleSheet.create({
   root: { flex: 1, position: 'relative', overflow: 'hidden' } as ViewStyle,
   safeContent: { flex: 1 } as ViewStyle,
-  deco: { position: 'absolute', borderRadius: 999 } as ViewStyle,
+  deco: { position: 'absolute', borderRadius: radii.pillFull } as ViewStyle,
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
@@ -578,7 +580,7 @@ const welcomeStyles = StyleSheet.create({
   } as ViewStyle,
   badgeText: {
     color: '#ffffff',
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '600',
     letterSpacing: 0.2,
   } as TextStyle,
@@ -602,13 +604,13 @@ const welcomeStyles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(149,210,242,0.18)',
   } as ViewStyle,
   logoCircle: {
     width: 124,
     height: 124,
-    borderRadius: 62,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.28)',
@@ -632,7 +634,7 @@ const welcomeStyles = StyleSheet.create({
   } as TextStyle,
   tagline: {
     color: T.secondary,
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
     fontStyle: 'italic',
     letterSpacing: 0.2,
@@ -1097,13 +1099,13 @@ const successStyles = StyleSheet.create({
     position: 'absolute',
     width: 96,
     height: 96,
-    borderRadius: 48,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(163,189,49,0.18)',
   } as ViewStyle,
   iconCircle: {
     width: 88,
     height: 88,
-    borderRadius: 44,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(163,189,49,0.12)',
     borderWidth: 2,
     borderColor: 'rgba(163,189,49,0.28)',
@@ -1119,7 +1121,7 @@ const successStyles = StyleSheet.create({
     textAlign: 'center',
   } as TextStyle,
   sub: {
-    fontSize: 14,
+    ...typography.subhead,
     color: T.muted,
     lineHeight: 22,
     marginBottom: 28,
@@ -1136,13 +1138,13 @@ const successStyles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radii.md,
     backgroundColor: 'rgba(37,56,131,0.06)',
     borderWidth: 1,
     borderColor: 'rgba(37,56,131,0.10)',
   } as ViewStyle,
   pillText: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     color: T.primary,
   } as TextStyle,
@@ -1181,7 +1183,7 @@ const stepStyles = StyleSheet.create({
   heroIcon: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radii.full,
     backgroundColor: 'rgba(37,56,131,0.09)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1195,7 +1197,7 @@ const stepStyles = StyleSheet.create({
     textAlign: 'center',
   } as TextStyle,
   heroSub: {
-    fontSize: 14,
+    ...typography.subhead,
     color: T.muted,
     lineHeight: 20,
     maxWidth: 280,
@@ -1223,7 +1225,7 @@ const cardStyles = StyleSheet.create({
     gap: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 2,
     borderColor: T.border,
     backgroundColor: '#fff',
@@ -1236,7 +1238,7 @@ const cardStyles = StyleSheet.create({
   cardSelected: {
     borderColor: T.primary,
     backgroundColor: 'rgba(37,56,131,0.055)',
-    shadowColor: '#253883',
+    shadowColor: colors.primary,
     shadowOpacity: 0.18,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 3 },
@@ -1245,14 +1247,14 @@ const cardStyles = StyleSheet.create({
   iconCircle: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(37,56,131,0.09)',
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
   iconCircleSelected: {
     backgroundColor: T.primary,
-    shadowColor: '#253883',
+    shadowColor: colors.primary,
     shadowOpacity: 0.32,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 },
@@ -1263,7 +1265,7 @@ const cardStyles = StyleSheet.create({
     fontWeight: '700',
   } as TextStyle,
   cardDesc: {
-    fontSize: 12,
+    ...typography.footnote,
     color: T.muted,
     marginTop: 2,
     lineHeight: 16,
@@ -1277,7 +1279,7 @@ const delegStyles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 13,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1.5,
     borderColor: T.border,
     backgroundColor: '#fff',
@@ -1286,18 +1288,18 @@ const delegStyles = StyleSheet.create({
     borderWidth: 2,
     borderColor: T.primary,
     backgroundColor: 'rgba(37,56,131,0.055)',
-    shadowColor: '#253883',
+    shadowColor: colors.primary,
     shadowOpacity: 0.14,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   } as ViewStyle,
   label: {
-    fontSize: 14,
+    ...typography.subhead,
     flex: 1,
   } as TextStyle,
   desc: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 2,
     lineHeight: 16,
   } as TextStyle,
@@ -1327,8 +1329,7 @@ function LoginOnboardingScreen({
   totalSteps: number;
 }) {
   const Entering = animDir === 'back' ? SlideInLeft : SlideInRight;
-  const { width: screenW } = useWindowDimensions();
-  const isWide = screenW >= 640;
+  const { isWide } = useResponsiveLayout();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -1522,7 +1523,7 @@ const loginOnbStyles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   } as ViewStyle,
-  deco: { position: 'absolute', borderRadius: 999 } as ViewStyle,
+  deco: { position: 'absolute', borderRadius: radii.pillFull } as ViewStyle,
   backBtn: {
     position: 'absolute',
     top: 16,
@@ -1544,7 +1545,7 @@ const loginOnbStyles = StyleSheet.create({
   logoCircle: {
     width: 96,
     height: 96,
-    borderRadius: 48,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.28)',
@@ -1562,7 +1563,7 @@ const loginOnbStyles = StyleSheet.create({
   } as TextStyle,
   body: {
     color: 'rgba(255,255,255,0.72)',
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 21,
     textAlign: 'center',
     maxWidth: 280,
@@ -1597,14 +1598,14 @@ const loginOnbStyles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.24)',
   } as ViewStyle,
   summaryPillText: {
     color: '#fff',
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
   } as TextStyle,
   skipWrap: {
@@ -1619,14 +1620,14 @@ const loginOnbStyles = StyleSheet.create({
     gap: 6,
     paddingVertical: 12,
     paddingHorizontal: 22,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.28)',
   } as ViewStyle,
   skipText: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     letterSpacing: -0.1,
   } as TextStyle,
@@ -1640,8 +1641,11 @@ export default function OnboardingScreen() {
   const { rawConfig } = useProfileConfigContext();
   const { setProfile } = useUserProfile();
   const TT = useThemeT();
-  const { width: screenW, height: screenH } = useWindowDimensions();
-  const isWide = screenW >= 640;
+  // El corte lo pone `useResponsiveLayout` (breakpoints.md = 720), que es el
+  // que usa el resto de la app; aquí había un `screenW >= 640` a mano, así que
+  // el onboarding se creía "ancho" 80 px antes que las demás pantallas
+  // (PLAN_DISENO §F5).
+  const { width: screenW, height: screenH, isWide } = useResponsiveLayout();
 
   const [step, setStep] = useState<Step>('welcome');
   const [animDir, setAnimDir] = useState<'forward' | 'back'>('forward');
@@ -1908,9 +1912,9 @@ const shellStyles = StyleSheet.create({
   frame: { flex: 1, alignSelf: 'center' } as ViewStyle,
   frameWide: {
     flex: undefined,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     overflow: 'hidden',
-    shadowColor: '#253883',
+    shadowColor: colors.primary,
     shadowOpacity: 0.14,
     shadowRadius: 48,
     shadowOffset: { width: 0, height: 16 },

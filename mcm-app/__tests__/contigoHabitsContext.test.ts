@@ -16,10 +16,7 @@ import React from 'react';
 import { render, act } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  syncContigoHabit,
-  fetchContigoHabits,
-} from '@/utils/authHelpers';
+import { syncContigoHabit, fetchContigoHabits } from '@/utils/authHelpers';
 import {
   ContigoHabitsProvider,
   useContigoHabitsContext,
@@ -266,7 +263,12 @@ describe('hidratación remota (multi-dispositivo)', () => {
     await AsyncStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        [TODAY]: { date: TODAY, readingDone: true, prayerDone: false, timestamp: 1 },
+        [TODAY]: {
+          date: TODAY,
+          readingDone: true,
+          prayerDone: false,
+          timestamp: 1,
+        },
       }),
     );
     const { boxA } = await renderTwoConsumersUnderSameProvider();
@@ -283,7 +285,10 @@ describe('hidratación remota (multi-dispositivo)', () => {
       prayerDone: false,
       timestamp: 1,
     };
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ '2026-08-01': localOnly }));
+    await AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ '2026-08-01': localOnly }),
+    );
     (fetchContigoHabits as jest.Mock).mockResolvedValue({
       '2026-08-02': {
         date: '2026-08-02',
@@ -298,14 +303,20 @@ describe('hidratación remota (multi-dispositivo)', () => {
     expect(boxA.value!.getRecord('2026-08-01')).toEqual(localOnly);
     expect(boxA.value!.getRecord('2026-08-02')?.prayerDone).toBe(true);
     // Solo el 08-01 era exclusivamente local → es el que hay que re-subir.
-    expect(syncContigoHabit).toHaveBeenCalledWith('u1', '2026-08-01', localOnly);
+    expect(syncContigoHabit).toHaveBeenCalledWith(
+      'u1',
+      '2026-08-01',
+      localOnly,
+    );
     expect(syncContigoHabit).not.toHaveBeenCalledWith(
       'u1',
       '2026-08-02',
       expect.anything(),
     );
 
-    const stored = JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) as string);
+    const stored = JSON.parse(
+      (await AsyncStorage.getItem(STORAGE_KEY)) as string,
+    );
     expect(stored['2026-08-01']).toEqual(localOnly);
     expect(stored['2026-08-02']).toBeDefined();
   });

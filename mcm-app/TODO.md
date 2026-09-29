@@ -16,25 +16,30 @@
 
 > Orden propuesto (repriorízalo si no lo ves).
 
-### 0. ⚠️ El CI no ejecuta nada desde abril de 2026
+### 0. CI — ✅ ARREGLADO (2026-09-09)
 
-- [ ] **Averiguar por qué GitHub Actions está parado y volver a encenderlo.**
-      El último run de `ci.yml` es del **2026-04-10**; desde entonces
-      **ningún PR se ha verificado de verdad**, aunque el workflow siga en el
-      repo y la PR parezca "clean" al mergear.
+**La causa era que el workflow estaba desactivado a mano.** `ci.yml` figuraba en
+estado `disabled_manually` desde el 2026-05-25 (alguien le dio a "Disable
+workflow" en la pestaña Actions). Con ese estado GitHub **no crea el run**: no
+sale ni en rojo ni en gris, simplemente no existe, y la PR parece "clean" al
+mergear. No era la cuenta sin minutos (el repo es **público**: los runners
+estándar son gratis y no tocan la cuota) ni un ajuste de organización.
 
-Cómo se descubrió: el 2026-08-15, `npm run typecheck:tests` —que es uno de los
-cuatro pasos de `verify.yml`— llevaba fallando con 4 errores de tipos en `main`
-sin que saltara nadie. Se arreglaron en la #334, pero el problema de fondo es
-que **el guardarraíl está desenchufado**: mientras siga así, lo único que
-verifica el repo es lo que ejecute a mano quien esté trabajando.
+Arreglado registrando el guardarraíl en una ruta nueva —
+`.github/workflows/pr.yml`— porque el estado "desactivado" va pegado a la ruta
+del workflow, no a su contenido: en una ruta nueva nace activo, sin depender de
+entrar en la web. De paso se borró `.github/workflows/disabled/` (tres archivos
+con `on: {}` que no ejecutaban nada) y el scraper bajó de dos disparos diarios
+a uno.
 
-Sitios donde mirar: pestaña Actions del repo (¿deshabilitadas?), si la cuenta se
-quedó sin minutos, y si algún ajuste de la organización bloquea los workflows en
-PRs de ramas `claude/*`.
+**Verificado el 2026-09-10**: en la PR
+[#344](https://github.com/mcmespana/mcmapp/pull/344) apareció y corrió el check
+`verify / verify` — el primer run de verdad desde el 2026-04-10. Si algún día
+vuelve a "no ejecutarse nada", lo PRIMERO que hay que mirar es el estado del
+workflow (Actions → PR → "..." → Enable workflow), no el disparador.
 
-Mientras tanto, **antes de mergear cualquier cosa hay que pasar los cuatro pasos
-en local**:
+Aun así sigue siendo buena costumbre pasar los cuatro pasos en local antes de
+empujar, que es más rápido que esperar al runner:
 
 ```bash
 cd mcm-app
@@ -156,27 +161,33 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       Grupos migrados de sus versiones a mano).
 
       **Los `TextInput` que quedan NO se migran, y está decidido**: los
-                                  buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
-                                  de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
-                                  celdas del código; y los de Revisión quedaron, tras el refactor del examen
-                                  del día, como campos SIN borde dentro de una fila que sí lo tiene —
-                                  `AppTextField` les metería un borde dentro de otro.
+                                                  buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
+                                                  de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
+                                                  celdas del código; y los de Revisión quedaron, tras el refactor del examen
+                                                  del día, como campos SIN borde dentro de una fila que sí lo tiene —
+                                                  `AppTextField` les metería un borde dentro de otro.
 
-## Modo Carismochito (ver `docs/planes/PLAN_CARISMOCHITO.md`)
+## Modo Carismochito (ver `docs/funcionalidades/CARISMOCHITO.md`)
 
 > Hecho (jun-2026, ver CHANGELOG): confirmar antes de desactivar + salir con un
 > par de sacudidas fuertes (sin semáforo), el badge ahora abre la explicación, y
 > onboarding persistido con teaser de futuro.
 
-- [ ] **Carismochito aparece en (casi) todas las pantallas** (overlay global),
-      excepto materiales/profundiza de evento y canción a pantalla completa.
-- [ ] **Colección + contador** al tocar la mascota (animación especial); guardado
-      por usuario y **solo con sesión iniciada** (si no, avisar de pérdida de
-      progreso).
-- [ ] **Widget de los 3 hábitos diarios** (Evangelio/Oración/Revisión) con marca,
-      deep-link y recordatorio (notificación local / Carismochito). ⚠️ NATIVO
-      (WidgetKit iOS / App Widget Android) → build de tienda + App Group para
-      compartir el estado del día con el widget. Empezar por iOS.
+- [x] **Carismochito aparece en (casi) todas las pantallas**, excepto lectura y
+      presentación — hecho el 2026-09-26.
+- [x] **Colección + contador** al tocarlo — hecho el 2026-09-26, **escondido en
+      el Laboratorio Alpha**. Sin sesión se guarda en el móvil y se avisa.
+- [ ] **Sacar la caza del laboratorio** cuando el usuario lo decida
+      (`docs/planes/BACKLOG.md` §4).
+- [ ] **Widgets de Contigo — los TRES** (ampliado el 2026-09-19, ver
+      `docs/planes/PLAN_WIDGET_CONTIGO.md`): (1) los 3 hábitos diarios
+      (Evangelio/Oración/Revisión) con marca y deep-link; (2) **la racha**, con
+      un estado visual distinto por tramo (0 / 1-2 / 3-6 / 7+ / 30+ días);
+      (3) **el evangelio del día**, que enseña "Hoy, Lc 15, 1-10" con su icono y
+      lleva directo a la pantalla del evangelio. Más el recordatorio
+      (notificación local / Carismochito). ⚠️ NATIVO (WidgetKit iOS / App Widget
+      Android) → build de tienda + App Group. Los tres comparten target, payload
+      y deep links: se hacen juntos. Empezar por iOS.
 
 ## Notificaciones push — mejoras pendientes (alineación con MCM Panel)
 
@@ -185,22 +196,29 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 > Estas mejoras requieren build nativo o trabajo nuevo y por eso quedaron fuera
 > de la entrega OTA de 2026-06-02.
 
-- [ ] **Channels Android — probar en dispositivo real antes de production** ⚠️ los
-      canales YA están implementados (2026-08-03): siete, uno por categoría del Panel,
-      en `constants/notificationChannels.ts` + `notifications/androidChannels.ts`.
-      Queda lo que siempre fue requisito y no se puede hacer a ciegas:
-      (a) **verificar en un Android real** el heads-up y el sonido de cada canal —
-      aparecen en los ajustes del sistema de TODOS los Android y las preferencias que
-      el usuario toque ya no se pueden revertir desde la app
-      (`deleteNotificationChannelAsync` no las borra);
-      (b) **que el Panel mande `channelId`** (cross-repo) — sin él todo cae en
-      `default` como hasta ahora, y con un `channelId` que la app no declare Android
-      **no entrega** la notificación. Tabla cerrada en
-      `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8.
-- [ ] **(Panel) Corregir el contrato** — que el MCM Panel use las rutas reales,
-      segmente por `topics`/`profileType`/`delegationId` (no `userType`/`delegacion`) y
-      desacople `categoryId` (solo iOS) de `data.category`. Detalle en
-      `docs/contratos/NOTIFICACIONES_CONTRATO.md`.
+- [ ] 🚨 **URGENTE — Android pierde las notificaciones con categoría** (visto el
+      2026-09-26). El Panel manda `channelId` desde el **2026-08-03**
+      (`mcmpanel/api/_lib/push.ts`, `resolveChannelId`: `urgente`, `eventos`,
+      `celebraciones`, `cancionero`, `fotos`, `mantenimiento`), pero la app de
+      `production` solo crea el canal `default`: los otros seis viven en
+      `notifications/androidChannels.ts`, que está en `main` y no en
+      `production`. Expo lo dice claro: un `channelId` que el dispositivo no
+      tiene creado **no se muestra**. O sea: en Android solo llegan las de
+      categoría `general`. **Decisión del usuario (2026-09-26): no se hace OTA
+      a `production`; se arregla solo al publicar la build 2.1.** Las salidas que
+      había, por si se reconsidera:
+      (1) **OTA a `production`** con `androidChannels.ts` — es solo JS
+      (`expo-notifications` ya está en el binario); arregla a cada móvil la
+      próxima vez que abra la app. Ojo: los canales se quedan en los ajustes del
+      sistema para siempre, así que la importancia de cada uno tiene que estar
+      bien a la primera;
+      (2) que el Panel mande `channelId: 'default'` hasta que salga la build 2.1.
+      Pendiente además: **verificar en un Android real** el heads-up y el sonido
+      de cada canal. Tabla en `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8.
+- [x] **(Panel) Corregir el contrato** — hecho en `mcmpanel` (comprobado el
+      2026-09-26 en `api/_lib/push.ts`): segmenta por `topics`/`profileType`/
+      `delegationId` con 4 ejes y AND/OR, y `categoryId` (iOS) va desacoplado
+      de `data.category` (`resolveCategoryId`).
 
 ---
 
@@ -213,22 +231,22 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       cada render) lo habría cazado un render test.
 
       Por dónde empezar, en orden de rentabilidad:
-                                                          1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
-                                                             Más): que monten sin reventar con datos vacíos, con datos y offline.
-                                                          2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
-                                                             hook con sus contextos).
-                                                          3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
-                                                             releer del bookmark.
-                                                          4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
+                                                                          1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
+                                                                             Más): que monten sin reventar con datos vacíos, con datos y offline.
+                                                                          2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
+                                                                             hook con sus contextos).
+                                                                          3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
+                                                                             releer del bookmark.
+                                                                          4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
 
-                                                          Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
-                                                          lee la suite entera para tocar código: lee los tests del área que toca. Lo
-                                                          que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
-                                                          de en una build de 20 minutos— y evita iteraciones enteras como la del
-                                                          tamaño de los iconos. El coste real de una suite grande es de
-                                                          MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
-                                                          detalles internos) que hay que reescribir en cada refactor. Por eso la
-                                                          lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
+                                                                          Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
+                                                                          lee la suite entera para tocar código: lee los tests del área que toca. Lo
+                                                                          que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
+                                                                          de en una build de 20 minutos— y evita iteraciones enteras como la del
+                                                                          tamaño de los iconos. El coste real de una suite grande es de
+                                                                          MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
+                                                                          detalles internos) que hay que reescribir en cada refactor. Por eso la
+                                                                          lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
 - [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales, y (jun-2026) Fotos (`AlbumListScreen`/`AlbumCard`), Materiales, Comida, MasHome y `EventItem`. Horario es de solo lectura (sin interactivos). Pendiente: validar en dispositivo con VoiceOver/TalkBack y revisar pantallas/flujos secundarios.
 
@@ -236,23 +254,42 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 
 ## Inconsistencias del Design System
 
-- [ ] **Tipografía no conectada a componentes**: `constants/typography.ts` define h1/h2/body/caption/button pero la mayoría de componentes usan fontSize inline. El archivo solo se importa en pocos sitios.
-- [ ] **Peso de fuente inconsistente**: section labels usan `fontWeight: '800'`, títulos de cards `'700'`, botones `'500'`/`'700'`. No hay guía clara de qué peso usar en cada nivel.
-- [ ] **Migrar componentes existentes a tokens**: `radii.*` y `shadows.*` están definidos pero los componentes siguen usando valores inline. Migrar gradualmente.
+> El sitio donde se llevan estas ahora es
+> **[`docs/planes/PLAN_DISENO.md`](../docs/planes/PLAN_DISENO.md)**, con la
+> evidencia y el destino de cada una. Lo de aquí abajo es lo que queda vivo.
+
+- [ ] **Tipografía no conectada a componentes** (`PLAN_DISENO` §C):
+      `constants/typography.ts` define h1/h2/body/caption/button pero la
+      mayoría de componentes usan `fontSize` inline. El archivo solo se
+      importa en pocos sitios.
+- [ ] **Peso de fuente inconsistente** (`PLAN_DISENO` §C): section labels usan
+      `fontWeight: '800'`, títulos de cards `'700'`, botones `'500'`/`'700'`.
+      La escala decidida está en `design.md` §4; falta aplicarla.
+- [x] ~~Migrar componentes existentes a tokens~~ — hecho en agosto de 2026 para
+      color (de 1.363 hex literales a 793), sombras y radios. Lo que queda de
+      hex está en `PLAN_DISENO` §A5/§A6.
 
 ---
 
 ## Ideas para la Home Screen
 
-La home actual es un grid de botones estático. Opciones para hacerla más útil:
+> ⚠️ **Esta sección estaba desactualizada** (revisado 2026-09-02). La Home ya
+> NO es "un grid de botones estático": tiene hero (`ScreenHero`), próximos
+> eventos agrupados por cercanía con skeleton y `EmptyState`, banner de
+> encuestas, avisos de actualización, campana de notificaciones con contador,
+> accesos rápidos filtrados por perfil y layout de dos columnas en pantalla
+> ancha. O sea, la Opción A ya está hecha casi entera.
+>
+> Lo único que sigue sin estar de la lista de abajo: **canción del día** y
+> **último contenido actualizado**. El Wordle está dormido a propósito.
 
-### Opción A: Home con contenido dinámico (recomendada)
+### Opción A: Home con contenido dinámico (recomendada) — ✅ mayormente hecha
 
-- Próximo evento del calendario (tarjeta destacada arriba)
-- Accesos rápidos más compactos
-- Canción del día (si el cantoral está activo)
-- Wordle pendiente con indicador más claro
-- Último contenido actualizado (materiales, reflexiones)
+- ✅ Próximo evento del calendario (tarjeta destacada arriba)
+- ✅ Accesos rápidos más compactos
+- [ ] Canción del día (si el cantoral está activo)
+- ~~Wordle pendiente con indicador más claro~~ (el Wordle está dormido)
+- [ ] Último contenido actualizado (materiales, reflexiones)
 
 ### Opción B: Home tipo dashboard
 
@@ -265,6 +302,21 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 - Logo MCM grande arriba
 - Lista simple de secciones con subtítulo
 - Barra de búsqueda global
+
+---
+
+## Ideas de futuro (apuntadas, sin fecha)
+
+- [ ] **Mapa interactivo de obras y movimiento** (anotado 2026-09-19, idea del
+      usuario). Un mapa con los puntos donde hay presencia: hospitales,
+      residencias y colegios de las Hermanas de la Consolación, y los sitios
+      donde la gente se junta para hacer movimiento. Sin fecha ni plan todavía
+      — lo que hay que decidir antes de escribirlo: de dónde salen los datos
+      (¿nodo nuevo en RTDB mantenido desde el panel, o un JSON en el repo?),
+      qué se enseña de cada punto (ficha, foto, contacto, enlace a Comunica) y
+      si es solo consulta o también "apúntate al de tu zona". Ojo al coste
+      técnico: un mapa de verdad en la app son `react-native-maps` (nativo,
+      build de tienda) o un WebView con un mapa web (OTA, más pobre).
 
 ---
 
@@ -331,7 +383,7 @@ activa a propósito agitando el móvil, quien entre ahí es porque quiere).
 
 ## Backend Firebase
 
-- [ ] **Completar backend de notificaciones push** — solo hay `purgeExpiredShares`. Falta función Cloud que lea trigger y use FCM Admin (`docs/funcionalidades/NOTIFICACIONES.md`). Idempotencia y audiencias por perfil/delegación. Ver MEJORAS.md §13.2.
+- [x] **Backend de notificaciones push** — no hacía falta una Cloud Function: el envío vive en el **Panel** (`mcmpanel/api/notifications/send.ts`, `schedule.ts` y `process-scheduled.ts` + `api/_lib/push.ts`): Expo Push API por lotes, audiencias por perfil/delegación/evento, programadas por cron y limpieza de tokens. Comprobado el 2026-09-26. Lo que queda de ese lado es seguridad (Integración D1/D5).
 - [ ] **Cleanup adicional**: reflexiones antiguas, notificaciones por usuario antiguas. Ver MEJORAS.md §13.3.
 - [ ] **Valorar Firestore** para `songs` y `compartiendo` cuando el dataset crezca (paginación, queries indexadas). Mantener RTDB para configuración y datos pequeños. Ver MEJORAS.md §13.1.
 

@@ -15,6 +15,8 @@ import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 // Usando el mismo CSS que funcionó en comunica.tsx
 import iframeStyles from '../../styles/comunica.module.css';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 type Route = RouteProp<MasStackParamList, 'ComidaWeb'>;
 
 export default function ComidaWebScreen() {
@@ -158,7 +160,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     webview: {
       flex: 1,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       overflow: 'hidden',
     } as any,
     loadingContainer: {
@@ -184,7 +186,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     redirectContent: {
       backgroundColor: theme.cardBg,
-      borderRadius: 16,
+      borderRadius: radii.lg,
       padding: spacing.xl,
       alignItems: 'center',
       maxWidth: 400,
@@ -204,7 +206,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       marginBottom: spacing.sm,
     } as any,
     redirectSubtitle: {
-      fontSize: 16,
+      ...typography.body,
       color: theme.text,
       opacity: 0.7,
       textAlign: 'center',
@@ -217,7 +219,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       backgroundColor: '#2196F3',
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.md,
-      borderRadius: 12,
+      borderRadius: radii.md,
       marginBottom: spacing.md,
       shadowColor: '#2196F3',
       shadowOffset: { width: 0, height: 2 },
@@ -229,7 +231,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       color: '#fff',
       marginLeft: spacing.sm,
       fontWeight: 'bold',
-      fontSize: 16,
+      ...typography.body,
     } as any,
     backButton: {
       paddingHorizontal: spacing.lg,
@@ -237,7 +239,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     backButtonText: {
       color: scheme === 'dark' ? '#aaa' : '#666',
-      fontSize: 16,
+      ...typography.body,
     } as any,
   });
 };

@@ -11,7 +11,8 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-08-15.
+> Última actualización: 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
 > [`docs/planes/README.md`](README.md). Si un plan está en `archivo/`, está
@@ -33,16 +34,16 @@
 > paso a paso completo en `docs/desarrollo/BUILD_AGOSTO_2026.md`. La Cola
 > Principal (§1) se reanuda cuando la build esté publicada.
 
-|                              |                                                                                                                                                                                               |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Ahora mismo**              | **Build de tienda 2.1 — agosto de 2026.** Falta: crear las cuentas de Sentry y Aptabase y meter las claves (§2 del doc de build), validar en dispositivo (§5), publicar (§6)                  |
-| **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`)                                                                     |
-| **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                              |
-| **⚠️ Roto y sin dueño**      | **El CI no ejecuta nada desde el 2026-04-10.** Ningún PR se verifica de verdad; hasta arreglarlo, pasa los 4 pasos de `verify.yml` en local antes de mergear. Detalle en `mcm-app/TODO.md` §0 |
-| **Después de la build**      | UI Nativa Fase 2 → Integración D → Carismochito                                                                                                                                               |
-| **Oportunista**              | Integraciones resto. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                        |
-| **Futuro lejano, sin prisa** | Widget de Contigo · Panel Pañuelo (§1 notas)                                                                                                                                                  |
-| **Cerrado**                  | Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                              |
+|                              |                                                                                                                                                                                                                                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Ahora mismo**              | **Build de tienda 2.1 — agosto de 2026.** Falta: crear las cuentas de Sentry y Aptabase y meter las claves (§2 del doc de build), validar en dispositivo (§5), publicar (§6)                                                                                                   |
+| **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`)                                                                                                                                                      |
+| **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                                                                                                               |
+| **⚠️ Roto y sin dueño**      | 🚨 **Android no muestra las notificaciones con categoría** desde el 2026-08-03: el Panel manda `channelId` y la app de `production` no tiene esos canales. **Decidido (2026-09-26): no se toca `production`, se arregla con la build 2.1** (`mcm-app/TODO.md`, Notificaciones) |
+| **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                                                                                         |
+| **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                                                                                     |
+| **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio) · Panel Pañuelo (§1 notas)                                                                                                                                                                                                   |
+| **Cerrado**                  | Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                                                                                                               |
 
 > **Ojo con el orden al publicar**: `production` dispara la OTA sola. No se
 > mueve hasta que las tiendas tengan el binario nuevo, o la gente recibe un
@@ -69,6 +70,10 @@
    preguntar. Es mecánica, segura (solo añade ficheros a `__tests__/`) y está
    escrita para Sonnet. Si el usuario prefiere otra cosa, enséñale la Bolsa
    Oportunista (§2) y que elija.
+   **Si dice "diseño"** (o "unificar la UI", "los colores", "los tokens") →
+   `docs/planes/PLAN_DISENO.md`, y empieza por su "Orden sugerido". Es la
+   segunda tarea mecánica de esta casa: tareas sueltas, cada una en un commit,
+   sin decisiones nuevas salvo las marcadas 🔒.
 4. **Nunca ejecutes un ítem 🔒 sin preguntar primero**, aunque parezca
    evidente qué elegir. Son decisiones de producto/seguridad del usuario, no
    del ejecutor.
@@ -86,12 +91,12 @@
 | 1   | **Plan 004** — Contigo: sync bidireccional de hábitos/revisiones + tests `authHelpers`  | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `archivo/tacticos/004-…`                             |
 | 2   | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `archivo/tacticos/005-…`                             |
 | 3   | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate   | **Opus**                                     | No                                                                      | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `archivo/tacticos/008-…`                             |
-| 4   | **UI Nativa** — headers nativos + componentes unificados                                | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | 🟡 En curso — Fase 1 ✅, Fase 2 ~65-70% (`AppTextField`/`EmptyState` mayormente hechos, `AppPrimaryButton` parcial, `SegmentedControl`/chips/tokens sin empezar)                                                                                                                        | `docs/planes/PLAN_UI_NATIVA.md`                      |
+| 4   | **UI Nativa** — headers nativos + componentes unificados                                | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | ⏸️ **EN PAUSA** (decisión del usuario, 2026-09-24): no se retoma hasta que lo diga. Fase 1 ✅, Fase 2 ~80% (`AppTextField`/`EmptyState` mayormente hechos, **`SegmentedControl` cerrado el 2026-09-10**, `AppPrimaryButton` parcial, chips sin empezar)                                 | `docs/planes/PLAN_UI_NATIVA.md`                      |
 | 5   | **Integración D** — Seguridad Firebase (+ A2)                                           | Opus                                         | **Sí** — D2 + repo `mcmpanel` (ver §4)                                  | ⏳ Pendiente, importante pero no urgente. **Es lo único que queda de PLAN_INTEGRACIONES**: el resto (A, B, C, E) se cerró el 2026-08-12                                                                                                                                                 | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" |
-| 6   | **Carismochito** (ejecutar bien §1–4)                                                   | Sonnet (Opus solo el icono nativo §5)        | No                                                                      | ⏳ Cierre final                                                                                                                                                                                                                                                                         | `docs/planes/PLAN_CARISMOCHITO.md`                   |
+| 6   | **Carismochito** (§1–4)                                                                 | —                                            | Solo para sacarlo del laboratorio (§4)                                  | ✅ **DONE** (2026-09-26). La caza y la colección van **escondidas en el Laboratorio Alpha** por decisión del usuario                                                                                                                                                                    | `docs/funcionalidades/CARISMOCHITO.md`               |
 
 **Fuera de la cola — futuro lejano (decisión del usuario, 2026-08-15):**
-**Widget de Contigo** y **Panel Pañuelo** salen de la Cola Principal. Son dos
+**Widgets de Contigo** (los tres) y **Panel Pañuelo** salen de la Cola Principal. Son dos
 funcionalidades "muy futuras": _ya se hará, no hay prisa_. No las propongas al
 decir "seguimos", no las metas en la bolsa oportunista y **no preguntes por
 ellas** — la decisión de cuándo es del usuario y ya la ha tomado: todavía no.
@@ -100,7 +105,8 @@ cuando toque.
 
 **Notas de orden:**
 
-- El **4** (UI Nativa) puede avanzar en lo no bloqueado (Fase 2: migrar
+- El **4** (UI Nativa) está **en pausa desde el 2026-09-24** por decisión del
+  usuario: "seguimos" lo salta. Cuando se reanude, puede avanzar en lo no bloqueado (Fase 2: migrar
   `TextInput`→`AppTextField`, `AppPrimaryButton`, `EmptyState`…) mientras se
   resuelven las 3 decisiones que sí bloquean partes concretas.
 - El **5** (Integración D) ya NO es la urgencia máxima de antes: la app está
@@ -108,7 +114,7 @@ cuando toque.
   incidente inminente. Sigue siendo importante hacerlo bien antes de escalar
   a más usuarios — por eso se queda en la cola, pero sin prisa y bloqueado
   por D2.
-- El **6** (Carismochito) es deliberadamente el cierre: no bloquea a nada y
+- El **6** (Carismochito) está hecho (2026-09-26); era deliberadamente el cierre: no bloqueaba a nada y
   nada lo bloquea a él.
 
 ---
@@ -195,16 +201,16 @@ Detalle en `docs/planes/PLAN_INTEGRACIONES.md`.
 Decidido el 2026-08-03: estas dos son NATIVAS y **no entran en la 2.1**. Se
 guardan para la siguiente build de tienda.
 
-| Qué                                                                    | Estado | Por qué se aplaza                                                                                                                                                                                                               |
-| ---------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Widget de Contigo** (WidgetKit iOS / App Widget Android + App Group) | 0%     | Es una feature entera, no un extra. `docs/planes/PLAN_WIDGET_CONTIGO.md`                                                                                                                                                        |
-| **Firebase App Check** (DeviceCheck / Play Integrity)                  | 0%     | Arrastra `@react-native-firebase` entero junto al SDK JS que ya se usa, y un _enforcement_ mal configurado deja sin datos a toda la base instalada. Además la Integración D (reglas) sigue abierta, que es el agujero de verdad |
+| Qué                                                                                                           | Estado | Por qué se aplaza                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Widgets de Contigo** — hábitos + racha + evangelio del día (WidgetKit iOS / App Widget Android + App Group) | 0%     | Es una feature entera, no un extra. Los tres comparten target, payload y deep links: se hacen juntos. `docs/planes/PLAN_WIDGET_CONTIGO.md`                                                                                      |
+| **Firebase App Check** (DeviceCheck / Play Integrity)                                                         | 0%     | Arrastra `@react-native-firebase` entero junto al SDK JS que ya se usa, y un _enforcement_ mal configurado deja sin datos a toda la base instalada. Además la Integración D (reglas) sigue abierta, que es el agujero de verdad |
 
 #### C.4 — Sigue bloqueado por una decisión tuya
 
-| Qué                                              | Qué falta decidir                                                                                |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| **Widget de Contigo** (`PLAN_WIDGET_CONTIGO.md`) | Es una build dedicada, no un extra de ésta: WidgetKit + App Group. ¿Se compromete y para cuándo? |
+| Qué                                               | Qué falta decidir                                                                                |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Widgets de Contigo** (`PLAN_WIDGET_CONTIGO.md`) | Es una build dedicada, no un extra de ésta: WidgetKit + App Group. ¿Se compromete y para cuándo? |
 
 > **Paso a paso del día de la build**: `docs/desarrollo/BUILD_AGOSTO_2026.md`
 > — variables de Sentry, credenciales de la extensión y checklist de pruebas.
@@ -260,6 +266,40 @@ patrón oficial de "ref al último callback". Perseguirlos empeora el código.
 **Lo que sí se pide:** no añadir warnings NUEVOS. Si un cambio tuyo sube la
 cuenta por encima de 51, ese es tuyo y se arregla.
 
+### G. Diseño — unificar tokens y quitar incoherencias
+
+**Documento: [`PLAN_DISENO.md`](PLAN_DISENO.md).** Creado el 2026-09-02 al
+escribir [`design.md`](../../design.md), que es ahora la guía prescriptiva de
+diseño para agentes.
+
+Es la **tarea por defecto cuando el usuario pide diseño** en un hueco
+oportunista. Sus tareas son independientes y caben en un commit cada una.
+
+**Dos pasadas ejecutadas el 2026-09-02/03.** Cerrado: tokens de marca,
+sombras, radios, roles de color (de 1.363 hex literales a 865), escala y pesos
+tipográficos (de 666 `fontSize` a 276), un solo hook responsive, espejo de
+tokens en el panel, y **tres bugs de contraste que estaban en producción**: el
+texto tenue del cantoral por debajo del mínimo legible, el azul de marca
+invisible sobre fondo oscuro en cinco pantallas (Notificaciones entera, la de
+error, encuestas, la hoja de notificaciones y el contenido en BBCode), y la
+misma pregunta de "qué texto va sobre este fondo" resuelta cinco veces con
+cinco umbrales distintos.
+
+Hay **cinco trinquetes de test** (colores, tamaños de letra, radios, contraste
+y marca-en-primer-plano) cuyos topes solo pueden bajar.
+
+**Lo que queda, y lo que NO:**
+
+- 🔴 **Bloquea publicar**: verificar en dispositivo las cinco pantallas que
+  cambiaron de aspecto (`PLAN_DISENO` §H9). Nada más lo bloquea.
+- Otros dos ítems necesitan dispositivo: los tres dorados de Contigo (§A3) y si
+  `textStrong` sobra (§H10/H12).
+- El resto es abrir el fichero y decidir caso a caso: 865 hex, 276 `fontSize`,
+  radios sueltos.
+- ❌ **NO se tocan, decidido**: las anchuras máximas y el layout de iPad
+  (decisión del usuario) y las capas de superficie en oscuro (el contraste lo
+  desaconseja). No los propongas.
+
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
 - **Multilenguaje (i18n)** — catalán/portugués/inglés. Por ahora **no**. Si
@@ -292,14 +332,41 @@ reglas** (no relacionado con esta visibilidad deseada del panel — p. ej. una
 ruta que debería estar protegida por otro motivo), evaluarlo aparte; no
 reabrir este plan tal cual, su premisa ya no aplica.
 
+### Pestaña de perfil de usuario
+
+**Descartada el 2026-09-19**, tras investigarlo a petición del usuario. No se
+vuelve a proponer ni a re-investigar.
+
+El motivo es aritmético, no de gusto: la barra admite **6 items**
+(`MAX_TAB_BAR_ITEMS`) y los perfiles del seed ya declaran **7 tabs**, así que
+Fotos ya vive como tarjeta en Más — y con un evento activo caen dos. Un tab
+"Perfil" añadido al final de `TABS_CONFIG` sería siempre el primero en caerse,
+o sea que acabaría siendo una tarjeta en Más: exactamente donde ya está el
+`SettingsBottomSheet`. Y el dashboard personal de verdad (racha, minutos,
+lecturas, calendario) ya existe dentro de Contigo.
+
+Lo que **sí** quedó como idea buena, barata y OTA, por si algún día se retoma:
+sacar el contenido del `SettingsBottomSheet` a una pantalla propia dentro del
+stack de Más (deep-linkable y con sitio para crecer), y cambiar el engranaje
+de la Home por el avatar/inicial cuando hay sesión.
+
+Hallazgo suelto de esa investigación, sin dueño: el Wordle se identifica con un
+id aleatorio de AsyncStorage (`hooks/useWordleStats.ts`), **no con el uid de
+Firebase** — estadísticas y ranking son por dispositivo. Contigo sí sincroniza
+contra `users/{uid}`. Habría que unificarlo antes de enseñar "tu racha" en
+ningún sitio compartido.
+
+---
+
 ---
 
 ## 4. Decisiones pendientes — preguntar ANTES de ejecutar
 
-| Decisión                                                                                   | Bloquea       | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------ | ------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?" |
-| **Plan funcional del Panel Pañuelo**                                                       | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md` (stub)           | "¿Nos sentamos a diseñar la mecánica de chapas/modelo 3D, o esperamos a después de Carismochito §1–4?"                                                           |
+| Decisión                                                                                   | Bloquea       | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------ | ------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                          |
+| **Sacar la caza de Carismochitos del laboratorio**                                         | Carismochito  | `docs/funcionalidades/CARISMOCHITO.md`               | "¿Cuándo sale la caza para todo el mundo, y la colección se enlaza desde algún sitio o espera a la vista de perfil?"                                                                                                                      |
+| **Pañuelo — por definir**                                                                  | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md`                  | Idea parcial contada el 2026-09-29 (medallas 3D por evento, en el pañuelo, pop-up al tocar; prueba ya en el laboratorio). Falta: **cómo se reparten** y cómo es el pañuelo. No propongas la propuesta escrita como si estuviera decidida. |
 
 ---
 

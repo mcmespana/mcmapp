@@ -20,6 +20,7 @@ import {
   useRoute,
   RouteProp,
 } from 'expo-router/react-navigation';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
 interface Actividad {
   nombre: string;
@@ -102,6 +103,7 @@ function getClosestDateIndex(data: any[]): number {
 }
 
 export default function MaterialesScreen() {
+  useSuppressCarismochito();
   const navigation = useNavigation<Nav>();
   const route = useRoute<MaterialesScreenRoute>();
   const scheme = useColorScheme();
@@ -230,7 +232,7 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
       paddingBottom: Platform.OS === 'ios' ? 100 : spacing.xl,
     },
     card: {
-      borderRadius: 16,
+      borderRadius: radii.lg,
       paddingVertical: spacing.xl,
       paddingHorizontal: spacing.md,
       justifyContent: 'center',

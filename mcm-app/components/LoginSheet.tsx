@@ -5,6 +5,7 @@ import SocialLoginSection from '@/components/SocialLoginSection';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -35,7 +36,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   } as ViewStyle,
   body: {
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 20,
   } as TextStyle,
 });

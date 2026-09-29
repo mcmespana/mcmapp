@@ -1,4 +1,5 @@
 import React from 'react';
+import { radii } from '@/constants/uiStyles';
 import {
   View,
   Text,
@@ -9,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import typography from '@/constants/typography';
 
 interface Props {
   error: string;
@@ -107,7 +109,7 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: radii.pillFull,
     backgroundColor: '#c0392b',
     alignItems: 'center',
     justifyContent: 'center',
@@ -121,7 +123,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 13,
+    ...typography.caption,
     color: '#aaa',
     textAlign: 'center',
     lineHeight: 19,
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   errorText: {
-    fontSize: 12,
+    ...typography.footnote,
     fontFamily: 'monospace',
     color: '#ff6b6b',
     lineHeight: 18,
@@ -150,13 +152,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   fixTitle: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '700',
     color: '#7ed321',
     marginBottom: 4,
   },
   fixStep: {
-    fontSize: 12,
+    ...typography.footnote,
     color: '#ccc',
     lineHeight: 18,
   },

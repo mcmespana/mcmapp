@@ -11,11 +11,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Card } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -46,20 +47,27 @@ import type { ReadingSelection } from '@/components/contigo/HighlightableReading
 
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { styles } from '@/components/contigo/evangelioStyles';
+import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
+import typography from '@/constants/typography';
+import EmptyState from '@/components/ui/EmptyState';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
 // ── Contigo warm palette (aligned with redesign tokens) ──
 const WARM = {
   light: {
-    accent: '#C4922A',
+    accent: WARM_LIGHT.accent,
+    /** El acento cuando pinta texto o hace de relleno con texto encima. */
+    accentText: WARM_LIGHT.accentText,
     accentSoft: '#FFF8E7',
-    surface: '#FAF6F0',
-    warmGray: '#7A6550',
+    surface: WARM_LIGHT.bg,
+    warmGray: WARM_LIGHT.textSec,
   },
   dark: {
-    accent: '#DAA520',
+    accent: WARM_DARK.accent,
+    accentText: WARM_DARK.accentText,
     accentSoft: '#2A2112',
-    surface: '#1A1712',
-    warmGray: '#A09A8A',
+    surface: WARM_DARK.bg,
+    warmGray: WARM_DARK.textSec,
   },
 };
 
@@ -76,6 +84,16 @@ const MONTHS = [
   'octubre',
   'noviembre',
   'diciembre',
+];
+
+/** Las dos vistas del evangelio del día. Fuera del componente: no cambian. */
+const EVANGELIO_VIEWS = [
+  { value: 'lectura' as const, label: 'Lectura', icon: 'menu-book' as const },
+  {
+    value: 'comentario' as const,
+    label: 'Comentario',
+    icon: 'lightbulb-outline' as const,
+  },
 ];
 
 function formatDateDisplay(dateStr: string) {
@@ -107,6 +125,7 @@ function addDays(dateStr: string, offset: number): string {
 }
 
 export default function EvangelioScreen() {
+  useSuppressCarismochito();
   // Subruta de Contigo: se registra con la clave del tab (gana el último
   // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
@@ -450,7 +469,7 @@ export default function EvangelioScreen() {
                     <Text
                       style={{
                         fontSize: 10,
-                        color: isDark ? '#A3BD31' : '#3A7D44',
+                        color: isDark ? colors.green : WARM_LIGHT.green,
                       }}
                     >
                       ✓
@@ -458,7 +477,7 @@ export default function EvangelioScreen() {
                     <Text
                       style={[
                         styles.statusChipText,
-                        { color: isDark ? '#A3BD31' : '#3A7D44' },
+                        { color: isDark ? colors.green : WARM_LIGHT.green },
                       ]}
                     >
                       Leído
@@ -527,21 +546,14 @@ export default function EvangelioScreen() {
             </View>
           ) : error || !readings?.evangelio ? (
             <View style={styles.stateContainer}>
-              <MaterialIcons name="cloud-off" size={48} color={warm.warmGray} />
-              <Text style={[styles.stateText, { color: warm.warmGray }]}>
-                No se encontraron lecturas para este día.
-              </Text>
-              <TouchableOpacity
-                onPress={() => setSelectedDate(todayStr)}
-                style={[
-                  styles.todayBtn,
-                  { backgroundColor: hexAlpha(warm.accent, '15') },
-                ]}
-              >
-                <Text style={[styles.todayBtnText, { color: warm.accent }]}>
-                  Volver a hoy
-                </Text>
-              </TouchableOpacity>
+              <EmptyState
+                icon="cloud-off"
+                title="No se encontraron lecturas para este día."
+                actionLabel="Volver a hoy"
+                onAction={() => setSelectedDate(todayStr)}
+                accentColor={warm.accent}
+                titleColor={warm.warmGray}
+              />
             </View>
           ) : (
             <View style={styles.mainContent}>
@@ -557,119 +569,20 @@ export default function EvangelioScreen() {
                   },
                 ]}
               >
-                {/* HeroUI Tabs — Lectura / Comentario */}
+                {/* Lectura / Comentario — `SegmentedControl` (Fase 2 de
+                    PLAN_UI_NATIVA §5). Antes eran 110 líneas de conmutador a
+                    mano: dos `TouchableOpacity` con el estado activo, el color
+                    del icono y el del texto repetidos en cuatro sitios. */}
                 {readings.evangelio.comentario ? (
                   <View>
-                    <View
-                      style={[
-                        styles.segmentedContainer,
-                        {
-                          backgroundColor: isDark
-                            ? 'rgba(255,255,255,0.06)'
-                            : 'rgba(0,0,0,0.04)',
-                        },
-                      ]}
-                    >
-                      <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={() => setViewMode('lectura')}
-                        style={[
-                          styles.segmentButton,
-                          viewMode === 'lectura' && [
-                            styles.segmentActive,
-                            {
-                              backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
-                              borderColor: isDark
-                                ? 'rgba(255,255,255,0.1)'
-                                : 'rgba(0,0,0,0.04)',
-                            },
-                          ],
-                        ]}
-                      >
-                        <MaterialIcons
-                          name="menu-book"
-                          size={16}
-                          color={
-                            viewMode === 'lectura'
-                              ? isDark
-                                ? '#DAA520'
-                                : '#B8860B'
-                              : isDark
-                                ? '#A09A94'
-                                : '#888888'
-                          }
-                        />
-                        <Text
-                          style={[
-                            styles.segmentText,
-                            {
-                              color:
-                                viewMode === 'lectura'
-                                  ? isDark
-                                    ? '#DAA520'
-                                    : '#B8860B'
-                                  : isDark
-                                    ? '#A09A94'
-                                    : '#888888',
-                              fontWeight:
-                                viewMode === 'lectura' ? '700' : '500',
-                            },
-                          ]}
-                        >
-                          Lectura
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={() => setViewMode('comentario')}
-                        style={[
-                          styles.segmentButton,
-                          viewMode === 'comentario' && [
-                            styles.segmentActive,
-                            {
-                              backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
-                              borderColor: isDark
-                                ? 'rgba(255,255,255,0.1)'
-                                : 'rgba(0,0,0,0.04)',
-                            },
-                          ],
-                        ]}
-                      >
-                        <MaterialIcons
-                          name="lightbulb-outline"
-                          size={16}
-                          color={
-                            viewMode === 'comentario'
-                              ? isDark
-                                ? '#DAA520'
-                                : '#B8860B'
-                              : isDark
-                                ? '#A09A94'
-                                : '#888888'
-                          }
-                        />
-                        <Text
-                          style={[
-                            styles.segmentText,
-                            {
-                              color:
-                                viewMode === 'comentario'
-                                  ? isDark
-                                    ? '#DAA520'
-                                    : '#B8860B'
-                                  : isDark
-                                    ? '#A09A94'
-                                    : '#888888',
-                              fontWeight:
-                                viewMode === 'comentario' ? '700' : '500',
-                            },
-                          ]}
-                        >
-                          Comentario
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                    <SegmentedControl
+                      options={EVANGELIO_VIEWS}
+                      value={viewMode}
+                      onChange={setViewMode}
+                      accentColor={warm.accentText}
+                      accessibilityLabel="Lectura o comentario"
+                      style={styles.segmentedContainer}
+                    />
 
                     <View style={styles.cardContent}>
                       {viewMode === 'lectura' ? (
@@ -682,7 +595,7 @@ export default function EvangelioScreen() {
                           >
                             <Text
                               style={{
-                                fontSize: 13,
+                                ...typography.caption,
                                 color: warm.accent,
                                 marginRight: 6,
                                 lineHeight: 16,
@@ -781,7 +694,7 @@ export default function EvangelioScreen() {
                     >
                       <Text
                         style={{
-                          fontSize: 13,
+                          ...typography.caption,
                           color: warm.accent,
                           marginRight: 6,
                           lineHeight: 16,
@@ -844,12 +757,12 @@ export default function EvangelioScreen() {
                         <MaterialIcons
                           name="check-circle"
                           size={22}
-                          color={isDark ? '#A3BD31' : '#3A7D44'}
+                          color={isDark ? colors.green : WARM_LIGHT.green}
                         />
                         <Text
                           style={[
                             styles.trackerText,
-                            { color: isDark ? '#A3BD31' : '#3A7D44' },
+                            { color: isDark ? colors.green : WARM_LIGHT.green },
                           ]}
                         >
                           ¡He rezado hoy con el Evangelio!
@@ -957,7 +870,7 @@ export default function EvangelioScreen() {
               >
                 <Text
                   style={{
-                    fontSize: 13,
+                    ...typography.caption,
                     color: warm.warmGray,
                     textDecorationLine: 'underline',
                   }}

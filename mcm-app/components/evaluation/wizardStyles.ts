@@ -1,4 +1,6 @@
 import { StyleSheet, ViewStyle } from 'react-native';
+import { radii } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 /**
  * Estilos del armazón del wizard de evaluación (topBar, barra de progreso,
@@ -31,7 +33,7 @@ export const createWizardStyles = (isDark: boolean) =>
     progressArea: { flex: 1, justifyContent: 'center' },
     progressTrack: {
       height: 6,
-      borderRadius: 3,
+      borderRadius: radii.pillFull,
       overflow: 'hidden',
       backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
     },
@@ -44,7 +46,7 @@ export const createWizardStyles = (isDark: boolean) =>
       paddingVertical: 24,
     },
     stepCount: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '800',
       letterSpacing: 1,
       marginBottom: 10,
@@ -57,6 +59,9 @@ export const createWizardStyles = (isDark: boolean) =>
       marginBottom: 24,
     },
     // Footer
+    // El CTA del pie ocupa todo el ancho, como el botón propio que tenía antes
+    // esta pantalla (ahora es `AppPrimaryButton`).
+    footerButton: { width: '100%' as const },
     footer: {
       paddingHorizontal: 24,
       paddingTop: 10,

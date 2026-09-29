@@ -5,6 +5,8 @@ import { Spinner } from 'heroui-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import type { SongStyleState } from '@/hooks/useSongProcessor';
+import { themeColors } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 
 interface SongDisplayProps {
   songHtml: string;
@@ -165,7 +167,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
             height: '100%',
             border: 'none',
             display: 'block',
-            backgroundColor: isDark ? '#2C2C2E' : '#fff',
+            backgroundColor: themeColors(isDark).background,
           }}
           title="Song content"
         />
@@ -182,7 +184,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
               styles.fullBleedContainer,
               // Mismo color que el bodyBg del HTML (useSongProcessor) → un único
               // fondo continuo bajo el header transparente.
-              { backgroundColor: isDark ? '#2C2C2E' : '#ffffff' },
+              { backgroundColor: themeColors(isDark).background },
             ]
           : [
               styles.cardContainer,
@@ -204,7 +206,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
         source={{ html: songHtml }}
         style={[
           styles.webView,
-          fullBleed && { backgroundColor: isDark ? '#2C2C2E' : '#ffffff' },
+          fullBleed && { backgroundColor: themeColors(isDark).background },
         ]}
         showsVerticalScrollIndicator={false}
         {...(useInset
@@ -250,12 +252,12 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
       },
       web: {
-        borderRadius: 16,
+        borderRadius: radii.lg,
         marginBottom: 8,
         boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
       },
       default: {
-        borderRadius: 16,
+        borderRadius: radii.lg,
         marginBottom: 8,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },

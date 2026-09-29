@@ -24,6 +24,7 @@ import { useAlbumPagination } from '@/hooks/useAlbumPagination';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { radii } from '@/constants/uiStyles';
 
 interface Album {
   id: string;
@@ -254,7 +255,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: theme.tint,
       paddingHorizontal: 24,
       paddingVertical: 12,
-      borderRadius: 8,
+      borderRadius: radii.sm,
     },
   });
 };

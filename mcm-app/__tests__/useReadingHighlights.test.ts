@@ -17,7 +17,10 @@ import type { DailyReadings } from '@/hooks/useDailyReadings';
 import type { StoredBookmark } from '@/utils/contigoBookmarks';
 
 const readings = {
-  evangelio: { texto: 'Amaos los unos a los otros.', comentario: 'Comenta esto.' },
+  evangelio: {
+    texto: 'Amaos los unos a los otros.',
+    comentario: 'Comenta esto.',
+  },
   lectura1: { texto: 'Primera lectura del día.' },
   salmo: { texto: 'Bendice alma mia.' },
   lectura2: { texto: 'Segunda lectura del día.' },
@@ -141,7 +144,9 @@ describe('useReadingHighlights', () => {
     const bookmark: StoredBookmark = {
       date: '2026-08-22',
       highlights: {
-        evangelio: [{ start: 0, end: 27, color: 'sun', text: readings.evangelio!.texto }],
+        evangelio: [
+          { start: 0, end: 27, color: 'sun', text: readings.evangelio!.texto },
+        ],
       },
     } as unknown as StoredBookmark;
     const { result } = await mount(bookmark, setHighlights);

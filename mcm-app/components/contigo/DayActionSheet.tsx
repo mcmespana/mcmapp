@@ -7,6 +7,7 @@ import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import type { DayRecord } from '@/hooks/useContigoHabits';
 import { formatDateLong, habitColor, warm, type HabitKey } from './theme';
+import { radii } from '@/constants/uiStyles';
 
 export type DayAction = 'evangelio' | 'oracion' | 'revision';
 
@@ -155,14 +156,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     paddingVertical: 12,
     paddingHorizontal: 14,
   },
   iconWrap: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },

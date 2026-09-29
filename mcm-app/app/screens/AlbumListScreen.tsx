@@ -18,6 +18,7 @@ import { useAlbumPagination } from '@/hooks/useAlbumPagination';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { Colors as ThemeColors, TabHeaderColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { radii } from '@/constants/uiStyles';
 
 interface Album {
   id: string;
@@ -157,6 +158,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
 });

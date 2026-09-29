@@ -7,6 +7,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
+import { onColor } from '@/utils/colorUtils';
 import {
   HIGHLIGHT_COLORS,
   HIGHLIGHT_COLOR_KEYS,
@@ -15,6 +16,9 @@ import {
 } from '@/utils/highlightRanges';
 import { h } from '@/utils/haptics';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import { WARM_DARK, warm } from '@/components/contigo/theme';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface HighlightActionBarProps {
   visible: boolean;
@@ -72,7 +76,7 @@ export function HighlightActionBar({
         barStyle,
         {
           bottom: tabBarClearance + 8,
-          backgroundColor: isDark ? '#26221C' : '#FFFFFF',
+          backgroundColor: isDark ? WARM_DARK.bgCard : '#FFFFFF',
           borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
           shadowColor: '#000',
         },
@@ -138,13 +142,13 @@ export function HighlightActionBar({
             <MaterialIcons
               name="format-color-reset"
               size={22}
-              color={isDark ? '#A09A8A' : '#7A6550'}
+              color={warm(isDark).textSec}
             />
           </TouchableOpacity>
         </View>
       ) : (
         <Text
-          style={[styles.hint, { color: isDark ? '#A09A8A' : '#7A6550' }]}
+          style={[styles.hint, { color: warm(isDark).textSec }]}
           numberOfLines={2}
         >
           Mantén pulsado y desliza para elegir inicio y fin
@@ -156,13 +160,17 @@ export function HighlightActionBar({
           h.tap();
           onDone();
         }}
-        style={[
-          styles.doneBtn,
-          { backgroundColor: isDark ? '#DAA520' : '#C4922A' },
-        ]}
+        style={[styles.doneBtn, { backgroundColor: warm(isDark).accent }]}
         accessibilityLabel="Terminar de subrayar"
       >
-        <Text style={styles.doneText}>Listo</Text>
+        {/* El color lo decide el contraste, no el modo: sobre el dorado de
+            Contigo el blanco daba 2,24:1. Mismo arreglo que §H4/§A6-bis de
+            PLAN_DISENO. */}
+        <Text
+          style={[styles.doneText, { color: onColor(warm(isDark).accent) }]}
+        >
+          Listo
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -182,7 +190,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     borderWidth: 1,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.18,
@@ -199,7 +207,7 @@ const styles = StyleSheet.create({
   swatch: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1,
   },
   divider: {
@@ -210,24 +218,23 @@ const styles = StyleSheet.create({
   eraseBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   hint: {
     flex: 1,
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '600',
     lineHeight: 16,
   },
   doneBtn: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
   },
   doneText: {
-    color: '#FFFFFF',
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '800',
   },
 });

@@ -8,17 +8,20 @@ import {
   Platform,
   PanResponder,
   TouchableOpacity,
-  useAnimatedValue,
   useWindowDimensions,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import useAnimatedValue from '@/hooks/useAnimatedValue';
 import BottomSheet from '@/components/BottomSheet';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
+import SegmentedControl, {
+  type SegmentedOption,
+} from '@/components/ui/SegmentedControl';
 import useSectionFontScale from '@/hooks/useSectionFontScale';
 import { warm } from '@/components/contigo/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -29,10 +32,10 @@ interface Props {
   previewText?: string;
 }
 
-const THEME_OPTIONS: { key: ThemeScheme; icon: string; label: string }[] = [
-  { key: 'light', icon: 'light-mode', label: 'Claro' },
-  { key: 'dark', icon: 'dark-mode', label: 'Oscuro' },
-  { key: 'system', icon: 'brightness-auto', label: 'Auto' },
+const THEME_OPTIONS: SegmentedOption<ThemeScheme>[] = [
+  { value: 'light', icon: 'light-mode', label: 'Claro' },
+  { value: 'dark', icon: 'dark-mode', label: 'Oscuro' },
+  { value: 'system', icon: 'brightness-auto', label: 'Auto' },
 ];
 
 const DEFAULT_PREVIEW =
@@ -279,48 +282,13 @@ export default function ReaderSettingsSheet({
         >
           APARIENCIA
         </Text>
-        <View style={[styles.themeSegment, { backgroundColor: segmentBg }]}>
-          {THEME_OPTIONS.map((opt) => {
-            const selected = settings.theme === opt.key;
-            return (
-              <TouchableOpacity
-                key={opt.key}
-                onPress={() => {
-                  h.select();
-                  setSettings({ theme: opt.key });
-                }}
-                style={[
-                  styles.themeOption,
-                  selected && {
-                    backgroundColor: W.accent,
-                    shadowColor: W.accent,
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 5,
-                    elevation: 3,
-                  },
-                ]}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                accessibilityLabel={`Tema ${opt.label}`}
-              >
-                <MaterialIcons
-                  name={opt.icon as never}
-                  size={17}
-                  color={selected ? '#fff' : W.textSec}
-                />
-                <Text
-                  style={[
-                    styles.themeOptionText,
-                    { color: selected ? '#fff' : W.textSec },
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <SegmentedControl
+          options={THEME_OPTIONS}
+          value={settings.theme}
+          onChange={(theme) => setSettings({ theme })}
+          accentColor={W.accent}
+          accessibilityLabel="Tema del lector"
+        />
       </ScrollView>
     </BottomSheet>
   );
@@ -345,7 +313,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sectionLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
@@ -357,7 +325,7 @@ const styles = StyleSheet.create({
   sizeBtn: {
     width: 46,
     height: 46,
-    borderRadius: 12,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -378,18 +346,18 @@ const styles = StyleSheet.create({
   track: {
     width: '100%',
     height: 6,
-    borderRadius: 3,
+    borderRadius: radii.pillFull,
     justifyContent: 'center',
   },
   trackFill: {
     height: 6,
-    borderRadius: 3,
+    borderRadius: radii.pillFull,
   },
   knob: {
     position: 'absolute',
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radii.pillFull,
     borderWidth: 2,
     marginLeft: -10,
     shadowColor: '#000',
@@ -399,26 +367,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   percentLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  themeSegment: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    padding: 4,
-    gap: 4,
-  },
-  themeOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 11,
-    borderRadius: 9,
-  },
-  themeOptionText: {
-    fontSize: 13,
+    ...typography.footnote,
     fontWeight: '700',
   },
 });

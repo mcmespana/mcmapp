@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { radii } from '@/constants/uiStyles';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   interpolate,
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: radii.pillFull,
   },
   starWrap: {
     position: 'absolute',

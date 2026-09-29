@@ -30,7 +30,13 @@ beforeEach(() => {
 describe('un solo día con una única opción disponible', () => {
   it('abre esa opción directamente, sin menú ni háptica', async () => {
     (getDayOptions as jest.Mock).mockReturnValue([
-      { key: 'evangelio', title: 'Evangelio', subtitle: '', icon: 'x', recorded: false },
+      {
+        key: 'evangelio',
+        title: 'Evangelio',
+        subtitle: '',
+        icon: 'x',
+        recorded: false,
+      },
     ]);
     const { result } = await renderHook(() => useContigoDayMenu());
     await act(async () => result.current.handleDayPress('2026-08-20', null));
@@ -47,10 +53,27 @@ describe('un solo día con una única opción disponible', () => {
 describe('varias opciones disponibles', () => {
   it('no navega directamente: da háptica y abre el submenú', async () => {
     (getDayOptions as jest.Mock).mockReturnValue([
-      { key: 'revision', title: 'Revisión', subtitle: '', icon: 'x', recorded: true },
-      { key: 'evangelio', title: 'Evangelio', subtitle: '', icon: 'x', recorded: true },
+      {
+        key: 'revision',
+        title: 'Revisión',
+        subtitle: '',
+        icon: 'x',
+        recorded: true,
+      },
+      {
+        key: 'evangelio',
+        title: 'Evangelio',
+        subtitle: '',
+        icon: 'x',
+        recorded: true,
+      },
     ]);
-    const rec = { date: '2026-08-20', readingDone: true, prayerDone: false, timestamp: 1 };
+    const rec = {
+      date: '2026-08-20',
+      readingDone: true,
+      prayerDone: false,
+      timestamp: 1,
+    };
     const { result } = await renderHook(() => useContigoDayMenu());
     await act(async () => result.current.handleDayPress('2026-08-20', rec));
 

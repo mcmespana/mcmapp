@@ -18,6 +18,745 @@
 
 ---
 
+## 2026-09-29 23:25 — Laboratorio: medallas en 3D
+
+- Nueva tarjeta **"Medallas en 3D"** en el Laboratorio Alpha, debajo de la
+  caza de Carismochitos. Es el primer paso del sistema de recompensas por ir a
+  eventos (medallas por usuario, colocadas en el pañuelo). Rejilla con
+  miniaturas; al tocar una se abre un pop-up a pantalla completa con la medalla
+  en 3D, que entra girando y se gira con el dedo (estilo premios de Fitness).
+- Medallas de prueba: Jubileo de los Jóvenes 2025 y visita del Papa 2026
+  ("Alza la mirada").
+- Visor: `<model-viewer>` (Google, v4.3.1 fijada) dentro de
+  `react-native-webview`, que ya estaba en el binario → **sin build nativo**.
+  En web va en un iframe. Necesita red.
+- Los `.glb` (~2 MB, comprimidos desde ~70 MB) viven en `medallas-3d/` de la
+  raíz y se sirven por jsDelivr desde `main`. Las miniaturas WebP van
+  empaquetadas en `assets/images/medallas/`.
+- Archivos: `components/medallas/` (`medalViewerHtml.ts`, `Medalla3DViewer`,
+  `Medalla3DModal`, `labMedals.ts`),
+  `components/preview-channel/MedallasLabPanel.tsx`,
+  `components/PreviewChannelModal.tsx`, `__tests__/medalViewerHtml.test.ts`.
+
+---
+
+## 2026-09-26 18:53 — Calendario: títulos con "\," y descripciones de alarma
+
+- **Bug 1.** Google escapa las comas y los punto y coma del `SUMMARY`
+  (`Retiro\, oración`) y el parser solo desescapaba `DESCRIPTION` y
+  `LOCATION`: el título salía con la barra invertida.
+- **Bug 2.** Las propiedades de un `VALARM` anidado se trataban como del
+  evento: la `DESCRIPTION:This is an event reminder` de la alarma pisaba la
+  descripción real (y un `SUMMARY` de alarma de correo, el título). Ahora se
+  ignora todo lo que va dentro de un subcomponente del `VEVENT`.
+- `utils/icsParser.ts` (compartido con la Cloud Function `cacheCalendarIcs`:
+  el nodo precacheado se corrige en el siguiente despliegue de functions).
+  Tests en `__tests__/icsParserFeed.test.ts`.
+
+## 2026-09-26 18:49 — El PDF de la playlist no transponía los acordes
+
+- **Bug.** Al exportar una playlist a PDF con una canción transpuesta, la
+  cabecera y el índice decían el tono nuevo (p. ej. "RE (orig. DO)") pero los
+  acordes del cuerpo salían en el tono original. `renderSongBody` anteponía una
+  directiva `{transpose: N}` al ChordPro, y `HtmlDivFormatter` de ChordSheetJS
+  no la aplica.
+- **Arreglo.** Se transpone con `Song.transpose()`, lo mismo que hace
+  `useSongProcessor` en pantalla. Las transposiciones negativas ahora bajan de
+  verdad (−2 desde DO da SIb, no LA#).
+- `utils/playlistPdfHtml.ts`, test nuevo en `__tests__/playlistPdfSongs.test.ts`.
+
+## 2026-09-26 18:42 — Caza de Carismochitos y su colección (escondida en el Laboratorio Alpha)
+
+- **Qué hay nuevo.** Con el modo Carismochito activo, el que se asoma por los
+  bordes se puede **atrapar tocándolo**: sale en 8 variantes (común → legendario,
+  con pieles de los colores de marca), suma a una **colección** y avisa con un
+  toast ("¡Nuevo! Carismochito dorado · Legendario" / "… llevas 5").
+- **Solo para pruebas, decisión del usuario.** Todo va detrás de un interruptor
+  nuevo en el **Laboratorio Alpha** (7 toques en la versión). Sin encenderlo, la
+  app se comporta igual que antes. La pantalla de la colección
+  (`app/carismochito.tsx`) no tiene enlace desde ningún otro sitio, y si se
+  entra por enlace directo sin el interruptor, redirige a Inicio. Desde el
+  laboratorio también se puede forzar una aparición y borrar la colección.
+- **Datos.** AsyncStorage siempre; con sesión, además
+  `users/{uid}/carismochitos/{variantId} = { count, firstAt }` (lo cubre la
+  regla de `users/$uid` que ya existía). Se fusiona por el **máximo**, no la
+  suma, para que abrir la app no duplique capturas.
+- **Para todos, no solo con la caza:** Carismochito ya no se asoma en pantallas
+  de lectura y presentación (evangelio, oración, canción a pantalla completa,
+  materiales y profundiza) — `hooks/useSuppressCarismochito.ts`, por foco.
+- En web el brillo de la asomada sigue la silueta (`drop-shadow`) en vez de
+  pintar un rectángulo.
+- Analítica: evento nuevo `carismochito_atrapado { rareza, nuevo }`.
+- Archivos: `utils/carismochitoCollection.ts` (puro), `contexts/CarismochitoHuntContext.tsx`,
+  `components/preview-channel/CarismochitoLabPanel.tsx`, `components/CarismochitoOverlay.tsx`,
+  `components/CarismochitoMascot.tsx` (prop `palette`), `constants/colors.ts`
+  (`CarismochitoPalettes`), `utils/authHelpers.ts`. Tests: 39 nuevos.
+
+## 2026-09-26 11:56 — Comunica pasa de `/aptest/` a `/ap/` (producción)
+
+- `COMUNICA_BASE_URL` (`utils/pendingComunicaLink.ts`) apuntaba todavía a la
+  ruta de pruebas del portal (`/aptest/`); pasa a `/ap/`, la ruta de
+  producción.
+- Actualizado el test que fija esa URL (`__tests__/comunicaDeepLink.test.ts`)
+  y el ejemplo de `docs/contratos/COMUNICA_WEBVIEW.md`.
+
+## 2026-09-19 01:10 — Un solo botón de CTA, y cae el umbral de brillo de la encuesta
+
+Cierra el `AppPrimaryButton` de `PLAN_UI_NATIVA` §5, con otra corrección del
+diagnóstico del plan.
+
+- **La evaluación no tenía "CTAs a mano": tenía su propio botón.**
+  `components/evaluation/WizardButton.tsx` era un duplicado de
+  `AppPrimaryButton` con `Pressable` + reanimated (la primitiva que §4 prohíbe
+  para código nuevo), texto `#fff` fijo y la flecha a la derecha. Sus cuatro
+  usos pasan al botón compartido —que gana `iconPosition` para la flecha de
+  "siguiente"— y el duplicado se borra.
+- **El texto del CTA ya no es `#fff` fijo**: lo decide el contraste. Se queda
+  en blanco mientras llegue al 3:1 que pide un texto de ese tamaño y peso sobre
+  el relleno (el azul de acción de iOS da 3,86:1, y el blanco es la convención),
+  y si no llega, lo elige `onColor`. Con `color` variable el blanco fijo era el
+  bug del §H4: sobre el amarillo del Vaticano da **1,25:1**.
+- **Cae un umbral de brillo a ojo.** La encuesta elegía su acento con
+  `getBrightness(tint) > 170` y, cuando saltaba, **cambiaba el color del evento
+  por el azul de marca**: el evento perdía su identidad en su propia encuesta.
+  Ahora es `readableOn`, que conserva el tono — el amarillo sigue siendo
+  amarillo, más oscuro. Quedan dos de esa familia (`SurveyBanner`,
+  `EventHomeScreen`) y NO se tocan de paso: ahí se elige un relleno, no una
+  tinta, y eso es una decisión de diseño. Anotados en `PLAN_DISENO`.
+- **`contrastRatio()` en `utils/colorUtils.ts`**: la razón de contraste WCAG,
+  que estaba calculada por dentro de `onColor`, de `readableOn` y a mano en
+  varios tests. Se saca para que quien tenga que decidir pueda preguntar el
+  número en vez de estimarlo con un umbral de brillo.
+- **SecretPanel y ExportPdfModal no tenían CTA que migrar**: su acción vive en
+  otra forma. Estaban en la lista del plan por inercia.
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (38 warnings),
+1.663 tests en verde, y el botón visto en pantalla en el modal de feedback.
+
+---
+
+## 2026-09-18 23:40 — Un chip canónico, y cinco de seis categorías que no se leían
+
+Cierra los chips de `PLAN_UI_NATIVA` §5 y el §H5 de `PLAN_DISENO`.
+
+- **`components/ui/AppChip.tsx` (nuevo)** — el chip informativo teñido, que
+  estaba escrito **cinco veces**: la categoría y el destino de una notificación
+  en la lista, en el detalle y en la campana de Inicio, siempre con la misma
+  receta (relleno al 12-14 % del color, borde al 60 %, texto en el color).
+- **El bug que escondía, que es el de verdad**: los seis colores de categoría
+  son UN valor usado como texto en los dos modos, y medidos daban `#9D1E74` a
+  **1,91:1** sobre el fondo oscuro, `#C62828` a 2,48, `#0E7490` a 2,60 y
+  `#8A6D00` a 2,83 — **cinco de seis ilegibles en oscuro**, y dos también en
+  claro. Es la familia del §H4 otra vez.
+- **`readableOn()` en `utils/colorUtils.ts` (nuevo)** — el mismo color, movido
+  hasta que se lee: conserva tono y saturación y solo toca la luminosidad. Es
+  la versión automática de lo que se hizo a mano con `accentText` para el
+  dorado de Contigo, y hacía falta porque el Panel puede mandar colores de
+  categoría nuevos que nadie ha medido: una tabla de pares a mano se queda
+  corta el día que añadan una. Con 8 tests propios y un trinquete en
+  `designTokens.test.ts` que recorre las seis categorías en los dos modos.
+- **Lo que NO se migra, y no es deuda** (el censo del plan contaba de más): el
+  chip de FILTRO del calendario es pulsable, tiene estado seleccionado y vive
+  en un solo sitio; el `TagChip` del cantoral ya es canónico para su función
+  (relleno sólido con emoji, contador y botón de quitar); y las insignias de
+  contador no son chips.
+
+Verificado en pantalla: la lista y el detalle de notificaciones con las seis
+categorías, en claro y en oscuro. tsc limpio (app y tests), 0 errores de lint
+(38 warnings), **1.662 tests** en verde.
+
+---
+
+## 2026-09-18 21:15 — Red de humo: 14 pantallas montadas de verdad, en 3 escenarios
+
+Lo que faltaba después de la semana pasada. El 2026-09-09 la app tenía dos
+pantallas que **petaban al montar en cualquier plataforma** con `tsc` limpio,
+el lint limpio y 1.600 tests en verde, y se encontraron abriendo la app a mano.
+Esto convierte ese paseo en un test.
+
+- **`__tests__/screenSmoke.test.tsx`** — monta 14 pantallas en tres escenarios
+  (**vacía**, **con datos**, **offline**) y exige que monten y pinten algo. No
+  comprueba que estén bien: comprueba que existen y arrancan, que es el suelo
+  por debajo del cual no se publica. 42 tests nuevos que tardan ~1 s.
+- **Comprobado que caza lo que dice cazar**: retirando `@gorhom/bottom-sheet`
+  de `node_modules`, Reflexiones se pone roja en los tres escenarios. El bug que
+  llegó a `main` habría sido un test en rojo.
+- **`components/AppProviders.tsx` (nuevo)** — la torre de providers sale de
+  `app/_layout.tsx` a su propio componente. No es cosmético: el test monta las
+  pantallas DENTRO de los providers de verdad (varios de estos fallos solo
+  aparecen con el árbol real puesto), y teniéndolo en un sitio, añadir un
+  provider lo mete en la app y en el test a la vez. Si se copia otra vez en el
+  layout, el test empieza a mentir el día que cambie el orden.
+- **`jest.setup.js` (nuevo)** — mocks de los módulos NATIVOS para toda la
+  suite: `expo-alternate-app-icons`, `expo-haptics`, `expo-notifications`,
+  `expo-web-browser`, `expo-apple-authentication`, `expo-sensors`, el módulo
+  local de subrayado, Aptabase y Sentry. Un módulo de Expo con parte nativa
+  llama a `requireNativeModule()` al cargarse y mata la suite en el `import`,
+  aunque el test no lo use. Estaban descubriéndose uno a uno en cada intento:
+  ese era el muro que hacía que "añadir un test de pantalla" pareciera caro.
+- **`__mocks__/firebase-auth.ts` (nuevo)**, mapeado en `jest.config.js` como
+  ya lo estaban `firebase/app` y `firebase/database`: el paquete real es ESM y
+  cualquier test que monte `AuthProvider` moría con «Unexpected token
+  'export'». Estaba resuelto a mano y suelto en `authContext.test.tsx`.
+
+Con esto, el "no hay ni un test que renderice una pantalla" del §Mantenimiento
+de `TODO.md` deja de ser verdad, y el siguiente test de render no tiene que
+volver a pelearse con la infraestructura.
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (38 warnings),
+**1.653 tests** en verde.
+
+---
+
+## 2026-09-10 22:30 — Un solo conmutador para toda la app (UI Nativa, Fase 2)
+
+Cierra el `SegmentedControl` de `PLAN_UI_NATIVA` §5, y de paso saca el mismo bug
+de contraste de dos sitios más.
+
+- **Cuatro conmutadores, un componente.** `SegmentedControl` (que solo usaba el
+  calendario) se adopta en **Lectura/Comentario** del Evangelio —eran 114 líneas
+  a mano, con el estado activo, el color del icono y el del texto repetidos en
+  cuatro sitios—, en **Tema** de los ajustes de la app y en **Tema** del lector
+  de Contigo. Los tres pasan a compartir forma, háptica y accesibilidad
+  (`accessibilityRole="tab"`), cada uno con su acento: celeste de marca, azul y
+  el dorado de Contigo.
+- **El componente compartido traía dentro el bug del §H4.** Pintaba la etiqueta
+  activa de `#FFFFFF` fijo, fuera cual fuese `accentColor`: con el celeste de
+  marca —que es el DEFECTO, el del Mes/Agenda del calendario— daba **2,64:1**, y
+  con el dorado de Contigo 2,80:1. La inactiva era un `#8E8E93` a mano: 2,60:1
+  sobre la pista clara. Arreglado ANTES de extenderlo, que era la parte
+  importante: la tinta la decide `onColor()` (contraste real) y la inactiva sale
+  de `textSecondary`. Con test que lo fija para todos los acentos de la casa.
+- **Y el mismo fallo en el botón "Listo"** de la barra de subrayado de Contigo:
+  blanco sobre el dorado, 2,24:1. Ahora también por `onColor()`.
+- **Lo que NO se migra, y no es deuda**: `SongFullscreen`. El censo del plan lo
+  contaba como conmutador, pero son botones redondos numerados (velocidad de
+  auto-scroll) en el panel translúcido del modo inmersivo. Otros dos de la lista
+  (`EventDetailsBottomSheet`, `SelectedSongsScreen`) eran falsos positivos del
+  grep: ahí `segment` es parseo de texto.
+- **`jest.config.js`: `heroui-native` y `uniwind` pasan por Babel.** Se
+  publican como ESM sin transpilar, así que cualquier suite que renderice un
+  componente que use heroui —aunque sea de rebote, como este
+  `SegmentedControl`— moría con «Unexpected token 'export'». Es el mismo muro
+  que se encontraría cualquier test de render de los que pide
+  `docs/desarrollo/COBERTURA.md`, así que queda desbloqueado para todos.
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (**38** warnings, uno
+menos que antes), 1.611 tests en verde, y los cuatro conmutadores fotografiados
+en claro y oscuro.
+
+---
+
+## 2026-09-10 03:40 — Radios que no eran radios, el corte del onboarding y las fechas en español
+
+Sigue el cierre de `PLAN_DISENO`: §E5 (a medias), §F5 (hecho) y un fallo de
+copia que se vio en pantalla.
+
+- **53 radios a `radii.pillFull`** (§E5). No eran radios: en todos ellos el
+  número era exactamente **la mitad del lado** del elemento (`width: 38,
+borderRadius: 19`; `height: 4, borderRadius: 2`), o sea "hazlo redondo"
+  escrito a mano. `pillFull` (999) pinta idéntico —React Native recorta el
+  radio a la mitad de la dimensión— y además no se rompe si el elemento cambia
+  de tamaño, que es lo que sí pasaba con el número fijo. Verificado comparando
+  las 20 capturas **al píxel** antes y después: idénticas.
+  Los topes del trinquete bajan de 17 a 6 (`app/`) y de 95 a 54
+  (`components/`). Quedan 60, que son los difíciles: valores que no son la
+  mitad de nada y hay que decidirlos uno a uno.
+- **El onboarding cambiaba de layout antes que el resto de la app** (§F5).
+  Tenía dos `screenW >= 640` escritos a mano, y el corte del hook que usan las
+  demás pantallas (`useResponsiveLayout`, `breakpoints.md`) es **720**: el
+  onboarding se creía "ancho" 80 px antes. Ahora usa el hook.
+- **Las fechas en español no llevan mayúscula en cada palabra.**
+  `textTransform: 'capitalize'` de RN capitaliza TODAS las palabras, así que el
+  detalle de una notificación decía «Jueves, 10 De Septiembre De 2026 A Las
+  14:32», y el Evangelio del día «Jueves, 10 De Septiembre». Pasaba en cuatro
+  sitios (notificaciones, `NotificationDetail`, Evangelio, Oración y Visitas).
+  Nuevo `utils/textCase.ts` con `capitalizeFirst` y sus tests; el
+  `textTransform` se queda solo donde el texto es UNA palabra (el mes del
+  selector de fechas, el día de la semana de una cabecera), que es el único
+  caso en que acierta.
+
+Archivos: `utils/textCase.ts` (nuevo), `__tests__/textCase.test.ts` (nuevo),
+`app/onboarding.tsx`, `app/notifications.tsx`,
+`components/notifications/NotificationDetail.tsx`,
+`app/screens/VisitasScreen.tsx`, `components/contigo/evangelioStyles.ts`,
+`components/contigo/oracionStyles.ts`, más 20 ficheros de estilos por los
+radios y `__tests__/noNewMagicNumbers.test.ts` (topes).
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (39 warnings, los
+mismos), 1.610 tests en verde.
+
+---
+
+## 2026-09-10 02:05 — Cierre de la cola de diseño, y tres bugs que solo salen ejecutando la app
+
+Al verificar el §H9 de `PLAN_DISENO` (las cinco pantallas que cambiaron de
+aspecto, en claro y oscuro) **renderizando la app de verdad** —Chromium sobre
+`expo start --web`, con datos de cantoral inyectados en la caché local— salieron
+tres fallos que ninguna revisión de código había visto. El diseño está bien; lo
+que estaba roto era otra cosa.
+
+**Diseño (cierra `PLAN_DISENO` §H10/H12 y §A3):**
+
+- **Borrado el token `textStrong`.** Era "el texto que destaca" y contrastaba
+  MENOS que el cuerpo en los dos modos: en claro `#1C1C1E` contra el `#11181C`
+  de `text`, en oscuro `#F5F5F7` contra `#FFFFFF`. Un 1% de luminancia en la
+  dirección contraria a su nombre. Sus 43 usos pasan a `text`, que contrasta un
+  pelín más; los títulos se distinguen por tamaño y peso, como en iOS. Un token
+  menos, ningún caso nuevo.
+- **Un solo dorado para Contigo, y uno que se lee.** Había tres (`#B8860B` en la
+  raya de la pestaña, `#C4922A` en la paleta de la sección, `#B8860B` otra vez a
+  mano en `ReadingCard` y en cuatro sitios de `evangelio.tsx`). Pero el problema
+  gordo no era la incoherencia: el acento **pintaba texto** —el kicker
+  "EVANGELIO DEL DÍA", la cita, el CTA, el día de hoy del calendario— a
+  **2,60:1** sobre su propio fondo, por debajo del 4,5:1 mínimo y hasta del 3:1
+  de los elementos no textuales. Es el mismo fallo que el azul de marca en
+  oscuro (§H4): un color de marca vale como relleno, no como primer plano. Nace
+  `accentText` (`#876208`: mismo tono y saturación, menos luminosidad → 5,16:1
+  sobre `bg`, 5,55 sobre `bgCard`, 4,64 sobre `bgDeep`) y los rellenos se quedan
+  con `accent`. La raya de la pestaña ya es el dorado de la sección.
+- Dos trinquetes nuevos en `__tests__/designTokens.test.ts`: el contraste de
+  `accentText` sobre las tres superficies cálidas, y que la raya de la pestaña
+  siga siendo el mismo dorado que la sección.
+- Corregido un typo visible en Contigo: "¿Cuándo empeazmos?" → "empezamos".
+
+**Bugs encontrados al ejecutar (los tres, de verdad):**
+
+- **`useAnimatedValue` no existe en `react-native-web`.** RN lo exporta desde la
+  0.71 y la app lo adoptó en agosto para quitar los `useRef(new
+Animated.Value())` que marca el compilador de React — pero
+  `react-native-web@0.21.2` no lo trae, así que en web el import valía
+  `undefined` y **petaba todo `BottomSheet`**, y con él cualquier hoja de la app
+  en web, más `TransposeBottomSheet`, `ReaderSettingsSheet`,
+  `CarismochitoDialogs` y `OTAUpdatePrompt`. Sustituido por
+  `hooks/useAnimatedValue.ts` (inicializador perezoso de `useState`, mismo
+  contrato, funciona en las dos plataformas) + candado en
+  `__tests__/animatedValueWebSafety.test.ts`. Ni los tests ni `tsc` lo veían:
+  `jest-expo` resuelve el preset nativo y los tipos de RN sí declaran el hook.
+- **Faltaba la peer dependency `@gorhom/bottom-sheet`.** `heroui-native` la
+  declara "opcional", pero su `BottomSheet.Content` hace
+  `withUniwind(paquete?.default)` sin comprobar nada: sin el paquete es
+  `undefined` y **la pantalla entera revienta al montar** (ErrorBoundary), en
+  cualquier plataforma, no solo en web. Afectaba a **Notificaciones** y a
+  **Reflexiones**, las dos únicas que usan ese sheet. Se ve que la dependencia
+  se perdió en algún `npm install` (los comentarios del código dicen que ese
+  sheet funcionó y se afinó a mano). Instalada `@gorhom/bottom-sheet@^5.2.14`,
+  que es **solo JS** (usa reanimated + gesture-handler, ya presentes).
+- **Una canción sin `filename` tumbaba su categoría completa.** `filename` es
+  opcional en `SongEntry`, y de los tres sitios de `SongListScreen` que lo leen
+  para ordenar, uno usaba `?.` y los otros dos no: la lista entera se caía con
+  "Error al cargar las canciones, lo sentimos :(". Guardados los tres.
+- **`stripCategoryPrefix`** (`utils/songUtils.ts`, con tests): el regex que
+  quitaba el prefijo de ordenación de las categorías (`"C. Entrada"` →
+  `"Entrada"`) hacía el punto OPCIONAL, así que una categoría **sin** prefijo
+  perdía su primera letra ("Adoración" → "doración"). Hoy no salta porque todas
+  las reales traen su "X. ", pero basta con crear una desde el panel sin él.
+
+Verificado: `tsc` limpio (app y tests), 0 errores de lint (39 warnings, los
+mismos), **1.604 tests** en verde (9 nuevos), y las 8 pantallas renderizadas en
+claro y oscuro sin un solo ErrorBoundary.
+
+Lo que la web NO puede verificar y sigue pendiente de dispositivo: el glass de
+iOS 26, la barra nativa de pestañas y el tinte de las cabeceras nativas (§A6-quater).
+
+---
+
+## 2026-09-10 00:20 — El CI estaba desactivado a mano: resucitado, y el scraper a la mitad de runs
+
+**La causa del "el CI no ejecuta nada desde abril" (§0 de `TODO.md`) era mucho
+más tonta de lo que buscábamos:** el workflow `ci.yml` estaba en estado
+`disabled_manually` desde el 2026-05-25 — alguien le dio a "Disable workflow"
+en la pestaña Actions. Con ese estado GitHub **no crea el run**: no sale en
+rojo, no sale en gris, no sale. Por eso cada PR parecía "clean" al mergear y
+por eso los 4 errores de tipos de la #334 llegaron a `main` sin que saltara
+nada. No era la cuenta sin minutos ni un ajuste de organización: el repo es
+**público**, así que los runners estándar son gratis y no tocan la cuota de la
+cuenta.
+
+- **`.github/workflows/pr.yml` (nuevo)** — el mismo guardarraíl (llama a
+  `verify.yml`, que sigue siendo la única fuente de verdad de los 4 pasos) en
+  una **ruta nueva**. Es la parte importante: el estado "desactivado" va pegado
+  a la ruta del workflow, no a su contenido, así que en una ruta nueva nace
+  activo y no depende de que nadie entre en la web a reactivarlo. Afinado para
+  no gastar de más: solo en `pull_request`, `paths-ignore` de documentación y
+  portadas (muchas PRs de este repo son solo `.md`), y `concurrency` con
+  `cancel-in-progress` para que al empujar un commit nuevo a una PR se cancele
+  el run anterior.
+- **`.github/workflows/ci.yml` borrado** (era el desactivado) y
+  **`.github/workflows/disabled/` borrada** — tres archivos con `on: {}` que no
+  ejecutaban nada y que confundían a cualquiera que buscara "el CI".
+- **`verify.yml`: `timeout-minutes: 20`** — los 4 pasos tardan ~4 min; sin
+  timeout un job colgado ocupa un runner las **6 horas** que GitHub da por
+  defecto.
+- **Scraper de lecturas: de dos disparos diarios a uno.** Tenía dos crons (uno
+  para CET y otro para CEST, porque GitHub no entiende el cambio de hora) y un
+  job previo `check-time` que descartaba el sobrante. Resultado: dos runs al
+  día, uno siempre tirado a la basura, más un runner extra en el bueno. Con un
+  solo cron a las 00:10 UTC —01:10 en invierno, 02:10 en verano, las dos
+  después de la 1:00, que era lo único que se pedía— sobra el job entero. El
+  scraper ya resuelve por su cuenta qué día es en Europe/Madrid.
+
+Neto de Actions: **se gasta menos que antes** aun con el CI encendido.
+
+Archivos: `.github/workflows/pr.yml` (nuevo), `.github/workflows/ci.yml` y
+`.github/workflows/disabled/` (borrados), `.github/workflows/verify.yml`,
+`.github/workflows/scraper-lecturas.yml`, `mcm-app/TODO.md`,
+`docs/planes/BACKLOG.md`.
+
+---
+
+## 2026-09-03 19:30 — Un solo criterio para "qué texto va sobre este fondo", y el resto de la cola de diseño
+
+Cierre de PLAN_DISENO: §A6-bis, §E4, §G1.4, §H2-bis.
+
+**`onColor()`** (`utils/colorUtils.ts`). La pregunta "¿qué color de texto va
+sobre este fondo?" estaba resuelta **cinco veces con cinco umbrales de brillo
+puestos a ojo** —150, 160, 170, 175 y 200— y tres parejas distintas de
+blanco/negro. Ahora se decide por **razón de contraste real**: se calcula
+contra los dos candidatos y gana el que más contrasta. Sin umbral que afinar.
+
+De paso sale un dato que ningún umbral acertaba: **sobre el rojo MIC gana el
+texto oscuro** (4,79:1); el blanco se queda en 3,55:1. Con tests que comprueban
+que sobre todos los colores de marca y litúrgicos el resultado llega a 4,5:1.
+
+**`EmptyState` compacto** (§H2-bis). Los vacíos de `ChoirSheet` se habían
+escrito a mano porque el padding de 48 px del componente desbordaba la hoja.
+Ahora hay una prop `compact` y los dos usan el componente. `ShareQrModal` no se
+migra: no es un vacío, es un aviso con su botón al lado.
+
+**`borderRadius: 100` → `radii.pillFull`** (§E4, 12 usos). Siempre significaba
+"hazlo redondo" y funcionaba de chiripa: RN recorta el radio a la mitad de la
+dimensión. `pillFull` pinta igual y deja de depender de que el elemento siga
+siendo pequeño.
+
+**Panel** (§G1.4): la "Vista previa móvil" del compositor de notificaciones
+pintaba el icono de la app y los chips de acción con el cian del panel — el
+admin veía una notificación que no se parecía a la que iba a recibir la gente.
+Ahora salen del espejo de tokens de marca.
+
+Topes de los trinquetes bajados: hex 231→218 y 409→406, radios 107→95.
+
+---
+
+## 2026-09-03 01:55 — Arreglado: en modo oscuro, Notificaciones tenía los controles invisibles
+
+PLAN_DISENO §H4. Esto empezó como una mejora anotada ("los colores de marca no
+tienen variante oscura") y al medirlo resultó ser un **bug de verdad**.
+
+Sobre el fondo oscuro (`#2C2C2E`), el azul de marca `#253883` da **1,31:1**. No
+es "poco contraste": es invisible. Y ese azul se usaba como color de iconos,
+bordes y etiquetas de botón en **toda la pantalla de Notificaciones**, que sí
+cambia de fondo con el tema. En modo oscuro, el botón de "marcar como leída",
+los chips de destino, los botones de acción y los de "Ir a…" estaban ahí sin
+verse.
+
+- Arreglado en `notifications.tsx`, `NotificationListItem`, `NotificationDetail`
+  y `notificationsStyles` usando `themeColors(isDark).link`: el mismo azul de
+  marca en claro, y `#7AB3FF` en oscuro.
+- **No hizo falta ninguna paleta nueva.** El rol ya existía; solo que se
+  llamaba `link` y nadie lo asociaba con iconos y botones. Ahora está
+  documentado como lo que es: el `tintColor` de iOS, que en el sistema cubre
+  enlaces, iconos de acción y etiquetas de botón con un único color.
+- Los rellenos (`backgroundColor: colors.primary` con texto blanco encima) se
+  quedan: ahí el azul de marca está bien en los dos modos.
+
+La regla queda escrita en `design.md` §3, con la tabla de qué color de marca
+sirve de primer plano en cada fondo: en oscuro valen `secondary` (8,5),
+`yellow` (9,5), `green` (6,6) e `info` (5,3), y NO valen `text` (1,1),
+`primary` (1,3) ni `purple` (1,9).
+
+**El barrido del resto encontró tres sitios más con el mismo bug** (§H4-bis):
+el título de `ErrorBoundary` —la pantalla de error, ilegible justo cuando más
+falta hace leerla—, el spinner de `SurveyScreen`, y el icono y el texto de
+"Marcar todo" de `NotificationsBottomSheet`. Más `FormattedContent`, donde la
+clase `color-primary` del contenido en BBCode la elige **quien escribe desde el
+panel**, así que no podía quedarse fija.
+
+`SongControls` no era un bug: ya tenía el par a mano (`#253883`/`#7AB3FF`), que
+es exactamente `link`; tokenizado. Y `GruposScreen` tampoco: ahí el azul es un
+relleno de tarjeta con texto blanco encima, y como relleno está bien.
+
+---
+
+## 2026-09-03 01:25 — EmptyState cumple por fin su contrato, y el foco de los botones
+
+PLAN_DISENO §H2, §H1-bis y §A2-bis.
+
+**`EmptyState` no era agnóstico de paleta**, que es justo lo que `design.md` §2
+exige a todo lo que vive en `components/ui/`. Lo era a medias: `accentColor`
+tocaba el icono y el CTA, pero el título y el subtítulo se cogían del tema
+institucional — o sea que en Contigo salían grises fríos sobre fondo crema. Por
+eso los dos vacíos de Contigo llevaban meses "pendientes de verificar" en el
+plan: no era que hubiera que verlos, es que el componente no servía ahí.
+
+- Añadidos `titleColor` y `subtitleColor`. Por defecto hacen lo de antes, así
+  que los 11 sitios que ya usaban el componente no cambian.
+- Migrados los dos que lo esperaban: **Contigo → marcadores** ("Sin guardados
+  aún") y **Contigo → evangelio** ("No se encontraron lecturas para este día",
+  con su botón de "Volver a hoy"). Los dos con la paleta cálida.
+
+**Foco de teclado** (web y teclado externo):
+
+- `AppPrimaryButton` no tenía ningún indicador. Ahora lleva un borde permanente
+  en transparente que solo cambia de color al enfocar, así el botón no se
+  mueve. Usa el color de su texto, que siempre contrasta con su propio fondo.
+- **Revertido en `AppTextField`**: el engorde a 2 px que había puesto
+  desplazaba el campo 1 px justo al empezar a escribir, y el salto se nota más
+  que la mejora. Su foco sigue siendo el cambio de color de todo el borde.
+
+**Los dos amarillos, documentados**: `brand.yellow` (#FCD200) es el de MARCA
+—estrellas de valoración, categorías, tab de la Visita del Papa— y
+`UIColors.accentYellow` (#f4c11e) el del CANTORAL —su tab, su FAB y el
+destacado ámbar—. Están a cuatro puntos y hacen cosas distintas.
+
+---
+
+## 2026-09-03 01:00 — Los pesos tipográficos, ajustados a lo que la app hace
+
+PLAN_DISENO §C4. Segunda vez que el token resulta ser el raro y no el código.
+
+La escala de pesos que había escrito —500 para acciones, 600 para secciones— me
+la había inventado yo. Contando: a 15 px la app usa 600 o 700 en **53 sitios**
+y 500 en **3**. Lo mismo con 17 y 18 px, que van a 700. Y había una
+incoherencia de escalera: `h2` (22 px) a 800 pesaba más que `h1` (28 px) a 700,
+o sea peso subiendo al bajar de tamaño.
+
+- Pesos del token ajustados: `h2` y `h3` a 700, `button` a 600. La escalera
+  queda `h0 800 · h1/h2/h3 700 · title/button/overline 600 · resto normal`,
+  bajando con el tamaño y sin superar nunca al nivel de arriba.
+- Con eso, 45 sitios más pasan a token **sin cambiar de aspecto**: de 321
+  `fontSize` a mano a **276**.
+- `design.md` §4 y el inventario corregidos.
+
+**Cambian de peso 5 sitios**, los que heredaban del token sin declarar el suyo:
+`ComidaScreen` (label de acción), `ScreenHero` en modo compacto, el `subtitle`
+de `ThemedText` y la cabecera de notificaciones. De 600 a 700 y de 500 a 600 —
+en la dirección de lo que ya hace el resto de la app.
+
+Los 276 que quedan son tamaños fuera de escala (26, 20, 30, 9, 48…) o
+combinaciones con un peso que no es el del token: ahí ya no hay regla general
+que aplicar (§C6).
+
+---
+
+## 2026-09-03 00:35 — El texto tenue del cantoral ahora se lee, y tres decisiones cerradas
+
+**Corrijo un diagnóstico mío de la entrada anterior**: dije que tres pares
+claro/oscuro estaban "del revés" porque el hex de modo oscuro era más oscuro
+que el de modo claro. Eso no significa nada — cada color se mide contra SU
+fondo. Medidos bien estaban deliberadamente igualados (placeholder 2,92 en
+claro y 2,84 en oscuro; leyenda 2,16 y 2,67). No había ningún ternario
+intercambiado.
+
+Lo que sí era verdad, aunque no por el motivo que yo daba: **esos valores están
+por debajo del mínimo legible** (4,5:1), y es el buscador y la leyenda del
+cantoral, la pantalla más usada de la app.
+
+- `Colors.light.textMuted` sube de `#8E8E93` a `#6E6E73`, el primer gris de la
+  escala que pasa: 4,54:1 sobre el gris de los campos y 5,07 sobre blanco. En
+  oscuro `#8E8E93` ya pasaba y se queda. 10 sitios migrados al token.
+- `designTokens.test.ts` gana **tests de contraste** de todos los roles de
+  texto contra las superficies donde se pintan de verdad, y `design.md` §5 un
+  aviso para que nadie repita mi error de comparar los dos hex entre sí.
+- `UIColors`: `activePrimary`/`secondaryText` no eran "el azul activo" y "el
+  gris secundario" de la UI — están en el HTML que genera `useSongProcessor`,
+  pintando los acordes. Renombrados a `chordBlue` y `chordSecondaryText`.
+  Cuatro claves más no las usaba nadie: borradas.
+- `design.md` §5 recoge la **regla del radio anidado** (el interior es el
+  exterior menos el hueco), que es por qué `SegmentedControl` lleva un 10 con
+  `padding: 2` y por qué eso no es deuda.
+
+**Tres decisiones cerradas, para que no se vuelvan a proponer:**
+
+- **Anchuras máximas / layout de iPad: no se tocan.** Decisión del usuario.
+- **Capas de superficie en modo oscuro: no.** Dar color propio a las cards
+  (`#3A3A3C`) dejaría el texto terciario encima en 3,48:1. Lo de ahora —plano
+  con hairline— se lee. Queda un test que avisa si alguien lo intenta.
+- **`borderRadius: 10`: no es deuda, es geometría.** Es la regla del radio
+  anidado; ahora está escrita.
+
+---
+
+## 2026-09-03 00:05 — Segunda tanda de colores, y un posible bug de contraste anotado
+
+PLAN_DISENO §A5.4 y §A5.5.
+
+- El **destacado ámbar** (la canción o playlist marcada) pasa a `HighlightColors`:
+  27 literales en `PlaylistRow`, `SongListItem`, `TransposeBottomSheet`,
+  `SongFontBottomSheet` y `TagChip`. Unificada de paso la deriva que tenían
+  entre ellos (`#3A2800` en uno, `#3A2D0A` en otro, para el mismo papel).
+- **Aquí se acaba el barrido mecánico** (§A5.5). Lo que queda son hex cuyo VALOR
+  coincide con un token pero cuyo PAPEL no: el mismo `#1C1C1E` es un gris de
+  superficie en un sitio y "texto casi negro" en otro. Cambiarlo por un token
+  mal nombrado es peor que dejarlo, porque el nombre pasa a mentir — que es lo
+  que este plan vino a arreglar. A partir de aquí hay que abrir el fichero.
+
+**Hallazgo pendiente de mirar en dispositivo (§H11)**: tres pares claro/oscuro
+parecen estar del revés — el color de modo oscuro es más oscuro que el de modo
+claro. Afecta al placeholder de búsqueda del cantoral y a texto tenue de
+`PlaylistRow`, `SongListItem` y `CommandPalette`, con contraste por debajo de
+3:1 en ambos modos. Puede ser un tenue deliberado o un ternario intercambiado al
+copiar; no se ha tocado nada.
+
+---
+
+## 2026-09-02 23:45 — Los radios a mano bajan de 300 a 122
+
+PLAN_DISENO §E2. Complementa el colapso de la escala de radios del commit
+anterior.
+
+- 114 sustituciones **byte-idénticas** (4, 8, 12, 16, 20, 28 y 999 ya coincidían
+  con la escala).
+- 64 de los valores que la escala colapsó (14, 18, 22), migrados **a propósito**:
+  dejarlos a mano creaba el peor de los mundos, la misma card con 14 px si el
+  fichero hardcodeaba y 16 si usaba el token. Son 2 px.
+- `__tests__/noNewMagicNumbers.test.ts` suma el tercer trinquete: colores,
+  tamaños de letra y ahora radios.
+
+Los 122 que quedan son valores que no están en la escala (10 con 23 usos, y
+luego 3, 6, 100, 5, 2, 13, 26…): unos son decorativos de un sitio concreto y
+otros son un escalón inventado. Hay que mirarlos uno a uno (§E3).
+
+---
+
+## 2026-09-02 23:25 — La escala tipográfica ahora cubre los tamaños que la app usa
+
+PLAN_DISENO §C. `constants/typography.ts` existía desde siempre y **solo lo
+importaban 6 ficheros**, con 666 `fontSize` escritos a mano por toda la app.
+
+La causa no era desidia: la escala declaraba siete tamaños (10/13/15/16/22/28/34)
+y los cinco más usados del repo —12 con 100 usos, 14 con 71, 11 con 71, 17 con
+22 y 18 con 25— **no estaban**. Un token que no cubre tu caso no se usa, se
+rodea.
+
+- Escala ampliada con los nombres de iOS, que es de donde vienen los tamaños:
+  `h3` 18, `title` 17, `subhead` 14, `footnote` 12, `micro` 11.
+- Un token solo trae `fontWeight` cuando el rol lo implica, para poder
+  sobrescribirlo sin sorpresas.
+- Migrados 345 `fontSize`: **de 666 a 321**, y de 6 ficheros importando el token
+  a 96. Solo se tocaron los tokens sin peso propio (byte-equivalentes); los que
+  llevan peso, únicamente donde el peso declarado ya coincidía.
+- La escala de pesos queda escrita en `design.md` §4: 800 en `h0`, kickers y
+  badges · 700 en títulos de card · 600 en secciones · 500 en acciones · normal
+  en cuerpo.
+- `__tests__/noNewMagicNumbers.test.ts` (antes `noNewHardcodedColors`) suma un
+  trinquete de `fontSize` al que ya tenía de colores.
+
+Los 321 que quedan llevan un `fontWeight` al lado que no coincide con el del
+token: hay que mirarlos uno a uno y decidir si el sitio se equivoca de peso o si
+el token no le vale. Es revisión, no trabajo mecánico (§C4).
+
+- **Archivos**: `constants/typography.ts`, `__tests__/noNewMagicNumbers.test.ts`
+  y 85 ficheros de `app/` y `components/`.
+
+---
+
+## 2026-09-02 22:55 — Unificación de tokens de diseño: los nombres ya no mienten
+
+Primera pasada de [`docs/planes/PLAN_DISENO.md`](../docs/planes/PLAN_DISENO.md).
+Sin cambios de comportamiento; los cambios visuales son tres, pequeños y
+deliberados, y están listados abajo para verificarlos en dispositivo.
+
+- **Colores de marca**: `brand` pasa a ser una paleta **cromática**
+  (`success`→`green`, `warning`→`yellow`, `danger`→`purple`). El código dictó el
+  alcance: el verde pintaba la pantalla de Reflexiones y el amarillo las
+  estrellas de valoración — no eran estados. `accent` se queda, porque sí se usa
+  como acento. El estado sigue en `ToastColors` y `SwipeColors`.
+- **Roles de color que faltaban**: `textStrong`, `textSecondary`, `textMuted`,
+  `link`, `backgroundSunken` y `separator` en `Colors.light`/`Colors.dark`, con
+  `themeColors(isDark)` para resolverlos (mismo patrón que `warm(isDark)` de
+  Contigo). Más `SystemGray`, `HighlightColors`, `CarismoColors` y
+  `LiturgicalColors` (los colores del tiempo litúrgico, que estaban escritos a
+  mano dentro de `LiturgicalBadge`).
+- **De 1.363 hex literales a 793**: 202 ternarios `isDark ? '#X' : '#Y'` a
+  roles, 126 literales a su token de siempre, 50 de la paleta cálida de Contigo.
+- **Sombras** renombradas por función (`card`/`raised`/`hero`/`overlay`): con
+  nombres de talla el orden mentía, `lg` (0.3) era más marcada que `xl` (0.18).
+- **Radios** colapsados de nueve escalones a siete, en la rejilla de 4 px.
+- **Responsive**: había **dos** hooks con umbrales distintos y el que
+  documentaba `DESIGN.md` tenía cero usos; borrado. `useResponsiveLayout` es el
+  único, y sus cortes salen ya de `constants/breakpoints.ts`.
+- **Foco**: nuevo `focusRing` y aplicado en `AppTextField` — el foco no puede
+  distinguirse solo por color.
+- **Panel** (repo `mcmpanel`): `src/lib/brandTokens.ts`, espejo de
+  `constants/colors.ts`, para que lo que representa datos de la app se pinte con
+  los colores de la app. Y el panel queda declarado oscuro-only.
+- **Guardarraíl**: `__tests__/designTokens.test.ts` comprueba que `global.css` no
+  se desincroniza de `constants/colors.ts`, que ningún token de marca se llame
+  como un estado, y que las escalas siguen siendo monótonas.
+
+**Pendiente de ver en un dispositivo** (`PLAN_DISENO` §H9): la sombra de toasts
+y FABs (0.30 → 0.22), los radios (`lg` 14→16, destacadas 18→20, hero 22→20) y el
+gris de texto secundario, unificado en el par con más contraste de los dos que
+había.
+
+- **Archivos**: `constants/colors.ts`, `constants/uiStyles.ts`,
+  `constants/breakpoints.ts`, `global.css`, `hooks/useResponsiveLayout.ts`
+  (borrado `hooks/useResponsive.ts`), `__tests__/designTokens.test.ts` y ~95
+  ficheros de `app/` y `components/`.
+
+---
+
+## 2026-09-02 22:20 — `design.md`: guía de diseño prescriptiva para agentes (+ plan de unificación)
+
+- **Qué es**: nuevo [`design.md`](../design.md) en la raíz del monorepo,
+  inspirado en el `design.md` público de Vercel. No es un catálogo: es el
+  **criterio** con el que un agente construye interfaz — qué se prioriza cuando
+  dos requisitos chocan, los tres territorios visuales (institucional, Contigo,
+  evento) y qué se comparte entre ellos, la API de componentes que ya existen,
+  los antipatrones que no se envían y la checklist previa a dar una pantalla
+  por buena.
+- **Reparto de papeles**: `design.md` = reglas (prescriptivo) ·
+  `docs/desarrollo/DESIGN.md` = inventario de valores (descriptivo) ·
+  `mcm-app/constants/*.ts` = fuente de verdad. Anotado en la cabecera de ambos
+  documentos para que no vuelvan a divergir sin que se note.
+- **`mcmpanel/design.md`** (repo `mcmpanel`): el panel mantiene su estética
+  oscura tipo consola, pero queda por escrito lo que sí comparte con la app —
+  pintar con los colores reales de MCM lo que representa datos de la app,
+  espejar catálogos en vez de reinventarlos, vocabulario común y la forma de los
+  datos por encima de la estética.
+- **`docs/planes/PLAN_DISENO.md`** (nuevo): las incoherencias reales detectadas
+  con evidencia (entre otras: `accent`/`danger` significan cosas distintas en la
+  capa RN y en la capa CSS; 1.363 hex hardcodeados, casi todos grises de sistema
+  que no existen como token; los nombres de `shadows` no siguen el orden de
+  intensidad) más las mejoras propuestas, cada una con destino decidido y
+  ejecutable en un commit. Registrado en `BACKLOG.md` §2.G y en
+  `docs/planes/README.md`.
+- **Archivos**: `design.md`, `docs/planes/PLAN_DISENO.md`,
+  `docs/desarrollo/DESIGN.md`, `docs/README.md`, `docs/planes/README.md`,
+  `docs/planes/BACKLOG.md`, `CLAUDE.md`, `mcm-app/AGENTS.md`. Sin cambios de
+  código.
+
+---
+
+---
+
+## 2026-09-01 20:30 — Enlaces de canción: Spotify, partituras de Drive y otras webs
+
+- **Qué**: soporte de los tres campos nuevos del cantoral (`spotifyLinks`,
+  `driveLinks`, `otherLinks`), que se pintan en una sección **Enlaces** de la
+  hoja de multimedia. Antes solo existían vídeos y audios, así que un enlace de
+  Spotify o una partitura no tenían dónde ir.
+- **La distinción que importa**: `spotifyLinks` es el único que SALE de la app
+  (con Spotify no hay embed posible: abre su app y el usuario vuelve a mano).
+  `driveLinks` y `otherLinks` se abren a **pantalla completa dentro** de la app,
+  en un visor nuevo. Un enlace de Drive en `audioLinks` sigue sonando en el
+  reproductor flotante: el tipo lo decide el campo, no la URL — no hay
+  auto-detección por dominio.
+- **Visor** (`SongLinkViewer`): `Modal` a pantalla completa con WebView (iframe
+  en web). Drive se carga por `/preview` (el `/view` de compartir no se deja
+  embeber) y al abrirlo fuera va la URL original, que es la que captura la app
+  de Drive. Si el embed falla, ofrece abrirlo fuera en vez de dejar la pantalla
+  en blanco. No usa el reproductor flotante a propósito: una partitura se lee
+  mientras se toca, y el PiP está pensado para lo contrario.
+- **Archivos**: `types/songMedia.ts`, `components/song-media/SongLinkViewer.tsx`
+  (nuevo), `components/song-media/SongMediaSheet.tsx`,
+  `app/screens/SongDetailScreen.tsx`, `components/SongListItem.tsx` (indicador
+  🔗 en la fila), `app/screens/SongListScreen.tsx`,
+  `__tests__/songLinks.test.tsx` (nuevo).
+- **Docs**: `docs/funcionalidades/ENLACES_CANCION.md`. Contrato de los campos:
+  `docs/CAMPOS_CANCIONES.md` §3.1 del repo `mcmapp-cantoral`.
+
 ## 2026-08-30 13:49 — Los ajustes de lectura del evangelio se quedaban sin scroll (y sin control de tamaño)
 
 - **El problema**: en "Ajustes de lectura" (Contigo → evangelio) el contenido
@@ -2938,7 +3677,7 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
   > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  >      Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`

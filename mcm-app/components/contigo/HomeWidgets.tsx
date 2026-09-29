@@ -11,6 +11,8 @@ import {
   habitColor,
   warm,
   weekdayLetter,
+  WARM_DARK,
+  WARM_LIGHT,
 } from './theme';
 import type { DayRecord } from '@/hooks/useContigoHabits';
 import { styles } from '@/components/contigo/homeWidgetsStyles';
@@ -40,11 +42,11 @@ export function ProgressRing({
   const cy = size / 2;
   const color =
     done === total && total > 0
-      ? '#6DBF7E'
+      ? WARM_DARK.green
       : done >= 2
         ? '#F97316'
         : done === 1
-          ? '#FB923C'
+          ? WARM_DARK.fire
           : 'rgba(255,255,255,0.22)';
   const trackColor = 'rgba(255,255,255,0.10)';
 
@@ -88,7 +90,7 @@ export function HeroCard({
   isDark: boolean;
 }) {
   const motivs = [
-    '¿Cuándo empeazmos?',
+    '¿Cuándo empezamos?',
     '¿Buscamos un ratito más?',
     '¡Casi un día completo!',
     '¡Día completo! 🎉',
@@ -218,7 +220,7 @@ export function HabitTile({
           styles.tileClip,
           styles.tileWrapEmpty,
           {
-            backgroundColor: isDark ? '#26221C' : '#FFFFFF',
+            backgroundColor: isDark ? WARM_DARK.bgCard : '#FFFFFF',
             borderColor: accent + '40',
           },
         ]}
@@ -258,12 +260,12 @@ export function EvangelioTeaserCard({
             borderColor: isDark
               ? 'rgba(218,165,32,0.15)'
               : 'rgba(196,146,42,0.18)',
-            backgroundColor: isDark ? '#26221C' : '#FFFDF7',
+            backgroundColor: isDark ? WARM_DARK.bgCard : '#FFFDF7',
           },
         ]}
       >
         <LinearGradient
-          colors={['#E8A838', '#C4922A', '#9A6A1A']}
+          colors={['#E8A838', WARM_LIGHT.accent, '#9A6A1A']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.teaserBar}
@@ -271,7 +273,7 @@ export function EvangelioTeaserCard({
         <View style={styles.teaserBody}>
           <View style={styles.teaserHeaderRow}>
             <View style={{ flex: 1, marginRight: 10 }}>
-              <Text style={[styles.teaserKicker, { color: W.accent }]}>
+              <Text style={[styles.teaserKicker, { color: W.accentText }]}>
                 EVANGELIO DEL DÍA
               </Text>
               <Text
@@ -292,7 +294,7 @@ export function EvangelioTeaserCard({
                   },
                 ]}
               >
-                <Text style={[styles.teaserCitaText, { color: W.accent }]}>
+                <Text style={[styles.teaserCitaText, { color: W.accentText }]}>
                   {cita}
                 </Text>
               </View>
@@ -339,7 +341,7 @@ export function EvangelioTeaserCard({
                 },
               ]}
             >
-              <Text style={[styles.teaserCtaText, { color: W.accent }]}>
+              <Text style={[styles.teaserCtaText, { color: W.accentText }]}>
                 Leer evangelio →
               </Text>
             </TouchableOpacity>
@@ -432,7 +434,7 @@ export function WeekStrip({
               <Text
                 style={[
                   styles.weekHdr,
-                  { color: isToday ? W.accent : W.textMuted },
+                  { color: isToday ? W.accentText : W.textMuted },
                 ]}
               >
                 {weekdayLetter(ds)}
@@ -455,7 +457,7 @@ export function WeekStrip({
                 style={[
                   styles.weekDay,
                   {
-                    color: isToday ? W.accent : W.textMuted,
+                    color: isToday ? W.accentText : W.textMuted,
                     fontWeight: isToday ? '800' : '400',
                   },
                 ]}
@@ -674,7 +676,7 @@ export function MonthHeatmap({
                   styles.heatmapDay,
                   {
                     color: isToday
-                      ? W.accent
+                      ? W.accentText
                       : rd || pd || rv
                         ? W.text
                         : W.textMuted,

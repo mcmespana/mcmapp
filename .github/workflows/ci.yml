@@ -1,9 +1,0 @@
-name: CI
-
-on:
-  pull_request:
-    branches: [main, production, preview]
-
-jobs:
-  ci:
-    uses: ./.github/workflows/verify.yml

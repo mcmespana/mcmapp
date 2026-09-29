@@ -14,6 +14,9 @@ import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
+import SegmentedControl, {
+  type SegmentedOption,
+} from '@/components/ui/SegmentedControl';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -27,20 +30,17 @@ import SocialLoginSection from '@/components/SocialLoginSection';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
 }
 
-const THEME_OPTIONS: {
-  key: ThemeScheme;
-  icon: string;
-  label: string;
-}[] = [
-  { key: 'light', icon: 'light-mode', label: 'Claro' },
-  { key: 'dark', icon: 'dark-mode', label: 'Oscuro' },
-  { key: 'system', icon: 'brightness-auto', label: 'Auto' },
+const THEME_OPTIONS: SegmentedOption<ThemeScheme>[] = [
+  { value: 'light', icon: 'light-mode', label: 'Claro' },
+  { value: 'dark', icon: 'dark-mode', label: 'Oscuro' },
+  { value: 'system', icon: 'brightness-auto', label: 'Auto' },
 ];
 
 export default function SettingsBottomSheet({ visible, onClose }: Props) {
@@ -333,48 +333,13 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                     Tema
                   </Text>
                 </View>
-                <View
-                  style={[styles.themeSegment, { backgroundColor: segmentBg }]}
-                >
-                  {THEME_OPTIONS.map((opt) => {
-                    const isSelected = settings.theme === opt.key;
-                    return (
-                      <PressableFeedback
-                        key={opt.key}
-                        style={[
-                          styles.themeOption,
-                          isSelected && {
-                            backgroundColor: colors.primary,
-                            shadowColor: colors.primary,
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.35,
-                            shadowRadius: 4,
-                            elevation: 3,
-                          },
-                        ]}
-                        onPress={() => setSettings({ theme: opt.key })}
-                        accessibilityLabel={`Tema ${opt.label}`}
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected: isSelected }}
-                      >
-                        <PressableFeedback.Highlight />
-                        <MaterialIcons
-                          name={opt.icon as any}
-                          size={17}
-                          color={isSelected ? '#fff' : theme.icon}
-                        />
-                        <Text
-                          style={[
-                            styles.themeOptionText,
-                            { color: isSelected ? '#fff' : theme.icon },
-                          ]}
-                        >
-                          {opt.label}
-                        </Text>
-                      </PressableFeedback>
-                    );
-                  })}
-                </View>
+                <SegmentedControl
+                  options={THEME_OPTIONS}
+                  value={settings.theme}
+                  onChange={(theme) => setSettings({ theme })}
+                  accentColor={accentColor}
+                  accessibilityLabel="Tema de la app"
+                />
               </View>
 
               {/* Font size */}
@@ -524,12 +489,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   } as ViewStyle,
   backLabel: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '500',
   } as TextStyle,
 
   sectionLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.8,
     marginBottom: spacing.sm,
@@ -553,41 +518,15 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   } as ViewStyle,
   surfaceLabel: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   } as TextStyle,
   surfaceHint: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 2,
     opacity: 0.75,
   } as TextStyle,
 
-  themeSegment: {
-    flexDirection: 'row',
-    borderRadius: 10,
-    padding: 3,
-    gap: 3,
-  } as ViewStyle,
-  themeOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 8,
-    borderRadius: radii.sm,
-  } as ViewStyle,
-  themeOptionText: {
-    fontSize: 12,
-    fontWeight: '700',
-  } as TextStyle,
-
-  fontRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  } as ViewStyle,
   fontBtn: {
     width: 44,
     height: 44,
@@ -595,11 +534,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   } as ViewStyle,
+  fontRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  } as ViewStyle,
+
   fontValue: {
     flex: 1,
     textAlign: 'center',
     fontWeight: '700',
-    fontSize: 16,
+    ...typography.body,
   } as TextStyle,
 
   optionRow: {
@@ -627,7 +573,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   } as TextStyle,
   optionDesc: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 2,
     opacity: 0.8,
     lineHeight: 16,

@@ -90,7 +90,9 @@ describe('cuando el perfil ya está listo', () => {
     expect(initAnalytics).toHaveBeenCalledTimes(1);
     expect(trackEvent).toHaveBeenCalledWith('app_abierta');
     expect(
-      (trackEvent as jest.Mock).mock.calls.filter((c) => c[0] === 'app_abierta'),
+      (trackEvent as jest.Mock).mock.calls.filter(
+        (c) => c[0] === 'app_abierta',
+      ),
     ).toHaveLength(1);
   });
 

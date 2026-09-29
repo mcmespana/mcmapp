@@ -16,9 +16,9 @@ import {
   StyleSheet,
   Dimensions,
   Keyboard,
-  useAnimatedValue,
   useWindowDimensions,
 } from 'react-native';
+import useAnimatedValue from '@/hooks/useAnimatedValue';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UIColors, Colors } from '@/constants/colors';
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radii.pillFull,
   },
   headerContainer: {
     height: 48,

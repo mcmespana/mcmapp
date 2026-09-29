@@ -19,6 +19,9 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 import { usePreviewChannel } from '@/contexts/PreviewChannelContext';
+import { useCarismochitoHunt } from '@/contexts/CarismochitoHuntContext';
+import { useSecretTap } from '@/hooks/useSecretTap';
+import { PressableFeedback } from 'heroui-native';
 import { AnimatedGradients } from '@/components/preview-channel/AnimatedGradients';
 import { FloatingParticle } from '@/components/preview-channel/FloatingParticle';
 import { ConfettiBurst } from '@/components/preview-channel/ConfettiBurst';
@@ -29,6 +32,10 @@ import {
   WobblingTitle,
 } from '@/components/preview-channel/LabDecorations';
 import { LabStatusPanel } from '@/components/preview-channel/LabStatusPanel';
+import { CarismochitoLabPanel } from '@/components/preview-channel/CarismochitoLabPanel';
+import { MedallasLabPanel } from '@/components/preview-channel/MedallasLabPanel';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /**
  * Modal "Laboratorio Alpha" — UI deliberadamente exagerada, festiva y opuesta
@@ -54,6 +61,10 @@ export function PreviewChannelModal() {
     restart,
   } = usePreviewChannel();
   const busy = status.kind === 'switching';
+  const { huntEnabled } = useCarismochitoHunt();
+  const [carismoRevealed, setCarismoRevealed] = useState(false);
+  const revealCarismo = useCallback(() => setCarismoRevealed(true), []);
+  const titleTap = useSecretTap(revealCarismo, { tapsRequired: 5 });
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const phase = useSharedValue(0);
@@ -143,7 +154,14 @@ export function PreviewChannelModal() {
           {/* Header */}
           <View style={styles.headerBlock}>
             <Sparkles />
-            <WobblingTitle>🧪 LABORATORIO ALPHA 🧪</WobblingTitle>
+            {/* 5 toques en el título destapan la caza de Carismochitos (ver
+                abajo). Sin feedback visual a propósito: no se tiene que notar. */}
+            <PressableFeedback
+              onPress={titleTap.onPress}
+              accessibilityRole="header"
+            >
+              <WobblingTitle>🧪 LABORATORIO ALPHA 🧪</WobblingTitle>
+            </PressableFeedback>
             <Text style={styles.subtitle}>
               Has descubierto el portal a las novedades del futuro
             </Text>
@@ -167,6 +185,17 @@ export function PreviewChannelModal() {
             diagnostics={diagnostics}
             onRestart={restart}
           />
+
+          {/* Caza de Carismochitos: su única puerta de entrada, y escondida
+              también aquí dentro. Quien abre el laboratorio (los probadores)
+              no la ve hasta tocar 5 veces el título; una vez encendida, sale
+              siempre para quien la encendió. Decisión del usuario: que no se
+              note que se está preparando. */}
+          {huntEnabled || carismoRevealed ? <CarismochitoLabPanel /> : null}
+
+          {/* Medallas en 3D: primer paso del sistema de recompensas por ir a
+              eventos. Visible para cualquiera que abra el laboratorio. */}
+          <MedallasLabPanel />
 
           {/* Pergamino: el pacto */}
           <View style={styles.scrollCard}>
@@ -246,7 +275,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: 'rgba(255,255,255,0.95)',
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
     textAlign: 'center',
     paddingHorizontal: 30,
@@ -255,7 +284,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     color: 'rgba(255,255,255,0.75)',
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -268,7 +297,7 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingVertical: 18,
     paddingHorizontal: 18,
-    borderRadius: 28,
+    borderRadius: radii.full,
     backgroundColor: 'rgba(255,255,255,0.10)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.30)',
@@ -287,7 +316,7 @@ const styles = StyleSheet.create({
   },
   statusEyebrow: {
     color: 'rgba(255,255,255,0.85)',
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -308,7 +337,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 460,
     padding: 22,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     backgroundColor: 'rgba(255, 248, 220, 0.94)',
     borderWidth: 2,
     borderColor: 'rgba(120, 80, 30, 0.45)',
@@ -334,7 +363,7 @@ const styles = StyleSheet.create({
   },
   scrollBody: {
     color: '#3D2A0E',
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 21,
   },
   scrollMono: {
@@ -349,7 +378,7 @@ const styles = StyleSheet.create({
   },
   scrollFootnote: {
     color: 'rgba(61, 42, 14, 0.75)',
-    fontSize: 12,
+    ...typography.footnote,
     fontStyle: 'italic',
     marginTop: 4,
     lineHeight: 17,
@@ -367,7 +396,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '800',
     letterSpacing: 1.4,
     textTransform: 'uppercase',

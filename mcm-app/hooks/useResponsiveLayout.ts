@@ -1,13 +1,14 @@
 import { useWindowDimensions } from 'react-native';
+import { breakpoints } from '@/constants/breakpoints';
 
 /**
  * Tamaño efectivo de pantalla, agnóstico de plataforma.
  *
- * Breakpoints alineados con tablets/iPad y web:
- * - `xs`  → móvil portrait (< 480)
- * - `sm`  → móvil grande o tablet pequeño portrait (< 720)
- * - `md`  → iPad portrait (< 1024)
- * - `lg`  → iPad landscape / desktop (>= 1024)
+ * Los cortes salen de `constants/breakpoints.ts`, que es la fuente única:
+ * - `xs`  → móvil vertical (< sm)
+ * - `sm`  → móvil grande o tablet pequeño vertical (< md)
+ * - `md`  → tablet vertical (< lg)
+ * - `lg`  → tablet horizontal / escritorio (>= lg)
  */
 export type ResponsiveSize = 'xs' | 'sm' | 'md' | 'lg';
 
@@ -15,9 +16,9 @@ export interface ResponsiveLayout {
   width: number;
   height: number;
   size: ResponsiveSize;
-  /** >= 720 px — empieza a tener sentido layout de tablet */
+  /** >= `breakpoints.md` — empieza a tener sentido layout de tablet */
   isWide: boolean;
-  /** >= 1024 px — iPad landscape / desktop */
+  /** >= `breakpoints.lg` — tablet horizontal / escritorio */
   isExtraWide: boolean;
   /** True si la orientación actual es horizontal. */
   isLandscape: boolean;
@@ -43,12 +44,12 @@ export function useResponsiveLayout(): ResponsiveLayout {
   const isLandscape = width > height;
 
   let size: ResponsiveSize = 'xs';
-  if (width >= 1024) size = 'lg';
-  else if (width >= 720) size = 'md';
-  else if (width >= 480) size = 'sm';
+  if (width >= breakpoints.lg) size = 'lg';
+  else if (width >= breakpoints.md) size = 'md';
+  else if (width >= breakpoints.sm) size = 'sm';
 
-  const isWide = width >= 720;
-  const isExtraWide = width >= 1024;
+  const isWide = width >= breakpoints.md;
+  const isExtraWide = width >= breakpoints.lg;
 
   const gridColumns = isExtraWide ? 3 : isWide ? 2 : 1;
   const readableMaxWidth = isExtraWide ? 760 : isWide ? 640 : width;
