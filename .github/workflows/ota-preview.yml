@@ -56,7 +56,16 @@ jobs:
 
   publish-preview:
     needs: [guard-native, verify]
-    if: needs.guard-native.outputs.skip != 'true'
+    # Con `force`, guard-native se SALTA, y un job cuyo `needs` se ha saltado
+    # se salta también salvo que su `if` lleve una función de estado. Sin el
+    # `!cancelled()` de aquí, `force` no publicaba nunca (2026-09-29: el run
+    # salía en verde con este job en "skipped"). Publica si el guard se saltó
+    # a propósito o si pasó sin pedir skip; nunca si falló.
+    if: >-
+      ${{ !cancelled() && needs.verify.result == 'success' &&
+      (needs.guard-native.result == 'skipped' ||
+      (needs.guard-native.result == 'success' &&
+      needs.guard-native.outputs.skip != 'true')) }}
     runs-on: ubuntu-latest
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }} # yamllint disable-line

@@ -18,6 +18,17 @@
 
 ---
 
+## 2026-09-29 23:40 — OTA: la opción `force` del workflow no publicaba nunca
+
+- Con `force`, `guard-native` se salta, y GitHub salta también todo job que lo
+  tenga en `needs` salvo que su `if` lleve una función de estado. El run
+  salía en verde con `publish-*` en "skipped" y no llegaba nada a los móviles.
+- `publish-preview` y `publish-prod` ahora llevan `!cancelled()` y publican si
+  el guard se saltó a propósito o pasó sin pedir skip; nunca si falló.
+- `.github/workflows/ota-preview.yml`, `.github/workflows/ota-production.yml`.
+
+---
+
 ## 2026-09-29 23:25 — Laboratorio: medallas en 3D
 
 - Nueva tarjeta **"Medallas en 3D"** en el Laboratorio Alpha, debajo de la
