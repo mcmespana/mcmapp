@@ -9,6 +9,23 @@
 > cuando el usuario la cuente. Cuando la explique, se reescribe este plan
 > partiendo de lo que diga, no de esta propuesta.
 
+> ### Lo que ha contado el usuario (2026-09-29)
+>
+> - Un **sistema de recompensas por ir a eventos**, dentro de la app y **por
+>   usuario**. Hay que poder **repartirlas** de alguna forma (sin decidir cómo:
+>   QR/código en el evento o asignación desde el Panel siguen abiertos).
+> - Son **medallas** (chapas metálicas esmaltadas modeladas en 3D). La idea es
+>   que se **coloquen en el pañuelo** y que al tocar una salga un **pop-up
+>   donde se ve en 3D**. Referencia: los premios de la app Fitness de Apple.
+> - Primer paso ya hecho: la prueba **"Medallas en 3D" del Laboratorio Alpha**
+>   (`components/preview-channel/MedallasLabPanel.tsx`), con las medallas del
+>   Jubileo de los Jóvenes 2025 y de la visita del Papa 2026 ("Alza la
+>   mirada"). Visor: `<model-viewer>` en WebView — **OTA, sin build nativo**,
+>   así que lo que dice abajo §4 v2 ("las dos son nativas") ya no aplica al
+>   pop-up. Modelos y cómo prepararlos: `medallas-3d/README.md`.
+> - Lo que sigue **pendiente de que el usuario lo explique**: cómo se reparten,
+>   cómo es el pañuelo (dibujo 2D con huecos, 3D…) y dónde vive en la app.
+
 ## 1. Qué es, en una frase
 
 Una **pantalla de perfil** —"Tu pañuelo"— donde cada persona ve lo que ha ido

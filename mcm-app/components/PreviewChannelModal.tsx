@@ -33,6 +33,7 @@ import {
 } from '@/components/preview-channel/LabDecorations';
 import { LabStatusPanel } from '@/components/preview-channel/LabStatusPanel';
 import { CarismochitoLabPanel } from '@/components/preview-channel/CarismochitoLabPanel';
+import { MedallasLabPanel } from '@/components/preview-channel/MedallasLabPanel';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 
@@ -191,6 +192,10 @@ export function PreviewChannelModal() {
               siempre para quien la encendió. Decisión del usuario: que no se
               note que se está preparando. */}
           {huntEnabled || carismoRevealed ? <CarismochitoLabPanel /> : null}
+
+          {/* Medallas en 3D: primer paso del sistema de recompensas por ir a
+              eventos. Visible para cualquiera que abra el laboratorio. */}
+          <MedallasLabPanel />
 
           {/* Pergamino: el pacto */}
           <View style={styles.scrollCard}>

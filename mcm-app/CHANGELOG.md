@@ -18,6 +18,28 @@
 
 ---
 
+## 2026-09-29 23:25 — Laboratorio: medallas en 3D
+
+- Nueva tarjeta **"Medallas en 3D"** en el Laboratorio Alpha, debajo de la
+  caza de Carismochitos. Es el primer paso del sistema de recompensas por ir a
+  eventos (medallas por usuario, colocadas en el pañuelo). Rejilla con
+  miniaturas; al tocar una se abre un pop-up a pantalla completa con la medalla
+  en 3D, que entra girando y se gira con el dedo (estilo premios de Fitness).
+- Medallas de prueba: Jubileo de los Jóvenes 2025 y visita del Papa 2026
+  ("Alza la mirada").
+- Visor: `<model-viewer>` (Google, v4.3.1 fijada) dentro de
+  `react-native-webview`, que ya estaba en el binario → **sin build nativo**.
+  En web va en un iframe. Necesita red.
+- Los `.glb` (~2 MB, comprimidos desde ~70 MB) viven en `medallas-3d/` de la
+  raíz y se sirven por jsDelivr desde `main`. Las miniaturas WebP van
+  empaquetadas en `assets/images/medallas/`.
+- Archivos: `components/medallas/` (`medalViewerHtml.ts`, `Medalla3DViewer`,
+  `Medalla3DModal`, `labMedals.ts`),
+  `components/preview-channel/MedallasLabPanel.tsx`,
+  `components/PreviewChannelModal.tsx`, `__tests__/medalViewerHtml.test.ts`.
+
+---
+
 ## 2026-09-26 18:53 — Calendario: títulos con "\," y descripciones de alarma
 
 - **Bug 1.** Google escapa las comas y los punto y coma del `SUMMARY`
