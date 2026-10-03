@@ -57,6 +57,8 @@ interface SongListItemProps {
   selectedTranspose: number;
   onAddSong: (filename: string) => void;
   onRemoveSong: (filename: string) => void;
+  /** Última fila de un grupo con esquinas: el separador sobra. */
+  hideSeparator?: boolean;
 }
 
 const SongListItem: React.FC<SongListItemProps> = React.memo(
@@ -69,6 +71,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     selectedTranspose,
     onAddSong,
     onRemoveSong,
+    hideSeparator = false,
   }) {
     const { settings } = useSettings();
     const { notation } = settings;
@@ -192,7 +195,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         <Animated.View style={[styles.songItemOuter, animatedStyle]}>
           <TouchableOpacity
             onPress={() => onPress(song)}
-            style={styles.songItemInner}
+            style={[styles.songItemInner, hideSeparator && styles.noSeparator]}
             activeOpacity={0.6}
             {...contextMenuProps}
           >
@@ -216,7 +219,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                           {`${song.originalCategoryKey}${song.numericFilenamePart}`}
                         </Text>
                       </View>
-                      {song.author && (
+                      {!!song.author && (
                         <Text
                           style={styles.authorText}
                           numberOfLines={1}
@@ -228,7 +231,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                     </View>
                   ) : (
                     <View style={styles.metaPills}>
-                      {song.numericFilenamePart && (
+                      {!!song.numericFilenamePart && (
                         <Text style={styles.numberText}>
                           #{song.numericFilenamePart}
                         </Text>
@@ -236,7 +239,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                       {song.numericFilenamePart && song.author ? (
                         <Text style={styles.metaSeparator}>{' - '}</Text>
                       ) : null}
-                      {song.author && (
+                      {!!song.author && (
                         <Text
                           style={styles.authorText}
                           numberOfLines={1}
@@ -330,6 +333,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingHorizontal: 20,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+    },
+    noSeparator: {
+      borderBottomWidth: 0,
     },
     leftSection: {
       flex: 1,

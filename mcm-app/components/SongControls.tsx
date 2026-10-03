@@ -18,6 +18,8 @@ import GlassSurface from '@/components/ui/GlassSurface';
 import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
+import { transposeLabel } from '@/utils/transposeKey';
+import { useLabSongLayout } from '@/hooks/useLabSongLayout';
 import SongFontBottomSheet from './SongFontBottomSheet';
 import TransposeBottomSheet from './TransposeBottomSheet';
 import ReportBugsModal from './ReportBugsModal';
@@ -25,12 +27,10 @@ import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
-import colors, {
-  KeyPillColors,
-  SwipeColors,
-  themeColors,
-} from '@/constants/colors';
+import { KeyPillColors, SwipeColors, themeColors } from '@/constants/colors';
+import { onColor } from '@/utils/colorUtils';
 import { radii } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 interface FontOption {
   name: string;
@@ -164,6 +164,8 @@ const SongControls: React.FC<SongControlsProps> = ({
   const [showSecretPanel, setShowSecretPanel] = useState(false);
   const scheme = useColorScheme();
   const { toast } = useToast();
+  // Solo en el canal preview: conmutar la maquetación vieja/nueva de la letra.
+  const lab = useLabSongLayout();
   const isDark = scheme === 'dark';
   // El FAB va por encima de la barra de pestañas flotante.
   const tabBarClearance = useTabBarClearance();
@@ -179,14 +181,20 @@ const SongControls: React.FC<SongControlsProps> = ({
       ? (layout.width - layout.contentMaxWidth) / 2 + 16
       : 16;
 
-  const hasModifications =
-    currentTranspose !== 0 ||
-    (currentCapoOverride !== null && currentCapoOverride !== undefined) ||
-    !chordsVisible ||
-    currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
-    (availableFonts.length > 0 &&
-      currentFontFamily !== availableFonts[0].cssValue) ||
-    notation !== 'ES';
+  // Lo que dice el botón cerrado. Antes eran dos puntitos sin explicar: uno
+  // rojo de «hay algo cambiado» que se encendía también con la notación
+  // inglesa o la letra grande —preferencias GLOBALES, así que salía en todas
+  // las canciones para siempre— y otro de «tiene arreglos», que ya se ven en
+  // la propia letra. Ahora solo se avisa de lo que es de ESTA canción y no se
+  // ve al bajar por ella: el tono y la cejilla cambiados, con su valor.
+  const hasCapoOverride =
+    currentCapoOverride !== null && currentCapoOverride !== undefined;
+  const songBadge = [
+    currentTranspose !== 0 ? transposeLabel(currentTranspose) : null,
+    hasCapoOverride ? `C${currentCapoOverride}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   const toggleMenu = () => {
     const toOpen = !showActionButtons;
@@ -263,8 +271,8 @@ const SongControls: React.FC<SongControlsProps> = ({
           >
             <ActionButton
               isDark={isDark}
-              icon={chordsVisible ? 'music-note' : 'music-off'}
-              label={`Acordes ${chordsVisible ? 'ON' : 'OFF'}`}
+              icon={chordsVisible ? 'music-off' : 'music-note'}
+              label={chordsVisible ? 'Ocultar acordes' : 'Mostrar acordes'}
               onPress={onToggleChords}
               isActive={!chordsVisible}
             />
@@ -272,15 +280,21 @@ const SongControls: React.FC<SongControlsProps> = ({
               <ActionButton
                 isDark={isDark}
                 icon="auto-awesome"
-                label={`Arreglos ${arrangementsVisible ? 'ON' : 'OFF'}`}
+                label={
+                  arrangementsVisible ? 'Ocultar arreglos' : 'Mostrar arreglos'
+                }
                 onPress={onToggleArrangements}
-                isActive={arrangementsVisible}
+                isActive={!arrangementsVisible}
               />
             )}
             <ActionButton
               isDark={isDark}
               icon="translate"
-              label={`Notación: ${notation}`}
+              label={
+                notation === 'ES'
+                  ? 'Acordes en inglés (C, D…)'
+                  : 'Acordes en español (DO, RE…)'
+              }
               onPress={onToggleNotation}
               isActive={notation !== 'ES'}
             />
@@ -288,23 +302,10 @@ const SongControls: React.FC<SongControlsProps> = ({
               isDark={isDark}
               icon="swap-vert"
               label={
-                currentTranspose !== 0 &&
-                currentCapoOverride !== null &&
-                currentCapoOverride !== undefined
-                  ? `Tono ${currentTranspose > 0 ? '+' : ''}${currentTranspose} · C${currentCapoOverride}`
-                  : currentTranspose !== 0
-                    ? `Tono ${currentTranspose > 0 ? '+' : ''}${currentTranspose}`
-                    : currentCapoOverride !== null &&
-                        currentCapoOverride !== undefined
-                      ? `Cejilla ${currentCapoOverride}`
-                      : 'Cambiar tono / cejilla'
+                songBadge ? `Tono y cejilla · ${songBadge}` : 'Tono y cejilla'
               }
               onPress={handleOpenTransposeBottomSheet}
-              isActive={
-                currentTranspose !== 0 ||
-                (currentCapoOverride !== null &&
-                  currentCapoOverride !== undefined)
-              }
+              isActive={!!songBadge}
             />
             <ActionButton
               isDark={isDark}
@@ -317,6 +318,20 @@ const SongControls: React.FC<SongControlsProps> = ({
                   currentFontFamily !== availableFonts[0].cssValue)
               }
             />
+
+            {lab.available && (
+              <ActionButton
+                isDark={isDark}
+                icon="science"
+                label={
+                  lab.legacyLayout
+                    ? 'Lab: viendo la maquetación antigua'
+                    : 'Lab: ver la maquetación antigua'
+                }
+                onPress={() => lab.setLegacyLayout(!lab.legacyLayout)}
+                isActive={lab.legacyLayout}
+              />
+            )}
 
             <View
               style={[styles.menuDivider, isDark && styles.menuDividerDark]}
@@ -346,11 +361,21 @@ const SongControls: React.FC<SongControlsProps> = ({
           </View>
         )}
         <View style={{ position: 'relative' }}>
-          {hasModifications && !showActionButtons && (
-            <View style={[styles.badge, isDark && styles.badgeDark]} />
-          )}
-          {hasArrangements && !showActionButtons && (
-            <View style={[styles.arrBadge, isDark && styles.arrBadgeDark]} />
+          {!!songBadge && !showActionButtons && (
+            <View
+              style={[styles.badge, isDark && styles.badgeDark]}
+              pointerEvents="none"
+            >
+              <Text
+                style={[
+                  styles.badgeText,
+                  { color: onColor(themeColors(isDark).link) },
+                ]}
+                numberOfLines={1}
+              >
+                {songBadge}
+              </Text>
+            </View>
           )}
           <TouchableOpacity
             style={[
@@ -360,7 +385,13 @@ const SongControls: React.FC<SongControlsProps> = ({
             ]}
             onPress={toggleMenu}
             activeOpacity={0.75}
-            accessibilityLabel="Configuración"
+            accessibilityLabel={
+              showActionButtons
+                ? 'Cerrar opciones de la canción'
+                : songBadge
+                  ? `Opciones de la canción. Tono cambiado: ${songBadge}`
+                  : 'Opciones de la canción'
+            }
           >
             {Platform.OS === 'ios' && (
               <GlassSurface
@@ -546,37 +577,28 @@ const styles = StyleSheet.create({
   fabMainOpen: {
     backgroundColor: SwipeColors.remove,
   },
+  // Píldora con el tono/cejilla de esta canción, montada sobre el borde del
+  // botón. Mismo azul que el tono transpuesto en la ficha y en la lista.
   badge: {
     position: 'absolute',
-    right: -1,
-    top: -1,
-    backgroundColor: SwipeColors.remove,
+    right: -6,
+    top: -8,
+    backgroundColor: themeColors(false).link,
     borderRadius: radii.pillFull,
-    width: 12,
-    height: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
     zIndex: 10,
     borderWidth: 2,
     borderColor: '#F2F2F7',
   },
   badgeDark: {
+    backgroundColor: themeColors(true).link,
     borderColor: '#1C1C1E',
   },
-  // Indicador de "arreglos disponibles" — acento MCM, esquina superior izquierda
-  // para no chocar con el badge de modificaciones (rojo, derecha).
-  arrBadge: {
-    position: 'absolute',
-    left: -1,
-    top: -1,
-    backgroundColor: colors.accent,
-    borderRadius: radii.pillFull,
-    width: 12,
-    height: 12,
-    zIndex: 10,
-    borderWidth: 2,
-    borderColor: '#F2F2F7',
-  },
-  arrBadgeDark: {
-    borderColor: '#1C1C1E',
+  badgeText: {
+    ...typography.micro,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
 });
 

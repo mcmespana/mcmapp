@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
+import { useLabSongLayout } from '@/hooks/useLabSongLayout';
 import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -276,6 +277,8 @@ export default function SongFullscreenScreen({
     [content],
   );
 
+  // Laboratorio (canal preview): comparar con la maquetación antigua.
+  const { legacyLayout } = useLabSongLayout();
   const { songHtml, styleState } = useSongProcessor({
     originalChordPro: content || null,
     currentTranspose: 0,
@@ -292,6 +295,7 @@ export default function SongFullscreenScreen({
     isDark,
     topInset: Math.max(insets.top, 16) + 56,
     bottomInset: Math.max(insets.bottom, 16) + 96,
+    legacyLayout,
   });
 
   const webViewRef = useRef<WebView | null>(null);

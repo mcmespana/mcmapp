@@ -33,7 +33,7 @@ import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import SuggestSongModal from '@/components/SuggestSongModal';
 import { filterSongsData } from '@/utils/filterSongsData';
-import { stripCategoryPrefix } from '@/utils/songUtils';
+import { extractTrailingEmoji, stripCategoryPrefix } from '@/utils/songUtils';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useSongTagIndex } from '@/hooks/useSongTags';
 import TagCloudSheet from '@/components/song-tags/TagCloudSheet';
@@ -50,24 +50,6 @@ import typography from '@/constants/typography';
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
 const SELECTED_SONGS_CATEGORY_ID = '__SELECTED_SONGS__';
-
-const EMOJI_REGEX =
-  /[\p{Emoji_Presentation}\p{Extended_Pictographic}][\u{FE0F}\u{200D}\p{Emoji_Presentation}\p{Extended_Pictographic}]*$/u;
-
-function extractTrailingEmoji(text: string): {
-  emoji: string;
-  cleanText: string;
-} {
-  const trimmed = text.trim();
-  const match = trimmed.match(EMOJI_REGEX);
-  if (match) {
-    return {
-      emoji: match[0],
-      cleanText: trimmed.slice(0, match.index).trim(),
-    };
-  }
-  return { emoji: '🎵', cleanText: trimmed };
-}
 
 const isIOS = Platform.OS === 'ios';
 

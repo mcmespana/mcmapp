@@ -14,6 +14,7 @@ import {
   postProcessArrangementsHtml,
   injectRowLineIndices,
 } from '../utils/arrangements';
+import { groupWordColumns } from '../utils/chordSheetWords';
 
 export interface UseSongProcessorParams {
   originalChordPro: string | null;
@@ -40,6 +41,12 @@ export interface UseSongProcessorParams {
    * a RN (mensaje `{ type: 'arr-longpress', line }`) para insertar un `{arr:}`.
    */
   adminMode?: boolean;
+  /**
+   * Solo canal preview: pinta la letra con la maquetación de antes de
+   * octubre de 2026 (sin agrupar palabras, sin sangría francesa, acordes sin
+   * hueco) para compararlas en el móvil. Se cambia en vivo, sin recargar.
+   */
+  legacyLayout?: boolean;
 }
 
 /**
@@ -53,6 +60,7 @@ export interface SongStyleState {
   isDark: boolean;
   chordsVisible: boolean;
   arrangementsVisible: boolean;
+  legacyLayout: boolean;
   topPadding: number;
   bottomPadding: number;
 }
@@ -471,6 +479,7 @@ export const useSongProcessor = ({
   topInset,
   bottomInset,
   adminMode = false,
+  legacyLayout = false,
 }: UseSongProcessorParams) => {
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
@@ -498,6 +507,7 @@ export const useSongProcessor = ({
       isDark,
       chordsVisible,
       arrangementsVisible,
+      legacyLayout,
       topPadding,
       bottomPadding,
     }),
@@ -507,6 +517,7 @@ export const useSongProcessor = ({
       isDark,
       chordsVisible,
       arrangementsVisible,
+      legacyLayout,
       topPadding,
       bottomPadding,
     ],
@@ -546,8 +557,8 @@ export const useSongProcessor = ({
           : baseSong;
 
       const formatter = new HtmlDivFormatter();
-      let formattedSong = postProcessArrangementsHtml(
-        formatter.format(songForFormatting),
+      let formattedSong = groupWordColumns(
+        postProcessArrangementsHtml(formatter.format(songForFormatting)),
       );
       // En modo admin, etiquetamos cada fila con el índice de su línea en el
       // ChordPro original para poder insertar arreglos por long-press. La
@@ -644,6 +655,9 @@ export const useSongProcessor = ({
             }
             if (typeof s.chordsVisible === 'boolean') {
               document.body.classList.toggle('chords-hidden', !s.chordsVisible);
+            }
+            if (typeof s.legacyLayout === 'boolean') {
+              document.body.classList.toggle('layout-legacy', s.legacyLayout);
             }
             if (typeof s.arrangementsVisible === 'boolean') {
               document.body.classList.toggle('arr-hidden', !s.arrangementsVisible);
@@ -878,12 +892,34 @@ export const useSongProcessor = ({
               flex-wrap: wrap;
               margin-bottom: 0.2em;
               max-width: 100%;
+              /* Sangría francesa: si una línea no cabe en el móvil, lo que
+                 salta queda metido hacia dentro y se ve que CONTINÚA la
+                 anterior, en vez de parecer una línea nueva de la canción. */
+              padding-left: 0.9em;
             }
+            .row > :first-child {
+              margin-left: -0.9em;
+            }
+            /* Maquetación de antes (solo canal preview, para comparar): las
+               palabras agrupadas se deshacen con display: contents y sus
+               columnas vuelven a ser hijas directas de la fila. */
+            body.layout-legacy .row { padding-left: 0; }
+            body.layout-legacy .row > :first-child { margin-left: 0; }
+            body.layout-legacy .word { display: contents; }
+            body.layout-legacy .chord-sheet .chord { padding-right: 0; }
             .column {
               padding-right: 0;
               max-width: 100%;
               overflow-wrap: break-word;
               word-wrap: break-word;
+            }
+            /* Una palabra partida por acordes («a|quí») salta entera de línea
+               (utils/chordSheetWords.ts). Solo se parte por dentro si la
+               palabra sola no cabe en la línea. */
+            .word {
+              display: flex;
+              flex-wrap: wrap;
+              max-width: 100%;
             }
             .chord-sheet .chord {
               font-weight: bold;
@@ -891,6 +927,11 @@ export const useSongProcessor = ({
               display: block;
               min-height: 1.2em;
               font-size: var(--song-font-size);
+              /* Hueco tras el acorde: si es más ancho que su sílaba
+                 («SOL#m7» sobre «a»), el siguiente no se le pega
+                 («SOL#m7RE»). Sobre una sílaba normal no se nota: la columna
+                 ya la ensancha la letra. */
+              padding-right: 0.3em;
             }
             .chord-sheet .lyrics {
               white-space: pre-wrap;
@@ -993,7 +1034,7 @@ export const useSongProcessor = ({
             }
           </style>
         </head>
-        <body class="${s.isDark ? 'theme-dark' : ''}${s.chordsVisible ? '' : ' chords-hidden'}${s.arrangementsVisible ? '' : ' arr-hidden'}">
+        <body class="${s.isDark ? 'theme-dark' : ''}${s.chordsVisible ? '' : ' chords-hidden'}${s.arrangementsVisible ? '' : ' arr-hidden'}${s.legacyLayout ? ' layout-legacy' : ''}">
           ${fsHeader}
           ${finalSongContentWithMeta}
           <script>${bootstrap}</script>

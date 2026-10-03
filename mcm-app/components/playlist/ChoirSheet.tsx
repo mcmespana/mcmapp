@@ -417,6 +417,109 @@ const ChoirSheet: React.FC<Props> = ({
     const followingHere = liveMode === 'slave' && liveKey === choir?.id;
     const leaderName = live?.master?.name?.trim();
     const iAmLeader = isSameLeader(live, identity);
+    // Coro recién creado (o vaciado): no hay «última» que importar. En vez de
+    // un botón grande desactivado y una fila muerta de «Ver todas», lo que se
+    // destaca es subir la primera — que es lo único que se puede hacer.
+    const emptyChoir = !!choir && !loading && entries.length === 0;
+    const goSave = () => {
+      setNewPlaylistName(link?.name || defaultPlaylistName());
+      setStep('save');
+    };
+
+    // El coro en vivo va igual con o sin playlists.
+    const renderLive = () => {
+      return (
+        <>
+          <View style={styles.separator} />
+          <Text style={styles.sectionTitle}>Coro en vivo</Text>
+
+          {leadingHere ? (
+            renderRow(
+              'campaign',
+              'Estás dirigiendo',
+              'Los demás ven la canción que abras. Toca para cerrar la sesión.',
+              () => close(onLeaveLive),
+              { live: true },
+            )
+          ) : followingHere ? (
+            renderRow(
+              'headphones',
+              `Siguiendo a ${leaderName || 'el líder'}`,
+              'Toca para salir del coro en vivo',
+              () => close(onLeaveLive),
+              { live: true },
+            )
+          ) : live ? (
+            <>
+              {renderRow(
+                'headphones',
+                `Unirme · dirige ${leaderName || 'alguien'}`,
+                'Verás su canción y su tono en tiempo real',
+                () => {
+                  if (!myChoir) return;
+                  close(() => onJoinLive(myChoir, live));
+                },
+                { live: true },
+              )}
+              {renderRow(
+                'campaign',
+                'Tomar el mando',
+                iAmLeader
+                  ? 'Eres tú desde otro dispositivo: pasa sin contraseña'
+                  : 'Hace falta la contraseña del coro',
+                () => {
+                  if (!myChoir) return;
+                  close(() => onLead(myChoir, live));
+                },
+              )}
+            </>
+          ) : (
+            renderRow(
+              'campaign',
+              'Dirigir yo',
+              'Quien se una a este coro seguirá tus canciones (24 h)',
+              () => {
+                if (!myChoir) return;
+                close(() => onLead(myChoir, null));
+              },
+              { disabled: !myChoir },
+            )
+          )}
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+        </>
+      );
+    };
+
+    if (emptyChoir) {
+      return (
+        <>
+          {renderChoirHeader()}
+          <TouchableOpacity
+            style={[styles.hero, songCount === 0 && styles.heroDisabled]}
+            disabled={songCount === 0}
+            onPress={() => {
+              h.tap();
+              goSave();
+            }}
+            accessibilityRole="button"
+          >
+            <View style={styles.heroIcon}>
+              <MaterialIcons name="cloud-upload" size={22} color="#fff" />
+            </View>
+            <View style={styles.heroTextBlock}>
+              <Text style={styles.heroTitle}>Subir la primera playlist</Text>
+              <Text style={styles.heroSubtitle}>
+                {songCount === 0
+                  ? 'Este coro aún no tiene playlists. Añade canciones a tu selección y súbela desde aquí'
+                  : `${songCount} ${songCount === 1 ? 'canción' : 'canciones'}. A partir de ahí, el resto del coro la importa con un toque`}
+              </Text>
+            </View>
+          </TouchableOpacity>
+          {renderLive()}
+        </>
+      );
+    }
 
     return (
       <>
@@ -466,70 +569,11 @@ const ChoirSheet: React.FC<Props> = ({
             : linkedEntry
               ? 'Actualizar la del coro o subir una nueva'
               : `${songCount} ${songCount === 1 ? 'canción' : 'canciones'} para todo el coro`,
-          () => {
-            setNewPlaylistName(link?.name || defaultPlaylistName());
-            setStep('save');
-          },
+          goSave,
           { disabled: songCount === 0 },
         )}
 
-        <View style={styles.separator} />
-        <Text style={styles.sectionTitle}>Coro en vivo</Text>
-
-        {leadingHere ? (
-          renderRow(
-            'campaign',
-            'Estás dirigiendo',
-            'Los demás ven la canción que abras. Toca para cerrar la sesión.',
-            () => close(onLeaveLive),
-            { live: true },
-          )
-        ) : followingHere ? (
-          renderRow(
-            'headphones',
-            `Siguiendo a ${leaderName || 'el líder'}`,
-            'Toca para salir del coro en vivo',
-            () => close(onLeaveLive),
-            { live: true },
-          )
-        ) : live ? (
-          <>
-            {renderRow(
-              'headphones',
-              `Unirme · dirige ${leaderName || 'alguien'}`,
-              'Verás su canción y su tono en tiempo real',
-              () => {
-                if (!myChoir) return;
-                close(() => onJoinLive(myChoir, live));
-              },
-              { live: true },
-            )}
-            {renderRow(
-              'campaign',
-              'Tomar el mando',
-              iAmLeader
-                ? 'Eres tú desde otro dispositivo: pasa sin contraseña'
-                : 'Hace falta la contraseña del coro',
-              () => {
-                if (!myChoir) return;
-                close(() => onLead(myChoir, live));
-              },
-            )}
-          </>
-        ) : (
-          renderRow(
-            'campaign',
-            'Dirigir yo',
-            'Quien se una a este coro seguirá tus canciones (24 h)',
-            () => {
-              if (!myChoir) return;
-              close(() => onLead(myChoir, null));
-            },
-            { disabled: !myChoir },
-          )
-        )}
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {renderLive()}
       </>
     );
   };
