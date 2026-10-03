@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   getDayOptions,
@@ -31,6 +31,21 @@ export function useContigoDayMenu() {
     [router],
   );
 
+  // Desde el submenú NO se navega al tocar: se cierra la hoja y se navega
+  // cuando ya se ha desmontado (`onMenuClosed`). Empujar una pantalla con el
+  // Modal de la hoja aún encima es lo que en iOS se queda a medias; es el
+  // mismo patrón que la hoja de etiquetas y el menú de la playlist.
+  const pendingRef = useRef<{ action: DayAction; date: string } | null>(null);
+  const chooseFromMenu = useCallback((action: DayAction, date: string) => {
+    pendingRef.current = { action, date };
+    setDayMenu(null);
+  }, []);
+  const onMenuClosed = useCallback(() => {
+    const pending = pendingRef.current;
+    pendingRef.current = null;
+    if (pending) openDay(pending.action, pending.date);
+  }, [openDay]);
+
   const handleDayPress = useCallback(
     (date: string, rec: DayRecord | null) => {
       const options = getDayOptions(date, rec);
@@ -46,5 +61,12 @@ export function useContigoDayMenu() {
 
   const closeDayMenu = useCallback(() => setDayMenu(null), []);
 
-  return { dayMenu, handleDayPress, openDay, closeDayMenu };
+  return {
+    dayMenu,
+    handleDayPress,
+    openDay,
+    chooseFromMenu,
+    onMenuClosed,
+    closeDayMenu,
+  };
 }

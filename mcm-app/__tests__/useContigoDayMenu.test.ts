@@ -129,3 +129,26 @@ describe('closeDayMenu', () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 });
+
+describe('elegir desde el submenú', () => {
+  it('no navega hasta que la hoja se ha cerrado del todo', async () => {
+    const { result } = await renderHook(() => useContigoDayMenu());
+    await act(async () =>
+      result.current.chooseFromMenu('oracion', '2026-08-20'),
+    );
+    expect(result.current.dayMenu).toBeNull();
+    expect(mockPush).not.toHaveBeenCalled();
+
+    await act(async () => result.current.onMenuClosed());
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/(tabs)/contigo/oracion',
+      params: { date: '2026-08-20' },
+    });
+  });
+
+  it('cerrar la hoja sin elegir no navega', async () => {
+    const { result } = await renderHook(() => useContigoDayMenu());
+    await act(async () => result.current.onMenuClosed());
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+});

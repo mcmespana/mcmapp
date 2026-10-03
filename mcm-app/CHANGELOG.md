@@ -18,6 +18,25 @@
 
 ---
 
+## 2026-10-03 23:00 — Contigo: navegación por días y calendarios
+
+- **Oración**: «día siguiente» se para en hoy y los días futuros del
+  calendario ya no se pueden tocar (se podía apuntar oración en el futuro). Un
+  enlace con fecha futura abre hoy. El calendario «Tu mes» tiene flechas para
+  cambiar de mes sin mover el día elegido, y al tocar un día la pantalla sube
+  al formulario de ese día (antes cambiaba arriba sin que se viera).
+- **Home de Contigo**: tocar un día pasado ofrece siempre evangelio, oración y
+  revisión, en orden fijo y con check en lo hecho. Antes un día vacío solo
+  abría el evangelio, así que no había forma de apuntar la oración o la
+  revisión de un día que se olvidó. Un día futuro solo abre el evangelio.
+- La navegación desde ese submenú espera a que la hoja se cierre del todo (el
+  mismo patrón que la hoja de etiquetas y el menú de la playlist).
+- `app/(tabs)/contigo/{oracion,index}.tsx`, `components/contigo/DayActionSheet.tsx`,
+  `hooks/useContigoDayMenu.ts`, tests en `__tests__/contigoDayOptions.test.ts`
+  y `__tests__/useContigoDayMenu.test.ts`.
+
+---
+
 ## 2026-10-03 22:15 — Canción: las palabras ya no se parten al saltar de línea
 
 - **Bug de lectura en móvil**: ChordSheetJS parte cada línea en columnas

@@ -232,6 +232,12 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
+  calMonthNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: -6,
+  },
   calMonthTitle: {
     ...typography.h3,
     fontWeight: '700',

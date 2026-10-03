@@ -28,6 +28,7 @@ import { styles } from '@/components/contigo/oracionStyles';
 import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
 import { radii } from '@/constants/uiStyles';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
+import { offsetISODate } from '@/utils/localDate';
 
 // ── Screen geometry ──
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -161,17 +162,6 @@ function formatDateDisplay(dateStr: string) {
   return `${days[date.getDay()]}, ${d} de ${MONTHS[m - 1]}`;
 }
 
-function addDays(dateStr: string, offset: number): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  date.setDate(date.getDate() + offset);
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, '0'),
-    String(date.getDate()).padStart(2, '0'),
-  ].join('-');
-}
-
 /** Returns calendar cells for the month of selectedDate.
  *  null = empty offset slot, number = day of month */
 function buildCalendar(selectedDate: string): {
@@ -240,8 +230,10 @@ export default function OracionScreen() {
 
   const params = useLocalSearchParams<{ date?: string }>();
   const initialDate = useMemo(() => {
+    // Un enlace a un día futuro se queda en hoy: no se apunta oración por
+    // adelantado (las flechas y el calendario tampoco dejan).
     if (params.date && /^\d{4}-\d{2}-\d{2}$/.test(params.date)) {
-      return params.date;
+      return todayStr && params.date > todayStr ? todayStr : params.date;
     }
     return todayStr || new Date().toISOString().split('T')[0];
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -273,8 +265,38 @@ export default function OracionScreen() {
   const handleDecrease = () => setDuration((p) => Math.max(1, (p || 15) - 1));
   const handleIncrease = () => setDuration((p) => Math.min(120, (p || 15) + 1));
 
-  const changeDate = (offset: number) =>
-    setSelectedDate(addDays(selectedDate, offset));
+  // No se puede apuntar oración en el futuro: «siguiente» se para en hoy,
+  // igual que en la revisión del día.
+  const canGoNext = selectedDate < todayStr;
+  const changeDate = (offset: number) => {
+    const next = offsetISODate(selectedDate, offset);
+    if (next > todayStr) return;
+    setSelectedDate(next);
+  };
+
+  // El calendario «Tu mes» navega por meses sin mover el día elegido. Sigue al
+  // día elegido cuando este cambia de mes (con las flechas de arriba).
+  const [calMonth, setCalMonth] = useState(selectedDate.slice(0, 7));
+  const [calFollows, setCalFollows] = useState(selectedDate);
+  if (calFollows !== selectedDate) {
+    setCalFollows(selectedDate);
+    setCalMonth(selectedDate.slice(0, 7));
+  }
+  const canGoNextMonth = calMonth < todayStr.slice(0, 7);
+  const changeCalMonth = (delta: number) => {
+    const [y, m] = calMonth.split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (key > todayStr.slice(0, 7)) return;
+    setCalMonth(key);
+  };
+
+  /** Elegir un día en el calendario: el formulario está arriba, se sube a él. */
+  const pickCalendarDay = (ds: string) => {
+    if (ds > todayStr) return;
+    setSelectedDate(ds);
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
 
   const handleSave = async () => {
     if (!duration) {
@@ -318,7 +340,7 @@ export default function OracionScreen() {
       : liturgicalInfo.hex;
 
   // Calendar data
-  const calData = useMemo(() => buildCalendar(selectedDate), [selectedDate]);
+  const calData = useMemo(() => buildCalendar(`${calMonth}-01`), [calMonth]);
   const { cells, year, month, daysInMonth } = calData;
 
   // Count days prayed this month (fast, no memo needed)
@@ -427,15 +449,18 @@ export default function OracionScreen() {
 
           <TouchableOpacity
             onPress={() => changeDate(1)}
+            disabled={!canGoNext}
             style={[
               styles.navBtn,
               {
                 backgroundColor: isDark
                   ? 'rgba(255,255,255,0.09)'
                   : 'rgba(0,0,0,0.06)',
+                opacity: canGoNext ? 1 : 0.3,
               },
             ]}
             accessibilityLabel="Día siguiente"
+            accessibilityState={{ disabled: !canGoNext }}
           >
             <MaterialIcons name="chevron-right" size={26} color={theme.text} />
           </TouchableOpacity>
@@ -739,9 +764,36 @@ export default function OracionScreen() {
                 <Text style={[styles.sectionLabel, { color: warm.warmGray }]}>
                   TU MES
                 </Text>
-                <Text style={[styles.calMonthTitle, { color: warm.title }]}>
-                  {MONTHS_CAP[month - 1]} {year}
-                </Text>
+                <View style={styles.calMonthNav}>
+                  <TouchableOpacity
+                    onPress={() => changeCalMonth(-1)}
+                    hitSlop={10}
+                    accessibilityLabel="Mes anterior"
+                  >
+                    <MaterialIcons
+                      name="chevron-left"
+                      size={24}
+                      color={warm.title}
+                    />
+                  </TouchableOpacity>
+                  <Text style={[styles.calMonthTitle, { color: warm.title }]}>
+                    {MONTHS_CAP[month - 1]} {year}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => changeCalMonth(1)}
+                    disabled={!canGoNextMonth}
+                    hitSlop={10}
+                    style={{ opacity: canGoNextMonth ? 1 : 0.25 }}
+                    accessibilityLabel="Mes siguiente"
+                    accessibilityState={{ disabled: !canGoNextMonth }}
+                  >
+                    <MaterialIcons
+                      name="chevron-right"
+                      size={24}
+                      color={warm.title}
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
               <View
                 style={[
@@ -812,7 +864,11 @@ export default function OracionScreen() {
                   <TouchableOpacity
                     key={ds}
                     activeOpacity={0.7}
-                    onPress={() => setSelectedDate(ds)}
+                    onPress={() => pickCalendarDay(ds)}
+                    disabled={isFuture}
+                    accessibilityLabel={`${day} de ${MONTHS[month - 1]}${
+                      rec?.prayerDone ? ', rezado' : ''
+                    }`}
                     style={[
                       styles.calCell,
                       {
