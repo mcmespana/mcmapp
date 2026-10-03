@@ -120,13 +120,24 @@ los pseudo-IDs `__ALL__` y `__SELECTED_SONGS__`. Se hereda gratis la lista, el
 buscador nativo, el swipe para añadir a la playlist, la píldora de tono y el
 estado vacío.
 
-- **Agrupada por categoría**, con cabeceras de sección y su recuento, en el
-  orden normal del cantoral. Precisamente porque una etiqueta es transversal,
-  la categoría es el contexto que falta.
-- **Barra amarilla de contexto** bajo el header: a la izquierda la etiqueta
-  activa (con ✕), detrás las candidatas de refinamiento.
+- **Agrupada por categoría**, como una lista agrupada de Ajustes de iOS: cada
+  categoría es una tarjeta con las esquinas redondeadas y su cabecera encima,
+  sobre el fondo — con el emoji y el nombre tal como se ven en el cantoral
+  («🤲 Ofertorio», no «E. OFERTORIO 🤲») y su recuento. Precisamente porque una
+  etiqueta es transversal, la categoría es el contexto que falta.
+- **Fila de refinamiento** como cabecera de la lista (se va con el scroll):
+  «Combinar con» + las candidatas con un «+». Las etiquetas activas solo
+  aparecen ahí cuando hay **más de una** (con ✕ para soltarlas); con una sola,
+  el título ya lo dice y soltarla es lo mismo que volver atrás.
 - El header lleva su propio 🏷️ para saltar a otra etiqueta sin volver atrás.
 - El contador dice `34 canciones · 7 categorías`.
+
+> **Hasta octubre de 2026 la barra era una franja amarilla fija encima de la
+> lista**, y en iOS se pintaba debajo de la barra de estado, con el chip encima
+> del reloj: el header es transparente y la lista compensa su alto con
+> `contentInsetAdjustmentBehavior`, pero una `View` hermana de la lista no. Lo
+> que vaya encima de una lista con header transparente, va DENTRO de la lista
+> (`ListHeaderComponent`).
 
 ### 3.4 Cruzar etiquetas sin UI de filtros
 
@@ -169,7 +180,7 @@ pica la curiosidad y se ven las otras 33.
 | Catálogo + índice inverso | `mcm-app/hooks/useSongTags.ts` |
 | Chip (3 variantes) | `mcm-app/components/song-tags/TagChip.tsx` |
 | Nube de etiquetas | `mcm-app/components/song-tags/TagCloudSheet.tsx` |
-| Barra de contexto | `mcm-app/components/song-tags/TagContextBar.tsx` |
+| Fila de refinamiento | `mcm-app/components/song-tags/TagContextBar.tsx` |
 | Botón del header | `mcm-app/app/screens/CategoriesScreen.tsx` |
 | Pantalla `__TAG__:` | `mcm-app/app/screens/SongListScreen.tsx` |
 | Chips en la ficha | `mcm-app/components/song-media/SongMediaSheet.tsx` |

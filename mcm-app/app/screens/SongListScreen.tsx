@@ -42,6 +42,9 @@ import {
   type SongTagIndex,
 } from '@/utils/songTags';
 import { h } from '@/utils/haptics';
+import { extractTrailingEmoji, stripCategoryPrefix } from '@/utils/songUtils';
+import { radii } from '@/constants/uiStyles';
+import spacing from '@/constants/spacing';
 import { SwipeColors, UIColors, themeColors } from '@/constants/colors';
 import typography from '@/constants/typography';
 
@@ -77,8 +80,21 @@ interface SongCategory {
 
 /** Fila de la lista: una canción o la cabecera de una categoría. */
 type ListRow =
-  | { kind: 'section'; key: string; title: string; count: number }
-  | { kind: 'song'; key: string; song: Song };
+  | {
+      kind: 'section';
+      key: string;
+      title: string;
+      emoji: string;
+      count: number;
+    }
+  | {
+      kind: 'song';
+      key: string;
+      song: Song;
+      /** Solo en modo etiqueta: posición dentro de su grupo (esquinas). */
+      first?: boolean;
+      last?: boolean;
+    };
 
 const getSongsData = (data: any): Record<string, SongCategory> => {
   try {
@@ -98,6 +114,9 @@ const getSongsData = (data: any): Record<string, SongCategory> => {
 };
 
 const isIOS = Platform.OS === 'ios';
+
+/** Margen lateral de la lista en modo etiqueta (tarjetas por categoría). */
+const TAG_LIST_INSET = spacing.md;
 
 /**
  * Texto sobre el que busca el buscador. Además del título y el autor incluye
@@ -173,28 +192,51 @@ function buildTagSongList(
   return { songs: out, error: null };
 }
 
-/** Corta una lista YA ordenada por categoría en filas de sección + canción. */
+/**
+ * Corta una lista YA ordenada por categoría en filas de sección + canción.
+ *
+ * La cabecera lleva el nombre de la categoría tal como se ve en el cantoral
+ * («Ofertorio», con su emoji delante), no el título crudo de Firebase
+ * («E. OFERTORIO 🤲»): la letra es un truco de ordenación, no un nombre. Y
+ * cada canción sabe si abre o cierra su grupo, para que la lista pinte cada
+ * categoría como una tarjeta con las esquinas redondeadas.
+ */
 function toGroupedRows(songs: Song[]): ListRow[] {
   const rows: ListRow[] = [];
   let currentTitle: string | null = null;
   let headerIndex = -1;
+  let lastSongIndex = -1;
 
   songs.forEach((song) => {
-    const title = song.groupTitle ?? '';
-    if (title !== currentTitle) {
-      currentTitle = title;
+    const rawTitle = song.groupTitle ?? '';
+    const startsGroup = rawTitle !== currentTitle;
+    if (startsGroup) {
+      currentTitle = rawTitle;
+      const lastRow = rows[lastSongIndex];
+      if (lastRow?.kind === 'song') lastRow.last = true;
+      const { emoji, cleanText } = extractTrailingEmoji(rawTitle);
       headerIndex = rows.length;
       rows.push({
         kind: 'section',
-        key: `section-${song.originalCategoryKey ?? title}`,
-        title,
+        key: `section-${song.originalCategoryKey ?? rawTitle}`,
+        title: stripCategoryPrefix(cleanText),
+        emoji,
         count: 0,
       });
     }
     const header = rows[headerIndex];
     if (header.kind === 'section') header.count += 1;
-    rows.push({ kind: 'song', key: song.filename, song });
+    lastSongIndex = rows.length;
+    rows.push({
+      kind: 'song',
+      key: song.filename,
+      song,
+      first: startsGroup,
+      last: false,
+    });
   });
+  const lastRow = rows[lastSongIndex];
+  if (lastRow?.kind === 'song') lastRow.last = true;
 
   return rows;
 }
@@ -683,8 +725,18 @@ export default function SongsListScreen({
             </View>
           </View>
         )}
+        {isTagMode && (
+          <TagContextBar
+            activeTags={activeTags}
+            candidates={candidateTags}
+            isDark={isDark}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+            edgeInset={layout.isWide ? 0 : TAG_LIST_INSET}
+          />
+        )}
         {/* Conteo de canciones — siempre visible, muy sutil */}
-        <View style={styles.countRow}>
+        <View style={[styles.countRow, isTagMode && styles.countRowTag]}>
           <Text style={styles.songCount}>
             {filteredSongs.length}{' '}
             {filteredSongs.length === 1 ? 'canción' : 'canciones'}
@@ -727,6 +779,11 @@ export default function SongsListScreen({
       isDark,
       isTagMode,
       categoryCount,
+      activeTags,
+      candidateTags,
+      handleAddTag,
+      handleRemoveTag,
+      layout.isWide,
     ],
   );
 
@@ -734,7 +791,14 @@ export default function SongsListScreen({
     ({ item: row }: { item: ListRow }) => {
       if (row.kind === 'section') {
         return (
-          <View style={styles.sectionHeader}>
+          <View
+            style={styles.sectionHeader}
+            accessibilityRole="header"
+            accessibilityLabel={`${row.title}, ${row.count} ${
+              row.count === 1 ? 'canción' : 'canciones'
+            }`}
+          >
+            <Text style={styles.sectionHeaderEmoji}>{row.emoji}</Text>
             <Text style={styles.sectionHeaderText} numberOfLines={1}>
               {row.title}
             </Text>
@@ -747,7 +811,7 @@ export default function SongsListScreen({
       // If false, we skip the `getSelectedSong` lookup entirely, avoiding redundant object mapping
       // for the vast majority of unselected songs during list re-renders.
       const isSelected = isSongSelected(item.filename);
-      return (
+      const listItem = (
         <SongListItem
           song={item}
           onPress={handleSongPress}
@@ -759,7 +823,22 @@ export default function SongsListScreen({
           }
           onAddSong={addSong}
           onRemoveSong={removeSong}
+          hideSeparator={row.last}
         />
+      );
+      // En una etiqueta cada categoría es una tarjeta: las filas de los
+      // extremos redondean sus esquinas y la última no lleva separador.
+      if (row.first === undefined) return listItem;
+      return (
+        <View
+          style={[
+            styles.groupRow,
+            row.first && styles.groupRowFirst,
+            row.last && styles.groupRowLast,
+          ]}
+        >
+          {listItem}
+        </View>
       );
     },
     [
@@ -771,8 +850,12 @@ export default function SongsListScreen({
       addSong,
       removeSong,
       styles.sectionHeader,
+      styles.sectionHeaderEmoji,
       styles.sectionHeaderText,
       styles.sectionHeaderCount,
+      styles.groupRow,
+      styles.groupRowFirst,
+      styles.groupRowLast,
     ],
   );
 
@@ -842,16 +925,6 @@ export default function SongsListScreen({
         </View>
       </BottomSheet>
       {isTagMode && (
-        <TagContextBar
-          activeTags={activeTags}
-          candidates={candidateTags}
-          isDark={isDark}
-          onAddTag={handleAddTag}
-          onRemoveTag={handleRemoveTag}
-        />
-      )}
-
-      {isTagMode && (
         <TagCloudSheet
           visible={showTagSheet}
           onClose={() => setShowTagSheet(false)}
@@ -878,6 +951,7 @@ export default function SongsListScreen({
         ListHeaderComponent={listHeaderComponent}
         contentContainerStyle={[
           styles.listContent,
+          isTagMode && styles.listContentTag,
           { paddingBottom: contentPaddingBottom },
         ]}
         contentInsetAdjustmentBehavior="automatic"
@@ -970,29 +1044,32 @@ const createStyles = (
       color: isDark ? '#48484A' : '#D1D1D6',
       marginHorizontal: 1,
     },
-    // Cabecera de categoría dentro de una etiqueta. Mismo peso visual que las
-    // cabeceras de sección del resto de la app: la categoría es el contexto
-    // que le falta a una etiqueta, no un adorno.
+    // Modo etiqueta: lista agrupada al estilo de Ajustes de iOS. Cada
+    // categoría es una tarjeta con su cabecera ENCIMA, sobre el fondo, no una
+    // franja blanca más entre filas blancas (que es lo que había y por lo que
+    // no se distinguía dónde acababa un grupo). Es el mismo molde que
+    // «Por categoría» en la playlist.
+    listContentTag: {
+      paddingHorizontal: isWide ? 20 : TAG_LIST_INSET,
+    },
+    countRowTag: {
+      paddingHorizontal: spacing.xs,
+    },
     sectionHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 10,
-      backgroundColor: themeColors(isDark).background,
-      paddingHorizontal: 16,
-      paddingVertical: 9,
-      marginTop: 8,
-      marginHorizontal: isWide ? 0 : -12,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.xs,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.sm,
+    },
+    sectionHeaderEmoji: {
+      ...typography.subhead,
     },
     sectionHeaderText: {
       flex: 1,
-      ...typography.caption,
-      fontWeight: '700',
-      letterSpacing: 0.5,
-      textTransform: 'uppercase',
+      ...typography.subhead,
+      fontWeight: '600',
       color: themeColors(isDark).textSecondary,
     },
     sectionHeaderCount: {
@@ -1000,6 +1077,18 @@ const createStyles = (
       fontWeight: '600',
       color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
+    },
+    groupRow: {
+      overflow: 'hidden',
+      backgroundColor: themeColors(isDark).background,
+    },
+    groupRowFirst: {
+      borderTopLeftRadius: radii.lg,
+      borderTopRightRadius: radii.lg,
+    },
+    groupRowLast: {
+      borderBottomLeftRadius: radii.lg,
+      borderBottomRightRadius: radii.lg,
     },
     listContent: {
       paddingHorizontal: isWide ? 20 : 12,
