@@ -18,6 +18,27 @@
 
 ---
 
+## 2026-10-03 22:15 — Canción: las palabras ya no se parten al saltar de línea
+
+- **Bug de lectura en móvil**: ChordSheetJS parte cada línea en columnas
+  acorde+letra cortando donde cae el acorde («a|quí»). Cuando la línea no
+  cabía, el salto podía caer entre esas columnas y la palabra quedaba partida
+  («ilu» / «mina»). `utils/chordSheetWords.ts` agrupa las columnas de una
+  misma palabra en un `<div class="word">`, que salta entera.
+- **Acordes pegados**: si un acorde era más ancho que su sílaba, el siguiente
+  se le pegaba («SOL#m7REmimDO»). Ahora el acorde lleva un hueco detrás.
+- **Sangría francesa**: lo que salta de línea queda metido hacia dentro, así
+  se distingue una línea que continúa de una línea nueva.
+- **Botón flotante**: fuera los dos puntitos sin explicación (el rojo salía en
+  todas las canciones si tenías la notación inglesa o la letra grande, que son
+  preferencias globales). En su lugar, una píldora con el tono/cejilla
+  cambiados de ESA canción («+2 · C3»). Etiquetas como acciones
+  («Ocultar acordes», «Acordes en inglés») en vez de «ON/OFF».
+- `hooks/useSongProcessor.ts`, `utils/chordSheetWords.ts` (+ test),
+  `components/SongControls.tsx`.
+
+---
+
 ## 2026-10-03 21:30 — Playlist: menú «⋯» reordenado y cabecera en tres filas
 
 - **Menú «⋯»**: de 16 opciones a 6 visibles + «Más opciones». Arriba lo de cada

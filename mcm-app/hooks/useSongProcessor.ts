@@ -14,6 +14,7 @@ import {
   postProcessArrangementsHtml,
   injectRowLineIndices,
 } from '../utils/arrangements';
+import { groupWordColumns } from '../utils/chordSheetWords';
 
 export interface UseSongProcessorParams {
   originalChordPro: string | null;
@@ -546,8 +547,8 @@ export const useSongProcessor = ({
           : baseSong;
 
       const formatter = new HtmlDivFormatter();
-      let formattedSong = postProcessArrangementsHtml(
-        formatter.format(songForFormatting),
+      let formattedSong = groupWordColumns(
+        postProcessArrangementsHtml(formatter.format(songForFormatting)),
       );
       // En modo admin, etiquetamos cada fila con el índice de su línea en el
       // ChordPro original para poder insertar arreglos por long-press. La
@@ -878,6 +879,13 @@ export const useSongProcessor = ({
               flex-wrap: wrap;
               margin-bottom: 0.2em;
               max-width: 100%;
+              /* Sangría francesa: si una línea no cabe en el móvil, lo que
+                 salta queda metido hacia dentro y se ve que CONTINÚA la
+                 anterior, en vez de parecer una línea nueva de la canción. */
+              padding-left: 0.9em;
+            }
+            .row > :first-child {
+              margin-left: -0.9em;
             }
             .column {
               padding-right: 0;
@@ -885,12 +893,25 @@ export const useSongProcessor = ({
               overflow-wrap: break-word;
               word-wrap: break-word;
             }
+            /* Una palabra partida por acordes («a|quí») salta entera de línea
+               (utils/chordSheetWords.ts). Solo se parte por dentro si la
+               palabra sola no cabe en la línea. */
+            .word {
+              display: flex;
+              flex-wrap: wrap;
+              max-width: 100%;
+            }
             .chord-sheet .chord {
               font-weight: bold;
               white-space: pre;
               display: block;
               min-height: 1.2em;
               font-size: var(--song-font-size);
+              /* Hueco tras el acorde: si es más ancho que su sílaba
+                 («SOL#m7» sobre «a»), el siguiente no se le pega
+                 («SOL#m7RE»). Sobre una sílaba normal no se nota: la columna
+                 ya la ensancha la letra. */
+              padding-right: 0.3em;
             }
             .chord-sheet .lyrics {
               white-space: pre-wrap;
