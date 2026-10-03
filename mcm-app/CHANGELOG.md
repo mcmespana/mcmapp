@@ -18,6 +18,43 @@
 
 ---
 
+## 2026-10-03 21:30 — Playlist: menú «⋯» reordenado y cabecera en tres filas
+
+- **Menú «⋯»**: de 16 opciones a 6 visibles + «Más opciones». Arriba lo de cada
+  semana (Mi coro: guardar —primero si hay cambios—, abrir el coro, enlace del
+  coro; Compartir: WhatsApp, PDF, QR). Lo de códigos sueltos, la gestión de la
+  copia en la nube y los `.mcm` quedan plegados (`secondary`) cuando el menú
+  pasa de 8 acciones. Fuera los duplicados: «Dirigir o seguir a mi coro» abría
+  la misma hoja que «Coro: X», y «Vaciar» ya está en la cabecera. La sección
+  «Coro en vivo» solo aparece con una sesión abierta, y entonces va arriba.
+- **Cabecera**: el contador se partía en dos líneas y el estado se quedaba en
+  «Cambios s…». Ahora contador + Vaciar, estado a todo el ancho (con
+  «Guardar») y conmutador a todo el ancho. Iconos en vez de ☁️/✏️.
+- **Hoja del coro**: un coro sin playlists destaca «Subir la primera playlist»
+  en vez de un «Importar la última» desactivado.
+- `app/screens/SelectedSongsScreen.tsx`,
+  `components/playlist/{PlaylistActionsBottomSheet,PlaylistHeaderBar,ChoirSheet,selectedSongsStyles}.ts(x)`,
+  `docs/funcionalidades/COROS.md`.
+
+---
+
+## 2026-10-03 21:00 — Cantoral: la pantalla de una etiqueta, rehecha
+
+- **Bug**: la barra de etiquetas era una `View` encima de la lista y, con el
+  header transparente de iOS, se pintaba debajo de la barra de estado (el chip
+  encima del reloj). Ahora va dentro de la lista como cabecera.
+- **Diseño**: lista agrupada estilo Ajustes de iOS. Cada categoría es una
+  tarjeta con esquinas y su cabecera encima («🤲 Ofertorio» y no
+  «E. OFERTORIO 🤲»). La fila de refinamiento dice «Combinar con» y las
+  candidatas llevan «+»; las activas solo salen cuando hay más de una.
+- De paso: `SongListItem` pintaba un `''` suelto dentro de una `View` cuando
+  una canción tenía el autor vacío (error «Unexpected text node» en web).
+- `extractTrailingEmoji` pasa de `CategoriesScreen` a `utils/songUtils.ts`.
+- `app/screens/SongListScreen.tsx`, `components/song-tags/{TagContextBar,TagChip}.tsx`,
+  `components/SongListItem.tsx`, `docs/funcionalidades/ETIQUETAS.md`.
+
+---
+
 ## 2026-09-29 23:40 — OTA: la opción `force` del workflow no publicaba nunca
 
 - Con `force`, `guard-native` se salta, y GitHub salta también todo job que lo

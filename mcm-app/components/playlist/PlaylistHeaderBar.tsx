@@ -46,31 +46,23 @@ export const PlaylistHeaderBar = React.memo(function PlaylistHeaderBar({
 }: PlaylistHeaderBarProps) {
   const statusLabel = link
     ? isSynced
-      ? `☁️ ${link.choirName ? `Guardada en ${link.choirName}` : 'Guardada'}${
+      ? `${link.choirName ? `Guardada en ${link.choirName}` : 'Guardada'}${
           link.syncedAt ? ` · ${formatRelativeDate(link.syncedAt)}` : ''
         }`
-      : `✏️ Cambios sin guardar en «${link.name ?? link.code}»`
+      : `Cambios sin guardar en «${link.name ?? link.code}»`
     : null;
 
+  // Tres filas y no una: con el contador, «Vaciar», el estado y el
+  // conmutador en la misma línea, en un iPhone normal el contador se partía en
+  // dos («9 / CANCIONES») y el estado —lo que más importa saber— se quedaba en
+  // «Cambios s…». Ahora el estado tiene la fila entera y el conmutador también.
   return (
     <View>
       <ChoirSessionBanner />
       <View style={styles.summaryRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.selectionCount}>
-            {visibleCount} {visibleCount === 1 ? 'canción' : 'canciones'}
-          </Text>
-          {statusLabel ? (
-            <TouchableOpacity onPress={onPressStatus} hitSlop={6}>
-              <Text
-                style={[styles.subInfo, !isSynced && styles.subInfoDirty]}
-                numberOfLines={1}
-              >
-                {statusLabel}
-              </Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        <Text style={styles.selectionCount} numberOfLines={1}>
+          {visibleCount} {visibleCount === 1 ? 'canción' : 'canciones'}
+        </Text>
         {visibleCount > 0 ? (
           <TouchableOpacity
             onPress={onClear}
@@ -82,14 +74,46 @@ export const PlaylistHeaderBar = React.memo(function PlaylistHeaderBar({
             <Text style={styles.clearBtnText}>Vaciar</Text>
           </TouchableOpacity>
         ) : null}
-        {visibleCount > 1 ? (
-          <View style={styles.viewToggle}>
+      </View>
+      {statusLabel ? (
+        <TouchableOpacity
+          onPress={onPressStatus}
+          style={styles.statusRow}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityHint="Abre las opciones para guardar en el coro"
+        >
+          <MaterialIcons
+            name={isSynced ? 'cloud-done' : 'edit-note'}
+            size={18}
+            style={[styles.subInfo, !isSynced && styles.subInfoDirty]}
+          />
+          <Text
+            style={[
+              styles.subInfo,
+              styles.statusText,
+              !isSynced && styles.subInfoDirty,
+            ]}
+            numberOfLines={2}
+          >
+            {statusLabel}
+          </Text>
+          {!isSynced ? (
+            <Text style={[styles.subInfo, styles.statusAction]}>Guardar</Text>
+          ) : null}
+        </TouchableOpacity>
+      ) : null}
+      {visibleCount > 1 ? (
+        <View style={styles.viewToggleRow}>
+          <View style={styles.viewToggle} accessibilityRole="tablist">
             <TouchableOpacity
               onPress={() => setViewMode('category')}
               style={[
                 styles.viewToggleBtn,
                 viewMode === 'category' && styles.viewToggleBtnActive,
               ]}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: viewMode === 'category' }}
             >
               <Text
                 style={[
@@ -106,6 +130,8 @@ export const PlaylistHeaderBar = React.memo(function PlaylistHeaderBar({
                 styles.viewToggleBtn,
                 viewMode === 'manual' && styles.viewToggleBtnActive,
               ]}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: viewMode === 'manual' }}
             >
               <Text
                 style={[
@@ -117,8 +143,8 @@ export const PlaylistHeaderBar = React.memo(function PlaylistHeaderBar({
               </Text>
             </TouchableOpacity>
           </View>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
     </View>
   );
 });
