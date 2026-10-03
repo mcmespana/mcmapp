@@ -112,8 +112,13 @@ export default function ContigoScreen() {
 
   // Pulsar un día (racha o calendario) abre lo que haya guardado; si hay
   // varias cosas, pregunta. Ver `useContigoDayMenu`.
-  const { dayMenu, handleDayPress, openDay, closeDayMenu } =
-    useContigoDayMenu();
+  const {
+    dayMenu,
+    handleDayPress,
+    chooseFromMenu,
+    onMenuClosed,
+    closeDayMenu,
+  } = useContigoDayMenu();
 
   const bgGradient = isDark
     ? ([WARM_DARK.bg, WARM_DARK.bgDeep] as const)
@@ -380,7 +385,8 @@ export default function ContigoScreen() {
         onClose={closeDayMenu}
         date={dayMenu?.date ?? null}
         record={dayMenu?.rec ?? null}
-        onSelect={openDay}
+        onSelect={chooseFromMenu}
+        onCloseComplete={onMenuClosed}
       />
     </View>
   );

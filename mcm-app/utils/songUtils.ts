@@ -41,3 +41,27 @@ export function stripCategoryPrefix(title: string): string {
 export function cleanSongTitle(title: string): string {
   return title.replace(/^\d+\.\s*/, '').trim();
 }
+
+const TRAILING_EMOJI_REGEX =
+  /[\p{Emoji_Presentation}\p{Extended_Pictographic}][\u{FE0F}\u{200D}\p{Emoji_Presentation}\p{Extended_Pictographic}]*$/u;
+
+/**
+ * Separa el emoji final del título de una categoría («Ofertorio 🤲» →
+ * `{ emoji: '🤲', cleanText: 'Ofertorio' }`). Sin emoji devuelve 🎵. Lo usan
+ * la lista de categorías y las cabeceras de la pantalla de una etiqueta, que
+ * tienen que pintar la misma categoría igual.
+ */
+export function extractTrailingEmoji(text: string): {
+  emoji: string;
+  cleanText: string;
+} {
+  const trimmed = text.trim();
+  const match = trimmed.match(TRAILING_EMOJI_REGEX);
+  if (match) {
+    return {
+      emoji: match[0],
+      cleanText: trimmed.slice(0, match.index).trim(),
+    };
+  }
+  return { emoji: '🎵', cleanText: trimmed };
+}

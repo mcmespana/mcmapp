@@ -118,8 +118,36 @@ desde el ordenador e ir a actualizarlo desde el móvil) ahora se puede.
 
 ### Vaciar
 
-Un botón «Vaciar» en la propia cabecera de la lista (además del menú). No
-pregunta: vacía y deja 10 s de «Deshacer».
+Un botón «Vaciar» en la propia cabecera de la lista. No pregunta: vacía y deja
+10 s de «Deshacer». (Desde octubre de 2026 ya no está repetido en el menú «⋯».)
+
+### El menú «⋯» de la playlist
+
+Reordenado en octubre de 2026. Había llegado a 16 opciones mezclando el modelo
+nuevo (coro) con el antiguo (códigos sueltos), con dos entradas que abrían la
+misma hoja. Ahora:
+
+| Sección | Qué lleva | Visible |
+| ------- | --------- | ------- |
+| **Coro en vivo** | QR de la sesión, cambiar su código, cerrar/salir | Solo con una sesión abierta (arriba del todo) |
+| **Mi coro** | Guardar en el coro (primero si hay cambios sin subir) · Abrir el coro · Enlace del coro | Siempre |
+| **Compartir** | Mensaje para WhatsApp · PDF · Código QR | Con canciones |
+| **Con código** | Importar con código · Subir con código · Dirigir/seguir en vivo con código | Plegado |
+| **En la nube · #código** | Cambiar el código · Borrar de la nube | Plegado, solo si la subiste tú |
+| **Archivo** | Exportar/importar `.mcm` | Plegado |
+
+Las secciones marcadas `secondary` se esconden tras **«Más opciones»** cuando
+el menú pasa de 8 acciones (`PlaylistActionsBottomSheet`); con menos, todo se
+ve de golpe. Nada se ha quitado: la trastienda está a un toque más.
+
+La cabecera de la lista va en tres filas: contador + «Vaciar», el estado de
+sincronización con la fila entera (con «Guardar» al lado si hay cambios), y el
+conmutador «Por categoría / Orden ajustado» a todo el ancho. En una sola fila,
+en un iPhone normal el contador se partía y el estado se quedaba en
+«Cambios s…».
+
+En la hoja del coro, un coro **sin playlists** ya no enseña «Importar la
+última» desactivado: lo destacado pasa a ser «Subir la primera playlist».
 
 ### Coro en vivo
 

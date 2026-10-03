@@ -43,10 +43,31 @@ export const createStyles = (
       justifyContent: 'space-between',
       paddingHorizontal: 20,
       paddingTop: 12,
-      paddingBottom: 8,
+      paddingBottom: 4,
       gap: 8,
     },
+    statusRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 20,
+      paddingVertical: 4,
+    },
+    statusText: {
+      flex: 1,
+      marginTop: 0,
+    },
+    statusAction: {
+      marginTop: 0,
+      textDecorationLine: 'underline',
+    },
+    viewToggleRow: {
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 4,
+    },
     selectionCount: {
+      flexShrink: 1,
       ...typography.caption,
       fontWeight: '700',
       color: themeColors(isDark).textSecondary,
@@ -84,7 +105,9 @@ export const createStyles = (
       padding: 2,
     },
     viewToggleBtn: {
-      paddingVertical: 6,
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: 7,
       paddingHorizontal: 10,
       borderRadius: 6,
     },

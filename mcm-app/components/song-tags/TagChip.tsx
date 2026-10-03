@@ -39,6 +39,8 @@ interface TagChipProps {
   onPress?: (tag: ResolvedTag) => void;
   /** Si se pasa, el chip muestra una ✕ que llama a esta función. */
   onRemove?: (tag: ResolvedTag) => void;
+  /** Un «+» delante: la etiqueta se AÑADE a las activas (refinamiento). */
+  showAdd?: boolean;
   accessibilityHint?: string;
 }
 
@@ -50,6 +52,7 @@ export default function TagChip({
   hideCount = false,
   onPress,
   onRemove,
+  showAdd = false,
   accessibilityHint,
 }: TagChipProps) {
   const styles = React.useMemo(
@@ -59,6 +62,14 @@ export default function TagChip({
 
   const body = (
     <>
+      {showAdd && (
+        <MaterialIcons
+          name="add"
+          size={15}
+          color={themeColors(isDark).textMuted}
+          style={styles.addIcon}
+        />
+      )}
       {!!tag.emoji && <Text style={styles.emoji}>{tag.emoji}</Text>}
       <Text
         style={[styles.label, fontSize ? { fontSize } : null]}
@@ -102,7 +113,11 @@ export default function TagChip({
       activeOpacity={0.6}
       accessibilityRole="button"
       accessibilityLabel={
-        onRemove ? `Quitar la etiqueta ${tag.label}` : tag.label
+        onRemove
+          ? `Quitar la etiqueta ${tag.label}`
+          : showAdd
+            ? `Añadir la etiqueta ${tag.label}`
+            : tag.label
       }
       accessibilityHint={accessibilityHint}
     >
@@ -170,6 +185,11 @@ const createStyles = (isDark: boolean, variant: TagChipVariant) => {
     },
     emoji: {
       fontSize: variant === 'cloud' ? 15 : 13,
+    },
+    // El «+» va pegado al texto: el hueco del chip ya lo separa del borde.
+    addIcon: {
+      marginLeft: -2,
+      marginRight: -2,
     },
     label: {
       fontSize: variant === 'cloud' ? 14.5 : 13.5,

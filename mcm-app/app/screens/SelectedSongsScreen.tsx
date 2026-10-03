@@ -1194,87 +1194,103 @@ const SelectedSongsScreen: React.FC = () => {
 
   const hasSongs = flatSelectedSongs.length > 0;
 
+  /**
+   * El menú «⋯». Reordenado en octubre de 2026: había crecido a 16 opciones
+   * mezclando el modelo nuevo (coro) con el antiguo (códigos sueltos), con dos
+   * entradas que hacían exactamente lo mismo («Coro: X» y «Dirigir o seguir a
+   * mi coro» abrían la misma hoja) y un «Vaciar» que ya está en la cabecera.
+   *
+   * Ahora arriba solo lo de cada semana —el coro y compartir— y la trastienda
+   * (códigos, archivos, gestionar la copia en la nube) queda plegada tras
+   * «Más opciones» cuando el menú es largo. Nada se ha quitado: lo que sobra
+   * está a un toque más.
+   */
   const sheetSections = useMemo<PlaylistActionSection[]>(() => {
-    const exportar: PlaylistAction[] = [
-      {
-        id: 'share-text',
-        icon: 'share',
-        label:
-          Platform.OS === 'web' ||
-          Platform.OS === 'windows' ||
-          Platform.OS === 'macos'
-            ? 'Copiar lista al portapapeles'
-            : 'Compartir mensaje con las canciones',
-        description: 'Texto para Whatsapp con canción, tono y número',
-        onPress: handleShareText,
-      },
-      {
-        id: 'export-pdf',
-        icon: 'picture-as-pdf',
-        label: 'Exportar a PDF',
-        description: 'Letra y acordes con un formato bonito',
-        onPress: handleStartExportPdf,
-      },
-    ];
+    const desktopLike =
+      Platform.OS === 'web' ||
+      Platform.OS === 'windows' ||
+      Platform.OS === 'macos';
 
-    // El coro es ahora la vía principal: nadie tiene que acordarse de códigos.
-    const coroPlaylists: PlaylistAction[] = [
-      {
-        id: 'choir-hub',
-        icon: 'groups',
-        label: sharing.myChoir
-          ? `Coro: ${sharing.myChoir.name}`
-          : 'Elegir mi coro',
-        description: sharing.myChoir
-          ? 'Importar la última, ver el histórico o dirigir en vivo'
-          : 'Las playlists cuelgan del coro. Elígelo una vez y listo.',
-        onPress: () => sharing.openSheet(sharing.myChoir ? 'home' : 'choose'),
-      },
-    ];
-    if (hasSongs) {
+    // --- Mi coro: la vía principal, nadie tiene que acordarse de códigos ---
+    const hub: PlaylistAction = {
+      id: 'choir-hub',
+      icon: 'groups',
+      label: sharing.myChoir ? 'Abrir el coro' : 'Elegir mi coro',
+      description: sharing.myChoir
+        ? 'Importar la última, ver el histórico o dirigir en vivo'
+        : 'Las playlists cuelgan del coro. Elígelo una vez y listo.',
+      onPress: () => sharing.openSheet(sharing.myChoir ? 'home' : 'choose'),
+    };
+    const save: PlaylistAction | null = hasSongs
+      ? {
+          id: 'choir-save',
+          icon: 'cloud-upload',
+          label: link
+            ? sharing.isSynced
+              ? 'Guardada en el coro'
+              : 'Guardar cambios en el coro'
+            : 'Subir al coro',
+          description: link
+            ? sharing.isSynced
+              ? `«${link.name ?? link.code}» está al día. Toca para subirla como nueva`
+              : `Actualizar «${link.name ?? link.code}» o subir una nueva`
+            : `${flatSelectedSongs.length} ${
+                flatSelectedSongs.length === 1 ? 'canción' : 'canciones'
+              } para todo el coro`,
+          onPress: () => sharing.openSheet(sharing.myChoir ? 'save' : 'choose'),
+        }
+      : null;
+    // Con cambios sin subir, guardar va lo primero: es lo que se viene a hacer.
+    const coroPlaylists: PlaylistAction[] =
+      save && link && !sharing.isSynced
+        ? [save, hub]
+        : save
+          ? [hub, save]
+          : [hub];
+    if (sharing.myChoir) {
       coroPlaylists.push({
-        id: 'choir-save',
-        icon: 'cloud-upload',
-        label: link
-          ? 'Guardar cambios en el coro'
-          : 'Subir esta playlist al coro',
-        description: link
-          ? sharing.isSynced
-            ? `«${link.name ?? link.code}» ya está al día`
-            : `Actualizar «${link.name ?? link.code}» o subir una nueva`
-          : `${flatSelectedSongs.length} canciones para todo el coro`,
-        onPress: () => sharing.openSheet(sharing.myChoir ? 'save' : 'choose'),
+        id: 'share-choir-link',
+        icon: 'link',
+        label: 'Enlace del coro',
+        description:
+          'Abre siempre la última: el mismo sirve todos los domingos',
+        onPress: () =>
+          setQrModal({
+            title: `${sharing.myChoir!.name} · última playlist`,
+            url: `${WEB_BASE_URL}/playlist?coro=${sharing.myChoir!.id}`,
+          }),
       });
     }
 
-    // Códigos y QR: se mantienen, pero como opción secundaria.
-    const nube: PlaylistAction[] = [
-      {
-        id: 'download-cloud',
-        icon: 'pin',
-        label: 'Importar con un código',
-        description: 'Los 4 dígitos que te han pasado (o escanear un QR)',
-        onPress: () => setCodeDialog({ variant: 'cloud-download' }),
-      },
-      {
-        id: 'upload-cloud',
-        icon: 'cloud-upload',
-        label: 'Subir con un código suelto',
-        description: link
-          ? `Sin coro. Código actual: ${link.code}`
-          : 'Sin coro: solo quien tenga el código podrá importarla',
-        onPress: () => setCodeDialog({ variant: 'cloud-upload' }),
-      },
-    ];
-    if (offlineUrl) {
-      // Un único botón de QR: dentro, el modal ofrece dos pestañas
-      // (con código / sin conexión). Si todavía no se ha subido, la pestaña
-      // online invita a subir la playlist.
-      nube.push({
+    // --- Compartir esta lista ---------------------------------------------
+    const compartir: PlaylistAction[] = hasSongs
+      ? [
+          {
+            id: 'share-text',
+            icon: 'share',
+            label: desktopLike
+              ? 'Copiar la lista al portapapeles'
+              : 'Mensaje para WhatsApp',
+            description: 'Canciones con su tono y su número',
+            onPress: handleShareText,
+          },
+          {
+            id: 'export-pdf',
+            icon: 'picture-as-pdf',
+            label: 'PDF con letra y acordes',
+            description: 'Listo para imprimir o mandar',
+            onPress: handleStartExportPdf,
+          },
+        ]
+      : [];
+    if (hasSongs && offlineUrl) {
+      // Un único QR: dentro, el modal ofrece dos pestañas (con código / sin
+      // conexión). Si todavía no se ha subido, la online invita a subirla.
+      compartir.push({
         id: 'show-qr',
         icon: 'qr-code-2',
-        label: 'Compartir QR de la playlist',
-        description: 'Dos pestañas: con código (internet) o sin conexión',
+        label: 'Código QR',
+        description: 'Para escanear con otro móvil, con o sin internet',
         onPress: () =>
           setQrModal({
             title: link
@@ -1287,184 +1303,159 @@ const SelectedSongsScreen: React.FC = () => {
           }),
       });
     }
-    if (sharing.myChoir) {
-      nube.push({
-        id: 'share-choir-link',
-        icon: 'link',
-        label: 'Enlace del coro (siempre la última)',
-        description: `Quien lo abra importa la última playlist de ${sharing.myChoir.name}`,
+
+    // --- Coro en vivo: solo con una sesión en marcha ----------------------
+    // Para empezar una se entra por el coro (la hoja) o, sin coro, por la
+    // trastienda «Con código». Aquí solo se gestiona la que ya está abierta.
+    const enVivo: PlaylistAction[] = [];
+    if (choir.mode !== 'off') {
+      // La sesión puede colgar de un coro (clave = id del coro) o ser suelta
+      // (clave = 4 dígitos). No es lo mismo: a una sesión de coro NO se le
+      // puede cambiar el código, porque la clave *es* el coro — hacerlo la
+      // desataría de él y nadie del coro la encontraría.
+      const key = choir.code ?? '';
+      const esCoro = isChoirId(key);
+      const nombre = choir.session?.choirName ?? sharing.myChoir?.name;
+      enVivo.push({
+        id: 'show-qr-choir',
+        icon: 'qr-code-2',
+        label: 'QR de la sesión en vivo',
+        description: 'Quien lo escanee entra directamente',
         onPress: () =>
           setQrModal({
-            title: `${sharing.myChoir!.name} · última playlist`,
-            url: `${WEB_BASE_URL}/playlist?coro=${sharing.myChoir!.id}`,
+            title: esCoro
+              ? `${nombre ?? 'Coro'} · en vivo`
+              : `Coro · Código ${key}`,
+            url: esCoro
+              ? `${WEB_BASE_URL}/coro?coro=${key}`
+              : `${WEB_BASE_URL}/coro?c=${key}`,
+            code: esCoro ? undefined : key,
           }),
       });
+      if (!esCoro) {
+        enVivo.push({
+          id: 'choir-change-code',
+          icon: 'edit',
+          label: 'Cambiar código de la sesión',
+          description: `Actual: ${key}${choir.mode === 'slave' ? ' (solo el líder puede cambiarlo)' : ''}`,
+          onPress: () =>
+            setCodeDialog({ variant: 'change-code', initial: key }),
+          disabled: choir.mode !== 'master',
+        });
+      }
+      enVivo.push({
+        id: 'choir-leave',
+        icon: 'logout',
+        label:
+          choir.mode === 'master'
+            ? 'Cerrar la sesión en vivo'
+            : 'Salir del coro en vivo',
+        variant: 'danger',
+        onPress: () => choir.leave(),
+      });
     }
+
+    // --- Trastienda: con código, sin coro ---------------------------------
+    const conCodigo: PlaylistAction[] = [
+      {
+        id: 'download-cloud',
+        icon: 'download',
+        label: 'Importar con un código',
+        description: 'Los 4 dígitos que te han pasado, o escanear un QR',
+        onPress: () => setCodeDialog({ variant: 'cloud-download' }),
+      },
+    ];
+    if (hasSongs) {
+      conCodigo.push({
+        id: 'upload-cloud',
+        icon: 'pin',
+        label: 'Subir con un código',
+        description: link
+          ? `Sin coro. Código actual: ${link.code}`
+          : 'Sin coro: solo quien tenga el código podrá importarla',
+        onPress: () => setCodeDialog({ variant: 'cloud-upload' }),
+      });
+    }
+    if (choir.mode === 'off') {
+      conCodigo.push(
+        {
+          id: 'choir-start',
+          icon: 'campaign',
+          label: 'Dirigir en vivo con un código',
+          description: 'Para un ensayo puntual fuera de tu coro',
+          onPress: () => setCodeDialog({ variant: 'choir-start' }),
+        },
+        {
+          id: 'choir-join',
+          icon: 'headphones',
+          label: 'Seguir en vivo con un código',
+          description: 'Ves la canción y el tono del líder en tiempo real',
+          onPress: () => setCodeDialog({ variant: 'choir-join' }),
+        },
+      );
+    }
+
     // Cambiar el código o borrar de la nube solo tiene sentido sobre una
     // playlist que subiste tú: sobre la de otra persona sería un destrozo
     // silencioso (para eso está "actualizar", que sí pide la contraseña).
-    if (link?.owned) {
-      nube.push(
-        {
-          id: 'change-cloud-code',
-          icon: 'edit',
-          label: 'Cambiar código de la playlist',
-          description: `Actual: ${link.code}`,
-          onPress: () =>
-            setCodeDialog({
-              variant: 'change-code',
-              initial: link.code,
-            }),
-        },
-        {
-          id: 'delete-cloud',
-          icon: 'cloud-off',
-          label: 'Borrar playlist de la nube',
-          variant: 'danger',
-          onPress: handleDeleteFromCloud,
-        },
-      );
-    }
+    const nube: PlaylistAction[] = link?.owned
+      ? [
+          {
+            id: 'change-cloud-code',
+            icon: 'edit',
+            label: 'Cambiar el código',
+            description: `Ahora es ${link.code}`,
+            onPress: () =>
+              setCodeDialog({
+                variant: 'change-code',
+                initial: link.code,
+              }),
+          },
+          {
+            id: 'delete-cloud',
+            icon: 'cloud-off',
+            label: 'Borrar de la nube',
+            description: link.choirId
+              ? 'Desaparece también del histórico del coro'
+              : undefined,
+            variant: 'danger',
+            onPress: handleDeleteFromCloud,
+          },
+        ]
+      : [];
 
-    const archivo: PlaylistAction[] = [
-      {
+    const archivo: PlaylistAction[] = [];
+    if (hasSongs) {
+      archivo.push({
         id: 'export-file',
         icon: 'file-upload',
-        label: 'Exportar archivo (.mcm)',
+        label: 'Exportar archivo .mcm',
         description: 'Incluye tonos cambiados y orden personalizado',
         onPress: handleStartExportFile,
-      },
-      {
-        id: 'import-file',
-        icon: 'file-download',
-        label: 'Importar archivo (.mcm)',
-        onPress: handleImportFile,
-      },
-    ];
+      });
+    }
+    archivo.push({
+      id: 'import-file',
+      icon: 'file-download',
+      label: 'Importar archivo .mcm',
+      description: 'Puedes juntarlo con tu lista o reemplazarla',
+      onPress: handleImportFile,
+    });
 
-    const coro: PlaylistAction[] =
-      choir.mode === 'off'
-        ? [
-            {
-              id: 'choir-live-hub',
-              icon: 'campaign',
-              label: 'Dirigir o seguir a mi coro',
-              description: sharing.myChoir
-                ? `Sin códigos: se entra por ${sharing.myChoir.name}`
-                : 'Elige tu coro y dirige (o síguele) en vivo',
-              onPress: () =>
-                sharing.openSheet(sharing.myChoir ? 'home' : 'choose'),
-            },
-            {
-              id: 'choir-start',
-              icon: 'pin',
-              label: 'Sesión suelta con código',
-              description: 'Para un ensayo puntual fuera de tu coro',
-              onPress: () => setCodeDialog({ variant: 'choir-start' }),
-            },
-            {
-              id: 'choir-join',
-              icon: 'headphones',
-              label: 'Unirse con un código',
-              description:
-                'Introduces un código y sigues las canciones del líder',
-              onPress: () => setCodeDialog({ variant: 'choir-join' }),
-            },
-          ]
-        : (() => {
-            // La sesión puede colgar de un coro (clave = id del coro) o ser
-            // suelta (clave = 4 dígitos). No es lo mismo: a una sesión de coro
-            // NO se le puede cambiar el código, porque la clave *es* el coro —
-            // hacerlo la desataría de él y nadie del coro la encontraría.
-            const key = choir.code ?? '';
-            const esCoro = isChoirId(key);
-            const nombre = choir.session?.choirName ?? sharing.myChoir?.name;
-            const acciones: PlaylistAction[] = [
-              {
-                id: 'show-qr-choir',
-                icon: 'qr-code-2',
-                label: 'Ver QR de la sesión',
-                description: 'Quien lo escanee entra directamente',
-                onPress: () =>
-                  setQrModal({
-                    title: esCoro
-                      ? `${nombre ?? 'Coro'} · en vivo`
-                      : `Coro · Código ${key}`,
-                    url: esCoro
-                      ? `${WEB_BASE_URL}/coro?coro=${key}`
-                      : `${WEB_BASE_URL}/coro?c=${key}`,
-                    code: esCoro ? undefined : key,
-                  }),
-              },
-            ];
-            if (!esCoro) {
-              acciones.push({
-                id: 'choir-change-code',
-                icon: 'edit',
-                label: 'Cambiar código de la sesión',
-                description: `Actual: ${key}${choir.mode === 'slave' ? ' (solo el líder puede cambiarlo)' : ''}`,
-                onPress: () =>
-                  setCodeDialog({ variant: 'change-code', initial: key }),
-                disabled: choir.mode !== 'master',
-              });
-            }
-            acciones.push({
-              id: 'choir-leave',
-              icon: 'logout',
-              label:
-                choir.mode === 'master'
-                  ? 'Cerrar la sesión en vivo'
-                  : 'Salir del coro en vivo',
-              variant: 'danger',
-              onPress: () => choir.leave(),
-            });
-            return acciones;
-          })();
-
-    // Vaciar ya no pasa por un diálogo de confirmación: se vacía y el toast
-    // deja 10 s para deshacerlo. Empezar una lista de cero es de las cosas que
-    // más se hacen y era de las más pesadas (menú → confirmar → aceptar).
-    const peligro: PlaylistAction[] = [
-      {
-        id: 'clear',
-        icon: 'delete-outline',
-        label: 'Vaciar playlist y empezar de cero',
-        description: 'Se puede deshacer justo después',
-        variant: 'danger',
-        onPress: sharing.clearWithUndo,
-      },
-    ];
-
-    // Sin canciones no se puede compartir, exportar, subir ni vaciar NADA: esas
-    // opciones se quitan en vez de dejarse muertas (una lista llena de cosas
-    // que no hacen nada es peor que una lista corta). Se quedan las que SÍ
-    // funcionan con la lista vacía: importar, el hub del coro, compartir el
-    // enlace del coro (que no depende de tu selección) y el modo coro en vivo,
-    // donde las canciones las pone el líder después.
-    const VIVAS_SIN_CANCIONES = new Set([
-      'download-cloud',
-      'choir-hub',
-      'share-choir-link',
-    ]);
-    const soloImportar = <T extends PlaylistAction>(as: T[]) =>
-      as.filter(
-        (a) => a.id.startsWith('import') || VIVAS_SIN_CANCIONES.has(a.id),
-      );
-
-    // Orden por frecuencia de uso real: traer/guardar la del coro es lo que se
-    // hace cada semana; exportar el mensaje de WhatsApp o el PDF, casi igual de
-    // a menudo; el coro en vivo, los domingos; y los códigos, los QR y los
-    // archivos son la trastienda para casos raros.
+    // Orden por frecuencia de uso real: una sesión en vivo abierta es lo más
+    // urgente; traer/guardar la del coro es lo de cada semana; el mensaje de
+    // WhatsApp y el PDF, casi igual de a menudo. Lo demás es trastienda.
     return [
+      { title: 'Coro en vivo', actions: enVivo },
       { title: 'Mi coro', actions: coroPlaylists },
-      { title: 'Exportar y compartir', actions: hasSongs ? exportar : [] },
-      { title: 'Coro en vivo', actions: coro },
+      { title: 'Compartir', actions: compartir },
+      { title: 'Con código', actions: conCodigo, secondary: true },
       {
-        title: 'Códigos y QR',
-        actions: hasSongs ? nube : soloImportar(nube),
+        title: link ? `En la nube · #${link.code}` : 'En la nube',
+        actions: nube,
+        secondary: true,
       },
-      { title: 'Archivo', actions: hasSongs ? archivo : soloImportar(archivo) },
-      { actions: hasSongs ? peligro : [] },
+      { title: 'Archivo', actions: archivo, secondary: true },
     ];
   }, [
     hasSongs,

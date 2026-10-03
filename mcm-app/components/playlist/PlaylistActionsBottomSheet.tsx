@@ -1,5 +1,5 @@
 import { radii } from '@/constants/uiStyles';
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,19 @@ export interface PlaylistActionSection {
   /** Cabecera de la sección. Sin título = solo separador (p.ej. zona peligro). */
   title?: string;
   actions: PlaylistAction[];
+  /**
+   * Trastienda: códigos sueltos, archivos, gestión de la copia en la nube. Se
+   * esconde tras «Más opciones» cuando el menú es largo, para que lo de todas
+   * las semanas (coro y compartir) quepa en la hoja sin hacer scroll.
+   */
+  secondary?: boolean;
 }
+
+/**
+ * Con menos acciones que esto todo se ve de golpe: esconder dos opciones tras
+ * un «Más opciones» sería un toque de más para nada.
+ */
+const COLLAPSE_FROM = 9;
 
 interface Props {
   visible: boolean;
@@ -52,6 +64,25 @@ const PlaylistActionsBottomSheet: React.FC<Props> = ({
   // Using a ref (not state) avoids a re-render between press and close.
   const pendingActionRef = useRef<PlaylistAction | null>(null);
 
+  // La trastienda se pliega de nuevo cada vez que se abre la hoja.
+  const [expanded, setExpanded] = useState(false);
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (wasVisible !== visible) {
+    setWasVisible(visible);
+    if (visible) setExpanded(false);
+  }
+
+  const nonEmpty = sections.filter((s) => s.actions.length > 0);
+  const total = nonEmpty.reduce((n, s) => n + s.actions.length, 0);
+  const hidden = nonEmpty.filter((s) => s.secondary);
+  const collapsible = total >= COLLAPSE_FROM && hidden.length > 0;
+  const shown =
+    collapsible && !expanded ? nonEmpty.filter((s) => !s.secondary) : nonEmpty;
+  const hiddenSummary = hidden
+    .map((s) => s.title)
+    .filter(Boolean)
+    .join(' · ');
+
   const handleCloseComplete = useCallback(() => {
     const action = pendingActionRef.current;
     pendingActionRef.current = null;
@@ -70,63 +101,90 @@ const PlaylistActionsBottomSheet: React.FC<Props> = ({
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       >
-        {sections
-          .filter((s) => s.actions.length > 0)
-          .map((section, sIdx) => (
-            <React.Fragment key={section.title ?? `section-${sIdx}`}>
-              {sIdx > 0 ? <View style={styles.separator} /> : null}
-              {section.title ? (
-                <Text style={styles.sectionTitle}>{section.title}</Text>
-              ) : null}
-              {section.actions.map((a) => (
-                <TouchableOpacity
-                  key={a.id}
-                  style={[styles.item, a.disabled && styles.itemDisabled]}
-                  onPress={() => {
-                    if (a.disabled) return;
-                    // Store the action so handleCloseComplete fires it after
-                    // the sheet Modal is fully dismissed. iOS cannot present a
-                    // second Modal while the first one is still mounted.
-                    pendingActionRef.current = a;
-                    onClose();
-                  }}
-                  disabled={a.disabled}
+        {shown.map((section, sIdx) => (
+          <React.Fragment key={section.title ?? `section-${sIdx}`}>
+            {sIdx > 0 ? <View style={styles.separator} /> : null}
+            {section.title ? (
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+            ) : null}
+            {section.actions.map((a) => (
+              <TouchableOpacity
+                key={a.id}
+                style={[styles.item, a.disabled && styles.itemDisabled]}
+                onPress={() => {
+                  if (a.disabled) return;
+                  // Store the action so handleCloseComplete fires it after
+                  // the sheet Modal is fully dismissed. iOS cannot present a
+                  // second Modal while the first one is still mounted.
+                  pendingActionRef.current = a;
+                  onClose();
+                }}
+                disabled={a.disabled}
+              >
+                <View
+                  style={[
+                    styles.iconWrap,
+                    a.variant === 'danger' && styles.iconWrapDanger,
+                  ]}
                 >
-                  <View
+                  <MaterialIcons
+                    name={a.icon}
+                    size={22}
+                    color={
+                      a.variant === 'danger'
+                        ? SwipeColors.remove
+                        : themeColors(isDark).link
+                    }
+                  />
+                </View>
+                <View style={styles.itemText}>
+                  <Text
                     style={[
-                      styles.iconWrap,
-                      a.variant === 'danger' && styles.iconWrapDanger,
+                      styles.itemLabel,
+                      a.variant === 'danger' && styles.itemLabelDanger,
                     ]}
                   >
-                    <MaterialIcons
-                      name={a.icon}
-                      size={22}
-                      color={
-                        a.variant === 'danger'
-                          ? SwipeColors.remove
-                          : themeColors(isDark).link
-                      }
-                    />
-                  </View>
-                  <View style={styles.itemText}>
-                    <Text
-                      style={[
-                        styles.itemLabel,
-                        a.variant === 'danger' && styles.itemLabelDanger,
-                      ]}
-                    >
-                      {a.label}
-                    </Text>
-                    {a.description ? (
-                      <Text style={styles.itemDescription}>
-                        {a.description}
-                      </Text>
-                    ) : null}
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </React.Fragment>
-          ))}
+                    {a.label}
+                  </Text>
+                  {a.description ? (
+                    <Text style={styles.itemDescription}>{a.description}</Text>
+                  ) : null}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </React.Fragment>
+        ))}
+        {collapsible && !expanded ? (
+          <>
+            <View style={styles.separator} />
+            <TouchableOpacity
+              style={styles.item}
+              onPress={() => setExpanded(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Más opciones"
+              accessibilityHint={hiddenSummary}
+            >
+              <View style={styles.iconWrap}>
+                <MaterialIcons
+                  name="more-horiz"
+                  size={22}
+                  color={themeColors(isDark).link}
+                />
+              </View>
+              <View style={styles.itemText}>
+                <Text style={styles.itemLabel}>Más opciones</Text>
+                {hiddenSummary ? (
+                  <Text style={styles.itemDescription}>{hiddenSummary}</Text>
+                ) : null}
+              </View>
+              <MaterialIcons
+                name="expand-more"
+                size={22}
+                color={themeColors(isDark).textMuted}
+              />
+            </TouchableOpacity>
+          </>
+        ) : null}
       </ScrollView>
     </BottomSheet>
   );
@@ -173,7 +231,7 @@ const createStyles = (isDark: boolean) =>
     },
     itemDescription: {
       ...typography.caption,
-      color: '#8E8E93',
+      color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
     separator: {
