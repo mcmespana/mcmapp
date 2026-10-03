@@ -41,6 +41,12 @@ export interface UseSongProcessorParams {
    * a RN (mensaje `{ type: 'arr-longpress', line }`) para insertar un `{arr:}`.
    */
   adminMode?: boolean;
+  /**
+   * Solo canal preview: pinta la letra con la maquetación de antes de
+   * octubre de 2026 (sin agrupar palabras, sin sangría francesa, acordes sin
+   * hueco) para compararlas en el móvil. Se cambia en vivo, sin recargar.
+   */
+  legacyLayout?: boolean;
 }
 
 /**
@@ -54,6 +60,7 @@ export interface SongStyleState {
   isDark: boolean;
   chordsVisible: boolean;
   arrangementsVisible: boolean;
+  legacyLayout: boolean;
   topPadding: number;
   bottomPadding: number;
 }
@@ -472,6 +479,7 @@ export const useSongProcessor = ({
   topInset,
   bottomInset,
   adminMode = false,
+  legacyLayout = false,
 }: UseSongProcessorParams) => {
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
@@ -499,6 +507,7 @@ export const useSongProcessor = ({
       isDark,
       chordsVisible,
       arrangementsVisible,
+      legacyLayout,
       topPadding,
       bottomPadding,
     }),
@@ -508,6 +517,7 @@ export const useSongProcessor = ({
       isDark,
       chordsVisible,
       arrangementsVisible,
+      legacyLayout,
       topPadding,
       bottomPadding,
     ],
@@ -645,6 +655,9 @@ export const useSongProcessor = ({
             }
             if (typeof s.chordsVisible === 'boolean') {
               document.body.classList.toggle('chords-hidden', !s.chordsVisible);
+            }
+            if (typeof s.legacyLayout === 'boolean') {
+              document.body.classList.toggle('layout-legacy', s.legacyLayout);
             }
             if (typeof s.arrangementsVisible === 'boolean') {
               document.body.classList.toggle('arr-hidden', !s.arrangementsVisible);
@@ -887,6 +900,13 @@ export const useSongProcessor = ({
             .row > :first-child {
               margin-left: -0.9em;
             }
+            /* Maquetación de antes (solo canal preview, para comparar): las
+               palabras agrupadas se deshacen con display: contents y sus
+               columnas vuelven a ser hijas directas de la fila. */
+            body.layout-legacy .row { padding-left: 0; }
+            body.layout-legacy .row > :first-child { margin-left: 0; }
+            body.layout-legacy .word { display: contents; }
+            body.layout-legacy .chord-sheet .chord { padding-right: 0; }
             .column {
               padding-right: 0;
               max-width: 100%;
@@ -1014,7 +1034,7 @@ export const useSongProcessor = ({
             }
           </style>
         </head>
-        <body class="${s.isDark ? 'theme-dark' : ''}${s.chordsVisible ? '' : ' chords-hidden'}${s.arrangementsVisible ? '' : ' arr-hidden'}">
+        <body class="${s.isDark ? 'theme-dark' : ''}${s.chordsVisible ? '' : ' chords-hidden'}${s.arrangementsVisible ? '' : ' arr-hidden'}${s.legacyLayout ? ' layout-legacy' : ''}">
           ${fsHeader}
           ${finalSongContentWithMeta}
           <script>${bootstrap}</script>

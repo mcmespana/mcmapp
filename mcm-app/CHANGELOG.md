@@ -18,6 +18,23 @@
 
 ---
 
+## 2026-10-04 01:20 — Barra de pestañas cortada en el primer arranque + laboratorio de maquetación
+
+- **Bug (iOS, solo primer arranque)**: etiquetas cortadas y desplazadas
+  («Con», «Co», «Cal»). Sin configuración de perfiles en caché, la barra se
+  montaba con las pestañas por defecto y al llegar las de Firebase el módulo
+  nativo cambiaba los items en caliente; UIKit no volvía a repartirlos. Ahora
+  `CompactTabBar` recrea la vista nativa cuando cambia el juego de pestañas
+  (`key`). Solo JS.
+- **Laboratorio (canal preview)**: en el menú del botón flotante de una
+  canción, «Lab: ver la maquetación antigua» conmuta en vivo entre la
+  maquetación nueva de la letra y la de antes, para compararlas en el móvil.
+  Fuera de preview no aparece y siempre se ve la nueva. Clase
+  `layout-legacy` en `useSongProcessor` + `hooks/useLabSongLayout.ts`; se
+  borran cuando se decida.
+
+---
+
 ## 2026-10-03 23:00 — Contigo: navegación por días y calendarios
 
 - **Oración**: «día siguiente» se para en hoy y los días futuros del

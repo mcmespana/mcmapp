@@ -1,4 +1,5 @@
 import { logger } from '@/utils/logger';
+import { useLabSongLayout } from '@/hooks/useLabSongLayout';
 import { useEffect, useState, useLayoutEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
@@ -208,6 +209,8 @@ export default function SongDetailScreen({
   const slideAnim = useSharedValue(0);
   const screenWidth = Dimensions.get('window').width;
 
+  // Laboratorio (canal preview): comparar con la maquetación antigua.
+  const { legacyLayout } = useLabSongLayout();
   const {
     songHtml,
     isLoadingSong: isSongProcessing,
@@ -226,6 +229,7 @@ export default function SongDetailScreen({
     capo: effectiveCapo,
     isDark,
     adminMode: isAdmin,
+    legacyLayout,
   });
 
   const isSelected = isSongSelected(filename);

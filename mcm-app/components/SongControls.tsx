@@ -19,6 +19,7 @@ import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import { transposeLabel } from '@/utils/transposeKey';
+import { useLabSongLayout } from '@/hooks/useLabSongLayout';
 import SongFontBottomSheet from './SongFontBottomSheet';
 import TransposeBottomSheet from './TransposeBottomSheet';
 import ReportBugsModal from './ReportBugsModal';
@@ -163,6 +164,8 @@ const SongControls: React.FC<SongControlsProps> = ({
   const [showSecretPanel, setShowSecretPanel] = useState(false);
   const scheme = useColorScheme();
   const { toast } = useToast();
+  // Solo en el canal preview: conmutar la maquetación vieja/nueva de la letra.
+  const lab = useLabSongLayout();
   const isDark = scheme === 'dark';
   // El FAB va por encima de la barra de pestañas flotante.
   const tabBarClearance = useTabBarClearance();
@@ -315,6 +318,20 @@ const SongControls: React.FC<SongControlsProps> = ({
                   currentFontFamily !== availableFonts[0].cssValue)
               }
             />
+
+            {lab.available && (
+              <ActionButton
+                isDark={isDark}
+                icon="science"
+                label={
+                  lab.legacyLayout
+                    ? 'Lab: viendo la maquetación antigua'
+                    : 'Lab: ver la maquetación antigua'
+                }
+                onPress={() => lab.setLegacyLayout(!lab.legacyLayout)}
+                isActive={lab.legacyLayout}
+              />
+            )}
 
             <View
               style={[styles.menuDivider, isDark && styles.menuDividerDark]}
