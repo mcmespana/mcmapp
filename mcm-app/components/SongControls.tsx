@@ -291,9 +291,7 @@ const SongControls: React.FC<SongControlsProps> = ({
               isDark={isDark}
               icon="translate"
               label={
-                notation === 'ES'
-                  ? 'Acordes en inglés (C, D…)'
-                  : 'Acordes en español (DO, RE…)'
+                notation === 'ES' ? 'Acordes en inglés' : 'Acordes en español'
               }
               onPress={onToggleNotation}
               isActive={notation !== 'ES'}

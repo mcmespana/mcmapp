@@ -21,6 +21,7 @@ import { extractDriveFileId, toDrivePreviewUrl } from '@/utils/googleDrive';
 import type { MediaLink, SongMedia } from '@/types/songMedia';
 import { songExtraLinks } from '@/types/songMedia';
 import TagChip from '@/components/song-tags/TagChip';
+import { useHiddenTags } from '@/hooks/useHiddenTags';
 import type { ResolvedTag } from '@/utils/songTags';
 import type { FloatingMediaSource } from '@/components/song-media/FloatingMediaPlayer';
 import typography from '@/constants/typography';
@@ -105,9 +106,12 @@ export default function SongMediaSheet({
   onPlayMedia,
   onOpenLink,
   onCloseComplete,
-  tags = [],
+  tags: allTags = [],
   onTagPress,
 }: SongMediaSheetProps) {
+  // Las etiquetas ocultas por la persona tampoco salen en la ficha.
+  const { hiddenSlugs } = useHiddenTags();
+  const tags = allTags.filter((t) => !hiddenSlugs.has(t.slug));
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const { toast } = useToast();
