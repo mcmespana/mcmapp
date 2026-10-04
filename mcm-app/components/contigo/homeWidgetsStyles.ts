@@ -87,7 +87,6 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 4,
   },
-  heroChipEmoji: { fontSize: 11 },
   heroChipText: {
     ...typography.micro,
     fontWeight: '700',
@@ -116,9 +115,10 @@ export const styles = StyleSheet.create({
     borderRadius: radii.xl,
     overflow: 'hidden',
   },
+  // Pendiente: borde fino y sólido. Era discontinuo y parecía un hueco
+  // «por rellenar» de la maqueta, no una tarjeta que se puede tocar.
   tileWrapEmpty: {
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -278,7 +278,7 @@ export const styles = StyleSheet.create({
       android: { elevation: 1 },
     }),
   },
-  statIcon: { fontSize: 20, marginBottom: 3 },
+  statIcon: { marginBottom: 4 },
   statValue: {
     fontSize: 22,
     fontWeight: '800',

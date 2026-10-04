@@ -28,6 +28,7 @@ import { durations } from '@/constants/animations';
 import { extractSongMedia, mediaKinds } from '@/types/songMedia';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
+import spacing from '@/constants/spacing';
 
 // Type for song data
 interface Song {
@@ -201,6 +202,17 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
           >
             <View style={styles.leftSection}>
               {isSelected && <View style={styles.selectedDot} />}
+              {/* El número va delante, en su columna: en misa se busca
+                  «la 98», y escondido en gris detrás de «#» al lado del autor
+                  costaba encontrarlo. Sin ceros a la izquierda («2», no
+                  «02»). En «Buscar general» la pastilla de categoría ya lo
+                  lleva. */}
+              {!isSearchAllMode && !!song.numericFilenamePart && (
+                <Text style={styles.numberColumn}>
+                  {parseInt(song.numericFilenamePart, 10) ||
+                    song.numericFilenamePart}
+                </Text>
+              )}
               <View style={styles.songInfoContainer}>
                 <Text
                   style={styles.songTitle}
@@ -231,14 +243,6 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                     </View>
                   ) : (
                     <View style={styles.metaPills}>
-                      {!!song.numericFilenamePart && (
-                        <Text style={styles.numberText}>
-                          #{song.numericFilenamePart}
-                        </Text>
-                      )}
-                      {song.numericFilenamePart && song.author ? (
-                        <Text style={styles.metaSeparator}>{' - '}</Text>
-                      ) : null}
                       {!!song.author && (
                         <Text
                           style={styles.authorText}
@@ -383,14 +387,13 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: themeColors(isDark).textSecondary,
       fontVariant: ['tabular-nums'],
     },
-    numberText: {
-      ...typography.caption,
-      color: themeColors(isDark).textMuted,
+    numberColumn: {
+      ...typography.subhead,
+      fontWeight: '600',
+      color: themeColors(isDark).textSecondary,
       fontVariant: ['tabular-nums'],
-    },
-    metaSeparator: {
-      ...typography.caption,
-      color: isDark ? '#636366' : '#C7C7CC',
+      minWidth: 26,
+      marginRight: spacing.xs + 2,
     },
     authorText: {
       ...typography.caption,

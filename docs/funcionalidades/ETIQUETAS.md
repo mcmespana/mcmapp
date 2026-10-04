@@ -108,17 +108,18 @@ buscar algo"— como bar item nativo, para que iOS le dé su cápsula liquid-gla
 ### 3.2 La hoja de etiquetas
 
 Un `BottomSheet` con **todas** las etiquetas con al menos una canción,
-**ordenadas por uso**, en una rejilla de dos columnas: emoji (o icono de
-etiqueta si no tiene), nombre y «8 canciones». Rehecha en octubre de 2026; antes
-era una nube de chips que variaban 1 pt de tamaño según el uso (no se notaba).
+**ordenadas por uso**, como chips en línea: relleno suave, emoji si lo hay y
+el número en su propia pastilla. Refinada en octubre de 2026 (antes los chips
+variaban 1 pt de tamaño según el uso, que no se notaba). Una rejilla de dos
+columnas se probó y se descartó: desperdiciaba el ancho.
 
 **«Editar»** permite **ocultar** etiquetas que no van contigo (p. ej. las de
 otra casa). Una etiqueta oculta desaparece de la hoja, de las candidatas para
 combinar y de la ficha de la canción; **sus canciones siguen** en sus
 categorías y en el buscador. Es una preferencia del dispositivo
 (`hooks/useHiddenTags.ts`, AsyncStorage `@mcm_hidden_tags_v1`), no se sube a
-ningún sitio. En modo edición las ocultas salen al final, apagadas, para
-recuperarlas.
+ningún sitio. En modo edición cada chip lleva «−» para ocultarla; las ocultas salen al
+final, apagadas y con «+», para recuperarlas.
 
 ### 3.3 La pantalla de una etiqueta
 

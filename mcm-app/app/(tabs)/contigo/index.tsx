@@ -272,21 +272,21 @@ export default function ContigoScreen() {
           {/* ── Stats ──────────────────────────────────── */}
           <View style={[styles.section, styles.statsRow]}>
             <StatCard
-              icon="🔥"
+              icon="local-fire-department"
               value={prayStreak}
               label={'racha de\noración'}
               color={W.fire}
               isDark={isDark}
             />
             <StatCard
-              icon="⏱"
+              icon="timer"
               value={`${totalMins}'`}
               label={'min\nesta sem.'}
               color={W.accent}
               isDark={isDark}
             />
             <StatCard
-              icon="📖"
+              icon="menu-book"
               value={totalReads}
               label={'lecturas\neste mes'}
               color={W.blue}
