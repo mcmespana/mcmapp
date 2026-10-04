@@ -18,6 +18,20 @@
 
 ---
 
+## 2026-10-04 10:00 — Hoja de etiquetas rehecha y etiquetas ocultables
+
+- La hoja de etiquetas pasa de nube de chips a rejilla de dos columnas
+  (emoji o icono, nombre, «N canciones»). La etiqueta activa va resaltada.
+- **«Editar»**: ocultar etiquetas en este dispositivo. Desaparecen de la hoja,
+  de «Combinar con» y de la ficha de la canción; las canciones no se ocultan.
+  `hooks/useHiddenTags.ts` (AsyncStorage `@mcm_hidden_tags_v1`).
+- Menú de la canción: «Acordes en inglés/español» sin los ejemplos, que
+  ocupaban sitio.
+- `components/song-tags/TagCloudSheet.tsx`, `app/screens/SongListScreen.tsx`,
+  `components/song-media/SongMediaSheet.tsx`, `components/SongControls.tsx`.
+
+---
+
 ## 2026-10-04 01:20 — Barra de pestañas cortada en el primer arranque + laboratorio de maquetación
 
 - **Bug (iOS, solo primer arranque)**: etiquetas cortadas y desplazadas
