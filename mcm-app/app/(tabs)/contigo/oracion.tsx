@@ -19,10 +19,8 @@ import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
-import {
-  LiturgicalBadge,
-  getLiturgicalInfo,
-} from '@/components/contigo/LiturgicalBadge';
+import { getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
+import DayNavigator from '@/components/contigo/DayNavigator';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { styles } from '@/components/contigo/oracionStyles';
 import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
@@ -146,21 +144,6 @@ const MONTHS_CAP = [
 const WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
 // ── Helpers ──
-function formatDateDisplay(dateStr: string) {
-  if (!dateStr) return '';
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  const days = [
-    'Domingo',
-    'Lunes',
-    'Martes',
-    'Miércoles',
-    'Jueves',
-    'Viernes',
-    'Sábado',
-  ];
-  return `${days[date.getDay()]}, ${d} de ${MONTHS[m - 1]}`;
-}
 
 /** Returns calendar cells for the month of selectedDate.
  *  null = empty offset slot, number = day of month */
@@ -265,9 +248,7 @@ export default function OracionScreen() {
   const handleDecrease = () => setDuration((p) => Math.max(1, (p || 15) - 1));
   const handleIncrease = () => setDuration((p) => Math.min(120, (p || 15) + 1));
 
-  // No se puede apuntar oración en el futuro: «siguiente» se para en hoy,
-  // igual que en la revisión del día.
-  const canGoNext = selectedDate < todayStr;
+  // No se puede apuntar oración en el futuro (`DayNavigator allowFuture`).
   const changeDate = (offset: number) => {
     const next = offsetISODate(selectedDate, offset);
     if (next > todayStr) return;
@@ -423,47 +404,14 @@ export default function OracionScreen() {
             },
           ]}
         >
-          <TouchableOpacity
-            onPress={() => changeDate(-1)}
-            style={[
-              styles.navBtn,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.09)'
-                  : 'rgba(0,0,0,0.06)',
-              },
-            ]}
-            accessibilityLabel="Día anterior"
-          >
-            <MaterialIcons name="chevron-left" size={26} color={theme.text} />
-          </TouchableOpacity>
-
-          <View style={styles.dateCenter}>
-            <Text style={[styles.dateText, { color: theme.text }]}>
-              {formatDateDisplay(selectedDate)}
-            </Text>
-            <View style={{ marginTop: 8 }}>
-              <LiturgicalBadge dateStr={selectedDate} />
-            </View>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => changeDate(1)}
-            disabled={!canGoNext}
-            style={[
-              styles.navBtn,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.09)'
-                  : 'rgba(0,0,0,0.06)',
-                opacity: canGoNext ? 1 : 0.3,
-              },
-            ]}
-            accessibilityLabel="Día siguiente"
-            accessibilityState={{ disabled: !canGoNext }}
-          >
-            <MaterialIcons name="chevron-right" size={26} color={theme.text} />
-          </TouchableOpacity>
+          <DayNavigator
+            date={selectedDate}
+            todayStr={todayStr}
+            isDark={isDark}
+            onStep={changeDate}
+            onToday={() => setSelectedDate(todayStr)}
+            allowFuture={false}
+          />
         </View>
 
         {/* ── Completed banner ── */}

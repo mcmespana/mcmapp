@@ -130,7 +130,11 @@ export function HeroCard({
               </Text>
               <View style={styles.heroChips}>
                 <View style={styles.heroChip}>
-                  <Text style={styles.heroChipEmoji}>🔥</Text>
+                  <MaterialIcons
+                    name="local-fire-department"
+                    size={13}
+                    color="#FFB25B"
+                  />
                   <Text style={styles.heroChipText}>{prayStreak} días</Text>
                 </View>
               </View>
@@ -221,7 +225,7 @@ export function HabitTile({
           styles.tileWrapEmpty,
           {
             backgroundColor: isDark ? WARM_DARK.bgCard : '#FFFFFF',
-            borderColor: accent + '40',
+            borderColor: accent + '59',
           },
         ]}
       >
@@ -550,7 +554,8 @@ export function StatCard({
   color,
   isDark,
 }: {
-  icon: string;
+  /** Icono de Material (antes era un emoji, que no seguía el color de la app). */
+  icon: keyof typeof MaterialIcons.glyphMap;
   value: string | number;
   label: string;
   color?: string;
@@ -568,7 +573,12 @@ export function StatCard({
         },
       ]}
     >
-      <Text style={styles.statIcon}>{icon}</Text>
+      <MaterialIcons
+        name={icon}
+        size={22}
+        color={color || W.text}
+        style={styles.statIcon}
+      />
       <Text
         style={[styles.statValue, { color: color || W.text }]}
         numberOfLines={1}

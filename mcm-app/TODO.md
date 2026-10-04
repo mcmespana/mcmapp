@@ -148,7 +148,8 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       navegación por días/meses de la oración y el submenú de días de la home.
       Queda: el tiempo de oración (el usuario pide **propuestas**, no cambios
       directos), los tres navegadores de fecha distintos (evangelio, oración y
-      revisión no se parecen entre sí) y repasar en dispositivo el evangelio,
+      revisión — evangelio y oración ya comparten `DayNavigator` desde el
+      2026-10-04) y repasar en dispositivo el evangelio,
       que en web sin datos se queda en «Preparando la Palabra…».
 - [ ] **Command Palette v2: deep-link a contenidos** — el palette actual (`CommandPalette.tsx`) solo navega a tabs/pantallas top-level. Para saltar a una canción concreta o a un punto dentro de los stacks anidados hay que exponer un `navigation ref` (p.ej. `CancioneroNavRefContext`). Después indexar canciones (`songs/data`), reflexiones (`compartiendo/data`) y eventos del calendario.
 

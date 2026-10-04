@@ -18,10 +18,27 @@
 
 ---
 
+## 2026-10-04 11:30 — Contigo y lista de canciones: pulido
+
+- **Navegador de días único** (`components/contigo/DayNavigator.tsx`) en
+  evangelio y oración: mismos botones, misma fecha, «Volver a hoy» en los dos
+  y tocar la fecha abre el calendario en el evangelio. La oración no deja ir
+  al futuro. La revisión mantiene su selector compacto en la barra (es un
+  asistente por pasos).
+- **Home de Contigo**: las tarjetas de hábito pendientes ya no tienen borde
+  discontinuo (parecían huecos sin terminar); las estadísticas y la racha usan
+  iconos de Material en vez de emojis.
+- **Lista de canciones**: el número va delante del título en su propia columna
+  («98», sin «#» ni ceros a la izquierda); en «Buscar general» sigue la
+  pastilla de categoría.
+
+---
+
 ## 2026-10-04 10:00 — Hoja de etiquetas rehecha y etiquetas ocultables
 
-- La hoja de etiquetas pasa de nube de chips a rejilla de dos columnas
-  (emoji o icono, nombre, «N canciones»). La etiqueta activa va resaltada.
+- La hoja de etiquetas: chips en línea refinados (relleno suave, emoji si lo
+  hay, número en su propia pastilla). La activa va en amarillo. Una rejilla de
+  dos columnas se probó y se descartó: desperdiciaba el ancho.
 - **«Editar»**: ocultar etiquetas en este dispositivo. Desaparecen de la hoja,
   de «Combinar con» y de la ficha de la canción; las canciones no se ocultan.
   `hooks/useHiddenTags.ts` (AsyncStorage `@mcm_hidden_tags_v1`).

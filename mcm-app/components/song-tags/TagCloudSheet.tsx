@@ -2,16 +2,17 @@
  * Hoja de etiquetas — a un toque desde el header del cantoral y desde la
  * propia pantalla de una etiqueta.
  *
- * Rehecha en octubre de 2026: era una nube de chips blancos que variaban de
- * tamaño en 1 pt (no se notaba) y con un recuento gris casi invisible. Ahora
- * es una rejilla de dos columnas: cada etiqueta con su emoji (o el icono de
- * etiqueta si no tiene), su nombre bien grande y «8 canciones» debajo. Orden
- * por uso, igual que antes.
+ * Octubre de 2026: chips que fluyen en línea, como la nube original (así
+ * caben varios por fila), pero sin bordes ni sombras: relleno suave, el
+ * emoji si lo hay y el número en su propia pastilla. Antes los chips
+ * variaban 1 pt de tamaño según el uso (no se notaba) y el recuento era un
+ * gris casi invisible. Hubo un intento intermedio de rejilla de dos columnas
+ * con «8 canciones» debajo: desperdiciaba el ancho y se descartó.
  *
  * «Editar» deja ocultar etiquetas que no van contigo (p. ej. las de otra
  * casa): desaparecen de aquí, de las candidatas para combinar y de la ficha de
  * la canción, pero las canciones siguen en el cantoral. Las ocultas se ven al
- * final, apagadas, solo en modo edición, para poder recuperarlas.
+ * final, apagadas y con «+», solo en modo edición, para poder recuperarlas.
  */
 import React, { useMemo, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -21,8 +22,8 @@ import BottomSheet from '@/components/BottomSheet';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useHiddenTags } from '@/hooks/useHiddenTags';
 import type { ResolvedTag } from '@/utils/songTags';
-import { UIColors, themeColors } from '@/constants/colors';
-import { hexAlpha } from '@/utils/colorUtils';
+import { SwipeColors, UIColors, themeColors } from '@/constants/colors';
+import { hexAlpha, onColor } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import typography from '@/constants/typography';
 import spacing from '@/constants/spacing';
@@ -64,21 +65,21 @@ export default function TagCloudSheet({
   const hiddenTags = tags.filter((t) => hiddenSlugs.has(t.slug));
 
   const subtitle = editing
-    ? 'Toca una para ocultarla o volver a mostrarla. Sus canciones siguen en el cantoral.'
+    ? 'Toca «−» para ocultar una etiqueta de tu cantoral. Sus canciones siguen ahí.'
     : shown.length === 0
       ? 'Has ocultado todas las etiquetas. Toca «Editar» para recuperarlas.'
-      : 'Todas las canciones de una etiqueta, agrupadas por categoría.';
+      : null;
 
-  const renderTile = (tag: ResolvedTag, isHidden: boolean) => {
-    const isActive = activeSlugs.includes(tag.slug);
+  const renderChip = (tag: ResolvedTag, isHidden: boolean) => {
+    const isActive = activeSlugs.includes(tag.slug) && !editing;
     const countLabel = `${tag.count} ${tag.count === 1 ? 'canción' : 'canciones'}`;
     return (
       <PressableFeedback
         key={tag.slug}
         style={[
-          styles.tile,
-          isActive && !editing && styles.tileActive,
-          isHidden && styles.tileHidden,
+          styles.chip,
+          isActive && styles.chipActive,
+          isHidden && styles.chipHidden,
         ]}
         onPress={() => {
           if (editing) {
@@ -100,25 +101,26 @@ export default function TagCloudSheet({
         }
       >
         <PressableFeedback.Highlight />
-        <View style={[styles.badge, editing && styles.badgeEditing]}>
-          {editing ? (
+        {tag.emoji ? <Text style={styles.emoji}>{tag.emoji}</Text> : null}
+        <Text
+          style={[styles.label, isActive && styles.labelActive]}
+          numberOfLines={1}
+        >
+          {tag.label}
+        </Text>
+        {editing ? (
+          <View style={[styles.editMark, isHidden && styles.editMarkAdd]}>
             <MaterialIcons
-              name={isHidden ? 'visibility-off' : 'visibility'}
-              size={18}
-              color={themeColors(isDark).textSecondary}
+              name={isHidden ? 'add' : 'remove'}
+              size={14}
+              color={isHidden ? onColor(themeColors(isDark).link) : '#FFFFFF'}
             />
-          ) : tag.emoji ? (
-            <Text style={styles.emoji}>{tag.emoji}</Text>
-          ) : (
-            <MaterialIcons name="sell" size={18} color={styles.icon.color} />
-          )}
-        </View>
-        <View style={styles.tileText}>
-          <Text style={styles.tileLabel} numberOfLines={2}>
-            {tag.label}
+          </View>
+        ) : (
+          <Text style={[styles.count, isActive && styles.countActive]}>
+            {tag.count}
           </Text>
-          <Text style={styles.tileCount}>{countLabel}</Text>
-        </View>
+        )}
       </PressableFeedback>
     );
   };
@@ -146,20 +148,20 @@ export default function TagCloudSheet({
       }
       paddingHorizontal={0}
     >
-      <Text style={styles.subtitle}>{subtitle}</Text>
+      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.grid}>
-          {shown.map((t) => renderTile(t, false))}
+          {shown.map((t) => renderChip(t, false))}
         </View>
         {editing && hiddenTags.length > 0 ? (
           <>
             <Text style={styles.sectionLabel}>Ocultas</Text>
             <View style={styles.grid}>
-              {hiddenTags.map((t) => renderTile(t, true))}
+              {hiddenTags.map((t) => renderChip(t, true))}
             </View>
           </>
         ) : null}
@@ -189,60 +191,69 @@ const createStyles = (isDark: boolean) => {
     grid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      rowGap: spacing.sm + spacing.xs,
+      gap: spacing.sm,
     },
-    tile: {
-      width: '48.5%',
+    // Chip que fluye en línea: ocupa lo que mide su nombre, así caben varios
+    // por fila. Relleno suave, sin borde ni sombra; el número va en su
+    // propia pastilla para que se lea como dato y no como parte del nombre.
+    chip: {
       flexDirection: 'row',
       alignItems: 'center',
-      // Sin `gap`: la capa de pulsación de PressableFeedback es un hijo más y
-      // se comía un hueco a la izquierda. El espacio lo pone el texto.
-      padding: spacing.sm + spacing.xs,
-      borderRadius: radii.lg,
+      minHeight: 44,
+      paddingLeft: spacing.md - spacing.xs / 2,
+      paddingRight: spacing.sm,
+      borderRadius: radii.pillFull,
       backgroundColor: t.backgroundSunken,
-      borderWidth: 1,
-      borderColor: 'transparent',
       overflow: 'hidden',
     },
-    tileActive: {
-      borderColor: UIColors.accentYellow,
-      backgroundColor: hexAlpha(UIColors.accentYellow, isDark ? '1F' : '24'),
+    chipActive: {
+      backgroundColor: UIColors.accentYellow,
     },
-    tileHidden: {
-      opacity: 0.45,
-    },
-    badge: {
-      width: 36,
-      height: 36,
-      borderRadius: radii.pillFull,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: hexAlpha(UIColors.accentYellow, isDark ? '2E' : '33'),
+    chipHidden: {
+      opacity: 0.5,
     },
     emoji: {
-      ...typography.body,
+      ...typography.subhead,
+      marginRight: spacing.xs + 2,
     },
-    icon: {
-      color: isDark ? UIColors.accentYellow : t.textSecondary,
-    },
-    badgeEditing: {
-      backgroundColor: t.background,
-    },
-    tileText: {
-      flex: 1,
-      marginLeft: spacing.sm + spacing.xs / 2,
-    },
-    tileLabel: {
+    label: {
       ...typography.subhead,
       fontWeight: '600',
       color: t.text,
+      flexShrink: 1,
     },
-    tileCount: {
+    labelActive: {
+      color: onColor(UIColors.accentYellow),
+    },
+    count: {
       ...typography.footnote,
+      fontWeight: '600',
       color: t.textSecondary,
-      marginTop: 2,
+      backgroundColor: t.background,
+      minWidth: 24,
+      textAlign: 'center',
+      paddingHorizontal: spacing.xs + 2,
+      paddingVertical: 2,
+      borderRadius: radii.pillFull,
+      overflow: 'hidden',
+      marginLeft: spacing.sm,
       fontVariant: ['tabular-nums'],
+    },
+    countActive: {
+      backgroundColor: hexAlpha('#FFFFFF', isDark ? '59' : '80'),
+      color: onColor(UIColors.accentYellow),
+    },
+    editMark: {
+      width: 22,
+      height: 22,
+      borderRadius: radii.pillFull,
+      marginLeft: spacing.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: SwipeColors.remove,
+    },
+    editMarkAdd: {
+      backgroundColor: t.link,
     },
     sectionLabel: {
       ...typography.footnote,

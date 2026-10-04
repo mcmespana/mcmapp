@@ -23,10 +23,8 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import useSectionFontScale from '@/hooks/useSectionFontScale';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import { useDailyReadings } from '@/hooks/useDailyReadings';
-import {
-  LiturgicalBadge,
-  getLiturgicalInfo,
-} from '@/components/contigo/LiturgicalBadge';
+import { getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
+import DayNavigator from '@/components/contigo/DayNavigator';
 import { ReadingCard } from '@/components/contigo/ReadingCard';
 import { HighlightableReading } from '@/components/contigo/HighlightableReading';
 import { HighlightActionBar } from '@/components/contigo/HighlightActionBar';
@@ -71,21 +69,6 @@ const WARM = {
   },
 };
 
-const MONTHS = [
-  'enero',
-  'febrero',
-  'marzo',
-  'abril',
-  'mayo',
-  'junio',
-  'julio',
-  'agosto',
-  'septiembre',
-  'octubre',
-  'noviembre',
-  'diciembre',
-];
-
 /** Las dos vistas del evangelio del día. Fuera del componente: no cambian. */
 const EVANGELIO_VIEWS = [
   { value: 'lectura' as const, label: 'Lectura', icon: 'menu-book' as const },
@@ -95,23 +78,6 @@ const EVANGELIO_VIEWS = [
     icon: 'lightbulb-outline' as const,
   },
 ];
-
-function formatDateDisplay(dateStr: string) {
-  if (!dateStr) return '';
-  // Parse as local date — avoid timezone offset
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  const days = [
-    'Domingo',
-    'Lunes',
-    'Martes',
-    'Miércoles',
-    'Jueves',
-    'Viernes',
-    'Sábado',
-  ];
-  return `${days[date.getDay()]}, ${d} de ${MONTHS[m - 1]}`;
-}
 
 /** Navigate by exactly 1 day — uses local date math to avoid timezone bugs */
 function addDays(dateStr: string, offset: number): string {
@@ -399,54 +365,14 @@ export default function EvangelioScreen() {
               },
             ]}
           >
-            <TouchableOpacity
-              onPress={() => changeDate(-1)}
-              style={[
-                styles.dateNavBtn,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(255,255,255,0.08)'
-                    : 'rgba(0,0,0,0.05)',
-                },
-              ]}
-              accessibilityLabel="Día anterior"
+            <DayNavigator
+              date={selectedDate}
+              todayStr={todayStr}
+              isDark={isDark}
+              onStep={changeDate}
+              onToday={goToToday}
+              onPressDate={openCalendar}
             >
-              <MaterialIcons name="chevron-left" size={26} color={theme.text} />
-            </TouchableOpacity>
-
-            <View style={styles.dateDisplay}>
-              <Text style={[styles.dateText, { color: theme.text }]}>
-                {formatDateDisplay(selectedDate)}
-              </Text>
-
-              {/* Volver a hoy: diminuto y solo cuando hace falta (estás en
-                  otro día). Estando en hoy no se pinta nada. */}
-              {selectedDate !== todayStr ? (
-                <TouchableOpacity
-                  onPress={goToToday}
-                  style={[
-                    styles.todayMiniPill,
-                    {
-                      backgroundColor: hexAlpha(warm.accent, '12'),
-                      borderColor: hexAlpha(warm.accent, '30'),
-                    },
-                  ]}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Volver a hoy"
-                >
-                  <MaterialIcons name="undo" size={12} color={warm.accent} />
-                  <Text style={[styles.todayMiniLabel, { color: warm.accent }]}>
-                    Volver a hoy
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
-
-              {/* Liturgical badge */}
-              <View style={styles.badgeRow}>
-                <LiturgicalBadge dateStr={selectedDate} />
-              </View>
-
               {/* Done / Pendiente chip */}
               <View
                 style={[
@@ -514,26 +440,7 @@ export default function EvangelioScreen() {
                   {readings.info.titulo}
                 </Text>
               ) : null}
-            </View>
-
-            <TouchableOpacity
-              onPress={() => changeDate(1)}
-              style={[
-                styles.dateNavBtn,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(255,255,255,0.08)'
-                    : 'rgba(0,0,0,0.05)',
-                },
-              ]}
-              accessibilityLabel="Día siguiente"
-            >
-              <MaterialIcons
-                name="chevron-right"
-                size={26}
-                color={theme.text}
-              />
-            </TouchableOpacity>
+            </DayNavigator>
           </View>
 
           {/* ── Content ── */}
