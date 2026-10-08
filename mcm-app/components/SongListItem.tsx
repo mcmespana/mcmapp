@@ -21,7 +21,7 @@ import {
   KeyPillColors,
   StateColors,
   SwipeColors,
-  UIColors,
+  SystemGray,
   themeColors,
 } from '@/constants/colors';
 import { durations } from '@/constants/animations';
@@ -237,7 +237,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                         </Text>
                       )}
                       {song.numericFilenamePart && song.author ? (
-                        <Text style={styles.metaSeparator}>{' - '}</Text>
+                        <Text style={styles.metaSeparator}>{' · '}</Text>
                       ) : null}
                       {!!song.author && (
                         <Text
@@ -329,10 +329,10 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 14,
-      paddingHorizontal: 20,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      borderColor: themeColors(isDark).separator,
     },
     noSeparator: {
       borderBottomWidth: 0,
@@ -375,7 +375,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       borderRadius: radii.pillFull,
       backgroundColor: themeColors(isDark).separator,
       borderWidth: 1,
-      borderColor: isDark ? '#48484A' : '#D1D1D6',
+      borderColor: isDark ? SystemGray.dark.gray3 : SystemGray.light.gray4,
     },
     categoryPillText: {
       ...typography.micro,
@@ -390,11 +390,12 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     metaSeparator: {
       ...typography.caption,
-      color: isDark ? '#636366' : '#C7C7CC',
+      color: themeColors(isDark).textMuted,
     },
     authorText: {
       ...typography.caption,
-      color: isDark ? '#AEAEB2' : '#8E8E93',
+      // Era #8E8E93 en claro: 3,3:1 sobre blanco, por debajo del mínimo.
+      color: themeColors(isDark).textSecondary,
       fontStyle: 'italic',
       flex: 1,
     },
@@ -412,8 +413,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     capoPill: {
       paddingHorizontal: 6,
       paddingVertical: 3,
-      borderRadius: 5,
-      backgroundColor: isDark ? '#3A3A3C' : '#EBEBEB',
+      borderRadius: radii.xs,
+      backgroundColor: isDark ? Colors.dark.card : SystemGray.light.gray5,
     },
     capoText: {
       ...typography.micro,
@@ -424,7 +425,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     keyPill: {
       paddingHorizontal: 8,
       paddingVertical: 3,
-      borderRadius: 6,
+      borderRadius: radii.xs,
       backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     keyText: {
@@ -448,22 +449,26 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       paddingHorizontal: 7,
       paddingVertical: 3,
-      borderRadius: 6,
+      borderRadius: radii.xs,
       backgroundColor: isDark
         ? HighlightColors.dark.bg
         : HighlightColors.light.bg,
       borderWidth: 1,
-      borderColor: UIColors.accentYellow,
+      borderColor: isDark
+        ? HighlightColors.dark.border
+        : HighlightColors.light.border,
     },
     keyTextTransposed: {
       ...typography.caption,
       fontWeight: '700',
-      color: HighlightColors.light.fg,
+      // Antes era el fg de CLARO también en oscuro: #7A5A00 sobre #3A2D0A,
+      // ilegible. Mismo fallo que el azul de marca en oscuro (§H4).
+      color: isDark ? HighlightColors.dark.fg : HighlightColors.light.fg,
     },
     transposeParenLabel: {
       ...typography.micro,
       fontWeight: '700',
-      color: '#8E8E93',
+      color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
     },
     rightAction: {

@@ -195,7 +195,10 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       color de la categoría a pelo y **cinco de seis no se leían en oscuro**
       (el morado, a 1,91:1). Nace `readableOn()`, la versión automática de lo
       que se hizo a mano con `accentText` en §A3.
-- [ ] **H6. Densidad de la lista de canciones.** Es la pantalla más usada y de
+- [x] **H6. Densidad de la lista de canciones — hecho el 2026-10-09.** Fila
+      de 14 a 12 de padding vertical, lista agrupada redondeada como la
+      portada, autor a `textSecondary` (estaba bajo el mínimo de contraste) y
+      el tono transpuesto legible en oscuro. Lo que decía esta línea: Es la pantalla más usada y de
       las menos tokenizadas. Al migrarla (A5.5), revisar de paso altura de fila
       y jerarquía título/subtítulo/pill de tono.
 

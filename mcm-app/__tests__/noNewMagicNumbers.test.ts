@@ -86,7 +86,7 @@ const BUDGET = {
   // el tope, y los nueve colores sueltos del dibujo de Carismochito pasaron a
   // `CarismochitoPalettes` en constants/colors.ts.
   app: 177,
-  components: 338,
+  components: 329,
 };
 
 describe('no se añaden colores a mano', () => {
@@ -188,7 +188,7 @@ const RADIUS_BUDGET = {
   // Antes de esto: 107 → 95 al migrar los `borderRadius: 100` (mismo caso), y
   // 300 → 122 al colapsar la escala en agosto de 2026.
   app: 4,
-  components: 52,
+  components: 49,
 };
 
 const INLINE_RADIUS = /borderRadius: \d+/g;

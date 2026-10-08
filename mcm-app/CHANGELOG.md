@@ -18,6 +18,19 @@
 
 ---
 
+## 2026-10-09 02:45 — Cantoral: la lista de canciones, a juego con la portada
+
+- **La cabecera decía «A. Canciones Entrada 🎉»**: el prefijo de ordenación y
+  el emoji llegaban crudos de Firebase. Ahora se limpia igual que en la
+  portada: «Canciones Entrada».
+- **Lista agrupada siempre**: la de una categoría era un bloque de esquinas
+  rectas; ahora es una tarjeta redondeada como la del modo etiqueta y la de la
+  portada. Filas algo más densas (cabe una canción más por pantalla).
+- **Bug de contraste**: el tono transpuesto usaba el ámbar de claro también en
+  oscuro (`#7A5A00` sobre `#3A2D0A`, ilegible). Y el autor iba en `#8E8E93`
+  sobre blanco (3,3:1); pasa a `textSecondary`.
+- «#01 - Alborada» → «#01 · Alborada». 9 colores y 3 radios a mano, a tokens.
+
 ## 2026-10-09 02:15 — Cantoral: la portada pasa a lista agrupada
 
 En móvil, las 16 categorías eran 16 tarjetas sueltas con su sombra cada una.
