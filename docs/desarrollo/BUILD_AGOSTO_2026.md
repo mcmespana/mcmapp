@@ -82,6 +82,7 @@ código **nativo**, que vive en el binario y no se puede actualizar así:
 - `@aptabase/react-native` — analítica de uso
 - `modules/highlight-menu` — módulo nativo propio: "Subrayar" en el menú del sistema
 - iPad landscape (`UISupportedInterfaceOrientations~ipad`)
+- `expo-gl` — sin uso todavía: va en el binario para poder hacer 3D luego por OTA
 
 Si esto saliera por OTA, la app **crashearía** en los móviles ya instalados: el
 binario que tienen no lleva esos módulos. Por eso los commits van con

@@ -18,6 +18,14 @@
 
 ---
 
+## 2026-10-08 23:50 — `expo-gl` en el binario, por si acaso
+
+Se instala `expo-gl` (`~57.0.2`) sin usarlo todavía, para que vaya dentro de
+la build 2.1. Es lo que permitiría, más adelante y **por OTA**, hacer 3D de
+verdad con `three`/`expo-three` (pañuelo, medallas) si el visor actual
+(`<model-viewer>` en WebView) se queda corto: sin conexión no carga y no se
+puede integrar con el resto de la pantalla. Nativo → commit con `[skip-ota]`.
+
 ## 2026-10-08 23:30 — Contigo: un solo navegador de días
 
 Evangelio, oración y revisión tenían cada uno su navegador ‹ fecha › y no se
