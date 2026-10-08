@@ -408,6 +408,8 @@ const SongControls: React.FC<SongControlsProps> = ({
         onClose={() => setShowTransposeBottomSheet(false)}
         currentTranspose={currentTranspose}
         onSetTranspose={handleSetTranspose}
+        songKey={songKey}
+        notation={notation}
         originalCapo={songCapo}
         currentCapoOverride={currentCapoOverride}
         onSetCapoOverride={onSetCapoOverride}

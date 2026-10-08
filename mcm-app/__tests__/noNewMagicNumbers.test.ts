@@ -86,7 +86,7 @@ const BUDGET = {
   // el tope, y los nueve colores sueltos del dibujo de Carismochito pasaron a
   // `CarismochitoPalettes` en constants/colors.ts.
   app: 197,
-  components: 387,
+  components: 338,
 };
 
 describe('no se añaden colores a mano', () => {
@@ -132,7 +132,7 @@ describe('no se añaden colores a mano', () => {
  */
 const FONT_SIZE_BUDGET = {
   app: 82,
-  components: 185,
+  components: 178,
 };
 
 const INLINE_FONT_SIZE = /fontSize: \d+/g;

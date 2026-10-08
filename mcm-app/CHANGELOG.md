@@ -18,6 +18,25 @@
 
 ---
 
+## 2026-10-09 01:30 — Cantoral: las hojas de tono y de letra, rediseñadas
+
+- **El tono habla en tonos.** Con la tonalidad de la canción, el valor central
+  es el tono resultante («LA», con «Original: DO» debajo) y cada botón enseña
+  a qué tono lleva (SOL# / LA#). Antes solo decía «+9 semitonos» y había que
+  hacer la cuenta de cabeza. Sin tonalidad, cae a semitonos como antes.
+- **Las dos hojas hablan igual** (`components/song-sheet/sheetKit.tsx`): mismos
+  bloques, mismo «restablecer», mismo resaltado de lo cambiado. El tamaño de
+  letra gana lo que solo tenía el tono: **repetir al mantener pulsado**, aviso
+  háptico y meneo al llegar al tope, y `accessibilityLabel` en los botones (no
+  tenían). Los ± del tamaño son una «A» pequeña y otra grande.
+- **Fuera el rojo y el verde** de bajar/subir tono: bajar no es un error.
+- **49 colores a mano → 0**, todo por rol. De paso, un ámbar (`#9D5C00`) que
+  en oscuro se pintaba sobre fondo casi negro.
+- La fuente se elige como `radio` (lectores de pantalla) y la suma de 0,1 en
+  coma flotante ya no deja tamaños como 1,2000000000000002.
+
+Test nuevo: `__tests__/transposeSheet.test.tsx`.
+
 ## 2026-10-09 00:30 — Dependencias al día antes de la build 2.1
 
 - **SDK 57 al último parche**: los 32 paquetes que gestiona Expo estaban por
