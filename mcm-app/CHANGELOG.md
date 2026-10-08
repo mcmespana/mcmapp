@@ -18,6 +18,22 @@
 
 ---
 
+## 2026-10-09 03:15 — Android y web: el cristal ya no es blanco en modo oscuro
+
+**Bug visible en Android** (y web): `GlassSurface` sin tinte caía siempre a
+blanco al 95 %, también en oscuro. En iOS no se veía porque manda el cristal
+nativo, así que pasó desapercibido. Lo sufrían la cápsula de campana y perfil
+de la Home, el botón de volver de cristal, los botones de un evento y el FAB
+de la canción: pastillas blancas con los iconos claros encima, invisibles.
+Ahora, en oscuro, el respaldo es la superficie elevada (`Colors.dark.card`).
+Test: `__tests__/glassSurfaceDark.test.tsx`.
+
+**Home: un botón dentro de otro.** El botón de acción de un aviso
+(«Descúbrelo TODO») vivía dentro de la tarjeta pulsable. En web es un
+`<button>` dentro de otro (HTML inválido, aviso rojo en desarrollo) y el lector
+de pantalla los leía como uno. Con acción, esa fila va ahora debajo, fuera de
+la zona pulsable; sin acción, la tarjeta sigue siendo un solo botón.
+
 ## 2026-10-09 02:45 — Cantoral: la lista de canciones, a juego con la portada
 
 - **La cabecera decía «A. Canciones Entrada 🎉»**: el prefijo de ordenación y
