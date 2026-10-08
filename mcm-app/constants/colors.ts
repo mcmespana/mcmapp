@@ -231,6 +231,12 @@ export const SwipeColors = {
 export const KeyPillColors = {
   bgLight: '#EEF4FF',
   bgDark: '#1A2744',
+  /**
+   * Borde y relleno del icono de «Tu selección» en el cantoral, la misma
+   * familia azul que el fondo. Estaban a mano en sus cuatro usos.
+   */
+  borderLight: '#D4E2FF',
+  borderDark: '#2A3D66',
 } as const;
 
 // Colores de emociones — usado en Contigo (oración) y disponible para futuros trackers.

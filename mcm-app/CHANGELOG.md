@@ -18,6 +18,21 @@
 
 ---
 
+## 2026-10-09 02:15 — Cantoral: la portada pasa a lista agrupada
+
+En móvil, las 16 categorías eran 16 tarjetas sueltas con su sombra cada una.
+Ahora son **una lista agrupada** con separadores finos que empiezan después del
+icono, como agrupa iOS sus ajustes, bajo la etiqueta «Categorías». Cabe más
+en pantalla y se distingue de un vistazo lo tuyo del catálogo.
+
+**«Tu selección»** sigue suelta y destacada, y ahora dice algo: «Vacía · añade
+canciones desde el cantoral» o «3 canciones», en vez de un «0» suelto. Las
+filas llevan `accessibilityLabel` con el número de canciones.
+
+De paso: estilos muertos fuera (un header inline que ya no existía), 29
+valores a mano → 3, y el azul de «Tu selección» pasa a `KeyPillColors`.
+iPad conserva su hero + rejilla.
+
 ## 2026-10-09 01:30 — Cantoral: las hojas de tono y de letra, rediseñadas
 
 - **El tono habla en tonos.** Con la tonalidad de la canción, el valor central
