@@ -129,9 +129,8 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       la peer dependency `@gorhom/bottom-sheet` de heroui no estaba instalada
       (Notificaciones y Reflexiones petaban al montar, en cualquier
       plataforma) y una canción sin `filename` tumbaba su categoría entera.
-      **Queda pendiente el repaso en un iPhone/Android físico** para lo que la
-      web no puede dar: el glass de iOS 26, la barra nativa de pestañas y las
-      cabeceras nativas.
+      **Repaso en dispositivo físico: ✅ hecho por el usuario (2026-10-08)** —
+      las pantallas de la pasada de diseño están bien.
 - [ ] **A6-quater. El tinte de las cabeceras nativas.** `isDark ? '#FFFFFF' :
 '#1a1a1a'` a mano en ~8 sitios (cantoral, fotos, calendario, botones de
       volver). No es byte-idéntico a ningún rol. O se le da uno propio o se
