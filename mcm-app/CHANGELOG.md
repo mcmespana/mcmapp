@@ -18,6 +18,21 @@
 
 ---
 
+## 2026-10-08 23:30 — Contigo: un solo navegador de días
+
+Evangelio, oración y revisión tenían cada uno su navegador ‹ fecha › y no se
+parecían. Ahora comparten `components/contigo/DateNavigator.tsx`:
+
+- **Misma fecha** («Jueves, 8 de octubre»), mismos botones y misma háptica.
+- **«Volver a hoy» en los tres** (antes solo en el evangelio). En la revisión,
+  que lleva el navegador en la barra nativa, se toca la fecha.
+- **El tope de «siguiente»** lo decide cada pantalla (`maxDate`): el evangelio
+  deja mirar días futuros; oración y revisión se paran en hoy, como antes.
+- El evangelio pasa de franja a sangre a tarjeta, igual que la oración.
+
+Fuera tres `formatDateDisplay`/`addDays` duplicados y los estilos muertos.
+Topes del trinquete de números mágicos bajados a lo que hay.
+
 ## 2026-10-03 23:00 — Contigo: navegación por días y calendarios
 
 - **Oración**: «día siguiente» se para en hoy y los días futuros del

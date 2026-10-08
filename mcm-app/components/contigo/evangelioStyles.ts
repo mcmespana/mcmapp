@@ -74,51 +74,6 @@ export const styles = StyleSheet.create({
   segmentText: {
     fontSize: 15,
   },
-  // Date navigator
-  dateNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-  },
-  dateNavBtn: {
-    padding: 10,
-    borderRadius: radii.lg,
-  },
-  dateDisplay: {
-    alignItems: 'center',
-    flex: 1,
-    paddingHorizontal: 8,
-  },
-  dateText: {
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    textAlign: 'center',
-  },
-  badgeRow: {
-    marginTop: 8,
-  },
-  // "Hoy" en pequeñito: solo sale cuando estás mirando otro día, y ocupa lo
-  // justo para no competir con la fecha ni con el badge litúrgico.
-  todayMiniPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    alignSelf: 'center',
-    marginTop: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-  },
-  todayMiniLabel: {
-    ...typography.micro,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-  },
   diaLiturgico: {
     ...typography.footnote,
     marginTop: 6,

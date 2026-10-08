@@ -26,15 +26,10 @@ import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { h } from '@/utils/haptics';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
-import {
-  WARM_DARK,
-  WARM_LIGHT,
-  formatDateLong,
-  offsetDate,
-  warm,
-} from '@/components/contigo/theme';
+import { WARM_DARK, WARM_LIGHT, warm } from '@/components/contigo/theme';
 import { BreathingPhase } from '@/components/contigo/BreathingPhase';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
+import { DateNavigator } from '@/components/contigo/DateNavigator';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   syncContigoRevision,
@@ -180,10 +175,8 @@ export default function RevisionScreen() {
     };
   }, []);
 
-  const navigateDate = (delta: number) => {
-    const next = offsetDate(selDate, delta);
-    if (next > todayStr) return;
-    h.select();
+  // La háptica y el tope de «siguiente» los pone `DateNavigator`.
+  const changeDate = (next: string) => {
     setSelDate(next);
     setStep(0);
     setSaved(false);
@@ -241,9 +234,6 @@ export default function RevisionScreen() {
     }
   };
 
-  const isToday = selDate === todayStr;
-  const isFutureDisabled = selDate >= todayStr;
-
   const bgColors = useMemo(
     () =>
       isDark
@@ -273,42 +263,13 @@ export default function RevisionScreen() {
             </TouchableOpacity>
           ),
           headerTitle: () => (
-            <View style={styles.navTitle}>
-              <TouchableOpacity
-                onPress={() => navigateDate(-1)}
-                style={styles.dateStepperBtn}
-                hitSlop={10}
-                accessibilityLabel="Día anterior"
-              >
-                <MaterialIcons
-                  name="chevron-left"
-                  size={20}
-                  color={W.textSec}
-                />
-              </TouchableOpacity>
-              <Text
-                style={[styles.navTitleText, { color: W.text }]}
-                numberOfLines={1}
-              >
-                {isToday ? 'Hoy' : formatDateLong(selDate)}
-              </Text>
-              <TouchableOpacity
-                onPress={() => navigateDate(1)}
-                disabled={isFutureDisabled}
-                style={[
-                  styles.dateStepperBtn,
-                  { opacity: isFutureDisabled ? 0.25 : 1 },
-                ]}
-                hitSlop={10}
-                accessibilityLabel="Día siguiente"
-              >
-                <MaterialIcons
-                  name="chevron-right"
-                  size={20}
-                  color={W.textSec}
-                />
-              </TouchableOpacity>
-            </View>
+            <DateNavigator
+              variant="header"
+              date={selDate}
+              todayStr={todayStr}
+              onChange={changeDate}
+              maxDate={todayStr}
+            />
           ),
           ...(Platform.OS === 'ios' &&
           parseInt(String(Platform.Version), 10) < 26
