@@ -18,6 +18,30 @@
 
 ---
 
+## 2026-10-09 00:30 — Dependencias al día antes de la build 2.1
+
+- **SDK 57 al último parche**: los 32 paquetes que gestiona Expo estaban por
+  detrás (`expo` 57.0.11 → 57.0.27, `expo-updates`, `expo-router`,
+  `expo-notifications`… y `react-native` 0.86.2 → 0.86.3). `npx expo install
+--check` queda limpio. `@react-native/jest-preset` se fija a `0.86.3`: con
+  `^0.86.0` el lock lo dejaba en 0.86.2 y `react-native` 0.86.3 lo exige exacto.
+- **El resto, dentro de su rango**: Firebase 12.19, heroui-native 1.0.10,
+  uniwind 1.12.2, Aptabase 0.5.1, Google Sign-In 16.1.5, react-native-web
+  0.21.4 y herramientas de desarrollo.
+- **Lo que NO se sube, a propósito**:
+  - `expo-native-compact-tabs` se **fija en 0.2.0** (antes `^0.2.0`). La 0.2.1
+    toca el mismo código que nuestro parche (escala de los iconos) y el parche
+    ya no aplica; rehacerlo pide un iPhone delante. Ver `TODO.md`.
+  - Las majors que fija el SDK (react-native 0.87, reanimated 4.7, screens,
+    gesture-handler 3, webview 14, TypeScript 7, jest 30, eslint 10): entran con
+    el SDK 58, no a mano.
+  - Majors propias con cambios incompatibles (Sentry 8, Firebase 13,
+    chordsheetjs 18, Aptabase 0.6): cada una es una tarea con sus pruebas, no
+    un bump antes de una build de tienda.
+
+Verificado: tipos, lint, 1.859 tests, `expo prebuild -p ios` (extensión,
+Sentry e icono alternativo presentes) y `expo export --platform web`.
+
 ## 2026-10-08 23:50 — `expo-gl` en el binario, por si acaso
 
 Se instala `expo-gl` (`~57.0.2`) sin usarlo todavía, para que vaya dentro de
