@@ -341,6 +341,26 @@ npm run eas:build:android -- --profile production
 `autoIncrement` sube solo el número de build. La versión visible sigue siendo
 la de `app.json` (`2.1.0`) — cámbiala ahí si quieres que salga otra.
 
+### 4.2-bis Alternativa: lanzarla desde GitHub (o pedírsela a Claude)
+
+Existe `.github/workflows/eas-build.yml` (manual, `workflow_dispatch`): elige
+plataforma y perfil y, con `submit`, la manda sola a TestFlight / Play al
+terminar. El build corre en los servidores de Expo; el job solo lo encola.
+Usa el `EXPO_TOKEN` que ya tienen las OTA.
+
+Antes de que funcione hacen falta, **una sola vez y a mano**:
+
+1. Que el workflow esté en `main` (GitHub solo ofrece "Run workflow" para
+   los que están en la rama por defecto).
+2. Las **credenciales de iOS de los dos targets** guardadas en EAS (§2.5). En
+   modo no interactivo EAS no puede crearlas: `npx eas-cli credentials -p ios`
+   o el primer build desde tu terminal.
+3. Para el envío a TestFlight, una **API key de App Store Connect** guardada en
+   EAS (la crea el primer `eas submit` interactivo).
+
+A partir de ahí, cualquier build sale con un clic, o pidiéndosela a Claude,
+que puede dispararla por la API de Actions.
+
 ### 4.3 Subir a las tiendas
 
 ```bash
