@@ -21,17 +21,17 @@ on:
   workflow_dispatch:
     inputs:
       platform:
-        description: "Plataforma"
+        description: 'Plataforma'
         type: choice
         options: [ios, android, all]
         default: ios
       profile:
-        description: "Perfil de eas.json"
+        description: 'Perfil de eas.json'
         type: choice
         options: [production, preview, development]
         default: production
       submit:
-        description: "Enviar a TestFlight / Play al terminar (solo production)"
+        description: 'Enviar a TestFlight / Play al terminar (solo production)'
         type: boolean
         default: true
 
@@ -54,8 +54,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: '20'
+          cache: 'npm'
           cache-dependency-path: mcm-app/package-lock.json
 
       - name: Verificar que EXPO_TOKEN existe
