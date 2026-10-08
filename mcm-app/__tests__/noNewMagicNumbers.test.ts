@@ -85,7 +85,7 @@ const BUDGET = {
   // Y a 204 / 394 el 2026-09-26: `app/` ya estaba en 204 sin que nadie bajase
   // el tope, y los nueve colores sueltos del dibujo de Carismochito pasaron a
   // `CarismochitoPalettes` en constants/colors.ts.
-  app: 204,
+  app: 197,
   components: 387,
 };
 

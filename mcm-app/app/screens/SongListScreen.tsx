@@ -530,7 +530,7 @@ export default function SongsListScreen({
                 name="sell"
                 size={22}
                 color={
-                  isIOS ? UIColors.accentYellow : isDark ? '#FFFFFF' : '#1a1a1a'
+                  isIOS ? UIColors.accentYellow : themeColors(isDark).headerTint
                 }
               />
             </TouchableOpacity>
@@ -548,13 +548,7 @@ export default function SongsListScreen({
                   <MaterialIcons
                     name={searchVisible ? 'search-off' : 'search'}
                     size={24}
-                    color={
-                      isIOS
-                        ? UIColors.accentYellow
-                        : Platform.OS === 'web'
-                          ? '#1a1a1a'
-                          : '#1a1a1a'
-                    }
+                    color={isIOS ? UIColors.accentYellow : '#1a1a1a'}
                   />
                 </TouchableOpacity>
               ),

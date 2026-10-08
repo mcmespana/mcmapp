@@ -131,10 +131,14 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       plataforma) y una canción sin `filename` tumbaba su categoría entera.
       **Repaso en dispositivo físico: ✅ hecho por el usuario (2026-10-08)** —
       las pantallas de la pasada de diseño están bien.
-- [ ] **A6-quater. El tinte de las cabeceras nativas.** `isDark ? '#FFFFFF' :
-'#1a1a1a'` a mano en ~8 sitios (cantoral, fotos, calendario, botones de
-      volver). No es byte-idéntico a ningún rol. O se le da uno propio o se
-      alinea con `textStrong` — pero son cabeceras nativas.
+- [x] **A6-quater. El tinte de las cabeceras nativas — hecho el 2026-10-08.**
+      Nace el rol `headerTint` (`#1a1a1a` / `#FFFFFF`) con los MISMOS valores
+      que estaban escritos a mano, así que no cambia un píxel y no hacía falta
+      dispositivo. Aplicado en Fotos, Calendario, cabeceras de evento (iOS),
+      lista de canciones y playlist. **Lo que NO se migró, a propósito:** los
+      `'#1a1a1a'` fijos de Android/web en el cantoral y en `getTextColor` de
+      eventos. No dependen del modo: son la tinta sobre la barra de COLOR del
+      tab (amarillo del cantoral), y eso es `onColor(fondo)`, no este rol.
 
 ### Trabajo de abrir el fichero y decidir (sin regla general que aplicar)
 
@@ -198,8 +202,7 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 
 ## Orden sugerido si hay un hueco
 
-1. **A6-quater** — el único que sigue necesitando dispositivo (cabeceras
-   nativas). H9 se verificó en web el 2026-09-09; H10/H12 y A3 están hechos.
+1. ~~A6-quater~~ hecho (2026-10-08). H9 verificado en dispositivo.
 2. **C6**, **A5.5**, **E5** — revisión fichero a fichero.
 3. **H1-ter**, **H5**, **H6** — mejoras.
 

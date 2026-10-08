@@ -81,12 +81,13 @@ Es la **única** capa de roles. Se resuelve con `themeColors(isDark)`, igual que
                    Claro          Oscuro
 text:              #11181C        #FFFFFF
 textSecondary:     #636366        #AEAEB2
-textMuted:         #8E8E93        #8E8E93
+textMuted:         #6E6E73        #8E8E93
 link:              #253883        #7AB3FF
 background:        #ffffff        #2C2C2E
 backgroundSunken:  #F2F2F7        #1C1C1E
 card:              #FFFFFF        #3A3A3C
 separator:         #E5E5EA        #3A3A3C
+headerTint:        #1a1a1a        #FFFFFF   ← botones/título de cabeceras nativas transparentes
 tint:              #0a7ea4        #ffffff
 icon:              #687076        #C5C5C7
 shadow:            #000000        #000000

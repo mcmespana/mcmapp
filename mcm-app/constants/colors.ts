@@ -69,6 +69,15 @@ export const Colors = {
     backgroundSunken: '#F2F2F7',
     /** Hairline entre filas. Más sutil que `border`, que es para cajas. */
     separator: '#E5E5EA',
+
+    /**
+     * Botones y título de las cabeceras NATIVAS transparentes (glass en iOS,
+     * barra del sistema en web): `headerTintColor` y los iconos de los bar
+     * items. Casi negro en claro, blanco en oscuro. No es `text` (`#11181C`):
+     * se escribió a mano en ~8 sitios con este valor y se le da nombre tal
+     * cual, sin cambiar un píxel (PLAN_DISENO §A6-quater).
+     */
+    headerTint: '#1a1a1a',
   },
   dark: {
     text: '#FFFFFF',
@@ -86,6 +95,7 @@ export const Colors = {
     link: '#7AB3FF',
     backgroundSunken: '#1C1C1E',
     separator: '#3A3A3C',
+    headerTint: '#FFFFFF',
   },
 };
 
