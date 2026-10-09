@@ -33,8 +33,8 @@ import { SongSheetColors } from '@/constants/colors';
 
 /** Variantes del estribillo. La primera es la de serie. */
 export const CHORUS_STYLES = [
-  { id: 'raya', name: 'Raya' },
   { id: 'negrita', name: 'Negrita' },
+  { id: 'raya', name: 'Raya' },
   { id: 'mayus', name: 'MAYÚS' },
   { id: 'clasico', name: 'Clásico' },
   { id: 'sangrado', name: 'Sangrado' },

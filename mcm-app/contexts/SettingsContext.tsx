@@ -37,6 +37,17 @@ export interface SongSettings {
    */
   pagedFullscreen: boolean;
   /**
+   * Versión del onboarding del cantoral que ya se ha visto (0 = nunca). Si
+   * es menor que `CANTORAL_ONBOARDING_VERSION`, se abre solo una vez al
+   * entrar en el cantoral.
+   */
+  cantoralOnboarding: number;
+  /**
+   * Etiquetas «a mano»: salen como atajos arriba del cantoral. Slugs
+   * normalizados (`slugifyTag`).
+   */
+  featuredTags: string[];
+  /**
    * Versión de la migración de la letra por defecto. Ver
    * `migrateSongSettings`.
    */
@@ -100,10 +111,12 @@ const defaultSettings: SongSettings = {
   notation: 'ES',
   compactView: false,
   verseNumbers: true,
-  chorusStyle: 'raya',
+  chorusStyle: 'negrita',
   chorusLabel: true,
   airy: false,
   pagedFullscreen: false,
+  cantoralOnboarding: 0,
+  featuredTags: [],
   fontVersion: FONT_VERSION,
 };
 

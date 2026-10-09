@@ -28,7 +28,7 @@ El coste de mantener esta tabla al día es mucho menor que el de repetirlo.
 | [`PLAN_INTEGRACIONES.md`](PLAN_INTEGRACIONES.md) | 🟡 Solo queda **Integración D** (reglas Firebase). A, B, C, E cerrados el 2026-08-12                                                                                                           | `BACKLOG.md` §1 fila 5 — 🔒 bloqueado por decisión D2 |
 | [`PLAN_CALIDAD.md`](PLAN_CALIDAD.md)             | 🟡 Parcial — Fase 0 (guardarraíles) ✅. **Fase 1 (trocear gigantes) descartada por decisión del usuario** el 2026-08-15, ver abajo                                                             | `BACKLOG.md` §2.A                                     |
 | [`PLAN_DISENO.md`](PLAN_DISENO.md)               | 🟡 En curso — dos pasadas hechas (tokens, tipografía, radios, sombras, responsive, panel) + 3 bugs de contraste arreglados. Lo que queda necesita **dispositivo** o revisión fichero a fichero | `BACKLOG.md` §2.G                                     |
-| [`PLAN_HOJA_CANCION.md`](PLAN_HOJA_CANCION.md)   | 🟡 Fase 1 hecha en la rama `claude/mcm-chord-display-ux-aagafj` (2026-10-09), sin PR; 🔒 seis decisiones del usuario (§3). Fases 2 (modo atril, PDF) y 3 (limpiar `.cho`) sin empezar          | `BACKLOG.md` §2.H                                     |
+| [`PLAN_HOJA_CANCION.md`](PLAN_HOJA_CANCION.md)   | 🟡 En la rama `claude/mcm-chord-display-ux-aagafj`, sin PR: hoja, modo atril, onboarding y las 258 canciones repasadas. Queda: admin fiel a la app, PDF y pantalla completa web                | `BACKLOG.md` §2.H                                     |
 
 ## 🔵 Futuro lejano — no se tocan hasta que el usuario lo pida
 

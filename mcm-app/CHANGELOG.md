@@ -18,6 +18,23 @@
 
 ---
 
+## 2026-10-10 01:30 — Cantoral: onboarding y estribillo en negrita de serie
+
+- **Onboarding del cantoral** (`components/song-onboarding/CantoralOnboarding.tsx`):
+  la primera vez que se entra en el cantoral, y siempre con el «?» nuevo del
+  header, pregunta si tocas o cantas (y DO RE MI / C D E), vista completa o
+  compacta, estilo del estribillo, letra, números y aire, y qué etiquetas
+  quieres a mano. Cada opción se ve al momento sobre una canción de verdad;
+  se cierra en cualquier paso. Ajustes nuevos: `cantoralOnboarding`
+  (versión vista) y `featuredTags` (atajos de etiqueta arriba del cantoral).
+- **Estribillo raya + negrita de serie** (`chorusStyle: 'negrita'`).
+- `SongDisplay` acepta `scrollTo` (selector CSS) para llevar la hoja a una
+  sección.
+- Las 258 canciones del cantoral, repasadas a mano en `mcmapp-cantoral`
+  (misma rama): ver `PLAN_HOJA_CANCION.md` §9.
+
+---
+
 ## 2026-10-09 23:30 — Canción: interlineado con sentido, estribillo a elegir, iPad y modo atril
 
 - **Interlineado que dice algo**: un renglón partido va pegado; otra línea

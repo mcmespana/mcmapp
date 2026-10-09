@@ -98,16 +98,13 @@ blanco / dos o más), unión de líneas partidas de PDF, numeración continua,
 variantes del estribillo elegibles en «Letra y vista», «más aire», plegado
 automático en columnas, aviso de girar, modo atril con pedal.
 
-🔒 **Pendiente del usuario**: elegir la variante de estribillo de serie
-(comparador en vivo en el artifact) — hoy es «Raya».
+~~Pendiente del usuario: elegir la variante de estribillo de serie~~ →
+**«Negrita» (raya + negrita)**, decidido el 2026-10-10.
 
 ## 7. Apuntado para pronto
 
-1. **Onboarding del cantoral** (la primera vez que se abre): ¿acordes?,
-   ¿completa o compacta?, ¿monoespaciada?, ¿números de estrofa?, estilo del
-   estribillo, destacar u ocultar etiquetas. Todo son ya ajustes de
-   `SettingsContext`; falta la pantalla.
-2. **Limpieza de los `.cho`** (Fase 3, §5). Recordárselo al usuario.
+1. ✅ **Onboarding del cantoral** — hecho (§9).
+2. ✅ **Limpieza de los `.cho`** — hecha (§9).
 3. **El admin del cantoral (script C) pintando igual que la app**: usar el
    mismo JavaScript de la hoja (`songSheet` + `songSheetLayout`) en su vista
    previa, para maquetar viendo lo que saldrá.
@@ -126,3 +123,25 @@ reordenada a mano.
 Queda para una persona (`revisar_cho.py` lo lista): revisar acordes (97),
 estribillos sin marcar (38), muros de texto (8) y las mayúsculas, que
 dependen del estilo de estribillo que elija el usuario.
+
+## 9. Tercera vuelta (2026-10-10)
+
+- **Estribillo raya + negrita** de serie (`chorusStyle: 'negrita'`, primera
+  de `CHORUS_STYLES`).
+- **Onboarding del cantoral** (`components/song-onboarding/`,
+  `utils/cantoralOnboarding.ts`): se abre solo la primera vez y con el «?»
+  del header. ¿Tocas o cantas? (+ DO RE MI / C D E), completa o compacta,
+  estilo del estribillo (+ etiqueta), letra (+ números, más aire) y, si hay
+  etiquetas, las que se quieren «a mano» arriba del cantoral
+  (`featuredTags`). Cada opción se ve al momento sobre una canción de verdad,
+  que baja sola a la parte que cambia; se cierra en cualquier paso y lo
+  tocado se queda.
+- **«Ocultar» etiquetas** no se ha hecho: hoy hay 4 etiquetas y esconder
+  canciones de las listas confunde más de lo que ayuda. Si algún día hay
+  etiquetas que molesten, es un `hiddenTags` al lado de `featuredTags`.
+- **Las 258 canciones repasadas** en `mcmapp-cantoral` (fuera mayúsculas,
+  estribillos marcados, muros partidos, notas a `{c:}`, acordes a corchetes),
+  verificado palabra a palabra y acorde a acorde. En iPad horizontal caben
+  enteras 167 (antes 136). `revisar_cho.py` ya solo avisa de «REVISAR
+  ACORDES»; lo dudoso, en `mcmapp-cantoral/docs/REVISION_OIDO.md`.
+

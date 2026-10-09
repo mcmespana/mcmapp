@@ -297,7 +297,13 @@ export default function SongFontBottomSheet({
 }
 
 /** Las variantes del estribillo dibujadas en pequeño, como se verán. */
-function ChorusPreview({ id, color }: { id: ChorusStyle; color: string }) {
+export function ChorusPreview({
+  id,
+  color,
+}: {
+  id: ChorusStyle;
+  color: string;
+}) {
   const bold = id !== 'raya';
   const caps = id === 'mayus' || id === 'clasico';
   const bar = id === 'raya' || id === 'negrita' || id === 'mayus';

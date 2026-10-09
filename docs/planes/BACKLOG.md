@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-10-09 (hoja de canción: Fase 1 en rama, §2.H). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> Última actualización: 2026-10-10 (hoja de canción: onboarding y canciones repasadas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
 > de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
@@ -315,9 +315,14 @@ usuario el 2026-10-09 («la mejor experiencia para músicos y cantantes»).
   en un dispositivo.
 - ✅ Segunda vuelta (2026-10-09): interlineado con sentido, variantes de
   estribillo, iPad con plegado y aviso de girar, **modo atril** hecho.
-- 📝 Apuntado (pronto, el usuario lo quiere): **onboarding del cantoral**,
-  **limpieza de los `.cho`** y **admin del cantoral fiel a la app** (§7 del
-  plan). Queda de Fase 2: PDF con la hoja nueva y pantalla completa en web.
+- ✅ Tercera vuelta (2026-10-10): estribillo **raya + negrita** de serie
+  (decidido por el usuario), **onboarding del cantoral** (con el «?» del
+  header) y **las 258 canciones repasadas a mano** en el cantoral (solo
+  queda «revisar acordes», que es de oído; dudas en
+  `mcmapp-cantoral/docs/REVISION_OIDO.md`).
+- 📝 Siguiente (el usuario lo quiere): **admin del cantoral (script C) fiel
+  a la app** (§7 del plan). Queda de Fase 2: PDF con la hoja nueva y pantalla
+  completa en web.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 

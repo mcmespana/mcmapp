@@ -95,8 +95,20 @@ media palabra.
 | Ajuste         | Dónde                                                                          | Por defecto |
 | -------------- | ------------------------------------------------------------------------------ | ----------- |
 | `compactView`  | Menú de la canción → «Plegar estribillos repetidos» (solo si alguno se repite) | No          |
-| `verseNumbers` | «Tipo de letra» → Estrofas (solo si la canción lleva números)                  | Sí          |
-| `fontFamily`   | «Tipo de letra» → Fuente                                                       | Sistema     |
+| `verseNumbers` | «Letra y vista» → Números                                                      | Sí          |
+| `fontFamily`   | «Letra y vista» → Fuente                                                       | Sistema     |
+| `chorusStyle`  | «Letra y vista» → Estribillo                                                   | Negrita     |
+| `featuredTags` | Onboarding → «Etiquetas a mano» (atajos arriba del cantoral)                   | Ninguna     |
+
+**Onboarding** (`components/song-onboarding/CantoralOnboarding.tsx`, lógica
+en `utils/cantoralOnboarding.ts`): se abre solo la primera vez que se entra
+en el cantoral (`cantoralOnboarding` < `CANTORAL_ONBOARDING_VERSION`; súbela
+para que todos lo vuelvan a ver) y siempre con el «?» del header. Pregunta
+por acordes y notación, completa/compacta, estilo del estribillo, letra y
+etiquetas, y cada respuesta se ve al momento en una canción de verdad
+(`pickPreviewSong`: una con estrofas, acordes y estribillo repetido) que baja
+sola a lo que cambia (`SongDisplay` → `scrollTo`). Se cierra en cualquier
+paso; lo tocado se queda, porque son ajustes normales.
 
 La letra por defecto pasó de monoespaciada a la del sistema el 2026-10-09: la
 monoespaciada gasta un 30 % más de ancho. `migrateSongSettings` cambia una vez
@@ -110,8 +122,9 @@ elegir la monoespaciada se la queda.
   «Más aire» (`airy`) los abre todos.
 - **Líneas partidas de PDF**: se unen si la siguiente empieza en minúscula y
   la línea pasa de 70 caracteres, o de 60 sin puntuación final.
-- **Variantes del estribillo** (`chorusStyle`): `raya` (de serie), `negrita`,
-  `mayus`, `clasico`, `sangrado`; `chorusLabel` quita la etiqueta.
+- **Variantes del estribillo** (`chorusStyle`): `negrita` (raya + negrita,
+  de serie desde el 2026-10-10), `raya`, `mayus`, `clasico`, `sangrado`;
+  `chorusLabel` quita la etiqueta.
 - **iPad**: en columnas, `auto-compact` pliega las repeticiones; si girando
   cabría entera, `.rot-hint` lo avisa.
 - **Modo atril** (`pagedFullscreen`, pantalla completa nativa): columnas de

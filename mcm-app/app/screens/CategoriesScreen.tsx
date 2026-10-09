@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
+import { useIsFocused } from 'expo-router/react-navigation';
 import {
   useLayoutEffect,
   useMemo,
@@ -38,6 +39,13 @@ import { extractTrailingEmoji, stripCategoryPrefix } from '@/utils/songUtils';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useSongTagIndex } from '@/hooks/useSongTags';
 import TagCloudSheet from '@/components/song-tags/TagCloudSheet';
+import TagChip from '@/components/song-tags/TagChip';
+import CantoralOnboarding from '@/components/song-onboarding/CantoralOnboarding';
+import { useSettings } from '@/contexts/SettingsContext';
+import {
+  CANTORAL_ONBOARDING_VERSION,
+  shouldAutoOpenOnboarding,
+} from '@/utils/cantoralOnboarding';
 import { tagCategoryId, type ResolvedTag } from '@/utils/songTags';
 import { h } from '@/utils/haptics';
 import {
@@ -47,6 +55,7 @@ import {
   consumePendingChoirImport,
 } from '@/utils/pendingCloudPlaylist';
 import typography from '@/constants/typography';
+import spacing from '@/constants/spacing';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
@@ -136,6 +145,43 @@ export default function CategoriesScreen({
     });
   }, [navigation]);
 
+  // ── Onboarding («?» del header) ──────────────────────────────────────────
+  // Se abre solo la primera vez (por versión) y se vuelve a abrir con el «?».
+  // Solo con esta pantalla delante: si un enlace a una playlist o un coro nos
+  // ha llevado a otra, espera a la vuelta. Se da por visto al cerrarlo.
+  const { settings, setSettings, isLoadingSettings } = useSettings();
+  const isFocused = useIsFocused();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [autoDismissed, setAutoDismissed] = useState(false);
+  const autoOpen =
+    !autoDismissed &&
+    isFocused &&
+    !!songsData &&
+    shouldAutoOpenOnboarding(settings.cantoralOnboarding, isLoadingSettings);
+  const onboardingVisible = showOnboarding || autoOpen;
+  const openOnboarding = useCallback(() => setShowOnboarding(true), []);
+  const closeOnboarding = () => {
+    setShowOnboarding(false);
+    setAutoDismissed(true);
+    if (settings.cantoralOnboarding < CANTORAL_ONBOARDING_VERSION) {
+      setSettings({ cantoralOnboarding: CANTORAL_ONBOARDING_VERSION });
+    }
+  };
+
+  // Etiquetas «a mano» elegidas en el onboarding: atajos arriba de la lista.
+  const featuredTags = useMemo(() => {
+    const wanted = new Set(settings.featuredTags);
+    return tagIndex.tags.filter((t) => wanted.has(t.slug));
+  }, [settings.featuredTags, tagIndex.tags]);
+  const openTag = useCallback(
+    (tag: ResolvedTag) =>
+      navigation.navigate('SongsList', {
+        categoryId: tagCategoryId([tag.slug]),
+        categoryName: tag.label,
+      }),
+    [navigation],
+  );
+
   const handleSuccessSubmit = () => {
     toast.show({ variant: 'success', label: '¡Sugerencia enviada!' });
   };
@@ -192,6 +238,22 @@ export default function CategoriesScreen({
       // El de etiquetas solo existe si hay etiquetas que enseñar.
       headerRight: () => (
         <View style={styles.headerActions}>
+          <PressableFeedback
+            onPress={() => {
+              h.tap();
+              openOnboarding();
+            }}
+            style={styles.headerNativeButton}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Cómo ver las canciones"
+          >
+            <MaterialIcons
+              name="help-outline"
+              size={22}
+              color={headerIconColor}
+            />
+          </PressableFeedback>
           {hasTags && (
             <TouchableOpacity
               onPress={() => {
@@ -221,7 +283,7 @@ export default function CategoriesScreen({
         </View>
       ),
     });
-  }, [navigation, styles, headerIconColor, hasTags]);
+  }, [navigation, styles, headerIconColor, hasTags, openOnboarding]);
 
   // En iPad/web amplio rendiriamos la "Tu selección" en una card destacada
   // de ancho completo arriba, y las categorías reales en un grid de 2-3 cols
@@ -413,11 +475,23 @@ export default function CategoriesScreen({
   const listHeader = useMemo(
     () => (
       <View>
+        {featuredTags.length > 0 && (
+          <View style={styles.featuredTags}>
+            {featuredTags.map((tag) => (
+              <TagChip
+                key={tag.slug}
+                tag={tag}
+                isDark={isDark}
+                onPress={openTag}
+              />
+            ))}
+          </View>
+        )}
         {renderSelectionHero()}
         {sectionLabel()}
       </View>
     ),
-    [renderSelectionHero, sectionLabel],
+    [renderSelectionHero, sectionLabel, featuredTags, isDark, openTag, styles],
   );
 
   if (loading && sortedCategories.length === 0) {
@@ -461,6 +535,13 @@ export default function CategoriesScreen({
         onCloseComplete={handleTagsCloseComplete}
       />
 
+      <CantoralOnboarding
+        visible={onboardingVisible}
+        onClose={closeOnboarding}
+        songsData={songsData}
+        tags={tagIndex.tags}
+      />
+
       <SuggestSongModal
         visible={showForm}
         onClose={() => setShowForm(false)}
@@ -500,6 +581,15 @@ const createStyles = (
     },
     // Botones del header NATIVO (sugerir/buscar). Minimal —solo padding, sin
     // fondo— para que iOS 26 los envuelva en su cápsula liquid-glass.
+    // Atajos a las etiquetas elegidas en el onboarding.
+    featuredTags: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      paddingHorizontal: isWide ? 0 : spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.md,
+    },
     headerActions: {
       flexDirection: 'row',
       alignItems: 'center',

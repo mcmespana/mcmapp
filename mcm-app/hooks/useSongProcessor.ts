@@ -31,7 +31,7 @@ export interface UseSongProcessorParams {
   compact?: boolean;
   /** Números de estrofa. Default true. */
   verseNumbers?: boolean;
-  /** Variante del estribillo. Default 'raya'. */
+  /** Variante del estribillo. Default 'negrita' (raya + negrita). */
   chorusStyle?: ChorusStyle;
   /** Etiqueta «ESTRIBILLO». Default true. */
   chorusLabel?: boolean;
@@ -530,7 +530,7 @@ export const useSongProcessor = ({
   arrangementsVisible = true,
   compact = false,
   verseNumbers = true,
-  chorusStyle = 'raya',
+  chorusStyle = 'negrita',
   chorusLabel = true,
   airy = false,
   paged = false,

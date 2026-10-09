@@ -59,10 +59,12 @@ describe('SettingsContext (ajustes del cantoral)', () => {
       notation: 'ES',
       compactView: false,
       verseNumbers: true,
-      chorusStyle: 'raya',
+      chorusStyle: 'negrita',
       chorusLabel: true,
       airy: false,
       pagedFullscreen: false,
+      cantoralOnboarding: 0,
+      featuredTags: [],
       fontVersion: 2,
     });
     expect(result.current.isAdmin).toBe(false);
