@@ -268,7 +268,14 @@ export default function SongFullscreenScreen({
   }, []);
 
   const { settings } = useSettings();
-  const { chordsVisible, fontSize, fontFamily, notation } = settings;
+  const {
+    chordsVisible,
+    fontSize,
+    fontFamily,
+    notation,
+    compactView,
+    verseNumbers,
+  } = settings;
 
   // En presentación mostramos los arreglos siempre que la canción los tenga.
   const songHasArrangements = useMemo(
@@ -281,6 +288,8 @@ export default function SongFullscreenScreen({
     currentTranspose: 0,
     chordsVisible,
     arrangementsVisible: songHasArrangements,
+    compact: compactView,
+    verseNumbers,
     currentFontSizeEm: fontSize * 1.6,
     currentFontFamily: fontFamily,
     title,

@@ -130,7 +130,7 @@ contexts/                       # Estado global (React Context, NO Redux)
 
 hooks/                          # Custom hooks
 ├── useFirebaseData.ts         # CLAVE: fetch genérico con caché offline
-├── useSongProcessor.ts        # ChordPro → HTML
+├── useSongProcessor.ts        # ChordPro → HTML (la hoja: utils/songSheet*.ts)
 ├── useCalendarEvents.ts       # ICS → eventos
 ├── useCalendarConfigs.ts      # Configuraciones de calendarios
 ├── useColorScheme.ts          # Tema claro/oscuro
@@ -410,6 +410,7 @@ Documentar NO:
 | Firebase app singleton    | `utils/firebaseApp.ts`                                    |
 | Fetch de datos            | `hooks/useFirebaseData.ts`                                |
 | Procesador de canciones   | `hooks/useSongProcessor.ts`                               |
+| Hoja de canción (HTML)    | `utils/songSheet.ts` + `utils/songSheetLayout.ts`         |
 | Parser de calendario      | `utils/icsParser.ts` (puro, compartido con las functions) |
 | Hook de calendario        | `hooks/useCalendarEvents.ts`                              |
 | BBCode → HTML             | `utils/formatText.ts`                                     |

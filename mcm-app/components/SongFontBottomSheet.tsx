@@ -31,7 +31,18 @@ interface Props {
   currentFontFamily: string;
   onSetFontSize: (size: number) => void;
   onSetFontFamily: (family: string) => void;
+  /**
+   * Números de estrofa. Sin definir = la canción no los lleva y el bloque no
+   * se enseña.
+   */
+  verseNumbers?: boolean;
+  onSetVerseNumbers?: (value: boolean) => void;
 }
+
+const VERSE_OPTIONS = [
+  { value: true, preview: '1 2 3', name: 'Numeradas' },
+  { value: false, preview: '—', name: 'Sin número' },
+] as const;
 
 const MIN_SIZE = 0.6;
 const MAX_SIZE = 2.0;
@@ -47,6 +58,8 @@ export default function SongFontBottomSheet({
   currentFontFamily,
   onSetFontSize,
   onSetFontFamily,
+  verseNumbers,
+  onSetVerseNumbers,
 }: Props) {
   const isDark = useColorScheme() === 'dark';
   const p = sheetPalette(isDark);
@@ -249,6 +262,53 @@ export default function SongFontBottomSheet({
             })}
           </View>
         </SheetCard>
+
+        {/* ━━━━━━━━━━━━━━ ESTROFAS ━━━━━━━━━━━━━━ */}
+        {verseNumbers !== undefined && onSetVerseNumbers && (
+          <SheetCard
+            palette={p}
+            label="Estrofas"
+            status={verseNumbers ? 'Numeradas' : 'Sin número'}
+          >
+            <View style={styles.fontGrid} accessibilityRole="radiogroup">
+              {VERSE_OPTIONS.map((opt) => {
+                const isActive = opt.value === verseNumbers;
+                const color = isActive ? p.active.fg : p.text;
+                return (
+                  <PressableFeedback
+                    key={opt.name}
+                    style={[styles.fontChip, valueBoxStyle(p, isActive)]}
+                    onPress={() => {
+                      if (isActive) return;
+                      h.select();
+                      onSetVerseNumbers(opt.value);
+                    }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: isActive }}
+                    accessibilityLabel={`Estrofas: ${opt.name}`}
+                  >
+                    <PressableFeedback.Highlight />
+                    <Text style={[styles.fontChipPreview, { color }]}>
+                      {opt.preview}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.fontChipLabel,
+                        {
+                          color: isActive ? p.active.fg : p.textSecondary,
+                          fontWeight: isActive ? '700' : '500',
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {opt.name}
+                    </Text>
+                  </PressableFeedback>
+                );
+              })}
+            </View>
+          </SheetCard>
+        )}
 
         {(isSizeModified || isFontModified) && (
           <PressableFeedback

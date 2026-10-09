@@ -3,7 +3,7 @@
 > **Lee esto antes de abrir ningún `PLAN_*.md`.** Su único trabajo es que no
 > vuelvas a ejecutar algo que ya está hecho.
 >
-> Última actualización: 2026-09-26.
+> Última actualización: 2026-10-09.
 
 ## La regla, en una línea
 
@@ -24,20 +24,21 @@ El coste de mantener esta tabla al día es mucho menor que el de repetirlo.
 
 | Plan                                             | Estado real                                                                                                                                                                                    | Dónde manda el orden                                  |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| [`PLAN_UI_NATIVA.md`](PLAN_UI_NATIVA.md)         | ⏸️ **En pausa** por decisión del usuario (2026-09-24) — Fase 1 ✅, Fase 2 ~80%. No se retoma hasta que lo diga                                                                                                                                                        | `BACKLOG.md` §1 fila 4                                |
+| [`PLAN_UI_NATIVA.md`](PLAN_UI_NATIVA.md)         | ⏸️ **En pausa** por decisión del usuario (2026-09-24) — Fase 1 ✅, Fase 2 ~80%. No se retoma hasta que lo diga                                                                                 | `BACKLOG.md` §1 fila 4                                |
 | [`PLAN_INTEGRACIONES.md`](PLAN_INTEGRACIONES.md) | 🟡 Solo queda **Integración D** (reglas Firebase). A, B, C, E cerrados el 2026-08-12                                                                                                           | `BACKLOG.md` §1 fila 5 — 🔒 bloqueado por decisión D2 |
 | [`PLAN_CALIDAD.md`](PLAN_CALIDAD.md)             | 🟡 Parcial — Fase 0 (guardarraíles) ✅. **Fase 1 (trocear gigantes) descartada por decisión del usuario** el 2026-08-15, ver abajo                                                             | `BACKLOG.md` §2.A                                     |
 | [`PLAN_DISENO.md`](PLAN_DISENO.md)               | 🟡 En curso — dos pasadas hechas (tokens, tipografía, radios, sombras, responsive, panel) + 3 bugs de contraste arreglados. Lo que queda necesita **dispositivo** o revisión fichero a fichero | `BACKLOG.md` §2.G                                     |
+| [`PLAN_HOJA_CANCION.md`](PLAN_HOJA_CANCION.md)   | 🟡 Fase 1 hecha en la rama `claude/mcm-chord-display-ux-aagafj` (2026-10-09), sin PR; 🔒 seis decisiones del usuario (§3). Fases 2 (modo atril, PDF) y 3 (limpiar `.cho`) sin empezar          | `BACKLOG.md` §2.H                                     |
 
 ## 🔵 Futuro lejano — no se tocan hasta que el usuario lo pida
 
 Decidido el 2026-08-15: **no hay prisa, ya se hará**. No entran en "seguimos",
 no entran en la bolsa oportunista, y no hace falta preguntar por ellos.
 
-| Plan                                               | Por qué espera                                                    |
-| -------------------------------------------------- | ----------------------------------------------------------------- |
+| Plan                                               | Por qué espera                                                                                                                                      |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`PLAN_WIDGET_CONTIGO.md`](PLAN_WIDGET_CONTIGO.md) | Feature entera + build de tienda dedicada (WidgetKit + App Group). Ampliado el 2026-09-19: son **tres** widgets (hábitos, racha, evangelio del día) |
-| [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md)   | ⚠️ **Por definir**: el usuario explicará la idea. Lo que hay escrito es solo una propuesta de Claude (2026-09-26), no un plan decidido |
+| [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md)   | ⚠️ **Por definir**: el usuario explicará la idea. Lo que hay escrito es solo una propuesta de Claude (2026-09-26), no un plan decidido              |
 
 ## 🗄️ Archivados — HECHOS o ANULADOS, no re-ejecutar
 
@@ -46,7 +47,7 @@ no entran en la bolsa oportunista, y no hace falta preguntar por ellos.
 | [`archivo/auditoria-2026-08/`](archivo/auditoria-2026-08/README.md) | 15 planes          | ✅ Todos hechos, en `main` vía [#317](https://github.com/mcmespana/mcmapp/pull/317) y [#320](https://github.com/mcmespana/mcmapp/pull/320)                                                             |
 | [`archivo/tacticos/`](archivo/tacticos/README.md)                   | 8 planes (001–008) | ✅ Hechos, salvo el **007** ❌ **ANULADO** (decisión de producto: el panel SÍ debe ver las respuestas)                                                                                                 |
 | [`archivo/PLAN_TAGS.md`](archivo/PLAN_TAGS.md)                      | 1 plan             | ✅ Completo — app (2026-08-13) + generador de `mcmapp-cantoral` (2026-08-15). Doc viva: [`ETIQUETAS.md`](../funcionalidades/ETIQUETAS.md)                                                              |
-| [`archivo/PLAN_CARISMOCHITO.md`](archivo/PLAN_CARISMOCHITO.md)      | 1 plan             | ✅ Hecho el 2026-09-26 — la caza y la colección, **detrás de un interruptor del Laboratorio Alpha**. Doc viva: [`CARISMOCHITO.md`](../funcionalidades/CARISMOCHITO.md) |
+| [`archivo/PLAN_CARISMOCHITO.md`](archivo/PLAN_CARISMOCHITO.md)      | 1 plan             | ✅ Hecho el 2026-09-26 — la caza y la colección, **detrás de un interruptor del Laboratorio Alpha**. Doc viva: [`CARISMOCHITO.md`](../funcionalidades/CARISMOCHITO.md)                                 |
 | [`archivo/MEJORAS.md`](archivo/MEJORAS.md)                          | —                  | 🗄️ Foto de un análisis de mayo 2026, ya repartido en otros documentos                                                                                                                                  |
 | [`archivo/ANIMACIONES.md`](archivo/ANIMACIONES.md)                  | —                  | ✅ Auditoría de animaciones contra la skill `animate-expo` (2026-08-19), aplicada. Se queda como el **por qué** el `BottomSheet` sigue con `PanResponder`; los 3 pendientes están en `mcm-app/TODO.md` |
 

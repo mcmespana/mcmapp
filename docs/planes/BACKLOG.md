@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> Última actualización: 2026-10-09 (hoja de canción: Fase 1 en rama, §2.H). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
 > de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
@@ -301,6 +301,21 @@ y marca-en-primer-plano) cuyos topes solo pueden bajar.
   (decisión del usuario) y las capas de superficie en oscuro (el contraste lo
   desaconseja). No los propongas.
 
+### H. Hoja de canción — músicos y cantantes
+
+**Documento: [`PLAN_HOJA_CANCION.md`](PLAN_HOJA_CANCION.md).** Pedido por el
+usuario el 2026-10-09 («la mejor experiencia para músicos y cantantes»).
+
+- ✅ **Fase 1** en la rama `claude/mcm-chord-display-ux-aagafj` (`mcmapp` y
+  `mcmapp-cantoral`), sin PR: hoja propia (palabras, secciones, cortes por
+  frase, acordes que vuelan), vista compacta, numeración, columnas en iPad,
+  letra del sistema por defecto, `scripts/revisar_cho.py` en el cantoral.
+- 🔒 Seis decisiones aplicadas a falta de que el usuario las confirme
+  (§3 del plan y fila en §4 de este backlog). No se mergea sin su visto bueno
+  en un dispositivo.
+- Fase 2 (modo atril con páginas y pedal, PDF con la hoja nueva, pantalla
+  completa en web) y Fase 3 (limpiar los `.cho`) sin empezar.
+
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
 - **Multilenguaje (i18n)** — catalán/portugués/inglés. Por ahora **no**. Si
@@ -363,11 +378,12 @@ ningún sitio compartido.
 
 ## 4. Decisiones pendientes — preguntar ANTES de ejecutar
 
-| Decisión                                                                                   | Bloquea       | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                                                                                             |
-| ------------------------------------------------------------------------------------------ | ------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                          |
-| **Sacar la caza de Carismochitos del laboratorio**                                         | Carismochito  | `docs/funcionalidades/CARISMOCHITO.md`               | "¿Cuándo sale la caza para todo el mundo, y la colección se enlaza desde algún sitio o espera a la vista de perfil?"                                                                                                                      |
-| **Pañuelo — por definir**                                                                  | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md`                  | Idea parcial contada el 2026-09-29 (medallas 3D por evento, en el pañuelo, pop-up al tocar; prueba ya en el laboratorio). Falta: **cómo se reparten** y cómo es el pañuelo. No propongas la propuesta escrita como si estuviera decidida. |
+| Decisión                                                                                   | Bloquea         | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------ | --------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D   | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                                                      |
+| **Sacar la caza de Carismochitos del laboratorio**                                         | Carismochito    | `docs/funcionalidades/CARISMOCHITO.md`               | "¿Cuándo sale la caza para todo el mundo, y la colección se enlaza desde algún sitio o espera a la vista de perfil?"                                                                                                                                                  |
+| **Hoja de canción — confirmar la Fase 1**                                                  | Mergear la rama | `docs/planes/PLAN_HOJA_CANCION.md` §3                | "Ya lo has visto en el móvil: ¿te valen la letra del sistema para todos, el estribillo sin mayúsculas, las columnas con letra hasta un 20 % más pequeña en iPad, la vista compacta recordada, la numeración automática desde 2 estrofas y los arreglos a la derecha?" |
+| **Pañuelo — por definir**                                                                  | Panel Pañuelo   | `docs/planes/PLAN_PANEL_PANUELO.md`                  | Idea parcial contada el 2026-09-29 (medallas 3D por evento, en el pañuelo, pop-up al tocar; prueba ya en el laboratorio). Falta: **cómo se reparten** y cómo es el pañuelo. No propongas la propuesta escrita como si estuviera decidida.                             |
 
 ---
 

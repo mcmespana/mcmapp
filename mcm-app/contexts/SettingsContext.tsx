@@ -16,6 +16,19 @@ export interface SongSettings {
   fontSize: number; // Using number for em value
   fontFamily: string;
   notation: 'EN' | 'ES';
+  /**
+   * Vista compacta: los estribillos que se repiten se pliegan en una línea
+   * («Estribillo ×2»). Pensada para quien canta: con los acordes ocultos, la
+   * canción entera cabe en muy poca pantalla.
+   */
+  compactView: boolean;
+  /** Números de estrofa (1, 2, 3…) a la izquierda de cada una. */
+  verseNumbers: boolean;
+  /**
+   * Versión de la migración de la letra por defecto. Ver
+   * `migrateSongSettings`.
+   */
+  fontVersion?: number;
 }
 
 // Define the shape of the context value
@@ -34,13 +47,79 @@ interface SettingsContextType {
 
 export const DEFAULT_FONT_SIZE_EM = 1.25; // baseline font size (ligeramente mayor para mejor legibilidad)
 
+/**
+ * Letras de la canción. La primera es la de por defecto.
+ *
+ * La del sistema (San Francisco / Roboto) va primero desde 2026-10: la
+ * monoespaciada gasta ~30 % más de ancho por letra, y en un móvil eso es la
+ * diferencia entre que «Esta paz que hoy nos das, viva siempre estará» quepa
+ * en un renglón o se parta en tres. Los acordes ya no necesitan letra
+ * monoespaciada para cuadrar: la hoja los coloca encima de su sílaba
+ * (`utils/songSheet.ts`).
+ */
+export const SONG_FONTS = [
+  {
+    name: 'Sistema',
+    cssValue:
+      "-apple-system, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+  },
+  {
+    name: 'Monoespaciada',
+    cssValue: "'Roboto Mono', 'Courier New', monospace",
+  },
+  {
+    name: 'Serif',
+    cssValue: "'Palatino Linotype', 'Book Antiqua', Palatino, serif",
+  },
+] as const;
+
+export const DEFAULT_FONT_FAMILY = SONG_FONTS[0].cssValue;
+
+/** Valores viejos de la letra, para la migración. */
+const OLD_DEFAULT_MONO = "'Roboto Mono', 'Courier New', monospace";
+const OLD_SANS = "'Helvetica Neue', 'Arial', sans-serif";
+const FONT_VERSION = 2;
+
 // Default settings
 const defaultSettings: SongSettings = {
   chordsVisible: true,
   fontSize: DEFAULT_FONT_SIZE_EM,
-  fontFamily: "'Roboto Mono', 'Courier New', monospace", // Default font
+  fontFamily: DEFAULT_FONT_FAMILY,
   notation: 'ES',
+  compactView: false,
+  verseNumbers: true,
+  fontVersion: FONT_VERSION,
 };
+
+/**
+ * Ajustes guardados → ajustes de ahora.
+ *
+ * - Faltan claves (JSON de una versión anterior) → las del default.
+ * - `fontSize` 0 o ausente → el default.
+ * - Letra (una vez, `fontVersion` < 2): la monoespaciada era la de por
+ *   defecto y se guardaba aunque nadie la eligiera, así que quien la tenga
+ *   pasa a la del sistema; quien quiera la monoespaciada la vuelve a elegir y
+ *   ya no se toca. La «Sans-Serif» vieja (Helvetica) es la del sistema.
+ */
+export function migrateSongSettings(
+  stored: Partial<SongSettings> | null | undefined,
+): SongSettings {
+  const merged: SongSettings = {
+    ...defaultSettings,
+    ...(stored ?? {}),
+    fontSize: stored?.fontSize || defaultSettings.fontSize,
+  };
+  if ((stored?.fontVersion ?? 0) < FONT_VERSION) {
+    if (
+      merged.fontFamily === OLD_DEFAULT_MONO ||
+      merged.fontFamily === OLD_SANS
+    ) {
+      merged.fontFamily = DEFAULT_FONT_FAMILY;
+    }
+  }
+  merged.fontVersion = FONT_VERSION;
+  return merged;
+}
 
 // Storage key
 const SETTINGS_STORAGE_KEY = '@mcm_song_settings';
@@ -72,13 +151,8 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
       try {
         const storedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
         if (storedSettings) {
-          const parsedSettings = JSON.parse(storedSettings);
-          // Merge with defaults to ensure all keys are present if some were missing
-          setAppSettings((prev) => ({
-            ...defaultSettings,
-            ...parsedSettings,
-            fontSize: parsedSettings.fontSize || defaultSettings.fontSize,
-          }));
+          // Fusiona con los defaults (claves nuevas) y migra la letra vieja.
+          setAppSettings(migrateSongSettings(JSON.parse(storedSettings)));
         } else {
           setAppSettings(defaultSettings);
         }

@@ -21,6 +21,7 @@ Cómo funciona cada sistema de la app, de principio a fin.
 | [CALENDARIOS.md](funcionalidades/CALENDARIOS.md)       | Calendarios ICS: por qué son lentos (medido), la Cloud Function que los precachea cada 2 h y el fallback                                             |
 | [ENCUESTAS.md](funcionalidades/ENCUESTAS.md)           | Sistema de encuestas y evaluaciones (guía funcional)                                                                                                 |
 | [COROS.md](funcionalidades/COROS.md)                   | Coros, playlists compartidas y coro en vivo: `/choirs`, importar «la última», actualizar vs subir nueva, contraseña y caducidad de 24 h              |
+| [HOJA_CANCION.md](funcionalidades/HOJA_CANCION.md)     | Cómo se pinta una canción: palabras, secciones, estribillos repetidos y `{chorus}`, cortes de línea por frase, vista compacta, columnas en iPad      |
 | [ARREGLOS.md](funcionalidades/ARREGLOS.md)             | Directiva `{arr:}` del cantoral (anotaciones de arreglos) + prompt del generador ChordPro                                                            |
 | [ETIQUETAS.md](funcionalidades/ETIQUETAS.md)           | Etiquetas del cantoral: directiva `{tags:}`, catálogo `songs/tags`, botón del header, nube y pantalla `__TAG__:`                                     |
 | [SUBRAYADO.md](funcionalidades/SUBRAYADO.md)           | Subrayado de las lecturas de Contigo: rangos, componente de texto nativo y qué falta (build nativa) para el ítem "Subrayar" del menú del sistema     |
@@ -53,15 +54,16 @@ Si cambias uno de estos formatos, actualiza el contrato.
 
 **🟢 Vivos:**
 
-| Documento                                                           | Qué cubre                                                                                                                  |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| [BACKLOG.md](planes/BACKLOG.md)                                     | ★ Orden de ejecución, decisiones pendientes, protocolo de trabajo                                                          |
-| [planes/README.md](planes/README.md)                                | ★★ Índice de estado: qué plan está vivo, cuál archivado y cuál es futuro lejano                                            |
-| [PLAN_UI_NATIVA.md](planes/PLAN_UI_NATIVA.md)                       | Unificación de UI y componentes nativos (headers, botones, inputs, color) — 🟡 Fase 2 en curso                             |
-| [PLAN_INTEGRACIONES.md](planes/PLAN_INTEGRACIONES.md)               | Integraciones app ↔ panel ↔ cantoral — 🟡 solo queda la **Integración D** (reglas Firebase)                                |
-| [PLAN_CALIDAD.md](planes/PLAN_CALIDAD.md)                           | Saneamiento de código — 🟡 Fase 0 hecha; **Fase 1 descartada**. Su §0 explica cómo organizar código que solo edita una IA  |
-| [archivo/PLAN_CARISMOCHITO.md](planes/archivo/PLAN_CARISMOCHITO.md) | ✅ Hecho (2026-09-26). Cómo funciona hoy: [funcionalidades/CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)               |
-| [PLAN_DISENO.md](planes/PLAN_DISENO.md)                             | ⏳ Unificación del diseño: incoherencias de tokens con evidencia + mejoras. Bolsa oportunista, tareas sueltas de un commit |
+| Documento                                                           | Qué cubre                                                                                                                             |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| [BACKLOG.md](planes/BACKLOG.md)                                     | ★ Orden de ejecución, decisiones pendientes, protocolo de trabajo                                                                     |
+| [planes/README.md](planes/README.md)                                | ★★ Índice de estado: qué plan está vivo, cuál archivado y cuál es futuro lejano                                                       |
+| [PLAN_UI_NATIVA.md](planes/PLAN_UI_NATIVA.md)                       | Unificación de UI y componentes nativos (headers, botones, inputs, color) — 🟡 Fase 2 en curso                                        |
+| [PLAN_HOJA_CANCION.md](planes/PLAN_HOJA_CANCION.md)                 | Hoja de canción para músicos y cantantes — Fase 1 hecha en rama, 🔒 decisiones del usuario; Fases 2 (modo atril) y 3 (limpiar `.cho`) |
+| [PLAN_INTEGRACIONES.md](planes/PLAN_INTEGRACIONES.md)               | Integraciones app ↔ panel ↔ cantoral — 🟡 solo queda la **Integración D** (reglas Firebase)                                           |
+| [PLAN_CALIDAD.md](planes/PLAN_CALIDAD.md)                           | Saneamiento de código — 🟡 Fase 0 hecha; **Fase 1 descartada**. Su §0 explica cómo organizar código que solo edita una IA             |
+| [archivo/PLAN_CARISMOCHITO.md](planes/archivo/PLAN_CARISMOCHITO.md) | ✅ Hecho (2026-09-26). Cómo funciona hoy: [funcionalidades/CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)                          |
+| [PLAN_DISENO.md](planes/PLAN_DISENO.md)                             | ⏳ Unificación del diseño: incoherencias de tokens con evidencia + mejoras. Bolsa oportunista, tareas sueltas de un commit            |
 
 **🔵 Futuro lejano** (no se tocan hasta que el usuario lo pida — decisión de 2026-08-15):
 

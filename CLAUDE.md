@@ -96,5 +96,6 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Etiquetas del cantoral (`{tags:}`)                                       | `docs/funcionalidades/ETIQUETAS.md`                                          |
 | Sistema de diseño / tabs                                                 | `docs/desarrollo/DESIGN.md` + `docs/desarrollo/TABS_MAINTENANCE.md`          |
 | Build de tienda de agosto 2026 (paso a paso)                             | `docs/desarrollo/BUILD_AGOSTO_2026.md`                                       |
+| Cómo se pinta una canción (hoja, cortes, vista compacta)                 | `docs/funcionalidades/HOJA_CANCION.md`                                       |
 | Arreglos del cantoral (`{arr:}`)                                         | `docs/funcionalidades/ARREGLOS.md`                                           |
 | Subrayado de lecturas (Contigo)                                          | `docs/funcionalidades/SUBRAYADO.md`                                          |

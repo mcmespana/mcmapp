@@ -185,6 +185,41 @@ export const UIColors = {
   modalOverlay: 'rgba(0, 0, 0, 0.5)',
 } as const;
 
+/**
+ * Hoja de una canción (el HTML del WebView del cantoral, ver
+ * `utils/songSheetLayout.ts`). Vive en un documento aparte, así que no puede
+ * leer `themeColors`: va su propio par claro/oscuro, con los mismos valores
+ * que ya pintaba `useSongProcessor`.
+ *
+ * - `chorusBar`/`chorusBg`: la raya y el fondo del estribillo. El amarillo es
+ *   el del cantoral (`UIColors.accentYellow`); el fondo apenas se nota a
+ *   propósito: separa sin gritar.
+ * - `label`: las etiquetas de sección («ESTRIBILLO», «INTRO») y el número de
+ *   estrofa. Más tenue que la letra, más firme que un comentario.
+ */
+export const SongSheetColors = {
+  light: {
+    text: '#212529',
+    title: '#1C1C1E',
+    chord: UIColors.chordBlue,
+    muted: UIColors.chordSecondaryText,
+    label: '#5B6270',
+    chorusBar: UIColors.accentYellow,
+    chorusBg: 'rgba(244, 193, 30, 0.07)',
+    filler: 'rgba(33, 37, 41, 0.25)',
+  },
+  dark: {
+    text: '#E5E5EA',
+    title: '#F5F5F7',
+    chord: '#64B5F6',
+    muted: '#98989D',
+    label: '#AEAEB2',
+    chorusBar: UIColors.accentYellow,
+    chorusBg: 'rgba(244, 193, 30, 0.08)',
+    filler: 'rgba(229, 229, 234, 0.28)',
+  },
+} as const;
+
 // Colores de tabs (cabecera)
 export const TabHeaderColors = {
   cancionero: '#f4c11e', // Amarillo Cantoral

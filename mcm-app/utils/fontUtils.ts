@@ -38,6 +38,11 @@ export const getFontMapping = () => {
 
 // Función para convertir CSS font family a nombres nativos de React Native
 export const getNativeFontFamily = (cssValue: string): string | undefined => {
+  // Antes que «serif»: «sans-serif» contiene «serif» y la letra del sistema
+  // salía en la vista previa como Times New Roman.
+  if (cssValue.includes('sans-serif') || cssValue.includes('system-ui')) {
+    return undefined;
+  }
   if (
     cssValue.includes('monospace') ||
     cssValue.includes('Courier') ||

@@ -17,6 +17,8 @@ import {
   SettingsProvider,
   useSettings,
   DEFAULT_FONT_SIZE_EM,
+  DEFAULT_FONT_FAMILY,
+  migrateSongSettings,
 } from '@/contexts/SettingsContext';
 import {
   AppSettingsProvider,
@@ -53,8 +55,11 @@ describe('SettingsContext (ajustes del cantoral)', () => {
     expect(result.current.settings).toEqual({
       chordsVisible: true,
       fontSize: DEFAULT_FONT_SIZE_EM,
-      fontFamily: "'Roboto Mono', 'Courier New', monospace",
+      fontFamily: DEFAULT_FONT_FAMILY,
       notation: 'ES',
+      compactView: false,
+      verseNumbers: true,
+      fontVersion: 2,
     });
     expect(result.current.isAdmin).toBe(false);
   });
@@ -107,6 +112,28 @@ describe('SettingsContext (ajustes del cantoral)', () => {
     await waitFor(async () =>
       expect(await AsyncStorage.getItem(ADMIN_KEY)).toBe('false'),
     );
+  });
+
+  it('la monoespaciada guardada por defecto pasa a la del sistema, una vez', async () => {
+    const mono = "'Roboto Mono', 'Courier New', monospace";
+    await AsyncStorage.setItem(KEY, JSON.stringify({ fontFamily: mono }));
+    const { result } = await mount();
+    expect(result.current.settings.fontFamily).toBe(DEFAULT_FONT_FAMILY);
+    // Quien la vuelve a elegir después de migrar, se la queda.
+    expect(
+      migrateSongSettings({ fontFamily: mono, fontVersion: 2 }).fontFamily,
+    ).toBe(mono);
+  });
+
+  it('la serif elegida a mano no se toca al migrar', () => {
+    const serif = "'Palatino Linotype', 'Book Antiqua', Palatino, serif";
+    expect(migrateSongSettings({ fontFamily: serif }).fontFamily).toBe(serif);
+  });
+
+  it('las claves nuevas (vista compacta, números) llegan con su default', () => {
+    const s = migrateSongSettings({ notation: 'EN' });
+    expect(s.compactView).toBe(false);
+    expect(s.verseNumbers).toBe(true);
   });
 
   it('fuera del provider devuelve defaults en vez de reventar (SSG)', async () => {

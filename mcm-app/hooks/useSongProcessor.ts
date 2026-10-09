@@ -1,20 +1,17 @@
 import { logger } from '@/utils/logger';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
-import { ChordProParser, HtmlDivFormatter, Song } from 'chordsheetjs';
+import { ChordProParser, Song } from 'chordsheetjs';
 import { UIColors } from '@/constants/colors';
-import {
-  convertHtmlChords,
-  convertChord,
-  Notation,
-} from '../utils/chordNotation';
+import { convertChord, Notation } from '../utils/chordNotation';
 import { transposeKey } from '../utils/transposeKey';
+import { preprocessArrangements } from '../utils/arrangements';
 import {
-  preprocessArrangements,
-  postProcessArrangementsHtml,
-  injectRowLineIndices,
-} from '../utils/arrangements';
-import { groupWordColumns } from '../utils/chordSheetWords';
+  buildSheet,
+  CHORUS_REF_SENTINEL,
+  renderSheetHtml,
+} from '../utils/songSheet';
+import { SHEET_CSS, SHEET_LAYOUT_JS } from '../utils/songSheetLayout';
 
 export interface UseSongProcessorParams {
   originalChordPro: string | null;
@@ -22,6 +19,13 @@ export interface UseSongProcessorParams {
   chordsVisible: boolean;
   /** Mostrar anotaciones de arreglo `{arr:}`. Default true. */
   arrangementsVisible?: boolean;
+  /**
+   * Vista compacta: los estribillos que se repiten se pliegan en una línea
+   * («Estribillo ×2»), que se despliega al tocarla. Default false.
+   */
+  compact?: boolean;
+  /** Números de estrofa. Default true. */
+  verseNumbers?: boolean;
   currentFontSizeEm: number;
   currentFontFamily: string;
   notation: Notation;
@@ -54,6 +58,8 @@ export interface SongStyleState {
   isDark: boolean;
   chordsVisible: boolean;
   arrangementsVisible: boolean;
+  compact: boolean;
+  verseNumbers: boolean;
   topPadding: number;
   bottomPadding: number;
 }
@@ -80,6 +86,21 @@ export interface SongParseError {
   context: { n: number; text: string; isError: boolean }[];
 }
 
+/**
+ * Lo que la pantalla necesita saber de la canción para ofrecer (o no) las
+ * opciones de vista: «Plegar estribillos» solo tiene sentido si alguno se
+ * repite, y los números de estrofa solo si la canción los lleva.
+ */
+export interface SongSheetInfo {
+  hasRepeats: boolean;
+  hasVerseNumbers: boolean;
+}
+
+const NO_SHEET_INFO: SongSheetInfo = {
+  hasRepeats: false,
+  hasVerseNumbers: false,
+};
+
 interface ParsedResult {
   song: Song | null;
   error: SongParseError | null;
@@ -95,6 +116,8 @@ const PARSED_CACHE_LIMIT = 64;
 function parseChordPro(chordPro: string): ParsedResult {
   const cached = PARSED_CACHE.get(chordPro);
   if (cached !== undefined) return cached;
+  // Cada sustitución deja el mismo número de líneas: el modo admin señala
+  // líneas del ChordPro original por su número (`data-line`).
   const cleaned = preprocessArrangements(chordPro)
     .replace(/\{sov\}/gi, '{start_of_verse}')
     .replace(/\{eov\}/gi, '{end_of_verse}')
@@ -102,7 +125,14 @@ function parseChordPro(chordPro: string): ParsedResult {
     .replace(/\{eoc\}/gi, '{end_of_chorus}')
     .replace(/\{sob\}/gi, '{start_of_bridge}')
     .replace(/\{eob\}/gi, '{end_of_bridge}')
-    .replace(/\{transpose:.*\}\n?/gi, '');
+    // `{chorus}` (ChordPro estándar: «aquí va el estribillo»). ChordSheetJS
+    // lo descarta; como comentario-centinela llega hasta `buildSheet`.
+    .replace(
+      /\{\s*chorus\s*(?::\s*([^}]*))?\}/gi,
+      (_m, label?: string) =>
+        `{comment: ${CHORUS_REF_SENTINEL}${(label ?? '').trim()}}`,
+    )
+    .replace(/\{transpose:.*\}/gi, '');
   // `HtmlDivFormatter` de ChordSheetJS NO escapa el texto libre al formatear:
   // título, autor, comentarios y letra se emiten tal cual dentro del HTML
   // (verificado: `{title: <script>}` produce `<h1><script>` literal). El
@@ -460,6 +490,8 @@ export const useSongProcessor = ({
   currentTranspose,
   chordsVisible,
   arrangementsVisible = true,
+  compact = false,
+  verseNumbers = true,
   currentFontSizeEm,
   currentFontFamily,
   notation,
@@ -475,6 +507,7 @@ export const useSongProcessor = ({
 }: UseSongProcessorParams) => {
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
+  const [sheetInfo, setSheetInfo] = useState<SongSheetInfo>(NO_SHEET_INFO);
 
   const parsed = useMemo<ParsedResult>(() => {
     if (!originalChordPro) return { song: null, error: null };
@@ -499,6 +532,8 @@ export const useSongProcessor = ({
       isDark,
       chordsVisible,
       arrangementsVisible,
+      compact,
+      verseNumbers,
       topPadding,
       bottomPadding,
     }),
@@ -508,6 +543,8 @@ export const useSongProcessor = ({
       isDark,
       chordsVisible,
       arrangementsVisible,
+      compact,
+      verseNumbers,
       topPadding,
       bottomPadding,
     ],
@@ -525,6 +562,7 @@ export const useSongProcessor = ({
       return;
     }
     if (!baseSong) {
+      setSheetInfo(NO_SHEET_INFO);
       setSongHtml(
         buildErrorHtml(
           songError,
@@ -546,17 +584,17 @@ export const useSongProcessor = ({
           ? baseSong.transpose(currentTranspose)
           : baseSong;
 
-      const formatter = new HtmlDivFormatter();
-      let formattedSong = groupWordColumns(
-        postProcessArrangementsHtml(formatter.format(songForFormatting)),
-      );
-      // En modo admin, etiquetamos cada fila con el índice de su línea en el
-      // ChordPro original para poder insertar arreglos por long-press. La
-      // transposición no altera el número/orden de filas, así que mapeamos
-      // sobre el ChordPro original (no el transpuesto).
-      if (adminMode && originalChordPro) {
-        formattedSong = injectRowLineIndices(formattedSong, originalChordPro);
-      }
+      const model = buildSheet(songForFormatting, { notation });
+      setSheetInfo({
+        hasRepeats: model.sections.some((x) => x.repeatOf !== null),
+        hasVerseNumbers: model.sections.some((x) => x.number !== null),
+      });
+      // En modo admin cada línea lleva su número en el ChordPro original
+      // (`data-line`) para insertar arreglos con un toque largo.
+      const sheetHtml = renderSheetHtml(model, { lineNumbers: adminMode });
+      // El título sale del ChordPro (ya escapado al parsear); si no trae, el
+      // de la navegación, que sí hay que escapar.
+      const songTitle = songForFormatting.title || escapeHtml(title ?? '');
 
       let metaInsert = '';
       if (author && !isFullscreen) {
@@ -581,6 +619,10 @@ export const useSongProcessor = ({
       }
       if (capo !== undefined && capo > 0) {
         badges += `<span class="meta-badge">Cejilla ${capo}</span>`;
+      }
+      // Las marcas de revisión («♩ REVISAR ACORDES») ya no van en la letra.
+      if (model.reviewNotes.length > 0) {
+        badges += `<span class="meta-badge meta-badge-muted">Acordes sin revisar</span>`;
       }
       if (currentTranspose !== 0) {
         const transposeDisplay =
@@ -613,20 +655,8 @@ export const useSongProcessor = ({
         fsHeader = `<div class="fs-header">${title ? `<div class="fs-title">${escapeHtml(title)}</div>` : ''}${fsMeta ? `<div class="fs-meta">${fsMeta}</div>` : ''}</div>`;
       }
 
-      let finalSongContentWithMeta = formattedSong;
-      if (metaInsert) {
-        const titleEndTag = '</h1>';
-        const titleEndIndex = formattedSong.indexOf(titleEndTag);
-        if (titleEndIndex !== -1) {
-          const insertionPoint = titleEndIndex + titleEndTag.length;
-          finalSongContentWithMeta =
-            formattedSong.substring(0, insertionPoint) +
-            metaInsert +
-            formattedSong.substring(insertionPoint);
-        } else {
-          finalSongContentWithMeta = metaInsert + formattedSong;
-        }
-      }
+      const finalSongContentWithMeta =
+        (songTitle ? `<h1>${songTitle}</h1>` : '') + metaInsert + sheetHtml;
 
       // ── Bootstrap script: receives postMessage / injectJavaScript calls
       // ── and updates CSS variables / classes live without reloading HTML.
@@ -649,6 +679,15 @@ export const useSongProcessor = ({
             if (typeof s.arrangementsVisible === 'boolean') {
               document.body.classList.toggle('arr-hidden', !s.arrangementsVisible);
             }
+            if (typeof s.compact === 'boolean') {
+              document.body.classList.toggle('compact', s.compact);
+            }
+            if (typeof s.verseNumbers === 'boolean') {
+              document.body.classList.toggle('nums-hidden', !s.verseNumbers);
+            }
+            // Tamaño, letra, acordes o vista cambian el ancho de las palabras:
+            // hay que volver a elegir dónde se parte cada línea.
+            if (window.__SONG_LAYOUT__) window.__SONG_LAYOUT__.refit();
           }
           window.__SONG_BRIDGE__ = { apply: apply };
           function onMessage(ev) {
@@ -680,8 +719,7 @@ export const useSongProcessor = ({
             var MOVE_CANCEL = 12, DELAY = 450;
             function rowFor(el) {
               while (el && el !== document.body) {
-                if (el.classList && el.classList.contains('row') &&
-                    el.hasAttribute('data-line')) return el;
+                if (el.hasAttribute && el.hasAttribute('data-line')) return el;
                 el = el.parentElement;
               }
               return null;
@@ -743,7 +781,7 @@ export const useSongProcessor = ({
         }
       `;
 
-      let finalHtml = `
+      const finalHtml = `
         <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -775,8 +813,6 @@ export const useSongProcessor = ({
             }
             body.theme-dark h1 { color: #F5F5F7; }
             body.theme-dark .song-meta-author { color: #98989D; }
-            body.theme-dark .chord-sheet .chord { color: #64B5F6; }
-            body.theme-dark .comment, body.theme-dark .c { color: #98989D; }
             body.theme-dark .arrangement { color: #FF8A80; }
             body.theme-dark .meta-badge {
               background: rgba(244, 193, 30, 0.12);
@@ -792,8 +828,6 @@ export const useSongProcessor = ({
             }
             body:not(.theme-dark) h1 { color: #1C1C1E; }
             body:not(.theme-dark) .song-meta-author { color: #8E8E93; }
-            body:not(.theme-dark) .chord-sheet .chord { color: ${UIColors.chordBlue}; }
-            body:not(.theme-dark) .comment, body:not(.theme-dark) .c { color: ${UIColors.chordSecondaryText}; }
             body:not(.theme-dark) .arrangement { color: #E15C62; }
             body:not(.theme-dark) .meta-badge {
               background: rgba(37, 56, 131, 0.06);
@@ -803,8 +837,6 @@ export const useSongProcessor = ({
               background: rgba(225, 92, 98, 0.08);
               color: #C62828;
             }
-            /* Live toggle: hide chords when body has .chords-hidden */
-            body.chords-hidden .chord { display: none !important; }
             /* Anotaciones de arreglo {arr:} — sutiles y alineadas a la derecha
                como rasgo distintivo. Toggle en vivo con .arr-hidden. */
             .arrangement {
@@ -868,90 +900,12 @@ export const useSongProcessor = ({
               font-weight: 600;
               letter-spacing: 0.02em;
             }
-            .chord-sheet {
-              margin-top: 0.5em;
-              text-align: left;
-              max-width: 100%;
-              overflow: hidden;
+            .meta-badge-muted {
+              background: transparent !important;
+              color: var(--sh-muted) !important;
+              box-shadow: inset 0 0 0 1px var(--sh-filler);
             }
-            .row {
-              display: flex;
-              flex-wrap: wrap;
-              margin-bottom: 0.2em;
-              max-width: 100%;
-              /* Sangría francesa: si una línea no cabe en el móvil, lo que
-                 salta queda metido hacia dentro y se ve que CONTINÚA la
-                 anterior, en vez de parecer una línea nueva de la canción. */
-              padding-left: 0.9em;
-            }
-            .row > :first-child {
-              margin-left: -0.9em;
-            }
-            .column {
-              padding-right: 0;
-              max-width: 100%;
-              overflow-wrap: break-word;
-              word-wrap: break-word;
-            }
-            /* Una palabra partida por acordes («a|quí») salta entera de línea
-               (utils/chordSheetWords.ts). Solo se parte por dentro si la
-               palabra sola no cabe en la línea. */
-            .word {
-              display: flex;
-              flex-wrap: wrap;
-              max-width: 100%;
-            }
-            .chord-sheet .chord {
-              font-weight: bold;
-              white-space: pre;
-              display: block;
-              min-height: 1.2em;
-              font-size: var(--song-font-size);
-              /* Hueco tras el acorde: si es más ancho que su sílaba
-                 («SOL#m7» sobre «a»), el siguiente no se le pega
-                 («SOL#m7RE»). Sobre una sílaba normal no se nota: la columna
-                 ya la ensancha la letra. */
-              padding-right: 0.3em;
-            }
-            .chord-sheet .lyrics {
-              white-space: pre-wrap;
-              word-wrap: break-word;
-              overflow-wrap: break-word;
-              display: block;
-              min-height: 1.2em;
-              max-width: 100%;
-              font-size: var(--song-font-size);
-            }
-            .comment, .c {
-              font-style: italic;
-              white-space: pre-wrap;
-              word-wrap: break-word;
-              overflow-wrap: break-word;
-              display: block;
-              margin-top: 0.5em;
-              margin-bottom: 0.5em;
-              max-width: 100%;
-            }
-            .paragraph {
-              margin-top: 1.2em;
-              margin-bottom: 1.2em;
-              white-space: pre-wrap;
-              word-wrap: break-word;
-              overflow-wrap: break-word;
-              max-width: 100%;
-            }
-            .paragraph.chorus {
-              font-weight: bold;
-              margin-top: 1em;
-              margin-bottom: 1em;
-              white-space: pre-wrap;
-              word-wrap: break-word;
-              overflow-wrap: break-word;
-              max-width: 100%;
-            }
-            .paragraph.chorus .lyrics {
-              text-transform: uppercase;
-            }
+            ${SHEET_CSS}
             ${
               isFullscreen
                 ? `
@@ -1014,14 +968,14 @@ export const useSongProcessor = ({
             }
           </style>
         </head>
-        <body class="${s.isDark ? 'theme-dark' : ''}${s.chordsVisible ? '' : ' chords-hidden'}${s.arrangementsVisible ? '' : ' arr-hidden'}">
+        <body class="${s.isDark ? 'theme-dark' : ''}${s.chordsVisible ? '' : ' chords-hidden'}${s.arrangementsVisible ? '' : ' arr-hidden'}${s.compact ? ' compact' : ''}${s.verseNumbers ? '' : ' nums-hidden'}">
           ${fsHeader}
           ${finalSongContentWithMeta}
+          <script>${SHEET_LAYOUT_JS}</script>
           <script>${bootstrap}</script>
         </body>
         </html>
       `;
-      finalHtml = convertHtmlChords(finalHtml, notation);
       setSongHtml(finalHtml);
     } catch (err) {
       logger.error('Error procesando canción en useSongProcessor:', err);
@@ -1053,5 +1007,5 @@ export const useSongProcessor = ({
     adminMode,
   ]);
 
-  return { songHtml, isLoadingSong, styleState, songError };
+  return { songHtml, isLoadingSong, styleState, songError, sheetInfo };
 };

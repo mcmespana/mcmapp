@@ -26,7 +26,7 @@ import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useSettings } from '@/contexts/SettingsContext';
+import { SONG_FONTS, useSettings } from '@/contexts/SettingsContext';
 import { hasArrangements, insertArrangementAtLine } from '@/utils/arrangements';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
@@ -57,17 +57,7 @@ import SongLinkViewer, {
 // intentional native iOS convention preserved for visual consistency.
 const APPLE_SYSTEM_GREEN = SwipeColors.add;
 
-const availableFonts = [
-  {
-    name: 'Monoespaciada',
-    cssValue: "'Roboto Mono', 'Courier New', monospace",
-  },
-  {
-    name: 'Serif',
-    cssValue: "'Palatino Linotype', 'Book Antiqua', Palatino, serif",
-  },
-  { name: 'Sans-Serif', cssValue: "'Helvetica Neue', 'Arial', sans-serif" },
-];
+const availableFonts = SONG_FONTS.map((f) => ({ ...f }));
 
 type SongDetailScreenRouteProp = RouteProp<RootStackParamList, 'SongDetail'>;
 type SongDetailScreenNavigationProp = NavigationProp<
@@ -140,6 +130,8 @@ export default function SongDetailScreen({
     fontSize: currentFontSizeEm,
     fontFamily: currentFontFamily,
     notation,
+    compactView,
+    verseNumbers,
   } = settings;
 
   // Edición de arreglos por long-press (solo admin). El índice apunta a una
@@ -213,11 +205,14 @@ export default function SongDetailScreen({
     isLoadingSong: isSongProcessing,
     styleState,
     songError,
+    sheetInfo,
   } = useSongProcessor({
     originalChordPro,
     currentTranspose,
     chordsVisible,
     arrangementsVisible: songHasArrangements && arrangementsVisible,
+    compact: compactView,
+    verseNumbers,
     currentFontSizeEm,
     currentFontFamily,
     notation,
@@ -426,6 +421,9 @@ export default function SongDetailScreen({
   const handleToggleChords = () =>
     setSettings({ chordsVisible: !chordsVisible });
   const handleToggleArrangements = () => setArrangementsVisible((v) => !v);
+  const handleToggleCompact = () => setSettings({ compactView: !compactView });
+  const handleSetVerseNumbers = (value: boolean) =>
+    setSettings({ verseNumbers: value });
   const handleSetTranspose = (semitones: number) => {
     let newTranspose = semitones;
     if (newTranspose >= 12 || newTranspose <= -12)
@@ -635,6 +633,12 @@ export default function SongDetailScreen({
         hasArrangements={songHasArrangements}
         arrangementsVisible={arrangementsVisible}
         onToggleArrangements={handleToggleArrangements}
+        hasRepeats={sheetInfo.hasRepeats}
+        compactView={compactView}
+        onToggleCompact={handleToggleCompact}
+        hasVerseNumbers={sheetInfo.hasVerseNumbers}
+        verseNumbers={verseNumbers}
+        onSetVerseNumbers={handleSetVerseNumbers}
         currentTranspose={currentTranspose}
         currentFontSizeEm={currentFontSizeEm}
         currentFontFamily={currentFontFamily}

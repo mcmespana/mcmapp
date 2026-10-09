@@ -211,6 +211,9 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
         showsVerticalScrollIndicator={false}
         {...(useInset
           ? {
+              // La hoja (utils/songSheetLayout.ts) lo resta al decidir si la
+              // canción cabe entera en pantalla.
+              injectedJavaScriptBeforeContentLoaded: `window.__SONG_VIEW_INSET__=${topInset};true;`,
               automaticallyAdjustContentInsets: false,
               contentInsetAdjustmentBehavior: 'never' as const,
               contentInset: { top: topInset, left: 0, right: 0, bottom: 0 },

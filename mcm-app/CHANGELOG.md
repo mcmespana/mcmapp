@@ -18,6 +18,49 @@
 
 ---
 
+## 2026-10-09 19:55 — Canción: hoja nueva para músicos y cantantes
+
+- **La canción ya no la pinta `HtmlDivFormatter`.** ChordSheetJS sigue
+  parseando y transportando, pero el HTML lo hace `utils/songSheet.ts`: cada
+  línea en **palabras enteras**, en secciones (estrofa, estribillo, puente,
+  intro de acordes). Detalle en `docs/funcionalidades/HOJA_CANCION.md`.
+- **Cortes de línea por frase** (`utils/songSheetLayout.ts`, script dentro del
+  WebView): el menor número de renglones, y dentro de eso tras punto o coma,
+  antes de «y/que», nunca detrás de un artículo. Los acordes **vuelan** sobre
+  la letra: solo se separan si chocarían (y a media palabra los une una raya).
+  Fuera los renglones vacíos de acordes encima de las líneas sin acordes.
+- **El estribillo se separa siempre**, aunque el `{soc}` no lleve línea en
+  blanco delante (le pasaba a «Fieles»). Raya amarilla, fondo suave y
+  etiqueta; ya no se fuerzan mayúsculas ni negrita.
+- **`{chorus}` y las líneas «ESTRIBILLO»** (29 canciones) pintan el
+  estribillo entero donde se canta. **Vista compacta** nueva (menú de la
+  canción, «Plegar estribillos repetidos», solo si alguno se repite): las
+  repeticiones idénticas o casi se pliegan en una línea que se abre al tocarla.
+  Avisa «con cambios» / «otros acordes». Ajuste persistente `compactView`.
+- **Números de estrofa** consistentes: automáticos desde 2 estrofas; los «1.»
+  escritos a mano se quitan de la letra y se respetan. Se quitan en «Tipo de
+  letra → Estrofas» (`verseNumbers`).
+- **«♩ REVISAR ACORDES»** (97 canciones) sale de la letra: aviso «Acordes sin
+  revisar» en la cabecera.
+- **iPad**: si la canción cabe entera en pantalla a 2–3 columnas (achicando la
+  letra hasta un 20 %), se reparte en columnas. Si no, una columna como antes.
+- **Letra del sistema por defecto** (antes monoespaciada, un 30 % más ancha).
+  `migrateSongSettings` la cambia una vez a quien tuviera la monoespaciada o la
+  «Sans-Serif» vieja. La vista previa de la letra sans salía como serif
+  (`getNativeFontFamily` confundía `sans-serif` con `serif`).
+- `{arr:}` sale a la derecha, como decía `ARREGLOS.md` (salía a la izquierda
+  por un fallo del CSS).
+- Borrados: `utils/chordSheetWords.ts` y `injectRowLineIndices` /
+  `renderableRowLineIndices` (el número de línea del modo admin lo pone ahora
+  la hoja con el del parser). El PDF de la playlist sigue con el render viejo.
+- `utils/songSheet.ts`, `utils/songSheetLayout.ts`, `hooks/useSongProcessor.ts`,
+  `contexts/SettingsContext.tsx`, `components/SongControls.tsx`,
+  `components/SongFontBottomSheet.tsx`, `constants/colors.ts`
+  (`SongSheetColors`), tests nuevos en `__tests__/songSheet*.test.ts`. Plan y
+  decisiones pendientes: `docs/planes/PLAN_HOJA_CANCION.md`.
+
+---
+
 ## 2026-10-09 10:00 — `expo-native-compact-tabs` 0.2.1 con nuestro parche portado
 
 La 0.2.1 pasa a iOS la escala del asset de React Native (arregla el tamaño de

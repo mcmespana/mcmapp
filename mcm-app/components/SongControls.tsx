@@ -43,6 +43,15 @@ interface SongControlsProps {
   /** Arreglos visibles (efímero por canción). */
   arrangementsVisible?: boolean;
   onToggleArrangements?: () => void;
+  /** Algún estribillo se repite: tiene sentido plegarlos. */
+  hasRepeats?: boolean;
+  /** Vista compacta (estribillos repetidos plegados). Preferencia global. */
+  compactView?: boolean;
+  onToggleCompact?: () => void;
+  /** La canción lleva números de estrofa. */
+  hasVerseNumbers?: boolean;
+  verseNumbers?: boolean;
+  onSetVerseNumbers?: (value: boolean) => void;
   currentTranspose: number;
   currentFontSizeEm: number;
   currentFontFamily: string;
@@ -132,6 +141,12 @@ const SongControls: React.FC<SongControlsProps> = ({
   hasArrangements = false,
   arrangementsVisible = true,
   onToggleArrangements,
+  hasRepeats = false,
+  compactView = false,
+  onToggleCompact,
+  hasVerseNumbers = false,
+  verseNumbers = true,
+  onSetVerseNumbers,
   currentTranspose,
   currentFontSizeEm,
   currentFontFamily,
@@ -273,6 +288,19 @@ const SongControls: React.FC<SongControlsProps> = ({
               onPress={onToggleChords}
               isActive={!chordsVisible}
             />
+            {hasRepeats && onToggleCompact && (
+              <ActionButton
+                isDark={isDark}
+                icon={compactView ? 'unfold-more' : 'unfold-less'}
+                label={
+                  compactView
+                    ? 'Desplegar estribillos'
+                    : 'Plegar estribillos repetidos'
+                }
+                onPress={onToggleCompact}
+                isActive={compactView}
+              />
+            )}
             {hasArrangements && onToggleArrangements && (
               <ActionButton
                 isDark={isDark}
@@ -401,6 +429,10 @@ const SongControls: React.FC<SongControlsProps> = ({
         currentFontFamily={currentFontFamily}
         onSetFontSize={onSetFontSize}
         onSetFontFamily={onSetFontFamily}
+        verseNumbers={
+          hasVerseNumbers && onSetVerseNumbers ? verseNumbers : undefined
+        }
+        onSetVerseNumbers={onSetVerseNumbers}
       />
 
       <TransposeBottomSheet
