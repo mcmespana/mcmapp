@@ -1,5 +1,5 @@
 diff --git a/node_modules/expo-native-compact-tabs/ios/ExpoNativeCompactTabsView.swift b/node_modules/expo-native-compact-tabs/ios/ExpoNativeCompactTabsView.swift
-index e4c82b3..3b0f433 100644
+index 8427b7f..778dd51 100644
 --- a/node_modules/expo-native-compact-tabs/ios/ExpoNativeCompactTabsView.swift
 +++ b/node_modules/expo-native-compact-tabs/ios/ExpoNativeCompactTabsView.swift
 @@ -128,6 +128,41 @@ public final class ExpoNativeCompactTabsView: ExpoView, UITabBarDelegate {
@@ -44,7 +44,7 @@ index e4c82b3..3b0f433 100644
    func setItems(_ definitions: [ExpoNativeCompactTabItem]) {
      let changed = definitions.count != itemDefinitions.count ||
        zip(definitions, itemDefinitions).contains { next, current in
-@@ -409,6 +444,30 @@ public final class ExpoNativeCompactTabsView: ExpoView, UITabBarDelegate {
+@@ -420,6 +455,30 @@ public final class ExpoNativeCompactTabsView: ExpoView, UITabBarDelegate {
      }
    }
  
@@ -56,12 +56,12 @@ index e4c82b3..3b0f433 100644
 +  /// Reinterprets an image's scale so it always measures `iconPointSize`
 +  /// points, whatever pixel density the file happens to be.
 +  ///
-+  /// Without this, icons come out at the wrong size in a real build:
-+  /// `UIImage(contentsOfFile:)` always reports scale 1.0, so a @3x asset (72px)
-+  /// is drawn as 72pt instead of 24pt — three times too big, overlapping the
-+  /// labels. The filename cannot be trusted either: bundlers that hash embedded
-+  /// assets drop the `@3x` suffix. Deriving the scale from the pixel width is
-+  /// the only thing that holds in every case.
++  /// 0.2.1 already passes React Native's asset scale through, which fixes the
++  /// common case. This stays as a belt-and-braces guard for when that scale is
++  /// missing or wrong (0 falls back to 1 for file URLs, which draws a @3x asset
++  /// at 72pt — three times too big, overlapping the labels). Deriving the scale
++  /// from the pixel width holds in every case, as long as every icon is drawn
++  /// for a 24pt box — which `scripts/generate-tab-icons.js` guarantees.
 +  private static func normalisedToIconBox(_ image: UIImage) -> UIImage {
 +    guard let cgImage = image.cgImage, cgImage.width > 0 else { return image }
 +    let scale = CGFloat(cgImage.width) / iconPointSize
@@ -72,13 +72,18 @@ index e4c82b3..3b0f433 100644
 +    )
 +  }
 +
-   private func loadImage(_ uri: String, completion: @escaping (UIImage?) -> Void) {
-     let cacheKey = uri as NSString
-     if let cached = Self.imageCache.object(forKey: cacheKey) {
-@@ -423,15 +482,16 @@ public final class ExpoNativeCompactTabsView: ExpoView, UITabBarDelegate {
+   private func loadImage(
+     _ uri: String,
+     scale: Double,
+@@ -440,18 +499,18 @@ public final class ExpoNativeCompactTabsView: ExpoView, UITabBarDelegate {
+     }
  
      if url.isFileURL {
-       let image = UIImage(contentsOfFile: url.path)
+-      let image = (try? Data(contentsOf: url)).flatMap {
+-        UIImage(data: $0, scale: resolvedScale)
+-      }
++      let image = (try? Data(contentsOf: url))
++        .flatMap { UIImage(data: $0, scale: resolvedScale) }
 +        .map(Self.normalisedToIconBox)
        if let image { Self.imageCache.setObject(image, forKey: cacheKey) }
        completion(image)
@@ -87,10 +92,10 @@ index e4c82b3..3b0f433 100644
  
      URLSession.shared.dataTask(with: url) { data, _, _ in
 -      let image = data.flatMap {
--        UIImage(data: $0, scale: UIScreen.main.scale)
+-        UIImage(data: $0, scale: resolvedScale)
 -      }
 +      let image = data
-+        .flatMap { UIImage(data: $0, scale: UIScreen.main.scale) }
++        .flatMap { UIImage(data: $0, scale: resolvedScale) }
 +        .map(Self.normalisedToIconBox)
        if let image { Self.imageCache.setObject(image, forKey: cacheKey) }
        DispatchQueue.main.async { completion(image) }

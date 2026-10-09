@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from 'expo-router/build/react-navigation/n
 import GlassHeader from '@/components/ui/GlassHeader.ios';
 import GlassBackButton from '@/components/ui/GlassBackButton';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
+import { Colors, themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { getEvent } from '@/constants/events';
 
@@ -288,7 +288,7 @@ export function eventStackScreenOptions({
 }) {
   // En iOS el header es glass (se adapta al tema): en oscuro el texto debe ser
   // CLARO o no se lee (antes estaba fijo en #1a1a1a → invisible en modo oscuro).
-  const iosHeaderText = isDark ? '#FFFFFF' : '#1a1a1a';
+  const iosHeaderText = themeColors(!!isDark).headerTint;
   return ({ navigation }: { navigation: any; route: any }) => {
     onNavReady?.(navigation);
     return {

@@ -22,7 +22,7 @@ import OfflineBanner from '@/components/OfflineBanner';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useAlbumPagination } from '@/hooks/useAlbumPagination';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import { Colors as ThemeColors } from '@/constants/colors';
+import { Colors as ThemeColors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
 
@@ -202,7 +202,7 @@ export default function FotosTab() {
         title: '',
         headerShadowVisible: false,
         headerTransparent: true,
-        headerTintColor: isDark ? '#FFFFFF' : '#1a1a1a',
+        headerTintColor: themeColors(isDark).headerTint,
         // iOS <26 necesita el blur explícito; en iOS 26+ lo pone el sistema
         // (combinarlo provoca solape, ver cancionero.tsx).
         ...(isIOS && parseInt(String(Platform.Version), 10) < 26

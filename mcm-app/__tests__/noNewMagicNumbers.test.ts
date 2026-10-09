@@ -85,8 +85,8 @@ const BUDGET = {
   // Y a 204 / 394 el 2026-09-26: `app/` ya estaba en 204 sin que nadie bajase
   // el tope, y los nueve colores sueltos del dibujo de Carismochito pasaron a
   // `CarismochitoPalettes` en constants/colors.ts.
-  app: 204,
-  components: 394,
+  app: 177,
+  components: 329,
 };
 
 describe('no se añaden colores a mano', () => {
@@ -131,8 +131,8 @@ describe('no se añaden colores a mano', () => {
  * hay que migrar uno a uno porque ahí el spread sí puede cambiar el render.
  */
 const FONT_SIZE_BUDGET = {
-  app: 82,
-  components: 186,
+  app: 80,
+  components: 178,
 };
 
 const INLINE_FONT_SIZE = /fontSize: \d+/g;
@@ -187,8 +187,8 @@ const RADIUS_BUDGET = {
   //
   // Antes de esto: 107 → 95 al migrar los `borderRadius: 100` (mismo caso), y
   // 300 → 122 al colapsar la escala en agosto de 2026.
-  app: 6,
-  components: 54,
+  app: 4,
+  components: 49,
 };
 
 const INLINE_RADIUS = /borderRadius: \d+/g;

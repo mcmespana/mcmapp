@@ -48,7 +48,8 @@ npm run typecheck && npm run typecheck:tests && npm run lint && npm test -- --ci
 
 ### 1. Sacar la build de tienda de agosto
 
-- [ ] **Todo el paso a paso está en `docs/desarrollo/BUILD_AGOSTO_2026.md`** —
+- [ ] **Todo el paso a paso está en `docs/desarrollo/BUILD_AGOSTO_2026.md`**
+      (con una tabla de estado arriba: Sentry y Aptabase ✅ el 2026-10-08) —
       qué variables configurar y dónde, el checklist de pruebas completo y el
       orden de publicación. No se duplica aquí para que no haya dos listas que
       se contradigan.
@@ -63,15 +64,10 @@ Es lo que desbloquea el resto: `main` ya lleva SDK 57, barra flotante,
 Reanimated 4, NSE de iOS, Sentry, analítica, icono de Carismochito y subrayado
 nativo (entró en la #313 el 2026-08-04). Todo NATIVO, nada sale por OTA.
 
-- [ ] **Quitar `updates.disableAntiBrickingMeasures: true` de `app.json`.** Ya
-      no lo usa nadie: el modo tester pasó a `setUpdateRequestHeadersOverride`,
-      que no lo necesita (ver `docs/funcionalidades/CANAL_PREVIEW.md`). Dejarlo
-      puesto quita la protección que garantiza poder publicar un update que
-      arregle un update roto — Expo lo desaconseja explícitamente en builds de
-      tienda. **Hay que hacerlo aquí y no antes**: tocar `app.json` dispara el
-      `guard-native` de `ota-production.yml`, que obliga a `[skip-ota]` y con
-      eso se saltaría la OTA. Como el flag solo se hornea al compilar, quitarlo
-      no cambia nada hasta esta build.
+- [x] **Quitado `updates.disableAntiBrickingMeasures: true` de `app.json`**
+      (2026-10-08, commit con `[skip-ota]`). El modo tester ya usa
+      `setUpdateRequestHeadersOverride`, que no lo necesita; con el flag puesto
+      se perdía la protección para arreglar un update roto con otro update.
 
 ### 1-bis. `expo export --platform web` — ✅ ARREGLADO (2026-08-08)
 
@@ -135,6 +131,9 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       contra jest 29; mezclarlos rompe el runtime entero
       (`_moduleMocker.clearMocksOnScope is not a function`). Va atado al SDK. - `typescript` 6 → 7, `@babel/core` 7 → 8: los fija Expo, no se tocan a
       mano. Entrarán con el SDK 58.
+- [ ] **Majors pendientes que no fija Expo**: Sentry 8, Firebase 13,
+      chordsheetjs 18 (el parser del cantoral) y Aptabase 0.6. Cada una con su
+      changelog y sus pruebas; ninguna corre prisa.
 - [ ] **PDF — número de página y pie por canción**: parcial. Hecho: pie con nombre de playlist + "Página N" vía margin boxes de `@page` (funciona en web Chrome ≥131 y Android; iOS/WebKit no los soporta → validar y, si se quiere también en iOS, haría falta paginación JS). Pendiente: el "1 de 3" por canción multipágina — no viable con CSS de impresión, requeriría paginar por JS midiendo alturas.
 - [ ] **⏰ RECORDATORIO PARA EL USUARIO — Examen del día (Revisión)** (pedido
       el 2026-10-03: _"recuérdame en otro momento que hay que arreglar un pelín
@@ -147,8 +146,8 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 - [ ] **Contigo — pulido pendiente tras la pasada del 2026-10-03.** Hecho:
       navegación por días/meses de la oración y el submenú de días de la home.
       Queda: el tiempo de oración (el usuario pide **propuestas**, no cambios
-      directos), los tres navegadores de fecha distintos (evangelio, oración y
-      revisión no se parecen entre sí) y repasar en dispositivo el evangelio,
+      directos), ~~los tres navegadores de fecha distintos~~ (✅ unificados en
+      `DateNavigator` el 2026-10-08) y repasar en dispositivo el evangelio,
       que en web sin datos se queda en «Preparando la Palabra…».
 - [ ] **Command Palette v2: deep-link a contenidos** — el palette actual (`CommandPalette.tsx`) solo navega a tabs/pantallas top-level. Para saltar a una canción concreta o a un punto dentro de los stacks anidados hay que exponer un `navigation ref` (p.ej. `CancioneroNavRefContext`). Después indexar canciones (`songs/data`), reflexiones (`compartiendo/data`) y eventos del calendario.
 
@@ -174,12 +173,12 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       en `ArrangementInputModal`, `EmptyState` en 11 pantallas (SongList y
       Grupos migrados de sus versiones a mano).
 
-      **Los `TextInput` que quedan NO se migran, y está decidido**: los
-                                                  buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
-                                                  de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
-                                                  celdas del código; y los de Revisión quedaron, tras el refactor del examen
-                                                  del día, como campos SIN borde dentro de una fila que sí lo tiene —
-                                                  `AppTextField` les metería un borde dentro de otro.
+  **Los `TextInput` que quedan NO se migran, y está decidido**: los
+  buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
+  de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
+  celdas del código; y los de Revisión quedaron, tras el refactor del examen
+  del día, como campos SIN borde dentro de una fila que sí lo tiene —
+  `AppTextField` les metería un borde dentro de otro.
 
 ## Modo Carismochito (ver `docs/funcionalidades/CARISMOCHITO.md`)
 
@@ -244,23 +243,23 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       de bug que se coló con la barra de tabs (`ActionButton` remontándose en
       cada render) lo habría cazado un render test.
 
-      Por dónde empezar, en orden de rentabilidad:
-                                                                          1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
-                                                                             Más): que monten sin reventar con datos vacíos, con datos y offline.
-                                                                          2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
-                                                                             hook con sus contextos).
-                                                                          3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
-                                                                             releer del bookmark.
-                                                                          4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
+  Por dónde empezar, en orden de rentabilidad:
+  1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
+     Más): que monten sin reventar con datos vacíos, con datos y offline.
+  2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
+     hook con sus contextos).
+  3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
+     releer del bookmark.
+  4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
 
-                                                                          Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
-                                                                          lee la suite entera para tocar código: lee los tests del área que toca. Lo
-                                                                          que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
-                                                                          de en una build de 20 minutos— y evita iteraciones enteras como la del
-                                                                          tamaño de los iconos. El coste real de una suite grande es de
-                                                                          MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
-                                                                          detalles internos) que hay que reescribir en cada refactor. Por eso la
-                                                                          lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
+  Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
+  lee la suite entera para tocar código: lee los tests del área que toca. Lo
+  que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
+  de en una build de 20 minutos— y evita iteraciones enteras como la del
+  tamaño de los iconos. El coste real de una suite grande es de
+  MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
+  detalles internos) que hay que reescribir en cada refactor. Por eso la
+  lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
 - [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales, y (jun-2026) Fotos (`AlbumListScreen`/`AlbumCard`), Materiales, Comida, MasHome y `EventItem`. Horario es de solo lectura (sin interactivos). Pendiente: validar en dispositivo con VoiceOver/TalkBack y revisar pantallas/flujos secundarios.
 

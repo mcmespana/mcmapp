@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { CalendarProps, LocaleConfig } from 'react-native-calendars';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import colors, { TabHeaderColors } from '@/constants/colors';
+import colors, { TabHeaderColors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import Animated from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -826,11 +826,11 @@ export default function CalendarioTab() {
       <CalStack.Navigator
         screenOptions={{
           headerShadowVisible: false,
-          headerTintColor: isDark ? '#FFFFFF' : '#1a1a1a',
+          headerTintColor: themeColors(isDark).headerTint,
           headerTitleStyle: {
             fontWeight: '700',
             fontSize: 17,
-            color: isDark ? '#FFFFFF' : '#1a1a1a',
+            color: themeColors(isDark).headerTint,
           },
           // Header transparente (como el cantoral): glass del sistema en iOS.
           headerTransparent: Platform.OS === 'ios',

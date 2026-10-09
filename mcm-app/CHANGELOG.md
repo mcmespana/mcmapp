@@ -18,6 +18,124 @@
 
 ---
 
+## 2026-10-09 10:00 — `expo-native-compact-tabs` 0.2.1 con nuestro parche portado
+
+La 0.2.1 pasa a iOS la escala del asset de React Native (arregla el tamaño de
+los iconos tras una OTA). Nuestro parche se rehace encima
+(`patches/expo-native-compact-tabs+0.2.1.patch`): se conserva la normalización
+a caja de 24 pt como red de seguridad y el relayout de safe area al volver del
+onboarding, que la 0.2.1 no trae. Nativo → `[skip-ota]`.
+
+## 2026-10-09 03:15 — Android y web: el cristal ya no es blanco en modo oscuro
+
+**Bug visible en Android** (y web): `GlassSurface` sin tinte caía siempre a
+blanco al 95 %, también en oscuro. En iOS no se veía porque manda el cristal
+nativo, así que pasó desapercibido. Lo sufrían la cápsula de campana y perfil
+de la Home, el botón de volver de cristal, los botones de un evento y el FAB
+de la canción: pastillas blancas con los iconos claros encima, invisibles.
+Ahora, en oscuro, el respaldo es la superficie elevada (`Colors.dark.card`).
+Test: `__tests__/glassSurfaceDark.test.tsx`.
+
+**Home: un botón dentro de otro.** El botón de acción de un aviso
+(«Descúbrelo TODO») vivía dentro de la tarjeta pulsable. En web es un
+`<button>` dentro de otro (HTML inválido, aviso rojo en desarrollo) y el lector
+de pantalla los leía como uno. Con acción, esa fila va ahora debajo, fuera de
+la zona pulsable; sin acción, la tarjeta sigue siendo un solo botón.
+
+## 2026-10-09 02:45 — Cantoral: la lista de canciones, a juego con la portada
+
+- **La cabecera decía «A. Canciones Entrada 🎉»**: el prefijo de ordenación y
+  el emoji llegaban crudos de Firebase. Ahora se limpia igual que en la
+  portada: «Canciones Entrada».
+- **Lista agrupada siempre**: la de una categoría era un bloque de esquinas
+  rectas; ahora es una tarjeta redondeada como la del modo etiqueta y la de la
+  portada. Filas algo más densas (cabe una canción más por pantalla).
+- **Bug de contraste**: el tono transpuesto usaba el ámbar de claro también en
+  oscuro (`#7A5A00` sobre `#3A2D0A`, ilegible). Y el autor iba en `#8E8E93`
+  sobre blanco (3,3:1); pasa a `textSecondary`.
+- «#01 - Alborada» → «#01 · Alborada». 9 colores y 3 radios a mano, a tokens.
+
+## 2026-10-09 02:15 — Cantoral: la portada pasa a lista agrupada
+
+En móvil, las 16 categorías eran 16 tarjetas sueltas con su sombra cada una.
+Ahora son **una lista agrupada** con separadores finos que empiezan después del
+icono, como agrupa iOS sus ajustes, bajo la etiqueta «Categorías». Cabe más
+en pantalla y se distingue de un vistazo lo tuyo del catálogo.
+
+**«Tu selección»** sigue suelta y destacada, y ahora dice algo: «Vacía · añade
+canciones desde el cantoral» o «3 canciones», en vez de un «0» suelto. Las
+filas llevan `accessibilityLabel` con el número de canciones.
+
+De paso: estilos muertos fuera (un header inline que ya no existía), 29
+valores a mano → 3, y el azul de «Tu selección» pasa a `KeyPillColors`.
+iPad conserva su hero + rejilla.
+
+## 2026-10-09 01:30 — Cantoral: las hojas de tono y de letra, rediseñadas
+
+- **El tono habla en tonos.** Con la tonalidad de la canción, el valor central
+  es el tono resultante («LA», con «Original: DO» debajo) y cada botón enseña
+  a qué tono lleva (SOL# / LA#). Antes solo decía «+9 semitonos» y había que
+  hacer la cuenta de cabeza. Sin tonalidad, cae a semitonos como antes.
+- **Las dos hojas hablan igual** (`components/song-sheet/sheetKit.tsx`): mismos
+  bloques, mismo «restablecer», mismo resaltado de lo cambiado. El tamaño de
+  letra gana lo que solo tenía el tono: **repetir al mantener pulsado**, aviso
+  háptico y meneo al llegar al tope, y `accessibilityLabel` en los botones (no
+  tenían). Los ± del tamaño son una «A» pequeña y otra grande.
+- **Fuera el rojo y el verde** de bajar/subir tono: bajar no es un error.
+- **49 colores a mano → 0**, todo por rol. De paso, un ámbar (`#9D5C00`) que
+  en oscuro se pintaba sobre fondo casi negro.
+- La fuente se elige como `radio` (lectores de pantalla) y la suma de 0,1 en
+  coma flotante ya no deja tamaños como 1,2000000000000002.
+
+Test nuevo: `__tests__/transposeSheet.test.tsx`.
+
+## 2026-10-09 00:30 — Dependencias al día antes de la build 2.1
+
+- **SDK 57 al último parche**: los 32 paquetes que gestiona Expo estaban por
+  detrás (`expo` 57.0.11 → 57.0.27, `expo-updates`, `expo-router`,
+  `expo-notifications`… y `react-native` 0.86.2 → 0.86.3). `npx expo install
+--check` queda limpio. `@react-native/jest-preset` se fija a `0.86.3`: con
+  `^0.86.0` el lock lo dejaba en 0.86.2 y `react-native` 0.86.3 lo exige exacto.
+- **El resto, dentro de su rango**: Firebase 12.19, heroui-native 1.0.10,
+  uniwind 1.12.2, Aptabase 0.5.1, Google Sign-In 16.1.5, react-native-web
+  0.21.4 y herramientas de desarrollo.
+- **Lo que NO se sube, a propósito**:
+  - `expo-native-compact-tabs` se **fija en 0.2.0** (antes `^0.2.0`). La 0.2.1
+    toca el mismo código que nuestro parche (escala de los iconos) y el parche
+    ya no aplica; rehacerlo pide un iPhone delante. Ver `TODO.md`.
+  - Las majors que fija el SDK (react-native 0.87, reanimated 4.7, screens,
+    gesture-handler 3, webview 14, TypeScript 7, jest 30, eslint 10): entran con
+    el SDK 58, no a mano.
+  - Majors propias con cambios incompatibles (Sentry 8, Firebase 13,
+    chordsheetjs 18, Aptabase 0.6): cada una es una tarea con sus pruebas, no
+    un bump antes de una build de tienda.
+
+Verificado: tipos, lint, 1.859 tests, `expo prebuild -p ios` (extensión,
+Sentry e icono alternativo presentes) y `expo export --platform web`.
+
+## 2026-10-08 23:50 — `expo-gl` en el binario, por si acaso
+
+Se instala `expo-gl` (`~57.0.2`) sin usarlo todavía, para que vaya dentro de
+la build 2.1. Es lo que permitiría, más adelante y **por OTA**, hacer 3D de
+verdad con `three`/`expo-three` (pañuelo, medallas) si el visor actual
+(`<model-viewer>` en WebView) se queda corto: sin conexión no carga y no se
+puede integrar con el resto de la pantalla. Nativo → commit con `[skip-ota]`.
+
+## 2026-10-08 23:30 — Contigo: un solo navegador de días
+
+Evangelio, oración y revisión tenían cada uno su navegador ‹ fecha › y no se
+parecían. Ahora comparten `components/contigo/DateNavigator.tsx`:
+
+- **Misma fecha** («Jueves, 8 de octubre»), mismos botones y misma háptica.
+- **«Volver a hoy» en los tres** (antes solo en el evangelio). En la revisión,
+  que lleva el navegador en la barra nativa, se toca la fecha.
+- **El tope de «siguiente»** lo decide cada pantalla (`maxDate`): el evangelio
+  deja mirar días futuros; oración y revisión se paran en hoy, como antes.
+- El evangelio pasa de franja a sangre a tarjeta, igual que la oración.
+
+Fuera tres `formatDateDisplay`/`addDays` duplicados y los estilos muertos.
+Topes del trinquete de números mágicos bajados a lo que hay.
+
 ## 2026-10-03 23:00 — Contigo: navegación por días y calendarios
 
 - **Oración**: «día siguiente» se para en hoy y los días futuros del

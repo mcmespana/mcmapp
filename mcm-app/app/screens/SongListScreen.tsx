@@ -91,7 +91,7 @@ type ListRow =
       kind: 'song';
       key: string;
       song: Song;
-      /** Solo en modo etiqueta: posición dentro de su grupo (esquinas). */
+      /** Posición dentro de su grupo (esquinas y último separador). */
       first?: boolean;
       last?: boolean;
     };
@@ -485,7 +485,13 @@ export default function SongsListScreen({
 
   // Header: title + optional search toggle button
   useLayoutEffect(() => {
-    const cleanCategoryName = categoryName.replace(/^🔎\s*/, '');
+    // El nombre llega crudo de Firebase («A. Canciones Entrada 🎉»): la letra
+    // es un truco de ordenación y el emoji ya se ve en la portada. Se limpia
+    // igual que allí, para que la cabecera diga lo mismo que la fila que se
+    // ha tocado.
+    const cleanCategoryName = stripCategoryPrefix(
+      extractTrailingEmoji(categoryName.replace(/^🔎\s*/, '')).cleanText,
+    );
     // En modo etiqueta el título lo manda el estado, no el parámetro: al
     // cruzar o soltar etiquetas cambia sin salir de la pantalla.
     const tagTitle = isTagMode
@@ -530,7 +536,7 @@ export default function SongsListScreen({
                 name="sell"
                 size={22}
                 color={
-                  isIOS ? UIColors.accentYellow : isDark ? '#FFFFFF' : '#1a1a1a'
+                  isIOS ? UIColors.accentYellow : themeColors(isDark).headerTint
                 }
               />
             </TouchableOpacity>
@@ -548,13 +554,7 @@ export default function SongsListScreen({
                   <MaterialIcons
                     name={searchVisible ? 'search-off' : 'search'}
                     size={24}
-                    color={
-                      isIOS
-                        ? UIColors.accentYellow
-                        : Platform.OS === 'web'
-                          ? '#1a1a1a'
-                          : '#1a1a1a'
-                    }
+                    color={isIOS ? UIColors.accentYellow : '#1a1a1a'}
                   />
                 </TouchableOpacity>
               ),
@@ -584,15 +584,19 @@ export default function SongsListScreen({
   }, [songs, search]);
 
   // En modo etiqueta la lista lleva cabeceras de categoría intercaladas; en el
-  // resto es la lista de canciones de siempre.
+  // resto es UN solo grupo. Las dos se pintan igual —tarjeta con las esquinas
+  // redondeadas sobre el fondo—, que es también como se ve la portada del
+  // cantoral: antes la lista normal era un bloque de esquinas rectas.
   const listRows = useMemo<ListRow[]>(
     () =>
       isTagMode
         ? toGroupedRows(filteredSongs)
-        : filteredSongs.map((song) => ({
+        : filteredSongs.map((song, i) => ({
             kind: 'song' as const,
             key: song.filename,
             song,
+            first: i === 0,
+            last: i === filteredSongs.length - 1,
           })),
     [isTagMode, filteredSongs],
   );
@@ -736,7 +740,7 @@ export default function SongsListScreen({
           />
         )}
         {/* Conteo de canciones — siempre visible, muy sutil */}
-        <View style={[styles.countRow, isTagMode && styles.countRowTag]}>
+        <View style={[styles.countRow, styles.countRowTag]}>
           <Text style={styles.songCount}>
             {filteredSongs.length}{' '}
             {filteredSongs.length === 1 ? 'canción' : 'canciones'}
@@ -951,7 +955,6 @@ export default function SongsListScreen({
         ListHeaderComponent={listHeaderComponent}
         contentContainerStyle={[
           styles.listContent,
-          isTagMode && styles.listContentTag,
           { paddingBottom: contentPaddingBottom },
         ]}
         contentInsetAdjustmentBehavior="automatic"
@@ -1049,9 +1052,6 @@ const createStyles = (
     // franja blanca más entre filas blancas (que es lo que había y por lo que
     // no se distinguía dónde acababa un grupo). Es el mismo molde que
     // «Por categoría» en la playlist.
-    listContentTag: {
-      paddingHorizontal: isWide ? 20 : TAG_LIST_INSET,
-    },
     countRowTag: {
       paddingHorizontal: spacing.xs,
     },
@@ -1091,7 +1091,7 @@ const createStyles = (
       borderBottomRightRadius: radii.lg,
     },
     listContent: {
-      paddingHorizontal: isWide ? 20 : 12,
+      paddingHorizontal: isWide ? 20 : TAG_LIST_INSET,
       ...(isWide
         ? {
             maxWidth,
