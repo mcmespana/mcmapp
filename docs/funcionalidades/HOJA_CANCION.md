@@ -109,7 +109,7 @@ elegir la monoespaciada se la queda.
   una línea en blanco `--gap-sec`; dos o más, o un estribillo, `--gap-big`.
   «Más aire» (`airy`) los abre todos.
 - **Líneas partidas de PDF**: se unen si la siguiente empieza en minúscula y
-  la línea pasa de 70 caracteres, o de 50 sin puntuación final.
+  la línea pasa de 70 caracteres, o de 60 sin puntuación final.
 - **Variantes del estribillo** (`chorusStyle`): `raya` (de serie), `negrita`,
   `mayus`, `clasico`, `sangrado`; `chorusLabel` quita la etiqueta.
 - **iPad**: en columnas, `auto-compact` pliega las repeticiones; si girando

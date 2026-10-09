@@ -479,15 +479,15 @@ export function buildSheet(song: Song, opts: BuildSheetOptions): SheetModel {
  * Líneas partidas a mano por el ancho de un PDF («…mucho más que» /
  * «sentimientos, obras son amores…»): si la línea siguiente empieza en
  * minúscula, es la MISMA estrofa que sigue, y se unen cuando
- *  - la línea es larga (más de 50 caracteres) y no acaba en puntuación, o
+ *  - la línea es larga (más de 60 caracteres) y no acaba en puntuación, o
  *  - es tan larga (más de 70) que no puede ser un verso: es un trozo de
  *    estrofa copiado de un PDF, acabe como acabe.
  * La maquetación la vuelve a partir por frases, con la sangría de
  * continuación, así que una estrofa se lee igual venga como venga. Un verso
  * de verdad casi nunca pasa de 50 caracteres: las canciones escritas por
- * versos no se tocan.
+ * versos no se tocan (mismo umbral que `scripts/arreglar_cho.py` del cantoral).
  */
-const HARD_WRAP_MIN = 50;
+const HARD_WRAP_MIN = 60;
 const HARD_WRAP_ALWAYS = 70;
 const ENDS_PHRASE_RE = /[.,;:!?…)»"'”]\s*$/;
 const STARTS_LOWER_RE = /^[a-záéíóúüñ]/;

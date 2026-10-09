@@ -112,3 +112,17 @@ automático en columnas, aviso de girar, modo atril con pedal.
    mismo JavaScript de la hoja (`songSheet` + `songSheetLayout`) en su vista
    previa, para maquetar viendo lo que saldrá.
 4. Probar el pedal Bluetooth en un iPad de verdad (en navegador funciona).
+
+## 8. Fase 3 — limpieza mecánica hecha (2026-10-09)
+
+En `mcmapp-cantoral`, rama `claude/mcm-chord-display-ux-aagafj`:
+`scripts/arreglar_cho.py` (con tests) pasó por las 258 canciones y tocó 137
+sin cambiar ni una palabra ni un acorde (comprobado): «ESTRIBILLO» →
+`{chorus}`, fuera la numeración a mano, intros en comentario → líneas de
+acordes, estrofas de PDF unidas y líneas largas partidas por frases (de 104
+canciones con líneas de más de 70 caracteres a 34). «Siempre imaginé»,
+reordenada a mano.
+
+Queda para una persona (`revisar_cho.py` lo lista): revisar acordes (97),
+estribillos sin marcar (38), muros de texto (8) y las mayúsculas, que
+dependen del estilo de estribillo que elija el usuario.
