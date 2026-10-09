@@ -50,7 +50,7 @@
     "expo-insights": "~57.0.21",
     "expo-linear-gradient": "~57.0.2",
     "expo-linking": "~57.0.12",
-    "expo-native-compact-tabs": "0.2.0",
+    "expo-native-compact-tabs": "0.2.1",
     "expo-network": "~57.0.2",
     "expo-notifications": "~57.0.22",
     "expo-observe": "~57.0.25",

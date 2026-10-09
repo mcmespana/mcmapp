@@ -131,12 +131,6 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       contra jest 29; mezclarlos rompe el runtime entero
       (`_moduleMocker.clearMocksOnScope is not a function`). Va atado al SDK. - `typescript` 6 → 7, `@babel/core` 7 → 8: los fija Expo, no se tocan a
       mano. Entrarán con el SDK 58.
-- [ ] **`expo-native-compact-tabs` 0.2.1** (salió el 2026-08-08): está FIJADO
-      en 0.2.0 porque la 0.2.1 cambia la carga de los iconos de iOS —el mismo
-      sitio que nuestro parche `normalisedToIconBox`— y el parche ya no aplica.
-      Puede que la 0.2.1 arregle por su cuenta lo que arreglaba el parche
-      ("preserve image scale metadata"). Probarlo con un iPhone delante: subir,
-      quitar el parche y mirar el tamaño de los iconos (también tras una OTA).
 - [ ] **Majors pendientes que no fija Expo**: Sentry 8, Firebase 13,
       chordsheetjs 18 (el parser del cantoral) y Aptabase 0.6. Cada una con su
       changelog y sus pruebas; ninguna corre prisa.

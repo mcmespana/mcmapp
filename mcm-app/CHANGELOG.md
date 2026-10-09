@@ -18,6 +18,14 @@
 
 ---
 
+## 2026-10-09 10:00 — `expo-native-compact-tabs` 0.2.1 con nuestro parche portado
+
+La 0.2.1 pasa a iOS la escala del asset de React Native (arregla el tamaño de
+los iconos tras una OTA). Nuestro parche se rehace encima
+(`patches/expo-native-compact-tabs+0.2.1.patch`): se conserva la normalización
+a caja de 24 pt como red de seguridad y el relayout de safe area al volver del
+onboarding, que la 0.2.1 no trae. Nativo → `[skip-ota]`.
+
 ## 2026-10-09 03:15 — Android y web: el cristal ya no es blanco en modo oscuro
 
 **Bug visible en Android** (y web): `GlassSurface` sin tinte caía siempre a
