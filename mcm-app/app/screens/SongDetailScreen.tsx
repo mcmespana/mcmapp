@@ -21,6 +21,7 @@ import { useSongProcessor } from '@/hooks/useSongProcessor';
 import { useForceCompact } from '@/components/tabs/tabBarController';
 import { trackEvent } from '@/utils/analytics';
 import SongControls from '@/components/SongControls';
+import type { SheetViewOptions } from '@/components/SongFontBottomSheet';
 import { RouteProp, NavigationProp } from 'expo-router/react-navigation';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
@@ -132,6 +133,9 @@ export default function SongDetailScreen({
     notation,
     compactView,
     verseNumbers,
+    chorusStyle,
+    chorusLabel,
+    airy,
   } = settings;
 
   // Edición de arreglos por long-press (solo admin). El índice apunta a una
@@ -213,6 +217,9 @@ export default function SongDetailScreen({
     arrangementsVisible: songHasArrangements && arrangementsVisible,
     compact: compactView,
     verseNumbers,
+    chorusStyle,
+    chorusLabel,
+    airy,
     currentFontSizeEm,
     currentFontFamily,
     notation,
@@ -422,8 +429,15 @@ export default function SongDetailScreen({
     setSettings({ chordsVisible: !chordsVisible });
   const handleToggleArrangements = () => setArrangementsVisible((v) => !v);
   const handleToggleCompact = () => setSettings({ compactView: !compactView });
-  const handleSetVerseNumbers = (value: boolean) =>
-    setSettings({ verseNumbers: value });
+  const sheetView: SheetViewOptions = {
+    hasChorus: sheetInfo.hasChorus,
+    hasVerseNumbers: sheetInfo.hasVerseNumbers,
+    chorusStyle,
+    chorusLabel,
+    verseNumbers,
+    airy,
+    onChange: (patch) => setSettings(patch),
+  };
   const handleSetTranspose = (semitones: number) => {
     let newTranspose = semitones;
     if (newTranspose >= 12 || newTranspose <= -12)
@@ -636,9 +650,7 @@ export default function SongDetailScreen({
         hasRepeats={sheetInfo.hasRepeats}
         compactView={compactView}
         onToggleCompact={handleToggleCompact}
-        hasVerseNumbers={sheetInfo.hasVerseNumbers}
-        verseNumbers={verseNumbers}
-        onSetVerseNumbers={handleSetVerseNumbers}
+        view={sheetView}
         currentTranspose={currentTranspose}
         currentFontSizeEm={currentFontSizeEm}
         currentFontFamily={currentFontFamily}

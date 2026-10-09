@@ -19,7 +19,9 @@ import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import { transposeLabel } from '@/utils/transposeKey';
-import SongFontBottomSheet from './SongFontBottomSheet';
+import SongFontBottomSheet, {
+  type SheetViewOptions,
+} from './SongFontBottomSheet';
 import TransposeBottomSheet from './TransposeBottomSheet';
 import ReportBugsModal from './ReportBugsModal';
 import SecretPanelModal from './SecretPanelModal';
@@ -48,10 +50,8 @@ interface SongControlsProps {
   /** Vista compacta (estribillos repetidos plegados). Preferencia global. */
   compactView?: boolean;
   onToggleCompact?: () => void;
-  /** La canción lleva números de estrofa. */
-  hasVerseNumbers?: boolean;
-  verseNumbers?: boolean;
-  onSetVerseNumbers?: (value: boolean) => void;
+  /** Opciones de vista de la hoja (en «Letra y vista»). */
+  view?: SheetViewOptions;
   currentTranspose: number;
   currentFontSizeEm: number;
   currentFontFamily: string;
@@ -144,9 +144,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   hasRepeats = false,
   compactView = false,
   onToggleCompact,
-  hasVerseNumbers = false,
-  verseNumbers = true,
-  onSetVerseNumbers,
+  view,
   currentTranspose,
   currentFontSizeEm,
   currentFontFamily,
@@ -335,7 +333,7 @@ const SongControls: React.FC<SongControlsProps> = ({
             <ActionButton
               isDark={isDark}
               icon="text-fields"
-              label="Tipo de letra"
+              label="Letra y vista"
               onPress={handleOpenFontPanel}
               isActive={
                 currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
@@ -429,10 +427,7 @@ const SongControls: React.FC<SongControlsProps> = ({
         currentFontFamily={currentFontFamily}
         onSetFontSize={onSetFontSize}
         onSetFontFamily={onSetFontFamily}
-        verseNumbers={
-          hasVerseNumbers && onSetVerseNumbers ? verseNumbers : undefined
-        }
-        onSetVerseNumbers={onSetVerseNumbers}
+        view={view}
       />
 
       <TransposeBottomSheet

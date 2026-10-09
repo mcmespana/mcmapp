@@ -102,3 +102,19 @@ La letra por defecto pasó de monoespaciada a la del sistema el 2026-10-09: la
 monoespaciada gasta un 30 % más de ancho. `migrateSongSettings` cambia una vez
 a quien tuviera la monoespaciada o la «Sans-Serif» vieja; quien vuelva a
 elegir la monoespaciada se la queda.
+
+## Segunda vuelta (2026-10-09)
+
+- **Huecos**: renglón partido pegado; otra línea del `.cho` `--gap-line`;
+  una línea en blanco `--gap-sec`; dos o más, o un estribillo, `--gap-big`.
+  «Más aire» (`airy`) los abre todos.
+- **Líneas partidas de PDF**: se unen si la siguiente empieza en minúscula y
+  la línea pasa de 70 caracteres, o de 50 sin puntuación final.
+- **Variantes del estribillo** (`chorusStyle`): `raya` (de serie), `negrita`,
+  `mayus`, `clasico`, `sangrado`; `chorusLabel` quita la etiqueta.
+- **iPad**: en columnas, `auto-compact` pliega las repeticiones; si girando
+  cabría entera, `.rot-hint` lo avisa.
+- **Modo atril** (`pagedFullscreen`, pantalla completa nativa): columnas de
+  la altura de la pantalla en páginas; toque (tercio izquierdo = atrás),
+  deslizar o teclas (flechas, AvPág/RePág, espacio, Intro: lo que mandan los
+  pedales). `__SONG_LAYOUT__.page(±1)`.

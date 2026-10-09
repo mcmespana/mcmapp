@@ -11,7 +11,12 @@ import {
   CHORUS_REF_SENTINEL,
   renderSheetHtml,
 } from '../utils/songSheet';
-import { SHEET_CSS, SHEET_LAYOUT_JS } from '../utils/songSheetLayout';
+import {
+  CHORUS_STYLE_CLASSES,
+  SHEET_CSS,
+  SHEET_LAYOUT_JS,
+  type ChorusStyle,
+} from '../utils/songSheetLayout';
 
 export interface UseSongProcessorParams {
   originalChordPro: string | null;
@@ -26,6 +31,17 @@ export interface UseSongProcessorParams {
   compact?: boolean;
   /** Números de estrofa. Default true. */
   verseNumbers?: boolean;
+  /** Variante del estribillo. Default 'raya'. */
+  chorusStyle?: ChorusStyle;
+  /** Etiqueta «ESTRIBILLO». Default true. */
+  chorusLabel?: boolean;
+  /** Más hueco entre líneas y bloques. Default false. */
+  airy?: boolean;
+  /**
+   * Pantalla completa en páginas (modo atril): sin scroll, se pasa de página
+   * con un toque en el borde o con un pedal. Default false.
+   */
+  paged?: boolean;
   currentFontSizeEm: number;
   currentFontFamily: string;
   notation: Notation;
@@ -60,6 +76,10 @@ export interface SongStyleState {
   arrangementsVisible: boolean;
   compact: boolean;
   verseNumbers: boolean;
+  chorusStyle: ChorusStyle;
+  chorusLabel: boolean;
+  airy: boolean;
+  paged: boolean;
   topPadding: number;
   bottomPadding: number;
 }
@@ -94,11 +114,13 @@ export interface SongParseError {
 export interface SongSheetInfo {
   hasRepeats: boolean;
   hasVerseNumbers: boolean;
+  hasChorus: boolean;
 }
 
 const NO_SHEET_INFO: SongSheetInfo = {
   hasRepeats: false,
   hasVerseNumbers: false,
+  hasChorus: false,
 };
 
 interface ParsedResult {
@@ -474,6 +496,22 @@ const themeVarsFor = (isDark: boolean) => ({
   fsBgMid: isDark ? 'rgba(44,44,46,0.88)' : 'rgba(255,255,255,0.88)',
 });
 
+/** Clases del `<body>` al pintar: las mismas que luego cambia el puente. */
+const bodyClasses = (s: SongStyleState): string =>
+  [
+    s.isDark && 'theme-dark',
+    !s.chordsVisible && 'chords-hidden',
+    !s.arrangementsVisible && 'arr-hidden',
+    s.compact && 'compact',
+    !s.verseNumbers && 'nums-hidden',
+    `ch-${s.chorusStyle}`,
+    !s.chorusLabel && 'ch-nolabel',
+    s.airy && 'airy',
+    s.paged && 'paged',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
 const defaultBottomPadding = (isFullscreen: boolean) =>
   isFullscreen
     ? 110
@@ -492,6 +530,10 @@ export const useSongProcessor = ({
   arrangementsVisible = true,
   compact = false,
   verseNumbers = true,
+  chorusStyle = 'raya',
+  chorusLabel = true,
+  airy = false,
+  paged = false,
   currentFontSizeEm,
   currentFontFamily,
   notation,
@@ -534,6 +576,10 @@ export const useSongProcessor = ({
       arrangementsVisible,
       compact,
       verseNumbers,
+      chorusStyle,
+      chorusLabel,
+      airy,
+      paged,
       topPadding,
       bottomPadding,
     }),
@@ -545,6 +591,10 @@ export const useSongProcessor = ({
       arrangementsVisible,
       compact,
       verseNumbers,
+      chorusStyle,
+      chorusLabel,
+      airy,
+      paged,
       topPadding,
       bottomPadding,
     ],
@@ -588,6 +638,7 @@ export const useSongProcessor = ({
       setSheetInfo({
         hasRepeats: model.sections.some((x) => x.repeatOf !== null),
         hasVerseNumbers: model.sections.some((x) => x.number !== null),
+        hasChorus: model.sections.some((x) => x.kind === 'chorus'),
       });
       // En modo admin cada línea lleva su número en el ChordPro original
       // (`data-line`) para insertar arreglos con un toque largo.
@@ -655,8 +706,14 @@ export const useSongProcessor = ({
         fsHeader = `<div class="fs-header">${title ? `<div class="fs-title">${escapeHtml(title)}</div>` : ''}${fsMeta ? `<div class="fs-meta">${fsMeta}</div>` : ''}</div>`;
       }
 
+      // `.rot-hint`: aviso de «gira la pantalla» que enciende la maquetación
+      // si en la otra orientación la canción cabe entera. `.pager`: marco del
+      // modo atril (pantalla completa en páginas).
       const finalSongContentWithMeta =
-        (songTitle ? `<h1>${songTitle}</h1>` : '') + metaInsert + sheetHtml;
+        (songTitle ? `<h1>${songTitle}</h1>` : '') +
+        metaInsert +
+        '<div class="rot-hint" hidden></div>' +
+        `<div class="pager">${sheetHtml}</div>`;
 
       // ── Bootstrap script: receives postMessage / injectJavaScript calls
       // ── and updates CSS variables / classes live without reloading HTML.
@@ -684,6 +741,20 @@ export const useSongProcessor = ({
             }
             if (typeof s.verseNumbers === 'boolean') {
               document.body.classList.toggle('nums-hidden', !s.verseNumbers);
+            }
+            if (typeof s.chorusStyle === 'string') {
+              ${JSON.stringify(CHORUS_STYLE_CLASSES)}.forEach(function (c) {
+                document.body.classList.toggle(c, c === 'ch-' + s.chorusStyle);
+              });
+            }
+            if (typeof s.chorusLabel === 'boolean') {
+              document.body.classList.toggle('ch-nolabel', !s.chorusLabel);
+            }
+            if (typeof s.airy === 'boolean') {
+              document.body.classList.toggle('airy', s.airy);
+            }
+            if (typeof s.paged === 'boolean') {
+              document.body.classList.toggle('paged', s.paged);
             }
             // Tamaño, letra, acordes o vista cambian el ancho de las palabras:
             // hay que volver a elegir dónde se parte cada línea.
@@ -968,7 +1039,7 @@ export const useSongProcessor = ({
             }
           </style>
         </head>
-        <body class="${s.isDark ? 'theme-dark' : ''}${s.chordsVisible ? '' : ' chords-hidden'}${s.arrangementsVisible ? '' : ' arr-hidden'}${s.compact ? ' compact' : ''}${s.verseNumbers ? '' : ' nums-hidden'}">
+        <body class="${bodyClasses(s)}">
           ${fsHeader}
           ${finalSongContentWithMeta}
           <script>${SHEET_LAYOUT_JS}</script>

@@ -69,6 +69,13 @@ export interface SheetSection {
   repeatOf: { index: number; exact: boolean; sameChords: boolean } | null;
   /** El estribillo no venía marcado: se deduce porque el bloque se repite. */
   inferred?: boolean;
+  /**
+   * Líneas en blanco que había en el `.cho` justo antes de esta sección (0,
+   * 1 o 2 = «dos o más»). Es el hueco que pidió quien maquetó la canción, y
+   * se respeta: 0 cuando la sección empieza por un cambio de tipo (un
+   * `{soc}` pegado) o por una etiqueta.
+   */
+  breakBefore: 0 | 1 | 2;
 }
 
 export interface SheetModel {
@@ -305,8 +312,18 @@ export function buildSheet(song: Song, opts: BuildSheetOptions): SheetModel {
     number: number | null;
   } | null = null;
 
+  /** Hueco del párrafo en curso: lo hereda la PRIMERA sección que se abra. */
+  let paraBreak: 0 | 1 | 2 = 0;
   const open = (kind: SectionKind, label: string | null, type: string) => {
-    current = { kind, label, number: null, lines: [], repeatOf: null };
+    current = {
+      kind,
+      label,
+      number: null,
+      lines: [],
+      repeatOf: null,
+      breakBefore: paraBreak,
+    };
+    paraBreak = 0;
     currentType = type;
     sections.push(current);
     return current;
@@ -330,8 +347,17 @@ export function buildSheet(song: Song, opts: BuildSheetOptions): SheetModel {
     return open(wanted, null, type);
   };
 
+  // Dos líneas en blanco seguidas dejan un párrafo vacío en medio: así se
+  // cuenta cuánto hueco pidió quien maquetó.
+  let blankRun = 0;
   for (const paragraph of song.paragraphs) {
     close();
+    if (paragraph.lines.length === 0) {
+      blankRun++;
+      continue;
+    }
+    paraBreak = sections.length === 0 ? 0 : blankRun >= 1 ? 2 : 1;
+    blankRun = 0;
     const paraLabel = paragraph.label;
     for (const line of paragraph.lines) {
       const src = line.lineNumber ?? null;
@@ -434,6 +460,7 @@ export function buildSheet(song: Song, opts: BuildSheetOptions): SheetModel {
       number: null,
       lines: [{ kind: 'comment', text: pendingLabel.label, src: null }],
       repeatOf: null,
+      breakBefore: 1,
     });
   }
 
@@ -441,10 +468,60 @@ export function buildSheet(song: Song, opts: BuildSheetOptions): SheetModel {
     (s) => s.lines.length > 0 || s.repeatOf?.index === -1,
   );
   classify(cleaned);
+  joinHardWraps(cleaned);
   manualNumbers = extractManualNumbers(cleaned) || manualNumbers;
   resolveRepeats(cleaned);
   numberVerses(cleaned, manualNumbers);
   return { sections: cleaned, reviewNotes, manualNumbers };
+}
+
+/**
+ * Líneas partidas a mano por el ancho de un PDF («…mucho más que» /
+ * «sentimientos, obras son amores…»): si la línea siguiente empieza en
+ * minúscula, es la MISMA estrofa que sigue, y se unen cuando
+ *  - la línea es larga (más de 50 caracteres) y no acaba en puntuación, o
+ *  - es tan larga (más de 70) que no puede ser un verso: es un trozo de
+ *    estrofa copiado de un PDF, acabe como acabe.
+ * La maquetación la vuelve a partir por frases, con la sangría de
+ * continuación, así que una estrofa se lee igual venga como venga. Un verso
+ * de verdad casi nunca pasa de 50 caracteres: las canciones escritas por
+ * versos no se tocan.
+ */
+const HARD_WRAP_MIN = 50;
+const HARD_WRAP_ALWAYS = 70;
+const ENDS_PHRASE_RE = /[.,;:!?…)»"'”]\s*$/;
+const STARTS_LOWER_RE = /^[a-záéíóúüñ]/;
+
+function isHardWrap(prev: string, next: string): boolean {
+  const len = prev.trim().length;
+  if (!STARTS_LOWER_RE.test(next.trim())) return false;
+  if (len > HARD_WRAP_ALWAYS) return true;
+  return len > HARD_WRAP_MIN && !ENDS_PHRASE_RE.test(prev);
+}
+
+function joinHardWraps(sections: SheetSection[]) {
+  for (const s of sections) {
+    const out: SheetLine[] = [];
+    for (const line of s.lines) {
+      const prev = out[out.length - 1];
+      if (
+        prev?.kind === 'lyrics' &&
+        line.kind === 'lyrics' &&
+        isHardWrap(lineText(prev), lineText(line))
+      ) {
+        const last = prev.atoms[prev.atoms.length - 1];
+        const tail = last.segs[last.segs.length - 1];
+        last.segs[last.segs.length - 1] = {
+          ...tail,
+          text: tail.text.replace(/\s*$/, ' '),
+        };
+        prev.atoms.push(...line.atoms);
+        continue;
+      }
+      out.push(line);
+    }
+    s.lines = out;
+  }
 }
 
 /** Secciones de solo acordes → instrumental; de solo notas → nota. */
@@ -579,14 +656,22 @@ function chordSignature(s: SheetSection): string {
     .join('|');
 }
 
+/**
+ * Números de estrofa, siempre con la misma regla: a partir de dos estrofas
+ * (o si alguna trae número escrito), cada una lleva el suyo — el escrito si
+ * lo hay, si no el de la anterior más uno.
+ */
 function numberVerses(sections: SheetSection[], manual: boolean) {
   const verses = sections.filter((s) => s.kind === 'verse');
-  if (manual) return; // Se respeta lo escrito; las sin número se quedan sin él.
-  if (verses.length < 2) {
+  if (verses.length < 2 && !manual) {
     verses.forEach((v) => (v.number = null));
     return;
   }
-  verses.forEach((v, i) => (v.number = i + 1));
+  let prev = 0;
+  for (const v of verses) {
+    v.number = v.number ?? prev + 1;
+    prev = v.number;
+  }
 }
 
 // ─── HTML ────────────────────────────────────────────────────────────────────
@@ -676,9 +761,11 @@ function firstLyric(s: SheetSection): string {
 }
 
 /**
- * HTML de la hoja. Las repeticiones se emiten DOS veces: completas
- * (`.rep-full`) y plegadas (`.rep-fold`); la clase `compact` del `<body>`
- * decide cuál se ve, así cambiar de vista no recarga el WebView.
+ * HTML de la hoja. Las repeticiones se emiten DOS veces dentro de su
+ * sección: completas (`.rep-full`) y plegadas (`.rep-fold`); la clase
+ * `compact` del `<body>` decide cuál se ve, así cambiar de vista no recarga
+ * el WebView. Las clases `gap0`/`gap2` dicen cuántas líneas en blanco había
+ * antes en el `.cho` (ninguna / dos o más).
  */
 export interface RenderSheetOptions {
   /**
@@ -697,7 +784,10 @@ export function renderSheetHtml(
   const { sections } = model;
   while (i < sections.length) {
     const s = sections[i];
-    const kindCls = s.kind + (s.inferred ? ' inferred' : '');
+    const kindCls =
+      s.kind +
+      (s.inferred ? ' inferred' : '') +
+      (s.breakBefore === 2 ? ' gap2' : s.breakBefore === 0 ? ' gap0' : '');
     const label =
       s.label ??
       (s.kind === 'chorus' || s.kind === 'bridge' ? KIND_LABEL[s.kind] : null);
@@ -712,12 +802,15 @@ export function renderSheetHtml(
       ) {
         times++;
       }
+      // La repetición va en UNA sección con sus dos versiones dentro: así
+      // el hueco con la sección de al lado no depende de cuál se ve.
+      const lbl = label ? `<div class="lbl">${label}</div>` : '';
       const full = sections
         .slice(i, i + times)
-        .map((r) => {
-          const lbl = label ? `<div class="lbl">${label}</div>` : '';
-          return `<section class="sec ${kindCls} rep-full">${lbl}${sectionBody(r, lineNumbers)}</section>`;
-        })
+        .map(
+          (r) =>
+            `<div class="rep-one">${lbl}${sectionBody(r, lineNumbers)}</div>`,
+        )
         .join('');
       const preview = firstLyric(s);
       const foldLabel =
@@ -729,11 +822,13 @@ export function renderSheetHtml(
             : ' <span class="x xc">otros acordes</span>'
           : ' <span class="x">con cambios</span>');
       const fold =
-        `<details class="sec ${kindCls} rep-fold"><summary>` +
+        `<details class="rep-fold"><summary>` +
         `<span class="lbl">${foldLabel}</span>` +
         (preview ? `<span class="pv">${preview}</span>` : '') +
         `</summary>${sectionBody(s, lineNumbers)}</details>`;
-      parts.push(full + fold);
+      parts.push(
+        `<section class="sec ${kindCls} rep"><div class="rep-full">${full}</div>${fold}</section>`,
+      );
       i += times;
       continue;
     }

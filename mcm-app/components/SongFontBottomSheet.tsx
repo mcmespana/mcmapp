@@ -14,7 +14,13 @@ import { radii } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { DEFAULT_FONT_SIZE_EM } from '@/contexts/SettingsContext';
+import {
+  DEFAULT_FONT_SIZE_EM,
+  type SongSettings,
+} from '@/contexts/SettingsContext';
+import { CHORUS_STYLES, type ChorusStyle } from '@/utils/songSheetLayout';
+import { UIColors } from '@/constants/colors';
+import type { SheetPalette } from '@/components/song-sheet/sheetKit';
 import { getNativeFontFamily } from '@/utils/fontUtils';
 import { h } from '@/utils/haptics';
 
@@ -31,18 +37,25 @@ interface Props {
   currentFontFamily: string;
   onSetFontSize: (size: number) => void;
   onSetFontFamily: (family: string) => void;
-  /**
-   * Números de estrofa. Sin definir = la canción no los lleva y el bloque no
-   * se enseña.
-   */
-  verseNumbers?: boolean;
-  onSetVerseNumbers?: (value: boolean) => void;
+  /** Cómo se ve la hoja (estribillo, números, aire). Sin definir, no sale. */
+  view?: SheetViewOptions;
 }
 
-const VERSE_OPTIONS = [
-  { value: true, preview: '1 2 3', name: 'Numeradas' },
-  { value: false, preview: '—', name: 'Sin número' },
-] as const;
+export type SheetViewPatch = Partial<
+  Pick<SongSettings, 'chorusStyle' | 'chorusLabel' | 'verseNumbers' | 'airy'>
+>;
+
+export interface SheetViewOptions {
+  /** La canción tiene estribillo: se ofrecen sus variantes y la etiqueta. */
+  hasChorus: boolean;
+  /** La canción lleva números de estrofa. */
+  hasVerseNumbers: boolean;
+  chorusStyle: ChorusStyle;
+  chorusLabel: boolean;
+  verseNumbers: boolean;
+  airy: boolean;
+  onChange: (patch: SheetViewPatch) => void;
+}
 
 const MIN_SIZE = 0.6;
 const MAX_SIZE = 2.0;
@@ -58,8 +71,7 @@ export default function SongFontBottomSheet({
   currentFontFamily,
   onSetFontSize,
   onSetFontFamily,
-  verseNumbers,
-  onSetVerseNumbers,
+  view,
 }: Props) {
   const isDark = useColorScheme() === 'dark';
   const p = sheetPalette(isDark);
@@ -106,7 +118,7 @@ export default function SongFontBottomSheet({
   const previewFamily = getNativeFontFamily(currentFontFamily);
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} title="Tipo de letra">
+    <BottomSheet visible={visible} onClose={onClose} title="Letra y vista">
       <View style={styles.container}>
         {/* ━━━━━━━━━━━━━━ TAMAÑO ━━━━━━━━━━━━━━ */}
         <SheetCard
@@ -263,52 +275,8 @@ export default function SongFontBottomSheet({
           </View>
         </SheetCard>
 
-        {/* ━━━━━━━━━━━━━━ ESTROFAS ━━━━━━━━━━━━━━ */}
-        {verseNumbers !== undefined && onSetVerseNumbers && (
-          <SheetCard
-            palette={p}
-            label="Estrofas"
-            status={verseNumbers ? 'Numeradas' : 'Sin número'}
-          >
-            <View style={styles.fontGrid} accessibilityRole="radiogroup">
-              {VERSE_OPTIONS.map((opt) => {
-                const isActive = opt.value === verseNumbers;
-                const color = isActive ? p.active.fg : p.text;
-                return (
-                  <PressableFeedback
-                    key={opt.name}
-                    style={[styles.fontChip, valueBoxStyle(p, isActive)]}
-                    onPress={() => {
-                      if (isActive) return;
-                      h.select();
-                      onSetVerseNumbers(opt.value);
-                    }}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: isActive }}
-                    accessibilityLabel={`Estrofas: ${opt.name}`}
-                  >
-                    <PressableFeedback.Highlight />
-                    <Text style={[styles.fontChipPreview, { color }]}>
-                      {opt.preview}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.fontChipLabel,
-                        {
-                          color: isActive ? p.active.fg : p.textSecondary,
-                          fontWeight: isActive ? '700' : '500',
-                        },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {opt.name}
-                    </Text>
-                  </PressableFeedback>
-                );
-              })}
-            </View>
-          </SheetCard>
-        )}
+        {/* ━━━━━━━━━━━━━━ VISTA ━━━━━━━━━━━━━━ */}
+        {view && <ViewCard palette={p} view={view} />}
 
         {(isSizeModified || isFontModified) && (
           <PressableFeedback
@@ -325,6 +293,158 @@ export default function SongFontBottomSheet({
         )}
       </View>
     </BottomSheet>
+  );
+}
+
+/** Las variantes del estribillo dibujadas en pequeño, como se verán. */
+function ChorusPreview({ id, color }: { id: ChorusStyle; color: string }) {
+  const bold = id !== 'raya';
+  const caps = id === 'mayus' || id === 'clasico';
+  const bar = id === 'raya' || id === 'negrita' || id === 'mayus';
+  return (
+    <View
+      style={[
+        styles.chorusPreview,
+        bar && styles.chorusPreviewBar,
+        id === 'sangrado' && styles.chorusPreviewIndent,
+      ]}
+    >
+      <Text
+        style={[
+          styles.chorusPreviewText,
+          { color, fontWeight: bold ? '800' : '400' },
+        ]}
+      >
+        {caps ? 'AA' : 'Aa'}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * Cómo se ve la hoja: variante del estribillo, su etiqueta, los números de
+ * estrofa y el aire entre bloques. Todo se aplica en vivo (sin recargar).
+ */
+function ViewCard({
+  palette: p,
+  view,
+}: {
+  palette: SheetPalette;
+  view: SheetViewOptions;
+}) {
+  const toggles: {
+    key: string;
+    icon: keyof typeof MaterialIcons.glyphMap;
+    name: string;
+    on: boolean;
+    patch: SheetViewPatch;
+  }[] = [];
+  if (view.hasChorus) {
+    toggles.push({
+      key: 'label',
+      icon: 'label-outline',
+      name: 'Etiqueta',
+      on: view.chorusLabel,
+      patch: { chorusLabel: !view.chorusLabel },
+    });
+  }
+  if (view.hasVerseNumbers) {
+    toggles.push({
+      key: 'nums',
+      icon: 'format-list-numbered',
+      name: 'Números',
+      on: view.verseNumbers,
+      patch: { verseNumbers: !view.verseNumbers },
+    });
+  }
+  toggles.push({
+    key: 'airy',
+    icon: 'format-line-spacing',
+    name: 'Más aire',
+    on: view.airy,
+    patch: { airy: !view.airy },
+  });
+  return (
+    <SheetCard palette={p} label="Vista">
+      {view.hasChorus && (
+        <>
+          <Text style={[styles.subLabel, { color: p.label }]}>Estribillo</Text>
+          <View style={styles.chipWrap} accessibilityRole="radiogroup">
+            {CHORUS_STYLES.map((c) => {
+              const isActive = c.id === view.chorusStyle;
+              const color = isActive ? p.active.fg : p.text;
+              return (
+                <PressableFeedback
+                  key={c.id}
+                  style={[
+                    styles.fontChip,
+                    styles.gridChip,
+                    valueBoxStyle(p, isActive),
+                  ]}
+                  onPress={() => {
+                    if (isActive) return;
+                    h.select();
+                    view.onChange({ chorusStyle: c.id });
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isActive }}
+                  accessibilityLabel={`Estribillo: ${c.name}`}
+                >
+                  <PressableFeedback.Highlight />
+                  <ChorusPreview id={c.id} color={color} />
+                  <Text
+                    style={[
+                      styles.fontChipLabel,
+                      {
+                        color: isActive ? p.active.fg : p.textSecondary,
+                        fontWeight: isActive ? '700' : '500',
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {c.name}
+                  </Text>
+                </PressableFeedback>
+              );
+            })}
+          </View>
+        </>
+      )}
+      <View style={styles.fontGrid}>
+        {toggles.map((t) => (
+          <PressableFeedback
+            key={t.key}
+            style={[styles.fontChip, valueBoxStyle(p, t.on)]}
+            onPress={() => {
+              h.toggle();
+              view.onChange(t.patch);
+            }}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: t.on }}
+            accessibilityLabel={t.name}
+          >
+            <PressableFeedback.Highlight />
+            <MaterialIcons
+              name={t.icon}
+              size={22}
+              color={t.on ? p.active.fg : p.text}
+            />
+            <Text
+              style={[
+                styles.fontChipLabel,
+                {
+                  color: t.on ? p.active.fg : p.textSecondary,
+                  fontWeight: t.on ? '700' : '500',
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {t.name}
+            </Text>
+          </PressableFeedback>
+        ))}
+      </View>
+    </SheetCard>
   );
 }
 
@@ -402,6 +522,36 @@ const styles = StyleSheet.create({
   fontChipLabel: {
     ...typography.micro,
     textAlign: 'center',
+  },
+  subLabel: {
+    ...typography.micro,
+    fontWeight: '600',
+    marginBottom: -spacing.xs,
+  },
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  // Tres por fila: cinco variantes no caben en una a ancho de móvil.
+  gridChip: {
+    flexGrow: 0,
+    flexBasis: '30%',
+  },
+  chorusPreview: {
+    height: 26,
+    justifyContent: 'center',
+  },
+  chorusPreviewBar: {
+    borderLeftWidth: 3,
+    borderLeftColor: UIColors.accentYellow,
+    paddingLeft: spacing.xs,
+  },
+  chorusPreviewIndent: {
+    paddingLeft: spacing.sm,
+  },
+  chorusPreviewText: {
+    ...typography.h3,
   },
   resetAll: {
     flexDirection: 'row',

@@ -278,3 +278,45 @@ describe('normalizeLyrics / lyricsSimilarity', () => {
     expect(lyricsSimilarity('a b', '')).toBe(0);
   });
 });
+
+describe('buildSheet — huecos y líneas partidas', () => {
+  it('cuenta las líneas en blanco antes de cada sección (0, 1, 2+)', () => {
+    const m = sheet(
+      '[G]Una\n\n[C]Dos\n\n\n[D]Tres\n{soc}\n[G]Coro pegado\n{eoc}',
+    );
+    expect(m.sections.map((s) => s.breakBefore)).toEqual([0, 1, 2, 0]);
+    const html = renderSheetHtml(m);
+    expect(html).toContain('class="sec verse gap2"');
+    expect(html).toContain('class="sec chorus gap0"');
+  });
+
+  it('une una línea partida por el ancho de un PDF con la siguiente', () => {
+    // «El amor», de Maite López: cada línea del .cho es un trozo de estrofa.
+    const m = sheet(
+      'El [G]amor, ha de [C]traducirse en [D]hechos, es mu[G]cho más que pa[Em]labras, mucho [Bm]más que\n' +
+        'sentimientos, o[C]bras son [D]amores [G]y no buenas razones.',
+    );
+    expect(m.sections[0].lines).toHaveLength(1);
+    expect(words(m.sections[0].lines[0])).toContain('que ');
+    expect(words(m.sections[0].lines[0])).toContain('sentimientos, ');
+  });
+
+  it('no une versos cortos aunque el siguiente empiece en minúscula', () => {
+    const m = sheet('[C]Siempre imaginé la fe[F]licidad\nligada al [C]poder');
+    expect(m.sections[0].lines).toHaveLength(2);
+  });
+
+  it('no une una línea larga con otra que empieza en mayúscula', () => {
+    const long =
+      'Esta [A]paz que hoy nos das, viva [D]siempre estará, en la tierra como en el cielo.';
+    const m = sheet(`${long}\n[A]Esta paz que hoy nos das`);
+    expect(m.sections[0].lines).toHaveLength(2);
+  });
+});
+
+describe('buildSheet — numeración siempre igual', () => {
+  it('las estrofas sin número siguen la cuenta de las numeradas a mano', () => {
+    const m = sheet('1. Una [G]estrofa\n\nOtra [C]estrofa\n\n3. La [D]tercera');
+    expect(m.sections.map((s) => s.number)).toEqual([1, 2, 3]);
+  });
+});

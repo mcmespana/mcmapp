@@ -106,6 +106,17 @@ describe('chooseBreaks — cortes óptimos', () => {
     }
   });
 
+  it('gasta un renglón más antes que dejar un «de» colgando', () => {
+    // «Seas quien seas» en el móvil a pantalla completa: con dos renglones
+    // solo cabía «Hay muchas formas de / orar, tantas como personas».
+    const rows = breaksFor(
+      'Hay muchas formas de orar, tantas como personas',
+      21,
+    );
+    expect(rows[0]).toBe('Hay muchas formas');
+    for (const r of rows.slice(0, -1)) expect(r).not.toMatch(/\b(de|la|el)$/);
+  });
+
   it('los renglones de continuación respetan la sangría', () => {
     const rows = breaksFor('uno dos tres cuatro cinco seis siete ocho', 20, 4);
     for (const r of rows.slice(1)) expect(r.length + 4).toBeLessThanOrEqual(20);

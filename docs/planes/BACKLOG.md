@@ -313,8 +313,11 @@ usuario el 2026-10-09 («la mejor experiencia para músicos y cantantes»).
 - 🔒 Seis decisiones aplicadas a falta de que el usuario las confirme
   (§3 del plan y fila en §4 de este backlog). No se mergea sin su visto bueno
   en un dispositivo.
-- Fase 2 (modo atril con páginas y pedal, PDF con la hoja nueva, pantalla
-  completa en web) y Fase 3 (limpiar los `.cho`) sin empezar.
+- ✅ Segunda vuelta (2026-10-09): interlineado con sentido, variantes de
+  estribillo, iPad con plegado y aviso de girar, **modo atril** hecho.
+- 📝 Apuntado (pronto, el usuario lo quiere): **onboarding del cantoral**,
+  **limpieza de los `.cho`** y **admin del cantoral fiel a la app** (§7 del
+  plan). Queda de Fase 2: PDF con la hoja nueva y pantalla completa en web.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 

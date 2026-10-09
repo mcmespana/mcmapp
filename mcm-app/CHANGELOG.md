@@ -18,6 +18,30 @@
 
 ---
 
+## 2026-10-09 23:30 — Canción: interlineado con sentido, estribillo a elegir, iPad y modo atril
+
+- **Interlineado que dice algo**: un renglón partido va pegado; otra línea
+  del `.cho`, un poco separada; una línea en blanco, más; dos líneas en
+  blanco o entrar/salir de un estribillo, bastante más. `breakBefore` en
+  `utils/songSheet.ts`, huecos en `utils/songSheetLayout.ts`.
+- **Líneas partidas de un PDF** («El amor»): una línea larga sin punto final
+  seguida de otra en minúscula se une; la estrofa se vuelve a partir por
+  frases con la misma sangría (33 canciones).
+- **Números de estrofa siempre igual**: la que no trae número sigue la cuenta
+  de la anterior.
+- **Cortes**: se gasta un renglón más antes que dejar un «de» o un «la»
+  colgando al final.
+- **«Letra y vista»** (antes «Tipo de letra»): variantes del estribillo
+  (raya, negrita, MAYÚS, clásico, sangrado), etiqueta sí/no, números y «más
+  aire». Ajustes nuevos: `chorusStyle`, `chorusLabel`, `airy`.
+- **iPad**: con columnas los estribillos repetidos se pliegan solos; si en la
+  otra orientación la canción cabría entera, aviso «Gira la pantalla».
+- **Modo atril** en pantalla completa (`pagedFullscreen`, solo nativo):
+  páginas en vez de scroll; se pasa con un toque, deslizando o con un pedal
+  (flechas, AvPág, espacio). Ninguna línea se parte entre páginas.
+
+---
+
 ## 2026-10-09 19:55 — Canción: hoja nueva para músicos y cantantes
 
 - **La canción ya no la pinta `HtmlDivFormatter`.** ChordSheetJS sigue

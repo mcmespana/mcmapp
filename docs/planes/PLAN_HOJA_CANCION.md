@@ -86,3 +86,29 @@ Orden: estrofas en una línea (104) → revisar acordes (97) → `{soc}` que fal
 (39) → «ESTRIBILLO» a `{chorus}` (29) → quitar numeración a mano (25) → intros
 en comentario a líneas de acordes (9) → muros de texto (8). Pasar los
 estribillos a minúscula depende de la decisión de §3.
+
+## 6. Segunda vuelta (2026-10-09, misma rama)
+
+Respuestas del usuario: la letra del sistema, **aceptada** («pero que se vea
+bien»); columnas en iPad, **sí**, y con los estribillos plegados cuando todo
+está a la vista; modo atril, **sí**; numeración, **que se vea siempre igual**.
+
+Hecho: interlineado con significado (renglón partido / línea / línea en
+blanco / dos o más), unión de líneas partidas de PDF, numeración continua,
+variantes del estribillo elegibles en «Letra y vista», «más aire», plegado
+automático en columnas, aviso de girar, modo atril con pedal.
+
+🔒 **Pendiente del usuario**: elegir la variante de estribillo de serie
+(comparador en vivo en el artifact) — hoy es «Raya».
+
+## 7. Apuntado para pronto
+
+1. **Onboarding del cantoral** (la primera vez que se abre): ¿acordes?,
+   ¿completa o compacta?, ¿monoespaciada?, ¿números de estrofa?, estilo del
+   estribillo, destacar u ocultar etiquetas. Todo son ya ajustes de
+   `SettingsContext`; falta la pantalla.
+2. **Limpieza de los `.cho`** (Fase 3, §5). Recordárselo al usuario.
+3. **El admin del cantoral (script C) pintando igual que la app**: usar el
+   mismo JavaScript de la hoja (`songSheet` + `songSheetLayout`) en su vista
+   previa, para maquetar viendo lo que saldrá.
+4. Probar el pedal Bluetooth en un iPad de verdad (en navegador funciona).

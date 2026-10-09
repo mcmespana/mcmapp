@@ -9,6 +9,7 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { ChorusStyle } from '@/utils/songSheetLayout';
 
 // Define the shape of the settings
 export interface SongSettings {
@@ -24,6 +25,17 @@ export interface SongSettings {
   compactView: boolean;
   /** Números de estrofa (1, 2, 3…) a la izquierda de cada una. */
   verseNumbers: boolean;
+  /** Cómo se marca el estribillo (raya, negrita, mayúsculas…). */
+  chorusStyle: ChorusStyle;
+  /** Etiqueta «ESTRIBILLO» encima de cada estribillo. */
+  chorusLabel: boolean;
+  /** Más hueco entre líneas y entre bloques. */
+  airy: boolean;
+  /**
+   * Modo atril: la pantalla completa en páginas (toque en el borde o pedal)
+   * en vez de scroll.
+   */
+  pagedFullscreen: boolean;
   /**
    * Versión de la migración de la letra por defecto. Ver
    * `migrateSongSettings`.
@@ -88,6 +100,10 @@ const defaultSettings: SongSettings = {
   notation: 'ES',
   compactView: false,
   verseNumbers: true,
+  chorusStyle: 'raya',
+  chorusLabel: true,
+  airy: false,
+  pagedFullscreen: false,
   fontVersion: FONT_VERSION,
 };
 
