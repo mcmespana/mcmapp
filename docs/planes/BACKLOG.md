@@ -320,9 +320,11 @@ usuario el 2026-10-09 («la mejor experiencia para músicos y cantantes»).
   header) y **las 258 canciones repasadas a mano** en el cantoral (solo
   queda «revisar acordes», que es de oído; dudas en
   `mcmapp-cantoral/docs/REVISION_OIDO.md`).
-- 📝 Siguiente (el usuario lo quiere): **admin del cantoral (script C) fiel
-  a la app** (§7 del plan). Queda de Fase 2: PDF con la hoja nueva y pantalla
-  completa en web.
+- ✅ **Admin del cantoral (script C) pintando como la app** (2026-10-10, §10
+  del plan): `mcm-sheet.js` generado con `npm run build:sheet-bundle`.
+- 📝 Queda de Fase 2: PDF de la playlist con la hoja nueva, pantalla completa
+  en web, mapa de la canción, probar el pedal en un iPad. Y las 🔒 decisiones
+  de §3 antes de mergear.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 

@@ -3,6 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
+    "build:sheet-bundle": "node scripts/build-sheet-bundle.js",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -96,6 +97,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "babel-preset-expo": "~57.0.0",
     "cross-env": "^10.1.0",
+    "esbuild": "0.25.10",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.2",
     "eslint-config-prettier": "^10.1.8",

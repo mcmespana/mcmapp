@@ -18,6 +18,21 @@
 
 ---
 
+## 2026-10-10 14:45 — El admin del cantoral pinta las canciones con el código de la app
+
+- `utils/songDocument.ts`: el documento HTML de una canción, puro (sin React
+  ni React Native), sacado de `useSongProcessor`, que ahora solo guarda el
+  estado. Letras de la canción a `constants/songFonts.ts`.
+- `utils/songDocumentBundle.ts` + `npm run build:sheet-bundle` (esbuild, nueva
+  dependencia de desarrollo): empaqueta la hoja en
+  `mcmapp-cantoral/scripts/admin/static/mcm-sheet.js` para la vista previa del
+  admin (móvil / iPad, al lado del editor Raw). Hay que regenerarlo al
+  cambiar la hoja.
+- Test `songDocumentBundle.test.ts`: el paquete pinta byte a byte lo mismo que
+  la app, con sus mismos valores por defecto, y se puede empaquetar.
+
+---
+
 ## 2026-10-10 01:30 — Cantoral: onboarding y estribillo en negrita de serie
 
 - **Onboarding del cantoral** (`components/song-onboarding/CantoralOnboarding.tsx`):

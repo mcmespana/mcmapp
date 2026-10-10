@@ -105,9 +105,8 @@ automático en columnas, aviso de girar, modo atril con pedal.
 
 1. ✅ **Onboarding del cantoral** — hecho (§9).
 2. ✅ **Limpieza de los `.cho`** — hecha (§9).
-3. **El admin del cantoral (script C) pintando igual que la app**: usar el
-   mismo JavaScript de la hoja (`songSheet` + `songSheetLayout`) en su vista
-   previa, para maquetar viendo lo que saldrá.
+3. ✅ **El admin del cantoral (script C) pintando igual que la app** — hecho
+   (§10).
 4. Probar el pedal Bluetooth en un iPad de verdad (en navegador funciona).
 
 ## 8. Fase 3 — limpieza mecánica hecha (2026-10-09)
@@ -145,3 +144,16 @@ dependen del estilo de estribillo que elija el usuario.
   enteras 167 (antes 136). `revisar_cho.py` ya solo avisa de «REVISAR
   ACORDES»; lo dudoso, en `mcmapp-cantoral/docs/REVISION_OIDO.md`.
 
+## 10. El admin pinta como la app (2026-10-10)
+
+`mcm-sheet.js` (la hoja empaquetada con esbuild desde
+`utils/songDocumentBundle.ts`) en `mcmapp-cantoral/scripts/admin/static/`:
+pestaña 👁 Preview con móvil / iPad ⬌ / iPad ⬍ a tamaño real, acordes,
+completa/compacta, notación, estilo del estribillo y oscuro; el móvil al lado
+del editor Raw; y la misma vista al añadir canción y al importar de
+doceacordes. Detalle en `HOJA_CANCION.md` («El admin del cantoral pinta
+igual»).
+
+Queda de la Fase 2: PDF de la playlist con la hoja nueva, pantalla completa
+en web (`innerHTML` → iframe), el mapa de la canción y probar el pedal en un
+iPad de verdad.

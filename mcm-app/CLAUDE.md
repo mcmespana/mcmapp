@@ -410,7 +410,7 @@ Documentar NO:
 | Firebase app singleton    | `utils/firebaseApp.ts`                                    |
 | Fetch de datos            | `hooks/useFirebaseData.ts`                                |
 | Procesador de canciones   | `hooks/useSongProcessor.ts`                               |
-| Hoja de canción (HTML)    | `utils/songSheet.ts` + `utils/songSheetLayout.ts`         |
+| Hoja de canción (HTML)    | `utils/songSheet*.ts` + `utils/songDocument.ts`           |
 | Parser de calendario      | `utils/icsParser.ts` (puro, compartido con las functions) |
 | Hook de calendario        | `hooks/useCalendarEvents.ts`                              |
 | BBCode → HTML             | `utils/formatText.ts`                                     |

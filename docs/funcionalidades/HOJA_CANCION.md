@@ -3,7 +3,8 @@
 > Qué hace la app con el ChordPro de una canción para que se lea bien en un
 > móvil, en un iPad y a un metro del atril. Código: `mcm-app/utils/songSheet.ts`
 > (modelo + HTML), `mcm-app/utils/songSheetLayout.ts` (CSS + script de
-> maquetación dentro del WebView), conectado en `hooks/useSongProcessor.ts`.
+> maquetación dentro del WebView), `mcm-app/utils/songDocument.ts` (el
+> documento entero, puro) y `hooks/useSongProcessor.ts` (el estado de React).
 > Cómo escribir un `.cho` que aproveche todo esto: `docs/CAMPOS_CANCIONES.md`
 > §4.6 del repo `mcmapp-cantoral`. Plan y decisiones:
 > [`PLAN_HOJA_CANCION.md`](../planes/PLAN_HOJA_CANCION.md).
@@ -131,3 +132,22 @@ elegir la monoespaciada se la queda.
   la altura de la pantalla en páginas; toque (tercio izquierdo = atrás),
   deslizar o teclas (flechas, AvPág/RePág, espacio, Intro: lo que mandan los
   pedales). `__SONG_LAYOUT__.page(±1)`.
+
+## El admin del cantoral pinta igual (2026-10-10)
+
+La vista previa del admin (`mcmapp-cantoral/scripts/admin`, el «script C»)
+usa **este mismo código**: `utils/songDocumentBundle.ts` lo expone como
+`window.MCMSheet.render(chordPro, opciones)` y `npm run build:sheet-bundle`
+(esbuild) lo empaqueta en `mcmapp-cantoral/scripts/admin/static/mcm-sheet.js`,
+que se commitea en el cantoral. Allí se pinta en un iframe del tamaño real de
+un móvil o un iPad, también al lado del editor Raw mientras se escribe.
+
+- `useSongProcessor` solo guarda el estado; el HTML sale de
+  `buildSongDocument` (`utils/songDocument.ts`), sin React ni React Native.
+  Las letras viven en `constants/songFonts.ts` por lo mismo.
+- `__tests__/songDocumentBundle.test.ts` comprueba que el paquete pinta byte a
+  byte lo mismo que el hook (en web), que sus valores por defecto son los de
+  `SettingsContext` y que se puede empaquetar (si alguien mete un import de
+  React Native en la hoja, salta).
+- **Al cambiar la hoja**: `npm run build:sheet-bundle` y commitear
+  `mcm-sheet.js` en el cantoral, o el admin enseñará la versión anterior.
