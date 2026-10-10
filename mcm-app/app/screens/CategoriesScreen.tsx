@@ -168,7 +168,8 @@ export default function CategoriesScreen({
     }
   };
 
-  // Etiquetas «a mano» elegidas en el onboarding: atajos arriba de la lista.
+  // Etiquetas destacadas (★) en el onboarding o en Etiquetas → Editar:
+  // atajos arriba de la lista.
   const featuredTags = useMemo(() => {
     const wanted = new Set(settings.featuredTags);
     return tagIndex.tags.filter((t) => wanted.has(t.slug));

@@ -252,7 +252,7 @@ export function withoutHiddenTagSongs<T extends { tags?: unknown }>(
 }
 
 /**
- * Las etiquetas «a mano» que lleva una canción, en el orden en que se
+ * Las etiquetas destacadas que lleva una canción, en el orden en que se
  * eligieron: son las que se ven, discretas, en las listas.
  */
 export function featuredTagsOf(

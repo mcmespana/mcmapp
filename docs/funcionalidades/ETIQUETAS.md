@@ -121,7 +121,7 @@ categorías y en el buscador. Es una preferencia del dispositivo
 ningún sitio. En modo edición cada chip lleva «−» para ocultarla; las ocultas salen al
 final, apagadas y con «+», para recuperarlas.
 
-**«Editar» tiene dos modos** (un selector Ocultar / A mano arriba de la hoja):
+**«Editar» tiene dos modos** (un selector Ocultar / Destacar arriba de la hoja):
 
 - **Ocultar** — lo de arriba. Debajo de las ocultas hay una casilla
   **«Esconder también sus canciones de las categorías»**
@@ -132,10 +132,13 @@ final, apagadas y con «+», para recuperarlas.
   propia pantalla de la etiqueta: esconder no es borrar. La lista lo dice con
   un «2 escondidas · Ver» discreto junto al recuento, que las enseña en esa
   visita (`components/song-tags/HiddenSongsNote.tsx`).
-- **A mano** (★, `settings.featuredTags`) — las etiquetas que más usas. Salen
-  como atajo arriba del cantoral y, **discretas, en las filas de las listas**:
-  una línea pequeña y apagada bajo el autor («🕰️ Viejunas»). Solo las que
-  marcas, nunca todas: sin ninguna ★, las filas no cambian.
+- **Destacar** (★, `settings.featuredTags`) — las etiquetas que más usas, las
+  **destacadas**. Salen como atajo arriba del cantoral y, **discretas, en las
+  filas de las listas**: una pastilla pequeña junto al autor («🕰️ Viejunas»,
+  «+1» si hay más). Solo las que marcas, nunca todas: sin ninguna ★, las filas
+  no cambian. (Se llamó «A mano» hasta el 2026-10-10.) Ojo: no es el campo
+  `destacada` del catálogo (§2.2), que lo pone el admin para todos; esto es
+  una preferencia de cada móvil.
 
 Lo mismo se elige en el paso **«Tus etiquetas»** del onboarding del cantoral
 (saltable, y se repite con el «?» del header), que explica para qué sirve

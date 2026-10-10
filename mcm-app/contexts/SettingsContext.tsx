@@ -47,7 +47,7 @@ export interface SongSettings {
    */
   cantoralOnboarding: number;
   /**
-   * Etiquetas «a mano»: salen como atajos arriba del cantoral. Slugs
+   * Etiquetas destacadas (★): salen como atajos arriba del cantoral. Slugs
    * normalizados (`slugifyTag`).
    */
   featuredTags: string[];

@@ -18,7 +18,27 @@
 
 ---
 
-## 2026-10-10 19:30 — PDF de la playlist con la hoja nueva
+## 2026-10-10 19:02 — Cantoral: repaso de diseño (onboarding, etiquetas, pantalla completa)
+
+- **Pantalla completa**: los controles (‹ ›, atril, play) se apagan solos a
+  los 3,5 s y vuelven con cualquier toque o tecla; la ✕ solo se atenúa
+  (`hooks/useImmersiveChrome.ts`, `FS_TOUCH_JS` en `utils/songDocument.ts`).
+  Con lector de pantalla no se esconden.
+- **Arreglo**: los `{arr:}` multiplicaban dos veces el tamaño de la letra y,
+  con la letra grande o en pantalla completa, salían más grandes que ella.
+- **Onboarding**: estribillo en una fila (antes 3 + 2), paso de etiquetas con
+  «Destacadas» (★) y «Ocultas» (tachadas) explicados, y en el móvil ese paso
+  ocupa toda la pantalla; fundido entre pasos; textos corregidos (no hay
+  ningún botón «Aa»).
+- **«Letra y vista»**: las cinco variantes del estribillo en una fila.
+- **Listas**: la etiqueta ★ va en una pastilla pequeña (en texto suelto
+  parecía un segundo autor). `TagChip` gana icono delante, tachado y área de
+  toque de 44.
+- **Etiquetas del cantoral** (otro repo): nombres con tildes en el catálogo.
+
+---
+
+## 2026-10-10 18:20 — PDF de la playlist con la hoja nueva
 
 - `utils/playlistPdfHtml.ts` pinta cada canción con la hoja de la app
   (`buildSheet` + `SHEET_CSS`) en vez de `HtmlDivFormatter`: estribillo con
@@ -33,13 +53,13 @@
 
 ---
 
-## 2026-10-10 18:00 — Etiquetas: esconder canciones de otro carisma y ★ a mano
+## 2026-10-10 18:00 — Etiquetas: esconder canciones de otro carisma y ★ destacadas
 
 - **Esconder sus canciones**: en «Etiquetas → Editar → Ocultar», una casilla
   nueva (`settings.hideHiddenTagSongs`) quita de las categorías las canciones
   con alguna etiqueta oculta (siguen en el buscador y en la
   pantalla de la etiqueta). La lista avisa con «N escondidas · Ver».
-- **★ A mano** (`settings.featuredTags`): segundo modo de «Editar». Las
+- **★ Destacar** (`settings.featuredTags`): segundo modo de «Editar». Las
   marcadas salen, discretas, bajo el autor en las filas de las listas.
 - El paso «Tus etiquetas» del onboarding del cantoral explica las dos cosas.
 - `utils/songTags.ts` (`withoutHiddenTagSongs`, `featuredTagsOf`, con tests),
@@ -48,7 +68,7 @@
 
 ---
 
-## 2026-10-10 18:30 — Pantalla completa: mismo tono, pasar de canción y coro
+## 2026-10-10 17:48 — Pantalla completa: mismo tono, pasar de canción y coro
 
 - **Bug**: la pantalla completa pintaba siempre la canción en su tono
   original aunque la estuvieras viendo transportada (y sin la cejilla
@@ -66,7 +86,7 @@
 
 ---
 
-## 2026-10-10 14:45 — El admin del cantoral pinta las canciones con el código de la app
+## 2026-10-10 16:31 — El admin del cantoral pinta las canciones con el código de la app
 
 - `utils/songDocument.ts`: el documento HTML de una canción, puro (sin React
   ni React Native), sacado de `useSongProcessor`, que ahora solo guarda el

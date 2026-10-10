@@ -131,7 +131,7 @@ dependen del estilo de estribillo que elija el usuario.
   `utils/cantoralOnboarding.ts`): se abre solo la primera vez y con el «?»
   del header. ¿Tocas o cantas? (+ DO RE MI / C D E), completa o compacta,
   estilo del estribillo (+ etiqueta), letra (+ números, más aire) y, si hay
-  etiquetas, las que se quieren «a mano» arriba del cantoral
+  etiquetas, las destacadas (★) arriba del cantoral
   (`featuredTags`). Cada opción se ve al momento sobre una canción de verdad,
   que baja sola a la parte que cambia; se cierra en cualquier paso y lo
   tocado se queda.
@@ -160,7 +160,7 @@ igual»).
   última página), sigue al coro, botón ⛶ en la cabecera y en web un iframe
   con la maquetación de verdad. Detalle en `HOJA_CANCION.md`.
 - **Etiquetas**: esconder también las canciones de las etiquetas ocultas
-  (para quien no quiere las de otro carisma) y ★ «a mano», que salen
+  (para quien no quiere las de otro carisma) y ★ destacadas, que salen
   discretas en las filas. Lo explica el onboarding. Detalle en
   `ETIQUETAS.md` §3.2.
 - **Repaso de etiquetas** propuesto en un artefacto interactivo para que el

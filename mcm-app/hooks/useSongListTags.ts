@@ -5,7 +5,7 @@
  *   no salen las de las etiquetas ocultas (p. ej. las de otro carisma). En el
  *   buscador y en la pantalla de una etiqueta, sí. Siempre se dice cuántas y
  *   se pueden ver (`revealHidden`).
- * - Las etiquetas «a mano» (`featuredTags`) de cada canción, para verlas
+ * - Las etiquetas destacadas (`featuredTags`) de cada canción, para verlas
  *   discretas en su fila.
  */
 import { useCallback, useMemo, useState } from 'react';

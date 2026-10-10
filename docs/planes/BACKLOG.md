@@ -323,7 +323,7 @@ usuario el 2026-10-09 («la mejor experiencia para músicos y cantantes»).
   del plan): `mcm-sheet.js` generado con `npm run build:sheet-bundle`.
 - ✅ Cuarta vuelta (2026-10-10, §11 del plan): **pantalla completa** rehecha
   (tono, pasar de canción, coro, web) y **etiquetas**: esconder las
-  canciones de otro carisma y ★ «a mano» discretas en las filas.
+  canciones de otro carisma y ★ destacadas discretas en las filas.
 - ✅ Editor visual del admin parecido a la app y PDF de la playlist con la
   hoja nueva (2026-10-10).
 - 📝 Queda, en este orden (§11 del plan): aplicar las etiquetas que el
