@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
+import { useIsFocused } from 'expo-router/react-navigation';
 import {
   useLayoutEffect,
   useMemo,
@@ -24,6 +25,7 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import colors, {
   Colors,
   KeyPillColors,
+  SystemGray,
   UIColors,
   themeColors,
 } from '@/constants/colors';
@@ -37,6 +39,13 @@ import { extractTrailingEmoji, stripCategoryPrefix } from '@/utils/songUtils';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useSongTagIndex } from '@/hooks/useSongTags';
 import TagCloudSheet from '@/components/song-tags/TagCloudSheet';
+import TagChip from '@/components/song-tags/TagChip';
+import CantoralOnboarding from '@/components/song-onboarding/CantoralOnboarding';
+import { useSettings } from '@/contexts/SettingsContext';
+import {
+  CANTORAL_ONBOARDING_VERSION,
+  shouldAutoOpenOnboarding,
+} from '@/utils/cantoralOnboarding';
 import { tagCategoryId, type ResolvedTag } from '@/utils/songTags';
 import { h } from '@/utils/haptics';
 import {
@@ -46,6 +55,7 @@ import {
   consumePendingChoirImport,
 } from '@/utils/pendingCloudPlaylist';
 import typography from '@/constants/typography';
+import spacing from '@/constants/spacing';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
@@ -135,6 +145,43 @@ export default function CategoriesScreen({
     });
   }, [navigation]);
 
+  // ── Onboarding («?» del header) ──────────────────────────────────────────
+  // Se abre solo la primera vez (por versión) y se vuelve a abrir con el «?».
+  // Solo con esta pantalla delante: si un enlace a una playlist o un coro nos
+  // ha llevado a otra, espera a la vuelta. Se da por visto al cerrarlo.
+  const { settings, setSettings, isLoadingSettings } = useSettings();
+  const isFocused = useIsFocused();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [autoDismissed, setAutoDismissed] = useState(false);
+  const autoOpen =
+    !autoDismissed &&
+    isFocused &&
+    !!songsData &&
+    shouldAutoOpenOnboarding(settings.cantoralOnboarding, isLoadingSettings);
+  const onboardingVisible = showOnboarding || autoOpen;
+  const openOnboarding = useCallback(() => setShowOnboarding(true), []);
+  const closeOnboarding = () => {
+    setShowOnboarding(false);
+    setAutoDismissed(true);
+    if (settings.cantoralOnboarding < CANTORAL_ONBOARDING_VERSION) {
+      setSettings({ cantoralOnboarding: CANTORAL_ONBOARDING_VERSION });
+    }
+  };
+
+  // Etiquetas «a mano» elegidas en el onboarding: atajos arriba de la lista.
+  const featuredTags = useMemo(() => {
+    const wanted = new Set(settings.featuredTags);
+    return tagIndex.tags.filter((t) => wanted.has(t.slug));
+  }, [settings.featuredTags, tagIndex.tags]);
+  const openTag = useCallback(
+    (tag: ResolvedTag) =>
+      navigation.navigate('SongsList', {
+        categoryId: tagCategoryId([tag.slug]),
+        categoryName: tag.label,
+      }),
+    [navigation],
+  );
+
   const handleSuccessSubmit = () => {
     toast.show({ variant: 'success', label: '¡Sugerencia enviada!' });
   };
@@ -191,6 +238,22 @@ export default function CategoriesScreen({
       // El de etiquetas solo existe si hay etiquetas que enseñar.
       headerRight: () => (
         <View style={styles.headerActions}>
+          <PressableFeedback
+            onPress={() => {
+              h.tap();
+              openOnboarding();
+            }}
+            style={styles.headerNativeButton}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Cómo ver las canciones"
+          >
+            <MaterialIcons
+              name="help-outline"
+              size={22}
+              color={headerIconColor}
+            />
+          </PressableFeedback>
           {hasTags && (
             <TouchableOpacity
               onPress={() => {
@@ -220,7 +283,7 @@ export default function CategoriesScreen({
         </View>
       ),
     });
-  }, [navigation, styles, headerIconColor, hasTags]);
+  }, [navigation, styles, headerIconColor, hasTags, openOnboarding]);
 
   // En iPad/web amplio rendiriamos la "Tu selección" en una card destacada
   // de ancho completo arriba, y las categorías reales en un grid de 2-3 cols
@@ -234,6 +297,7 @@ export default function CategoriesScreen({
     return displayCategories.slice(1);
   }, [displayCategories, isWideLayout]);
 
+  const lastIndex = gridData.length - 1;
   const renderItem = useCallback(
     ({
       item,
@@ -278,42 +342,92 @@ export default function CategoriesScreen({
         );
       }
 
-      // ── Layout móvil: fila tradicional ───────────────────────────────
-      return (
-        <PressableFeedback
-          onPress={onPress}
-          style={[
-            styles.card,
-            isSpecial && styles.cardSpecial,
-            index === 0 && { marginTop: 12 },
-          ]}
-        >
-          <PressableFeedback.Highlight />
-          <View
-            style={[styles.cardEmoji, isSpecial && styles.cardEmojiSpecial]}
+      // ── Layout móvil ──────────────────────────────────────────────────
+      // «Tu selección» va suelta y destacada; las categorías, en UNA lista
+      // agrupada con separadores finos, como agrupa iOS sus ajustes. Antes
+      // eran 16 tarjetas con su sombra cada una: más alto, más ruido y
+      // ninguna jerarquía entre lo tuyo y el catálogo.
+      if (isSpecial) {
+        const count = item.songCount;
+        return (
+          <PressableFeedback
+            onPress={onPress}
+            style={[styles.row, styles.selectionRow]}
+            accessibilityRole="button"
+            accessibilityLabel={`Tu selección, ${
+              count === 0
+                ? 'vacía'
+                : `${count} ${count === 1 ? 'canción' : 'canciones'}`
+            }`}
           >
-            <Text style={styles.emojiText}>{emoji}</Text>
-          </View>
-          <View style={styles.cardContent}>
-            <Text
-              style={[styles.cardTitle, isSpecial && styles.cardTitleSpecial]}
-              numberOfLines={1}
-            >
-              {displayName}
-            </Text>
-          </View>
-          <View style={styles.cardRight}>
-            <Text style={styles.countBadge}>{item.songCount}</Text>
+            <PressableFeedback.Highlight />
+            <View style={[styles.rowIcon, styles.selectionIcon]}>
+              <Text style={styles.emojiText}>{emoji}</Text>
+            </View>
+            <View style={styles.selectionContent}>
+              <Text style={[styles.rowTitle, styles.selectionTitle]}>
+                {displayName}
+              </Text>
+              <Text style={styles.selectionSubtitle} numberOfLines={1}>
+                {count === 0
+                  ? 'Vacía · añade canciones desde el cantoral'
+                  : `${count} ${count === 1 ? 'canción' : 'canciones'}`}
+              </Text>
+            </View>
             <MaterialIcons
               name="chevron-right"
               size={20}
-              color={isDark ? '#8E8E93' : '#C7C7CC'}
+              color={themeColors(isDark).link}
+            />
+          </PressableFeedback>
+        );
+      }
+
+      // `index` cuenta «Tu selección» (posición 0): la primera categoría es 1.
+      const isFirst = index === 1;
+      const isLast = index === lastIndex;
+      const row = (
+        <PressableFeedback
+          onPress={onPress}
+          style={[
+            styles.row,
+            styles.groupRow,
+            isFirst && styles.groupFirst,
+            isLast && styles.groupLast,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={`${displayName}, ${item.songCount} ${
+            item.songCount === 1 ? 'canción' : 'canciones'
+          }`}
+        >
+          <PressableFeedback.Highlight />
+          <View style={styles.rowIcon}>
+            <Text style={styles.emojiText}>{emoji}</Text>
+          </View>
+          <View style={[styles.rowContent, !isLast && styles.rowDivider]}>
+            <Text style={styles.rowTitle} numberOfLines={1}>
+              {displayName}
+            </Text>
+            <Text style={styles.rowCount}>{item.songCount}</Text>
+            <MaterialIcons
+              name="chevron-right"
+              size={20}
+              color={isDark ? SystemGray.dark.gray : SystemGray.light.gray3}
             />
           </View>
         </PressableFeedback>
       );
+      if (!isFirst) return row;
+      return (
+        <View>
+          <Text style={styles.groupLabel} accessibilityRole="header">
+            Categorías
+          </Text>
+          {row}
+        </View>
+      );
     },
-    [isDark, navigation, isWideLayout, styles],
+    [isDark, navigation, isWideLayout, styles, lastIndex],
   );
 
   // ── Hero "Tu selección" para iPad ────────────────────────────────────
@@ -361,11 +475,23 @@ export default function CategoriesScreen({
   const listHeader = useMemo(
     () => (
       <View>
+        {featuredTags.length > 0 && (
+          <View style={styles.featuredTags}>
+            {featuredTags.map((tag) => (
+              <TagChip
+                key={tag.slug}
+                tag={tag}
+                isDark={isDark}
+                onPress={openTag}
+              />
+            ))}
+          </View>
+        )}
         {renderSelectionHero()}
         {sectionLabel()}
       </View>
     ),
-    [renderSelectionHero, sectionLabel],
+    [renderSelectionHero, sectionLabel, featuredTags, isDark, openTag, styles],
   );
 
   if (loading && sortedCategories.length === 0) {
@@ -409,6 +535,13 @@ export default function CategoriesScreen({
         onCloseComplete={handleTagsCloseComplete}
       />
 
+      <CantoralOnboarding
+        visible={onboardingVisible}
+        onClose={closeOnboarding}
+        songsData={songsData}
+        tags={tagIndex.tags}
+      />
+
       <SuggestSongModal
         visible={showForm}
         onClose={() => setShowForm(false)}
@@ -426,20 +559,6 @@ const createStyles = (
   contentMaxWidth: number,
 ) => {
   const isDark = scheme === 'dark';
-  const cardShadow =
-    Platform.OS === 'web'
-      ? ({
-          boxShadow: isDark
-            ? '0 1px 3px rgba(0,0,0,0.4)'
-            : '0 1px 3px rgba(0,0,0,0.06)',
-        } as any)
-      : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.25 : 0.04,
-          shadowRadius: 3,
-          elevation: 1,
-        };
   const gridCardShadow =
     Platform.OS === 'web'
       ? ({
@@ -462,6 +581,15 @@ const createStyles = (
     },
     // Botones del header NATIVO (sugerir/buscar). Minimal —solo padding, sin
     // fondo— para que iOS 26 los envuelva en su cápsula liquid-glass.
+    // Atajos a las etiquetas elegidas en el onboarding.
+    featuredTags: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      paddingHorizontal: isWide ? 0 : spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.md,
+    },
     headerActions: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -470,55 +598,6 @@ const createStyles = (
     },
     headerNativeButton: {
       padding: 6,
-    },
-    inlineHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-end',
-      paddingBottom: 16,
-      paddingHorizontal: 4,
-      marginBottom: 8,
-    },
-    headerLeftContainer: {
-      flex: 1,
-      justifyContent: 'flex-end',
-    },
-    headerTitle: {
-      ...typography.h0,
-      fontWeight: '800',
-      letterSpacing: -1.4,
-      lineHeight: 38,
-      color: themeColors(isDark).text,
-    },
-    headerSubtitle: {
-      ...typography.caption,
-      fontWeight: '600',
-      color: isDark ? '#A09A8A' : '#7A6550',
-      marginTop: 2,
-    },
-    headerRightContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      marginBottom: 2,
-    },
-    headerFloatingButton: {
-      width: 36,
-      height: 36,
-      borderRadius: radii.xl,
-      borderWidth: 1,
-      borderColor: isDark
-        ? 'rgba(218, 165, 32, 0.3)'
-        : 'rgba(196, 146, 42, 0.25)',
-      backgroundColor: isDark
-        ? 'rgba(218, 165, 32, 0.08)'
-        : 'rgba(196, 146, 42, 0.06)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    headerButton: {
-      padding: 4,
-      marginHorizontal: Platform.OS === 'web' ? 4 : 0,
     },
     listContent: {
       paddingHorizontal: isWide ? 24 : 16,
@@ -530,79 +609,96 @@ const createStyles = (
           }
         : null),
     },
-    // ── Móvil: fila tradicional ─────────────────────────────────────────
-    card: {
+    // ── Móvil: «Tu selección» suelta + lista agrupada ───────────────────
+    row: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: themeColors(isDark).background,
-      borderRadius: radii.lg,
-      paddingHorizontal: 14,
-      paddingVertical: 11,
-      marginBottom: 8,
-      ...cardShadow,
+      paddingLeft: 14,
     },
-    cardSpecial: {
+    selectionRow: {
+      marginTop: 12,
+      paddingRight: 12,
+      paddingVertical: 12,
+      borderRadius: radii.lg,
       backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
       borderWidth: 1,
-      borderColor: isDark ? '#2A3D66' : '#D4E2FF',
+      borderColor: isDark
+        ? KeyPillColors.borderDark
+        : KeyPillColors.borderLight,
     },
-    cardEmoji: {
-      width: 38,
-      height: 38,
-      borderRadius: 10,
-      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
+    selectionIcon: {
+      backgroundColor: isDark ? colors.primary : KeyPillColors.borderLight,
+    },
+    selectionContent: {
+      flex: 1,
+    },
+    selectionTitle: {
+      color: themeColors(isDark).link,
+      flex: 0,
+    },
+    selectionSubtitle: {
+      ...typography.caption,
+      color: themeColors(isDark).textSecondary,
+      marginTop: 1,
+    },
+    groupLabel: {
+      ...typography.overline,
+      color: themeColors(isDark).textMuted,
+      marginTop: 24,
+      marginBottom: 8,
+      paddingLeft: 14,
+    },
+    groupRow: {},
+    groupFirst: {
+      borderTopLeftRadius: radii.lg,
+      borderTopRightRadius: radii.lg,
+    },
+    groupLast: {
+      borderBottomLeftRadius: radii.lg,
+      borderBottomRightRadius: radii.lg,
+    },
+    rowIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: radii.sm,
+      backgroundColor: themeColors(isDark).backgroundSunken,
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 12,
     },
-    cardEmojiSpecial: {
-      backgroundColor: isDark ? colors.primary : '#D4E2FF',
-    },
     emojiText: {
       fontSize: 20,
     },
-    cardContent: {
+    rowContent: {
       flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: 52,
+      paddingRight: 10,
+      gap: 6,
     },
-    cardTitle: {
+    // El separador empieza DESPUÉS del icono, como en iOS: separa filas, no
+    // corta la columna de iconos.
+    rowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: themeColors(isDark).separator,
+    },
+    rowTitle: {
       ...typography.body,
       fontWeight: '600',
       color: themeColors(isDark).text,
       letterSpacing: -0.2,
+      flex: 1,
     },
-    cardTitleSpecial: {
-      color: themeColors(isDark).link,
-    },
-    cardRight: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    countBadge: {
-      ...typography.footnote,
-      fontWeight: '600',
-      color: isDark ? '#8E8E93' : '#6E6E73',
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
-      paddingHorizontal: 7,
-      paddingVertical: 2,
-      borderRadius: 10,
-      overflow: 'hidden',
+    rowCount: {
+      ...typography.subhead,
+      color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
-    },
-    topColorBar: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: 4,
-      backgroundColor: UIColors.accentYellow,
-      zIndex: 1000,
     },
     // ── iPad: hero + grid ───────────────────────────────────────────────
     sectionLabel: {
-      ...typography.micro,
-      fontWeight: '800',
-      letterSpacing: 1.2,
+      ...typography.overline,
       color: themeColors(isDark).textMuted,
       marginTop: 22,
       marginBottom: 12,
@@ -612,19 +708,21 @@ const createStyles = (
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
-      borderRadius: radii.lg + 6,
+      borderRadius: radii.xl,
       paddingHorizontal: 22,
       paddingVertical: 20,
       marginTop: 18,
       borderWidth: 1,
-      borderColor: isDark ? '#2A3D66' : '#D4E2FF',
+      borderColor: isDark
+        ? KeyPillColors.borderDark
+        : KeyPillColors.borderLight,
       gap: 18,
     },
     heroEmojiWrap: {
       width: 56,
       height: 56,
       borderRadius: radii.lg,
-      backgroundColor: isDark ? colors.primary : '#D4E2FF',
+      backgroundColor: isDark ? colors.primary : KeyPillColors.borderLight,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -635,7 +733,7 @@ const createStyles = (
       flex: 1,
     },
     heroTitle: {
-      fontSize: 22,
+      ...typography.h2,
       fontWeight: '800',
       letterSpacing: -0.4,
       color: themeColors(isDark).link,
@@ -643,7 +741,7 @@ const createStyles = (
     },
     heroSubtitle: {
       ...typography.subhead,
-      color: isDark ? '#9CB7E0' : '#5A6B8A',
+      color: themeColors(isDark).textSecondary,
       lineHeight: 19,
     },
     gridRow: {
@@ -653,7 +751,7 @@ const createStyles = (
     gridCard: {
       flex: 1,
       backgroundColor: themeColors(isDark).background,
-      borderRadius: radii.lg + 4,
+      borderRadius: radii.xl,
       paddingVertical: 22,
       paddingHorizontal: 18,
       minHeight: 140,
@@ -664,7 +762,9 @@ const createStyles = (
       width: 52,
       height: 52,
       borderRadius: radii.lg,
-      backgroundColor: isDark ? Colors.dark.card : '#F7F7FB',
+      backgroundColor: isDark
+        ? Colors.dark.card
+        : themeColors(isDark).backgroundSunken,
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 14,
@@ -673,7 +773,7 @@ const createStyles = (
       fontSize: 28,
     },
     gridCardTitle: {
-      fontSize: 17,
+      ...typography.title,
       fontWeight: '700',
       letterSpacing: -0.3,
       color: themeColors(isDark).text,
@@ -683,7 +783,7 @@ const createStyles = (
     gridCardCount: {
       ...typography.caption,
       fontWeight: '500',
-      color: isDark ? '#8E8E93' : '#8A8A8E',
+      color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
     },
   });

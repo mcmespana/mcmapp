@@ -1,4 +1,4 @@
-# Build de tienda — agosto de 2026
+# Build de tienda 2.1 (prevista para agosto de 2026)
 
 > **Para el día que te sientes a sacarla.** Paso a paso, en orden, sin dar nada
 > por sabido. Lo que hay que configurar UNA vez está en §2; el día de la build
@@ -8,7 +8,25 @@
 >
 > (La rama `claude/compact-tabs-bar-uxxaoz`, que traía todo esto, se mergeó en
 > la [#313](https://github.com/mcmespana/mcmapp/pull/313) el 2026-08-04 y ya no
-> existe. Se compila desde `main`.)
+> existe. Se compila desde `main`. El nombre del fichero dice "agosto" porque
+> era la fecha prevista; se mantiene para no romper los enlaces.)
+
+## 📍 Estado a 2026-10-08
+
+| Paso                                                   | Estado                                                                                                    |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| §0 Desplegar la Cloud Function del calendario          | ⏳ **Sin hacer** (no bloquea)                                                                             |
+| §2.1–2.4 Sentry y Aptabase (cuentas + claves)          | ✅ Hecho (usuario, antes del 2026-10-08)                                                                  |
+| §2.5 Credenciales de la NSE                            | ⏳ Se resuelven en el primer build de iOS (quédate delante)                                               |
+| §2.6 Huellas SHA-1 de Android                          | ⏳ Sin confirmar                                                                                          |
+| §3 Comprobaciones en frío (lint/tsc/test)              | ✅ En verde el 2026-10-08                                                                                 |
+| `disableAntiBrickingMeasures` fuera de `app.json`      | ✅ Quitado el 2026-10-08 (`[skip-ota]`)                                                                   |
+| §5 "Subrayar" en el menú nativo                        | ✅ Probado                                                                                                |
+| §5 iPad horizontal                                     | ➖ No se prueba en físico (decisión del usuario: "confiamos")                                             |
+| §5 Pantallas de la pasada de diseño (`PLAN_DISENO` H9) | ✅ Verificadas en dispositivo — ya no bloquea publicar                                                    |
+| §5 Canales de Android en un Android real               | ⏳ **Sin hacer**                                                                                          |
+| §5 Resto del checklist                                 | ⏳ Pendiente de la build de desarrollo                                                                    |
+| §6 Política de privacidad + fichas de las tiendas      | ⏳ **Bloquea publicar.** Con la clave de Aptabase ya creada hay que declararlo (o no meterla en el build) |
 
 ---
 
@@ -64,6 +82,7 @@ código **nativo**, que vive en el binario y no se puede actualizar así:
 - `@aptabase/react-native` — analítica de uso
 - `modules/highlight-menu` — módulo nativo propio: "Subrayar" en el menú del sistema
 - iPad landscape (`UISupportedInterfaceOrientations~ipad`)
+- `expo-gl` — sin uso todavía: va en el binario para poder hacer 3D luego por OTA
 
 Si esto saliera por OTA, la app **crashearía** en los móviles ya instalados: el
 binario que tienen no lleva esos módulos. Por eso los commits van con
@@ -322,6 +341,26 @@ npm run eas:build:android -- --profile production
 `autoIncrement` sube solo el número de build. La versión visible sigue siendo
 la de `app.json` (`2.1.0`) — cámbiala ahí si quieres que salga otra.
 
+### 4.2-bis Alternativa: lanzarla desde GitHub (o pedírsela a Claude)
+
+Existe `.github/workflows/eas-build.yml` (manual, `workflow_dispatch`): elige
+plataforma y perfil y, con `submit`, la manda sola a TestFlight / Play al
+terminar. El build corre en los servidores de Expo; el job solo lo encola.
+Usa el `EXPO_TOKEN` que ya tienen las OTA.
+
+Antes de que funcione hacen falta, **una sola vez y a mano**:
+
+1. Que el workflow esté en `main` (GitHub solo ofrece "Run workflow" para
+   los que están en la rama por defecto).
+2. Las **credenciales de iOS de los dos targets** guardadas en EAS (§2.5). En
+   modo no interactivo EAS no puede crearlas: `npx eas-cli credentials -p ios`
+   o el primer build desde tu terminal.
+3. Para el envío a TestFlight, una **API key de App Store Connect** guardada en
+   EAS (la crea el primer `eas submit` interactivo).
+
+A partir de ahí, cualquier build sale con un clic, o pidiéndosela a Claude,
+que puede dispararla por la API de Actions.
+
 ### 4.3 Subir a las tiendas
 
 ```bash
@@ -511,16 +550,18 @@ Si prefieres no tocar nada de esto todavía: **no pongas
 `EXPO_PUBLIC_APTABASE_KEY`**. Sin la clave la app no manda ningún evento y no
 hay nada que declarar; se enciende luego por OTA cuando los textos estén.
 
-### Avisar al Panel
+### El Panel ya va por delante (no hay que avisarle)
 
-Esta build cambia el contrato de notificaciones. Cuando esté publicada, el MCM
-Panel tiene que empezar a mandar **`channelId`** (top-level, mismo valor que
-`data.category`, y `default` cuando la categoría sea `general`). Detalle y tabla
-cerrada en `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8.
+Esta build cambia el contrato de notificaciones, pero el MCM Panel **ya manda
+`channelId` desde el 2026-08-03** (top-level, derivado de `data.category`,
+`default` para `general`). Detalle y tabla cerrada en
+`docs/contratos/NOTIFICACIONES_CONTRATO.md` §8.
 
-⚠️ Un `channelId` que la app **no** declare hace que Android **no entregue** la
-notificación. Mientras el Panel no lo mande, todo sigue cayendo en `default`
-como hasta ahora — así que no hay prisa, pero sí cuidado al hacerlo.
+⚠️ Por eso mismo, **hasta que esta build esté instalada, Android no muestra las
+notificaciones con categoría**: un `channelId` que la app no declara no se
+entrega, y la app de `production` solo tiene `default`. Se decidió (2026-09-26)
+no arreglarlo por OTA y que lo arregle esta build — ver `mcm-app/TODO.md`,
+Notificaciones.
 
 ---
 

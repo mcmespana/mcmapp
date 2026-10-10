@@ -33,6 +33,42 @@ interface SongDisplayProps {
    * transparente pero scrollea por debajo de él. Solo aplica con `fullBleed`.
    */
   topInset?: number;
+  /**
+   * Selector CSS de la parte de la hoja que hay que enseñar (se desplaza
+   * hasta ella al cambiar y al cargar). `null` = arriba del todo. Lo usa el
+   * onboarding del cantoral para enseñar el estribillo al elegir su estilo.
+   */
+  scrollTo?: string | null;
+}
+
+/**
+ * Lleva la hoja hasta `selector` (o arriba del todo con `null`). Sin
+ * `selector` (undefined) no hace nada: casi nadie lo pide.
+ */
+function runScroll(
+  selector: string | null | undefined,
+  webView: WebView | null,
+  iframe: HTMLIFrameElement | null,
+) {
+  if (selector === undefined) return;
+  const js = scrollScript(selector);
+  if (iframe) {
+    try {
+      // srcDoc hereda el origen: el documento del iframe es accesible.
+      (iframe.contentWindow as any)?.eval(js);
+    } catch {
+      /* noop */
+    }
+  } else {
+    webView?.injectJavaScript(js);
+  }
+}
+
+/** JS que lleva la hoja hasta `selector` (o arriba del todo). */
+function scrollScript(selector: string | null): string {
+  return `(function(){setTimeout(function(){var e=${JSON.stringify(
+    selector,
+  )};var el=e&&document.querySelector(e);if(el){el.scrollIntoView({block:'start',behavior:'smooth'});}else{window.scrollTo({top:0,behavior:'smooth'});}},150);true;})();`;
 }
 
 const SongDisplay: React.FC<SongDisplayProps> = ({
@@ -42,6 +78,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
   onMessage,
   fullBleed = false,
   topInset = 0,
+  scrollTo,
 }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -115,6 +152,12 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
     webViewRef.current.injectJavaScript(js);
   }, [styleState]);
 
+  // Desplazar la hoja a lo que interesa (solo si alguien lo pide).
+  useEffect(() => {
+    if (!readyRef.current) return;
+    runScroll(scrollTo, webViewRef.current, iframeRef.current);
+  }, [scrollTo]);
+
   // When the HTML reloads (structural change), the bridge is fresh — re-mark
   // not-ready so the next style update re-flushes on load.
   useEffect(() => {
@@ -150,6 +193,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
           srcDoc={songHtml}
           onLoad={() => {
             readyRef.current = true;
+            runScroll(scrollTo, null, iframeRef.current);
             const s = pendingStyleRef.current;
             if (s) {
               try {
@@ -211,6 +255,9 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
         showsVerticalScrollIndicator={false}
         {...(useInset
           ? {
+              // La hoja (utils/songSheetLayout.ts) lo resta al decidir si la
+              // canción cabe entera en pantalla.
+              injectedJavaScriptBeforeContentLoaded: `window.__SONG_VIEW_INSET__=${topInset};true;`,
               automaticallyAdjustContentInsets: false,
               contentInsetAdjustmentBehavior: 'never' as const,
               contentInset: { top: topInset, left: 0, right: 0, bottom: 0 },
@@ -220,6 +267,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
         onMessage={(event) => handleRawMessage(event.nativeEvent.data)}
         onLoadEnd={() => {
           readyRef.current = true;
+          runScroll(scrollTo, webViewRef.current, null);
           const s = pendingStyleRef.current;
           if (s && webViewRef.current) {
             const js = `(function(){try{var s=${JSON.stringify(s)};if(window.__SONG_BRIDGE__){window.__SONG_BRIDGE__.apply(s);}}catch(_){};true;})();`;

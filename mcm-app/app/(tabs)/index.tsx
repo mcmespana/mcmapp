@@ -587,6 +587,57 @@ export default function Home() {
     goToTab('calendario', date ? { date } : undefined);
   };
 
+  // Fila de abajo del aviso: destino interno + botón de acción. Ver la nota
+  // de la tarjeta sobre por qué con acción va fuera de la zona pulsable.
+  const hasNotifAction = !!latestNotification?.actionButton;
+  const notifCtaRow = (
+    <View style={styles.notifCtaRow}>
+      {/* Chip de destino (internalRoute) — solo indicador, la tarjeta lleva a /notifications */}
+      {internalRouteInfo && (
+        <AppChip
+          label={internalRouteInfo.label}
+          color={accentColor}
+          icon={internalRouteInfo.icon}
+        />
+      )}
+
+      {/* Botón de acción explícito: hermano de la zona pulsable, no hijo */}
+      {latestNotification?.actionButton ? (
+        <Pressable
+          onPress={handleActionButton}
+          style={[
+            styles.actionBtn,
+            { backgroundColor: hexAlpha(accentColor, '12') },
+          ]}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.actionBtnText, { color: accentColor }]}>
+            {latestNotification.actionButton.text ?? 'Voy a verlo'}
+          </Text>
+          <MaterialIcons
+            name={
+              latestNotification.actionButton.isInternal
+                ? 'arrow-forward'
+                : 'open-in-new'
+            }
+            size={13}
+            color={accentColor}
+          />
+        </Pressable>
+      ) : !internalRouteLabel ? (
+        /* Flecha genérica solo si no hay ningún indicador */
+        <View
+          style={[
+            styles.arrowPill,
+            { backgroundColor: hexAlpha(accentColor, '10') },
+          ]}
+        >
+          <MaterialIcons name="east" size={14} color={accentColor} />
+        </View>
+      ) : null}
+    </View>
+  );
+
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.background }]}
@@ -929,7 +980,12 @@ export default function Home() {
 
             {/* ── Novedades ── */}
             <View style={styles.section}>
-              <TouchableOpacity
+              {/* El botón de acción del aviso NO puede vivir dentro de la
+                  tarjeta pulsable: en web eso es un <button> dentro de otro
+                  (HTML inválido, y el lector de pantalla lo lee como uno
+                  solo). Con acción, la fila de abajo va FUERA de la zona
+                  pulsable, debajo; sin acción, todo es un solo botón. */}
+              <View
                 style={StyleSheet.flatten([
                   styles.notifCard,
                   {
@@ -940,133 +996,89 @@ export default function Home() {
                         : 'rgba(0,0,0,0.07)',
                   },
                 ])}
-                onPress={() => {
-                  // Abre directamente el detalle de la última notificación
-                  // (vista en grande), no la lista completa.
-                  setNotifSheetInitial(latestNotification);
-                  setNotifSheetOpen(true);
-                }}
-                activeOpacity={0.78}
-                accessibilityLabel={`${notifTitle}. Toca para leer`}
-                accessibilityRole="button"
               >
-                {/* Top row: content + icon */}
-                <View style={styles.notifRow}>
-                  {/* Content */}
-                  <View style={styles.notifContent}>
-                    {isUnread && (
-                      <View
-                        style={[
-                          styles.newBadge,
-                          { backgroundColor: hexAlpha(accentColor, '15') },
-                        ]}
-                      >
-                        <Text
-                          style={[styles.newBadgeText, { color: accentColor }]}
+                <TouchableOpacity
+                  onPress={() => {
+                    // Abre directamente el detalle de la última notificación
+                    // (vista en grande), no la lista completa.
+                    setNotifSheetInitial(latestNotification);
+                    setNotifSheetOpen(true);
+                  }}
+                  activeOpacity={0.78}
+                  accessibilityLabel={`${notifTitle}. Toca para leer`}
+                  accessibilityRole="button"
+                >
+                  {/* Top row: content + icon */}
+                  <View style={styles.notifRow}>
+                    {/* Content */}
+                    <View style={styles.notifContent}>
+                      {isUnread && (
+                        <View
+                          style={[
+                            styles.newBadge,
+                            { backgroundColor: hexAlpha(accentColor, '15') },
+                          ]}
                         >
-                          NUEVO
-                        </Text>
-                      </View>
-                    )}
-                    <Text
-                      style={[
-                        styles.notifTitle,
-                        {
-                          color: theme.text,
-                          fontSize: 16 * fontScale,
-                        },
-                      ]}
-                      numberOfLines={2}
-                    >
-                      {notifTitle}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.notifDescription,
-                        {
-                          color: theme.icon,
-                          fontSize: 13 * fontScale,
-                        },
-                      ]}
-                      numberOfLines={2}
-                    >
-                      {notifBody}
-                    </Text>
-                  </View>
-
-                  {/* Megaphone icon — right */}
-                  <View
-                    style={[
-                      styles.notifIconCircle,
-                      {
-                        backgroundColor:
-                          scheme === 'dark'
-                            ? hexAlpha(accentColor, '20')
-                            : hexAlpha(accentColor, '12'),
-                      },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name="campaign"
-                      size={26}
-                      color={accentColor}
-                    />
-                  </View>
-                </View>
-
-                {/* CTA row: destino interno + botón de acción */}
-                <View style={styles.notifCtaRow}>
-                  {/* Chip de destino (internalRoute) — solo indicador, la tarjeta lleva a /notifications */}
-                  {internalRouteInfo && (
-                    <AppChip
-                      label={internalRouteInfo.label}
-                      color={accentColor}
-                      icon={internalRouteInfo.icon}
-                    />
-                  )}
-
-                  {/* Botón de acción explícito — Pressable evita <button> anidado en web */}
-                  {latestNotification?.actionButton ? (
-                    <Pressable
-                      onPress={handleActionButton}
-                      style={[
-                        styles.actionBtn,
-                        { backgroundColor: hexAlpha(accentColor, '12') },
-                      ]}
-                      accessibilityRole="button"
-                    >
+                          <Text
+                            style={[
+                              styles.newBadgeText,
+                              { color: accentColor },
+                            ]}
+                          >
+                            NUEVO
+                          </Text>
+                        </View>
+                      )}
                       <Text
-                        style={[styles.actionBtnText, { color: accentColor }]}
+                        style={[
+                          styles.notifTitle,
+                          {
+                            color: theme.text,
+                            fontSize: 16 * fontScale,
+                          },
+                        ]}
+                        numberOfLines={2}
                       >
-                        {latestNotification.actionButton.text ?? 'Voy a verlo'}
+                        {notifTitle}
                       </Text>
-                      <MaterialIcons
-                        name={
-                          latestNotification.actionButton.isInternal
-                            ? 'arrow-forward'
-                            : 'open-in-new'
-                        }
-                        size={13}
-                        color={accentColor}
-                      />
-                    </Pressable>
-                  ) : !internalRouteLabel ? (
-                    /* Flecha genérica solo si no hay ningún indicador */
+                      <Text
+                        style={[
+                          styles.notifDescription,
+                          {
+                            color: theme.icon,
+                            fontSize: 13 * fontScale,
+                          },
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {notifBody}
+                      </Text>
+                    </View>
+
+                    {/* Megaphone icon — right */}
                     <View
                       style={[
-                        styles.arrowPill,
-                        { backgroundColor: hexAlpha(accentColor, '10') },
+                        styles.notifIconCircle,
+                        {
+                          backgroundColor:
+                            scheme === 'dark'
+                              ? hexAlpha(accentColor, '20')
+                              : hexAlpha(accentColor, '12'),
+                        },
                       ]}
                     >
                       <MaterialIcons
-                        name="east"
-                        size={14}
+                        name="campaign"
+                        size={26}
                         color={accentColor}
                       />
                     </View>
-                  ) : null}
-                </View>
-              </TouchableOpacity>
+                  </View>
+
+                  {hasNotifAction ? null : notifCtaRow}
+                </TouchableOpacity>
+                {hasNotifAction ? notifCtaRow : null}
+              </View>
             </View>
 
             {/* ── Accesos rápidos ── */}

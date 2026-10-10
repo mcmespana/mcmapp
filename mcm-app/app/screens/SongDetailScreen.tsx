@@ -1,5 +1,4 @@
 import { logger } from '@/utils/logger';
-import { useLabSongLayout } from '@/hooks/useLabSongLayout';
 import { useEffect, useState, useLayoutEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
@@ -22,12 +21,13 @@ import { useSongProcessor } from '@/hooks/useSongProcessor';
 import { useForceCompact } from '@/components/tabs/tabBarController';
 import { trackEvent } from '@/utils/analytics';
 import SongControls from '@/components/SongControls';
+import type { SheetViewOptions } from '@/components/SongFontBottomSheet';
 import { RouteProp, NavigationProp } from 'expo-router/react-navigation';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useSettings } from '@/contexts/SettingsContext';
+import { SONG_FONTS, useSettings } from '@/contexts/SettingsContext';
 import { hasArrangements, insertArrangementAtLine } from '@/utils/arrangements';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
@@ -58,17 +58,7 @@ import SongLinkViewer, {
 // intentional native iOS convention preserved for visual consistency.
 const APPLE_SYSTEM_GREEN = SwipeColors.add;
 
-const availableFonts = [
-  {
-    name: 'Monoespaciada',
-    cssValue: "'Roboto Mono', 'Courier New', monospace",
-  },
-  {
-    name: 'Serif',
-    cssValue: "'Palatino Linotype', 'Book Antiqua', Palatino, serif",
-  },
-  { name: 'Sans-Serif', cssValue: "'Helvetica Neue', 'Arial', sans-serif" },
-];
+const availableFonts = SONG_FONTS.map((f) => ({ ...f }));
 
 type SongDetailScreenRouteProp = RouteProp<RootStackParamList, 'SongDetail'>;
 type SongDetailScreenNavigationProp = NavigationProp<
@@ -141,6 +131,11 @@ export default function SongDetailScreen({
     fontSize: currentFontSizeEm,
     fontFamily: currentFontFamily,
     notation,
+    compactView,
+    verseNumbers,
+    chorusStyle,
+    chorusLabel,
+    airy,
   } = settings;
 
   // Edición de arreglos por long-press (solo admin). El índice apunta a una
@@ -209,18 +204,22 @@ export default function SongDetailScreen({
   const slideAnim = useSharedValue(0);
   const screenWidth = Dimensions.get('window').width;
 
-  // Laboratorio (canal preview): comparar con la maquetación antigua.
-  const { legacyLayout } = useLabSongLayout();
   const {
     songHtml,
     isLoadingSong: isSongProcessing,
     styleState,
     songError,
+    sheetInfo,
   } = useSongProcessor({
     originalChordPro,
     currentTranspose,
     chordsVisible,
     arrangementsVisible: songHasArrangements && arrangementsVisible,
+    compact: compactView,
+    verseNumbers,
+    chorusStyle,
+    chorusLabel,
+    airy,
     currentFontSizeEm,
     currentFontFamily,
     notation,
@@ -229,7 +228,6 @@ export default function SongDetailScreen({
     capo: effectiveCapo,
     isDark,
     adminMode: isAdmin,
-    legacyLayout,
   });
 
   const isSelected = isSongSelected(filename);
@@ -430,6 +428,16 @@ export default function SongDetailScreen({
   const handleToggleChords = () =>
     setSettings({ chordsVisible: !chordsVisible });
   const handleToggleArrangements = () => setArrangementsVisible((v) => !v);
+  const handleToggleCompact = () => setSettings({ compactView: !compactView });
+  const sheetView: SheetViewOptions = {
+    hasChorus: sheetInfo.hasChorus,
+    hasVerseNumbers: sheetInfo.hasVerseNumbers,
+    chorusStyle,
+    chorusLabel,
+    verseNumbers,
+    airy,
+    onChange: (patch) => setSettings(patch),
+  };
   const handleSetTranspose = (semitones: number) => {
     let newTranspose = semitones;
     if (newTranspose >= 12 || newTranspose <= -12)
@@ -639,6 +647,10 @@ export default function SongDetailScreen({
         hasArrangements={songHasArrangements}
         arrangementsVisible={arrangementsVisible}
         onToggleArrangements={handleToggleArrangements}
+        hasRepeats={sheetInfo.hasRepeats}
+        compactView={compactView}
+        onToggleCompact={handleToggleCompact}
+        view={sheetView}
         currentTranspose={currentTranspose}
         currentFontSizeEm={currentFontSizeEm}
         currentFontFamily={currentFontFamily}

@@ -116,7 +116,9 @@ users/{uid}/panuelo/{badgeId}
   tocar una chapa para ver su ficha (evento, fecha). **OTA.**
 - **v1.5 — colocar a mano**: arrastrar una chapa a otro hueco
   (`react-native-gesture-handler`, ya instalado) y guardar el `slot`. **OTA.**
-- **v2 — 3D**: el pañuelo con volumen, que gira. Opciones: `expo-gl` + `three`
+- **v2 — 3D** (2026-10-08: `expo-gl` ya va en el binario de la build 2.1, así
+  que `expo-gl` + `three` dejaría de pedir build en cuanto esa build esté
+  publicada): el pañuelo con volumen, que gira. Opciones: `expo-gl` + `three`
   o `react-native-filament`; las dos son **nativas** (build de tienda) y piden
   un modelo `.glb` del pañuelo hecho por alguien que sepa modelar. Se decide
   después de ver si la v1 engancha; el modelo de datos no cambia.

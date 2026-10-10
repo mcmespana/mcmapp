@@ -18,6 +18,223 @@
 
 ---
 
+## 2026-10-10 14:45 — El admin del cantoral pinta las canciones con el código de la app
+
+- `utils/songDocument.ts`: el documento HTML de una canción, puro (sin React
+  ni React Native), sacado de `useSongProcessor`, que ahora solo guarda el
+  estado. Letras de la canción a `constants/songFonts.ts`.
+- `utils/songDocumentBundle.ts` + `npm run build:sheet-bundle` (esbuild, nueva
+  dependencia de desarrollo): empaqueta la hoja en
+  `mcmapp-cantoral/scripts/admin/static/mcm-sheet.js` para la vista previa del
+  admin (móvil / iPad, al lado del editor Raw). Hay que regenerarlo al
+  cambiar la hoja.
+- Test `songDocumentBundle.test.ts`: el paquete pinta byte a byte lo mismo que
+  la app, con sus mismos valores por defecto, y se puede empaquetar.
+
+---
+
+## 2026-10-10 01:30 — Cantoral: onboarding y estribillo en negrita de serie
+
+- **Onboarding del cantoral** (`components/song-onboarding/CantoralOnboarding.tsx`):
+  la primera vez que se entra en el cantoral, y siempre con el «?» nuevo del
+  header, pregunta si tocas o cantas (y DO RE MI / C D E), vista completa o
+  compacta, estilo del estribillo, letra, números y aire, y qué etiquetas
+  quieres a mano. Cada opción se ve al momento sobre una canción de verdad;
+  se cierra en cualquier paso. Ajustes nuevos: `cantoralOnboarding`
+  (versión vista) y `featuredTags` (atajos de etiqueta arriba del cantoral).
+- **Estribillo raya + negrita de serie** (`chorusStyle: 'negrita'`).
+- `SongDisplay` acepta `scrollTo` (selector CSS) para llevar la hoja a una
+  sección.
+- Las 258 canciones del cantoral, repasadas a mano en `mcmapp-cantoral`
+  (misma rama): ver `PLAN_HOJA_CANCION.md` §9.
+
+---
+
+## 2026-10-09 23:30 — Canción: interlineado con sentido, estribillo a elegir, iPad y modo atril
+
+- **Interlineado que dice algo**: un renglón partido va pegado; otra línea
+  del `.cho`, un poco separada; una línea en blanco, más; dos líneas en
+  blanco o entrar/salir de un estribillo, bastante más. `breakBefore` en
+  `utils/songSheet.ts`, huecos en `utils/songSheetLayout.ts`.
+- **Líneas partidas de un PDF** («El amor»): una línea larga sin punto final
+  seguida de otra en minúscula se une; la estrofa se vuelve a partir por
+  frases con la misma sangría (33 canciones).
+- **Números de estrofa siempre igual**: la que no trae número sigue la cuenta
+  de la anterior.
+- **Cortes**: se gasta un renglón más antes que dejar un «de» o un «la»
+  colgando al final.
+- **«Letra y vista»** (antes «Tipo de letra»): variantes del estribillo
+  (raya, negrita, MAYÚS, clásico, sangrado), etiqueta sí/no, números y «más
+  aire». Ajustes nuevos: `chorusStyle`, `chorusLabel`, `airy`.
+- **iPad**: con columnas los estribillos repetidos se pliegan solos; si en la
+  otra orientación la canción cabría entera, aviso «Gira la pantalla».
+- **Modo atril** en pantalla completa (`pagedFullscreen`, solo nativo):
+  páginas en vez de scroll; se pasa con un toque, deslizando o con un pedal
+  (flechas, AvPág, espacio). Ninguna línea se parte entre páginas.
+
+---
+
+## 2026-10-09 19:55 — Canción: hoja nueva para músicos y cantantes
+
+- **La canción ya no la pinta `HtmlDivFormatter`.** ChordSheetJS sigue
+  parseando y transportando, pero el HTML lo hace `utils/songSheet.ts`: cada
+  línea en **palabras enteras**, en secciones (estrofa, estribillo, puente,
+  intro de acordes). Detalle en `docs/funcionalidades/HOJA_CANCION.md`.
+- **Cortes de línea por frase** (`utils/songSheetLayout.ts`, script dentro del
+  WebView): el menor número de renglones, y dentro de eso tras punto o coma,
+  antes de «y/que», nunca detrás de un artículo. Los acordes **vuelan** sobre
+  la letra: solo se separan si chocarían (y a media palabra los une una raya).
+  Fuera los renglones vacíos de acordes encima de las líneas sin acordes.
+- **El estribillo se separa siempre**, aunque el `{soc}` no lleve línea en
+  blanco delante (le pasaba a «Fieles»). Raya amarilla, fondo suave y
+  etiqueta; ya no se fuerzan mayúsculas ni negrita.
+- **`{chorus}` y las líneas «ESTRIBILLO»** (29 canciones) pintan el
+  estribillo entero donde se canta. **Vista compacta** nueva (menú de la
+  canción, «Plegar estribillos repetidos», solo si alguno se repite): las
+  repeticiones idénticas o casi se pliegan en una línea que se abre al tocarla.
+  Avisa «con cambios» / «otros acordes». Ajuste persistente `compactView`.
+- **Números de estrofa** consistentes: automáticos desde 2 estrofas; los «1.»
+  escritos a mano se quitan de la letra y se respetan. Se quitan en «Tipo de
+  letra → Estrofas» (`verseNumbers`).
+- **«♩ REVISAR ACORDES»** (97 canciones) sale de la letra: aviso «Acordes sin
+  revisar» en la cabecera.
+- **iPad**: si la canción cabe entera en pantalla a 2–3 columnas (achicando la
+  letra hasta un 20 %), se reparte en columnas. Si no, una columna como antes.
+- **Letra del sistema por defecto** (antes monoespaciada, un 30 % más ancha).
+  `migrateSongSettings` la cambia una vez a quien tuviera la monoespaciada o la
+  «Sans-Serif» vieja. La vista previa de la letra sans salía como serif
+  (`getNativeFontFamily` confundía `sans-serif` con `serif`).
+- `{arr:}` sale a la derecha, como decía `ARREGLOS.md` (salía a la izquierda
+  por un fallo del CSS).
+- Borrados: `utils/chordSheetWords.ts` y `injectRowLineIndices` /
+  `renderableRowLineIndices` (el número de línea del modo admin lo pone ahora
+  la hoja con el del parser). El PDF de la playlist sigue con el render viejo.
+- `utils/songSheet.ts`, `utils/songSheetLayout.ts`, `hooks/useSongProcessor.ts`,
+  `contexts/SettingsContext.tsx`, `components/SongControls.tsx`,
+  `components/SongFontBottomSheet.tsx`, `constants/colors.ts`
+  (`SongSheetColors`), tests nuevos en `__tests__/songSheet*.test.ts`. Plan y
+  decisiones pendientes: `docs/planes/PLAN_HOJA_CANCION.md`.
+
+---
+
+## 2026-10-09 10:00 — `expo-native-compact-tabs` 0.2.1 con nuestro parche portado
+
+La 0.2.1 pasa a iOS la escala del asset de React Native (arregla el tamaño de
+los iconos tras una OTA). Nuestro parche se rehace encima
+(`patches/expo-native-compact-tabs+0.2.1.patch`): se conserva la normalización
+a caja de 24 pt como red de seguridad y el relayout de safe area al volver del
+onboarding, que la 0.2.1 no trae. Nativo → `[skip-ota]`.
+
+## 2026-10-09 03:15 — Android y web: el cristal ya no es blanco en modo oscuro
+
+**Bug visible en Android** (y web): `GlassSurface` sin tinte caía siempre a
+blanco al 95 %, también en oscuro. En iOS no se veía porque manda el cristal
+nativo, así que pasó desapercibido. Lo sufrían la cápsula de campana y perfil
+de la Home, el botón de volver de cristal, los botones de un evento y el FAB
+de la canción: pastillas blancas con los iconos claros encima, invisibles.
+Ahora, en oscuro, el respaldo es la superficie elevada (`Colors.dark.card`).
+Test: `__tests__/glassSurfaceDark.test.tsx`.
+
+**Home: un botón dentro de otro.** El botón de acción de un aviso
+(«Descúbrelo TODO») vivía dentro de la tarjeta pulsable. En web es un
+`<button>` dentro de otro (HTML inválido, aviso rojo en desarrollo) y el lector
+de pantalla los leía como uno. Con acción, esa fila va ahora debajo, fuera de
+la zona pulsable; sin acción, la tarjeta sigue siendo un solo botón.
+
+## 2026-10-09 02:45 — Cantoral: la lista de canciones, a juego con la portada
+
+- **La cabecera decía «A. Canciones Entrada 🎉»**: el prefijo de ordenación y
+  el emoji llegaban crudos de Firebase. Ahora se limpia igual que en la
+  portada: «Canciones Entrada».
+- **Lista agrupada siempre**: la de una categoría era un bloque de esquinas
+  rectas; ahora es una tarjeta redondeada como la del modo etiqueta y la de la
+  portada. Filas algo más densas (cabe una canción más por pantalla).
+- **Bug de contraste**: el tono transpuesto usaba el ámbar de claro también en
+  oscuro (`#7A5A00` sobre `#3A2D0A`, ilegible). Y el autor iba en `#8E8E93`
+  sobre blanco (3,3:1); pasa a `textSecondary`.
+- «#01 - Alborada» → «#01 · Alborada». 9 colores y 3 radios a mano, a tokens.
+
+## 2026-10-09 02:15 — Cantoral: la portada pasa a lista agrupada
+
+En móvil, las 16 categorías eran 16 tarjetas sueltas con su sombra cada una.
+Ahora son **una lista agrupada** con separadores finos que empiezan después del
+icono, como agrupa iOS sus ajustes, bajo la etiqueta «Categorías». Cabe más
+en pantalla y se distingue de un vistazo lo tuyo del catálogo.
+
+**«Tu selección»** sigue suelta y destacada, y ahora dice algo: «Vacía · añade
+canciones desde el cantoral» o «3 canciones», en vez de un «0» suelto. Las
+filas llevan `accessibilityLabel` con el número de canciones.
+
+De paso: estilos muertos fuera (un header inline que ya no existía), 29
+valores a mano → 3, y el azul de «Tu selección» pasa a `KeyPillColors`.
+iPad conserva su hero + rejilla.
+
+## 2026-10-09 01:30 — Cantoral: las hojas de tono y de letra, rediseñadas
+
+- **El tono habla en tonos.** Con la tonalidad de la canción, el valor central
+  es el tono resultante («LA», con «Original: DO» debajo) y cada botón enseña
+  a qué tono lleva (SOL# / LA#). Antes solo decía «+9 semitonos» y había que
+  hacer la cuenta de cabeza. Sin tonalidad, cae a semitonos como antes.
+- **Las dos hojas hablan igual** (`components/song-sheet/sheetKit.tsx`): mismos
+  bloques, mismo «restablecer», mismo resaltado de lo cambiado. El tamaño de
+  letra gana lo que solo tenía el tono: **repetir al mantener pulsado**, aviso
+  háptico y meneo al llegar al tope, y `accessibilityLabel` en los botones (no
+  tenían). Los ± del tamaño son una «A» pequeña y otra grande.
+- **Fuera el rojo y el verde** de bajar/subir tono: bajar no es un error.
+- **49 colores a mano → 0**, todo por rol. De paso, un ámbar (`#9D5C00`) que
+  en oscuro se pintaba sobre fondo casi negro.
+- La fuente se elige como `radio` (lectores de pantalla) y la suma de 0,1 en
+  coma flotante ya no deja tamaños como 1,2000000000000002.
+
+Test nuevo: `__tests__/transposeSheet.test.tsx`.
+
+## 2026-10-09 00:30 — Dependencias al día antes de la build 2.1
+
+- **SDK 57 al último parche**: los 32 paquetes que gestiona Expo estaban por
+  detrás (`expo` 57.0.11 → 57.0.27, `expo-updates`, `expo-router`,
+  `expo-notifications`… y `react-native` 0.86.2 → 0.86.3). `npx expo install
+--check` queda limpio. `@react-native/jest-preset` se fija a `0.86.3`: con
+  `^0.86.0` el lock lo dejaba en 0.86.2 y `react-native` 0.86.3 lo exige exacto.
+- **El resto, dentro de su rango**: Firebase 12.19, heroui-native 1.0.10,
+  uniwind 1.12.2, Aptabase 0.5.1, Google Sign-In 16.1.5, react-native-web
+  0.21.4 y herramientas de desarrollo.
+- **Lo que NO se sube, a propósito**:
+  - `expo-native-compact-tabs` se **fija en 0.2.0** (antes `^0.2.0`). La 0.2.1
+    toca el mismo código que nuestro parche (escala de los iconos) y el parche
+    ya no aplica; rehacerlo pide un iPhone delante. Ver `TODO.md`.
+  - Las majors que fija el SDK (react-native 0.87, reanimated 4.7, screens,
+    gesture-handler 3, webview 14, TypeScript 7, jest 30, eslint 10): entran con
+    el SDK 58, no a mano.
+  - Majors propias con cambios incompatibles (Sentry 8, Firebase 13,
+    chordsheetjs 18, Aptabase 0.6): cada una es una tarea con sus pruebas, no
+    un bump antes de una build de tienda.
+
+Verificado: tipos, lint, 1.859 tests, `expo prebuild -p ios` (extensión,
+Sentry e icono alternativo presentes) y `expo export --platform web`.
+
+## 2026-10-08 23:50 — `expo-gl` en el binario, por si acaso
+
+Se instala `expo-gl` (`~57.0.2`) sin usarlo todavía, para que vaya dentro de
+la build 2.1. Es lo que permitiría, más adelante y **por OTA**, hacer 3D de
+verdad con `three`/`expo-three` (pañuelo, medallas) si el visor actual
+(`<model-viewer>` en WebView) se queda corto: sin conexión no carga y no se
+puede integrar con el resto de la pantalla. Nativo → commit con `[skip-ota]`.
+
+## 2026-10-08 23:30 — Contigo: un solo navegador de días
+
+Evangelio, oración y revisión tenían cada uno su navegador ‹ fecha › y no se
+parecían. Ahora comparten `components/contigo/DateNavigator.tsx`:
+
+- **Misma fecha** («Jueves, 8 de octubre»), mismos botones y misma háptica.
+- **«Volver a hoy» en los tres** (antes solo en el evangelio). En la revisión,
+  que lleva el navegador en la barra nativa, se toca la fecha.
+- **El tope de «siguiente»** lo decide cada pantalla (`maxDate`): el evangelio
+  deja mirar días futuros; oración y revisión se paran en hoy, como antes.
+- El evangelio pasa de franja a sangre a tarjeta, igual que la oración.
+
+Fuera tres `formatDateDisplay`/`addDays` duplicados y los estilos muertos.
+Topes del trinquete de números mágicos bajados a lo que hay.
+
 ## 2026-10-04 11:30 — Contigo y lista de canciones: pulido
 
 - **Navegador de días único** (`components/contigo/DayNavigator.tsx`) en

@@ -9,6 +9,11 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { ChorusStyle } from '@/utils/songSheetLayout';
+import {
+  DEFAULT_FONT_FAMILY,
+  DEFAULT_FONT_SIZE_EM,
+} from '@/constants/songFonts';
 
 // Define the shape of the settings
 export interface SongSettings {
@@ -16,6 +21,41 @@ export interface SongSettings {
   fontSize: number; // Using number for em value
   fontFamily: string;
   notation: 'EN' | 'ES';
+  /**
+   * Vista compacta: los estribillos que se repiten se pliegan en una línea
+   * («Estribillo ×2»). Pensada para quien canta: con los acordes ocultos, la
+   * canción entera cabe en muy poca pantalla.
+   */
+  compactView: boolean;
+  /** Números de estrofa (1, 2, 3…) a la izquierda de cada una. */
+  verseNumbers: boolean;
+  /** Cómo se marca el estribillo (raya, negrita, mayúsculas…). */
+  chorusStyle: ChorusStyle;
+  /** Etiqueta «ESTRIBILLO» encima de cada estribillo. */
+  chorusLabel: boolean;
+  /** Más hueco entre líneas y entre bloques. */
+  airy: boolean;
+  /**
+   * Modo atril: la pantalla completa en páginas (toque en el borde o pedal)
+   * en vez de scroll.
+   */
+  pagedFullscreen: boolean;
+  /**
+   * Versión del onboarding del cantoral que ya se ha visto (0 = nunca). Si
+   * es menor que `CANTORAL_ONBOARDING_VERSION`, se abre solo una vez al
+   * entrar en el cantoral.
+   */
+  cantoralOnboarding: number;
+  /**
+   * Etiquetas «a mano»: salen como atajos arriba del cantoral. Slugs
+   * normalizados (`slugifyTag`).
+   */
+  featuredTags: string[];
+  /**
+   * Versión de la migración de la letra por defecto. Ver
+   * `migrateSongSettings`.
+   */
+  fontVersion?: number;
 }
 
 // Define the shape of the context value
@@ -32,15 +72,65 @@ interface SettingsContextType {
   setIsAdmin: (value: boolean) => void;
 }
 
-export const DEFAULT_FONT_SIZE_EM = 1.25; // baseline font size (ligeramente mayor para mejor legibilidad)
+// Letras y tamaño por defecto: en `constants/songFonts.ts` (sin React) para
+// que también los use la vista previa del admin del cantoral.
+export {
+  DEFAULT_FONT_FAMILY,
+  DEFAULT_FONT_SIZE_EM,
+  SONG_FONTS,
+} from '@/constants/songFonts';
+
+/** Valores viejos de la letra, para la migración. */
+const OLD_DEFAULT_MONO = "'Roboto Mono', 'Courier New', monospace";
+const OLD_SANS = "'Helvetica Neue', 'Arial', sans-serif";
+const FONT_VERSION = 2;
 
 // Default settings
 const defaultSettings: SongSettings = {
   chordsVisible: true,
   fontSize: DEFAULT_FONT_SIZE_EM,
-  fontFamily: "'Roboto Mono', 'Courier New', monospace", // Default font
+  fontFamily: DEFAULT_FONT_FAMILY,
   notation: 'ES',
+  compactView: false,
+  verseNumbers: true,
+  chorusStyle: 'negrita',
+  chorusLabel: true,
+  airy: false,
+  pagedFullscreen: false,
+  cantoralOnboarding: 0,
+  featuredTags: [],
+  fontVersion: FONT_VERSION,
 };
+
+/**
+ * Ajustes guardados → ajustes de ahora.
+ *
+ * - Faltan claves (JSON de una versión anterior) → las del default.
+ * - `fontSize` 0 o ausente → el default.
+ * - Letra (una vez, `fontVersion` < 2): la monoespaciada era la de por
+ *   defecto y se guardaba aunque nadie la eligiera, así que quien la tenga
+ *   pasa a la del sistema; quien quiera la monoespaciada la vuelve a elegir y
+ *   ya no se toca. La «Sans-Serif» vieja (Helvetica) es la del sistema.
+ */
+export function migrateSongSettings(
+  stored: Partial<SongSettings> | null | undefined,
+): SongSettings {
+  const merged: SongSettings = {
+    ...defaultSettings,
+    ...(stored ?? {}),
+    fontSize: stored?.fontSize || defaultSettings.fontSize,
+  };
+  if ((stored?.fontVersion ?? 0) < FONT_VERSION) {
+    if (
+      merged.fontFamily === OLD_DEFAULT_MONO ||
+      merged.fontFamily === OLD_SANS
+    ) {
+      merged.fontFamily = DEFAULT_FONT_FAMILY;
+    }
+  }
+  merged.fontVersion = FONT_VERSION;
+  return merged;
+}
 
 // Storage key
 const SETTINGS_STORAGE_KEY = '@mcm_song_settings';
@@ -72,13 +162,8 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
       try {
         const storedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
         if (storedSettings) {
-          const parsedSettings = JSON.parse(storedSettings);
-          // Merge with defaults to ensure all keys are present if some were missing
-          setAppSettings((prev) => ({
-            ...defaultSettings,
-            ...parsedSettings,
-            fontSize: parsedSettings.fontSize || defaultSettings.fontSize,
-          }));
+          // Fusiona con los defaults (claves nuevas) y migra la letra vieja.
+          setAppSettings(migrateSongSettings(JSON.parse(storedSettings)));
         } else {
           setAppSettings(defaultSettings);
         }

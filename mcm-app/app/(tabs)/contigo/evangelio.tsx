@@ -24,11 +24,11 @@ import useSectionFontScale from '@/hooks/useSectionFontScale';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import { useDailyReadings } from '@/hooks/useDailyReadings';
 import { getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
-import DayNavigator from '@/components/contigo/DayNavigator';
 import { ReadingCard } from '@/components/contigo/ReadingCard';
 import { HighlightableReading } from '@/components/contigo/HighlightableReading';
 import { HighlightActionBar } from '@/components/contigo/HighlightActionBar';
 import { ReadingCalendarSheet } from '@/components/contigo/ReadingCalendarSheet';
+import { DateNavigator } from '@/components/contigo/DateNavigator';
 import { CreditsSheet } from '@/components/contigo/CreditsSheet';
 import ReaderSettingsSheet from '@/components/contigo/ReaderSettingsSheet';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -78,17 +78,6 @@ const EVANGELIO_VIEWS = [
     icon: 'lightbulb-outline' as const,
   },
 ];
-
-/** Navigate by exactly 1 day — uses local date math to avoid timezone bugs */
-function addDays(dateStr: string, offset: number): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  date.setDate(date.getDate() + offset);
-  const ny = date.getFullYear();
-  const nm = String(date.getMonth() + 1).padStart(2, '0');
-  const nd = String(date.getDate()).padStart(2, '0');
-  return `${ny}-${nm}-${nd}`;
-}
 
 export default function EvangelioScreen() {
   useSuppressCarismochito();
@@ -213,16 +202,9 @@ export default function EvangelioScreen() {
 
   const liturgicalInfo = getLiturgicalInfo(selectedDate);
 
-  const changeDate = (offset: number) => {
+  const changeDate = (date: string) => {
     exitHighlightMode();
-    setSelectedDate(addDays(selectedDate, offset));
-  };
-
-  const goToToday = () => {
-    if (Platform.OS !== 'web')
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    exitHighlightMode();
-    setSelectedDate(todayStr);
+    setSelectedDate(date);
   };
 
   const handleToggleDone = async () => {
@@ -351,97 +333,79 @@ export default function EvangelioScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={wideWrapperStyle}>
-          {/* ── Date Navigator with liturgical color backdrop ── */}
-          <View
-            style={[
-              styles.dateNav,
-              {
-                backgroundColor: isDark
-                  ? hexAlpha(liturgicalAccent, '10')
-                  : hexAlpha(liturgicalAccent, '08'),
-                borderBottomColor: isDark
-                  ? 'rgba(255,255,255,0.04)'
-                  : 'rgba(0,0,0,0.04)',
-              },
-            ]}
+          {/* ── Navegador de días (común a las tres pantallas de Contigo) ── */}
+          <DateNavigator
+            date={selectedDate}
+            todayStr={todayStr}
+            onChange={changeDate}
+            tint={liturgicalAccent}
           >
-            <DayNavigator
-              date={selectedDate}
-              todayStr={todayStr}
-              isDark={isDark}
-              onStep={changeDate}
-              onToday={goToToday}
-              onPressDate={openCalendar}
+            {/* Done / Pendiente chip */}
+            <View
+              style={[
+                styles.statusChip,
+                isDone
+                  ? {
+                      backgroundColor: isDark
+                        ? 'rgba(163,189,49,0.14)'
+                        : 'rgba(58,125,68,0.10)',
+                    }
+                  : {
+                      backgroundColor: isDark
+                        ? 'rgba(255,255,255,0.06)'
+                        : 'rgba(0,0,0,0.05)',
+                    },
+              ]}
             >
-              {/* Done / Pendiente chip */}
-              <View
-                style={[
-                  styles.statusChip,
-                  isDone
-                    ? {
-                        backgroundColor: isDark
-                          ? 'rgba(163,189,49,0.14)'
-                          : 'rgba(58,125,68,0.10)',
-                      }
-                    : {
-                        backgroundColor: isDark
-                          ? 'rgba(255,255,255,0.06)'
-                          : 'rgba(0,0,0,0.05)',
-                      },
-                ]}
-              >
-                {isDone ? (
-                  <>
-                    <Text
-                      style={{
-                        fontSize: 10,
-                        color: isDark ? colors.green : WARM_LIGHT.green,
-                      }}
-                    >
-                      ✓
-                    </Text>
-                    <Text
-                      style={[
-                        styles.statusChipText,
-                        { color: isDark ? colors.green : WARM_LIGHT.green },
-                      ]}
-                    >
-                      Leído
-                    </Text>
-                  </>
-                ) : (
+              {isDone ? (
+                <>
                   <Text
-                    style={[styles.statusChipText, { color: warm.warmGray }]}
+                    style={{
+                      fontSize: 10,
+                      color: isDark ? colors.green : WARM_LIGHT.green,
+                    }}
                   >
-                    Pendiente
+                    ✓
                   </Text>
-                )}
-              </View>
-
-              {/* Liturgical day name / celebration */}
-              {readings?.info?.diaLiturgico ? (
-                <Text
-                  style={[styles.diaLiturgico, { color: liturgicalAccent }]}
-                  numberOfLines={2}
-                >
-                  {readings.info.diaLiturgico}
+                  <Text
+                    style={[
+                      styles.statusChipText,
+                      { color: isDark ? colors.green : WARM_LIGHT.green },
+                    ]}
+                  >
+                    Leído
+                  </Text>
+                </>
+              ) : (
+                <Text style={[styles.statusChipText, { color: warm.warmGray }]}>
+                  Pendiente
                 </Text>
-              ) : null}
+              )}
+            </View>
 
-              {/* Motivational title */}
-              {readings?.info?.titulo ? (
-                <Text
-                  style={[
-                    styles.tituloLiturgico,
-                    { color: isDark ? warm.warmGray : '#8B7E6E' },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {readings.info.titulo}
-                </Text>
-              ) : null}
-            </DayNavigator>
-          </View>
+            {/* Liturgical day name / celebration */}
+            {readings?.info?.diaLiturgico ? (
+              <Text
+                style={[styles.diaLiturgico, { color: liturgicalAccent }]}
+                numberOfLines={2}
+              >
+                {readings.info.diaLiturgico}
+              </Text>
+            ) : null}
+
+            {/* Motivational title */}
+            {readings?.info?.titulo ? (
+              <Text
+                style={[
+                  styles.tituloLiturgico,
+                  { color: isDark ? warm.warmGray : '#8B7E6E' },
+                ]}
+                numberOfLines={2}
+              >
+                {readings.info.titulo}
+              </Text>
+            ) : null}
+          </DateNavigator>
 
           {/* ── Content ── */}
           {isLoading ? (

@@ -20,13 +20,12 @@ import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
 import { getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
-import DayNavigator from '@/components/contigo/DayNavigator';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
+import { DateNavigator } from '@/components/contigo/DateNavigator';
 import { styles } from '@/components/contigo/oracionStyles';
 import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
 import { radii } from '@/constants/uiStyles';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
-import { offsetISODate } from '@/utils/localDate';
 
 // ── Screen geometry ──
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -144,7 +143,6 @@ const MONTHS_CAP = [
 const WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
 // ── Helpers ──
-
 /** Returns calendar cells for the month of selectedDate.
  *  null = empty offset slot, number = day of month */
 function buildCalendar(selectedDate: string): {
@@ -247,13 +245,6 @@ export default function OracionScreen() {
 
   const handleDecrease = () => setDuration((p) => Math.max(1, (p || 15) - 1));
   const handleIncrease = () => setDuration((p) => Math.min(120, (p || 15) + 1));
-
-  // No se puede apuntar oración en el futuro (`DayNavigator allowFuture`).
-  const changeDate = (offset: number) => {
-    const next = offsetISODate(selectedDate, offset);
-    if (next > todayStr) return;
-    setSelectedDate(next);
-  };
 
   // El calendario «Tu mes» navega por meses sin mover el día elegido. Sigue al
   // día elegido cuando este cambia de mes (con las flechas de arriba).
@@ -390,29 +381,16 @@ export default function OracionScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Date navigation ── */}
-        <View
-          style={[
-            styles.dateNavCard,
-            {
-              backgroundColor: isDark
-                ? hexAlpha(liturgicalAccent, '12')
-                : hexAlpha(liturgicalAccent, '09'),
-              borderColor: isDark
-                ? 'rgba(255,255,255,0.05)'
-                : 'rgba(0,0,0,0.05)',
-            },
-          ]}
-        >
-          <DayNavigator
-            date={selectedDate}
-            todayStr={todayStr}
-            isDark={isDark}
-            onStep={changeDate}
-            onToday={() => setSelectedDate(todayStr)}
-            allowFuture={false}
-          />
-        </View>
+        {/* ── Navegador de días (común a las tres pantallas de Contigo) ── */}
+        {/* No se apunta oración en el futuro: «siguiente» se para en hoy. */}
+        <DateNavigator
+          date={selectedDate}
+          todayStr={todayStr}
+          onChange={setSelectedDate}
+          maxDate={todayStr}
+          tint={liturgicalAccent}
+          style={styles.dateNav}
+        />
 
         {/* ── Completed banner ── */}
         {record?.prayerDone && (

@@ -57,22 +57,6 @@ export const styles = StyleSheet.create({
     gap: 4,
     maxWidth: '70%',
   },
-  dateStepperBtn: {
-    width: 28,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  navTitleText: {
-    ...typography.body,
-    fontWeight: '700',
-    maxWidth: 200,
-  },
   dateCenter: {
     alignItems: 'center',
     paddingHorizontal: 6,

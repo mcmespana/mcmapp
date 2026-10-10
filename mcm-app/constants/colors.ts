@@ -69,6 +69,15 @@ export const Colors = {
     backgroundSunken: '#F2F2F7',
     /** Hairline entre filas. Más sutil que `border`, que es para cajas. */
     separator: '#E5E5EA',
+
+    /**
+     * Botones y título de las cabeceras NATIVAS transparentes (glass en iOS,
+     * barra del sistema en web): `headerTintColor` y los iconos de los bar
+     * items. Casi negro en claro, blanco en oscuro. No es `text` (`#11181C`):
+     * se escribió a mano en ~8 sitios con este valor y se le da nombre tal
+     * cual, sin cambiar un píxel (PLAN_DISENO §A6-quater).
+     */
+    headerTint: '#1a1a1a',
   },
   dark: {
     text: '#FFFFFF',
@@ -86,6 +95,7 @@ export const Colors = {
     link: '#7AB3FF',
     backgroundSunken: '#1C1C1E',
     separator: '#3A3A3C',
+    headerTint: '#FFFFFF',
   },
 };
 
@@ -175,6 +185,41 @@ export const UIColors = {
   modalOverlay: 'rgba(0, 0, 0, 0.5)',
 } as const;
 
+/**
+ * Hoja de una canción (el HTML del WebView del cantoral, ver
+ * `utils/songSheetLayout.ts`). Vive en un documento aparte, así que no puede
+ * leer `themeColors`: va su propio par claro/oscuro, con los mismos valores
+ * que ya pintaba `useSongProcessor`.
+ *
+ * - `chorusBar`/`chorusBg`: la raya y el fondo del estribillo. El amarillo es
+ *   el del cantoral (`UIColors.accentYellow`); el fondo apenas se nota a
+ *   propósito: separa sin gritar.
+ * - `label`: las etiquetas de sección («ESTRIBILLO», «INTRO») y el número de
+ *   estrofa. Más tenue que la letra, más firme que un comentario.
+ */
+export const SongSheetColors = {
+  light: {
+    text: '#212529',
+    title: '#1C1C1E',
+    chord: UIColors.chordBlue,
+    muted: UIColors.chordSecondaryText,
+    label: '#5B6270',
+    chorusBar: UIColors.accentYellow,
+    chorusBg: 'rgba(244, 193, 30, 0.07)',
+    filler: 'rgba(33, 37, 41, 0.25)',
+  },
+  dark: {
+    text: '#E5E5EA',
+    title: '#F5F5F7',
+    chord: '#64B5F6',
+    muted: '#98989D',
+    label: '#AEAEB2',
+    chorusBar: UIColors.accentYellow,
+    chorusBg: 'rgba(244, 193, 30, 0.08)',
+    filler: 'rgba(229, 229, 234, 0.28)',
+  },
+} as const;
+
 // Colores de tabs (cabecera)
 export const TabHeaderColors = {
   cancionero: '#f4c11e', // Amarillo Cantoral
@@ -221,6 +266,12 @@ export const SwipeColors = {
 export const KeyPillColors = {
   bgLight: '#EEF4FF',
   bgDark: '#1A2744',
+  /**
+   * Borde y relleno del icono de «Tu selección» en el cantoral, la misma
+   * familia azul que el fondo. Estaban a mano en sus cuatro usos.
+   */
+  borderLight: '#D4E2FF',
+  borderDark: '#2A3D66',
 } as const;
 
 // Colores de emociones — usado en Contigo (oración) y disponible para futuros trackers.

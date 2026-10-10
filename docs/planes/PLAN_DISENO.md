@@ -129,13 +129,16 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       la peer dependency `@gorhom/bottom-sheet` de heroui no estaba instalada
       (Notificaciones y Reflexiones petaban al montar, en cualquier
       plataforma) y una canción sin `filename` tumbaba su categoría entera.
-      **Queda pendiente el repaso en un iPhone/Android físico** para lo que la
-      web no puede dar: el glass de iOS 26, la barra nativa de pestañas y las
-      cabeceras nativas.
-- [ ] **A6-quater. El tinte de las cabeceras nativas.** `isDark ? '#FFFFFF' :
-'#1a1a1a'` a mano en ~8 sitios (cantoral, fotos, calendario, botones de
-      volver). No es byte-idéntico a ningún rol. O se le da uno propio o se
-      alinea con `textStrong` — pero son cabeceras nativas.
+      **Repaso en dispositivo físico: ✅ hecho por el usuario (2026-10-08)** —
+      las pantallas de la pasada de diseño están bien.
+- [x] **A6-quater. El tinte de las cabeceras nativas — hecho el 2026-10-08.**
+      Nace el rol `headerTint` (`#1a1a1a` / `#FFFFFF`) con los MISMOS valores
+      que estaban escritos a mano, así que no cambia un píxel y no hacía falta
+      dispositivo. Aplicado en Fotos, Calendario, cabeceras de evento (iOS),
+      lista de canciones y playlist. **Lo que NO se migró, a propósito:** los
+      `'#1a1a1a'` fijos de Android/web en el cantoral y en `getTextColor` de
+      eventos. No dependen del modo: son la tinta sobre la barra de COLOR del
+      tab (amarillo del cantoral), y eso es `onColor(fondo)`, no este rol.
 
 ### Trabajo de abrir el fichero y decidir (sin regla general que aplicar)
 
@@ -148,7 +151,8 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       decisión de diseño, no un cálculo. Mirar caso a caso si lo que se quiere
       es oscurecer el acento (`readableOn`) o de verdad cambiarlo.
 
-- [ ] **A5.5. Los 865 hex que quedan.** Aquí se acabó lo mecánico: son hex cuyo
+- [ ] **A5.5. Los hex que quedan** (2026-10-09: `TransposeBottomSheet` y
+      `SongFontBottomSheet` a cero, rediseñadas sobre `song-sheet/sheetKit`). Aquí se acabó lo mecánico: son hex cuyo
       VALOR coincide con un token pero cuyo PAPEL no (el mismo `#1C1C1E` es un
       gris de superficie en un sitio y "texto casi negro" en otro). Cambiarlo
       por un token mal nombrado es peor que dejarlo. Los que más tienen:
@@ -191,7 +195,10 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       color de la categoría a pelo y **cinco de seis no se leían en oscuro**
       (el morado, a 1,91:1). Nace `readableOn()`, la versión automática de lo
       que se hizo a mano con `accentText` en §A3.
-- [ ] **H6. Densidad de la lista de canciones.** Es la pantalla más usada y de
+- [x] **H6. Densidad de la lista de canciones — hecho el 2026-10-09.** Fila
+      de 14 a 12 de padding vertical, lista agrupada redondeada como la
+      portada, autor a `textSecondary` (estaba bajo el mínimo de contraste) y
+      el tono transpuesto legible en oscuro. Lo que decía esta línea: Es la pantalla más usada y de
       las menos tokenizadas. Al migrarla (A5.5), revisar de paso altura de fila
       y jerarquía título/subtítulo/pill de tono.
 
@@ -199,8 +206,7 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 
 ## Orden sugerido si hay un hueco
 
-1. **A6-quater** — el único que sigue necesitando dispositivo (cabeceras
-   nativas). H9 se verificó en web el 2026-09-09; H10/H12 y A3 están hechos.
+1. ~~A6-quater~~ hecho (2026-10-08). H9 verificado en dispositivo.
 2. **C6**, **A5.5**, **E5** — revisión fichero a fichero.
 3. **H1-ter**, **H5**, **H6** — mejoras.
 

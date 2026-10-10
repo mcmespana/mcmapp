@@ -5,7 +5,6 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
-import { useLabSongLayout } from '@/hooks/useLabSongLayout';
 import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -268,8 +267,22 @@ export default function SongFullscreenScreen({
     trackEvent('modo_presentacion');
   }, []);
 
-  const { settings } = useSettings();
-  const { chordsVisible, fontSize, fontFamily, notation } = settings;
+  const { settings, setSettings } = useSettings();
+  const {
+    chordsVisible,
+    fontSize,
+    fontFamily,
+    notation,
+    compactView,
+    verseNumbers,
+    chorusStyle,
+    chorusLabel,
+    airy,
+    pagedFullscreen,
+  } = settings;
+  // Modo atril: páginas en vez de scroll. En web no: allí la pantalla
+  // completa mete el HTML con innerHTML y el script de páginas no corre.
+  const paged = pagedFullscreen && !isWeb;
 
   // En presentación mostramos los arreglos siempre que la canción los tenga.
   const songHasArrangements = useMemo(
@@ -277,13 +290,17 @@ export default function SongFullscreenScreen({
     [content],
   );
 
-  // Laboratorio (canal preview): comparar con la maquetación antigua.
-  const { legacyLayout } = useLabSongLayout();
   const { songHtml, styleState } = useSongProcessor({
     originalChordPro: content || null,
     currentTranspose: 0,
     chordsVisible,
     arrangementsVisible: songHasArrangements,
+    compact: compactView,
+    verseNumbers,
+    chorusStyle,
+    chorusLabel,
+    airy,
+    paged,
     currentFontSizeEm: fontSize * 1.6,
     currentFontFamily: fontFamily,
     title,
@@ -295,7 +312,6 @@ export default function SongFullscreenScreen({
     isDark,
     topInset: Math.max(insets.top, 16) + 56,
     bottomInset: Math.max(insets.bottom, 16) + 96,
-    legacyLayout,
   });
 
   const webViewRef = useRef<WebView | null>(null);
@@ -333,6 +349,16 @@ export default function SongFullscreenScreen({
     webViewRef,
     webContainerRef,
   });
+
+  // Al pasar a páginas, el scroll automático no pinta nada.
+  const { pause: pauseAutoScroll } = autoScroll;
+  useEffect(() => {
+    if (paged) pauseAutoScroll();
+  }, [paged, pauseAutoScroll]);
+  const togglePaged = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    setSettings({ pagedFullscreen: !pagedFullscreen });
+  };
 
   // Atajos de teclado: espacio = play/pause, ↑/↓ = subir/bajar velocidad.
   useKeyboardShortcut(' ', () => autoScroll.toggle());
@@ -397,15 +423,44 @@ export default function SongFullscreenScreen({
         <MaterialIcons name="close" color="#FFFFFF" size={22} />
       </PressableFeedback>
 
-      {/* Controles de auto-scroll — esquina inferior derecha */}
-      <AutoScrollControls
-        isPlaying={autoScroll.isPlaying}
-        speedIndex={autoScroll.speedIndex}
-        onToggle={autoScroll.toggle}
-        onSelectSpeed={autoScroll.setSpeedIndex}
-        isDark={isDark}
-        bottom={controlsBottom}
-      />
+      {/* Modo atril (páginas) — encima del play, solo en el móvil/iPad. */}
+      {!isWeb && (
+        <PressableFeedback
+          style={[
+            styles.pagedButton,
+            { bottom: controlsBottom + (paged ? 0 : 56 + 12) },
+          ]}
+          onPress={togglePaged}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: paged }}
+          accessibilityLabel={
+            paged
+              ? 'Volver al scroll'
+              : 'Modo atril: pasar página con un toque o un pedal'
+          }
+        >
+          <PressableFeedback.Scale />
+          <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
+          <MaterialIcons
+            name={paged ? 'swap-vert' : 'auto-stories'}
+            color="#FFFFFF"
+            size={22}
+          />
+        </PressableFeedback>
+      )}
+
+      {/* Controles de auto-scroll — esquina inferior derecha. En páginas no
+          hay scroll que automatizar. */}
+      {!paged && (
+        <AutoScrollControls
+          isPlaying={autoScroll.isPlaying}
+          speedIndex={autoScroll.speedIndex}
+          onToggle={autoScroll.toggle}
+          onSelectSpeed={autoScroll.setSpeedIndex}
+          isDark={isDark}
+          bottom={controlsBottom}
+        />
+      )}
     </Animated.View>
   );
 }
@@ -447,6 +502,20 @@ const styles = StyleSheet.create({
         elevation: 5,
       },
     }),
+  },
+  /* Modo atril — mismo aspecto que el botón de cerrar */
+  pagedButton: {
+    position: 'absolute',
+    right: 24,
+    width: 40,
+    height: 40,
+    borderRadius: radii.xl,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    zIndex: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.22)',
   },
   /* Cluster inferior derecha */
   controlsCluster: {

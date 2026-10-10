@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> Última actualización: 2026-10-10 (hoja de canción: onboarding y canciones repasadas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
 > de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
@@ -34,16 +34,16 @@
 > paso a paso completo en `docs/desarrollo/BUILD_AGOSTO_2026.md`. La Cola
 > Principal (§1) se reanuda cuando la build esté publicada.
 
-|                              |                                                                                                                                                                                                                                                                                |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Ahora mismo**              | **Build de tienda 2.1 — agosto de 2026.** Falta: crear las cuentas de Sentry y Aptabase y meter las claves (§2 del doc de build), validar en dispositivo (§5), publicar (§6)                                                                                                   |
-| **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`)                                                                                                                                                      |
-| **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                                                                                                               |
-| **⚠️ Roto y sin dueño**      | 🚨 **Android no muestra las notificaciones con categoría** desde el 2026-08-03: el Panel manda `channelId` y la app de `production` no tiene esos canales. **Decidido (2026-09-26): no se toca `production`, se arregla con la build 2.1** (`mcm-app/TODO.md`, Notificaciones) |
-| **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                                                                                         |
-| **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                                                                                     |
-| **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio) · Panel Pañuelo (§1 notas)                                                                                                                                                                                                   |
-| **Cerrado**                  | Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                                                                                                               |
+|                              |                                                                                                                                                                                                                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Ahora mismo**              | **Build de tienda 2.1.** Sentry y Aptabase ✅, diseño verificado en dispositivo ✅, subrayado ✅ (2026-10-08). Falta: compilar y pasar el resto del §5 (canales en Android real), fichas de privacidad, publicar (§6). Estado al día en la tabla de arriba de `BUILD_AGOSTO_2026.md` |
+| **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`)                                                                                                                                                            |
+| **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                                                                                                                     |
+| **⚠️ Roto y sin dueño**      | 🚨 **Android no muestra las notificaciones con categoría** desde el 2026-08-03: el Panel manda `channelId` y la app de `production` no tiene esos canales. **Decidido (2026-09-26): no se toca `production`, se arregla con la build 2.1** (`mcm-app/TODO.md`, Notificaciones)       |
+| **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                                                                                               |
+| **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                                                                                           |
+| **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio) · Panel Pañuelo (§1 notas)                                                                                                                                                                                                         |
+| **Cerrado**                  | Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                                                                                                                     |
 
 > **Ojo con el orden al publicar**: `production` dispara la OTA sola. No se
 > mueve hasta que las tiendas tengan el binario nuevo, o la gente recibe un
@@ -290,8 +290,9 @@ y marca-en-primer-plano) cuyos topes solo pueden bajar.
 
 **Lo que queda, y lo que NO:**
 
-- 🔴 **Bloquea publicar**: verificar en dispositivo las cinco pantallas que
-  cambiaron de aspecto (`PLAN_DISENO` §H9). Nada más lo bloquea.
+- ✅ ~~Bloquea publicar: verificar en dispositivo las cinco pantallas que
+  cambiaron de aspecto (`PLAN_DISENO` §H9)~~ — verificadas por el usuario
+  (2026-10-08). Ya no bloquea nada.
 - Otros dos ítems necesitan dispositivo: los tres dorados de Contigo (§A3) y si
   `textStrong` sobra (§H10/H12).
 - El resto es abrir el fichero y decidir caso a caso: 865 hex, 276 `fontSize`,
@@ -299,6 +300,31 @@ y marca-en-primer-plano) cuyos topes solo pueden bajar.
 - ❌ **NO se tocan, decidido**: las anchuras máximas y el layout de iPad
   (decisión del usuario) y las capas de superficie en oscuro (el contraste lo
   desaconseja). No los propongas.
+
+### H. Hoja de canción — músicos y cantantes
+
+**Documento: [`PLAN_HOJA_CANCION.md`](PLAN_HOJA_CANCION.md).** Pedido por el
+usuario el 2026-10-09 («la mejor experiencia para músicos y cantantes»).
+
+- ✅ **Fase 1** en la rama `claude/mcm-chord-display-ux-aagafj` (`mcmapp` y
+  `mcmapp-cantoral`), sin PR: hoja propia (palabras, secciones, cortes por
+  frase, acordes que vuelan), vista compacta, numeración, columnas en iPad,
+  letra del sistema por defecto, `scripts/revisar_cho.py` en el cantoral.
+- 🔒 Seis decisiones aplicadas a falta de que el usuario las confirme
+  (§3 del plan y fila en §4 de este backlog). No se mergea sin su visto bueno
+  en un dispositivo.
+- ✅ Segunda vuelta (2026-10-09): interlineado con sentido, variantes de
+  estribillo, iPad con plegado y aviso de girar, **modo atril** hecho.
+- ✅ Tercera vuelta (2026-10-10): estribillo **raya + negrita** de serie
+  (decidido por el usuario), **onboarding del cantoral** (con el «?» del
+  header) y **las 258 canciones repasadas a mano** en el cantoral (solo
+  queda «revisar acordes», que es de oído; dudas en
+  `mcmapp-cantoral/docs/REVISION_OIDO.md`).
+- ✅ **Admin del cantoral (script C) pintando como la app** (2026-10-10, §10
+  del plan): `mcm-sheet.js` generado con `npm run build:sheet-bundle`.
+- 📝 Queda de Fase 2: PDF de la playlist con la hoja nueva, pantalla completa
+  en web, mapa de la canción, probar el pedal en un iPad. Y las 🔒 decisiones
+  de §3 antes de mergear.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
@@ -362,11 +388,12 @@ ningún sitio compartido.
 
 ## 4. Decisiones pendientes — preguntar ANTES de ejecutar
 
-| Decisión                                                                                   | Bloquea       | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                                                                                             |
-| ------------------------------------------------------------------------------------------ | ------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                          |
-| **Sacar la caza de Carismochitos del laboratorio**                                         | Carismochito  | `docs/funcionalidades/CARISMOCHITO.md`               | "¿Cuándo sale la caza para todo el mundo, y la colección se enlaza desde algún sitio o espera a la vista de perfil?"                                                                                                                      |
-| **Pañuelo — por definir**                                                                  | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md`                  | Idea parcial contada el 2026-09-29 (medallas 3D por evento, en el pañuelo, pop-up al tocar; prueba ya en el laboratorio). Falta: **cómo se reparten** y cómo es el pañuelo. No propongas la propuesta escrita como si estuviera decidida. |
+| Decisión                                                                                   | Bloquea         | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------ | --------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D   | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                                                      |
+| **Sacar la caza de Carismochitos del laboratorio**                                         | Carismochito    | `docs/funcionalidades/CARISMOCHITO.md`               | "¿Cuándo sale la caza para todo el mundo, y la colección se enlaza desde algún sitio o espera a la vista de perfil?"                                                                                                                                                  |
+| **Hoja de canción — confirmar la Fase 1**                                                  | Mergear la rama | `docs/planes/PLAN_HOJA_CANCION.md` §3                | "Ya lo has visto en el móvil: ¿te valen la letra del sistema para todos, el estribillo sin mayúsculas, las columnas con letra hasta un 20 % más pequeña en iPad, la vista compacta recordada, la numeración automática desde 2 estrofas y los arreglos a la derecha?" |
+| **Pañuelo — por definir**                                                                  | Panel Pañuelo   | `docs/planes/PLAN_PANEL_PANUELO.md`                  | Idea parcial contada el 2026-09-29 (medallas 3D por evento, en el pañuelo, pop-up al tocar; prueba ya en el laboratorio). Falta: **cómo se reparten** y cómo es el pañuelo. No propongas la propuesta escrita como si estuviera decidida.                             |
 
 ---
 

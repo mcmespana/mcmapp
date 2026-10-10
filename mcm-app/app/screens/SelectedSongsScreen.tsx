@@ -1482,9 +1482,7 @@ const SelectedSongsScreen: React.FC = () => {
 
   const headerIconColor =
     Platform.OS === 'ios' || Platform.OS === 'web'
-      ? isDark
-        ? '#ffffff'
-        : '#1a1a1a'
+      ? themeColors(isDark).headerTint
       : '#fff';
 
   useLayoutEffect(() => {

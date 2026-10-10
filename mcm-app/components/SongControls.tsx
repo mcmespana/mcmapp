@@ -19,8 +19,9 @@ import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import { transposeLabel } from '@/utils/transposeKey';
-import { useLabSongLayout } from '@/hooks/useLabSongLayout';
-import SongFontBottomSheet from './SongFontBottomSheet';
+import SongFontBottomSheet, {
+  type SheetViewOptions,
+} from './SongFontBottomSheet';
 import TransposeBottomSheet from './TransposeBottomSheet';
 import ReportBugsModal from './ReportBugsModal';
 import SecretPanelModal from './SecretPanelModal';
@@ -44,6 +45,13 @@ interface SongControlsProps {
   /** Arreglos visibles (efímero por canción). */
   arrangementsVisible?: boolean;
   onToggleArrangements?: () => void;
+  /** Algún estribillo se repite: tiene sentido plegarlos. */
+  hasRepeats?: boolean;
+  /** Vista compacta (estribillos repetidos plegados). Preferencia global. */
+  compactView?: boolean;
+  onToggleCompact?: () => void;
+  /** Opciones de vista de la hoja (en «Letra y vista»). */
+  view?: SheetViewOptions;
   currentTranspose: number;
   currentFontSizeEm: number;
   currentFontFamily: string;
@@ -133,6 +141,10 @@ const SongControls: React.FC<SongControlsProps> = ({
   hasArrangements = false,
   arrangementsVisible = true,
   onToggleArrangements,
+  hasRepeats = false,
+  compactView = false,
+  onToggleCompact,
+  view,
   currentTranspose,
   currentFontSizeEm,
   currentFontFamily,
@@ -164,8 +176,6 @@ const SongControls: React.FC<SongControlsProps> = ({
   const [showSecretPanel, setShowSecretPanel] = useState(false);
   const scheme = useColorScheme();
   const { toast } = useToast();
-  // Solo en el canal preview: conmutar la maquetación vieja/nueva de la letra.
-  const lab = useLabSongLayout();
   const isDark = scheme === 'dark';
   // El FAB va por encima de la barra de pestañas flotante.
   const tabBarClearance = useTabBarClearance();
@@ -276,6 +286,19 @@ const SongControls: React.FC<SongControlsProps> = ({
               onPress={onToggleChords}
               isActive={!chordsVisible}
             />
+            {hasRepeats && onToggleCompact && (
+              <ActionButton
+                isDark={isDark}
+                icon={compactView ? 'unfold-more' : 'unfold-less'}
+                label={
+                  compactView
+                    ? 'Desplegar estribillos'
+                    : 'Plegar estribillos repetidos'
+                }
+                onPress={onToggleCompact}
+                isActive={compactView}
+              />
+            )}
             {hasArrangements && onToggleArrangements && (
               <ActionButton
                 isDark={isDark}
@@ -308,7 +331,7 @@ const SongControls: React.FC<SongControlsProps> = ({
             <ActionButton
               isDark={isDark}
               icon="text-fields"
-              label="Tipo de letra"
+              label="Letra y vista"
               onPress={handleOpenFontPanel}
               isActive={
                 currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
@@ -316,20 +339,6 @@ const SongControls: React.FC<SongControlsProps> = ({
                   currentFontFamily !== availableFonts[0].cssValue)
               }
             />
-
-            {lab.available && (
-              <ActionButton
-                isDark={isDark}
-                icon="science"
-                label={
-                  lab.legacyLayout
-                    ? 'Lab: viendo la maquetación antigua'
-                    : 'Lab: ver la maquetación antigua'
-                }
-                onPress={() => lab.setLegacyLayout(!lab.legacyLayout)}
-                isActive={lab.legacyLayout}
-              />
-            )}
 
             <View
               style={[styles.menuDivider, isDark && styles.menuDividerDark]}
@@ -416,6 +425,7 @@ const SongControls: React.FC<SongControlsProps> = ({
         currentFontFamily={currentFontFamily}
         onSetFontSize={onSetFontSize}
         onSetFontFamily={onSetFontFamily}
+        view={view}
       />
 
       <TransposeBottomSheet
@@ -423,6 +433,8 @@ const SongControls: React.FC<SongControlsProps> = ({
         onClose={() => setShowTransposeBottomSheet(false)}
         currentTranspose={currentTranspose}
         onSetTranspose={handleSetTranspose}
+        songKey={songKey}
+        notation={notation}
         originalCapo={songCapo}
         currentCapoOverride={currentCapoOverride}
         onSetCapoOverride={onSetCapoOverride}

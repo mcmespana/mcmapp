@@ -1,0 +1,94 @@
+# Build de tienda en EAS, lanzada a mano desde GitHub (o por un agente con
+# acceso a la API de Actions). Con `submit`, EAS la manda sola a TestFlight /
+# Play Console (pista interna) al terminar.
+#
+# Requisitos que este workflow NO puede resolver por ti:
+#   - `EXPO_TOKEN` en los secrets del repo (ya existe: lo usan las OTA).
+#   - Credenciales de iOS GUARDADAS en EAS para los DOS targets: la app y la
+#     extensión `MCMNotificationService`. La primera vez EAS las crea
+#     preguntando por terminal, y en `--non-interactive` no puede: hay que
+#     hacer ese primer paso a mano (`npx eas-cli credentials -p ios`, o un
+#     primer build desde tu terminal). Ver docs/desarrollo/BUILD_AGOSTO_2026.md §2.5.
+#   - Para `submit` en iOS: una API key de App Store Connect guardada en EAS
+#     (la crea `eas submit` la primera vez, o `eas credentials` → App Store
+#     Connect API Key). Sin ella el build termina bien pero el envío falla.
+#
+# El build corre en los servidores de Expo (`--no-wait`): este job solo lo
+# encola y termina, no gasta minutos de Actions esperando.
+name: EAS Build (tienda)
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Plataforma'
+        type: choice
+        options: [ios, android, all]
+        default: ios
+      profile:
+        description: 'Perfil de eas.json'
+        type: choice
+        options: [production, preview, development]
+        default: production
+      submit:
+        description: 'Enviar a TestFlight / Play al terminar (solo production)'
+        type: boolean
+        default: true
+
+concurrency:
+  group: eas-build-${{ github.ref }}-${{ inputs.platform }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }} # yamllint disable-line
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mcm-app/package-lock.json
+
+      - name: Verificar que EXPO_TOKEN existe
+        run: |
+          if [ -z "${EXPO_TOKEN}" ]; then
+            echo "::error::EXPO_TOKEN no está configurado en los secrets del repositorio"
+            exit 1
+          fi
+
+      - name: Instalar EAS CLI
+        # Mismo pin que las OTA: subirlo a propósito, nunca @latest.
+        run: npm install -g eas-cli@21.0.2
+
+      - name: Instalar dependencias
+        working-directory: ./mcm-app
+        run: npm ci
+
+      - name: Verificar autenticación
+        run: eas whoami
+
+      - name: Encolar build
+        working-directory: ./mcm-app
+        env:
+          PLATFORM: ${{ inputs.platform }}
+          PROFILE: ${{ inputs.profile }}
+          SUBMIT: ${{ inputs.submit }}
+        run: |
+          # Los symlinks de las skills de Claude Code rompen la subida (lo que
+          # hace `npm run eas:build` en local).
+          rm -rf .agent .agents
+          ARGS=(--platform "$PLATFORM" --profile "$PROFILE" --non-interactive --no-wait)
+          if [ "$SUBMIT" = "true" ] && [ "$PROFILE" = "production" ]; then
+            ARGS+=(--auto-submit)
+          fi
+          eas build "${ARGS[@]}"
+          echo "Build encolada. Sigue el progreso en https://expo.dev (proyecto mcm-app)." >> "$GITHUB_STEP_SUMMARY"

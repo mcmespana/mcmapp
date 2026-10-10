@@ -43,33 +43,7 @@ export const styles = StyleSheet.create({
   scrollContent: {},
 
   // Date nav
-  dateNavCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    marginHorizontal: 16,
-    marginBottom: 10,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    ...shadows.card,
-  },
-  navBtn: {
-    padding: 10,
-    borderRadius: radii.lg,
-  },
-  dateCenter: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 6,
-  },
-  dateText: {
-    ...typography.h3,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    textAlign: 'center',
-  },
+  dateNav: { marginBottom: 10 },
 
   // Completed banner
   completedBanner: {

@@ -205,9 +205,10 @@ describe('useSongProcessor — sanitización de contenido no confiable (XSS)', (
     const { result } = await renderSong({
       originalChordPro: '{title: Test}\n[C]Tú & Yo',
     });
-    // ChordSheetJS trocea la letra por columna de acorde ("Tú " / "& Yo"), así
-    // que solo comprobamos que el "&" está escapado una única vez.
-    expect(result.current.songHtml).toContain('&amp; Yo');
+    // La hoja trocea la letra en palabras («Tú », «& », «Yo»): miramos el
+    // texto sin etiquetas y que el "&" esté escapado una única vez.
+    const visible = result.current.songHtml.replace(/<[^>]+>/g, '');
+    expect(visible).toContain('Tú &amp; Yo');
     expect(result.current.songHtml).not.toContain('&amp;amp;');
   });
 });

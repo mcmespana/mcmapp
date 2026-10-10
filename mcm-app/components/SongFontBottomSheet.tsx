@@ -1,19 +1,28 @@
-import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
 import {
-  Colors,
-  HighlightColors,
-  UIColors,
-  themeColors,
-} from '@/constants/colors';
+  HoldStepButton,
+  SheetCard,
+  sheetPalette,
+  useValueFeedback,
+  valueBoxStyle,
+} from '@/components/song-sheet/sheetKit';
 import { radii } from '@/constants/uiStyles';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { DEFAULT_FONT_SIZE_EM } from '@/contexts/SettingsContext';
-import { getNativeFontFamily } from '@/utils/fontUtils';
+import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import {
+  DEFAULT_FONT_SIZE_EM,
+  type SongSettings,
+} from '@/contexts/SettingsContext';
+import { CHORUS_STYLES, type ChorusStyle } from '@/utils/songSheetLayout';
+import { UIColors } from '@/constants/colors';
+import type { SheetPalette } from '@/components/song-sheet/sheetKit';
+import { getNativeFontFamily } from '@/utils/fontUtils';
+import { h } from '@/utils/haptics';
 
 interface FontOption {
   name: string;
@@ -28,10 +37,31 @@ interface Props {
   currentFontFamily: string;
   onSetFontSize: (size: number) => void;
   onSetFontFamily: (family: string) => void;
+  /** Cómo se ve la hoja (estribillo, números, aire). Sin definir, no sale. */
+  view?: SheetViewOptions;
+}
+
+export type SheetViewPatch = Partial<
+  Pick<SongSettings, 'chorusStyle' | 'chorusLabel' | 'verseNumbers' | 'airy'>
+>;
+
+export interface SheetViewOptions {
+  /** La canción tiene estribillo: se ofrecen sus variantes y la etiqueta. */
+  hasChorus: boolean;
+  /** La canción lleva números de estrofa. */
+  hasVerseNumbers: boolean;
+  chorusStyle: ChorusStyle;
+  chorusLabel: boolean;
+  verseNumbers: boolean;
+  airy: boolean;
+  onChange: (patch: SheetViewPatch) => void;
 }
 
 const MIN_SIZE = 0.6;
 const MAX_SIZE = 2.0;
+const STEP = 0.1;
+/** Sumar 0,1 en coma flotante acaba en 1,2000000000000002: se redondea. */
+const round1 = (n: number) => Math.round(n * 10) / 10;
 
 export default function SongFontBottomSheet({
   visible,
@@ -41,260 +71,188 @@ export default function SongFontBottomSheet({
   currentFontFamily,
   onSetFontSize,
   onSetFontFamily,
+  view,
 }: Props) {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = useColorScheme() === 'dark';
+  const p = sheetPalette(isDark);
 
   const defaultFamily = availableFonts[0]?.cssValue ?? currentFontFamily;
   const isSizeModified =
     Math.abs(currentFontSize - DEFAULT_FONT_SIZE_EM) > 0.001;
   const isFontModified = currentFontFamily !== defaultFamily;
+  const atMin = currentFontSize <= MIN_SIZE + 0.001;
+  const atMax = currentFontSize >= MAX_SIZE - 0.001;
+  const percentage = Math.round((currentFontSize / DEFAULT_FONT_SIZE_EM) * 100);
+  const currentFontName =
+    availableFonts.find((f) => f.cssValue === currentFontFamily)?.name ??
+    'Personalizada';
+
+  // Igual que el tono: al repetir manteniendo pulsado el prop llega con un
+  // frame de retraso, y sin el ref se perdían pasos.
+  const sizeRef = useRef(currentFontSize);
+  useEffect(() => {
+    sizeRef.current = currentFontSize;
+  }, [currentFontSize]);
+
+  const size = useValueFeedback(percentage);
+  const stepSize = (delta: number) => {
+    const next = round1(
+      Math.min(MAX_SIZE, Math.max(MIN_SIZE, sizeRef.current + delta)),
+    );
+    if (next === round1(sizeRef.current)) return;
+    sizeRef.current = next;
+    h.select();
+    onSetFontSize(next);
+  };
+  const sizeBlocked = () => {
+    h.limit();
+    size.nudge();
+  };
 
   const resetAll = () => {
+    h.tap();
     onSetFontSize(DEFAULT_FONT_SIZE_EM);
     onSetFontFamily(defaultFamily);
   };
-  const resetSize = () => onSetFontSize(DEFAULT_FONT_SIZE_EM);
-  const resetFont = () => onSetFontFamily(defaultFamily);
 
-  const increase = () =>
-    onSetFontSize(Math.min(MAX_SIZE, currentFontSize + 0.1));
-  const decrease = () =>
-    onSetFontSize(Math.max(MIN_SIZE, currentFontSize - 0.1));
-  const percentage = ((currentFontSize / DEFAULT_FONT_SIZE_EM) * 100).toFixed(
-    0,
-  );
+  const previewFamily = getNativeFontFamily(currentFontFamily);
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} title="Tipo de letra">
-      <View
-        style={[
-          styles.container,
-          {
-            paddingBottom: Platform.OS === 'web' ? 16 : 0,
-          },
-        ]}
-      >
+    <BottomSheet visible={visible} onClose={onClose} title="Letra y vista">
+      <View style={styles.container}>
         {/* ━━━━━━━━━━━━━━ TAMAÑO ━━━━━━━━━━━━━━ */}
-        <View style={[styles.card, isDark && styles.cardDark]}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardLabel}>TAMAÑO</Text>
-            <View style={styles.cardValueWrap}>
+        <SheetCard
+          palette={p}
+          label="Tamaño"
+          status={isSizeModified ? 'Modificado' : 'Original'}
+          statusActive={isSizeModified}
+          onReset={() => {
+            h.tap();
+            onSetFontSize(DEFAULT_FONT_SIZE_EM);
+          }}
+          resetLabel="Volver al tamaño original"
+        >
+          <View style={styles.row}>
+            <HoldStepButton
+              palette={p}
+              onStep={() => stepSize(-STEP)}
+              onBlocked={sizeBlocked}
+              disabled={atMin}
+              accessibilityLabel="Letra más pequeña"
+            >
               <Text
                 style={[
-                  styles.cardValue,
-                  {
-                    color: isSizeModified
-                      ? isDark
-                        ? '#FFB74D'
-                        : '#C77700'
-                      : themeColors(isDark).textMuted,
-                  },
+                  styles.stepA,
+                  styles.stepASmall,
+                  { color: atMin ? p.disabled : p.text },
                 ]}
               >
-                {isSizeModified ? 'Modificado' : 'Original'}
+                A
               </Text>
-            </View>
-            <PressableFeedback
-              style={[
-                styles.resetIconBtn,
-                !isSizeModified && styles.resetIconBtnHidden,
-              ]}
-              onPress={resetSize}
-              isDisabled={!isSizeModified}
-              accessibilityLabel="Restablecer tamaño"
-            >
-              <PressableFeedback.Highlight />
-              <MaterialIcons
-                name="refresh"
-                size={18}
-                color={themeColors(isDark).textSecondary}
-              />
-            </PressableFeedback>
-          </View>
+            </HoldStepButton>
 
-          <View style={styles.sizeRow}>
-            <PressableFeedback
+            <Animated.View
               style={[
-                styles.sizeStepBtn,
-                isDark ? styles.sizeStepBtnDark : null,
-                currentFontSize <= MIN_SIZE + 0.001 && styles.sizeStepDisabled,
+                styles.valueBox,
+                valueBoxStyle(p, isSizeModified),
+                size.style,
               ]}
-              onPress={decrease}
-              isDisabled={currentFontSize <= MIN_SIZE + 0.001}
+              accessibilityLiveRegion="polite"
+              accessibilityLabel={`Tamaño de letra al ${percentage} por ciento`}
             >
-              <PressableFeedback.Highlight />
-              <MaterialIcons
-                name="remove"
-                size={24}
-                color={
-                  currentFontSize <= MIN_SIZE + 0.001
-                    ? isDark
-                      ? '#48484A'
-                      : '#C7C7CC'
-                    : isDark
-                      ? '#EBEBF0'
-                      : '#1C1C1E'
-                }
-              />
-            </PressableFeedback>
-
-            <View
-              style={[
-                styles.sizeDisplay,
-                isSizeModified
-                  ? isDark
-                    ? styles.sizeDisplayActiveDark
-                    : styles.sizeDisplayActive
-                  : isDark
-                    ? styles.sizeDisplayDark
-                    : null,
-              ]}
-            >
-              <Text
+              <Animated.Text
                 style={[
-                  styles.sizePercent,
-                  {
-                    color: isSizeModified
-                      ? isDark
-                        ? UIColors.accentYellow
-                        : HighlightColors.light.fg
-                      : isDark
-                        ? '#EBEBF0'
-                        : '#1C1C1E',
-                  },
+                  styles.percent,
+                  size.popStyle,
+                  { color: isSizeModified ? p.active.fg : p.text },
                 ]}
               >
                 {percentage}%
-              </Text>
-              <View
-                style={[
-                  styles.previewWrap,
-                  {
-                    transform: [
-                      {
-                        scale: Math.min(
-                          1.4,
-                          Math.max(0.6, currentFontSize / DEFAULT_FONT_SIZE_EM),
-                        ),
-                      },
-                    ],
-                  },
-                ]}
-              >
+              </Animated.Text>
+              {/* Muestra de verdad: la letra de la canción a su tamaño, con la
+                  fuente elegida. Recortada a la caja para que no la rompa. */}
+              <View style={styles.previewWrap}>
                 <Text
                   style={[
-                    styles.previewText,
+                    styles.preview,
                     {
-                      color: themeColors(isDark).textSecondary,
-                      ...(getNativeFontFamily(currentFontFamily) && {
-                        fontFamily: getNativeFontFamily(currentFontFamily),
-                      }),
+                      color: p.textSecondary,
+                      transform: [
+                        {
+                          scale: Math.min(
+                            1.4,
+                            Math.max(
+                              0.6,
+                              currentFontSize / DEFAULT_FONT_SIZE_EM,
+                            ),
+                          ),
+                        },
+                      ],
                     },
+                    previewFamily ? { fontFamily: previewFamily } : null,
                   ]}
                 >
                   Aa
                 </Text>
               </View>
-            </View>
+            </Animated.View>
 
-            <PressableFeedback
-              style={[
-                styles.sizeStepBtn,
-                isDark ? styles.sizeStepBtnDark : null,
-                currentFontSize >= MAX_SIZE - 0.001 && styles.sizeStepDisabled,
-              ]}
-              onPress={increase}
-              isDisabled={currentFontSize >= MAX_SIZE - 0.001}
+            <HoldStepButton
+              palette={p}
+              onStep={() => stepSize(STEP)}
+              onBlocked={sizeBlocked}
+              disabled={atMax}
+              accessibilityLabel="Letra más grande"
             >
-              <PressableFeedback.Highlight />
-              <MaterialIcons
-                name="add"
-                size={24}
-                color={
-                  currentFontSize >= MAX_SIZE - 0.001
-                    ? isDark
-                      ? '#48484A'
-                      : '#C7C7CC'
-                    : isDark
-                      ? '#EBEBF0'
-                      : '#1C1C1E'
-                }
-              />
-            </PressableFeedback>
-          </View>
-        </View>
-
-        {/* ━━━━━━━━━━━━━━ TIPOGRAFÍA ━━━━━━━━━━━━━━ */}
-        <View style={[styles.card, isDark && styles.cardDark]}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardLabel}>FUENTE</Text>
-            <View style={styles.cardValueWrap}>
               <Text
                 style={[
-                  styles.cardValue,
-                  {
-                    color: isFontModified
-                      ? isDark
-                        ? '#FFB74D'
-                        : '#C77700'
-                      : themeColors(isDark).textMuted,
-                  },
+                  styles.stepA,
+                  styles.stepALarge,
+                  { color: atMax ? p.disabled : p.text },
                 ]}
               >
-                {availableFonts.find((f) => f.cssValue === currentFontFamily)
-                  ?.name ?? 'Personalizada'}
+                A
               </Text>
-            </View>
-            <PressableFeedback
-              style={[
-                styles.resetIconBtn,
-                !isFontModified && styles.resetIconBtnHidden,
-              ]}
-              onPress={resetFont}
-              isDisabled={!isFontModified}
-              accessibilityLabel="Restablecer fuente"
-            >
-              <PressableFeedback.Highlight />
-              <MaterialIcons
-                name="refresh"
-                size={18}
-                color={themeColors(isDark).textSecondary}
-              />
-            </PressableFeedback>
+            </HoldStepButton>
           </View>
+        </SheetCard>
 
-          <View style={styles.fontGrid}>
+        {/* ━━━━━━━━━━━━━━ FUENTE ━━━━━━━━━━━━━━ */}
+        <SheetCard
+          palette={p}
+          label="Fuente"
+          status={currentFontName}
+          statusActive={isFontModified}
+          onReset={() => {
+            h.tap();
+            onSetFontFamily(defaultFamily);
+          }}
+          resetLabel="Volver a la fuente original"
+        >
+          <View style={styles.fontGrid} accessibilityRole="radiogroup">
             {availableFonts.map((font) => {
               const isActive = font.cssValue === currentFontFamily;
               const nativeFamily = getNativeFontFamily(font.cssValue);
+              const color = isActive ? p.active.fg : p.text;
               return (
                 <PressableFeedback
                   key={font.cssValue}
-                  style={[
-                    styles.fontChip,
-                    isDark ? styles.fontChipDark : null,
-                    isActive &&
-                      (isDark
-                        ? styles.fontChipActiveDark
-                        : styles.fontChipActive),
-                  ]}
-                  onPress={() => onSetFontFamily(font.cssValue)}
+                  style={[styles.fontChip, valueBoxStyle(p, isActive)]}
+                  onPress={() => {
+                    if (isActive) return;
+                    h.select();
+                    onSetFontFamily(font.cssValue);
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isActive }}
+                  accessibilityLabel={font.name}
                 >
                   <PressableFeedback.Highlight />
                   <Text
                     style={[
                       styles.fontChipPreview,
-                      {
-                        ...(nativeFamily && { fontFamily: nativeFamily }),
-                        color: isActive
-                          ? isDark
-                            ? UIColors.accentYellow
-                            : HighlightColors.light.fg
-                          : isDark
-                            ? '#EBEBF0'
-                            : '#1C1C1E',
-                      },
+                      { color },
+                      nativeFamily ? { fontFamily: nativeFamily } : null,
                     ]}
                   >
                     Aa
@@ -303,11 +261,7 @@ export default function SongFontBottomSheet({
                     style={[
                       styles.fontChipLabel,
                       {
-                        color: isActive
-                          ? isDark
-                            ? UIColors.accentYellow
-                            : HighlightColors.light.fg
-                          : themeColors(isDark).textSecondary,
+                        color: isActive ? p.active.fg : p.textSecondary,
                         fontWeight: isActive ? '700' : '500',
                       },
                     ]}
@@ -319,25 +273,20 @@ export default function SongFontBottomSheet({
               );
             })}
           </View>
-        </View>
+        </SheetCard>
+
+        {/* ━━━━━━━━━━━━━━ VISTA ━━━━━━━━━━━━━━ */}
+        {view && <ViewCard palette={p} view={view} />}
 
         {(isSizeModified || isFontModified) && (
           <PressableFeedback
-            style={[styles.resetAllBtn, isDark && styles.resetAllBtnDark]}
+            style={[styles.resetAll, { backgroundColor: p.group }]}
             onPress={resetAll}
+            accessibilityRole="button"
           >
             <PressableFeedback.Highlight />
-            <MaterialIcons
-              name="refresh"
-              size={16}
-              color={themeColors(isDark).textSecondary}
-            />
-            <Text
-              style={[
-                styles.resetAllText,
-                { color: themeColors(isDark).textSecondary },
-              ]}
-            >
+            <MaterialIcons name="refresh" size={16} color={p.textSecondary} />
+            <Text style={[styles.resetAllText, { color: p.textSecondary }]}>
               Restablecer todo
             </Text>
           </PressableFeedback>
@@ -347,164 +296,276 @@ export default function SongFontBottomSheet({
   );
 }
 
+/** Las variantes del estribillo dibujadas en pequeño, como se verán. */
+export function ChorusPreview({
+  id,
+  color,
+}: {
+  id: ChorusStyle;
+  color: string;
+}) {
+  const bold = id !== 'raya';
+  const caps = id === 'mayus' || id === 'clasico';
+  const bar = id === 'raya' || id === 'negrita' || id === 'mayus';
+  return (
+    <View
+      style={[
+        styles.chorusPreview,
+        bar && styles.chorusPreviewBar,
+        id === 'sangrado' && styles.chorusPreviewIndent,
+      ]}
+    >
+      <Text
+        style={[
+          styles.chorusPreviewText,
+          { color, fontWeight: bold ? '800' : '400' },
+        ]}
+      >
+        {caps ? 'AA' : 'Aa'}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * Cómo se ve la hoja: variante del estribillo, su etiqueta, los números de
+ * estrofa y el aire entre bloques. Todo se aplica en vivo (sin recargar).
+ */
+function ViewCard({
+  palette: p,
+  view,
+}: {
+  palette: SheetPalette;
+  view: SheetViewOptions;
+}) {
+  const toggles: {
+    key: string;
+    icon: keyof typeof MaterialIcons.glyphMap;
+    name: string;
+    on: boolean;
+    patch: SheetViewPatch;
+  }[] = [];
+  if (view.hasChorus) {
+    toggles.push({
+      key: 'label',
+      icon: 'label-outline',
+      name: 'Etiqueta',
+      on: view.chorusLabel,
+      patch: { chorusLabel: !view.chorusLabel },
+    });
+  }
+  if (view.hasVerseNumbers) {
+    toggles.push({
+      key: 'nums',
+      icon: 'format-list-numbered',
+      name: 'Números',
+      on: view.verseNumbers,
+      patch: { verseNumbers: !view.verseNumbers },
+    });
+  }
+  toggles.push({
+    key: 'airy',
+    icon: 'format-line-spacing',
+    name: 'Más aire',
+    on: view.airy,
+    patch: { airy: !view.airy },
+  });
+  return (
+    <SheetCard palette={p} label="Vista">
+      {view.hasChorus && (
+        <>
+          <Text style={[styles.subLabel, { color: p.label }]}>Estribillo</Text>
+          <View style={styles.chipWrap} accessibilityRole="radiogroup">
+            {CHORUS_STYLES.map((c) => {
+              const isActive = c.id === view.chorusStyle;
+              const color = isActive ? p.active.fg : p.text;
+              return (
+                <PressableFeedback
+                  key={c.id}
+                  style={[
+                    styles.fontChip,
+                    styles.gridChip,
+                    valueBoxStyle(p, isActive),
+                  ]}
+                  onPress={() => {
+                    if (isActive) return;
+                    h.select();
+                    view.onChange({ chorusStyle: c.id });
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isActive }}
+                  accessibilityLabel={`Estribillo: ${c.name}`}
+                >
+                  <PressableFeedback.Highlight />
+                  <ChorusPreview id={c.id} color={color} />
+                  <Text
+                    style={[
+                      styles.fontChipLabel,
+                      {
+                        color: isActive ? p.active.fg : p.textSecondary,
+                        fontWeight: isActive ? '700' : '500',
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {c.name}
+                  </Text>
+                </PressableFeedback>
+              );
+            })}
+          </View>
+        </>
+      )}
+      <View style={styles.fontGrid}>
+        {toggles.map((t) => (
+          <PressableFeedback
+            key={t.key}
+            style={[styles.fontChip, valueBoxStyle(p, t.on)]}
+            onPress={() => {
+              h.toggle();
+              view.onChange(t.patch);
+            }}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: t.on }}
+            accessibilityLabel={t.name}
+          >
+            <PressableFeedback.Highlight />
+            <MaterialIcons
+              name={t.icon}
+              size={22}
+              color={t.on ? p.active.fg : p.text}
+            />
+            <Text
+              style={[
+                styles.fontChipLabel,
+                {
+                  color: t.on ? p.active.fg : p.textSecondary,
+                  fontWeight: t.on ? '700' : '500',
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {t.name}
+            </Text>
+          </PressableFeedback>
+        ))}
+      </View>
+    </SheetCard>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 4,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.md,
     gap: 12,
   },
-  card: {
-    backgroundColor: '#F7F7FB',
-    borderRadius: radii.lg,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    gap: 12,
-  },
-  cardDark: {
-    backgroundColor: Colors.dark.card,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 28,
-  },
-  cardLabel: {
-    ...typography.micro,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-    color: '#8E8E93',
-  },
-  cardValueWrap: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 8,
-  },
-  cardValue: {
-    ...typography.caption,
-    fontWeight: '600',
-  },
-  resetIconBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: radii.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resetIconBtnHidden: {
-    opacity: 0,
-  },
-  sizeRow: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  sizeStepBtn: {
-    width: 56,
-    height: 64,
-    borderRadius: radii.md,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
+  // Los ± del tamaño son una «A» pequeña y una grande: dicen qué hacen sin
+  // tener que leer nada, como en los lectores de iOS.
+  stepA: {
+    fontWeight: '700',
   },
-  sizeStepBtnDark: {
-    backgroundColor: '#1C1C1E',
-    borderColor: 'rgba(255,255,255,0.08)',
+  stepASmall: {
+    ...typography.subhead,
+    fontWeight: '700',
   },
-  sizeStepDisabled: {
-    opacity: 0.4,
+  stepALarge: {
+    ...typography.h2,
+    fontWeight: '700',
   },
-  sizeDisplay: {
+  valueBox: {
     flex: 1,
     height: 64,
     borderRadius: radii.md,
-    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: spacing.md,
   },
-  sizeDisplayDark: {
-    backgroundColor: '#1C1C1E',
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  sizeDisplayActive: {
-    backgroundColor: HighlightColors.light.bg,
-    borderColor: UIColors.accentYellow,
-  },
-  sizeDisplayActiveDark: {
-    backgroundColor: HighlightColors.dark.bg,
-    borderColor: HighlightColors.light.fg,
-  },
-  sizePercent: {
-    fontSize: 20,
+  percent: {
+    ...typography.h2,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.5,
   },
   previewWrap: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  previewText: {
-    fontSize: 18,
+  preview: {
+    ...typography.h3,
     fontWeight: '600',
   },
   fontGrid: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
   },
   fontChip: {
     flex: 1,
+    minHeight: 64,
     paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     borderRadius: radii.md,
-    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-    minHeight: 64,
-  },
-  fontChipDark: {
-    backgroundColor: '#1C1C1E',
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  fontChipActive: {
-    backgroundColor: HighlightColors.light.bg,
-    borderColor: UIColors.accentYellow,
-  },
-  fontChipActiveDark: {
-    backgroundColor: HighlightColors.dark.bg,
-    borderColor: HighlightColors.light.fg,
   },
   fontChipPreview: {
-    fontSize: 20,
+    ...typography.h2,
     fontWeight: '700',
-    lineHeight: 24,
+    lineHeight: 26,
   },
   fontChipLabel: {
     ...typography.micro,
-    letterSpacing: 0.1,
     textAlign: 'center',
   },
-  resetAllBtn: {
+  subLabel: {
+    ...typography.micro,
+    fontWeight: '600',
+    marginBottom: -spacing.xs,
+  },
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  // Tres por fila: cinco variantes no caben en una a ancho de móvil.
+  gridChip: {
+    flexGrow: 0,
+    flexBasis: '30%',
+  },
+  chorusPreview: {
+    height: 26,
+    justifyContent: 'center',
+  },
+  chorusPreviewBar: {
+    borderLeftWidth: 3,
+    borderLeftColor: UIColors.accentYellow,
+    paddingLeft: spacing.xs,
+  },
+  chorusPreviewIndent: {
+    paddingLeft: spacing.sm,
+  },
+  chorusPreviewText: {
+    ...typography.h3,
+  },
+  resetAll: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    minHeight: 44,
     borderRadius: radii.md,
-    backgroundColor: '#F2F2F7',
     gap: 6,
-    marginTop: 2,
-  },
-  resetAllBtnDark: {
-    backgroundColor: Colors.dark.card,
   },
   resetAllText: {
     ...typography.caption,
