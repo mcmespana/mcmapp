@@ -22,6 +22,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import SongDisplay from '@/components/SongDisplay';
@@ -52,6 +53,7 @@ import { radii } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { h } from '@/utils/haptics';
+import { durations } from '@/constants/animations';
 
 interface Props {
   visible: boolean;
@@ -74,7 +76,7 @@ const STEP_SCROLL: Record<OnboardingStepId, string | null> = {
 const STEP_TEXT: Record<OnboardingStepId, { title: string; hint: string }> = {
   role: {
     title: '¿Tocas o cantas?',
-    hint: 'Mira la canción de arriba: cambia al momento.',
+    hint: 'Mira la canción: cambia al momento.',
   },
   repeats: {
     title: 'Estribillos que se repiten',
@@ -90,7 +92,7 @@ const STEP_TEXT: Record<OnboardingStepId, { title: string; hint: string }> = {
   },
   tags: {
     title: 'Tus etiquetas',
-    hint: 'Las que uses mucho, a mano. Las que no van contigo (canciones de otro carisma, por ejemplo), escondidas.',
+    hint: 'Opcional. Se cambia siempre desde Etiquetas → Editar.',
   },
 };
 
@@ -147,29 +149,41 @@ export default function CantoralOnboarding({
     else setIndex((i) => i + 1);
   };
   const back = () => setIndex((i) => Math.max(0, i - 1));
+  // Las etiquetas no cambian la canción: en el móvil, ese paso se queda con
+  // toda la pantalla (si no, la última opción quedaba fuera). La vista
+  // previa se oculta sin desmontarse, para que al volver no recargue.
+  const soloPanel = step === 'tags' && !layout.isWide;
 
   const panel = (
     <ScrollView
-      style={styles.panelScroll}
+      style={soloPanel ? styles.panelScrollFull : styles.panelScroll}
       contentContainerStyle={styles.panelContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text
-        style={[styles.title, { color: t.text }]}
-        accessibilityRole="header"
+      {/* Cada paso entra con un fundido corto: sin él, el cambio de opciones
+          era un salto seco. */}
+      <Animated.View
+        key={step}
+        entering={FadeIn.duration(durations.base)}
+        style={styles.stepContent}
       >
-        {STEP_TEXT[step].title}
-      </Text>
-      <Text style={[styles.hint, { color: t.textSecondary }]}>
-        {STEP_TEXT[step].hint}
-      </Text>
-      <StepBody step={step} palette={p} tags={tags} isDark={isDark} />
-      {index === 0 || isLast ? (
-        <Text style={[styles.footnote, { color: t.textMuted }]}>
-          Todo se cambia cuando quieras: Aa → «Letra y vista» en cada canción, o
-          el ? de arriba del cantoral.
+        <Text
+          style={[styles.title, { color: t.text }]}
+          accessibilityRole="header"
+        >
+          {STEP_TEXT[step].title}
         </Text>
-      ) : null}
+        <Text style={[styles.hint, { color: t.textSecondary }]}>
+          {STEP_TEXT[step].hint}
+        </Text>
+        <StepBody step={step} palette={p} tags={tags} isDark={isDark} />
+        {index === 0 || isLast ? (
+          <Text style={[styles.footnote, { color: t.textMuted }]}>
+            Todo se cambia cuando quieras: Aa → «Letra y vista» en cada canción,
+            o el ? de arriba del cantoral.
+          </Text>
+        ) : null}
+      </Animated.View>
     </ScrollView>
   );
 
@@ -222,6 +236,7 @@ export default function CantoralOnboarding({
             style={[
               styles.preview,
               layout.isWide && styles.previewWide,
+              soloPanel && styles.hidden,
               { borderColor: t.separator },
             ]}
             accessibilityLabel="Vista previa de una canción"
@@ -234,7 +249,13 @@ export default function CantoralOnboarding({
               scrollTo={STEP_SCROLL[step]}
             />
           </View>
-          <View style={[styles.panel, layout.isWide && styles.panelWide]}>
+          <View
+            style={[
+              styles.panel,
+              layout.isWide && styles.panelWide,
+              soloPanel && styles.panelFull,
+            ]}
+          >
             {panel}
             <View style={styles.nav}>
               {index > 0 ? (
@@ -343,7 +364,7 @@ function StepBody({
   if (step === 'chorus') {
     return (
       <View style={styles.group}>
-        <View style={styles.chipWrap} accessibilityRole="radiogroup">
+        <View style={styles.chipRow} accessibilityRole="radiogroup">
           {CHORUS_STYLES.map((c) => {
             const active = c.id === settings.chorusStyle;
             return (
@@ -354,7 +375,7 @@ function StepBody({
                 label={c.name}
                 accessibilityLabel={`Estribillo: ${c.name}`}
                 onPress={() => setSettings({ chorusStyle: c.id })}
-                third
+                fifth
               >
                 <ChorusPreview
                   id={c.id}
@@ -445,60 +466,70 @@ function TagsStep({
         ? settings.featuredTags.filter((s) => s !== slug)
         : [...settings.featuredTags, slug],
     });
+  const shownForFeature = tags.filter((t) => !hiddenSlugs.has(t.slug));
+  const shownForHide = tags.filter((t) => !featured.has(t.slug));
   return (
     <View style={styles.group}>
-      <Text style={[styles.inlineLabel, { color: p.label }]}>A mano</Text>
-      <View style={styles.tagWrap}>
-        {tags
-          .filter((t) => !hiddenSlugs.has(t.slug))
-          .map((tag) => {
-            const on = featured.has(tag.slug);
-            return (
-              <TagChip
-                key={tag.slug}
-                tag={tag}
-                variant={on ? 'active' : 'outline'}
-                isDark={isDark}
-                showAdd={!on}
-                hideCount
-                onPress={() => toggleFeatured(tag.slug)}
-                accessibilityHint={
-                  on
-                    ? 'Quitar de las etiquetas a mano'
-                    : 'Tenerla arriba del cantoral y en las listas'
-                }
-              />
-            );
-          })}
-      </View>
-      <Text style={[styles.inlineLabel, { color: p.label }]}>Esconder</Text>
-      <View style={styles.tagWrap}>
-        {tags
-          .filter((t) => !featured.has(t.slug))
-          .map((tag) => {
-            const off = hiddenSlugs.has(tag.slug);
-            return (
-              <TagChip
-                key={tag.slug}
-                tag={tag}
-                variant={off ? 'active' : 'outline'}
-                isDark={isDark}
-                hideCount
-                onPress={() => {
-                  h.toggle();
-                  toggleHidden(tag.slug);
-                }}
-                accessibilityHint={
-                  off ? 'Volver a mostrarla' : 'Esconder esta etiqueta'
-                }
-              />
-            );
-          })}
-      </View>
+      <TagSection
+        palette={p}
+        icon="star"
+        iconColor={UIColors.accentYellow}
+        title="A mano"
+        desc="Salen arriba del cantoral y, discretas, en las listas."
+      >
+        {shownForFeature.map((tag) => {
+          const on = featured.has(tag.slug);
+          return (
+            <TagChip
+              key={tag.slug}
+              tag={tag}
+              variant={on ? 'active' : 'outline'}
+              isDark={isDark}
+              leadingIcon={on ? 'star' : 'add'}
+              hideCount
+              onPress={() => toggleFeatured(tag.slug)}
+              accessibilityHint={
+                on
+                  ? 'Quitar de las etiquetas a mano'
+                  : 'Tenerla arriba del cantoral y en las listas'
+              }
+            />
+          );
+        })}
+      </TagSection>
+      <TagSection
+        palette={p}
+        icon="visibility-off"
+        iconColor={p.label}
+        title="Esconder"
+        desc="Las que no van contigo, como las de otro carisma."
+      >
+        {shownForHide.map((tag) => {
+          const off = hiddenSlugs.has(tag.slug);
+          return (
+            <TagChip
+              key={tag.slug}
+              tag={tag}
+              variant="outline"
+              isDark={isDark}
+              leadingIcon={off ? 'visibility-off' : undefined}
+              struck={off}
+              hideCount
+              onPress={() => {
+                h.toggle();
+                toggleHidden(tag.slug);
+              }}
+              accessibilityHint={
+                off ? 'Volver a mostrarla' : 'Esconder esta etiqueta'
+              }
+            />
+          );
+        })}
+      </TagSection>
       {hiddenSlugs.size > 0 && (
         <ToggleRow
           palette={p}
-          icon="visibility-off"
+          icon="playlist-remove"
           title="Esconder también sus canciones (siguen en el buscador)"
           on={settings.hideHiddenTagSongs}
           onPress={() =>
@@ -506,6 +537,36 @@ function TagsStep({
           }
         />
       )}
+    </View>
+  );
+}
+
+/** Un bloque del paso de etiquetas: qué hace, y sus chips. */
+function TagSection({
+  palette: p,
+  icon,
+  iconColor,
+  title,
+  desc,
+  children,
+}: {
+  palette: SheetPalette;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  iconColor: string;
+  title: string;
+  desc: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.tagSection}>
+      <View style={styles.tagSectionHead}>
+        <MaterialIcons name={icon} size={18} color={iconColor} />
+        <Text style={[styles.tagSectionTitle, { color: p.text }]}>{title}</Text>
+      </View>
+      <Text style={[styles.tagSectionDesc, { color: p.textSecondary }]}>
+        {desc}
+      </Text>
+      <View style={styles.tagWrap}>{children}</View>
     </View>
   );
 }
@@ -612,7 +673,7 @@ function ChoiceChip({
   label,
   accessibilityLabel,
   onPress,
-  third = false,
+  fifth = false,
   children,
 }: {
   palette: SheetPalette;
@@ -620,7 +681,7 @@ function ChoiceChip({
   label: string;
   accessibilityLabel: string;
   onPress: () => void;
-  third?: boolean;
+  fifth?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -630,7 +691,7 @@ function ChoiceChip({
         h.select();
         onPress();
       }}
-      style={[styles.chip, third && styles.chipThird, valueBoxStyle(p, active)]}
+      style={[styles.chip, fifth && styles.chipFifth, valueBoxStyle(p, active)]}
       accessibilityRole="radio"
       accessibilityState={{ selected: active }}
       accessibilityLabel={accessibilityLabel}
@@ -646,6 +707,8 @@ function ChoiceChip({
           },
         ]}
         numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
       >
         {label}
       </Text>
@@ -686,6 +749,9 @@ const styles = StyleSheet.create({
   panel: { maxHeight: '58%' },
   panelWide: { maxHeight: undefined, width: 400 },
   panelScroll: { flexGrow: 0 },
+  panelScrollFull: { flex: 1 },
+  panelFull: { flex: 1, maxHeight: '100%' },
+  hidden: { display: 'none' },
   panelContent: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
@@ -726,8 +792,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   toggleTitle: { flex: 1, ...typography.subhead, fontWeight: '600' },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chipRow: { flexDirection: 'row', gap: spacing.sm },
+  stepContent: { gap: spacing.sm },
   chip: {
     flex: 1,
     minHeight: 64,
@@ -739,16 +805,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
-  // Tres por fila: cinco variantes no caben en una a ancho de móvil.
-  chipThird: { flex: 0, flexBasis: '30%', flexGrow: 1 },
+  // Las cinco variantes en una fila (antes 3 + 2, que se veía cojo y en
+  // un móvil pequeño tapaba la opción de debajo).
+  chipFifth: { paddingHorizontal: spacing.xs },
   chipLabel: { ...typography.micro, textAlign: 'center' },
   fontSample: { ...typography.h2, lineHeight: 26 },
   tagWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
   },
+  tagSection: { marginBottom: spacing.sm },
+  tagSectionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  tagSectionTitle: { ...typography.subhead, fontWeight: '700' },
+  tagSectionDesc: { ...typography.footnote },
   nav: {
     flexDirection: 'row',
     alignItems: 'center',
