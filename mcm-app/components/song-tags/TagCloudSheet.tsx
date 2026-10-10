@@ -15,7 +15,8 @@
  *   canción. Las ocultas se ven al final, apagadas y con «+», para
  *   recuperarlas. Con «Esconder también sus canciones» (`hideHiddenTagSongs`)
  *   tampoco salen sus canciones en las categorías (siguen en el buscador).
- * - **A mano** (★, `featuredTags`): salen como atajo arriba del cantoral y,
+ * - **Destacar** (★, `featuredTags`): las destacadas salen como atajo arriba
+ *   del cantoral y,
  *   discretas, en las filas de las listas.
  */
 import React, { useMemo, useState } from 'react';
@@ -82,7 +83,7 @@ export default function TagCloudSheet({
   const subtitle = editing
     ? editMode === 'hide'
       ? 'Toca «−» para ocultar las que no van contigo, como las de otro carisma.'
-      : 'Las de la ★ salen arriba del cantoral y, discretas, en las listas.'
+      : 'Las destacadas (★) salen arriba del cantoral y, discretas, en las listas.'
     : shown.length === 0
       ? 'Has ocultado todas las etiquetas. Toca «Editar» para recuperarlas.'
       : null;
@@ -114,8 +115,8 @@ export default function TagCloudSheet({
           editing
             ? editMode === 'feature'
               ? featured.includes(tag.slug)
-                ? 'Quitar de las etiquetas a mano'
-                : 'Tener esta etiqueta a mano'
+                ? 'Quitar de las destacadas'
+                : 'Destacar esta etiqueta'
               : isHidden
                 ? 'Volver a mostrar esta etiqueta'
                 : 'Ocultar esta etiqueta'
@@ -185,7 +186,7 @@ export default function TagCloudSheet({
         <SegmentedControl
           options={[
             { value: 'hide', label: 'Ocultar', icon: 'visibility-off' },
-            { value: 'feature', label: 'A mano', icon: 'star' },
+            { value: 'feature', label: 'Destacar', icon: 'star' },
           ]}
           value={editMode}
           onChange={setEditMode}

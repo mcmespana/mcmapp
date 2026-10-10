@@ -99,7 +99,7 @@ media palabra.
 | `verseNumbers` | «Letra y vista» → Números                                                      | Sí          |
 | `fontFamily`   | «Letra y vista» → Fuente                                                       | Sistema     |
 | `chorusStyle`  | «Letra y vista» → Estribillo                                                   | Negrita     |
-| `featuredTags` | Onboarding → «Etiquetas a mano» (atajos arriba del cantoral)                   | Ninguna     |
+| `featuredTags` | Onboarding → «Destacadas» o Etiquetas → Editar → Destacar (atajos arriba del cantoral)                   | Ninguna     |
 
 **Onboarding** (`components/song-onboarding/CantoralOnboarding.tsx`, lógica
 en `utils/cantoralOnboarding.ts`): se abre solo la primera vez que se entra

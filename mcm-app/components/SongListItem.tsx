@@ -61,7 +61,7 @@ interface SongListItemProps {
   onRemoveSong: (filename: string) => void;
   /** Última fila de un grupo con esquinas: el separador sobra. */
   hideSeparator?: boolean;
-  /** Etiquetas «a mano» que lleva la canción: se ven discretas. */
+  /** Etiquetas destacadas que lleva la canción: se ven discretas. */
   featuredTags?: ResolvedTag[];
 }
 

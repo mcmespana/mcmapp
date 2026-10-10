@@ -41,7 +41,7 @@ interface TagChipProps {
   onRemove?: (tag: ResolvedTag) => void;
   /** Un «+» delante: la etiqueta se AÑADE a las activas (refinamiento). */
   showAdd?: boolean;
-  /** Otro icono delante (★ a mano, ojo tachado…); manda sobre `showAdd`. */
+  /** Otro icono delante (★ destacada, ojo tachado…); manda sobre `showAdd`. */
   leadingIcon?: keyof typeof MaterialIcons.glyphMap;
   /** Tachada y apagada: una etiqueta escondida. */
   struck?: boolean;

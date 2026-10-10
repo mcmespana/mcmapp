@@ -288,7 +288,7 @@ describe('withoutHiddenTagSongs — esconder las canciones de una etiqueta', () 
   });
 });
 
-describe('featuredTagsOf — las etiquetas «a mano» de una canción', () => {
+describe('featuredTagsOf — las etiquetas destacadas de una canción', () => {
   const index = buildTagIndex({
     a: {
       categoryTitle: 'A',

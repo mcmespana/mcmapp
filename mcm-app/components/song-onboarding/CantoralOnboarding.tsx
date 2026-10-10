@@ -443,8 +443,8 @@ function StepBody({
     );
   }
 
-  // Etiquetas: a mano (atajo arriba y discretas en las listas) o
-  // escondidas (y, si se quiere, sus canciones fuera de las categorías).
+  // Etiquetas: destacadas (atajo arriba y discretas en las listas) u
+  // ocultas (y, si se quiere, sus canciones fuera de las categorías).
   return <TagsStep palette={p} tags={tags} isDark={isDark} />;
 }
 
@@ -474,7 +474,7 @@ function TagsStep({
         palette={p}
         icon="star"
         iconColor={UIColors.accentYellow}
-        title="A mano"
+        title="Destacadas"
         desc="Salen arriba del cantoral y, discretas, en las listas."
       >
         {shownForFeature.map((tag) => {
@@ -490,7 +490,7 @@ function TagsStep({
               onPress={() => toggleFeatured(tag.slug)}
               accessibilityHint={
                 on
-                  ? 'Quitar de las etiquetas a mano'
+                  ? 'Quitar de las destacadas'
                   : 'Tenerla arriba del cantoral y en las listas'
               }
             />
@@ -501,7 +501,7 @@ function TagsStep({
         palette={p}
         icon="visibility-off"
         iconColor={p.label}
-        title="Esconder"
+        title="Ocultas"
         desc="Las que no van contigo, como las de otro carisma."
       >
         {shownForHide.map((tag) => {

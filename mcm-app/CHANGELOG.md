@@ -27,7 +27,7 @@
 - **Arreglo**: los `{arr:}` multiplicaban dos veces el tamaño de la letra y,
   con la letra grande o en pantalla completa, salían más grandes que ella.
 - **Onboarding**: estribillo en una fila (antes 3 + 2), paso de etiquetas con
-  «A mano» (★) y «Esconder» (tachadas) explicados, y en el móvil ese paso
+  «Destacadas» (★) y «Ocultas» (tachadas) explicados, y en el móvil ese paso
   ocupa toda la pantalla; fundido entre pasos; textos corregidos (no hay
   ningún botón «Aa»).
 - **«Letra y vista»**: las cinco variantes del estribillo en una fila.
@@ -53,13 +53,13 @@
 
 ---
 
-## 2026-10-10 18:00 — Etiquetas: esconder canciones de otro carisma y ★ a mano
+## 2026-10-10 18:00 — Etiquetas: esconder canciones de otro carisma y ★ destacadas
 
 - **Esconder sus canciones**: en «Etiquetas → Editar → Ocultar», una casilla
   nueva (`settings.hideHiddenTagSongs`) quita de las categorías las canciones
   con alguna etiqueta oculta (siguen en el buscador y en la
   pantalla de la etiqueta). La lista avisa con «N escondidas · Ver».
-- **★ A mano** (`settings.featuredTags`): segundo modo de «Editar». Las
+- **★ Destacar** (`settings.featuredTags`): segundo modo de «Editar». Las
   marcadas salen, discretas, bajo el autor en las filas de las listas.
 - El paso «Tus etiquetas» del onboarding del cantoral explica las dos cosas.
 - `utils/songTags.ts` (`withoutHiddenTagSongs`, `featuredTagsOf`, con tests),
