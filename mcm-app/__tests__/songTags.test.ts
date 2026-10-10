@@ -1,6 +1,7 @@
 import {
   buildTagIndex,
   coOccurringTags,
+  featuredTagsOf,
   isTagCategoryId,
   normalizeTagCatalog,
   parseTagCategoryId,
@@ -12,6 +13,7 @@ import {
   tagCategoryId,
   tagCloudBucket,
   tagsTitle,
+  withoutHiddenTagSongs,
 } from '@/utils/songTags';
 import type { SongsData } from '@/utils/filterSongsData';
 
@@ -259,5 +261,53 @@ describe('tagsTitle', () => {
     expect(tagsTitle(['viejunas', 'infantiles'], index)).toBe(
       'Viejunas · Infantiles',
     );
+  });
+});
+
+describe('withoutHiddenTagSongs — esconder las canciones de una etiqueta', () => {
+  const songs = [
+    { title: 'A', tags: ['consolacion'] },
+    { title: 'B', tags: 'Salesianos, grandes-clasicos' },
+    { title: 'C' },
+  ];
+  it('quita las que llevan alguna oculta y dice cuántas', () => {
+    const r = withoutHiddenTagSongs(songs, new Set(['salesianos']));
+    expect(r.visible.map((s) => s.title)).toEqual(['A', 'C']);
+    expect(r.hiddenCount).toBe(1);
+  });
+  it('sin ocultas, la lista tal cual', () => {
+    const r = withoutHiddenTagSongs(songs, new Set());
+    expect(r.visible).toBe(songs);
+    expect(r.hiddenCount).toBe(0);
+  });
+  it('respeta los alias del catálogo', () => {
+    const r = withoutHiddenTagSongs(songs, new Set(['grandes-clasicos']), {
+      clasicos: 'grandes-clasicos',
+    });
+    expect(r.hiddenCount).toBe(1);
+  });
+});
+
+describe('featuredTagsOf — las etiquetas «a mano» de una canción', () => {
+  const index = buildTagIndex({
+    a: {
+      categoryTitle: 'A',
+      songs: [
+        { title: 'Uno', tags: ['taize', 'maria', 'catala'] },
+        { title: 'Dos', tags: ['maria'] },
+      ],
+    },
+  } as any);
+  it('solo las elegidas, en el orden en que se eligieron', () => {
+    const r = featuredTagsOf(
+      { tags: ['taize', 'maria', 'catala'] },
+      ['catala', 'taize'],
+      index,
+    );
+    expect(r.map((t) => t.slug)).toEqual(['catala', 'taize']);
+  });
+  it('nada si no hay elegidas o la canción no lleva ninguna', () => {
+    expect(featuredTagsOf({ tags: ['maria'] }, [], index)).toEqual([]);
+    expect(featuredTagsOf({}, ['maria'], index)).toEqual([]);
   });
 });

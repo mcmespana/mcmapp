@@ -18,6 +18,21 @@
 
 ---
 
+## 2026-10-10 18:00 — Etiquetas: esconder canciones de otro carisma y ★ a mano
+
+- **Esconder sus canciones**: en «Etiquetas → Editar → Ocultar», una casilla
+  nueva (`settings.hideHiddenTagSongs`) quita de las categorías las canciones
+  con alguna etiqueta oculta (siguen en el buscador y en la
+  pantalla de la etiqueta). La lista avisa con «N escondidas · Ver».
+- **★ A mano** (`settings.featuredTags`): segundo modo de «Editar». Las
+  marcadas salen, discretas, bajo el autor en las filas de las listas.
+- El paso «Tus etiquetas» del onboarding del cantoral explica las dos cosas.
+- `utils/songTags.ts` (`withoutHiddenTagSongs`, `featuredTagsOf`, con tests),
+  `hooks/useSongListTags.ts`, `components/song-tags/HiddenSongsNote.tsx`.
+  Detalle en `docs/funcionalidades/ETIQUETAS.md` §3.2.
+
+---
+
 ## 2026-10-10 18:30 — Pantalla completa: mismo tono, pasar de canción y coro
 
 - **Bug**: la pantalla completa pintaba siempre la canción en su tono

@@ -52,6 +52,12 @@ export interface SongSettings {
    */
   featuredTags: string[];
   /**
+   * Las canciones de las etiquetas ocultas (`useHiddenTags`) tampoco salen
+   * en las categorías: para quien no quiere ver las de otro carisma. Siguen
+   * en el buscador y en las playlists.
+   */
+  hideHiddenTagSongs: boolean;
+  /**
    * Versión de la migración de la letra por defecto. Ver
    * `migrateSongSettings`.
    */
@@ -99,6 +105,7 @@ const defaultSettings: SongSettings = {
   pagedFullscreen: false,
   cantoralOnboarding: 0,
   featuredTags: [],
+  hideHiddenTagSongs: false,
   fontVersion: FONT_VERSION,
 };
 

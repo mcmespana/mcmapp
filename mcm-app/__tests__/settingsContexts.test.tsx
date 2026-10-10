@@ -65,6 +65,7 @@ describe('SettingsContext (ajustes del cantoral)', () => {
       pagedFullscreen: false,
       cantoralOnboarding: 0,
       featuredTags: [],
+      hideHiddenTagSongs: false,
       fontVersion: 2,
     });
     expect(result.current.isAdmin).toBe(false);

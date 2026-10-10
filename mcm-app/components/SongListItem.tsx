@@ -29,6 +29,7 @@ import { extractSongMedia, mediaKinds } from '@/types/songMedia';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
+import type { ResolvedTag } from '@/utils/songTags';
 
 // Type for song data
 interface Song {
@@ -60,6 +61,8 @@ interface SongListItemProps {
   onRemoveSong: (filename: string) => void;
   /** Última fila de un grupo con esquinas: el separador sobra. */
   hideSeparator?: boolean;
+  /** Etiquetas «a mano» que lleva la canción: se ven discretas. */
+  featuredTags?: ResolvedTag[];
 }
 
 const SongListItem: React.FC<SongListItemProps> = React.memo(
@@ -73,6 +76,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     onAddSong,
     onRemoveSong,
     hideSeparator = false,
+    featuredTags,
   }) {
     const { settings } = useSettings();
     const { notation } = settings;
@@ -254,6 +258,21 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                       )}
                     </View>
                   )}
+                  {featuredTags && featuredTags.length > 0 && (
+                    <Text
+                      style={styles.featuredTags}
+                      numberOfLines={1}
+                      accessibilityLabel={`Etiquetas: ${featuredTags
+                        .map((t) => t.label)
+                        .join(', ')}`}
+                    >
+                      {featuredTags
+                        .map((t) =>
+                          t.emoji ? `${t.emoji} ${t.label}` : t.label,
+                        )
+                        .join(' · ')}
+                    </Text>
+                  )}
                 </View>
               </View>
             </View>
@@ -394,6 +413,13 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontVariant: ['tabular-nums'],
       minWidth: 26,
       marginRight: spacing.xs + 2,
+    },
+    // Discretas: que se vean sin competir con el título ni el autor.
+    featuredTags: {
+      ...typography.caption,
+      color: themeColors(isDark).textMuted,
+      flexShrink: 1,
+      marginLeft: spacing.sm,
     },
     authorText: {
       ...typography.caption,

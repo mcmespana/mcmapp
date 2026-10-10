@@ -42,6 +42,8 @@ import {
   type ResolvedTag,
   type SongTagIndex,
 } from '@/utils/songTags';
+import { useSongListTags } from '@/hooks/useSongListTags';
+import HiddenSongsNote from '@/components/song-tags/HiddenSongsNote';
 import { h } from '@/utils/haptics';
 import { extractTrailingEmoji, stripCategoryPrefix } from '@/utils/songUtils';
 import { radii } from '@/constants/uiStyles';
@@ -449,6 +451,13 @@ export default function SongsListScreen({
     [isTagMode, songs, activeSlugs, tagIndex, hiddenSlugs],
   );
 
+  const { visibleSongs, hiddenCount, revealHidden, featuredFor } =
+    useSongListTags(songs, {
+      tagIndex,
+      hiddenSlugs,
+      inCategory: !isTagMode && categoryId !== '__ALL__',
+    });
+
   const handleAddTag = useCallback((tag: ResolvedTag) => {
     setActiveSlugs((prev) =>
       prev.includes(tag.slug) ? prev : [...prev, tag.slug],
@@ -583,13 +592,13 @@ export default function SongsListScreen({
 
   const filteredSongs = useMemo(() => {
     const searchTerm = search.trim().toLowerCase();
-    if (!searchTerm) return songs;
+    if (!searchTerm) return visibleSongs;
 
-    return songs.filter((song) => {
+    return visibleSongs.filter((song) => {
       if (!song) return false;
       return song.searchableText?.includes(searchTerm);
     });
-  }, [songs, search]);
+  }, [visibleSongs, search]);
 
   // En modo etiqueta la lista lleva cabeceras de categoría intercaladas; en el
   // resto es UN solo grupo. Las dos se pintan igual —tarjeta con las esquinas
@@ -759,6 +768,7 @@ export default function SongsListScreen({
                 }`
               : ''}
           </Text>
+          <HiddenSongsNote count={hiddenCount} onReveal={revealHidden} />
           {hasAnyMedia && (
             <View style={styles.legend}>
               <MaterialIcons
@@ -785,6 +795,8 @@ export default function SongsListScreen({
       isSearchAll,
       nativeSearch,
       filteredSongs.length,
+      hiddenCount,
+      revealHidden,
       hasAnyMedia,
       styles,
       setSearch,
@@ -836,6 +848,7 @@ export default function SongsListScreen({
           onAddSong={addSong}
           onRemoveSong={removeSong}
           hideSeparator={row.last}
+          featuredTags={featuredFor(item)}
         />
       );
       // En una etiqueta cada categoría es una tarjeta: las filas de los
@@ -856,6 +869,7 @@ export default function SongsListScreen({
     [
       handleSongPress,
       handleSongLongPress,
+      featuredFor,
       isSearchAll,
       isSongSelected,
       getSelectedSong,

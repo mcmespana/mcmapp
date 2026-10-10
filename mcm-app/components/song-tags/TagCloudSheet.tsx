@@ -9,10 +9,14 @@
  * gris casi invisible. Hubo un intento intermedio de rejilla de dos columnas
  * con «8 canciones» debajo: desperdiciaba el ancho y se descartó.
  *
- * «Editar» deja ocultar etiquetas que no van contigo (p. ej. las de otra
- * casa): desaparecen de aquí, de las candidatas para combinar y de la ficha de
- * la canción, pero las canciones siguen en el cantoral. Las ocultas se ven al
- * final, apagadas y con «+», solo en modo edición, para poder recuperarlas.
+ * «Editar» tiene dos modos:
+ * - **Ocultar** las que no van contigo (p. ej. las de otra casa):
+ *   desaparecen de aquí, de las candidatas para combinar y de la ficha de la
+ *   canción. Las ocultas se ven al final, apagadas y con «+», para
+ *   recuperarlas. Con «Esconder también sus canciones» (`hideHiddenTagSongs`)
+ *   tampoco salen sus canciones en las categorías (siguen en el buscador).
+ * - **A mano** (★, `featuredTags`): salen como atajo arriba del cantoral y,
+ *   discretas, en las filas de las listas.
  */
 import React, { useMemo, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -21,6 +25,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import BottomSheet from '@/components/BottomSheet';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useHiddenTags } from '@/hooks/useHiddenTags';
+import { useSettings } from '@/contexts/SettingsContext';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import type { ResolvedTag } from '@/utils/songTags';
 import { SwipeColors, UIColors, themeColors } from '@/constants/colors';
 import { hexAlpha, onColor } from '@/utils/colorUtils';
@@ -52,7 +58,16 @@ export default function TagCloudSheet({
   const isDark = scheme === 'dark';
   const styles = useMemo(() => createStyles(isDark), [isDark]);
   const { hiddenSlugs, toggleHidden } = useHiddenTags();
+  const { settings, setSettings } = useSettings();
+  const featured = settings.featuredTags;
   const [editing, setEditing] = useState(false);
+  const [editMode, setEditMode] = useState<'hide' | 'feature'>('hide');
+  const toggleFeatured = (slug: string) =>
+    setSettings({
+      featuredTags: featured.includes(slug)
+        ? featured.filter((s) => s !== slug)
+        : [...featured, slug],
+    });
 
   // Cada apertura empieza fuera de edición.
   const [wasVisible, setWasVisible] = useState(visible);
@@ -65,7 +80,9 @@ export default function TagCloudSheet({
   const hiddenTags = tags.filter((t) => hiddenSlugs.has(t.slug));
 
   const subtitle = editing
-    ? 'Toca «−» para ocultar una etiqueta de tu cantoral. Sus canciones siguen ahí.'
+    ? editMode === 'hide'
+      ? 'Toca «−» para ocultar las que no van contigo, como las de otro carisma.'
+      : 'Las de la ★ salen arriba del cantoral y, discretas, en las listas.'
     : shown.length === 0
       ? 'Has ocultado todas las etiquetas. Toca «Editar» para recuperarlas.'
       : null;
@@ -84,7 +101,8 @@ export default function TagCloudSheet({
         onPress={() => {
           if (editing) {
             h.toggle();
-            toggleHidden(tag.slug);
+            if (editMode === 'feature') toggleFeatured(tag.slug);
+            else toggleHidden(tag.slug);
             return;
           }
           h.select();
@@ -94,9 +112,13 @@ export default function TagCloudSheet({
         accessibilityLabel={`${tag.label}, ${countLabel}`}
         accessibilityHint={
           editing
-            ? isHidden
-              ? 'Volver a mostrar esta etiqueta'
-              : 'Ocultar esta etiqueta'
+            ? editMode === 'feature'
+              ? featured.includes(tag.slug)
+                ? 'Quitar de las etiquetas a mano'
+                : 'Tener esta etiqueta a mano'
+              : isHidden
+                ? 'Volver a mostrar esta etiqueta'
+                : 'Ocultar esta etiqueta'
             : undefined
         }
       >
@@ -108,7 +130,18 @@ export default function TagCloudSheet({
         >
           {tag.label}
         </Text>
-        {editing ? (
+        {editing && editMode === 'feature' ? (
+          <MaterialIcons
+            name={featured.includes(tag.slug) ? 'star' : 'star-border'}
+            size={20}
+            color={
+              featured.includes(tag.slug)
+                ? UIColors.accentYellow
+                : themeColors(isDark).textMuted
+            }
+            style={styles.star}
+          />
+        ) : editing ? (
           <View style={[styles.editMark, isHidden && styles.editMarkAdd]}>
             <MaterialIcons
               name={isHidden ? 'add' : 'remove'}
@@ -148,6 +181,18 @@ export default function TagCloudSheet({
       }
       paddingHorizontal={0}
     >
+      {editing && (
+        <SegmentedControl
+          options={[
+            { value: 'hide', label: 'Ocultar', icon: 'visibility-off' },
+            { value: 'feature', label: 'A mano', icon: 'star' },
+          ]}
+          value={editMode}
+          onChange={setEditMode}
+          style={styles.modeSwitch}
+          accessibilityLabel="Qué hacer con las etiquetas"
+        />
+      )}
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       <ScrollView
         style={styles.scroll}
@@ -157,12 +202,38 @@ export default function TagCloudSheet({
         <View style={styles.grid}>
           {shown.map((t) => renderChip(t, false))}
         </View>
-        {editing && hiddenTags.length > 0 ? (
+        {editing && editMode === 'hide' && hiddenTags.length > 0 ? (
           <>
             <Text style={styles.sectionLabel}>Ocultas</Text>
             <View style={styles.grid}>
               {hiddenTags.map((t) => renderChip(t, true))}
             </View>
+            <PressableFeedback
+              style={styles.hideSongsRow}
+              onPress={() => {
+                h.toggle();
+                setSettings({
+                  hideHiddenTagSongs: !settings.hideHiddenTagSongs,
+                });
+              }}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: settings.hideHiddenTagSongs }}
+              accessibilityLabel="Esconder también sus canciones de las categorías"
+            >
+              <MaterialIcons
+                name={
+                  settings.hideHiddenTagSongs
+                    ? 'check-box'
+                    : 'check-box-outline-blank'
+                }
+                size={22}
+                color={themeColors(isDark).link}
+              />
+              <Text style={styles.hideSongsText}>
+                Esconder también sus canciones de las categorías (siguen en el
+                buscador)
+              </Text>
+            </PressableFeedback>
           </>
         ) : null}
       </ScrollView>
@@ -262,6 +333,25 @@ const createStyles = (isDark: boolean) => {
       marginTop: spacing.lg,
       marginBottom: spacing.sm,
       marginLeft: spacing.xs,
+    },
+    modeSwitch: {
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    star: {
+      marginLeft: spacing.sm,
+    },
+    hideSongsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 44,
+      marginTop: spacing.md,
+    },
+    hideSongsText: {
+      ...typography.subhead,
+      color: t.text,
+      flex: 1,
     },
     editButton: {
       paddingHorizontal: spacing.sm,
