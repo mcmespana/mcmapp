@@ -25,6 +25,7 @@
  *    expo-print al generar el fichero).
  */
 
+import { chorusRefsToComments } from '@/utils/chorusRef';
 import {
   ChordProParser,
   HtmlDivFormatter,
@@ -83,7 +84,7 @@ const cleanTitle = (t: string) => t.replace(/^\d+\.\s*/, '').trim();
 
 /** Renderiza una canción a HTML usando ChordSheetJS, con transpose aplicado. */
 function renderSongBody(content: string, transpose: number): string {
-  let chordPro = preprocessArrangements(content)
+  let chordPro = chorusRefsToComments(preprocessArrangements(content))
     .replace(/\{sov\}/gi, '{start_of_verse}')
     .replace(/\{eov\}/gi, '{end_of_verse}')
     .replace(/\{soc\}/gi, '{start_of_chorus}')

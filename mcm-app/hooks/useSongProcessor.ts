@@ -1,4 +1,5 @@
 import { logger } from '@/utils/logger';
+import { chorusRefsToComments } from '@/utils/chorusRef';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 import { ChordProParser, HtmlDivFormatter, Song } from 'chordsheetjs';
@@ -94,7 +95,7 @@ const PARSED_CACHE_LIMIT = 64;
 function parseChordPro(chordPro: string): ParsedResult {
   const cached = PARSED_CACHE.get(chordPro);
   if (cached !== undefined) return cached;
-  const cleaned = preprocessArrangements(chordPro)
+  const cleaned = chorusRefsToComments(preprocessArrangements(chordPro))
     .replace(/\{sov\}/gi, '{start_of_verse}')
     .replace(/\{eov\}/gi, '{end_of_verse}')
     .replace(/\{soc\}/gi, '{start_of_chorus}')

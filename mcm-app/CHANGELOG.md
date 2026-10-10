@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-10 21:00 — OTA producción: los `{chorus}` del cantoral se ven
+
+- El cantoral repasado (octubre de 2026) marca «aquí va el estribillo» con
+  `{chorus}` en vez de escribir «ESTRIBILLO» como letra. Esta versión lo
+  perdía (ChordSheetJS lo descarta): ahora sale como comentario
+  «Estribillo» o con su etiqueta (`utils/chorusRef.ts`), en la canción y en
+  el PDF de la playlist.
+
 ## Formato
 
 ```
