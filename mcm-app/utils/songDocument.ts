@@ -484,6 +484,32 @@ export interface SongDocumentOptions {
   adminMode?: boolean;
 }
 
+/**
+ * Pantalla completa: cualquier toque, tecla o rueda dentro de la hoja avisa
+ * con `{ type: 'sheet-touch' }` (como mucho cada 400 ms), para volver a
+ * enseñar los controles, que se apagan solos mientras se lee.
+ */
+export const FS_TOUCH_JS = `
+(function () {
+  var last = 0;
+  function post() {
+    var now = Date.now();
+    if (now - last < 400) return;
+    last = now;
+    var msg = JSON.stringify({ type: 'sheet-touch' });
+    try {
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) window.ReactNativeWebView.postMessage(msg);
+      else if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*');
+    } catch (e) {}
+  }
+  document.addEventListener('touchstart', post, { passive: true });
+  document.addEventListener('mousedown', post);
+  document.addEventListener('mousemove', post);
+  document.addEventListener('keydown', post);
+  window.addEventListener('wheel', post, { passive: true });
+})();
+`;
+
 /** HTML completo de una canción ya parseada, y lo que hay en ella. */
 export function buildSongDocument(
   baseSong: Song,
@@ -793,6 +819,10 @@ export function buildSongDocument(
           overflow-wrap: break-word;
           max-width: 100%;
         }
+        /* Dentro de la hoja el tamaño ya es el de la letra: el calc de arriba
+           se aplicaba dos veces y, con la letra grande o en pantalla
+           completa, «Intro: Violín» salía más grande que la propia letra. */
+        .sheet .arrangement { font-size: 0.78em; }
         body.arr-hidden .arrangement { display: none !important; }
         @media (min-width: 720px) {
           body { padding-left: max(16px, calc((100% - ${isFullscreen ? 920 : 760}px) / 2)); padding-right: max(16px, calc((100% - ${isFullscreen ? 920 : 760}px) / 2)); }
@@ -913,6 +943,7 @@ export function buildSongDocument(
       ${finalSongContentWithMeta}
       <script>${SHEET_LAYOUT_JS}</script>
       <script>${bootstrap}</script>
+      ${isFullscreen ? `<script>${FS_TOUCH_JS}</script>` : ''}
     </body>
     </html>
   `;

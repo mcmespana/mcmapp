@@ -179,6 +179,15 @@ un móvil o un iPad, también al lado del editor Raw mientras se escribe.
   pase (`screen: 'fullscreen'`).
 - **Web**: la canción va en un iframe (como en el detalle), así que corre la
   maquetación y también hay modo atril con teclado o pedal.
+- **Los controles se apagan solos** (`hooks/useImmersiveChrome.ts`): a los
+  3,5 s sin tocar nada se desvanecen (‹ › , atril, play) y la ✕ se queda
+  atenuada; vuelven con cualquier toque, tecla, rueda o movimiento del ratón.
+  Dentro de la hoja, el documento de pantalla completa lleva `FS_TOUCH_JS`,
+  que avisa con `{ type: 'sheet-touch' }`. En modo atril el toque también
+  pasa página (es su gesto). Con lector de pantalla no se esconden nunca;
+  en web no se pregunta, porque react-native-web contesta siempre que sí.
+- Arreglado de paso: el `{arr:}` multiplicaba dos veces el tamaño de la letra
+  y, en pantalla completa o con la letra grande, salía más grande que ella.
 
 ## PDF de la playlist (2026-10-10)
 
