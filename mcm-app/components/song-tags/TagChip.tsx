@@ -41,6 +41,10 @@ interface TagChipProps {
   onRemove?: (tag: ResolvedTag) => void;
   /** Un «+» delante: la etiqueta se AÑADE a las activas (refinamiento). */
   showAdd?: boolean;
+  /** Otro icono delante (★ a mano, ojo tachado…); manda sobre `showAdd`. */
+  leadingIcon?: keyof typeof MaterialIcons.glyphMap;
+  /** Tachada y apagada: una etiqueta escondida. */
+  struck?: boolean;
   accessibilityHint?: string;
 }
 
@@ -53,6 +57,8 @@ export default function TagChip({
   onPress,
   onRemove,
   showAdd = false,
+  leadingIcon,
+  struck = false,
   accessibilityHint,
 }: TagChipProps) {
   const styles = React.useMemo(
@@ -62,17 +68,27 @@ export default function TagChip({
 
   const body = (
     <>
-      {showAdd && (
+      {(leadingIcon || showAdd) && (
         <MaterialIcons
-          name="add"
+          name={leadingIcon ?? 'add'}
           size={15}
-          color={themeColors(isDark).textMuted}
+          color={
+            variant === 'active'
+              ? StyleSheet.flatten(styles.label).color
+              : themeColors(isDark).textMuted
+          }
           style={styles.addIcon}
         />
       )}
-      {!!tag.emoji && <Text style={styles.emoji}>{tag.emoji}</Text>}
+      {!!tag.emoji && (
+        <Text style={[styles.emoji, struck && styles.struck]}>{tag.emoji}</Text>
+      )}
       <Text
-        style={[styles.label, fontSize ? { fontSize } : null]}
+        style={[
+          styles.label,
+          fontSize ? { fontSize } : null,
+          struck && styles.struckLabel,
+        ]}
         numberOfLines={1}
       >
         {tag.label}
@@ -111,6 +127,8 @@ export default function TagChip({
       onPress={handlePress}
       style={styles.chip}
       activeOpacity={0.6}
+      // El chip mide ~32 de alto: hasta 44 con el área de toque.
+      hitSlop={TOUCH_SLOP}
       accessibilityRole="button"
       accessibilityLabel={
         onRemove
@@ -125,6 +143,8 @@ export default function TagChip({
     </TouchableOpacity>
   );
 }
+
+const TOUCH_SLOP = { top: 6, bottom: 6, left: 2, right: 2 };
 
 const createStyles = (isDark: boolean, variant: TagChipVariant) => {
   const isActive = variant === 'active';
@@ -197,6 +217,11 @@ const createStyles = (isDark: boolean, variant: TagChipVariant) => {
       letterSpacing: -0.1,
       color: labelColor,
       flexShrink: 1,
+    },
+    struck: { opacity: 0.45 },
+    struckLabel: {
+      textDecorationLine: 'line-through',
+      color: themeColors(isDark).textMuted,
     },
     count: {
       fontSize: 11.5,

@@ -259,19 +259,32 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                     </View>
                   )}
                   {featuredTags && featuredTags.length > 0 && (
-                    <Text
-                      style={styles.featuredTags}
-                      numberOfLines={1}
+                    // Una pastilla callada, como las del tono: en texto
+                    // suelto detrás del autor parecía un segundo autor.
+                    <View
+                      style={styles.tagPill}
                       accessibilityLabel={`Etiquetas: ${featuredTags
                         .map((t) => t.label)
                         .join(', ')}`}
                     >
-                      {featuredTags
-                        .map((t) =>
-                          t.emoji ? `${t.emoji} ${t.label}` : t.label,
-                        )
-                        .join(' · ')}
-                    </Text>
+                      {featuredTags[0].emoji ? (
+                        <Text style={styles.tagPillText}>
+                          {featuredTags[0].emoji}
+                        </Text>
+                      ) : (
+                        <MaterialIcons
+                          name="local-offer"
+                          size={10}
+                          color={themeColors(isDark).textMuted}
+                        />
+                      )}
+                      <Text style={styles.tagPillText} numberOfLines={1}>
+                        {featuredTags[0].label}
+                        {featuredTags.length > 1
+                          ? ` +${featuredTags.length - 1}`
+                          : ''}
+                      </Text>
+                    </View>
                   )}
                 </View>
               </View>
@@ -415,11 +428,23 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginRight: spacing.xs + 2,
     },
     // Discretas: que se vean sin competir con el título ni el autor.
-    featuredTags: {
-      ...typography.caption,
-      color: themeColors(isDark).textMuted,
+    tagPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
       flexShrink: 1,
+      maxWidth: '55%',
       marginLeft: spacing.sm,
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: radii.pillFull,
+      backgroundColor: themeColors(isDark).backgroundSunken,
+    },
+    tagPillText: {
+      ...typography.micro,
+      fontWeight: '600',
+      color: themeColors(isDark).textSecondary,
+      flexShrink: 1,
     },
     authorText: {
       ...typography.caption,

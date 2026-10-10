@@ -42,6 +42,7 @@ import {
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
+import { useImmersiveChrome } from '@/hooks/useImmersiveChrome';
 
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
@@ -442,6 +443,21 @@ export default function SongFullscreenScreen({
     webViewRef.current.injectJavaScript(js);
   }, [styleState]);
 
+  // Los controles se apagan solos y vuelven con cualquier toque o tecla.
+  const chrome = useImmersiveChrome();
+  const { poke } = chrome;
+  useEffect(() => {
+    if (!isWeb) return;
+    window.addEventListener('mousemove', poke);
+    window.addEventListener('mousedown', poke);
+    window.addEventListener('keydown', poke);
+    return () => {
+      window.removeEventListener('mousemove', poke);
+      window.removeEventListener('mousedown', poke);
+      window.removeEventListener('keydown', poke);
+    };
+  }, [poke]);
+
   const autoScroll = useAutoScroller({
     webViewRef,
     webContainerRef:
@@ -455,7 +471,12 @@ export default function SongFullscreenScreen({
     (event: { nativeEvent: { data: string } }) => {
       try {
         const msg = JSON.parse(event.nativeEvent.data);
+        if (msg && msg.type === 'sheet-touch') {
+          poke();
+          return;
+        }
         if (msg && msg.type === 'sheet-nav') {
+          poke();
           go(msg.dir > 0 ? 1 : -1);
           return;
         }
@@ -464,7 +485,7 @@ export default function SongFullscreenScreen({
       }
       autoScroll.handleWebViewMessage(event);
     },
-    [go, autoScroll],
+    [go, autoScroll, poke],
   );
   useEffect(() => {
     if (!isWeb) return;
@@ -560,110 +581,122 @@ export default function SongFullscreenScreen({
         )}
       </View>
 
-      {/* Cerrar — esquina superior derecha */}
-      <PressableFeedback
-        style={[styles.closeButton, { top: closeTop }]}
-        onPress={close}
-        accessibilityLabel="Cerrar pantalla completa"
+      {/* Cerrar — esquina superior derecha. Con los controles escondidos
+          solo se atenúa: la salida siempre está a la vista. */}
+      <Animated.View
+        style={[styles.closeWrap, { top: closeTop }, chrome.dimStyle]}
       >
-        <PressableFeedback.Scale />
-        <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
-        <MaterialIcons name="close" color="#FFFFFF" size={22} />
-      </PressableFeedback>
-
-      {/* Pasar de canción (lista) o aviso de que se sigue al líder del coro. */}
-      {canNavigate && (
-        <View
-          style={[styles.navCluster, { bottom: controlsBottom }]}
-          accessibilityRole="toolbar"
+        <PressableFeedback
+          style={styles.closeButton}
+          onPress={close}
+          accessibilityLabel="Cerrar pantalla completa"
         >
+          <PressableFeedback.Scale />
           <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
-          <PressableFeedback
-            style={styles.navButton}
-            onPress={() => go(-1)}
-            accessibilityRole="button"
-            isDisabled={index === 0}
-            accessibilityLabel="Canción anterior"
+          <MaterialIcons name="close" color="#FFFFFF" size={22} />
+        </PressableFeedback>
+      </Animated.View>
+
+      {/* Los controles de abajo se apagan solos mientras se lee. */}
+      <Animated.View
+        style={[StyleSheet.absoluteFill, chrome.style]}
+        pointerEvents={chrome.shown ? 'box-none' : 'none'}
+        onTouchStart={poke}
+      >
+        {/* Pasar de canción (lista) o aviso de que se sigue al líder del coro. */}
+        {canNavigate && (
+          <View
+            style={[styles.navCluster, { bottom: controlsBottom }]}
+            accessibilityRole="toolbar"
           >
-            <MaterialIcons
-              name="chevron-left"
-              size={28}
-              color={index === 0 ? 'rgba(255,255,255,0.35)' : '#FFFFFF'}
-            />
-          </PressableFeedback>
-          <Text style={styles.navCount}>
-            {index! + 1} / {list!.length}
-          </Text>
-          <PressableFeedback
-            style={styles.navButton}
-            onPress={() => go(1)}
-            accessibilityRole="button"
-            isDisabled={index === list!.length - 1}
-            accessibilityLabel="Canción siguiente"
+            <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
+            <PressableFeedback
+              style={styles.navButton}
+              onPress={() => go(-1)}
+              accessibilityRole="button"
+              isDisabled={index === 0}
+              accessibilityLabel="Canción anterior"
+            >
+              <MaterialIcons
+                name="chevron-left"
+                size={28}
+                color={index === 0 ? 'rgba(255,255,255,0.35)' : '#FFFFFF'}
+              />
+            </PressableFeedback>
+            <Text style={styles.navCount}>
+              {index! + 1} / {list!.length}
+            </Text>
+            <PressableFeedback
+              style={styles.navButton}
+              onPress={() => go(1)}
+              accessibilityRole="button"
+              isDisabled={index === list!.length - 1}
+              accessibilityLabel="Canción siguiente"
+            >
+              <MaterialIcons
+                name="chevron-right"
+                size={28}
+                color={
+                  index === list!.length - 1
+                    ? 'rgba(255,255,255,0.35)'
+                    : '#FFFFFF'
+                }
+              />
+            </PressableFeedback>
+          </View>
+        )}
+        {following && (
+          <View
+            style={[
+              styles.navCluster,
+              styles.followPill,
+              { bottom: controlsBottom },
+            ]}
+            accessibilityLabel="Siguiendo la canción del coro"
           >
-            <MaterialIcons
-              name="chevron-right"
-              size={28}
-              color={
-                index === list!.length - 1
-                  ? 'rgba(255,255,255,0.35)'
-                  : '#FFFFFF'
-              }
-            />
-          </PressableFeedback>
-        </View>
-      )}
-      {following && (
-        <View
+            <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
+            <MaterialIcons name="groups" size={18} color="#FFFFFF" />
+            <Text style={styles.navCount}>Siguiendo al coro</Text>
+          </View>
+        )}
+
+        {/* Modo atril (páginas) — encima del play. */}
+        <PressableFeedback
           style={[
-            styles.navCluster,
-            styles.followPill,
-            { bottom: controlsBottom },
+            styles.pagedButton,
+            { bottom: controlsBottom + (paged ? 0 : 56 + 12) },
           ]}
-          accessibilityLabel="Siguiendo la canción del coro"
+          onPress={togglePaged}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: paged }}
+          accessibilityLabel={
+            paged
+              ? 'Volver al scroll'
+              : 'Modo atril: pasar página con un toque o un pedal'
+          }
         >
+          <PressableFeedback.Scale />
           <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
-          <MaterialIcons name="groups" size={18} color="#FFFFFF" />
-          <Text style={styles.navCount}>Siguiendo al coro</Text>
-        </View>
-      )}
+          <MaterialIcons
+            name={paged ? 'swap-vert' : 'auto-stories'}
+            color="#FFFFFF"
+            size={22}
+          />
+        </PressableFeedback>
 
-      {/* Modo atril (páginas) — encima del play. */}
-      <PressableFeedback
-        style={[
-          styles.pagedButton,
-          { bottom: controlsBottom + (paged ? 0 : 56 + 12) },
-        ]}
-        onPress={togglePaged}
-        accessibilityRole="switch"
-        accessibilityState={{ checked: paged }}
-        accessibilityLabel={
-          paged
-            ? 'Volver al scroll'
-            : 'Modo atril: pasar página con un toque o un pedal'
-        }
-      >
-        <PressableFeedback.Scale />
-        <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
-        <MaterialIcons
-          name={paged ? 'swap-vert' : 'auto-stories'}
-          color="#FFFFFF"
-          size={22}
-        />
-      </PressableFeedback>
-
-      {/* Controles de auto-scroll — esquina inferior derecha. En páginas no
+        {/* Controles de auto-scroll — esquina inferior derecha. En páginas no
           hay scroll que automatizar. */}
-      {!paged && (
-        <AutoScrollControls
-          isPlaying={autoScroll.isPlaying}
-          speedIndex={autoScroll.speedIndex}
-          onToggle={autoScroll.toggle}
-          onSelectSpeed={autoScroll.setSpeedIndex}
-          isDark={isDark}
-          bottom={controlsBottom}
-        />
-      )}
+        {!paged && (
+          <AutoScrollControls
+            isPlaying={autoScroll.isPlaying}
+            speedIndex={autoScroll.speedIndex}
+            onToggle={autoScroll.toggle}
+            onSelectSpeed={autoScroll.setSpeedIndex}
+            isDark={isDark}
+            bottom={controlsBottom}
+          />
+        )}
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -683,9 +716,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   /* Cerrar — superior derecha */
-  closeButton: {
+  closeWrap: {
     position: 'absolute',
     right: 16,
+    zIndex: 4,
+  },
+  closeButton: {
     width: 40,
     height: 40,
     borderRadius: radii.xl,

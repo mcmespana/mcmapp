@@ -207,7 +207,7 @@ const ExportPdfModal: React.FC<Props> = ({
                 </View>
                 <Text style={styles.subtitle}>
                   {songCount} {songCount === 1 ? 'canción' : 'canciones'}
-                  {'  ·  '}Letra y acordes con un formato fantástico
+                  {'  ·  '}Letra y acordes, listo para imprimir
                 </Text>
 
                 <Text style={styles.label}>Título del PDF</Text>
