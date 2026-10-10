@@ -28,6 +28,7 @@ import SongDisplay from '@/components/SongDisplay';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import TagChip from '@/components/song-tags/TagChip';
+import { useHiddenTags } from '@/hooks/useHiddenTags';
 import { ChorusPreview } from '@/components/SongFontBottomSheet';
 import {
   sheetPalette,
@@ -88,8 +89,8 @@ const STEP_TEXT: Record<OnboardingStepId, { title: string; hint: string }> = {
     hint: 'El tamaño, con Aa dentro de cada canción.',
   },
   tags: {
-    title: 'Etiquetas a mano',
-    hint: 'Las que marques salen arriba del cantoral.',
+    title: 'Tus etiquetas',
+    hint: 'Las que uses mucho, a mano. Las que no van contigo (canciones de otro carisma, por ejemplo), escondidas.',
   },
 };
 
@@ -421,31 +422,90 @@ function StepBody({
     );
   }
 
-  // Etiquetas: se marcan y desmarcan; las marcadas salen como atajos.
+  // Etiquetas: a mano (atajo arriba y discretas en las listas) o
+  // escondidas (y, si se quiere, sus canciones fuera de las categorías).
+  return <TagsStep palette={p} tags={tags} isDark={isDark} />;
+}
+
+function TagsStep({
+  palette: p,
+  tags,
+  isDark,
+}: {
+  palette: SheetPalette;
+  tags: ResolvedTag[];
+  isDark: boolean;
+}) {
+  const { settings, setSettings } = useSettings();
+  const { hiddenSlugs, toggleHidden } = useHiddenTags();
   const featured = new Set(settings.featuredTags);
+  const toggleFeatured = (slug: string) =>
+    setSettings({
+      featuredTags: featured.has(slug)
+        ? settings.featuredTags.filter((s) => s !== slug)
+        : [...settings.featuredTags, slug],
+    });
   return (
-    <View style={styles.tagWrap}>
-      {tags.map((tag) => {
-        const on = featured.has(tag.slug);
-        return (
-          <TagChip
-            key={tag.slug}
-            tag={tag}
-            variant={on ? 'active' : 'outline'}
-            isDark={isDark}
-            showAdd={!on}
-            onPress={() => {
-              const nextTags = on
-                ? settings.featuredTags.filter((s) => s !== tag.slug)
-                : [...settings.featuredTags, tag.slug];
-              setSettings({ featuredTags: nextTags });
-            }}
-            accessibilityHint={
-              on ? 'Quitar de los atajos' : 'Añadir a los atajos del cantoral'
-            }
-          />
-        );
-      })}
+    <View style={styles.group}>
+      <Text style={[styles.inlineLabel, { color: p.label }]}>A mano</Text>
+      <View style={styles.tagWrap}>
+        {tags
+          .filter((t) => !hiddenSlugs.has(t.slug))
+          .map((tag) => {
+            const on = featured.has(tag.slug);
+            return (
+              <TagChip
+                key={tag.slug}
+                tag={tag}
+                variant={on ? 'active' : 'outline'}
+                isDark={isDark}
+                showAdd={!on}
+                hideCount
+                onPress={() => toggleFeatured(tag.slug)}
+                accessibilityHint={
+                  on
+                    ? 'Quitar de las etiquetas a mano'
+                    : 'Tenerla arriba del cantoral y en las listas'
+                }
+              />
+            );
+          })}
+      </View>
+      <Text style={[styles.inlineLabel, { color: p.label }]}>Esconder</Text>
+      <View style={styles.tagWrap}>
+        {tags
+          .filter((t) => !featured.has(t.slug))
+          .map((tag) => {
+            const off = hiddenSlugs.has(tag.slug);
+            return (
+              <TagChip
+                key={tag.slug}
+                tag={tag}
+                variant={off ? 'active' : 'outline'}
+                isDark={isDark}
+                hideCount
+                onPress={() => {
+                  h.toggle();
+                  toggleHidden(tag.slug);
+                }}
+                accessibilityHint={
+                  off ? 'Volver a mostrarla' : 'Esconder esta etiqueta'
+                }
+              />
+            );
+          })}
+      </View>
+      {hiddenSlugs.size > 0 && (
+        <ToggleRow
+          palette={p}
+          icon="visibility-off"
+          title="Esconder también sus canciones (siguen en el buscador)"
+          on={settings.hideHiddenTagSongs}
+          onPress={() =>
+            setSettings({ hideHiddenTagSongs: !settings.hideHiddenTagSongs })
+          }
+        />
+      )}
     </View>
   );
 }

@@ -132,3 +132,62 @@ describe('chooseBreaks — cortes óptimos', () => {
     expect(L.chooseBreaks([8, 8], [8], 16, 16, [0, 6])).toEqual([1]);
   });
 });
+
+describe('pasar de canción desde la hoja (pantalla completa)', () => {
+  /** Un DOM mínimo: lo justo para los manejadores de toque y teclado. */
+  function mount(paged: boolean) {
+    const handlers: Record<string, ((e: any) => void)[]> = {};
+    const sent: unknown[] = [];
+    const doc = {
+      readyState: 'complete',
+      body: { classList: { contains: (c: string) => paged && c === 'paged' } },
+      querySelector: () => null,
+      addEventListener: (type: string, fn: (e: any) => void) => {
+        (handlers[type] ??= []).push(fn);
+      },
+    };
+    const win = {
+      innerWidth: 300,
+      innerHeight: 600,
+      ReactNativeWebView: {
+        postMessage: (m: string) => sent.push(JSON.parse(m)),
+      },
+      addEventListener: () => {},
+      requestAnimationFrame: () => 0,
+    };
+    new Function('window', 'document', SHEET_LAYOUT_JS)(win, doc);
+    const fire = (type: string, e: object) =>
+      (handlers[type] ?? []).forEach((fn) =>
+        fn({ preventDefault: () => {}, target: null, ...e }),
+      );
+    return { fire, sent };
+  }
+
+  it('en atril, pasar de la última página pide la siguiente canción', () => {
+    const { fire, sent } = mount(true);
+    fire('click', { clientX: 250 });
+    fire('keydown', { key: 'PageDown' });
+    fire('click', { clientX: 20 });
+    expect(sent).toEqual([
+      { type: 'sheet-nav', dir: 1 },
+      { type: 'sheet-nav', dir: 1 },
+      { type: 'sheet-nav', dir: -1 },
+    ]);
+  });
+
+  it('con scroll, solo las flechas laterales y el deslizar en horizontal', () => {
+    const { fire, sent } = mount(false);
+    fire('keydown', { key: 'PageDown' });
+    fire('click', { clientX: 250 });
+    fire('keydown', { key: 'ArrowLeft' });
+    fire('touchstart', { touches: [{ clientX: 200, clientY: 100 }] });
+    fire('touchend', { changedTouches: [{ clientX: 60, clientY: 110 }] });
+    // Un deslizar casi vertical es scroll, no pasar de canción.
+    fire('touchstart', { touches: [{ clientX: 200, clientY: 100 }] });
+    fire('touchend', { changedTouches: [{ clientX: 100, clientY: 400 }] });
+    expect(sent).toEqual([
+      { type: 'sheet-nav', dir: -1 },
+      { type: 'sheet-nav', dir: 1 },
+    ]);
+  });
+});

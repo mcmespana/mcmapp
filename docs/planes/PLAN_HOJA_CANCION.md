@@ -61,9 +61,9 @@ horizontal caben enteras 124 de 258 (completa) y 142 (compacta).
 | Números de estrofa automáticos desde 2                  | Sí       | Solo los escritos a mano       |
 | `{arr:}` a la derecha                                   | Sí       | A la izquierda                 |
 
-El backlog dice que «las anchuras máximas y el layout de iPad» no se tocan
-(§2.G). Se ha leído como la app en general: las columnas solo existen dentro
-de la hoja de la canción. Confirmar.
+**✅ Confirmadas por el usuario el 2026-10-10** («Tus decisiones ok»), también
+la lectura de §2.G del backlog: las columnas solo existen dentro de la hoja de
+la canción; el layout de iPad de la app no se toca.
 
 ## 4. Fase 2 — pendiente
 
@@ -135,9 +135,8 @@ dependen del estilo de estribillo que elija el usuario.
   (`featuredTags`). Cada opción se ve al momento sobre una canción de verdad,
   que baja sola a la parte que cambia; se cierra en cualquier paso y lo
   tocado se queda.
-- **«Ocultar» etiquetas** no se ha hecho: hoy hay 4 etiquetas y esconder
-  canciones de las listas confunde más de lo que ayuda. Si algún día hay
-  etiquetas que molesten, es un `hiddenTags` al lado de `featuredTags`.
+- **«Ocultar» etiquetas**: ya existía (rama de pulido); el 2026-10-10 se le
+  añade esconder también sus canciones (§11).
 - **Las 258 canciones repasadas** en `mcmapp-cantoral` (fuera mayúsculas,
   estribillos marcados, muros partidos, notas a `{c:}`, acordes a corchetes),
   verificado palabra a palabra y acorde a acorde. En iPad horizontal caben
@@ -154,6 +153,25 @@ del editor Raw; y la misma vista al añadir canción y al importar de
 doceacordes. Detalle en `HOJA_CANCION.md` («El admin del cantoral pinta
 igual»).
 
-Queda de la Fase 2: PDF de la playlist con la hoja nueva, pantalla completa
-en web (`innerHTML` → iframe), el mapa de la canción y probar el pedal en un
-iPad de verdad.
+## 11. Cuarta vuelta (2026-10-10, tarde)
+
+- **Pantalla completa** rehecha: entra con el tono y la cejilla que tenías,
+  pasa de canción sin salir (‹ ›, deslizar, flechas, pedal al acabar la
+  última página), sigue al coro, botón ⛶ en la cabecera y en web un iframe
+  con la maquetación de verdad. Detalle en `HOJA_CANCION.md`.
+- **Etiquetas**: esconder también las canciones de las etiquetas ocultas
+  (para quien no quiere las de otro carisma) y ★ «a mano», que salen
+  discretas en las filas. Lo explica el onboarding. Detalle en
+  `ETIQUETAS.md` §3.2.
+- **Repaso de etiquetas** propuesto en un artefacto interactivo para que el
+  usuario diga sí / no a cada una; lo que apruebe se escribe en los `.cho`.
+
+Orden de lo que queda:
+
+1. Editor visual del admin con el móvil al lado y el estribillo / intro como
+   en la app.
+2. PDF de la playlist con la hoja nueva (estrofas y estribillos sin partir
+   entre páginas).
+3. Aplicar las etiquetas aprobadas en el repaso.
+4. Mapa de la canción («1 · E · 2 · E · 3 · E×2»), opcional.
+5. Probar el pedal Bluetooth en un iPad de verdad.

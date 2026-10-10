@@ -121,6 +121,28 @@ categorías y en el buscador. Es una preferencia del dispositivo
 ningún sitio. En modo edición cada chip lleva «−» para ocultarla; las ocultas salen al
 final, apagadas y con «+», para recuperarlas.
 
+**«Editar» tiene dos modos** (un selector Ocultar / A mano arriba de la hoja):
+
+- **Ocultar** — lo de arriba. Debajo de las ocultas hay una casilla
+  **«Esconder también sus canciones de las categorías»**
+  (`settings.hideHiddenTagSongs`, apagada de serie): pensada para quien no
+  quiere un cantoral lleno de canciones de otro carisma (salesianos,
+  Consolació…). Con ella, las canciones con alguna etiqueta oculta dejan de
+  salir **en las categorías**, pero siguen en el buscador y en la
+  propia pantalla de la etiqueta: esconder no es borrar. La lista lo dice con
+  un «2 escondidas · Ver» discreto junto al recuento, que las enseña en esa
+  visita (`components/song-tags/HiddenSongsNote.tsx`).
+- **A mano** (★, `settings.featuredTags`) — las etiquetas que más usas. Salen
+  como atajo arriba del cantoral y, **discretas, en las filas de las listas**:
+  una línea pequeña y apagada bajo el autor («🕰️ Viejunas»). Solo las que
+  marcas, nunca todas: sin ninguna ★, las filas no cambian.
+
+Lo mismo se elige en el paso **«Tus etiquetas»** del onboarding del cantoral
+(saltable, y se repite con el «?» del header), que explica para qué sirve
+esconder. La lógica pura está en `utils/songTags.ts`
+(`withoutHiddenTagSongs`, `featuredTagsOf`) y la de las listas en
+`hooks/useSongListTags.ts`.
+
 ### 3.3 La pantalla de una etiqueta
 
 Es `SongListScreen` con la **categoría virtual `__TAG__:<slug>`**, hermana de
@@ -173,8 +195,10 @@ pica la curiosidad y se ven las otras 33.
 
 ### 3.7 Lo que NO se hace
 
-- ❌ **Etiquetas en las filas de la lista.** `SongListItem` ya lleva píldora de
-  tono con transposición, puntos de multimedia y dos direcciones de swipe.
+- ❌ **Todas las etiquetas en las filas de la lista.** `SongListItem` ya lleva
+  píldora de tono con transposición, puntos de multimedia y dos direcciones de
+  swipe. Desde octubre de 2026 salen **solo las que el usuario marca con ★**,
+  en una línea apagada bajo el autor (§3.2).
 - ❌ **Modal de filtros con checkboxes.** Ver §3.4.
 - ❌ **Nodo nuevo de Firebase escrito desde el panel.** Ver §2.
 
@@ -189,6 +213,7 @@ pica la curiosidad y se ven las otras 33.
 | Chip (3 variantes) | `mcm-app/components/song-tags/TagChip.tsx` |
 | Nube de etiquetas | `mcm-app/components/song-tags/TagCloudSheet.tsx` |
 | Fila de refinamiento | `mcm-app/components/song-tags/TagContextBar.tsx` |
+| Ocultar canciones · ★ en las filas | `mcm-app/hooks/useSongListTags.ts` + `components/song-tags/HiddenSongsNote.tsx` |
 | Botón del header | `mcm-app/app/screens/CategoriesScreen.tsx` |
 | Pantalla `__TAG__:` | `mcm-app/app/screens/SongListScreen.tsx` |
 | Chips en la ficha | `mcm-app/components/song-media/SongMediaSheet.tsx` |

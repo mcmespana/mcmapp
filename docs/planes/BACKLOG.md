@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-10-10 (hoja de canción: onboarding y canciones repasadas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> Última actualización: 2026-10-10 (hoja de canción: decisiones confirmadas, pantalla completa y etiquetas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
 > de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
@@ -310,9 +310,8 @@ usuario el 2026-10-09 («la mejor experiencia para músicos y cantantes»).
   `mcmapp-cantoral`), sin PR: hoja propia (palabras, secciones, cortes por
   frase, acordes que vuelan), vista compacta, numeración, columnas en iPad,
   letra del sistema por defecto, `scripts/revisar_cho.py` en el cantoral.
-- 🔒 Seis decisiones aplicadas a falta de que el usuario las confirme
-  (§3 del plan y fila en §4 de este backlog). No se mergea sin su visto bueno
-  en un dispositivo.
+- ✅ Las seis decisiones de §3 del plan, **confirmadas** por el usuario el
+  2026-10-10 («Tus decisiones ok»).
 - ✅ Segunda vuelta (2026-10-09): interlineado con sentido, variantes de
   estribillo, iPad con plegado y aviso de girar, **modo atril** hecho.
 - ✅ Tercera vuelta (2026-10-10): estribillo **raya + negrita** de serie
@@ -322,9 +321,12 @@ usuario el 2026-10-09 («la mejor experiencia para músicos y cantantes»).
   `mcmapp-cantoral/docs/REVISION_OIDO.md`).
 - ✅ **Admin del cantoral (script C) pintando como la app** (2026-10-10, §10
   del plan): `mcm-sheet.js` generado con `npm run build:sheet-bundle`.
-- 📝 Queda de Fase 2: PDF de la playlist con la hoja nueva, pantalla completa
-  en web, mapa de la canción, probar el pedal en un iPad. Y las 🔒 decisiones
-  de §3 antes de mergear.
+- ✅ Cuarta vuelta (2026-10-10, §11 del plan): **pantalla completa** rehecha
+  (tono, pasar de canción, coro, web) y **etiquetas**: esconder las
+  canciones de otro carisma y ★ «a mano» discretas en las filas.
+- 📝 Queda, en este orden (§11 del plan): editor visual del admin parecido a
+  la app → PDF de la playlist con la hoja nueva → aplicar las etiquetas que
+  el usuario apruebe en el repaso → mapa de la canción → pedal en un iPad.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
@@ -388,12 +390,11 @@ ningún sitio compartido.
 
 ## 4. Decisiones pendientes — preguntar ANTES de ejecutar
 
-| Decisión                                                                                   | Bloquea         | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                                                                                                                         |
-| ------------------------------------------------------------------------------------------ | --------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D   | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                                                      |
-| **Sacar la caza de Carismochitos del laboratorio**                                         | Carismochito    | `docs/funcionalidades/CARISMOCHITO.md`               | "¿Cuándo sale la caza para todo el mundo, y la colección se enlaza desde algún sitio o espera a la vista de perfil?"                                                                                                                                                  |
-| **Hoja de canción — confirmar la Fase 1**                                                  | Mergear la rama | `docs/planes/PLAN_HOJA_CANCION.md` §3                | "Ya lo has visto en el móvil: ¿te valen la letra del sistema para todos, el estribillo sin mayúsculas, las columnas con letra hasta un 20 % más pequeña en iPad, la vista compacta recordada, la numeración automática desde 2 estrofas y los arreglos a la derecha?" |
-| **Pañuelo — por definir**                                                                  | Panel Pañuelo   | `docs/planes/PLAN_PANEL_PANUELO.md`                  | Idea parcial contada el 2026-09-29 (medallas 3D por evento, en el pañuelo, pop-up al tocar; prueba ya en el laboratorio). Falta: **cómo se reparten** y cómo es el pañuelo. No propongas la propuesta escrita como si estuviera decidida.                             |
+| Decisión                                                                                   | Bloquea       | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------ | ------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                          |
+| **Sacar la caza de Carismochitos del laboratorio**                                         | Carismochito  | `docs/funcionalidades/CARISMOCHITO.md`               | "¿Cuándo sale la caza para todo el mundo, y la colección se enlaza desde algún sitio o espera a la vista de perfil?"                                                                                                                      |
+| **Pañuelo — por definir**                                                                  | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md`                  | Idea parcial contada el 2026-09-29 (medallas 3D por evento, en el pañuelo, pop-up al tocar; prueba ya en el laboratorio). Falta: **cómo se reparten** y cómo es el pañuelo. No propongas la propuesta escrita como si estuviera decidida. |
 
 ---
 

@@ -151,3 +151,24 @@ un móvil o un iPad, también al lado del editor Raw mientras se escribe.
   React Native en la hoja, salta).
 - **Al cambiar la hoja**: `npm run build:sheet-bundle` y commitear
   `mcm-sheet.js` en el cantoral, o el admin enseñará la versión anterior.
+
+## Pantalla completa (2026-10-10)
+
+`app/screens/SongFullscreenScreen.tsx`; qué canción y con qué tono, en
+`utils/fullscreenSong.ts` (puro, con tests).
+
+- **Se entra** con el botón ⛶ de la cabecera de la canción (antes solo desde
+  el menú «⋯») y se sale con la ✕, Esc o F (teclado, también con el foco en la
+  letra).
+- **Mismo tono y cejilla** con los que se estaba viendo: antes volvía siempre
+  al original. Y la letra viva (los arreglos recién añadidos por el admin).
+- **Pasar de canción** sin salir: botones ‹ 3 / 8 › abajo a la izquierda,
+  deslizar en horizontal, flechas ← →, y en modo atril pasar de la última
+  página (toque, deslizar o pedal) lleva a la siguiente canción. La hoja lo
+  avisa con el mensaje `{ type: 'sheet-nav', dir }`. Al cerrar, el detalle se
+  queda en la canción a la que se haya llegado (`popTo`).
+- **Coro**: quien escucha sigue la canción del líder sin salir de la pantalla
+  completa (aviso «Siguiendo al coro»); el líder publica la canción a la que
+  pase (`screen: 'fullscreen'`).
+- **Web**: la canción va en un iframe (como en el detalle), así que corre la
+  maquetación y también hay modo atril con teclado o pedal.

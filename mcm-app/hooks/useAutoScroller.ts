@@ -97,6 +97,11 @@ interface UseAutoScrollerParams {
   webContainerRef?: React.MutableRefObject<HTMLDivElement | null>;
   /** Si la pantalla aún no está lista (e.g. esperando contenido), pausamos. */
   enabled?: boolean;
+  /**
+   * Web: cambia cuando el elemento de `webContainerRef` es otro (p. ej. el
+   * documento de un iframe que se ha recargado), para volver a engancharse.
+   */
+  webKey?: unknown;
 }
 
 export interface AutoScrollerApi {
@@ -117,6 +122,7 @@ export function useAutoScroller({
   webViewRef,
   webContainerRef,
   enabled = true,
+  webKey,
 }: UseAutoScrollerParams): AutoScrollerApi {
   const [speedIndex, setSpeedIndexState] =
     useState<number>(DEFAULT_SPEED_INDEX);
@@ -217,7 +223,7 @@ export function useAutoScroller({
     return () => {
       if (raf != null) cancelAnimationFrame(raf);
     };
-  }, [isPlaying, enabled, webContainerRef]);
+  }, [isPlaying, enabled, webContainerRef, webKey]);
 
   // ── Web: pausar ante interacción manual del usuario ─────────────────────
   useEffect(() => {
@@ -236,7 +242,7 @@ export function useAutoScroller({
       el.removeEventListener('touchstart', onUserInteract);
       el.removeEventListener('mousedown', onUserInteract);
     };
-  }, [webContainerRef]);
+  }, [webContainerRef, webKey]);
 
   // ── Controles ───────────────────────────────────────────────────────────
   const play = useCallback(() => setIsPlaying(true), []);

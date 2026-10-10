@@ -234,6 +234,40 @@ export function songHasAllTags(
   return slugs.every((slug) => own.includes(slug));
 }
 
+/**
+ * Las canciones de una lista sin las que lleven alguna etiqueta oculta
+ * («esconder también sus canciones»: p. ej. las de otro carisma). Devuelve
+ * cuántas se han quitado para poder decirlo y ofrecer verlas.
+ */
+export function withoutHiddenTagSongs<T extends { tags?: unknown }>(
+  songs: T[],
+  hidden: ReadonlySet<string>,
+  aliases: Record<string, string> = {},
+): { visible: T[]; hiddenCount: number } {
+  if (hidden.size === 0) return { visible: songs, hiddenCount: 0 };
+  const visible = songs.filter(
+    (song) => !songTagSlugs(song, aliases).some((slug) => hidden.has(slug)),
+  );
+  return { visible, hiddenCount: songs.length - visible.length };
+}
+
+/**
+ * Las etiquetas «a mano» que lleva una canción, en el orden en que se
+ * eligieron: son las que se ven, discretas, en las listas.
+ */
+export function featuredTagsOf(
+  song: { tags?: unknown } | null | undefined,
+  featured: readonly string[],
+  index: SongTagIndex,
+): ResolvedTag[] {
+  if (featured.length === 0) return [];
+  const own = songTagSlugs(song, index.aliases);
+  if (own.length === 0) return [];
+  return featured
+    .filter((slug) => own.includes(slug))
+    .map((slug) => resolveTag(slug, index));
+}
+
 // ── Índice inverso ──────────────────────────────────────────────────────────
 
 /**

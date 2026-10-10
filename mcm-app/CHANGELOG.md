@@ -18,6 +18,39 @@
 
 ---
 
+## 2026-10-10 18:00 — Etiquetas: esconder canciones de otro carisma y ★ a mano
+
+- **Esconder sus canciones**: en «Etiquetas → Editar → Ocultar», una casilla
+  nueva (`settings.hideHiddenTagSongs`) quita de las categorías las canciones
+  con alguna etiqueta oculta (siguen en el buscador y en la
+  pantalla de la etiqueta). La lista avisa con «N escondidas · Ver».
+- **★ A mano** (`settings.featuredTags`): segundo modo de «Editar». Las
+  marcadas salen, discretas, bajo el autor en las filas de las listas.
+- El paso «Tus etiquetas» del onboarding del cantoral explica las dos cosas.
+- `utils/songTags.ts` (`withoutHiddenTagSongs`, `featuredTagsOf`, con tests),
+  `hooks/useSongListTags.ts`, `components/song-tags/HiddenSongsNote.tsx`.
+  Detalle en `docs/funcionalidades/ETIQUETAS.md` §3.2.
+
+---
+
+## 2026-10-10 18:30 — Pantalla completa: mismo tono, pasar de canción y coro
+
+- **Bug**: la pantalla completa pintaba siempre la canción en su tono
+  original aunque la estuvieras viendo transportada (y sin la cejilla
+  cambiada). Ahora entra con el tono y la cejilla de la playlist o del
+  detalle (`utils/fullscreenSong.ts`, con tests).
+- **Pasar de canción sin salir**: ‹ › con «3 / 8», deslizar, flechas, y en
+  modo atril el pedal pasa de la última página a la siguiente canción. Al
+  cerrar, el detalle se queda en la canción a la que se ha llegado.
+- **Coro**: quien escucha ya no sale de la pantalla completa cuando el líder
+  cambia de canción: la sigue dentro. El líder publica las que pasa.
+- **Entrada**: botón ⛶ en la cabecera de la canción (antes solo en «⋯»).
+- **Web**: la letra en un iframe, con la maquetación nueva y modo atril.
+- La WebView de la pantalla completa ya no acepta navegar a otros orígenes
+  (igual que la del detalle).
+
+---
+
 ## 2026-10-10 14:45 — El admin del cantoral pinta las canciones con el código de la app
 
 - `utils/songDocument.ts`: el documento HTML de una canción, puro (sin React
