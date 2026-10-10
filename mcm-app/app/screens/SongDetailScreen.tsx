@@ -1,5 +1,12 @@
 import { logger } from '@/utils/logger';
-import { useEffect, useState, useLayoutEffect, useRef, useMemo } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+} from 'react';
 import {
   StyleSheet,
   View,
@@ -16,6 +23,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { PressableFeedback } from 'heroui-native';
 import SongDisplay from '@/components/SongDisplay';
 import { useSongProcessor } from '@/hooks/useSongProcessor';
 import { useForceCompact } from '@/components/tabs/tabBarController';
@@ -310,6 +318,42 @@ export default function SongDetailScreen({
     setArrangementsVisible(true);
   }
 
+  // Pantalla completa: desde el menú «⋯» y, más a mano, desde la cabecera.
+  const openFullscreen = useCallback(() => {
+    navigation.navigate('SongFullscreen', {
+      filename,
+      title: _navScreenTitle,
+      author,
+      key,
+      capo,
+      // La letra viva (con los arreglos que el admin acabe de añadir) y el
+      // tono con el que se está viendo: antes la pantalla completa volvía
+      // siempre al tono original.
+      content: originalChordPro ?? content ?? '',
+      transpose: currentTranspose,
+      capoOverride: currentCapoOverride,
+      navigationList,
+      currentIndex,
+      source,
+      firebaseCategory,
+    });
+  }, [
+    navigation,
+    filename,
+    _navScreenTitle,
+    author,
+    key,
+    capo,
+    originalChordPro,
+    content,
+    currentTranspose,
+    currentCapoOverride,
+    navigationList,
+    currentIndex,
+    source,
+    firebaseCategory,
+  ]);
+
   // Header NATIVO transparente, HEREDANDO la config del stack del cantoral
   // (headerTransparent + glass en iOS 26), igual que Categorías y dentro de una
   // categoría. Solo añadimos las acciones (multimedia + añadir/quitar) como bar
@@ -322,6 +366,22 @@ export default function SongDetailScreen({
       headerTitle: '',
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 28 }}>
+          <PressableFeedback
+            onPress={() => {
+              h.tap();
+              openFullscreen();
+            }}
+            hitSlop={10}
+            style={{ paddingHorizontal: 6, paddingVertical: 4 }}
+            accessibilityRole="button"
+            accessibilityLabel="Pantalla completa"
+          >
+            <MaterialIcons
+              name="fullscreen"
+              size={26}
+              color={headerIconColor}
+            />
+          </PressableFeedback>
           {songHasMedia && (
             <TouchableOpacity
               onPress={() => {
@@ -372,6 +432,7 @@ export default function SongDetailScreen({
     filename,
     addSong,
     removeSong,
+    openFullscreen,
   ]);
 
   useEffect(() => {
@@ -471,16 +532,7 @@ export default function SongDetailScreen({
   const handleToggleNotation = () =>
     setSettings({ notation: notation === 'EN' ? 'ES' : 'EN' });
 
-  const handleNavigateToFullscreen = () => {
-    navigation.navigate('SongFullscreen', {
-      filename,
-      title: _navScreenTitle,
-      author,
-      key,
-      capo,
-      content: content || '',
-    });
-  };
+  const handleNavigateToFullscreen = openFullscreen;
 
   const handleCopyLyrics = async () => {
     if (!originalChordPro) return;

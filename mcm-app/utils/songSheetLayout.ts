@@ -710,19 +710,42 @@ export const SHEET_LAYOUT_JS = `
 
   if (typeof document === 'undefined' || !document.addEventListener) return;
   window.addEventListener('resize', schedule);
+  // Pasar de canción: lo decide quien pinta la hoja (la pantalla completa
+  // escucha «sheet-nav»; el resto lo ignora). Se avisa al pasar de la última
+  // página o de la primera, y al deslizar en horizontal con scroll.
+  function postNav(dir) {
+    var msg = JSON.stringify({ type: 'sheet-nav', dir: dir });
+    try {
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(msg);
+      } else if (window.parent && window.parent !== window) {
+        window.parent.postMessage(msg, '*');
+      }
+    } catch (e) {}
+  }
+  function pageOrNav(dir) {
+    if (!goPage(dir)) postNav(dir);
+  }
   // Atril: un toque en el tercio izquierdo vuelve atrás, en el resto
   // avanza; las flechas, AvPág/RePág, espacio e Intro hacen lo mismo (es lo
   // que mandan los pedales Bluetooth); y también se puede deslizar.
   document.addEventListener('click', function (e) {
     if (!document.body.classList.contains('paged')) return;
     if (e.target && e.target.closest && e.target.closest('summary, a, button')) return;
-    goPage(e.clientX < window.innerWidth / 3 ? -1 : 1);
+    pageOrNav(e.clientX < window.innerWidth / 3 ? -1 : 1);
   });
   document.addEventListener('keydown', function (e) {
     var k = e.key;
+    if (!document.body.classList.contains('paged')) {
+      // Con scroll, las flechas laterales pasan de canción.
+      if (k === 'ArrowRight' || k === 'ArrowLeft') postNav(k === 'ArrowRight' ? 1 : -1);
+      return;
+    }
     var d = k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown' || k === ' ' || k === 'Enter' ? 1
       : k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' ? -1 : 0;
-    if (d && goPage(d)) e.preventDefault();
+    if (!d) return;
+    e.preventDefault();
+    pageOrNav(d);
   });
   var touchX = null, touchY = null;
   document.addEventListener('touchstart', function (e) {
@@ -735,7 +758,9 @@ export const SHEET_LAYOUT_JS = `
     var dy = e.changedTouches[0].clientY - touchY;
     touchX = null;
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      if (goPage(dx < 0 ? 1 : -1)) e.preventDefault();
+      var dir = dx < 0 ? 1 : -1;
+      if (document.body.classList.contains('paged')) pageOrNav(dir);
+      else if (Math.abs(dx) > 80) postNav(dir);
     }
   });
   // Al desplegar un estribillo plegado, sus líneas se miden por primera vez.

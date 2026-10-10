@@ -50,6 +50,14 @@ export type RootStackParamList = {
     key?: string;
     capo?: number;
     content: string;
+    /** Tono y cejilla con los que se estaba viendo la canción. */
+    transpose?: number;
+    capoOverride?: number | null;
+    /** La lista por la que se navega (categoría, etiqueta o playlist). */
+    navigationList?: SongNavItem[];
+    currentIndex?: number;
+    source?: 'category' | 'selection';
+    firebaseCategory?: string;
   };
   SelectedSongs: { p?: string } | undefined;
 };
@@ -104,6 +112,9 @@ export default function CancioneroTab() {
       ) {
         return;
       }
+      // En pantalla completa la canción del líder la sigue la propia
+      // pantalla (sin salir de ella).
+      if (route?.name === 'SongFullscreen') return;
     } catch {
       // ignore
     }
