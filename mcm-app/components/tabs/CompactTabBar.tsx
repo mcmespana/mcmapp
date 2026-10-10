@@ -64,6 +64,18 @@ export default function CompactTabBar({ tabs }: CompactTabBarProps) {
 
   const selectedIndex = selectedIndexFor(tabs, pathname);
 
+  // La barra nativa se RECREA cuando cambia el juego de pestañas, en vez de
+  // cambiarle los items en caliente. En el primer arranque de la app no hay
+  // configuración de perfiles en caché: la barra se monta con las pestañas por
+  // defecto y, al llegar las de Firebase, `setItems` del módulo nativo
+  // sustituye los `UITabBarItem` de una barra ya maquetada. UIKit no vuelve a
+  // repartir bien los items y las etiquetas salían cortadas y desplazadas
+  // («Con», «Co», «Cal») hasta reiniciar. En los arranques siguientes las
+  // pestañas vienen de la caché desde el primer render y nunca pasaba.
+  // Cambiar de juego de pestañas es raro (perfil, evento), así que recrear la
+  // vista no cuesta nada.
+  const itemsKey = items.map((i) => `${i.key}:${i.label}`).join('|');
+
   const onTabSelected = useCallback(
     ({ nativeEvent }: { nativeEvent: { index: number } }) => {
       const tab = tabs[nativeEvent.index];
@@ -104,6 +116,7 @@ export default function CompactTabBar({ tabs }: CompactTabBarProps) {
 
   return (
     <NativeCompactTabBar
+      key={itemsKey}
       items={items}
       selectedIndex={selectedIndex}
       compact={compact}

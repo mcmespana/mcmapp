@@ -1,20 +1,33 @@
 /**
- * Hoja de etiquetas — la nube completa, a un toque desde el header del
- * cantoral y desde la propia pantalla de una etiqueta.
+ * Hoja de etiquetas — a un toque desde el header del cantoral y desde la
+ * propia pantalla de una etiqueta.
  *
- * Orden por uso y punto: sin conmutador A–Z. Una etiqueta se reconoce por el
- * nombre, y quien busca un nombre concreto tiene el buscador. El tamaño del
- * chip cuenta el uso (3 tramos, 1 pt de salto entre tramos): las etiquetas
- * gordas son las vivas.
+ * Octubre de 2026: chips que fluyen en línea, como la nube original (así
+ * caben varios por fila), pero sin bordes ni sombras: relleno suave, el
+ * emoji si lo hay y el número en su propia pastilla. Antes los chips
+ * variaban 1 pt de tamaño según el uso (no se notaba) y el recuento era un
+ * gris casi invisible. Hubo un intento intermedio de rejilla de dos columnas
+ * con «8 canciones» debajo: desperdiciaba el ancho y se descartó.
+ *
+ * «Editar» deja ocultar etiquetas que no van contigo (p. ej. las de otra
+ * casa): desaparecen de aquí, de las candidatas para combinar y de la ficha de
+ * la canción, pero las canciones siguen en el cantoral. Las ocultas se ven al
+ * final, apagadas y con «+», solo en modo edición, para poder recuperarlas.
  */
-import React, { useMemo } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import BottomSheet from '@/components/BottomSheet';
-import TagChip from '@/components/song-tags/TagChip';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { tagCloudBucket, type ResolvedTag } from '@/utils/songTags';
-import { themeColors } from '@/constants/colors';
+import { useHiddenTags } from '@/hooks/useHiddenTags';
+import type { ResolvedTag } from '@/utils/songTags';
+import { SwipeColors, UIColors, themeColors } from '@/constants/colors';
+import { hexAlpha, onColor } from '@/utils/colorUtils';
+import { h } from '@/utils/haptics';
 import typography from '@/constants/typography';
+import spacing from '@/constants/spacing';
+import { radii } from '@/constants/uiStyles';
 
 interface TagCloudSheetProps {
   visible: boolean;
@@ -27,10 +40,6 @@ interface TagCloudSheetProps {
   onCloseComplete?: () => void;
 }
 
-/** Salto de tamaño entre tramos de la nube, en puntos. */
-const SIZE_STEP = 1;
-const BASE_SIZE = 14.5;
-
 export default function TagCloudSheet({
   visible,
   onClose,
@@ -42,17 +51,79 @@ export default function TagCloudSheet({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const styles = useMemo(() => createStyles(isDark), [isDark]);
+  const { hiddenSlugs, toggleHidden } = useHiddenTags();
+  const [editing, setEditing] = useState(false);
 
-  const sized = useMemo(() => {
-    if (tags.length === 0) return [];
-    const counts = tags.map((t) => t.count);
-    const max = Math.max(...counts);
-    const min = Math.min(...counts);
-    return tags.map((tag) => ({
-      tag,
-      fontSize: BASE_SIZE + tagCloudBucket(tag.count, min, max) * SIZE_STEP,
-    }));
-  }, [tags]);
+  // Cada apertura empieza fuera de edición.
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (wasVisible !== visible) {
+    setWasVisible(visible);
+    if (visible) setEditing(false);
+  }
+
+  const shown = tags.filter((t) => !hiddenSlugs.has(t.slug));
+  const hiddenTags = tags.filter((t) => hiddenSlugs.has(t.slug));
+
+  const subtitle = editing
+    ? 'Toca «−» para ocultar una etiqueta de tu cantoral. Sus canciones siguen ahí.'
+    : shown.length === 0
+      ? 'Has ocultado todas las etiquetas. Toca «Editar» para recuperarlas.'
+      : null;
+
+  const renderChip = (tag: ResolvedTag, isHidden: boolean) => {
+    const isActive = activeSlugs.includes(tag.slug) && !editing;
+    const countLabel = `${tag.count} ${tag.count === 1 ? 'canción' : 'canciones'}`;
+    return (
+      <PressableFeedback
+        key={tag.slug}
+        style={[
+          styles.chip,
+          isActive && styles.chipActive,
+          isHidden && styles.chipHidden,
+        ]}
+        onPress={() => {
+          if (editing) {
+            h.toggle();
+            toggleHidden(tag.slug);
+            return;
+          }
+          h.select();
+          onSelectTag(tag);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`${tag.label}, ${countLabel}`}
+        accessibilityHint={
+          editing
+            ? isHidden
+              ? 'Volver a mostrar esta etiqueta'
+              : 'Ocultar esta etiqueta'
+            : undefined
+        }
+      >
+        <PressableFeedback.Highlight />
+        {tag.emoji ? <Text style={styles.emoji}>{tag.emoji}</Text> : null}
+        <Text
+          style={[styles.label, isActive && styles.labelActive]}
+          numberOfLines={1}
+        >
+          {tag.label}
+        </Text>
+        {editing ? (
+          <View style={[styles.editMark, isHidden && styles.editMarkAdd]}>
+            <MaterialIcons
+              name={isHidden ? 'add' : 'remove'}
+              size={14}
+              color={isHidden ? onColor(themeColors(isDark).link) : '#FFFFFF'}
+            />
+          </View>
+        ) : (
+          <Text style={[styles.count, isActive && styles.countActive]}>
+            {tag.count}
+          </Text>
+        )}
+      </PressableFeedback>
+    );
+  };
 
   return (
     <BottomSheet
@@ -60,54 +131,148 @@ export default function TagCloudSheet({
       onClose={onClose}
       onCloseComplete={onCloseComplete}
       title="Etiquetas"
+      headerRight={
+        <PressableFeedback
+          onPress={() => {
+            h.tap();
+            setEditing((v) => !v);
+          }}
+          style={styles.editButton}
+          accessibilityRole="button"
+          accessibilityLabel={
+            editing ? 'Terminar de editar' : 'Editar etiquetas'
+          }
+        >
+          <Text style={styles.editText}>{editing ? 'Listo' : 'Editar'}</Text>
+        </PressableFeedback>
+      }
       paddingHorizontal={0}
     >
-      <Text style={styles.subtitle}>
-        {tags.length} {tags.length === 1 ? 'etiqueta' : 'etiquetas'}, de más a
-        menos usadas
-      </Text>
+      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.cloud}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {sized.map(({ tag, fontSize }) => (
-          <TagChip
-            key={tag.slug}
-            tag={tag}
-            variant={activeSlugs.includes(tag.slug) ? 'active' : 'cloud'}
-            isDark={isDark}
-            fontSize={fontSize}
-            onPress={onSelectTag}
-            accessibilityHint={`${tag.count} ${
-              tag.count === 1 ? 'canción' : 'canciones'
-            }`}
-          />
-        ))}
+        <View style={styles.grid}>
+          {shown.map((t) => renderChip(t, false))}
+        </View>
+        {editing && hiddenTags.length > 0 ? (
+          <>
+            <Text style={styles.sectionLabel}>Ocultas</Text>
+            <View style={styles.grid}>
+              {hiddenTags.map((t) => renderChip(t, true))}
+            </View>
+          </>
+        ) : null}
       </ScrollView>
     </BottomSheet>
   );
 }
 
-const createStyles = (isDark: boolean) =>
-  StyleSheet.create({
+const createStyles = (isDark: boolean) => {
+  const t = themeColors(isDark);
+  return StyleSheet.create({
     subtitle: {
       ...typography.caption,
-      color: themeColors(isDark).textMuted,
-      paddingHorizontal: 18,
-      paddingBottom: 16,
+      color: t.textSecondary,
+      paddingHorizontal: spacing.md + spacing.xs,
+      paddingBottom: spacing.md,
     },
     scroll: {
-      // La hoja se ajusta al contenido; con muchas etiquetas la nube scrollea
-      // dentro en vez de empujar la hoja fuera de pantalla.
+      // La hoja se ajusta al contenido; con muchas etiquetas la rejilla
+      // scrollea dentro en vez de empujar la hoja fuera de pantalla.
       maxHeight: Dimensions.get('window').height * 0.62,
     },
-    cloud: {
+    content: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.lg,
+    },
+    grid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 12,
-      rowGap: 14,
-      paddingHorizontal: 18,
-      paddingBottom: 28,
+      gap: spacing.sm,
+    },
+    // Chip que fluye en línea: ocupa lo que mide su nombre, así caben varios
+    // por fila. Relleno suave, sin borde ni sombra; el número va en su
+    // propia pastilla para que se lea como dato y no como parte del nombre.
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: 44,
+      paddingLeft: spacing.md - spacing.xs / 2,
+      paddingRight: spacing.sm,
+      borderRadius: radii.pillFull,
+      backgroundColor: t.backgroundSunken,
+      overflow: 'hidden',
+    },
+    chipActive: {
+      backgroundColor: UIColors.accentYellow,
+    },
+    chipHidden: {
+      opacity: 0.5,
+    },
+    emoji: {
+      ...typography.subhead,
+      marginRight: spacing.xs + 2,
+    },
+    label: {
+      ...typography.subhead,
+      fontWeight: '600',
+      color: t.text,
+      flexShrink: 1,
+    },
+    labelActive: {
+      color: onColor(UIColors.accentYellow),
+    },
+    count: {
+      ...typography.footnote,
+      fontWeight: '600',
+      color: t.textSecondary,
+      backgroundColor: t.background,
+      minWidth: 24,
+      textAlign: 'center',
+      paddingHorizontal: spacing.xs + 2,
+      paddingVertical: 2,
+      borderRadius: radii.pillFull,
+      overflow: 'hidden',
+      marginLeft: spacing.sm,
+      fontVariant: ['tabular-nums'],
+    },
+    countActive: {
+      backgroundColor: hexAlpha('#FFFFFF', isDark ? '59' : '80'),
+      color: onColor(UIColors.accentYellow),
+    },
+    editMark: {
+      width: 22,
+      height: 22,
+      borderRadius: radii.pillFull,
+      marginLeft: spacing.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: SwipeColors.remove,
+    },
+    editMarkAdd: {
+      backgroundColor: t.link,
+    },
+    sectionLabel: {
+      ...typography.footnote,
+      fontWeight: '600',
+      color: t.textSecondary,
+      marginTop: spacing.lg,
+      marginBottom: spacing.sm,
+      marginLeft: spacing.xs,
+    },
+    editButton: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    editText: {
+      ...typography.button,
+      fontWeight: '600',
+      color: t.link,
     },
   });
+};

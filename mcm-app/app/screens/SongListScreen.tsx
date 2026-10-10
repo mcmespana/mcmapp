@@ -29,6 +29,7 @@ import {
   type MediaLink,
 } from '@/types/songMedia';
 import { useSongTagIndex } from '@/hooks/useSongTags';
+import { useHiddenTags } from '@/hooks/useHiddenTags';
 import TagContextBar from '@/components/song-tags/TagContextBar';
 import TagCloudSheet from '@/components/song-tags/TagCloudSheet';
 import {
@@ -436,9 +437,16 @@ export default function SongsListScreen({
   );
   // Candidatas de refinamiento sobre el resultado SIN filtrar por el buscador:
   // así la barra no baila mientras se escribe.
+  // Las etiquetas que la persona ha ocultado no se ofrecen para combinar.
+  const { hiddenSlugs } = useHiddenTags();
   const candidateTags = useMemo(
-    () => (isTagMode ? coOccurringTags(songs, activeSlugs, tagIndex) : []),
-    [isTagMode, songs, activeSlugs, tagIndex],
+    () =>
+      isTagMode
+        ? coOccurringTags(songs, activeSlugs, tagIndex).filter(
+            (t) => !hiddenSlugs.has(t.slug),
+          )
+        : [],
+    [isTagMode, songs, activeSlugs, tagIndex, hiddenSlugs],
   );
 
   const handleAddTag = useCallback((tag: ResolvedTag) => {

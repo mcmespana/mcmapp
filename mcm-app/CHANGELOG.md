@@ -235,6 +235,54 @@ parecían. Ahora comparten `components/contigo/DateNavigator.tsx`:
 Fuera tres `formatDateDisplay`/`addDays` duplicados y los estilos muertos.
 Topes del trinquete de números mágicos bajados a lo que hay.
 
+## 2026-10-04 11:30 — Contigo y lista de canciones: pulido
+
+- **Navegador de días único** (`components/contigo/DayNavigator.tsx`) en
+  evangelio y oración: mismos botones, misma fecha, «Volver a hoy» en los dos
+  y tocar la fecha abre el calendario en el evangelio. La oración no deja ir
+  al futuro. La revisión mantiene su selector compacto en la barra (es un
+  asistente por pasos).
+- **Home de Contigo**: las tarjetas de hábito pendientes ya no tienen borde
+  discontinuo (parecían huecos sin terminar); las estadísticas y la racha usan
+  iconos de Material en vez de emojis.
+- **Lista de canciones**: el número va delante del título en su propia columna
+  («98», sin «#» ni ceros a la izquierda); en «Buscar general» sigue la
+  pastilla de categoría.
+
+---
+
+## 2026-10-04 10:00 — Hoja de etiquetas rehecha y etiquetas ocultables
+
+- La hoja de etiquetas: chips en línea refinados (relleno suave, emoji si lo
+  hay, número en su propia pastilla). La activa va en amarillo. Una rejilla de
+  dos columnas se probó y se descartó: desperdiciaba el ancho.
+- **«Editar»**: ocultar etiquetas en este dispositivo. Desaparecen de la hoja,
+  de «Combinar con» y de la ficha de la canción; las canciones no se ocultan.
+  `hooks/useHiddenTags.ts` (AsyncStorage `@mcm_hidden_tags_v1`).
+- Menú de la canción: «Acordes en inglés/español» sin los ejemplos, que
+  ocupaban sitio.
+- `components/song-tags/TagCloudSheet.tsx`, `app/screens/SongListScreen.tsx`,
+  `components/song-media/SongMediaSheet.tsx`, `components/SongControls.tsx`.
+
+---
+
+## 2026-10-04 01:20 — Barra de pestañas cortada en el primer arranque + laboratorio de maquetación
+
+- **Bug (iOS, solo primer arranque)**: etiquetas cortadas y desplazadas
+  («Con», «Co», «Cal»). Sin configuración de perfiles en caché, la barra se
+  montaba con las pestañas por defecto y al llegar las de Firebase el módulo
+  nativo cambiaba los items en caliente; UIKit no volvía a repartirlos. Ahora
+  `CompactTabBar` recrea la vista nativa cuando cambia el juego de pestañas
+  (`key`). Solo JS.
+- **Laboratorio (canal preview)**: en el menú del botón flotante de una
+  canción, «Lab: ver la maquetación antigua» conmuta en vivo entre la
+  maquetación nueva de la letra y la de antes, para compararlas en el móvil.
+  Fuera de preview no aparece y siempre se ve la nueva. Clase
+  `layout-legacy` en `useSongProcessor` + `hooks/useLabSongLayout.ts`; se
+  borran cuando se decida.
+
+---
+
 ## 2026-10-03 23:00 — Contigo: navegación por días y calendarios
 
 - **Oración**: «día siguiente» se para en hoy y los días futuros del
