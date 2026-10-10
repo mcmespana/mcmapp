@@ -168,10 +168,12 @@ igual»).
 
 Orden de lo que queda:
 
-1. Editor visual del admin con el móvil al lado y el estribillo / intro como
-   en la app.
-2. PDF de la playlist con la hoja nueva (estrofas y estribillos sin partir
-   entre páginas).
-3. Aplicar las etiquetas aprobadas en el repaso.
+1. ✅ Editor visual del admin con el móvil al lado y el estribillo / intro
+   como en la app (`HOJA_CANCION.md`, «El admin del cantoral pinta igual»).
+2. ✅ PDF de la playlist con la hoja nueva, sin estrofas partidas entre
+   páginas, con estribillos plegados y dos columnas opcionales
+   (`HOJA_CANCION.md`, «PDF de la playlist»).
+3. Aplicar las etiquetas aprobadas en el repaso (espera a que el usuario
+   vote en el artefacto).
 4. Mapa de la canción («1 · E · 2 · E · 3 · E×2»), opcional.
 5. Probar el pedal Bluetooth en un iPad de verdad.

@@ -564,6 +564,12 @@ const SelectedSongsScreen: React.FC = () => {
           showChords: cfg.showChords,
           lyricsFontPt: cfg.lyricsFontPt,
           printedDate: cfg.printedDate,
+          compact: cfg.compact,
+          twoColumns: cfg.twoColumns,
+          // El estribillo y los números, como los tiene en la app.
+          chorusStyle: settings.chorusStyle,
+          chorusLabel: settings.chorusLabel,
+          verseNumbers: settings.verseNumbers,
         });
 
         if (Platform.OS === 'web') {
@@ -627,7 +633,14 @@ const SelectedSongsScreen: React.FC = () => {
         });
       }
     },
-    [flatSelectedSongs, settings.notation, toast],
+    [
+      flatSelectedSongs,
+      settings.notation,
+      settings.chorusStyle,
+      settings.chorusLabel,
+      settings.verseNumbers,
+      toast,
+    ],
   );
 
   /**
@@ -1985,6 +1998,7 @@ const SelectedSongsScreen: React.FC = () => {
         visible={showExportPdfModal}
         initialName={exportPdfDefaultName}
         songCount={flatSelectedSongs.length}
+        defaultCompact={settings.compactView}
         onClose={() => setShowExportPdfModal(false)}
         onSubmit={handleConfirmExportPdf}
       />

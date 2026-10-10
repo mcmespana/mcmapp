@@ -19,8 +19,8 @@ columna seguía siendo de acorde a acorde: «Miembro de / un pueblo, tengo
 familia.». Además dejaba un renglón vacío de acordes encima de cada línea sin
 acordes.
 
-El PDF de la playlist (`utils/playlistPdfHtml.ts`) **sigue** con
-`HtmlDivFormatter`: en papel A4 no hay problema de ancho.
+El PDF de la playlist (`utils/playlistPdfHtml.ts`) también usa ya esta hoja
+(desde el 2026-10-10, ver «PDF de la playlist» más abajo).
 
 ## Modelo (`buildSheet`)
 
@@ -151,6 +151,13 @@ un móvil o un iPad, también al lado del editor Raw mientras se escribe.
   React Native en la hoja, salta).
 - **Al cambiar la hoja**: `npm run build:sheet-bundle` y commitear
   `mcm-sheet.js` en el cantoral, o el admin enseñará la versión anterior.
+- **El editor Visual** (el de arrastrar acordes, el que más se usa) se
+  parece a la app: acordes azules sin pastilla maciza, el estribillo con la
+  raya amarilla y en negrita, la marca «ESTRIBILLO», intros como fila de
+  acordes y comentarios en cursiva gris; y con «📱 Ver en el móvil» lleva la
+  hoja de verdad al lado, bajando a la par. Arreglado de paso: las intros
+  (letra de solo espacios) salían como un «1» con los acordes amontonados,
+  porque Alpine toma por número una cadena como `"   "` en un `x-for`.
 
 ## Pantalla completa (2026-10-10)
 
@@ -172,3 +179,26 @@ un móvil o un iPad, también al lado del editor Raw mientras se escribe.
   pase (`screen: 'fullscreen'`).
 - **Web**: la canción va en un iframe (como en el detalle), así que corre la
   maquetación y también hay modo atril con teclado o pedal.
+
+## PDF de la playlist (2026-10-10)
+
+`utils/playlistPdfHtml.ts` pinta el cuerpo de cada canción con
+`buildSheet` + `renderSheetHtml` y `SHEET_CSS`, como la app (antes,
+`HtmlDivFormatter`, que ni escapaba el texto ni sabía de estribillos
+repetidos). Sin `SHEET_LAYOUT_JS`: en papel no hay pantalla que medir, así que
+una línea que no cabe se parte por palabras enteras.
+
+- El estribillo, la etiqueta y los números de estrofa salen como los tiene
+  cada uno en la app (`chorusStyle`, `chorusLabel`, `verseNumbers`); los
+  acordes, en un azul más oscuro (en papel el de la app se queda flojo).
+- **Ni una estrofa ni un estribillo partidos entre dos páginas.** Una canción
+  que cabe en lo que queda de página no se parte. Una más larga que una
+  página (`estimateSongHeightPt`, a ojo con las medidas de `SHEET_CSS`) no
+  salta de página entera, que solo dejaba media página en blanco: empieza
+  donde toque y se parte entre secciones. El título nunca se queda solo al
+  pie con la intro.
+- **Opciones nuevas** en «Exportar a PDF»: «Estribillos repetidos en una
+  línea» (la vista compacta; de serie, la que tenga en la app) y «A dos
+  columnas» (casi todas las canciones caben en una página; de serie, no). Con
+  las dos, una playlist de 6 canciones pasa de 12 páginas a 8.
+- Tests en `__tests__/playlistPdfHtml.test.ts`.

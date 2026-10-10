@@ -26,9 +26,9 @@ const build = (
     ...over,
   });
 
-/** Acordes que acaban pintados en el cuerpo, en orden. */
+/** Acordes que acaban pintados en el cuerpo (la hoja de la app), en orden. */
 const bodyChords = (html: string) =>
-  [...html.matchAll(/<div class="chord"[^>]*>([^<]*)<\/div>/g)]
+  [...html.matchAll(/<b class="c"[^>]*>([^<]*)<\/b>/g)]
     .map((m) => m[1])
     .filter(Boolean);
 
@@ -173,11 +173,12 @@ describe('buildPlaylistPdfHtml — contenido y escape', () => {
     expect(html).not.toContain('Duplicado');
   });
 
-  it('"solo letra" marca el cuerpo con no-chords para que el CSS oculte los acordes', () => {
+  it('"solo letra" marca el <body> con chords-hidden, como la hoja de la app', () => {
     const html = build([{ title: 'X', content: '[C]a' }], {
       showChords: false,
     });
-    expect(article(html)).toContain('class="song-body no-chords"');
+    expect(html).toMatch(/<body class="[^"]*\bchords-hidden\b/);
+    expect(html).toContain('body.chords-hidden .c');
   });
 
   it('"una canción por página" añade el salto a cada canción', () => {
