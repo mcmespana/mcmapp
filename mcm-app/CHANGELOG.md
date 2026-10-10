@@ -18,6 +18,21 @@
 
 ---
 
+## 2026-10-10 19:30 — PDF de la playlist con la hoja nueva
+
+- `utils/playlistPdfHtml.ts` pinta cada canción con la hoja de la app
+  (`buildSheet` + `SHEET_CSS`) en vez de `HtmlDivFormatter`: estribillo con
+  su estilo, números de estrofa, intros, avisos de «revisar acordes» fuera de
+  la letra y el texto escapado.
+- Ni estrofas ni estribillos partidos entre páginas; una canción más larga
+  que una página ya no salta entera a la siguiente
+  (`estimateSongHeightPt`).
+- `ExportPdfModal`: «Estribillos repetidos en una línea» y «A dos columnas».
+- Admin del cantoral (otro repo): el editor Visual se parece a la app y
+  lleva el móvil al lado; arreglado que las intros salieran como un «1».
+
+---
+
 ## 2026-10-10 18:00 — Etiquetas: esconder canciones de otro carisma y ★ a mano
 
 - **Esconder sus canciones**: en «Etiquetas → Editar → Ocultar», una casilla

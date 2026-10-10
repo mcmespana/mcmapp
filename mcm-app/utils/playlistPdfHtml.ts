@@ -1,8 +1,15 @@
 /**
  * Construye el HTML imprimible (PDF) de una playlist a partir de canciones
- * en formato ChordPro. Usa ChordSheetJS para parsear y `HtmlDivFormatter`
- * para volcar el cuerpo de cada canción; encima añade una capa propia
- * de estilo "cancionero moderno" pensada para A4.
+ * en formato ChordPro.
+ *
+ * Octubre de 2026: el cuerpo de cada canción es **la misma hoja que la app**
+ * (`utils/songSheet.ts` + `SHEET_CSS`): secciones, estribillo con su raya y
+ * su estilo, números de estrofa, intros como fila de acordes, los avisos de
+ * «revisar acordes» fuera de la letra, y estrofas y estribillos que nunca se
+ * parten entre dos páginas. Antes era el `HtmlDivFormatter` de ChordSheetJS,
+ * que ni sabía qué era un estribillo repetido ni escapaba el texto. Sin el
+ * script de maquetación de la app (en el papel no hay pantalla que medir):
+ * una línea que no cabe se parte por palabras enteras.
  *
  * Decisiones de diseño:
  *  - Tipografía sans-serif moderna (Inter desde Google Fonts, fallback al
@@ -10,13 +17,15 @@
  *    el fallback es perfectamente legible.
  *  - Título 20pt, metadatos (autor/tono/cejilla) alineados a la derecha en
  *    gris, encima de la línea separadora.
- *  - Acordes en negrita color #0055A4. Letra 13pt, interlineado 1.55.
- *  - `page-break-inside: avoid` para cada canción → si entra en la
- *    página actual no se parte; si no cabe, salta a la siguiente y
- *    empieza arriba. Si la canción es más larga que una página, el
- *    navegador la parte por filas (cabecera se queda con la primera
- *    fila gracias al wrapper).
+ *  - Acordes en negrita color #0055A4 (más oscuro que en pantalla: en papel
+ *    el azul de la app se queda flojo).
+ *  - Una canción que cabe en lo que queda de página no se parte; si no
+ *    cabe, salta a la siguiente. Si es más larga que una página, se parte
+ *    entre secciones, nunca dentro de una estrofa o de un estribillo.
  *  - Opción de "una canción por página" → `page-break-after: always`.
+ *  - Opciones de la hoja: estribillos repetidos plegados en una línea
+ *    (como la vista compacta) y dos columnas (para que una canción larga
+ *    quepa en una página; las líneas largas se parten).
  *  - Pie de página con el nombre de la playlist (abajo-izquierda) y
  *    "Página N" (abajo-derecha) vía margin boxes de @page. Soportado en
  *    Chrome/Chromium ≥131 (web y WebView de Android); el motor de
@@ -25,17 +34,11 @@
  *    expo-print al generar el fichero).
  */
 
-import {
-  ChordProParser,
-  HtmlDivFormatter,
-  Song as ChordSong,
-} from 'chordsheetjs';
-import { convertHtmlChords, convertChord, Notation } from './chordNotation';
+import { convertChord, Notation } from './chordNotation';
 import { transposeKey } from './transposeKey';
-import {
-  preprocessArrangements,
-  postProcessArrangementsHtml,
-} from './arrangements';
+import { parseChordPro } from './songDocument';
+import { buildSheet, renderSheetHtml, type SheetModel } from './songSheet';
+import { SHEET_CSS, type ChorusStyle } from './songSheetLayout';
 
 export interface PdfSongInput {
   title: string;
@@ -63,6 +66,16 @@ export interface PdfBuildOptions {
    * fecha de hoy; cadena vacía = no imprimir fecha.
    */
   printedDate?: string;
+  /** Estribillos repetidos plegados en una línea (la vista compacta). */
+  compact?: boolean;
+  /** Dos columnas por canción. */
+  twoColumns?: boolean;
+  /** Estilo del estribillo, el mismo que en la app (de serie, negrita). */
+  chorusStyle?: ChorusStyle;
+  /** Etiqueta «ESTRIBILLO» encima (de serie, sí). */
+  chorusLabel?: boolean;
+  /** Números de estrofa (de serie, sí). */
+  verseNumbers?: boolean;
 }
 
 const escapeHtml = (s: string) =>
@@ -81,31 +94,88 @@ const escapeCssString = (s: string) =>
 
 const cleanTitle = (t: string) => t.replace(/^\d+\.\s*/, '').trim();
 
-/** Renderiza una canción a HTML usando ChordSheetJS, con transpose aplicado. */
-function renderSongBody(content: string, transpose: number): string {
-  const chordPro = preprocessArrangements(content)
-    .replace(/\{sov\}/gi, '{start_of_verse}')
-    .replace(/\{eov\}/gi, '{end_of_verse}')
-    .replace(/\{soc\}/gi, '{start_of_chorus}')
-    .replace(/\{eoc\}/gi, '{end_of_chorus}')
-    .replace(/\{sob\}/gi, '{start_of_bridge}')
-    .replace(/\{eob\}/gi, '{end_of_bridge}')
-    .replace(/\{transpose:.*\}\n?/gi, '');
+const clampLyricsPt = (pt: number) => Math.max(10, Math.min(18, pt));
 
-  // Se transpone con `Song.transpose()`, igual que `useSongProcessor`. Antes
-  // se anteponía una directiva `{transpose: N}`, pero `HtmlDivFormatter` no la
-  // aplica: el PDF salía con la cabecera en el tono nuevo y los acordes del
-  // cuerpo en el original.
-  const parser = new ChordProParser();
-  let parsed: ChordSong = parser.parse(chordPro);
-  if (transpose) parsed = parsed.transpose(transpose);
-  const formatter = new HtmlDivFormatter();
-  let html = postProcessArrangementsHtml(formatter.format(parsed));
-  // El formatter mete un <h1> con el título de la canción si está en el
-  // ChordPro; lo quitamos porque ya pintamos cabecera propia.
-  html = html.replace(/<h1[^>]*>[\s\S]*?<\/h1>/i, '');
-  html = html.replace(/<h2[^>]*>[\s\S]*?<\/h2>/i, '');
-  return html;
+/** El modelo de la hoja de una canción, en el tono pedido. */
+function songModel(
+  content: string,
+  transpose: number,
+  notation: Notation,
+): SheetModel {
+  const { song, error } = parseChordPro(content);
+  if (!song) throw new Error(error?.message ?? 'ChordPro no válido');
+  const transposed = transpose ? song.transpose(transpose) : song;
+  return buildSheet(transposed, { notation });
+}
+
+/** Alto útil de un A4 con los márgenes del PDF (18 mm arriba y abajo), en pt. */
+const PAGE_BODY_PT = 842 - 2 * 51;
+/** Ancho útil (16 mm a cada lado, menos el hueco de la raya del estribillo). */
+const PAGE_WIDTH_PT = 595 - 2 * 45 - 10;
+
+/**
+ * Lo que ocupará una canción en el papel, en pt, a ojo: renglones de letra
+ * (con o sin acordes encima, partiendo las líneas largas), etiquetas,
+ * comentarios y huecos entre secciones, con las medidas de `SHEET_CSS`.
+ *
+ * Sirve para una sola cosa: una canción que cabe en lo que queda de página
+ * no se parte, y salta a la siguiente si no cabe; pero una que no cabe ni
+ * en una página entera se parte de todos modos, así que hacerla saltar solo
+ * dejaba media página en blanco. Esas empiezan donde toque.
+ */
+export function estimateSongHeightPt(
+  model: SheetModel,
+  o: {
+    lyricsPt: number;
+    showChords: boolean;
+    compact?: boolean;
+    twoColumns?: boolean;
+  },
+): number {
+  const em = o.lyricsPt;
+  const width = o.twoColumns ? (PAGE_WIDTH_PT - 26) / 2 : PAGE_WIDTH_PT;
+  // Unos 0,52 em por carácter en Inter, de media.
+  const perRow = Math.max(12, Math.floor(width / (em * 0.52)));
+  const LYRIC = 1.34;
+  const CHORD = 0.92 * 1.2;
+  let total = 0;
+  model.sections.forEach((sec, i) => {
+    if (i > 0) {
+      const big =
+        sec.breakBefore === 2 ||
+        sec.kind === 'chorus' ||
+        sec.kind === 'bridge' ||
+        model.sections[i - 1].kind === 'chorus' ||
+        model.sections[i - 1].kind === 'bridge';
+      total += big ? 1.45 : 0.95;
+    }
+    if (o.compact && sec.repeatOf) {
+      total += 1.7;
+      return;
+    }
+    if (!o.showChords && sec.kind === 'instrumental') return;
+    if (sec.label) total += 0.6 * 1.4 + 0.2;
+    sec.lines.forEach((ln, j) => {
+      if (j > 0) total += 0.34;
+      if (ln.kind === 'lyrics') {
+        const text = ln.atoms
+          .map((a) => a.segs.map((g) => g.text).join(''))
+          .join('');
+        const rows = Math.max(1, Math.ceil(text.length / perRow));
+        const chorded =
+          o.showChords && ln.atoms.some((a) => a.segs.some((g) => g.chord));
+        total += rows * (LYRIC + (chorded ? CHORD : 0));
+      } else if (ln.kind === 'chords') {
+        if (o.showChords) total += CHORD;
+      } else {
+        total += 1.2 * 0.86;
+      }
+    });
+  });
+  const body = total * em;
+  // Cabecera: título de 20 pt, raya y su hueco.
+  const header = 20 * 1.15 + 18;
+  return header + (o.twoColumns ? body / 2 : body);
 }
 
 function songBlock(song: PdfSongInput, opts: PdfBuildOptions): string {
@@ -150,10 +220,18 @@ function songBlock(song: PdfSongInput, opts: PdfBuildOptions): string {
     : '';
 
   let body = '';
+  let long = false;
   if (song.content && song.content.trim()) {
     try {
-      body = renderSongBody(song.content, transpose);
-      body = convertHtmlChords(body, opts.notation);
+      const model = songModel(song.content, transpose, opts.notation);
+      body = renderSheetHtml(model);
+      long =
+        estimateSongHeightPt(model, {
+          lyricsPt: clampLyricsPt(opts.lyricsFontPt),
+          showChords: opts.showChords,
+          compact: opts.compact,
+          twoColumns: opts.twoColumns,
+        }) > PAGE_BODY_PT;
     } catch (e) {
       body = `<p class="song-error">No se pudo procesar el ChordPro: ${escapeHtml(
         (e as Error).message,
@@ -163,14 +241,20 @@ function songBlock(song: PdfSongInput, opts: PdfBuildOptions): string {
     body = `<p class="song-error">Sin contenido.</p>`;
   }
 
-  const breakClass = opts.pageBreakPerSong ? 'song page-break-after' : 'song';
+  const breakClass = [
+    'song',
+    opts.pageBreakPerSong && 'page-break-after',
+    long && 'long',
+  ]
+    .filter(Boolean)
+    .join(' ');
   return `
     <article class="${breakClass}">
       <header class="song-header">
         <h2 class="song-title">${title}</h2>
         ${meta}
       </header>
-      <div class="song-body ${opts.showChords ? '' : 'no-chords'}">
+      <div class="song-body">
         ${body}
       </div>
     </article>
@@ -178,9 +262,19 @@ function songBlock(song: PdfSongInput, opts: PdfBuildOptions): string {
 }
 
 export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
-  const lyricsPt = Math.max(10, Math.min(18, opts.lyricsFontPt));
-  const chordPt = (lyricsPt * 0.95).toFixed(2);
+  const lyricsPt = clampLyricsPt(opts.lyricsFontPt);
   const songs = opts.songs.map((s) => songBlock(s, opts)).join('\n');
+  // Las mismas clases del <body> que usa la app para su hoja.
+  const bodyClass = [
+    `ch-${opts.chorusStyle ?? 'negrita'}`,
+    opts.chorusLabel === false && 'ch-nolabel',
+    opts.verseNumbers === false && 'nums-hidden',
+    !opts.showChords && 'chords-hidden',
+    opts.compact && 'compact',
+    opts.twoColumns && 'cols2',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const printedDate =
     opts.printedDate !== undefined
@@ -316,6 +410,12 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
       page-break-inside: avoid;
       margin-bottom: 14mm;
     }
+    /* Más larga que una página: se parte igual, así que empieza donde
+       toque en vez de dejar media página en blanco (entre secciones). */
+    .song.long {
+      break-inside: auto;
+      page-break-inside: auto;
+    }
     .song.page-break-after {
       page-break-after: always;
       break-after: page;
@@ -388,58 +488,33 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
       line-height: 1.55;
     }
 
-    /* ───── Cuerpo (HtmlDivFormatter) ─────────────────────── */
-    .chord-sheet {
-      max-width: 100%;
+    /* ───── Cuerpo: la hoja de la app (SHEET_CSS, más abajo) ── */
+    .song-body {
+      --song-font-size: ${lyricsPt}pt;
+      /* La raya del estribillo va en el margen (como en la app): este
+         hueco la deja dentro de la página. */
+      padding-left: 13px;
     }
-    .paragraph {
-      margin: 0 0 ${(lyricsPt * 0.9).toFixed(1)}pt 0;
+    .song-body .sheet { margin-top: 0; column-rule: none; }
+    body.cols2 .song-body .sheet {
+      column-count: 2;
+      column-gap: 9mm;
+      column-rule: 0.5pt solid #e5e7eb;
+    }
+    /* Ni una estrofa ni un estribillo partidos entre dos páginas (las
+       propiedades viejas, para el motor de impresión de iOS). */
+    .sec, .rep-one, details.rep-fold {
       break-inside: avoid;
       page-break-inside: avoid;
     }
-    .paragraph.chorus {
-      border-left: 2.5pt solid #0055A4;
-      padding-left: 9pt;
-      margin-left: 0;
-      background: linear-gradient(90deg, rgba(0,85,164,0.04), transparent 70%);
+    .lbl { page-break-after: avoid; }
+    /* El título no se queda solo al pie con la intro: la primera sección y
+       las intros van con lo que les sigue. */
+    .sheet > .sec:first-child, .sec.instrumental {
+      break-after: avoid;
+      page-break-after: avoid;
     }
-    .paragraph.chorus .lyrics {
-      font-weight: 600;
-    }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      margin-bottom: 2pt;
-    }
-    .column {
-      display: flex;
-      flex-direction: column;
-      padding-right: 1pt;
-      min-height: ${(lyricsPt * 1.5).toFixed(1)}pt;
-    }
-    .chord {
-      color: #0055A4;
-      font-weight: 700;
-      font-size: ${chordPt}pt;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      letter-spacing: -0.01em;
-      line-height: 1.1;
-      min-height: ${(lyricsPt * 1.05).toFixed(1)}pt;
-      white-space: pre;
-    }
-    .lyrics {
-      color: #1a1a1a;
-      white-space: pre;
-      line-height: 1.35;
-    }
-    .comment, .c {
-      display: block;
-      color: #475569;
-      font-style: italic;
-      font-size: ${(lyricsPt * 0.92).toFixed(1)}pt;
-      margin: 4pt 0;
-    }
+    details.rep-fold > summary { cursor: default; }
     /* Anotaciones de arreglo {arr:} — sutiles, alineadas a la derecha. */
     .arrangement {
       display: block;
@@ -447,14 +522,9 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
       color: #E15C62;
       font-style: italic;
       font-weight: 500;
-      font-size: ${(lyricsPt * 0.84).toFixed(1)}pt;
-      margin: 3pt 0 5pt;
-    }
-    .no-chords .chord {
-      display: none !important;
-    }
-    .no-chords .column {
-      min-height: ${(lyricsPt * 1.1).toFixed(1)}pt;
+      font-size: 0.84em;
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
     }
     .song-error {
       color: #b91c1c;
@@ -467,8 +537,14 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
       .cover { padding-top: 20mm; }
     }
   </style>
+  <style>${SHEET_CSS}</style>
+  <style>
+    /* Después de SHEET_CSS, que define sus colores en el body: en papel,
+       el azul de los acordes de la app se queda flojo. */
+    body { --sh-chord: #0055A4; }
+  </style>
 </head>
-<body>
+<body class="${bodyClass}">
   <section class="cover">
     <div class="cover-eyebrow">Playlist · MCM</div>
     <h1 class="cover-title">${escapeHtml(opts.playlistName)}</h1>
