@@ -6,8 +6,8 @@
  * - Se puede cerrar en cualquier momento («Saltar», la ✕ o deslizando hacia
  *   abajo en iOS). Lo que ya se haya tocado se queda: son ajustes normales
  *   de `SettingsContext` y se ven al momento.
- * - Todo se vuelve a cambiar cuando se quiera: en cada canción con Aa →
- *   «Letra y vista», o volviendo aquí con el «?» del cantoral.
+ * - Todo se vuelve a cambiar cuando se quiera: en cada canción, en el botón
+ *   de opciones → «Letra y vista», o volviendo aquí con el «?» del cantoral.
  *
  * La lógica pura (pasos, canción de muestra, cuándo se abre solo) está en
  * `utils/cantoralOnboarding.ts`.
@@ -88,7 +88,7 @@ const STEP_TEXT: Record<OnboardingStepId, { title: string; hint: string }> = {
   },
   text: {
     title: 'Letra',
-    hint: 'El tamaño, con Aa dentro de cada canción.',
+    hint: 'El tamaño, en cada canción: opciones → «Letra y vista».',
   },
   tags: {
     title: 'Tus etiquetas',
@@ -179,8 +179,8 @@ export default function CantoralOnboarding({
         <StepBody step={step} palette={p} tags={tags} isDark={isDark} />
         {index === 0 || isLast ? (
           <Text style={[styles.footnote, { color: t.textMuted }]}>
-            Todo se cambia cuando quieras: Aa → «Letra y vista» en cada canción,
-            o el ? de arriba del cantoral.
+            Todo se cambia cuando quieras: en cada canción, en opciones → «Letra
+            y vista», o con el ? de arriba del cantoral.
           </Text>
         ) : null}
       </Animated.View>

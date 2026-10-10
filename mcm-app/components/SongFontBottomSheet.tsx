@@ -407,6 +407,8 @@ function ViewCard({
                       },
                     ]}
                     numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
                   >
                     {c.name}
                   </Text>
@@ -536,13 +538,15 @@ const styles = StyleSheet.create({
   },
   chipWrap: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+    // Más juntos que el resto: así «Sangrado» cabe entero también en web,
+    // que no encoge el texto (adjustsFontSizeToFit es solo nativo).
+    gap: spacing.xs,
   },
-  // Tres por fila: cinco variantes no caben en una a ancho de móvil.
+  // Las cinco variantes en una fila, como en el onboarding: antes iban
+  // 3 + 2 y la segunda fila quedaba coja.
   gridChip: {
-    flexGrow: 0,
-    flexBasis: '30%',
+    flex: 1,
+    paddingHorizontal: spacing.xs,
   },
   chorusPreview: {
     height: 26,
