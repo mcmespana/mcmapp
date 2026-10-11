@@ -4,6 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-11 12:00 — Comunica: la cápsula atrás/adelante se oculta si la web trae barra fija abajo
+
+`ComunicaScreen` escucha `{type:'sticpa:barra', abajo}` desde la web: con `abajo: true` oculta la cápsula (iOS y Android) e inyecta la clase `sticpa-app-sin-flechas` y `--stic-app-tabbar`; con `false` o al empezar otra navegación lo deshace. Contrato en `docs/contratos/COMUNICA_WEBVIEW.md` §4.b.
+
 ## Formato
 
 ```
