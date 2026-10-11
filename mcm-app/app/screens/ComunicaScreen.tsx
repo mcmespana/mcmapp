@@ -11,7 +11,7 @@
 // La mecánica (tema hacia la web, historial, progreso, errores) vive en
 // `hooks/useComunicaWebView.ts`; aquí solo queda el layout de cada plataforma.
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Platform,
   View,
@@ -116,12 +116,49 @@ export default function ComunicaScreen() {
     status,
     progress,
     pageLoading,
-    onLoadStart,
+    onLoadStart: onLoadStartBase,
     onLoadProgress,
     onLoadEnd,
     onError,
     retry,
   } = useComunicaWebView(pageBg, safeAreaJS);
+
+  // La web (área privada) avisa con `{type:'sticpa:barra', abajo}` de que trae
+  // su propia barra fija abajo (p. ej. «Guardar» en Pasar Lista). Entonces la
+  // cápsula atrás/adelante se esconde y la web recibe la altura del tab bar.
+  // Si el mensaje no llega (área antigua) todo queda como antes.
+  const [barraAbajo, setBarraAbajo] = useState(false);
+
+  const quitarClaseBarra = `document.documentElement.classList.remove('sticpa-app-sin-flechas');document.documentElement.style.removeProperty('--stic-app-tabbar');true;`;
+
+  const onMessage = useCallback(
+    (event: { nativeEvent: { data: string } }) => {
+      let msg: { type?: string; abajo?: unknown } | null = null;
+      try {
+        msg = JSON.parse(event.nativeEvent.data);
+      } catch {
+        return;
+      }
+      if (!msg || msg.type !== 'sticpa:barra') return;
+      const abajo = msg.abajo === true;
+      setBarraAbajo(abajo);
+      webViewRef.current?.injectJavaScript(
+        abajo
+          ? `document.documentElement.classList.add('sticpa-app-sin-flechas');document.documentElement.style.setProperty('--stic-app-tabbar','${navControlsBottom}px');true;`
+          : quitarClaseBarra,
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [navControlsBottom, webViewRef],
+  );
+
+  // Al empezar otra navegación se vuelve a enseñar la cápsula.
+  const onLoadStart = useCallback(() => {
+    setBarraAbajo(false);
+    webViewRef.current?.injectJavaScript(quitarClaseBarra);
+    onLoadStartBase();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onLoadStartBase, webViewRef]);
 
   // La portada de carga se desvanece cuando la web ya está lista (y se
   // desmonta al acabar la transición, para no dejar una capa invisible encima).
@@ -171,6 +208,7 @@ export default function ComunicaScreen() {
       // Reaplica tema e insets en cada carga de página (también tras navegar)
       injectedJavaScript: injectedJS,
       onNavigationStateChange,
+      onMessage,
       onLoadStart,
       onLoadProgress,
       onLoadEnd,
@@ -193,6 +231,7 @@ export default function ComunicaScreen() {
       injectedJS,
       onWebViewScroll,
       onNavigationStateChange,
+      onMessage,
       onLoadStart,
       onLoadProgress,
       onLoadEnd,
@@ -303,13 +342,15 @@ export default function ComunicaScreen() {
           visible={pageLoading && status === 'ready'}
           top={insets.top}
         />
-        <WebViewNavControls
-          canGoBack={nav.canGoBack}
-          canGoForward={nav.canGoForward}
-          onBack={goBack}
-          onForward={goForward}
-          style={[styles.navControls, { bottom: navControlsBottom }]}
-        />
+        {!barraAbajo && (
+          <WebViewNavControls
+            canGoBack={nav.canGoBack}
+            canGoForward={nav.canGoForward}
+            onBack={goBack}
+            onForward={goForward}
+            style={[styles.navControls, { bottom: navControlsBottom }]}
+          />
+        )}
         {loaderOverlay(insets.top, bottomInset)}
       </View>
     );
@@ -348,13 +389,15 @@ export default function ComunicaScreen() {
         visible={pageLoading && status === 'ready'}
         top={insets.top}
       />
-      <WebViewNavControls
-        canGoBack={nav.canGoBack}
-        canGoForward={nav.canGoForward}
-        onBack={goBack}
-        onForward={goForward}
-        style={[styles.navControls, { bottom: tabBarClearance + 12 }]}
-      />
+      {!barraAbajo && (
+        <WebViewNavControls
+          canGoBack={nav.canGoBack}
+          canGoForward={nav.canGoForward}
+          onBack={goBack}
+          onForward={goForward}
+          style={[styles.navControls, { bottom: tabBarClearance + 12 }]}
+        />
+      )}
       {loaderOverlay(insets.top, bottomInset)}
     </View>
   );
