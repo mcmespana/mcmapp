@@ -4,6 +4,18 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-16 23:40 — Buscador del cantoral sin tildes y auditoría de pulido
+
+- **Buscador del cantoral**: ya no distingue tildes — «senor» encuentra
+  «Señor» y «jesus», «Jesús» (`foldForSearch` en `utils/songTags.ts`).
+- **Rendimiento de la lista de canciones**: las etiquetas destacadas de cada
+  fila salen del mismo array entre renders, así que el `React.memo` de
+  `SongListItem` vuelve a servir y teclear en el buscador ya no repinta todas
+  las filas.
+- **Auditoría de pulido** (rendimiento, Android, web/iPad, diseño, animación,
+  limpieza de los dos repos y Carismochito): 184 hallazgos verificados y
+  repartidos en 12 paquetes, en `docs/planes/PLAN_PULIDO_2026_10.md`.
+
 ## 2026-10-11 12:00 — Comunica: la cápsula atrás/adelante se oculta si la web trae barra fija abajo
 
 `ComunicaScreen` escucha `{type:'sticpa:barra', abajo}` desde la web: con `abajo: true` oculta la cápsula (iOS y Android) e inyecta la clase `sticpa-app-sin-flechas` y `--stic-app-tabbar`; con `false` o al empezar otra navegación lo deshace. Contrato en `docs/contratos/COMUNICA_WEBVIEW.md` §4.b.
