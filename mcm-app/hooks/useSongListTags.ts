@@ -38,9 +38,20 @@ export function useSongListTags<T extends { tags?: unknown }>(
     [hide, revealed, songs, hiddenSlugs, tagIndex.aliases],
   );
   const featured = settings.featuredTags;
+  // Las destacadas de cada canción se calculan UNA vez por lista: así cada
+  // fila recibe el mismo array en cada render y su `React.memo` sirve (antes,
+  // cada tecla del buscador repintaba todas las filas).
+  const featuredBySong = useMemo(
+    () =>
+      new Map(
+        songs.map((song) => [song, featuredTagsOf(song, featured, tagIndex)]),
+      ),
+    [songs, featured, tagIndex],
+  );
   const featuredFor = useCallback(
-    (song: T) => featuredTagsOf(song, featured, tagIndex),
-    [featured, tagIndex],
+    (song: T) =>
+      featuredBySong.get(song) ?? featuredTagsOf(song, featured, tagIndex),
+    [featuredBySong, featured, tagIndex],
   );
   const revealHidden = useCallback(() => setRevealed(true), []);
   return { visibleSongs: visible, hiddenCount, revealHidden, featuredFor };

@@ -34,6 +34,7 @@ import TagContextBar from '@/components/song-tags/TagContextBar';
 import TagCloudSheet from '@/components/song-tags/TagCloudSheet';
 import {
   coOccurringTags,
+  foldForSearch,
   parseTagCategoryId,
   resolveTag,
   songHasAllTags,
@@ -128,13 +129,13 @@ const TAG_LIST_INSET = spacing.md;
  */
 function makeSearchableText(song: Song, tagIndex?: SongTagIndex): string {
   const base = `${song.title || ''} ${song.author || ''}`;
-  if (!tagIndex) return base.toLowerCase();
+  if (!tagIndex) return foldForSearch(base);
   const slugs = songTagSlugs(song, tagIndex.aliases);
-  if (slugs.length === 0) return base.toLowerCase();
+  if (slugs.length === 0) return foldForSearch(base);
   const labels = slugs
     .map((slug) => `${slug} ${resolveTag(slug, tagIndex).label}`)
     .join(' ');
-  return `${base} ${labels}`.toLowerCase();
+  return foldForSearch(`${base} ${labels}`);
 }
 
 /**
@@ -591,7 +592,7 @@ export default function SongsListScreen({
   ]);
 
   const filteredSongs = useMemo(() => {
-    const searchTerm = search.trim().toLowerCase();
+    const searchTerm = foldForSearch(search.trim());
     if (!searchTerm) return visibleSongs;
 
     return visibleSongs.filter((song) => {
