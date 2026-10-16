@@ -135,14 +135,10 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       chordsheetjs 18 (el parser del cantoral) y Aptabase 0.6. Cada una con su
       changelog y sus pruebas; ninguna corre prisa.
 - [ ] **PDF — número de página y pie por canción**: parcial. Hecho: pie con nombre de playlist + "Página N" vía margin boxes de `@page` (funciona en web Chrome ≥131 y Android; iOS/WebKit no los soporta → validar y, si se quiere también en iOS, haría falta paginación JS). Pendiente: el "1 de 3" por canción multipágina — no viable con CSS de impresión, requeriría paginar por JS midiendo alturas.
-- [ ] **⏰ RECORDATORIO PARA EL USUARIO — Examen del día (Revisión)** (pedido
-      el 2026-10-03: _"recuérdame en otro momento que hay que arreglar un pelín
-      el examen del día y hacer otra versión"_). Al empezar la próxima sesión
-      de Contigo, **recuérdaselo** antes de proponer otra cosa. Dos partes:
-      (1) pulir la que hay — diseño y funcionalidad, que "ha quedado un poquito
-      coja" (`app/(tabs)/contigo/revision.tsx`, `components/contigo/revisionStyles.ts`);
-      (2) una **segunda versión** del examen, a definir con el usuario (no la
-      inventes: pregunta qué estilo quiere antes de diseñarla).
+- [ ] **Examen del día (Revisión) — segunda versión APARCADA** (decisión del
+      usuario, 2026-10-16: «nada por ahora»). Ya no hay que recordárselo. El
+      pulido de la versión actual (`app/(tabs)/contigo/revision.tsx`) va en
+      `docs/planes/PLAN_PULIDO_2026_10.md` (paquete E).
 - [ ] **Contigo — pulido pendiente tras la pasada del 2026-10-03.** Hecho:
       navegación por días/meses de la oración y el submenú de días de la home.
       Queda: el tiempo de oración (el usuario pide **propuestas**, no cambios
