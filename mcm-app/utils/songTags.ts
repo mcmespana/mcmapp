@@ -255,14 +255,21 @@ export function withoutHiddenTagSongs<T extends { tags?: unknown }>(
  * Las etiquetas destacadas que lleva una canción, en el orden en que se
  * eligieron: son las que se ven, discretas, en las listas.
  */
+/**
+ * Siempre el MISMO array vacío: las filas de las listas van con `React.memo`,
+ * y un `[]` nuevo en cada render las repintaba todas al teclear o al
+ * seleccionar una canción.
+ */
+const NO_TAGS: ResolvedTag[] = [];
+
 export function featuredTagsOf(
   song: { tags?: unknown } | null | undefined,
   featured: readonly string[],
   index: SongTagIndex,
 ): ResolvedTag[] {
-  if (featured.length === 0) return [];
+  if (featured.length === 0) return NO_TAGS;
   const own = songTagSlugs(song, index.aliases);
-  if (own.length === 0) return [];
+  if (own.length === 0) return NO_TAGS;
   return featured
     .filter((slug) => own.includes(slug))
     .map((slug) => resolveTag(slug, index));
@@ -376,4 +383,15 @@ export function coOccurringTags(
 /** Título de pantalla para un cruce de etiquetas: "Viejunas · Infantiles". */
 export function tagsTitle(slugs: string[], index: SongTagIndex): string {
   return slugs.map((slug) => resolveTag(slug, index).label).join(' · ');
+}
+
+/**
+ * Minúsculas y sin tildes: «senor» encuentra «Señor» y «jesus», «Jesús».
+ * Se aplica igual al texto buscable y a lo que se teclea.
+ */
+export function foldForSearch(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }
