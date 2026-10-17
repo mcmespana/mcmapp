@@ -53,6 +53,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
+        "monochromeImage": "./assets/images/monochrome-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.mcmespana.mcmapp",
@@ -169,7 +170,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/adaptive-icon.png",
+          "icon": "./assets/images/notification-icon.png",
           "color": "#253883",
           "sounds": [],
           "mode": "production"
