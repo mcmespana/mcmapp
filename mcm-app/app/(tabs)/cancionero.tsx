@@ -12,7 +12,8 @@ import SongFullscreenScreen from '../screens/SongFullscreenScreen';
 import SelectedSongsScreen from '../screens/SelectedSongsScreen';
 
 import { SettingsProvider } from '../../contexts/SettingsContext';
-import { TabHeaderColors, UIColors, themeColors } from '@/constants/colors';
+import { TabHeaderColors, themeColors } from '@/constants/colors';
+import { cantoralHeaderTint } from '@/utils/cantoralHeader';
 import TabTintBar from '@/components/ui/TabTintBar';
 import { useChoirSession } from '../../contexts/ChoirSessionContext';
 import { extractSongMedia, type SongMedia } from '@/types/songMedia';
@@ -160,11 +161,7 @@ export default function CancioneroTab() {
                     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
                   } as any)
                 : ({ backgroundColor: TabHeaderColors.cancionero } as any),
-            headerTintColor: isIOS
-              ? scheme === 'dark'
-                ? UIColors.accentYellow
-                : '#3d79b9ff'
-              : '#1a1a1a',
+            headerTintColor: cantoralHeaderTint(scheme === 'dark'),
             headerTitleStyle: {
               fontWeight: '700' as const,
               fontSize: 17,

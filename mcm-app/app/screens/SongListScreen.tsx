@@ -49,7 +49,8 @@ import { h } from '@/utils/haptics';
 import { extractTrailingEmoji, stripCategoryPrefix } from '@/utils/songUtils';
 import { radii } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
-import { SwipeColors, UIColors, themeColors } from '@/constants/colors';
+import { SwipeColors, themeColors } from '@/constants/colors';
+import { cantoralHeaderTint } from '@/utils/cantoralHeader';
 import typography from '@/constants/typography';
 
 interface Song {
@@ -116,8 +117,6 @@ const getSongsData = (data: any): Record<string, SongCategory> => {
     return {};
   }
 };
-
-const isIOS = Platform.OS === 'ios';
 
 /** Margen lateral de la lista en modo etiqueta (tarjetas por categoría). */
 const TAG_LIST_INSET = spacing.md;
@@ -553,9 +552,7 @@ export default function SongsListScreen({
               <MaterialIcons
                 name="sell"
                 size={22}
-                color={
-                  isIOS ? UIColors.accentYellow : themeColors(isDark).headerTint
-                }
+                color={cantoralHeaderTint(isDark)}
               />
             </TouchableOpacity>
           )
@@ -572,7 +569,7 @@ export default function SongsListScreen({
                   <MaterialIcons
                     name={searchVisible ? 'search-off' : 'search'}
                     size={24}
-                    color={isIOS ? UIColors.accentYellow : '#1a1a1a'}
+                    color={cantoralHeaderTint(isDark)}
                   />
                 </TouchableOpacity>
               ),

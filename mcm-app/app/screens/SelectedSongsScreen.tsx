@@ -101,6 +101,7 @@ import { defaultPlaylistName } from '@/utils/playlistCodes';
 import { isChoirId } from '@/utils/choirIds';
 import { transposeLabel, transposeKey } from '@/utils/transposeKey';
 import { convertChord } from '@/utils/chordNotation';
+import { cantoralHeaderTint } from '@/utils/cantoralHeader';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
   encodeOfflinePlaylist,
@@ -1493,10 +1494,12 @@ const SelectedSongsScreen: React.FC = () => {
     [sharing],
   );
 
+  // En iOS el header es transparente (casi negro / blanco según el modo); en
+  // Android y web es la barra amarilla del cantoral, donde el blanco no se lee.
   const headerIconColor =
-    Platform.OS === 'ios' || Platform.OS === 'web'
+    Platform.OS === 'ios'
       ? themeColors(isDark).headerTint
-      : '#fff';
+      : cantoralHeaderTint(isDark);
 
   useLayoutEffect(() => {
     navigation.setOptions({

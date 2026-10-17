@@ -26,9 +26,9 @@ import colors, {
   Colors,
   KeyPillColors,
   SystemGray,
-  UIColors,
   themeColors,
 } from '@/constants/colors';
+import { cantoralHeaderTint } from '@/utils/cantoralHeader';
 import { radii } from '@/constants/uiStyles';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { PressableFeedback } from 'heroui-native';
@@ -60,8 +60,6 @@ import spacing from '@/constants/spacing';
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
 const SELECTED_SONGS_CATEGORY_ID = '__SELECTED_SONGS__';
-
-const isIOS = Platform.OS === 'ios';
 
 export default function CategoriesScreen({
   navigation,
@@ -213,11 +211,7 @@ export default function CategoriesScreen({
   // liquid-glass del sistema (igual que el back/buscar de dentro de una
   // categoría). Antes vivían en un header inline dentro del scroll, por eso NO
   // tenían ese efecto. El título "Cantoral" lo pone el screenOptions del stack.
-  const headerIconColor = isIOS
-    ? isDark
-      ? UIColors.accentYellow
-      : '#3d79b9'
-    : '#1a1a1a';
+  const headerIconColor = cantoralHeaderTint(isDark);
   useLayoutEffect(() => {
     // Título pequeño nativo (centrado, heredado del stack) + los 2 botones
     // separados. "Sugerir" a la IZQUIERDA y "Buscar" a la DERECHA → son dos bar

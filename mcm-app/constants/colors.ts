@@ -182,6 +182,13 @@ export const UIColors = {
   chordSecondaryText: '#6c757d',
   /** Amarillo del cantoral — FAB principal y color de su tab. */
   accentYellow: '#f4c11e',
+  /**
+   * Botones de la cabecera del cantoral en iOS claro (header transparente
+   * sobre fondo blanco/gris, 4,5:1). Estaba escrito a mano en tres sitios con
+   * este mismo valor; se le da nombre sin cambiar un píxel. Quién lo usa y en
+   * qué plataforma lo decide `utils/cantoralHeader.ts`.
+   */
+  cantoralHeaderTintLight: '#3d79b9',
   modalOverlay: 'rgba(0, 0, 0, 0.5)',
 } as const;
 

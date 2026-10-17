@@ -41,11 +41,8 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import ArrangementInputModal from '@/components/ArrangementInputModal';
 import * as Clipboard from 'expo-clipboard';
-import brandColors, {
-  SwipeColors,
-  UIColors,
-  themeColors,
-} from '@/constants/colors';
+import brandColors, { SwipeColors, themeColors } from '@/constants/colors';
+import { cantoralHeaderTint } from '@/utils/cantoralHeader';
 import { durations } from '@/constants/animations';
 import { h } from '@/utils/haptics';
 import { pushWithRetry } from '@/services/firebaseWrites';
@@ -360,7 +357,9 @@ export default function SongDetailScreen({
   // items; el back y la transparencia los pone el stack. Sin título para no
   // tapar letra. El FAB de abajo (SongControls) se queda.
   useLayoutEffect(() => {
-    const headerIconColor = isDark ? UIColors.accentYellow : '#3d79b9';
+    // Mismo color que el back del stack: en Android/web la cabecera es la
+    // barra amarilla sólida y el amarillo/azul de iOS no se leía sobre ella.
+    const headerIconColor = cantoralHeaderTint(isDark);
     navigation.setOptions({
       headerShown: true,
       headerTitle: '',
@@ -395,7 +394,7 @@ export default function SongDetailScreen({
               <MaterialIcons
                 name="ondemand-video"
                 size={22}
-                color={isDark ? brandColors.secondary : brandColors.primary}
+                color={headerIconColor}
               />
             </TouchableOpacity>
           )}
@@ -418,7 +417,13 @@ export default function SongDetailScreen({
             <IconSymbol
               name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
               size={24}
-              color={isSelected ? APPLE_SYSTEM_GREEN : headerIconColor}
+              // El estado ya lo dice la forma (✓ relleno frente a +). El
+              // verde de iOS no se lee sobre la barra amarilla de Android/web.
+              color={
+                isSelected && Platform.OS === 'ios'
+                  ? APPLE_SYSTEM_GREEN
+                  : headerIconColor
+              }
             />
           </TouchableOpacity>
         </View>
