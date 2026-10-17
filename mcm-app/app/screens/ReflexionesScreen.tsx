@@ -6,7 +6,6 @@ import {
   ScrollView,
   FlatList,
   Platform,
-  Share,
   Text,
   Pressable,
   Modal,
@@ -18,6 +17,7 @@ import { useRoute, RouteProp } from 'expo-router/react-navigation';
 import { Spinner, BottomSheet } from 'heroui-native';
 // Toast de la app (mismo API que el de heroui) — el resto del repo usa este.
 import { useToast } from '@/contexts/AppToastContext';
+import { shareText } from '@/utils/shareText';
 import ContextMenuSheet from '@/components/ContextMenuSheet';
 import CelebrationBurst from '@/components/ui/CelebrationBurst';
 import EmptyState from '@/components/ui/EmptyState';
@@ -331,7 +331,9 @@ export default function ReflexionesScreen() {
     toast.show({ variant: 'success', label: 'Reflexión copiada' });
   };
   const shareReflexion = (r: Reflexion) => {
-    Share.share({ message: reflexionText(r) });
+    shareText(reflexionText(r), {
+      notify: (label) => toast.show({ label }),
+    });
   };
 
   // Función normal (no useCallback): recreada cada render, igual que el

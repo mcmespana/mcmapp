@@ -14,7 +14,6 @@ import {
   Text,
   FlatList,
   Platform,
-  Share,
   Modal,
   TouchableOpacity,
   TouchableWithoutFeedback,
@@ -22,8 +21,8 @@ import {
 import { PressableFeedback } from 'heroui-native';
 import AppTextField from '@/components/ui/AppTextField';
 import { useToast } from '@/contexts/AppToastContext';
+import { shareText } from '@/utils/shareText';
 import { extractSongMedia } from '@/types/songMedia';
-import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -470,21 +469,13 @@ const SelectedSongsScreen: React.FC = () => {
       accion: 'compartida',
       tamano: tramoTamano(flatSelectedSongs.length),
     });
-    const desktopLike =
-      Platform.OS === 'web' ||
-      Platform.OS === 'windows' ||
-      Platform.OS === 'macos';
-    if (desktopLike) {
-      Clipboard.setStringAsync(text)
-        .then(() => toast.show({ label: 'Lista copiada al portapapeles' }))
-        .catch(() => toast.show({ label: 'Error al copiar la lista' }));
-    } else {
-      try {
-        Share.share({ message: text });
-      } catch (e) {
-        logger.error(e);
-      }
-    }
+    // En escritorio se copia (es para pegarla en otro sitio); en móvil, hoja
+    // del sistema. `shareText` no deja promesas rechazadas sueltas.
+    shareText(text, {
+      notify: (label) => toast.show({ label }),
+      copiedLabel: 'Lista copiada al portapapeles',
+      copyOnDesktop: true,
+    });
     // `flatSelectedSongs.length` va en las deps aunque hoy `buildShareText` ya
     // cambie con la lista: sin él, el día que ese memo cambie de dependencias
     // la analítica empezaría a reportar el tamaño de una playlist vieja.
