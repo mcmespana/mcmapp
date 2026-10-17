@@ -4,7 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 import colors, { Colors } from '@/constants/colors';
-import { getBrightness } from '@/components/ui/glass';
+import { fillForWhiteText } from '@/utils/tintInk';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import type { SurveyIndexEntry } from '@/constants/surveys';
@@ -82,9 +82,9 @@ export default function SurveyBanner({
     );
   }
 
-  // El acento puede ser muy claro; si lo es, el texto blanco no se lee, así que
-  // usamos un fondo legible (primary) manteniendo el acento solo en el botón.
-  const bg = getBrightness(accent) > 200 ? colors.primary : accent;
+  // El acento puede ser muy claro; si el texto blanco no se lee sobre él
+  // (contraste real < 4,5:1), el fondo cae al azul de marca.
+  const bg = fillForWhiteText(accent, colors.primary);
   const ctaLabel = entry.placement?.ctaLabel || 'Responder';
 
   return (

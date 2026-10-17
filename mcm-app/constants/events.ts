@@ -87,6 +87,11 @@ export interface EventConfig {
   /** Subtítulo del banner destacado de la Home (modo evento). */
   bannerText?: string;
   /**
+   * Lema del encuentro, al pie del hub. Si falta, no se pinta nada: el hub es
+   * genérico y no puede enseñar el lema de otro evento.
+   */
+  motto?: string;
+  /**
    * Categorías de la pantalla de Grupos que se ocultan en este evento
    * (ej. `['Alojamiento']`). La comparación ignora mayúsculas y acentos.
    * Si falta, se muestran todas las categorías.
@@ -197,6 +202,7 @@ export const VISITAPAPA: EventConfig = {
   // devolverlo a `active` desde `activities/visitapapa26/_meta.status`.
   status: 'archived',
   bannerText: 'Horarios, materiales y todo para vivir un momento histórico',
+  motto: 'Alzad la mirada',
   tabId: 'visitapapa',
   hiddenGroupCategories: ['Alojamiento'],
   sections: [
