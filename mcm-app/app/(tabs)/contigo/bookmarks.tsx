@@ -15,12 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import {
-  WARM_DARK,
-  WARM_LIGHT,
-  formatDateLong,
-  warm,
-} from '@/components/contigo/theme';
+import { HABITS, formatDateLong, warm } from '@/components/contigo/theme';
 import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
 import { countHighlights } from '@/utils/contigoBookmarks';
 import typography from '@/constants/typography';
@@ -72,14 +67,7 @@ export default function BookmarksScreen() {
             : {}),
         }}
       />
-      <LinearGradient
-        colors={
-          isDark
-            ? ([WARM_DARK.bg, WARM_DARK.bgDeep] as const)
-            : ([WARM_LIGHT.bg, '#F0E8D8'] as const)
-        }
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient colors={W.bgGradient} style={StyleSheet.absoluteFill} />
 
       {isLoading ? (
         <View style={styles.center}>
@@ -140,7 +128,7 @@ export default function BookmarksScreen() {
                   ]}
                 >
                   <LinearGradient
-                    colors={['#E8A838', WARM_LIGHT.accent]}
+                    colors={HABITS.oracion.grad}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.cardBar}
@@ -150,14 +138,14 @@ export default function BookmarksScreen() {
                       <View style={{ flex: 1 }}>
                         {ev?.cita ? (
                           <Text
-                            style={[styles.cita, { color: W.accent }]}
+                            style={[styles.cita, { color: W.accentText }]}
                             numberOfLines={1}
                           >
                             {ev.cita}
                           </Text>
                         ) : null}
                         <Text
-                          style={[styles.dateText, { color: W.textMuted }]}
+                          style={[styles.dateText, { color: W.textSec }]}
                           numberOfLines={1}
                         >
                           {formatDateLong(b.date)}
@@ -167,10 +155,13 @@ export default function BookmarksScreen() {
                             <MaterialIcons
                               name="border-color"
                               size={11}
-                              color={W.accent}
+                              color={W.accentText}
                             />
                             <Text
-                              style={[styles.hlChipText, { color: W.accent }]}
+                              style={[
+                                styles.hlChipText,
+                                { color: W.accentText },
+                              ]}
                             >
                               {nHighlights} subrayado
                               {nHighlights !== 1 ? 's' : ''}
@@ -228,7 +219,7 @@ export default function BookmarksScreen() {
                         },
                       ]}
                     >
-                      <Text style={[styles.openText, { color: W.accent }]}>
+                      <Text style={[styles.openText, { color: W.accentText }]}>
                         Leer evangelio →
                       </Text>
                     </TouchableOpacity>

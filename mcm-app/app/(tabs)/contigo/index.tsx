@@ -19,7 +19,6 @@ import { useDailyReadings } from '@/hooks/useDailyReadings';
 import {
   MONTHS_CAP,
   WARM_DARK,
-  WARM_LIGHT,
   formatDateLong,
   warm,
 } from '@/components/contigo/theme';
@@ -120,10 +119,6 @@ export default function ContigoScreen() {
     closeDayMenu,
   } = useContigoDayMenu();
 
-  const bgGradient = isDark
-    ? ([WARM_DARK.bg, WARM_DARK.bgDeep] as const)
-    : ([WARM_LIGHT.bg, '#F0E8D8'] as const);
-
   return (
     <View style={styles.container}>
       {/* Header NATIVO: título pequeño "Contigo" + badge litúrgico y favoritos
@@ -151,7 +146,11 @@ export default function ContigoScreen() {
                 style={{ padding: 4 }}
                 accessibilityLabel="Ver evangelios guardados"
               >
-                <MaterialIcons name="bookmarks" size={22} color={W.accent} />
+                <MaterialIcons
+                  name="bookmarks"
+                  size={22}
+                  color={W.accentText}
+                />
               </TouchableOpacity>
             </View>
           ),
@@ -162,7 +161,7 @@ export default function ContigoScreen() {
         }}
       />
       <LinearGradient
-        colors={bgGradient}
+        colors={W.bgGradient}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
@@ -247,7 +246,7 @@ export default function ContigoScreen() {
 
           {/* ── Esta semana ────────────────────────────── */}
           <View style={[styles.section, { paddingTop: 18 }]}>
-            <Text style={[styles.smallLabel, { color: W.textMuted }]}>
+            <Text style={[styles.smallLabel, { color: W.textSec }]}>
               ÚLTIMOS 7 DÍAS
             </Text>
             <View
@@ -282,7 +281,7 @@ export default function ContigoScreen() {
               icon="timer"
               value={`${totalMins}'`}
               label={'min\nesta sem.'}
-              color={W.accent}
+              color={W.accentText}
               isDark={isDark}
             />
             <StatCard
@@ -306,14 +305,14 @@ export default function ContigoScreen() {
                   <MaterialIcons
                     name="chevron-left"
                     size={20}
-                    color={W.textMuted}
+                    color={W.textSec}
                   />
                 </TouchableOpacity>
                 <Text
                   style={[
                     styles.smallLabel,
                     styles.monthNavLabel,
-                    { color: W.textMuted },
+                    { color: W.textSec },
                   ]}
                 >
                   {monthLabel.toUpperCase()}
@@ -326,7 +325,7 @@ export default function ContigoScreen() {
                   <MaterialIcons
                     name="chevron-right"
                     size={20}
-                    color={W.textMuted}
+                    color={W.textSec}
                   />
                 </TouchableOpacity>
                 {!isCurrentMonth ? (
@@ -338,7 +337,11 @@ export default function ContigoScreen() {
                     hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
                     accessibilityLabel="Volver al mes de hoy"
                   >
-                    <MaterialIcons name="today" size={16} color={W.accent} />
+                    <MaterialIcons
+                      name="today"
+                      size={16}
+                      color={W.accentText}
+                    />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -352,7 +355,7 @@ export default function ContigoScreen() {
                   },
                 ]}
               >
-                <Text style={[styles.monthBadgeText, { color: W.accent }]}>
+                <Text style={[styles.monthBadgeText, { color: W.accentText }]}>
                   {activeDays}{' '}
                   {activeDays === 1 ? 'día activo' : 'días activos'}
                 </Text>

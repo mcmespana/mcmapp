@@ -26,7 +26,12 @@ import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { h } from '@/utils/haptics';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
-import { WARM_DARK, WARM_LIGHT, warm } from '@/components/contigo/theme';
+import {
+  HABITS,
+  WARM_DARK,
+  WARM_LIGHT,
+  warm,
+} from '@/components/contigo/theme';
 import { BreathingPhase } from '@/components/contigo/BreathingPhase';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { DateNavigator } from '@/components/contigo/DateNavigator';
@@ -234,14 +239,6 @@ export default function RevisionScreen() {
     }
   };
 
-  const bgColors = useMemo(
-    () =>
-      isDark
-        ? ([WARM_DARK.bg, WARM_DARK.bgDeep] as const)
-        : (['#FBF7F1', '#F0E8D8'] as const),
-    [isDark],
-  );
-
   return (
     <View style={[styles.container, { paddingTop: insets.top + 52 }]}>
       {/* Header NATIVO: cerrar (izq) + navegador de fechas como título custom
@@ -278,7 +275,7 @@ export default function RevisionScreen() {
         }}
       />
       <LinearGradient
-        colors={bgColors}
+        colors={W.bgGradient}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
@@ -316,7 +313,7 @@ export default function RevisionScreen() {
           />
         ))}
       </View>
-      <Text style={[styles.stepLabel, { color: W.textMuted }]}>
+      <Text style={[styles.stepLabel, { color: W.textSec }]}>
         Paso {step + 1} de {totalSteps} · {STEP_NAMES[step]}
       </Text>
 
@@ -415,7 +412,7 @@ export default function RevisionScreen() {
                 style={{ flex: 1 }}
               >
                 <LinearGradient
-                  colors={['#8B5CF6', '#6D28D9']}
+                  colors={HABITS.revision.grad}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.nextBtn}

@@ -38,9 +38,22 @@ export const WARM_LIGHT = {
   fire: '#EA580C',
   text: '#1C1610',
   textSec: '#7A6550',
+  /**
+   * DECORATIVO: placeholders, iconos inactivos y chevrones. NO vale para texto
+   * que haya que leer: da 2,33:1 sobre `bg` y 2,10:1 sobre `bgDeep`. Subirlo no
+   * lo arregla (para llegar a 4,5:1 sobre `bgDeep` hay que bajar a ~`#7A644D`,
+   * que es justo `textSec` y se perdería el escalón), así que el texto pequeño
+   * —etiquetas, leyendas, fechas, subtítulos— usa `textSec` (5,13:1).
+   */
   textMuted: '#B5A08A',
   border: 'rgba(196,146,42,0.13)',
   shadow: 'rgba(100,70,20,0.08)',
+  /**
+   * Fondo de pantalla de las tres hermanas (inicio, guardados, examen): de `bg`
+   * al beige profundo. Estaba escrito a mano en cada pantalla, y la del examen
+   * había derivado a `#FBF7F1` de inicio.
+   */
+  bgGradient: ['#FAF6F0', '#F0E8D8'] as const,
 } as const;
 
 export const WARM_DARK = {
@@ -61,9 +74,11 @@ export const WARM_DARK = {
   fire: '#FB923C',
   text: '#F5EFE3',
   textSec: '#A09A8A',
+  /** Decorativo, igual que en `WARM_LIGHT`: 3,02:1 sobre `bg`. No para texto. */
   textMuted: '#6B6358',
   border: 'rgba(218,165,32,0.12)',
   shadow: 'rgba(0,0,0,0.25)',
+  bgGradient: ['#1A1712', '#100F0C'] as const,
 } as const;
 
 export type WarmTheme = {
@@ -87,6 +102,8 @@ export type WarmTheme = {
   textMuted: string;
   border: string;
   shadow: string;
+  /** Fondo en degradado de las pantallas de Contigo. */
+  bgGradient: readonly [string, string];
 };
 
 export const warm = (isDark: boolean): WarmTheme =>

@@ -45,7 +45,7 @@ import type { ReadingSelection } from '@/components/contigo/HighlightableReading
 
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { styles } from '@/components/contigo/evangelioStyles';
-import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
+import { HABITS, WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
 import typography from '@/constants/typography';
 import EmptyState from '@/components/ui/EmptyState';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
@@ -467,7 +467,7 @@ export default function EvangelioScreen() {
                             <Text
                               style={{
                                 ...typography.caption,
-                                color: warm.accent,
+                                color: warm.accentText,
                                 marginRight: 6,
                                 lineHeight: 16,
                               }}
@@ -475,7 +475,10 @@ export default function EvangelioScreen() {
                               ✦
                             </Text>
                             <Text
-                              style={[styles.citaText, { color: warm.accent }]}
+                              style={[
+                                styles.citaText,
+                                { color: warm.accentText },
+                              ]}
                             >
                               {readings.evangelio.cita}
                             </Text>
@@ -539,7 +542,7 @@ export default function EvangelioScreen() {
                               <Text
                                 style={[
                                   styles.sourceText,
-                                  { color: warm.accent },
+                                  { color: warm.accentText },
                                 ]}
                               >
                                 Leer original completo
@@ -547,7 +550,7 @@ export default function EvangelioScreen() {
                               <MaterialIcons
                                 name="open-in-new"
                                 size={14}
-                                color={warm.accent}
+                                color={warm.accentText}
                               />
                             </TouchableOpacity>
                           ) : null}
@@ -566,14 +569,16 @@ export default function EvangelioScreen() {
                       <Text
                         style={{
                           ...typography.caption,
-                          color: warm.accent,
+                          color: warm.accentText,
                           marginRight: 6,
                           lineHeight: 16,
                         }}
                       >
                         ✦
                       </Text>
-                      <Text style={[styles.citaText, { color: warm.accent }]}>
+                      <Text
+                        style={[styles.citaText, { color: warm.accentText }]}
+                      >
                         {readings.evangelio.cita}
                       </Text>
                     </View>
@@ -601,7 +606,7 @@ export default function EvangelioScreen() {
                   style={[
                     styles.trackerBtnWrap,
                     !isDone && {
-                      shadowColor: '#1D4ED8',
+                      shadowColor: HABITS.evangelio.grad[1],
                       shadowOffset: { width: 0, height: 6 },
                       shadowOpacity: isDark ? 0.45 : 0.35,
                       shadowRadius: 16,
@@ -642,7 +647,7 @@ export default function EvangelioScreen() {
                     </View>
                   ) : (
                     <LinearGradient
-                      colors={['#3B82F6', '#1D4ED8']}
+                      colors={HABITS.evangelio.grad}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.trackerGradient}

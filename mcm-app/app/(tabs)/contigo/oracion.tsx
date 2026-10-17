@@ -23,7 +23,7 @@ import { getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { DateNavigator } from '@/components/contigo/DateNavigator';
 import { styles } from '@/components/contigo/oracionStyles';
-import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
+import { HABITS, WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
 import { radii } from '@/constants/uiStyles';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
@@ -39,6 +39,7 @@ const CELL_SIZE = Math.floor((effectiveW - 72 - 30) / 7);
 const WARM = {
   light: {
     accent: WARM_LIGHT.accent,
+    accentText: WARM_LIGHT.accentText,
     accentGlow: 'rgba(196,146,42,0.28)',
     bg1: WARM_LIGHT.bg,
     bg2: WARM_LIGHT.bgDeep,
@@ -51,6 +52,7 @@ const WARM = {
   },
   dark: {
     accent: WARM_DARK.accent,
+    accentText: WARM_DARK.accentText,
     accentGlow: 'rgba(218,165,32,0.25)',
     bg1: WARM_DARK.bg,
     bg2: '#131210',
@@ -474,7 +476,7 @@ export default function OracionScreen() {
                       style={[
                         styles.emotionLabel,
                         {
-                          color: isSelected ? warm.accent : warm.warmGray,
+                          color: isSelected ? warm.accentText : warm.warmGray,
                           fontWeight: isSelected ? '700' : '500',
                         },
                       ]}
@@ -586,7 +588,7 @@ export default function OracionScreen() {
                     <MaterialIcons
                       name="remove"
                       size={26}
-                      color={warm.accent}
+                      color={warm.accentText}
                     />
                   </TouchableOpacity>
 
@@ -614,7 +616,11 @@ export default function OracionScreen() {
                       },
                     ]}
                   >
-                    <MaterialIcons name="add" size={26} color={warm.accent} />
+                    <MaterialIcons
+                      name="add"
+                      size={26}
+                      color={warm.accentText}
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -664,7 +670,7 @@ export default function OracionScreen() {
               </View>
             ) : (
               <LinearGradient
-                colors={['#E8A838', WARM_LIGHT.accent]}
+                colors={HABITS.oracion.grad}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.saveBtnGradient}
@@ -731,8 +737,12 @@ export default function OracionScreen() {
                   },
                 ]}
               >
-                <MaterialIcons name="favorite" size={12} color={warm.accent} />
-                <Text style={[styles.statText, { color: warm.accent }]}>
+                <MaterialIcons
+                  name="favorite"
+                  size={12}
+                  color={warm.accentText}
+                />
+                <Text style={[styles.statText, { color: warm.accentText }]}>
                   {prayedThisMonth}{' '}
                   {prayedThisMonth === 1 ? 'día rezado' : 'días rezados'}
                 </Text>
@@ -823,7 +833,7 @@ export default function OracionScreen() {
                               ? '#2D2008'
                               : '#3D3225'
                             : isToday
-                              ? warm.accent
+                              ? warm.accentText
                               : isFuture
                                 ? isDark
                                   ? 'rgba(255,255,255,0.3)'

@@ -438,7 +438,7 @@ export function WeekStrip({
               <Text
                 style={[
                   styles.weekHdr,
-                  { color: isToday ? W.accentText : W.textMuted },
+                  { color: isToday ? W.accentText : W.textSec },
                 ]}
               >
                 {weekdayLetter(ds)}
@@ -461,7 +461,7 @@ export function WeekStrip({
                 style={[
                   styles.weekDay,
                   {
-                    color: isToday ? W.accentText : W.textMuted,
+                    color: isToday ? W.accentText : W.textSec,
                     fontWeight: isToday ? '800' : '400',
                   },
                 ]}
@@ -528,14 +528,14 @@ export function WeekStrip({
                 { backgroundColor: habitColor(key, isDark) + '80' },
               ]}
             />
-            <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+            <Text style={[styles.weekLegendText, { color: W.textSec }]}>
               {label}
             </Text>
           </View>
         ))}
         <View style={styles.weekLegendItem}>
           <Text style={[styles.weekLegendStar, { color: W.green }]}>✦</Text>
-          <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+          <Text style={[styles.weekLegendText, { color: W.textSec }]}>
             Los 3
           </Text>
         </View>
@@ -585,7 +585,7 @@ export function StatCard({
       >
         {value}
       </Text>
-      <Text style={[styles.statLabel, { color: W.textMuted }]}>{label}</Text>
+      <Text style={[styles.statLabel, { color: W.textSec }]}>{label}</Text>
     </View>
   );
 }
@@ -621,7 +621,7 @@ export function MonthHeatmap({
     <View>
       <View style={styles.heatmapHdr}>
         {WEEKDAYS.map((d) => (
-          <Text key={d} style={[styles.heatmapHdrText, { color: W.textMuted }]}>
+          <Text key={d} style={[styles.heatmapHdrText, { color: W.textSec }]}>
             {d}
           </Text>
         ))}
@@ -689,7 +689,7 @@ export function MonthHeatmap({
                       ? W.accentText
                       : rd || pd || rv
                         ? W.text
-                        : W.textMuted,
+                        : W.textSec,
                     fontWeight: isToday || rd || pd || rv ? '700' : '500',
                   },
                 ]}
@@ -728,7 +728,7 @@ export function MonthHeatmap({
               },
             ]}
           />
-          <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+          <Text style={[styles.weekLegendText, { color: W.textSec }]}>
             Evangelio
           </Text>
         </View>
@@ -743,7 +743,7 @@ export function MonthHeatmap({
               },
             ]}
           />
-          <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+          <Text style={[styles.weekLegendText, { color: W.textSec }]}>
             Oración
           </Text>
         </View>
@@ -758,7 +758,7 @@ export function MonthHeatmap({
               },
             ]}
           />
-          <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+          <Text style={[styles.weekLegendText, { color: W.textSec }]}>
             Revisión
           </Text>
         </View>
@@ -773,7 +773,7 @@ export function MonthHeatmap({
               },
             ]}
           />
-          <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+          <Text style={[styles.weekLegendText, { color: W.textSec }]}>
             Los 3
           </Text>
         </View>
