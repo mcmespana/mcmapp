@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import SegmentedControl from '@/components/ui/SegmentedControl';
-import * as Haptics from 'expo-haptics';
+import { h } from '@/utils/haptics';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Card } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -45,7 +45,7 @@ import type { ReadingSelection } from '@/components/contigo/HighlightableReading
 
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { styles } from '@/components/contigo/evangelioStyles';
-import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
+import { HABITS, WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
 import typography from '@/constants/typography';
 import EmptyState from '@/components/ui/EmptyState';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
@@ -163,8 +163,7 @@ export default function EvangelioScreen() {
       source,
       (sel: ReadingSelection) => {
         applyHighlightColor(pickStickyHighlightColor(), { source, sel });
-        if (Platform.OS !== 'web')
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        h.tap();
         setHighlightMode(true);
       },
     ]);
@@ -180,14 +179,12 @@ export default function EvangelioScreen() {
   };
 
   const toggleBookmark = async () => {
-    if (Platform.OS !== 'web')
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    h.toggle();
     await toggleBm(selectedDate, readings);
   };
 
   const toggleHighlightMode = () => {
-    if (Platform.OS !== 'web')
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    h.toggle();
     if (highlightMode) exitHighlightMode();
     else setHighlightMode(true);
   };
@@ -212,22 +209,12 @@ export default function EvangelioScreen() {
     await setReadingDone(selectedDate, newValue);
 
     if (newValue) {
-      // Create a playful, escalating vibration sequence
-      if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setTimeout(
-          () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
-          100,
-        );
-        setTimeout(
-          () =>
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
-          250,
-        );
-      }
-
+      h.formSuccess();
       setShowCheck(true);
       setTimeout(() => setShowCheck(false), 2500);
+    } else {
+      // Desmarcar es un gesto distinto de marcar: el golpe seco lo avisa.
+      h.toggle();
     }
   };
 
@@ -467,7 +454,7 @@ export default function EvangelioScreen() {
                             <Text
                               style={{
                                 ...typography.caption,
-                                color: warm.accent,
+                                color: warm.accentText,
                                 marginRight: 6,
                                 lineHeight: 16,
                               }}
@@ -475,7 +462,10 @@ export default function EvangelioScreen() {
                               ✦
                             </Text>
                             <Text
-                              style={[styles.citaText, { color: warm.accent }]}
+                              style={[
+                                styles.citaText,
+                                { color: warm.accentText },
+                              ]}
                             >
                               {readings.evangelio.cita}
                             </Text>
@@ -539,7 +529,7 @@ export default function EvangelioScreen() {
                               <Text
                                 style={[
                                   styles.sourceText,
-                                  { color: warm.accent },
+                                  { color: warm.accentText },
                                 ]}
                               >
                                 Leer original completo
@@ -547,7 +537,7 @@ export default function EvangelioScreen() {
                               <MaterialIcons
                                 name="open-in-new"
                                 size={14}
-                                color={warm.accent}
+                                color={warm.accentText}
                               />
                             </TouchableOpacity>
                           ) : null}
@@ -566,14 +556,16 @@ export default function EvangelioScreen() {
                       <Text
                         style={{
                           ...typography.caption,
-                          color: warm.accent,
+                          color: warm.accentText,
                           marginRight: 6,
                           lineHeight: 16,
                         }}
                       >
                         ✦
                       </Text>
-                      <Text style={[styles.citaText, { color: warm.accent }]}>
+                      <Text
+                        style={[styles.citaText, { color: warm.accentText }]}
+                      >
                         {readings.evangelio.cita}
                       </Text>
                     </View>
@@ -598,10 +590,13 @@ export default function EvangelioScreen() {
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={handleToggleDone}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: isDone }}
+                  accessibilityLabel="Leído"
                   style={[
                     styles.trackerBtnWrap,
                     !isDone && {
-                      shadowColor: '#1D4ED8',
+                      shadowColor: HABITS.evangelio.grad[1],
                       shadowOffset: { width: 0, height: 6 },
                       shadowOpacity: isDark ? 0.45 : 0.35,
                       shadowRadius: 16,
@@ -636,13 +631,15 @@ export default function EvangelioScreen() {
                             { color: isDark ? colors.green : WARM_LIGHT.green },
                           ]}
                         >
-                          ¡He rezado hoy con el Evangelio!
+                          {selectedDate === todayStr
+                            ? 'Hoy has rezado con el Evangelio'
+                            : 'Rezado con el Evangelio este día'}
                         </Text>
                       </View>
                     </View>
                   ) : (
                     <LinearGradient
-                      colors={['#3B82F6', '#1D4ED8']}
+                      colors={HABITS.evangelio.grad}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.trackerGradient}
@@ -663,7 +660,9 @@ export default function EvangelioScreen() {
                   )}
                 </TouchableOpacity>
                 <Text style={[styles.trackerNote, { color: warm.warmGray }]}>
-                  Marcando este día sumas a tu constancia en «Contigo».
+                  {isDone
+                    ? 'Toca para desmarcar'
+                    : 'Marcando este día sumas a tu constancia en «Contigo».'}
                 </Text>
               </View>
 
