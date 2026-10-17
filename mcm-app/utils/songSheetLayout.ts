@@ -283,7 +283,8 @@ export const SHEET_CSS = `
  * Maquetación en el WebView. Expone `window.__SONG_LAYOUT__`:
  *  - `refit()`: recoloca todo (columnas + cortes). Lo llama el puente de
  *    estilos tras cambiar letra, tamaño, acordes o vista.
- *  - `chooseBreaks`, `penalty`: el algoritmo, para los tests.
+ *  - `chooseBreaks`, `penalty`, `canRotate`: el algoritmo y el aviso de
+ *    girar, para los tests.
  */
 export const SHEET_LAYOUT_JS = `
 (function () {
@@ -550,14 +551,23 @@ export const SHEET_LAYOUT_JS = `
     return false;
   }
 
+  // ¿Tiene sentido avisar de girar? Solo en tablet: un móvil en horizontal
+  // tiene sitio para muy pocas líneas, y un monitor no se gira (sin pantalla
+  // táctil, nada de aviso; el admin del cantoral lo fuerza con
+  // __SONG_ROTATE_HINT__ en su vista de iPad).
+  function canRotate(w, h, touchPoints, forced) {
+    if (Math.min(w, h) < 600) return false;
+    return touchPoints > 0 || !!forced;
+  }
+
   /**
    * ¿Cabría entera girando la pantalla? Se maqueta con el ancho y el alto
-   * cambiados, se mira y se deshace. Solo en tablet: un móvil en horizontal
-   * tiene sitio para muy pocas líneas.
+   * cambiados, se mira y se deshace.
    */
   function fitsRotated(sheet) {
     var w = window.innerWidth, h = window.innerHeight;
-    if (Math.min(w, h) < 600) return false;
+    var touch = typeof navigator !== 'undefined' ? navigator.maxTouchPoints || 0 : 0;
+    if (!canRotate(w, h, touch, window.__SONG_ROTATE_HINT__)) return false;
     var root = document.documentElement;
     root.style.width = h + 'px';
     relayout();
@@ -704,6 +714,7 @@ export const SHEET_LAYOUT_JS = `
     refit: schedule,
     page: goPage,
     relayout: relayout,
+    canRotate: canRotate,
     chooseBreaks: chooseBreaks,
     penalty: penalty
   };
