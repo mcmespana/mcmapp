@@ -501,7 +501,17 @@ export const isNotificationOlderThan60Days = (dateStr?: string): boolean => {
   return diffDays > 60;
 };
 
+/**
+ * Cuenta las notificaciones sin leer (locales + historial de Firebase).
+ *
+ * El historial de Firebase lo pasa quien llama: el `NotificationsContext` ya lo
+ * tiene en memoria por su suscripción en tiempo real. Antes esta función hacía
+ * su propio `get()` del nodo `/notifications` entero en cada llamada —con cada
+ * cambio del nodo, de audiencia y en cada vuelta a primer plano—, o sea que
+ * descargaba y procesaba dos veces el histórico completo.
+ */
 export const getUnreadNotificationsCount = async (
+  firebaseHistory: NotificationData[],
   // Filtro opcional para las notificaciones de Firebase (historial remoto). Lo
   // usa el NotificationsContext para descontar del badge los avisos dirigidos a
   // otra audiencia (perfil/delegación/evento). Sin filtro → se cuentan todas.
@@ -510,19 +520,24 @@ export const getUnreadNotificationsCount = async (
   try {
     const readIds = await getReadNotificationIds();
     const localNotifications = await getLocalNotificationsHistory();
-    const firebaseHistory = await getNotificationsHistory();
+    // Las de más de 60 días cuentan como leídas: se descartan ANTES de ordenar
+    // y deduplicar, que es lo caro, en vez de recorrer el histórico entero.
+    const isRecent = (n: NotificationData | ReceivedNotification) =>
+      !isNotificationOlderThan60Days(
+        'receivedAt' in n ? n.receivedAt : n.createdAt,
+      );
+    const recentFirebase = firebaseHistory.filter(isRecent);
     const firebaseNotifications = filterFirebaseNotification
-      ? firebaseHistory.filter(filterFirebaseNotification)
-      : firebaseHistory;
+      ? recentFirebase.filter(filterFirebaseNotification)
+      : recentFirebase;
+    const recentLocal = localNotifications.filter(isRecent);
 
     // Combinar, priorizando locales
-    const combined = [...localNotifications, ...firebaseNotifications].sort(
-      (a, b) => {
-        const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
-        const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
-        return dateB.getTime() - dateA.getTime();
-      },
-    );
+    const combined = [...recentLocal, ...firebaseNotifications].sort((a, b) => {
+      const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
+      const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
+      return dateB.getTime() - dateA.getTime();
+    });
 
     // Deduplicar
     const seenContentKeys = new Set<string>();
