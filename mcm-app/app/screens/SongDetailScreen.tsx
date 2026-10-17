@@ -17,6 +17,7 @@ import {
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -44,7 +45,7 @@ import ArrangementInputModal from '@/components/ArrangementInputModal';
 import * as Clipboard from 'expo-clipboard';
 import brandColors, { SwipeColors, themeColors } from '@/constants/colors';
 import { cantoralHeaderTint } from '@/utils/cantoralHeader';
-import { durations } from '@/constants/animations';
+import { durations, reaEasings, springs } from '@/constants/animations';
 import { h } from '@/utils/haptics';
 import { pushWithRetry } from '@/services/firebaseWrites';
 import { hasSongMedia } from '@/types/songMedia';
@@ -629,24 +630,34 @@ export default function SongDetailScreen({
     }
   };
 
-  const animateAndSet = (params: any, direction: 'next' | 'prev') => {
+  const animateAndSet = (
+    params: any,
+    direction: 'next' | 'prev',
+    velocity = 0,
+  ) => {
     const toValue = direction === 'next' ? -screenWidth : screenWidth;
-    // La canción actual se va por un lado; al terminar se cambian los params y
-    // la nueva entra desde el lado contrario.
+    // La canción actual se va por un lado (acelerando: algo que se va sí
+    // acelera); al terminar se cambian los params y la nueva entra desde el
+    // lado contrario con un muelle que hereda la velocidad del dedo, en vez
+    // de una curva que la reiniciaba.
     const swapAndSlideIn = () => {
       navigation.setParams(params);
       slideAnim.set(-toValue);
-      slideAnim.set(withTiming(0, { duration: durations.quick }));
+      slideAnim.set(withSpring(0, { ...springs.snap, velocity }));
     };
     slideAnim.set(
-      withTiming(toValue, { duration: durations.quick }, () => {
-        'worklet';
-        scheduleOnRN(swapAndSlideIn);
-      }),
+      withTiming(
+        toValue,
+        { duration: durations.quick, easing: reaEasings.exit },
+        () => {
+          'worklet';
+          scheduleOnRN(swapAndSlideIn);
+        },
+      ),
     );
   };
 
-  const handleSwipeLeft = () => {
+  const handleSwipeLeft = (velocity = 0) => {
     if (
       navigationList &&
       typeof currentIndex === 'number' &&
@@ -657,11 +668,12 @@ export default function SongDetailScreen({
       animateAndSet(
         { ...prevSong, navigationList, currentIndex: currentIndex - 1, source },
         'prev',
+        velocity,
       );
     }
   };
 
-  const handleSwipeRight = () => {
+  const handleSwipeRight = (velocity = 0) => {
     if (
       navigationList &&
       typeof currentIndex === 'number' &&
@@ -672,6 +684,7 @@ export default function SongDetailScreen({
       animateAndSet(
         { ...nextSong, navigationList, currentIndex: currentIndex + 1, source },
         'next',
+        velocity,
       );
     }
   };
@@ -750,8 +763,8 @@ export default function SongDetailScreen({
           if (event.nativeEvent.state !== State.END) return;
           const { translationX, velocityX } = event.nativeEvent;
           if (Math.abs(translationX) < 60 || Math.abs(velocityX) < 150) return;
-          if (translationX > 0) handleSwipeLeft();
-          else handleSwipeRight();
+          if (translationX > 0) handleSwipeLeft(velocityX);
+          else handleSwipeRight(velocityX);
         }}
       >
         {contentView}

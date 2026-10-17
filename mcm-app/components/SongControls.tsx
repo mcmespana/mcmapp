@@ -10,6 +10,9 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router/react-navigation';
 import Animated, {
+  FadeIn,
+  FadeOut,
+  ZoomIn,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -34,6 +37,7 @@ import { KeyPillColors, SwipeColors, themeColors } from '@/constants/colors';
 import { onColor } from '@/utils/colorUtils';
 import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
+import { durations, motionEasings, springs } from '@/constants/animations';
 
 interface FontOption {
   name: string;
@@ -216,7 +220,10 @@ const SongControls: React.FC<SongControlsProps> = ({
         h.menuClose();
       }
       setShowActionButtons(toOpen);
-      rotateAnim.set(withSpring(toOpen ? 1 : 0, { damping: 6, mass: 1 }));
+      // Muelle con `dampingRatio` explícito: el `{ damping: 6, mass: 1 }` de
+      // antes, con los defaults de Reanimated 4 (stiffness 900), oscilaba con
+      // ζ≈0,1 — el «+» se pasaba de 45° a casi 80° y tardaba un segundo.
+      rotateAnim.set(withSpring(toOpen ? 1 : 0, springs.snap));
     },
     [rotateAnim],
   );
@@ -295,7 +302,13 @@ const SongControls: React.FC<SongControlsProps> = ({
         ]}
       >
         {showActionButtons && (
-          <View
+          // Solo opacidad, sin entradas encadenadas por ítem: el menú no
+          // salta de la nada justo encima del dedo.
+          <Animated.View
+            entering={FadeIn.duration(durations.quick).easing(
+              motionEasings.out,
+            )}
+            exiting={FadeOut.duration(durations.quick)}
             style={[styles.menuContainer, isDark && styles.menuContainerDark]}
           >
             <ActionButton
@@ -384,11 +397,17 @@ const SongControls: React.FC<SongControlsProps> = ({
               label="Reportar error"
               onPress={() => setShowReportBugsModal(true)}
             />
-          </View>
+          </Animated.View>
         )}
         <View style={{ position: 'relative' }}>
           {!!songBadge && !showActionButtons && (
-            <View
+            // Es la única señal de que la canción va transportada: entra con
+            // un zoom corto (sin rebote) para que se vea al cerrar la hoja.
+            <Animated.View
+              entering={ZoomIn.duration(durations.base).easing(
+                motionEasings.out,
+              )}
+              exiting={FadeOut.duration(durations.quick)}
               style={[styles.badge, isDark && styles.badgeDark]}
               pointerEvents="none"
             >
@@ -401,7 +420,7 @@ const SongControls: React.FC<SongControlsProps> = ({
               >
                 {songBadge}
               </Text>
-            </View>
+            </Animated.View>
           )}
           <TouchableOpacity
             style={[
