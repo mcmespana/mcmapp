@@ -32,7 +32,12 @@ import { useKeepAwakeWhileFocused } from '@/hooks/useKeepAwakeWhileFocused';
 import { trackEvent } from '@/utils/analytics';
 import SongControls from '@/components/SongControls';
 import type { SheetViewOptions } from '@/components/SongFontBottomSheet';
-import { RouteProp, NavigationProp } from 'expo-router/react-navigation';
+import {
+  RouteProp,
+  NavigationProp,
+  useIsFocused,
+} from 'expo-router/react-navigation';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
@@ -66,6 +71,11 @@ import SongLinkViewer, {
 const APPLE_SYSTEM_GREEN = SwipeColors.add;
 
 const availableFonts = SONG_FONTS.map((f) => ({ ...f }));
+
+// Atajos de teclado del detalle (web). Fuera del componente: un array nuevo en
+// cada render haría que el atajo se volviera a registrar cada vez.
+const KEYS_TRANSPOSE_UP = ['+', '='];
+const KEYS_TRANSPOSE_DOWN = ['-'];
 
 type SongDetailScreenRouteProp = RouteProp<RootStackParamList, 'SongDetail'>;
 type SongDetailScreenNavigationProp = NavigationProp<
@@ -689,6 +699,47 @@ export default function SongDetailScreen({
     }
   };
 
+  // ── Teclado (web) ──
+  // ←/→ cambian de canción (en web no hay swipe), +/− transponen, C muestra u
+  // oculta los acordes, F abre la pantalla completa y Esc vuelve. Solo con la
+  // pantalla delante (la pantalla completa se apila ENCIMA y este detalle
+  // sigue montado) y sin nada abierto por encima: el menú del FAB, sus hojas
+  // y modales, la ficha de multimedia, el visor de enlaces o el de arreglos.
+  // Con el foco dentro de la letra también llegan: el iframe las reenvía.
+  const isFocused = useIsFocused();
+  const [controlsOverlayOpen, setControlsOverlayOpen] = useState(false);
+  const keysOff =
+    Platform.OS !== 'web' ||
+    !isFocused ||
+    controlsOverlayOpen ||
+    showMediaSheet ||
+    arrModalVisible ||
+    linkSource !== null;
+  const keyOpts = { disabled: keysOff };
+  useKeyboardShortcut('arrowright', () => handleSwipeRight(), keyOpts);
+  useKeyboardShortcut('arrowleft', () => handleSwipeLeft(), keyOpts);
+  // Con Shift o sin él: «+» es Shift+= en un teclado inglés y una tecla
+  // propia en el español.
+  useKeyboardShortcut(
+    KEYS_TRANSPOSE_UP,
+    () => handleSetTranspose(currentTranspose + 1),
+    { ...keyOpts, shift: 'any' },
+  );
+  useKeyboardShortcut(
+    KEYS_TRANSPOSE_DOWN,
+    () => handleSetTranspose(currentTranspose - 1),
+    { ...keyOpts, shift: 'any' },
+  );
+  useKeyboardShortcut('c', handleToggleChords, keyOpts);
+  useKeyboardShortcut('f', openFullscreen, keyOpts);
+  useKeyboardShortcut(
+    'escape',
+    () => {
+      if (navigation.canGoBack()) navigation.goBack();
+    },
+    { ...keyOpts, preventDefault: false },
+  );
+
   if (isLoadingSettings) {
     // Brief settings loading
   }
@@ -751,6 +802,7 @@ export default function SongDetailScreen({
         firebaseCategory={firebaseCategory}
         currentCapoOverride={currentCapoOverride}
         onSetCapoOverride={handleSetCapoOverride}
+        onOverlayChange={setControlsOverlayOpen}
       />
     </Animated.View>
   );

@@ -33,6 +33,7 @@ import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import {
   KeyPillColors,
   SwipeColors,
@@ -86,6 +87,12 @@ interface SongControlsProps {
   /** Override de cejilla para esta sesión/playlist. undefined = no disponible. */
   currentCapoOverride?: number | null;
   onSetCapoOverride?: (capo: number | null) => void;
+  /**
+   * Avisa cuando se abre o se cierra algo de lo suyo (el menú, una hoja o un
+   * modal), para que la pantalla no reaccione a sus propios atajos de teclado
+   * mientras tanto.
+   */
+  onOverlayChange?: (open: boolean) => void;
 }
 
 /**
@@ -178,6 +185,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   firebaseCategory,
   currentCapoOverride,
   onSetCapoOverride,
+  onOverlayChange,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
   const [showTransposeBottomSheet, setShowTransposeBottomSheet] =
@@ -233,6 +241,23 @@ const SongControls: React.FC<SongControlsProps> = ({
     [rotateAnim],
   );
   const toggleMenu = () => setMenuOpen(!showActionButtons);
+
+  // Web: Esc cierra el menú, como tocar el velo. Si hay una hoja o un modal
+  // encima, ese Esc es suyo (lo cierra la pila de overlays): uno cada vez.
+  const sheetOpen =
+    showTransposeBottomSheet ||
+    showFontPanel ||
+    showReportBugsModal ||
+    showSecretPanel;
+  useKeyboardShortcut('escape', () => setMenuOpen(false), {
+    disabled: !showActionButtons || sheetOpen,
+    preventDefault: false,
+  });
+
+  const overlayOpen = showActionButtons || sheetOpen;
+  useEffect(() => {
+    onOverlayChange?.(overlayOpen);
+  }, [overlayOpen, onOverlayChange]);
 
   // Android: con el menú abierto, el atrás lo cierra (como tocar el velo) en
   // vez de salir de la canción. Por foco: con la pantalla completa encima, el
