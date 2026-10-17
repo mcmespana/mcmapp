@@ -295,7 +295,7 @@ export default function ContactosScreen() {
             query.trim().length >= 2 ? (
               <EmptyState
                 icon="search-off"
-                title="Sin coincidencias"
+                title="Sin resultados"
                 subtitle={`No hay contactos que coincidan con "${query}".`}
               />
             ) : null

@@ -495,7 +495,7 @@ export default function GruposScreen() {
             ListEmptyComponent={
               <EmptyState
                 icon="search-off"
-                title="No he encontrado nada, ya lo siento 😔"
+                title="Sin resultados"
                 subtitle="Prueba con otro nombre o apellido."
               />
             }
