@@ -150,8 +150,6 @@ SwipeColors             add / remove — verde y rojo de sistema del swipe
 KeyPillColors           bgLight / bgDark — pill de tono en SongListItem
 HighlightColors         light/dark { bg, fg, border } — canción o playlist destacada
 CarismoColors           light / dark — el verde de Carismochito
-EmotionColors           joy / sadness / anger / fear / disgust (Contigo)
-EmotionColorsSoft       versiones suaves de las emociones (chips, fondos)
 FeedbackCategoryColors  bug / idea / praise (AppFeedbackModal)
 ```
 
@@ -173,7 +171,7 @@ WARM_DARK: paralelo, fondos #1A1712/#100F0C/#26221C, accent #DAA520
 ## Tipografía
 
 - **Fuente:** Sistema nativo (San Francisco en iOS, Roboto en Android). No se usa fuente custom para UI.
-- **Fuente monoespaciada:** SpaceMono-Regular (solo para código/acordes).
+- **Fuente monoespaciada:** la del sistema (`monospace` / `Courier`), solo para acordes y código. No hay fuente custom empaquetada.
 - **Iconos:** MaterialIcons (`@expo/vector-icons`), SF Symbols en iOS.
 
 | Token      | Tamaño | Peso   | Uso                                                        |
@@ -281,19 +279,11 @@ Se llaman por su **función**, no por su tamaño.
 Todas tienen variante `web` con `boxShadow` equivalente. `warm`/`cool` aportan
 color: cálida `#64461E` (marrón), fría `#253883` (primary).
 
-### Sombra de texto
-
-```
-textShadowColor:  rgba(0, 0, 0, 0.5)
-textShadowOffset: {0, 1}
-textShadowRadius: 2
-```
-
 ## Glass Morphism (cross-platform)
 
 La decisión LiquidGlass-vs-BlurView-vs-fallback está centralizada en
 `components/ui/GlassSurface(.ios).tsx`. Los componentes glass de alto nivel
-(`GlassHeader`, `GlassFAB`, `GlassTabBarBackground`, `GlassCard`) delegan en él.
+(`GlassHeader`, `GlassActionGroup`, `GlassBackButton`) delegan en él.
 
 ### `GlassSurface` — abstracción canónica
 
@@ -313,17 +303,6 @@ Props clave:
 
 Brillo de color: `(r*299 + g*587 + b*114) / 1000` → si > 180, tint claro y alpha `F0` (94%); si no, tint oscuro y alpha `D0` (82%).
 
-### `GlassCard`
-
-Card con compound API (`GlassCard.Header/Body/Footer`). En iOS aplica `GlassSurface` real; en Android/web es una card sólida con sombra (`shadows.raised` por defecto). Usar para cards "premium" cuando se quiera dar protagonismo (no para cualquier card).
-
-### `GlassFAB`
-
-FAB de 56×56 con icono opcional + `label` opcional (lo convierte en pill). Resolución por plataforma:
-
-- iOS: `GlassFAB.ios.tsx` con `GlassSurface` real
-- Android/Web: `GlassFAB.tsx` con fondo sólido tintado + `shadows.overlay`
-
 ## Animaciones
 
 Tokens en `constants/animations.ts`:
@@ -338,7 +317,7 @@ easings    standard (RN default) · cubic (contemplativo) · bouncy (celebració
 | Toast show/hide     | slow (300ms)     | native | translateY + opacity                |
 | Selection highlight | base (250ms)     | native | Fade de fondo (SongListItem)        |
 | Notification ping   | hero (800ms)     | native | Loop: scale 1→1.8 + opacity         |
-| Splash (HelloWave)  | 900ms            | —      | 3 repeticiones                      |
+| Splash (HelloWave)  | 600ms            | —      | 2 repeticiones de 300ms             |
 | Contigo breathing   | 2100ms (custom)  | native | Cubic in-out, 3 ciclos, auto-skip   |
 | CelebrationBurst    | hero + 100       | native | 12 partículas, stagger 18ms, bouncy |
 
@@ -387,23 +366,19 @@ easings    standard (RN default) · cubic (contemplativo) · bouncy (celebració
 
 Catálogo de componentes agnósticos de paleta, listos para usar en cualquier pantalla. La mayoría se extrajeron de `components/contigo/` para que el resto de la app aproveche sus patrones sin heredar la paleta cálida.
 
-| Componente              | Para qué                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------- |
-| `GlassSurface`          | Capa glass (iOS) / fallback cross-platform — base de los demás Glass\*          |
-| `GlassCard`             | Card destacada (compound: Header/Body/Footer)                                   |
-| `GlassHeader`           | Header con glass — iOS                                                          |
-| `GlassFAB`              | FAB cross-platform — recibe `icon`, `label?`, `tintColor`                       |
-| `GlassTabBarBackground` | Background del tab bar — iOS                                                    |
-| `TopColorBar`           | Barra fina de color bajo el status bar — cross-platform                         |
-| `ProgressRing`          | Anillo de puntos (sin SVG) — recibe `done/total/size/color`                     |
-| `TeaserCard`            | Card con barra superior + kicker + título + preview con fade + CTA + done badge |
-| `StatCard`              | Tile compacto: icono · valor grande · label uppercase                           |
-| `EmptyState`            | Placeholder canónico (icono/emoji + título + subtítulo + CTA opcional)          |
-| `ScreenHero`            | Hero de pantalla (h0 + subtítulo + kicker + slot derecho)                       |
-| `SectionHeader`         | Label uppercase + acción opcional                                               |
-| `PageContainer`         | Wrap con max-width centrado (no-op por debajo del límite)                       |
-| `CelebrationBurst`      | Burst de 12 partículas + emoji escalando — feedback positivo                    |
-| `IconSymbol`            | Icono cross-platform (SF Symbols iOS / Material Android)                        |
+| Componente         | Para qué                                                               |
+| ------------------ | ---------------------------------------------------------------------- |
+| `GlassSurface`     | Capa glass (iOS) / fallback cross-platform — base de los demás Glass\* |
+| `GlassHeader`      | Header con glass — iOS                                                 |
+| `GlassActionGroup` | Grupo de acciones en barra (glass)                                     |
+| `GlassBackButton`  | Botón de volver con glass                                              |
+| `ProgressRing`     | Anillo de puntos (sin SVG) — recibe `done/total/size/color`            |
+| `EmptyState`       | Placeholder canónico (icono/emoji + título + subtítulo + CTA opcional) |
+| `ScreenHero`       | Hero de pantalla (h0 + subtítulo + kicker + slot derecho)              |
+| `SectionHeader`    | Label uppercase + acción opcional                                      |
+| `PageContainer`    | Wrap con max-width centrado (no-op por debajo del límite)              |
+| `CelebrationBurst` | Burst de 12 partículas + emoji escalando — feedback positivo           |
+| `IconSymbol`       | Icono cross-platform (SF Symbols iOS / Material Android)               |
 
 Hook `useResponsiveLayout()` en `hooks/useResponsiveLayout.ts` complementa los componentes anteriores cuando se necesita lógica de layout responsive.
 
@@ -455,16 +430,13 @@ Patrones recomendados:
 
 ## Plataforma
 
-| Aspecto        | iOS                                  | Android/Web                                     |
-| -------------- | ------------------------------------ | ----------------------------------------------- |
-| Tab bar        | NativeTabs (liquid glass)            | Tabs tradicionales                              |
-| Header         | GlassHeader → GlassSurface (glass)   | Solid header con TabHeaderColors                |
-| FAB            | GlassFAB.ios → GlassSurface (glass)  | GlassFAB.tsx con fondo sólido + shadows.overlay |
-| Barra de color | TopColorBar.ios (4–8px under header) | TopColorBar.tsx (cross-platform)                |
-| Card destacada | GlassCard → GlassSurface             | GlassCard con sombra elevada (sin glass)        |
-| Iconos         | SF Symbols (via IconSymbol)          | MaterialIcons (via IconSymbol)                  |
-| Safe area      | edges: ['top']                       | Gestionado por sistema                          |
-| Responsive     | Mobile portrait + iPad               | Breakpoints sm/md/lg activos en tablet y web    |
+| Aspecto    | iOS                                   | Android/Web                                          |
+| ---------- | ------------------------------------- | ---------------------------------------------------- |
+| Tab bar    | `CompactTabBar` flotante (NativeTabs) | Android: `CompactTabBar`; Web: `Tabs` de expo-router |
+| Header     | GlassHeader → GlassSurface (glass)    | Solid header con TabHeaderColors                     |
+| Iconos     | SF Symbols (via IconSymbol)           | MaterialIcons (via IconSymbol)                       |
+| Safe area  | edges: ['top']                        | Gestionado por sistema                               |
+| Responsive | Mobile portrait + iPad                | Breakpoints sm/md/lg activos en tablet y web         |
 
 ## Reglas
 

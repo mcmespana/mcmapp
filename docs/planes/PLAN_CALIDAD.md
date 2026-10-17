@@ -190,7 +190,7 @@ Objetivo original: ninguna pantalla > 800 líneas; cada pantalla = composición 
 - [ ] **1.5 — `calendario.tsx` (1.123)**.
 - [ ] **1.6 — `SecretPanelModal.tsx` (1.121)** — panel admin; trocear por sección del panel.
 - [~] **1.7 — `GruposScreen.tsx` (1.100)** — **parcial, 2026-06-28** → 561 líneas (fuera de la lista de gigantes). Extraídos a `components/grupos/`: los subcomponentes (`SearchBar`, `MemberRow`, `GrupoCard`, `SearchHitRow`), los estilos (`gruposStyles.ts`) y los helpers puros (`gruposHelpers.ts`: `normalize`/`isMe`/tipos, con test). **Pendiente** (no tocado a propósito, requiere verificación en dispositivo): trocear las 4 ramas de render del cuerpo principal (~511 líneas, sigue >400) y valorar la migración a `SectionList` con items memoizados (MEJORAS §1.4) — eso sí cambia comportamiento.
-- [ ] **1.8 — `HomeWidgets.tsx` (1.075)** — un archivo con N widgets dentro; partirlo en un archivo por widget. ⚠️ Ojo: hay una extracción previa **huérfana** (`components/ui/ProgressRing.tsx`, `StatCard.tsx`, `TeaserCard.tsx` "extracted from HomeWidgets" pero **no las importa nadie** — Contigo sigue usando las de HomeWidgets). Antes de trocear hay que decidir si se adoptan esas versiones de `ui/` o se borran (dedup = cambio de comportamiento), si no se duplica más el lío.
+- [ ] **1.8 — `HomeWidgets.tsx` (1.075)** — un archivo con N widgets dentro; partirlo en un archivo por widget. ⚠️ Ojo: hubo una extracción previa **huérfana** a `components/ui/` (`StatCard.tsx`, `TeaserCard.tsx`, que no importaba nadie): **borradas el 2026-10-17** por decisión del usuario; Contigo sigue usando las de `HomeWidgets.tsx`, que son las únicas. (`ui/ProgressRing.tsx` sí se usa, en `app/carismochito.tsx`.)
 - [ ] **1.9 — Segunda ronda** (si hay energía): `notifications.tsx` (994), ~~`EvaluationWizard.tsx` (974)~~ **hecho 2026-06-28** → 360 líneas; extraídas a `components/evaluation/` las fases (`WelcomePhase`, `QuestionInput`, `SuccessPhase`), los controles (`WizardButton`, `ScaleInput`) y los estilos del armazón (`wizardStyles.ts`). ~~`NotificationsBottomSheet.tsx` (937)~~ **hecho 2026-06-28** → 365 líneas; extraídos a `components/notifications/` el detalle (`NotificationDetail`), el item de lista (`NotificationListItem`) y los helpers puros (`notificationDisplay.ts`, con test). ~~`PreviewChannelModal.tsx` (847)~~ **hecho 2026-06-28** → 349 líneas; piezas decorativas extraídas a `components/preview-channel/` (`AnimatedGradients`, `FloatingParticle`, `ConfettiBurst`, `GiantLever`, `LabDecorations`).
   - Nota: `hooks/useSongProcessor.ts` pasó a >800 (1014) con el trabajo del cantoral (pantalla de error de sintaxis), que compensa parte de estos troceados en el recuento de gigantes (hoy 11).
 
@@ -252,7 +252,7 @@ Objetivo original: ninguna pantalla > 800 líneas; cada pantalla = composición 
 
 - [ ] **3.1 — Auditar la pareja `SettingsContext` vs `AppSettingsContext`**: dos contexts con nombre casi idéntico. Averiguar si es duplicación histórica o separación real (cantoral vs app); si se solapan, fusionar; si no, renombrar para que el nombre cuente la diferencia (p. ej. `SongDisplaySettingsContext`).
 - [ ] **3.2 — Fusionar contexts afines**: `UserProfileContext` + `ProfileConfigContext` se consumen casi siempre juntos (ya sugerido en MEJORAS §2.2).
-- [ ] **3.3 — `AppProviders.tsx`**: componente que encapsule la pirámide de providers; `_layout.tsx` queda legible.
+- [x] **3.3 — `AppProviders.tsx`**: _hecho_ (`components/AppProviders.tsx`; `_layout.tsx` solo lo monta).
 - [ ] **3.4 — Re-renders**: donde se sospeche cascada, **medir primero** con React DevTools Profiler; solo entonces separar `state`/`actions` en contexts gemelos o usar `use-context-selector`. No optimizar a ciegas.
 
 **Criterio de salida:** ≤ 12 contexts, pirámide encapsulada, decisión Settings/AppSettings documentada.
@@ -262,7 +262,7 @@ Objetivo original: ninguna pantalla > 800 líneas; cada pantalla = composición 
 ## Fase 4 — Tipos y duplicación (~1 semana · solapable con Fase 1)
 
 - [ ] **4.1 — Eliminar los 63 `: any`** módulo a módulo. Al terminar: `'@typescript-eslint/no-explicit-any': 'error'`.
-- [x] **4.2 — Incluir `__tests__` en typecheck**: _hecho 2026-06-28._ Creado `tsconfig.test.json` (extiende el base + incluye `__tests__`), script `npm run typecheck:tests`, y añadido como paso del CI (`.github/workflows/ci.yml`). Los tests tipan limpios.
+- [x] **4.2 — Incluir `__tests__` en typecheck**: _hecho 2026-06-28._ Creado `tsconfig.test.json` (extiende el base + incluye `__tests__`), script `npm run typecheck:tests`, y añadido como paso del CI (`.github/workflows/verify.yml`; `ci.yml` ya no existe). Los tests tipan limpios.
 - [ ] **4.3 — Pasada de duplicación con `jscpd`** (informe, no gate de CI). Candidatos ya sospechados: `evangelio.tsx` ↔ `oracion.tsx`, las 4 variantes de render de `GruposScreen`, modales de export.
 
 ---
