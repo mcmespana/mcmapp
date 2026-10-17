@@ -466,8 +466,8 @@ limitado pero gratis de cerrar).
 ### E1. Proteger las ediciones del panel frente al uploader · [panel]/[cantoral] · prioridad MEDIA
 
 **Problema**: la fuente de verdad de `/songs/data` es el repo cantoral: cada
-push a `main` regenera `songs-vX.json` y hace **PUT completo** de
-`songs/data`. Cualquier edición hecha en la sección Cantoral del panel
+push a `main` regenera `songs-vX.json` (que ya no se commitea: solo va a
+Firebase) y hace **PUT completo** de `songs/data`. Cualquier edición hecha en la sección Cantoral del panel
 (reordenar, editar canción) que no haya pasado por el repo se pierde en el
 siguiente push. El flujo de vuelta existente es la cola `songs/ediciones`
 (app → `sincronizaCambiosDeFirebase.py` → ficheros `.cho`), no el panel.
