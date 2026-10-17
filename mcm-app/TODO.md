@@ -142,6 +142,61 @@ nativo (entró en la #313 el 2026-08-04). Todo NATIVO, nada sale por OTA.
 
 ---
 
+## Restos del pulido de octubre (2026-10-17)
+
+El plan (`docs/planes/archivo/pulido-2026-10/`) está ejecutado y archivado;
+esto es lo que quedó fuera a propósito. El `id` es el del hallazgo en
+`hallazgos.json` de esa carpeta, con su evidencia y su arreglo propuesto.
+
+**🔒 Necesitan tu decisión:**
+
+- [ ] **`global.css` no se importa en ningún sitio** (nunca se ha importado):
+      en web los componentes de heroui que van por `className` salen sin
+      estilos (el Dialog de la paleta ⌘K, por ejemplo). Importarlo en
+      `app/_layout.tsx` mete el reset de Tailwind en toda la web: hay que
+      decidir y repasar la web entera con él.
+- [ ] **Escala de letra del sistema en la hoja** (`android-webview-textzoom`):
+      hoy solo Android la respeta, vía `textZoom` del WebView. Lo coherente es
+      aplicar `fontScale` a la hoja en las dos plataformas, pero cambia cómo se
+      ve en iOS.
+- [ ] **Hoja de canción**, tres detalles que se hicieron en la versión más
+      sobria: el mapa no sale en el PDF de la playlist; el pre-estribillo sale
+      como «P»; la pantalla completa del navegador no entra sola (F o botón).
+
+**Para hacer (sin decisión):**
+
+- [ ] Añadir a mano en la consola de Firebase `".indexOn": ["createdAt"]` en
+      `/notifications` y, después, la parte B de `perf-notificaciones-nodo-entero`
+      (suscripción con `limitToLast(100)`).
+- [ ] `web-bundle-asyncroutes` / `web-bundle-split-measure`: rutas asíncronas
+      en web (el bundle inicial sigue en 6,7 MB).
+- [ ] `bug-app-screens-son-rutas`: `app/screens/*` se publican como rutas
+      reales en web; sacarlas de `app/`.
+- [ ] Web: F5 en `/cancionero/Categories` o en una lista da 404 (solo el
+      detalle de canción tiene URL estable, `/cancion?f=`).
+- [ ] `android-pressable-ripple`: ripple de Android en vez del resaltado de iOS.
+- [ ] `backlog-swipeable-reanimated-necesita-dispositivo`: migrar el
+      `Swipeable` legacy a `ReanimatedSwipeable` (probar en dispositivo).
+- [ ] `animation-readingcalendar-reanimated-dentro-de-bottomsheet`.
+- [ ] `web-playlist-reorder-dnd`: arrastrar para reordenar la playlist en web.
+- [ ] `backlog-home-cancion-del-dia`: tarjeta «Canción del día» en la Home.
+- [ ] Sueltos: gris `#8E8E93` de `PlaylistRow.authorText`; muelle a mano e
+      import directo de expo-haptics en `MaintenanceScreen.tsx`; comentario
+      viejo del toast («Android Tabs custom 80»); `ux-copy-tone` en
+      `AppsScreen` y la Home; el admin del cantoral podría pasar `songMap` a su
+      vista previa.
+
+**Comprobar en dispositivo** (lo que solo se ve en un teléfono real): hojas
+con teclado en Android (que llegue `keyboardDidShow` dentro del `Modal`);
+transponer sin recarga en iOS/Android/web; splash sin 🌐 en arranques normales
+y nunca colgado más de 3 s; scroll de pestañas en iOS y volver arriba tras una
+pantalla anidada; hero del Jubileo con texto oscuro y banner de encuesta con
+acento poco contrastado; accesos rápidos de la Home en claro/oscuro; atrás de
+Android en onboarding, encuestas, menú de la canción y Panel/Gestión; icono de
+notificación y enlaces `mcmapp://` con Carismochito activo (build nativo).
+
+---
+
 ## Mantenimiento
 
 - [ ] **Ampliar cobertura de tests — tarea ideal para "quemar tokens"** (anotado
