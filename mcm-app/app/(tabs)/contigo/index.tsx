@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import {
   MONTHS_CAP,
   WARM_DARK,
   formatDateLong,
+  habitColor,
   warm,
 } from '@/components/contigo/theme';
 import {
@@ -36,6 +37,13 @@ import { useContigoDayMenu } from '@/hooks/useContigoDayMenu';
 import LoginNudgeBanner from '@/components/LoginNudgeBanner';
 import { useAuth } from '@/contexts/AuthContext';
 import { h } from '@/utils/haptics';
+import CelebrationBurst from '@/components/ui/CelebrationBurst';
+import {
+  DAY_COMPLETE_MS,
+  dayCompleteParticles,
+  hasCelebratedDay,
+  markDayCelebrated,
+} from '@/utils/contigoDayComplete';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 
@@ -81,6 +89,40 @@ export default function ContigoScreen() {
   const doneCount = [readingDone, prayerDone, revisionDone].filter(
     Boolean,
   ).length;
+
+  // Los tres hábitos hechos: UNA celebración al día, sobria, la primera vez que
+  // se vuelve a la home con 3/3 (no mientras está tapada por la pantalla del
+  // hábito, que ya tiene la suya). Se re-evalúa al cambiar `doneCount` estando
+  // enfocada. Ver `utils/contigoDayComplete`.
+  const [dayBurst, setDayBurst] = useState(false);
+  const dayBurstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (dayBurstTimer.current) clearTimeout(dayBurstTimer.current);
+    },
+    [],
+  );
+  useFocusEffect(
+    useCallback(() => {
+      if (doneCount < 3 || !todayStr) return;
+      let cancelled = false;
+      (async () => {
+        if (await hasCelebratedDay(todayStr)) return;
+        if (cancelled) return;
+        await markDayCelebrated(todayStr);
+        h.formSuccess();
+        setDayBurst(true);
+        if (dayBurstTimer.current) clearTimeout(dayBurstTimer.current);
+        dayBurstTimer.current = setTimeout(() => {
+          dayBurstTimer.current = null;
+          setDayBurst(false);
+        }, DAY_COMPLETE_MS);
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [doneCount, todayStr]),
+  );
 
   const prayStreak = getStreak('prayer');
   const totalMins = getTotalMinutesWeek(todayStr);
@@ -382,6 +424,16 @@ export default function ContigoScreen() {
           </View>
         </View>
       </Animated.ScrollView>
+
+      <CelebrationBurst
+        visible={dayBurst}
+        particles={dayCompleteParticles([
+          habitColor('evangelio', isDark),
+          habitColor('oracion', isDark),
+          habitColor('revision', isDark),
+        ])}
+        emoji="✨"
+      />
 
       <DayActionSheet
         visible={!!dayMenu}

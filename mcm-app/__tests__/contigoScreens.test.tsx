@@ -14,6 +14,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import AppProviders from '@/components/AppProviders';
 import { localISO } from '@/utils/localDate';
+import {
+  DAY_COMPLETE_KEY,
+  resetDayCompleteSession,
+} from '@/utils/contigoDayComplete';
 import { ContigoHabitsProvider } from '@/contexts/ContigoHabitsContext';
 import { __resetMockDb, __setMockSnapshot } from '@/__mocks__/firebase';
 import IndexScreen from '@/app/(tabs)/contigo/index';
@@ -92,6 +96,7 @@ afterEach(() => {
 });
 
 beforeEach(async () => {
+  resetDayCompleteSession();
   await AsyncStorage.clear();
   __resetMockDb();
   __setMockSnapshot(null);
@@ -278,5 +283,61 @@ describe('Examen del día', () => {
   it('sin examen guardado no hay aviso', async () => {
     const tree = await montar(RevisionScreen);
     expect(textos(tree)).not.toContain('Ya hiciste el examen');
+  });
+});
+
+describe('Inicio', () => {
+  const hoy = localISO();
+  const sembrar = (hechos: {
+    readingDone: boolean;
+    prayerDone: boolean;
+    revisionDone: boolean;
+  }) =>
+    AsyncStorage.setItem(
+      '@contigo_habits',
+      JSON.stringify({ [hoy]: { date: hoy, timestamp: 1, ...hechos } }),
+    );
+
+  it('las tarjetas de hábito dicen qué son y si están hechas', async () => {
+    await sembrar({
+      readingDone: true,
+      prayerDone: false,
+      revisionDone: false,
+    });
+    const tree = await montar(IndexScreen);
+    const etiquetas = new Set(
+      tree.root
+        .findAll(
+          (n) =>
+            n.props.accessibilityRole === 'button' &&
+            typeof n.props.accessibilityLabel === 'string',
+        )
+        .map((n) => n.props.accessibilityLabel as string),
+    );
+    expect(etiquetas.has('Evangelio, hecho hoy')).toBe(true);
+    expect(etiquetas.has('Oración, pendiente')).toBe(true);
+    expect(etiquetas.has('Revisión, pendiente')).toBe(true);
+  });
+
+  it('con los tres hábitos hechos celebra UNA vez al día y sin emoji en el copy', async () => {
+    await sembrar({ readingDone: true, prayerDone: true, revisionDone: true });
+    const tree = await montar(IndexScreen);
+    expect(textos(tree)).toContain('✨');
+    expect(textos(tree)).toContain('Día completo');
+    expect(textos(tree)).not.toContain('🎉');
+    expect(await AsyncStorage.getItem(DAY_COMPLETE_KEY)).toBe(hoy);
+
+    // Volver a la home el mismo día no repite el momento.
+    act(() => tree.unmount());
+    trees.splice(0);
+    const otra = await montar(IndexScreen);
+    expect(textos(otra)).not.toContain('✨');
+  });
+
+  it('con dos hábitos no celebra', async () => {
+    await sembrar({ readingDone: true, prayerDone: true, revisionDone: false });
+    const tree = await montar(IndexScreen);
+    expect(textos(tree)).not.toContain('✨');
+    expect(await AsyncStorage.getItem(DAY_COMPLETE_KEY)).toBeNull();
   });
 });
