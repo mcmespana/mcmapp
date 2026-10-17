@@ -13,6 +13,7 @@ import { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import typography from '@/constants/typography';
+import { getNativeFontFamily } from '@/utils/fontUtils';
 
 interface ArrangementInputModalProps {
   visible: boolean;
@@ -146,7 +147,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   mono: {
-    fontFamily: 'Courier',
+    // 'Courier' solo existe en iOS: en Android caía a Roboto proporcional y la
+    // vista previa no se parecía a la hoja.
+    fontFamily: getNativeFontFamily('monospace'),
     fontWeight: '600',
   },
   previewBox: {
