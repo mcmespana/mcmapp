@@ -1,6 +1,6 @@
 # Sistema de Notificaciones Push — MCM App
 
-> Documento consolidado. Reemplaza a: `NOTIS_APP_MEJORAS.md`, `NOTIS_DEVELOP_BACKEND.md`, `NOTIS_GUIA_PRUEBAS.md`, `PANEL_NOTIFICACIONES_NEXTJS.md`
+> Documento consolidado: es la única referencia del sistema de notificaciones push.
 
 ---
 
@@ -44,7 +44,7 @@ app/_layout.tsx
 ├── notifications/NotificationHandler.ts             ← Configuración global + categorías iOS
 ├── notifications/usePushNotifications.ts            ← Lifecycle + iOS action button routing
 ├── services/pushNotificationService.ts              ← Capa de datos: Firebase + AsyncStorage
-├── hooks/useUnreadNotificationsCount.ts             ← Badge: delega a NotificationsContext
+├── contexts/NotificationsContext.tsx                ← Badge: expone `unreadCount` (no hay hook aparte)
 ├── types/notifications.ts                           ← Tipos TypeScript
 └── app/notifications.tsx                            ← Pantalla (real-time, detalle modal, mark all)
 ```
@@ -66,7 +66,7 @@ Todo implementado:
 - `app/notifications.tsx` — reescrita con modal de detalle, botones marcar leída, rediseño de tarjetas
 - `notifications/usePushNotifications.ts` — routing de iOS action buttons (`actionIdentifier`)
 - `services/pushNotificationService.ts` — `markAllNotificationsAsRead()` batch, `initializeNewUserReadStatus()`
-- `hooks/useUnreadNotificationsCount.ts` — simplificado, delega a NotificationsContext
+- El contador de no leídas (`unreadCount`) lo expone `NotificationsContext` (`contexts/NotificationsContext.tsx`); no hay un hook aparte
 
 ---
 

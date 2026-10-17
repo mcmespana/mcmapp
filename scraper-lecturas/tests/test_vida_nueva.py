@@ -12,7 +12,7 @@ import responses as responses_lib
 from scrapers.vida_nueva import VidaNuevaScraper, URL
 
 # Path to the real HTML snapshot committed to the repo
-HTML_FIXTURE = Path(__file__).parent.parent / "ejemplo_vida_nueva.html"
+HTML_FIXTURE = Path(__file__).parent / "fixtures" / "vida_nueva.html"
 
 
 @pytest.fixture

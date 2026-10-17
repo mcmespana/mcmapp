@@ -119,24 +119,6 @@ export const shadows = {
   }),
 } as const;
 
-// ── Texto con sombra ──
-export const textShadow = {
-  textShadowColor: 'rgba(0, 0, 0, 0.5)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 2,
-} as const;
-
-// ── Padding de página ──
-export const pagePadding = {
-  paddingHorizontal: 16,
-} as const;
-
-// ── Bordes ──
-export const commonBorder = {
-  borderWidth: 1,
-  borderColor: colors.border,
-} as const;
-
 /**
  * Anillo de foco. En web y con teclado externo (iPad, Android con teclado) el
  * foco tiene que verse: hasta ahora no había ninguno definido y cada campo se

@@ -274,24 +274,6 @@ export const KeyPillColors = {
   borderDark: '#2A3D66',
 } as const;
 
-// Colores de emociones — usado en Contigo (oración) y disponible para futuros trackers.
-export const EmotionColors = {
-  joy: '#FCD200', // Alegría — amarillo COM
-  sadness: '#31AADF', // Tristeza — celeste
-  anger: '#E15C62', // Enfado — rojo MIC
-  fear: '#6B3FA0', // Miedo — púrpura
-  disgust: '#3A7D44', // Asco — verde bosque
-} as const;
-
-// Versiones suaves (light) de cada emoción para fondos de chips/cards.
-export const EmotionColorsSoft = {
-  joy: '#FDE68A',
-  sadness: '#BFDBFE',
-  anger: '#FECACA',
-  fear: '#DDD6FE',
-  disgust: '#BBF7D0',
-} as const;
-
 // Colores de las categorías del modal de feedback (sustituye magic numbers en AppFeedbackModal).
 export const FeedbackCategoryColors = {
   bug: '#FF6B6B', // Error / bug

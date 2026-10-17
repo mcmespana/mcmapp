@@ -182,6 +182,11 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 
 ### Mejoras, sin prisa
 
+- [ ] **Muelles (`springs`) sin adoptar.** `constants/animations.ts` exporta
+      `springs`, el token que `design.md` §6 prescribe para todo lo que mueve un
+      dedo (drag, sheets), pero **ningún componente lo importa todavía**:
+      `PressableScale` y el resto usan `durations`/`motionEasings`. No se borra;
+      hay que usarlo al tocar gestos.
 - [ ] **H1-ter.** `SegmentedControl` no tiene indicador de foco. Ahí el pulsado
       y el seleccionado ya compiten por el mismo espacio visual: hay que
       pensarlo, no copiar el patrón del botón.
