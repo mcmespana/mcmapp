@@ -44,7 +44,7 @@ import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import type { EventStackParamList } from './eventStackScreens';
 import typography from '@/constants/typography';
-import { onColor } from '@/utils/colorUtils';
+import { onColor, readableOn } from '@/utils/colorUtils';
 
 interface Grupo {
   nombre: string;
@@ -134,6 +134,7 @@ export default function ReflexionesScreen() {
   const insets = useSafeAreaInsets();
   const theme = Colors[scheme ?? 'light'];
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const greenInk = reflexionesGreenInk(scheme);
   const route = useRoute<RouteProp<EventStackParamList, 'Reflexiones'>>();
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
@@ -459,7 +460,7 @@ export default function ReflexionesScreen() {
                   <MaterialIcons
                     name="auto-stories"
                     size={20}
-                    color={colors.green}
+                    color={greenInk}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -502,7 +503,7 @@ export default function ReflexionesScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Elegir fecha"
               >
-                <MaterialIcons name="event" size={20} color={colors.green} />
+                <MaterialIcons name="event" size={20} color={greenInk} />
                 <Text style={styles.dateFieldLabel}>Fecha</Text>
                 <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
                 <MaterialIcons
@@ -534,7 +535,11 @@ export default function ReflexionesScreen() {
                   pressed && { opacity: 0.85 },
                 ]}
               >
-                <MaterialIcons name="send" size={18} color="#fff" />
+                <MaterialIcons
+                  name="send"
+                  size={18}
+                  color={onColor(colors.green)}
+                />
                 <Text style={styles.saveBtnLabel}>Compartir</Text>
               </Pressable>
             </ScrollView>
@@ -625,8 +630,18 @@ export default function ReflexionesScreen() {
   );
 }
 
+/**
+ * El verde COM como TINTA (etiquetas, fecha, iconos sueltos): sobre claro da
+ * 2,1:1 (design.md §3), así que se usa su variante legible. Como relleno de
+ * botón sigue siendo el verde tal cual, con `onColor` encima.
+ */
+const reflexionesGreenInk = (scheme: 'light' | 'dark' | null) =>
+  readableOn(colors.green, themeColors(scheme === 'dark').background);
+
 const createStyles = (scheme: 'light' | 'dark' | null) => {
   const theme = Colors[scheme ?? 'light'];
+  const greenInk = reflexionesGreenInk(scheme);
+  const onGreen = onColor(colors.green);
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     // El padding del contenido del bottom sheet va aquí (en el ScrollView),
@@ -683,25 +698,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: theme.text,
       marginBottom: 4,
     },
-    cardContent: { fontSize: 15, lineHeight: 21, color: theme.text },
-    emptyState: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: spacing.xl * 2,
-      paddingHorizontal: spacing.lg,
-      gap: 8,
-    },
-    emptyTitle: {
-      fontSize: 17,
-      fontWeight: '700',
-      color: theme.text,
-      marginTop: 4,
-    },
-    emptyText: {
-      ...typography.subhead,
-      color: theme.icon,
-      textAlign: 'center',
-    },
+    cardContent: { ...typography.body, lineHeight: 24, color: theme.text },
     modalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.5)',
@@ -731,7 +728,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     field: { marginBottom: spacing.md },
     inputLabel: {
       ...typography.footnote,
-      color: colors.green,
+      color: greenInk,
       fontWeight: '700',
       letterSpacing: 0.2,
       marginBottom: 6,
@@ -755,7 +752,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '500',
       color: theme.text,
     },
-    dateValue: { fontSize: 15, fontWeight: '600', color: colors.green },
+    dateValue: { fontSize: 15, fontWeight: '600', color: greenInk },
     dateModalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.45)',
@@ -793,7 +790,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       marginTop: spacing.sm,
     },
-    dateDoneLabel: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    dateDoneLabel: { color: onGreen, fontSize: 16, fontWeight: '700' },
     saveBtn: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -806,7 +803,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginBottom: spacing.lg,
     },
     saveBtnLabel: {
-      color: '#fff',
+      color: onGreen,
       ...typography.body,
       fontWeight: '700',
       letterSpacing: 0.2,
