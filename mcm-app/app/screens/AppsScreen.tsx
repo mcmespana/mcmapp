@@ -3,11 +3,11 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Image,
   Linking,
   Platform,
   Text,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Chip,
@@ -161,7 +161,12 @@ export default function AppsScreen() {
               <PressableFeedback.Highlight />
               <View style={styles.listItemContainer}>
                 <View style={styles.iconContainer}>
-                  <Image source={{ uri: app.icono }} style={styles.icon} />
+                  <Image
+                    source={{ uri: app.icono }}
+                    style={styles.icon}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
                 </View>
                 <View style={styles.contentContainer}>
                   <Text style={styles.title}>{app.nombre}</Text>
