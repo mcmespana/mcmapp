@@ -149,8 +149,26 @@ StateColors             selectedBgLight/Dark, hoverOverlay(Dark), pressedOverlay
 SwipeColors             add / remove — verde y rojo de sistema del swipe
 KeyPillColors           bgLight / bgDark — pill de tono en SongListItem
 HighlightColors         light/dark { bg, fg, border } — canción o playlist destacada
-CarismoColors           light / dark — el verde de Carismochito
+CarismoColors           light / dark / glow / deep / deepEdge / abyss / inactive* / onDeep* / leaf
+                        — la familia de verdes de Carismochito (todo el modo sale de aquí)
 FeedbackCategoryColors  bug / idea / praise (AppFeedbackModal)
+```
+
+**Quién pinta qué en el header del cantoral** (`utils/cantoralHeader.ts`,
+`cantoralHeaderTint(isDark)`): iOS lleva cabecera transparente → amarillo
+(`accentYellow`) en oscuro y `cantoralHeaderTintLight` en claro; Android y web
+llevan barra amarilla sólida → siempre el `headerTint` claro. (Seleccionadas en
+iOS usa `headerTint` y no este par: divergencia anotada en `PLAN_DISENO.md`.)
+
+**Tinta sobre un tinte** (el color no es nuestro o es el de una pestaña):
+
+```
+utils/tintColors.ts  tintedGlyph(tint, surface, alphaHex) → { fill, glyph }
+                     pastilla teñida + glifo del mismo color llevado a 3:1
+                     (accesos rápidos de la Home, tarjetas de «Más»)
+utils/tintInk.ts     eventHeroColors(tint) → tinta del hero de un evento
+                     fillForWhiteText(accent) → relleno de un CTA con texto blanco
+                     (EventHome, SurveyBanner); decide por contraste real
 ```
 
 ### Paleta cálida de Contigo
@@ -160,12 +178,14 @@ Definida en `components/contigo/theme.ts` (NO en `constants/colors.ts` — es es
 ```
 WARM_LIGHT
   bg #FAF6F0, bgDeep #F2EAD9, bgCard #FFFFFF
+  bgGradient [#FAF6F0, #F0E8D8]   (fondo en degradado de las pantallas de Contigo)
   accent #C4922A (dorado), accentLight rgba(196,146,42,0.10), accentMid 0.22
   blue #2563EB, green #3A7D44, purple #7C3AED, fire #EA580C
   text #1C1610, textSec #7A6550, textMuted #B5A08A
   border rgba(196,146,42,0.13), shadow rgba(100,70,20,0.08)
 
 WARM_DARK: paralelo, fondos #1A1712/#100F0C/#26221C, accent #DAA520
+           bgGradient [#1A1712, #100F0C]
 ```
 
 ## Tipografía
@@ -309,8 +329,15 @@ Tokens en `constants/animations.ts`:
 
 ```
 durations  quick: 150 · base: 250 · slow: 300 · hero: 800
-easings    standard (RN default) · cubic (contemplativo) · bouncy (celebración) · exit
+easings    standard (RN default) · cubic (contemplativo) · bouncy (celebración) · exit · sheet
+           (sheet = bezier(0.32, 0.72, 0, 1), la de los sheets de iOS, para `Animated` de core;
+           `reaEasings` / `motionEasings` son las mismas curvas para Reanimated)
+springs    settle (sin rebote, el de casi todo) · snap (tras un gesto) · sheet
 ```
+
+**Trinquete**: `__tests__/noLooseMotion.test.ts` cuenta los `withSpring` sin
+token, los `Animated.spring` y los `duration: <número>` sueltos; su tope solo
+baja (Carismochito y `components/preview-channel/` quedan fuera a propósito).
 
 | Patrón              | Duración (token) | Driver | Notas                               |
 | ------------------- | ---------------- | ------ | ----------------------------------- |
@@ -375,10 +402,19 @@ Catálogo de componentes agnósticos de paleta, listos para usar en cualquier pa
 | `ProgressRing`     | Anillo de puntos (sin SVG) — recibe `done/total/size/color`            |
 | `EmptyState`       | Placeholder canónico (icono/emoji + título + subtítulo + CTA opcional) |
 | `ScreenHero`       | Hero de pantalla (h0 + subtítulo + kicker + slot derecho)              |
-| `SectionHeader`    | Label uppercase + acción opcional                                      |
+| `SectionHeader`    | Label uppercase + acción opcional (`textStyle` para ajustar la tinta)  |
 | `PageContainer`    | Wrap con max-width centrado (no-op por debajo del límite)              |
 | `CelebrationBurst` | Burst de 12 partículas + emoji escalando — feedback positivo           |
 | `IconSymbol`       | Icono cross-platform (SF Symbols iOS / Material Android)               |
+
+Otros compartidos fuera de `components/ui/`:
+
+| Pieza                         | Para qué                                                                                                                                           |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `components/ListSkeleton.tsx` | Carga de una lista con la forma de la lista (filas `Skeleton` sobre su mismo fondo); `maxWidth` en pantalla ancha                                  |
+| `utils/confirmDialog.ts`      | `confirmAsync({ title, message, confirmLabel, destructive })`: `Alert` en nativo, `window.confirm` en web                                          |
+| `hooks/useRepeatPress.ts`     | Botón «+/−» con pulsación mantenida (un toque = un paso; mantenido repite hasta el tope)                                                           |
+| `hooks/useTabBarClearance.ts` | `useTabBarClearance(extra)` y `useTabBarPaddingBottom(webPadding)`: hueco al final de un scroll bajo la barra flotante (0 / padding normal en web) |
 
 Hook `useResponsiveLayout()` en `hooks/useResponsiveLayout.ts` complementa los componentes anteriores cuando se necesita lógica de layout responsive.
 
@@ -390,6 +426,7 @@ Tokens en `constants/breakpoints.ts` — **fuente única** de los cortes:
 breakpoints           sm 480 · md 720 · lg 1024
 maxContentWidth       960  (PageContainer, pantallas internas)
 maxContentWidthWide   1200 (PageContainer con `wide`)
+sheetMaxWidth         560  (BottomSheet en pantalla ancha ≥ md: se centra con este ancho)
 ```
 
 Hook **único**: `useResponsiveLayout()` en `hooks/useResponsiveLayout.ts`.

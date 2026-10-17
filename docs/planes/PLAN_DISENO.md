@@ -142,17 +142,25 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 
 ### Trabajo de abrir el fichero y decidir (sin regla general que aplicar)
 
-- [ ] **A6-quinquies. Los dos umbrales de brillo que quedan.**
-      `SurveyBanner` (`getBrightness(accent) > 200 → colors.primary`) y
-      `EventHomeScreen` (`> 175`). Son los últimos de la familia que cerró
-      §A6-bis, pero **la pregunta no es la misma**: ahí no se elige la tinta
-      sobre un fondo (eso ya lo hacen `onColor`/`readableOn`), se elige un
-      RELLENO, y sustituir el acento del evento por el azul de marca es una
-      decisión de diseño, no un cálculo. Mirar caso a caso si lo que se quiere
-      es oscurecer el acento (`readableOn`) o de verdad cambiarlo.
+- [x] **A6-quinquies. Los dos umbrales de brillo — hecho el 2026-10-17.**
+      `EventHomeScreen` (`> 175`) y `SurveyBanner` (`> 200`) decidían a ojo; con
+      el verde del Jubileo el umbral elegía texto blanco a 2,1:1. Ahora
+      `utils/tintInk.ts`: `eventHeroColors(tint)` (la tinta del hero es
+      `onColor(tint)`, la que más contrasta) y `fillForWhiteText(accent)` (el
+      acento si el blanco se lee sobre él a 4,5:1 y, si no, el azul de marca,
+      que es la decisión de diseño que pedía este punto). Test:
+      `__tests__/tintInk.test.ts`.
+- [x] **A6-sexies. Los verdes de Carismochito — hecho el 2026-10-17.** El modo
+      tenía sus verdes escritos a mano por `CarismochitoDialogs`, el overlay, el
+      HUD y la barra de pestañas. Todos salen ya de `CarismoColors`
+      (`light`/`dark`/`glow`/`deep`/`deepEdge`/`abyss`/`inactive*`/`onDeep*`/
+      `leaf`) y bajó el trinquete de colores.
 
 - [ ] **A5.5. Los hex que quedan** (2026-10-09: `TransposeBottomSheet` y
-      `SongFontBottomSheet` a cero, rediseñadas sobre `song-sheet/sheetKit`). Aquí se acabó lo mecánico: son hex cuyo
+      `SongFontBottomSheet` a cero, rediseñadas sobre `song-sheet/sheetKit`.
+      2026-10-17: **gradientes de Contigo cerrados** — el fondo sale de
+      `warm(isDark).bgGradient` y los CTA de `HABITS.*.grad`, en inicio,
+      guardados y examen). Aquí se acabó lo mecánico: son hex cuyo
       VALOR coincide con un token pero cuyo PAPEL no (el mismo `#1C1C1E` es un
       gris de superficie en un sitio y "texto casi negro" en otro). Cambiarlo
       por un token mal nombrado es peor que dejarlo. Los que más tienen:
@@ -160,7 +168,8 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       `contigo/evangelio`, `onboarding`.
 - [ ] **C6. Los 276 `fontSize`.** Tamaños fuera de escala (26, 20, 30, 9, 48…)
       o combinaciones con un peso que no es el del token.
-- [ ] **E5. Los radios sueltos — a MEDIAS (2026-09-09).** Eran 112 (17 en
+- [ ] **E5. Los radios sueltos — a MEDIAS (2026-09-09; 2026-10-17: los 13/11/9/7
+      de `SongMediaSheet` y los 5/6 de `PlaylistRow` pasan a `radii.*`).** Eran 112 (17 en
       `app/`, 95 en `components/`), no los ocho valores que decía esta línea.
       **53 cerrados**: los que no eran radios sino círculos, con el número
       escrito a mano como la mitad del lado (`width: 38, borderRadius: 19`,
@@ -178,6 +187,13 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       que no decía esta línea: el corte del hook es **720** (`breakpoints.md`),
       así que el onboarding se creía "ancho" 80 px antes que el resto de la app
       y ahora cambia de layout a la vez que las demás pantallas.
+- [ ] **Divergencia anotada: iconos del header de «Tu selección» en iOS.**
+      `SelectedSongsScreen` pinta los botones de su header con
+      `themeColors(isDark).headerTint` (casi negro / blanco) mientras que el
+      resto del cantoral en iOS usa `cantoralHeaderTint` (amarillo en oscuro,
+      `cantoralHeaderTintLight` en claro: `utils/cantoralHeader.ts`). En
+      Android y web coinciden. No se ha tocado: decidir si «Tu selección» se
+      alinea con el resto o si su header es deliberadamente más sobrio.
 - [ ] **G3.** Auditoría de vocabulario app ↔ panel ↔ contratos.
 
 ### Mejoras, sin prisa
@@ -211,7 +227,8 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 
 ## Orden sugerido si hay un hueco
 
-1. ~~A6-quater~~ hecho (2026-10-08). H9 verificado en dispositivo.
+1. ~~A6-quater~~ hecho (2026-10-08), ~~A6-quinquies~~ y ~~A6-sexies~~ (2026-10-17).
+   H9 verificado en dispositivo.
 2. **C6**, **A5.5**, **E5** — revisión fichero a fichero.
 3. **H1-ter**, **H5**, **H6** — mejoras.
 

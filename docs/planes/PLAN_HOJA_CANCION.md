@@ -2,8 +2,8 @@
 
 > Estado (2026-10-17): **Fases 1, 2 y 3 hechas y en `main`**; el usuario
 > confirmó las decisiones de §3 el 2026-10-10. Solo queda: aplicar las
-> etiquetas que el usuario apruebe en el repaso, el mapa de la canción
-> (opcional) y probar el pedal Bluetooth en un iPad de verdad (§11).
+> etiquetas que el usuario apruebe en el repaso y probar el pedal Bluetooth en
+> un iPad de verdad (§11). El mapa de la canción se hizo el 2026-10-17.
 > Cómo funciona hoy: [`HOJA_CANCION.md`](../funcionalidades/HOJA_CANCION.md).
 > Comparativa con capturas: https://claude.ai/artifact/Dxti1MFr79kxJY8oPmYHUQ
 
@@ -66,14 +66,15 @@ horizontal caben enteras 124 de 258 (completa) y 142 (compacta).
 la lectura de §2.G del backlog: las columnas solo existen dentro de la hoja de
 la canción; el layout de iPad de la app no se toca.
 
-## 4. Fase 2 — hecha (salvo el mapa de la canción)
+## 4. Fase 2 — hecha
 
 1. ✅ **Modo atril** (pantalla completa): páginas en vez de scroll, con las
    columnas de la Fase 1; pasar con un toque en el borde o con un pedal
    Bluetooth (los pedales mandan flechas / AvPág). Para las canciones que no
    caben en una pantalla de iPad.
-2. ⏳ **Mapa de la canción** opcional arriba («1 · E · 2 · E · 3 · E×2»), que se
-   saca del modelo sin tocar los `.cho`.
+2. ✅ **Mapa de la canción** opcional arriba («1 · E · 2 · E · 3 · E×2»), que se
+   saca del modelo sin tocar los `.cho` (hecho el 2026-10-17, §11; ajuste
+   «Mapa», apagado de serie).
 3. ✅ **PDF de la playlist** con la hoja nueva (hecho el 2026-10-10, §11).
 4. ✅ **Pantalla completa en web** (hecho el 2026-10-10, §11): metía el HTML con `innerHTML`, que no ejecuta
    el script de maquetación ni respeta las clases del `<body>`. Pasarla a
@@ -175,5 +176,7 @@ Orden de lo que queda:
    (`HOJA_CANCION.md`, «PDF de la playlist»).
 3. Aplicar las etiquetas aprobadas en el repaso (espera a que el usuario
    vote en el artefacto).
-4. Mapa de la canción («1 · E · 2 · E · 3 · E×2»), opcional.
+4. ✅ Mapa de la canción («1 · E · 2 · E · 3 · E×2»), opcional (hecho el
+   2026-10-17: ajuste «Mapa», clase `show-map`; solo sale con estribillo o
+   puente y al menos tres pasos. `HOJA_CANCION.md`, «Tercera vuelta»).
 5. Probar el pedal Bluetooth en un iPad de verdad.

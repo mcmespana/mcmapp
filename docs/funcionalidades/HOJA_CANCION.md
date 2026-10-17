@@ -97,6 +97,7 @@ media palabra.
 | -------------- | ------------------------------------------------------------------------------ | ----------- |
 | `compactView`  | Menú de la canción → «Plegar estribillos repetidos» (solo si alguno se repite) | No          |
 | `verseNumbers` | «Letra y vista» → Números                                                      | Sí          |
+| `songMap`      | «Letra y vista» → Mapa (solo si la canción tiene mapa que enseñar)             | No          |
 | `fontFamily`   | «Letra y vista» → Fuente                                                       | Sistema     |
 | `chorusStyle`  | «Letra y vista» → Estribillo                                                   | Negrita     |
 | `featuredTags` | Onboarding → «Destacadas» o Etiquetas → Editar → Destacar (atajos arriba del cantoral)                   | Ninguna     |
@@ -165,8 +166,11 @@ un móvil o un iPad, también al lado del editor Raw mientras se escribe.
 `utils/fullscreenSong.ts` (puro, con tests).
 
 - **Se entra** con el botón ⛶ de la cabecera de la canción (antes solo desde
-  el menú «⋯») y se sale con la ✕, Esc o F (teclado, también con el foco en la
-  letra).
+  el menú «⋯») y se sale con la ✕ o Esc (teclado, también con el foco en la
+  letra). En web, **F** pone o quita la pantalla completa **del navegador**
+  (sin barra de direcciones, para el proyector); con ella puesta, el Esc se lo
+  queda el navegador y al salir se cierra la presentación igual
+  (`hooks/useBrowserFullscreen.ts`). Sin la API (Safari de iPhone), F cierra.
 - **Mismo tono y cejilla** con los que se estaba viendo: antes volvía siempre
   al original. Y la letra viva (los arreglos recién añadidos por el admin).
 - **Pasar de canción** sin salir: botones ‹ 3 / 8 › abajo a la izquierda,
@@ -178,7 +182,13 @@ un móvil o un iPad, también al lado del editor Raw mientras se escribe.
   completa (aviso «Siguiendo al coro»); el líder publica la canción a la que
   pase (`screen: 'fullscreen'`).
 - **Web**: la canción va en un iframe (como en el detalle), así que corre la
-  maquetación y también hay modo atril con teclado o pedal.
+  maquetación y también hay modo atril con teclado o pedal. La hoja recibe el
+  foco al entrar, así que el pedal pasa página **sin hacer clic antes**, y con
+  los controles escondidos también se esconde el **cursor**. Las teclas que
+  se pulsan con el foco en la hoja se reenvían a los atajos de la pantalla
+  (ver «Teclado del iframe»).
+- **Pantalla siempre encendida** (`hooks/useKeepAwakeWhileFocused.ts`): en el
+  detalle y en la pantalla completa, por foco y no por montaje.
 - **Los controles se apagan solos** (`hooks/useImmersiveChrome.ts`): a los
   3,5 s sin tocar nada se desvanecen (‹ › , atril, play) y la ✕ se queda
   atenuada; vuelven con cualquier toque, tecla, rueda o movimiento del ratón.
@@ -211,3 +221,72 @@ una línea que no cabe se parte por palabras enteras.
   columnas» (casi todas las canciones caben en una página; de serie, no). Con
   las dos, una playlist de 6 canciones pasa de 12 páginas a 8.
 - Tests en `__tests__/playlistPdfHtml.test.ts`.
+
+## Tercera vuelta (2026-10-17)
+
+### Mapa de la canción
+
+Una línea discreta encima de la letra con el orden de la canción:
+«1 · E · 2 · E×2» (estrofas numeradas, E estribillo, P puente, ×N si se repite).
+`buildSongMap` / `renderSongMapHtml` en `utils/songSheet.ts`; CSS en
+`utils/songSheetLayout.ts`.
+
+- **Cuándo sale**: solo con estribillo o puente que ubicar y al menos tres
+  pasos (`songMapWorthShowing`). Si no, no hay mapa ni opción «Mapa».
+- **Ajuste «Mapa»** (`songMap`, apagado de serie): el HTML lleva siempre el
+  mapa, oculto, y lo enseña la clase `show-map` del `<body>`; cambia en vivo
+  por el puente de estilos, sin recargar.
+- Si ocultar acordes cambia el mapa (había intros), van dos versiones
+  (`mp-all` / `mp-lyr`) y `chords-hidden` elige.
+
+### Atajos de teclado del detalle (web)
+
+`←` / `→` canción anterior o siguiente, `+` / `−` transponer (con o sin Shift),
+`C` acordes, `F` pantalla completa, `Esc` atrás. Se apagan con una hoja o un
+modal encima y fuera del foco (`SongDetailScreen`, `hooks/useKeyboardShortcut.ts`).
+
+### Teclado del iframe
+
+Un `keydown` dentro del iframe no sube a la ventana, así que tras hacer clic en
+la letra dejaban de funcionar ⌘K y los atajos. `makeKeydownForwarder`
+(`utils/songDisplayBridge.ts`) reemite cada tecla (menos Tab) en la ventana de
+la app y, si un atajo la consume, cancela la original. Lo usan `SongDisplay` y
+la pantalla completa.
+
+### Transponer y cambiar la notación sin recargar
+
+`utils/songDisplayBridge.ts`: transponer o cambiar la notación reconstruye el
+HTML, que antes recargaba el WebView entero (parpadeo y vuelta arriba).
+`SongDisplay` decide con `nextSongView`:
+
+- **Intercambia el contenido del `<body>`** (`swapBodyScript`) si la página
+  está lista, es la misma canción (`docKey`) y la **carcasa** no cambia
+  (`documentShell`: cabecera con el CSS, etiqueta `<body>` con sus clases y los
+  `<script>`). Conserva el scroll y los estribillos plegados abiertos, y vuelve
+  a maquetar.
+- **Recarga** si es otra canción, si cambia el modo admin (otros scripts), si
+  cambia el CSS horneado (otro tema) o si hay spinner.
+- **Regla para la hoja**: lo que depende del tono o de la notación debe ir en
+  el contenido del `<body>`, nunca en el `<head>` ni en los scripts, o cada
+  cambio de tono volvería a recargar. `__tests__/songDisplayBridge.test.ts` lo
+  vigila.
+
+### Imprimir una canción (web)
+
+«Imprimir» en el menú de la canción (solo web, `SongControls`): abre la hoja en
+papel (`utils/printSong.ts`, como el PDF de la playlist) con el tono, la
+cejilla y la vista que se tienen ahora. Espera a que carguen estilos y fuente
+con `utils/printWhenReady.ts`. Si el navegador bloquea la ventana, un aviso pide
+permitir las emergentes.
+
+### Aviso de «gira la pantalla»
+
+Solo en pantallas **táctiles** (`navigator.maxTouchPoints`, `canRotate`): en un
+monitor no tiene sentido girar nada.
+
+### Enlace a una canción
+
+`/cancion?f=<fichero>` (`app/cancion.tsx`): resuelve el fichero contra el
+catálogo y abre la canción en el cantoral. En web, el detalle escribe ese mismo
+enlace en la barra de direcciones (`hooks/useSongWebLocation.ts`): F5 vuelve a
+la canción y copiar la URL sirve para pasarla. También lo abre la paleta ⌘K.

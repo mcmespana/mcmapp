@@ -67,6 +67,8 @@ Todo implementado:
 - `notifications/usePushNotifications.ts` — routing de iOS action buttons (`actionIdentifier`)
 - `services/pushNotificationService.ts` — `markAllNotificationsAsRead()` batch, `initializeNewUserReadStatus()`
 - El contador de no leídas (`unreadCount`) lo expone `NotificationsContext` (`contexts/NotificationsContext.tsx`); no hay un hook aparte
+- `getUnreadNotificationsCount(firebaseHistory, filter?)` (`services/pushNotificationService.ts`) cuenta con el **histórico que el contexto ya tiene en memoria** por su suscripción en tiempo real: no hace otro `get()` de `/notifications`. `filter` descuenta del badge los avisos dirigidos a otra audiencia.
+- `/notifications` y la hoja de la campana de Inicio comparten una sola tarjeta, `components/notifications/NotificationListItem.tsx`: chip de categoría, dot de no leída, swipe para marcar leída, chip de destino y hasta 3 botones de acción.
 
 ---
 
@@ -380,6 +382,7 @@ Notas:
 }]
 ```
 
+- **Icono de notificación de Android** (`assets/images/notification-icon.png`, 96×96) e icono monocromo del launcher (`monochrome-icon.png`): Android los pinta solo con el canal alfa, así que se generan a partir del logo con `node scripts/generate-notification-icon.js` (desde `mcm-app/`). Si cambia `adaptive-icon.png`, hay que regenerarlos.
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
 - **Canal Android**: "Notificaciones MCM" (importancia MAX)
 - **Categorías iOS**: general, eventos, fotos (con action buttons)
@@ -453,5 +456,7 @@ Notas:
   }
 }
 ```
+
+Pendiente: añadir a mano, en la consola de Firebase, `".indexOn": ["createdAt"]` en `/notifications` (no está desplegado; ver `mcm-app/TODO.md`).
 
 Nota: la escritura en `/notifications` se hace desde el backend con Firebase Admin SDK (bypasa rules).

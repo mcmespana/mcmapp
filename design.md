@@ -264,6 +264,18 @@ estaba resuelto cinco veces en el repo con cinco números distintos, y ninguno
 acertaba que **sobre el rojo MIC gana el texto oscuro** (4,79:1) y no el
 blanco (3,55:1).
 
+**Tinta sobre un tinte.** Un icono del color de su pestaña sobre una pastilla
+teñida de ese color (accesos rápidos, «Más») usa `tintedGlyph` de
+`utils/tintColors.ts`: el glifo se lleva a 3:1 contra la pastilla (el amarillo
+del cantoral sobre blanco no se lee). Sobre el acento de un evento o encuesta:
+`utils/tintInk.ts`. Los iconos del header del cantoral salen de
+`cantoralHeaderTint` (`utils/cantoralHeader.ts`): no los decidas por pantalla.
+
+**Hojas y barra de pestañas.** Una hoja inferior en pantalla ancha no pasa de
+`sheetMaxWidth` (`constants/breakpoints.ts`). El final de un scroll bajo la
+barra flotante lleva `useTabBarPaddingBottom` / `useTabBarClearance`, nunca un
+`Platform.OS === 'ios' ? 100 : 24`.
+
 ---
 
 ## 6. Glass, plataforma y movimiento
@@ -289,7 +301,10 @@ sueltos **nuevos** están prohibidos (decisión cerrada, `PLAN_UI_NATIVA.md` §4
 `sheet` para sheets. Muelles (`springs`) siempre que haya intervenido un dedo:
 un muelle conserva la velocidad del gesto, una curva la reinicia.
 **Nunca `ease-in` en algo que entra.** Siempre native driver. Bouncy solo para
-celebración.
+celebración. En `Animated` de core, la curva de un sheet es `easings.sheet`
+(la de Reanimated no se puede ejecutar ahí). Hay un trinquete,
+`__tests__/noLooseMotion.test.ts`: un muelle a mano o un `duration: <número>`
+nuevo lo pone en rojo; su tope solo baja.
 
 ---
 
@@ -298,25 +313,28 @@ celebración.
 Antes de escribir un componente, busca aquí. Reinventar uno de estos es un
 error de revisión, no una preferencia.
 
-| Necesitas                  | Usa                                                                   |
-| -------------------------- | --------------------------------------------------------------------- |
-| Capa glass                 | `GlassSurface`                                                        |
-| Card (cualquiera)          | Card local con `radii.lg` + `shadows.card`/`hero`, o `Card` de heroui |
-| Hero de pantalla           | `ScreenHero`                                                          |
-| Cabecera de sección        | `SectionHeader`                                                       |
-| Progreso circular          | `ProgressRing`                                                        |
-| "No hay nada aquí"         | `EmptyState` — **siempre**, ~20 sitios lo reinventan                  |
-| Campo de texto             | `AppTextField` (props `error`, `accentColor`)                         |
-| CTA principal              | `AppPrimaryButton` (prop `color`)                                     |
-| Grupo de acciones en barra | `GlassActionGroup`                                                    |
-| Segmentado / toggle        | `SegmentedControl`                                                    |
-| Botón de icono             | `PressableScale` o `PressableFeedback` (no hay componente)            |
-| FAB                        | Propio con `PressableScale` + `shadows.overlay` (no hay componente)   |
-| Barra de color de tab      | `TabTintBar`                                                          |
-| Ancho máximo en web        | `PageContainer`                                                       |
-| Icono                      | `IconSymbol` (SF Symbols en iOS, Material en Android)                 |
-| Feedback positivo          | `CelebrationBurst`                                                    |
-| Layout responsive          | hook `useResponsiveLayout()` — **es el único**, no crees otro         |
+| Necesitas                  | Usa                                                                         |
+| -------------------------- | --------------------------------------------------------------------------- |
+| Capa glass                 | `GlassSurface`                                                              |
+| Card (cualquiera)          | Card local con `radii.lg` + `shadows.card`/`hero`, o `Card` de heroui       |
+| Hero de pantalla           | `ScreenHero`                                                                |
+| Cabecera de sección        | `SectionHeader` (`textStyle` si hay que ajustar la tinta)                   |
+| Carga de una lista         | `ListSkeleton` (la forma de la lista, no un spinner)                        |
+| Confirmar un gesto         | `confirmAsync` de `utils/confirmDialog.ts` (`Alert.alert` no existe en web) |
+| Botón «+/−» mantenido      | `useRepeatPress`                                                            |
+| Progreso circular          | `ProgressRing`                                                              |
+| "No hay nada aquí"         | `EmptyState` — **siempre**, ~20 sitios lo reinventan                        |
+| Campo de texto             | `AppTextField` (props `error`, `accentColor`)                               |
+| CTA principal              | `AppPrimaryButton` (prop `color`)                                           |
+| Grupo de acciones en barra | `GlassActionGroup`                                                          |
+| Segmentado / toggle        | `SegmentedControl`                                                          |
+| Botón de icono             | `PressableScale` o `PressableFeedback` (no hay componente)                  |
+| FAB                        | Propio con `PressableScale` + `shadows.overlay` (no hay componente)         |
+| Barra de color de tab      | `TabTintBar`                                                                |
+| Ancho máximo en web        | `PageContainer`                                                             |
+| Icono                      | `IconSymbol` (SF Symbols en iOS, Material en Android)                       |
+| Feedback positivo          | `CelebrationBurst`                                                          |
+| Layout responsive          | hook `useResponsiveLayout()` — **es el único**, no crees otro               |
 
 Componentes de `components/ui/` reciben color por prop. Si el tuyo necesita
 saber en qué territorio está, va mal diseñado.

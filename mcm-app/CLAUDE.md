@@ -234,7 +234,9 @@ Firebase Realtime Database
 
 ### Patrón de datos
 
-Todo usa `useFirebaseData<T>(path, cacheKey, transform?)`:
+Todo usa `useFirebaseData<T>(path, cacheKey, transform?)`. Con el nodo ya
+parseado en la caché en memoria, el primer render ya trae los datos (sin
+parpadeo de «Cargando…») y devuelve además `refresh()` para el pull-to-refresh:
 
 1. Carga desde AsyncStorage (caché local)
 2. Muestra datos cacheados inmediatamente
@@ -315,11 +317,12 @@ completo, en `docs/desarrollo/DESIGN.md`.
 ### Fetch de datos Firebase
 
 ```typescript
-const { data, loading, offline } = useFirebaseData<TipoData>(
+const { data, loading, offline, hidden, refresh } = useFirebaseData<TipoData>(
   'ruta/firebase',
   'clave-cache',
   funcionTransformOptional,
 );
+// `refresh()` revalida por `updatedAt` (pull-to-refresh); nunca rechaza.
 ```
 
 ## Documentación de cambios
@@ -537,7 +540,7 @@ Para activar en Claude Code: `claude mcp add heroui-native -- npx -y @heroui/nat
 
 - `ReportBugsModal.tsx` es usado por `SongControls.tsx` — NO eliminar (las variantes *Fixed, *New, \*Simple ya fueron eliminadas)
 - `ErrorBoundary.tsx` envuelve toda la app en `_layout.tsx`
-- Splash screen: `HelloWave` (🌐) hace 2 repeticiones de 300 ms (600 ms en total)
+- Splash screen: el splash nativo lo retiene y lo suelta `utils/splashGate.ts` (`holdSplash` a nivel de módulo en `app/_layout.tsx`, `releaseSplash` cuando hay algo que pintar; temporizador de seguridad de 3 s para no colgar la app). `HelloWave` (🌐, 600 ms) solo sale en el primer arranque de la vida de la app
 - Sistema de Perfiles: reemplaza al viejo `featureFlags.ts`. Ver `types/profileConfig.ts` + `utils/resolveProfileConfig.ts`
 - Sistema de notificaciones push: ver `docs/funcionalidades/NOTIFICACIONES.md` en la raíz del monorepo
 - **Wordle:** `app/screens/WordleScreen.tsx` y `app/wordle.tsx` no tienen uso activo, pero **se conservan a propósito** como código de referencia para recuperar el Wordle algún día. NO eliminar, NO refactorizar, NO añadirle funcionalidades hasta que se decida reactivarlo.
