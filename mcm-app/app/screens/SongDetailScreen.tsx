@@ -29,6 +29,7 @@ import SongDisplay from '@/components/SongDisplay';
 import { useSongProcessor } from '@/hooks/useSongProcessor';
 import { useForceCompact } from '@/components/tabs/tabBarController';
 import { useKeepAwakeWhileFocused } from '@/hooks/useKeepAwakeWhileFocused';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 import { trackEvent } from '@/utils/analytics';
 import SongControls from '@/components/SongControls';
 import type { SheetViewOptions } from '@/components/SongFontBottomSheet';
@@ -104,6 +105,8 @@ export default function SongDetailScreen({
   // con el foco: al abrir la pantalla completa encima o irse a otra pestaña,
   // el detalle sigue montado y no hace falta.
   useKeepAwakeWhileFocused('song-detail');
+  // Es la hoja con la que se canta: Carismochito no se asoma aquí.
+  useSuppressCarismochito();
 
   const {
     filename,

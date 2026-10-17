@@ -29,12 +29,12 @@ import { router } from 'expo-router';
 import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
-import colors, { Colors } from '@/constants/colors';
+import colors, { CarismoColors, Colors } from '@/constants/colors';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
-import { Skeleton } from 'heroui-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
@@ -221,7 +221,7 @@ export default function Home() {
   const isWide = windowWidth >= 700;
   const { toast } = useToast();
   // Modo carismochito: tiñe de verde el icono de la app del header.
-  const { isActive: carismoActive } = useCarismochito();
+  const { isActive: carismoActive, openOnboarding } = useCarismochito();
   const [settingsVisible, setSettingsVisibleRaw] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [notifSheetOpen, setNotifSheetOpenRaw] = useState(false);
@@ -677,14 +677,25 @@ export default function Home() {
           title="MCM App"
           titleStyle={styles.logoText}
           left={
-            <View
-              style={[
-                styles.logoBox,
-                carismoActive && { backgroundColor: '#1B9E4B' },
-              ]}
-            >
-              <MaterialIcons name="device-hub" size={20} color="white" />
-            </View>
+            carismoActive ? (
+              // Con el modo puesto, el logo verde reabre su explicación y desde
+              // ahí se puede salir sin agitar (el aviso flotante desaparece).
+              <PressableFeedback
+                onPress={openOnboarding}
+                accessibilityRole="button"
+                accessibilityLabel="Modo Carismochito activo. Toca para ver opciones"
+                style={[
+                  styles.logoBox,
+                  { backgroundColor: CarismoColors.light },
+                ]}
+              >
+                <MaterialIcons name="device-hub" size={20} color="white" />
+              </PressableFeedback>
+            ) : (
+              <View style={styles.logoBox}>
+                <MaterialIcons name="device-hub" size={20} color="white" />
+              </View>
+            )
           }
           right={
             <GlassActionGroup

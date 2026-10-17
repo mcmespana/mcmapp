@@ -33,6 +33,7 @@ import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { h } from '@/utils/haptics';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import {
   HABITS,
@@ -81,6 +82,7 @@ const GRATEFUL_MODES = [
 ];
 
 export default function RevisionScreen() {
+  useSuppressCarismochito();
   // Subruta de Contigo: se registra con la clave del tab (gana el último
   // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
   const { scrollRef, onScroll } = useTabScroll('contigo');
