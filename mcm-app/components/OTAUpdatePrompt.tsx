@@ -12,7 +12,9 @@ import {
 } from 'react-native';
 import useAnimatedValue from '@/hooks/useAnimatedValue';
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
+import { useReducedMotion } from 'react-native-reanimated';
+import { h } from '@/utils/haptics';
+import { durations, easings } from '@/constants/animations';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import brand, { Colors } from '@/constants/colors';
@@ -57,6 +59,11 @@ export default function OTAUpdatePrompt({
   const scale = useAnimatedValue(0.92);
   const rotate = useAnimatedValue(0);
   const sparkle = useAnimatedValue(0);
+  // El `Animated` de core NO hereda "reducir movimiento" (Reanimated sí): hay
+  // que leerlo a mano. Es un hook de solo lectura, así que vale aunque esto
+  // viva en un `Modal`. Con el ajuste puesto no hay giro ni pulso en bucle,
+  // que es justo lo que más marea.
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!visible) {
@@ -67,25 +74,33 @@ export default function OTAUpdatePrompt({
       return;
     }
 
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      // Sin haptics — ignorar.
-    }
+    h.success();
 
     const nativeDriver = Platform.OS !== 'web';
 
     Animated.timing(opacity, {
       toValue: 1,
-      duration: 220,
+      duration: durations.base,
       useNativeDriver: nativeDriver,
     }).start();
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: nativeDriver,
-      tension: 120,
-      friction: 11,
-    }).start();
+    // Aviso de sistema: entra sin rebote (antes, muelle con ζ≈0,5). Con
+    // "reducir movimiento" no escala: solo el fundido del fondo.
+    if (reducedMotion) {
+      scale.setValue(1);
+    } else {
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: durations.slow,
+        easing: easings.sheet,
+        useNativeDriver: nativeDriver,
+      }).start();
+    }
+
+    if (reducedMotion) {
+      // Halo quieto a media intensidad, icono sin girar.
+      sparkle.setValue(0.5);
+      return;
+    }
 
     // Rotación continua suave del icono de update.
     const spin = Animated.loop(
@@ -121,7 +136,7 @@ export default function OTAUpdatePrompt({
       spin.stop();
       pulse.stop();
     };
-  }, [visible, opacity, scale, rotate, sparkle]);
+  }, [visible, opacity, scale, rotate, sparkle, reducedMotion]);
 
   const backdropStyle = { opacity };
   const cardStyle = { transform: [{ scale }] };
