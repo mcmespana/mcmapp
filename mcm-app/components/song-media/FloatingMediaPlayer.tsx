@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   LayoutAnimation,
@@ -14,9 +14,11 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   interpolate,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { HeaderHeightContext } from 'expo-router/react-navigation';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -25,6 +27,7 @@ import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { extractYouTubeId } from '@/utils/youtube';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
+import { durations, springs } from '@/constants/animations';
 
 export interface FloatingMediaSource {
   /** 'youtube' → URL de embed de YouTube · 'drive' → URL de preview de Drive. */
@@ -50,7 +53,11 @@ const VIDEO_HEIGHT = Math.round((PLAYER_WIDTH * 9) / 16);
 // nada".
 const AUDIO_HEIGHT = 116;
 const SIDE_MARGIN = 14;
-/** Alto de la barra de navegación del sistema, sin contar la barra de estado. */
+/**
+ * Alto de la barra de navegación del sistema, sin contar la barra de estado.
+ * Solo es el respaldo para cuando el reproductor se monta fuera de una
+ * pantalla con header (tests): dentro de una, manda `HeaderHeightContext`.
+ */
 const HEADER_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 56;
 
 /**
@@ -106,6 +113,15 @@ export default function FloatingMediaPlayer({
   // Se apoya sobre la barra de pestañas flotante, que ya incluye el inset.
   const tabBarClearance = useTabBarClearance();
   const insets = useSafeAreaInsets();
+  // Alto REAL del header de la pantalla (barra de estado incluida). Se lee el
+  // contexto en vez de `useHeaderHeight()` porque este no revienta fuera de
+  // un navegador: devuelve `undefined` y se cae al cálculo a mano.
+  const headerHeight = useContext(HeaderHeightContext);
+  const headerReserve =
+    headerHeight !== undefined
+      ? Math.max(headerHeight, insets.top)
+      : insets.top + HEADER_BAR_HEIGHT;
+  const reducedMotion = useReducedMotion();
   const [fullscreen, setFullscreen] = useState(false);
   // Estado de carga del embed. Sin esto, un embed que tarda o que falla se ve
   // como un rectángulo negro y no hay forma de distinguir "cargando" de "roto"
@@ -153,8 +169,8 @@ export default function FloatingMediaPlayer({
     panX.set(0);
     panY.set(0);
     enter.set(0);
-    // `tension: 90, friction: 11` de RN Animated → mismo muelle aquí.
-    enter.set(withSpring(1, { stiffness: 90, damping: 11, mass: 1 }));
+    // Sin rebote: el muelle de antes (stiffness 90, damping 11) botaba.
+    enter.set(withSpring(1, springs.settle));
     // Solo cuando cambia la URL.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.url]);
@@ -201,10 +217,19 @@ export default function FloatingMediaPlayer({
   const toggleFullscreen = useCallback(() => {
     h.tap();
     // Anima el cambio de tamaño/posición del contenedor — el WebView es el
-    // mismo, así que la reproducción continúa sin recargar.
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    // mismo, así que la reproducción continúa sin recargar. Solo en iOS: en
+    // Android re-maquetar el WebView (Chromium) en cada fotograma da tirones
+    // y fotogramas en negro, así que ahí el cambio es instantáneo, igual que
+    // con "reducir movimiento" (LayoutAnimation no lo respeta sola). Curva de
+    // salida, no `easeInEaseOut`: es algo que entra.
+    if (Platform.OS === 'ios' && !reducedMotion) {
+      LayoutAnimation.configureNext({
+        duration: durations.slow,
+        update: { type: LayoutAnimation.Types.easeOut },
+      });
+    }
     setFullscreen((f) => !f);
-  }, []);
+  }, [reducedMotion]);
 
   /** Abre la fuente fuera de la app: YouTube o Drive, según el tipo. */
   const openOutside = useCallback(() => {
@@ -301,10 +326,9 @@ export default function FloatingMediaPlayer({
         // En pantalla completa el reproductor tapa toda la pantalla, pero el
         // header del stack es NATIVO y se pinta ENCIMA: sin reservar su alto,
         // los botones de la barra (YouTube, salir de pantalla completa,
-        // cerrar) caían debajo del back y no se podían tocar. No se usa
-        // `useHeaderHeight()` a propósito: revienta si el reproductor se monta
-        // fuera de una pantalla con header (los tests, sin ir más lejos).
-        fullscreen && { paddingTop: insets.top + HEADER_BAR_HEIGHT + 8 },
+        // cerrar) caían debajo del back y no se podían tocar. El alto sale
+        // de `headerReserve` (ver arriba por qué no `useHeaderHeight()`).
+        fullscreen && { paddingTop: headerReserve + 8 },
       ]}
     >
       <Text style={styles.barLabel} numberOfLines={1}>
