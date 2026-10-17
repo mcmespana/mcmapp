@@ -27,6 +27,10 @@ import { h } from '@/utils/haptics';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import { WARM_DARK, WARM_LIGHT, warm } from '@/components/contigo/theme';
+import {
+  contigoHeaderChrome,
+  useContigoHeaderInset,
+} from '@/components/contigo/headerChrome';
 import { BreathingPhase } from '@/components/contigo/BreathingPhase';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { DateNavigator } from '@/components/contigo/DateNavigator';
@@ -57,6 +61,7 @@ export default function RevisionScreen() {
   const scheme = useColorScheme();
   const { user: authUser } = useAuth();
   const isDark = scheme === 'dark';
+  const headerInset = useContigoHeaderInset();
   const W = warm(isDark);
   const purple = isDark ? WARM_DARK.purple : WARM_LIGHT.purple;
   const { width: windowWidth } = useWindowDimensions();
@@ -243,7 +248,7 @@ export default function RevisionScreen() {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 52 }]}>
+    <View style={[styles.container, { paddingTop: headerInset }]}>
       {/* Header NATIVO: cerrar (izq) + navegador de fechas como título custom
           (‹ fecha ›) dentro de la barra nativa. */}
       <Stack.Screen
@@ -271,10 +276,7 @@ export default function RevisionScreen() {
               maxDate={todayStr}
             />
           ),
-          ...(Platform.OS === 'ios' &&
-          parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
+          ...contigoHeaderChrome(isDark),
         }}
       />
       <LinearGradient

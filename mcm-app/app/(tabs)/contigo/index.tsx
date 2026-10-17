@@ -5,10 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, Stack } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated from 'react-native-reanimated';
@@ -23,6 +21,10 @@ import {
   formatDateLong,
   warm,
 } from '@/components/contigo/theme';
+import {
+  contigoHeaderChrome,
+  useContigoHeaderInset,
+} from '@/components/contigo/headerChrome';
 import {
   HabitTile,
   HeroCard,
@@ -41,13 +43,13 @@ import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 
 export default function ContigoScreen() {
-  const insets = useSafeAreaInsets();
   // Pantalla raíz del tab Contigo.
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const router = useRouter();
   const scheme = useColorScheme();
   const { user: authUser } = useAuth();
   const isDark = scheme === 'dark';
+  const headerInset = useContigoHeaderInset();
   const W = warm(isDark);
   const { width: windowWidth } = useWindowDimensions();
   // iPad / large tablet / desktop web — cap content width so the layout
@@ -155,10 +157,7 @@ export default function ContigoScreen() {
               </TouchableOpacity>
             </View>
           ),
-          ...(Platform.OS === 'ios' &&
-          parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
+          ...contigoHeaderChrome(isDark),
         }}
       />
       <LinearGradient
@@ -173,7 +172,7 @@ export default function ContigoScreen() {
         scrollEventThrottle={16}
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingTop: insets.top + 52,
+          paddingTop: headerInset,
           paddingBottom: contentPaddingBottom,
         }}
         showsVerticalScrollIndicator={false}
