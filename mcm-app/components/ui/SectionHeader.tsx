@@ -2,6 +2,7 @@ import React from 'react';
 import {
   StyleSheet,
   Text,
+  TextStyle,
   TouchableOpacity,
   View,
   ViewStyle,
@@ -19,6 +20,8 @@ interface SectionHeaderProps {
   /** Accent color for the label and action. Defaults to muted text. */
   accentColor?: string;
   style?: ViewStyle;
+  /** Ajuste del texto de la etiqueta (p.ej. escalarlo con `fontScale`). */
+  textStyle?: TextStyle;
 }
 
 /**
@@ -32,13 +35,19 @@ export default function SectionHeader({
   onAction,
   accentColor,
   style,
+  textStyle,
 }: SectionHeaderProps) {
   const mutedColor = useThemeColor({}, 'icon');
   const labelColor = accentColor ?? mutedColor;
 
   return (
     <View style={[styles.row, style]}>
-      <Text style={[typography.overline, { color: labelColor }]}>{label}</Text>
+      <Text
+        accessibilityRole="header"
+        style={[typography.overline, { color: labelColor }, textStyle]}
+      >
+        {label}
+      </Text>
       {actionLabel && onAction ? (
         <TouchableOpacity activeOpacity={0.7} onPress={onAction}>
           <Text style={[styles.action, { color: labelColor }]}>
