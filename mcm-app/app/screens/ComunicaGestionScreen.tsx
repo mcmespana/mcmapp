@@ -17,6 +17,7 @@ import { WebView } from 'react-native-webview';
 import { useToast } from '@/contexts/AppToastContext';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 
 // CSS module reutilizado del iframe (solo aplica en web)
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -73,6 +74,7 @@ const INJECTED_JAVASCRIPT = `
 export default function ComunicaGestionScreen() {
   const scheme = useColorScheme() ?? 'light';
   const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarClearance();
   const tintColor = ThemeColors[scheme].tint;
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -161,6 +163,10 @@ export default function ComunicaGestionScreen() {
         onError={onError}
         onHttpError={onError}
       />
+      {/* Hueco de la barra de pestañas flotante (estamos dentro de «Más»): sin
+          él, el final de la página quedaba debajo y no se podía pulsar. Mismo
+          patrón que McmPanelScreen. */}
+      <View style={{ height: tabBarSpace }} />
     </View>
   );
 }
