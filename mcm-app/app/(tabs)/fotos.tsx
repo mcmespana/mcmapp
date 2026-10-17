@@ -19,6 +19,7 @@ import { Button } from 'heroui-native';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
+import EmptyState from '@/components/ui/EmptyState';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useAlbumPagination } from '@/hooks/useAlbumPagination';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -101,13 +102,16 @@ export function FotosScreen() {
       } catch (error) {
         logger.error('Failed to open URL:', error);
         Alert.alert(
-          'Error',
-          'No se ha podido abrir el link, qué pena más grande',
+          'No se pudo abrir el álbum',
+          'Inténtalo de nuevo en un momento.',
         );
       }
     } else {
       logger.warn(`Don't know how to open this URL: ${albumUrl}`);
-      Alert.alert('Invalid Link', `Esta URL es un poco raruna: ${albumUrl}`);
+      Alert.alert(
+        'Enlace no válido',
+        'Este álbum no tiene un enlace que se pueda abrir.',
+      );
     }
   };
 
@@ -121,7 +125,7 @@ export function FotosScreen() {
         onPress={loadMoreAlbums}
         style={styles.loadMoreButton}
       >
-        <Button.Label>Cargar más...</Button.Label>
+        <Button.Label>Cargar más</Button.Label>
       </Button>
     );
   };
@@ -187,6 +191,19 @@ export function FotosScreen() {
         onEndReached={loadMoreAlbums}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
+        // Un perfil sin álbumes visibles, o sin conexión y sin caché, dejaba
+        // la pantalla en blanco.
+        ListEmptyComponent={
+          <EmptyState
+            icon="photo-library"
+            title="Aún no hay álbumes"
+            subtitle={
+              offline
+                ? 'Conéctate para ver los álbumes'
+                : 'Cuando se publiquen fotos aparecerán aquí'
+            }
+          />
+        }
       />
     </View>
   );
