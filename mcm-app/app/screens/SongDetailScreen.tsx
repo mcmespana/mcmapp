@@ -35,6 +35,7 @@ import type { SheetViewOptions } from '@/components/SongFontBottomSheet';
 import {
   RouteProp,
   NavigationProp,
+  useHeaderHeight,
   useIsFocused,
 } from 'expo-router/react-navigation';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
@@ -145,6 +146,9 @@ export default function SongDetailScreen({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const insets = useSafeAreaInsets();
+  // Alto real del header transparente (incluye la barra de estado). En iPad
+  // es más alto que los 44 pt del iPhone que se daban por hechos.
+  const headerHeight = useHeaderHeight();
 
   const { settings, setSettings, isLoadingSettings, isAdmin } = useSettings();
   const {
@@ -769,7 +773,7 @@ export default function SongDetailScreen({
         // recargar la hoja (ni volver arriba).
         docKey={filename}
         fullBleed
-        topInset={insets.top + 44}
+        topInset={headerHeight > 0 ? headerHeight : insets.top + 44}
       />
       <SongControls
         chordsVisible={chordsVisible}
