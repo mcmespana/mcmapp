@@ -63,6 +63,11 @@
         {
           "action": "VIEW",
           "category": ["DEFAULT", "BROWSABLE"],
+          "data": [{ "scheme": "mcmapp" }]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT", "BROWSABLE"],
           "data": [
             {
               "scheme": "file",
