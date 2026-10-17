@@ -27,6 +27,7 @@ import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useIncomingPlaylist } from '@/hooks/useIncomingPlaylist';
 import { useRegisterServiceWorker } from '@/hooks/useRegisterServiceWorker';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { trackEvent } from '@/utils/analytics';
 import { tramoTamano } from '@/constants/analyticsEvents';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -137,6 +138,8 @@ function InnerLayout() {
   // Analítica: arranca Aptabase y registra cada cambio de pantalla. Sin
   // EXPO_PUBLIC_APTABASE_KEY no hace nada.
   useScreenTracking();
+  // Web: título de la pestaña del navegador según la pantalla.
+  useDocumentTitle();
 
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
@@ -266,6 +269,8 @@ function InnerLayout() {
             headerShown: false,
           }}
         />
+        {/* Enlace a una canción (`/cancion?f=…`): puente al cantoral. */}
+        <Stack.Screen name="cancion" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <AddToHomeBanner />

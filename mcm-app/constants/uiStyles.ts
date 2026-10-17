@@ -124,7 +124,10 @@ export const shadows = {
  * foco tiene que verse: hasta ahora no había ninguno definido y cada campo se
  * las apañaba como podía.
  *
- * Se aplica al contenedor del control, no al texto.
+ * Se aplica al contenedor del control, no al texto. En web, además, el
+ * `<style>` de `app/+html.tsx` lo convierte en el `:focus-visible` de toda la
+ * página (mismo grosor y color), así que cualquier elemento enfocable lo
+ * enseña con teclado aunque su componente no lo pida.
  */
 export const focusRing = {
   borderWidth: 2,
