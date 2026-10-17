@@ -27,6 +27,7 @@ import { PressableFeedback } from 'heroui-native';
 import SongDisplay from '@/components/SongDisplay';
 import { useSongProcessor } from '@/hooks/useSongProcessor';
 import { useForceCompact } from '@/components/tabs/tabBarController';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 import { trackEvent } from '@/utils/analytics';
 import SongControls from '@/components/SongControls';
 import type { SheetViewOptions } from '@/components/SongFontBottomSheet';
@@ -90,6 +91,8 @@ export default function SongDetailScreen({
   // La barra de pestañas se queda COMPACTA mientras se lee una canción: aquí
   // lo que importa es que quepa la mayor cantidad de letra posible.
   useForceCompact(true);
+  // Es la hoja con la que se canta: Carismochito no se asoma aquí.
+  useSuppressCarismochito();
 
   const {
     filename,
