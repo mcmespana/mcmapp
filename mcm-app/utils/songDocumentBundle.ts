@@ -22,6 +22,8 @@ export interface PreviewOptions {
   chorusStyle?: ChorusStyle;
   chorusLabel?: boolean;
   airy?: boolean;
+  /** Mapa de la canción («1 · E · 2 · E×2») encima de la letra. */
+  songMap?: boolean;
   dark?: boolean;
   fontSize?: number;
   fontFamily?: string;
@@ -46,6 +48,7 @@ export const PREVIEW_DEFAULTS = {
   chorusStyle: 'negrita' as ChorusStyle,
   chorusLabel: true,
   airy: false,
+  songMap: false,
   fontSize: DEFAULT_FONT_SIZE_EM,
   fontFamily: SONG_FONTS[0].cssValue as string,
 };
@@ -64,6 +67,7 @@ export function renderPreview(chordPro: string, o: PreviewOptions = {}) {
     chorusLabel: o.chorusLabel ?? d.chorusLabel,
     airy: o.airy ?? d.airy,
     paged: false,
+    songMap: o.songMap ?? d.songMap,
     // Los de la app en web (`useSongProcessor`).
     topPadding: 16,
     bottomPadding: 40,

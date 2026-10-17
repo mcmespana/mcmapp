@@ -36,6 +36,7 @@ describe('mcm-sheet.js (vista previa del admin)', () => {
       chorusStyle: app.chorusStyle,
       chorusLabel: app.chorusLabel,
       airy: app.airy,
+      songMap: app.songMap,
       fontSize: app.fontSize,
       fontFamily: app.fontFamily,
     });

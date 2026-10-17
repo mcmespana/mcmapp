@@ -42,7 +42,10 @@ interface Props {
 }
 
 export type SheetViewPatch = Partial<
-  Pick<SongSettings, 'chorusStyle' | 'chorusLabel' | 'verseNumbers' | 'airy'>
+  Pick<
+    SongSettings,
+    'chorusStyle' | 'chorusLabel' | 'verseNumbers' | 'airy' | 'songMap'
+  >
 >;
 
 export interface SheetViewOptions {
@@ -54,6 +57,11 @@ export interface SheetViewOptions {
   chorusLabel: boolean;
   verseNumbers: boolean;
   airy: boolean;
+  /**
+   * La canción tiene mapa («1 · E · 2 · E×2») y si se enseña. Sin definir,
+   * el ajuste no sale (canciones sin estribillo ni puente que ubicar).
+   */
+  songMap?: { available: boolean; on: boolean };
   onChange: (patch: SheetViewPatch) => void;
 }
 
@@ -370,6 +378,15 @@ function ViewCard({
     on: view.airy,
     patch: { airy: !view.airy },
   });
+  if (view.songMap?.available) {
+    toggles.push({
+      key: 'map',
+      icon: 'linear-scale',
+      name: 'Mapa',
+      on: view.songMap.on,
+      patch: { songMap: !view.songMap.on },
+    });
+  }
   return (
     <SheetCard palette={p} label="Vista">
       {view.hasChorus && (

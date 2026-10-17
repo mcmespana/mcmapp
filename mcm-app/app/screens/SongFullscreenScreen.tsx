@@ -385,6 +385,7 @@ export default function SongFullscreenScreen({
     chorusLabel,
     airy,
     pagedFullscreen,
+    songMap,
   } = settings;
   // Modo atril: páginas en vez de scroll (también en web: un portátil con
   // pedal es un atril).
@@ -407,6 +408,7 @@ export default function SongFullscreenScreen({
     chorusLabel,
     airy,
     paged,
+    songMap,
     currentFontSizeEm: fontSize * 1.6,
     currentFontFamily: fontFamily,
     title,

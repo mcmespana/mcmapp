@@ -271,6 +271,31 @@ export const SHEET_CSS = `
     font-size: 0.8em;
     font-weight: 600;
   }
+  /* Mapa de la canción («1 · E · 2 · E×2»), una línea discreta encima de
+     la letra. Apagado de serie: lo enciende \`show-map\` en el body. */
+  .song-map {
+    display: none;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15em 0.45em;
+    margin: 0 0 0.6em;
+    color: var(--sh-muted);
+    font-size: calc(var(--song-font-size) * 0.8);
+    font-weight: 600;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+  }
+  body.show-map .song-map.mp-all { display: flex; }
+  body.show-map.chords-hidden .song-map.has-alt { display: none; }
+  body.show-map.chords-hidden .song-map.mp-lyr { display: flex; }
+  .song-map .mp + .mp::before {
+    content: '\\00b7';
+    margin-right: 0.45em;
+    font-weight: 400;
+    opacity: 0.7;
+  }
+  .song-map .mp-e { color: var(--sh-label); }
+  .song-map .mx { font-weight: 500; font-size: 0.85em; }
   /* Columnas (iPad, solo si la canción cabe entera sin scroll). */
   body.cols { padding-left: 28px; padding-right: 28px; }
   @media (min-width: 720px) {
