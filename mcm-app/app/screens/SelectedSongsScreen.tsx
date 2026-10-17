@@ -22,6 +22,7 @@ import { PressableFeedback } from 'heroui-native';
 import AppTextField from '@/components/ui/AppTextField';
 import { useToast } from '@/contexts/AppToastContext';
 import { shareText } from '@/utils/shareText';
+import { printWhenReady } from '@/utils/printWhenReady';
 import { extractSongMedia } from '@/types/songMedia';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -574,14 +575,11 @@ const SelectedSongsScreen: React.FC = () => {
           }
           w.document.open();
           w.document.write(html);
+          // Imprime cuando la hoja y la fuente (Inter) han llegado, no a
+          // ciegas: los saltos de página se calculan para Inter. Se engancha
+          // antes de `close()`, que es lo que dispara el `load`.
+          void printWhenReady(w);
           w.document.close();
-          // Pequeño delay para que Inter cargue antes de lanzar print.
-          setTimeout(() => {
-            try {
-              w.focus();
-              w.print();
-            } catch {}
-          }, 600);
         } else {
           const Print = await import('expo-print');
           const { uri } = await Print.printToFileAsync({
@@ -616,12 +614,10 @@ const SelectedSongsScreen: React.FC = () => {
           });
         }
         setShowExportPdfModal(false);
-        toast.show({ label: 'Tenemos tu PDF recién sacado del orno' });
+        toast.show({ label: 'PDF listo' });
       } catch (err) {
         logger.error('Error exportando PDF', err);
-        toast.show({
-          label: 'Error al generar el PDF, sorry, lo arreglaremos',
-        });
+        toast.show({ label: 'No se pudo generar el PDF' });
       }
     },
     [
@@ -1554,13 +1550,14 @@ const SelectedSongsScreen: React.FC = () => {
           <MaterialIcons
             name="queue-music"
             size={56}
-            color={isDark ? '#636366' : '#C7C7CC'}
+            color={themeColors(isDark).textMuted}
           />
         </View>
         <Text style={styles.emptyTitle}>Sin canciones seleccionadas</Text>
         <Text style={styles.emptyDescription}>
-          Desliza una canción hacia la izquierda para añadirla o usa el botón +
-          en la pantalla de detalle.
+          {Platform.OS === 'web'
+            ? 'Pulsa el + de una canción en el cantoral, o haz clic derecho sobre ella.'
+            : 'Desliza una canción hacia la izquierda o usa el + al abrirla.'}
         </Text>
       </View>
       <View style={{ gap: 10, marginBottom: Platform.OS === 'ios' ? 100 : 20 }}>
