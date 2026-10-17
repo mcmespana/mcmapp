@@ -1,7 +1,11 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
+import { focusRing } from '@/constants/uiStyles';
+import { APP_TITLE } from '@/utils/documentTitle';
 
 // Web-only HTML root. Configura el shell HTML emitido en el export estático.
-// Mantener sincronizado con `app.json > expo.web.meta` y `public/manifest.json`.
+// Mantener sincronizado con `public/manifest.json`, que es el ÚNICO manifiesto:
+// con `web.output: "static"` Expo no usa `web.meta` ni `web.manifest` de
+// app.json (eran de webpack), así que ya no están.
 export default function Root({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
@@ -9,11 +13,17 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
 
-        {/* Viewport — viewport-fit=cover habilita env(safe-area-inset-*) en iOS */}
+        {/* Viewport — viewport-fit=cover habilita env(safe-area-inset-*) en
+            iOS. SIN `user-scalable=no`: el zoom con pellizco es de quien lee
+            (WCAG 1.4.4), y iOS Safari ya lo ignoraba. */}
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
+          content="width=device-width, initial-scale=1.0, viewport-fit=cover"
         />
+
+        {/* Título inicial de la pestaña. Luego lo pone la app por pantalla
+            (`hooks/useDocumentTitle.ts`): «Cantoral · MCM», la canción… */}
+        <title>{APP_TITLE}</title>
 
         {/* SEO */}
         <meta
@@ -128,10 +138,22 @@ export default function Root({ children }: { children: React.ReactNode }) {
               html, body { background-color: #0F0D0A; }
             }
             /* Evita el efecto de pull-to-refresh sobre el shell en standalone */
+            /* \`touch-action: manipulation\`: sin el doble toque que hace zoom
+               (el pellizco sigue funcionando). */
             body {
               overscroll-behavior-y: none;
               -webkit-tap-highlight-color: transparent;
+              touch-action: manipulation;
             }
+            /* Anillo de foco de teclado (design.md §5): el token \`focusRing\`
+               para toda la web, no el contorno de cada navegador, que se pierde
+               sobre los fondos de color. Solo con teclado (:focus-visible). */
+            :focus-visible {
+              outline: ${focusRing.borderWidth}px solid ${focusRing.borderColor};
+              outline-offset: 2px;
+            }
+            /* Contenedores que reciben el foco por código, no por teclado. */
+            [tabindex="-1"]:focus-visible { outline: none; }
           `,
           }}
         />
