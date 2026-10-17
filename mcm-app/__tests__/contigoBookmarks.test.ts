@@ -6,6 +6,7 @@ import {
   loadLocalBookmarks,
   upsertLocalBookmark,
   removeLocalBookmark,
+  removeBookmarkWarning,
   mergeRemoteBookmarks,
   type StoredBookmark,
 } from '@/utils/contigoBookmarks';
@@ -166,5 +167,17 @@ describe('loadLocalBookmarks — almacenamiento dañado', () => {
     );
     const list = await loadLocalBookmarks();
     expect(list.map((b) => b.date)).toEqual(['2026-01-01']);
+  });
+});
+
+describe('removeBookmarkWarning', () => {
+  it('avisa en singular con un solo subrayado', () => {
+    expect(removeBookmarkWarning(1)).toBe('Se borrará también tu subrayado.');
+  });
+
+  it('cuenta los subrayados en plural', () => {
+    expect(removeBookmarkWarning(4)).toBe(
+      'Se borrarán también tus 4 subrayados.',
+    );
   });
 });
