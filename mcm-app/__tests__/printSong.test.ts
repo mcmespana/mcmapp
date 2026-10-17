@@ -85,9 +85,7 @@ describe('printHtmlInNewWindow', () => {
     window.open = jest.fn(() => w as unknown as Window);
     expect(printHtmlInNewWindow('<p>x</p>')).toBe(true);
     expect(w.document.write).toHaveBeenCalledWith('<p>x</p>');
-    await Promise.resolve();
-    await Promise.resolve();
-    jest.advanceTimersByTime(5000);
+    await jest.advanceTimersByTimeAsync(5000);
     expect(w.print).toHaveBeenCalledTimes(1);
   });
 });

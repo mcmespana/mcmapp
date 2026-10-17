@@ -6,6 +6,7 @@
  */
 import { buildPlaylistPdfHtml, type PdfSongInput } from './playlistPdfHtml';
 import type { Notation } from './chordNotation';
+import { printWhenReady } from './printWhenReady';
 import type { ChorusStyle } from './songSheetLayout';
 
 export interface PrintSongView {
@@ -41,13 +42,11 @@ export function buildSongPrintHtml(
   });
 }
 
-/** Tope de espera a la hoja de estilos y la fuente antes de imprimir. */
-const READY_TIMEOUT_MS = 3000;
-
 /**
  * Abre `html` en una ventana nueva y lanza el diálogo de imprimir cuando ha
- * cargado (estilos y fuente), con un tope. Devuelve false si el navegador ha
- * bloqueado la ventana emergente.
+ * cargado (estilos y fuente), con un tope (`printWhenReady`, el mismo que usa
+ * el PDF de la playlist). Devuelve false si el navegador ha bloqueado la
+ * ventana emergente.
  */
 export function printHtmlInNewWindow(html: string): boolean {
   if (typeof window === 'undefined') return false;
@@ -55,25 +54,9 @@ export function printHtmlInNewWindow(html: string): boolean {
   if (!w) return false;
   w.document.open();
   w.document.write(html);
-  // `load` se engancha antes de `close()`, que es lo que lo dispara
+  // Se engancha antes de `close()`, que es lo que dispara `load`
   // (`open()` borra los listeners de la ventana).
-  let done = false;
-  const print = () => {
-    if (done) return;
-    done = true;
-    try {
-      w.focus();
-      w.print();
-    } catch {
-      // Ventana cerrada antes de tiempo: no hay nada que imprimir.
-    }
-  };
-  w.addEventListener('load', () => {
-    const fonts = w.document.fonts?.ready;
-    if (fonts) fonts.then(print, print);
-    else print();
-  });
-  setTimeout(print, READY_TIMEOUT_MS);
+  void printWhenReady(w);
   w.document.close();
   return true;
 }
