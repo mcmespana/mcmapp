@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,9 @@ import {
   Platform,
   Pressable,
   TouchableOpacity,
+  BackHandler,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -206,16 +208,33 @@ const SongControls: React.FC<SongControlsProps> = ({
     .filter(Boolean)
     .join(' · ');
 
-  const toggleMenu = () => {
-    const toOpen = !showActionButtons;
-    if (toOpen) {
-      h.menuOpen();
-    } else {
-      h.menuClose();
-    }
-    setShowActionButtons(toOpen);
-    rotateAnim.set(withSpring(toOpen ? 1 : 0, { damping: 6, mass: 1 }));
-  };
+  const setMenuOpen = useCallback(
+    (toOpen: boolean) => {
+      if (toOpen) {
+        h.menuOpen();
+      } else {
+        h.menuClose();
+      }
+      setShowActionButtons(toOpen);
+      rotateAnim.set(withSpring(toOpen ? 1 : 0, { damping: 6, mass: 1 }));
+    },
+    [rotateAnim],
+  );
+  const toggleMenu = () => setMenuOpen(!showActionButtons);
+
+  // Android: con el menú abierto, el atrás lo cierra (como tocar el velo) en
+  // vez de salir de la canción. Por foco: con la pantalla completa encima, el
+  // atrás es de ella.
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android' || !showActionButtons) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        setMenuOpen(false);
+        return true;
+      });
+      return () => sub.remove();
+    }, [showActionButtons, setMenuOpen]),
+  );
 
   const fabIconStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotateAnim.get() * 45}deg` }],
