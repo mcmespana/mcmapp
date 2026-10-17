@@ -58,6 +58,7 @@ import FloatingMediaPlayer, {
   type FloatingMediaSource,
 } from '@/components/song-media/FloatingMediaPlayer';
 import { radii } from '@/constants/uiStyles';
+import { useSongWebLocation } from '@/hooks/useSongWebLocation';
 import SongLinkViewer, {
   type SongLinkSource,
 } from '@/components/song-media/SongLinkViewer';
@@ -104,6 +105,9 @@ export default function SongDetailScreen({
     source,
     firebaseCategory,
   } = route.params;
+
+  // Web: título de la pestaña y URL `/cancion?f=…` de la canción abierta.
+  useSongWebLocation(filename, _navScreenTitle);
 
   // Analítica: una canción abierta por navegación, no por render. `source` lo
   // pone quien navega: 'category' desde una categoría, 'selection' desde la

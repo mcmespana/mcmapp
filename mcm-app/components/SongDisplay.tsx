@@ -213,7 +213,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
             display: 'block',
             backgroundColor: themeColors(isDark).background,
           }}
-          title="Song content"
+          title="Letra de la canción"
         />
       </View>
     );
