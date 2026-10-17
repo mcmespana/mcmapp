@@ -212,6 +212,9 @@ export default function EvangelioScreen() {
       h.formSuccess();
       setShowCheck(true);
       setTimeout(() => setShowCheck(false), 2500);
+    } else {
+      // Desmarcar es un gesto distinto de marcar: el golpe seco lo avisa.
+      h.toggle();
     }
   };
 
@@ -587,6 +590,9 @@ export default function EvangelioScreen() {
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={handleToggleDone}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: isDone }}
+                  accessibilityLabel="Leído"
                   style={[
                     styles.trackerBtnWrap,
                     !isDone && {
@@ -625,7 +631,9 @@ export default function EvangelioScreen() {
                             { color: isDark ? colors.green : WARM_LIGHT.green },
                           ]}
                         >
-                          ¡He rezado hoy con el Evangelio!
+                          {selectedDate === todayStr
+                            ? 'Hoy has rezado con el Evangelio'
+                            : 'Rezado con el Evangelio este día'}
                         </Text>
                       </View>
                     </View>
@@ -652,7 +660,9 @@ export default function EvangelioScreen() {
                   )}
                 </TouchableOpacity>
                 <Text style={[styles.trackerNote, { color: warm.warmGray }]}>
-                  Marcando este día sumas a tu constancia en «Contigo».
+                  {isDone
+                    ? 'Toca para desmarcar'
+                    : 'Marcando este día sumas a tu constancia en «Contigo».'}
                 </Text>
               </View>
 
