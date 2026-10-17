@@ -50,7 +50,8 @@ import { useToast } from '@/contexts/AppToastContext';
 import { extractTrailingEmoji, stripCategoryPrefix } from '@/utils/songUtils';
 import { radii } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
-import { SystemGray, UIColors, themeColors } from '@/constants/colors';
+import { SystemGray, themeColors } from '@/constants/colors';
+import { cantoralHeaderTint } from '@/utils/cantoralHeader';
 import typography from '@/constants/typography';
 
 interface Song {
@@ -110,8 +111,6 @@ const getSongsData = (data: any): Record<string, SongCategory> => {
   logger.error('Unexpected songs data format:', data);
   return {};
 };
-
-const isIOS = Platform.OS === 'ios';
 
 /** Alto aproximado de una fila de canción (título + autor), para el esqueleto. */
 const SONG_ROW_HEIGHT = 64;
@@ -564,9 +563,7 @@ export default function SongsListScreen({
               <MaterialIcons
                 name="sell"
                 size={22}
-                color={
-                  isIOS ? UIColors.accentYellow : themeColors(isDark).headerTint
-                }
+                color={cantoralHeaderTint(isDark)}
               />
             </TouchableOpacity>
           )

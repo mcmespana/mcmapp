@@ -15,6 +15,7 @@ import { WebView } from 'react-native-webview';
 import { useToast } from '@/contexts/AppToastContext';
 import { Colors as ThemeColors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useWebViewBackHandler } from '@/hooks/useWebViewBackHandler';
 
 // CSS module reutilizado del iframe (solo aplica en web)
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -33,6 +34,8 @@ export default function McmPanelScreen() {
   const tintColor = ThemeColors[scheme].tint;
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  // Android: el atrás navega primero por el historial de la web.
+  const { webViewRef, onNavigationStateChange } = useWebViewBackHandler();
 
   // El panel se monta como Stack.Screen DENTRO del tab "Más", así que la tab
   // bar sigue visible. En iOS es una NativeTabs (UITabBar TRANSLÚCIDO) y el
@@ -108,7 +111,9 @@ export default function McmPanelScreen() {
         />
       )}
       <WebView
+        ref={webViewRef}
         source={{ uri: MCM_PANEL_URL }}
+        onNavigationStateChange={onNavigationStateChange}
         style={[styles.webview, { backgroundColor: screenBg }]}
         javaScriptEnabled={true}
         domStorageEnabled={true}

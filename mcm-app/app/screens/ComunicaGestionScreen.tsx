@@ -17,6 +17,7 @@ import { WebView } from 'react-native-webview';
 import { useToast } from '@/contexts/AppToastContext';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useWebViewBackHandler } from '@/hooks/useWebViewBackHandler';
 
 // CSS module reutilizado del iframe (solo aplica en web)
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -76,6 +77,8 @@ export default function ComunicaGestionScreen() {
   const tintColor = ThemeColors[scheme].tint;
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  // Android: el atrás navega primero por el historial de la web.
+  const { webViewRef, onNavigationStateChange } = useWebViewBackHandler();
 
   const dynamicStyles = useMemo(
     () =>
@@ -139,7 +142,9 @@ export default function ComunicaGestionScreen() {
         />
       )}
       <WebView
+        ref={webViewRef}
         source={{ uri: GESTION_URL }}
+        onNavigationStateChange={onNavigationStateChange}
         style={styles.webview}
         // Rendimiento y persistencia
         javaScriptEnabled={true}
