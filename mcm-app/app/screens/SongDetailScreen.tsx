@@ -48,6 +48,7 @@ import brandColors, {
 } from '@/constants/colors';
 import { durations } from '@/constants/animations';
 import { h } from '@/utils/haptics';
+import { useToast } from '@/contexts/AppToastContext';
 import { pushWithRetry } from '@/services/firebaseWrites';
 import { hasSongMedia } from '@/types/songMedia';
 import { useSongTags } from '@/hooks/useSongTags';
@@ -128,6 +129,7 @@ export default function SongDetailScreen({
     setTranspose: setSelectionTranspose,
     setCapoOverride: setSelectionCapoOverride,
   } = useSelectedSongs();
+  const { toast } = useToast();
   const choir = useChoirSession();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -407,12 +409,20 @@ export default function SongDetailScreen({
               } else {
                 h.add();
                 addSong(filename);
+                toast.show({
+                  label: 'Añadida a tu selección',
+                  actionLabel: 'Ver',
+                  onActionPress: ({ hide }) => {
+                    hide();
+                    navigation.navigate('SelectedSongs');
+                  },
+                });
               }
             }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={{ paddingHorizontal: 6, paddingVertical: 4 }}
             accessibilityLabel={
-              isSelected ? 'Quitar de selección' : 'Añadir a selección'
+              isSelected ? 'Quitar de tu selección' : 'Añadir a tu selección'
             }
           >
             <IconSymbol
@@ -433,6 +443,7 @@ export default function SongDetailScreen({
     addSong,
     removeSong,
     openFullscreen,
+    toast,
   ]);
 
   useEffect(() => {

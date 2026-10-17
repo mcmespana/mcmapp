@@ -231,7 +231,7 @@ export default function CancioneroTab() {
           name="SelectedSongs"
           component={SelectedSongsScreen}
           options={{
-            title: 'Seleccionadas',
+            title: 'Tu selección',
           }}
         />
       </Stack.Navigator>
