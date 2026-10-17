@@ -33,7 +33,12 @@ import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
-import { KeyPillColors, SwipeColors, themeColors } from '@/constants/colors';
+import {
+  KeyPillColors,
+  SwipeColors,
+  SystemGray,
+  themeColors,
+} from '@/constants/colors';
 import { onColor } from '@/utils/colorUtils';
 import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
@@ -542,8 +547,13 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  // En oscuro el menú y el FAB tienen el mismo relleno que la pantalla
+  // (`background`): sin sombra visible en Android oscuro, solo los separa un
+  // contorno fino.
   menuContainerDark: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: themeColors(true).background,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: SystemGray.dark.gray3,
     ...Platform.select({
       web: {
         boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
@@ -620,7 +630,9 @@ const styles = StyleSheet.create({
     }),
   },
   fabMainDark: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: themeColors(true).background,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: SystemGray.dark.gray3,
   },
   fabMainOpen: {
     backgroundColor: SwipeColors.remove,
