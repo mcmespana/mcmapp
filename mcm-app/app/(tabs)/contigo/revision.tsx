@@ -20,10 +20,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useReducedMotion,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { h } from '@/utils/haptics';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import {
@@ -41,13 +49,32 @@ import {
   fetchContigoRevisions,
 } from '@/utils/authHelpers';
 import { styles } from '@/components/contigo/revisionStyles';
-import typography from '@/constants/typography';
+import colors from '@/constants/colors';
+import { durations, springs } from '@/constants/animations';
+import {
+  carryGratefulText,
+  gratefulItemsToSave,
+  padListItems,
+  revisionHasContent,
+  stepDotWidth,
+  type RevisionMode,
+} from '@/utils/contigoRevision';
 
 const REVISION_STORAGE = '@contigo_revision_';
 
-type Mode = 'list' | 'free';
+type Mode = RevisionMode;
 
 const STEP_NAMES = ['Agradecer', 'Revisar'] as const;
+
+/** Las dos formas de agradecer. Fuera del componente: no cambian. */
+const GRATEFUL_MODES = [
+  {
+    value: 'list' as const,
+    label: 'Lista',
+    icon: 'format-list-bulleted' as const,
+  },
+  { value: 'free' as const, label: 'Texto libre', icon: 'notes' as const },
+];
 
 export default function RevisionScreen() {
   // Subruta de Contigo: se registra con la clave del tab (gana el último
@@ -76,7 +103,7 @@ export default function RevisionScreen() {
     : undefined;
 
   const params = useLocalSearchParams<{ date?: string }>();
-  const { todayStr, setRevisionDone } = useContigoHabits();
+  const { todayStr, setRevisionDone, isRevisionDone } = useContigoHabits();
 
   // If we arrive with a `date` param (from the calendar tap), skip the
   // breathing intro and open that day's review directly.
@@ -94,6 +121,9 @@ export default function RevisionScreen() {
     cameFromCalendar ? 'review' : 'breathing',
   );
   const [selDate, setSelDate] = useState(initialDate);
+  // Como en oración: el día ya tiene examen guardado (el registro de hábitos es
+  // síncrono, así que el aviso sale a la vez que se rellenan los campos).
+  const hasEntry = isRevisionDone(selDate);
   const [step, setStep] = useState(0);
   const [saved, setSaved] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -120,7 +150,7 @@ export default function RevisionScreen() {
         setSingleGrat(g[0] || '');
         setItems(['', '', '']);
       } else {
-        setItems(g.length >= 3 ? g : [...g, ...Array(3 - g.length).fill('')]);
+        setItems(padListItems(g));
         setSingleGrat('');
       }
       setRevText(data?.grateful?.revision || '');
@@ -188,13 +218,17 @@ export default function RevisionScreen() {
     setPhase('review'); // skip breathing on date nav
   };
 
+  // Un día en blanco no cuenta como examen hecho (ni racha, ni celebración).
+  const canSave = revisionHasContent({ mode, items, singleGrat, revText });
+
   const handleSave = async () => {
+    if (!canSave) return;
     const revisionData = {
       date: selDate,
       type: 'grateful' as const,
       grateful: {
         mode,
-        items: mode === 'list' ? items.filter((g) => g.trim()) : [singleGrat],
+        items: gratefulItemsToSave(mode, items, singleGrat),
         revision: revText,
       },
     };
@@ -238,6 +272,15 @@ export default function RevisionScreen() {
       handleSave();
     }
   };
+
+  const isLastStep = step === totalSteps - 1;
+  // En el último paso no se puede guardar un día en blanco.
+  const blocked = isLastStep && !canSave;
+  const nextLabel = !isLastStep
+    ? 'Continuar'
+    : hasEntry
+      ? 'Actualizar revisión'
+      : 'Guardar revisión';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 52 }]}>
@@ -287,29 +330,25 @@ export default function RevisionScreen() {
           style={[styles.pillText, { color: purple }]}
           accessibilityLabel="Revisión: agradecer y revisar"
         >
-          ✦ EXAMEN ESTILO &apos;AGRADECER Y REVISAR&apos;
+          Agradecer y revisar
         </Text>
       </View>
 
       {/* ── Step indicator ── */}
       <View style={styles.stepRow}>
         {Array.from({ length: totalSteps }).map((_, i) => (
-          <View
+          <StepDot
             key={i}
-            style={[
-              styles.stepDot,
-              {
-                width: i === step ? 26 : i < step ? 12 : 7,
-                backgroundColor:
-                  i < step
-                    ? W.accent
-                    : i === step
-                      ? purple
-                      : isDark
-                        ? 'rgba(255,255,255,0.12)'
-                        : 'rgba(0,0,0,0.10)',
-              },
-            ]}
+            width={stepDotWidth(i, step)}
+            color={
+              i < step
+                ? W.accent
+                : i === step
+                  ? purple
+                  : isDark
+                    ? 'rgba(255,255,255,0.12)'
+                    : 'rgba(0,0,0,0.10)'
+            }
           />
         ))}
       </View>
@@ -332,9 +371,19 @@ export default function RevisionScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={wideWrapperStyle}>
+            {hasEntry && !saved ? (
+              <View
+                style={[styles.entryBanner, { backgroundColor: W.greenLight }]}
+              >
+                <MaterialIcons name="check-circle" size={16} color={W.green} />
+                <Text style={[styles.entryBannerText, { color: W.green }]}>
+                  Ya hiciste el examen de este día — puedes modificarlo
+                </Text>
+              </View>
+            ) : null}
             <Animated.View
               key={step}
-              entering={FadeIn.duration(220)}
+              entering={FadeIn.duration(durations.base)}
               exiting={FadeOut.duration(120)}
             >
               {step === 0 ? (
@@ -384,46 +433,69 @@ export default function RevisionScreen() {
               </Text>
             </Animated.View>
           ) : (
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              {step > 0 && (
+            <View>
+              {blocked ? (
+                <Text style={[styles.blockedHint, { color: W.textSec }]}>
+                  Escribe al menos una cosa para guardar
+                </Text>
+              ) : null}
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {step > 0 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      h.tap();
+                      setStep(step - 1);
+                    }}
+                    style={[
+                      styles.backBtn,
+                      {
+                        borderColor: W.border,
+                      },
+                    ]}
+                    accessibilityLabel="Paso anterior"
+                  >
+                    <MaterialIcons
+                      name="arrow-back"
+                      size={20}
+                      color={W.textSec}
+                    />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
-                  onPress={() => {
-                    h.tap();
-                    setStep(step - 1);
-                  }}
-                  style={[
-                    styles.backBtn,
-                    {
-                      borderColor: W.border,
-                    },
-                  ]}
-                  accessibilityLabel="Paso anterior"
+                  onPress={handleNext}
+                  activeOpacity={0.85}
+                  disabled={blocked}
+                  accessibilityRole="button"
+                  accessibilityLabel={nextLabel}
+                  accessibilityState={{ disabled: blocked }}
+                  style={[{ flex: 1 }, blocked && styles.nextBtnBlocked]}
                 >
-                  <MaterialIcons
-                    name="arrow-back"
-                    size={20}
-                    color={W.textSec}
-                  />
+                  <LinearGradient
+                    colors={HABITS.revision.grad}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.nextBtn}
+                  >
+                    <View style={styles.nextBtnInner}>
+                      {isLastStep ? (
+                        <MaterialIcons
+                          name="check"
+                          size={18}
+                          color={colors.white}
+                        />
+                      ) : null}
+                      <Text style={styles.nextBtnText}>{nextLabel}</Text>
+                      {isLastStep ? null : (
+                        <MaterialIcons
+                          name="arrow-forward"
+                          size={18}
+                          color={colors.white}
+                        />
+                      )}
+                    </View>
+                  </LinearGradient>
                 </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                onPress={handleNext}
-                activeOpacity={0.85}
-                style={{ flex: 1 }}
-              >
-                <LinearGradient
-                  colors={HABITS.revision.grad}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.nextBtn}
-                >
-                  <Text style={styles.nextBtnText}>
-                    {step < totalSteps - 1
-                      ? 'Continuar →'
-                      : '✓ Guardar revisión'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
@@ -436,6 +508,24 @@ export default function RevisionScreen() {
       <CelebrationAnimation visible={showCelebration} isDark={isDark} />
     </View>
   );
+}
+
+/**
+ * Un punto del indicador de pasos. El ancho se alarga con un muelle sin rebote
+ * y el color se funde: antes saltaba de golpe mientras el cuerpo hacía un
+ * fundido. Con «reducir movimiento» asigna el valor directamente.
+ */
+function StepDot({ width, color }: { width: number; color: string }) {
+  const reducedMotion = useReducedMotion();
+  const animatedStyle = useAnimatedStyle(() =>
+    reducedMotion
+      ? { width, backgroundColor: color }
+      : {
+          width: withSpring(width, springs.settle),
+          backgroundColor: withTiming(color, { duration: durations.quick }),
+        },
+  );
+  return <Animated.View style={[styles.stepDot, animatedStyle]} />;
 }
 
 // ── Step 1: Agradecer ─────────────────────────────────────────────────
@@ -465,48 +555,21 @@ function GratefulStep({
         Y mientras lo haces, recuerda aquello por lo que estás agradecido/a
       </Text>
 
-      <View style={styles.modeRow}>
-        {(
-          [
-            { id: 'list' as Mode, label: 'Lista' },
-            { id: 'free' as Mode, label: 'Texto libre' },
-          ] as const
-        ).map(({ id, label }) => {
-          const active = mode === id;
-          return (
-            <TouchableOpacity
-              key={id}
-              onPress={() => {
-                if (!active) h.select();
-                setMode(id);
-              }}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              style={[
-                styles.modeChip,
-                {
-                  borderColor: active ? purple : W.border,
-                  backgroundColor: active
-                    ? isDark
-                      ? 'rgba(167,139,250,0.14)'
-                      : 'rgba(124,58,237,0.08)'
-                    : 'transparent',
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  ...typography.caption,
-                  fontWeight: '700',
-                  color: active ? purple : W.textMuted,
-                }}
-              >
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {/* Al cambiar de forma el texto viaja con quien escribe: solo se guarda
+          el modo activo y antes lo escrito en el otro se perdía en silencio. */}
+      <SegmentedControl
+        options={GRATEFUL_MODES}
+        value={mode}
+        onChange={(next) => {
+          const carried = carryGratefulText(next, items, singleGrat);
+          setItems(carried.items);
+          setSingleGrat(carried.singleGrat);
+          setMode(next);
+        }}
+        accentColor={purple}
+        accessibilityLabel="Forma de agradecer"
+        style={styles.modeSwitch}
+      />
 
       {mode === 'list' ? (
         <View style={{ gap: 10 }}>
@@ -572,7 +635,7 @@ function GratefulStep({
                 accessibilityRole="button"
                 accessibilityLabel="Quitar el último agradecimiento"
               >
-                <MaterialIcons name="remove" size={18} color={W.textMuted} />
+                <MaterialIcons name="remove" size={18} color={W.textSec} />
               </TouchableOpacity>
             )}
           </View>
