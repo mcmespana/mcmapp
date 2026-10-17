@@ -43,6 +43,7 @@ import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 import { useImmersiveChrome } from '@/hooks/useImmersiveChrome';
+import { useKeepAwakeWhileFocused } from '@/hooks/useKeepAwakeWhileFocused';
 
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
@@ -255,6 +256,8 @@ export default function SongFullscreenScreen({
   route: SongFullscreenRouteProp;
 }) {
   useSuppressCarismochito();
+  // Modo presentación: la pantalla no se apaga mientras se toca.
+  useKeepAwakeWhileFocused('song-fullscreen');
   const params = route.params;
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const choir = useChoirSession();

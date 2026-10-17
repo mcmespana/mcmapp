@@ -27,6 +27,7 @@ import { PressableFeedback } from 'heroui-native';
 import SongDisplay from '@/components/SongDisplay';
 import { useSongProcessor } from '@/hooks/useSongProcessor';
 import { useForceCompact } from '@/components/tabs/tabBarController';
+import { useKeepAwakeWhileFocused } from '@/hooks/useKeepAwakeWhileFocused';
 import { trackEvent } from '@/utils/analytics';
 import SongControls from '@/components/SongControls';
 import type { SheetViewOptions } from '@/components/SongFontBottomSheet';
@@ -86,6 +87,10 @@ export default function SongDetailScreen({
   // La barra de pestañas se queda COMPACTA mientras se lee una canción: aquí
   // lo que importa es que quepa la mayor cantidad de letra posible.
   useForceCompact(true);
+  // Con el móvil en el atril la pantalla no se apaga a mitad de canción. Solo
+  // con el foco: al abrir la pantalla completa encima o irse a otra pestaña,
+  // el detalle sigue montado y no hace falta.
+  useKeepAwakeWhileFocused('song-detail');
 
   const {
     filename,
