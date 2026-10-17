@@ -714,6 +714,9 @@ export default function SongDetailScreen({
         isLoading={isSongProcessing || isLoadingSettings}
         styleState={styleState}
         onMessage={isAdmin ? handleSongMessage : undefined}
+        // Misma canción → transponer o cambiar la notación se pinta sin
+        // recargar la hoja (ni volver arriba).
+        docKey={filename}
         fullBleed
         topInset={insets.top + 44}
       />

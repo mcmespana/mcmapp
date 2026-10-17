@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Spinner } from 'heroui-native';
@@ -7,6 +7,12 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import type { SongStyleState } from '@/hooks/useSongProcessor';
 import { themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
+import {
+  makeKeydownForwarder,
+  nextSongView,
+  swapBodyScript,
+  type SongView,
+} from '@/utils/songDisplayBridge';
 
 interface SongDisplayProps {
   songHtml: string;
@@ -39,6 +45,14 @@ interface SongDisplayProps {
    * onboarding del cantoral para enseñar el estribillo al elegir su estilo.
    */
   scrollTo?: string | null;
+  /**
+   * Qué documento es (el `filename` de la canción). Mientras no cambie, un
+   * HTML nuevo con la misma carcasa —transponer, cambiar la notación— se pinta
+   * DENTRO de la página ya cargada, sin recargarla: sin parpadeo y sin volver
+   * arriba (`utils/songDisplayBridge.ts`). Sin `docKey`, cada HTML nuevo
+   * recarga, como siempre.
+   */
+  docKey?: string;
 }
 
 /**
@@ -79,6 +93,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
   fullBleed = false,
   topInset = 0,
   scrollTo,
+  docKey,
 }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -104,10 +119,49 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
     }
   };
 
-  // Web (iframe): listen for window messages from the document.
+  // Lo que la página tiene cargado (`loaded`, lo que va en `source`/`srcDoc`)
+  // y lo que enseña (`shown`). Difieren cuando un HTML nuevo se ha pintado
+  // dentro de la página sin recargarla; `swaps` cuenta esos cambios para que
+  // el efecto de abajo los mande. Se ajusta durante el render (el patrón de
+  // React para "cambiar estado cuando cambia una prop").
+  const [ready, setReady] = useState(false);
+  const [view, setView] = useState<SongView>({
+    loaded: songHtml,
+    key: docKey,
+    shown: songHtml,
+    swaps: 0,
+  });
+  const { view: nextView, ready: nextReady } = nextSongView(view, ready, {
+    html: songHtml,
+    docKey,
+    isLoading,
+  });
+  if (nextView !== view) setView(nextView);
+  if (nextReady !== ready) setReady(nextReady);
+
+  // Pinta el HTML nuevo dentro de la página ya cargada.
+  useEffect(() => {
+    if (view.swaps === 0) return;
+    const js = swapBodyScript(view.shown);
+    if (Platform.OS === 'web') {
+      try {
+        // srcDoc hereda el origen: el documento del iframe es accesible.
+        (iframeRef.current?.contentWindow as any)?.eval(js);
+      } catch {
+        /* noop */
+      }
+    } else {
+      webViewRef.current?.injectJavaScript(js);
+    }
+  }, [view.swaps, view.shown]);
+
+  // Web (iframe): listen for window messages from the document. Solo los de
+  // NUESTRO iframe: la pantalla completa (otro iframe) se queda montada encima
+  // y sus mensajes también llegan a esta ventana.
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const listener = (ev: MessageEvent) => {
+      if (ev.source !== iframeRef.current?.contentWindow) return;
       if (typeof ev.data === 'string') handleRawMessage(ev.data);
     };
     window.addEventListener('message', listener);
@@ -162,7 +216,17 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
   // not-ready so the next style update re-flushes on load.
   useEffect(() => {
     readyRef.current = false;
-  }, [songHtml]);
+  }, [view.loaded]);
+
+  // iOS: el alto del header puede llegar después de cargar (iPad, giro). La
+  // hoja lo necesita para decidir si la canción cabe entera en pantalla.
+  const useInset = fullBleed && Platform.OS === 'ios' && topInset > 0;
+  useEffect(() => {
+    if (!useInset || !readyRef.current) return;
+    webViewRef.current?.injectJavaScript(
+      `window.__SONG_VIEW_INSET__=${topInset};if(window.__SONG_LAYOUT__)window.__SONG_LAYOUT__.refit();true;`,
+    );
+  }, [useInset, topInset]);
 
   if (isLoading) {
     return (
@@ -190,9 +254,16 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
       >
         <iframe
           ref={iframeRef}
-          srcDoc={songHtml}
+          srcDoc={view.loaded}
           onLoad={() => {
             readyRef.current = true;
+            setReady(true);
+            // Las teclas pulsadas con el foco en la letra no suben a la
+            // ventana: se reenvían para que ⌘K y los atajos sigan funcionando.
+            iframeRef.current?.contentDocument?.addEventListener(
+              'keydown',
+              makeKeydownForwarder(window),
+            );
             runScroll(scrollTo, null, iframeRef.current);
             const s = pendingStyleRef.current;
             if (s) {
@@ -219,7 +290,6 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
     );
   }
 
-  const useInset = fullBleed && Platform.OS === 'ios' && topInset > 0;
   return (
     <View
       style={
@@ -247,7 +317,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
         // docs/SEGURIDAD.md §3.1.
         originWhitelist={['about:blank']}
         onShouldStartLoadWithRequest={(req) => req.url === 'about:blank'}
-        source={{ html: songHtml }}
+        source={{ html: view.loaded }}
         style={[
           styles.webView,
           fullBleed && { backgroundColor: themeColors(isDark).background },
@@ -267,6 +337,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
         onMessage={(event) => handleRawMessage(event.nativeEvent.data)}
         onLoadEnd={() => {
           readyRef.current = true;
+          setReady(true);
           runScroll(scrollTo, webViewRef.current, null);
           const s = pendingStyleRef.current;
           if (s && webViewRef.current) {
