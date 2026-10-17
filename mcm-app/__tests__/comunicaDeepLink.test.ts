@@ -68,4 +68,21 @@ describe('redirectSystemPath', () => {
     expect(redirectSystemPath({ path, initial: true })).toBe(path);
     expect(consumePendingComunicaAuthUrl()).toBeNull();
   });
+
+  // Un `.mcm` abierto con la app llega como URI de fichero: al router no le
+  // dice nada (acababa en «ruta no encontrada»). Se aterriza en el cantoral y
+  // la importación la hace useIncomingPlaylist por su cuenta.
+  it.each([
+    'content://com.whatsapp.provider.media/item/123',
+    'content://com.android.providers.downloads.documents/document/42',
+    'file:///storage/emulated/0/Download/Misa%20domingo.mcm',
+    'FILE:///private/var/mobile/Inbox/lista.mcm',
+  ])('un fichero (%s) lleva al cantoral', (path) => {
+    expect(redirectSystemPath({ path, initial: true })).toBe(
+      '/(tabs)/cancionero',
+    );
+    expect(redirectSystemPath({ path, initial: false })).toBe(
+      '/(tabs)/cancionero',
+    );
+  });
 });
