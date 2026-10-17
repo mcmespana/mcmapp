@@ -291,10 +291,30 @@ export const HighlightColors = {
   dark: { bg: '#3A2D0A', fg: '#F4C11E', border: '#7A5A00' },
 } as const;
 
-/** Verde de Carismochito. Estaba duplicado como constante en 3 ficheros. */
+/**
+ * Verdes del modo Carismochito. `light`/`dark` son el acento por tema; el resto
+ * son los tonos del HUD (cuenta atrás, avisos, diálogos), que viven sobre fondo
+ * verde oscuro en ambos temas.
+ */
 export const CarismoColors = {
   light: '#1B9E4B',
   dark: '#9DE86B',
+  /** Brillo: halos, sombras, anillo de la cuenta atrás. */
+  glow: '#5AE08A',
+  /** Verde casi negro: fondo de tarjetas, texto sobre botones lima. */
+  deep: '#06210F',
+  /** Extremos del degradado de fondo del HUD. */
+  deepEdge: '#0C3D1C',
+  abyss: '#011A0A',
+  /** Pestañas inactivas del modo (barra compacta y web). */
+  inactiveLight: '#6FA77E',
+  inactiveDark: '#4E8C5F',
+  /** Texto claro sobre `deep`: títulos, cuerpo y pistas. */
+  onDeep: '#E8FFB8',
+  onDeepSoft: '#D4F5A0',
+  onDeepMuted: '#A3D86E',
+  /** Verde hoja: solo para el confeti. */
+  leaf: '#7AC943',
 } as const;
 
 /** Las piezas de color del dibujo vectorial de Carismochito. */

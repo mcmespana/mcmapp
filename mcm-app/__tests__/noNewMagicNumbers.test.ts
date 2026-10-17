@@ -85,8 +85,10 @@ const BUDGET = {
   // Y a 204 / 394 el 2026-09-26: `app/` ya estaba en 204 sin que nadie bajase
   // el tope, y los nueve colores sueltos del dibujo de Carismochito pasaron a
   // `CarismochitoPalettes` en constants/colors.ts.
-  app: 177,
-  components: 329,
+  // Y a 176 / 286 el 2026-10-17: los verdes del modo Carismochito (overlay,
+  // diálogos, barras de pestañas, logo de Inicio) pasaron a `CarismoColors`.
+  app: 176,
+  components: 286,
 };
 
 describe('no se añaden colores a mano', () => {

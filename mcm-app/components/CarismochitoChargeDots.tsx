@@ -7,11 +7,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import { CarismoColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 
 const DOT_SIZE = 10;
 const DOT_GAP = 8;
-const G_GLOW = '#5AE08A';
+const G_GLOW = CarismoColors.glow;
 const G_DIM = 'rgba(90, 224, 138, 0.25)';
 
 function Dot({ filled, index }: { filled: boolean; index: number }) {

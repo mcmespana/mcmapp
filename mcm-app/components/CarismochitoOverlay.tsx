@@ -35,23 +35,23 @@ import {
   CarismochitoOnboarding,
   CarismochitoExitConfirm,
 } from '@/components/CarismochitoDialogs';
-import colors from '@/constants/colors';
+import colors, { CarismoColors } from '@/constants/colors';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 
 /* Verdes del HUD del modo (distintos tonos). */
-const G = '#1B9E4B'; // verde principal
-const G_LIGHT = '#9DE86B'; // verde lima claro
-const G_GLOW = '#5AE08A'; // verde brillo
-const G_DARK = '#06210F'; // verde casi negro
+const G = CarismoColors.light; // verde principal
+const G_LIGHT = CarismoColors.dark; // verde lima claro
+const G_GLOW = CarismoColors.glow; // verde brillo
+const G_DARK = CarismoColors.deep; // verde casi negro
 
 /* Paleta festiva del confeti (verdes protagonistas + toques de marca). */
 const CONFETTI_COLORS = [
-  '#1B9E4B',
-  '#5AE08A',
-  '#9DE86B',
+  G,
+  G_GLOW,
+  G_LIGHT,
   colors.green,
-  '#7AC943',
+  CarismoColors.leaf,
   colors.yellow,
   colors.info,
   colors.accent,
@@ -118,7 +118,7 @@ function CountdownScreen({
       pointerEvents="auto"
     >
       <LinearGradient
-        colors={['#011A0A', G_DARK, '#0C3D1C']}
+        colors={[CarismoColors.abyss, G_DARK, CarismoColors.deepEdge]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -594,15 +594,19 @@ export default function CarismochitoOverlay() {
     onboardingVisible,
     openOnboarding,
     dismissOnboarding,
+    requestExit,
     exitConfirmVisible,
     confirmExit,
     cancelExit,
   } = useCarismochito();
 
-  const { huntEnabled } = useCarismochitoHunt();
+  const { huntEnabled, suppressed } = useCarismochitoHunt();
 
-  // Listener de shake siempre activo — el contexto decide qué hacer según estado.
-  useShakeDetector(toggleByShake);
+  // El contexto decide qué hacer con cada sacudida según el estado. El
+  // acelerómetro se pausa en las pantallas de lectura y presentación (las
+  // mismas donde no se asoma la mascota): en el atril, con el móvil en un
+  // soporte, solo gastaba hilo JS y podía activar el modo sin querer.
+  useShakeDetector(toggleByShake, { enabled: !suppressed });
 
   return (
     <>
@@ -630,6 +634,7 @@ export default function CarismochitoOverlay() {
       <CarismochitoOnboarding
         visible={onboardingVisible}
         onDismiss={dismissOnboarding}
+        onExit={state === 'active' ? requestExit : undefined}
         huntEnabled={huntEnabled}
       />
       {/* Confirmación antes de salir (tras un par de sacudidas fuertes). */}
@@ -724,7 +729,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
   },
   badgeSubtitle: {
-    color: '#D4F5A0',
+    color: CarismoColors.onDeepSoft,
     fontSize: 10,
     marginTop: 2,
     letterSpacing: 0.3,
@@ -780,7 +785,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   carismoTitle: {
-    color: '#E8FFB8',
+    color: CarismoColors.onDeep,
     fontSize: 28,
     fontWeight: '900',
     letterSpacing: 3,
@@ -813,7 +818,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   subtle: {
-    color: '#A3D86E',
+    color: CarismoColors.onDeepMuted,
     ...typography.caption,
     marginTop: 22,
     marginBottom: 28,
