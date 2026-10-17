@@ -6,17 +6,19 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   useWindowDimensions,
-  Platform,
 } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { HABITS, formatDateLong, warm } from '@/components/contigo/theme';
+import {
+  contigoHeaderChrome,
+  useContigoHeaderInset,
+} from '@/components/contigo/headerChrome';
 import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
 import { h } from '@/utils/haptics';
 import { confirmAsync } from '@/utils/confirmDialog';
@@ -33,9 +35,9 @@ export default function BookmarksScreen() {
   // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const headerInset = useContigoHeaderInset();
   const W = warm(isDark);
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 720;
@@ -83,10 +85,7 @@ export default function BookmarksScreen() {
           headerShadowVisible: false,
           headerTintColor: W.text,
           headerTitleStyle: { color: W.text, fontWeight: '700', fontSize: 17 },
-          ...(Platform.OS === 'ios' &&
-          parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
+          ...contigoHeaderChrome(isDark),
         }}
       />
       <LinearGradient colors={W.bgGradient} style={StyleSheet.absoluteFill} />
@@ -114,7 +113,7 @@ export default function BookmarksScreen() {
           contentContainerStyle={[
             styles.listWrap,
             {
-              paddingTop: insets.top + 56,
+              paddingTop: headerInset,
               paddingBottom: contentPaddingBottom,
             },
           ]}

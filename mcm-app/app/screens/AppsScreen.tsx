@@ -58,7 +58,20 @@ export default function AppsScreen() {
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
         const schemeUrl =
           Platform.OS === 'ios' ? app.iosScheme : app.androidScheme;
-        if (schemeUrl) {
+        if (schemeUrl && Platform.OS === 'android') {
+          // En Android 11+ `canOpenURL` dice que NO a cualquier esquema que no
+          // esté declarado en <queries> del manifest, y estos vienen de
+          // Firebase (no se pueden declarar de antemano): siempre acababa en
+          // Play Store aunque la app estuviera instalada. Se intenta abrir
+          // sin preguntar; si no hay quien la abra, `openURL` rechaza y se
+          // cae a la tienda.
+          try {
+            await Linking.openURL(schemeUrl);
+            return;
+          } catch {
+            // Sin la app instalada → tienda, abajo.
+          }
+        } else if (schemeUrl) {
           const canOpen = await Linking.canOpenURL(schemeUrl);
           if (canOpen) {
             await Linking.openURL(schemeUrl);

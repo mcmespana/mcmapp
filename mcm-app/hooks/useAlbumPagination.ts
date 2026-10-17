@@ -1,7 +1,6 @@
 // hooks/useAlbumPagination.ts
-// Paginación "cargar más" de la lista de álbumes. La usan las DOS pantallas de
-// fotos —el tab (`app/(tabs)/fotos.tsx`) y la de dentro de un evento
-// (`app/screens/AlbumListScreen.tsx`)—, que antes repetían el mismo bloque.
+// Paginación "cargar más" de la lista de álbumes (`FotosScreen`, en
+// `app/(tabs)/fotos.tsx`, que se monta tanto en el tab como en «Más»).
 //
 // La lista visible es DERIVADA (`slice` de la completa), no una copia guardada
 // en estado y rellenada por un efecto. Eso quita el aviso de

@@ -9,7 +9,6 @@ import {
   Platform,
   useWindowDimensions,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import { h } from '@/utils/haptics';
@@ -46,6 +45,10 @@ import type { ReadingSelection } from '@/components/contigo/HighlightableReading
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { styles } from '@/components/contigo/evangelioStyles';
 import { HABITS, WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
+import {
+  contigoHeaderChrome,
+  useContigoHeaderInset,
+} from '@/components/contigo/headerChrome';
 import typography from '@/constants/typography';
 import EmptyState from '@/components/ui/EmptyState';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
@@ -86,9 +89,9 @@ export default function EvangelioScreen() {
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const headerInset = useContigoHeaderInset();
   const theme = Colors[scheme ?? 'light'];
   const warm = isDark ? WARM.dark : WARM.light;
-  const insets = useSafeAreaInsets();
   const { scale: fontScale } = useSectionFontScale('contigo');
   const { width: windowWidth } = useWindowDimensions();
   // iPad / large tablet / desktop web — cap content width.
@@ -247,10 +250,7 @@ export default function EvangelioScreen() {
           headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: false,
           headerTintColor: theme.text,
-          ...(Platform.OS === 'ios' &&
-          parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
+          ...contigoHeaderChrome(isDark),
           headerRight: () => (
             <View style={styles.nativeHeaderActions}>
               <TouchableOpacity
@@ -310,7 +310,7 @@ export default function EvangelioScreen() {
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: insets.top + (Platform.OS === 'android' ? 68 : 56),
+            paddingTop: headerInset,
             paddingBottom: contentPaddingBottom,
           },
           // Hueco extra para la barra flotante de subrayado, que se pone por

@@ -26,6 +26,12 @@ export const easings = {
   bouncy: Easing.bezier(0.2, 0.8, 0.3, 1),
   /** Salida acelerada — para elementos que desaparecen. */
   exit: Easing.in(Easing.cubic),
+  /**
+   * La curva de los sheets de iOS (= `motionEasings.sheet`), en la versión de
+   * `Animated` de core: la de Reanimated no sirve ahí. La usa `BottomSheet`,
+   * que va con core a propósito (ver su cabecera).
+   */
+  sheet: Easing.bezier(0.32, 0.72, 0, 1),
 } as const;
 
 /**

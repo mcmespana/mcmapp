@@ -3,14 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  Platform,
   TouchableOpacity,
   useWindowDimensions,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { h } from '@/utils/haptics';
 import { useContigoHabits, Emotion } from '@/hooks/useContigoHabits';
@@ -28,6 +26,10 @@ import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation'
 import { DateNavigator } from '@/components/contigo/DateNavigator';
 import { styles } from '@/components/contigo/oracionStyles';
 import { HABITS, WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
+import {
+  contigoHeaderChrome,
+  useContigoHeaderInset,
+} from '@/components/contigo/headerChrome';
 import { radii } from '@/constants/uiStyles';
 import { springs } from '@/constants/animations';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
@@ -316,9 +318,9 @@ export default function OracionScreen() {
   // Subruta de Contigo: se registra con la clave del tab (gana el último
   // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
-  const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const headerInset = useContigoHeaderInset();
   const theme = Colors[scheme ?? 'light'];
   const warm = isDark ? WARM.dark : WARM.light;
 
@@ -473,10 +475,7 @@ export default function OracionScreen() {
             fontWeight: '700',
             fontSize: 17,
           },
-          ...(Platform.OS === 'ios' &&
-          parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
+          ...contigoHeaderChrome(isDark),
         }}
       />
 
@@ -499,8 +498,8 @@ export default function OracionScreen() {
           { paddingBottom: contentPaddingBottom },
           {
             // El header nativo es transparente y flota sobre el contenido,
-            // así que reservamos su altura (≈44 iOS / 56 Android + safe-area).
-            paddingTop: insets.top + (Platform.OS === 'android' ? 68 : 56),
+            // así que reservamos su altura real.
+            paddingTop: headerInset,
             maxWidth: MAX_CONTENT_W,
             width: '100%',
             alignSelf: 'center',

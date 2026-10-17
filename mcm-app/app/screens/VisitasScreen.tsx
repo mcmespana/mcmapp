@@ -18,6 +18,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors, KeyPillColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
@@ -75,6 +76,7 @@ export default function VisitasScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const bottomPadding = useTabBarPaddingBottom(24);
   const { height: windowHeight } = useWindowDimensions();
   const event = useCurrentEvent();
   const { data: visitas, loading } = useFirebaseData<Visita[]>(
@@ -125,7 +127,12 @@ export default function VisitasScreen() {
     <View style={styles.container}>
       <ScreenHero title="Visitas" hideOnWeb floatingHeaderInset />
       <PageContainer>
-        <ScrollView contentContainerStyle={styles.list}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.list,
+            { paddingBottom: bottomPadding },
+          ]}
+        >
           {(visitas || []).map((v, idx) => (
             <PressableFeedback
               key={idx}
@@ -292,7 +299,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
     container: { flex: 1, backgroundColor: theme.background },
     list: {
       padding: 16,
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
       gap: 14,
     },
     card: {

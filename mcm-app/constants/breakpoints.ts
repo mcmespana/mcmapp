@@ -37,3 +37,11 @@ export const maxContentWidth = 960;
 
 /** Max-width para dashboards / Home con layouts más densos. */
 export const maxContentWidthWide = 1200;
+
+/**
+ * Ancho máximo de una hoja inferior (`BottomSheet`) en pantalla ancha
+ * (≥ `breakpoints.md`: web de escritorio, iPad). Por debajo ocupa todo el
+ * ancho, como en un móvil; por encima se centra con este ancho, para que un
+ * selector de tono no sea una franja de 1440 px con tres botones perdidos.
+ */
+export const sheetMaxWidth = 560;

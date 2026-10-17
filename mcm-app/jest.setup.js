@@ -30,11 +30,23 @@ jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
   notificationAsync: jest.fn(() => Promise.resolve()),
   selectionAsync: jest.fn(() => Promise.resolve()),
+  performAndroidHapticsAsync: jest.fn(() => Promise.resolve()),
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
   NotificationFeedbackType: {
     Success: 'success',
     Warning: 'warning',
     Error: 'error',
+  },
+  // `utils/haptics.ts` lee el enum al llamar; en Android es lo que manda.
+  AndroidHaptics: {
+    Confirm: 'confirm',
+    Reject: 'reject',
+    Gesture_End: 'gesture-end',
+    Clock_Tick: 'clock-tick',
+    Context_Click: 'context-click',
+    Long_Press: 'long-press',
+    Virtual_Key: 'virtual-key',
+    Segment_Tick: 'segment-tick',
   },
 }));
 

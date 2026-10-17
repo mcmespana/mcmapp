@@ -133,8 +133,9 @@ export const createStyles = (
       color: themeColors(isDark).link,
       fontWeight: '700',
     },
+    // `paddingBottom` lo pone la pantalla (`useTabBarPaddingBottom`): el
+    // hueco de la barra de pestañas flotante depende del safe-area.
     listContentContainer: {
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
       ...(isWide ? { maxWidth, width: '100%', alignSelf: 'center' } : null),
     },
     categoryContainer: {

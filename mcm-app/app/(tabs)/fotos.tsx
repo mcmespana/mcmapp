@@ -78,9 +78,15 @@ export function FotosScreen() {
   } = useFirebaseData<Album[]>('albums', 'albums');
   const resolved = useResolvedProfileConfig();
   const sortedAlbums = React.useMemo(() => {
-    const visible = (allAlbumsData ?? []).filter((album) =>
-      isAlbumVisibleForProfile(album, resolved.albumTags),
-    );
+    // Sin duplicados por id: un álbum repetido en Firebase rompía el
+    // `keyExtractor` de la lista. (Venía de AlbumListScreen, la copia que se
+    // abría desde «Más» y que ya no existe.)
+    const seen = new Set<string>();
+    const visible = (allAlbumsData ?? []).filter((album) => {
+      if (seen.has(album.id)) return false;
+      seen.add(album.id);
+      return isAlbumVisibleForProfile(album, resolved.albumTags);
+    });
     // Orden inverso por ID (más nuevos primero).
     return visible.sort((a, b) => b.id.localeCompare(a.id));
   }, [allAlbumsData, resolved.albumTags]);
@@ -187,39 +193,48 @@ export function FotosScreen() {
 }
 
 /**
- * Tab de Fotos: stack propio para tener un header NATIVO transparente —
- * las portadas pasan por debajo y se funden con él al deslizar, igual que en
- * el cantoral, pero SIN texto de título (la pestaña ya se llama Fotos).
+ * Header de `FotosScreen`: NATIVO y transparente — las portadas pasan por
+ * debajo y se funden con él al deslizar, igual que en el cantoral. La pantalla
+ * cuenta con que es transparente (reserva `useHeaderHeight()` arriba), así que
+ * quien la monte tiene que usar estas opciones: el tab de Fotos y el stack de
+ * «Más» (cuando Fotos no cabe en la barra).
+ */
+export function fotosHeaderOptions(isDark: boolean) {
+  const isIOS = Platform.OS === 'ios';
+  return {
+    headerShadowVisible: false,
+    headerTransparent: true,
+    headerTintColor: themeColors(isDark).headerTint,
+    // iOS <26 necesita el blur explícito; en iOS 26+ lo pone el sistema
+    // (combinarlo provoca solape, ver cancionero.tsx).
+    ...(isIOS && parseInt(String(Platform.Version), 10) < 26
+      ? { headerBlurEffect: 'systemChromeMaterial' as const }
+      : {}),
+    // Android/Web no tienen blur nativo: una barra semitransparente del
+    // color del fondo deja intuir las fotos por debajo.
+    ...(isIOS
+      ? {}
+      : {
+          headerStyle: {
+            backgroundColor: isDark
+              ? 'rgba(21,23,24,0.72)'
+              : 'rgba(255,255,255,0.72)',
+          },
+        }),
+  };
+}
+
+/**
+ * Tab de Fotos: stack propio para tener el header nativo transparente, SIN
+ * texto de título (la pestaña ya se llama Fotos).
  */
 const FotosStack = createNativeStackNavigator();
 export default function FotosTab() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const isIOS = Platform.OS === 'ios';
   return (
     <FotosStack.Navigator
-      screenOptions={{
-        title: '',
-        headerShadowVisible: false,
-        headerTransparent: true,
-        headerTintColor: themeColors(isDark).headerTint,
-        // iOS <26 necesita el blur explícito; en iOS 26+ lo pone el sistema
-        // (combinarlo provoca solape, ver cancionero.tsx).
-        ...(isIOS && parseInt(String(Platform.Version), 10) < 26
-          ? { headerBlurEffect: 'systemChromeMaterial' as const }
-          : {}),
-        // Android/Web no tienen blur nativo: una barra semitransparente del
-        // color del fondo deja intuir las fotos por debajo.
-        ...(isIOS
-          ? {}
-          : {
-              headerStyle: {
-                backgroundColor: isDark
-                  ? 'rgba(21,23,24,0.72)'
-                  : 'rgba(255,255,255,0.72)',
-              },
-            }),
-      }}
+      screenOptions={{ title: '', ...fotosHeaderOptions(isDark) }}
     >
       <FotosStack.Screen name="FotosMain" component={FotosScreen} />
     </FotosStack.Navigator>

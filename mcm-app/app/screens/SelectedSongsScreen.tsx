@@ -42,6 +42,7 @@ import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 
@@ -156,6 +157,12 @@ const SelectedSongsScreen: React.FC = () => {
   const scheme = useColorScheme() || 'light';
   const isDark = scheme === 'dark';
   const layout = useResponsiveLayout();
+  // Hueco de la barra de pestañas flotante al final de las tres listas.
+  const tabBarBottom = useTabBarPaddingBottom(24);
+  const listBottom = useMemo(
+    () => ({ paddingBottom: tabBarBottom }),
+    [tabBarBottom],
+  );
   // En iOS el header es transparente (`headerTransparent`) y las FlatList lo
   // compensan con `contentInsetAdjustmentBehavior="automatic"`. La
   // `ReorderableList` (modo "Orden ajustado") NO respeta ese inset, así que su
@@ -1566,7 +1573,7 @@ const SelectedSongsScreen: React.FC = () => {
           en la pantalla de detalle.
         </Text>
       </View>
-      <View style={{ gap: 10, marginBottom: Platform.OS === 'ios' ? 100 : 20 }}>
+      <View style={{ gap: 10, marginBottom: tabBarBottom }}>
         {/* Con la lista vacía, lo primero que quiere casi todo el mundo es
             traerse la del coro: va la primera y sin pedir ningún código. */}
         <PressableFeedback
@@ -1751,7 +1758,7 @@ const SelectedSongsScreen: React.FC = () => {
             renderItem={renderManualItem}
             keyExtractor={(it) => it.filename}
             ListHeaderComponent={headerComponent}
-            contentContainerStyle={styles.listContentContainer}
+            contentContainerStyle={[styles.listContentContainer, listBottom]}
             contentInsetAdjustmentBehavior="automatic"
             showsVerticalScrollIndicator={false}
           />
@@ -1764,6 +1771,7 @@ const SelectedSongsScreen: React.FC = () => {
             ListHeaderComponent={headerComponent}
             contentContainerStyle={[
               styles.listContentContainer,
+              listBottom,
               { paddingTop: reorderableTopInset },
             ]}
             contentInsetAdjustmentBehavior="never"
@@ -1776,7 +1784,7 @@ const SelectedSongsScreen: React.FC = () => {
           renderItem={renderCategoryGroup}
           keyExtractor={(it) => it.categoryKey}
           ListHeaderComponent={headerComponent}
-          contentContainerStyle={styles.listContentContainer}
+          contentContainerStyle={[styles.listContentContainer, listBottom]}
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
         />
