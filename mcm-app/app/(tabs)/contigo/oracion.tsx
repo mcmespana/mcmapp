@@ -12,7 +12,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
+import { h } from '@/utils/haptics';
 import { useContigoHabits, Emotion } from '@/hooks/useContigoHabits';
 import colors, { Colors } from '@/constants/colors';
 import Animated from 'react-native-reanimated';
@@ -289,18 +289,7 @@ export default function OracionScreen() {
 
     await setPrayerDone(selectedDate, durationEnum, emotion, duration);
 
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setTimeout(
-        () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
-        100,
-      );
-      setTimeout(
-        () =>
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
-        250,
-      );
-    }
+    h.formSuccess();
 
     setShowCheck(true);
     setTimeout(() => setShowCheck(false), 2800);

@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import SegmentedControl from '@/components/ui/SegmentedControl';
-import * as Haptics from 'expo-haptics';
+import { h } from '@/utils/haptics';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Card } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -163,8 +163,7 @@ export default function EvangelioScreen() {
       source,
       (sel: ReadingSelection) => {
         applyHighlightColor(pickStickyHighlightColor(), { source, sel });
-        if (Platform.OS !== 'web')
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        h.tap();
         setHighlightMode(true);
       },
     ]);
@@ -180,14 +179,12 @@ export default function EvangelioScreen() {
   };
 
   const toggleBookmark = async () => {
-    if (Platform.OS !== 'web')
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    h.toggle();
     await toggleBm(selectedDate, readings);
   };
 
   const toggleHighlightMode = () => {
-    if (Platform.OS !== 'web')
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    h.toggle();
     if (highlightMode) exitHighlightMode();
     else setHighlightMode(true);
   };
@@ -212,20 +209,7 @@ export default function EvangelioScreen() {
     await setReadingDone(selectedDate, newValue);
 
     if (newValue) {
-      // Create a playful, escalating vibration sequence
-      if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setTimeout(
-          () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
-          100,
-        );
-        setTimeout(
-          () =>
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
-          250,
-        );
-      }
-
+      h.formSuccess();
       setShowCheck(true);
       setTimeout(() => setShowCheck(false), 2500);
     }
