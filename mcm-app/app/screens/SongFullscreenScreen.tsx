@@ -44,11 +44,25 @@ import { radii } from '@/constants/uiStyles';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 import { useImmersiveChrome } from '@/hooks/useImmersiveChrome';
 import { useKeepAwakeWhileFocused } from '@/hooks/useKeepAwakeWhileFocused';
+import { useBrowserFullscreen } from '@/hooks/useBrowserFullscreen';
+import { makeKeydownForwarder } from '@/utils/songDisplayBridge';
+import spacing from '@/constants/spacing';
 
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
 const isIOS = Platform.OS === 'ios';
 const isWeb = Platform.OS === 'web';
+/** Lado de los botones redondos de arriba (cerrar, pantalla completa). */
+const CLOSE_SIZE = 40;
+
+// Teclas del modo atril (lo que mandan los pedales Bluetooth): las mismas que
+// entiende la hoja (`songSheetLayout.ts`) cuando el foco está dentro.
+const PAGE_NEXT_KEYS = ['arrowright', 'arrowdown', 'pagedown', ' ', 'enter'];
+const PAGE_PREV_KEYS = ['arrowleft', 'arrowup', 'pageup'];
+
+type SheetWindow = Window & {
+  __SONG_LAYOUT__?: { page: (dir: number) => boolean };
+};
 
 const triggerHaptic = (style: Haptics.ImpactFeedbackStyle) => {
   if (Platform.OS === 'web') return;
@@ -329,7 +343,12 @@ export default function SongFullscreenScreen({
   }, [index]);
 
   // Al salir, el detalle queda en la canción a la que se haya llegado.
+  // Una sola vez: en web, salir de la pantalla completa del navegador y la
+  // tecla Esc pueden llegar juntos, y un segundo goBack sacaría del detalle.
+  const closedRef = useRef(false);
   const close = useCallback(() => {
+    if (closedRef.current) return;
+    closedRef.current = true;
     const moved = following
       ? song.filename !== params.filename
       : index !== null && index !== params.currentIndex;
@@ -363,8 +382,15 @@ export default function SongFullscreenScreen({
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
 
-  // Web: F y Esc salen del modo presentación.
-  useKeyboardShortcut('f', close);
+  // Web: Esc sale del modo presentación. F pone o quita la pantalla
+  // completa del navegador (en el detalle, F abre esta pantalla); con ella
+  // puesta, el Esc se lo queda el navegador y al salir se cierra igual.
+  const browserFs = useBrowserFullscreen(close);
+  useKeyboardShortcut('f', (e) => {
+    if ((e as { repeat?: boolean }).repeat) return;
+    if (browserFs.supported) browserFs.toggle();
+    else close();
+  });
   useKeyboardShortcut('escape', close, {
     preventDefault: false,
   });
@@ -513,10 +539,19 @@ export default function SongFullscreenScreen({
     } catch {
       /* noop */
     }
-    // Con el foco dentro de la canción, Esc y F también salen.
+    // Las teclas pulsadas con el foco en la hoja no suben a la ventana: se
+    // reenvían a los atajos de aquí (Esc, F, auto-scroll), con sus
+    // modificadores (⌘F es buscar, no salir). Lo que la hoja ya ha usado
+    // (pasar página en el atril) y las flechas laterales (con scroll, la
+    // hoja ya pide la canción con «sheet-nav») no, o se haría dos veces.
+    const forward = makeKeydownForwarder(window);
     doc.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' || e.key === 'f' || e.key === 'F') close();
+      if (e.defaultPrevented) return;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') return;
+      forward(e);
     });
+    // Foco en la hoja al entrar: el pedal pasa página sin hacer clic antes.
+    frame.contentWindow?.focus();
   };
 
   // Al pasar a páginas, el scroll automático no pinta nada.
@@ -527,16 +562,41 @@ export default function SongFullscreenScreen({
   const togglePaged = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setSettings({ pagedFullscreen: !pagedFullscreen });
+    // El foco vuelve a la hoja: el pedal sigue funcionando tras el botón.
+    if (isWeb) iframeRef.current?.contentWindow?.focus();
   };
 
-  // Atajos de teclado: espacio = play/pause, ↑/↓ = subir/bajar velocidad.
-  useKeyboardShortcut(' ', () => autoScroll.toggle());
-  useKeyboardShortcut('arrowup', () =>
-    autoScroll.setSpeedIndex(autoScroll.speedIndex + 1),
+  // Atajos de teclado (con el foco fuera de la hoja, o reenviados desde ella).
+  // Con scroll: espacio = play/pause, ↑/↓ = velocidad, ←/→ = canción.
+  const scrollKeys = { disabled: paged };
+  useKeyboardShortcut(' ', () => autoScroll.toggle(), scrollKeys);
+  useKeyboardShortcut(
+    'arrowup',
+    () => autoScroll.setSpeedIndex(autoScroll.speedIndex + 1),
+    scrollKeys,
   );
-  useKeyboardShortcut('arrowdown', () =>
-    autoScroll.setSpeedIndex(autoScroll.speedIndex - 1),
+  useKeyboardShortcut(
+    'arrowdown',
+    () => autoScroll.setSpeedIndex(autoScroll.speedIndex - 1),
+    scrollKeys,
   );
+  useKeyboardShortcut('arrowright', () => go(1), scrollKeys);
+  useKeyboardShortcut('arrowleft', () => go(-1), scrollKeys);
+  // En el atril, el pedal pasa página; al acabar, de canción (como dentro).
+  const pageOrGo = (dir: number) => {
+    const sheet = iframeRef.current?.contentWindow as SheetWindow | null;
+    if (!sheet?.__SONG_LAYOUT__?.page(dir)) go(dir);
+  };
+  const pagedKeys = { disabled: !paged };
+  useKeyboardShortcut(PAGE_NEXT_KEYS, () => pageOrGo(1), pagedKeys);
+  useKeyboardShortcut(PAGE_PREV_KEYS, () => pageOrGo(-1), pagedKeys);
+
+  // Web: con los controles escondidos, también el cursor (sobre la hoja, que
+  // es otro documento, y sobre lo demás); vuelve al mover el ratón.
+  const hideCursor = isWeb && !chrome.shown;
+  useEffect(() => {
+    if (isWeb) setSheetCursor(iframeRef.current, hideCursor);
+  }, [hideCursor, webDocKey]);
 
   // Fade-in de entrada
   const fadeAnim = useSharedValue(0);
@@ -554,6 +614,7 @@ export default function SongFullscreenScreen({
       style={[
         styles.container,
         { backgroundColor: theme.background },
+        hideCursor && webHiddenCursor,
         screenStyle,
       ]}
     >
@@ -665,6 +726,33 @@ export default function SongFullscreenScreen({
           </View>
         )}
 
+        {/* Pantalla completa del navegador (web) — junto a cerrar. */}
+        {browserFs.supported && (
+          <PressableFeedback
+            style={[
+              styles.closeButton,
+              styles.browserFsButton,
+              { top: closeTop },
+            ]}
+            onPress={() => {
+              browserFs.toggle();
+              // El foco vuelve a la hoja (espacio o Intro no repiten el botón).
+              iframeRef.current?.contentWindow?.focus();
+            }}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: browserFs.active }}
+            accessibilityLabel="Pantalla completa del navegador (F)"
+          >
+            <PressableFeedback.Scale />
+            <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
+            <MaterialIcons
+              name={browserFs.active ? 'fullscreen-exit' : 'fullscreen'}
+              color="#FFFFFF"
+              size={22}
+            />
+          </PressableFeedback>
+        )}
+
         {/* Modo atril (páginas) — encima del play. */}
         <PressableFeedback
           style={[
@@ -706,6 +794,15 @@ export default function SongFullscreenScreen({
   );
 }
 
+/** El cursor dentro de la hoja (otro documento: no hereda el de fuera). */
+function setSheetCursor(frame: HTMLIFrameElement | null, hide: boolean) {
+  const root = frame?.contentDocument?.documentElement;
+  if (root) root.style.cursor = hide ? 'none' : '';
+}
+
+/** Cursor escondido (web) con los controles: `cursor` no está en ViewStyle. */
+const webHiddenCursor = { cursor: 'none' } as object;
+
 const webFrameStyle = {
   width: '100%',
   height: '100%',
@@ -727,8 +824,8 @@ const styles = StyleSheet.create({
     zIndex: 4,
   },
   closeButton: {
-    width: 40,
-    height: 40,
+    width: CLOSE_SIZE,
+    height: CLOSE_SIZE,
     borderRadius: radii.xl,
     justifyContent: 'center',
     alignItems: 'center',
@@ -746,6 +843,11 @@ const styles = StyleSheet.create({
         elevation: 5,
       },
     }),
+  },
+  /* Pantalla completa del navegador — a la izquierda de cerrar */
+  browserFsButton: {
+    position: 'absolute',
+    right: spacing.md + CLOSE_SIZE + spacing.sm,
   },
   /* Anterior / siguiente — abajo a la izquierda */
   navCluster: {
