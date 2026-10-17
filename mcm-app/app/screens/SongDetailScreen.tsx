@@ -170,6 +170,7 @@ export default function SongDetailScreen({
     chorusStyle,
     chorusLabel,
     airy,
+    songMap,
   } = settings;
 
   // Edición de arreglos por long-press (solo admin). El índice apunta a una
@@ -254,6 +255,7 @@ export default function SongDetailScreen({
     chorusStyle,
     chorusLabel,
     airy,
+    songMap,
     currentFontSizeEm,
     currentFontFamily,
     notation,
@@ -540,6 +542,7 @@ export default function SongDetailScreen({
     chorusLabel,
     verseNumbers,
     airy,
+    songMap: { available: sheetInfo.hasSongMap, on: songMap },
     onChange: (patch) => setSettings(patch),
   };
   const handleSetTranspose = (semitones: number) => {

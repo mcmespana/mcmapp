@@ -271,6 +271,31 @@ export const SHEET_CSS = `
     font-size: 0.8em;
     font-weight: 600;
   }
+  /* Mapa de la canción («1 · E · 2 · E×2»), una línea discreta encima de
+     la letra. Apagado de serie: lo enciende \`show-map\` en el body. */
+  .song-map {
+    display: none;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15em 0.45em;
+    margin: 0 0 0.6em;
+    color: var(--sh-muted);
+    font-size: calc(var(--song-font-size) * 0.8);
+    font-weight: 600;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+  }
+  body.show-map .song-map.mp-all { display: flex; }
+  body.show-map.chords-hidden .song-map.has-alt { display: none; }
+  body.show-map.chords-hidden .song-map.mp-lyr { display: flex; }
+  .song-map .mp + .mp::before {
+    content: '\\00b7';
+    margin-right: 0.45em;
+    font-weight: 400;
+    opacity: 0.7;
+  }
+  .song-map .mp-e { color: var(--sh-label); }
+  .song-map .mx { font-weight: 500; font-size: 0.85em; }
   /* Columnas (iPad, solo si la canción cabe entera sin scroll). */
   body.cols { padding-left: 28px; padding-right: 28px; }
   @media (min-width: 720px) {
@@ -283,7 +308,8 @@ export const SHEET_CSS = `
  * Maquetación en el WebView. Expone `window.__SONG_LAYOUT__`:
  *  - `refit()`: recoloca todo (columnas + cortes). Lo llama el puente de
  *    estilos tras cambiar letra, tamaño, acordes o vista.
- *  - `chooseBreaks`, `penalty`: el algoritmo, para los tests.
+ *  - `chooseBreaks`, `penalty`, `canRotate`: el algoritmo y el aviso de
+ *    girar, para los tests.
  */
 export const SHEET_LAYOUT_JS = `
 (function () {
@@ -550,14 +576,23 @@ export const SHEET_LAYOUT_JS = `
     return false;
   }
 
+  // ¿Tiene sentido avisar de girar? Solo en tablet: un móvil en horizontal
+  // tiene sitio para muy pocas líneas, y un monitor no se gira (sin pantalla
+  // táctil, nada de aviso; el admin del cantoral lo fuerza con
+  // __SONG_ROTATE_HINT__ en su vista de iPad).
+  function canRotate(w, h, touchPoints, forced) {
+    if (Math.min(w, h) < 600) return false;
+    return touchPoints > 0 || !!forced;
+  }
+
   /**
    * ¿Cabría entera girando la pantalla? Se maqueta con el ancho y el alto
-   * cambiados, se mira y se deshace. Solo en tablet: un móvil en horizontal
-   * tiene sitio para muy pocas líneas.
+   * cambiados, se mira y se deshace.
    */
   function fitsRotated(sheet) {
     var w = window.innerWidth, h = window.innerHeight;
-    if (Math.min(w, h) < 600) return false;
+    var touch = typeof navigator !== 'undefined' ? navigator.maxTouchPoints || 0 : 0;
+    if (!canRotate(w, h, touch, window.__SONG_ROTATE_HINT__)) return false;
     var root = document.documentElement;
     root.style.width = h + 'px';
     relayout();
@@ -704,6 +739,7 @@ export const SHEET_LAYOUT_JS = `
     refit: schedule,
     page: goPage,
     relayout: relayout,
+    canRotate: canRotate,
     chooseBreaks: chooseBreaks,
     penalty: penalty
   };

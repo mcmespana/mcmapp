@@ -191,3 +191,29 @@ describe('pasar de canción desde la hoja (pantalla completa)', () => {
     ]);
   });
 });
+
+describe('aviso de girar la pantalla', () => {
+  const rotate = (
+    load() as unknown as {
+      canRotate: (
+        w: number,
+        h: number,
+        touch: number,
+        forced?: boolean,
+      ) => boolean;
+    }
+  ).canRotate;
+
+  it('en un monitor (sin pantalla táctil) no sale', () => {
+    expect(rotate(1200, 800, 0)).toBe(false);
+  });
+
+  it('en una tablet sí, y el admin lo puede forzar en su vista de iPad', () => {
+    expect(rotate(1024, 768, 5)).toBe(true);
+    expect(rotate(1024, 768, 0, true)).toBe(true);
+  });
+
+  it('en un móvil nunca: en horizontal caben muy pocas líneas', () => {
+    expect(rotate(390, 844, 5)).toBe(false);
+  });
+});

@@ -841,3 +841,115 @@ export function renderSheetHtml(
   }
   return `<div class="sheet">${parts.join('')}</div>`;
 }
+
+// ─── Mapa de la canción ──────────────────────────────────────────────────────
+
+/** Un paso del mapa: «1», «E», «P», «Intro»… y cuántas veces seguidas va. */
+export interface SongMapToken {
+  /** Lo que se pinta. */
+  label: string;
+  /** Lo que lee el lector de pantalla («Estrofa 1», «Estribillo»). */
+  name: string;
+  times: number;
+  /** Intro, solo, final…: con los acordes ocultos no se tocan. */
+  instrumental: boolean;
+}
+
+function mapStep(s: SheetSection): Omit<SongMapToken, 'times'> | null {
+  switch (s.kind) {
+    case 'verse':
+      return s.number !== null
+        ? {
+            label: String(s.number),
+            name: `Estrofa ${s.number}`,
+            instrumental: false,
+          }
+        : { label: 'Estrofa', name: 'Estrofa', instrumental: false };
+    case 'chorus':
+      return { label: 'E', name: 'Estribillo', instrumental: false };
+    case 'bridge':
+      return { label: 'P', name: s.label ?? 'Puente', instrumental: false };
+    case 'instrumental': {
+      // «Intro», «Final», «Solo»…: la primera palabra de la etiqueta basta,
+      // en minúscula con mayúscula inicial («INTRO» → «Intro»).
+      const first = (s.label ?? '').split(/\s+/)[0].toLowerCase();
+      const word = first
+        ? first.charAt(0).toUpperCase() + first.slice(1)
+        : 'Instrumental';
+      return { label: word, name: word, instrumental: true };
+    }
+    case 'note':
+      return null;
+  }
+}
+
+/**
+ * El orden de la canción de un vistazo («1 · E · 2 · E · 3 · E×2»), sacado
+ * del modelo sin tocar el `.cho`: estrofa → su número, estribillo → «E»,
+ * puente → «P», intro/solo/final → su nombre. Los pasos iguales seguidos se
+ * juntan («E×2»). Con `instrumentals: false` se quitan las intros (la vista
+ * sin acordes no las pinta), y lo que queda se vuelve a juntar.
+ */
+export function buildSongMap(
+  model: SheetModel,
+  { instrumentals = true }: { instrumentals?: boolean } = {},
+): SongMapToken[] {
+  const out: SongMapToken[] = [];
+  for (const s of model.sections) {
+    const step = mapStep(s);
+    if (!step || (step.instrumental && !instrumentals)) continue;
+    const last = out[out.length - 1];
+    if (last && last.label === step.label) last.times++;
+    else out.push({ ...step, times: 1 });
+  }
+  return out;
+}
+
+/**
+ * ¿Merece la pena el mapa? Solo si hay estribillo o puente que ubicar y al
+ * menos tres pasos: «1 · 2» o «E» no dicen nada que no se vea ya.
+ */
+export function songMapWorthShowing(tokens: SongMapToken[]): boolean {
+  return (
+    tokens.length >= 3 && tokens.some((t) => t.label === 'E' || t.label === 'P')
+  );
+}
+
+/** «1 · E · 2 · E×2»: el mapa en texto plano (tests y lector de pantalla). */
+export function songMapText(tokens: SongMapToken[]): string {
+  return tokens
+    .map((t) => t.label + (t.times > 1 ? `×${t.times}` : ''))
+    .join(' · ');
+}
+
+function songMapBlock(tokens: SongMapToken[], cls: string): string {
+  const aria = tokens
+    .map((t) => t.name + (t.times > 1 ? ` (${t.times} veces)` : ''))
+    .join(', ');
+  const steps = tokens
+    .map(
+      (t) =>
+        `<span class="mp${t.label === 'E' ? ' mp-e' : ''}">${t.label}` +
+        (t.times > 1 ? `<span class="mx">×${t.times}</span>` : '') +
+        `</span>`,
+    )
+    .join('');
+  return `<div class="song-map ${cls}" role="img" aria-label="Orden de la canción: ${aria}">${steps}</div>`;
+}
+
+/**
+ * HTML del mapa, o '' si no merece la pena. Va oculto: lo enseña la clase
+ * `show-map` del `<body>` (ajuste «Mapa», en vivo por el puente). Si sin
+ * acordes cambia (había intros), van las dos versiones y la clase
+ * `chords-hidden` elige: así ocultar acordes tampoco recarga la página.
+ */
+export function renderSongMapHtml(model: SheetModel): string {
+  const all = buildSongMap(model);
+  if (!songMapWorthShowing(all)) return '';
+  const lyr = buildSongMap(model, { instrumentals: false });
+  if (songMapText(lyr) === songMapText(all)) return songMapBlock(all, 'mp-all');
+  return (
+    songMapBlock(all, 'mp-all has-alt') +
+    (songMapWorthShowing(lyr) ? songMapBlock(lyr, 'mp-lyr') : '')
+  );
+}

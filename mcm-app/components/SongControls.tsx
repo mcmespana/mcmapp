@@ -24,6 +24,7 @@ import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import { transposeLabel } from '@/utils/transposeKey';
+import { buildSongPrintHtml, printHtmlInNewWindow } from '@/utils/printSong';
 import SongFontBottomSheet, {
   type SheetViewOptions,
 } from './SongFontBottomSheet';
@@ -421,6 +422,41 @@ const SongControls: React.FC<SongControlsProps> = ({
               label="Pantalla completa"
               onPress={onNavigateToFullscreen}
             />
+            {Platform.OS === 'web' && !!songContent && (
+              <ActionButton
+                isDark={isDark}
+                icon="print"
+                label="Imprimir"
+                onPress={() => {
+                  // La hoja en papel, como el PDF de la playlist: con el
+                  // tono, la cejilla y la vista que se tienen ahora.
+                  const html = buildSongPrintHtml(
+                    {
+                      title: songTitle ?? '',
+                      author: songAuthor,
+                      key: songKey,
+                      capo: songCapo,
+                      capoOverride: currentCapoOverride,
+                      content: songContent,
+                      transpose: currentTranspose,
+                    },
+                    {
+                      notation,
+                      showChords: chordsVisible,
+                      compact: compactView,
+                      chorusStyle: view?.chorusStyle,
+                      chorusLabel: view?.chorusLabel,
+                      verseNumbers: view?.verseNumbers,
+                    },
+                  );
+                  if (!printHtmlInNewWindow(html)) {
+                    toast.show({
+                      label: 'Permite las ventanas emergentes para imprimir',
+                    });
+                  }
+                }}
+              />
+            )}
             <ActionButton
               isDark={isDark}
               icon="bug-report"
