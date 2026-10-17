@@ -179,17 +179,6 @@ export function useFirebaseData<T>(
   storageKey: string,
   transform?: (data: any) => T,
 ) {
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [offline, setOffline] = useState(false);
-  // `hidden` se lee del mismo nodo Firebase (hermano de `data` y `updatedAt`).
-  // Lo usa el hub de eventos para esconder secciones desde el panel sin
-  // borrar sus datos. Si el nodo no lo trae, se asume false.
-  const [hidden, setHidden] = useState(false);
-  // Estado de red de la última comprobación, para distinguir "he recuperado la
-  // conexión" de "el listener ha vuelto a emitir estando ya conectado".
-  const wasOfflineRef = useRef(false);
-
   // Última aplicación del transform de ESTA instancia: si el `parsed` crudo
   // no cambió de identidad (p. ej. `refreshRemote` salió por la vía rápida
   // porque el updatedAt remoto coincide con el local), reutilizamos el
@@ -200,7 +189,37 @@ export function useFirebaseData<T>(
   // abajo recomputaba para cero cambio visible. Memo POR INSTANCIA (no en
   // `nodeCache`): transforms distintos por consumidor del mismo path siguen
   // aislados (ver el comentario de cabecera sobre `nodeCache`).
+  // Va ANTES de los `useState` porque sus inicializadores lo rellenan.
   const lastApplied = useRef<{ src: unknown; out: T } | null>(null);
+
+  // Primer pintado SÍNCRONO desde la caché de módulo. Antes cada montaje
+  // arrancaba con `data = null` y `loading = true` aunque el nodo ya estuviera
+  // parseado en memoria (lo había cargado otra pantalla), y el efecto tardaba
+  // un salto nativo (`getNetworkStateAsync`) en servirlo: al abrir una
+  // categoría asomaba «Cargando canciones…» durante la animación de entrada y
+  // luego saltaba la lista. Con caché caliente, el primer render ya trae los
+  // datos; el efecto solo revalida.
+  const [data, setData] = useState<T | null>(() => {
+    const cached = path === null ? undefined : nodeCache.get(storageKey);
+    if (cached?.parsed === undefined) return null;
+    const out = transform ? transform(cached.parsed) : (cached.parsed as T);
+    lastApplied.current = { src: cached.parsed, out };
+    return out;
+  });
+  const [loading, setLoading] = useState(
+    () => !(path !== null && nodeCache.get(storageKey)?.parsed !== undefined),
+  );
+  const [offline, setOffline] = useState(false);
+  // `hidden` se lee del mismo nodo Firebase (hermano de `data` y `updatedAt`).
+  // Lo usa el hub de eventos para esconder secciones desde el panel sin
+  // borrar sus datos. Si el nodo no lo trae, se asume false.
+  const [hidden, setHidden] = useState(() => {
+    const cached = path === null ? undefined : nodeCache.get(storageKey);
+    return cached?.parsed !== undefined && cached.hidden;
+  });
+  // Estado de red de la última comprobación, para distinguir "he recuperado la
+  // conexión" de "el listener ha vuelto a emitir estando ya conectado".
+  const wasOfflineRef = useRef(false);
 
   useEffect(() => {
     // Sin nodo que mirar no hay nada que hacer. `loading` se resuelve al
@@ -229,13 +248,10 @@ export function useFirebaseData<T>(
 
     async function fetchData() {
       try {
-        const state = await Network.getNetworkStateAsync();
-        const connected =
-          state.isConnected && state.isInternetReachable !== false;
-        wasOfflineRef.current = !connected;
-        if (isMounted) setOffline(!connected);
-
         // 1. Servir desde la caché de módulo o, si no existe, desde AsyncStorage.
+        // Va ANTES de preguntar por la red: ese `await` es un salto al lado
+        // nativo que solo retrasaba el primer pintado (igual que se corrigió
+        // en `useCalendarEvents`).
         const cached = nodeCache.get(storageKey);
         let hasLocalCache = false;
         let localUpdatedAt: string | null = null;
@@ -278,6 +294,12 @@ export function useFirebaseData<T>(
             }
           }
         }
+
+        const state = await Network.getNetworkStateAsync();
+        const connected =
+          state.isConnected && state.isInternetReachable !== false;
+        wasOfflineRef.current = !connected;
+        if (isMounted) setOffline(!connected);
 
         // 2. Fase remota, coalescida entre instancias del mismo storageKey.
         await refreshRemote(
