@@ -93,10 +93,15 @@ export function NotificationsProvider({
     [rawFirebaseNotifications, audienceUser],
   );
 
+  // Último historial recibido, para que `updateCount` (estable) lo lea sin
+  // recrearse ni volver a pedírselo a Firebase.
+  const rawFirebaseRef = useRef<NotificationData[]>([]);
+
   const updateCount = useCallback(async () => {
     try {
-      const count = await getUnreadNotificationsCount((n) =>
-        notificationMatchesUser(n.audience, audienceUserRef.current),
+      const count = await getUnreadNotificationsCount(
+        rawFirebaseRef.current,
+        (n) => notificationMatchesUser(n.audience, audienceUserRef.current),
       );
       setUnreadCount(count);
       const ids = await getReadNotificationIds();
@@ -109,6 +114,7 @@ export function NotificationsProvider({
   // Suscripción en tiempo real a Firebase
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((notifications) => {
+      rawFirebaseRef.current = notifications;
       setRawFirebaseNotifications(notifications);
     });
     return unsubscribe;

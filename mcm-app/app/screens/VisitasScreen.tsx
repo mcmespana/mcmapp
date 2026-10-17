@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   Linking,
-  Image,
   Platform,
   Text,
   TouchableOpacity,
@@ -13,6 +12,7 @@ import {
   Modal,
   useWindowDimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors, KeyPillColors, themeColors } from '@/constants/colors';
@@ -146,7 +146,9 @@ export default function VisitasScreen() {
                 <Image
                   source={{ uri: v.imagen }}
                   style={styles.image}
-                  resizeMode="cover"
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
                 />
               ) : null}
               <View style={styles.cardContent}>
@@ -209,7 +211,9 @@ export default function VisitasScreen() {
                   <Image
                     source={{ uri: selected.imagen }}
                     style={styles.modalImage}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
                   />
                 ) : null}
                 <TouchableOpacity

@@ -126,6 +126,25 @@ describe('contador de no leídas', () => {
   });
 });
 
+describe('contador sobre el historial en memoria', () => {
+  it('pasa al contador el historial de la suscripción (sin otra descarga)', async () => {
+    let onNotifications: ((n: any[]) => void) | null = null;
+    (subscribeToNotifications as jest.Mock).mockImplementation((cb) => {
+      onNotifications = cb;
+      return jest.fn();
+    });
+    await mount();
+    const historial = [{ id: '1' }, { id: '2' }];
+    await act(async () => onNotifications!(historial));
+    await waitFor(() =>
+      expect(getUnreadNotificationsCount).toHaveBeenLastCalledWith(
+        historial,
+        expect.any(Function),
+      ),
+    );
+  });
+});
+
 describe('historial filtrado por audiencia', () => {
   it('oculta del historial visible las notificaciones de otro perfil', async () => {
     let onNotifications: ((n: any[]) => void) | null = null;

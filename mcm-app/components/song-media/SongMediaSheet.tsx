@@ -495,14 +495,14 @@ const createStyles = (isDark: boolean) =>
       fontWeight: '800',
       letterSpacing: 0.9,
       textTransform: 'uppercase',
-      color: '#8E8E93',
+      color: themeColors(isDark).textSecondary,
     },
     secHint: {
       marginLeft: 'auto',
       ...typography.overline,
       fontWeight: '600',
       fontStyle: 'italic',
-      color: isDark ? '#7C7C80' : '#A8A8AD',
+      color: themeColors(isDark).textMuted,
     },
     // ── media rows ──
     mRow: {
@@ -512,13 +512,13 @@ const createStyles = (isDark: boolean) =>
       paddingVertical: 11,
       paddingHorizontal: 12,
       backgroundColor: isDark ? '#2C2C2E' : '#F7F7F9',
-      borderRadius: 13,
+      borderRadius: radii.md,
       marginBottom: 8,
     },
     mIco: {
       width: 34,
       height: 34,
-      borderRadius: 9,
+      borderRadius: radii.sm,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -549,14 +549,14 @@ const createStyles = (isDark: boolean) =>
     },
     mMeta: {
       ...typography.micro,
-      color: '#8E8E93',
+      color: themeColors(isDark).textSecondary,
       marginTop: 1,
     },
     floatTag: {
       backgroundColor: 'rgba(244,193,30,0.28)',
       paddingVertical: 3,
       paddingHorizontal: 7,
-      borderRadius: 7,
+      borderRadius: radii.sm,
     },
     floatTagText: {
       fontSize: 9.5,
@@ -589,16 +589,18 @@ const createStyles = (isDark: boolean) =>
     },
     fichaChip: {
       backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
-      borderRadius: 11,
+      borderRadius: radii.md,
       paddingVertical: 7,
       paddingHorizontal: 12,
       minWidth: 96,
     },
     fk: {
-      fontSize: 9.5,
+      ...typography.micro,
       fontWeight: '800',
       letterSpacing: 0.5,
-      color: '#8E8E93',
+      // Sobre la ficha gris: `textSecondary` llega a 4,5:1 en los dos modos
+      // (`#8E8E93` daba 3,3:1 en claro y 3,5:1 sobre la ficha oscura).
+      color: themeColors(isDark).textSecondary,
     },
     fv: {
       ...typography.caption,
@@ -618,7 +620,7 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: isDark
         ? 'rgba(149,210,242,0.10)'
         : 'rgba(149,210,242,0.14)',
-      borderRadius: 13,
+      borderRadius: radii.md,
       borderLeftWidth: 3,
       borderLeftColor: brand.secondary,
     },
@@ -629,7 +631,7 @@ const createStyles = (isDark: boolean) =>
       marginHorizontal: 4,
       paddingVertical: 9,
       paddingHorizontal: 12,
-      borderRadius: 11,
+      borderRadius: radii.md,
       backgroundColor: isDark
         ? 'rgba(149,210,242,0.10)'
         : 'rgba(37,56,131,0.06)',

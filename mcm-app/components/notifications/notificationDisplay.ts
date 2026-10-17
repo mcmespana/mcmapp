@@ -1,4 +1,10 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import { normalizeNotificationRoute } from '@/utils/notificationRoutes';
+import type {
+  NotificationActionButtonData,
+  NotificationData,
+  ReceivedNotification,
+} from '@/types/notifications';
 
 /**
  * Helpers de presentación para la UI de notificaciones (lista + detalle).
@@ -6,8 +12,9 @@ import { MaterialIcons } from '@expo/vector-icons';
  * mocks): mapeo de rutas internas a etiqueta+icono, normalización de rutas y
  * formato relativo de fechas.
  *
- * Nota: existe otra normalización de rutas en `utils/notificationRoutes.ts`
- * (`normalizeNotificationRoute`) con lógica distinta; NO son la misma función.
+ * La normalización de rutas es la de `utils/notificationRoutes.ts` (con alias
+ * para las rutas heredadas del panel). Hubo aquí una copia más corta, sin
+ * alias, y la hoja de notificaciones navegaba con ella a rutas que no existen.
  */
 
 export const ROUTE_LABELS: Record<
@@ -25,42 +32,32 @@ export const ROUTE_LABELS: Record<
   '/(tabs)/contigo/oracion': { label: 'Oración', icon: 'brightness-3' },
   '/(tabs)/contigo/revision': { label: 'Revisión', icon: 'rate-review' },
   '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
+  '/notifications': { label: 'Notificaciones', icon: 'notifications' },
 };
 
 export function normalizeRoute(route: string): string {
-  if (!route) return '';
-  let clean = route.trim();
-  if (clean.startsWith('http')) return clean;
-
-  clean = clean.replace(/\/+/g, '/');
-
-  const hasSlash = clean.startsWith('/');
-  const naked = hasSlash ? clean.substring(1) : clean;
-
-  if (naked.startsWith('(tabs)/')) {
-    return '/' + naked;
-  }
-
-  const tabPaths = [
-    'cancionero',
-    'calendario',
-    'fotos',
-    'mas',
-    'index',
-    'contigo',
-  ];
-
-  const isTab = tabPaths.some((p) => naked === p || naked.startsWith(p + '/'));
-  if (isTab) {
-    return '/(tabs)/' + naked;
-  }
-
-  return '/' + naked;
+  return normalizeNotificationRoute(route);
 }
 
 export function getRouteLabel(route: string) {
   const norm = normalizeRoute(route);
   return ROUTE_LABELS[norm] ?? ROUTE_LABELS[route] ?? null;
+}
+
+/**
+ * Botones de acción de una notificación (hasta 3). Soporta el array
+ * `actionButtons` (formato actual) y el `actionButton` único (legacy y
+ * notificaciones antiguas cacheadas). Lo usan la lista, la hoja y el detalle,
+ * para que la misma notificación enseñe los mismos botones se abra por donde
+ * se abra.
+ */
+export function getActionButtons(
+  notification: NotificationData | ReceivedNotification,
+): NotificationActionButtonData[] {
+  if (notification.actionButtons && notification.actionButtons.length > 0) {
+    return notification.actionButtons;
+  }
+  return notification.actionButton ? [notification.actionButton] : [];
 }
 
 export function formatDate(date: Date): string {

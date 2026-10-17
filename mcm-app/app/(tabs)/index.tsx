@@ -29,7 +29,12 @@ import { router } from 'expo-router';
 import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
-import colors, { CarismoColors, Colors } from '@/constants/colors';
+import colors, {
+  CarismoColors,
+  Colors,
+  TabHeaderColors,
+  themeColors,
+} from '@/constants/colors';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -47,8 +52,12 @@ import { useVersionGate } from '@/contexts/VersionGateContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useTabNavigation } from '@/hooks/useTabNavigation';
 import { localISO } from '@/utils/localDate';
-import { hexAlpha } from '@/utils/colorUtils';
+import { hexAlpha, readableOn } from '@/utils/colorUtils';
+import { tintedGlyph } from '@/utils/tintColors';
+import { motionEasings } from '@/constants/animations';
+import typography from '@/constants/typography';
 import ScreenHero from '@/components/ui/ScreenHero';
+import SectionHeader from '@/components/ui/SectionHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import AppChip from '@/components/ui/AppChip';
 import GlassActionGroup from '@/components/ui/GlassActionGroup';
@@ -185,6 +194,23 @@ function getUpcomingEventsByWeek(
 
   return groups;
 }
+
+/**
+ * Relleno de los CTA de evaluación: el rojo MIC y el celeste de marca,
+ * oscurecidos lo justo para que el texto BLANCO de encima llegue a 4,5:1
+ * (blanco sobre `info` da 2,6:1 y sobre `accent` 3,6:1). Así se conserva el
+ * estilo «color + texto blanco» sin pasar a texto oscuro.
+ */
+const EVAL_ACCENT_FILL = readableOn(colors.accent, colors.white);
+const EVAL_INFO_FILL = readableOn(colors.info, colors.white);
+
+// Tamaños base de la escala, para multiplicarlos por `fontScale`.
+const FOOTNOTE_SIZE = typography.footnote.fontSize as number;
+const OVERLINE_SIZE = typography.overline.fontSize as number;
+
+/** Opacidad de la pastilla de un acceso rápido (el color de su pestaña). */
+const QUICK_FILL_LIGHT = '1F';
+const QUICK_FILL_DARK = '33';
 
 interface QuickItem {
   key: string;
@@ -381,15 +407,23 @@ export default function Home() {
       ? crossCheck.unread
       : false;
 
-  // Ping animation for the notification badge (Reanimated 3).
+  // Ping animation for the notification badge (Reanimated 3). Solo late
+  // mientras la Home está en pantalla: las pestañas de Android y web mantienen
+  // las pantallas montadas, y un bucle infinito en segundo plano mantiene a la
+  // plataforma produciendo fotogramas (batería, y en web el hilo principal).
   const pingScale = useSharedValue(1);
   const pingOpacity = useSharedValue(0.6);
-  useEffect(() => {
-    if (unreadCount > 0) {
+  useFocusEffect(
+    useCallback(() => {
+      if (unreadCount === 0) {
+        pingScale.set(1);
+        pingOpacity.set(0.6);
+        return;
+      }
       pingScale.set(
         withRepeat(
           withSequence(
-            withTiming(1.8, { duration: 800 }),
+            withTiming(1.8, { duration: 800, easing: motionEasings.out }),
             withTiming(1, { duration: 0 }),
           ),
           -1,
@@ -407,11 +441,11 @@ export default function Home() {
       return () => {
         cancelAnimation(pingScale);
         cancelAnimation(pingOpacity);
+        pingScale.set(1);
+        pingOpacity.set(0.6);
       };
-    }
-    pingScale.set(1);
-    pingOpacity.set(0.6);
-  }, [unreadCount, pingScale, pingOpacity]);
+    }, [unreadCount, pingScale, pingOpacity]),
+  );
   const animatedPingStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pingScale.get() }],
     opacity: pingOpacity.get(),
@@ -435,29 +469,43 @@ export default function Home() {
   // Quick grid items — filtrados por la config del perfil resuelto
   const quickItems = useMemo<QuickItem[]>(() => {
     const visible = new Set(resolved.homeButtons);
+    // Cada acceso lleva el color de su pestaña (design.md §1: el mismo destino
+    // no puede tener un color en la barra y otro en la Home). Comunica va con
+    // `colors.purple` porque `TabHeaderColors.comunica` es un rgba.
+    const tinted = (tint: string) =>
+      tintedGlyph(
+        tint,
+        theme.background,
+        scheme === 'dark' ? QUICK_FILL_DARK : QUICK_FILL_LIGHT,
+      );
+    const comunicaColors = tinted(colors.purple);
+    const cancioneroColors = tinted(TabHeaderColors.cancionero);
+    const visitapapaColors = tinted(TabHeaderColors.visitapapa);
+    const fotosColors = tinted(TabHeaderColors.fotos);
+    const evangelioColors = tinted(TabHeaderColors.contigo);
     const catalog: Record<string, QuickItem> = {
       comunica: {
         key: 'comunica',
         label: 'Comunica',
         icon: 'forum',
-        iconBg: scheme === 'dark' ? '#3A2200' : '#FFF0E0',
-        iconColor: '#E08A3C',
+        iconBg: comunicaColors.fill,
+        iconColor: comunicaColors.glyph,
         tab: 'comunica',
       },
       cancionero: {
         key: 'cancionero',
         label: 'Cantoral',
         icon: 'music-note',
-        iconBg: scheme === 'dark' ? '#1A1A3A' : '#E8E0FF',
-        iconColor: '#6366F1',
+        iconBg: cancioneroColors.fill,
+        iconColor: cancioneroColors.glyph,
         tab: 'cancionero',
       },
       visitapapa: {
         key: 'visitapapa',
         label: 'Visita Papa',
         icon: 'church',
-        iconBg: scheme === 'dark' ? '#332B00' : '#FFF8D6',
-        iconColor: '#C9A800',
+        iconBg: visitapapaColors.fill,
+        iconColor: visitapapaColors.glyph,
         // El tab del evento en curso; su nombre lo pone el perfil, no está fijo.
         tab: activeTabId || 'visitapapa',
       },
@@ -465,16 +513,16 @@ export default function Home() {
         key: 'fotos',
         label: 'Fotos',
         icon: 'image',
-        iconBg: scheme === 'dark' ? '#0A2A1A' : '#D5F5E3',
-        iconColor: '#34D399',
+        iconBg: fotosColors.fill,
+        iconColor: fotosColors.glyph,
         tab: 'fotos',
       },
       evangelio: {
         key: 'evangelio',
         label: 'Evangelio',
         icon: 'menu-book',
-        iconBg: scheme === 'dark' ? '#3A2A1A' : '#FFF8E1',
-        iconColor: '#F59E0B',
+        iconBg: evangelioColors.fill,
+        iconColor: evangelioColors.glyph,
         href: '/(tabs)/contigo/evangelio',
       },
       mas: {
@@ -492,7 +540,14 @@ export default function Home() {
       .filter((id) => visible.has(id) && catalog[id])
       .filter((id) => !(eventArchived && id === activeTabId))
       .map((id) => catalog[id]);
-  }, [resolved.homeButtons, scheme, theme.icon, eventArchived, activeTabId]);
+  }, [
+    resolved.homeButtons,
+    scheme,
+    theme.background,
+    theme.icon,
+    eventArchived,
+    activeTabId,
+  ]);
 
   // Hide the tab navigator header — we render our own
   useLayoutEffect(() => {
@@ -878,9 +933,7 @@ export default function Home() {
                   <MaterialIcons
                     name="church"
                     size={22}
-                    color={
-                      scheme === 'dark' ? activeEvent.tintColor : '#8A6D00'
-                    }
+                    color={readableOn(activeEvent.tintColor, theme.background)}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -910,7 +963,7 @@ export default function Home() {
             {/* ── CTA "Evalúa la actividad" — destacado y directo ── */}
             {showEvalBanner && (
               <TouchableOpacity
-                style={[styles.evalCta, { backgroundColor: colors.accent }]}
+                style={[styles.evalCta, { backgroundColor: EVAL_ACCENT_FILL }]}
                 onPress={() => {
                   h.tap();
                   // Entra por el tab del evento si tiene ruta propia y por
@@ -935,14 +988,14 @@ export default function Home() {
                 </View>
                 <View style={styles.evalCtaBtn}>
                   <Text
-                    style={[styles.evalCtaBtnText, { color: colors.accent }]}
+                    style={[styles.evalCtaBtnText, { color: EVAL_ACCENT_FILL }]}
                   >
                     Evaluar
                   </Text>
                   <MaterialIcons
                     name="arrow-forward"
                     size={15}
-                    color={colors.accent}
+                    color={EVAL_ACCENT_FILL}
                   />
                 </View>
               </TouchableOpacity>
@@ -951,7 +1004,7 @@ export default function Home() {
             {/* ── CTA "Evalúa la app" ── */}
             {showAppEvalBanner && (
               <TouchableOpacity
-                style={[styles.evalCta, { backgroundColor: colors.info }]}
+                style={[styles.evalCta, { backgroundColor: EVAL_INFO_FILL }]}
                 onPress={() => {
                   h.tap();
                   router.push('/evaluacion-app');
@@ -972,13 +1025,15 @@ export default function Home() {
                   </Text>
                 </View>
                 <View style={styles.evalCtaBtn}>
-                  <Text style={[styles.evalCtaBtnText, { color: colors.info }]}>
+                  <Text
+                    style={[styles.evalCtaBtnText, { color: EVAL_INFO_FILL }]}
+                  >
                     Evaluar
                   </Text>
                   <MaterialIcons
                     name="arrow-forward"
                     size={15}
-                    color={colors.info}
+                    color={EVAL_INFO_FILL}
                   />
                 </View>
               </TouchableOpacity>
@@ -1133,10 +1188,10 @@ export default function Home() {
                         styles.quickLabel,
                         {
                           color: theme.icon,
-                          fontSize: 10 * fontScale,
+                          fontSize: FOOTNOTE_SIZE * fontScale,
                         },
                       ]}
-                      numberOfLines={1}
+                      numberOfLines={2}
                     >
                       {item.label}
                     </Text>
@@ -1151,17 +1206,13 @@ export default function Home() {
           <View style={isWide ? styles.wideColRight : undefined}>
             {/* ── Próximos eventos ── */}
             <View style={styles.section}>
-              <Text
-                style={[
-                  styles.sectionLabel,
-                  {
-                    color: theme.icon,
-                    fontSize: 11 * fontScale,
-                  },
-                ]}
-              >
-                PRÓXIMOS EVENTOS
-              </Text>
+              <SectionHeader
+                label="Próximos eventos"
+                style={styles.sectionHeader}
+                textStyle={{
+                  fontSize: OVERLINE_SIZE * fontScale,
+                }}
+              />
 
               {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (
                 /* User has calendars but all hidden */
@@ -1270,8 +1321,8 @@ export default function Home() {
                             {evt.location ? (
                               <View style={styles.eventMeta}>
                                 <MaterialIcons
-                                  name="schedule"
-                                  size={11}
+                                  name="place"
+                                  size={12}
                                   color={theme.icon}
                                 />
                                 <Text
@@ -1341,7 +1392,12 @@ export default function Home() {
             style={styles.feedbackLink}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={[styles.feedbackText, { color: theme.icon }]}>
+            <Text
+              style={[
+                styles.feedbackText,
+                { color: themeColors(scheme === 'dark').textSecondary },
+              ]}
+            >
               ¿Algún fallo? Cuéntanoslo
             </Text>
           </TouchableOpacity>
