@@ -4,7 +4,7 @@ import {
   reportIfPermissionDenied,
   type FirebaseOp,
 } from '@/utils/firebaseErrors';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirebaseApp } from '../utils/firebaseApp';
@@ -179,6 +179,20 @@ export function useFirebaseData<T>(
   storageKey: string,
   transform?: (data: any) => T,
 ) {
+  // Primer pintado SÍNCRONO desde la caché de módulo. Antes cada montaje
+  // arrancaba con `data = null` y `loading = true` aunque el nodo ya estuviera
+  // parseado en memoria (lo había cargado otra pantalla), y el efecto tardaba
+  // un salto nativo (`getNetworkStateAsync`) en servirlo: al abrir una
+  // categoría asomaba «Cargando canciones…» durante la animación de entrada y
+  // luego saltaba la lista. Con caché caliente, el primer render ya trae los
+  // datos; el efecto solo revalida. Se lee UNA vez (inicializador de estado).
+  const [initial] = useState(() => {
+    const cached = path === null ? undefined : nodeCache.get(storageKey);
+    if (cached?.parsed === undefined) return null;
+    const out = transform ? transform(cached.parsed) : (cached.parsed as T);
+    return { src: cached.parsed, out, hidden: cached.hidden };
+  });
+
   // Última aplicación del transform de ESTA instancia: si el `parsed` crudo
   // no cambió de identidad (p. ej. `refreshRemote` salió por la vía rápida
   // porque el updatedAt remoto coincide con el local), reutilizamos el
@@ -188,38 +202,23 @@ export function useFirebaseData<T>(
   // datos fueran idénticos: React re-renderizaba y todo `useMemo` aguas
   // abajo recomputaba para cero cambio visible. Memo POR INSTANCIA (no en
   // `nodeCache`): transforms distintos por consumidor del mismo path siguen
-  // aislados (ver el comentario de cabecera sobre `nodeCache`).
-  // Va ANTES de los `useState` porque sus inicializadores lo rellenan.
-  const lastApplied = useRef<{ src: unknown; out: T } | null>(null);
+  // aislados (ver el comentario de cabecera sobre `nodeCache`). Arranca con lo
+  // que ya transformó el primer pintado.
+  const lastApplied = useRef<{ src: unknown; out: T } | null>(initial);
 
-  // Primer pintado SÍNCRONO desde la caché de módulo. Antes cada montaje
-  // arrancaba con `data = null` y `loading = true` aunque el nodo ya estuviera
-  // parseado en memoria (lo había cargado otra pantalla), y el efecto tardaba
-  // un salto nativo (`getNetworkStateAsync`) en servirlo: al abrir una
-  // categoría asomaba «Cargando canciones…» durante la animación de entrada y
-  // luego saltaba la lista. Con caché caliente, el primer render ya trae los
-  // datos; el efecto solo revalida.
-  const [data, setData] = useState<T | null>(() => {
-    const cached = path === null ? undefined : nodeCache.get(storageKey);
-    if (cached?.parsed === undefined) return null;
-    const out = transform ? transform(cached.parsed) : (cached.parsed as T);
-    lastApplied.current = { src: cached.parsed, out };
-    return out;
-  });
-  const [loading, setLoading] = useState(
-    () => !(path !== null && nodeCache.get(storageKey)?.parsed !== undefined),
-  );
+  const [data, setData] = useState<T | null>(initial ? initial.out : null);
+  const [loading, setLoading] = useState(initial === null);
   const [offline, setOffline] = useState(false);
   // `hidden` se lee del mismo nodo Firebase (hermano de `data` y `updatedAt`).
   // Lo usa el hub de eventos para esconder secciones desde el panel sin
   // borrar sus datos. Si el nodo no lo trae, se asume false.
-  const [hidden, setHidden] = useState(() => {
-    const cached = path === null ? undefined : nodeCache.get(storageKey);
-    return cached?.parsed !== undefined && cached.hidden;
-  });
+  const [hidden, setHidden] = useState(initial?.hidden ?? false);
   // Estado de red de la última comprobación, para distinguir "he recuperado la
   // conexión" de "el listener ha vuelto a emitir estando ya conectado".
   const wasOfflineRef = useRef(false);
+  // Revalidación a demanda (pull-to-refresh). La rellena el efecto, que es
+  // quien conoce el `applyParsed` de la instancia; sin nodo no hace nada.
+  const refreshRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   useEffect(() => {
     // Sin nodo que mirar no hay nada que hacer. `loading` se resuelve al
@@ -325,6 +324,29 @@ export function useFirebaseData<T>(
     }
     fetchData();
 
+    // Pull-to-refresh: misma fase remota que el montaje (coalescida y por la
+    // vía rápida de `updatedAt`, así que si nada cambió no se descarga `data`)
+    // y se vuelve a aplicar la caché. Nunca rechaza: un fallo de red deja lo
+    // que ya se estaba viendo.
+    refreshRef.current = async () => {
+      const entry = nodeCache.get(storageKey);
+      try {
+        await refreshRemote(
+          nodePath,
+          storageKey,
+          entry?.parsed !== undefined,
+          entry?.updatedAt ?? null,
+        );
+      } catch (e) {
+        if (!isPermissionDenied(e)) {
+          logger.error('Error refreshing firebase data', e);
+        }
+        return;
+      }
+      const fresh = nodeCache.get(storageKey);
+      if (fresh) applyParsed(fresh.parsed, fresh.hidden);
+    };
+
     // Resincronización al RECUPERAR la red.
     //
     // Antes, si la app arrancaba sin cobertura, se quedaba con la caché hasta
@@ -347,8 +369,11 @@ export function useFirebaseData<T>(
     return () => {
       isMounted = false;
       subscription.remove();
+      refreshRef.current = () => Promise.resolve();
     };
   }, [path, storageKey, transform]);
+
+  const refresh = useCallback(() => refreshRef.current(), []);
 
   // Sin nodo no hay carga pendiente ni nada que esperar.
   return {
@@ -356,5 +381,6 @@ export function useFirebaseData<T>(
     loading: path === null ? false : loading,
     offline,
     hidden,
+    refresh,
   } as const;
 }

@@ -9,7 +9,7 @@
  * - Que se aplique la función de transformación si se proporciona
  * - Que se detecte correctamente el estado offline
  */
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import {
   useFirebaseData,
   __resetNodeCacheForTests,
@@ -374,5 +374,52 @@ describe('useFirebaseData — memo del transform por instancia (Plan 007)', () =
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.data).toEqual({ raw: true });
+  });
+});
+
+describe('useFirebaseData — refresh (pull-to-refresh)', () => {
+  it('trae datos nuevos si el updatedAt remoto cambió', async () => {
+    __setMockNode('songs', { updatedAt: '1', data: { v: 1 } });
+    const { result } = await renderHook(() =>
+      useFirebaseData<{ v: number }>('songs', 'refresh_new'),
+    );
+    await waitFor(() => expect(result.current.data).toEqual({ v: 1 }));
+
+    __setMockNode('songs', { updatedAt: '2', data: { v: 2 } });
+    await act(async () => {
+      await result.current.refresh();
+    });
+    expect(result.current.data).toEqual({ v: 2 });
+  });
+
+  it('con el mismo updatedAt no vuelve a descargar `data`', async () => {
+    __setMockNode('songs', { updatedAt: '1', data: { v: 1 } });
+    const { result } = await renderHook(() =>
+      useFirebaseData<{ v: number }>('songs', 'refresh_same'),
+    );
+    await waitFor(() => expect(result.current.data).toEqual({ v: 1 }));
+    const before = dataFetches();
+    const sameData = result.current.data;
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+    expect(dataFetches()).toBe(before);
+    expect(result.current.data).toBe(sameData);
+  });
+
+  it('un fallo de red no rechaza y deja los datos que había', async () => {
+    __setMockNode('songs', { updatedAt: '1', data: { v: 1 } });
+    const { result } = await renderHook(() =>
+      useFirebaseData<{ v: number }>('songs', 'refresh_fail'),
+    );
+    await waitFor(() => expect(result.current.data).toEqual({ v: 1 }));
+
+    (get as jest.Mock).mockRejectedValue(new Error('Network error'));
+    await act(async () => {
+      await expect(result.current.refresh()).resolves.toBeUndefined();
+    });
+    // (El `beforeEach` devuelve `get` a su implementación con `__resetMockDb`.)
+    expect(result.current.data).toEqual({ v: 1 });
   });
 });
