@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-19 12:00 — Módulo NFC instalado (aún sin usar)
+
+- Añadido `react-native-nfc-manager` y su plugin en `app.json` (permiso NFC + entitlement NDEF en iOS) para que el próximo build nativo ya lo incluya. Todavía no hay código que lo use.
+- Requiere build nativo: no llega por OTA.
+
 ## 2026-10-16 23:40 — Buscador del cantoral sin tildes y auditoría de pulido
 
 - **Buscador del cantoral**: ya no distingue tildes — «senor» encuentra

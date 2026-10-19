@@ -202,6 +202,13 @@
           "cameraPermission": "MCM App usa la cámara para escanear los códigos QR de playlists y sesiones de coro.",
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "react-native-nfc-manager",
+        {
+          "nfcPermission": "MCM App usa NFC para leer tarjetas y pegatinas del movimiento.",
+          "includeNdefEntitlement": true
+        }
       ]
     ],
     "experiments": {
