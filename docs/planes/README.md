@@ -43,12 +43,13 @@ no entran en la bolsa oportunista, y no hace falta preguntar por ellos.
 
 ## 🔬 En análisis — todavía no hay plan
 
-No se ejecuta nada de aquí: es la base para escribir un plan cuando el usuario
-haya decidido.
+El análisis no se ejecuta. Los planes de `area-nativa/` sí, pero solo cuando el
+usuario lo pida y en su rama.
 
 | Documento                                                          | Estado                                                                                                                                                                                                  |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`ANALISIS_AREA_PRIVADA_NATIVA.md`](ANALISIS_AREA_PRIVADA_NATIVA.md) | 🔬 Análisis del 2026-10-21: el área privada de Comunica en nativo, con backend propio. Empieza **después de la 2.1/2.2**, en rama aparte. 🔒 14 decisiones en su página (`BACKLOG.md` §2.I) |
+| [`ANALISIS_AREA_PRIVADA_NATIVA.md`](ANALISIS_AREA_PRIVADA_NATIVA.md) | 🔬 Análisis del 2026-10-21: el área privada de Comunica en nativo, con backend propio. Decisiones tomadas casi todas (`BACKLOG.md` §2.I) |
+| [`area-nativa/`](area-nativa/README.md) | 🟢 Planes de la app (front), escritos el 2026-10-21. Se ejecutan en la rama `nuevoComunicaChulo` cuando el usuario lo diga; no necesitan el servidor (servidor falso) |
 
 ## 🗄️ Archivados — HECHOS o ANULADOS, no re-ejecutar
 

@@ -357,7 +357,8 @@ del código.
   App Check. Lo nativo empezaría después.
 - **La rama aparte no molesta a la publicación.** Un push a `main` no publica
   nada; la OTA de producción solo sale con push a `production` y la de preview
-  con push a `preview`. Una rama larga (p. ej. `area-privada-nativa`) se prueba
+  con push a `preview`. La rama larga es **`nuevoComunicaChulo`** (nombre del
+  propietario, 21/10/2026) y se prueba
   con builds de desarrollo de EAS hechas desde ella, o mergeándola a `preview`
   como se hace con el cantoral.
 - **Para que la rama no se pudra:** código nuevo en carpetas propias, tocar lo
@@ -511,6 +512,8 @@ propietario puede haber cambiado algo. Estado al 21/10/2026, por la tarde:
 | `tecnicas` | Quería hablarlo | Rehecha con sus dos comentarios (abajo); pendiente de que la confirme |
 | `ipfija` | **Pendiente** (nueva) | Recomendado: servidor pequeño con IP fija (~6 €/mes), solo si la piden |
 | `diseno` | **Pendiente** (nueva) | Recomendado: traducir pantalla a pantalla (§3.5) |
+| `territorio` | **Pendiente** (nueva, de los planes de la app) | Recomendado: territorio «Comunica», con el degradado solo en la acción principal (`area-nativa/03`) |
+| `dni` | **Pendiente** (nueva, de los planes de la app) | Recomendado: con un DNI que no existe, contestar igual que con el correo (`area-nativa/02`) |
 
 **Lo técnico, rehecho con sus comentarios** (tarjeta `tecnicas`): primera
 versión sin espejo, leyendo la base de datos del CRM y escribiendo por la API

@@ -64,7 +64,7 @@ Si cambias uno de estos formatos, actualiza el contrato.
 | [PLAN_CALIDAD.md](planes/PLAN_CALIDAD.md)                           | Saneamiento de código — 🟡 Fase 0 hecha; **Fase 1 descartada**. Su §0 explica cómo organizar código que solo edita una IA           |
 | [archivo/PLAN_CARISMOCHITO.md](planes/archivo/PLAN_CARISMOCHITO.md) | ✅ Hecho (2026-09-26). Cómo funciona hoy: [funcionalidades/CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)                        |
 | [PLAN_DISENO.md](planes/PLAN_DISENO.md)                             | ⏳ Unificación del diseño: incoherencias de tokens con evidencia + mejoras. Bolsa oportunista, tareas sueltas de un commit          |
-| [ANALISIS_AREA_PRIVADA_NATIVA.md](planes/ANALISIS_AREA_PRIVADA_NATIVA.md) | 🔬 Análisis, no plan: el área privada de Comunica en nativo con backend propio, después de la 2.2. Decisiones pendientes        |
+| [ANALISIS_AREA_PRIVADA_NATIVA.md](planes/ANALISIS_AREA_PRIVADA_NATIVA.md) | 🔬 Análisis: el área privada de Comunica en nativo con backend propio. Planes de la app en [planes/area-nativa/](planes/area-nativa/README.md) |
 
 **🔵 Futuro lejano** (no se tocan hasta que el usuario lo pida — decisión de 2026-08-15):
 
