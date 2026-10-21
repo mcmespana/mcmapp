@@ -3,7 +3,7 @@
 > **Lee esto antes de abrir ningún `PLAN_*.md`.** Su único trabajo es que no
 > vuelvas a ejecutar algo que ya está hecho.
 >
-> Última actualización: 2026-10-09.
+> Última actualización: 2026-10-21.
 
 ## La regla, en una línea
 
@@ -40,6 +40,15 @@ no entran en la bolsa oportunista, y no hace falta preguntar por ellos.
 | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`PLAN_WIDGET_CONTIGO.md`](PLAN_WIDGET_CONTIGO.md) | Feature entera + build de tienda dedicada (WidgetKit + App Group). Ampliado el 2026-09-19: son **tres** widgets (hábitos, racha, evangelio del día) |
 | [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md)   | ⚠️ **Por definir**: el usuario explicará la idea. Lo que hay escrito es solo una propuesta de Claude (2026-09-26), no un plan decidido              |
+
+## 🔬 En análisis — todavía no hay plan
+
+No se ejecuta nada de aquí: es la base para escribir un plan cuando el usuario
+haya decidido.
+
+| Documento                                                          | Estado                                                                                                                                                                                                  |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`ANALISIS_AREA_PRIVADA_NATIVA.md`](ANALISIS_AREA_PRIVADA_NATIVA.md) | 🔬 Análisis del 2026-10-21: el área privada de Comunica en nativo, con backend propio. Empieza **después de la 2.1/2.2**, en rama aparte. 🔒 14 decisiones en su página (`BACKLOG.md` §2.I) |
 
 ## 🗄️ Archivados — HECHOS o ANULADOS, no re-ejecutar
 
