@@ -328,17 +328,17 @@ con etiqueta y acciones de accesibilidad; falso y cliente comparten esquemas.
 
 ## Preguntas abiertas
 
-1. **Quitar una marca guardada no la borra**: «sin marcar no se escribe»
+1. 🔒 (tarjeta `desmarcar`) **Quitar una marca guardada no la borra**: «sin marcar no se escribe»
    (`sticpa_pl_save`), así que un «Vino» quitado sigue en el CRM y al releer
    vuelve. La app hace lo mismo. ¿Se quiere que quitarla la borre?
-2. **Sesión futura**: el análisis (§5) y `PASAR-LISTA.md` §6.3 dicen que no se
+2. 🔒 (tarjeta `futuras`) **Sesión futura**: el análisis (§5) y `PASAR-LISTA.md` §6.3 dicen que no se
    pasa lista del futuro, pero si no ha empezado ninguna el plugin propone la
    próxima y deja guardarla. El plan sigue al análisis. Confirmar.
 3. **«Crear la sesión de hoy»** (plugin, 16/10/2026): fuera de alcance, WebView. ¿Nativa?
 4. **COM II y COM III** son `#7c3aed` y `#be185d` en el plugin: sin token del
-   plan 03, son colores nuevos y se pregunta (`design.md` §1).
-5. **El glosario de 00 no coincide con el plugin** (se sigue el plugin y se
-   corrige 00): «No vino», no «No»; «COM I/II/III», no «COM 1»; «chavalines».
+   plan 03, son colores nuevos. Se deciden con `territorio` (plan 03 §2).
+5. ~~El glosario de 00 no coincide con el plugin~~ **Resuelto:** 00 ya dice
+   «No vino», «COM I/II/III» y «chavalines».
 6. **«Hace N días»**: el plugin cuenta bloques de 24 h y el domingo por la
    mañana dice «Hace 0 días»; el plan cuenta días de calendario. Confirmar.
 7. **Documento contra código (se sigue el código)**: `PASAR-LISTA.md` §4 limita

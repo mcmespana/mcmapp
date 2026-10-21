@@ -514,6 +514,7 @@ propietario puede haber cambiado algo. Estado al 21/10/2026, por la tarde:
 | `diseno` | **Pendiente** (nueva) | Recomendado: traducir pantalla a pantalla (§3.5) |
 | `territorio` | **Pendiente** (nueva, de los planes de la app) | Recomendado: territorio «Comunica», con el degradado solo en la acción principal (`area-nativa/03`) |
 | `dni` | **Pendiente** (nueva, de los planes de la app) | Recomendado: con un DNI que no existe, contestar igual que con el correo (`area-nativa/02`) |
+| `futuras`, `desmarcar`, `salud-no`, `alcance-coord`, `marcas-autobus`, `avisos-nombres`, `fotos-documentos` | **Pendientes** (nuevas, de la revisión de los planes de pantallas) | Lista y recomendación en `area-nativa/README.md` |
 
 **Lo técnico, rehecho con sus comentarios** (tarjeta `tecnicas`): primera
 versión sin espejo, leyendo la base de datos del CRM y escribiendo por la API

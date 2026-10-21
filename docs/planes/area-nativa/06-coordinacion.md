@@ -331,19 +331,23 @@ coordinas», «porque eres» ni «porque acompañas» (§6.4).
 
 1. **MIC y COM en eventos separados** (parte de estado §1, 🔴): quien coordina
    toda la delegación pasa la lista del sábado sobre el evento de COM, y los
-   monitores de MIC acabarían inscritos en COM. El plan hace lo del plugin.
-   ¿Selector de etapa en la lista cuando el alcance es la delegación?
-2. **Varias relaciones de coordinación de etapas distintas** (MIC y COM, ninguna
+   monitores de MIC acabarían inscritos en COM. **Resuelto en la revisión
+   (21/10):** cuando el alcance cubre más de una etapa, la lista de monitores
+   lleva un `SegmentedControl` de etapa y cada etapa va sobre su evento. Es
+   arreglar un fallo conocido, no cambiar una regla.
+2. 🔒 (tarjeta `alcance-coord`) **Varias relaciones de coordinación de etapas distintas** (MIC y COM, ninguna
    más amplia): el plugin se queda con la primera que devuelve el CRM; `Me.scope`
    del plan 00 admite listas. ¿La primera o la suma?
-3. **Alcance de acompañamiento**: el encargo dice «por sus relaciones con etapa
+3. 🔒 (tarjeta `alcance-coord`) **Alcance de acompañamiento**: el encargo dice «por sus relaciones con etapa
    y segmento»; el código no le da alcance (ve toda la delegación) pero, de
    rebote, **no ve a los monitores sin grupo**. ¿Es lo querido?
 4. **El % de sábados en la ficha**: el encargo dice «solo con 4 marcas o más»;
    el código solo aplica el mínimo en la lista, y la ficha lo enseña desde una
    marca. El plan sigue al código.
-5. **Una reunión futura**: el código deja abrir y guardar su lista; las reglas
+5. 🔒 (tarjeta `futuras`) **Una reunión futura**: el código deja abrir y guardar su lista; las reglas
    del análisis (§5) dicen «no se pasa lista de sesiones futuras». El plan
-   sigue al código y el falso no la bloquea.
-6. **Seguimientos sobre uno mismo**: el plan esconde la sección (SEGUIMIENTOS §7)
-   en vez de la vacía con un alta que falla del código. Confirmar.
+   sigue al código y el falso no la bloquea. **Corregido en la revisión
+   (21/10):** mientras se decide, lo mismo que el plan 04 (se ve, no se marca),
+   para que los tres planes hagan lo mismo.
+6. ~~Seguimientos sobre uno mismo~~ **Resuelto:** la regla es «nadie ve ni
+   escribe los seguimientos sobre sí mismo», así que la sección no se pinta.

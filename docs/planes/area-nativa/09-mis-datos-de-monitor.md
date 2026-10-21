@@ -206,7 +206,7 @@ la relación con la persona, la revisión con el archivo y el indicador a `1`, a
 
 ## Preguntas abiertas
 
-1. **Fotos y cámara.** Con `expo-document-picker` el iPhone ve la app Archivos, no la galería: un
+1. 🔒 (tarjeta `fotos-documentos`) **Fotos y cámara.** Con `expo-document-picker` el iPhone ve la app Archivos, no la galería: un
    título en papel hay que escanearlo antes. «Hacer una foto» o «Elegir de la galería» pedirían
    **`expo-image-picker`** (paquete nativo nuevo) y, con ese o con `expo-camera`, **cambiar el texto
    del permiso de cámara** de `app.json` («…para escanear los códigos QR de playlists y sesiones de

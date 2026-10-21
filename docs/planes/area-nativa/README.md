@@ -28,13 +28,34 @@ una variable.
 Lo que sí afecta al front ya está decidido: alcance (monitores), sin cobertura
 (pasar lista y grupos), salud (solo la marca), login (código, con el correo de
 la cuenta ya puesto), extras (avisos y compartir), lanzamiento (para todos, con
-vuelta atrás). Lo único de front aún abierto es cómo se traduce el diseño
-(`diseno` y `territorio`): el plan 03 sigue la recomendación y deja marcado
-dónde cambiaría.
+vuelta atrás). Lo de front que sigue abierto (tabla de abajo) son detalles de
+pantalla: cada plan dice qué hace mientras tanto y dónde cambiaría.
 
 **El riesgo de adelantarse** es pequeño: si al construir el servidor el
 contrato necesita un retoque, se cambia en un sitio (`services/comunica/contract.ts`)
 y el typecheck señala todo lo que toca.
+
+---
+
+## Lo que sigue abierto (🔒, en la página de decisiones)
+
+Ninguna bloquea empezar 00-03. Cada plan dice qué hace mientras tanto.
+
+| Tarjeta | Pregunta | Afecta a |
+|---|---|---|
+| `diseno` | Cómo se traduce el diseño (recomendado: pantalla a pantalla) | 03 |
+| `territorio` | De qué color va el área nativa (y los colores del pañuelo, avisos y segmentos) | 03, 04, 05 |
+| `dni` | Si un DNI no existe, ¿se dice? | 02 |
+| `futuras` | ¿Se pasa lista de un día que aún no ha llegado? (mientras, no) | 04, 06, 07 |
+| `desmarcar` | Quitar una marca guardada, ¿la borra en el CRM? | 04 |
+| `salud-no` | Si la familia dijo «no» a la salud, ¿la ficha la enseña? | 05 |
+| `alcance-coord` | Qué ve quien coordina o acompaña varias etapas | 06 |
+| `marcas-autobus` | Marcas del grupo en la lista del autobús | 07 |
+| `avisos-nombres` | Nombres de chavales en los avisos del móvil | 08 |
+| `fotos-documentos` | Fotos con la cámara para títulos (paquete nuevo en la 2.2) | 09 |
+
+Antes de ejecutar un plan, se leen las respuestas de la página (colección
+`decisiones`) y se aplican.
 
 ---
 

@@ -58,7 +58,8 @@ allí solo para coordinación y acompañamiento; hasta que exista, sin enlace.
 | `GET /v1/groups` (plan 04) | Vista Grupos | Equipo de la delegación | Se guarda |
 | `GET /v1/people` | Cursos, A-Z, sin grupo | Equipo de la delegación | Se guarda |
 | `GET /v1/groups/:id` | Un grupo | Equipo; de otra delegación → 403 | Se guarda |
-| `GET /v1/people/:id` | Ficha | Equipo; sin relación vigente con tu delegación → 403 | Se guarda |
+| `GET /v1/people/:id` | Ficha | Equipo; sin relación vigente con tu delegación → 403 | Se guarda, **sin los datos personales** |
+| `GET /v1/people/:id/personal` | Datos personales (documento, dirección, correo, centro, talla, nº de persona) | Equipo | **Nunca**: `persist: false`, como la salud |
 | `GET /v1/people/:id/health` | Salud | `Me.canSeeHealth`; fuera → 403 | **Nunca**: `persist: false`, `gcTime` 1 min |
 | `GET /v1/people/:id/photo?v=` | Miniatura | Equipo; fuera → **403, no 404** | Caché de `expo-image`, vaciada al salir |
 | `POST /v1/people/:id/notices` | Poner un aviso | Equipo | Cola `notice:<clientId>` |
@@ -331,7 +332,8 @@ texto de salud; la función que decide el WhatsApp del menor solo dice sí con
 
 ## Preguntas abiertas
 
-1. **Salud con `healthData` a «No».** La ficha del plugin enseña el texto igual
+1. 🔒 **Salud con `healthData` a «No»** (tarjeta `salud-no` de la página de
+   decisiones).** La ficha del plugin enseña el texto igual
    (`ficha.php` l.532-537 y l.884-902), pero la marca y el globo lo esconden
    (`_marcas_de` l.976, `stic-action.php` l.1708). Con una sola ruta de salud,
    una de las dos se pierde. El falso hace lo del globo hasta que se decida.
@@ -342,9 +344,11 @@ texto de salud; la función que decide el WhatsApp del menor solo dice sí con
    `grupo` (`_participants_without_group`); Cursos y A-Z, solo
    `participante_mic_com` (`mis_grupos.php` l.569). El contrato tiene una lista:
    ¿con o sin los +18?
-4. **Datos personales en el móvil.** El plan guarda DNI, dirección y correo con
-   la ficha (cifrado, por persona, borrado al salir: plan 01). Si protección de
-   datos los quiere como la salud, `personal` pasa a una ruta `persist: false`.
+4. ~~Datos personales en el móvil~~ **Resuelto (revisión del 21/10):** la
+   decisión `offline` del propietario solo guarda nombres, fotos, teléfonos de
+   los tutores y marcas. Los datos personales van en su propia ruta,
+   `GET /v1/people/:id/personal`, con `persist: false`, y la regla 24 se pinta
+   solo con conexión («Necesitas conexión para ver los datos personales»).
 5. **Colores nuevos.** Pañuelo (7) y escala de avisos (3 y su tinta) son hex
    fijos del plugin, iguales en claro y oscuro; la app no los tiene y
-   `design.md` §1 pide preguntar: ¿entran en `constants/colors.ts` como están?
+   `design.md` §1 pide preguntar. Se deciden con `territorio` (plan 03 §2).

@@ -37,7 +37,7 @@
 |                              |                                                                                                                                                                                                                                                                                      |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Ahora mismo**              | **Build de tienda 2.1.** Sentry y Aptabase ✅, diseño verificado en dispositivo ✅, subrayado ✅ (2026-10-08). Falta: compilar y pasar el resto del §5 (canales en Android real), fichas de privacidad, publicar (§6). Estado al día en la tabla de arriba de `BUILD_AGOSTO_2026.md` |
-| **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`) · **Área privada nativa**: 5 decisiones que faltan en su página (§2.I)                                                                                                                                                            |
+| **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`) · **Área privada nativa**: 12 decisiones que faltan en su página (§2.I)                                                                                                                                                            |
 | **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                                                                                                                     |
 | **⚠️ Roto y sin dueño**      | 🚨 **Android no muestra las notificaciones con categoría** desde el 2026-08-03: el Panel manda `channelId` y la app de `production` no tiene esos canales. **Decidido (2026-09-26): no se toca `production`, se arregla con la build 2.1** (`mcm-app/TODO.md`, Notificaciones)       |
 | **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                                                                                               |
@@ -348,9 +348,9 @@ monitores, con un backend nuevo que no sea el plugin.
   sin espejo** (el servidor lee la BBDD del CRM y escribe por la API), Vercel +
   Neon gratis, repo nuevo, código por correo con el correo de la app ya puesto,
   lanzamiento para todos con vuelta atrás.
-- 🔒 **Faltan 5:** `tecnicas` (rehecha con sus comentarios, por confirmar),
-  `ipfija`, `diseno`, y dos que salen de los planes de la app: `territorio`
-  (color del área) y `dni`. Antes de preguntar nada, lee lo que ya haya marcado.
+- 🔒 **Faltan 12:** `tecnicas` (rehecha con sus comentarios, por confirmar) e
+  `ipfija`, del servidor; y diez que salen de los planes de la app, listadas en
+  [`area-nativa/README.md`](area-nativa/README.md) (ninguna bloquea empezar). Antes de preguntar nada, lee lo que ya haya marcado.
 - **Rama: `nuevoComunicaChulo`** (en `mcmapp` y en `comunicaAreaPrivada`).
 - 📝 **Planes de la app (front) escritos** el 2026-10-21 en
   [`area-nativa/`](area-nativa/README.md): contrato y servidor falso,
@@ -429,7 +429,7 @@ ningún sitio compartido.
 | **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D"                                                          | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                                                        |
 | **Sacar la caza de Carismochitos del laboratorio** — ⏳ **pendiente de Izan** (2026-10-16) | Carismochito  | `docs/funcionalidades/CARISMOCHITO.md` + las 4 propuestas en `docs/planes/PLAN_PULIDO_2026_10.md` §Decisiones | Lo decide **Izan**. Si detectas que hablas con Izan, díselo tal cual: **«Izan, fiera, el asunto del carismocho.»** Propuesta recomendada: la caza sale con el propio modo de agitar y la colección se abre tocando el logo verde de Inicio, con interruptor en el Panel |
 | **Pañuelo — por definir**                                                                  | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md`                                                                           | Idea parcial contada el 2026-09-29 (medallas 3D por evento, en el pañuelo, pop-up al tocar; prueba ya en el laboratorio). Falta: **cómo se reparten** y cómo es el pañuelo. No propongas la propuesta escrita como si estuviera decidida.                               |
-| **Área privada nativa — 5 que faltan** (`tecnicas`, `ipfija`, `diseno`, `territorio`, `dni`) | El plan del área nativa (§2.I) | `docs/planes/ANALISIS_AREA_PRIVADA_NATIVA.md` §10 + la página <https://claude.ai/artifact/B3ABkV5CYJLUTo2hnWW8t5> | No preguntes en el chat lo que ya esté marcado: lee primero la colección `decisiones` de la página con la herramienta de datos del artefacto. Pregunta solo lo que falte, con la recomendación del §10 |
+| **Área privada nativa — 12 que faltan** (lista en `area-nativa/README.md`)                    | El plan del área nativa (§2.I) | `docs/planes/ANALISIS_AREA_PRIVADA_NATIVA.md` §10 + la página <https://claude.ai/artifact/B3ABkV5CYJLUTo2hnWW8t5> | No preguntes en el chat lo que ya esté marcado: lee primero la colección `decisiones` de la página con la herramienta de datos del artefacto. Pregunta solo lo que falte, con la recomendación del §10 |
 
 ---
 

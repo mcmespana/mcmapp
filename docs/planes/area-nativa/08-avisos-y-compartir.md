@@ -237,7 +237,7 @@ ya lo enseñe. Analítica: `notificacion_abierta` con `categoria: 'comunica'`, s
 
 ## Preguntas abiertas
 
-1. **Nombres en los avisos.** El plan los deja fuera (solo grupo, fecha y recuentos), porque la
+1. 🔒 (tarjeta `avisos-nombres`) **Nombres en los avisos.** El plan los deja fuera (solo grupo, fecha y recuentos), porque la
    pantalla bloqueada la ve cualquiera y el texto pasa por terceros. ¿Te vale «1 chaval nuevo», o
    quieres el nombre de pila?
 2. **¿Dónde se ve quién ha llegado o se ha ido?** «Novedades en C1» abre la ficha del grupo (plan 05),
