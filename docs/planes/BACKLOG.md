@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-10-21 (área privada nativa: análisis y página de decisiones, §2.I). 2026-10-10 (hoja de canción: decisiones confirmadas, pantalla completa y etiquetas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> Última actualización: 2026-10-21 (área privada nativa: análisis, decisiones tomadas y pasarela sin espejo, §2.I; paquetes nativos a la 2.2, §C-bis). 2026-10-10 (hoja de canción: decisiones confirmadas, pantalla completa y etiquetas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
 > de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
@@ -37,7 +37,7 @@
 |                              |                                                                                                                                                                                                                                                                                      |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Ahora mismo**              | **Build de tienda 2.1.** Sentry y Aptabase ✅, diseño verificado en dispositivo ✅, subrayado ✅ (2026-10-08). Falta: compilar y pasar el resto del §5 (canales en Android real), fichas de privacidad, publicar (§6). Estado al día en la tabla de arriba de `BUILD_AGOSTO_2026.md` |
-| **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`) · **Área privada nativa**: 14 decisiones en su página (§2.I)                                                                                                                                                            |
+| **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`) · **Área privada nativa**: 3 decisiones que faltan en su página (§2.I)                                                                                                                                                            |
 | **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                                                                                                                     |
 | **⚠️ Roto y sin dueño**      | 🚨 **Android no muestra las notificaciones con categoría** desde el 2026-08-03: el Panel manda `channelId` y la app de `production` no tiene esos canales. **Decidido (2026-09-26): no se toca `production`, se arregla con la build 2.1** (`mcm-app/TODO.md`, Notificaciones)       |
 | **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                                                                                               |
@@ -205,7 +205,7 @@ guardan para la siguiente build de tienda.
 | ------------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Widgets de Contigo** — hábitos + racha + evangelio del día (WidgetKit iOS / App Widget Android + App Group) | 0%     | Es una feature entera, no un extra. Los tres comparten target, payload y deep links: se hacen juntos. `docs/planes/PLAN_WIDGET_CONTIGO.md`                                                                                      |
 | **Firebase App Check** (DeviceCheck / Play Integrity)                                                         | 0%     | Arrastra `@react-native-firebase` entero junto al SDK JS que ya se usa, y un _enforcement_ mal configurado deja sin datos a toda la base instalada. Además la Integración D (reglas) sigue abierta, que es el agujero de verdad |
-| **Paquetes nativos del área privada nativa, sin usar** (`expo-secure-store`, `expo-sqlite` con SQLCipher, `expo-local-authentication`) | 🔒 decisión `paquetes` (§2.I) | Solo si el usuario lo decide: así el área nativa podrá salir luego por OTA sobre la 2.2. Como el NFC del 19/10. `ANALISIS_AREA_PRIVADA_NATIVA.md` §7 |
+| **Paquetes nativos del área privada nativa, sin usar** (`expo-secure-store`, `expo-sqlite` con SQLCipher, `expo-local-authentication`) | 0% — **decidido** (2026-10-21) | Para que el área nativa pueda salir luego por OTA sobre la 2.2, como el NFC del 19/10. Solo instalar y configurar; nada de código que los use. `ANALISIS_AREA_PRIVADA_NATIVA.md` §3.5 y §7 |
 
 #### C.4 — Sigue bloqueado por una decisión tuya
 
@@ -342,10 +342,14 @@ monitores, con un backend nuevo que no sea el plugin.
   usuario).
 - **Es un análisis, no un plan: no se ejecuta.** El plan se escribe cuando
   estén las decisiones, en otra sesión.
-- 🔒 **14 decisiones** en la página
-  <https://claude.ai/artifact/B3ABkV5CYJLUTo2hnWW8t5> (colección
-  `decisiones`; §10 del análisis tiene los ids y las recomendaciones). Antes de
-  preguntar nada, lee lo que ya haya marcado.
+- ✅ **Decidido el 2026-10-21** (página
+  <https://claude.ai/artifact/B3ABkV5CYJLUTo2hnWW8t5>, colección
+  `decisiones`; resumen en §10 del análisis): monitores primero, **pasarela
+  sin espejo** (el servidor lee la BBDD del CRM y escribe por la API), Vercel +
+  Neon gratis, repo nuevo, código por correo con el correo de la app ya puesto,
+  lanzamiento para todos con vuelta atrás.
+- 🔒 **Faltan 3:** `tecnicas` (rehecha con sus comentarios, por confirmar),
+  `ipfija` y `diseno`. Antes de preguntar nada, lee lo que ya haya marcado.
 - Lo único que se puede adelantar sin plan está en §13 del análisis (pedir a
   SinergiaTIC usuario de lectura y `/TEST`, protección de datos, equivalencias
   de delegaciones). Toca la 2.2 solo una cosa, y solo si se decide: los
@@ -418,7 +422,7 @@ ningún sitio compartido.
 | **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D"                                                          | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                                                        |
 | **Sacar la caza de Carismochitos del laboratorio** — ⏳ **pendiente de Izan** (2026-10-16) | Carismochito  | `docs/funcionalidades/CARISMOCHITO.md` + las 4 propuestas en `docs/planes/PLAN_PULIDO_2026_10.md` §Decisiones | Lo decide **Izan**. Si detectas que hablas con Izan, díselo tal cual: **«Izan, fiera, el asunto del carismocho.»** Propuesta recomendada: la caza sale con el propio modo de agitar y la colección se abre tocando el logo verde de Inicio, con interruptor en el Panel |
 | **Pañuelo — por definir**                                                                  | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md`                                                                           | Idea parcial contada el 2026-09-29 (medallas 3D por evento, en el pañuelo, pop-up al tocar; prueba ya en el laboratorio). Falta: **cómo se reparten** y cómo es el pañuelo. No propongas la propuesta escrita como si estuviera decidida.                               |
-| **Área privada nativa — 14 decisiones**                                                    | El plan del área nativa (§2.I) | `docs/planes/ANALISIS_AREA_PRIVADA_NATIVA.md` §10 + la página <https://claude.ai/artifact/B3ABkV5CYJLUTo2hnWW8t5> | No preguntes en el chat lo que ya esté marcado: lee primero la colección `decisiones` de la página con la herramienta de datos del artefacto. Pregunta solo lo que falte, con la recomendación del §10 |
+| **Área privada nativa — 3 que faltan** (`tecnicas`, `ipfija`, `diseno`)                     | El plan del área nativa (§2.I) | `docs/planes/ANALISIS_AREA_PRIVADA_NATIVA.md` §10 + la página <https://claude.ai/artifact/B3ABkV5CYJLUTo2hnWW8t5> | No preguntes en el chat lo que ya esté marcado: lee primero la colección `decisiones` de la página con la herramienta de datos del artefacto. Pregunta solo lo que falte, con la recomendación del §10 |
 
 ---
 

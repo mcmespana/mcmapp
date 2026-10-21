@@ -11,6 +11,11 @@
 > Fecha: 2026-10-21. Repos mirados: `mcmapp`, `comunicaAreaPrivada`,
 > `mcm-sinergia-mcp`, más el manual de SinergiaCRM y la infraestructura de
 > Vercel y Supabase (solo lectura).
+>
+> **Actualizado el mismo 21/10 con las respuestas del propietario** (§10). La
+> más importante cambia la arquitectura: **primera versión sin espejo**, con
+> una pasarela que lee la base de datos del CRM directamente (§2). Donde este
+> documento hable del espejo, es para «si algún día hace falta».
 
 ---
 
@@ -19,30 +24,30 @@
 1. **Lo lento no es la WebView: es esperar al CRM.** Una pantalla de monitores
    espera al CRM hasta 8 veces, ~350 ms cada vez, y recarga la página entera de
    WordPress. Guardar una lista son 8 esperas.
-2. **Una app nativa que siga preguntando al CRM en directo seguiría siendo
-   lenta.** La velocidad sale de no esperarle: una **copia propia** de los datos
-   que hacen falta (espejo), puesta al día con el CRM cada pocos minutos, y una
-   **cola** que sube por detrás lo que se escribe. Es justo lo que dejó previsto
-   `comunicaAreaPrivada/docs/comunica/DECISION-BBDD-ESPEJO.md` para «una app
-   nativa que quiera API propia».
-3. La app guarda en el móvil lo último que vio: **abre al instante y pasa lista
-   sin cobertura**. El monitor no ve nunca una rueda esperando al CRM.
-4. Piezas: pantallas nativas · API propia · espejo + sincronizador · cola de
-   escrituras al CRM · login. Más la convivencia con el plugin.
-5. Dos cosas que se piden a SinergiaTIC lo simplifican mucho: un **usuario de
-   solo lectura de la base de datos** del CRM (el manual dice que lo dan) y una
-   **instancia clonada de pruebas** (`/TEST`). Hoy solo existe el CRM de
-   producción.
-6. Alcance recomendado: **primero monitores** (Pasar Lista, Mis grupos, fichas,
-   coordinación). Las familias siguen en la WebView hasta una segunda fase.
-7. El plugin se queda para la web. Cuando arranque lo nativo, lo nuevo de
-   monitores se hace solo en nativo.
-8. Lo más delicado: la sincronización (relaciones y borrados), la seguridad
-   (la API es la única que filtra por delegación, rol y familia) y los datos
-   de salud de menores en móviles de voluntarios.
-9. Coste de infraestructura: ~25-50 €/mes. Esfuerzo: §11.
-10. Calendario: después de la 2.1/2.2, en una rama aparte. Lo que tarda
-    (peticiones a SinergiaTIC, protección de datos) se puede pedir ya (§13).
+2. **Decidido: pasarela primero.** La app habla solo con un servidor nuestro
+   (Vercel, como el MCP). El servidor **lee el CRM directamente de su base de
+   datos** con un usuario de solo lectura (1-3 consultas por pantalla, ~0,1 s)
+   y **escribe por la API v4.1**, como el plugin. Sin espejo.
+3. La app guarda en el móvil lo último que vio y lo que marca: **abre al
+   instante, pasa lista sin cobertura** y no se queda esperando al CRM.
+4. **La fuente de datos del servidor es intercambiable.** Mientras no haya
+   lectura directa, lee por la API (como el plugin); si un día hace falta, se
+   pone el espejo detrás (el diseño de `DECISION-BBDD-ESPEJO.md` del plugin).
+   La app no cambia en ningún caso.
+5. Se piden a SinergiaTIC **las dos cosas**: el usuario de solo lectura de la
+   base de datos (el manual dice que lo dan) y la instancia clonada `/TEST`.
+   Hoy solo existe el CRM de producción.
+6. Alcance: **primero monitores** (Pasar Lista, Mis grupos, fichas,
+   coordinación, eventos). Las familias siguen en la WebView hasta la fase 2.
+7. El plugin se queda para la web. Cuando arranque lo nativo, lo de monitores
+   en el plugin pasa a solo arreglos.
+8. Lo más delicado: la seguridad (leyendo la base de datos, el CRM no filtra
+   nada: lo filtra todo nuestro servidor) y que SinergiaTIC pida una IP fija.
+9. Coste de infraestructura: **0 €/mes** (Vercel y Neon gratis); ~6 €/mes si
+   piden IP fija. Esfuerzo: §11.
+10. Calendario: después de la 2.1/2.2, en una rama aparte. Los paquetes
+    nativos entran ya en la 2.2 (decidido). Lo que tarda (SinergiaTIC,
+    protección de datos) se puede pedir ya (§13).
 
 ---
 
@@ -76,66 +81,69 @@ camino de cada toque.**
 ## 2. Qué la hace rápida de verdad
 
 ```
-HOY        App ─► WebView ─► WordPress ─► CRM      (1-8 esperas de ~350 ms por pantalla)
+HOY             App ─► WebView ─► WordPress ─► CRM   (hasta 8 esperas de ~350 ms por pantalla)
 
-PROPUESTO  App (datos en el móvil) ─► API propia ─► Espejo (Postgres en la UE)
-                 abre al instante        ~50-150 ms        ▲              │
-                                                           │ cada pocos   │ cola de
-                                                           │ minutos      ▼ escrituras
-                                                           └──────── SinergiaCRM
+PRIMERA VERSIÓN App (datos en el móvil) ─► Nuestro servidor (Vercel) ─┬─ lee ──► BBDD del CRM (SQL, solo lectura)
+                abre al instante                                      └─ escribe ► API v4.1 del CRM
+
+SI HACE FALTA   App (igual) ─► Nuestro servidor ─► Espejo (Postgres) ◄─ sincronización ─► CRM
 ```
 
 - **Lectura:** la app pinta lo que tiene guardado y refresca por detrás contra
-  la API, que lee del espejo (milisegundos, sin red externa).
-- **Escritura:** la marca se guarda en el móvil (al instante), sube a la API
-  (~100 ms) y queda en el espejo; una cola la sube al CRM con reintentos. El
-  estado «pendiente de subir al CRM» se ve, no se esconde (la lección del plan
-  033).
-- **El CRM sigue siendo la fuente de la verdad.** El espejo es una caché con
-  forma de tabla: se puede vaciar y reconstruir. Nada vive solo en el espejo
-  salvo la cola, mientras no ha subido.
+  el servidor, que lee la base de datos del CRM con 1-3 consultas SQL por
+  pantalla (joins de verdad, sin las trampas de la API). Lo que recién se ha
+  escrito se ve al momento: es la misma base de datos.
+- **Escritura:** la marca se guarda en el móvil (al instante) y sube al
+  servidor, que la escribe en el CRM por la API v4.1 (como el plugin). Si el
+  CRM falla, la escritura sigue en la cola del móvil y se reintenta; cada una
+  lleva un id propio para no duplicar y queda apuntada en un diario del
+  servidor. El estado «pendiente de subir» se ve, no se esconde (plan 033).
+- **Fuente de datos intercambiable.** El servidor lee a través de una capa con
+  tres implementaciones posibles: API v4.1 (mientras no haya lectura directa,
+  o si SinergiaTIC no la da), SQL directo (lo normal) y espejo (si algún día).
+  Cambiar de una a otra no toca la app ni el contrato.
 
-**La alternativa descartada** es una «pasarela» que pregunte al CRM en directo
-(con tandas y caché). Es más simple, pero cada primera carga y cada guardado
-siguen pagando al CRM, y si el CRM va lento o se cae, la app también. Vale para
-pantallas de poco uso; no para Pasar Lista.
+**Por qué ya no hace falta el espejo para empezar.** En agosto,
+`DECISION-BBDD-ESPEJO.md` concluyó que, con caché y llamadas en paralelo, quizá
+no era necesario, y lo dejó como fase 3 «solo si sigue siendo lento». Con la
+lectura directa, el cuello de botella (la API, ~350 ms por llamada) desaparece
+para las lecturas, y las escrituras no bloquean al monitor porque van por la
+cola del móvil. El espejo solo haría falta si la base de datos del CRM contesta
+lenta desde Vercel, si el CRM se cae a menudo, o si coordinación necesita
+cálculos pesados (rachas y porcentajes de todo el curso). Neon se descartó
+entonces porque el plugin vive en un hosting PHP (driver, latencia, RGPD); para
+la app nativa con servidor propio sí vale.
 
 ## 3. Las piezas que hay que construir
 
-### 3.1 Espejo + sincronizador
+### 3.1 Lectura del CRM
 
-- **Qué guarda:** solo lo que usan las pantallas nativas (ver Anexo A), no el
-  CRM entero. Volumen: miles de filas, no millones (~12 delegaciones × ~20
-  grupos × ~12 chavales).
-- **De dónde lo lee — dos caminos:**
-  - **Con usuario de lectura de la BBDD del CRM** (recomendado): SQL directo
-    sobre las tablas, incluidas las de relaciones y las filas borradas. Una
-    sincronización completa en segundos y la incremental por `date_modified`
-    sin trampas. El manual de SinergiaCRM lo ofrece («SinergiaTIC puede
-    proporcionar usuarios con derechos de lectura»), con acceso remoto al
-    puerto de la BBDD; lo normal es que pidan una **IP fija** de origen.
-  - **Solo por la API:** v4.1 con SQL en `query`, como el plugin. Funciona,
-    pero las relaciones salen por consultas aparte, los borrados hay que
-    buscarlos con `deleted=1`, y heredamos todas las trampas (§6). Más lento y
-    más código.
-- **Cuándo:** incremental cada 5-10 min, completa de madrugada, y «refrescar
-  este grupo» bajo demanda. El CRM no avisa de cambios (no hay webhooks), así
-  que siempre es por consulta.
-- **Lo que escribe el propio backend** se refleja en el espejo en el mismo
-  momento (no espera a la sincronización).
+- **SQL directo, con el usuario de solo lectura** que se pide a SinergiaTIC.
+  El manual de SinergiaCRM lo ofrece («SinergiaTIC puede proporcionar usuarios
+  con derechos de lectura en la base de datos»), abriendo el puerto de la base
+  de datos; lo normal es que pidan una **IP fija** de origen (decisión
+  `ipfija`). Las tablas son las de SuiteCRM (`contacts` + `contacts_cstm`, las
+  de cada módulo custom y las de relaciones); la wiki tiene un «Diagrama de
+  tablas» en «Información para desarrolladores». Los nombres de campo, los de
+  `CAMPOS.md`.
+- **Mientras no lo haya, por la API v4.1** con SQL en `query`, como el plugin:
+  funciona, pero con sus trampas (§6) y ~350 ms por llamada. La caché del móvil
+  lo tapa en las visitas repetidas.
+- **El espejo, si algún día hace falta:** el diseño de la fase 3 de
+  `DECISION-BBDD-ESPEJO.md` (y el Anexo A), detrás del mismo servidor.
 
-### 3.2 Cola de escrituras al CRM
+### 3.2 Escrituras al CRM
 
-- Cada escritura entra en una tabla `outbox` con su estado (`pendiente`,
-  `subida`, `error`), intentos y último error.
-- **Idempotente:** cada marca/lista lleva un id generado en el móvil; reintentar
-  no duplica. (El plugin sufrió duplicados de inscripciones y asistencias: ver
-  `PASAR-LISTA-ESTADO.md` §1.)
-- Escribe por la **API v4.1** reutilizando lo aprendido en el plugin:
-  importes sin «.00», el pago que nace sin persona, el `_ida` dentro del
-  `set_entry`, tandas con `set_entries`.
-- Errores visibles: «2 listas pendientes de subir al CRM» en la app y aviso a
-  quien mantiene si algo lleva horas atascado.
+- Por la **API v4.1**, reutilizando lo aprendido en el plugin: importes sin
+  «.00», el pago que nace sin persona, el `_ida` dentro del `set_entry`, tandas
+  con `set_entries`.
+- **Idempotentes:** cada marca/lista lleva un id generado en el móvil;
+  reintentar no duplica. (El plugin sufrió duplicados de inscripciones y
+  asistencias: ver `PASAR-LISTA-ESTADO.md` §1.)
+- **La cola vive en el móvil** (sin cobertura o si el CRM falla) y el servidor
+  apunta cada intento en un **diario** (tabla pequeña en Neon): qué, quién,
+  cuándo, resultado y error. Errores visibles: «2 listas pendientes de subir»
+  en la app, y aviso a quien mantiene si algo lleva horas atascado.
 
 ### 3.3 API propia
 
@@ -161,8 +169,12 @@ Propuesta para nativo:
 - **Correo o DNI → código de 6 cifras** (y el enlace, que abre la app: los
   enlaces universales de `comunica.movimientoconsolacion.com` ya están
   configurados en `app.json` y el plugin ya sirve `/.well-known/`).
+- **Decidido (idea del propietario):** si la persona ya entró en la app con
+  Google o Apple, su correo sale puesto; toca «Recibir código», lo escribe y
+  está dentro. Si el correo del CRM es otro, lo cambia.
 - **Sesión larga** (meses) con token de refresco rotatorio en el almacén
-  seguro del móvil; se puede revocar uno a uno. Bloqueo opcional con Face ID.
+  seguro del móvil; se puede revocar uno a uno. (Face ID no entra en la
+  primera versión.)
 - **Sin contraseña ni token permanente.** SEC-03 no aplica a lo nativo.
 - Los correos los manda el backend con Resend (ya lo usa el Guardián). Hoy
   salen con `wp_mail()` del hosting y caen en spam (`docs/email-entregabilidad.md`).
@@ -189,22 +201,31 @@ Propuesta para nativo:
   `components/OfflineBanner.tsx`, `utils/storageMutex.ts`, el patrón
   stale-while-revalidate de `hooks/useFirebaseData.ts`, `utils/logger`, Sentry,
   `utils/haptics.ts`, `expo-image` (fotos con caché en disco).
-- **Diseño:** `design.md` (raíz) manda: nativo antes que custom (cabecera,
-  buscador y pull-to-refresh del sistema), componentes aprobados
-  (`AppTextField`, `AppPrimaryButton`, `SegmentedControl`, `EmptyState`,
-  `SectionHeader`, `StatCard`, `PressableFeedback`), tokens, territorio
-  institucional y su checklist (fontScale ×1,3, 44 pt, etiquetas de
-  accesibilidad).
+- **Diseño: se parte del área privada actual** (deseo del propietario: «ha
+  quedado guapo»). Mismas pantallas y mismo concepto, rehechos en Expo. Método
+  propuesto (decisión `diseno`): capturar cada pantalla del plugin a 375 px en
+  claro y oscuro con los arneses `tests/manual/render-*.php` (sin datos
+  reales) y los artboards de `design/pasar-lista/`, y apuntar por pantalla qué
+  se queda igual y qué cambia por ser app. Donde choquen, manda el `design.md`
+  de la app: nativo antes que custom (cabecera, buscador y pull-to-refresh del
+  sistema, hojas), componentes aprobados (`AppTextField`, `AppPrimaryButton`,
+  `SegmentedControl`, `EmptyState`, `SectionHeader`, `StatCard`,
+  `PressableFeedback`), tokens y su checklist (fontScale ×1,3, 44 pt,
+  etiquetas de accesibilidad). Los tokens de las dos superficies ya se
+  unificaron (plan 039 del plugin), lo que facilita la traducción.
 - **Web:** el mismo código correría en `mcm.expo.app` con react-native-web si
   la API acepta CORS y lo nativo queda fuera del grafo de web
   (`tabsLayoutWebSafety.test.ts`). De entrada, la web de la app sigue con el
   `<iframe>` al plugin.
 
-Paquetes nativos nuevos (cada uno exige build de tienda): `expo-secure-store`,
-`expo-sqlite` (con SQLCipher) y `expo-local-authentication`. Posibles más
-adelante: `expo-image-picker` (fotos y documentos, fase de familias) y
-`expo-background-task` (subir la cola con la app cerrada). `expo-notifications`,
-`expo-camera` y el NFC ya están.
+Paquetes nativos nuevos (cada uno exige build de tienda; **decidido: entran en
+la 2.2 sin usarse**): `expo-secure-store` (sesión), `expo-sqlite` (datos en el
+móvil, con SQLCipher preparado) y `expo-local-authentication` (Face ID no entra
+en la primera versión, pero el paquete es pequeño y evita otra build si se
+quiere luego). Posibles más adelante: `expo-image-picker` (fotos y documentos,
+fase de familias) y `expo-background-task` (subir la cola con la app cerrada).
+`expo-notifications` (avisos, decididos para la primera versión), `expo-camera`
+y el NFC ya están; compartir un evento usa `Share` de React Native, sin paquete.
 
 ## 4. Qué hay que rehacer
 
@@ -343,15 +364,17 @@ del código.
   mínimo de lo compartido y mergear `main` cada semana. Choques casi seguros:
   la cabecera del CHANGELOG, `firebase-seed/profileConfig.json`,
   `constants/tabsCatalog.ts`, `app.json` y `package-lock.json`.
-- **Paquetes nativos en la 2.2.** La runtime es una cadena fija (`"2.1.0"`):
-  un binario compilado antes no tiene los paquetes que se añadan después. Si
-  `expo-secure-store`, `expo-sqlite` y `expo-local-authentication` entran en la
-  2.2 sin usarse (como se hizo con el NFC el 19/10), cuando lo nativo esté
-  listo puede salir **por OTA** a la 2.2, sin esperar otra build de tienda.
-- **Piloto con interruptor.** `/profileConfig` ya admite overrides
-  `perfil:delegación`, así que se puede encender en una sola delegación. Ojo:
-  valida contra los `KNOWN_*` del bundle, así que el código tiene que llegar
-  antes que el interruptor.
+- **Paquetes nativos en la 2.2 (decidido).** La runtime es una cadena fija
+  (`"2.1.0"`): un binario compilado antes no tiene los paquetes que se añadan
+  después. Como `expo-secure-store`, `expo-sqlite` y
+  `expo-local-authentication` entran en la 2.2 sin usarse (igual que el NFC el
+  19/10), cuando lo nativo esté listo podrá salir **por OTA** a la 2.2, sin
+  esperar otra build de tienda. Está apuntado en `BACKLOG.md` §C-bis.
+- **Lanzamiento para todos a la vez (decidido), con vuelta atrás.** Sin
+  piloto, pero con un interruptor en `/profileConfig` que devuelve a todos a la
+  WebView en un minuto si algo sale mal, sin build ni OTA. Ojo: la
+  configuración valida contra los `KNOWN_*` del bundle, así que el código del
+  interruptor tiene que llegar antes que el interruptor.
 - **Identidad de verdad.** Hoy el perfil (familia/monitor/miembro) y la
   delegación se los declara cada usuario en el onboarding y nadie los
   comprueba; tampoco hay vínculo entre la cuenta Google/Apple de la app y su
@@ -414,34 +437,50 @@ del código.
 | Resend | Ya en uso (avisos del Guardián, cumpleaños) | Sirve para los códigos de acceso |
 | Clientes del CRM en TS/JS | MCP `lib/sinergia/` (V8, ~980 líneas) y `.github/scripts/guardian/crm.mjs` (V8, reintenta 429/5xx) | Se copian auth, cliente y errores (~530 líneas). **Ninguno habla v4.1**: ese cliente se escribe nuevo, con `inc/stic-class-6.php` como especificación |
 
-Mismo patrón que **MCM Bank**: Next.js + Supabase en `eu-central-1`, con un
-MCP que guarda sus tokens con hash y se pueden revocar uno a uno. El de
-SinergiaCRM no (un solo secreto compartido).
+De **MCM Bank** (Next.js + Supabase) se puede copiar cómo guarda sus tokens:
+con hash y revocables uno a uno. El MCP de SinergiaCRM no lo hace (un solo
+secreto compartido).
 
-**Lo que haría falta:**
+**Lo que hace falta** (decidido: `almacen` = Neon + Vercel):
 
-- **Postgres en la UE:** proyecto nuevo de Supabase en `eu-central-1`.
-- **Dónde corre la API:** Supabase Edge Functions (misma región que la base de
-  datos, sin otra factura) o un Next.js en Vercel con plan Pro.
-- **Tareas programadas:** `pg_cron` de Supabase.
-- **Si SinergiaTIC exige IP fija** para leer su base de datos: el sincronizador
-  va en un servidor pequeño con IP fija (Fly.io, Hetzner…).
+- **El servidor, en Vercel** (proyecto nuevo, región Frankfurt `fra1`), como el
+  MCP. Con la pasarela no hay sincronizador que correr cada pocos minutos, así
+  que las tareas programadas diarias del plan gratis bastan.
+- **Una base de datos pequeña en Neon** (Frankfurt), solo para lo que el CRM no
+  guarda: códigos de acceso, sesiones (tokens de refresco con hash, revocables
+  uno a uno), límites de intentos y el diario de escrituras. Neon gratis se
+  duerme a los 5 min sin uso: los tokens de acceso son firmados y no consultan
+  la base de datos en cada toque, así que solo se nota al entrar o al guardar.
+- **Si SinergiaTIC exige IP fija** para leer su base de datos: un servidor
+  pequeño con IP fija (decisión `ipfija`). Vercel solo la da en Pro, a 100 $ al
+  mes por proyecto.
 - **Un usuario técnico del CRM propio**, con permisos mínimos. No se comparte
   con el plugin ni con el MCP: así se audita por separado y un cambio no rompe
   al otro.
-- **Correo:** Resend, con el dominio ya verificado.
-- **Sentry:** un proyecto para el backend.
+- **Correo:** Resend, con el dominio ya verificado. **Sentry:** un proyecto
+  para el backend.
 
-| Concepto | €/mes aprox. |
-|---|---|
-| Supabase Pro (organización aparte con un proyecto) | ~25 |
-| (si se sube de plan la organización actual, sus 3 proyectos pagan cómputo) | (~45) |
-| Servidor con IP fija, solo si SinergiaTIC lo exige | ~5 |
-| Vercel Pro, solo si la API va en Vercel | ~20 |
-| Resend (gratis hasta 3.000 correos/mes), Sentry (plan actual) | 0 |
-| **Total** | **~25-50** |
+Precios **consultados el 21/10/2026** en las páginas oficiales:
 
-Precios de memoria (no consultados hoy): confirmar antes de contratar.
+| Pieza | Gratis | De pago |
+|---|---|---|
+| Vercel | Hobby: 1 M de llamadas, 4 h de CPU activa y 360 GB-h de memoria al mes; crons solo diarios (±59 min); «uso personal no comercial» | Pro 20 $/mes; IP fija 100 $/mes por proyecto |
+| Neon | 100 proyectos; 1 GB y 100 CU-h por proyecto al mes; se duerme a los 5 min (no se puede quitar) | Launch: sin mínimo, 0,106 $/CU-h + 0,35 $/GB-mes |
+| Supabase | 2 proyectos activos **por persona** (los del propietario ya están usados); 500 MB; se pausa tras 1 semana sin uso; sin copias | Pro 25 $/mes (+10 $ por proyecto más) |
+| Hetzner (IP fija) | — | desde 5,99 €/mes + IVA |
+| Resend | 3.000 correos/mes, 100/día | Pro 20 $/mes |
+
+**Cuenta rápida:** 200 monitores abriendo la app unas 20 veces por semana, con
+~10 llamadas cada vez, son ~150.000-200.000 llamadas al mes: cabe en el gratis
+de Vercel. **Total: 0 €/mes; ~6 €/mes más IVA si piden IP fija.**
+
+**Sobre el «uso no comercial» de Vercel Hobby.** Vercel lo define como el que
+busca un beneficio económico de cualquiera que participe, incluido «un
+empleado o consultor pagado que escriba el código», o cobrar a los visitantes;
+pedir donativos no cuenta. Un área privada sin cobros, hecha por voluntarios,
+encaja; si alguien cobra por hacerla, o hay dudas, se pregunta a Vercel o se
+pasa a Pro (20 $/mes). Los 11 proyectos actuales ya viven con esa misma
+pregunta.
 
 ## 10. Decisiones
 
@@ -449,34 +488,37 @@ Precios de memoria (no consultados hoy): confirmar antes de contratar.
 desde cero (no el plugin, por velocidad), en una rama muy separada, y después
 de la 2.1/2.2.
 
-**Pendientes**, con su recomendación. Se marcan en la página de decisiones
-(<https://claude.ai/artifact/B3ABkV5CYJLUTo2hnWW8t5>); el id es el documento
-de la colección `decisiones`:
+Las respuestas viven en la página de decisiones
+(<https://claude.ai/artifact/B3ABkV5CYJLUTo2hnWW8t5>), colección `decisiones`;
+el id es el documento. **Antes de escribir el plan, vuelve a leerla**: el
+propietario puede haber cambiado algo. Estado al 21/10/2026, por la tarde:
 
-| id | Pregunta | Recomendación |
+| id | Decidido | Nota |
 |---|---|---|
-| `alcance` | ¿Qué va nativo primero? | Monitores; familias siguen en la WebView hasta la fase 2 |
-| `velocidad` | ¿De dónde sale la velocidad? | Copia propia (espejo) + cola de escrituras |
-| `sinergiatic` | ¿Qué se pide a SinergiaTIC? | Las dos cosas: usuario de lectura de la BBDD e instancia `/TEST` |
-| `almacen` | ¿Dónde viven los datos y el servidor? | Supabase, proyecto nuevo en la UE (Pro) |
-| `repo` | ¿Dónde vive el código del servidor? | Repo nuevo; del MCP se copia el cliente, no se comparte |
-| `login` | ¿Cómo se entra? | Código por correo (o DNI), sesión de meses, sin contraseña |
-| `offline` | ¿Qué funciona sin cobertura? | Pasar lista y ver mis grupos |
-| `salud` | ¿Salud sin cobertura? | Solo la marca, como hoy; el detalle con conexión |
-| `extras` | Extras nativos en la primera versión | Avisos push y Face ID; lo demás después |
-| `plugin` | ¿Qué pasa con el plugin? | Se queda para la web |
-| `congelar` | ¿El plugin sigue creciendo en monitores mientras tanto? | Solo arreglos desde que arranque lo nativo |
-| `paquetes` | ¿Paquetes nativos en la 2.2? | Sí, sin usarlos todavía |
-| `piloto` | ¿Cómo se lanza? | Piloto con una delegación y vuelta a la web |
-| `tecnicas` | Lo técnico que se da por hecho (abajo) | Vale |
+| `alcance` | Monitores primero | Familias en la WebView hasta la fase 2 |
+| `velocidad` | **Pasarela primero**, espejo si hace falta | Elegido por el propietario; la recomendación pasó a ser esta (§2) |
+| `sinergiatic` | Pedir las dos cosas | Usuario de lectura de la BBDD e instancia `/TEST` |
+| `almacen` | **Neon + Vercel, gratis** | Pidió precios reales: §9 |
+| `repo` | Repo nuevo | Del MCP se copia el cliente, no se comparte |
+| `login` | Código por correo o DNI, sesión de meses | Con el correo de la cuenta Google/Apple ya puesto (§3.4) |
+| `offline` | Pasar lista y ver mis grupos | |
+| `salud` | Solo la marca, como hoy | «No te ralles mucho con esto, simple» |
+| `extras` | Avisos y compartir un evento | Face ID no entra en la primera versión |
+| `plugin` | Se queda para la web | |
+| `congelar` | Solo arreglos en monitores desde que arranque lo nativo | |
+| `paquetes` | Sí, en la 2.2 | `BACKLOG.md` §C-bis |
+| `piloto` | Para todos a la vez | Con interruptor de vuelta a la WebView (§7) |
+| `tecnicas` | Quería hablarlo | Rehecha con sus dos comentarios (abajo); pendiente de que la confirme |
+| `ipfija` | **Pendiente** (nueva) | Recomendado: servidor pequeño con IP fija (~6 €/mes), solo si la piden |
+| `diseno` | **Pendiente** (nueva) | Recomendado: traducir pantalla a pantalla (§3.5) |
 
-**Lo técnico que se da por hecho** (se puede vetar en la tarjeta `tecnicas`):
-TypeScript en todo; toda la autorización en un módulo de la API con test
-guardarraíl; escrituras al CRM por la API v4.1 con lo aprendido en el plugin;
-cada escritura con id propio para que reintentar no duplique; la app abre con
-lo guardado y refresca por detrás, y lo sensible va cifrado; un usuario técnico
-del CRM nuevo, solo para esto; el diseño y los componentes de `design.md`;
-Sentry en la app y en el servidor.
+**Lo técnico, rehecho con sus comentarios** (tarjeta `tecnicas`): primera
+versión sin espejo, leyendo la base de datos del CRM y escribiendo por la API
+v4.1, con la fuente de datos intercambiable; el diseño parte de las pantallas
+actuales del área privada; TypeScript en todo; toda la autorización en un solo
+sitio del servidor, con test guardarraíl (leyendo la base de datos, el CRM no
+filtra nada); cada escritura con id propio y apuntada en un diario; un usuario
+técnico del CRM nuevo, solo para esto; Sentry en la app y en el servidor.
 
 ## 11. Esfuerzo
 
@@ -485,20 +527,26 @@ revisando y probando. Se afina en el plan.
 
 | Bloque | Semanas |
 |---|---|
-| Backend base: repo, esquema, cliente v4.1, sincronizador, cola, login, autorización | 6-9 |
-| App base: navegación, datos en el móvil, cola, login, bloqueo | ~2 |
+| Backend base: repo, lectura SQL, cliente v4.1 de escritura, diario, login, autorización | 4-6 |
+| Traducción del diseño, pantalla a pantalla | ~1 |
+| App base: navegación, datos en el móvil, cola, login | ~2 |
 | Pasar Lista: portada, árbol, marcar y guardar | 2-3 |
 | Ficha del participante y Grupos y fichas | 1,5-2 |
 | Coordinación, monitores, reuniones y seguimientos | 2-3 |
 | Pasar lista en eventos y grupos de actividad | 1,5-2 |
-| Piloto con una delegación y ajustes | 2-3 |
-| **MVP de monitores** | **~17-24 (4-6 meses)** |
+| Avisos y compartir | ~1 |
+| Pruebas con monitores y lanzamiento | 1-2 |
+| **MVP de monitores** | **~16-22 (3-5 meses)** |
 | Fase 2: familias y miembros | +8-12 |
+| Espejo, solo si hiciera falta | +2-3 |
 
-- Sin usuario de lectura de la BBDD, el sincronizador por API suma 2-3
-  semanas y es la parte más frágil.
-- Lo que más pesa no es escribir pantallas: es que el backend y la
-  sincronización estén bien antes de que se vea nada. Por eso la prueba
+- Sin espejo, el backend base baja unas 2-3 semanas respecto a la primera
+  versión de este análisis.
+- Si SinergiaTIC no da la lectura directa, el servidor lee por la API v4.1
+  como el plugin: suma 1-2 semanas (tandas, paginación y trampas) y la primera
+  carga de cada pantalla es más lenta.
+- Lo que más pesa no es escribir pantallas: es que la lectura, la escritura y
+  la autorización estén bien antes de que se vea nada. Por eso la prueba
   técnica de §13 va antes del plan.
 - Referencia: en julio de 2026 se estimaron 2-3 meses solo para lo de
   familias, con WordPress de backend y sin espejo ni modo sin conexión
@@ -509,15 +557,18 @@ revisando y probando. Se afina en el plan.
 | Riesgo | Qué lo frena |
 |---|---|
 | **Un fallo de autorización enseña datos de otra delegación o de otra familia** | Toda la autorización en un solo módulo de la API; test guardarraíl que falla si un endpoint no la usa; tests por rol con datos de dos delegaciones; revisión de seguridad antes del piloto |
-| **El espejo se queda rancio o incompleto** (relaciones, borrados) | Usuario de lectura de la BBDD; reconciliación completa cada noche; «actualizado hace N min» visible; «refrescar» bajo demanda |
-| **Escrituras que no llegan al CRM y nadie se entera** | Cola con estado visible, reintentos, idempotencia y aviso si algo lleva horas atascado |
-| **Datos de salud de menores en móviles de voluntarios** | Decisión explícita (§10), cifrado, bloqueo, borrado al salir, evaluación de impacto |
+| **SinergiaTIC no da la lectura directa, o pide IP fija** | La fuente de datos es intercambiable: se lee por la API v4.1 mientras tanto; con IP fija, servidor pequeño (decisión `ipfija`) |
+| **La base de datos del CRM contesta lenta desde Vercel** | Medirlo en la prueba técnica (§13) antes del plan; si se queda corto, el espejo detrás del mismo servidor |
+| **Leer las tablas de SuiteCRM a mano** (nombres de tablas, `_cstm`, relaciones) | El «Diagrama de tablas» de la wiki, `CAMPOS.md` y tests contra `/TEST` |
+| **Escrituras que no llegan al CRM y nadie se entera** | Cola en el móvil con estado visible, reintentos, idempotencia, diario en el servidor y aviso si algo lleva horas atascado |
+| **Datos de menores en móviles de voluntarios** | Solo lo de sus grupos; la salud, solo la marca (decidido); borrado al cerrar sesión; evaluación de impacto |
+| **Vercel Hobby y el «uso no comercial»** | Encaja mientras nadie cobre por hacerlo; si cambia, Pro (20 $/mes) |
 | **Doble mantenimiento plugin + nativo** | Fases cortas; congelar lo de monitores en el plugin al arrancar |
 | **La rama larga diverge de `main`** | Carpetas propias, merge semanal de `main`, paquetes nativos pronto (2.2) |
 | **No hay CRM de pruebas** | Pedir `/TEST`; si no llega, una delegación de prueba con datos ficticios en el real |
-| **Carga sobre el CRM** | Con la BBDD de lectura, casi ninguna; por API, incremental y con concurrencia limitada |
+| **Carga sobre el CRM** | Con la BBDD de lectura, consultas pequeñas y acotadas; por API, tandas con concurrencia limitada (como el plugin) |
 | **SinergiaTIC actualiza el CRM y cambia algo** | `CAMPOS.md` + tests de contrato contra `/TEST` |
-| **Proveedor nuevo y su coste** | El espejo se reconstruye desde el CRM; es Postgres estándar, se puede mover |
+| **Lanzar para todos sin piloto** | Pruebas con monitores antes de soltarlo e interruptor de vuelta a la WebView en `/profileConfig` |
 
 ## 13. Lo que se puede adelantar ya (sin plan)
 
@@ -542,26 +593,32 @@ Nada de esto toca la 2.1/2.2 ni escribe código de producción:
 
 3. **Protección de datos.** Hablar con quien lleve el RGPD: evaluación de
    impacto (datos de menores y de salud con una tecnología nueva), contrato de
-   encargado con el proveedor (Supabase), registro de actividades y aviso de
+   encargado con los proveedores (Vercel y Neon), registro de actividades y aviso de
    privacidad.
-4. **Paquetes nativos en la 2.2**, si se decide así.
+4. **Paquetes nativos en la 2.2** (decidido): `BACKLOG.md` §C-bis.
 5. **Tabla de equivalencias de delegaciones** (CRM ↔ app), §7.
 6. **Prueba técnica**, en cuanto haya `/TEST` o usuario de lectura, en el repo
-   del backend y sin tocar la app: sincronizar una delegación entera y medir
-   cuánto tarda; escribir una lista de asistencia de punta a punta por la
-   cola; comprobar que reintentar no duplica (crear con id propio,
-   `new_with_id` en v4.1).
-7. **Mantener al día** `CAMPOS.md` y los documentos de Pasar Lista: son la
+   del backend y sin tocar la app: medir desde Vercel (`fra1`) cuánto tarda la
+   consulta de una pantalla real (marcar, ficha) contra la base de datos del
+   CRM; escribir una lista de asistencia de punta a punta por la API;
+   comprobar que reintentar no duplica (crear con id propio, `new_with_id` en
+   v4.1).
+7. **Catálogo de pantallas para el diseño** (decisión `diseno`): capturas de
+   todas las pantallas del plugin con los arneses de `tests/manual/`, a 375 px
+   en claro y oscuro, con una nota por pantalla de qué cambia en la app.
+8. **Mantener al día** `CAMPOS.md` y los documentos de Pasar Lista: son la
    especificación.
 
 ---
 
-## Anexo A. Borrador del espejo
+## Anexo A. Qué se lee del CRM (y el espejo, si algún día)
 
-Punto de partida: la fase 3 de `DECISION-BBDD-ESPEJO.md` del plugin (pensada
-para `wpdb`, se migra «casi tal cual»). Cada tabla del espejo lleva `crm_id`
-(clave), `date_modified`, `deleted` y `synced_at`. Los campos, los de
-`CAMPOS.md`; nada inventado.
+En la primera versión, estas son las colecciones que el servidor lee por SQL
+directo (o por la API mientras tanto); **no se copian**. Si algún día hace
+falta el espejo, son también sus tablas: el punto de partida es la fase 3 de
+`DECISION-BBDD-ESPEJO.md` del plugin, y cada tabla llevaría `crm_id` (clave),
+`date_modified`, `deleted` y `synced_at`. Los campos, los de `CAMPOS.md`; nada
+inventado.
 
 | Tabla | Del CRM | Para qué |
 |---|---|---|
@@ -577,12 +634,12 @@ para `wpdb`, se migra «casi tal cual»). Cada tabla del espejo lleva `crm_id`
 | `avisos`, `seguimientos` | `AVI_avisos`, `stic_FollowUps` | Ficha del participante y del monitor |
 | `grupos_actividad` | `GAC_grupos`, `GAC_miembros` | Pestañas del evento (solo lectura) |
 
-Tablas propias: `sync_estado` (por tabla: último `date_modified`, última
-pasada completa, errores), `outbox` (la cola: tipo, carga, estado, intentos,
-último error, quién, cuándo, ids del CRM al subir), `sesiones_app` (tokens de
+Tablas propias en Neon (primera versión): `diario_escrituras` (tipo, carga,
+quién, cuándo, resultado, último error, ids del CRM), `sesiones_app` (tokens de
 refresco con hash, dispositivo, `revocado_en`), `codigos_acceso` (hash,
 intentos, caducidad) y, si se decide, `auditoria` (quién abrió la salud de
-quién).
+quién). Con espejo se añadiría `sync_estado` (por tabla: último
+`date_modified`, última pasada completa, errores).
 
 ## Anexo B. Borrador de la API
 
@@ -603,6 +660,6 @@ Coordinac.  GET  /coordinacion/equipo · /resumen · /reuniones
             PUT  /sesiones/:id/lista-monitores · POST /reuniones
             GET  /monitores/:id · POST /monitores/:id/seguimientos
 Eventos     GET  /eventos/hoy · GET /eventos/:id/pasar-lista · PUT …/lista
-Estado      GET  /sync/estado (última sincronización, cola) · POST /sync/refrescar
+Estado      GET  /estado (diario: lo pendiente y lo que ha fallado)
 Fase 2      /familia/perfiles · /eventos · /inscripciones · /pagos · /documentos
 ```
