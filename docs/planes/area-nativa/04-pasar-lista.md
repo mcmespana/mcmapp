@@ -5,33 +5,29 @@
 
 ## Para qué y para quién
 
-Para el **equipo** (monitor, coordinación, acompañamiento: la puerta del plan 01
-decide quién entra). Es lo de cada sábado, con el móvil en una mano y chavales
-alrededor: ver **tu grupo y la sesión de hoy** sin buscar, marcar en menos de un
-minuto y guardar, **también sin cobertura**. De vez en cuando: pasar lista de
-otro grupo (falta su monitor), recuperar una semana atrasada sin límite de
-tiempo y ver qué listas faltan. El listón es el del plugin: que apetezca.
+Para el **equipo** (la puerta del plan 01 decide quién entra), cada sábado, con
+el móvil en una mano y chavales alrededor: ver **tu grupo y la sesión de hoy**
+sin buscar, marcar en menos de un minuto y guardar, **también sin cobertura**.
+Y de vez en cuando: pasar lista de otro grupo (falta su monitor), recuperar una
+semana atrasada sin límite y ver qué listas faltan. El listón: que apetezca.
 
 ## Especificación de origen
 
-En `/home/user/comunicaAreaPrivada/`. **Manda el código** donde el documento no
-coincide (pregunta 7).
+En `/home/user/comunicaAreaPrivada/`; **manda el código** (pregunta 7).
 
-- Documentos (`docs/comunica/`): `PASAR-LISTA.md` §4 (qué sesión), §5, §6.1-6.3,
-  §7; `PASAR-LISTA-README.md` (mapa); `PASAR-LISTA-ESTADO.md` §1, §2 («cambios
-  sin guardar», marcas del grupo), §3 (sobre todo 3.2: un doble que miente),
-  §4, §5; `PASAR-LISTA-HISTORIAL.md` (por qué el código es así).
-- Pantallas: `pages/single_stic_pasar_lista.php`, `_marcar.php`, `_grupos.php`
-  (árbol, e historial con `?sesiones=1`).
+- `docs/comunica/PASAR-LISTA.md` §4-§7; `PASAR-LISTA-README.md`;
+  `PASAR-LISTA-ESTADO.md` §1, §2, §3 (sobre todo 3.2: un doble que miente), §4,
+  §5; `PASAR-LISTA-HISTORIAL.md` (por qué el código es así).
+- `pages/single_stic_pasar_lista.php`, `_marcar.php`, `_grupos.php` (árbol, e
+  historial con `?sesiones=1`).
 - `inc/stic-pasar-lista.php` (lógica pura: `sticpa_pl_states`, `_next_state`,
-  `_pick_session`, `_absence_streak`, `_group_label`, `_group_buckets`…),
+  `_pick_session`, `_absence_streak`, `_group_label`, `_group_buckets`),
   `inc/stic-pasar-lista-ui.php` (textos: `_row_html`, `_sheet_html`,
-  `_session_select_html`, `_notice_html`, `_queue_notice_html`…),
-  `inc/stic-pasar-lista-crm.php` (`sticpa_pl_save`, `_write_attendances`,
-  `_att_needs_update`, `_check_saved`, `_group_streaks`) y
-  `js/stic-pasar-lista.js` (`initMarcar`, `queuePush`, `queueFlush`).
-- Artboards `design/pasar-lista/{Main,Grupos,Marcar,Estados}.dc.html` (390 px;
-  **el CSS en línea es la spec**, trampa §3.3).
+  `_session_select_html`, `_notice_html`), `inc/stic-pasar-lista-crm.php`
+  (`sticpa_pl_save`, `_write_attendances`, `_att_needs_update`, `_check_saved`,
+  `_group_streaks`), `js/stic-pasar-lista.js` (`initMarcar`, `queuePush`).
+- `design/pasar-lista/{Main,Grupos,Marcar,Estados}.dc.html` (390 px; **el CSS en
+  línea es la spec**, trampa §3.3).
 
 ## Pantallas y rutas
 
@@ -42,18 +38,15 @@ coincide (pregunta 7).
 | `pasar-lista/[groupId]/index.tsx` | Marcar y guardar. Parámetros `sesion` (sin él, la regla) y `desde=resumen` |
 | `pasar-lista/[groupId]/historial.tsx` | Historial de listas del grupo |
 
-Cambiar de sesión en marcar es `router.setParams` (no apila: «atrás» vuelve a
-donde se vino). Destinos de otros planes; mientras no existan, `web.tsx` con la
-`internalpage` del plugin: ficha del chaval (05, `single_stic_pasar_lista_ficha`
-con `participante`, `grupo` y `sesion`), Grupos y fichas (05,
-`single_stic_mis_grupos`), resumen, lista de monitores y reuniones (06, `_resumen`,
-`_monitores`, `_reuniones`), lista de un evento (07, `_evento&evento=…`).
+Cambiar de sesión es `router.setParams` (no apila). Lo de otros planes, hasta que
+exista, abre `web.tsx` con su `internalpage`: ficha (05, `_ficha` con
+`participante`, `grupo`, `sesion`), Grupos y fichas (05), resumen, monitores y
+reuniones (06), lista de un evento (07).
 
 ## Datos: su trozo del contrato
 
-Tipos del glosario de 00. **Al ejecutar se añade `code: string | null` a
-`GroupSummary`** (el «C1» identifica un grupo en todas las pantallas y el
-glosario no lo tiene); se dice en el commit.
+Tipos del glosario de 00, **más `code: string | null` en `GroupSummary`** (el
+«C1» identifica un grupo en todas las pantallas; se añade a 00 y se dice).
 
 ```
 GET /v1/groups[?fresh=1]   → { generatedAt, season,              // estructura
@@ -121,11 +114,9 @@ escrituras**. Mandos nuevos: **reloj** («sábado 15:00», «domingo 10:00»,
 
 ## Comportamiento y reglas que no se pueden perder
 
-**Marcas** (`sticpa_pl_states`): «Vino», «Parcial», «Justificada», «No vino» y
-**sin marcar**, que es un quinto estado y no una falta. Vino y Parcial cuentan
-como asistencia; Justificada y No vino, como ausencia (también en la racha).
-
-**Qué sesión se propone** (`sticpa_pl_pick_session`, días en hora de Madrid):
+**Marcas**: «Vino», «Parcial», «Justificada», «No vino» y **sin marcar** (un
+quinto estado, no una falta). Vino y Parcial son asistencia; las otras dos,
+ausencia (también para la racha). **Qué sesión se propone** (días de Madrid):
 
 | Situación | Sesión | Aviso (`sticpa_pl_notice_html`) |
 |---|---|---|
@@ -134,12 +125,11 @@ como asistencia; Justificada y No vino, como ausencia (también en la racha).
 | Hoy no hay | La última empezada, sin límite | «Es la sesión de hace N días» (días de calendario, pregunta 6) |
 | No ha empezado ninguna | La próxima | «La próxima sesión es el sábado 22 de noviembre» |
 
-Dos el mismo día: la primera. El aviso sale solo si la sesión la eligió la regla.
-
-**No se pasa lista del futuro.** Una sesión de un día posterior a hoy se enseña
-pero no se marca: filas apagadas, sin «Han venido todos» ni «Sin registro», y
-la barra dice «Aún no ha llegado» con el botón desactivado. El servidor también
-la rechaza. Hoy antes de la hora **sí** se marca.
+Dos el mismo día: la primera. El aviso, solo si la sesión la eligió la regla.
+**No se pasa lista del futuro**: una sesión de otro día posterior se enseña sin
+poder marcar (filas apagadas, sin «Han venido todos» ni «Sin registro», barra
+«Aún no ha llegado» y botón apagado); el servidor la rechaza. Hoy, aunque no haya
+empezado, **sí** se marca.
 
 **Portada**, en este orden:
 
@@ -165,35 +155,33 @@ la rechaza. Hoy antes de la hora **sí** se marca.
 6. **Tus otros grupos** (sin sesión, con la próxima por llegar o ya pasados):
    «Tu otro grupo» / «Tus otros grupos», fila «C2 · Els Valents · 2º ESO · sáb 15».
 7. **«Pasar lista de otro grupo»**: MIC, COM I, COM II, COM III, COM (sin
-   segmento), LC, Sin etapa, solo las que tienen grupos, con su punto y
-   «93 chavalines» (con cero, «N grupos»). Debajo, «Ver todos los grupos · 28 grupos».
-8. «Pasar lista en un evento · N este curso» (si N > 0) y «Resumen de grupos»
-   (lo ve todo el equipo).
-9. **Coordinación** (solo con `coordination`): «Coordinación» y el alcance
-   («toda la delegación», «COM II»); la reunión sin lista (ámbar, «Recuperar»;
-   la regla es del servidor); «Lista de monitores · Quién ha venido el sábado»,
-   «Reuniones de programación · Crearlas y pasar lista» (plan 06).
+   segmento), LC, Sin etapa (solo las que tienen grupos), con su punto y «93
+   chavalines» (con cero, «N grupos»); y «Ver todos los grupos · 28 grupos».
+8. «Pasar lista en un evento · N este curso» (si N > 0) y «Resumen de grupos».
+9. **Coordinación** (solo `coordination`): título con el alcance («toda la
+   delegación», «COM II»), la reunión sin lista (ámbar, «Recuperar»), «Lista de
+   monitores · Quién ha venido el sábado» y «Reuniones de programación ·
+   Crearlas y pasar lista» (plan 06).
 10. Sin grupos tuyos: «No tienes ningún grupo asignado como monitor/a, así que
     no hay atajo. Puedes pasar lista de cualquier grupo desde la lista de arriba.»
 
 **Precarga** (decisión `offline`): con conexión, la portada pide por detrás las
-listas del atajo y de «Te faltan» (cinco como mucho), para poder abrirlas el
-sábado sin red.
+listas del atajo y de «Te faltan» (cinco como mucho), para el sábado sin red.
 
 **Árbol**: «Pasar lista» y el curso, o la sección con su punto y «5 grupos».
-Primero **tu grupo**, destacado, con «Tu grupo»; luego MIC, COM, LC, Sin etapa.
-Fila: **código** en negrita y el nombre solo si añade algo (nunca «C1 · C1»),
-«Mercedes · 1º ESO · 10 chavalines» (sin repetir la etapa), y el círculo de la
-**última sesión celebrada**: ✓ pasada, hueco ámbar pendiente, «No hubo»; sin
-sesiones, nada. Leyenda una vez, arriba. **Buscador** desde 8 grupos: «Buscar
-grupo, monitor o curso…», sin tildes ni mayúsculas; sin resultados, «Ningún
-grupo coincide con lo que buscas.» Al pie: «N participantes sin grupo asignado ·
-No aparecen en ninguna lista» (al resumen), «¿Solo quieres mirar las fichas?
-Están en Grupos y fichas» y «N grupos más en el CRM sin marcar para Pasar Lista.»
+Primero **tu grupo** («Tu grupo»), luego MIC, COM, LC, Sin etapa. Fila:
+**código** en negrita y el nombre solo si añade algo (nunca «C1 · C1»),
+«Mercedes · 1º ESO · 10 chavalines», y el círculo de la **última sesión
+celebrada** (✓ pasada, hueco ámbar pendiente, «No hubo»), con la leyenda arriba.
+**Buscador** desde 8 grupos: «Buscar grupo, monitor o curso…», sin tildes;
+vacío: «Ningún grupo coincide con lo que buscas.» Al pie: «N participantes sin
+grupo asignado · No aparecen en ninguna lista» (al resumen), «¿Solo quieres
+mirar las fichas? Están en Grupos y fichas» y «N grupos más en el CRM sin
+marcar para Pasar Lista.»
 
-**Historial**: el grupo y «Historial de listas»; las celebradas, la más
-reciente arriba: «sábado 15 de noviembre · 16:30», debajo «9 vinieron · 2
-ausencias», «Sin registro» o «Sin pasar», y su círculo. Toca → marcar esa fecha.
+**Historial**: «Historial de listas»; las celebradas, la última arriba: «sábado
+15 de noviembre · 16:30» y «9 vinieron · 2 ausencias», «Sin registro» o «Sin
+pasar», con su círculo. Toca → marcar esa fecha.
 
 **Marcar**:
 
@@ -270,40 +258,34 @@ ausencias», «Sin registro» o «Sin pasar», y su círculo. Toca → marcar es
 | Historial | Esqueleto | «Todavía no ha habido ninguna sesión.» | Ídem | Funciona (es lo guardado) | `UploadStatus` en esa fecha |
 | Marcar | Esqueleto de 8 filas | «Este grupo no tiene a nadie apuntado este curso todavía. Suele pasar al empezar el curso: avisa a coordinación.» + «Volver a mirar» (`fresh=1`) | Ídem; 403 «No tienes acceso a esto» | Con la lista guardada, se marca y guarda; sin ella, «Necesitas conexión la primera vez» | La barra (Guardar 3) |
 
-Más en marcar: etapa sin evento («Este grupo no tiene evento de sesiones
-semanales en el curso actual. Avisa a coordinación.»), evento sin sesiones
-(«Este evento aún no tiene sesiones.» y, de momento, «Abrir en la web» para
-crearla, pregunta 3) y sesión futura (solo lectura).
+Más en marcar: «Este grupo no tiene evento de sesiones semanales en el curso
+actual. Avisa a coordinación.»; «Este evento aún no tiene sesiones.» (con «Abrir
+en la web», pregunta 3); sesión futura, solo lectura.
 
 ## Traducción del diseño
 
-**Igual que el plugin**: el orden de la portada (atajo → deuda en ámbar → tus
-otros grupos → secciones), cómo se nombra un grupo, un círculo con glifo por
-estado (check, medio disco, guion, cruz; sin marcar, vacío con borde punteado)
-con la leyenda debajo, el ámbar para lo que falta, los textos, «chavalines» en
-los recuentos (decisión del propietario, plan 043 fila 4 del plugin) y «Sin
-registro» pequeño y arriba. Colores de estado y de etapa: tokens del plan 03.
+**Igual que el plugin**: el orden de la portada, cómo se nombra un grupo, un
+círculo con glifo por estado (check, medio disco, guion, cruz; sin marcar, vacío
+y punteado) con la leyenda debajo, el ámbar de lo que falta, los textos y
+«chavalines» en los recuentos (decisión del propietario, plan 043 fila 4 del
+plugin). Colores de estado y de etapa: tokens del plan 03.
 
 **Cambia por ser app**:
 
-- Cabecera nativa (`AreaScreen`); refrescar es el **pull-to-refresh**; el
-  buscador, `headerSearchBarOptions`; el `<select>` de la fecha, un botón de
-  cabecera con hoja; la barra, `BottomActionBar` (sobre la barra flotante y el
-  teclado: en el plugin hubo que reservar 184 px a mano).
-- Degradado del atajo y filete de «Tu grupo» → `RecordCard` en azul plano o con
-  acento (`design.md` §8: sin degradados fuera de Contigo). «Han venido todos»
-  **sin cascada** (§8: nada encadenado en listas).
-- Hoja de estados → `BottomSheet` (`@gorhom/bottom-sheet`, ya en la app),
-  arrastrable e interrumpible de serie. Gesto largo: `Pressable` con
-  `delayLongPress={500}` y el **anillo que se llena** con Reanimated (solo
-  `transform`/`opacity`; con movimiento reducido se queda). La pista late cuatro
-  veces y nunca más tras el primer uso.
+- Cabecera nativa (`AreaScreen`); refrescar, **pull-to-refresh**; buscador,
+  `headerSearchBarOptions`; el `<select>` de la fecha, botón de cabecera con
+  hoja; la barra, `BottomActionBar` (sobre la barra flotante y el teclado).
+- Degradado del atajo y filete de «Tu grupo» → `RecordCard` plano o con acento
+  (`design.md` §8); «Han venido todos» **sin cascada** (§8).
+- Hoja de estados → `BottomSheet` (`@gorhom/bottom-sheet`, ya en la app).
+  Gesto largo: `Pressable` con `delayLongPress={500}` y el **anillo que se
+  llena** con Reanimated (solo `transform`/`opacity`; con movimiento reducido se
+  queda). La pista late cuatro veces y nunca más tras el primer uso.
 - Hápticos: `h.select` al cambiar una marca, `h.tap` al abrir la hoja,
   `h.success` / `h.error` al confirmar o fallar.
-- Accesibilidad: la fila se lee «nombre, nota, estado», con
-  `accessibilityActions` activar, «Parcial», «Justificada» y «Más opciones» (con
-  VoiceOver no hay gesto largo); recuentos como región viva; `fontScale` ×1,3
-  sin cortar el nombre.
+- Accesibilidad: la fila se lee «nombre, nota, estado», con `accessibilityActions`
+  activar, «Parcial», «Justificada» y «Más opciones» (con VoiceOver no hay gesto
+  largo); recuentos como región viva; `fontScale` ×1,3 sin cortar el nombre.
 
 ## Tareas
 
@@ -314,12 +296,10 @@ registro» pequeño y arriba. Colores de estado y de etapa: tokens del plan 03.
 | 3 | `utils/comunica/`: `marks.ts`, `sessions.ts`, `dates.ts`, `groups.ts`, `pending.ts` (lo que ya dejara el plan 03 se reutiliza) | Unitarios |
 | 4 | `hooks/comunica/`: `usePlGroups`, `usePlToday`, `useRoll`, `useRollDraft`, `useSaveRoll` (cola, optimista, respuesta) | Tests de hooks con el falso |
 | 5 | Portada `PasarListaHome` y precarga | Test + capturas web 375 px, claro y oscuro, con reloj «sábado 15:00» y «martes» |
-| 6 | Árbol, secciones y buscador | Test + capturas (con y sin sección, buscando) |
-| 7 | Historial | Test + captura |
-| 8 | Marcar: filas, toque, gesto largo, hoja, motivo, «Han venido todos», «Sin registro», selector, sesión futura | Test + capturas (hoja abierta, teclado, futura) |
-| 9 | Guardar: barra, borrador, cola, estados de subida, contraste con lo releído, pasos siguientes, salir con cambios | Tests + capturas de cada estado de la barra con los mandos |
-| 10 | Accesibilidad y `fontScale` | Test de etiquetas y acciones; captura a ×1,3 |
-| 11 | Este bloque en `docs/contratos/COMUNICA_API.md`; `mcm-app/CHANGELOG.md` | Revisión |
+| 6 | Árbol (secciones, buscador) e historial | Test + capturas (con y sin sección, buscando, historial) |
+| 7 | Marcar: filas, toque, gesto largo, hoja, motivo, «Han venido todos», «Sin registro», selector, sesión futura, accesibilidad | Test (también de etiquetas y acciones) + capturas: hoja abierta, teclado, futura, `fontScale` ×1,3 |
+| 8 | Guardar: barra, borrador, cola, estados de subida, contraste con lo releído, pasos siguientes, salir con cambios | Tests + capturas de cada estado de la barra con los mandos |
+| 9 | Este bloque en `docs/contratos/COMUNICA_API.md`; `mcm-app/CHANGELOG.md` | Revisión |
 
 ## Tests
 
@@ -333,16 +313,14 @@ nada cambiado con lista pasada), `fillRestPresent`, `checkSaved`,
 `groupLabel`, `compareGroups` (M4.2 < M4.10), `groupBuckets`,
 `sessionPickerOptions` y los formatos de fecha en `es-ES` y Europe/Madrid.
 
-**De pantalla con el falso**: portada (atajo, «Te faltan 2 listas», otros
-grupos, coordinación solo a coordinación, sin grupo, evento de hoy, cola con una
-atascada); árbol (tu grupo primero, «merce» encuentra a Mercedes); marcar
-(ciclo, `longPress` abre la hoja, el motivo sobrevive a cerrarla, «El resto ha
-venido (3)» no pisa una falta, los dos textos de «Sin registro»); guardar (sin
-marcas no encola; bueno → recuentos y fuera el borrador; **guardar dos veces lo
-mismo = cero escrituras en el falso**; `no_registration` → «1 marca no ha
-quedado guardada» y el borrador sigue; sin red → `pending` y, al volver,
-aplicado; CRM caído cinco veces → `stuck`; otra delegación → 403; futura → sin
-botón, y un PUT a mano lo rechaza el falso).
+**De pantalla con el falso**: portada (atajo, «Te faltan 2 listas», coordinación
+solo a coordinación, sin grupo, evento de hoy, cola atascada); árbol («merce»
+encuentra a Mercedes); marcar (ciclo, `longPress` abre la hoja, el motivo
+sobrevive a cerrarla, «El resto ha venido (3)» no pisa una falta); guardar (sin
+marcas no encola; **guardar dos veces lo mismo = cero escrituras en el falso**;
+`no_registration` → «1 marca no ha quedado guardada» y el borrador sigue; sin
+red → `pending` y, al volver, aplicado; CRM caído cinco veces → `stuck`; otra
+delegación → 403; un PUT a mano a una futura lo rechaza el falso).
 
 **Guardarraíles**: el esquema del PUT no admite ids de inscripción ni de lista;
 ningún texto de salud en estas respuestas (el test de 00 las recorre); toda fila
@@ -350,28 +328,23 @@ con etiqueta y acciones de accesibilidad; falso y cliente comparten esquemas.
 
 ## Preguntas abiertas
 
-1. **Quitar una marca guardada no la borra**: en el plugin «sin marcar no se
-   escribe» (`sticpa_pl_save`), así que un «Vino» quitado sigue en el CRM y al
-   releer vuelve. La app hace lo mismo (y la fila vuelve a su marca al
-   confirmar). ¿Se quiere que quitarla la borre?
+1. **Quitar una marca guardada no la borra**: «sin marcar no se escribe»
+   (`sticpa_pl_save`), así que un «Vino» quitado sigue en el CRM y al releer
+   vuelve. La app hace lo mismo. ¿Se quiere que quitarla la borre?
 2. **Sesión futura**: el análisis (§5) y `PASAR-LISTA.md` §6.3 dicen que no se
-   pasa lista del futuro y el selector del plugin no las ofrece, pero cuando no
-   ha empezado ninguna el plugin propone la próxima y deja guardarla. El plan
-   sigue al análisis (solo lectura; el servidor la rechaza). Confirmar.
-3. **«Crear la sesión de hoy»** (plugin, 16/10/2026) es una escritura fuera de
-   este alcance: de momento, WebView. ¿Nativa aquí?
-4. **COM II y COM III** usan `#7c3aed` y `#be185d` en el plugin: si el plan 03
-   no les da token, son colores nuevos y se pregunta (`design.md` §1).
+   pasa lista del futuro, pero si no ha empezado ninguna el plugin propone la
+   próxima y deja guardarla. El plan sigue al análisis. Confirmar.
+3. **«Crear la sesión de hoy»** (plugin, 16/10/2026): fuera de alcance, WebView. ¿Nativa?
+4. **COM II y COM III** son `#7c3aed` y `#be185d` en el plugin: sin token del
+   plan 03, son colores nuevos y se pregunta (`design.md` §1).
 5. **El glosario de 00 no coincide con el plugin** (se sigue el plugin y se
-   corrige 00 al ejecutar): `no_unjustified` es «No vino», no «No»; los
-   segmentos son «COM I/II/III», no «COM 1»; los recuentos dicen «chavalines».
-6. **«Hace N días»**: el plugin cuenta bloques de 24 h y el domingo por la mañana
-   dice «Hace 0 días». El plan cuenta días de calendario. Confirmar.
+   corrige 00): «No vino», no «No»; «COM I/II/III», no «COM 1»; «chavalines».
+6. **«Hace N días»**: el plugin cuenta bloques de 24 h y el domingo por la
+   mañana dice «Hace 0 días»; el plan cuenta días de calendario. Confirmar.
 7. **Documento contra código (se sigue el código)**: `PASAR-LISTA.md` §4 limita
-   la sesión reciente a seis días (el código, no); §6.1 dice que sin grupo se
-   entra al árbol (el código pinta la portada con el aviso); §6.6, que el
-   buscador del árbol encuentra chavales (busca grupo, monitor o curso; los
-   chavales, en Grupos y fichas, plan 05); §7 da Pasar Lista a monitor y
-   coordinación (el código, a todo el equipo: `sticpa_equipo_secciones`). El
-   artboard `Marcar` pone «Sin registro — no me avises más» al final; el código
-   lo subió arriba y con confirmación (plan 042 PL-1).
+   la sesión reciente a seis días (el código, no); §6.1, sin grupo se entra al
+   árbol (el código pinta la portada con el aviso); §6.6, el buscador del árbol
+   encuentra chavales (busca grupo, monitor o curso; los chavales, plan 05); §7,
+   Pasar Lista es de monitor y coordinación (el código: todo el equipo,
+   `sticpa_equipo_secciones`). El artboard `Marcar` pone «Sin registro» al final;
+   el código lo subió arriba con confirmación (plan 042 PL-1).

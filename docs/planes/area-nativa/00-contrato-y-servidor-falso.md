@@ -24,12 +24,12 @@ plan del servidor, no de este).
 |---|---|---|
 | Delegación (`assigned_user_id`) | `delegationId`, `Delegation` | «delegación» |
 | Persona (`Contacts`) | `Person`, `personId` | su nombre |
-| Chaval/a (relación `participante_mic_com`) | `participant` (papel) | «chaval», «chavala», «chavales» |
+| Chaval/a (relación `participante_mic_com`) | `participant` (papel) | «chaval», «chavala», «chavales»; en los recuentos, «chavalines» («12 chavalines · 2 monitores», decisión del propietario) |
 | Monitor/a (marca `monitor`) | `monitor` (papel) | «monitor», «monitora», «monitores» |
 | Coordinación / acompañamiento | `coordination`, `accompaniment` (papeles) | «Coordinación», «Acompañamiento» (chip, `design.md` del plugin §6.4) |
 | Grupo (`ajmcm_GRUPOS`) | `Group`, `groupId` | nombre del grupo |
 | Etapa (`level`: mic/com/lc/apoyo) | `stage` | «MIC», «COM», «LC», «Apoyo» |
-| Segmento (`ajmcm_segmento_com_c`) | `segment` | «COM 1»… |
+| Segmento (`ajmcm_segmento_com_c`: `com_1`…`com_3`) | `segment` | «COM I», «COM II», «COM III» |
 | Curso escolar (1º ESO…) | `schoolLevel` | «1º ESO» |
 | Curso del año (2025-2026) | `season` | «curso 2025-2026» |
 | Relación persona-grupo (`stic_Contacts_Relationships`) | `Membership` | — |
@@ -45,7 +45,8 @@ plan del servidor, no de este).
 | Autorizaciones (`ajmcm_soloacasa_c`, `ajmcm_cesionimagenes_interne_c`, `ajmcm_menorwhatsapp_c`, `ajmcm_datossalud_c`) | `consents.goHomeAlone`, `.photos`, `.whatsapp`, `.healthData` | ver `MIS-GRUPOS.md` del plugin |
 
 **Estados de una marca** (`PASAR-LISTA.md` §6 del plugin): `yes` «Vino»,
-`partial` «Parcial», `no_justified` «Justificada», `no_unjustified` «No», y
+`partial` «Parcial», `no_justified` «Justificada», `no_unjustified` «No vino»
+(así en `inc/stic-pasar-lista.php`), y
 `null` = **sin marcar** (un quinto estado, no un «no»).
 
 **Estados de una lista** (`RollCall.status`): `taken` «Pasada» (con recuento),
@@ -90,7 +91,7 @@ Me               { personId, name, photoUrl?, delegation, roles: Role[],
 Role             'monitor' | 'coordination' | 'accompaniment' | 'member' | 'guardian'
 PersonSummary    { id, firstName, lastName, photoUrl?, schoolLevel?,
                    badges: { healthNote, noPhotos, notHomeAlone } }
-GroupSummary     { id, name, stage, segment?, schoolLevels[], counts: { participants, monitors } }
+GroupSummary     { id, code, name, stage, segment?, schoolLevels[], counts: { participants, monitors } }
 SessionSummary   { id, eventId, date, startsAt, endsAt, kind: 'weekly'|'meeting'|'event' }
 Mark             'yes' | 'partial' | 'no_justified' | 'no_unjustified' | null
 RollCallSummary  { sessionId, groupId?, status: 'taken'|'skipped', takenAt, counts: { came, missed } }
@@ -106,10 +107,10 @@ Catálogo previsto (lo detallan los planes que se indican):
 | Bloque | Rutas | Plan |
 |---|---|---|
 | Acceso | `POST /v1/auth/code`, `POST /v1/auth/verify`, `POST /v1/auth/refresh`, `POST /v1/auth/logout`, `GET /v1/me` | 02 |
-| Pasar Lista | `GET /v1/today`, `GET /v1/groups`, `GET /v1/groups/:id/sessions`, `GET /v1/sessions/:id/groups/:gid/roll`, `PUT /v1/sessions/:id/groups/:gid/roll` | 04 |
-| Grupos y fichas | `GET /v1/groups/:id`, `GET /v1/people`, `GET /v1/people/:id`, `GET /v1/people/:id/health`, `POST /v1/people/:id/notices` | 05 |
-| Coordinación | `GET /v1/coordination/*`, `PUT /v1/sessions/:id/monitors-roll`, `POST /v1/meetings`, `GET /v1/monitors/:id`, `POST /v1/monitors/:id/follow-ups`, `PUT /v1/memberships/…` | 06 |
-| Eventos | `GET /v1/events/today`, `GET /v1/events/:id/roll`, `PUT /v1/events/:id/roll`, `GET /v1/events/:id/activity-groups` | 07 |
+| Pasar Lista | `GET /v1/today`, `GET /v1/groups`, `GET /v1/sessions/:id/groups/:gid/roll`, `PUT /v1/sessions/:id/groups/:gid/roll` (el historial de un grupo sale de lo guardado) | 04 |
+| Grupos y fichas | `GET /v1/groups/:id`, `GET /v1/people`, `GET /v1/people/:id`, `GET /v1/people/:id/health`, `POST /v1/people/:id/notices`, `PUT /v1/people/:id/scarf`, `PUT /v1/memberships/:id/group` | 05 |
+| Coordinación | `GET /v1/coordination/*`, `PUT /v1/sessions/:id/monitors-roll`, `POST /v1/meetings`, `GET /v1/monitors/:id`, `POST /v1/monitors/:id/follow-ups` (y reutiliza `PUT /v1/memberships/:id/group` del 05) | 06 |
+| Eventos | `GET /v1/events`, `GET /v1/events/:id/roll` (con los grupos de actividad dentro), `PUT /v1/events/:id/roll` | 07 |
 | Avisos | `POST /v1/devices` (token de push), `DELETE /v1/devices/:id` | 08 |
 | Mis datos de monitor | `GET /v1/me/monitor`, `PATCH /v1/me/monitor`, `POST /v1/me/documents` | 09 |
 
