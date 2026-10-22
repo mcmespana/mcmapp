@@ -35,7 +35,7 @@ coordinación) están todos menos `ajmcm_vol_descripcion_c` y `ajmcm_vol_program
 
 | Ruta | Qué |
 |---|---|
-| `app/(tabs)/comunica/yo/index.tsx` | «Mis datos de monitor»: secciones, «Guardar» y archivos. Se llega desde el menú de cuenta del área (plan 02) y desde el aviso |
+| `app/(tabs)/comunica/yo/monitor.tsx` | «Mis datos de monitor»: secciones, «Guardar» y archivos. Se llega desde el menú de cuenta del área (plan 02), desde «Tu perfil» de la portada (plan 11) y desde el aviso. (`yo/index.tsx` es «Tu cuenta», del plan 02) |
 | `CertificatePendingAlert` (`components/comunica/yo/`) | El aviso: arriba en esta pantalla (sin botón) y en la portada «Hoy» del plan 04 (con «Subir certificado»), debajo de la tarjeta de hoy y de las listas que faltan |
 
 «Revisarlo en Documentos →» y «Tus datos personales» abren `web.tsx` (plan 01) con
@@ -185,7 +185,7 @@ la relación con la persona, la revisión con el archivo y el indicador a `1`, a
 | 1 | Contrato (`MonitorProfile`, `PATCH` estricto, `DocumentKind`) y servidor falso con sus fixtures | Tests de esquemas; el falso da 403 sin papel, guarda y se vuelve a leer |
 | 2 | `monitorProfile.ts`: cambios frente a lo confirmado, año, `isCertificatePending`, validación de archivo, claves de la cola | Tests puros |
 | 3 | Piezas de formulario en `comun/form/` | Test de cada una (etiqueta, papel, 44 pt); capturas a 375 px en claro y oscuro con `fontScale` 1,3 |
-| 4 | `yo/index.tsx` con Trayectoria, Formación y Voluntariado; guardar por la cola; diálogo al salir | Test de pantalla con el falso: editar, guardar sin conexión, reconectar, aplicado |
+| 4 | `yo/monitor.tsx` con Trayectoria, Formación y Voluntariado; guardar por la cola; diálogo al salir | Test de pantalla con el falso: editar, guardar sin conexión, reconectar, aplicado |
 | 5 | Sección del certificado: tarjetas, el bloque de cada opción y sus enlaces | Test: elegir «Manual» enseña el archivo y el aviso |
 | 6 | `FileField` y `useDocumentUpload`: elegir, validar, copiar, encolar, subir y borrar la copia | Test con el selector simulado: grande o HEIC, rechazado; la subida llega; la copia se borra |
 | 7 | `CertificatePendingAlert` aquí y en la portada del plan 04 | Test: sale, se esconde con el certificado en la cola y vuelve si falla |

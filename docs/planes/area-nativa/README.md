@@ -127,7 +127,7 @@ de cada uno (`docs/contratos/COMUNICA_API.md`, plan 00 tarea 7).
 | Qué | Dónde |
 |---|---|
 | Rutas | `app/(tabs)/comunica/` — carpeta con `_layout.tsx` (Stack), como `contigo/`. Sustituye a `app/(tabs)/comunica.tsx` (plan 01) |
-| Pantallas por bloque | `app/(tabs)/comunica/pasar-lista/`, `grupos/`, `coordinacion/`, `eventos/`, `yo/` |
+| Pantallas por bloque | Equipo: `pasar-lista/`, `grupos/`, `coordinacion/`, `eventos/`, `yo/` (cuenta, avisos y datos de monitor). Familias: `perfiles.tsx`, `datos/`, `actividades/`, `inscripciones/`, `pagos/`, `documentos/`, `calendario/`, `archivo.tsx`. Todo bajo `app/(tabs)/comunica/` |
 | Componentes | `components/comunica/<bloque>/` y `components/comunica/comun/` |
 | Hooks | `hooks/comunica/` |
 | Contrato, cliente, cola, sesión, servidor falso | `services/comunica/` (`contract.ts`, `client.ts`, `outbox.ts`, `session.ts`, `fake/`) |
