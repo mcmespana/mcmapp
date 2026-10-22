@@ -170,6 +170,12 @@ llegan aquí»); esta es la lista de páginas y su dueño:
 Las desactivadas del plugin no se construyen, pero su enlace lleva a la
 pantalla nativa más cercana, nunca a un error.
 
+**Enlaces a `admin-post.php`** (descargar un documento, el archivo de un
+evento con `sticpa_evento_archivo`, volver de la pasarela de pago): viven en
+`/wp-admin/`, que no abre la app (§3), así que solo llegan **desde dentro del
+legado** (`web.tsx` los intercepta) o dentro de un aviso. Van al mismo mapa,
+por su `action`, con las filas que dan los planes 15 y 16.
+
 ## 5. Datos: su trozo del contrato
 
 | Ruta | Envía | Devuelve |
