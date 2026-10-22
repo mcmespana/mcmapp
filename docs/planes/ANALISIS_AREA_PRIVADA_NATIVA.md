@@ -496,7 +496,7 @@ propietario puede haber cambiado algo. Estado al 21/10/2026, por la tarde:
 
 | id | Decidido | Nota |
 |---|---|---|
-| `alcance` | Monitores primero | Familias en la WebView hasta la fase 2 |
+| `alcance` | Monitores primero | **Ampliado el 22/10:** se planifica toda el área 1:1 (familias incluidas, planes `area-nativa/11-16`); lo nuevo se ve en modo alpha y la WebView queda como legado (`area-nativa/10`) |
 | `velocidad` | **Pasarela primero**, espejo si hace falta | Elegido por el propietario; la recomendación pasó a ser esta (§2) |
 | `sinergiatic` | Pedir las dos cosas | Usuario de lectura de la BBDD e instancia `/TEST` |
 | `almacen` | **Neon + Vercel, gratis** | Pidió precios reales: §9 |

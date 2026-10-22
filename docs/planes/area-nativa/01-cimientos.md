@@ -23,26 +23,29 @@ el interruptor está apagado.
   el mismo modelo que `contigo/`:
   - `_layout.tsx`: `Stack` con cabecera nativa (título grande en iOS donde
     toque, `design.md` §1 «que se sienta del sistema»).
-  - `index.tsx`: **la puerta** (`ComunicaGate`). Decide qué se ve:
-    1. Interruptor apagado o sin servidor configurado → la WebView de hoy
-       (`app/screens/ComunicaScreen.tsx`, sin tocarla).
-    2. Interruptor encendido y sin sesión → entrar (plan 02).
+  - `index.tsx`: **la puerta** (`ComunicaGate`). Decide qué se ve
+    (actualizado el 22/10 con el plan 10):
+    1. El enrutador del plan 10 dice «legado» (modo alpha apagado con el
+       interruptor en `alpha`, o interruptor en `off`), o no hay servidor
+       configurado → la WebView de hoy (`app/screens/ComunicaScreen.tsx`, sin
+       tocarla).
+    2. Nativa y sin sesión → entrar (plan 02).
     3. Con sesión y algún papel de equipo (`monitor`, `coordination`,
-       `accompaniment`) → la portada «Hoy» (plan 04).
-    4. Con sesión pero sin papel de equipo (solo familia o miembro) → la
-       WebView, que sigue siendo su área en esta fase.
-  - `web.tsx`: la WebView del plugin abierta en una pantalla concreta
-    (`?internalpage=…`), para lo que todavía no es nativo (lo de familia de un
-    monitor que también es padre o madre, pagos, inscripciones). Reutiliza
-    `ComunicaScreen` y `useComunicaWebView`.
+       `accompaniment`) → la portada «Hoy» (plan 04), con lo de familia debajo
+       si también es familia (plan 11).
+    4. Con sesión y sin papel de equipo (familia o miembro) → la portada de
+       familia (plan 11). Ya no va a la WebView: familias también es nativo.
+  - `web.tsx`: **el legado**. La WebView del plugin, entera o abierta en una
+    página concreta con sesión por `openLegacy` (plan 10), para lo poco que no
+    sea nativo. Reutiliza `ComunicaScreen` y `useComunicaWebView`.
   - Subcarpetas de cada bloque (`pasar-lista/`, `grupos/`, `coordinacion/`,
     `eventos/`, `yo/`): las crean sus planes.
-- **Interruptor** `global.comunicaNativa?: boolean` en `/profileConfig`
-  (`types/profileConfig.ts`, seed `firebase-seed/profileConfig.json`, por
-  defecto `false`). Es la vuelta atrás decidida (`piloto` = «para todos, con
-  vuelta atrás»): apagarlo devuelve a todos a la WebView al siguiente arranque,
-  sin build ni OTA. Documentarlo en `docs/contratos/PANEL_PERFILES.md` para que
-  el Panel lo enseñe; hasta entonces se cambia desde la consola de Firebase.
+- **Interruptor** `global.comunicaNativa: 'off' | 'alpha' | 'all'` en
+  `/profileConfig` (ausente = `alpha`), combinado con el modo alpha: lo define
+  el plan 10 §1. `alpha` = solo lo ve quien enciende el Laboratorio Alpha;
+  `all` = el lanzamiento para todos; `off` = vuelta atrás de emergencia, sin
+  build ni OTA. Documentarlo en `docs/contratos/PANEL_PERFILES.md` para que el
+  Panel lo enseñe; hasta entonces se cambia desde la consola de Firebase.
 - Los enlaces de acceso que ya abre la app (`app/+native-intent.ts`,
   `/app/acceso?acceso_magico=…`) siguen yendo a la pestaña: con el interruptor
   apagado, a la WebView como hoy; encendido, al acceso nativo (plan 02).
@@ -137,7 +140,7 @@ Sin conexión se reutiliza `components/OfflineBanner.tsx` y
 - Ninguna consulta con `persist: false` llega al almacén (test con el
   persistidor real y una consulta de salud del servidor falso).
 - Salir borra consultas, cola y sesión (test de punta a punta con el falso).
-- Con el interruptor apagado, la pestaña pinta `ComunicaScreen` (test de la
+- Con el enrutador en «legado», la pestaña pinta `ComunicaScreen` (test de la
   puerta con `screenSmoke`).
 - Nada nativo en el grafo de web: el área entra en
   `__tests__/tabsLayoutWebSafety.test.ts` (`expo-sqlite` y `expo-secure-store`
@@ -148,8 +151,8 @@ Sin conexión se reutiliza `components/OfflineBanner.tsx` y
 
 | # | Tarea | Cómo se comprueba |
 |---|---|---|
-| 1 | `comunica.tsx` → carpeta `comunica/` con `_layout.tsx`, `index.tsx` (puerta) y `web.tsx`; la WebView sigue igual | La pestaña se ve igual que hoy con el interruptor apagado (captura web y `screenSmoke`) |
-| 2 | Interruptor `global.comunicaNativa` en tipo, seed, resolver y `PANEL_PERFILES.md` | Tests del resolver: ausente = `false` |
+| 1 | `comunica.tsx` → carpeta `comunica/` con `_layout.tsx`, `index.tsx` (puerta) y `web.tsx`; la WebView sigue igual | La pestaña se ve igual que hoy en modo legado (captura web y `screenSmoke`) |
+| 2 | Interruptor de tres estados: lo hace el plan 10 (tarea 1); aquí la puerta lo consulta | Tests de la puerta con el enrutador simulado |
 | 3 | `QueryClient` del área, `useAreaQuery`, `useMe` sobre el cliente del plan 00 | Tests con el servidor falso: datos, error, 401, 403 |
 | 4 | Persistencia en `expo-sqlite` (adaptador de memoria en web), espacio por persona, borrado al salir, exclusión de `persist: false` | Guardarraíles de §7 |
 | 5 | Cola `outbox.ts` con estados, disparadores, reintentos, optimista y `useOutboxStatus` | Tests: gana la última, mismo `clientId` en reintentos, `stuck` a los 5, sube al reconectar, `validation` no reintenta |

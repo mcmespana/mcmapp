@@ -1,8 +1,17 @@
 # Área privada nativa — planes de la app (front)
 
-> **Qué es esto:** los planes para construir en MCM App, en nativo, la parte de
-> **monitores** del área privada de Comunica. Solo la app: el servidor va en un
-> repo propio (`mcm-comunica-api`, por crear) y tendrá sus planes aparte.
+> **Qué es esto:** los planes para construir en MCM App, en nativo, **toda el
+> área privada de Comunica**: monitores (04-09) y familias y miembros (11-16),
+> **1:1 en funcionalidad**, partiendo de su diseño y bien adaptada a nativo. Lo
+> que está desactivado en el plugin no se hace; lo poco que sea muy complicado
+> salta a la web del plugin dentro de la app, con la sesión puesta y sin que se
+> note (plan 10). Ejecutarlos es construir el área entera. Solo la app: el
+> servidor va en un repo propio (`mcm-comunica-api`, por crear) y tendrá sus
+> planes aparte.
+>
+> **Cómo convive con la de hoy (plan 10):** con el modo alpha encendido se ve
+> la nueva; en modo normal, la WebView de siempre, que pasa a ser **el
+> legado**. Cualquier enlace de Comunica abre la app en la pantalla que toca.
 > Análisis y decisiones: [`../ANALISIS_AREA_PRIVADA_NATIVA.md`](../ANALISIS_AREA_PRIVADA_NATIVA.md)
 > y la página <https://claude.ai/artifact/B3ABkV5CYJLUTo2hnWW8t5> (colección
 > `decisiones`).
@@ -11,8 +20,10 @@
 > lo de aquí se hace en esa rama, que se mantiene viva hasta que salga. No se
 > abre PR a `main` sin que el propietario lo pida.
 >
-> **Cuándo se ejecuta:** cuando el propietario lo diga. Escritos el 21/10/2026,
-> antes de la 2.2, para adelantar trabajo.
+> **Cuándo se ejecuta:** cuando el propietario lo diga. Escritos el 21 y el
+> 22/10/2026, antes de la 2.2, para adelantar trabajo. Como lo nuevo solo se ve
+> en modo alpha, el código puede llegar a los probadores mergeando la rama a
+> `preview`, sin tocar `main`.
 
 ---
 
@@ -25,7 +36,7 @@ construye entero contra un **servidor falso** dentro de la propia app (plan
 00), con datos inventados, y el día que exista el servidor de verdad se cambia
 una variable.
 
-Lo que sí afecta al front ya está decidido: alcance (monitores), sin cobertura
+Lo que sí afecta al front ya está decidido: alcance (todo, monitores primero), sin cobertura
 (pasar lista y grupos), salud (solo la marca), login (código, con el correo de
 la cuenta ya puesto), extras (avisos y compartir), lanzamiento (para todos, con
 vuelta atrás). Lo de front que sigue abierto (tabla de abajo) son detalles de
@@ -73,10 +84,21 @@ Antes de ejecutar un plan, se leen las respuestas de la página (colección
 | [`07-eventos.md`](07-eventos.md) | Pasar lista en un evento (el autobús) y grupos de actividad | 04 | L |
 | [`08-avisos-y-compartir.md`](08-avisos-y-compartir.md) | Avisos en el móvil y compartir un evento | 01 | M |
 | [`09-mis-datos-de-monitor.md`](09-mis-datos-de-monitor.md) | Formación, trayectoria, certificado y títulos | 01, 03 | M |
+| [`10-enrutador-enlaces-y-legado.md`](10-enrutador-enlaces-y-legado.md) | Modo alpha → nueva, normal → legado; salto a la web con sesión; cualquier enlace de Comunica abre la app donde toca | 00, 01, 02 | L |
+| [`11-portada-y-perfiles.md`](11-portada-y-perfiles.md) | Portada de familias y miembros, «¿A quién ves?» y cambio de hijo | 00-03 | M |
+| [`12-mis-datos.md`](12-mis-datos.md) | Mis datos y «Datos de» cada hijo, foto, salud, consentimientos | 01, 03, 11 | L |
+| [`13-eventos-y-ficha.md`](13-eventos-y-ficha.md) | «Para apuntarte», «Te has apuntado» y la ficha del evento | 01, 03, 11 | L |
+| [`14-inscripciones.md`](14-inscripciones.md) | Inscribirse (alta corta), mis inscripciones, modificar y cancelar | 13 | L |
+| [`15-pagos.md`](15-pagos.md) | Pagos y arrancar un pago con tarjeta desde la app | 11, 14 | L |
+| [`16-documentos-y-calendario.md`](16-documentos-y-calendario.md) | Documentos (ver, subir, borrar) y calendario con asistencia | 01, 03, 11 | M |
 
-00 → 01 → 02 van en fila. 03 puede ir a la vez. 04-09 se pueden repartir entre
-varias sesiones una vez hechos 00, 01 y 03, porque cada uno vive en sus
-carpetas.
+00 → 01 → 02 → 10 van en fila. 03 puede ir a la vez. Después, 04-09
+(monitores) y 11-16 (familias) se pueden repartir entre varias sesiones,
+porque cada uno vive en sus carpetas; dentro de familias, 11 va primero.
+
+**Construir el área entera** = ejecutar estos 17 planes y, aparte, los del
+servidor. Lo que el plan del servidor tiene que dar sale de la sección «Datos»
+de cada uno (`docs/contratos/COMUNICA_API.md`, plan 00 tarea 7).
 
 ---
 
@@ -126,7 +148,23 @@ conexión (datos guardados + «actualizado hace N min») y pendiente de subir.
 `design.md` de la app manda, y `03` dice cómo se traduce el área privada:
 componentes de `design.md` §7, cabecera y buscador nativos, `PressableFeedback`,
 hápticos con `h.*`, `useTabScroll` para que la barra flotante no tape nada,
-claro y oscuro a la vez.
+claro y oscuro a la vez. El listón: moderna, cómoda, rápida, sencilla y que se
+adapte (iPhone, Android, iPad y web).
+
+**Skills** (si la sesión las tiene; las de la app están en
+`mcm-app/skills-lock.json` y las de UI en el `skills-lock.json` de la raíz):
+
+| Para | Skill |
+|---|---|
+| Construir pantallas con Expo Router y lo nativo | `building-native-ui` |
+| Componentes de heroui-native | `heroui-native` |
+| Movimiento y gestos | `animate-expo` |
+| Pulido final | `make-interfaces-feel-better` |
+| Revisar cada pantalla antes de darla por hecha | `fixing-accessibility`, `baseline-ui`, `fixing-motion-performance` |
+| Repaso de un bloque entero con capturas | `improve-ui` |
+
+Una pantalla no está hecha hasta que ha pasado por las de revisión y por el
+checklist de `design.md` §10.
 
 ### Especificación funcional
 

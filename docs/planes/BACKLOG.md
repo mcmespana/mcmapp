@@ -205,6 +205,7 @@ guardan para la siguiente build de tienda.
 | ------------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Widgets de Contigo** — hábitos + racha + evangelio del día (WidgetKit iOS / App Widget Android + App Group) | 0%     | Es una feature entera, no un extra. Los tres comparten target, payload y deep links: se hacen juntos. `docs/planes/PLAN_WIDGET_CONTIGO.md`                                                                                      |
 | **Firebase App Check** (DeviceCheck / Play Integrity)                                                         | 0%     | Arrastra `@react-native-firebase` entero junto al SDK JS que ya se usa, y un _enforcement_ mal configurado deja sin datos a toda la base instalada. Además la Integración D (reglas) sigue abierta, que es el agujero de verdad |
+| **Enlaces de Comunica en Android**: `intentFilters` de `app.json` con los prefijos `/ap`, `/app`, `/area-privada`, `/actividades` y `/` del dominio de Comunica (hoy solo `/app/acceso`) | 0% — **pedido por el usuario** (2026-10-22) | Para que cualquier enlace de Comunica abra la app en la pantalla que toca. Es nativo: o entra en la 2.2 o espera otra build. En iOS no hace falta build (lo decide el fichero que sirve el plugin). `area-nativa/10` §3 |
 | **Paquetes nativos del área privada nativa, sin usar** (`expo-secure-store`, `expo-sqlite` con SQLCipher, `expo-local-authentication`) | 0% — **decidido** (2026-10-21) | Para que el área nativa pueda salir luego por OTA sobre la 2.2, como el NFC del 19/10. Solo instalar y configurar; nada de código que los use. `ANALISIS_AREA_PRIVADA_NATIVA.md` §3.5 y §7 |
 
 #### C.4 — Sigue bloqueado por una decisión tuya
@@ -352,11 +353,13 @@ monitores, con un backend nuevo que no sea el plugin.
   `ipfija`, del servidor; y diez que salen de los planes de la app, listadas en
   [`area-nativa/README.md`](area-nativa/README.md) (ninguna bloquea empezar). Antes de preguntar nada, lee lo que ya haya marcado.
 - **Rama: `nuevoComunicaChulo`** (en `mcmapp` y en `comunicaAreaPrivada`).
-- 📝 **Planes de la app (front) escritos** el 2026-10-21 en
-  [`area-nativa/`](area-nativa/README.md): contrato y servidor falso,
-  cimientos, acceso, traducción del diseño y las pantallas de monitores. Se
-  pueden ejecutar sin servidor (van contra el servidor falso), cuando el
-  usuario lo diga. Los del servidor, aparte, en su repo.
+- 📝 **Planes de la app (front) escritos** el 21 y 22/10/2026 en
+  [`area-nativa/`](area-nativa/README.md): **toda el área privada, 1:1**
+  (monitores y familias), con el enrutador del modo alpha (alpha → nueva,
+  normal → la WebView como legado), el salto a la web con sesión y los enlaces
+  de Comunica abriendo la app donde toca. Se pueden ejecutar sin servidor (van
+  contra el servidor falso), cuando el usuario lo diga. Los del servidor,
+  aparte, en su repo.
 - Lo único que se puede adelantar sin plan está en §13 del análisis (pedir a
   SinergiaTIC usuario de lectura y `/TEST`, protección de datos, equivalencias
   de delegaciones). Toca la 2.2 solo una cosa, y solo si se decide: los
