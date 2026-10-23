@@ -1,0 +1,218 @@
+// services/comunica/client.ts
+//
+// La interfaz `ComunicaApi` (lo que la app puede pedir) y el cliente real, que
+// habla por HTTP con `mcm-comunica-api`. El servidor falso (`fake/`) implementa
+// la MISMA interfaz: las pantallas no saben con cuál hablan, y ninguna importa
+// ni uno ni otro directamente — pasan por `getComunicaApi()` (`index.ts`).
+//
+// Todo lo que llega se valida con los esquemas de `contract.ts`. Una respuesta
+// con forma rota es un error tipado (`bad_response`), no un `undefined` que
+// revienta tres pantallas más allá.
+
+import { z } from 'zod';
+import {
+  ErrorBody,
+  type ErrorCode,
+  GroupsResponse,
+  HealthNote,
+  MeResponse,
+  RollDetail,
+  type RollWrite,
+  RollWriteResult,
+  TodayResponse,
+} from './contract';
+import { logger } from '@/utils/logger';
+
+export interface ReadOptions {
+  /** El `?fresh=1` del pull-to-refresh: el servidor no tira de su caché. */
+  fresh?: boolean;
+}
+
+export interface ComunicaApi {
+  getMe(): Promise<MeResponse>;
+  getGroups(opts?: ReadOptions): Promise<GroupsResponse>;
+  getToday(opts?: ReadOptions): Promise<TodayResponse>;
+  getRoll(
+    sessionId: string,
+    groupId: string,
+    opts?: ReadOptions,
+  ): Promise<RollDetail>;
+  saveRoll(
+    sessionId: string,
+    groupId: string,
+    body: RollWrite,
+  ): Promise<RollWriteResult>;
+  getHealth(personId: string): Promise<HealthNote>;
+}
+
+/** Lo que puede fallar: los códigos del contrato, más los de la app. */
+export type ApiErrorCode = ErrorCode | 'network' | 'bad_response';
+
+export class ComunicaApiError extends Error {
+  readonly code: ApiErrorCode;
+  readonly status: number;
+  readonly reason?: string;
+
+  constructor(
+    code: ApiErrorCode,
+    message: string,
+    status = 0,
+    reason?: string,
+  ) {
+    super(message);
+    this.name = 'ComunicaApiError';
+    this.code = code;
+    this.status = status;
+    this.reason = reason;
+  }
+
+  /** Vale la pena reintentar: el CRM o la red, no la petición. */
+  get retryable(): boolean {
+    return this.code === 'crm_unavailable' || this.code === 'network';
+  }
+}
+
+export const isComunicaApiError = (e: unknown): e is ComunicaApiError =>
+  e instanceof ComunicaApiError;
+
+const STATUS_CODE: Record<number, ErrorCode> = {
+  401: 'unauthenticated',
+  403: 'forbidden',
+  404: 'not_found',
+  409: 'conflict',
+  422: 'validation',
+  429: 'rate_limited',
+  503: 'crm_unavailable',
+};
+
+/** Cuántas veces se reintenta una LECTURA que falla por red o CRM caído. */
+const READ_RETRIES = 1;
+
+export interface HttpClientOptions {
+  baseUrl: string;
+  /** El token de acceso de la sesión (lo pone el plan 02). */
+  getToken?: () => string | null | Promise<string | null>;
+  fetchImpl?: typeof fetch;
+}
+
+export function createHttpClient({
+  baseUrl,
+  getToken,
+  fetchImpl,
+}: HttpClientOptions): ComunicaApi {
+  const doFetch =
+    fetchImpl ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
+  const root = baseUrl.replace(/\/+$/, '');
+
+  async function request<S extends z.ZodType>(
+    method: 'GET' | 'PUT' | 'POST',
+    path: string,
+    schema: S,
+    body?: unknown,
+    retries = 0,
+  ): Promise<z.infer<S>> {
+    const token = getToken ? await getToken() : null;
+    let res: Response;
+    try {
+      res = await doFetch(`${root}${path}`, {
+        method,
+        headers: {
+          Accept: 'application/json',
+          ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      });
+    } catch {
+      if (retries > 0) return request(method, path, schema, body, retries - 1);
+      throw new ComunicaApiError('network', 'Sin conexión con el servidor');
+    }
+
+    let json: unknown = null;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+
+    if (!res.ok) {
+      const parsed = ErrorBody.safeParse(json);
+      const code = parsed.success
+        ? parsed.data.error.code
+        : (STATUS_CODE[res.status] ?? 'crm_unavailable');
+      const err = new ComunicaApiError(
+        code,
+        parsed.success ? parsed.data.error.message : `HTTP ${res.status}`,
+        res.status,
+        parsed.success ? parsed.data.error.reason : undefined,
+      );
+      if (err.retryable && retries > 0) {
+        return request(method, path, schema, body, retries - 1);
+      }
+      if (code === 'forbidden') {
+        // Un 403 que la app no esperaba suele ser un fallo de alcance: ids,
+        // nunca nombres (`01-cimientos.md` §6).
+        logger.warn('[comunica] 403', method, path);
+      }
+      throw err;
+    }
+
+    const parsed = schema.safeParse(json);
+    if (!parsed.success) {
+      logger.error(
+        '[comunica] respuesta con forma rota',
+        method,
+        path,
+        parsed.error.issues.slice(0, 3),
+      );
+      throw new ComunicaApiError(
+        'bad_response',
+        'Respuesta inesperada del servidor',
+        res.status,
+      );
+    }
+    return parsed.data;
+  }
+
+  const q = (opts?: ReadOptions) => (opts?.fresh ? '?fresh=1' : '');
+  const enc = encodeURIComponent;
+
+  return {
+    getMe: () => request('GET', '/v1/me', MeResponse, undefined, READ_RETRIES),
+    getGroups: (opts) =>
+      request(
+        'GET',
+        `/v1/groups${q(opts)}`,
+        GroupsResponse,
+        undefined,
+        READ_RETRIES,
+      ),
+    getToday: (opts) =>
+      request(
+        'GET',
+        `/v1/today${q(opts)}`,
+        TodayResponse,
+        undefined,
+        READ_RETRIES,
+      ),
+    getRoll: (sid, gid, opts) =>
+      request(
+        'GET',
+        `/v1/sessions/${enc(sid)}/groups/${enc(gid)}/roll${q(opts)}`,
+        RollDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    // Las escrituras no se reintentan aquí: las reintenta la cola (plan 01),
+    // con el mismo `clientId`.
+    saveRoll: (sid, gid, body) =>
+      request(
+        'PUT',
+        `/v1/sessions/${enc(sid)}/groups/${enc(gid)}/roll`,
+        RollWriteResult,
+        body,
+      ),
+    getHealth: (id) =>
+      request('GET', `/v1/people/${enc(id)}/health`, HealthNote),
+  };
+}
