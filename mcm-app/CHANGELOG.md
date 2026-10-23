@@ -4,6 +4,36 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-24 02:00 — Área privada nativa de Comunica: cimientos con datos inventados (rama `nuevoComunicaChulo`)
+
+Primeros planes de `docs/planes/area-nativa/` (00, parte del 01 y del 03, y un
+primer corte del 04), **solo visibles con el Laboratorio Alpha** y sin tocar
+nada del CRM:
+
+- **Contrato y servidor falso** (`services/comunica/`): esquemas zod de lo que
+  la app y el futuro `mcm-comunica-api` se piden (`docs/contratos/COMUNICA_API.md`),
+  cliente HTTP con errores tipados y un servidor falso en memoria con datos
+  inventados (dos delegaciones ficticias, grupos, chavales, sesiones de los
+  sábados, listas, rachas), autorización por delegación y rechazos de Pasar
+  Lista. Se elige con `EXPO_PUBLIC_COMUNICA_API` (`fake` en desarrollo y en la
+  OTA del canal preview; en producción, sin variable, el área nativa no se
+  enciende).
+- **Navegación**: `app/(tabs)/comunica.tsx` pasa a ser la carpeta
+  `app/(tabs)/comunica/` con su `Stack`. La puerta (`index`) enseña la WebView
+  de siempre salvo con el modo alpha (o `global.comunicaNativa: "all"` en
+  `/profileConfig`; `"off"` la apaga para todos). Rutas nuevas: `lista`,
+  `web` (el legado) y `muestra`.
+- **Pantallas**: portada «Pasar lista» (atajo a tu grupo, «Te faltan N
+  listas», tus otros grupos, por etapa) y pantalla de marcar (tocar = vino/no
+  vino, mantener = las cuatro marcas y el motivo, «Han venido todos», «Sin
+  registro»), con los componentes del área en `components/comunica/comun/` y
+  su tema provisional en un solo fichero (`theme.ts`, pendiente de la decisión
+  `territorio`).
+- **Laboratorio Alpha**: panel «Comunica nueva» con los mandos del servidor
+  falso (entrar como monitor/coordinación/acompañamiento/otra delegación,
+  reloj, sin conexión, CRM caído, lento) y acceso a la WebView para comparar.
+- **Dependencias**: `zod` y `@tanstack/react-query` (JS puro).
+
 ## 2026-10-19 12:00 — Módulo NFC instalado (aún sin usar)
 
 - Añadido `react-native-nfc-manager` y su plugin en `app.json` (permiso NFC + entitlement NDEF en iOS) para que el próximo build nativo ya lo incluya. Todavía no hay código que lo use.

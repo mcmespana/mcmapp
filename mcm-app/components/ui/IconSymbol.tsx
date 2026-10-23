@@ -25,6 +25,27 @@ type IconMapping = {
   'checkmark.circle.fill': 'check-circle';
   'tray.and.arrow.down': 'file-download';
   'square.and.arrow.up.on.square': 'file-upload';
+  // Área privada nativa de Comunica
+  checkmark: 'check';
+  xmark: 'close';
+  minus: 'remove';
+  'circle.lefthalf.filled': 'contrast';
+  'cross.case.fill': 'medical-services';
+  'eye.slash': 'visibility-off';
+  'figure.and.child.holdinghands': 'family-restroom';
+  'exclamationmark.triangle.fill': 'warning';
+  clock: 'schedule';
+  'arrow.clockwise': 'refresh';
+  'wifi.slash': 'wifi-off';
+  'icloud.and.arrow.up': 'cloud-upload';
+  'checkmark.icloud': 'cloud-done';
+  'xmark.icloud': 'cloud-off';
+  iphone: 'smartphone';
+  'person.2': 'group';
+  calendar: 'event';
+  'list.bullet.clipboard': 'assignment';
+  'chart.bar': 'bar-chart';
+  lock: 'lock';
 };
 
 type IconSymbolName = keyof IconMapping;
@@ -54,6 +75,27 @@ const MAPPING: IconMapping = {
   'checkmark.circle.fill': 'check-circle',
   'tray.and.arrow.down': 'file-download',
   'square.and.arrow.up.on.square': 'file-upload',
+  // Área privada nativa de Comunica
+  checkmark: 'check',
+  xmark: 'close',
+  minus: 'remove',
+  'circle.lefthalf.filled': 'contrast',
+  'cross.case.fill': 'medical-services',
+  'eye.slash': 'visibility-off',
+  'figure.and.child.holdinghands': 'family-restroom',
+  'exclamationmark.triangle.fill': 'warning',
+  clock: 'schedule',
+  'arrow.clockwise': 'refresh',
+  'wifi.slash': 'wifi-off',
+  'icloud.and.arrow.up': 'cloud-upload',
+  'checkmark.icloud': 'cloud-done',
+  'xmark.icloud': 'cloud-off',
+  iphone: 'smartphone',
+  'person.2': 'group',
+  calendar: 'event',
+  'list.bullet.clipboard': 'assignment',
+  'chart.bar': 'bar-chart',
+  lock: 'lock',
 };
 
 /**

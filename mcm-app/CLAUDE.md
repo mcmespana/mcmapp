@@ -73,7 +73,7 @@ app/
 │   ├── index.tsx               # Home: grid de botones de navegación
 │   ├── cancionero.tsx          # Cantoral: stack navigator interno (Categories → Songs → Detail → Fullscreen)
 │   ├── contigo/                # Contigo: acompañamiento y oración (rutas anidadas)
-│   ├── comunica.tsx            # Comunica: WebView del portal (envuelve ComunicaScreen)
+│   ├── comunica/               # Comunica: puerta nativa/legado (WebView) — docs/planes/area-nativa/
 │   ├── visitapapa.tsx          # Tab del evento Visita Papa (oculta: evento archivado)
 │   ├── calendario.tsx          # Calendario: eventos ICS
 │   ├── fotos.tsx               # Galería de fotos

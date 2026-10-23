@@ -92,6 +92,16 @@ Antes de ejecutar un plan, se leen las respuestas de la página (colección
 | [`15-pagos.md`](15-pagos.md) | Pagos y arrancar un pago con tarjeta desde la app | 11, 14 | L |
 | [`16-documentos-y-calendario.md`](16-documentos-y-calendario.md) | Documentos (ver, subir, borrar) y calendario con asistencia | 01, 03, 11 | M |
 
+### Estado (24/10/2026)
+
+| Plan | Estado |
+|---|---|
+| 00 | ✅ Hecho: contrato (compartido + Pasar Lista), cliente, servidor falso con mandos, selector, `COMUNICA_API.md`. Los mandos viven en el **Laboratorio Alpha** («Comunica nueva»), no en `SecretPanelModal` (que es el editor de canciones) |
+| 01 | 🟡 Hecho: carpeta `comunica/` con puerta y legado, `QueryClient` del área, `useAreaQuery`/`useMe`, `AreaScreen`/`AreaState`/`SyncBadge`/`UploadStatus`, guardarraíles de imports y de la puerta. **Falta**: persistencia en `expo-sqlite` (llega con la 2.2), espacio por persona y borrado al salir, la cola `outbox.ts` y el panel de diagnóstico |
+| 03 | 🟡 Hecho: `theme.ts` provisional, los componentes de §4 y la página `muestra`. **Falta**: el catálogo de pantallas (tarea 1; los artboards ya se pueden capturar con Playwright) y la decisión `territorio` (tarea 3) |
+| 04 | 🟡 Primer corte: portada (atajo, «Te faltan N listas», otros grupos, por etapa) y marcar/guardar contra el servidor falso. **Falta**: borrador y cola, árbol de grupos, historial, evento de hoy, coordinación en la portada y el resto de reglas del plan |
+| 10 | 🟡 Solo la tabla del enrutador (`utils/comunica/router.ts`, `global.comunicaNativa`) y el panel del laboratorio. Falta el salto a la web con sesión y los enlaces |
+
 00 → 01 → 02 → 10 van en fila. 03 puede ir a la vez. Después, 04-09
 (monitores) y 11-16 (familias) se pueden repartir entre varias sesiones,
 porque cada uno vive en sus carpetas; dentro de familias, 11 va primero.

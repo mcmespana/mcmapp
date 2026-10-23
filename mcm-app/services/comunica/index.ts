@@ -16,6 +16,8 @@
 import { createHttpClient, type ComunicaApi } from './client';
 import { createFakeServer, type FakeServer } from './fake';
 
+export type { FakeControls, FakeServer } from './fake';
+
 export type ComunicaApiTarget =
   { kind: 'fake' } | { kind: 'http'; baseUrl: string } | { kind: 'off' };
 
@@ -76,6 +78,16 @@ export function getFakeServer(): FakeServer | null {
   if (comunicaApiTarget().kind !== 'fake') return null;
   getComunicaApi();
   return fake;
+}
+
+/**
+ * La hora con la que la app evalúa sus reglas (qué sesión toca, qué falta).
+ * Con el servidor falso, la de su reloj si se ha movido con los mandos
+ * («sábado 15:00»); si no, la del móvil.
+ */
+export function comunicaNow(): Date {
+  const clock = fake?.controls.clock;
+  return clock ? new Date(clock) : new Date();
 }
 
 /** El plan 02 engancha aquí la sesión. */
