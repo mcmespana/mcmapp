@@ -1,14 +1,18 @@
 import type { RollDetail, SessionSummary } from '@/services/comunica/contract';
 import { madridInstant } from '@/utils/comunica/madrid';
 import {
+  applyDraft,
   checkSaved,
-  draftAfterSave,
+  draftAfterApplied,
   draftFrom,
   fillRestLabel,
   hasSomethingToSave,
+  isEmptyWrite,
   pendingDisplay,
+  toRollWrite,
 } from '@/utils/comunica/rollDraft';
 import {
+  canMarkSession,
   isFutureSession,
   lastHeld,
   sessionOptions,
@@ -66,6 +70,30 @@ describe('sesión del futuro (Madrid)', () => {
     const fri = new Date('2026-10-23T23:30:00Z');
     expect(isFutureSession({ date: '2026-10-24' }, fri)).toBe(false);
     expect(isFutureSession({ date: '2026-10-25' }, fri)).toBe(true);
+  });
+});
+
+describe('futuras = «como el plugin»', () => {
+  const sessions = [
+    ses('a', '2026-10-10'),
+    ses('b', '2026-10-17'),
+    ses('c', '2026-10-24'),
+  ];
+  it('sin ninguna llegada, la próxima se marca y sale en el selector; la siguiente, no', () => {
+    const before = new Date(madridInstant('2026-10-01', '10:00'));
+    expect(canMarkSession(sessions[0], sessions, before)).toBe(true);
+    expect(canMarkSession(sessions[1], sessions, before)).toBe(false);
+    expect(
+      sessionOptions(sessions, new Map(), before).map((o) => o.session.id),
+    ).toEqual(['a']);
+  });
+  it('con alguna llegada, ninguna futura (hoy sí, aunque no haya empezado)', () => {
+    const sat = new Date(madridInstant('2026-10-17', '10:00'));
+    expect(canMarkSession(sessions[1], sessions, sat)).toBe(true);
+    expect(canMarkSession(sessions[2], sessions, sat)).toBe(false);
+    expect(
+      sessionOptions(sessions, new Map(), sat).map((o) => o.session.id),
+    ).toEqual(['b', 'a']);
   });
 });
 
@@ -131,10 +159,65 @@ describe('guardar', () => {
     expect(
       checkSaved({ marks: { p0: 'yes' } }, reread, [{ personId: 'p9' }]),
     ).toEqual(['p9']);
+    const sent = {
+      marks: { p0: 'yes' as const, p1: 'yes' as const },
+      notes: {},
+    };
+    // p1 no entró: sigue en el borrador como estaba; p0, lo releído.
     expect(
-      draftAfterSave({ marks: { p0: 'yes', p1: 'yes' }, notes: {} }, missing),
-    ).toEqual({ marks: { p1: 'yes' }, notes: { p1: '' } });
-    expect(draftAfterSave({ marks: {}, notes: {} }, [])).toBeNull();
+      draftAfterApplied(draftFrom(reread), sent, sent, missing).marks,
+    ).toEqual({ p0: 'yes', p1: 'yes' });
+  });
+  it('lo tocado después de encolar sobrevive a que se aplique la subida', () => {
+    const fresh = roll(['yes', 'yes', null]);
+    // Se mandó p0 y p1 «Vino»; mientras subía, p1 pasó a «No vino» y p2 a «Vino».
+    const sent = {
+      marks: { p0: 'yes' as const, p1: 'yes' as const },
+      notes: { p0: '', p1: '' },
+    };
+    const current = {
+      marks: {
+        p0: 'yes' as const,
+        p1: 'no_unjustified' as const,
+        p2: 'yes' as const,
+      },
+      notes: { p0: '', p1: '', p2: '' },
+    };
+    const next = draftAfterApplied(draftFrom(fresh), sent, current, []);
+    expect(next.marks).toEqual({ p0: 'yes', p1: 'no_unjustified', p2: 'yes' });
+    // Sin tocar nada después: lo releído, tal cual (gana el servidor).
+    const reread = roll(['no_unjustified', 'yes', null]);
+    expect(draftAfterApplied(draftFrom(reread), sent, sent, []).marks).toEqual({
+      p0: 'no_unjustified',
+      p1: 'yes',
+      p2: null,
+    });
+    // Un motivo escrito después también se queda.
+    const withNote = { ...sent, notes: { p0: 'Tarde', p1: '' } };
+    expect(
+      draftAfterApplied(draftFrom(fresh), sent, withNote, []).notes.p0,
+    ).toBe('Tarde');
+  });
+  it('desmarcar: quitar una marca guardada va como null y deja guardar a cero', () => {
+    const taken = roll(['yes', 'no_unjustified'], true);
+    const d = draftFrom(taken);
+    d.marks.p0 = null;
+    d.marks.p1 = null;
+    expect(isEmptyWrite(taken, d)).toBe(false);
+    expect(hasSomethingToSave(taken, d)).toBe(true);
+    const body = toRollWrite(d, 'c', taken);
+    expect(body.marks).toEqual({ p0: null, p1: null });
+    // Lo optimista no resucita la marca quitada.
+    const opt = applyDraft(taken, d, 'save', '2026-10-24T18:00:00Z');
+    expect(opt.entries.map((e) => e.mark)).toEqual([null, null]);
+    expect(opt.roll?.counts).toEqual({ came: 0, missed: 0 });
+    // Releído sin esa marca = guardado.
+    expect(checkSaved(body, opt, [])).toEqual([]);
+    // Quien no tenía marca no va en el PUT; sin marcas ni nada que quitar, vacío.
+    const fresh = roll([null, null]);
+    const e = draftFrom(fresh);
+    expect(toRollWrite(e, 'c', fresh).marks).toEqual({});
+    expect(isEmptyWrite(fresh, e)).toBe(true);
   });
   it('«Te faltan»: 4 → 4 filas; 5 → 3 + «Y 2 más»', () => {
     expect(pendingDisplay([1, 2, 3, 4])).toEqual({

@@ -14,6 +14,27 @@ import { madridDay } from './madrid';
 export const isFutureSession = (s: Pick<SessionSummary, 'date'>, now: Date) =>
   s.date > madridDay(now);
 
+/**
+ * ¿Se puede pasar lista de esta sesión? (`futuras` = «como el plugin», 21/10):
+ * la de hoy y las anteriores, sí; de un día posterior, solo la PRÓXIMA si aún
+ * no ha llegado ninguna del curso (la que propone la regla). Las demás
+ * futuras se ven, apagadas, y el servidor las rechaza. `sessions` son las del
+ * mismo evento (las del grupo).
+ */
+export function canMarkSession(
+  s: Pick<SessionSummary, 'id' | 'date' | 'startsAt'>,
+  sessions: readonly Pick<SessionSummary, 'id' | 'date' | 'startsAt'>[],
+  now: Date,
+): boolean {
+  if (!isFutureSession(s, now)) return true;
+  const today = madridDay(now);
+  if (sessions.some((x) => x.date <= today)) return false;
+  const first = [...sessions].sort((a, b) =>
+    a.startsAt < b.startsAt ? -1 : a.startsAt > b.startsAt ? 1 : 0,
+  )[0];
+  return first?.id === s.id;
+}
+
 /** ¿Ha empezado ya? (hoy antes de la hora, todavía no). */
 export const hasStarted = (s: Pick<SessionSummary, 'startsAt'>, now: Date) =>
   new Date(s.startsAt).getTime() <= now.getTime();
@@ -43,7 +64,8 @@ export interface SessionOption {
 
 /**
  * Las sesiones para el selector de fecha y el historial: las celebradas (y la
- * de hoy aunque no haya empezado), la más reciente arriba. Sin futuras.
+ * de hoy aunque no haya empezado), la más reciente arriba. Sin futuras, salvo
+ * la próxima cuando aún no ha llegado ninguna (`canMarkSession`).
  */
 export function sessionOptions(
   sessions: readonly SessionSummary[],
@@ -65,7 +87,7 @@ export function sessionOptions(
         roll,
       };
     })
-    .filter((o) => !isFutureSession(o.session, now))
+    .filter((o) => canMarkSession(o.session, sorted, now))
     .reverse();
 }
 

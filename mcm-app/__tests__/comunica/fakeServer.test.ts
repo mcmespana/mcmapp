@@ -287,6 +287,110 @@ describe('servidor falso', () => {
     );
   });
 
+  it('desmarcar: una marca guardada que se manda a null se borra (y cuenta una escritura)', async () => {
+    const s = server();
+    const c1 = s.data.groups.find((x) => x.code === 'C1')!;
+    const last = s.data.sessions.find(
+      (x) => x.date === '2026-10-17' && x.stage === 'com',
+    )!;
+    const [a, b] = c1.participantIds;
+    await s.saveRoll(last.id, c1.id, {
+      clientId: CLIENT(20),
+      action: 'save',
+      marks: { [a]: 'yes', [b]: 'no_justified' },
+      notes: { [b]: 'Médico' },
+    });
+    const writes = s.writeCount;
+    const res = await s.saveRoll(last.id, c1.id, {
+      clientId: CLIENT(21),
+      action: 'save',
+      marks: { [a]: 'yes', [b]: null },
+      notes: { [a]: '' },
+    });
+    expect(s.writeCount).toBe(writes + 1);
+    expect(res.roll.entries.find((e) => e.person.id === b)).toMatchObject({
+      mark: null,
+      note: '',
+    });
+    expect(res.rollCall.counts).toEqual({ came: 1, missed: 0 });
+    // Quitar a quien no tenía marca no escribe nada.
+    await s.saveRoll(last.id, c1.id, {
+      clientId: CLIENT(22),
+      action: 'save',
+      marks: { [a]: 'yes', [b]: null },
+      notes: { [a]: '' },
+    });
+    expect(s.writeCount).toBe(writes + 1);
+    // Dejar a cero una lista ya pasada se puede: sigue pasada, con 0 y 0.
+    const zero = await s.saveRoll(last.id, c1.id, {
+      clientId: CLIENT(23),
+      action: 'save',
+      marks: { [a]: null },
+      notes: {},
+    });
+    expect(zero.rollCall).toMatchObject({
+      status: 'taken',
+      counts: { came: 0, missed: 0 },
+    });
+    // Pero una lista nueva no se crea solo con «quitar».
+    const c2 = s.data.groups.find((x) => x.code === 'C2')!;
+    const noRoll = s.data.sessions.find(
+      (x) =>
+        x.stage === 'com' &&
+        x.date <= '2026-10-24' &&
+        !s.data.rolls.some((r) => r.sessionId === x.id && r.groupId === c2.id),
+    )!;
+    await expectError(
+      s.saveRoll(noRoll.id, c2.id, {
+        clientId: CLIENT(24),
+        action: 'save',
+        marks: { [c2.participantIds[0]]: null },
+        notes: {},
+      }),
+      'validation',
+      'nothing_marked',
+    );
+  });
+
+  it('futuras: la próxima se marca si aún no ha llegado ninguna; las demás, no', async () => {
+    // Antes del primer sábado del curso.
+    const s = server({ clock: '2026-09-01T10:00:00Z' });
+    const c1 = s.data.groups.find((x) => x.code === 'C1')!;
+    const com = s.data.sessions
+      .filter((x) => x.stage === 'com' && x.delegationId === c1.delegationId)
+      .sort((x, y) => (x.startsAt < y.startsAt ? -1 : 1));
+    const body = (n: number) => ({
+      clientId: CLIENT(n),
+      action: 'save' as const,
+      marks: { [c1.participantIds[0]]: 'yes' as const },
+      notes: {},
+    });
+    expect((await s.saveRoll(com[0].id, c1.id, body(30))).status).toBe(
+      'applied',
+    );
+    await expectError(
+      s.saveRoll(com[1].id, c1.id, body(31)),
+      'validation',
+      'session_in_future',
+    );
+  });
+
+  it('acepta su token de refresco tras reiniciar la app (por la forma)', async () => {
+    const before = server();
+    const { refreshToken } = before.issueSession('coordination');
+    // «Reiniciar»: un falso nuevo, sin memoria de aquel token.
+    const after = server();
+    const t = await after.refresh(refreshToken);
+    expect(t.refreshToken).not.toBe(refreshToken);
+    expect(t.refreshToken).toMatch(/-coordination$/);
+    // Rota: el viejo, reutilizado, revoca la sesión.
+    await expectError(after.refresh(refreshToken), 'unauthenticated');
+    // Lo que no tiene su forma, o una persona que no existe, no vale.
+    await expectError(after.refresh('fr-1-nadie'), 'unauthenticated');
+    await expectError(after.refresh('cualquier-cosa'), 'unauthenticated');
+    await expectError(after.refresh('fr-1-constructor'), 'unauthenticated');
+  });
+
   it('las marcas anteriores salen de las sesiones previas, la última primero', async () => {
     const s = server();
     const c2 = s.data.groups.find((x) => x.code === 'C2')!;
@@ -483,12 +587,20 @@ describe('Grupos y fichas en el servidor falso (plan 05)', () => {
     expect((await s.getPerson(pid)).scarf).toBe('cross');
   });
 
-  it('salud: con «No» a los datos de salud no dice nada', async () => {
+  it('salud: con «No» a los datos de salud la ficha enseña el texto; las listas, sin marca', async () => {
     const s = server();
     const [id] = Object.entries(s.data.profiles).find(
       ([pid, p]) => p.consents.healthData === false && s.data.health[pid],
     )!;
-    expect((await s.getHealth(id)).items).toEqual([]);
+    // `salud-no` = «sí, en la ficha»: la ruta de la ficha devuelve el texto…
+    const items = (await s.getHealth(id)).items;
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.every((i) => i.text.trim())).toBe(true);
+    // …y la marca de las listas sigue apagada.
+    const people = await s.getPeople();
+    expect(people.people.find((p) => p.id === id)?.badges.healthNote).toBe(
+      false,
+    );
   });
 
   it('curso cerrado: nadie vigente, y el grupo sin número', async () => {

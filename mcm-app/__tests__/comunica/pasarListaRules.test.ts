@@ -210,6 +210,7 @@ describe('borrador de lista', () => {
     const body = toRollWrite(
       { ...all, notes: { ...all.notes, [c1.participantIds[0]]: '  x  ' } },
       uuidV4(),
+      roll,
     );
     expect(Object.keys(body.marks)).toHaveLength(roll.entries.length);
     expect(body.notes[c1.participantIds[0]]).toBe('x');

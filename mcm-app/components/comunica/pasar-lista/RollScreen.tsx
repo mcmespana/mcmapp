@@ -8,16 +8,17 @@
 //     pantalla): la hoja con los cuatro estados, el motivo y quitar la marca.
 //   · «Han venido todos» / «El resto ha venido (N)» solo rellena lo sin marcar.
 //   · «¿No hubo sesión? · Sin registro», solo sin lista y con confirmación.
-//   · Del futuro no se pasa lista: filas apagadas y el botón también.
+//   · Del futuro no se pasa lista (salvo la próxima si aún no ha llegado
+//     ninguna, `futuras`): filas apagadas y el botón también.
+//   · Quitar una marca guardada y guardar la borra (`desmarcar`).
 //   · Lo marcado se guarda en el móvil a cada toque (borrador); «Guardar» lo
 //     pasa a la cola, que lo sube sola. Al contestar, se compara lo mandado con
 //     lo releído: nunca «guardada» sin comprobarlo.
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 import { Stack, useNavigation, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { useQueryClient } from '@tanstack/react-query';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
@@ -28,15 +29,12 @@ import type {
   Mark,
   RollCallSummary,
   RollDetail,
-  RollWrite,
-  RollWriteResult,
   SetMark,
-  TodayResponse,
 } from '@/services/comunica/contract';
-import { areaKey } from '@/hooks/comunica/useAreaQuery';
 import { useGroups, useRoll, useToday } from '@/hooks/comunica/usePasarLista';
 import { useOutbox } from '@/hooks/comunica/useOutbox';
 import { useRollDraft } from '@/hooks/comunica/useRollDraft';
+import { useRollSave } from '@/hooks/comunica/useRollSave';
 import useNetworkStatus from '@/hooks/useNetworkStatus';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
@@ -62,39 +60,37 @@ import {
   type Proposal,
 } from '@/utils/comunica/pasarLista';
 import {
-  applyDraft,
-  checkSaved,
-  draftAfterSave,
   draftFrom,
   fillRestLabel,
   hasSomethingToSave,
   isDirty,
   markAllUnmarked,
-  toRollWrite,
+  type RollDraft,
 } from '@/utils/comunica/rollDraft';
 import {
-  isFutureSession,
+  canMarkSession,
   sessionOptions,
   shortDate,
   type SessionOption,
 } from '@/utils/comunica/sessions';
-import { uuidV4 } from '@/utils/comunica/uuid';
 import AreaScreen from '../comun/AreaScreen';
-import AreaState from '../comun/AreaState';
 import BottomActionBar from '../comun/BottomActionBar';
+import { confirmAction } from '../comun/confirm';
 import { MarkIcon, MarkLegend } from '../comun/MarkControl';
 import PersonRow from '../comun/PersonRow';
 import Section from '../comun/Section';
 import UploadStatus from '../comun/UploadStatus';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import MarkSheet from './MarkSheet';
+import SaveRollButton from './SaveRollButton';
+import ScreenState from './ScreenState';
 import SessionPicker from './SessionPicker';
 
-const NOT_SAVED_COPY = {
-  not_in_group: 'ya no está en el grupo',
-  no_registration: 'no se ha podido inscribir',
-  crm_error: 'el CRM no lo ha guardado',
-} as const;
+/** Pone una marca; quitarla se lleva el motivo. */
+const withMark = (d: RollDraft, id: string, mark: Mark): RollDraft => ({
+  marks: { ...d.marks, [id]: mark },
+  notes: mark ? d.notes : { ...d.notes, [id]: '' },
+});
 
 export default function RollScreen({
   groupId,
@@ -183,7 +179,7 @@ export default function RollScreen({
           ),
         }}
       />
-      <AreaState query={groups} skeleton="list">
+      <ScreenState query={groups}>
         {() =>
           !group ? (
             <Message text="No tienes acceso a esto." />
@@ -196,9 +192,8 @@ export default function RollScreen({
               }
             />
           ) : (
-            <AreaState
+            <ScreenState
               query={roll}
-              skeleton="list"
               empty={{
                 title:
                   'Este grupo no tiene a nadie apuntado este curso todavía.',
@@ -207,19 +202,21 @@ export default function RollScreen({
                 isEmpty: (d) => d.entries.length === 0,
               }}
             >
-              {(data) => (
+              {(data, offline) => (
                 <RollEditor
                   key={`${data.session.id}:${data.groupId}`}
                   roll={data}
                   group={group}
                   proposal={byRule ? proposal : null}
+                  locked={!canMarkSession(data.session, sessions, now)}
+                  offline={offline}
                   refetch={() => roll.refetch()}
                 />
               )}
-            </AreaState>
+            </ScreenState>
           )
         }
-      </AreaState>
+      </ScreenState>
     </>
   );
 }
@@ -227,9 +224,9 @@ export default function RollScreen({
 function Message({ text }: { text: string }) {
   const t = useComunicaTheme();
   return (
-    <View style={styles.message}>
+    <AreaScreen>
       <Text style={[styles.body, { color: t.textSecondary }]}>{text}</Text>
-    </View>
+    </AreaScreen>
   );
 }
 
@@ -252,15 +249,20 @@ function RollEditor({
   roll,
   group,
   proposal,
+  locked,
+  offline,
   refetch,
 }: {
   roll: RollDetail;
   group: GroupWithMonitors;
   proposal: Proposal | null;
+  /** Futura que no se puede marcar (`canMarkSession`). */
+  locked: boolean;
+  /** El aviso de «sin conexión» de `ScreenState`, si toca. */
+  offline: React.ReactNode;
   refetch: () => Promise<unknown>;
 }) {
   const t = useComunicaTheme();
-  const qc = useQueryClient();
   const router = useRouter();
   const navigation = useNavigation();
   const online = useNetworkStatus();
@@ -269,13 +271,16 @@ function RollEditor({
   const initial = useMemo(() => draftFrom(roll), [roll]);
   const { draft, setDraft, resetTo, restored } = useRollDraft(key, initial);
   const [sheetFor, setSheetFor] = useState<string | null>(null);
-  const [outcome, setOutcome] = useState<{ ok: boolean; text: string } | null>(
-    null,
-  );
-  const handled = useRef<string | null>(null);
+  const { save, outcome } = useRollSave({
+    outbox,
+    roll,
+    group,
+    draft,
+    resetTo,
+    refetch,
+  });
 
-  const now = comunicaNow();
-  const future = isFutureSession(roll.session, now);
+  const future = locked;
   const counts = countMarks(
     roll.entries.map((e) => draft.marks[e.person.id] ?? null),
   );
@@ -284,94 +289,18 @@ function RollEditor({
   const fillLabel = future ? null : fillRestLabel(draft);
   const queued = get(key);
   const when = `${longDay(roll.session.date)} · ${madridTime(roll.session.startsAt)}`;
-  const rollKeyQ = useMemo(
-    () => areaKey(['pasar-lista', 'roll', roll.session.id, roll.groupId]),
-    [roll.session.id, roll.groupId],
-  );
-  const names = useMemo(
+  // Las rachas no cambian al marcar: se calculan una vez por lista.
+  const streaks = useMemo(
     () =>
       Object.fromEntries(
-        roll.entries.map((e) => [e.person.id, e.person.firstName]),
+        roll.entries.map((e) => [e.person.id, absenceStreak(e.previousMarks)]),
       ),
     [roll.entries],
   );
 
-  // Cuando la cola contesta: comparar lo mandado con lo releído. Se escucha a
-  // la cola (no un efecto sobre su estado) y se leen los valores del último
-  // render desde `latest`.
-  const latest = useRef({ draft, names, refetch });
-  useEffect(() => {
-    latest.current = { draft, names, refetch };
-  });
-  useEffect(() => {
-    if (!outbox) return;
-    const onChange = () => {
-      const q = outbox.get(key);
-      if (!q) return;
-      if (q.status === 'applied') {
-        if (handled.current === q.clientId) return;
-        handled.current = q.clientId;
-        const res = q.result as RollWriteResult | undefined;
-        if (!res) return;
-        const sent = q.payload as RollWrite;
-        const missing = checkSaved(sent, res.roll, res.notSaved);
-        qc.setQueryData(rollKeyQ, res.roll);
-        void qc.invalidateQueries({
-          queryKey: areaKey(['pasar-lista', 'today']),
-        });
-        const fresh = draftFrom(res.roll);
-        if (missing.length === 0) {
-          h.success();
-          resetTo(fresh);
-          setOutcome({
-            ok: true,
-            text:
-              res.rollCall.status === 'skipped'
-                ? 'Guardada como «sin registro»'
-                : res.status === 'queued'
-                  ? 'Subida. Falta que la confirme el CRM.'
-                  : `Lista guardada · ${cameLabel(res.rollCall.counts.came)}, ${missedLabel(res.rollCall.counts.missed)}`,
-          });
-        } else {
-          h.error();
-          // El borrador sigue con lo que no entró.
-          const left = draftAfterSave(latest.current.draft, missing);
-          if (left) {
-            resetTo(
-              {
-                marks: { ...fresh.marks, ...left.marks },
-                notes: { ...fresh.notes, ...left.notes },
-              },
-              true,
-            );
-          }
-          const why = res.notSaved
-            .map(
-              (n) =>
-                `${latest.current.names[n.personId] ?? 'Alguien'}: ${NOT_SAVED_COPY[n.reason]}`,
-            )
-            .join('; ');
-          setOutcome({
-            ok: false,
-            text: `${
-              missing.length === 1
-                ? '1 marca no ha quedado guardada'
-                : `${missing.length} marcas no han quedado guardadas`
-            }${why ? ` (${why})` : ''}.`,
-          });
-        }
-      } else if (q.status === 'failed' || q.status === 'stuck') {
-        const tag = `${q.clientId}:fail`;
-        if (handled.current === tag) return;
-        handled.current = tag;
-        // Se relee del servidor; las marcas siguen en el borrador.
-        void latest.current.refetch();
-      }
-    };
-    return outbox.subscribe(onChange);
-  }, [outbox, key, qc, rollKeyQ, resetTo]);
-
   // Salir con cambios sin guardar pregunta (el borrador se queda igual).
+  // `save` es estable y lee el borrador del momento, no el de cuando se
+  // registró esto.
   useEffect(() => {
     const unsub = navigation.addListener('beforeRemove', (e) => {
       if (!dirty || future || Platform.OS === 'web') return;
@@ -381,7 +310,13 @@ function RollEditor({
         'Tienes cambios sin guardar',
         'Se quedan en el móvil si sales.',
         [
-          { text: 'Guardar', onPress: () => void save('save') },
+          {
+            text: 'Guardar',
+            onPress: () =>
+              void save('save').then((ok) => {
+                if (ok) navigation.dispatch(e.data.action);
+              }),
+          },
           {
             text: 'Salir sin guardar',
             style: 'destructive',
@@ -391,93 +326,50 @@ function RollEditor({
       );
     });
     return unsub;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigation, dirty, future, queued?.status]);
+  }, [navigation, dirty, future, queued, save]);
 
-  const setMark = (id: string, mark: Mark) =>
-    setDraft((d) => ({
-      marks: { ...d.marks, [id]: mark },
-      // Quitar la marca se lleva el motivo.
-      notes: mark ? d.notes : { ...d.notes, [id]: '' },
-    }));
-
-  async function save(action: 'save' | 'skip') {
-    if (!outbox) return;
-    if (action === 'save' && !Object.values(draft.marks).some((m) => m)) {
-      h.error();
-      setOutcome({
-        ok: false,
-        text: 'No has marcado a nadie, así que no se ha guardado nada. Marca al menos a una persona, o usa «Sin registro» si no hubo sesión.',
-      });
-      return;
-    }
-    setOutcome(null);
-    const takenAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
-    const optimistic = applyDraft(roll, draft, action, takenAt);
-    qc.setQueryData(rollKeyQ, optimistic);
-    qc.setQueryData<TodayResponse>(areaKey(['pasar-lista', 'today']), (td) =>
-      td && optimistic.roll
-        ? {
-            ...td,
-            rollCalls: [
-              ...td.rollCalls.filter(
-                (r) =>
-                  !(
-                    r.sessionId === roll.session.id &&
-                    r.groupId === roll.groupId
-                  ),
-              ),
-              optimistic.roll,
-            ],
-          }
-        : td,
-    );
-    await outbox.enqueue({
-      key,
-      kind: 'roll',
-      clientId: uuidV4(),
-      payload:
-        action === 'save'
-          ? toRollWrite(draft, '')
-          : { action: 'skip', marks: {}, notes: {} },
-      meta: {
-        sessionId: roll.session.id,
-        groupId: roll.groupId,
-        date: roll.session.date,
-        label: groupLabel(group),
-      },
-    });
+  // Callbacks por id, estables: la fila (memo) no se repinta si no cambia.
+  const onTap = useCallback(
+    (id: string) => {
+      h.select();
+      setDraft((d) => withMark(d, id, nextMarkOnTap(d.marks[id] ?? null)));
+    },
+    [setDraft],
+  );
+  const onSet = useCallback(
+    (id: string, m: SetMark) => {
+      h.select();
+      setDraft((d) => withMark(d, id, m));
+    },
+    [setDraft],
+  );
+  const onMore = useCallback((id: string) => {
     h.tap();
-  }
+    setSheetFor(id);
+  }, []);
 
-  const confirmSkip = () => {
+  const confirmSkip = async () => {
     const marked = Object.values(draft.marks).some((m) => m);
-    const body = marked
-      ? 'Se quedará como «sin registro» y no se guardará ninguna de las marcas que has puesto. ¿Seguro?'
-      : '¿No hubo sesión con este grupo ese día? La lista se queda como «sin registro» y se deja de avisar.';
-    if (Platform.OS === 'web') {
-      void save('skip');
-      return;
-    }
-    Alert.alert('Sin registro', body, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sin registro',
-        style: 'destructive',
-        onPress: () => void save('skip'),
-      },
-    ]);
+    const ok = await confirmAction(
+      'Sin registro',
+      marked
+        ? 'Se quedará como «sin registro» y no se guardará ninguna de las marcas que has puesto. ¿Seguro?'
+        : '¿No hubo sesión con este grupo ese día? La lista se queda como «sin registro» y se deja de avisar.',
+      'Sin registro',
+      true,
+    );
+    if (ok) void save('skip');
   };
 
-  const confirmDiscard = () =>
-    Alert.alert('¿Descartar esta lista?', 'Lo que no se ha subido se pierde.', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Descartar',
-        style: 'destructive',
-        onPress: () => void outbox?.discard(key),
-      },
-    ]);
+  const confirmDiscard = async () => {
+    const ok = await confirmAction(
+      '¿Descartar esta lista?',
+      'Lo que no se ha subido se pierde.',
+      'Descartar',
+      true,
+    );
+    if (ok) void outbox?.discard(key);
+  };
 
   const sheetEntry = roll.entries.find((e) => e.person.id === sheetFor) ?? null;
   const saved = !!roll.roll && !dirty && roll.roll.status === 'taken';
@@ -536,9 +428,9 @@ function RollEditor({
               </Text>
               {queued.status === 'stuck' ? (
                 <PressableFeedback
-                  onPress={confirmDiscard}
+                  onPress={() => void confirmDiscard()}
                   accessibilityRole="button"
-                  hitSlop={8}
+                  style={styles.tapTarget}
                 >
                   <Text style={[styles.small, { color: t.dangerText }]}>
                     Descartar
@@ -564,30 +456,15 @@ function RollEditor({
               <Count mark={null} label={unmarkedLabel(counts.unmarked)} warn />
             ) : null}
           </View>
-          <PressableFeedback
-            isDisabled={!canSave}
+          <SaveRollButton
+            label={saveLabel}
+            enabled={canSave}
             onPress={() => void save('save')}
-            accessibilityRole="button"
-            accessibilityLabel={saveLabel}
-            accessibilityState={{ disabled: !canSave }}
-            style={[
-              styles.save,
-              { backgroundColor: canSave ? t.accentFill : t.separator },
-            ]}
-          >
-            <PressableFeedback.Scale />
-            <Text
-              style={[
-                styles.saveLabel,
-                { color: canSave ? t.onAccent : t.textSecondary },
-              ]}
-            >
-              {saveLabel}
-            </Text>
-          </PressableFeedback>
+          />
         </BottomActionBar>
       }
     >
+      {offline}
       <View style={styles.head}>
         <Text
           style={[styles.day, { color: t.text }]}
@@ -640,7 +517,7 @@ function RollEditor({
                 <PressableFeedback
                   onPress={() => router.push('/comunica/pasar-lista/grupos')}
                   accessibilityRole="button"
-                  hitSlop={8}
+                  style={styles.tapTarget}
                 >
                   <Text style={[styles.link, { color: t.accentText }]}>
                     Otro grupo
@@ -649,7 +526,7 @@ function RollEditor({
                 <PressableFeedback
                   onPress={() => router.dismissTo('/comunica')}
                   accessibilityRole="button"
-                  hitSlop={8}
+                  style={styles.tapTarget}
                 >
                   <Text style={[styles.link, { color: t.accentText }]}>
                     Volver a la portada
@@ -661,10 +538,9 @@ function RollEditor({
         ) : null}
         {!roll.roll && !future ? (
           <PressableFeedback
-            onPress={confirmSkip}
+            onPress={() => void confirmSkip()}
             accessibilityRole="button"
             accessibilityLabel="¿No hubo sesión? Sin registro"
-            hitSlop={8}
             style={styles.skip}
           >
             <Text style={[styles.small, { color: t.textSecondary }]}>
@@ -698,32 +574,19 @@ function RollEditor({
       ) : null}
 
       <Section>
-        {roll.entries.map((e) => {
-          const id = e.person.id;
-          const mark = draft.marks[id] ?? null;
-          return (
-            <RollRow
-              key={id}
-              entry={e}
-              mark={mark}
-              note={draft.notes[id] ?? ''}
-              streak={absenceStreak(e.previousMarks)}
-              disabled={future}
-              onTap={() => {
-                h.select();
-                setMark(id, nextMarkOnTap(mark));
-              }}
-              onSet={(m) => {
-                h.select();
-                setMark(id, m);
-              }}
-              onMore={() => {
-                h.tap();
-                setSheetFor(id);
-              }}
-            />
-          );
-        })}
+        {roll.entries.map((e) => (
+          <RollRow
+            key={e.person.id}
+            entry={e}
+            mark={draft.marks[e.person.id] ?? null}
+            note={draft.notes[e.person.id] ?? ''}
+            streak={streaks[e.person.id] ?? 0}
+            disabled={future}
+            onTap={onTap}
+            onSet={onSet}
+            onMore={onMore}
+          />
+        ))}
       </Section>
 
       <View style={styles.help}>
@@ -741,7 +604,7 @@ function RollEditor({
             })
           }
           accessibilityRole="button"
-          hitSlop={8}
+          style={styles.tapTarget}
         >
           <Text style={[styles.link, { color: t.accentText }]}>
             Ver todas las fechas
@@ -755,7 +618,7 @@ function RollEditor({
         mark={sheetFor ? (draft.marks[sheetFor] ?? null) : null}
         note={sheetFor ? (draft.notes[sheetFor] ?? '') : ''}
         onMark={(m) => {
-          if (sheetFor) setMark(sheetFor, m);
+          if (sheetFor) setDraft((d) => withMark(d, sheetFor, m));
         }}
         onNote={(n) => {
           if (sheetFor) {
@@ -782,7 +645,7 @@ function RollEditor({
   );
 }
 
-function RollRow({
+const RollRow = memo(function RollRow({
   entry,
   mark,
   note,
@@ -797,10 +660,11 @@ function RollRow({
   note: string;
   streak: number;
   disabled: boolean;
-  onTap: () => void;
-  onSet: (m: SetMark) => void;
-  onMore: () => void;
+  onTap: (id: string) => void;
+  onSet: (id: string, m: SetMark) => void;
+  onMore: (id: string) => void;
 }) {
+  const id = entry.person.id;
   const t = useComunicaTheme();
   const lines = [mark ? MARK_NOTE[mark] : undefined, note || undefined].filter(
     Boolean,
@@ -833,18 +697,18 @@ function RollRow({
       onAccessibilityAction={(e) => {
         if (disabled) return;
         const name = e.nativeEvent.actionName;
-        if (name === 'activate') onTap();
-        if (name === 'partial') onSet('partial');
-        if (name === 'justified') onSet('no_justified');
-        if (name === 'more') onMore();
+        if (name === 'activate') onTap(id);
+        if (name === 'partial') onSet(id, 'partial');
+        if (name === 'justified') onSet(id, 'no_justified');
+        if (name === 'more') onMore(id);
       }}
     >
       <PersonRow
         person={person}
         subtitle={lines.join(' · ') || undefined}
         disabled={disabled}
-        onPress={onTap}
-        onLongPress={onMore}
+        onPress={() => onTap(id)}
+        onLongPress={() => onMore(id)}
         right={
           <View style={styles.right}>
             {streak >= 2 ? (
@@ -858,7 +722,7 @@ function RollRow({
       />
     </View>
   );
-}
+});
 
 function Notice({
   icon,
@@ -899,7 +763,6 @@ function Count({
 }
 
 const styles = StyleSheet.create({
-  message: { padding: 24 },
   head: { gap: 6 },
   day: { ...typography.h3 },
   body: { ...typography.body },
@@ -911,7 +774,8 @@ const styles = StyleSheet.create({
   outcome: { padding: 12, borderRadius: radii.md, gap: 8 },
   nextSteps: { flexDirection: 'row', gap: 24 },
   link: { ...typography.button },
-  skip: { alignSelf: 'flex-start', paddingVertical: 4 },
+  skip: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
+  tapTarget: { minHeight: 44, justifyContent: 'center' },
   allCame: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -937,11 +801,4 @@ const styles = StyleSheet.create({
   },
   count: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   countText: { ...typography.caption, fontWeight: '600' },
-  save: {
-    minHeight: 52,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveLabel: { ...typography.button },
 });

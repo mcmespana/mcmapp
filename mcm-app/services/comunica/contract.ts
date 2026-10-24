@@ -35,6 +35,11 @@ export const Day = z.iso.date();
 export const Id = z.string().min(1);
 /** UUID que genera el móvil para que reintentar una escritura no duplique. */
 export const ClientId = z.uuid();
+/**
+ * La foto de una persona: solo https (se pide con el token de acceso; por
+ * http viajaría en claro). Revisión A, hallazgo 7.
+ */
+export const PhotoUrl = z.url({ protocol: /^https$/ });
 
 // ── Errores ─────────────────────────────────────────────────────────────────
 
@@ -95,7 +100,7 @@ export type Segment = z.infer<typeof Segment>;
 export const Me = z.object({
   personId: Id,
   name: z.string(),
-  photoUrl: z.url().optional(),
+  photoUrl: PhotoUrl.optional(),
   delegation: Delegation,
   roles: z.array(Role),
   /** `'delegation'` = toda la delegación; si no, las etapas/segmentos que ve. */
@@ -124,7 +129,7 @@ export const PersonSummary = z.object({
   id: Id,
   firstName: z.string(),
   lastName: z.string(),
-  photoUrl: z.url().optional(),
+  photoUrl: PhotoUrl.optional(),
   schoolLevel: z.string().optional(),
   badges: PersonBadges,
 });
@@ -360,11 +365,15 @@ export type RollDetail = z.infer<typeof RollDetail>;
 
 export const NOTE_MAX = 255;
 
-/** `PUT /v1/sessions/:sid/groups/:gid/roll` */
+/**
+ * `PUT /v1/sessions/:sid/groups/:gid/roll`. En `marks`, `null` = quitar la
+ * marca guardada de esa persona: el servidor borra su asistencia (borrado
+ * lógico) o la deja vacía (`desmarcar`, 21/10). Quien no tenía marca no va.
+ */
 export const RollWrite = z.object({
   clientId: ClientId,
   action: z.enum(['save', 'skip']),
-  marks: z.record(Id, SetMark),
+  marks: z.record(Id, Mark),
   notes: z.record(Id, z.string().max(NOTE_MAX)),
 });
 export type RollWrite = z.infer<typeof RollWrite>;
@@ -446,7 +455,7 @@ export const MonitorRow = z.object({
   id: Id,
   firstName: z.string(),
   lastName: z.string(),
-  photoUrl: z.url().optional(),
+  photoUrl: PhotoUrl.optional(),
 });
 export type MonitorRow = z.infer<typeof MonitorRow>;
 
@@ -526,7 +535,7 @@ export const ParticipantProfile = read({
     firstName: z.string(),
     lastName: z.string(),
     fullName: z.string(),
-    photoUrl: z.url().optional(),
+    photoUrl: PhotoUrl.optional(),
     age: z.number().int().nonnegative().optional(),
     schoolLevel: SchoolLevel.optional(),
   }),

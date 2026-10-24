@@ -68,6 +68,7 @@ import {
   type PersonaId,
 } from './fixtures';
 import { madridDay, madridInstant } from '@/utils/comunica/madrid';
+import { canMarkSession } from '@/utils/comunica/sessions';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export interface FakeControls {
@@ -232,6 +233,23 @@ export function createFakeServer(
     });
     refreshTokens.set(refreshToken, { persona, used: false, family });
     return { accessToken, refreshToken, expiresIn: FAKE_ACCESS_TTL_S };
+  }
+
+  /**
+   * Un token de refresco de antes de reiniciar la app: el falso vive en
+   * memoria y no lo conoce, pero si tiene SU forma (`fr-<n>-<persona>`) se
+   * acepta, para que un probador no tenga que entrar cada vez que abre la app
+   * (revisión A, hallazgo 5). Entra como uno nuevo, sin usar, de una familia
+   * nueva; la numeración sigue por encima para no repetir tokens.
+   */
+  function adopt(refreshToken: string) {
+    const m = /^fr-(\d{1,9})-([a-z]+)$/.exec(refreshToken);
+    if (!m || !Object.prototype.hasOwnProperty.call(data.personas, m[2]))
+      return undefined;
+    tokenSeq = Math.max(tokenSeq, Number(m[1]));
+    const t = { persona: m[2] as PersonaId, used: false, family: ++tokenSeq };
+    refreshTokens.set(refreshToken, t);
+    return t;
   }
 
   /** «m•••@ejemplo.org». */
@@ -566,7 +584,7 @@ export function createFakeServer(
 
     async refresh(refreshToken) {
       await gate('refresh', false, false);
-      const t = refreshTokens.get(refreshToken);
+      const t = refreshTokens.get(refreshToken) ?? adopt(refreshToken);
       if (!t || revokedFamilies.has(t.family)) {
         throw new ComunicaApiError('unauthenticated', 'Sesión revocada', 401);
       }
@@ -719,7 +737,9 @@ export function createFakeServer(
 
       const g = myGroup(gid);
       const s = mySession(sid);
-      if (s.date > today()) {
+      // Del futuro, solo la próxima si aún no ha llegado ninguna (`futuras`).
+      const ofEvent = data.sessions.filter((x) => x.eventId === s.eventId);
+      if (!canMarkSession(s, ofEvent, now())) {
         throw validation('session_in_future', 'Esta sesión aún no ha llegado');
       }
       const existing = rollOf(sid, gid);
@@ -741,7 +761,13 @@ export function createFakeServer(
         });
         writeCount += 1;
       } else {
-        if (Object.keys(write.marks).length === 0) {
+        // Quitar marcas (`null`) solo vale sobre una lista que ya existe:
+        // dejarla a cero sí se puede (`desmarcar`); crearla vacía, no.
+        const marked = Object.values(write.marks).some((m) => m !== null);
+        if (
+          !marked &&
+          !(existing?.status === 'taken' && Object.keys(write.marks).length > 0)
+        ) {
           throw validation('nothing_marked', 'No has marcado a nadie');
         }
         const roll: FakeRoll = existing ?? {
@@ -758,6 +784,15 @@ export function createFakeServer(
         }
         roll.status = 'taken';
         for (const [pid, mark] of Object.entries(write.marks)) {
+          if (mark === null) {
+            // Quitar la marca borra la asistencia (y su motivo). Sin marca
+            // guardada no hay nada que borrar: no se escribe.
+            if (!(pid in roll.marks)) continue;
+            delete roll.marks[pid];
+            delete roll.notes[pid];
+            writeCount += 1;
+            continue;
+          }
           if (!g.participantIds.includes(pid)) {
             notSaved.push({ personId: pid, reason: 'not_in_group' });
             continue;
@@ -798,15 +833,13 @@ export function createFakeServer(
       requireTeam();
       if (!meOf(current).canSeeHealth) throw forbidden();
       myParticipant(personId);
-      // Con «datos de salud» a «No», no se dice nada (lo del globo del
-      // plugin, hasta que se decida `salud-no`).
-      const hidden = data.profiles[personId]?.consents.healthData === false;
+      // Con «datos de salud» a «No», la ficha enseña IGUAL el texto (`salud-no`
+      // = «sí, en la ficha», 21/10): lo que se apaga es la marca de las listas
+      // (`badges.healthNote`, ver fixtures).
       return HealthNote.parse({
         generatedAt: nowIso(),
         personId,
-        items: hidden
-          ? []
-          : (data.health[personId] ?? []).filter((i) => i.text.trim()),
+        items: (data.health[personId] ?? []).filter((i) => i.text.trim()),
       });
     },
 

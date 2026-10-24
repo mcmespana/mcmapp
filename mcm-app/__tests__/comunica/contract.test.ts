@@ -87,6 +87,39 @@ describe('services/comunica/contract', () => {
     expect(GroupsResponse.safeParse({ generatedAt: 'ayer' }).success).toBe(
       false,
     );
+    expect(
+      RollWrite.safeParse({
+        clientId: '3b241101-e2bb-4255-8caf-4136c566a962',
+        action: 'save',
+        marks: { a: 'absent' },
+        notes: {},
+      }).success,
+    ).toBe(false);
+  });
+
+  it('desmarcar: el PUT admite `null` para quitar una marca guardada', () => {
+    expect(
+      RollWrite.parse({
+        clientId: '3b241101-e2bb-4255-8caf-4136c566a962',
+        action: 'save',
+        marks: { a: 'yes', b: null },
+        notes: { a: '' },
+      }).marks,
+    ).toEqual({ a: 'yes', b: null });
+  });
+
+  it('la foto solo por https (lleva el token de acceso)', () => {
+    const ok = { ...person, photoUrl: 'https://fotos.ejemplo.org/p/1' };
+    expect(PersonSummary.safeParse(ok).success).toBe(true);
+    for (const photoUrl of [
+      'http://fotos.ejemplo.org/p/1',
+      'ftp://fotos.ejemplo.org/p/1',
+      'javascript:alert(1)',
+    ]) {
+      expect(PersonSummary.safeParse({ ...person, photoUrl }).success).toBe(
+        false,
+      );
+    }
   });
 
   // Guardarraíl (plan 00 §6): la salud solo viaja en `/people/:id/health`.

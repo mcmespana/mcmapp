@@ -3,12 +3,7 @@
 // El borrador de una lista mientras se marca, sin React: de dónde parte, qué
 // ha cambiado y qué se manda al guardar (plan 04).
 
-import type {
-  Mark,
-  RollDetail,
-  RollWrite,
-  SetMark,
-} from '@/services/comunica/contract';
+import type { Mark, RollDetail, RollWrite } from '@/services/comunica/contract';
 import { NOTE_MAX } from '@/services/comunica/contract';
 
 export interface RollDraft {
@@ -42,17 +37,42 @@ export function markAllUnmarked(draft: RollDraft): RollDraft {
   return { ...draft, marks };
 }
 
-/** Lo que va en el PUT: las marcas puestas y sus motivos (≤ 255). */
-export function toRollWrite(draft: RollDraft, clientId: string): RollWrite {
-  const marks: Record<string, SetMark> = {};
+/**
+ * Lo que va en el PUT: las marcas puestas y sus motivos (≤ 255) y, con
+ * `mark: null`, a quien tenía una marca guardada y se le ha quitado
+ * (`desmarcar` = la asistencia se borra también en el CRM, 21/10). `saved` es
+ * la lista tal y como está en la caché (lo guardado o lo encolado antes).
+ */
+export function toRollWrite(
+  draft: RollDraft,
+  clientId: string,
+  saved: RollDetail,
+): RollWrite {
+  const marks: Record<string, Mark> = {};
   const notes: Record<string, string> = {};
   for (const [id, m] of Object.entries(draft.marks)) {
     if (!m) continue;
     marks[id] = m;
     // Va aunque esté vacío: vaciar un motivo es deliberado y se escribe.
-    notes[id] = (draft.notes[id] ?? '').trim().slice(0, NOTE_MAX);
+    notes[id] = normalizeNote(draft.notes[id]);
   }
+  for (const id of clearedIds(saved, draft)) marks[id] = null;
   return { clientId, action: 'save', marks, notes };
+}
+
+const normalizeNote = (note: string | undefined) =>
+  (note ?? '').trim().slice(0, NOTE_MAX);
+
+/** Quien tenía marca guardada y en el borrador ya no la tiene. */
+function clearedIds(saved: RollDetail, draft: RollDraft): string[] {
+  return saved.entries
+    .filter(
+      (e) =>
+        e.mark !== null &&
+        e.person.id in draft.marks &&
+        draft.marks[e.person.id] === null,
+    )
+    .map((e) => e.person.id);
 }
 
 /**
@@ -78,11 +98,16 @@ export function applyDraft(
       },
     };
   }
-  const entries = roll.entries.map((e) => ({
-    ...e,
-    mark: draft.marks[e.person.id] ?? e.mark,
-    note: (draft.notes[e.person.id] ?? e.note).trim().slice(0, NOTE_MAX),
-  }));
+  // Una marca quitada (`null` en el borrador) se queda quitada.
+  const entries = roll.entries.map((e) => {
+    const id = e.person.id;
+    const mark = id in draft.marks ? (draft.marks[id] ?? null) : e.mark;
+    return {
+      ...e,
+      mark,
+      note: mark ? normalizeNote(draft.notes[id] ?? e.note) : '',
+    };
+  });
   const marks = entries.map((e) => e.mark);
   return {
     ...roll,
@@ -102,12 +127,24 @@ export function applyDraft(
   };
 }
 
+/**
+ * ¿No hay nada que escribir? Sin ninguna marca y sin quitar ninguna guardada.
+ * Es el «No has marcado a nadie»: dejar a cero una lista ya pasada sí se
+ * guarda (`desmarcar`).
+ */
+export function isEmptyWrite(roll: RollDetail, draft: RollDraft): boolean {
+  return (
+    !Object.values(draft.marks).some((m) => m) &&
+    clearedIds(roll, draft).length === 0
+  );
+}
+
 /** ¿Hay algo que guardar? Sin marcas, no; con la lista pasada e igual, tampoco. */
 export function hasSomethingToSave(
   roll: RollDetail,
   draft: RollDraft,
 ): boolean {
-  if (!Object.values(draft.marks).some((m) => m)) return false;
+  if (isEmptyWrite(roll, draft)) return false;
   if (roll.roll?.status === 'taken' && !isDirty(roll, draft)) return false;
   return true;
 }
@@ -137,25 +174,39 @@ export function checkSaved(
   const missing = new Set(notSaved.map((n) => n.personId));
   const now = new Map(reread.entries.map((e) => [e.person.id, e.mark]));
   for (const [id, mark] of Object.entries(sent.marks)) {
-    if (now.get(id) !== mark) missing.add(id);
+    // Una marca quitada vale si ya no está (o si la persona ya no sale).
+    if ((now.get(id) ?? null) !== mark) missing.add(id);
   }
   return [...missing];
 }
 
-/** El borrador que queda tras guardar: solo lo que no entró. */
-export function draftAfterSave(
-  draft: RollDraft,
+/**
+ * El borrador cuando la subida se aplica: lo releído (`fresh`), salvo
+ *   · lo que no ha quedado guardado (`missing`), que sigue como estaba, y
+ *   · lo tocado DESPUÉS de encolar: lo que en el borrador actual ya no es lo
+ *     que se mandó (se siguió marcando mientras subía, o se salió con
+ *     «Guardar» y la cola subió una versión anterior).
+ */
+export function draftAfterApplied(
+  fresh: RollDraft,
+  sent: Pick<RollWrite, 'marks' | 'notes'>,
+  current: RollDraft,
   missing: readonly string[],
-): RollDraft | null {
-  if (missing.length === 0) return null;
+): RollDraft {
   const keep = new Set(missing);
-  const marks: RollDraft['marks'] = {};
-  const notes: RollDraft['notes'] = {};
-  for (const id of Object.keys(draft.marks)) {
-    if (keep.has(id)) {
-      marks[id] = draft.marks[id];
-      notes[id] = draft.notes[id] ?? '';
-    }
+  for (const id of Object.keys(current.marks)) {
+    const now = current.marks[id] ?? null;
+    const was = sent.marks[id] ?? null;
+    if (now !== was) keep.add(id);
+    else if (now && normalizeNote(current.notes[id]) !== (sent.notes[id] ?? ''))
+      keep.add(id);
+  }
+  const marks = { ...fresh.marks };
+  const notes = { ...fresh.notes };
+  for (const id of keep) {
+    if (!(id in current.marks)) continue;
+    marks[id] = current.marks[id] ?? null;
+    notes[id] = current.notes[id] ?? '';
   }
   return { marks, notes };
 }
