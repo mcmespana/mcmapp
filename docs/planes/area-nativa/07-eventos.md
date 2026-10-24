@@ -338,16 +338,15 @@ En `__tests__/comunica/`, con el servidor falso.
 
 ## Preguntas abiertas
 
-1. 🔒 (tarjeta `futuras`) **Sesiones futuras.** El plugin deja marcar la próxima sesión de un evento
-   que aún no ha llegado y, si no tiene días, crearía la sesión **de hoy**,
-   fuera de sus fechas. El análisis (§5) dice «no se pasa lista de sesiones
-   futuras». ¿Se bloquea (app y servidor) o se deja como el plugin? **Mientras
-   se decide, lo mismo que el plan 04** (revisión del 21/10, para que los tres
-   planes hagan lo mismo): el día de hoy se marca aunque no haya empezado; un
-   día posterior se ve pero no se marca; y la sesión de hoy solo se crea si hoy
-   cae dentro de las fechas del evento.
-2. 🔒 (tarjeta `marcas-autobus`) **Marcas F3 en el autobús** («No se va solo/a», «Sin fotos», «Alergia o
-   tratamiento»): el plugin no las pinta aquí (F3 era para las listas de grupo);
-   el contrato ya las trae en `badges`. ¿Se enseñan? Mientras tanto, no.
+1. ✅ (`futuras` = «como el plugin», 21/10) **Sesiones futuras**: se marca la de
+   hoy aunque no haya empezado y **la próxima del evento si aún no ha empezado
+   ninguna**; otro día posterior se ve pero no se marca. Crear la sesión de hoy
+   en un evento sin días **solo si hoy cae dentro de sus fechas** (el plugin la
+   crearía fuera; la tarjeta no lo cubre y fuera de fechas es casi siempre un
+   error: se queda la regla segura, dígalo el propietario si no).
+2. ✅ (`marcas-autobus` = «sí», 21/10) **Marcas F3 en el autobús**: se enseñan
+   como en las listas de grupo («Sin fotos» y «Alergia o tratamiento», sin decir
+   cuál). «No se va solo/a», «da igual que salga» (comentario del propietario):
+   sale también, por no hacer una regla distinta de la del grupo.
 3. **F8, «Solo mirar»** (tarea 13): sin GO ni NO GO, ni regla de quién la ve
    (todo el equipo de la delegación o solo los monitores inscritos al evento).

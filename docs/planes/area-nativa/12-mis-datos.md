@@ -3,8 +3,8 @@
 > **Estado:** 🟢 listo para ejecutar en `nuevoComunicaChulo` · **Depende de:** 01, 03, 11 ·
 > **Tamaño:** L · **Índice:** [README.md](README.md)
 >
-> 🔒 La foto depende en parte de la tarjeta `fotos-documentos` (plan 09): mientras no esté, va con lo
-> que ya hay (§Foto).
+> ✅ `fotos-documentos` = sí: la foto se elige con `expo-image-picker` (galería o cámara), que entra
+> con los paquetes de la 2.2 (§Foto). Hasta que esté en el binario, `expo-document-picker`.
 
 ## Para qué y para quién
 
@@ -187,7 +187,7 @@ fuera de la regla 9, es `validation`. Para el plan del servidor (todo de `Contac
 
 - Bloque: la foto (o la inicial) y «Cambiar foto de perfil» o, sin foto, «Sube una foto para
   conocernos mejor ✨»; debajo, «Formatos: jpg, png o heic · Tamaño máximo: 15 MB».
-- **Elegir** (🔒 `fotos-documentos`): con `expo-image-picker` en la 2.2, «Elegir de la galería» y
+- **Elegir** (✅ `fotos-documentos`): con `expo-image-picker` en la 2.2, «Elegir de la galería» y
   «Hacer una foto» (la cámara pide cambiar el texto del permiso de `app.json`, pregunta 1 del 09).
   **Mientras tanto**, «Elegir foto» con `expo-document-picker` (`type: 'image/*'`), que ya está: en
   Android abre la galería; en iPhone, Archivos, y bajo el botón: «¿Tu foto está en Fotos? Compártela a
@@ -302,11 +302,11 @@ El `msg=…` con que volvía un guardado se ignora. El «Tus datos personales» 
    tu referente») pero el rebote del pago lleva a páginas donde se edita. Se queda como dice el plan:
    solo lo **vacío** y solo con `completar=pago`, que es el único sitio donde hace falta. Abrirlo a
    cualquier momento es cambiar una condición.
-2. 🔒 (`campos-crm`) **La etapa en `CAMPOS.md` se contradice**: §1 da a `ajmcm_etapa_c` solo `MIC`, `COM` y `LC`; la
+2. (`campos-crm` = «míralos tú», 24/10: ver `CAMPOS.md` del plugin, actualizado) **La etapa en `CAMPOS.md` se contradecía**: §1 da a `ajmcm_etapa_c` solo `MIC`, `COM` y `LC`; la
    cabecera y el pendiente 1 añaden `lcincorporado`, `asesora` y `apoyo`, y la página usa
    `lcincorporado` para enseñar el año de incorporación. El servidor manda las opciones que tenga el
    CRM; falta corregir `CAMPOS.md`.
-3. 🔒 (`campos-crm`) **`stic_primary_address_region_c`** sale como «No» (sin usar) en `CAMPOS.md` §4, pero «Mis datos»
+3. (`campos-crm`, 24/10) **`stic_primary_address_region_c`** salía como «No» (sin usar) en `CAMPOS.md` §4, pero «Mis datos»
    lo escribe («Comunidad Autónoma»). ¿Se usa?
 4. **El plugin sigue convirtiendo «sin contestar» en «no»** (regla 8) y callando los errores de la
    foto, para quien guarda desde la web. No es de este plan: se le ha avisado al propietario (22/10)

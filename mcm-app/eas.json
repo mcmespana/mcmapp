@@ -37,6 +37,14 @@
       "channel": "production",
       "env": {
         "EXPO_NO_CAPABILITY_SYNC": "1",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "333436090762-mimunbdpp07nv2hr8mvc2u52ncgrlsr3.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "333436090762-tl5ltg6f1ad7lrqtbs3jq3ae2uu3v0sr.apps.googleusercontent.com"
+      }
+    },
+    "production-comunica-falso": {
+      "extends": "production",
+      "env": {
+        "EXPO_NO_CAPABILITY_SYNC": "1",
         "EXPO_PUBLIC_COMUNICA_API": "fake",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "333436090762-mimunbdpp07nv2hr8mvc2u52ncgrlsr3.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "333436090762-tl5ltg6f1ad7lrqtbs3jq3ae2uu3v0sr.apps.googleusercontent.com"

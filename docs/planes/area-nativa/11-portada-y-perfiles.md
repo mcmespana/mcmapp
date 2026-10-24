@@ -276,9 +276,8 @@ Nada: todo lo de este plan es nativo.
 
 ## Preguntas abiertas
 
-1. 🔒 (`equipo-hijo`) **El equipo viendo a un hijo** (decisión de este plan, contra el código): el
-   plugin esconde «Pasar lista» y compañía mientras se ve a un hijo; aquí se enseñan siempre, porque
-   son de quien ha entrado. Se hace así salvo que el propietario diga «como el plugin».
+1. ✅ (`equipo-hijo` = «sí, siempre», 24/10) **El equipo viendo a un hijo**: lo del
+   equipo se enseña siempre; el selector solo cambia la parte de familia.
 2. **`yo/index.tsx` lo reclamaban dos planes** (resuelta al integrar): es «Tu cuenta» (02); «Mis datos
    de monitor» (09) pasa a `yo/monitor.tsx`.
 3. **Documento contra código**: `docs/design-system.md` §6.2 dice que el familiar a secas no ve Pagos;

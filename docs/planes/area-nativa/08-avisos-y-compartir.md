@@ -237,9 +237,12 @@ ya lo enseñe. Analítica: `notificacion_abierta` con `categoria: 'comunica'`, s
 
 ## Preguntas abiertas
 
-1. 🔒 (tarjeta `avisos-nombres`) **Nombres en los avisos.** El plan los deja fuera (solo grupo, fecha y recuentos), porque la
-   pantalla bloqueada la ve cualquiera y el texto pasa por terceros. ¿Te vale «1 chaval nuevo», o
-   quieres el nombre de pila?
+1. ✅ (`avisos-nombres` = «con el nombre de pila», 21/10, con el comentario «solo
+   nombre y una letra: Luc. H.») **Nombres en los avisos**: nombre de pila y la
+   inicial del primer apellido con punto, «Lucía H.» («Lucía H. se ha apuntado a
+   C1»). Nunca el apellido entero ni otro dato. Lo compone el servidor con
+   `shortChildName()` (y la app solo lo pinta); con dos chavales, «Lucía H. y 1
+   más».
 2. **¿Dónde se ve quién ha llegado o se ha ido?** «Novedades en C1» abre la ficha del grupo (plan 05),
    que enseña quién está, no quién se fue. Para que el aviso de una baja sirva, la ficha necesitaría un
    bloque «Novedades» (altas y bajas de las dos últimas semanas) y el servidor tendría que dárselo.

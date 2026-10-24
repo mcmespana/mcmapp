@@ -29,8 +29,8 @@
 
 ## Por qué se puede hacer el front sin tenerlo todo decidido
 
-Las decisiones que faltan (`ipfija`, `tecnicas`) son del servidor, y la app no
-las nota: **la app solo habla con un contrato**, y detrás de él el servidor
+Las decisiones del servidor (`ipfija`, `almacen`, `tecnicas`) la app no las
+nota: **la app solo habla con un contrato**, y detrás de él el servidor
 puede leer el CRM por SQL, por la API o desde un espejo. Así que el front se
 construye entero contra un **servidor falso** dentro de la propia app (plan
 00), con datos inventados, y el día que exista el servidor de verdad se cambia
@@ -39,8 +39,7 @@ una variable.
 Lo que sí afecta al front ya está decidido: alcance (todo, monitores primero), sin cobertura
 (pasar lista y grupos), salud (solo la marca), login (código, con el correo de
 la cuenta ya puesto), extras (avisos y compartir), lanzamiento (para todos, con
-vuelta atrás). Lo de front que sigue abierto (tabla de abajo) son detalles de
-pantalla: cada plan dice qué hace mientras tanto y dónde cambiaría.
+vuelta atrás). Y los detalles de pantalla, también (tabla de abajo).
 
 **El riesgo de adelantarse** es pequeño: si al construir el servidor el
 contrato necesita un retoque, se cambia en un sitio (`services/comunica/contract.ts`)
@@ -48,31 +47,40 @@ y el typecheck señala todo lo que toca.
 
 ---
 
-## Lo que sigue abierto (🔒, en la página de decisiones)
+## Decisiones: todas contestadas (24/10/2026)
 
-Ninguna bloquea empezar 00-03. Cada plan dice qué hace mientras tanto.
+Las 31 tarjetas tienen respuesta. Copia con la tabla completa y los
+comentarios en [`decisiones/`](decisiones/README.md) (la página sigue siendo la
+fuente: si el propietario cambia algo allí, se refresca la copia). Lo que
+cambia cosas de la app, ya aplicado en cada plan:
 
-| Tarjeta | Pregunta | Afecta a |
+| Tarjeta | Respuesta | Dónde |
 |---|---|---|
-| `diseno` | Cómo se traduce el diseño (recomendado: pantalla a pantalla) | 03 |
-| `territorio` | De qué color va el área nativa (y los colores del pañuelo, avisos y segmentos) | 03, 04, 05 |
-| `dni` | Si un DNI no existe, ¿se dice? | 02 |
-| `futuras` | ¿Se pasa lista de un día que aún no ha llegado? (mientras, no) | 04, 06, 07 |
-| `desmarcar` | Quitar una marca guardada, ¿la borra en el CRM? | 04 |
-| `salud-no` | Si la familia dijo «no» a la salud, ¿la ficha la enseña? | 05 |
-| `alcance-coord` | Qué ve quien coordina o acompaña varias etapas | 06 |
-| `marcas-autobus` | Marcas del grupo en la lista del autobús | 07 |
-| `avisos-nombres` | Nombres de chavales en los avisos del móvil | 08 |
-| `fotos-documentos` | Fotos con la cámara para títulos (paquete nuevo en la 2.2) | 09, 12, 16 |
-| `equipo-hijo` | Lo del equipo («Pasar lista»…) sigue en la portada aunque se vea a un hijo (mientras, sí) | 11 |
-| `docs-con-plaza` | Quien tiene plaza ve los documentos del evento aunque ya no cumpla la audiencia (mientras, sí) | 13 |
-| `aviso-pagos` | A quién se avisa de un pago con tarjeta raro (cobrado dos veces, o sin confirmar en 24 h) y quién devuelve | 15 (servidor) |
-| `tope-importe` | «Pagar otra cantidad»: como mucho lo indicado (mientras, ese tope) | 15 |
-| `calendario-marcas` | «Parcial» y «Justificada» con su color en el calendario (mientras, como el plugin) | 16 |
-| `campos-crm` | Campos que faltan o se contradicen en `CAMPOS.md` (Documents, `special_needs`, la etapa, la comunidad autónoma) | 12, 14, 16 (servidor) |
+| `diseno` | Traducción pantalla a pantalla, «pero todo full nativo bien hecho» | 03 |
+| `territorio` | Territorio «Comunica»: acento violeta `#6c4b9e` («azul morado, más morado») y degradado solo en la acción principal | 03 §2, 04, 05 |
+| `dni` | Contestar igual que con el correo | 02 |
+| `futuras` | Como el plugin: se marca hoy, la próxima si no ha empezado ninguna, y las reuniones futuras | 04, 06, 07 |
+| `desmarcar` | Quitar una marca guardada la borra también en el CRM | 04 |
+| `salud-no` | Sí: la ficha enseña la salud aunque la familia dijera «no» (la marca y el globo, no) | 05 |
+| `alcance-coord` | La suma de sus relaciones; acompañamiento igual, monitores sin grupo incluidos | 06 |
+| `marcas-autobus` | Sí, como en las listas de grupo | 07 |
+| `avisos-nombres` | Nombre de pila e inicial: «Lucía H.» | 08 |
+| `fotos-documentos` | Sí: `expo-image-picker` entra en la 2.2 (y el texto del permiso de cámara) | 09, 12, 16 |
+| `equipo-hijo` | Sí: lo del equipo se ve siempre | 11 |
+| `docs-con-plaza` | Sí: con plaza o con audiencia | 13 |
+| `aviso-pagos` | Delegación dueña del pago, con copia a la oficina técnica | 15 (servidor) |
+| `tope-importe` | Sin tope, pero el importe se lee bien (comas, puntos, miles) y avisa si es más del doble | 15 |
+| `calendario-marcas` | Como el plugin (se juntan) | 16 |
+| `campos-crm` | Que lo mire Claude en el CRM y lo apunte en `CAMPOS.md` del plugin | 12, 14, 16 |
 
-Antes de ejecutar un plan, se leen las respuestas de la página (colección
-`decisiones`) y se aplican.
+Del servidor (no tocan la app): `velocidad` = pasarela primero, espejo si
+hace falta; `almacen` = Neon, aunque el propietario sigue pensando (quizá
+Supabase en un VPS); `ipfija` = servidor pequeño con IP fija si SinergiaTIC
+la pide (está mirando un VPS de Hostinger; parece que no la piden); `repo` =
+repo nuevo.
+
+**Ojo con el código ya hecho (04 y 05):** se escribió el 23-24/10 sin estas
+respuestas. Lo que hay que cambiar está en [`ESTADO.md`](ESTADO.md).
 
 ---
 
@@ -110,11 +118,15 @@ Antes de ejecutar un plan, se leen las respuestas de la página (colección
 | 05 | 🟡 Hecho (24/10/2026, commits `9b66ff6`, `4db00e9`, `b6c09df` y el de documentación): contrato y servidor falso (familia, autorizaciones, salud por campos, fotos, sueltos, avisos, eventos, pañuelo, «curso cerrado»), reglas puras con tests, hooks con precarga de tus fichas, Grupos y fichas (tres vistas, chips, buscador, «Asignar grupos»), un grupo, «Sin grupo» con «Vincular», hoja de salud y la ficha entera; marcar abre la ficha con la sesión; salir vacía las fotos. **Falta**: buscador nativo de cabecera (`headerSearchBarOptions`, va dentro de la lista como en el árbol del 04), enlace a la ficha del monitor (plan 06), tests de pantalla con `screenSmoke`, y las decisiones 🔒 `salud-no` y `territorio` (pañuelo y avisos con colores provisionales de la app); preguntas 2 y 3 siguen como el plugin |
 | 10 | ✅ Hecho: enrutador de tres estados (tipo, seed, `PANEL_PERFILES.md`), `links.ts` con el mapa de todas las páginas del plugin y su validación, `+native-intent.ts` (todo el dominio a la pestaña; el legado sigue recibiendo `acceso_magico` y destino; la nativa canjea el token con `exchange`, pregunta si el enlace es de otra persona, abre la pantalla nativa o el legado con pase), `openLegacy` + `web.tsx` con cabecera nativa e interceptación, `intentFilters` de Android con los prefijos (**para la 2.2**) y, en el plugin (rama `nuevoComunicaChulo`, **sin desplegar**), el `apple-app-site-association` con todo el dominio. Al hacer cada pantalla nativa, se registra en `NATIVE` de `links.ts` |
 
-> ⚠️ **Antes de mergear esta rama a `main`**: quitar `EXPO_PUBLIC_COMUNICA_API: "fake"`
-> del perfil `production` de `mcm-app/eas.json`. Se puso el 24/10/2026 para que
-> la build de TestFlight lanzada desde esta rama enseñe el área nativa (con el
-> Laboratorio Alpha) con datos inventados; en `main` el área de producción no
-> debe encenderse sin servidor de verdad.
+> **Builds con datos inventados**: el perfil `production` de `mcm-app/eas.json`
+> ya **no** lleva `EXPO_PUBLIC_COMUNICA_API=fake` (se quitó el 24/10/2026: en
+> `main` el área de producción no debe encenderse sin servidor de verdad, y lo
+> vigila `__tests__/comunica/easProfiles.test.ts`). Para una build de TestFlight
+> que enseñe el área nativa con el servidor falso:
+> `npm run eas:build:ios -- --profile production-comunica-falso`. Ojo: va por el
+> canal `production`, así que la siguiente OTA de producción le cambia el bundle
+> por uno sin servidor falso. El canal preview (Laboratorio Alpha) ya hornea
+> `fake` en su OTA.
 
 00 → 01 → 02 → 10 van en fila. 03 puede ir a la vez. Después, 04-09
 (monitores) y 11-16 (familias) se pueden repartir entre varias sesiones,
@@ -225,7 +237,7 @@ ve nombres del CRM, solo los del contrato.
   propietario pueda.
 - Paquetes nativos: los de la 2.2 (`expo-secure-store`, `expo-sqlite`,
   `expo-local-authentication`, y `expo-intent-launcher` para abrir PDF en
-  Android, plan 16; `expo-image-picker` si sale «sí» en `fotos-documentos`)
+  Android, plan 16; `expo-image-picker` por `fotos-documentos`)
   llegan a la rama al mergear `main`. Si un plan necesita otro, para y
   pregunta. Los JS puros (TanStack Query, zod) se
   añaden sin preguntar.

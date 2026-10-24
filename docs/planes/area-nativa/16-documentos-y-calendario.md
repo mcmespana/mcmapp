@@ -286,13 +286,11 @@ SessionDetail   CalendarSession & { description: string | null }
 
 ## Preguntas abiertas
 
-1. 🔒 (`fotos-documentos`) **Cámara y galería.** Mientras, solo `expo-document-picker`. Si entra
-   `expo-image-picker`, «Hacer una foto» y «Elegir de la galería» van en el `FileField` del 09 y
-   sirven aquí también (JPG, sin recortar).
-2. 🔒 (`calendario-marcas`) **«Parcial» y «Justificada» en el calendario.** Pasar Lista los escribe
-   y el calendario los junta: una falta justificada sale en rojo, «No asististe». Recomendado:
-   encender los dos, con su color y su fila en la leyenda. Mientras, como el código (C4). Es una
-   constante.
+1. ✅ (`fotos-documentos` = sí) **Cámara y galería**: «Hacer una foto» y «Elegir de la galería» van
+   en el `FileField` del 09 y sirven aquí también (JPG, sin recortar), con `expo-image-picker` de la
+   2.2.
+2. ✅ (`calendario-marcas` = «como el plugin», 24/10) **«Parcial» y «Justificada»** se juntan con
+   «Asististe» y «No asististe» (C4), como hoy. Es una constante por si se cambia.
 3. **Delegación del documento subido** (resuelta al integrar): el formulario la manda, pero
    `sticpa_forbidden_fields()` la quita (`stic-security.php` l. 143-150) y lo subido desde el área
    queda sin delegación, contra la regla del `CLAUDE.md` del plugin («todo lo que se cree en el CRM
@@ -304,6 +302,6 @@ SessionDetail   CalendarSession & { description: string | null }
 5. **Borrar un certificado** (el que sube el plan 09) desde aquí no apaga su indicador en la ficha
    del monitor (tampoco en el plugin): el aviso del 09 no vuelve. Se queda como el plugin y se
    apunta para el plan del servidor.
-6. 🔒 (`campos-crm`) Los campos de `Documents` (`status_id`, `category_id`,
+6. (`campos-crm` = «míralos tú», 24/10: ver `CAMPOS.md` del plugin, actualizado) Los campos de `Documents` (`status_id`, `category_id`,
    `stic_shared_document_link_c`) y sus claves no están en `CAMPOS.md`; el servidor los necesita (la
    app pinta neutro ante la duda).

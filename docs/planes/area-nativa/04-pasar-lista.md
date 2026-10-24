@@ -127,10 +127,12 @@ ausencia (también para la racha). **Qué sesión se propone** (días de Madrid)
 | No ha empezado ninguna | La próxima | «La próxima sesión es el sábado 22 de noviembre» |
 
 Dos el mismo día: la primera. El aviso, solo si la sesión la eligió la regla.
-**No se pasa lista del futuro**: una sesión de otro día posterior se enseña sin
-poder marcar (filas apagadas, sin «Han venido todos» ni «Sin registro», barra
-«Aún no ha llegado» y botón apagado); el servidor la rechaza. Hoy, aunque no haya
-empezado, **sí** se marca.
+**Sesiones futuras** (✅ `futuras` = «como el plugin», 21/10): hoy, aunque no
+haya empezado, **sí** se marca; **la próxima, si aún no ha empezado ninguna**
+del curso, también (es la que propone la regla). Cualquier otra sesión de un
+día posterior se enseña sin poder marcar (filas apagadas, sin «Han venido
+todos» ni «Sin registro», barra «Aún no ha llegado» y botón apagado) y el
+servidor la rechaza. Las reuniones futuras son del plan 06.
 
 **Portada**, en este orden:
 
@@ -189,7 +191,8 @@ pasar», con su círculo. Toca → marcar esa fecha.
 - Cabecera: código y nombre; debajo, monitores y «11 chavalines». A la derecha,
   **el selector** «3 · 15 nov ▾»: una hoja con las celebradas, la más reciente
   arriba, «3 · 15 nov · pasada | falta | sin registro» (el número es la posición
-  en el curso). Sin futuras; la abierta sí. Con una sola, el dato sin control.
+  en el curso). Sin futuras (salvo la próxima cuando no ha empezado ninguna);
+  la abierta sí. Con una sola, el dato sin control.
 - Con lista: «Esta lista ya está pasada. Si la cambias, se actualiza.» o «Esta
   sesión está marcada como «sin registro».»
 - **«¿No hubo sesión? · Sin registro»**, arriba y pequeño, solo sin lista y
@@ -329,15 +332,16 @@ con etiqueta y acciones de accesibilidad; falso y cliente comparten esquemas.
 
 ## Preguntas abiertas
 
-1. 🔒 (tarjeta `desmarcar`) **Quitar una marca guardada no la borra**: «sin marcar no se escribe»
-   (`sticpa_pl_save`), así que un «Vino» quitado sigue en el CRM y al releer
-   vuelve. La app hace lo mismo. ¿Se quiere que quitarla la borre?
-2. 🔒 (tarjeta `futuras`) **Sesión futura**: el análisis (§5) y `PASAR-LISTA.md` §6.3 dicen que no se
-   pasa lista del futuro, pero si no ha empezado ninguna el plugin propone la
-   próxima y deja guardarla. El plan sigue al análisis. Confirmar.
+1. ✅ (`desmarcar` = «sí, se borra», 21/10) **Quitar una marca guardada la borra
+   también en el CRM**: el plugin no escribe lo que queda sin marcar
+   (`sticpa_pl_save`) y un «Vino» quitado vuelve al releer. Aquí, la lista que
+   se guarda lleva **también** las personas que se desmarcaron respecto a lo
+   guardado (`mark: null`), y el servidor borra esa asistencia (borrado lógico)
+   o la deja vacía. «Han venido todos» y las demás reglas no cambian.
+2. ✅ (`futuras` = «como el plugin», 21/10): ver «Sesiones futuras» arriba.
 3. **«Crear la sesión de hoy»** (plugin, 16/10/2026): fuera de alcance, WebView. ¿Nativa?
-4. **COM II y COM III** son `#7c3aed` y `#be185d` en el plugin: sin token del
-   plan 03, son colores nuevos. Se deciden con `territorio` (plan 03 §2).
+4. **COM II y COM III** (`#7c3aed` y `#be185d` en el plugin): con `territorio`
+   = A, entran como tokens del territorio Comunica (plan 03 §2).
 5. ~~El glosario de 00 no coincide con el plugin~~ **Resuelto:** 00 ya dice
    «No vino», «COM I/II/III» y «chavalines».
 6. **«Hace N días»**: el plugin cuenta bloques de 24 h y el domingo por la

@@ -114,10 +114,10 @@ sigue llegando a la WebView como hoy.
 
 ## Preguntas abiertas
 
-- **DNI que no existe:** el plugin lo dice («esta puerta sí dice no existe»,
-  `docs/ACCESO.md`). Para no revelar quién está en el CRM, la propuesta es
-  contestar igual que con el correo. Lo decide el propietario (tarjeta `dni` de
-  la página de decisiones).
+- **DNI que no existe** (✅ decidido, tarjeta `dni`: «contestar igual que con
+  el correo»): el plugin lo dice («esta puerta sí dice no existe»,
+  `docs/ACCESO.md`); aquí no. Con DNI existente o no, la misma pantalla: «Si el
+  DNI es correcto, te llegará un código al correo que diste a tu delegación.»
 - **Rellenar el perfil de la app con el CRM** (papel y delegación, en vez de lo
   que la persona eligió en el onboarding): necesita la tabla de equivalencias
   de delegaciones (`ANALISIS_AREA_PRIVADA_NATIVA.md` §7). Queda fuera de este

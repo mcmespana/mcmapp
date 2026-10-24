@@ -4,6 +4,15 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-24 11:30 — Comunica: el servidor falso sale del perfil `production` de EAS
+
+- `EXPO_PUBLIC_COMUNICA_API=fake` ya no va en el perfil `production` de
+  `eas.json`: una build de tienda desde `main` habría encendido el área nativa
+  con datos inventados. Para las builds de prueba con el área nativa y el
+  servidor falso hay un perfil propio, `production-comunica-falso` (extiende
+  `production`). Un test (`__tests__/comunica/easProfiles.test.ts`) impide
+  volver a meterlo en `production`.
+
 ## 2026-10-24 09:20 — Área nativa de Comunica: Grupos y fichas y la ficha del participante (rama `nuevoComunicaChulo`)
 
 - **Grupos y fichas** (plan 05, `/comunica/grupos`): la gente de la
@@ -51,7 +60,8 @@
   caché se guarda por persona (nunca la salud) y salir lo borra todo. Sobre
   AsyncStorage hasta que llegue `expo-sqlite` con la 2.2.
 - La build de TestFlight lanzada desde esta rama lleva el servidor falso
-  (`eas.json`, perfil `production`): **quitarlo antes de mergear a `main`**.
+  (`eas.json`, perfil `production`). *Corregido a las 11:30: ahora va en un
+  perfil propio, `production-comunica-falso`.*
 
 ## 2026-10-24 02:00 — Área privada nativa de Comunica: cimientos con datos inventados (rama `nuevoComunicaChulo`)
 

@@ -173,7 +173,8 @@ texto plano (como el PHP sin DOM). Nunca HTML.
   o el lugar (`sticpa_event_map_url`). Textos normalizados y URLs con `mcm_cuerpo_url`.
 - **Documentos**: de la relación del evento, solo PDF, JPG, PNG, GIF y WEBP; cartel →
   galería → adjuntos con el reparto de `sticpa_event_web_view`. Se sirven con sesión, si el
-  documento es **de ese evento** y el evento es para quien lo pide (`sticpa_event_file_endpoint`);
+  documento es **de ese evento** y el evento es para quien lo pide **o** tiene plaza en él
+  (`sticpa_event_file_endpoint` más `docs-con-plaza`);
   si no, `not_found`. Solo se listan los que se servirían. En lo público, solo de eventos
   publicados.
 
@@ -345,11 +346,9 @@ En `__tests__/comunica/`, con el servidor falso.
 
 ## Preguntas abiertas
 
-1. 🔒 (`docs-con-plaza`) **Documentos de quien ya tiene plaza.** La ficha no le dice «no es para
-   ti» a quien ya está apuntado (`inc/stic-events.php:1018-1032`), pero el endpoint de documentos
-   sí lo mira solo por audiencia (`inc/stic-event-web.php:331-336`): si le cambian el curso, no
-   puede abrir el PDF de su convivencia. Recomendado: que los vea (audiencia **o** plaza). Mientras
-   no se conteste, eso; con «como el plugin», solo audiencia.
+1. ✅ (`docs-con-plaza` = «sí», 24/10) **Documentos de quien ya tiene plaza**: el servidor los
+   sirve y los lista con audiencia **o** plaza (el plugin, solo con audiencia,
+   `inc/stic-event-web.php:331-336`).
 2. **«Con plaza» con una inscripción rechazada** (resuelta el 22/10 al integrar): para el plugin,
    «activa» es cualquiera que no esté cancelada (`inc/stic-action.php:494`) y una `rejected` sale
    como «Con plaza». Aquí el guard no cambia (no deja volver a apuntarse, como el plugin), pero la

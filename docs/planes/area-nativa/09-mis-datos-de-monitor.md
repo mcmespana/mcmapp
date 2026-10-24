@@ -207,12 +207,14 @@ la relación con la persona, la revisión con el archivo y el indicador a `1`, a
 
 ## Preguntas abiertas
 
-1. 🔒 (tarjeta `fotos-documentos`) **Fotos y cámara.** Con `expo-document-picker` el iPhone ve la app Archivos, no la galería: un
-   título en papel hay que escanearlo antes. «Hacer una foto» o «Elegir de la galería» pedirían
-   **`expo-image-picker`** (paquete nativo nuevo) y, con ese o con `expo-camera`, **cambiar el texto
-   del permiso de cámara** de `app.json` («…para escanear los códigos QR de playlists y sesiones de
-   coro»), que va en el binario: Apple rechaza un uso que el texto no explica. ¿Entra en la siguiente
-   build, o la primera versión va solo con archivos?
+1. ✅ (`fotos-documentos` = «sí, y su paquete entra en la 2.2», 21/10) **Fotos y
+   cámara**: **`expo-image-picker`** entra con los paquetes nativos de la 2.2 (sin
+   usar hasta que llegue este plan), y en el mismo commit `[skip-ota]` se
+   amplían los textos de permiso de `app.json`: cámara («…escanear los códigos
+   QR de playlists y sesiones de coro, y hacer fotos de documentos que subes a tu
+   área privada») y fototeca. `FileField` ofrece «Hacer una foto», «Elegir de la
+   galería» y «Elegir un archivo». Lo usan también los planes 12 (foto de perfil)
+   y 16 (documentos).
 2. **El certificado de cada septiembre.** El indicador «archivo subido» no se apaga nunca y no hay
    fecha (lo dice F4 de las propuestas): quien lo subió el curso pasado ya no ve el aviso aunque le
    toque renovarlo. ¿Se queda como en el plugin?

@@ -332,11 +332,14 @@ texto de salud; la función que decide el WhatsApp del menor solo dice sí con
 
 ## Preguntas abiertas
 
-1. 🔒 **Salud con `healthData` a «No»** (tarjeta `salud-no` de la página de
-   decisiones).** La ficha del plugin enseña el texto igual
-   (`ficha.php` l.532-537 y l.884-902), pero la marca y el globo lo esconden
-   (`_marcas_de` l.976, `stic-action.php` l.1708). Con una sola ruta de salud,
-   una de las dos se pierde. El falso hace lo del globo hasta que se decida.
+1. ✅ **Salud con `healthData` a «No»** (`salud-no` = «sí, en la ficha, como hoy
+   el plugin, por si hay una urgencia», 21/10). La ficha enseña el texto
+   (`ficha.php` l.532-537 y l.884-902) y, como en el plugin, **la marca de la
+   lista y el globo no** (`_marcas_de` l.976, `stic-action.php` l.1708): el
+   servidor devuelve `badges.healthNote = false` en las listas, pero
+   `GET /v1/people/:id/health` sí da el texto a quien `canSeeHealth`. La ficha
+   abre la salud desde su propia sección, no desde la marca. El falso tiene que
+   cambiar a esto (hoy hace lo del globo también en la ficha).
 2. **«Sin grupo» no abre la ficha** (`mis_grupos.php` l.235-255) y Cursos y A-Z
    sí desde el 16/10; la razón de `MIS-GRUPOS.md` §7 («sin grupo no hay ficha»)
    ya no vale. ¿Se enlaza también allí?
@@ -351,4 +354,5 @@ texto de salud; la función que decide el WhatsApp del menor solo dice sí con
    solo con conexión («Necesitas conexión para ver los datos personales»).
 5. **Colores nuevos.** Pañuelo (7) y escala de avisos (3 y su tinta) son hex
    fijos del plugin, iguales en claro y oscuro; la app no los tiene y
-   `design.md` §1 pide preguntar. Se deciden con `territorio` (plan 03 §2).
+   `design.md` §1 pide preguntar. Con `territorio` = A, entran como tokens del
+   territorio Comunica (plan 03 §2).

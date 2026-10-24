@@ -162,8 +162,9 @@ abajo y **cuenta inscripciones** (para el bug del parte de estado §1).
    marcar no cuenta en el porcentaje. Sobre las sesiones del evento de la lista.
 7. **Qué sesión**: en la semanal, el evento de la etapa del alcance o, sin
    etapa, el primero de COM, MIC, LC; la sesión, con la regla y el aviso del
-   plan 04 (`pickSession`) y su selector (las futuras no se ofrecen). En una
-   reunión, la de `sesion`. La lista semanal **nunca avisa en ámbar**.
+   plan 04 (`pickSession`) y su selector (las futuras no se ofrecen, salvo la
+   próxima cuando no ha empezado ninguna, como en el 04). En una reunión, la de
+   `sesion`, **también si es futura** (`futuras` = «como el plugin»). La lista semanal **nunca avisa en ámbar**.
 8. **Reunión sin pasar**: solo la última celebrada, sin lista y durante 30 días;
    ámbar con «Falta 1 lista» y «Recuperar», en «Hoy» y en Coordinación.
 9. **Reuniones**: estado con el idioma del historial de un grupo: ✓ «11
@@ -335,19 +336,15 @@ coordinas», «porque eres» ni «porque acompañas» (§6.4).
    (21/10):** cuando el alcance cubre más de una etapa, la lista de monitores
    lleva un `SegmentedControl` de etapa y cada etapa va sobre su evento. Es
    arreglar un fallo conocido, no cambiar una regla.
-2. 🔒 (tarjeta `alcance-coord`) **Varias relaciones de coordinación de etapas distintas** (MIC y COM, ninguna
-   más amplia): el plugin se queda con la primera que devuelve el CRM; `Me.scope`
-   del plan 00 admite listas. ¿La primera o la suma?
-3. 🔒 (tarjeta `alcance-coord`) **Alcance de acompañamiento**: el encargo dice «por sus relaciones con etapa
-   y segmento»; el código no le da alcance (ve toda la delegación) pero, de
-   rebote, **no ve a los monitores sin grupo**. ¿Es lo querido?
+2. ✅ (`alcance-coord` = «la suma», 21/10) **Varias relaciones de coordinación de
+   etapas distintas** (MIC y COM): ve **la suma** de sus relaciones
+   (`Me.scope` con listas), no la primera que devuelva el CRM.
+3. ✅ (`alcance-coord` = «la suma», 21/10) **Acompañamiento** ve lo mismo que
+   coordinación en su alcance, **monitores sin grupo incluidos**.
 4. **El % de sábados en la ficha**: el encargo dice «solo con 4 marcas o más»;
    el código solo aplica el mínimo en la lista, y la ficha lo enseña desde una
    marca. El plan sigue al código.
-5. 🔒 (tarjeta `futuras`) **Una reunión futura**: el código deja abrir y guardar su lista; las reglas
-   del análisis (§5) dicen «no se pasa lista de sesiones futuras». El plan
-   sigue al código y el falso no la bloquea. **Corregido en la revisión
-   (21/10):** mientras se decide, lo mismo que el plan 04 (se ve, no se marca),
-   para que los tres planes hagan lo mismo.
+5. ✅ (`futuras` = «como el plugin», 21/10) **Una reunión futura se puede
+   abrir y guardar**, como en el plugin (la tarjeta lo dice expresamente).
 6. ~~Seguimientos sobre uno mismo~~ **Resuelto:** la regla es «nadie ve ni
    escribe los seguimientos sobre sí mismo», así que la sección no se pinta.

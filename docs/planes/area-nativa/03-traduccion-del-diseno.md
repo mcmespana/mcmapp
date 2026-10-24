@@ -4,10 +4,11 @@
 > puede hacer ya, no toca la app) · **Depende de:** nada · **Tamaño:** M ·
 > Índice y reglas comunes: [`README.md`](README.md).
 >
-> 🔒 Dos decisiones del propietario en la página de decisiones:
-> `diseno` (cómo se traduce; este plan sigue la recomendación, «pantalla a
-> pantalla») y `territorio` (qué color lleva el área nativa; §2). Mientras no
-> estén, se puede hacer todo menos la tarea 3.
+> ✅ Decidido por el propietario: `diseno` = **traducción pantalla a pantalla**
+> («pero todo full nativo bien hecho: partir de la idea existente, porque las
+> pantallas ya están pensadas y funcionan») y `territorio` = **A, territorio
+> «Comunica»** («para mí Comunica es un azul morado, pero en el plugin me
+> parece más morado que otra cosa»). Ver §2.
 
 ## Para qué
 
@@ -55,7 +56,7 @@ plugin que entra en la fase 1 (inventario en `ANALISIS_AREA_PRIVADA_NATIVA.md`
 - El propietario lo revisa antes de que empiecen los planes 04-09 (decisión
   `diseno`).
 
-## 2. El color del área nativa (🔒 `territorio`)
+## 2. El color del área nativa (✅ `territorio` = A)
 
 Hoy chocan dos identidades:
 
@@ -79,6 +80,23 @@ evento lleva su `tintColor`). Opciones para el propietario:
   al resto de la app y menos a la web que la gente ya conoce.
 - **C · Calcado de la web.** Degradados y cristal como en el plugin: choca con
   la ley de la app y con el «que se sienta del sistema».
+
+**Elegida la A** (21/10). Cómo se concreta, con el comentario del propietario
+(«azul morado, más morado»):
+
+- **Acento del área**: el **violeta Comunica `#6c4b9e`** (el «azul morado»),
+  con una variante más clara para oscuro que pase contraste AA sobre `card`
+  (se calcula y se prueba con el test de contraste al meterlo). Para enlaces,
+  chips de acento y la barra de identidad.
+- **Degradado de marca** `#1c6fb3 → #6c4b9e → #9d1e74`, **solo en la acción
+  principal** de cada pantalla («Guardar lista», «Inscribirme…», «Pagar…»):
+  uno por pantalla.
+- **Colores de dato** que ya traía el plugin y no tienen token en la app
+  (segmentos COM II `#7c3aed` y COM III `#be185d`, pañuelo, avisos): entran
+  como tokens del territorio en `constants/colors.ts`, no sueltos.
+- La pestaña sigue con su morado LC (`TabHeaderColors.comunica`); se mira en
+  las capturas si casa con el violeta o conviene igualarlos (lo decide el
+  propietario viendo las capturas: tarea 3).
 
 Mientras no se decida, los planes 04-09 usan los tokens de la app y dejan el
 acento en una sola constante del área (`components/comunica/comun/theme.ts`),
@@ -126,7 +144,7 @@ los estados y sus significados, las reglas de qué se enseña a quién.
 |---|---|---|
 | 1 | Catálogo de pantallas (§1) | El propietario lo revisa; una ficha por pantalla de la fase 1 |
 | 2 | `theme.ts` del área con los tokens de la app (provisional) | `designTokens` y `noNewMagicNumbers` en verde |
-| 3 | 🔒 Aplicar la decisión `territorio`: colores en `constants/colors.ts`, fila en `design.md` §2, `theme.ts` | Revisión del propietario con capturas en claro y oscuro |
+| 3 | Aplicar `territorio` = A (§2): colores en `constants/colors.ts`, fila en `design.md` §2, `theme.ts` (deja de ser provisional) | Revisión del propietario con capturas en claro y oscuro |
 | 4 | Componentes de §4, cada uno con su test y su captura en todos sus estados | Capturas web a 375 px, claro y oscuro; tests de accesibilidad (etiquetas) |
 | 5 | Página de muestra solo en desarrollo (`comunica/_muestra`) con todos los componentes, para revisarlos de un vistazo | Captura de la página entera |
 
@@ -139,4 +157,4 @@ vive en `utils/comunica/` y se prueba allí (plan 04).
 
 ## 7. Preguntas abiertas
 
-- `territorio` (arriba). Lo demás se decide al revisar el catálogo.
+- Ninguna de las de antes (`diseno` y `territorio`, decididas). Lo demás se decide al revisar el catálogo.

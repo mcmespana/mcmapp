@@ -226,8 +226,8 @@ del Congreso. Sus intentos devuelven `simulated: true`: la hoja pinta `Simulated
    «Pagar 35,00 € con tarjeta» solo si `canPayByCard`.
 5. **Pagar** (`single_stic_payment_form.php`): un **resumen, no un formulario**. Nada editable salvo
    el importe tras «Pagar otra cantidad» («¿Cuánto vas a pagar?», teclado decimal, coma o punto,
-   mínimo 1 €, como mucho lo indicado (🔒 `tope-importe`: «No puede pasar de 35,00 €»), dos
-   decimales; la nota «Solo si te han dicho que pagues otra cantidad: un descuento,
+   mínimo 1 €, **sin tope** (✅ `tope-importe` = como el plugin; lectura del importe y aviso del
+   «35 mal escrito» en §Preguntas), dos decimales; la nota «Solo si te han dicho que pagues otra cantidad: un descuento,
    una beca, un arreglo con tu delegación. Lo que pagues es lo que quedará como pagado.»). El botón
    repite el importe («Pagar 20,50 €»), se desactiva si no vale y no se puede pulsar dos veces. Se
    trata como **un descuento, no un pago parcial**: lo que no se paga no queda pendiente.
@@ -324,7 +324,7 @@ del Congreso. Sus intentos devuelven `simulated: true`: la hoja pinta `Simulated
 ## Tests
 
 - **Unitarios** (`__tests__/comunica/`): bloques y orden; `not_paid`/`not_remitted` nunca «ok»; «20,5»,
-  «20,50», «20.50» → 2050 céntimos; «0,99», «abc», vacío y más de lo indicado no valen; transiciones de `cardAttempt`
+  «20,50», «20.50» → 2050 céntimos; «0,99», «abc», vacío, «35,555» y «1.234» no valen; «1.234,56» vale; más del doble pide confirmación; transiciones de `cardAttempt`
   (también «KO pero el CRM dice pagado» → pagado); URL de vuelta con `ok`, `ko` y basura.
 - **De pantalla con el falso**: los bloques y la nota «Pago hecho»; ficha devuelta; rebotes de
   «Pagar»; las cuatro salidas de la pasarela simulada; reintentar crea un intento con `clientId`
@@ -340,12 +340,22 @@ del Congreso. Sus intentos devuelven `simulated: true`: la hoja pinta `Simulated
 
 ## Preguntas abiertas
 
-- 🔒 (`aviso-pagos`) **Intento con vuelta OK que el CRM no cobra en 24 h, y pago doble.** El plugin
-  cerraría el primero como abandonado (no sabe de la vuelta) y no detecta el segundo. El plan pide al
-  servidor **no cerrarlo y avisar** en los dos casos (§Datos 7). Falta a quién (la delegación dueña
-  del pago, la oficina técnica o las dos) y quién devuelve un cobro doble. No cambia la app.
-- 🔒 (`tope-importe`) **«Pagar otra cantidad» no tiene tope** en el plugin (vale 3.500 € por un 35
-  mal escrito; el banco enseña el importe antes de cobrar). Recomendado: como mucho lo indicado (la
-  nota ya dice que es para descuentos y becas). Mientras no se conteste, ese tope.
+- ✅ (`aviso-pagos` = «delegación dueña, con copia a la oficina técnica», 24/10) **Intento con
+  vuelta OK que el CRM no cobra en 24 h, y pago doble**: el servidor no lo cierra y manda un correo
+  a la delegación dueña del pago y otro a la oficina técnica. Quien lo recibe lo mira y, si hace
+  falta, devuelve el cobro. No cambia la app.
+- ✅ (`tope-importe` = «sin tope, como el plugin, pero resuelve el drama de las comas», 24/10)
+  **«Pagar otra cantidad» sin tope**, y el importe se lee sin sorpresas (`parseEuroAmount` en
+  `utils/comunica/payments.ts`, puro y con tests):
+  - Vale coma o punto como decimal: «35», «35,5», «35,50», «35.50» → 3550 céntimos.
+  - Separador de miles solo si es inequívoco: «1.234,56» y «1,234.56» → 123456; «1.234» (punto y
+    tres cifras, sin otra marca) se rechaza con «Escribe el importe con coma para los céntimos:
+    1234 o 1234,00», porque puede ser mil doscientos o uno con veintitrés.
+  - Más de dos decimales, letras o vacío: «Escribe solo el importe, como 35 o 35,50».
+  - El botón repite el importe ya normalizado («Pagar 1.234,56 €») y, si es **más del doble** de lo
+    indicado, antes de abrir la pasarela: «Vas a pagar 3.500,00 €, más de lo indicado (35,00 €).
+    ¿Es correcto?» (Pagar 3.500,00 € / Corregir). No es un tope: es un aviso del «35 mal escrito».
+  - El servidor recibe céntimos y escribe en el CRM con `sticpa_crm_amount()` (el «.00» que el
+    usuario técnico lee como miles, `CLAUDE.md` del plugin).
 - **«¿Ya lo has pagado? Tu delegación lo marcará en cuanto lo vea.»** (decidida al integrar): sale
   también en la ficha del pago, no solo en la inscripción. Es el mismo caso y el mismo texto.
