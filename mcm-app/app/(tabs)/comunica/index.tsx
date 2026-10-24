@@ -1,16 +1,22 @@
 // app/(tabs)/comunica/index.tsx
 //
-// La puerta de la pestaña Comunica (planes 01 §1 y 10 §1): con el modo alpha
-// encendido (o el interruptor en `all`) se ve el área nativa; si no, la
-// WebView de siempre, que pasa a ser el legado y no cambia en nada.
-//
-// Mientras no haya acceso nativo (plan 02), el área nativa solo se enciende
-// con el servidor falso, que ya «entra» con una persona de prueba.
+// La puerta de la pestaña Comunica (planes 01 §1, 02 y 10 §1):
+//   1. Modo normal (o interruptor en `off`, o sin servidor) → la WebView de
+//      siempre, que pasa a ser el legado y no cambia en nada.
+//   2. Nativa sin sesión → «Entra en tu área».
+//   3. Nativa con sesión → la portada.
 
 import React from 'react';
-import { Stack } from 'expo-router';
+import { Platform, StyleSheet, View } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import { PressableFeedback } from 'heroui-native';
 import ComunicaScreen from '@/app/screens/ComunicaScreen';
+import AccessScreen from '@/components/comunica/acceso/AccessScreen';
+import { AreaSkeleton } from '@/components/comunica/comun/AreaState';
+import { useArea } from '@/components/comunica/comun/ComunicaAreaProvider';
+import { useComunicaTheme } from '@/components/comunica/comun/useComunicaTheme';
 import ComunicaHome from '@/components/comunica/pasar-lista/ComunicaHome';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useComunicaMode } from '@/hooks/comunica/useComunicaMode';
 
 export default function ComunicaGate() {
@@ -23,10 +29,77 @@ export default function ComunicaGate() {
       </>
     );
   }
+  return <NativeGate />;
+}
+
+function NativeGate() {
+  const { session } = useArea();
+  const t = useComunicaTheme();
+  if (session.status === 'loading') {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, headerLargeTitle: true }} />
+        <View style={[styles.loading, { backgroundColor: t.backgroundSunken }]}>
+          <AreaSkeleton />
+        </View>
+      </>
+    );
+  }
+  if (session.status === 'signedOut') {
+    return (
+      <>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            headerLargeTitle: false,
+            headerRight: undefined,
+          }}
+        />
+        <AccessScreen
+          notice={
+            session.reason === 'revoked'
+              ? 'Tu sesión ha terminado. Vuelve a entrar.'
+              : undefined
+          }
+        />
+      </>
+    );
+  }
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, headerLargeTitle: true }} />
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerLargeTitle: true,
+          headerRight: () => <AccountButton />,
+        }}
+      />
       <ComunicaHome />
     </>
   );
 }
+
+function AccountButton() {
+  const router = useRouter();
+  const t = useComunicaTheme();
+  return (
+    <PressableFeedback
+      onPress={() => router.push('/comunica/yo')}
+      accessibilityRole="button"
+      accessibilityLabel="Tu cuenta"
+      hitSlop={12}
+      style={styles.account}
+    >
+      <IconSymbol
+        name="person.crop.circle"
+        size={26}
+        color={Platform.OS === 'ios' ? t.headerTint : '#fff'}
+      />
+    </PressableFeedback>
+  );
+}
+
+const styles = StyleSheet.create({
+  loading: { flex: 1, padding: 16 },
+  account: { padding: 4 },
+});

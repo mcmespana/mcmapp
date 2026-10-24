@@ -9,27 +9,32 @@
 //   · «Sin registro» solo si la lista no está pasada.
 //   · Del futuro no se pasa lista: filas apagadas y el botón también.
 //
-// Falta, y lo trae el plan 04 con la cola del plan 01: el borrador guardado en
-// el móvil a cada toque y la subida en segundo plano. Hoy se guarda contra el
-// servidor directamente y la pantalla espera la respuesta.
+//   · Lo marcado se guarda en el móvil a cada toque (borrador) y «Guardar» lo
+//     pasa a la cola, que lo sube sola: nunca se espera al CRM.
 
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useToast } from '@/contexts/AppToastContext';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
-import { comunicaNow, getComunicaApi } from '@/services/comunica';
-import { isComunicaApiError } from '@/services/comunica/client';
-import type { RollDetail, SetMark } from '@/services/comunica/contract';
+import { comunicaNow } from '@/services/comunica';
+import type {
+  RollDetail,
+  RollWriteResult,
+  SetMark,
+  TodayResponse,
+} from '@/services/comunica/contract';
 import { NOTE_MAX } from '@/services/comunica/contract';
 import { areaKey } from '@/hooks/comunica/useAreaQuery';
 import { useGroups, useRoll } from '@/hooks/comunica/usePasarLista';
+import { useOutbox } from '@/hooks/comunica/useOutbox';
+import { useRollDraft } from '@/hooks/comunica/useRollDraft';
 import { h } from '@/utils/haptics';
-import { longDay } from '@/utils/comunica/dates';
+import { longDay, shortDay } from '@/utils/comunica/dates';
 import { madridDay, madridTime } from '@/utils/comunica/madrid';
 import {
   countMarks,
@@ -40,11 +45,11 @@ import {
   participantsLabel,
 } from '@/utils/comunica/marks';
 import {
+  applyDraft,
   draftFrom,
   isDirty,
   markAllUnmarked,
   toRollWrite,
-  type RollDraft,
 } from '@/utils/comunica/rollDraft';
 import { uuidV4 } from '@/utils/comunica/uuid';
 import AreaScreen from '../comun/AreaScreen';
@@ -53,6 +58,7 @@ import BottomActionBar from '../comun/BottomActionBar';
 import { MarkIcon, MarkLegend, MarkPicker } from '../comun/MarkControl';
 import PersonRow from '../comun/PersonRow';
 import Section from '../comun/Section';
+import UploadStatus from '../comun/UploadStatus';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 
 const NOT_SAVED_COPY = {
@@ -81,6 +87,7 @@ export default function RollScreen({
           <RollEditor
             key={data.roll?.takenAt ?? 'nueva'}
             roll={data}
+            groupLabelText={`${title} · ${shortDay(data.session.date)}`}
             subtitle={[
               data.monitors.map((m) => m.firstName).join(', '),
               group?.schoolLevels.join(', '),
@@ -99,18 +106,21 @@ export default function RollScreen({
 function RollEditor({
   roll,
   subtitle,
+  groupLabelText,
   refetch,
 }: {
   roll: RollDetail;
   subtitle: string;
+  groupLabelText: string;
   refetch: () => Promise<unknown>;
 }) {
   const t = useComunicaTheme();
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [draft, setDraft] = useState<RollDraft>(() => draftFrom(roll));
+  const key = `roll:${roll.session.id}:${roll.groupId}`;
+  const initial = useMemo(() => draftFrom(roll), [roll]);
+  const { draft, setDraft, clearDraft, restored } = useRollDraft(key, initial);
   const [open, setOpen] = useState<string | null>(null);
-  const [notSaved, setNotSaved] = useState<string[]>([]);
 
   const now = comunicaNow();
   const today = madridDay(now);
@@ -128,62 +138,69 @@ function RollEditor({
     [roll.entries],
   );
 
-  const invalidate = () =>
-    Promise.all([
-      qc.invalidateQueries({ queryKey: areaKey(['pasar-lista', 'today']) }),
-      qc.invalidateQueries({
-        queryKey: areaKey([
-          'pasar-lista',
-          'roll',
-          roll.session.id,
-          roll.groupId,
-        ]),
-      }),
-    ]);
+  const { outbox, get } = useOutbox();
+  const queued = get(key);
+  const result =
+    queued?.status === 'applied'
+      ? (queued.result as RollWriteResult | undefined)
+      : undefined;
+  const notSaved = (result?.notSaved ?? []).map(
+    (n) => `${names[n.personId] ?? 'Alguien'}: ${NOT_SAVED_COPY[n.reason]}`,
+  );
+  const rollKeyQ = areaKey([
+    'pasar-lista',
+    'roll',
+    roll.session.id,
+    roll.groupId,
+  ]);
 
-  const save = useMutation({
-    mutationFn: (action: 'save' | 'skip') =>
-      getComunicaApi().saveRoll(
-        roll.session.id,
-        roll.groupId,
-        action === 'save'
-          ? toRollWrite(draft, uuidV4())
-          : { clientId: uuidV4(), action: 'skip', marks: {}, notes: {} },
-      ),
-    onSuccess: async (res) => {
-      h.success();
-      setNotSaved(
-        res.notSaved.map(
-          (n) =>
-            `${names[n.personId] ?? 'Alguien'}: ${NOT_SAVED_COPY[n.reason]}`,
-        ),
-      );
-      qc.setQueryData(
-        areaKey(['pasar-lista', 'roll', roll.session.id, roll.groupId]),
-        res.roll,
-      );
-      toast.show({
-        variant: res.notSaved.length ? 'warning' : 'success',
-        label:
-          res.rollCall.status === 'skipped' ? 'Sin registro' : 'Lista guardada',
-      });
-      await invalidate();
-    },
-    onError: (e) => {
+  // Guardar: al móvil al instante (con lo marcado ya en pantalla y en la
+  // portada) y la cola lo sube sola. Nada de esperar con una rueda.
+  const save = async (action: 'save' | 'skip') => {
+    if (!outbox) return;
+    if (action === 'save' && Object.values(draft.marks).every((m) => !m)) {
       h.error();
-      const offline =
-        isComunicaApiError(e) &&
-        (e.code === 'network' || e.code === 'crm_unavailable');
-      toast.show({
-        variant: 'danger',
-        label: offline
-          ? 'No se ha podido enviar. Vuelve a intentarlo con cobertura.'
-          : isComunicaApiError(e) && e.reason === 'nothing_marked'
-            ? 'No has marcado a nadie'
-            : 'No se ha podido guardar la lista',
-      });
-    },
-  });
+      toast.show({ variant: 'warning', label: 'No has marcado a nadie' });
+      return;
+    }
+    const takenAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+    const optimistic = applyDraft(roll, draft, action, takenAt);
+    qc.setQueryData(rollKeyQ, optimistic);
+    qc.setQueryData<TodayResponse>(areaKey(['pasar-lista', 'today']), (td) =>
+      td && optimistic.roll
+        ? {
+            ...td,
+            rollCalls: [
+              ...td.rollCalls.filter(
+                (r) =>
+                  !(
+                    r.sessionId === roll.session.id &&
+                    r.groupId === roll.groupId
+                  ),
+              ),
+              optimistic.roll,
+            ],
+          }
+        : td,
+    );
+    await outbox.enqueue({
+      key,
+      kind: 'roll',
+      clientId: uuidV4(),
+      payload:
+        action === 'save'
+          ? toRollWrite(draft, '')
+          : { action: 'skip', marks: {}, notes: {} },
+      meta: {
+        sessionId: roll.session.id,
+        groupId: roll.groupId,
+        date: roll.session.date,
+        label: groupLabelText,
+      },
+    });
+    await clearDraft();
+    h.formSuccess();
+  };
 
   const setMark = (id: string, mark: SetMark) =>
     setDraft((d) => ({ ...d, marks: { ...d.marks, [id]: mark } }));
@@ -216,11 +233,10 @@ function RollEditor({
             ) : null}
           </View>
           <PressableFeedback
-            isDisabled={future || save.isPending || (!dirty && !!roll.roll)}
-            onPress={() => save.mutate('save')}
+            isDisabled={future || (!dirty && !!roll.roll)}
+            onPress={() => void save('save')}
             accessibilityRole="button"
             accessibilityLabel={saveLabel}
-            accessibilityState={{ busy: save.isPending }}
             style={[
               styles.save,
               {
@@ -241,7 +257,7 @@ function RollEditor({
                 },
               ]}
             >
-              {save.isPending ? 'Guardando…' : saveLabel}
+              {saveLabel}
             </Text>
           </PressableFeedback>
         </BottomActionBar>
@@ -263,6 +279,29 @@ function RollEditor({
             icon="clock"
             text="Esta sesión aún no ha llegado: no se puede pasar lista."
           />
+        ) : null}
+        {restored && dirty ? (
+          <Notice
+            icon="clock"
+            text="Tenías esta lista a medio marcar: sigue donde lo dejaste."
+          />
+        ) : null}
+        {queued ? (
+          <View style={styles.upload}>
+            <UploadStatus
+              state={queued.status}
+              onRetry={() => void outbox?.retry(key)}
+            />
+            {queued.error &&
+            !queued.error.auto &&
+            queued.status !== 'applied' ? (
+              <Text style={[styles.sub, { color: t.warningText }]}>
+                {queued.error.reason === 'session_in_future'
+                  ? 'Esta sesión aún no ha llegado.'
+                  : queued.error.message}
+              </Text>
+            ) : null}
+          </View>
         ) : null}
         {notSaved.length > 0 ? (
           <Notice
@@ -360,8 +399,7 @@ function RollEditor({
 
       {!roll.roll && !future ? (
         <PressableFeedback
-          onPress={() => save.mutate('skip')}
-          isDisabled={save.isPending}
+          onPress={() => void save('skip')}
           accessibilityRole="button"
           style={[styles.skip, { borderColor: t.separator }]}
         >
@@ -439,6 +477,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   help: { gap: 8 },
+  upload: { gap: 4, marginTop: 6 },
   skip: {
     minHeight: 48,
     borderRadius: radii.md,

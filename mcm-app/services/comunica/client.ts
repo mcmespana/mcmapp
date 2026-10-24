@@ -11,6 +11,8 @@
 
 import { z } from 'zod';
 import {
+  type CodeRequest,
+  CodeResponse,
   ErrorBody,
   type ErrorCode,
   GroupsResponse,
@@ -19,7 +21,10 @@ import {
   RollDetail,
   type RollWrite,
   RollWriteResult,
+  RefreshResponse,
   TodayResponse,
+  type VerifyRequest,
+  VerifyResponse,
 } from './contract';
 import { logger } from '@/utils/logger';
 
@@ -29,6 +34,12 @@ export interface ReadOptions {
 }
 
 export interface ComunicaApi {
+  // Acceso (plan 02). Sin sesión.
+  requestCode(body: CodeRequest): Promise<CodeResponse>;
+  verify(body: VerifyRequest): Promise<VerifyResponse>;
+  refresh(refreshToken: string): Promise<RefreshResponse>;
+  logout(refreshToken: string): Promise<void>;
+
   getMe(): Promise<MeResponse>;
   getGroups(opts?: ReadOptions): Promise<GroupsResponse>;
   getToday(opts?: ReadOptions): Promise<TodayResponse>;
@@ -52,18 +63,22 @@ export class ComunicaApiError extends Error {
   readonly code: ApiErrorCode;
   readonly status: number;
   readonly reason?: string;
+  /** Con `rate_limited`: segundos que hay que esperar. */
+  readonly retryAfter?: number;
 
   constructor(
     code: ApiErrorCode,
     message: string,
     status = 0,
     reason?: string,
+    retryAfter?: number,
   ) {
     super(message);
     this.name = 'ComunicaApiError';
     this.code = code;
     this.status = status;
     this.reason = reason;
+    this.retryAfter = retryAfter;
   }
 
   /** Vale la pena reintentar: el CRM o la red, no la petición. */
@@ -105,7 +120,7 @@ export function createHttpClient({
   const root = baseUrl.replace(/\/+$/, '');
 
   async function request<S extends z.ZodType>(
-    method: 'GET' | 'PUT' | 'POST',
+    method: 'GET' | 'PUT' | 'POST' | 'DELETE',
     path: string,
     schema: S,
     body?: unknown,
@@ -145,6 +160,7 @@ export function createHttpClient({
         parsed.success ? parsed.data.error.message : `HTTP ${res.status}`,
         res.status,
         parsed.success ? parsed.data.error.reason : undefined,
+        parsed.success ? parsed.data.error.retryAfter : undefined,
       );
       if (err.retryable && retries > 0) {
         return request(method, path, schema, body, retries - 1);
@@ -178,6 +194,13 @@ export function createHttpClient({
   const enc = encodeURIComponent;
 
   return {
+    requestCode: (body) => request('POST', '/v1/auth/code', CodeResponse, body),
+    verify: (body) => request('POST', '/v1/auth/verify', VerifyResponse, body),
+    refresh: (refreshToken) =>
+      request('POST', '/v1/auth/refresh', RefreshResponse, { refreshToken }),
+    logout: async (refreshToken) => {
+      await request('POST', '/v1/auth/logout', z.unknown(), { refreshToken });
+    },
     getMe: () => request('GET', '/v1/me', MeResponse, undefined, READ_RETRIES),
     getGroups: (opts) =>
       request(

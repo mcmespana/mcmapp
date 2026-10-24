@@ -56,6 +56,8 @@ export const ErrorBody = z.object({
     message: z.string(),
     /** Detalle de máquina: p. ej. `nothing_marked` en un `validation`. */
     reason: z.string().optional(),
+    /** Con `rate_limited`: segundos que hay que esperar. */
+    retryAfter: z.number().int().nonnegative().optional(),
   }),
 });
 export type ErrorBody = z.infer<typeof ErrorBody>;
@@ -195,6 +197,69 @@ const read = <T extends z.ZodRawShape>(shape: T) =>
 export const MeResponse = read({ me: Me });
 export type MeResponse = z.infer<typeof MeResponse>;
 
+/** `POST /v1/auth/code` — misma respuesta exista o no el correo. */
+export const CodeRequest = z.union([
+  z.object({ email: z.email() }),
+  z.object({ dni: z.string().min(5).max(12) }),
+]);
+export type CodeRequest = z.infer<typeof CodeRequest>;
+export const CodeResponse = z.object({
+  /** El correo tapado: «m•••@gmail.com». */
+  sentTo: z.string(),
+});
+export type CodeResponse = z.infer<typeof CodeResponse>;
+
+/** `POST /v1/auth/verify` */
+export const VerifyRequest = z.union([
+  z.object({
+    email: z.email(),
+    code: z.string().regex(/^\d{6}$/),
+    personId: Id.optional(),
+  }),
+  z.object({
+    dni: z.string(),
+    code: z.string().regex(/^\d{6}$/),
+    personId: Id.optional(),
+  }),
+  z.object({ linkToken: z.string().min(1), personId: Id.optional() }),
+]);
+export type VerifyRequest = z.infer<typeof VerifyRequest>;
+
+export const Tokens = z.object({
+  accessToken: z.string().min(1),
+  refreshToken: z.string().min(1),
+  /** Segundos que vale el de acceso (~15 min). */
+  expiresIn: z.number().int().positive(),
+});
+export type Tokens = z.infer<typeof Tokens>;
+
+export const PersonChoice = z.object({
+  personId: Id,
+  name: z.string(),
+  delegation: z.string(),
+});
+export type PersonChoice = z.infer<typeof PersonChoice>;
+
+/** O entra, o hay que elegir ficha (un correo de varias fichas del CRM). */
+export const VerifyResponse = z.union([
+  Tokens.extend({ me: Me }),
+  z.object({ choose: z.array(PersonChoice).min(2) }),
+]);
+export type VerifyResponse = z.infer<typeof VerifyResponse>;
+
+/** `POST /v1/auth/refresh` — el de refresco ROTA en cada uso. */
+export const RefreshRequest = z.object({ refreshToken: z.string().min(1) });
+export const RefreshResponse = Tokens;
+export type RefreshResponse = z.infer<typeof RefreshResponse>;
+
+/** Motivos de `validation` en el acceso. */
+export const AUTH_REJECTIONS = [
+  'bad_code',
+  'code_expired',
+  'link_expired',
+  'blocked',
+] as const;
+
 // ── Pasar Lista (plan 04 «Datos») ───────────────────────────────────────────
 
 export const GroupWithMonitors = GroupSummary.extend({
@@ -301,6 +366,24 @@ export type HealthNote = z.infer<typeof HealthNote>;
  * lleva texto de salud).
  */
 export const ROUTES = {
+  code: {
+    method: 'POST',
+    path: '/v1/auth/code',
+    response: CodeResponse,
+    persist: false,
+  },
+  verify: {
+    method: 'POST',
+    path: '/v1/auth/verify',
+    response: VerifyResponse,
+    persist: false,
+  },
+  refresh: {
+    method: 'POST',
+    path: '/v1/auth/refresh',
+    response: RefreshResponse,
+    persist: false,
+  },
   me: { method: 'GET', path: '/v1/me', response: MeResponse, persist: true },
   groups: {
     method: 'GET',

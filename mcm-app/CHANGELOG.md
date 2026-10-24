@@ -4,6 +4,21 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-24 04:30 — Área nativa de Comunica: entrar con código y cola de escrituras (rama `nuevoComunicaChulo`)
+
+- **Acceso nativo** (plan 02): «Entra en tu área» con el correo de la cuenta
+  de la app ya puesto (o el DNI), código de 6 cifras, «¿Quién eres?» si el
+  correo es de varias fichas y «Tu cuenta» con «Salir». Sesión con token de
+  acceso en memoria y de refresco que rota (`services/comunica/session.ts`).
+  Con el servidor falso el código es `123456`.
+- **Cola de escrituras y caché en el móvil** (plan 01): guardar una lista va
+  al móvil al instante y sube sola (al reconectar, al volver la app, al abrir
+  el área), con su estado en pantalla. Lo marcado se guarda a cada toque. La
+  caché se guarda por persona (nunca la salud) y salir lo borra todo. Sobre
+  AsyncStorage hasta que llegue `expo-sqlite` con la 2.2.
+- La build de TestFlight lanzada desde esta rama lleva el servidor falso
+  (`eas.json`, perfil `production`): **quitarlo antes de mergear a `main`**.
+
 ## 2026-10-24 02:00 — Área privada nativa de Comunica: cimientos con datos inventados (rama `nuevoComunicaChulo`)
 
 Primeros planes de `docs/planes/area-nativa/` (00, parte del 01 y del 03, y un

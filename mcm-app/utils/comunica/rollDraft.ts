@@ -54,3 +54,50 @@ export function toRollWrite(draft: RollDraft, clientId: string): RollWrite {
   }
   return { clientId, action: 'save', marks, notes };
 }
+
+/**
+ * La lista como quedará al subir (actualización optimista, plan 01 §4): lo
+ * marcado se ve ya en la pantalla y en la portada, antes de que conteste el
+ * servidor. Cuando contesta, se cambia por lo que de verdad quedó.
+ */
+export function applyDraft(
+  roll: RollDetail,
+  draft: RollDraft,
+  action: 'save' | 'skip',
+  takenAt: string,
+): RollDetail {
+  if (action === 'skip') {
+    return {
+      ...roll,
+      roll: {
+        sessionId: roll.session.id,
+        groupId: roll.groupId,
+        status: 'skipped',
+        takenAt,
+        counts: { came: 0, missed: 0 },
+      },
+    };
+  }
+  const entries = roll.entries.map((e) => ({
+    ...e,
+    mark: draft.marks[e.person.id] ?? e.mark,
+    note: (draft.notes[e.person.id] ?? e.note).trim().slice(0, NOTE_MAX),
+  }));
+  const marks = entries.map((e) => e.mark);
+  return {
+    ...roll,
+    entries,
+    roll: {
+      sessionId: roll.session.id,
+      groupId: roll.groupId,
+      status: 'taken',
+      takenAt: roll.roll?.takenAt ?? takenAt,
+      counts: {
+        came: marks.filter((m) => m === 'yes' || m === 'partial').length,
+        missed: marks.filter(
+          (m) => m === 'no_justified' || m === 'no_unjustified',
+        ).length,
+      },
+    },
+  };
+}

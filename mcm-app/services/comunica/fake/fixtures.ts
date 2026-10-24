@@ -504,3 +504,31 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
 export function markOf(roll: FakeRoll | undefined, personId: string): Mark {
   return roll?.marks[personId] ?? null;
 }
+
+// ── Acceso (plan 02) ────────────────────────────────────────────────────────
+// Correos y DNI inventados. `ejemplo.org` no es de nadie de verdad.
+
+/** El código que vale en el servidor falso, para cualquier correo o DNI. */
+export const FAKE_CODE = '123456';
+
+/** Con qué correo entra cada persona de prueba. `dos@` es de dos fichas. */
+export const FAKE_EMAILS: Record<string, PersonaId[]> = {
+  'monitor@ejemplo.org': ['monitor'],
+  'coordinacion@ejemplo.org': ['coordination'],
+  'acompanamiento@ejemplo.org': ['accompaniment'],
+  'otra@ejemplo.org': ['other'],
+  'dos@ejemplo.org': ['monitor', 'coordination'],
+};
+
+export const FAKE_DNIS: Record<string, PersonaId> = {
+  '12345678Z': 'monitor',
+};
+
+/** Este correo siempre da `rate_limited`. */
+export const FAKE_RATE_LIMITED_EMAIL = 'limite@ejemplo.org';
+
+/** Tokens del enlace del correo (`acceso_app`): uno vale, otro ha caducado. */
+export const FAKE_LINK_TOKENS: Record<string, PersonaId | null> = {
+  'enlace-valido': 'monitor',
+  'enlace-caducado': null,
+};

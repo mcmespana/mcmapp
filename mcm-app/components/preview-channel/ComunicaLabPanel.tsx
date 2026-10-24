@@ -8,7 +8,13 @@ import { durations } from '@/constants/animations';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
-import { getFakeServer, type FakeControls } from '@/services/comunica';
+import {
+  FAKE_CODE,
+  getFakeServer,
+  type FakeControls,
+} from '@/services/comunica';
+
+import { signIn } from '@/services/comunica/session';
 
 import {
   addDays,
@@ -80,8 +86,18 @@ export function ComunicaLabPanel() {
           ['accompaniment', 'Acompañamiento'],
           ['other', 'Otra delegación'],
         ]}
-        onChange={(persona) => set({ persona })}
+        onChange={(persona) => {
+          set({ persona });
+          // Entra directamente, sin código: es para probar.
+          const t = fake.issueSession(persona);
+          void signIn(t, t.me);
+        }}
       />
+      <Text style={styles.hint}>
+        O desde «Entra en tu área»: monitor@ejemplo.org, coordinacion@,
+        acompanamiento@, otra@ o dos@ (dos fichas), o el DNI 12345678Z. El
+        código es siempre {FAKE_CODE}.
+      </Text>
 
       <Text style={styles.label}>Reloj del servidor</Text>
       <Chips
@@ -212,6 +228,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.75)',
     marginTop: spacing.sm,
   },
+  hint: { ...typography.caption, color: 'rgba(255,255,255,0.75)' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
     minHeight: 36,

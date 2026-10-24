@@ -73,7 +73,18 @@ describe('servidor falso', () => {
       .sessions[0];
     const roll = await s.getRoll(session.id, gid);
     const withHealth = Object.keys(s.data.health)[0];
+    const code = await s.requestCode({ email: 'monitor@ejemplo.org' });
+    const verified = await s.verify({
+      email: 'monitor@ejemplo.org',
+      code: '123456',
+    });
+    const refreshed = await s.refresh(
+      'refreshToken' in verified ? verified.refreshToken : '',
+    );
     const results: Record<keyof typeof ROUTES, unknown> = {
+      code,
+      verify: verified,
+      refresh: refreshed,
       me: await s.getMe(),
       groups,
       today: await s.getToday(),

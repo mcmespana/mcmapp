@@ -6,16 +6,19 @@
 //
 //   index    → la puerta: área nativa o la WebView de siempre (el legado).
 //   lista    → marcar la lista de un grupo en una sesión (Pasar Lista).
+//   acceso-codigo, acceso-elegir → entrar (plan 02; «Entra en tu área» es la
+//              propia puerta cuando no hay sesión).
+//   yo       → tu cuenta y salir.
 //   web      → el legado abierto a propósito (comparar, o lo que no es nativo).
 //   muestra  → los componentes del área de un vistazo (solo desarrollo/preview).
 //
-// El `QueryClient` del área vive aquí y no en la raíz: no toca al resto de la
-// app y se va con el interruptor.
+// El motor del área (consultas, sesión, caché por persona y cola) vive aquí y
+// no en la raíz: no toca al resto de la app y se va con el interruptor.
 
 import React from 'react';
 import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
-import ComunicaQueryProvider from '@/components/comunica/comun/ComunicaQueryProvider';
+import ComunicaAreaProvider from '@/components/comunica/comun/ComunicaAreaProvider';
 import { TabHeaderColors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -24,7 +27,7 @@ export default function ComunicaLayout() {
   const ios = Platform.OS === 'ios';
   const tint = ios ? themeColors(isDark).headerTint : '#fff';
   return (
-    <ComunicaQueryProvider>
+    <ComunicaAreaProvider>
       <Stack
         initialRouteName="index"
         screenOptions={{
@@ -46,9 +49,12 @@ export default function ComunicaLayout() {
       >
         <Stack.Screen name="index" options={{ title: 'Comunica' }} />
         <Stack.Screen name="lista" options={{ title: 'Lista' }} />
+        <Stack.Screen name="acceso-codigo" options={{ title: 'Código' }} />
+        <Stack.Screen name="acceso-elegir" options={{ title: 'Elegir' }} />
+        <Stack.Screen name="yo" options={{ title: 'Tu cuenta' }} />
         <Stack.Screen name="web" options={{ headerShown: false }} />
         <Stack.Screen name="muestra" options={{ title: 'Muestra' }} />
       </Stack>
-    </ComunicaQueryProvider>
+    </ComunicaAreaProvider>
   );
 }

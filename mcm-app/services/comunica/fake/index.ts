@@ -19,6 +19,7 @@
 // Solo lo importa `services/comunica/` (lo vigila un test).
 
 import {
+  CodeRequest,
   GroupsResponse,
   HealthNote,
   MeResponse,
@@ -31,9 +32,17 @@ import {
   type RollCallSummary,
   type Role,
   type Me,
+  VerifyRequest,
+  VerifyResponse,
+  type Tokens,
 } from '../contract';
 import { ComunicaApiError, type ComunicaApi } from '../client';
 import {
+  FAKE_CODE,
+  FAKE_DNIS,
+  FAKE_EMAILS,
+  FAKE_LINK_TOKENS,
+  FAKE_RATE_LIMITED_EMAIL,
   generateFakeData,
   markOf,
   type FakeData,
@@ -78,6 +87,22 @@ const PERSONA_ROLES: Record<PersonaId, { roles: Role[]; scope: Me['scope'] }> =
     other: { roles: ['monitor'], scope: 'delegation' },
   };
 
+export interface FakeServerOptions {
+  /**
+   * El token de acceso de la sesión de la app. Con él, el falso exige sesión
+   * como el de verdad (401 sin ella). Sin él (los tests de siempre), «entra»
+   * como `controls.persona`.
+   */
+  getAccessToken?: () => string | null | Promise<string | null>;
+}
+
+/** Lo que dura el token de acceso del falso (como el de verdad, ~15 min). */
+export const FAKE_ACCESS_TTL_S = 15 * 60;
+/** Lo que dura un código pedido. */
+const CODE_TTL_MS = 40 * 60_000;
+/** Códigos fallidos que bloquean esa vía una hora. */
+const MAX_BAD_CODES = 10;
+
 export interface FakeServer extends ComunicaApi {
   controls: FakeControls;
   setControls(patch: Partial<FakeControls>): void;
@@ -88,6 +113,10 @@ export interface FakeServer extends ComunicaApi {
   reset(): void;
   /** Los datos en bruto, para los tests. */
   readonly data: FakeData;
+  /** Entra directamente como una persona de prueba (Laboratorio Alpha). */
+  issueSession(persona: PersonaId): Tokens & { me: Me };
+  /** Revoca todas las sesiones: el siguiente refresco falla. */
+  revokeAll(): void;
 }
 
 const forbidden = () =>
@@ -97,12 +126,26 @@ const validation = (reason: string, message: string) =>
 
 export function createFakeServer(
   initial: Partial<FakeControls> = {},
+  options: FakeServerOptions = {},
 ): FakeServer {
   let data = generateFakeData();
   let controls: FakeControls = { ...DEFAULT_CONTROLS, ...initial };
   let writeCount = 0;
   const seenClientIds = new Map<string, unknown>();
   const listeners = new Set<() => void>();
+  // Sesiones: token de acceso → persona y caducidad; de refresco → persona,
+  // si ya se usó (rota en cada uso) y su familia (para revocar en bloque).
+  const access = new Map<string, { persona: PersonaId; exp: number }>();
+  const refreshTokens = new Map<
+    string,
+    { persona: PersonaId; used: boolean; family: number }
+  >();
+  const revokedFamilies = new Set<number>();
+  const codes = new Map<string, number>();
+  const badCodes = new Map<string, number>();
+  let tokenSeq = 0;
+  /** La persona de la petición en curso (la pone `gate`). */
+  let current: PersonaId = controls.persona;
 
   const now = () => (controls.clock ? new Date(controls.clock) : new Date());
   const nowIso = () =>
@@ -111,19 +154,83 @@ export function createFakeServer(
       .replace(/\.\d{3}Z$/, 'Z');
   const today = () => madridDay(now());
 
-  async function gate(route: RouteName, write = false) {
+  async function gate(route: RouteName, write = false, auth = true) {
     if (controls.latencyMs > 0) {
       await new Promise((r) => setTimeout(r, controls.latencyMs));
     }
     if (controls.offline) {
       throw new ComunicaApiError('network', 'Sin conexión con el servidor');
     }
+    if (auth) {
+      if (options.getAccessToken) {
+        const token = await options.getAccessToken();
+        const s = token ? access.get(token) : undefined;
+        if (!s || s.exp <= Date.now()) {
+          throw new ComunicaApiError('unauthenticated', 'Sesión caducada', 401);
+        }
+        current = s.persona;
+      } else {
+        current = controls.persona;
+      }
+    }
     if (controls.failRoute === route || (write && controls.crmDown)) {
       throw new ComunicaApiError('crm_unavailable', 'El CRM no responde', 503);
     }
   }
 
-  const persona = () => data.personas[controls.persona];
+  const personaOf = (personId: string): PersonaId | undefined =>
+    (Object.keys(data.personas) as PersonaId[]).find(
+      (k) => data.personas[k].personId === personId,
+    );
+
+  function meOf(persona: PersonaId): Me {
+    const p = data.people.find(
+      (x) => x.id === data.personas[persona].personId,
+    )!;
+    const { roles, scope } = PERSONA_ROLES[persona];
+    return {
+      personId: p.id,
+      name: `${p.firstName} ${p.lastName}`,
+      delegation: data.delegations.find((d) => d.id === p.delegationId)!,
+      roles,
+      scope,
+      canSeeHealth: true,
+    };
+  }
+
+  function issue(persona: PersonaId, family = ++tokenSeq): Tokens {
+    tokenSeq += 1;
+    const accessToken = `fa-${tokenSeq}-${persona}`;
+    const refreshToken = `fr-${tokenSeq}-${persona}`;
+    access.set(accessToken, {
+      persona,
+      exp: Date.now() + FAKE_ACCESS_TTL_S * 1000,
+    });
+    refreshTokens.set(refreshToken, { persona, used: false, family });
+    return { accessToken, refreshToken, expiresIn: FAKE_ACCESS_TTL_S };
+  }
+
+  /** «m•••@ejemplo.org». */
+  const mask = (email: string) => {
+    const [user, domain] = email.split('@');
+    return `${user.charAt(0)}•••@${domain}`;
+  };
+
+  const personasFor = (
+    body: { email: string } | { dni: string },
+  ): PersonaId[] =>
+    'email' in body
+      ? (FAKE_EMAILS[body.email.trim().toLowerCase()] ?? [])
+      : FAKE_DNIS[body.dni.trim().toUpperCase()]
+        ? [FAKE_DNIS[body.dni.trim().toUpperCase()]]
+        : [];
+
+  const identity = (body: { email: string } | { dni: string }) =>
+    'email' in body
+      ? `e:${body.email.trim().toLowerCase()}`
+      : `d:${body.dni.trim().toUpperCase()}`;
+
+  const persona = () => data.personas[current];
   const me = () => data.people.find((p) => p.id === persona().personId)!;
   const delegationId = () => me().delegationId;
   const person = (id: string) => data.people.find((p) => p.id === id);
@@ -239,25 +346,133 @@ export function createFakeServer(
       controls = { ...DEFAULT_CONTROLS };
       writeCount = 0;
       seenClientIds.clear();
+      codes.clear();
+      badCodes.clear();
       notify();
+    },
+    issueSession(p) {
+      return { ...issue(p), me: meOf(p) };
+    },
+    revokeAll() {
+      access.clear();
+      refreshTokens.forEach((t) => revokedFamilies.add(t.family));
+    },
+
+    async requestCode(body) {
+      await gate('code', false, false);
+      const parsed = CodeRequest.safeParse(body);
+      if (!parsed.success) {
+        throw validation('bad_body', 'Escribe un correo o un DNI válido');
+      }
+      const b = parsed.data;
+      if ('email' in b && b.email.toLowerCase() === FAKE_RATE_LIMITED_EMAIL) {
+        throw new ComunicaApiError(
+          'rate_limited',
+          'Demasiados intentos',
+          429,
+          undefined,
+          20 * 60,
+        );
+      }
+      codes.set(identity(b), now().getTime());
+      // La MISMA respuesta exista o no.
+      if ('email' in b) return { sentTo: mask(b.email.trim().toLowerCase()) };
+      const found = personasFor(b)[0];
+      return {
+        sentTo: found
+          ? mask(
+              Object.keys(FAKE_EMAILS).find((e) =>
+                FAKE_EMAILS[e].includes(found),
+              )!,
+            )
+          : 'el correo de tu ficha',
+      };
+    },
+
+    async verify(body) {
+      await gate('verify', false, false);
+      const parsed = VerifyRequest.safeParse(body);
+      if (!parsed.success) throw validation('bad_code', 'Código incorrecto');
+      const b = parsed.data;
+      let candidates: PersonaId[];
+      if ('linkToken' in b) {
+        if (!(b.linkToken in FAKE_LINK_TOKENS)) {
+          throw validation('link_expired', 'El enlace no vale');
+        }
+        const p = FAKE_LINK_TOKENS[b.linkToken];
+        if (!p) throw validation('link_expired', 'El enlace ha caducado');
+        candidates = [p];
+      } else {
+        const id = identity(b);
+        if ((badCodes.get(id) ?? 0) >= MAX_BAD_CODES) {
+          throw new ComunicaApiError(
+            'rate_limited',
+            'Bloqueado',
+            429,
+            'blocked',
+            3600,
+          );
+        }
+        const issuedAt = codes.get(id);
+        if (!issuedAt || now().getTime() - issuedAt > CODE_TTL_MS) {
+          throw validation('code_expired', 'El código ha caducado');
+        }
+        candidates = personasFor(b);
+        if (b.code !== FAKE_CODE || candidates.length === 0) {
+          badCodes.set(id, (badCodes.get(id) ?? 0) + 1);
+          throw validation('bad_code', 'Código incorrecto');
+        }
+      }
+      if (b.personId) {
+        const chosen = personaOf(b.personId);
+        if (!chosen || !candidates.includes(chosen)) {
+          throw validation('bad_code', 'Esa ficha no es de este correo');
+        }
+        candidates = [chosen];
+      }
+      if (candidates.length > 1) {
+        return VerifyResponse.parse({
+          choose: candidates.map((c) => {
+            const m = meOf(c);
+            return {
+              personId: m.personId,
+              name: m.name,
+              delegation: m.delegation.name,
+            };
+          }),
+        });
+      }
+      if (!('linkToken' in b)) codes.delete(identity(b));
+      return VerifyResponse.parse({
+        ...issue(candidates[0]),
+        me: meOf(candidates[0]),
+      });
+    },
+
+    async refresh(refreshToken) {
+      await gate('refresh', false, false);
+      const t = refreshTokens.get(refreshToken);
+      if (!t || revokedFamilies.has(t.family)) {
+        throw new ComunicaApiError('unauthenticated', 'Sesión revocada', 401);
+      }
+      if (t.used) {
+        // Uno reutilizado revoca la sesión entera.
+        revokedFamilies.add(t.family);
+        throw new ComunicaApiError('unauthenticated', 'Sesión revocada', 401);
+      }
+      t.used = true;
+      return issue(t.persona, t.family);
+    },
+
+    async logout(refreshToken) {
+      await gate('refresh', false, false);
+      const t = refreshTokens.get(refreshToken);
+      if (t) revokedFamilies.add(t.family);
     },
 
     async getMe() {
       await gate('me');
-      const p = me();
-      const delegation = data.delegations.find((d) => d.id === p.delegationId)!;
-      const { roles, scope } = PERSONA_ROLES[controls.persona];
-      return MeResponse.parse({
-        generatedAt: nowIso(),
-        me: {
-          personId: p.id,
-          name: `${p.firstName} ${p.lastName}`,
-          delegation,
-          roles,
-          scope,
-          canSeeHealth: true,
-        },
-      });
+      return MeResponse.parse({ generatedAt: nowIso(), me: meOf(current) });
     },
 
     async getGroups() {
@@ -312,7 +527,7 @@ export function createFakeServer(
         (s) => s.delegationId === did && s.kind === 'meeting' && s.date <= day,
       );
       const isCoordination =
-        PERSONA_ROLES[controls.persona].roles.includes('coordination');
+        PERSONA_ROLES[current].roles.includes('coordination');
       return TodayResponse.parse({
         generatedAt: nowIso(),
         rollCalls: data.rolls

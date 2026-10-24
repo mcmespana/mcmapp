@@ -46,6 +46,7 @@ type IconMapping = {
   'list.bullet.clipboard': 'assignment';
   'chart.bar': 'bar-chart';
   lock: 'lock';
+  'person.crop.circle': 'account-circle';
 };
 
 type IconSymbolName = keyof IconMapping;
@@ -96,6 +97,7 @@ const MAPPING: IconMapping = {
   'list.bullet.clipboard': 'assignment',
   'chart.bar': 'bar-chart',
   lock: 'lock',
+  'person.crop.circle': 'account-circle',
 };
 
 /**

@@ -15,8 +15,17 @@
 
 import { createHttpClient, type ComunicaApi } from './client';
 import { createFakeServer, type FakeServer } from './fake';
+import {
+  configureSession,
+  currentAccessToken,
+  fakeOnlyAsyncSecretStore,
+  memorySecretStore,
+  withSession,
+} from './session';
 
 export type { FakeControls, FakeServer } from './fake';
+/** El código del servidor falso, para el Laboratorio Alpha. */
+export { FAKE_CODE } from './fake/fixtures';
 
 export type ComunicaApiTarget =
   { kind: 'fake' } | { kind: 'http'; baseUrl: string } | { kind: 'off' };
@@ -41,7 +50,6 @@ const isDev = (): boolean =>
 let target: ComunicaApiTarget | null = null;
 let api: ComunicaApi | null = null;
 let fake: FakeServer | null = null;
-let tokenGetter: (() => string | null | Promise<string | null>) | undefined;
 
 export function comunicaApiTarget(): ComunicaApiTarget {
   if (!target) {
@@ -56,20 +64,32 @@ export function comunicaApiTarget(): ComunicaApiTarget {
 /** ¿Hay servidor (de verdad o falso)? Sin él, el área nativa no se enciende. */
 export const isComunicaApiAvailable = () => comunicaApiTarget().kind !== 'off';
 
-/** El cliente del área. Lanza si no hay servidor: antes, `isComunicaApiAvailable`. */
+/**
+ * El cliente del área, ya con la sesión puesta (`withSession`). Lanza si no hay
+ * servidor: antes, `isComunicaApiAvailable`.
+ */
 export function getComunicaApi(): ComunicaApi {
   if (api) return api;
   const t = comunicaApiTarget();
   if (t.kind === 'off') throw new Error('Área nativa de Comunica sin servidor');
+  let raw: ComunicaApi;
   if (t.kind === 'fake') {
-    fake = createFakeServer();
-    api = fake;
+    fake = createFakeServer({}, { getAccessToken: currentAccessToken });
+    raw = fake;
   } else {
-    api = createHttpClient({
+    raw = createHttpClient({
       baseUrl: t.baseUrl,
-      getToken: () => tokenGetter?.() ?? null,
+      getToken: currentAccessToken,
     });
   }
+  configureSession({
+    refresh: (r) => raw.refresh(r),
+    logout: (r) => raw.logout(r),
+    // Hasta que llegue `expo-secure-store` (2.2), el refresco del servidor de
+    // verdad vive solo en memoria. Ver `session.ts`.
+    secrets: t.kind === 'fake' ? fakeOnlyAsyncSecretStore : memorySecretStore(),
+  });
+  api = withSession(raw);
   return api;
 }
 
@@ -88,13 +108,6 @@ export function getFakeServer(): FakeServer | null {
 export function comunicaNow(): Date {
   const clock = fake?.controls.clock;
   return clock ? new Date(clock) : new Date();
-}
-
-/** El plan 02 engancha aquí la sesión. */
-export function setComunicaTokenGetter(
-  getter: (() => string | null | Promise<string | null>) | undefined,
-): void {
-  tokenGetter = getter;
 }
 
 /** Solo tests: olvida el servidor elegido. */
