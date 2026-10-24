@@ -33,12 +33,12 @@ Cómo funciona cada sistema de la app, de principio a fin.
 Formatos acordados entre la app y el panel de administración (`mcmpanel`).
 Si cambias uno de estos formatos, actualiza el contrato.
 
-| Documento                                                          | Qué cubre                                                                                                            |
-| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| [NOTIFICACIONES_CONTRATO.md](contratos/NOTIFICACIONES_CONTRATO.md) | Payload de notificaciones push: rutas, `actionButtons[]`, segmentación                                               |
-| [ENCUESTAS_CONTRATO.md](contratos/ENCUESTAS_CONTRATO.md)           | Estructura de encuestas/evaluaciones en Firebase                                                                     |
-| [PANEL_PERFILES.md](contratos/PANEL_PERFILES.md)                   | Sistema de perfiles: nodo `/profileConfig`, delegaciones, visibilidad                                                |
-| [COMUNICA_WEBVIEW.md](contratos/COMUNICA_WEBVIEW.md)               | Comunica embebido: `?app=1`, tema claro/oscuro (`?theme=` + cookie), zona segura, enlaces de acceso del correo       |
+| Documento                                                          | Qué cubre                                                                                                      |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| [NOTIFICACIONES_CONTRATO.md](contratos/NOTIFICACIONES_CONTRATO.md) | Payload de notificaciones push: rutas, `actionButtons[]`, segmentación                                         |
+| [ENCUESTAS_CONTRATO.md](contratos/ENCUESTAS_CONTRATO.md)           | Estructura de encuestas/evaluaciones en Firebase                                                               |
+| [PANEL_PERFILES.md](contratos/PANEL_PERFILES.md)                   | Sistema de perfiles: nodo `/profileConfig`, delegaciones, visibilidad                                          |
+| [COMUNICA_WEBVIEW.md](contratos/COMUNICA_WEBVIEW.md)               | Comunica embebido: `?app=1`, tema claro/oscuro (`?theme=` + cookie), zona segura, enlaces de acceso del correo |
 | [COMUNICA_API.md](contratos/COMUNICA_API.md)                       | Área privada nativa: contrato con `mcm-comunica-api` (rutas, errores, fechas, salud). Hoy lo sirve un servidor falso |
 
 ## Planes técnicos
@@ -55,16 +55,16 @@ Si cambias uno de estos formatos, actualiza el contrato.
 
 **🟢 Vivos:**
 
-| Documento                                                                 | Qué cubre                                                                                                                                      |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| [BACKLOG.md](planes/BACKLOG.md)                                           | ★ Orden de ejecución, decisiones pendientes, protocolo de trabajo                                                                              |
-| [planes/README.md](planes/README.md)                                      | ★★ Índice de estado: qué plan está vivo, cuál archivado y cuál es futuro lejano                                                                |
-| [PLAN_UI_NATIVA.md](planes/PLAN_UI_NATIVA.md)                             | Unificación de UI y componentes nativos (headers, botones, inputs, color) — 🟡 Fase 2 en curso                                                 |
-| [PLAN_HOJA_CANCION.md](planes/PLAN_HOJA_CANCION.md)                       | Hoja de canción para músicos y cantantes — en rama: hoja, modo atril, onboarding, canciones repasadas; queda el admin fiel a la app            |
-| [PLAN_INTEGRACIONES.md](planes/PLAN_INTEGRACIONES.md)                     | Integraciones app ↔ panel ↔ cantoral — 🟡 solo queda la **Integración D** (reglas Firebase)                                                    |
-| [PLAN_CALIDAD.md](planes/PLAN_CALIDAD.md)                                 | Saneamiento de código — 🟡 Fase 0 hecha; **Fase 1 descartada**. Su §0 explica cómo organizar código que solo edita una IA                      |
-| [archivo/PLAN_CARISMOCHITO.md](planes/archivo/PLAN_CARISMOCHITO.md)       | ✅ Hecho (2026-09-26). Cómo funciona hoy: [funcionalidades/CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)                                   |
-| [PLAN_DISENO.md](planes/PLAN_DISENO.md)                                   | ⏳ Unificación del diseño: incoherencias de tokens con evidencia + mejoras. Bolsa oportunista, tareas sueltas de un commit                     |
+| Documento                                                           | Qué cubre                                                                                                                           |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [BACKLOG.md](planes/BACKLOG.md)                                     | ★ Orden de ejecución, decisiones pendientes, protocolo de trabajo                                                                   |
+| [planes/README.md](planes/README.md)                                | ★★ Índice de estado: qué plan está vivo, cuál archivado y cuál es futuro lejano                                                     |
+| [PLAN_UI_NATIVA.md](planes/PLAN_UI_NATIVA.md)                       | Unificación de UI y componentes nativos (headers, botones, inputs, color) — 🟡 Fase 2 en curso                                      |
+| [PLAN_HOJA_CANCION.md](planes/PLAN_HOJA_CANCION.md)                 | Hoja de canción para músicos y cantantes — en rama: hoja, modo atril, onboarding, canciones repasadas; queda el admin fiel a la app |
+| [PLAN_INTEGRACIONES.md](planes/PLAN_INTEGRACIONES.md)               | Integraciones app ↔ panel ↔ cantoral — 🟡 solo queda la **Integración D** (reglas Firebase)                                         |
+| [PLAN_CALIDAD.md](planes/PLAN_CALIDAD.md)                           | Saneamiento de código — 🟡 Fase 0 hecha; **Fase 1 descartada**. Su §0 explica cómo organizar código que solo edita una IA           |
+| [archivo/PLAN_CARISMOCHITO.md](planes/archivo/PLAN_CARISMOCHITO.md) | ✅ Hecho (2026-09-26). Cómo funciona hoy: [funcionalidades/CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)                        |
+| [PLAN_DISENO.md](planes/PLAN_DISENO.md)                             | ⏳ Unificación del diseño: incoherencias de tokens con evidencia + mejoras. Bolsa oportunista, tareas sueltas de un commit          |
 | [ANALISIS_AREA_PRIVADA_NATIVA.md](planes/ANALISIS_AREA_PRIVADA_NATIVA.md) | 🔬 Análisis: el área privada de Comunica en nativo con backend propio. Planes de la app en [planes/area-nativa/](planes/area-nativa/README.md) |
 
 **🔵 Futuro lejano** (no se tocan hasta que el usuario lo pida — decisión de 2026-08-15):
