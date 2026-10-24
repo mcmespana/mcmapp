@@ -115,6 +115,7 @@ export function ComunicaLabPanel() {
             controls.crmDown && 'crm',
             controls.latencyMs > 1000 && 'slow',
             controls.cannotRegister && 'register',
+            controls.seasonClosed && 'closed',
           ].filter(Boolean) as string[]
         }
         options={[
@@ -122,6 +123,7 @@ export function ComunicaLabPanel() {
           ['crm', 'CRM caído al guardar'],
           ['slow', 'Lento (2 s)'],
           ['register', 'No se puede inscribir'],
+          ['closed', 'Curso cerrado'],
         ]}
         onChange={(k) =>
           set(
@@ -131,7 +133,9 @@ export function ComunicaLabPanel() {
                 ? { crmDown: !controls.crmDown }
                 : k === 'slow'
                   ? { latencyMs: controls.latencyMs > 1000 ? 300 : 2000 }
-                  : { cannotRegister: !controls.cannotRegister },
+                  : k === 'register'
+                    ? { cannotRegister: !controls.cannotRegister }
+                    : { seasonClosed: !controls.seasonClosed },
           )
         }
       />

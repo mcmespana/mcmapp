@@ -6,6 +6,8 @@
 //
 //   index    → la puerta: área nativa o la WebView de siempre (el legado).
 //   pasar-lista/grupos, pasar-lista/[groupId], …/historial → Pasar Lista.
+//   grupos, grupos/[groupId], grupos/sin-grupo, grupos/persona/[personId]
+//            → Grupos y fichas y la ficha del participante (plan 05).
 //   acceso-codigo, acceso-elegir → entrar (plan 02; «Entra en tu área» es la
 //              propia puerta cuando no hay sesión).
 //   yo       → tu cuenta y salir.
@@ -59,6 +61,19 @@ export default function ComunicaLayout() {
         <Stack.Screen
           name="pasar-lista/[groupId]/historial"
           options={{ title: 'Historial de listas' }}
+        />
+        <Stack.Screen
+          name="grupos/index"
+          options={{ title: 'Grupos y fichas' }}
+        />
+        <Stack.Screen name="grupos/[groupId]" options={{ title: 'Grupo' }} />
+        <Stack.Screen
+          name="grupos/sin-grupo"
+          options={{ title: 'Sin grupo' }}
+        />
+        <Stack.Screen
+          name="grupos/persona/[personId]"
+          options={{ title: 'Ficha' }}
         />
         <Stack.Screen name="acceso-codigo" options={{ title: 'Código' }} />
         <Stack.Screen name="acceso-elegir" options={{ title: 'Elegir' }} />

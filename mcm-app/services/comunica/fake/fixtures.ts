@@ -788,13 +788,21 @@ function generateProfiles({
       const n = r() < 0.6 ? 2 : 1;
       for (let i = 0; i < n; i++) {
         guardianSeq += 1;
-        const firstName = pick(ADULT_FIRST);
+        // Nombres de mujer en los pares de `ADULT_FIRST`, de hombre en los
+        // impares: así «Madre» no le toca a un Sergio.
+        const female = n === 1 ? r() < 0.6 : i === 0;
+        const names = ADULT_FIRST.filter((_, k) => k % 2 === (female ? 0 : 1));
+        const firstName = pick(names);
         const lastName =
           i === 0 ? `${surname} ${pick(LAST)}` : `${pick(LAST)} ${pick(LAST)}`;
         const relationship =
           n === 1
-            ? pick(['Madre', 'Padre', 'Tutora legal', 'Abuela'])
-            : i === 0
+            ? pick(
+                female
+                  ? ['Madre', 'Tutora legal', 'Abuela']
+                  : ['Padre', 'Tutor legal', 'Abuelo'],
+              )
+            : female
               ? 'Madre'
               : 'Padre';
         const hasPhone = pid !== familyNoPhones && r() < 0.92;

@@ -11,7 +11,7 @@
 //   5. «Te faltan N listas».
 //   6. Tus otros grupos.
 //   7. «Pasar lista de otro grupo», por etapa.
-//   8. Pasar lista en un evento y el resumen de grupos.
+//   8. Grupos y fichas (plan 05), pasar lista en un evento y el resumen.
 //   9. Coordinación (solo a quien coordina).
 //
 // Con conexión, precarga las listas del atajo y de lo que falta (cinco como
@@ -453,6 +453,12 @@ function HomeContent({
       </Section>
 
       <Section>
+        <NavRow
+          icon="person.2"
+          title="Grupos y fichas"
+          subtitle="Teléfonos y fichas, sin pasar lista"
+          onPress={() => router.push('/comunica/grupos')}
+        />
         {today.eventsThisSeason > 0 ? (
           <NavRow
             icon="bus"
@@ -561,7 +567,7 @@ function MissingRow({
   );
 }
 
-type NavIcon = 'bus' | 'chart.bar' | 'person.3' | 'calendar';
+type NavIcon = 'bus' | 'chart.bar' | 'person.2' | 'person.3' | 'calendar';
 
 function NavRow({
   title,

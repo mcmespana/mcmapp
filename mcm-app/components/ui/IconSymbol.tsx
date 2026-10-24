@@ -65,6 +65,10 @@ type IconMapping = {
   graduationcap: 'school';
   'heart.text.square': 'health-and-safety';
   flag: 'flag';
+  envelope: 'mail';
+  plus: 'add';
+  link: 'link';
+  'chevron.up': 'expand-less';
 };
 
 type IconSymbolName = keyof IconMapping;
@@ -134,6 +138,10 @@ const MAPPING: IconMapping = {
   graduationcap: 'school',
   'heart.text.square': 'health-and-safety',
   flag: 'flag',
+  envelope: 'mail',
+  plus: 'add',
+  link: 'link',
+  'chevron.up': 'expand-less',
 };
 
 /**

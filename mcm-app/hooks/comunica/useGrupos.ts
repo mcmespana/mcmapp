@@ -76,8 +76,7 @@ export function groupPlaceholder(
   const g = groups?.groups.find((x) => x.id === groupId);
   if (!people || !g) return undefined;
   // `monitorNames` no es de `GroupSummary`: fuera.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { monitorNames, ...group } = g;
+  const { monitorNames: _monitorNames, ...group } = g;
   return {
     generatedAt: people.generatedAt,
     group,

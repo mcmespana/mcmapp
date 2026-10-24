@@ -78,6 +78,9 @@ export function getComunicaApi(): ComunicaApi {
   if (t.kind === 'fake') {
     fake = createFakeServer({}, { getAccessToken: currentAccessToken });
     raw = fake;
+    // Los mandos del falso, a mano para las capturas de web (Playwright no
+    // llega al Laboratorio Alpha). Solo el falso: datos inventados.
+    (globalThis as { __comunicaFake?: FakeServer }).__comunicaFake = fake;
   } else {
     raw = createHttpClient({
       baseUrl: t.baseUrl,

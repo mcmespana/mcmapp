@@ -70,6 +70,23 @@ describe('mapa de páginas', () => {
       nativeHrefFor({ internalpage: 'single_stic_password_change' }),
     ).toEqual({ pathname: '/comunica/yo' });
   });
+  it('Grupos y fichas y la ficha son nativas (plan 05)', () => {
+    expect(nativeHrefFor({ internalpage: 'single_stic_mis_grupos' })).toEqual({
+      pathname: '/comunica/grupos',
+    });
+    expect(
+      nativeHrefFor({
+        internalpage: 'single_stic_pasar_lista_ficha',
+        id: 'abc12345-ff',
+      }),
+    ).toEqual({
+      pathname: '/comunica/grupos/persona/[personId]',
+      params: { personId: 'abc12345-ff' },
+    });
+    expect(
+      nativeHrefFor({ internalpage: 'single_stic_pasar_lista_ficha' }),
+    ).toEqual({ pathname: '/comunica/grupos' });
+  });
   it('destino con las formas del plugin', () => {
     expect(
       parseDestination({

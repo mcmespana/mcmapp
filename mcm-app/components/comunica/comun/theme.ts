@@ -26,7 +26,7 @@ import brand, {
   themeColors,
   ToastColors,
 } from '@/constants/colors';
-import type { SetMark, Stage } from '@/services/comunica/contract';
+import type { Scarf, SetMark, Stage } from '@/services/comunica/contract';
 import { hexAlpha, onColor, readableOn } from '@/utils/colorUtils';
 
 /** Relleno de los estados de una marca. */
@@ -43,6 +43,34 @@ export const STAGE_COLOR: Record<Stage, string> = {
   com: brand.green,
   lc: brand.purple,
   apoyo: SystemGray.light.gray,
+};
+
+/**
+ * Pañuelos (plan 05). ⚠️ Provisional, como todo este fichero: el plugin usa
+ * siete hex fijos propios y la app no los tiene; hasta que se decida
+ * `territorio` (que también decide estos), los más parecidos de la app.
+ * Siempre como RELLENO de un punto, con el nombre escrito al lado.
+ */
+export const SCARF_FILL: Record<Scarf, string> = {
+  none: SystemGray.light.gray,
+  red: SwipeColors.remove,
+  green: SwipeColors.add,
+  blue: brand.info,
+  yellow: brand.yellow,
+  cross: brand.purple,
+  unknown: SystemGray.light.gray3,
+};
+
+/**
+ * Escala de los avisos de comportamiento (ámbar → naranja → rojo), igual en
+ * claro y en oscuro para que «el naranja» signifique siempre lo mismo. ⚠️
+ * Provisional (`territorio`): el plugin tiene sus hex; aquí, los de la app.
+ * El número de dentro, con `onColor()`.
+ */
+export const NOTICE_FILL: Record<1 | 2 | 3, string> = {
+  1: brand.yellow,
+  2: ToastColors.warning,
+  3: SwipeColors.remove,
 };
 
 export type ChipTone =

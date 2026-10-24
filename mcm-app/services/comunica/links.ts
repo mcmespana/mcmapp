@@ -105,6 +105,16 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
   single_stic_pasar_lista_marcar: () => ({
     pathname: '/comunica/pasar-lista/grupos',
   }),
+  // Grupos y fichas (plan 05). La ficha lleva al chaval en `participante`,
+  // que el destino no conserva: con un `id`, su ficha; si no, el índice.
+  single_stic_mis_grupos: () => ({ pathname: '/comunica/grupos' }),
+  single_stic_pasar_lista_ficha: (d) =>
+    d.id
+      ? {
+          pathname: '/comunica/grupos/persona/[personId]',
+          params: { personId: d.id },
+        }
+      : { pathname: '/comunica/grupos' },
   single_stic_password_change: () => ({ pathname: '/comunica/yo' }),
   single_stic_unsubscribe: () => ({ pathname: '/comunica/yo' }),
 };

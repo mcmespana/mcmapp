@@ -763,6 +763,20 @@ function RollEditor({
           }
         }}
         onClose={() => setSheetFor(null)}
+        // La ficha nativa (plan 05), con la sesión: un aviso puesto desde
+        // allí queda atado a esta lista. Anterior/siguiente recorren el grupo.
+        onOpenFicha={() => {
+          if (!sheetFor) return;
+          router.push({
+            pathname: '/comunica/grupos/persona/[personId]',
+            params: {
+              personId: sheetFor,
+              groupId: roll.groupId,
+              sessionId: roll.session.id,
+              from: 'roll',
+            },
+          });
+        }}
       />
     </AreaScreen>
   );
