@@ -1,0 +1,2390 @@
+diff --git a/mcm-app/__tests__/comunica/areaProvider.test.tsx b/mcm-app/__tests__/comunica/areaProvider.test.tsx
+new file mode 100644
+index 0000000..e4399c2
+--- /dev/null
++++ b/mcm-app/__tests__/comunica/areaProvider.test.tsx
+@@ -0,0 +1,193 @@
++/**
++ * Guardarraíles del plan 01 §7 con el CABLEADO REAL: el proveedor del área,
++ * los hooks de verdad y el servidor falso.
++ *
++ *   · Ninguna consulta de salud ni de datos personales llega al almacén del
++ *     móvil (lo que de verdad queda escrito, no un `QueryClient` de mentira).
++ *   · Salir borra consultas, cola y sesión, y nada de esa persona vuelve a
++ *     escribirse ni a subirse después (ni el reintento programado de la cola
++ *     ni el guardado de la caché).
++ */
++import React from 'react';
++import { act, create, type ReactTestRenderer } from 'react-test-renderer';
++import AsyncStorage from '@react-native-async-storage/async-storage';
++import { QueryClient } from '@tanstack/react-query';
++import ComunicaAreaProvider, {
++  useArea,
++} from '@/components/comunica/comun/ComunicaAreaProvider';
++import {
++  __resetComunicaApiForTests,
++  getComunicaApi,
++  getFakeServer,
++} from '@/services/comunica';
++import type { Outbox } from '@/services/comunica/outbox';
++import { dehydrateArea } from '@/services/comunica/persist';
++import {
++  __resetSessionForTests,
++  signIn,
++  signOut,
++} from '@/services/comunica/session';
++import { memoryBackend, setStorageBackend } from '@/services/comunica/storage';
++import { areaKey } from '@/hooks/comunica/useAreaQuery';
++import {
++  GRUPOS_KEYS,
++  useHealth,
++  usePeople,
++  usePersonal,
++} from '@/hooks/comunica/useGrupos';
++
++jest.mock('expo-image', () => ({
++  Image: {
++    clearDiskCache: jest.fn().mockResolvedValue(true),
++    clearMemoryCache: jest.fn().mockResolvedValue(true),
++    prefetch: jest.fn().mockResolvedValue(true),
++  },
++}));
++
++const wait = (ms: number) =>
++  act(async () => {
++    await new Promise((r) => setTimeout(r, ms));
++  });
++
++const probe: { outbox: Outbox | null } = { outbox: null };
++
++function Reader({ pid }: { pid: string }) {
++  usePeople();
++  useHealth(pid, true);
++  usePersonal(pid, true);
++  probe.outbox = useArea().outbox;
++  return null;
++}
++
++async function setup() {
++  __resetSessionForTests();
++  __resetComunicaApiForTests();
++  const be = memoryBackend();
++  setStorageBackend(be);
++  const api = getComunicaApi();
++  const fake = getFakeServer()!;
++  fake.setControls({ latencyMs: 0 });
++  const t = fake.issueSession('coordination');
++  await signIn(t, t.me);
++  // Alguien con salud de verdad (texto) y datos personales.
++  const people = await api.getPeople();
++  let pid = '';
++  let healthTexts: string[] = [];
++  for (const p of people.people) {
++    const h = await api.getHealth(p.id).catch(() => null);
++    if (h && h.items.length > 0) {
++      pid = p.id;
++      healthTexts = h.items.map((i) => i.text);
++      break;
++    }
++  }
++  expect(pid).not.toBe('');
++  const personal = await api.getPersonal(pid);
++  const qc = new QueryClient({
++    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
++  });
++  let tree: ReactTestRenderer | undefined;
++  await act(async () => {
++    tree = create(
++      <ComunicaAreaProvider client={qc}>
++        <Reader pid={pid} />
++      </ComunicaAreaProvider>,
++    );
++  });
++  // Llegan las tres lecturas y pasa el guardado (1 s de espera).
++  for (let i = 0; i < 40; i++) {
++    if (qc.getQueryData(areaKey(GRUPOS_KEYS.health(pid)))) break;
++    await wait(25);
++  }
++  await wait(1_200);
++  return {
++    be,
++    api,
++    fake,
++    qc,
++    tree: tree!,
++    me: t.me,
++    pid,
++    healthTexts,
++    personal,
++  };
++}
++
++afterEach(() => {
++  __resetComunicaApiForTests();
++  __resetSessionForTests();
++});
++
++describe('el proveedor del área, de verdad', () => {
++  it('la salud y los datos personales nunca llegan al almacén', async () => {
++    const { be, qc, tree, me, pid, healthTexts, personal } = await setup();
++    expect(qc.getQueryData(areaKey(GRUPOS_KEYS.health(pid)))).toBeTruthy();
++    expect(qc.getQueryData(areaKey(GRUPOS_KEYS.personal(pid)))).toBeTruthy();
++
++    const saved = be.dump()[`@comunica/${me.personId}/queries`];
++    expect(saved).toBeTruthy();
++    expect(saved).toContain(`"${pid}"`); // `people` sí se guarda
++    for (const text of healthTexts) expect(saved).not.toContain(text);
++    for (const v of [
++      personal.address,
++      personal.email,
++      personal.document?.number,
++    ]) {
++      if (v) expect(saved).not.toContain(v);
++    }
++    // Y las dos capas por separado: los hooks marcan `persist: false`…
++    const meta = (k: readonly unknown[]) =>
++      qc.getQueryCache().find({ queryKey: areaKey(k as string[]) })?.meta;
++    expect(meta(GRUPOS_KEYS.health(pid))?.persist).toBe(false);
++    expect(meta(GRUPOS_KEYS.personal(pid))?.persist).toBe(false);
++    expect(meta(GRUPOS_KEYS.people)?.persist).toBe(true);
++    // …y lo que se guarda descarta la salud aunque venga mal marcada.
++    const health = qc.getQueryCache().find({
++      queryKey: areaKey(GRUPOS_KEYS.health(pid)),
++    })!;
++    health.meta = { persist: true };
++    expect(JSON.stringify(dehydrateArea(qc))).not.toContain(healthTexts[0]);
++
++    act(() => tree.unmount());
++    qc.clear();
++  });
++
++  it('salir borra consultas, cola y sesión, y nada de esa persona vuelve', async () => {
++    const { be, api, fake, qc, tree, me } = await setup();
++    const outbox = probe.outbox!;
++    expect(outbox).toBeTruthy();
++    // Una lista que no puede subir (CRM caído): queda con un reintento
++    // programado a los 2 s.
++    const saveRoll = jest.spyOn(api, 'saveRoll');
++    fake.setControls({ crmDown: true });
++    await act(async () => {
++      await outbox.enqueue({
++        key: 'roll:s:g',
++        kind: 'roll',
++        payload: { action: 'skip', marks: {}, notes: {} },
++        clientId: '3b241101-e2bb-4255-8caf-4136c566a962',
++        meta: { sessionId: 's', groupId: 'g' },
++      });
++    });
++    await wait(50);
++    expect(outbox.get('roll:s:g')?.status).toBe('failed');
++    expect(be.dump()[`@comunica/${me.personId}/outbox`]).toBeTruthy();
++    const sent = saveRoll.mock.calls.length;
++
++    await act(async () => {
++      await signOut();
++    });
++    expect(outbox.disposed).toBe(true);
++    expect(probe.outbox).toBeNull();
++    // Pasa el reintento programado y el guardado de la caché.
++    fake.setControls({ crmDown: false });
++    await wait(2_500);
++    expect(saveRoll.mock.calls.length).toBe(sent);
++    expect(be.dump()).toEqual({});
++    expect(await AsyncStorage.getItem('@comunica/session-person')).toBeNull();
++    expect(await AsyncStorage.getItem('@comunica/refresh')).toBeNull();
++
++    act(() => tree.unmount());
++    qc.clear();
++  }, 15_000);
++});
+diff --git a/mcm-app/__tests__/comunica/client.test.ts b/mcm-app/__tests__/comunica/client.test.ts
+index b383d47..8a8aaeb 100644
+--- a/mcm-app/__tests__/comunica/client.test.ts
++++ b/mcm-app/__tests__/comunica/client.test.ts
+@@ -115,4 +115,35 @@ describe('services/comunica/client', () => {
+     );
+     expect(f.mock.calls[0][1].headers.Authorization).toBeUndefined();
+   });
++
++  it('400 sin cuerpo es `validation` (no se reintenta); 500 sigue siendo reintentable', async () => {
++    const f400 = jest.fn().mockResolvedValue(respond(400, {}));
++    await expect(client(f400).getMe()).rejects.toMatchObject({
++      code: 'validation',
++      retryable: false,
++    });
++    expect(f400).toHaveBeenCalledTimes(1);
++    const f500 = jest
++      .fn()
++      .mockResolvedValueOnce(respond(500, {}))
++      .mockResolvedValueOnce(respond(200, me));
++    await expect(client(f500).getMe()).resolves.toEqual(me);
++    expect(f500).toHaveBeenCalledTimes(2);
++  });
++
++  it('la foto lleva el token SOLO si es de nuestro servidor', () => {
++    const c = client(jest.fn());
++    expect(c.photoSource('https://api.test/v1/photos/p1?v=2')).toEqual({
++      uri: 'https://api.test/v1/photos/p1?v=2',
++      headers: { Authorization: 'Bearer tok' },
++      cacheKey: 'https://api.test/v1/photos/p1?v=2',
++    });
++    for (const url of [
++      'https://otro.example/p1.jpg',
++      'https://api.test.evil.example/p1.jpg',
++      'http://api.test/v1/photos/p1',
++    ]) {
++      expect(c.photoSource(url).headers).toBeUndefined();
++    }
++  });
+ });
+diff --git a/mcm-app/__tests__/comunica/gruposFlow.test.ts b/mcm-app/__tests__/comunica/gruposFlow.test.ts
+index 4261b70..d40d0d9 100644
+--- a/mcm-app/__tests__/comunica/gruposFlow.test.ts
++++ b/mcm-app/__tests__/comunica/gruposFlow.test.ts
+@@ -16,7 +16,7 @@ import {
+ } from '@/services/comunica/session';
+ import { memoryBackend, setStorageBackend } from '@/services/comunica/storage';
+ import { clearPhotoCache } from '@/services/comunica/photos';
+-import { dehydrateArea } from '@/components/comunica/comun/ComunicaAreaProvider';
++import { dehydrateArea } from '@/services/comunica/persist';
+ import { areaKey } from '@/hooks/comunica/useAreaQuery';
+ import {
+   GRUPOS_KEYS,
+diff --git a/mcm-app/__tests__/comunica/linkSwitch.test.ts b/mcm-app/__tests__/comunica/linkSwitch.test.ts
+new file mode 100644
+index 0000000..6077fcf
+--- /dev/null
++++ b/mcm-app/__tests__/comunica/linkSwitch.test.ts
+@@ -0,0 +1,195 @@
++/**
++ * Un enlace de Comunica con la sesión abierta (plan 10 §3 y plan 02): el
++ * caso delicado es el de OTRA persona. Antes de cambiar se intenta subir lo
++ * pendiente; si queda algo, se avisa de cuánto se pierde; nunca se acepta
++ * solo (ni en web). Y los avisos del canje dicen lo que ha pasado.
++ */
++/* eslint-disable import/first */
++import { Platform } from 'react-native';
++
++jest.mock('expo-router', () => ({
++  useRouter: () => ({ push: jest.fn() }),
++  usePathname: () => '/comunica',
++}));
++jest.mock('@/contexts/AppToastContext', () => ({
++  useToast: () => ({ toast: { show: jest.fn() } }),
++}));
++
++import {
++  __resetComunicaApiForTests,
++  getComunicaApi,
++  getFakeServer,
++} from '@/services/comunica';
++import { ComunicaApiError } from '@/services/comunica/client';
++import { createOutbox } from '@/services/comunica/outbox';
++import {
++  __resetSessionForTests,
++  getSessionState,
++  signIn,
++} from '@/services/comunica/session';
++import { memoryBackend, setStorageBackend } from '@/services/comunica/storage';
++import {
++  CHOOSE_TEXT,
++  confirmSwitch,
++  exchangeErrorText,
++  handleComunicaLink,
++  shouldReturnToGate,
++  type LinkDeps,
++} from '@/hooks/comunica/useComunicaLinks';
++
++const linkFor = (magic: string) =>
++  ({ kind: 'page', destination: null, auth: { magic } }) as const;
++
++async function signedInAs(persona: 'monitor' | 'coordination') {
++  __resetSessionForTests();
++  __resetComunicaApiForTests();
++  setStorageBackend(memoryBackend());
++  getComunicaApi();
++  const fake = getFakeServer()!;
++  fake.setControls({ latencyMs: 0 });
++  const t = fake.issueSession(persona);
++  await signIn(t, t.me);
++  return { fake, me: t.me };
++}
++
++function deps(over: Partial<LinkDeps> = {}) {
++  const calls = { toasts: [] as string[], asked: [] as string[] };
++  const d: LinkDeps = {
++    push: jest.fn(),
++    toast: (l) => calls.toasts.push(l),
++    openLegacy: jest.fn(),
++    confirm: async (_t, body) => {
++      calls.asked.push(body);
++      return false;
++    },
++    outbox: null,
++    clearQueries: jest.fn(),
++    ...over,
++  };
++  return { d, calls };
++}
++
++describe('enlace de otra persona con la sesión abierta', () => {
++  it('con cola que no sube: lo intenta, avisa de lo que se pierde y no cambia si se cancela', async () => {
++    const { me } = await signedInAs('coordination');
++    const handler = jest
++      .fn()
++      .mockRejectedValue(new ComunicaApiError('crm_unavailable', 'x', 503));
++    const outbox = createOutbox({
++      personId: me.personId,
++      handlers: { roll: handler },
++      schedule: () => {},
++    });
++    await outbox.enqueue({
++      key: 'roll:s:g',
++      kind: 'roll',
++      payload: {},
++      clientId: 'c',
++    });
++    await outbox.flush();
++    handler.mockClear();
++    const { d, calls } = deps({ outbox });
++    await handleComunicaLink(linkFor('magico-valido'), d);
++    // Se ha intentado subir antes de preguntar.
++    expect(handler).toHaveBeenCalled();
++    expect(calls.asked).toHaveLength(1);
++    expect(calls.asked[0]).toMatch(/un cambio sin subir/);
++    expect(calls.asked[0]).toMatch(/se pierde/);
++    // Cancelar: sigue dentro quien estaba, y su cola intacta.
++    expect(getSessionState().me?.personId).toBe(me.personId);
++    expect(outbox.entries()).toHaveLength(1);
++    expect(d.clearQueries).not.toHaveBeenCalled();
++  });
++
++  it('si lo pendiente sube, pregunta sin aviso de pérdida y entra como la otra', async () => {
++    const { me } = await signedInAs('coordination');
++    const handler = jest
++      .fn()
++      .mockRejectedValueOnce(new ComunicaApiError('crm_unavailable', 'x', 503))
++      .mockResolvedValue({});
++    const outbox = createOutbox({
++      personId: me.personId,
++      handlers: { roll: handler },
++      schedule: () => {},
++    });
++    await outbox.enqueue({
++      key: 'k',
++      kind: 'roll',
++      payload: {},
++      clientId: 'c',
++    });
++    await outbox.flush();
++    const asked: string[] = [];
++    const { d } = deps({
++      outbox,
++      confirm: async (_t, body) => {
++        asked.push(body);
++        return true;
++      },
++    });
++    await handleComunicaLink(linkFor('magico-valido'), d);
++    expect(outbox.entries().every((e) => e.status === 'applied')).toBe(true);
++    expect(asked).toHaveLength(1);
++    expect(asked[0]).not.toMatch(/se pierde/);
++    expect(getSessionState().me?.personId).not.toBe(me.personId);
++    expect(d.clearQueries).toHaveBeenCalled();
++  });
++
++  it('en web, sin `confirm`, nunca se acepta solo', async () => {
++    const os = Platform.OS;
++    Object.defineProperty(Platform, 'OS', { value: 'web', configurable: true });
++    const g = globalThis as { confirm?: unknown };
++    const saved = g.confirm;
++    delete g.confirm;
++    await expect(confirmSwitch('t', 'b')).resolves.toBe(false);
++    g.confirm = () => true;
++    await expect(confirmSwitch('t', 'b')).resolves.toBe(true);
++    g.confirm = saved;
++    Object.defineProperty(Platform, 'OS', { value: os, configurable: true });
++  });
++});
++
++describe('los avisos del canje', () => {
++  it('cada fallo dice lo suyo (no todo es «caducado»)', () => {
++    expect(
++      exchangeErrorText(
++        new ComunicaApiError('validation', 'x', 422, 'link_expired'),
++      ),
++    ).toMatch(/caducado/);
++    expect(exchangeErrorText(new ComunicaApiError('network', 'x'))).toMatch(
++      /conexión/,
++    );
++    expect(exchangeErrorText(new Error('boom'))).not.toMatch(/caducado/);
++  });
++
++  it('un enlace caducado y uno de varias personas avisan', async () => {
++    await signedInAs('monitor');
++    const { d, calls } = deps();
++    await handleComunicaLink(linkFor('no-existe'), d);
++    expect(calls.toasts).toEqual([
++      'El enlace ha caducado. Entra con un código.',
++    ]);
++    // El falso no da enlaces de varias personas: se simula la respuesta.
++    const api = getComunicaApi();
++    jest.spyOn(api, 'exchange').mockResolvedValueOnce({ choose: [] } as never);
++    await handleComunicaLink(linkFor('magico-valido'), d);
++    expect(calls.toasts[1]).toBe(CHOOSE_TEXT);
++  });
++});
++
++describe('sesión revocada a mitad de pila', () => {
++  it('vuelve a la puerta solo si se revoca y se está dentro de Comunica', () => {
++    const revoked = { status: 'signedOut', reason: 'revoked' };
++    expect(shouldReturnToGate(revoked, '/comunica/grupos/persona/p1')).toBe(
++      true,
++    );
++    expect(shouldReturnToGate(revoked, '/comunica')).toBe(false);
++    expect(shouldReturnToGate(revoked, '/cancionero')).toBe(false);
++    expect(
++      shouldReturnToGate(
++        { status: 'signedOut', reason: 'signedOut' },
++        '/comunica/yo',
++      ),
++    ).toBe(false);
++  });
++});
+diff --git a/mcm-app/__tests__/comunica/links.test.ts b/mcm-app/__tests__/comunica/links.test.ts
+index 1875169..2a1093d 100644
+--- a/mcm-app/__tests__/comunica/links.test.ts
++++ b/mcm-app/__tests__/comunica/links.test.ts
+@@ -7,10 +7,17 @@ import {
+   nativeHrefFor,
+   parseDestination,
+   PLUGIN_PAGES,
++  publicPageUrl,
+ } from '@/services/comunica/links';
+ import { redirectSystemPath } from '@/app/+native-intent';
+-import { consumePendingNativeLink } from '@/services/comunica/pendingLink';
+-import { consumePendingComunicaAuthUrl } from '@/utils/pendingComunicaLink';
++import {
++  consumePendingNativeLink,
++  subscribeNativeLink,
++} from '@/services/comunica/pendingLink';
++import {
++  consumePendingComunicaAuthUrl,
++  setPendingComunicaAuthUrl,
++} from '@/utils/pendingComunicaLink';
+ 
+ const O = 'https://comunica.movimientoconsolacion.com';
+ 
+@@ -198,6 +205,48 @@ describe('enlaces que llegan (+native-intent)', () => {
+   });
+ });
+ 
++describe('con la app ya abierta en el área nativa', () => {
++  it('el hueco del legado no se queda con el token (se rellena antes)', () => {
++    // El manejador nativo vacía el hueco del legado nada más llegar, como
++    // `useComunicaLinks`.
++    const seen: string[] = [];
++    const off = subscribeNativeLink((l) => {
++      seen.push(l.kind);
++      consumePendingComunicaAuthUrl();
++    });
++    redirectSystemPath({
++      path: `${O}/ap/?token=abcDEF123&internalpage=list_stic_payments`,
++      initial: false,
++    });
++    off();
++    expect(seen).toEqual(['page']);
++    expect(consumePendingComunicaAuthUrl()).toBeNull();
++  });
++
++  it('el hueco del legado caduca a los 2 minutos', () => {
++    const now = Date.now();
++    const spy = jest.spyOn(Date, 'now').mockReturnValue(now);
++    setPendingComunicaAuthUrl(`${O}/ap/?token=abc&app=1`);
++    spy.mockReturnValue(now + 2 * 60_000 + 1);
++    expect(consumePendingComunicaAuthUrl()).toBeNull();
++    spy.mockRestore();
++  });
++
++  it('la actividad pública se abre en web.tsx (antes caía en el portal entero)', () => {
++    expect(
++      publicPageUrl(classifyComunicaLink(`${O}/actividades/?e=foro-2026`)),
++    ).toBe(`${O}/actividades/?e=foro-2026`);
++    expect(publicPageUrl(classifyComunicaLink(`${O}/formularios/x`))).toBe(
++      `${O}/formularios/x`,
++    );
++    expect(
++      publicPageUrl(
++        classifyComunicaLink(`${O}/ap/?internalpage=list_stic_payments`),
++      ),
++    ).toBeNull();
++  });
++});
++
+ describe('dentro del legado', () => {
+   it('lo nativo se abre en nativo; lo ajeno, fuera', () => {
+     expect(
+diff --git a/mcm-app/__tests__/comunica/outbox.test.ts b/mcm-app/__tests__/comunica/outbox.test.ts
+index c035bfd..ce18fee 100644
+--- a/mcm-app/__tests__/comunica/outbox.test.ts
++++ b/mcm-app/__tests__/comunica/outbox.test.ts
+@@ -10,6 +10,7 @@ import {
+   readDrawer,
+   setStorageBackend,
+ } from '@/services/comunica/storage';
++import { setReporter } from '@/utils/logger';
+ 
+ const crmDown = () => new ComunicaApiError('crm_unavailable', 'caído', 503);
+ 
+@@ -128,4 +129,150 @@ describe('cola de escrituras', () => {
+     await box.discard('k');
+     expect(box.entries()).toHaveLength(0);
+   });
++
++  it('sin red no es un fallo: sigue pendiente, sin gastar intentos, y sube al volver', async () => {
++    const offline = new ComunicaApiError('network', 'sin red');
++    const handler = jest.fn().mockRejectedValue(offline);
++    const { box, scheduled } = setup(handler);
++    await box.enqueue({ key: 'k', kind: 'roll', payload: {}, clientId: 'c' });
++    await box.flush();
++    for (let i = 0; i < MAX_ATTEMPTS + 2; i++) await box.wake();
++    expect(box.get('k')).toMatchObject({ status: 'pending', attempts: 0 });
++    expect(box.get('k')?.error).toBeUndefined();
++    expect(scheduled.length).toBeGreaterThan(0);
++    // Vuelve la red: `wake` la sube ya, sin esperar al reintento programado.
++    handler.mockResolvedValueOnce({});
++    await box.wake();
++    expect(box.get('k')?.status).toBe('applied');
++  });
++
++  it('un 401 no cuenta para el límite de 5', async () => {
++    const handler = jest
++      .fn()
++      .mockRejectedValue(new ComunicaApiError('unauthenticated', 'no', 401));
++    const { box } = setup(handler);
++    await box.enqueue({ key: 'k', kind: 'roll', payload: {}, clientId: 'c' });
++    for (let i = 0; i < MAX_ATTEMPTS + 2; i++) await box.wake();
++    expect(handler.mock.calls.length).toBeGreaterThan(MAX_ATTEMPTS);
++    expect(box.get('k')).toMatchObject({ status: 'pending', attempts: 0 });
++  });
++
++  it('un fallo de la app no se toma por red: failed sin reintento', async () => {
++    const errors: unknown[][] = [];
++    setReporter({ error: (...a) => errors.push(a) });
++    jest.spyOn(console, 'error').mockImplementation(() => {});
++    const handler = jest
++      .fn()
++      .mockRejectedValue(new TypeError('x is undefined'));
++    const { box, advance, scheduled } = setup(handler);
++    await box.enqueue({ key: 'k', kind: 'roll', payload: {}, clientId: 'c' });
++    await box.flush();
++    advance(60 * 60_000);
++    await box.wake();
++    expect(handler).toHaveBeenCalledTimes(1);
++    expect(scheduled).toHaveLength(0);
++    expect(box.get('k')).toMatchObject({
++      status: 'failed',
++      error: { code: 'internal', auto: false },
++    });
++    expect(errors.length).toBeGreaterThan(0);
++    setReporter(null);
++    jest.restoreAllMocks();
++  });
++
++  it('un rechazo definitivo no se reenvía al volver a abrir la app', async () => {
++    const handler = jest
++      .fn()
++      .mockRejectedValue(new ComunicaApiError('forbidden', 'no', 403));
++    const { box } = setup(handler);
++    await box.enqueue({ key: 'k', kind: 'roll', payload: {}, clientId: 'c' });
++    await box.flush();
++    expect(handler).toHaveBeenCalledTimes(1);
++    // Al cerrar y abrir, lo guardado pasa por JSON (Infinity → null).
++    const again = createOutbox({ personId: 'p1', handlers: { roll: handler } });
++    await again.load();
++    await again.flush();
++    await again.wake();
++    expect(handler).toHaveBeenCalledTimes(1);
++    expect(again.get('k')?.status).toBe('failed');
++  });
++
++  it('si el móvil no deja guardar, la entrada no se queda «subiendo»', async () => {
++    jest.spyOn(console, 'warn').mockImplementation(() => {});
++    const be = memoryBackend();
++    setStorageBackend({
++      ...be,
++      setItem: () => Promise.reject(new Error('disco lleno')),
++    });
++    const handler = jest.fn().mockResolvedValue({});
++    const { box } = setup(handler);
++    await box.enqueue({ key: 'k', kind: 'roll', payload: {}, clientId: 'c' });
++    await box.flush();
++    expect(box.get('k')?.status).toBe('applied');
++    jest.restoreAllMocks();
++  });
++});
++
++describe('la cola al salir (dispose)', () => {
++  beforeEach(() => setStorageBackend(memoryBackend()));
++
++  it('un reintento programado tras salir no sube ni resucita el cajón', async () => {
++    const be = memoryBackend();
++    setStorageBackend(be);
++    const handler = jest
++      .fn()
++      .mockRejectedValueOnce(crmDown())
++      .mockResolvedValue({});
++    const scheduled: (() => void)[] = [];
++    const cancelled: number[] = [];
++    let t = 1000;
++    const box = createOutbox({
++      personId: 'A',
++      handlers: { roll: handler },
++      now: () => t,
++      schedule: (fn) => {
++        scheduled.push(fn);
++        return () => cancelled.push(scheduled.length);
++      },
++    });
++    await box.enqueue({ key: 'k', kind: 'roll', payload: {}, clientId: 'c' });
++    await box.flush();
++    expect(scheduled).toHaveLength(1);
++    // Salir: se apaga ANTES de borrar.
++    box.dispose();
++    await clearAll();
++    expect(cancelled).toHaveLength(1);
++    // Aunque el temporizador saltara igualmente:
++    t += 10_000;
++    scheduled[0]();
++    await box.flush();
++    await box.wake();
++    await box.enqueue({ key: 'k2', kind: 'roll', payload: {}, clientId: 'd' });
++    await new Promise((r) => setTimeout(r, 5));
++    expect(handler).toHaveBeenCalledTimes(1);
++    expect(be.dump()).toEqual({});
++  });
++
++  it('lo que contesta una subida en vuelo tras salir no se escribe ni se anuncia', async () => {
++    const be = memoryBackend();
++    setStorageBackend(be);
++    let release: (v: unknown) => void = () => {};
++    const handler = jest.fn(() => new Promise((r) => (release = r)));
++    const onApplied = jest.fn();
++    const box = createOutbox({
++      personId: 'A',
++      handlers: { roll: handler },
++      onApplied,
++    });
++    await box.enqueue({ key: 'k', kind: 'roll', payload: {}, clientId: 'c' });
++    await new Promise((r) => setTimeout(r, 0));
++    expect(handler).toHaveBeenCalledTimes(1);
++    box.dispose();
++    await clearAll();
++    release({ ok: true });
++    await new Promise((r) => setTimeout(r, 5));
++    expect(onApplied).not.toHaveBeenCalled();
++    expect(be.dump()).toEqual({});
++    expect(box.disposed).toBe(true);
++  });
+ });
+diff --git a/mcm-app/__tests__/comunica/persistence.test.ts b/mcm-app/__tests__/comunica/persistence.test.ts
+index 50d03f8..36d3ee3 100644
+--- a/mcm-app/__tests__/comunica/persistence.test.ts
++++ b/mcm-app/__tests__/comunica/persistence.test.ts
+@@ -3,7 +3,7 @@
+  * llega al almacén del móvil. Y los textos del acceso.
+  */
+ import { QueryClient } from '@tanstack/react-query';
+-import { dehydrateArea } from '@/components/comunica/comun/ComunicaAreaProvider';
++import { dehydrateArea } from '@/services/comunica/persist';
+ import {
+   accessErrorText,
+   looksLikeDni,
+diff --git a/mcm-app/__tests__/comunica/photos.test.ts b/mcm-app/__tests__/comunica/photos.test.ts
+new file mode 100644
+index 0000000..9328d91
+--- /dev/null
++++ b/mcm-app/__tests__/comunica/photos.test.ts
+@@ -0,0 +1,25 @@
++/**
++ * Las fotos de las fichas (plan 05): la precarga no presta el token de una
++ * foto de nuestro servidor a las de otro dominio.
++ */
++import { Image } from 'expo-image';
++import { prefetchPhotos } from '@/services/comunica/photos';
++
++jest.mock('expo-image', () => ({
++  Image: { prefetch: jest.fn().mockResolvedValue(true) },
++}));
++
++it('cada foto se pide con sus cabeceras: las ajenas, sin sesión', async () => {
++  await prefetchPhotos([
++    { uri: 'https://api.test/v1/photos/a', headers: { Authorization: 'B t' } },
++    { uri: 'https://otro.example/b.jpg' },
++  ]);
++  const calls = (Image.prefetch as jest.Mock).mock.calls;
++  expect(calls).toEqual([
++    [
++      ['https://api.test/v1/photos/a'],
++      { cachePolicy: 'disk', headers: { Authorization: 'B t' } },
++    ],
++    [['https://otro.example/b.jpg'], { cachePolicy: 'disk' }],
++  ]);
++});
+diff --git a/mcm-app/__tests__/comunica/session.test.ts b/mcm-app/__tests__/comunica/session.test.ts
+index b97b25b..ff9b8cc 100644
+--- a/mcm-app/__tests__/comunica/session.test.ts
++++ b/mcm-app/__tests__/comunica/session.test.ts
+@@ -1,6 +1,10 @@
+ import AsyncStorage from '@react-native-async-storage/async-storage';
+ import { createFakeServer } from '@/services/comunica/fake';
+ import { FAKE_CODE } from '@/services/comunica/fake/fixtures';
++import {
++  __resetComunicaApiForTests,
++  getComunicaApi,
++} from '@/services/comunica';
+ import {
+   __resetSessionForTests,
+   configureSession,
+@@ -9,6 +13,7 @@ import {
+   getSessionState,
+   initSession,
+   memorySecretStore,
++  onSessionEnd,
+   signIn,
+   signOut,
+   withSession,
+@@ -139,7 +144,7 @@ describe('sesión', () => {
+     expect(await readDrawer(t.me.personId, 'outbox')).toEqual([{ key: 'x' }]);
+   });
+ 
+-  it('salir revoca y borra todo lo del área', async () => {
++  it('salir revoca y borra los cajones (de punta a punta: areaProvider.test)', async () => {
+     const { fake, secrets } = setup();
+     const t = fake.issueSession('monitor');
+     await signIn(t, t.me);
+@@ -169,16 +174,133 @@ describe('sesión', () => {
+     });
+   });
+ 
+-  // Guardarraíl (plan 02 «Tests»): con el servidor de verdad, el refresco no
+-  // pasa nunca por AsyncStorage.
+-  it('el token de refresco no toca AsyncStorage con un almacén de secretos', async () => {
++  it('salir apaga lo de la sesión ANTES de borrar el móvil', async () => {
+     const { fake } = setup();
+     const t = fake.issueSession('monitor');
+-    (AsyncStorage.setItem as jest.Mock).mockClear();
+     await signIn(t, t.me);
+-    const written = (AsyncStorage.setItem as jest.Mock).mock.calls.map((c) =>
+-      String(c[1]),
++    const order: string[] = [];
++    onSessionEnd(() => order.push('fin de sesión'));
++    const be = memoryBackend();
++    setStorageBackend({
++      ...be,
++      removeItem: async (k) => {
++        order.push('borrar');
++        await be.removeItem(k);
++      },
++    });
++    await writeDrawer(t.me.personId, 'outbox', [{ key: 'x' }]);
++    await signOut();
++    expect(order[0]).toBe('fin de sesión');
++    expect(order).toContain('borrar');
++  });
++
++  it('un refresco en vuelo al salir no reescribe el token ni lo usa', async () => {
++    __resetSessionForTests();
++    setStorageBackend(memoryBackend());
++    const secrets = memorySecretStore();
++    let finish: (v: unknown) => void = () => {};
++    configureSession({
++      refresh: () => new Promise((r) => (finish = r as never)),
++      logout: async () => {},
++      secrets,
++    });
++    const fake = createFakeServer({ latencyMs: 0 });
++    const t = fake.issueSession('monitor');
++    await signIn({ ...t, expiresIn: 0 }, t.me);
++    const pending = getAccessToken();
++    await new Promise((r) => setTimeout(r, 0));
++    await signOut();
++    finish({ accessToken: 'nuevo', refreshToken: 'rotado', expiresIn: 900 });
++    expect(await pending).toBeNull();
++    expect(await secrets.get('@comunica/refresh')).toBeNull();
++    expect(currentAccessToken()).toBeNull();
++  });
++
++  it('lo que empezó con A no se repite con el token de B', async () => {
++    const { fake, api } = setup();
++    const a = fake.issueSession('monitor');
++    await signIn(a, a.me);
++    // Una llamada de A se queda colgada en el servidor…
++    fake.setControls({ latencyMs: 50 });
++    const call = api.getMe().catch((e) => e);
++    fake.setControls({ latencyMs: 0 });
++    // …mientras A sale y entra B.
++    await signOut();
++    const b = fake.issueSession('coordination');
++    await signIn(b, b.me);
++    // Sin la época, la llamada de A llegaba al servidor con el token de B y
++    // volvía contestada como B.
++    expect(await call).toMatchObject({
++      code: 'unauthenticated',
++      reason: 'session_changed',
++    });
++    expect(getSessionState().me?.personId).toBe(b.me.personId);
++  });
++
++  it('un 401 sin con qué refrescar acaba la sesión (revocada)', async () => {
++    const { fake, api, secrets } = setup();
++    const t = fake.issueSession('monitor');
++    await signIn(t, t.me);
++    await secrets.remove('@comunica/refresh');
++    fake.revokeAll();
++    await expect(api.getMe()).rejects.toMatchObject({
++      code: 'unauthenticated',
++    });
++    expect(getSessionState()).toMatchObject({
++      status: 'signedOut',
++      reason: 'revoked',
++    });
++  });
++});
++
++// Guardarraíl (plan 02 «Tests»): con el servidor DE VERDAD, el refresco no
++// pasa nunca por AsyncStorage. Usa el cableado real de `getComunicaApi()`
++// (qué almacén de secretos elige) y el cliente HTTP con un `fetch` falso.
++describe('con el servidor de verdad', () => {
++  const realFetch = global.fetch;
++  afterEach(() => {
++    global.fetch = realFetch;
++    delete process.env.EXPO_PUBLIC_COMUNICA_API;
++    __resetComunicaApiForTests();
++    __resetSessionForTests();
++  });
++
++  it('el token de refresco no toca AsyncStorage (ni al entrar ni al refrescar)', async () => {
++    __resetSessionForTests();
++    __resetComunicaApiForTests();
++    process.env.EXPO_PUBLIC_COMUNICA_API = 'https://api.example.org';
++    const me = {
++      personId: 'p1',
++      name: 'Lucía',
++      delegation: { id: 'd1', name: 'Villaclara' },
++      roles: ['monitor'],
++      scope: 'delegation',
++      canSeeHealth: false,
++    };
++    let refreshes = 0;
++    global.fetch = jest.fn(async (url: string) => {
++      const json = String(url).endsWith('/v1/auth/refresh')
++        ? {
++            accessToken: `acc-${++refreshes}`,
++            refreshToken: `REFRESCO-ROTADO-${refreshes}`,
++            expiresIn: 900,
++          }
++        : { generatedAt: '2026-10-24T10:00:00+02:00', me };
++      return { ok: true, status: 200, json: async () => json } as Response;
++    }) as never;
++    const api = getComunicaApi();
++    (AsyncStorage.setItem as jest.Mock).mockClear();
++    await signIn(
++      { accessToken: 'a0', refreshToken: 'REFRESCO-INICIAL', expiresIn: 0 },
++      me as never,
+     );
+-    expect(written.some((v) => v.includes(t.refreshToken))).toBe(false);
++    await api.getMe(); // caducado: refresca y rota
++    expect(refreshes).toBe(1);
++    const written = (AsyncStorage.setItem as jest.Mock).mock.calls
++      .map((c) => `${c[0]}=${c[1]}`)
++      .join('\n');
++    expect(written).not.toMatch(/REFRESCO-/);
++    // Y sí guarda quién es (no es secreto).
++    expect(written).toMatch(/session-person/);
+   });
+ });
+diff --git a/mcm-app/app/(tabs)/comunica/web.tsx b/mcm-app/app/(tabs)/comunica/web.tsx
+index 18586cb..f3a4805 100644
+--- a/mcm-app/app/(tabs)/comunica/web.tsx
++++ b/mcm-app/app/(tabs)/comunica/web.tsx
+@@ -3,8 +3,8 @@
+ // El legado (plan 10 §2):
+ //   · Con un pase preparado (`openLegacy`): esa página del plugin, con
+ //     cabecera nativa y la sesión puesta.
+-//   · Con `?url=` (página pública del dominio, ya validada por `links.ts`):
+-//     esa página, sin sesión.
++//   · Con `?url=` (página pública del dominio o la ficha pública de una
++//     actividad, ya validadas por `links.ts`): esa página, sin sesión.
+ //   · Sin nada: la WebView de siempre, entera (para comparar).
+ 
+ import React, { useState } from 'react';
+@@ -12,17 +12,17 @@ import { Stack, useLocalSearchParams } from 'expo-router';
+ import ComunicaScreen from '@/app/screens/ComunicaScreen';
+ import LegacyWebScreen from '@/components/comunica/comun/LegacyWebScreen';
+ import { consumeLegacyOpen } from '@/services/comunica/legacy';
+-import { classifyComunicaLink } from '@/services/comunica/links';
++import { classifyComunicaLink, publicPageUrl } from '@/services/comunica/links';
+ 
+ export default function ComunicaLegacy() {
+   const params = useLocalSearchParams<{ url?: string; title?: string }>();
+   const [open] = useState(consumeLegacyOpen);
+   if (open) return <LegacyWebScreen url={open.url} title={open.title} />;
+-  const link = params.url ? classifyComunicaLink(params.url) : null;
+-  if (link?.kind === 'other') {
+-    return (
+-      <LegacyWebScreen url={link.url} title={params.title ?? 'Comunica'} />
+-    );
++  const url = publicPageUrl(
++    params.url ? classifyComunicaLink(params.url) : null,
++  );
++  if (url) {
++    return <LegacyWebScreen url={url} title={params.title ?? 'Comunica'} />;
+   }
+   return (
+     <>
+diff --git a/mcm-app/app/+native-intent.ts b/mcm-app/app/+native-intent.ts
+index 6b06051..822ea06 100644
+--- a/mcm-app/app/+native-intent.ts
++++ b/mcm-app/app/+native-intent.ts
+@@ -40,7 +40,11 @@ export function redirectSystemPath({
+     const link = classifyComunicaLink(path);
+     if (!link) return path;
+ 
+-    setPendingNativeLink(link);
++    // Primero el hueco del LEGADO y después el nativo: con la app abierta en
++    // el área nativa, `setPendingNativeLink` llama a su manejador en el acto y
++    // este vacía el hueco del legado. Al revés, la URL con el token se quedaba
++    // esperando y la WebView entraba luego como esa persona.
++    //
+     // El legado solo sabe de tokens y destinos del área. Sin ninguno de los
+     // dos, al tab y ya está (si hay sesión con cookie, entra directo).
+     if (link.kind === 'page') {
+@@ -56,6 +60,7 @@ export function redirectSystemPath({
+         );
+       }
+     }
++    setPendingNativeLink(link);
+     return '/(tabs)/comunica';
+   } catch {
+     // Nunca reventar por un enlace raro: mejor abrir la app por su inicio.
+diff --git a/mcm-app/components/comunica/comun/ComunicaAreaProvider.tsx b/mcm-app/components/comunica/comun/ComunicaAreaProvider.tsx
+index 3e365f3..1d220d3 100644
+--- a/mcm-app/components/comunica/comun/ComunicaAreaProvider.tsx
++++ b/mcm-app/components/comunica/comun/ComunicaAreaProvider.tsx
+@@ -6,10 +6,15 @@
+ //   · La sesión (plan 02): se lee al montar.
+ //   · La caché, guardada en el móvil POR PERSONA: al entrar se recupera (sin
+ //     cobertura se ve lo de la última vez) y se va guardando. Solo las
+-//     consultas con `persist: true`: la salud nunca toca el disco.
++//     consultas con `persist: true` (`ROUTES` del contrato), y NUNCA las de
++//     salud ni datos personales aunque alguien las marque. Si no cabe, se
++//     sacrifican las fichas más viejas, no la caché entera; si el móvil no
++//     deja escribir, se queda lo de la vez anterior.
+ //   · La cola de escrituras de esa persona, que sube al encolar, al
+ //     reconectar, al volver la app y al abrir una pantalla del área. Sabe
+ //     subir listas (plan 04), avisos, pañuelos y vincular a un grupo (plan 05).
++//     Se crea al entrar y se APAGA (`dispose`) al salir o cambiar de persona:
++//     ni reintentos ni escrituras de A después.
+ 
+ import React, {
+   createContext,
+@@ -22,7 +27,6 @@ import React, {
+ import { AppState, Platform } from 'react-native';
+ import * as Network from 'expo-network';
+ import {
+-  dehydrate,
+   focusManager,
+   hydrate,
+   onlineManager,
+@@ -48,10 +52,12 @@ import { createOutbox, type Outbox } from '@/services/comunica/outbox';
+ import {
+   getSessionState,
+   initSession,
++  onSessionEnd,
+   subscribeSession,
+   type SessionState,
+ } from '@/services/comunica/session';
+ import { readDrawer, writeDrawer } from '@/services/comunica/storage';
++import { dehydrateArea, fitForStorage } from '@/services/comunica/persist';
+ import { areaKey } from '@/hooks/comunica/useAreaQuery';
+ import { logger } from '@/utils/logger';
+ 
+@@ -91,13 +97,11 @@ function wireManagers() {
+ /** Cada cuánto, como mucho, se guarda la caché en el móvil. */
+ const PERSIST_DEBOUNCE_MS = 1_000;
+ 
+-/** Solo se guarda lo que es de guardar: `meta.persist` y con datos. */
+-export function dehydrateArea(qc: QueryClient): DehydratedState {
+-  return dehydrate(qc, {
+-    shouldDehydrateQuery: (q) =>
+-      q.state.status === 'success' && q.meta?.persist === true,
+-  });
+-}
++/** ¿Sigue dentro esta persona? Lo de otra (o de nadie) no se guarda. */
++const stillSignedIn = (personId: string) => {
++  const s = getSessionState();
++  return s.status === 'signedIn' && s.me?.personId === personId;
++};
+ 
+ interface AreaContextValue {
+   session: SessionState;
+@@ -158,35 +162,53 @@ export default function ComunicaAreaProvider({
+     if (!personId) return;
+     let cancelled = false;
+     let timer: ReturnType<typeof setTimeout> | null = null;
+-    void readDrawer<DehydratedState>(personId, 'queries').then((saved) => {
+-      if (cancelled) return;
+-      if (saved) {
+-        try {
+-          hydrate(qc, saved);
+-        } catch (e) {
+-          logger.warn('[comunica] caché ilegible', e);
++    const stop = () => {
++      cancelled = true;
++      if (timer) clearTimeout(timer);
++      timer = null;
++    };
++    // Al salir, se para ANTES de que se borre nada (no espera a React).
++    const offEnd = onSessionEnd(stop);
++    readDrawer<DehydratedState>(personId, 'queries')
++      .then((saved) => {
++        if (cancelled) return;
++        if (saved) {
++          try {
++            hydrate(qc, saved);
++          } catch (e) {
++            logger.warn('[comunica] caché ilegible', e);
++          }
+         }
+-      }
+-      setRestoredFor(personId);
+-    });
++        setRestoredFor(personId);
++      })
++      .catch((e) => logger.warn('[comunica] caché ilegible', e));
+     const unsub = qc.getQueryCache().subscribe(() => {
+-      if (timer) return;
++      if (timer || cancelled) return;
+       timer = setTimeout(() => {
+         timer = null;
+-        if (!cancelled) {
+-          void writeDrawer(personId, 'queries', dehydrateArea(qc));
++        if (cancelled || !stillSignedIn(personId)) return;
++        try {
++          // `writeDrawer` no lanza: si no cabe, se queda lo de antes.
++          void writeDrawer(
++            personId,
++            'queries',
++            fitForStorage(dehydrateArea(qc)),
++          );
++        } catch (e) {
++          logger.warn('[comunica] no se ha podido guardar la caché', e);
+         }
+       }, PERSIST_DEBOUNCE_MS);
+     });
+     return () => {
+-      cancelled = true;
+-      if (timer) clearTimeout(timer);
++      stop();
++      offEnd();
+       unsub();
+     };
+   }, [qc, personId]);
+ 
+-  // La cola de esta persona.
+-  const outbox = useMemo(() => {
++  // La cola de esta persona: se crea al entrar (sin efectos: solo memoria) y
++  // se apaga al salir o cambiar de persona (abajo).
++  const outbox = useMemo<Outbox | null>(() => {
+     if (!personId) return null;
+     return createOutbox({
+       personId,
+@@ -270,16 +292,24 @@ export default function ComunicaAreaProvider({
+ 
+   useEffect(() => {
+     if (!outbox) return;
+-    void outbox.load().then(() => outbox.flush());
++    const box = outbox;
++    // Salir la apaga en el acto, antes de borrar el móvil.
++    const offEnd = onSessionEnd(() => box.dispose());
++    box
++      .load()
++      .then(() => box.wake())
++      .catch((e) => logger.warn('[comunica] cola ilegible', e));
+     const offOnline = onlineManager.subscribe((online) => {
+-      if (online) void outbox.flush();
++      if (online) void box.wake();
+     });
+     const sub = AppState.addEventListener('change', (s) => {
+-      if (s === 'active') void outbox.flush();
++      if (s === 'active') void box.wake();
+     });
+     return () => {
++      offEnd();
+       offOnline();
+       sub.remove();
++      box.dispose();
+     };
+   }, [outbox]);
+ 
+diff --git a/mcm-app/hooks/comunica/useAreaQuery.ts b/mcm-app/hooks/comunica/useAreaQuery.ts
+index 8487b18..29cb340 100644
+--- a/mcm-app/hooks/comunica/useAreaQuery.ts
++++ b/mcm-app/hooks/comunica/useAreaQuery.ts
+@@ -4,12 +4,14 @@
+ // cliente de `services/comunica/`, con la clave siempre bajo `['comunica', …]`,
+ // lo guardado pintado al instante y el refresco por detrás.
+ //
+-// `persist: false` marca lo que NUNCA toca el disco (la salud). Hoy la caché
+-// vive en memoria; cuando llegue `expo-sqlite` con la 2.2, el persistidor
+-// solo guardará las consultas con `meta.persist === true`.
++// Qué se guarda en el móvil lo dice el CONTRATO: con `route`, el `persist` de
++// `ROUTES` (la salud y los datos personales, `false`). `ComunicaAreaProvider`
++// solo guarda las consultas con `meta.persist === true` y, además, nunca las
++// de salud ni datos personales. Sin `route`, se guarda salvo `persist: false`.
+ 
+ import { useQuery, type QueryKey } from '@tanstack/react-query';
+ import { isComunicaApiError } from '@/services/comunica/client';
++import { ROUTES, type RouteName } from '@/services/comunica/contract';
+ 
+ export const STALE = {
+   /** Estructura: grupos, personas. */
+@@ -22,6 +24,9 @@ interface Options<T> {
+   /** Sin el prefijo: `['pasar-lista', 'groups']`. */
+   key: QueryKey;
+   fetch: () => Promise<T>;
++  /** La ruta del contrato que se lee: de ahí sale si se guarda. */
++  route?: RouteName;
++  /** Solo para apagar el guardado (nunca enciende lo que `route` no deja). */
+   persist?: boolean;
+   staleTime?: number;
+   enabled?: boolean;
+@@ -38,6 +43,7 @@ export const areaKey = (key: QueryKey): QueryKey => ['comunica', ...key];
+ export function useAreaQuery<T extends { generatedAt: string }>({
+   key,
+   fetch,
++  route,
+   persist = true,
+   staleTime = STALE.state,
+   enabled = true,
+@@ -50,7 +56,7 @@ export function useAreaQuery<T extends { generatedAt: string }>({
+     queryFn: fetch,
+     staleTime,
+     enabled,
+-    meta: { persist },
++    meta: { persist: persist && (route ? ROUTES[route].persist : true) },
+     gcTime,
+     // `T` es siempre un objeto (una respuesta), nunca una función: el guarda
+     // de tipos de TanStack no lo puede saber con un genérico.
+diff --git a/mcm-app/hooks/comunica/useComunicaLinks.ts b/mcm-app/hooks/comunica/useComunicaLinks.ts
+index 7c93e55..f8613f4 100644
+--- a/mcm-app/hooks/comunica/useComunicaLinks.ts
++++ b/mcm-app/hooks/comunica/useComunicaLinks.ts
+@@ -1,105 +1,229 @@
+ // Los enlaces de Comunica que abren la app, en el área NATIVA (plan 10 §3).
+ // La puerta lo monta: recoge el enlace pendiente (si la app se abrió con él)
+ // y los que lleguen con la app ya abierta.
++//
++// Lo que hace con cada enlace vive en `handleComunicaLink`, sin React, para
++// poder probarlo: sobre todo el caso delicado, un enlace de OTRA persona con
++// la sesión abierta. Antes de cambiar se intenta subir lo pendiente; si aún
++// queda algo, se dice cuánto se perdería, y nunca se acepta solo (ni en web).
++//
++// La puerta sigue montada debajo de toda la pila de Comunica, así que también
++// vigila aquí que una sesión REVOCADA (un 401 sin refresco posible) no deje a
++// nadie atrapado en una pantalla interna: vuelve a la puerta, que pide entrar.
+ 
+-import { useEffect } from 'react';
++import { useEffect, useRef } from 'react';
+ import { Alert, Platform } from 'react-native';
+-import { useRouter } from 'expo-router';
++import { usePathname, useRouter } from 'expo-router';
+ import { useQueryClient } from '@tanstack/react-query';
+ import { getComunicaApi } from '@/services/comunica';
++import { isComunicaApiError } from '@/services/comunica/client';
+ import {
+-  COMUNICA_ORIGIN,
+   nativeHrefFor,
++  publicPageUrl,
+   type ComunicaLink,
++  type Destination,
+ } from '@/services/comunica/links';
++import { unsent, type Outbox } from '@/services/comunica/outbox';
+ import {
+   consumePendingNativeLink,
+   subscribeNativeLink,
+ } from '@/services/comunica/pendingLink';
+ import { getSessionState, signIn, signOut } from '@/services/comunica/session';
+ import { consumePendingComunicaAuthUrl } from '@/utils/pendingComunicaLink';
++import { useArea } from '@/components/comunica/comun/ComunicaAreaProvider';
+ import { useToast } from '@/contexts/AppToastContext';
+ import { useOpenLegacy } from './useOpenLegacy';
+ 
+-const confirm = (title: string, body: string) =>
+-  new Promise<boolean>((resolve) => {
+-    if (Platform.OS === 'web') {
+-      resolve(true);
+-      return;
+-    }
++/** Pregunta sí/no. En web, `window.confirm`; sin él, NO (nunca se acepta solo). */
++export function confirmSwitch(title: string, body: string): Promise<boolean> {
++  if (Platform.OS === 'web') {
++    const ask = (globalThis as { confirm?: (m: string) => boolean }).confirm;
++    return Promise.resolve(
++      typeof ask === 'function' ? ask(`${title}\n\n${body}`) : false,
++    );
++  }
++  return new Promise<boolean>((resolve) => {
+     Alert.alert(title, body, [
+       { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
+       { text: 'Entrar', onPress: () => resolve(true) },
+     ]);
+   });
++}
++
++/** El aviso cuando falla el canje del enlace: no todo es «caducado». */
++export function exchangeErrorText(e: unknown): string {
++  if (isComunicaApiError(e)) {
++    if (e.code === 'validation' && e.reason === 'link_expired') {
++      return 'El enlace ha caducado. Entra con un código.';
++    }
++    if (e.code === 'network' || e.code === 'crm_unavailable') {
++      return 'Necesitas conexión para usar este enlace. Inténtalo en un rato.';
++    }
++    if (e.code === 'rate_limited') {
++      return 'Demasiados intentos. Espera un poco y vuelve a probar.';
++    }
++  }
++  return 'No se ha podido usar el enlace. Entra con un código.';
++}
++
++export const CHOOSE_TEXT =
++  'Este enlace es de varias personas. Entra con un código para elegir quién eres.';
++
++/** «una cosa» / «3 cosas» sin subir. */
++const pendingText = (n: number) =>
++  n === 1 ? 'un cambio sin subir' : `${n} cambios sin subir`;
++
++export interface LinkDeps {
++  push: (href: { pathname: string; params?: Record<string, string> }) => void;
++  toast: (label: string) => void;
++  openLegacy: (destination: Destination, title: string) => Promise<void>;
++  confirm: (title: string, body: string) => Promise<boolean>;
++  /** La cola de quien está dentro (para subir antes de cambiar). */
++  outbox: Outbox | null;
++  /** Vaciar la caché en memoria tras salir. */
++  clearQueries: () => void;
++}
++
++/**
++ * Antes de salir para entrar como otra persona: se intenta subir lo
++ * pendiente, ya, con la sesión de quien está dentro. Devuelve lo que no ha
++ * podido subir.
++ */
++async function tryToUpload(outbox: Outbox | null): Promise<number> {
++  if (!outbox) return 0;
++  for (const e of unsent(outbox.entries())) {
++    // `retry` pone el intento a ahora (también lo atascado) y sube.
++    await outbox.retry(e.key);
++  }
++  return unsent(outbox.entries()).length;
++}
++
++export async function handleComunicaLink(
++  link: ComunicaLink,
++  deps: LinkDeps,
++): Promise<void> {
++  // Este modo se queda el enlace: el del legado sobra.
++  consumePendingComunicaAuthUrl();
++  if (link.kind === 'appAccess') {
++    deps.push({
++      pathname: '/comunica/acceso-codigo',
++      params: { link: link.linkToken },
++    });
++    return;
++  }
++  const publicUrl = publicPageUrl(link);
++  if (publicUrl) {
++    // La ficha nativa del evento llega con el plan 13; hasta entonces, su
++    // página pública (como cualquier otra página del dominio).
++    deps.push({ pathname: '/comunica/web', params: { url: publicUrl } });
++    return;
++  }
++  if (link.kind !== 'page') return;
++  if (link.auth) {
++    let res;
++    try {
++      res = await getComunicaApi().exchange(
++        link.auth.magic
++          ? { magic: link.auth.magic }
++          : { token: link.auth.token! },
++      );
++    } catch (e) {
++      deps.toast(exchangeErrorText(e));
++      return;
++    }
++    if ('choose' in res) {
++      deps.toast(CHOOSE_TEXT);
++      return;
++    }
++    const current = getSessionState();
++    if (
++      current.status === 'signedIn' &&
++      current.me &&
++      current.me.personId !== res.me.personId
++    ) {
++      const first = res.me.name.split(' ')[0];
++      const left = await tryToUpload(deps.outbox);
++      const ok = await deps.confirm(
++        `Este enlace es para ${first}`,
++        left > 0
++          ? `Tienes ${pendingText(left)}. Si sales, se ${left === 1 ? 'pierde' : 'pierden'}. ¿Salir y entrar como ${res.me.name}?`
++          : `¿Salir y entrar como ${res.me.name}?`,
++      );
++      if (!ok) return;
++      await signOut();
++      deps.clearQueries();
++    }
++    await signIn(res, res.me);
++  }
++  if (link.destination) {
++    const native = nativeHrefFor(link.destination);
++    if (native) deps.push(native);
++    else await deps.openLegacy(link.destination, 'Comunica');
++  }
++}
++
++/**
++ * ¿Hay que volver a la puerta? Solo si la sesión se acaba de revocar y se está
++ * en una pantalla interna de Comunica (no en otra pestaña, ni en la puerta).
++ * «Salir» a propósito ya vuelve solo desde «Tu cuenta».
++ */
++export const shouldReturnToGate = (
++  session: { status: string; reason?: string },
++  pathname: string | null | undefined,
++) =>
++  session.status === 'signedOut' &&
++  session.reason === 'revoked' &&
++  !!pathname?.startsWith('/comunica/');
++
++function useBackToGateWhenRevoked() {
++  const router = useRouter();
++  const pathname = usePathname();
++  const { session } = useArea();
++  const revoked =
++    session.status === 'signedOut' && session.reason === 'revoked';
++  const pathRef = useRef(pathname);
++  useEffect(() => {
++    pathRef.current = pathname;
++  }, [pathname]);
++  // Solo al revocarse la sesión, no a cada navegación.
++  useEffect(() => {
++    if (!revoked) return;
++    if (!shouldReturnToGate(getSessionState(), pathRef.current)) return;
++    if (router.canDismiss()) router.dismissAll();
++    router.navigate('/comunica');
++  }, [revoked, router]);
++}
+ 
+ export function useComunicaLinks() {
++  useBackToGateWhenRevoked();
+   const router = useRouter();
+   const qc = useQueryClient();
+   const { toast } = useToast();
+   const openLegacy = useOpenLegacy();
++  // La cola cambia con la persona; el manejador lee siempre la de ahora.
++  const { outbox } = useArea();
++  const outboxRef = useRef(outbox);
++  useEffect(() => {
++    outboxRef.current = outbox;
++  }, [outbox]);
+ 
+   useEffect(() => {
+-    const handle = async (link: ComunicaLink) => {
+-      // Este modo se queda el enlace: el del legado sobra.
+-      consumePendingComunicaAuthUrl();
+-      if (link.kind === 'appAccess') {
+-        router.push({
+-          pathname: '/comunica/acceso-codigo',
+-          params: { link: link.linkToken },
+-        });
+-        return;
+-      }
+-      if (link.kind === 'event') {
+-        // La ficha nativa del evento llega con el plan 13.
+-        router.push({
+-          pathname: '/comunica/web',
+-          params: { url: `${COMUNICA_ORIGIN}/actividades/?e=${link.slug}` },
++    const handle = (link: ComunicaLink) =>
++      handleComunicaLink(link, {
++        push: (href) => router.push(href as never),
++        toast: (label) => toast.show({ variant: 'warning', label }),
++        openLegacy,
++        confirm: confirmSwitch,
++        get outbox() {
++          return outboxRef.current;
++        },
++        clearQueries: () => qc.clear(),
++      }).catch(() => {
++        toast.show({
++          variant: 'warning',
++          label: 'No se ha podido usar el enlace. Entra con un código.',
+         });
+-        return;
+-      }
+-      if (link.kind === 'other') {
+-        router.push({ pathname: '/comunica/web', params: { url: link.url } });
+-        return;
+-      }
+-      if (link.auth) {
+-        try {
+-          const res = await getComunicaApi().exchange(
+-            link.auth.magic
+-              ? { magic: link.auth.magic }
+-              : { token: link.auth.token! },
+-          );
+-          if ('choose' in res) return;
+-          const current = getSessionState();
+-          if (
+-            current.status === 'signedIn' &&
+-            current.me &&
+-            current.me.personId !== res.me.personId
+-          ) {
+-            const first = res.me.name.split(' ')[0];
+-            const ok = await confirm(
+-              `Este enlace es para ${first}`,
+-              `¿Salir y entrar como ${res.me.name}?`,
+-            );
+-            if (!ok) return;
+-            await signOut();
+-            qc.clear();
+-          }
+-          await signIn(res, res.me);
+-        } catch {
+-          toast.show({
+-            variant: 'warning',
+-            label: 'El enlace ha caducado. Entra con un código.',
+-          });
+-          return;
+-        }
+-      }
+-      if (link.destination) {
+-        const native = nativeHrefFor(link.destination);
+-        if (native) router.push(native as never);
+-        else await openLegacy(link.destination, 'Comunica');
+-      }
+-    };
++      });
+     const pending = consumePendingNativeLink();
+     if (pending) void handle(pending);
+     return subscribeNativeLink((l) => void handle(l));
+diff --git a/mcm-app/hooks/comunica/useGrupos.ts b/mcm-app/hooks/comunica/useGrupos.ts
+index 86a56c0..bfbea7f 100644
+--- a/mcm-app/hooks/comunica/useGrupos.ts
++++ b/mcm-app/hooks/comunica/useGrupos.ts
+@@ -1,8 +1,8 @@
+ // Lecturas y escrituras de Grupos y fichas (plan 05 «Datos»).
+ //
+ //   · `people`, un grupo y la ficha se guardan en el móvil (sin la salud ni
+-//     los datos personales, que van en sus propias rutas con `persist: false`
+-//     y solo se piden con conexión).
++//     los datos personales, que van en sus propias rutas, `persist: false` en
++//     `ROUTES`, y solo se piden con conexión).
+ //   · Las escrituras (aviso, pañuelo, vincular) van por la cola: la pantalla
+ //     las enseña al momento con su `UploadStatus`.
+ //   · Con conexión se precargan las fichas y fotos de TUS grupos, de cuatro en
+@@ -43,6 +43,7 @@ const SECRET_GC_MS = 60_000;
+ export function usePeople() {
+   return useAreaQuery({
+     key: GRUPOS_KEYS.people,
++    route: 'people',
+     fetch: () => getComunicaApi().getPeople(),
+     staleTime: STALE.structure,
+   });
+@@ -56,6 +57,7 @@ export function useGroupDetail(groupId: string) {
+   const qc = useQueryClient();
+   return useAreaQuery({
+     key: GRUPOS_KEYS.group(groupId),
++    route: 'group',
+     fetch: () => getComunicaApi().getGroupDetail(groupId),
+     staleTime: STALE.structure,
+     enabled: !!groupId,
+@@ -88,6 +90,7 @@ export function groupPlaceholder(
+ export function useParticipant(personId: string) {
+   return useAreaQuery({
+     key: GRUPOS_KEYS.person(personId),
++    route: 'person',
+     fetch: () => getComunicaApi().getPerson(personId),
+     staleTime: STALE.state,
+     enabled: !!personId,
+@@ -98,8 +101,8 @@ export function useParticipant(personId: string) {
+ export function usePersonal(personId: string, enabled: boolean) {
+   return useAreaQuery({
+     key: GRUPOS_KEYS.personal(personId),
++    route: 'personal',
+     fetch: () => getComunicaApi().getPersonal(personId),
+-    persist: false,
+     gcTime: SECRET_GC_MS,
+     staleTime: 0,
+     enabled: enabled && !!personId,
+@@ -111,8 +114,8 @@ export function usePersonal(personId: string, enabled: boolean) {
+ export function useHealth(personId: string, enabled: boolean) {
+   return useAreaQuery({
+     key: GRUPOS_KEYS.health(personId),
++    route: 'health',
+     fetch: () => getComunicaApi().getHealth(personId),
+-    persist: false,
+     gcTime: SECRET_GC_MS,
+     staleTime: 0,
+     enabled: enabled && !!personId,
+diff --git a/mcm-app/hooks/comunica/useMe.ts b/mcm-app/hooks/comunica/useMe.ts
+index 4c98582..cd2f874 100644
+--- a/mcm-app/hooks/comunica/useMe.ts
++++ b/mcm-app/hooks/comunica/useMe.ts
+@@ -11,6 +11,7 @@ import { STALE, useAreaQuery } from './useAreaQuery';
+ export function useMe() {
+   const q = useAreaQuery({
+     key: ['me'],
++    route: 'me',
+     fetch: () => getComunicaApi().getMe(),
+     staleTime: STALE.structure,
+   });
+diff --git a/mcm-app/hooks/comunica/useOutbox.ts b/mcm-app/hooks/comunica/useOutbox.ts
+index 7f43c4a..b7ac95e 100644
+--- a/mcm-app/hooks/comunica/useOutbox.ts
++++ b/mcm-app/hooks/comunica/useOutbox.ts
+@@ -22,10 +22,10 @@ export function useOutbox() {
+   };
+ }
+ 
+-/** Abrir una pantalla del área también sube lo pendiente. */
++/** Abrir una pantalla del área también sube lo pendiente (ya, sin esperar). */
+ export function useFlushOutboxOnMount() {
+   const { outbox } = useArea();
+   useEffect(() => {
+-    void outbox?.flush();
++    void outbox?.wake();
+   }, [outbox]);
+ }
+diff --git a/mcm-app/services/comunica/client.ts b/mcm-app/services/comunica/client.ts
+index 38a273b..762ad59 100644
+--- a/mcm-app/services/comunica/client.ts
++++ b/mcm-app/services/comunica/client.ts
+@@ -132,7 +132,13 @@ export class ComunicaApiError extends Error {
+ export const isComunicaApiError = (e: unknown): e is ComunicaApiError =>
+   e instanceof ComunicaApiError;
+ 
++/**
++ * Sin cuerpo de error del contrato, el código sale del estado HTTP. Un 400 es
++ * la petición (no se arregla insistiendo); lo que no esté aquí (500, 502…) se
++ * toma por CRM caído y se reintenta.
++ */
+ const STATUS_CODE: Record<number, ErrorCode> = {
++  400: 'validation',
+   401: 'unauthenticated',
+   403: 'forbidden',
+   404: 'not_found',
+@@ -233,6 +239,7 @@ export function createHttpClient({
+   }
+ 
+   const q = (opts?: ReadOptions) => (opts?.fresh ? '?fresh=1' : '');
++  const isOwnUrl = (url: string) => url.startsWith(`${root}/`);
+   const enc = encodeURIComponent;
+ 
+   return {
+@@ -317,9 +324,11 @@ export function createHttpClient({
+     assignGroup: (mid, body) =>
+       request('PUT', `/v1/memberships/${enc(mid)}/group`, WriteResult, body),
+     photoSource: (url) => {
+-      // `expo-image` pide la foto él solo: el token va en la cabecera. Si aún
+-      // no hay token de acceso, sin cabecera (dará 401 y saldrán las iniciales).
+-      const token = getToken?.();
++      // `expo-image` pide la foto él solo: el token va en la cabecera, y SOLO
++      // si la foto es de nuestro servidor (una `photoUrl` de otro dominio no se
++      // lleva la sesión). Si aún no hay token de acceso, sin cabecera (dará 401
++      // y saldrán las iniciales).
++      const token = isOwnUrl(url) ? getToken?.() : null;
+       return typeof token === 'string'
+         ? {
+             uri: url,
+diff --git a/mcm-app/services/comunica/links.ts b/mcm-app/services/comunica/links.ts
+index 0be0864..c0fdfaf 100644
+--- a/mcm-app/services/comunica/links.ts
++++ b/mcm-app/services/comunica/links.ts
+@@ -241,6 +241,18 @@ export function classifyComunicaLink(url: string): ComunicaLink | null {
+   };
+ }
+ 
++/**
++ * La página PÚBLICA que abre el legado sin sesión para un enlace: la ficha de
++ * una actividad (hasta que sea nativa, plan 13) u otra página del dominio, ya
++ * reconstruida por `classifyComunicaLink`. `null` si no es de esas.
++ */
++export function publicPageUrl(link: ComunicaLink | null): string | null {
++  if (link?.kind === 'event')
++    return `${COMUNICA_ORIGIN}/actividades/?e=${link.slug}`;
++  if (link?.kind === 'other') return link.url;
++  return null;
++}
++
+ /** La query de un destino, en el orden del plugin. */
+ export function destinationQuery(d: Destination): string {
+   return (['internalpage', 'action', 'id', 'from'] as const)
+diff --git a/mcm-app/services/comunica/outbox.ts b/mcm-app/services/comunica/outbox.ts
+index faff589..11b91bb 100644
+--- a/mcm-app/services/comunica/outbox.ts
++++ b/mcm-app/services/comunica/outbox.ts
+@@ -9,7 +9,10 @@
+ //   · El `clientId` lo pone quien encola y se conserva entre reintentos: el
+ //     servidor no duplica.
+ //   · Estados: pending → sending → applied | failed | stuck (tras 5 fallos).
+-//   · Red caída o CRM caído: se reintenta sola, con espera creciente.
++//   · Sin red: NO es un fallo. Sigue `pending` («guardada en el móvil, se
++//     enviará sola»), sin gastar intentos, y sube al volver la red (`wake`).
++//   · CRM caído (503/5xx): `failed` con reintento automático y espera
++//     creciente; a los 5, `stuck`.
+ //     `validation`, `forbidden` o una respuesta rota: `failed` con el mensaje,
+ //     sin reintentar sola (no se arregla insistiendo).
+ //   · Sube al encolar, al reconectar, al volver la app y al abrir cualquier
+@@ -17,8 +20,17 @@
+ //   · Sin límite de horas: lo de 72 h del plugin venía del nonce de WordPress.
+ //     La pantalla enseña la fecha de lo viejo para que nadie suba una lista
+ //     antigua sin darse cuenta.
++//   · Un 401 no cuenta para el límite: la escritura espera a que se vuelva a
++//     entrar (no se arregla insistiendo, pero tampoco es culpa suya).
++//   · Un fallo que no es del servidor ni de la red (un error de programación)
++//     no se reintenta solo: `failed` con `internal`.
+ //
+ // Es por persona (el cajón `outbox` de `storage.ts`): al salir, se borra.
++// `dispose()` la apaga para siempre: cancela los reintentos programados y, si
++// había una subida en vuelo, lo que conteste ya no se escribe ni se anuncia.
++// La llama el proveedor al cambiar de persona y la sesión al salir, ANTES de
++// borrar: así nada de A se vuelve a escribir en el móvil ni se sube con la
++// sesión de B.
+ 
+ import { isComunicaApiError } from './client';
+ import { readDrawer, writeDrawer } from './storage';
+@@ -41,6 +53,8 @@ export interface OutboxEntry<P = unknown> {
+   createdAt: number;
+   updatedAt: number;
+   nextAttemptAt: number;
++  /** Veces que se ha esperado por falta de red (no cuentan como intento). */
++  waits?: number;
+   /** Lo que contestó el servidor al subir (solo en memoria). */
+   result?: unknown;
+ }
+@@ -68,6 +82,11 @@ export interface Outbox {
+   }): Promise<void>;
+   /** Intenta subir lo que toca ya. */
+   flush(): Promise<void>;
++  /**
++   * Ha vuelto la red, la app o se abre una pantalla: lo que esperaba (sin
++   * red, sin sesión o un reintento de CRM caído) se intenta YA.
++   */
++  wake(): Promise<void>;
+   /** «Reintentar» a mano (también lo atascado). */
+   retry(key: string): Promise<void>;
+   /** Descartar (con confirmación en la pantalla). */
+@@ -75,6 +94,9 @@ export interface Outbox {
+   entries(): readonly OutboxEntry[];
+   get(key: string): OutboxEntry | undefined;
+   subscribe(listener: () => void): () => void;
++  /** Apagarla para siempre (salir, cambiar de persona). */
++  dispose(): void;
++  readonly disposed: boolean;
+ }
+ 
+ interface Options {
+@@ -83,26 +105,55 @@ interface Options {
+   /** Cuando una sube: refrescar consultas, etc. */
+   onApplied?: (entry: OutboxEntry, result: unknown) => void;
+   now?: () => number;
+-  /** Programar el siguiente intento (en tests, falso). */
+-  schedule?: (fn: () => void, ms: number) => void;
++  /**
++   * Programar el siguiente intento (en tests, falso). Devuelve, si puede, cómo
++   * cancelarlo: `dispose()` lo llama.
++   */
++  schedule?: (fn: () => void, ms: number) => unknown;
+ }
+ 
++/** Un reintento programado vale como mucho esto (sin `Infinity`: va a JSON). */
++const NEVER = Number.MAX_SAFE_INTEGER;
++
++/** ¿Le toca subir sola? Lo rechazado sin `auto` espera a «Reintentar». */
++const isDue = (e: OutboxEntry, t: number) =>
++  (e.status === 'pending' ||
++    (e.status === 'failed' && e.error?.auto !== false)) &&
++  (e.nextAttemptAt ?? 0) <= t;
++
+ export function createOutbox({
+   personId,
+   handlers,
+   onApplied,
+   now = Date.now,
+   schedule = (fn, ms) => {
+-    setTimeout(fn, ms);
++    const id = setTimeout(fn, ms);
++    return () => clearTimeout(id);
+   },
+ }: Options): Outbox {
+   let list: OutboxEntry[] = [];
+   let snapshot: readonly OutboxEntry[] = [];
+   let flushing: Promise<void> | null = null;
+   let loaded = false;
++  let disposed = false;
+   const listeners = new Set<() => void>();
++  const timers = new Set<() => void>();
++
++  const later = (ms: number) => {
++    let cancel: (() => void) | null = null;
++    const run = () => {
++      if (cancel) timers.delete(cancel);
++      if (!disposed) void outbox.flush();
++    };
++    const handle = schedule(run, ms);
++    cancel = typeof handle === 'function' ? (handle as () => void) : null;
++    if (cancel) timers.add(cancel);
++  };
+ 
++  // Ya apagada, ni se anuncia ni se escribe: lo de esta persona puede estar
++  // borrándose ahora mismo (salir) y no debe resucitar.
+   const changed = async () => {
++    if (disposed) return;
+     snapshot = [...list];
+     listeners.forEach((l) => l());
+     await writeDrawer(
+@@ -120,17 +171,30 @@ export function createOutbox({
+   };
+ 
+   async function sendOne(entry: OutboxEntry) {
++    if (disposed) return;
+     const handler = handlers[entry.kind];
+     if (!handler) {
+       logger.error('[comunica] cola sin manejador', entry.kind);
++      // Sin manejador no hay nada que hacer: que no bloquee el bucle.
++      entry.status = 'failed';
++      entry.error = {
++        code: 'internal',
++        message: 'Sin manejador',
++        auto: false,
++      };
++      entry.nextAttemptAt = NEVER;
++      await changed();
+       return;
+     }
+     entry.status = 'sending';
+     entry.updatedAt = now();
+     await changed();
++    // Apagada mientras se escribía: no se sube (podría ir ya con otra sesión).
++    if (disposed) return;
+     const sentClientId = entry.clientId;
+     try {
+       const result = await handler(entry);
++      if (disposed) return;
+       // Si mientras subía se encoló otra versión, esa sigue pendiente.
+       const currentEntry = list.find((e) => e.key === entry.key);
+       if (currentEntry && currentEntry.clientId !== sentClientId) return;
+@@ -140,33 +204,53 @@ export function createOutbox({
+       entry.updatedAt = now();
+       onApplied?.(entry, result);
+     } catch (e) {
++      if (disposed) return;
+       const currentEntry = list.find((x) => x.key === entry.key);
+       if (currentEntry && currentEntry.clientId !== sentClientId) return;
+-      entry.attempts += 1;
+       entry.updatedAt = now();
+-      const code = isComunicaApiError(e) ? e.code : 'network';
++      const apiError = isComunicaApiError(e);
++      // Lo que no es un `ComunicaApiError` no viene del servidor ni de la red
++      // (el cliente envuelve los fallos de `fetch`): es un fallo de la app.
++      const code = apiError ? e.code : 'internal';
+       const message = e instanceof Error ? e.message : String(e);
+-      const reason = isComunicaApiError(e) ? e.reason : undefined;
++      const reason = apiError ? e.reason : undefined;
+       if (code === 'unauthenticated') {
+-        // Sin sesión: se queda esperando a que se vuelva a entrar.
++        // Sin sesión: se queda esperando a que se vuelva a entrar. No cuenta
++        // como intento: no es que el servidor la rechace.
+         entry.status = 'pending';
+-        entry.nextAttemptAt = now() + backoffMs(entry.attempts);
+-      } else if (code === 'network' || code === 'crm_unavailable') {
++        entry.error = undefined;
++        entry.nextAttemptAt = now() + backoffMs(Math.max(1, entry.attempts));
++      } else if (code === 'network') {
++        // Sin conexión no es un fallo: sigue «guardada en el móvil» y se sube
++        // sola al volver la red (`wake`), sin gastar intentos. Mientras, se
++        // prueba de vez en cuando por si la red volvió sin avisar.
++        entry.waits = (entry.waits ?? 0) + 1;
++        entry.status = 'pending';
++        entry.error = undefined;
++        entry.nextAttemptAt = now() + backoffMs(entry.waits);
++        later(backoffMs(entry.waits));
++      } else if (code === 'crm_unavailable') {
++        entry.attempts += 1;
+         if (entry.attempts >= MAX_ATTEMPTS) {
+           entry.status = 'stuck';
+           entry.error = { code, message, reason, auto: false };
++          entry.nextAttemptAt = NEVER;
+           // Ids, nunca nombres.
+           logger.error('[comunica] escritura atascada', entry.kind, entry.key);
+         } else {
+           entry.status = 'failed';
+           entry.error = { code, message, reason, auto: true };
+           entry.nextAttemptAt = now() + backoffMs(entry.attempts);
+-          schedule(() => void outbox.flush(), backoffMs(entry.attempts));
++          later(backoffMs(entry.attempts));
+         }
+       } else {
++        entry.attempts += 1;
++        if (code === 'internal') {
++          logger.error('[comunica] escritura con fallo de la app', entry.kind);
++        }
+         entry.status = 'failed';
+         entry.error = { code, message, reason, auto: false };
+-        entry.nextAttemptAt = Number.POSITIVE_INFINITY;
++        entry.nextAttemptAt = NEVER;
+       }
+     }
+     prune();
+@@ -175,13 +259,24 @@ export function createOutbox({
+ 
+   const outbox: Outbox = {
+     async load() {
+-      if (loaded) return;
++      if (loaded || disposed) return;
+       loaded = true;
+       const saved = await readDrawer<OutboxEntry[]>(personId, 'outbox');
+-      // Lo que se quedó «subiendo» al cerrar la app vuelve a pendiente.
+-      const fromDisk = (saved ?? []).map((e) =>
+-        e.status === 'sending' ? { ...e, status: 'pending' as const } : e,
+-      );
++      if (disposed) return;
++      // Lo que se quedó «subiendo» al cerrar la app vuelve a pendiente. Lo
++      // rechazado sin reintento automático sigue esperando a «Reintentar»
++      // (antes un `Infinity` pasaba por JSON como `null` y se reenviaba).
++      const fromDisk = (Array.isArray(saved) ? saved : []).map((e) => ({
++        ...e,
++        status: e.status === 'sending' ? ('pending' as const) : e.status,
++        nextAttemptAt:
++          typeof e.nextAttemptAt === 'number' &&
++          Number.isFinite(e.nextAttemptAt)
++            ? e.nextAttemptAt
++            : e.status === 'failed' || e.status === 'stuck'
++              ? NEVER
++              : 0,
++      }));
+       // Lo encolado antes de terminar de cargar gana a lo del disco.
+       const keys = new Set(list.map((e) => e.key));
+       list = [...fromDisk.filter((e) => !keys.has(e.key)), ...list];
+@@ -190,6 +285,7 @@ export function createOutbox({
+     },
+ 
+     async enqueue({ key, kind, payload, clientId, meta = {} }) {
++      if (disposed) return;
+       const t = now();
+       const prev = list.find((e) => e.key === key);
+       const entry: OutboxEntry = {
+@@ -210,6 +306,7 @@ export function createOutbox({
+     },
+ 
+     flush() {
++      if (disposed) return Promise.resolve();
+       if (flushing) return flushing;
+       const run = async () => {
+         // El primer `await` va ANTES del bucle: si no hubiera nada que subir,
+@@ -218,12 +315,9 @@ export function createOutbox({
+         await Promise.resolve();
+         try {
+           for (;;) {
++            if (disposed) break;
+             const t = now();
+-            const next = list.find(
+-              (e) =>
+-                (e.status === 'pending' || e.status === 'failed') &&
+-                e.nextAttemptAt <= t,
+-            );
++            const next = list.find((e) => isDue(e, t));
+             if (!next) break;
+             await sendOne(next);
+           }
+@@ -235,7 +329,19 @@ export function createOutbox({
+       return flushing;
+     },
+ 
++    wake() {
++      if (disposed) return Promise.resolve();
++      const t = now();
++      for (const e of list) {
++        if (isDue(e, Number.MAX_SAFE_INTEGER - 1) && e.nextAttemptAt > t) {
++          e.nextAttemptAt = t;
++        }
++      }
++      return outbox.flush();
++    },
++
+     async retry(key) {
++      if (disposed) return;
+       const e = list.find((x) => x.key === key);
+       if (!e || e.status === 'sending' || e.status === 'applied') return;
+       e.status = 'pending';
+@@ -247,10 +353,22 @@ export function createOutbox({
+     },
+ 
+     async discard(key) {
++      if (disposed) return;
+       list = list.filter((e) => e.key !== key);
+       await changed();
+     },
+ 
++    dispose() {
++      if (disposed) return;
++      disposed = true;
++      timers.forEach((cancel) => cancel());
++      timers.clear();
++      listeners.clear();
++    },
++    get disposed() {
++      return disposed;
++    },
++
+     entries: () => snapshot,
+     get: (key) => snapshot.find((e) => e.key === key),
+     subscribe(listener) {
+diff --git a/mcm-app/services/comunica/persist.ts b/mcm-app/services/comunica/persist.ts
+new file mode 100644
+index 0000000..c143825
+--- /dev/null
++++ b/mcm-app/services/comunica/persist.ts
+@@ -0,0 +1,71 @@
++// services/comunica/persist.ts
++//
++// Qué parte de la caché de consultas se guarda en el móvil (plan 01 §3), sin
++// React: lo usa `ComunicaAreaProvider` y lo prueban los guardarraíles.
++
++import {
++  dehydrate,
++  type DehydratedState,
++  type QueryClient,
++} from '@tanstack/react-query';
++import { ROUTES } from './contract';
++import { logger } from '@/utils/logger';
++
++/**
++ * Las lecturas del contrato que nunca se guardan (`persist: false`): la salud
++ * y los datos personales. Sus claves llevan ese nombre (`GRUPOS_KEYS`), y se
++ * excluyen aunque una consulta llegue marcada por error con `persist: true`.
++ */
++export const NEVER_STORED: ReadonlySet<string> = new Set(
++  Object.entries(ROUTES)
++    .filter(([, r]) => r.method === 'GET' && !r.persist)
++    .map(([name]) => name),
++);
++
++/** Solo se guarda lo que es de guardar: `meta.persist` y con datos. */
++export function dehydrateArea(qc: QueryClient): DehydratedState {
++  return dehydrate(qc, {
++    shouldDehydrateQuery: (q) =>
++      q.state.status === 'success' &&
++      q.meta?.persist === true &&
++      !q.queryKey.some((k) => typeof k === 'string' && NEVER_STORED.has(k)),
++  });
++}
++
++/**
++ * Lo que cabe en una fila del almacén. En Android, AsyncStorage no lee una
++ * fila de más de ~2 MB (CursorWindow): con menos de un millón de caracteres
++ * hay margen aunque haya acentos.
++ */
++export const MAX_SAVED_CHARS = 1_000_000;
++
++const isFicha = (key: readonly unknown[]) =>
++  key[1] === 'grupos' && key[2] === 'person';
++
++/**
++ * Si la caché no cabe, se quitan fichas (de la más vieja a la más nueva) hasta
++ * que quepa: mejor perder unas fichas precargadas que la caché entera.
++ */
++export function fitForStorage(
++  state: DehydratedState,
++  max = MAX_SAVED_CHARS,
++): DehydratedState {
++  if (JSON.stringify(state).length <= max) return state;
++  const keep = state.queries.filter((q) => !isFicha(q.queryKey));
++  const fichas = state.queries
++    .filter((q) => isFicha(q.queryKey))
++    .sort((a, b) => b.state.dataUpdatedAt - a.state.dataUpdatedAt);
++  let total = JSON.stringify({ ...state, queries: keep }).length;
++  const queries = [...keep];
++  for (const q of fichas) {
++    const size = JSON.stringify(q).length + 1;
++    if (total + size > max) break;
++    queries.push(q);
++    total += size;
++  }
++  logger.warn(
++    '[comunica] caché grande: fichas sin guardar',
++    fichas.length - (queries.length - keep.length),
++  );
++  return { ...state, queries };
++}
+diff --git a/mcm-app/services/comunica/photos.ts b/mcm-app/services/comunica/photos.ts
+index e44ec8e..076bca0 100644
+--- a/mcm-app/services/comunica/photos.ts
++++ b/mcm-app/services/comunica/photos.ts
+@@ -13,15 +13,28 @@ export async function clearPhotoCache(): Promise<void> {
+   await Promise.all([Image.clearDiskCache(), Image.clearMemoryCache()]);
+ }
+ 
+-/** Precarga (de cuatro en cuatro las pide quien llama). */
++/**
++ * Precarga (de cuatro en cuatro las pide quien llama). Las cabeceras van con
++ * cada foto según su `PhotoSource`: las que no llevan sesión (otro dominio) se
++ * piden aparte y sin ella.
++ */
+ export async function prefetchPhotos(sources: PhotoSource[]): Promise<void> {
+   const remote = sources.filter((s) => /^https?:/.test(s.uri));
+-  if (remote.length === 0) return;
++  const withAuth = remote.filter((s) => s.headers);
++  const plain = remote.filter((s) => !s.headers);
+   try {
+-    await Image.prefetch(
+-      remote.map((s) => s.uri),
+-      { cachePolicy: 'disk', headers: remote[0].headers },
+-    );
++    if (withAuth.length > 0) {
++      await Image.prefetch(
++        withAuth.map((s) => s.uri),
++        { cachePolicy: 'disk', headers: withAuth[0].headers },
++      );
++    }
++    if (plain.length > 0) {
++      await Image.prefetch(
++        plain.map((s) => s.uri),
++        { cachePolicy: 'disk' },
++      );
++    }
+   } catch (e) {
+     logger.warn('[comunica] no se han podido precargar fotos', e);
+   }
+diff --git a/mcm-app/services/comunica/session.ts b/mcm-app/services/comunica/session.ts
+index f2855db..86e516a 100644
+--- a/mcm-app/services/comunica/session.ts
++++ b/mcm-app/services/comunica/session.ts
+@@ -13,12 +13,18 @@
+ //     falta para entrar sin cobertura y para el espacio por persona (plan 01).
+ //
+ // Ante un 401: se refresca una vez y se repite (`withSession`). Si el refresco
+-// falla, la sesión acaba ('revoked'), pero NO se borra nada en silencio: lo que
+-// haya en la cola sigue ahí hasta que la persona salga o vuelva a entrar.
++// falla (o no hay con qué refrescar), la sesión acaba ('revoked'), pero NO se
++// borra nada en silencio: lo que haya en la cola sigue ahí hasta que la persona
++// salga o vuelva a entrar.
++//
++// Cada entrada y cada salida abre una «época» nueva. Lo que empezó en una
++// época y acaba en otra no vale: una llamada de A que termina con B dentro
++// falla como 401 (y no se repite con el token de B), y un refresco de A que
++// vuelve tras salir no reescribe nada.
+ 
+ import AsyncStorage from '@react-native-async-storage/async-storage';
+ import type { ComunicaApi } from './client';
+-import { isComunicaApiError } from './client';
++import { ComunicaApiError, isComunicaApiError } from './client';
+ import type { Me, Tokens } from './contract';
+ import { clearAll } from './storage';
+ import { logger } from '@/utils/logger';
+@@ -73,8 +79,10 @@ let accessToken: string | null = null;
+ let accessExp = 0;
+ let refreshing: Promise<string | null> | null = null;
+ let initPromise: Promise<void> | null = null;
++let epoch = 0;
+ const listeners = new Set<() => void>();
+ const signOutCleanups = new Set<() => unknown>();
++const sessionEndHooks = new Set<() => void>();
+ 
+ /**
+  * Algo más que borrar al salir (las fotos de `expo-image`, plan 05). Lo
+@@ -88,6 +96,26 @@ export function addSignOutCleanup(fn: () => unknown): () => void {
+   };
+ }
+ 
++/**
++ * Lo que hay que apagar en cuanto se acaba la sesión (salir o revocada), antes
++ * de borrar nada: la cola de esa persona (`ComunicaAreaProvider`). Síncrono.
++ */
++export function onSessionEnd(fn: () => void): () => void {
++  sessionEndHooks.add(fn);
++  return () => {
++    sessionEndHooks.delete(fn);
++  };
++}
++
++/** El 401 de una llamada que empezó con otra sesión. */
++const sessionChanged = () =>
++  new ComunicaApiError(
++    'unauthenticated',
++    'La sesión ha cambiado',
++    401,
++    'session_changed',
++  );
++
+ const emit = (next: SessionState) => {
+   state = next;
+   listeners.forEach((l) => l());
+@@ -108,12 +136,15 @@ export function subscribeSession(listener: () => void): () => void {
+ /** Al arrancar: ¿había sesión guardada? Sin red se entra igual. */
+ export function initSession(): Promise<void> {
+   if (initPromise) return initPromise;
++  const started = epoch;
+   initPromise = (async () => {
+     try {
+       const [refresh, rawMe] = await Promise.all([
+         deps?.secrets.get(REFRESH_KEY) ?? null,
+         AsyncStorage.getItem(PERSON_KEY),
+       ]);
++      // Si mientras se leía alguien ha entrado (un enlace), manda eso.
++      if (epoch !== started) return;
+       const me = rawMe ? (JSON.parse(rawMe) as Me) : null;
+       emit(
+         refresh && me
+@@ -122,7 +153,7 @@ export function initSession(): Promise<void> {
+       );
+     } catch (e) {
+       logger.warn('[comunica] sesión ilegible', e);
+-      emit({ status: 'signedOut', me: null });
++      if (epoch === started) emit({ status: 'signedOut', me: null });
+     }
+   })();
+   return initPromise;
+@@ -136,6 +167,7 @@ function setAccess(tokens: Tokens) {
+ 
+ export async function signIn(tokens: Tokens, me: Me): Promise<void> {
+   if (!deps) throw new Error('Sesión sin configurar');
++  epoch += 1;
+   setAccess(tokens);
+   await deps.secrets.set(REFRESH_KEY, tokens.refreshToken);
+   await AsyncStorage.setItem(PERSON_KEY, JSON.stringify(me));
+@@ -156,43 +188,82 @@ export const currentAccessToken = (): string | null =>
+ 
+ /** Un token de acceso válido, refrescando si hace falta (una vez a la vez). */
+ export async function getAccessToken(force = false): Promise<string | null> {
++  // Sin sesión no se refresca nada (ni lo que quede de la anterior).
++  if (state.status !== 'signedIn') return null;
+   if (!force && currentAccessToken()) return accessToken;
+   if (refreshing) return refreshing;
+-  refreshing = (async () => {
++  const started = epoch;
++  let p: Promise<string | null> | null = null;
++  p = (async () => {
+     try {
+       const refresh = await deps?.secrets.get(REFRESH_KEY);
+-      if (!deps || !refresh) return null;
++      if (epoch !== started) return null;
++      if (!deps || !refresh) {
++        // Un 401 sin con qué refrescar: la sesión no sirve. A la puerta.
++        if (force) await endSession('revoked');
++        return null;
++      }
+       const tokens = await deps.refresh(refresh);
++      // Se ha salido (o ha entrado otra persona) mientras tanto: ni se usa ni
++      // se guarda.
++      if (epoch !== started) return null;
+       setAccess(tokens);
+       await deps.secrets.set(REFRESH_KEY, tokens.refreshToken);
+       return tokens.accessToken;
+     } catch (e) {
+-      if (isComunicaApiError(e) && e.code === 'unauthenticated') {
++      if (
++        epoch === started &&
++        isComunicaApiError(e) &&
++        e.code === 'unauthenticated'
++      ) {
+         await endSession('revoked');
+       }
+       // Sin red: se sigue «dentro» con lo guardado; la petición fallará por
+       // red y la cola reintentará.
+       return null;
+     } finally {
+-      refreshing = null;
++      // El de otra época ya no es «el refresco en vuelo».
++      if (refreshing === p) refreshing = null;
+     }
+   })();
+-  return refreshing;
++  refreshing = p;
++  return p;
+ }
+ 
+ async function endSession(reason: 'signedOut' | 'revoked') {
++  // Primero, que nada de esta sesión siga: época nueva, sin token, la cola
++  // apagada y el estado fuera. Luego se borra lo guardado.
++  epoch += 1;
+   accessToken = null;
+   accessExp = 0;
+-  await deps?.secrets.remove(REFRESH_KEY);
+-  await AsyncStorage.removeItem(PERSON_KEY);
++  refreshing = null;
++  sessionEndHooks.forEach((fn) => {
++    try {
++      fn();
++    } catch (e) {
++      logger.warn('[comunica] al acabar la sesión', e);
++    }
++  });
+   emit({ status: 'signedOut', me: null, reason });
++  try {
++    await deps?.secrets.remove(REFRESH_KEY);
++    await AsyncStorage.removeItem(PERSON_KEY);
++  } catch (e) {
++    logger.warn('[comunica] no se ha podido borrar la sesión', e);
++  }
+ }
+ 
+-/** Salir: revoca en el servidor (si se puede) y borra TODO lo del área. */
++/**
++ * Salir, en este orden: se acaba la sesión (la cola se apaga y ya no hay
++ * token), se revoca en el servidor si se puede y se borra TODO lo del área.
++ * Así ningún reintento de la cola escribe ni sube nada después de borrar.
++ */
+ export async function signOut(): Promise<void> {
+-  const refresh = await deps?.secrets.get(REFRESH_KEY);
+-  if (refresh && deps) {
+-    await deps.logout(refresh).catch(() => {});
++  const refresh = await deps?.secrets.get(REFRESH_KEY).catch(() => null);
++  const logout = deps?.logout;
++  await endSession('signedOut');
++  if (refresh && logout) {
++    await logout(refresh).catch(() => {});
+   }
+   await clearAll();
+   await Promise.all(
+@@ -204,7 +275,6 @@ export async function signOut(): Promise<void> {
+       }
+     }),
+   );
+-  await endSession('signedOut');
+ }
+ 
+ /**
+@@ -215,14 +285,24 @@ export function withSession(api: ComunicaApi): ComunicaApi {
+   const authed =
+     <A extends unknown[], R>(fn: (...a: A) => Promise<R>) =>
+     async (...args: A): Promise<R> => {
++      const started = epoch;
++      // Cada paso comprueba que sigue la misma sesión: lo de A nunca se pide
++      // (ni se repite) con el token de B, ni su respuesta llega a B.
++      const call = async () => {
++        if (epoch !== started) throw sessionChanged();
++        const r = await fn(...args);
++        if (epoch !== started) throw sessionChanged();
++        return r;
++      };
+       await getAccessToken();
+       try {
+-        return await fn(...args);
++        return await call();
+       } catch (e) {
+         if (!isComunicaApiError(e) || e.code !== 'unauthenticated') throw e;
++        if (epoch !== started) throw e;
+         const token = await getAccessToken(true);
+         if (!token) throw e;
+-        return fn(...args);
++        return call();
+       }
+     };
+   return {
+@@ -257,6 +337,8 @@ export function __resetSessionForTests(): void {
+   accessExp = 0;
+   refreshing = null;
+   initPromise = null;
++  epoch = 0;
+   listeners.clear();
+   signOutCleanups.clear();
++  sessionEndHooks.clear();
+ }
+diff --git a/mcm-app/services/comunica/storage.ts b/mcm-app/services/comunica/storage.ts
+index 261c62e..a3e92ad 100644
+--- a/mcm-app/services/comunica/storage.ts
++++ b/mcm-app/services/comunica/storage.ts
+@@ -80,16 +80,29 @@ export async function readDrawer<T>(
+   }
+ }
+ 
++/**
++ * Guarda un cajón. Nunca lanza: si el móvil no deja escribir (lleno, una fila
++ * demasiado grande en Android), se avisa y devuelve `false`. Quien guarda en
++ * segundo plano no tiene que acordarse de capturar nada, y lo que había antes
++ * se queda como estaba.
++ */
+ export async function writeDrawer(
+   personId: string,
+   drawer: Drawer,
+   value: unknown,
+-): Promise<void> {
+-  const list = await people();
+-  if (!list.includes(personId)) {
+-    await backend.setItem(PEOPLE_KEY, JSON.stringify([...list, personId]));
++): Promise<boolean> {
++  try {
++    const json = JSON.stringify(value);
++    const list = await people();
++    if (!list.includes(personId)) {
++      await backend.setItem(PEOPLE_KEY, JSON.stringify([...list, personId]));
++    }
++    await backend.setItem(keyOf(personId, drawer), json);
++    return true;
++  } catch (e) {
++    logger.warn('[comunica] no se ha podido guardar', drawer, e);
++    return false;
+   }
+-  await backend.setItem(keyOf(personId, drawer), JSON.stringify(value));
+ }
+ 
+ /** Borra lo de una persona. */
+diff --git a/mcm-app/utils/pendingComunicaLink.ts b/mcm-app/utils/pendingComunicaLink.ts
+index a275693..33273c6 100644
+--- a/mcm-app/utils/pendingComunicaLink.ts
++++ b/mcm-app/utils/pendingComunicaLink.ts
+@@ -15,6 +15,10 @@
+  *    la URL espera aquí y `consume…()` la recoge al montar el WebView.
+  *  - **App abierta** (lo normal si vienes del Mail y ya tenías la app detrás):
+  *    la pantalla ya está montada, así que hay que avisarla → `subscribe…()`.
++ *
++ * Lo que espera aquí caduca a los 2 minutos (como el hueco del área nativa,
++ * `services/comunica/pendingLink.ts`): una URL con el token de alguien que
++ * nadie recogió no se aplica horas después por sorpresa.
+  */
+ 
+ /** Base del área privada, sin query. */
+@@ -30,7 +34,9 @@ export const COMUNICA_BASE_URL =
+  */
+ export const COMUNICA_AUTH_PARAMS = ['acceso_magico', 'token'] as const;
+ 
+-let pendingUrl: string | null = null;
++const TTL_MS = 2 * 60_000;
++
++let pending: { url: string; at: number } | null = null;
+ let listener: ((url: string) => void) | null = null;
+ 
+ /**
+@@ -65,14 +71,15 @@ export function setPendingComunicaAuthUrl(url: string) {
+     listener(url);
+     return;
+   }
+-  pendingUrl = url;
++  pending = { url, at: Date.now() };
+ }
+ 
+ /** Recoge la URL pendiente, si la hay. Se consume una sola vez. */
+ export function consumePendingComunicaAuthUrl(): string | null {
+-  const url = pendingUrl;
+-  pendingUrl = null;
+-  return url;
++  const p = pending;
++  pending = null;
++  if (!p || Date.now() - p.at > TTL_MS) return null;
++  return p.url;
+ }
+ 
+ /**
