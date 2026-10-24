@@ -29,11 +29,11 @@ import {
 } from '@/utils/comunica/pasarLista';
 import { lastHeld } from '@/utils/comunica/sessions';
 import AreaScreen from '../comun/AreaScreen';
-import AreaState from '../comun/AreaState';
 import Section from '../comun/Section';
 import { STAGE_COLOR } from '../comun/theme';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import RollStateDot, { RollStateLegend, type DotState } from './RollStateDot';
+import ScreenState from './ScreenState';
 
 /** Desde cuántos grupos sale el buscador. */
 const SEARCH_FROM = 8;
@@ -54,25 +54,25 @@ export default function GroupsTreeScreen({ section }: { section?: string }) {
   return (
     <>
       <Stack.Screen options={{ title, headerLargeTitle: false }} />
-      <AreaState
+      <ScreenState
         query={groups}
-        skeleton="list"
         empty={{
           title: 'No hay grupos de tu delegación en este curso.',
           subtitle: 'Si crees que es un error, avisa a coordinación.',
           isEmpty: (d) => d.groups.length === 0,
         }}
       >
-        {(g) => (
+        {(g, offline) => (
           <Tree
             data={g}
+            offline={offline}
             rollCalls={today.data?.rollCalls ?? []}
             section={section}
             refetch={() => Promise.all([groups.refetch(), today.refetch()])}
             dotColor={section ? sectionDot(section) : t.textMuted}
           />
         )}
-      </AreaState>
+      </ScreenState>
     </>
   );
 }
@@ -84,12 +84,14 @@ const sectionDot = (section: string) => {
 
 function Tree({
   data,
+  offline,
   rollCalls,
   section,
   refetch,
   dotColor,
 }: {
   data: NonNullable<ReturnType<typeof useGroups>['data']>;
+  offline: React.ReactNode;
   rollCalls: NonNullable<ReturnType<typeof useToday>['data']>['rollCalls'];
   section?: string;
   refetch: () => Promise<unknown>;
@@ -195,6 +197,7 @@ function Tree({
 
   return (
     <AreaScreen onRefresh={refetch}>
+      {offline}
       <View style={styles.head}>
         {section && dotColor ? (
           <View style={styles.sectionLine}>
@@ -271,7 +274,7 @@ function Tree({
         <PressableFeedback
           onPress={() => router.push('/comunica/grupos')}
           accessibilityRole="link"
-          hitSlop={8}
+          style={styles.footLink}
         >
           <Text style={[styles.sub, { color: t.textSecondary }]}>
             ¿Solo quieres mirar las fichas? Están en{' '}
@@ -289,7 +292,7 @@ function Tree({
               )
             }
             accessibilityRole="link"
-            hitSlop={8}
+            style={styles.footLink}
           >
             <Text style={[styles.sub, { color: t.textSecondary }]}>
               {data.hiddenGroups} grupos más en el CRM sin marcar para Pasar
@@ -329,4 +332,5 @@ const styles = StyleSheet.create({
   code: { fontWeight: '800' },
   rowSub: { ...typography.caption },
   foot: { gap: 10, alignItems: 'center' },
+  footLink: { minHeight: 44, justifyContent: 'center' },
 });

@@ -1,6 +1,7 @@
 // Historial de listas de un grupo (plan 04): las sesiones celebradas, la
 // última arriba, con su estado. Funciona sin cobertura (sale de lo guardado).
-// Tocar una lleva a marcar esa fecha.
+// Tocar una lleva a marcar esa fecha, sin apilar: si se vino de marcar, se
+// vuelve a esa pantalla con la fecha nueva (Roll → Historial → Roll no).
 
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -17,13 +18,13 @@ import { longDay } from '@/utils/comunica/dates';
 import { madridTime } from '@/utils/comunica/madrid';
 import { cameLabel, groupLabel, missedLabel } from '@/utils/comunica/marks';
 import { rollIndex, sessionsForGroup } from '@/utils/comunica/pasarLista';
-import { sessionOptions } from '@/utils/comunica/sessions';
+import { isFutureSession, sessionOptions } from '@/utils/comunica/sessions';
 import AreaScreen from '../comun/AreaScreen';
-import AreaState from '../comun/AreaState';
 import Section from '../comun/Section';
 import UploadStatus from '../comun/UploadStatus';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import RollStateDot from './RollStateDot';
+import ScreenState from './ScreenState';
 
 export default function RollHistoryScreen({ groupId }: { groupId: string }) {
   const groups = useGroups();
@@ -37,16 +38,17 @@ export default function RollHistoryScreen({ groupId }: { groupId: string }) {
           headerLargeTitle: false,
         }}
       />
-      <AreaState query={groups} skeleton="list">
-        {(g) => (
+      <ScreenState query={groups}>
+        {(g, offline) => (
           <History
             groupId={groupId}
             data={g}
+            offline={offline}
             rollCalls={today.data?.rollCalls ?? []}
             refetch={() => Promise.all([groups.refetch(), today.refetch()])}
           />
         )}
-      </AreaState>
+      </ScreenState>
     </>
   );
 }
@@ -54,11 +56,13 @@ export default function RollHistoryScreen({ groupId }: { groupId: string }) {
 function History({
   groupId,
   data,
+  offline,
   rollCalls,
   refetch,
 }: {
   groupId: string;
   data: NonNullable<ReturnType<typeof useGroups>['data']>;
+  offline: React.ReactNode;
   rollCalls: readonly RollCallSummary[];
   refetch: () => Promise<unknown>;
 }) {
@@ -75,21 +79,28 @@ function History({
       const r = idx.get(`${s.id}:${groupId}`);
       if (r) m.set(s.id, r);
     });
-    return sessionOptions(sessions, m, comunicaNow());
+    // Solo las celebradas: la próxima que deja marcar el selector, aquí no.
+    const now = comunicaNow();
+    return sessionOptions(sessions, m, now).filter(
+      (o) => !isFutureSession(o.session, now),
+    );
   }, [group, data.stageEvents, rollCalls, groupId]);
 
   if (!group) {
     return (
-      <EmptyState
-        icon="lock"
-        title="No tienes acceso a esto"
-        titleColor={t.text}
-      />
+      <AreaScreen>
+        <EmptyState
+          icon="lock"
+          title="No tienes acceso a esto"
+          titleColor={t.text}
+        />
+      </AreaScreen>
     );
   }
 
   return (
     <AreaScreen onRefresh={refetch}>
+      {offline}
       <Text
         style={[styles.title, { color: t.text }]}
         accessibilityRole="header"
@@ -118,7 +129,9 @@ function History({
               <PressableFeedback
                 key={o.session.id}
                 onPress={() =>
-                  router.push({
+                  // `dismissTo`: vuelve a la lista de abajo si la hay (con
+                  // esta fecha); si no, sustituye al historial.
+                  router.dismissTo({
                     pathname: '/comunica/pasar-lista/[groupId]',
                     params: { groupId, sesion: o.session.id },
                   })

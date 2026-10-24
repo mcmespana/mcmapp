@@ -119,7 +119,7 @@ export default function MarkSheet({
                 onOpenFicha();
               }}
               accessibilityRole="button"
-              hitSlop={8}
+              style={styles.linkTarget}
             >
               <Text style={[styles.link, { color: t.accentText }]}>
                 Ficha y teléfonos ›
@@ -135,7 +135,7 @@ export default function MarkSheet({
                 onMark(null);
               }}
               accessibilityRole="button"
-              hitSlop={8}
+              style={styles.linkTarget}
             >
               <Text style={[styles.link, { color: t.dangerText }]}>
                 Quitar la marca
@@ -178,4 +178,5 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   link: { ...typography.button },
+  linkTarget: { minHeight: 44, justifyContent: 'center' },
 });

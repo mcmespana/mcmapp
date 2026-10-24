@@ -91,7 +91,13 @@ export default function SessionPicker({
 }
 
 const styles = StyleSheet.create({
-  button: { flexDirection: 'row', alignItems: 'center', gap: 4, padding: 4 },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    minHeight: 44,
+    paddingHorizontal: 4,
+  },
   label: { ...typography.button },
   list: { paddingBottom: 16 },
   row: {

@@ -624,7 +624,7 @@ function SamplerLink() {
     <PressableFeedback
       onPress={() => router.push('/comunica/muestra')}
       accessibilityRole="link"
-      hitSlop={12}
+      style={styles.samplerLink}
     >
       <Text style={[styles.sampler, { color: t.accentText }]}>
         Datos inventados · Muestra de componentes
@@ -655,4 +655,5 @@ const styles = StyleSheet.create({
   dot: { width: 10, height: 10, borderRadius: radii.pillFull },
   footer: { alignItems: 'center', gap: 8, paddingTop: 8 },
   sampler: { ...typography.caption, fontWeight: '600' },
+  samplerLink: { minHeight: 44, justifyContent: 'center' },
 });
