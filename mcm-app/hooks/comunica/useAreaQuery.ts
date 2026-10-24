@@ -25,6 +25,12 @@ interface Options<T> {
   persist?: boolean;
   staleTime?: number;
   enabled?: boolean;
+  /** Cuánto se queda en memoria sin nadie mirando (la salud: 1 min). */
+  gcTime?: number;
+  /** Lo que se enseña mientras llega (los chavales de `people` en un grupo). */
+  placeholderData?: () => T | undefined;
+  /** Reintentar o no (lo que solo vale con conexión, no). */
+  retry?: boolean;
 }
 
 export const areaKey = (key: QueryKey): QueryKey => ['comunica', ...key];
@@ -35,17 +41,24 @@ export function useAreaQuery<T extends { generatedAt: string }>({
   persist = true,
   staleTime = STALE.state,
   enabled = true,
+  gcTime,
+  placeholderData,
+  retry = true,
 }: Options<T>) {
-  const query = useQuery({
+  const query = useQuery<T, Error, T>({
     queryKey: areaKey(key),
     queryFn: fetch,
     staleTime,
     enabled,
     meta: { persist },
+    gcTime,
+    // `T` es siempre un objeto (una respuesta), nunca una función: el guarda
+    // de tipos de TanStack no lo puede saber con un genérico.
+    placeholderData: placeholderData as never,
     // Solo se reintenta lo que tiene sentido reintentar (red, CRM caído); un
     // 403 o una forma rota no se arreglan insistiendo.
     retry: (count, error) =>
-      count < 2 && isComunicaApiError(error) && error.retryable,
+      retry && count < 2 && isComunicaApiError(error) && error.retryable,
   });
   return { ...query, generatedAt: query.data?.generatedAt ?? null };
 }

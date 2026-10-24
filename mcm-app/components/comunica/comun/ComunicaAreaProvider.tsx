@@ -8,7 +8,8 @@
 //     cobertura se ve lo de la última vez) y se va guardando. Solo las
 //     consultas con `persist: true`: la salud nunca toca el disco.
 //   · La cola de escrituras de esa persona, que sube al encolar, al
-//     reconectar, al volver la app y al abrir una pantalla del área.
+//     reconectar, al volver la app y al abrir una pantalla del área. Sabe
+//     subir listas (plan 04), avisos, pañuelos y vincular a un grupo (plan 05).
 
 import React, {
   createContext,
@@ -34,7 +35,15 @@ import {
   getFakeServer,
   isComunicaApiAvailable,
 } from '@/services/comunica';
-import type { RollWrite, RollWriteResult } from '@/services/comunica/contract';
+import type {
+  NoticeWrite,
+  NoticeWriteResult,
+  ParticipantProfile,
+  PeopleIndex,
+  RollWrite,
+  RollWriteResult,
+  SetScarf,
+} from '@/services/comunica/contract';
 import { createOutbox, type Outbox } from '@/services/comunica/outbox';
 import {
   getSessionState,
@@ -189,6 +198,22 @@ export default function ComunicaAreaProvider({
             // El `clientId` es el de la entrada: el mismo en cada reintento.
             { ...(e.payload as RollWrite), clientId: e.clientId },
           ),
+        // Grupos y fichas (plan 05).
+        notice: (e) =>
+          getComunicaApi().createNotice(e.meta.personId, {
+            ...(e.payload as Omit<NoticeWrite, 'clientId'>),
+            clientId: e.clientId,
+          }),
+        scarf: (e) =>
+          getComunicaApi().setScarf(e.meta.personId, {
+            scarf: (e.payload as { scarf: SetScarf }).scarf,
+            clientId: e.clientId,
+          }),
+        'membership-group': (e) =>
+          getComunicaApi().assignGroup(e.meta.membershipId, {
+            groupId: (e.payload as { groupId: string }).groupId,
+            clientId: e.clientId,
+          }),
       },
       onApplied: (e, result) => {
         if (e.kind === 'roll') {
@@ -199,6 +224,44 @@ export default function ComunicaAreaProvider({
           );
           void qc.invalidateQueries({
             queryKey: areaKey(['pasar-lista', 'today']),
+          });
+        }
+        // Lo subido se pone en la caché al momento (sin esperar a releer) y
+        // luego se relee: la pantalla no parpadea entre «Subida» y lo nuevo.
+        const personKey = areaKey(['grupos', 'person', e.meta.personId]);
+        if (e.kind === 'notice') {
+          const { notice } = result as NoticeWriteResult;
+          qc.setQueryData<ParticipantProfile>(personKey, (old) =>
+            old && !old.notices.some((n) => n.id === notice.id)
+              ? { ...old, notices: [...old.notices, notice] }
+              : old,
+          );
+          void qc.invalidateQueries({ queryKey: personKey });
+        }
+        if (e.kind === 'scarf') {
+          const { scarf } = e.payload as { scarf: SetScarf };
+          qc.setQueryData<ParticipantProfile>(personKey, (old) =>
+            old ? { ...old, scarf } : old,
+          );
+          void qc.invalidateQueries({ queryKey: personKey });
+        }
+        if (e.kind === 'membership-group') {
+          const { groupId } = e.payload as { groupId: string };
+          qc.setQueryData<PeopleIndex>(
+            areaKey(['grupos', 'people']),
+            (old) =>
+              old && {
+                ...old,
+                people: old.people.map((p) =>
+                  p.unassignedMembershipId === e.meta.membershipId
+                    ? { ...p, groupId, unassignedMembershipId: undefined }
+                    : p,
+                ),
+              },
+          );
+          void qc.invalidateQueries({ queryKey: areaKey(['grupos']) });
+          void qc.invalidateQueries({
+            queryKey: areaKey(['pasar-lista', 'groups']),
           });
         }
       },
