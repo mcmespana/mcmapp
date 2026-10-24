@@ -102,6 +102,12 @@ Antes de ejecutar un plan, se leen las respuestas de la página (colección
 | 04 | 🟡 Primer corte: portada (atajo, «Te faltan N listas», otros grupos, por etapa) y marcar/guardar contra el servidor falso. **Falta**: borrador y cola, árbol de grupos, historial, evento de hoy, coordinación en la portada y el resto de reglas del plan |
 | 10 | 🟡 Solo la tabla del enrutador (`utils/comunica/router.ts`, `global.comunicaNativa`) y el panel del laboratorio. Falta el salto a la web con sesión y los enlaces |
 
+> ⚠️ **Antes de mergear esta rama a `main`**: quitar `EXPO_PUBLIC_COMUNICA_API: "fake"`
+> del perfil `production` de `mcm-app/eas.json`. Se puso el 24/10/2026 para que
+> la build de TestFlight lanzada desde esta rama enseñe el área nativa (con el
+> Laboratorio Alpha) con datos inventados; en `main` el área de producción no
+> debe encenderse sin servidor de verdad.
+
 00 → 01 → 02 → 10 van en fila. 03 puede ir a la vez. Después, 04-09
 (monitores) y 11-16 (familias) se pueden repartir entre varias sesiones,
 porque cada uno vive en sus carpetas; dentro de familias, 11 va primero.
