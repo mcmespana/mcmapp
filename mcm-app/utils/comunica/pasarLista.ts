@@ -166,7 +166,7 @@ export function stageBuckets(
     return {
       ...b,
       groups: mine.length,
-      participants: mine.reduce((n, g) => n + g.counts.participants, 0),
+      participants: mine.reduce((n, g) => n + (g.counts.participants ?? 0), 0),
     };
   }).filter((b) => b.groups > 0);
 }

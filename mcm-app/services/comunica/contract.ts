@@ -15,8 +15,8 @@
 //     (`GET /v1/people/:id/health`). Lo vigila un test.
 //   · Las respuestas de lectura llevan `generatedAt` (el «actualizado hace»).
 //
-// Este fichero tiene lo compartido (plan 00 §3) y el trozo de Pasar Lista
-// (plan 04 «Datos»), que es el primero que se construye. Cada plan de
+// Este fichero tiene lo compartido (plan 00 §3), el trozo de Pasar Lista
+// (plan 04 «Datos») y el de Grupos y fichas (plan 05). Cada plan de
 // pantallas añade aquí su trozo al ejecutarse.
 
 // El esquema y su tipo se llaman igual (`Me` el valor, `Me` el tipo): es el
@@ -139,7 +139,12 @@ export const GroupSummary = z.object({
   segment: Segment.optional(),
   schoolLevels: z.array(z.string()),
   counts: z.object({
-    participants: z.number().int().nonnegative(),
+    /**
+     * `null` = no se sabe (el mapa de relaciones vino a medias y no hay
+     * recuento fresco): la app no pinta número. Nunca un cero inventado
+     * (`MIS-GRUPOS.md` §8 del plugin, plan 05).
+     */
+    participants: z.number().int().nonnegative().nullable(),
     monitors: z.number().int().nonnegative(),
   }),
 });
@@ -382,9 +387,248 @@ export const RollWriteResult = WriteResult.extend({
 });
 export type RollWriteResult = z.infer<typeof RollWriteResult>;
 
+// ── Grupos y fichas (plan 05 «Datos») ───────────────────────────────────────
+
+/** Los cursos que el área reconoce, en orden escolar. */
+export const SCHOOL_LEVEL_KEYS = [
+  'ep3',
+  'ep4',
+  'ep5',
+  'ep6',
+  'eso1',
+  'eso2',
+  'eso3',
+  'eso4',
+  'bach1',
+  'bach2',
+  'fp_gm',
+  'fp_gs',
+  'university',
+  'other',
+] as const;
+export const SchoolLevelKey = z.enum(SCHOOL_LEVEL_KEYS);
+export type SchoolLevelKey = z.infer<typeof SchoolLevelKey>;
+
+/**
+ * El curso de una persona: el de su relación y, si no lo tiene, el de su
+ * grupo. `label` es la corta («4 EP», «1 ESO», «1 Bach»), la que cabe en un
+ * chip. `key: null` = un texto que el servidor no reconoce (va sin color).
+ * Sin curso, el campo no viene.
+ */
+export const SchoolLevel = z.object({
+  key: SchoolLevelKey.nullable(),
+  label: z.string(),
+});
+export type SchoolLevel = z.infer<typeof SchoolLevel>;
+
+/** Un participante en las listas de Grupos y fichas. */
+export const ParticipantRow = PersonSummary.omit({ schoolLevel: true }).extend({
+  schoolLevel: SchoolLevel.optional(),
+  age: z.number().int().nonnegative().optional(),
+  /** `null` = sin grupo de la delegación. */
+  groupId: Id.nullable(),
+  /** Sin grupo: la relación a la que se le puede poner grupo. */
+  unassignedMembershipId: Id.optional(),
+});
+export type ParticipantRow = z.infer<typeof ParticipantRow>;
+
+/** `GET /v1/people` — todos los participantes vigentes, con grupo o sin él. */
+export const PeopleIndex = read({
+  season: z.string(),
+  /** El curso anterior se ha cerrado y el nuevo no está abierto. */
+  seasonClosed: z.boolean(),
+  people: z.array(ParticipantRow),
+});
+export type PeopleIndex = z.infer<typeof PeopleIndex>;
+
+/** Un monitor dentro de un grupo: sin marcas (son de los chavales). */
+export const MonitorRow = z.object({
+  id: Id,
+  firstName: z.string(),
+  lastName: z.string(),
+  photoUrl: z.url().optional(),
+});
+export type MonitorRow = z.infer<typeof MonitorRow>;
+
+/** `GET /v1/groups/:id` */
+export const GroupDetail = read({
+  group: GroupSummary,
+  monitors: z.array(MonitorRow),
+  participants: z.array(ParticipantRow),
+});
+export type GroupDetail = z.infer<typeof GroupDetail>;
+
+export const Guardian = z.object({
+  id: Id,
+  fullName: z.string(),
+  firstName: z.string().optional(),
+  /** «Madre», «Padre», «Tutora legal»… o `''` si el CRM no lo dice. */
+  relationship: z.string(),
+  /** En bruto, como está en el CRM: la app lo limpia para llamar. */
+  phone: z.string().optional(),
+  email: z.string().optional(),
+});
+export type Guardian = z.infer<typeof Guardian>;
+
+/** Las autorizaciones de un menor. `null` = sin contestar (NO es un «no»). */
+export const Consents = z.object({
+  goHomeAlone: z.boolean().nullable(),
+  photos: z.boolean().nullable(),
+  whatsapp: z.boolean().nullable(),
+  healthData: z.boolean().nullable(),
+  outings: z.boolean().nullable(),
+  participation: z.boolean().nullable(),
+  dataProtection: z.boolean().nullable(),
+});
+export type Consents = z.infer<typeof Consents>;
+
+export const SCARVES = [
+  'none',
+  'red',
+  'green',
+  'blue',
+  'yellow',
+  'cross',
+  'unknown',
+] as const;
+export const Scarf = z.enum(SCARVES);
+export type Scarf = z.infer<typeof Scarf>;
+/** Lo que se puede escribir: «Desconocido» solo se lee. */
+export const SetScarf = Scarf.exclude(['unknown']);
+export type SetScarf = z.infer<typeof SetScarf>;
+
+/** Un evento del curso de la persona (convivencias, salidas…). */
+export const PersonEvent = z.object({
+  eventId: Id,
+  name: z.string(),
+  startsAt: Instant,
+  endsAt: Instant,
+  /** Su marca; `no_roll` = sin lista; `registered` = apuntado y aún no ha sido; `cancelled` = no va. */
+  status: z.union([SetMark, z.enum(['no_roll', 'registered', 'cancelled'])]),
+  reason: z.string().optional(),
+});
+export type PersonEvent = z.infer<typeof PersonEvent>;
+
+/** Un aviso de comportamiento. Solo los del curso. El número no viaja. */
+export const Notice = z.object({
+  id: Id,
+  date: Day,
+  reason: z.string(),
+  placedBy: z.string().optional(),
+  familyNotified: z.boolean(),
+});
+export type Notice = z.infer<typeof Notice>;
+
+/** `GET /v1/people/:id` — la ficha. Se guarda: sin datos personales ni salud. */
+export const ParticipantProfile = read({
+  person: z.object({
+    id: Id,
+    firstName: z.string(),
+    lastName: z.string(),
+    fullName: z.string(),
+    photoUrl: z.url().optional(),
+    age: z.number().int().nonnegative().optional(),
+    schoolLevel: SchoolLevel.optional(),
+  }),
+  /** `null` = sin grupo. */
+  group: GroupSummary.nullable(),
+  phones: z.object({
+    own: z.string().optional(),
+    emergency: z.string().optional(),
+  }),
+  /** Ya ordenada: `[0]` es el tutor 1 (el primero que se dio de alta). */
+  guardians: z.array(Guardian),
+  consents: Consents,
+  badges: PersonBadges,
+  scarf: Scarf,
+  events: z.array(PersonEvent),
+  notices: z.array(Notice),
+  /** Cuántos avisos implican la salida del grupo (3). */
+  noticeLimit: z.number().int().positive(),
+  /** `null` = sin sábados que contar (sin grupo o sin inscripción). */
+  attendance: z
+    .object({
+      sessions: z.array(SessionSummary),
+      marks: z.record(Id, Mark),
+      reasons: z.record(Id, z.string()),
+    })
+    .nullable(),
+});
+export type ParticipantProfile = z.infer<typeof ParticipantProfile>;
+
+/**
+ * `GET /v1/people/:id/personal` — los datos personales. NUNCA se guardan en
+ * el móvil (decisión `offline`): solo con conexión.
+ */
+export const PersonalData = read({
+  personId: Id,
+  birthDate: Day.optional(),
+  document: z.object({ kindLabel: z.string(), number: z.string() }).optional(),
+  /** En una línea: «Calle Mayor 3, 12001 Villaclara». */
+  address: z.string().optional(),
+  /** La ciudad sola, para la cabecera del pliegue. */
+  city: z.string().optional(),
+  school: z.string().optional(),
+  email: z.string().optional(),
+  size: z.string().optional(),
+  stageLabel: z.string().optional(),
+  comLevelLabel: z.string().optional(),
+  personNumber: z.string().optional(),
+});
+export type PersonalData = z.infer<typeof PersonalData>;
+
+export const NOTICE_REASON_MAX = 1000;
+
+/** `POST /v1/people/:id/notices` — una fecha futura la recorta el servidor a hoy. */
+export const NoticeWrite = z.object({
+  clientId: ClientId,
+  date: Day,
+  reason: z.string().max(NOTICE_REASON_MAX),
+  familyNotified: z.boolean(),
+  /** Desde la pantalla de marcar: la sesión de la que se viene. */
+  sessionId: Id.optional(),
+});
+export type NoticeWrite = z.infer<typeof NoticeWrite>;
+export const NoticeWriteResult = WriteResult.extend({ notice: Notice });
+export type NoticeWriteResult = z.infer<typeof NoticeWriteResult>;
+
+/** `PUT /v1/people/:id/scarf` */
+export const ScarfWrite = z.object({ clientId: ClientId, scarf: SetScarf });
+export type ScarfWrite = z.infer<typeof ScarfWrite>;
+
+/**
+ * `PUT /v1/memberships/:id/group` — poner grupo a una relación QUE YA EXISTE.
+ * Solo coordinación; grupo y relación de su delegación. Nunca crea relaciones.
+ */
+export const MembershipGroupWrite = z.object({
+  clientId: ClientId,
+  groupId: Id,
+});
+export type MembershipGroupWrite = z.infer<typeof MembershipGroupWrite>;
+
+/** Motivos de `validation` de las escrituras de Grupos y fichas. */
+export const PEOPLE_REJECTIONS = ['empty_reason', 'season_closed'] as const;
+
 // ── Salud (lo único que lleva texto de salud; nunca se guarda) ──────────────
 
-export const HealthNote = read({ personId: Id, text: z.string() });
+export const HEALTH_KINDS = [
+  'allergies',
+  'intolerances',
+  'treatments',
+  'illnesses',
+  'other',
+] as const;
+export const HealthKind = z.enum(HEALTH_KINDS);
+export type HealthKind = z.infer<typeof HealthKind>;
+
+/**
+ * `GET /v1/people/:id/health` — solo con `Me.canSeeHealth`, solo con conexión
+ * y nunca en el móvil. Solo los campos con texto; vacío = nada que decir.
+ */
+export const HealthNote = read({
+  personId: Id,
+  items: z.array(z.object({ kind: HealthKind, text: z.string() })),
+});
 export type HealthNote = z.infer<typeof HealthNote>;
 
 // ── Rutas ───────────────────────────────────────────────────────────────────
@@ -454,6 +698,48 @@ export const ROUTES = {
     method: 'GET',
     path: '/v1/people/:id/health',
     response: HealthNote,
+    persist: false,
+  },
+  people: {
+    method: 'GET',
+    path: '/v1/people',
+    response: PeopleIndex,
+    persist: true,
+  },
+  group: {
+    method: 'GET',
+    path: '/v1/groups/:id',
+    response: GroupDetail,
+    persist: true,
+  },
+  person: {
+    method: 'GET',
+    path: '/v1/people/:id',
+    response: ParticipantProfile,
+    persist: true,
+  },
+  personal: {
+    method: 'GET',
+    path: '/v1/people/:id/personal',
+    response: PersonalData,
+    persist: false,
+  },
+  createNotice: {
+    method: 'POST',
+    path: '/v1/people/:id/notices',
+    response: NoticeWriteResult,
+    persist: false,
+  },
+  setScarf: {
+    method: 'PUT',
+    path: '/v1/people/:id/scarf',
+    response: WriteResult,
+    persist: false,
+  },
+  assignGroup: {
+    method: 'PUT',
+    path: '/v1/memberships/:id/group',
+    response: WriteResult,
     persist: false,
   },
 } as const;

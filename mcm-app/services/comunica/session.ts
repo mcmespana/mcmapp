@@ -74,6 +74,19 @@ let accessExp = 0;
 let refreshing: Promise<string | null> | null = null;
 let initPromise: Promise<void> | null = null;
 const listeners = new Set<() => void>();
+const signOutCleanups = new Set<() => unknown>();
+
+/**
+ * Algo más que borrar al salir (las fotos de `expo-image`, plan 05). Lo
+ * registra `services/comunica/index.ts`: así este fichero no importa nada
+ * nativo y se prueba sin mocks.
+ */
+export function addSignOutCleanup(fn: () => unknown): () => void {
+  signOutCleanups.add(fn);
+  return () => {
+    signOutCleanups.delete(fn);
+  };
+}
 
 const emit = (next: SessionState) => {
   state = next;
@@ -182,6 +195,15 @@ export async function signOut(): Promise<void> {
     await deps.logout(refresh).catch(() => {});
   }
   await clearAll();
+  await Promise.all(
+    [...signOutCleanups].map(async (fn) => {
+      try {
+        await fn();
+      } catch (e) {
+        logger.warn('[comunica] limpieza al salir', e);
+      }
+    }),
+  );
   await endSession('signedOut');
 }
 
@@ -216,6 +238,14 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     getRoll: authed((s, g, o) => api.getRoll(s, g, o)),
     saveRoll: authed((s, g, b) => api.saveRoll(s, g, b)),
     getHealth: authed((id) => api.getHealth(id)),
+    getPeople: authed((o) => api.getPeople(o)),
+    getGroupDetail: authed((g, o) => api.getGroupDetail(g, o)),
+    getPerson: authed((id, o) => api.getPerson(id, o)),
+    getPersonal: authed((id) => api.getPersonal(id)),
+    createNotice: authed((id, b) => api.createNotice(id, b)),
+    setScarf: authed((id, b) => api.setScarf(id, b)),
+    assignGroup: authed((id, b) => api.assignGroup(id, b)),
+    photoSource: (url) => api.photoSource(url),
   };
 }
 
@@ -228,4 +258,5 @@ export function __resetSessionForTests(): void {
   refreshing = null;
   initPromise = null;
   listeners.clear();
+  signOutCleanups.clear();
 }

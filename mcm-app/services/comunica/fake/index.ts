@@ -20,8 +20,19 @@
 
 import {
   CodeRequest,
+  GroupDetail,
   GroupsResponse,
   HealthNote,
+  MembershipGroupWrite,
+  NoticeWrite,
+  NoticeWriteResult,
+  type ParticipantRow,
+  ParticipantProfile,
+  PeopleIndex,
+  PersonalData,
+  ScarfWrite,
+  TEAM_ROLES,
+  WriteResult,
   MeResponse,
   type Mark,
   RollDetail,
@@ -50,11 +61,14 @@ import {
   generateFakeData,
   markOf,
   type FakeData,
+  type FakeGroup,
+  type FakePerson,
   type FakeRoll,
   type FakeSession,
   type PersonaId,
 } from './fixtures';
-import { madridDay } from '@/utils/comunica/madrid';
+import { madridDay, madridInstant } from '@/utils/comunica/madrid';
+import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export interface FakeControls {
   /** Espera de cada respuesta, en ms. */
@@ -71,6 +85,11 @@ export interface FakeControls {
   clock: string | null;
   /** El falso no sabe inscribir a quien no está inscrito. */
   cannotRegister: boolean;
+  /**
+   * El curso anterior se ha cerrado y el nuevo no está abierto: ningún
+   * participante tiene la relación vigente (Grupos y fichas, plan 05).
+   */
+  seasonClosed: boolean;
 }
 
 export const DEFAULT_CONTROLS: FakeControls = {
@@ -81,6 +100,7 @@ export const DEFAULT_CONTROLS: FakeControls = {
   persona: 'monitor',
   clock: null,
   cannotRegister: false,
+  seasonClosed: false,
 };
 
 const PERSONA_ROLES: Record<PersonaId, { roles: Role[]; scope: Me['scope'] }> =
@@ -323,6 +343,97 @@ export function createFakeServer(
     });
   }
 
+  // ── Grupos y fichas (plan 05) ─────────────────────────────────────────────
+
+  const roles = () => PERSONA_ROLES[current].roles;
+  const requireTeam = () => {
+    if (!roles().some((r) => TEAM_ROLES.includes(r))) throw forbidden();
+  };
+  const myGroups = () =>
+    data.groups.filter((g) => g.delegationId === delegationId());
+  const groupOfPerson = (pid: string): FakeGroup | undefined =>
+    myGroups().find((g) => g.participantIds.includes(pid));
+  const looseOf = (pid: string) =>
+    data.memberships.find(
+      (m) => m.personId === pid && m.delegationId === delegationId(),
+    );
+  /**
+   * Un participante con relación vigente con MI delegación, con grupo o sin
+   * él; si no, `forbidden` (exista o no, y también si es un monitor).
+   */
+  const myParticipant = (pid: string): FakePerson => {
+    const p = person(pid);
+    if (
+      !p ||
+      controls.seasonClosed ||
+      !data.profiles[pid] ||
+      (!groupOfPerson(pid) && !looseOf(pid))
+    ) {
+      throw forbidden();
+    }
+    return p;
+  };
+  const photoUrlOf = (pid: string) => {
+    const v = data.profiles[pid]?.photo;
+    return v
+      ? `https://fotos.ejemplo.org/v1/people/${pid}/photo?v=${v}`
+      : undefined;
+  };
+  const groupSummaryOf = (g: FakeGroup) => ({
+    id: g.id,
+    code: g.code,
+    name: g.name,
+    stage: g.stage,
+    segment: g.segment,
+    schoolLevels: g.schoolLevels,
+    counts: {
+      participants: controls.seasonClosed ? null : g.participantIds.length,
+      monitors: g.monitorIds.length,
+    },
+  });
+  /** El curso de la relación y, si no, el del grupo. */
+  const levelOf = (p: FakePerson, g?: FakeGroup) =>
+    schoolLevelFromText(p.schoolLevel ?? g?.schoolLevels[0]) ?? undefined;
+  const rowOf = (p: FakePerson): ParticipantRow => {
+    const g = groupOfPerson(p.id);
+    const loose = g ? undefined : looseOf(p.id);
+    const level = levelOf(p, g);
+    const age = data.profiles[p.id]?.age;
+    const photoUrl = photoUrlOf(p.id);
+    return {
+      id: p.id,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      ...(photoUrl ? { photoUrl } : {}),
+      badges: { ...p.badges },
+      ...(level ? { schoolLevel: level } : {}),
+      ...(age !== undefined ? { age } : {}),
+      groupId: g?.id ?? null,
+      ...(loose ? { unassignedMembershipId: loose.id } : {}),
+    };
+  };
+  const byLastName = (a: FakePerson, b: FakePerson) =>
+    a.lastName.localeCompare(b.lastName, 'es') ||
+    a.firstName.localeCompare(b.firstName, 'es');
+  const eventById = (id: string) => data.events.find((e) => e.id === id);
+
+  /** Una imagen abstracta (nunca una cara), estable por URL. */
+  const abstractImage = (url: string) => {
+    let h = 0;
+    for (let i = 0; i < url.length; i++) h = (h * 31 + url.charCodeAt(i)) >>> 0;
+    const hue = h % 360;
+    const hue2 = (hue + 140) % 360;
+    const x = 20 + (h % 60);
+    const y = 20 + ((h >> 8) % 60);
+    const svg =
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">` +
+      `<rect width="100" height="100" fill="hsl(${hue},55%,62%)"/>` +
+      `<circle cx="${x}" cy="${y}" r="34" fill="hsl(${hue2},60%,45%)" fill-opacity="0.75"/>` +
+      `<rect x="${100 - y}" y="${x}" width="46" height="46" rx="10" fill="hsl(${(hue + 60) % 360},70%,85%)" fill-opacity="0.6"/>` +
+      `</svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  };
+
   const notify = () => listeners.forEach((l) => l());
 
   const server: FakeServer = {
@@ -528,16 +639,7 @@ export function createFakeServer(
         generatedAt: nowIso(),
         season: data.season,
         groups: groups.map((g) => ({
-          id: g.id,
-          code: g.code,
-          name: g.name,
-          stage: g.stage,
-          segment: g.segment,
-          schoolLevels: g.schoolLevels,
-          counts: {
-            participants: g.participantIds.length,
-            monitors: g.monitorIds.length,
-          },
+          ...groupSummaryOf(g),
           monitorNames: g.monitorIds.map(nameOf),
         })),
         myGroupIds: groups
@@ -548,8 +650,10 @@ export function createFakeServer(
           eventId,
           sessions: list.map(sessionSummary),
         })),
-        hiddenGroups: 0,
-        participantsWithoutGroup: did === data.delegations[0].id ? 3 : 0,
+        hiddenGroups: data.hiddenGroups[did] ?? 0,
+        participantsWithoutGroup: controls.seasonClosed
+          ? 0
+          : data.memberships.filter((m) => m.delegationId === did).length,
       });
     },
 
@@ -691,13 +795,259 @@ export function createFakeServer(
 
     async getHealth(personId) {
       await gate('health');
-      const p = person(personId);
-      if (!p || p.delegationId !== delegationId()) throw forbidden();
+      requireTeam();
+      if (!meOf(current).canSeeHealth) throw forbidden();
+      myParticipant(personId);
+      // Con «datos de salud» a «No», no se dice nada (lo del globo del
+      // plugin, hasta que se decida `salud-no`).
+      const hidden = data.profiles[personId]?.consents.healthData === false;
       return HealthNote.parse({
         generatedAt: nowIso(),
         personId,
-        text: data.health[personId] ?? '',
+        items: hidden
+          ? []
+          : (data.health[personId] ?? []).filter((i) => i.text.trim()),
       });
+    },
+
+    async getPeople() {
+      await gate('people');
+      requireTeam();
+      const did = delegationId();
+      const ids = controls.seasonClosed
+        ? []
+        : [
+            ...myGroups().flatMap((g) => g.participantIds),
+            ...data.memberships
+              .filter((m) => m.delegationId === did)
+              .map((m) => m.personId),
+          ];
+      return PeopleIndex.parse({
+        generatedAt: nowIso(),
+        season: data.season,
+        seasonClosed: controls.seasonClosed,
+        people: ids
+          .map((id) => person(id)!)
+          .sort(byLastName)
+          .map(rowOf),
+      });
+    },
+
+    async getGroupDetail(gid) {
+      await gate('group');
+      requireTeam();
+      const g = myGroup(gid);
+      return GroupDetail.parse({
+        generatedAt: nowIso(),
+        group: groupSummaryOf(g),
+        monitors: g.monitorIds
+          .map((id) => person(id)!)
+          .sort(byLastName)
+          .map((m) => ({
+            id: m.id,
+            firstName: m.firstName,
+            lastName: m.lastName,
+          })),
+        participants: controls.seasonClosed
+          ? []
+          : g.participantIds
+              .map((id) => person(id)!)
+              .sort(byLastName)
+              .map(rowOf),
+      });
+    },
+
+    async getPerson(pid) {
+      await gate('person');
+      requireTeam();
+      const p = myParticipant(pid);
+      const prof = data.profiles[pid];
+      const g = groupOfPerson(pid);
+      const level = levelOf(p, g);
+      const photoUrl = photoUrlOf(pid);
+      // La asistencia: las sesiones del evento semanal de su etapa.
+      let attendance = null;
+      if (g?.stage) {
+        const sessions = data.sessions.filter(
+          (x) =>
+            x.delegationId === g.delegationId &&
+            x.kind === 'weekly' &&
+            x.stage === g.stage,
+        );
+        const marks: Record<string, Mark> = {};
+        const reasons: Record<string, string> = {};
+        for (const x of sessions) {
+          const r = rollOf(x.id, g.id);
+          marks[x.id] = r?.status === 'taken' ? markOf(r, pid) : null;
+          if (r?.notes[pid]) reasons[x.id] = r.notes[pid];
+        }
+        attendance = {
+          sessions: sessions.map(sessionSummary),
+          marks,
+          reasons,
+        };
+      }
+      const today0 = today();
+      return ParticipantProfile.parse({
+        generatedAt: nowIso(),
+        person: {
+          id: p.id,
+          firstName: p.firstName,
+          lastName: p.lastName,
+          fullName: `${p.firstName} ${p.lastName}`,
+          ...(photoUrl ? { photoUrl } : {}),
+          ...(prof.age !== undefined ? { age: prof.age } : {}),
+          ...(level ? { schoolLevel: level } : {}),
+        },
+        group: g ? groupSummaryOf(g) : null,
+        phones: {
+          ...(prof.ownPhone ? { own: prof.ownPhone } : {}),
+          ...(prof.emergency ? { emergency: prof.emergency } : {}),
+        },
+        guardians: prof.guardians.map((x) => ({
+          id: x.id,
+          fullName: `${x.firstName} ${x.lastName}`,
+          firstName: x.firstName,
+          relationship: x.relationship,
+          ...(x.phone ? { phone: x.phone } : {}),
+          ...(x.email ? { email: x.email } : {}),
+        })),
+        consents: prof.consents,
+        badges: { ...p.badges },
+        scarf: prof.scarf,
+        events: (data.personEvents[pid] ?? []).flatMap((pe) => {
+          const e = eventById(pe.eventId);
+          if (!e) return [];
+          return [
+            {
+              eventId: e.id,
+              name: e.name,
+              startsAt: madridInstant(e.startDay, '10:00'),
+              endsAt: madridInstant(e.endDay, '18:00'),
+              status: pe.status,
+              ...(pe.reason ? { reason: pe.reason } : {}),
+            },
+          ];
+        }),
+        notices: (data.notices[pid] ?? []).filter((n) => n.date <= today0),
+        noticeLimit: 3,
+        attendance,
+      });
+    },
+
+    async getPersonal(pid) {
+      await gate('personal');
+      requireTeam();
+      myParticipant(pid);
+      const prof = data.profiles[pid];
+      const address = [
+        prof.street,
+        [prof.postcode, prof.city].filter(Boolean).join(' '),
+      ]
+        .filter(Boolean)
+        .join(', ');
+      return PersonalData.parse({
+        generatedAt: nowIso(),
+        personId: pid,
+        ...(prof.birthDate ? { birthDate: prof.birthDate } : {}),
+        ...(prof.document ? { document: prof.document } : {}),
+        ...(prof.street ? { address } : {}),
+        ...(prof.city ? { city: prof.city } : {}),
+        ...(prof.school ? { school: prof.school } : {}),
+        ...(prof.email ? { email: prof.email } : {}),
+        ...(prof.size ? { size: prof.size } : {}),
+        ...(prof.stageLabel ? { stageLabel: prof.stageLabel } : {}),
+        ...(prof.comLevelLabel ? { comLevelLabel: prof.comLevelLabel } : {}),
+        ...(prof.personNumber ? { personNumber: prof.personNumber } : {}),
+      });
+    },
+
+    async createNotice(pid, body) {
+      await gate('createNotice', true);
+      requireTeam();
+      const parsed = NoticeWrite.safeParse(body);
+      if (!parsed.success)
+        throw validation('bad_body', 'El aviso no tiene la forma esperada');
+      const w = parsed.data;
+      const repeated = seenClientIds.get(w.clientId);
+      if (repeated) return NoticeWriteResult.parse(repeated);
+      myParticipant(pid);
+      if (!w.reason.trim()) {
+        throw validation('empty_reason', 'Escribe qué ha pasado');
+      }
+      const day = today();
+      const notice = {
+        id: `f-avi-n${writeCount + 1}-${pid}`,
+        // Una fecha futura se recorta a hoy (hora de Madrid).
+        date: w.date > day ? day : w.date,
+        reason: w.reason.trim(),
+        placedBy: me().firstName,
+        familyNotified: w.familyNotified,
+      };
+      data.notices[pid] = [...(data.notices[pid] ?? []), notice];
+      writeCount += 1;
+      const result = NoticeWriteResult.parse({
+        clientId: w.clientId,
+        status: 'applied',
+        crmIds: [notice.id],
+        notice,
+      });
+      seenClientIds.set(w.clientId, result);
+      return result;
+    },
+
+    async setScarf(pid, body) {
+      await gate('setScarf', true);
+      requireTeam();
+      const parsed = ScarfWrite.safeParse(body);
+      if (!parsed.success) throw validation('bad_body', 'Pañuelo no válido');
+      const w = parsed.data;
+      const repeated = seenClientIds.get(w.clientId);
+      if (repeated) return WriteResult.parse(repeated);
+      myParticipant(pid);
+      if (data.profiles[pid].scarf !== w.scarf) {
+        data.profiles[pid].scarf = w.scarf;
+        writeCount += 1;
+      }
+      const result = WriteResult.parse({
+        clientId: w.clientId,
+        status: 'applied',
+      });
+      seenClientIds.set(w.clientId, result);
+      return result;
+    },
+
+    async assignGroup(mid, body) {
+      await gate('assignGroup', true);
+      const parsed = MembershipGroupWrite.safeParse(body);
+      if (!parsed.success) throw validation('bad_body', 'Grupo no válido');
+      const w = parsed.data;
+      const repeated = seenClientIds.get(w.clientId);
+      if (repeated) return WriteResult.parse(repeated);
+      // Solo coordinación (acompañamiento no), grupo y relación de su delegación.
+      if (!roles().includes('coordination')) throw forbidden();
+      const m = data.memberships.find(
+        (x) => x.id === mid && x.delegationId === delegationId(),
+      );
+      if (!m) throw forbidden();
+      const g = myGroup(w.groupId);
+      if (controls.seasonClosed) {
+        throw validation('season_closed', 'El curso está cerrado');
+      }
+      g.participantIds.push(m.personId);
+      data.memberships = data.memberships.filter((x) => x.id !== mid);
+      writeCount += 1;
+      const result = WriteResult.parse({
+        clientId: w.clientId,
+        status: 'applied',
+        crmIds: [mid],
+      });
+      seenClientIds.set(w.clientId, result);
+      return result;
+    },
+
+    photoSource(url) {
+      return { uri: abstractImage(url), cacheKey: url };
     },
   };
   return server;

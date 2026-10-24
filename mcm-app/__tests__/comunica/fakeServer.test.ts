@@ -72,7 +72,12 @@ describe('servidor falso', () => {
     const session = groups.stageEvents.find((e) => e.stage === 'com')!
       .sessions[0];
     const roll = await s.getRoll(session.id, gid);
-    const withHealth = Object.keys(s.data.health)[0];
+    const withHealth = Object.keys(s.data.health).find(
+      (id) =>
+        s.data.profiles[id] &&
+        s.data.people.find((p) => p.id === id)!.delegationId ===
+          s.data.delegations[0].id,
+    )!;
     const code = await s.requestCode({ email: 'monitor@ejemplo.org' });
     const verified = await s.verify({
       email: 'monitor@ejemplo.org',
@@ -98,6 +103,30 @@ describe('servidor falso', () => {
         notes: {},
       }),
       health: await s.getHealth(withHealth),
+      people: await s.getPeople(),
+      group: await s.getGroupDetail(gid),
+      person: await s.getPerson(roll.entries[0].person.id),
+      personal: await s.getPersonal(roll.entries[0].person.id),
+      createNotice: await s.createNotice(roll.entries[0].person.id, {
+        clientId: CLIENT(20),
+        date: '2026-10-24',
+        reason: 'Prueba',
+        familyNotified: false,
+      }),
+      setScarf: await s.setScarf(roll.entries[0].person.id, {
+        clientId: CLIENT(21),
+        scarf: 'green',
+      }),
+      assignGroup: await (async () => {
+        s.setControls({ persona: 'coordination' });
+        const loose = (await s.getPeople()).people.find(
+          (p) => p.unassignedMembershipId,
+        )!;
+        return s.assignGroup(loose.unassignedMembershipId!, {
+          clientId: CLIENT(22),
+          groupId: gid,
+        });
+      })(),
     };
     for (const [name, value] of Object.entries(results)) {
       expect(
@@ -290,5 +319,193 @@ describe('servidor falso', () => {
     s.reset();
     expect(s.controls.persona).toBe('monitor');
     expect(s.writeCount).toBe(0);
+  });
+});
+
+describe('Grupos y fichas en el servidor falso (plan 05)', () => {
+  const D2_PERSON = (s: ReturnType<typeof server>) =>
+    s.data.groups.find((g) => g.code === 'P1')!.participantIds[0];
+
+  it('los datos tienen cada caso de pantalla', () => {
+    const d = generateFakeData();
+    const participants = [
+      ...d.groups.flatMap((g) => g.participantIds),
+      ...d.memberships.map((m) => m.personId),
+    ];
+    const profiles = participants.map((id) => d.profiles[id]);
+    // ~15 % sin grupo.
+    expect(d.memberships.length / participants.length).toBeGreaterThan(0.1);
+    // Un chaval sin familia y una familia sin teléfonos.
+    expect(profiles.some((p) => p.guardians.length === 0)).toBe(true);
+    expect(
+      profiles.some(
+        (p) => p.guardians.length > 0 && p.guardians.every((g) => !g.phone),
+      ),
+    ).toBe(true);
+    expect(profiles.some((p) => p.emergency)).toBe(true);
+    // Dos del COM con móvil propio: uno con WhatsApp y otro sin contestar.
+    const own = profiles.filter((p) => p.ownPhone);
+    expect(own.map((p) => p.consents.whatsapp).sort()).toEqual([null, true]);
+    // ~30 % sin contestar, salud en 1 de cada 5, una con «No» a la salud.
+    const nulls = profiles.filter((p) => p.consents.outings === null).length;
+    expect(nulls / profiles.length).toBeGreaterThan(0.15);
+    const withHealth = participants.filter((id) => d.health[id]).length;
+    expect(withHealth / participants.length).toBeGreaterThan(0.12);
+    expect(profiles.some((p) => p.consents.healthData === false)).toBe(true);
+    // Foto en la mitad, más o menos.
+    const photos = profiles.filter((p) => p.photo).length / profiles.length;
+    expect(photos).toBeGreaterThan(0.3);
+    expect(photos).toBeLessThan(0.7);
+    // Avisos con 2 y con 3.
+    const counts = Object.values(d.notices).map((n) => n.length);
+    expect(counts).toEqual(expect.arrayContaining([2, 3]));
+  });
+
+  it('las marcas salen de las autorizaciones con el «0» explícito', () => {
+    const d = generateFakeData();
+    for (const [id, prof] of Object.entries(d.profiles)) {
+      const p = d.people.find((x) => x.id === id)!;
+      expect(p.badges.notHomeAlone).toBe(prof.consents.goHomeAlone === false);
+      expect(p.badges.noPhotos).toBe(prof.consents.photos === false);
+      expect(p.badges.healthNote).toBe(
+        !!d.health[id] && prof.consents.healthData !== false,
+      );
+    }
+  });
+
+  it('lo de otra delegación es 403: ficha, salud, datos, grupo y escrituras', async () => {
+    const s = server();
+    const other = D2_PERSON(s);
+    await expectError(s.getPerson(other), 'forbidden');
+    await expectError(s.getHealth(other), 'forbidden');
+    await expectError(s.getPersonal(other), 'forbidden');
+    await expectError(s.getPerson('f-per-no-existe'), 'forbidden');
+    const p1 = s.data.groups.find((g) => g.code === 'P1')!;
+    await expectError(s.getGroupDetail(p1.id), 'forbidden');
+    await expectError(
+      s.setScarf(other, { clientId: CLIENT(30), scarf: 'red' }),
+      'forbidden',
+    );
+    // Un monitor no tiene ficha de participante.
+    await expectError(
+      s.getPerson(s.data.personas.monitor.personId),
+      'forbidden',
+    );
+    // Las fotos salen solo en lo que se puede ver: la de otro no viaja.
+    const people = await s.getPeople();
+    expect(people.people.map((p) => p.id)).not.toContain(other);
+  });
+
+  it('vincular: solo coordinación, y la fila pasa a su grupo', async () => {
+    const s = server();
+    const people = await s.getPeople();
+    const loose = people.people.find((p) => p.unassignedMembershipId)!;
+    const c1 = s.data.groups.find((g) => g.code === 'C1')!;
+    await expectError(
+      s.assignGroup(loose.unassignedMembershipId!, {
+        clientId: CLIENT(31),
+        groupId: c1.id,
+      }),
+      'forbidden',
+    );
+    s.setControls({ persona: 'accompaniment' });
+    await expectError(
+      s.assignGroup(loose.unassignedMembershipId!, {
+        clientId: CLIENT(32),
+        groupId: c1.id,
+      }),
+      'forbidden',
+    );
+    s.setControls({ persona: 'coordination' });
+    const p1 = s.data.groups.find((g) => g.code === 'P1')!;
+    await expectError(
+      s.assignGroup(loose.unassignedMembershipId!, {
+        clientId: CLIENT(33),
+        groupId: p1.id,
+      }),
+      'forbidden',
+    );
+    await s.assignGroup(loose.unassignedMembershipId!, {
+      clientId: CLIENT(34),
+      groupId: c1.id,
+    });
+    const after = await s.getPeople();
+    expect(after.people.find((p) => p.id === loose.id)).toMatchObject({
+      groupId: c1.id,
+    });
+    expect(
+      after.people.find((p) => p.id === loose.id)!.unassignedMembershipId,
+    ).toBeUndefined();
+  });
+
+  it('avisos: fecha futura → hoy, motivo vacío → validation, numerables', async () => {
+    const s = server();
+    const c1 = s.data.groups.find((g) => g.code === 'C1')!;
+    const pid = c1.participantIds[0];
+    await expectError(
+      s.createNotice(pid, {
+        clientId: CLIENT(40),
+        date: '2026-10-24',
+        reason: '   ',
+        familyNotified: false,
+      }),
+      'validation',
+      'empty_reason',
+    );
+    const res = await s.createNotice(pid, {
+      clientId: CLIENT(41),
+      date: '2026-12-25',
+      reason: 'Llegó tarde y se fue pronto',
+      familyNotified: true,
+    });
+    expect(res.notice.date).toBe('2026-10-24');
+    const writes = s.writeCount;
+    await s.createNotice(pid, {
+      clientId: CLIENT(41),
+      date: '2026-12-25',
+      reason: 'Llegó tarde y se fue pronto',
+      familyNotified: true,
+    });
+    expect(s.writeCount).toBe(writes);
+    const profile = await s.getPerson(pid);
+    expect(profile.notices.map((n) => n.reason)).toContain(
+      'Llegó tarde y se fue pronto',
+    );
+  });
+
+  it('pañuelo: se escribe y no se reescribe igual', async () => {
+    const s = server();
+    const pid = s.data.groups.find((g) => g.code === 'C2')!.participantIds[0];
+    await s.setScarf(pid, { clientId: CLIENT(50), scarf: 'cross' });
+    const w = s.writeCount;
+    await s.setScarf(pid, { clientId: CLIENT(51), scarf: 'cross' });
+    expect(s.writeCount).toBe(w);
+    expect((await s.getPerson(pid)).scarf).toBe('cross');
+  });
+
+  it('salud: con «No» a los datos de salud no dice nada', async () => {
+    const s = server();
+    const [id] = Object.entries(s.data.profiles).find(
+      ([pid, p]) => p.consents.healthData === false && s.data.health[pid],
+    )!;
+    expect((await s.getHealth(id)).items).toEqual([]);
+  });
+
+  it('curso cerrado: nadie vigente, y el grupo sin número', async () => {
+    const s = server({ seasonClosed: true });
+    const people = await s.getPeople();
+    expect(people).toMatchObject({ seasonClosed: true, people: [] });
+    const groups = await s.getGroups();
+    expect(groups.groups.every((g) => g.counts.participants === null)).toBe(
+      true,
+    );
+  });
+
+  it('la foto del falso es una imagen inventada, no una URL de red', () => {
+    const s = server();
+    const src = s.photoSource(
+      'https://fotos.ejemplo.org/v1/people/x/photo?v=1',
+    );
+    expect(src.uri.startsWith('data:image/svg+xml')).toBe(true);
   });
 });

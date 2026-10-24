@@ -145,7 +145,9 @@ function Tree({
     const sub = [
       g.monitorNames.map((n) => n.split(' ')[0]).join(', '),
       g.schoolLevels.join(', '),
-      participantsLabel(g.counts.participants),
+      g.counts.participants !== null
+        ? participantsLabel(g.counts.participants)
+        : null,
     ]
       .filter(Boolean)
       .join(' · ');

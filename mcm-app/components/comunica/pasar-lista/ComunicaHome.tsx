@@ -334,7 +334,9 @@ function HomeContent({
               : [
                   shortcut.group.schoolLevels.join(', '),
                   `${madridTime(shortcut.proposal.session.startsAt)} – ${madridTime(shortcut.proposal.session.endsAt)}`,
-                  participantsLabel(shortcut.group.counts.participants),
+                  shortcut.group.counts.participants !== null
+                    ? participantsLabel(shortcut.group.counts.participants)
+                    : null,
                 ]
                   .filter(Boolean)
                   .join(' · '),

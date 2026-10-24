@@ -16,18 +16,31 @@
 //   · Listas pasadas, «sin registro» y huecos; una racha de tres faltas (una
 //     justificada) y una de dos; marcas de salud, de fotos y de «no se va solo».
 //   · Una convivencia y una reunión de programación sin lista.
+//   · Grupos y fichas (plan 05): familia (1-2 por chaval; una sin teléfonos,
+//     un chaval sin familia, uno con teléfono de emergencias, dos del COM con
+//     móvil propio, con y sin permiso de WhatsApp), autorizaciones (~30 % sin
+//     contestar), salud en 1 de cada 5 (una con «datos de salud» a «No»),
+//     foto en la mitad (imágenes abstractas), ~15 % sin grupo, avisos (2 y 3),
+//     eventos del curso y pañuelos. Todo con una SEGUNDA semilla, para no
+//     mover ni un dato de los de arriba.
 
 import type {
+  Consents,
   Delegation,
   GroupSummary,
+  HealthKind,
   Mark,
+  Notice,
   PersonBadges,
+  PersonEvent,
+  Scarf,
   Segment,
   SessionSummary,
   SetMark,
   Stage,
 } from '../contract';
 import { addDays, madridInstant } from '@/utils/comunica/madrid';
+import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export const FIXTURE_SEED = 20262027;
 
@@ -85,6 +98,54 @@ export interface FakeEvent {
   endDay: string;
 }
 
+export interface FakeGuardian {
+  id: string;
+  firstName: string;
+  lastName: string;
+  relationship: string;
+  phone?: string;
+  email?: string;
+}
+
+/** Lo que un participante tiene en su ficha (y un monitor no). */
+export interface FakeProfile {
+  age?: number;
+  birthDate?: string;
+  /** Versión de la foto; sin ella, no tiene. */
+  photo?: string;
+  ownPhone?: string;
+  emergency?: string;
+  /** Ya en orden de alta: el primero es el tutor 1. */
+  guardians: FakeGuardian[];
+  consents: Consents;
+  scarf: Scarf;
+  document?: { kindLabel: string; number: string };
+  street?: string;
+  postcode?: string;
+  city?: string;
+  school?: string;
+  email?: string;
+  size?: string;
+  stageLabel?: string;
+  comLevelLabel?: string;
+  personNumber?: string;
+}
+
+/** Una relación de participante SIN grupo de la delegación. */
+export interface FakeMembership {
+  id: string;
+  personId: string;
+  delegationId: string;
+}
+
+export type FakeHealthItem = { kind: HealthKind; text: string };
+
+export interface FakePersonEvent {
+  eventId: string;
+  status: PersonEvent['status'];
+  reason?: string;
+}
+
 export interface FakeData {
   season: string;
   delegations: Delegation[];
@@ -93,8 +154,18 @@ export interface FakeData {
   sessions: FakeSession[];
   rolls: FakeRoll[];
   events: FakeEvent[];
-  /** Texto de salud por persona: solo lo sirve `/people/:id/health`. */
-  health: Record<string, string>;
+  /** Salud por persona: solo la sirve `/people/:id/health`. */
+  health: Record<string, FakeHealthItem[]>;
+  /** Fichas de los participantes (plan 05). */
+  profiles: Record<string, FakeProfile>;
+  /** Relaciones de participante sin grupo («sueltos»). */
+  memberships: FakeMembership[];
+  /** Avisos de comportamiento por persona. */
+  notices: Record<string, Notice[]>;
+  /** Eventos del curso por persona. */
+  personEvents: Record<string, FakePersonEvent[]>;
+  /** Grupos del CRM sin marcar para Pasar Lista, por delegación. */
+  hiddenGroups: Record<string, number>;
   /** Personas a las que el falso no sabe inscribir (mando «no se puede inscribir»). */
   unregistrable: string[];
   /** Personas de prueba con las que se «entra». */
@@ -268,7 +339,7 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
   const pick = <T>(list: readonly T[]) =>
     list[Math.floor(rand() * list.length)];
   const people: FakePerson[] = [];
-  const health: Record<string, string> = {};
+  const health: Record<string, FakeHealthItem[]> = {};
   const usedNames = new Set<string>();
 
   const newPerson = (
@@ -305,10 +376,18 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
       const r = rand();
       if (r < 0.12) {
         p.badges.healthNote = true;
-        health[p.id] = pick([
-          'Alergia a los frutos secos. Lleva su medicación en la mochila.',
-          'Asma leve: inhalador si hace mucho esfuerzo.',
-          'Intolerancia a la lactosa.',
+        health[p.id] = pick<FakeHealthItem[]>([
+          [
+            {
+              kind: 'allergies',
+              text: 'Frutos secos. Lleva su medicación en la mochila.',
+            },
+          ],
+          [
+            { kind: 'illnesses', text: 'Asma leve.' },
+            { kind: 'treatments', text: 'Inhalador si hace mucho esfuerzo.' },
+          ],
+          [{ kind: 'intolerances', text: 'Lactosa.' }],
         ]);
       }
       if (rand() < 0.1) p.badges.noPhotos = true;
@@ -454,6 +533,13 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
 
   const events: FakeEvent[] = [
     {
+      id: 'f-evt-salida',
+      name: 'Salida a la sierra',
+      delegationId: D1,
+      startDay: '2026-10-10',
+      endDay: '2026-10-11',
+    },
+    {
       id: 'f-evt-convivencia',
       name: 'Convivencia de otoño',
       delegationId: D1,
@@ -478,6 +564,18 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
     return `${p.firstName} ${p.lastName}`;
   };
 
+  const extra = generateProfiles({
+    people,
+    groups,
+    health,
+    monitorIds: new Set([
+      ...groups.flatMap((g) => g.monitorIds),
+      coordinator.id,
+      companion.id,
+    ]),
+    seed,
+  });
+
   return {
     season: SEASON,
     delegations: [
@@ -490,6 +588,8 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
     rolls,
     events,
     health,
+    ...extra,
+    hiddenGroups: { [D1]: 2 },
     unregistrable,
     personas: {
       monitor: { personId: shared.id, name: name(shared.id) },
@@ -498,6 +598,360 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
       other: { personId: otherMonitor, name: name(otherMonitor) },
     },
   };
+}
+
+// ── Grupos y fichas (plan 05) ───────────────────────────────────────────────
+
+const ADULT_FIRST = [
+  'Marta',
+  'Javier',
+  'Carmen',
+  'Luis',
+  'Elena',
+  'Raúl',
+  'Pilar',
+  'Andrés',
+  'Rosa',
+  'Sergio',
+  'Nuria',
+  'Óscar',
+  'Teresa',
+  'Ramón',
+];
+const STREETS = [
+  'Calle Mayor',
+  'Avenida del Río',
+  'Calle de los Almendros',
+  'Plaza Nueva',
+  'Calle Olivo',
+];
+const SCHOOLS = [
+  'Colegio Valle Verde',
+  'IES Puerta del Sol Naciente',
+  'Colegio Santa Clara de Villaclara',
+];
+const SIZES = ['8', '10', '12', '14', 'S', 'M', 'L'];
+
+/** Edad «típica» de cada curso (la que tendrán este otoño). */
+const AGE_BY_LEVEL: Record<string, number> = {
+  ep3: 8,
+  ep4: 9,
+  ep5: 10,
+  ep6: 11,
+  eso1: 12,
+  eso2: 13,
+  eso3: 14,
+  eso4: 15,
+  bach1: 16,
+  bach2: 17,
+};
+
+/** Sueltos de Villaclara: cursos variados, uno raro, uno «Otros» y uno sin curso. */
+const LOOSE_LEVELS: (string | undefined)[] = [
+  '3º Primaria',
+  '5º Primaria',
+  '1º ESO',
+  '1º ESO',
+  '2º ESO',
+  '3º ESO',
+  '1º Bachillerato',
+  'Otros',
+  'Curso puente',
+  undefined,
+];
+
+const ascii = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+const phoneOf = (r: () => number) => {
+  const d = () => Math.floor(r() * 10);
+  return `6${d()}${d()} ${d()}${d()} ${d()}${d()} ${d()}${d()}`;
+};
+
+interface ProfileInput {
+  people: FakePerson[];
+  groups: FakeGroup[];
+  health: Record<string, FakeHealthItem[]>;
+  monitorIds: Set<string>;
+  seed: number;
+}
+
+/**
+ * Lo del plan 05, con su propia semilla: añade sueltos al final de `people` (no
+ * cambia ningún id anterior) y no toca las marcas de las listas.
+ */
+function generateProfiles({
+  people,
+  groups,
+  health,
+  monitorIds,
+  seed,
+}: ProfileInput): Pick<
+  FakeData,
+  'profiles' | 'memberships' | 'notices' | 'personEvents'
+> {
+  const r = seededRandom(seed + 5);
+  const pick = <T>(list: readonly T[]) => list[Math.floor(r() * list.length)];
+  const used = new Set(people.map((p) => `${p.firstName} ${p.lastName}`));
+
+  // Los sueltos: relación de participante sin grupo. Nueve en Villaclara y uno
+  // en Puerto Alto (para el 403).
+  const memberships: FakeMembership[] = [];
+  const loose = (delegationId: string, schoolLevel?: string) => {
+    let firstName = pick(FIRST);
+    let lastName = `${pick(LAST)} ${pick(LAST)}`;
+    while (used.has(`${firstName} ${lastName}`)) {
+      firstName = pick(FIRST);
+      lastName = `${pick(LAST)} ${pick(LAST)}`;
+    }
+    used.add(`${firstName} ${lastName}`);
+    const p: FakePerson = {
+      id: `f-per-${pad2(people.length + 1)}`,
+      firstName,
+      lastName,
+      schoolLevel,
+      badges: { healthNote: false, noPhotos: false, notHomeAlone: false },
+      delegationId,
+    };
+    people.push(p);
+    memberships.push({
+      id: `f-rel-${pad2(memberships.length + 1)}`,
+      personId: p.id,
+      delegationId,
+    });
+  };
+  LOOSE_LEVELS.forEach((lvl) => loose(D1, lvl));
+  loose(D2, '1º ESO');
+
+  const participantIds = [
+    ...groups.flatMap((g) => g.participantIds),
+    ...memberships.map((m) => m.personId),
+  ];
+  const groupOf = (pid: string) =>
+    groups.find((g) => g.participantIds.includes(pid));
+
+  // Salud en 1 de cada 5: a la de partida se le suma alguna más.
+  for (const pid of participantIds) {
+    if (!health[pid] && r() < 0.1) {
+      health[pid] = pick<FakeHealthItem[]>([
+        [{ kind: 'allergies', text: 'Picadura de abeja.' }],
+        [
+          { kind: 'allergies', text: 'Penicilina.' },
+          { kind: 'other', text: 'Gafas para ver de lejos.' },
+        ],
+        [{ kind: 'intolerances', text: 'Gluten (celíaca).' }],
+      ]);
+    }
+  }
+
+  const profiles: Record<string, FakeProfile> = {};
+  const c3 = groups.find((g) => g.code === 'C3');
+  // Los casos con nombre, para que cada pantalla tenga el suyo.
+  const ownWithWhatsapp = c3?.participantIds[0];
+  const ownWithoutWhatsapp = c3?.participantIds[1];
+  const healthNo = participantIds.find((pid) => health[pid]);
+  const noFamily = groups.find((g) => g.code === 'M1')?.participantIds[1];
+  const familyNoPhones = groups.find((g) => g.code === 'M1')?.participantIds[2];
+  const withEmergency = groups.find((g) => g.code === 'C1')?.participantIds[1];
+
+  let guardianSeq = 0;
+  let personNumber = 1000;
+  for (const pid of participantIds) {
+    const p = people.find((x) => x.id === pid)!;
+    if (monitorIds.has(pid)) continue;
+    const level = p.schoolLevel ? schoolLevelFromText(p.schoolLevel) : null;
+    const baseAge = level?.key ? AGE_BY_LEVEL[level.key] : undefined;
+    const age =
+      baseAge !== undefined ? baseAge + (r() < 0.3 ? 1 : 0) : undefined;
+    const birthDate =
+      age !== undefined
+        ? `${2026 - age}-${pad2(1 + Math.floor(r() * 9))}-${pad2(1 + Math.floor(r() * 28))}`
+        : undefined;
+    const tri = (rate = 0.3): boolean | null =>
+      r() < rate ? null : r() < 0.85;
+    const consents: Consents = {
+      goHomeAlone: p.badges.notHomeAlone ? false : r() < 0.3 ? null : true,
+      photos: p.badges.noPhotos ? false : r() < 0.3 ? null : true,
+      whatsapp: tri(),
+      healthData: pid === healthNo ? false : r() < 0.3 ? null : true,
+      outings: tri(),
+      participation: tri(),
+      dataProtection: r() < 0.3 ? null : true,
+    };
+
+    const surname = p.lastName.split(' ')[0];
+    const guardians: FakeGuardian[] = [];
+    if (pid !== noFamily) {
+      const n = r() < 0.6 ? 2 : 1;
+      for (let i = 0; i < n; i++) {
+        guardianSeq += 1;
+        const firstName = pick(ADULT_FIRST);
+        const lastName =
+          i === 0 ? `${surname} ${pick(LAST)}` : `${pick(LAST)} ${pick(LAST)}`;
+        const relationship =
+          n === 1
+            ? pick(['Madre', 'Padre', 'Tutora legal', 'Abuela'])
+            : i === 0
+              ? 'Madre'
+              : 'Padre';
+        const hasPhone = pid !== familyNoPhones && r() < 0.92;
+        guardians.push({
+          id: `f-fam-${pad2(guardianSeq)}`,
+          firstName,
+          lastName,
+          relationship: r() < 0.05 ? '' : relationship,
+          phone: hasPhone
+            ? r() < 0.04
+              ? '+44 7700 900123'
+              : phoneOf(r)
+            : undefined,
+          email:
+            r() < 0.75
+              ? `${ascii(firstName)}.${ascii(lastName.split(' ')[0])}@ejemplo.org`
+              : undefined,
+        });
+      }
+    }
+
+    if (pid === ownWithWhatsapp) consents.whatsapp = true;
+    if (pid === ownWithoutWhatsapp) consents.whatsapp = null;
+    const ownPhone =
+      pid === ownWithWhatsapp || pid === ownWithoutWhatsapp
+        ? phoneOf(r)
+        : undefined;
+
+    const g = groupOf(pid);
+    const stageLabel =
+      g?.stage === 'mic' ? 'MIC' : g?.stage === 'com' ? 'COM' : undefined;
+    profiles[pid] = {
+      age,
+      birthDate,
+      photo: r() < 0.5 ? `v${Math.floor(r() * 1e6).toString(36)}` : undefined,
+      ownPhone,
+      emergency: pid === withEmergency ? '964 00 11 22' : undefined,
+      guardians,
+      consents,
+      scarf: pick<Scarf>([
+        'none',
+        'red',
+        'green',
+        'blue',
+        'yellow',
+        'cross',
+        'unknown',
+        'green',
+        'red',
+      ]),
+      document:
+        r() < 0.7
+          ? {
+              kindLabel: 'DNI',
+              number: `${Math.floor(r() * 9e7 + 1e7)}${pick(['A', 'K', 'Z', 'T'])}`,
+            }
+          : undefined,
+      street:
+        r() < 0.8 ? `${pick(STREETS)} ${1 + Math.floor(r() * 40)}` : undefined,
+      postcode: '12001',
+      city: p.delegationId === D1 ? 'Villaclara' : 'Puerto Alto',
+      school: r() < 0.7 ? pick(SCHOOLS) : undefined,
+      email:
+        age !== undefined && age >= 14 && r() < 0.6
+          ? `${ascii(p.firstName)}${Math.floor(r() * 90 + 10)}@ejemplo.org`
+          : undefined,
+      size: r() < 0.6 ? pick(SIZES) : undefined,
+      stageLabel,
+      comLevelLabel:
+        g?.stage === 'com' && r() < 0.5 ? pick(['COM 1', 'COM 2']) : undefined,
+      personNumber: String((personNumber += 1)),
+    };
+    // Las marcas las decide el servidor con el «0» explícito: la de salud,
+    // solo si hay texto y la familia no dijo «no» al uso de los datos.
+    p.badges.healthNote = !!health[pid] && consents.healthData !== false;
+  }
+
+  // Avisos: uno de C1 con dos, uno de C2 con tres (el límite) y uno de M2 con uno.
+  const notices: Record<string, Notice[]> = {};
+  const nameOfMonitor = (g: FakeGroup | undefined) =>
+    g ? people.find((x) => x.id === g.monitorIds[0])?.firstName : undefined;
+  const addNotices = (
+    code: string,
+    index: number,
+    list: Omit<Notice, 'id' | 'placedBy'>[],
+  ) => {
+    const g = groups.find((x) => x.code === code);
+    const pid = g?.participantIds[index];
+    if (!pid) return;
+    notices[pid] = list.map((n, i) => ({
+      ...n,
+      id: `f-avi-${code}-${i + 1}`,
+      placedBy: nameOfMonitor(g),
+    }));
+  };
+  addNotices('C1', 2, [
+    {
+      date: '2026-10-03',
+      reason: 'Se fue del local sin avisar durante el juego.',
+      familyNotified: true,
+    },
+    {
+      date: '2026-10-17',
+      reason: 'Insultó a un compañero en la oración.',
+      familyNotified: false,
+    },
+  ]);
+  addNotices('C2', 4, [
+    {
+      date: '2026-09-26',
+      reason: 'Rompió a propósito el material del taller.',
+      familyNotified: true,
+    },
+    {
+      date: '2026-10-03',
+      reason: 'No dejó hablar a nadie en la revisión.',
+      familyNotified: true,
+    },
+    {
+      date: '2026-10-17',
+      reason: 'Empujó a otro en la escalera.',
+      familyNotified: false,
+    },
+  ]);
+  addNotices('M2', 3, [
+    {
+      date: '2026-10-10',
+      reason: 'Se escondió y no volvió al grupo hasta el final.',
+      familyNotified: true,
+    },
+  ]);
+
+  // Eventos del curso: la salida (ya pasó), la convivencia (hoy) y Pascua.
+  const personEvents: Record<string, FakePersonEvent[]> = {};
+  for (const pid of participantIds) {
+    const p = people.find((x) => x.id === pid)!;
+    if (p.delegationId !== D1) continue;
+    const list: FakePersonEvent[] = [];
+    const a = r();
+    if (a < 0.6) list.push({ eventId: 'f-evt-salida', status: 'yes' });
+    else if (a < 0.7)
+      list.push({
+        eventId: 'f-evt-salida',
+        status: 'no_justified',
+        reason: 'Cumpleaños de su prima',
+      });
+    else if (a < 0.8) list.push({ eventId: 'f-evt-salida', status: 'no_roll' });
+    else if (a < 0.85)
+      list.push({ eventId: 'f-evt-salida', status: 'cancelled' });
+    const b = r();
+    if (b < 0.6)
+      list.push({ eventId: 'f-evt-convivencia', status: 'registered' });
+    if (r() < 0.3) list.push({ eventId: 'f-evt-pascua', status: 'registered' });
+    if (list.length) personEvents[pid] = list;
+  }
+
+  return { profiles, memberships, notices, personEvents };
 }
 
 /** Las marcas de una persona en una lista, o `null` si no está marcada. */

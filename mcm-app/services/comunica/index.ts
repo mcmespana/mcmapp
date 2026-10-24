@@ -15,7 +15,9 @@
 
 import { createHttpClient, type ComunicaApi } from './client';
 import { createFakeServer, type FakeServer } from './fake';
+import { clearPhotoCache } from './photos';
 import {
+  addSignOutCleanup,
   configureSession,
   currentAccessToken,
   fakeOnlyAsyncSecretStore,
@@ -89,6 +91,8 @@ export function getComunicaApi(): ComunicaApi {
     // verdad vive solo en memoria. Ver `session.ts`.
     secrets: t.kind === 'fake' ? fakeOnlyAsyncSecretStore : memorySecretStore(),
   });
+  // Salir vacía también las fotos de las fichas (plan 05).
+  addSignOutCleanup(clearPhotoCache);
   api = withSession(raw);
   return api;
 }

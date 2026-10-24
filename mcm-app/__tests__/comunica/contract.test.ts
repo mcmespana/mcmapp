@@ -1,6 +1,12 @@
 import {
+  GroupDetail,
   GroupsResponse,
   HealthNote,
+  NoticeWrite,
+  ParticipantProfile,
+  PeopleIndex,
+  PersonalData,
+  ScarfWrite,
   Me,
   Mark,
   PersonSummary,
@@ -119,7 +125,124 @@ describe('services/comunica/contract', () => {
       );
       if (route.persist) expect({ name, health }).toEqual({ name, health: [] });
     }
-    expect(textFields(HealthNote)).toContain('text');
+    expect(textFields(HealthNote)).toContain('items.text');
+    expect(ROUTES.health.persist).toBe(false);
+  });
+});
+
+describe('contrato de Grupos y fichas (plan 05)', () => {
+  const T = '2026-10-24T10:00:00+02:00';
+  const row = {
+    ...person,
+    schoolLevel: { key: 'eso1', label: '1 ESO' },
+    age: 12,
+    groupId: null,
+    unassignedMembershipId: 'f-rel-01',
+  };
+  const group = {
+    id: 'g',
+    code: 'C1',
+    name: 'Brújula',
+    stage: 'com',
+    schoolLevels: ['1º ESO'],
+    counts: { participants: null, monitors: 2 },
+  };
+  const profile = {
+    generatedAt: T,
+    person: {
+      id: 'p',
+      firstName: 'Lucía',
+      lastName: 'Arenas',
+      fullName: 'Lucía Arenas',
+      schoolLevel: { key: null, label: 'Curso puente' },
+    },
+    group: null,
+    phones: { own: '622 14 87 03' },
+    guardians: [{ id: 'f', fullName: 'Marta Arenas', relationship: 'Madre' }],
+    consents: {
+      goHomeAlone: false,
+      photos: null,
+      whatsapp: null,
+      healthData: true,
+      outings: true,
+      participation: true,
+      dataProtection: null,
+    },
+    badges: person.badges,
+    scarf: 'unknown',
+    events: [
+      {
+        eventId: 'e',
+        name: 'Salida',
+        startsAt: T,
+        endsAt: T,
+        status: 'no_roll',
+      },
+    ],
+    notices: [
+      { id: 'n', date: '2026-10-17', reason: 'x', familyNotified: false },
+    ],
+    noticeLimit: 3,
+    attendance: null,
+  };
+
+  it('admite cada forma', () => {
+    expect(
+      PeopleIndex.parse({
+        generatedAt: T,
+        season: '2026-2027',
+        seasonClosed: false,
+        people: [row],
+      }).people[0].groupId,
+    ).toBeNull();
+    expect(
+      GroupDetail.parse({
+        generatedAt: T,
+        group,
+        monitors: [{ id: 'm', firstName: 'A', lastName: 'B' }],
+        participants: [{ ...row, groupId: 'g' }],
+      }).group.counts.participants,
+    ).toBeNull();
+    expect(ParticipantProfile.parse(profile).scarf).toBe('unknown');
+    expect(
+      PersonalData.parse({ generatedAt: T, personId: 'p', city: 'Villaclara' }),
+    ).toBeTruthy();
+  });
+
+  it('rechaza lo que no es del contrato', () => {
+    expect(
+      ParticipantProfile.safeParse({ ...profile, scarf: 'morado' }).success,
+    ).toBe(false);
+    expect(
+      ScarfWrite.safeParse({
+        clientId: '3b241101-e2bb-4255-8caf-4136c566a962',
+        scarf: 'unknown',
+      }).success,
+    ).toBe(false);
+    expect(
+      NoticeWrite.safeParse({
+        clientId: '3b241101-e2bb-4255-8caf-4136c566a962',
+        date: '17/10/2026',
+        reason: 'x',
+        familyNotified: true,
+      }).success,
+    ).toBe(false);
+  });
+
+  it('la ficha no se queda con un texto de salud que le cuelen', () => {
+    const parsed = ParticipantProfile.parse({
+      ...profile,
+      health: 'Alergia a los frutos secos',
+      person: { ...profile.person, allergies: 'Frutos secos' },
+    });
+    expect(JSON.stringify(parsed)).not.toMatch(/frutos secos/i);
+  });
+
+  it('las rutas nuevas están en el catálogo con su persist', () => {
+    expect(ROUTES.people.persist).toBe(true);
+    expect(ROUTES.group.persist).toBe(true);
+    expect(ROUTES.person.persist).toBe(true);
+    expect(ROUTES.personal.persist).toBe(false);
     expect(ROUTES.health.persist).toBe(false);
   });
 });

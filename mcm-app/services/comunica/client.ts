@@ -18,8 +18,17 @@ import {
   CodeResponse,
   ErrorBody,
   type ErrorCode,
+  GroupDetail,
   GroupsResponse,
   HealthNote,
+  type MembershipGroupWrite,
+  type NoticeWrite,
+  NoticeWriteResult,
+  ParticipantProfile,
+  PeopleIndex,
+  PersonalData,
+  type ScarfWrite,
+  WriteResult,
   MeResponse,
   RollDetail,
   type RollWrite,
@@ -61,6 +70,32 @@ export interface ComunicaApi {
     body: RollWrite,
   ): Promise<RollWriteResult>;
   getHealth(personId: string): Promise<HealthNote>;
+
+  // Grupos y fichas (plan 05).
+  getPeople(opts?: ReadOptions): Promise<PeopleIndex>;
+  getGroupDetail(groupId: string, opts?: ReadOptions): Promise<GroupDetail>;
+  getPerson(personId: string, opts?: ReadOptions): Promise<ParticipantProfile>;
+  /** Nunca se guarda: solo con conexión. */
+  getPersonal(personId: string): Promise<PersonalData>;
+  createNotice(personId: string, body: NoticeWrite): Promise<NoticeWriteResult>;
+  setScarf(personId: string, body: ScarfWrite): Promise<WriteResult>;
+  assignGroup(
+    membershipId: string,
+    body: MembershipGroupWrite,
+  ): Promise<WriteResult>;
+  /**
+   * Cómo pedir una foto (`photoUrl`): con el servidor de verdad, la URL con el
+   * token; con el falso, su imagen inventada. Ninguna pantalla importa el falso.
+   */
+  photoSource(url: string): PhotoSource;
+}
+
+/** Lo que entiende `expo-image` como `source`. */
+export interface PhotoSource {
+  uri: string;
+  headers?: Record<string, string>;
+  /** La URL lleva la versión (`?v=`): sirve de clave de caché. */
+  cacheKey?: string;
 }
 
 /** Lo que puede fallar: los códigos del contrato, más los de la app. */
@@ -246,7 +281,52 @@ export function createHttpClient({
         RollWriteResult,
         body,
       ),
+    // La salud no se reintenta ni se registra: o llega, o «sin conexión».
     getHealth: (id) =>
       request('GET', `/v1/people/${enc(id)}/health`, HealthNote),
+    getPeople: (opts) =>
+      request(
+        'GET',
+        `/v1/people${q(opts)}`,
+        PeopleIndex,
+        undefined,
+        READ_RETRIES,
+      ),
+    getGroupDetail: (gid, opts) =>
+      request(
+        'GET',
+        `/v1/groups/${enc(gid)}${q(opts)}`,
+        GroupDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    getPerson: (id, opts) =>
+      request(
+        'GET',
+        `/v1/people/${enc(id)}${q(opts)}`,
+        ParticipantProfile,
+        undefined,
+        READ_RETRIES,
+      ),
+    getPersonal: (id) =>
+      request('GET', `/v1/people/${enc(id)}/personal`, PersonalData),
+    createNotice: (id, body) =>
+      request('POST', `/v1/people/${enc(id)}/notices`, NoticeWriteResult, body),
+    setScarf: (id, body) =>
+      request('PUT', `/v1/people/${enc(id)}/scarf`, WriteResult, body),
+    assignGroup: (mid, body) =>
+      request('PUT', `/v1/memberships/${enc(mid)}/group`, WriteResult, body),
+    photoSource: (url) => {
+      // `expo-image` pide la foto él solo: el token va en la cabecera. Si aún
+      // no hay token de acceso, sin cabecera (dará 401 y saldrán las iniciales).
+      const token = getToken?.();
+      return typeof token === 'string'
+        ? {
+            uri: url,
+            headers: { Authorization: `Bearer ${token}` },
+            cacheKey: url,
+          }
+        : { uri: url, cacheKey: url };
+    },
   };
 }
