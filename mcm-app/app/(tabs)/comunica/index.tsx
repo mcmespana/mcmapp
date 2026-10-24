@@ -7,11 +7,12 @@
 //   3. Nativa con sesión → la portada.
 
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import ComunicaScreen from '@/app/screens/ComunicaScreen';
 import AccessScreen from '@/components/comunica/acceso/AccessScreen';
+import AreaScreen from '@/components/comunica/comun/AreaScreen';
 import { AreaSkeleton } from '@/components/comunica/comun/AreaState';
 import { useArea } from '@/components/comunica/comun/ComunicaAreaProvider';
 import { useComunicaTheme } from '@/components/comunica/comun/useComunicaTheme';
@@ -36,14 +37,15 @@ export default function ComunicaGate() {
 function NativeGate() {
   const { session } = useArea();
   useComunicaLinks();
-  const t = useComunicaTheme();
   if (session.status === 'loading') {
     return (
       <>
         <Stack.Screen options={{ headerShown: true, headerLargeTitle: true }} />
-        <View style={[styles.loading, { backgroundColor: t.backgroundSunken }]}>
+        {/* Dentro de `AreaScreen`: si no, el esqueleto queda bajo la
+            cabecera grande y transparente de iOS. */}
+        <AreaScreen>
           <AreaSkeleton />
-        </View>
+        </AreaScreen>
       </>
     );
   }
@@ -102,6 +104,5 @@ function AccountButton() {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, padding: 16 },
   account: { padding: 4 },
 });

@@ -42,15 +42,12 @@ export default function LooseScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Sin grupo', headerLargeTitle: false }} />
-      <AreaState query={people} skeleton="list">
-        {(d) => (
-          <Body
-            data={d}
-            generatedAt={people.generatedAt}
-            refetch={() => people.refetch()}
-          />
-        )}
-      </AreaState>
+      {/* Los estados, dentro de `AreaScreen` (cabecera de iOS y barra). */}
+      <AreaScreen onRefresh={() => people.refetch()}>
+        <AreaState query={people} skeleton="list">
+          {(d) => <Body data={d} generatedAt={people.generatedAt} />}
+        </AreaState>
+      </AreaScreen>
     </>
   );
 }
@@ -58,11 +55,9 @@ export default function LooseScreen() {
 function Body({
   data,
   generatedAt,
-  refetch,
 }: {
   data: NonNullable<ReturnType<typeof usePeople>['data']>;
   generatedAt: string | null;
-  refetch: () => Promise<unknown>;
 }) {
   const t = useComunicaTheme();
   const groups = useGroups();
@@ -99,7 +94,7 @@ function Body({
   };
 
   return (
-    <AreaScreen onRefresh={refetch}>
+    <>
       <View style={styles.head}>
         <Text
           style={[styles.title, { color: t.text }]}
@@ -205,7 +200,7 @@ function Body({
         onClose={() => setAssignFor(null)}
       />
       <HealthSheet person={healthFor} onClose={() => setHealthFor(null)} />
-    </AreaScreen>
+    </>
   );
 }
 

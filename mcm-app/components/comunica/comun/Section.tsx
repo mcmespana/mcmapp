@@ -46,8 +46,11 @@ export default function Section({ title, warning, children, bare }: Props) {
           ]}
         >
           {rows.map((row, i) => (
+            // La key del HIJO (la que le dio quien llama, vía `toArray`), no
+            // el índice: al filtrar, las filas se quedan montadas y las fotos
+            // no parpadean.
             <View
-              key={i}
+              key={React.isValidElement(row) && row.key != null ? row.key : i}
               style={
                 i > 0
                   ? {

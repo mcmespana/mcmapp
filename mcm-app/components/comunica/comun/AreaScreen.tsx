@@ -8,7 +8,11 @@ import { RefreshControl, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import PageContainer from '@/components/ui/PageContainer';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
-import { BOTTOM_ACTION_BAR_SPACE } from './BottomActionBar';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import {
+  BOTTOM_ACTION_BAR_SPACE,
+  BottomActionBarHeightContext,
+} from './BottomActionBar';
 import { useComunicaTheme } from './useComunicaTheme';
 
 interface Props {
@@ -28,9 +32,16 @@ export default function AreaScreen({
   sunken = true,
 }: Props) {
   const t = useComunicaTheme();
+  // La `BottomActionBar` mide lo que ocupa (con el hueco de la barra de
+  // pestañas dentro); aquí se reserva eso, y nunca menos del mínimo.
+  const [footerHeight, setFooterHeight] = useState<number | null>(null);
+  const tabBar = useTabBarClearance();
+  const footerExtra = footer
+    ? Math.max(BOTTOM_ACTION_BAR_SPACE, (footerHeight ?? 0) - tabBar)
+    : 0;
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll(
     'comunica',
-    footer ? BOTTOM_ACTION_BAR_SPACE : 0,
+    footerExtra,
   );
   const [refreshing, setRefreshing] = useState(false);
   const refresh = useCallback(async () => {
@@ -70,7 +81,9 @@ export default function AreaScreen({
           <View style={styles.content}>{children}</View>
         </PageContainer>
       </Animated.ScrollView>
-      {footer}
+      <BottomActionBarHeightContext.Provider value={setFooterHeight}>
+        {footer}
+      </BottomActionBarHeightContext.Provider>
     </View>
   );
 }

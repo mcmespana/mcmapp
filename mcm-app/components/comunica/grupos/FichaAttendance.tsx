@@ -258,7 +258,9 @@ function Square({ sq, last }: { sq: TimelineSquare; last?: boolean }) {
         mark
           ? { backgroundColor: MARK_FILL[mark] }
           : { borderWidth: 1.5, borderColor: t.textMuted },
-        last && { borderWidth: 2, borderColor: t.text },
+        // La última sesión, con el mismo trazo fino en el color del texto
+        // (`design.md` §8: nada de bordes de 2 px).
+        last && { borderWidth: 1.5, borderColor: t.text },
       ]}
     />
   );
