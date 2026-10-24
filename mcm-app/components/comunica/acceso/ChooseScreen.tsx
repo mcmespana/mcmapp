@@ -15,6 +15,7 @@ import { h } from '@/utils/haptics';
 import Section from '../comun/Section';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import { accessErrorText } from './copy';
+import { clearAccessHandoffs } from './handoff';
 
 export default function ChooseScreen({
   body,
@@ -35,6 +36,7 @@ export default function ChooseScreen({
       const res = await getComunicaApi().verify({ ...body, personId });
       if ('choose' in res) throw new Error('otra vez a elegir');
       await signIn(res, res.me);
+      clearAccessHandoffs();
       h.formSuccess();
       router.dismissAll();
     } catch (e) {

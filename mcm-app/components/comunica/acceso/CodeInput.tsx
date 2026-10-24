@@ -6,7 +6,7 @@
 import React, { forwardRef } from 'react';
 import { Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import typography from '@/constants/typography';
-import { radii } from '@/constants/uiStyles';
+import { focusRing, radii } from '@/constants/uiStyles';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 
 interface Props {
@@ -39,11 +39,13 @@ const CodeInput = forwardRef<TextInput, Props>(function CodeInput(
                 styles.box,
                 {
                   backgroundColor: t.backgroundSunken,
+                  // El borde es el FOCO (y el error): en las demás casillas,
+                  // transparente. Siempre del mismo grosor, para no moverlas.
                   borderColor: invalid
                     ? t.warningIcon
                     : isActive
                       ? t.accentText
-                      : t.separator,
+                      : 'transparent',
                 },
               ]}
             >
@@ -89,7 +91,7 @@ const styles = StyleSheet.create({
     aspectRatio: 0.85,
     maxWidth: 56,
     borderRadius: radii.md,
-    borderWidth: 2,
+    borderWidth: focusRing.borderWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
