@@ -4,6 +4,26 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-24 09:20 — Área nativa de Comunica: Grupos y fichas y la ficha del participante (rama `nuevoComunicaChulo`)
+
+- **Grupos y fichas** (plan 05, `/comunica/grupos`): la gente de la
+  delegación sin pasar lista, en Grupos, Cursos y A-Z, con buscador, chips
+  por curso, fotos, marcas («No se va solo/a», «Sin fotos», «Alergia o
+  tratamiento», que abre la salud), la tarjeta de quien no tiene grupo y, a
+  coordinación, **«Vincular»** a un grupo (por la cola, con confirmación).
+  Pantallas nuevas: un grupo, «Sin grupo» y **la ficha del participante**
+  (contacto con botones al tutor 1, asistencia con cuadraditos y eventos,
+  avisos de comportamiento con alta por la cola, pañuelo, autorizaciones y
+  datos personales). Se llega desde la portada, el pie del árbol y la hoja
+  de marcar (con la sesión).
+- **Datos**: rutas nuevas del contrato (`/v1/people`, `/v1/groups/:id`,
+  `/v1/people/:id`, `/personal`, avisos, pañuelo y vincular); la salud pasa
+  a ir por campos. Ni la salud ni los datos personales se guardan en el
+  móvil; las fichas y fotos de tus grupos se precargan con conexión.
+- **Salir vacía la caché de fotos de `expo-image`** (también las demás
+  imágenes de la app, que se vuelven a bajar).
+- Laboratorio Alpha: mando «Curso cerrado».
+
 ## 2026-10-24 05:30 — Área nativa de Comunica: enlaces y salto a la web (rama `nuevoComunicaChulo`)
 
 - **Cualquier enlace de Comunica abre la app** donde toca (plan 10): con un

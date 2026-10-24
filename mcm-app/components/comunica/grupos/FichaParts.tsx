@@ -94,7 +94,9 @@ export function Fold({
           >
             {summary}
           </Text>
-        ) : null}
+        ) : (
+          <View style={styles.flex} />
+        )}
         <IconSymbol
           name={open ? 'chevron.up' : 'chevron.down'}
           size={16}
@@ -419,6 +421,7 @@ export async function openUrl(url: string) {
 
 const styles = StyleSheet.create({
   section: { gap: 8 },
+  flex: { flex: 1 },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',

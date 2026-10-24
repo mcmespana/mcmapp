@@ -57,4 +57,41 @@ describe('guardarraíles del área nativa', () => {
       .join('\n');
     expect(src).not.toMatch(/\b(ajmcm_|stic_|LIS_|AVI_|GAC_)\w*/);
   });
+
+  // Plan 05: la salud solo se pide en la hoja de salud y en la ficha, y nunca
+  // se escribe en un `accessibilityLabel` de fila o de marca.
+  it('la salud solo se pide donde toca', () => {
+    const users = appFiles
+      .filter((f) => /^(app|components)\//.test(rel(f)))
+      .filter((f) =>
+        /\buseHealth\(|\.getHealth\(/.test(fs.readFileSync(f, 'utf8')),
+      )
+      .map(rel)
+      .sort();
+    expect(users).toEqual([
+      'components/comunica/grupos/HealthSheet.tsx',
+      'components/comunica/grupos/ParticipantScreen.tsx',
+    ]);
+  });
+
+  it('las filas y las marcas no llevan texto de salud al lector', () => {
+    const rowFiles = [
+      'components/comunica/comun/PersonRow.tsx',
+      'components/comunica/comun/PersonMarks.tsx',
+      'components/comunica/grupos/GruposIndexScreen.tsx',
+      'components/comunica/grupos/GroupScreen.tsx',
+      'components/comunica/grupos/LooseScreen.tsx',
+    ];
+    for (const f of rowFiles) {
+      const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
+      // Ni la consulta de salud ni sus campos de texto.
+      expect({
+        f,
+        hit: /useHealth|\.items\b|HEALTH_LABEL/.test(src),
+      }).toEqual({
+        f,
+        hit: false,
+      });
+    }
+  });
 });

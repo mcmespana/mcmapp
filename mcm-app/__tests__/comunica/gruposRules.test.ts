@@ -34,6 +34,10 @@ import {
   timeline,
 } from '@/utils/comunica/attendance';
 import {
+  HEALTH_MARK_A11Y,
+  marksA11y,
+} from '@/components/comunica/comun/PersonMarks';
+import {
   noticeTier,
   noticeWarning,
   numberNotices,
@@ -446,5 +450,17 @@ describe('notices', () => {
     expect(noticeWarning(1, 3)).toBeNull();
     expect(noticeWarning(2, 3)).toEqual({ kind: 'next_is_exit', limit: 3 });
     expect(noticeWarning(3, 3)).toEqual({ kind: 'at_limit', count: 3 });
+  });
+});
+
+describe('marcas', () => {
+  it('la de salud no dice cuál ni qué', () => {
+    expect(
+      marksA11y({ healthNote: true, noPhotos: true, notHomeAlone: true }),
+    ).toBe(`No se va solo/a, Sin fotos, ${HEALTH_MARK_A11Y}`);
+    expect(HEALTH_MARK_A11Y).toBe('Alergia o tratamiento: ver el detalle');
+    expect(
+      marksA11y({ healthNote: false, noPhotos: false, notHomeAlone: false }),
+    ).toBe('');
   });
 });

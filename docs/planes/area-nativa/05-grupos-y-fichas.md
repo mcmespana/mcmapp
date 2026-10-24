@@ -1,6 +1,6 @@
 # 05 — Grupos y fichas
 
-> **Estado:** 🟢 listo para ejecutar en `nuevoComunicaChulo` · **Depende de:**
+> **Estado:** 🟡 ejecutado el 24/10/2026 en `nuevoComunicaChulo` (lo que falta, en la tabla de [`README.md`](README.md)) · **Depende de:**
 > 00, 01 y 03 · **Tamaño:** L · Índice y reglas comunes: [`README.md`](README.md).
 
 ## Para qué y para quién

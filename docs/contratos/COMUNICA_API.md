@@ -97,14 +97,69 @@ El glosario completo está en el plan 00 §1. Lo mínimo:
   - **No se reescribe lo que no cambia** (ni marca ni motivo iguales).
   - Responde la lista **releída** del CRM, su resumen y `notSaved`.
 
+### Grupos y fichas (plan 05)
+
+- `GET /v1/groups` (el del plan 04) sirve también aquí. `counts.participants`
+  puede ser **`null`** = no se sabe (el mapa de relaciones vino a medias y no
+  hay recuento fresco): la app no pinta número. **Nunca un cero inventado**
+  (`MIS-GRUPOS.md` §8 del plugin).
+- `GET /v1/people` → `{ generatedAt, season, seasonClosed, people:
+  ParticipantRow[] }`: **todos** los participantes con relación vigente con la
+  delegación, con grupo o sin él (`groupId: null` y su
+  `unassignedMembershipId`). `ParticipantRow` = persona + `schoolLevel?`
+  (`{ key, label }`: la clave de curso —`ep3`…`eso4`, `bach1`, `bach2`,
+  `fp_gm`, `fp_gs`, `university`, `other`— o `null` si el texto no se
+  reconoce; `label` la corta, «4 EP», «1 ESO»; el curso es el de la relación
+  y, si no, el del grupo) + `age?`. Sin curso, el campo no viene.
+  `seasonClosed: true` = el curso anterior se cerró y el nuevo no está
+  abierto (la app lo explica con el texto del plugin).
+- `GET /v1/groups/:id` → `{ generatedAt, group, monitors, participants }`.
+  Monitores **sin marcas**. De otra delegación → 403.
+- `GET /v1/people/:id` → la ficha (`ParticipantProfile`): persona, grupo
+  (`null` = sin grupo), teléfonos en bruto (`own`, `emergency`), familia
+  (`guardians`, **de los dos lados de la relación, sin repetidos y con el
+  tutor 1 —el primero dado de alta— primero**; con o sin teléfono), las siete
+  autorizaciones (`true`/`false`/`null` = sin contestar: **un vacío no es un
+  «no»**), marcas, pañuelo (`none`, `red`, `green`, `blue`, `yellow`,
+  `cross`, `unknown`), eventos del curso (`status`: su marca, `no_roll`,
+  `registered` o `cancelled`), avisos **del curso** (sin número: lo pone la
+  app ordenando por fecha e id), `noticeLimit` y la asistencia (`sessions`,
+  `marks` con el «sin marcar» explícito como `null`, `reasons`) o `null` si
+  no tiene sábados que contar. Solo si la persona tiene relación vigente de
+  participante con la delegación; si no, **403 sin decir si existe**. El
+  móvil la guarda: **sin datos personales ni salud**.
+- `GET /v1/people/:id/personal` → nacimiento, documento (`kindLabel`,
+  `number`), dirección en una línea, ciudad, centro, correo, talla, etapa,
+  nivel COM y nº de persona. **El móvil no lo guarda nunca** (decisión
+  `offline`): solo con conexión.
+- `GET /v1/people/:id/photo?v=` → la miniatura. La URL lleva la versión (con
+  ella, `max-age` de un año); sin foto no hay `photoUrl` y no se pide. Fuera
+  de alcance → **403, no 404**. La app la pide con el token en la cabecera.
+- `POST /v1/people/:id/notices` `{ clientId, date, reason, familyNotified,
+  sessionId? }` → `WriteResult` + `notice`. Fecha futura → **se recorta a
+  hoy** (Madrid); motivo vacío → `validation` / `empty_reason`.
+- `PUT /v1/people/:id/scarf` `{ clientId, scarf }` (sin `unknown`) →
+  `WriteResult`. No se reescribe si no cambia.
+- `PUT /v1/memberships/:id/group` `{ clientId, groupId }` → `WriteResult`.
+  **Solo coordinación** (acompañamiento no); el grupo y la RELACIÓN tienen
+  que ser de su delegación. Pone grupo a una relación que ya existe; **nunca
+  crea una**. Fuera de eso, 403.
+- Si el CRM no contesta: `crm_unavailable`, **nunca una lista vacía**.
+  Una relación con fin vacío o `0000-00-00` está vigente.
+
 ### Salud
 
-- `GET /v1/people/:id/health` → `{ generatedAt, personId, text }`. Solo con
-  `canSeeHealth`. La app no lo guarda nunca.
+- `GET /v1/people/:id/health` → `{ generatedAt, personId, items: [{ kind,
+  text }] }`, con `kind` en `allergies`, `intolerances`, `treatments`,
+  `illnesses` y `other`; solo los campos con texto. Solo con
+  `canSeeHealth` (si no, 403) y de alguien de la delegación. La app la pide
+  con conexión, la tiene un minuto en memoria y no la guarda nunca.
+  Mientras no se decida `salud-no`: con «datos de salud» a «No», `items`
+  vacío (lo que hace el globo del plugin).
 
 ## 4. Lo que vendrá
 
 Cada plan de pantallas añade su trozo al ejecutarse (catálogo en el plan 00
-§3): grupos y fichas (05), coordinación (06), eventos (07), avisos (08), mis
+§3): coordinación (06), eventos (07), avisos (08), mis
 datos de monitor (09), familias (11-16) y el pase a la web del legado
 (`POST /v1/web-pass`, plan 10).
