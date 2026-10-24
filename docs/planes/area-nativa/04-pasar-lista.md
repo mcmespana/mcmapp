@@ -38,8 +38,9 @@ En `/home/user/comunicaAreaPrivada/`; **manda el código** (pregunta 7).
 | `pasar-lista/[groupId]/index.tsx` | Marcar y guardar. Parámetros `sesion` (sin él, la regla) y `desde=resumen` |
 | `pasar-lista/[groupId]/historial.tsx` | Historial de listas del grupo |
 
-Cambiar de sesión es `router.setParams` (no apila). Lo de otros planes, hasta que
-exista, abre `web.tsx` con su `internalpage`: ficha (05, `_ficha` con
+Cambiar de sesión es `router.setParams` (no apila). Lo de otros planes se abre
+por el mapa de enlaces del plan 10 y, hasta que exista, cae en el legado con
+`openLegacy` y su `internalpage`: ficha (05, `_ficha` con
 `participante`, `grupo`, `sesion`), Grupos y fichas (05), resumen, monitores y
 reuniones (06), lista de un evento (07).
 

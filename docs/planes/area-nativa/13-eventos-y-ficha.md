@@ -96,7 +96,8 @@ y `action: 'detail'`; el 14 los cambia por sus rutas.
 | `internalpage=single_stic_events&action=detail&id=<evento>` | `actividades/[eventId]` |
 | `internalpage=single_stic_events` sin `id` o con forma rara | `actividades/index` |
 | `/actividades/?e=<slug o id>` | `actividades/publica/[slug]` |
-| `admin-post.php?action=sticpa_evento_fwa…` / `sticpa_evento_archivo…` | No llegan: `/wp-admin/*` está excluido (plan 10 §3) |
+| `admin-post.php?action=sticpa_evento_archivo&e=&d=` | De fuera no llegan (`/wp-admin/*` está excluido, plan 10 §3); desde dentro del legado, `actividades/[eventId]`, que abre ese archivo |
+| `admin-post.php?action=sticpa_evento_fwa&e=` | Igual: desde el legado, `actividades/[eventId]/inscribirme` (plan 14), que lleva al formulario avanzado |
 
 ## Datos: su trozo del contrato
 
@@ -109,15 +110,15 @@ GET  /v1/profiles/:pid/events                 → ActivityList
 GET  /v1/profiles/:pid/events/:eventId        → EventDetail
 GET  /v1/profiles/:pid/events/by-slug/:slug   → EventDetail          (slug o id, la regla de la web)
 GET  /v1/public/events/:slug                  → EventDetail          (sin sesión; solo publicados; signup: null)
-GET  /v1/profiles/:pid/events/:eventId/documents/:documentId        → binario (imagen o PDF)
-POST /v1/profiles/:pid/events/:eventId/documents/:documentId/link   → { url, expiresAt }   (2 min)
+GET  /v1/profiles/:pid/events/:eventId/documents/:documentId        → binario (imagen o PDF), `inline`
 
 ActivityList { generatedAt, toSignUp: EventCard[], signedUp: EventCard[] }
 EventCard    { id, name, startDate, endDate,              // null si el CRM no la tiene
                place: string|null,                         // lugar, si no dirección
                statusLabel: string|null,                   // etiqueta del CRM; la de «registration» ya es «Inscripciones abiertas»
                window: { opensOn: string|null, closesOn: string|null },
-               hasAdvancedForm: boolean, myRegistrationId: string|null }
+               hasAdvancedForm: boolean, myRegistrationId: string|null,
+               myRegistrationStatus: { label, tone: 'ok'|'warn'|'danger'|'neutral' } | null }
 EventDetail  EventCard & { tagline: string|null, description: string|null,   // texto plano
                timetable: string|null, address: string|null,
                capacity: number|null, price: number|null,  // null si es 0: un 0 no es un dato
@@ -185,8 +186,12 @@ texto plano (como el PHP sin DOM). Nunca HTML.
 | `['comunica','activities','public',slug]` | no | 2 min | Sin sesión no hay espacio de persona (plan 01 §3) |
 
 Imágenes con `expo-image` (caché en disco con `cacheKey` = `documentId`; las de `{ documentId }`
-con la cabecera de sesión). PDF: se pide el enlace de 2 min y se abre en el navegador del
-sistema; el enlace no se guarda ni se registra. Nada va por la cola: aquí no se escribe.
+con la cabecera de sesión, `fileSource` del plan 16). **Abrir un archivo** (cartel a pantalla
+completa, adjunto PDF, documento enlazado en el cuerpo) es **el abridor compartido del plan 16**
+(`useOpenFile` y `archivo.tsx`): baja el archivo con la sesión por la ruta de este plan y lo
+enseña en el visor propio o en la hoja de compartir. Si este plan va antes que el 16, crea esas
+dos piezas tal como las define el 16, y el 16 las reutiliza. Nada va por la cola: aquí no se
+escribe.
 Familias funcionan **con conexión** (decisión `offline`): la caché solo abre rápido.
 
 ### Servidor falso
@@ -209,7 +214,8 @@ hijo apuntado y otra sin; una con plazas y precio a 0. Usa el mando «la fecha d
 - Tarjeta (`sticpa_events_cards`): cápsula con el inicio; nombre; la fecha («5 de mayo de 2026»,
   «del 1 al 10 de julio de 2026», «del 28 de septiembre de 2026 al 2 de octubre de 2026»); el
   lugar; y el plazo («Hasta el 25 de octubre de 2026», «Se abre el …») **salvo** si está cerrado
-  o ya tiene plaza. Chip por este orden: «Con plaza» (ok) → el del plazo («Inscripción cerrada»
+  o ya tiene plaza. Chip por este orden: «Con plaza» (ok; si la inscripción está en un estado
+  de tono `danger`, como «Rechazada», su etiqueta en rojo en vez de «Con plaza») → el del plazo («Inscripción cerrada»
   apagado, «Inscripción no abierta» info) → la etiqueta del CRM (neutro). **Cuando hay fechas,
   mandan las fechas** sobre el estado del CRM.
 - Acción al pie (solo si lleva a otro sitio): «Mi inscripción» (con plaza) o «Inscribirme»
@@ -312,7 +318,7 @@ imágenes), `make-interfaces-feel-better`; y para revisar cada pantalla `fixing-
 | 6 | `EventBody`, `bodyLinks.ts`, vídeo e `ImageViewer` | Test de pantalla con todos los bloques; captura del cuerpo de muestra |
 | 7 | `actividades/index.tsx` | Capturas 375 px claro/oscuro: dos bloques, uno, vacío, sin conexión |
 | 8 | `actividades/[eventId]/index.tsx` con las cinco salidas de la acción y la CTA pegada | Capturas de cada salida y de iPad horizontal; test del orden de motivos |
-| 9 | Mapa, adjuntos, galería y «Ver la página pública» | Tests: `Linking` con la URL esperada por plataforma; el enlace de PDF no llega a `logger` |
+| 9 | Mapa, adjuntos (con `useOpenFile` del 16), galería y «Ver la página pública» | Tests: `Linking` con la URL esperada por plataforma; abrir un PDF pasa por `useOpenFile` |
 | 10 | `actividades/publica/[slug].tsx` (con y sin sesión) y el botón de compartir del plan 08 | Test sin sesión → «Entra para apuntarte»; con sesión → `replace` a la ficha |
 | 11 | Entradas del mapa de enlaces (plan 10), botones interinos con `openLegacy` y `CHANGELOG.md` | Test del mapa con cada enlace de la tabla |
 
@@ -334,16 +340,18 @@ En `__tests__/comunica/`, con el servidor falso.
   hijo en la ficha → la misma ficha con el otro perfil.
 - **Guardarraíles**: ningún componente de `actividades/` importa `react-native-render-html` ni
   `react-native-webview` (recorre los imports); ningún esquema del contrato de este bloque tiene
-  un campo de HTML; los enlaces de PDF y los `documentId` no pasan por `logger`; `price` y
+  un campo de HTML; las rutas de archivos y los `documentId` no pasan por `logger`; `price` y
   `capacity` nunca llegan a 0 desde el falso.
 
 ## Preguntas abiertas
 
-1. **Documentos de quien ya tiene plaza.** La ficha no le dice «no es para ti» a quien ya está
-   apuntado (`inc/stic-events.php:1018-1032`), pero el endpoint de documentos sí lo mira solo por
-   audiencia (`inc/stic-event-web.php:331-336`): si le cambian el curso, no puede abrir el PDF de
-   su convivencia. Mientras se decide, como el plugin (el servidor no lista lo que no serviría).
-   ¿Se le dejan ver?
-2. **«Con plaza» con una inscripción rechazada.** Para el plugin, «activa» es cualquiera que no
-   esté cancelada (`inc/stic-action.php:494`): una `rejected` sale como «Con plaza» y con «Mi
-   inscripción». Se deja igual; ¿debería contar solo lo que no sea cancelado **ni** rechazado?
+1. 🔒 (`docs-con-plaza`) **Documentos de quien ya tiene plaza.** La ficha no le dice «no es para
+   ti» a quien ya está apuntado (`inc/stic-events.php:1018-1032`), pero el endpoint de documentos
+   sí lo mira solo por audiencia (`inc/stic-event-web.php:331-336`): si le cambian el curso, no
+   puede abrir el PDF de su convivencia. Recomendado: que los vea (audiencia **o** plaza). Mientras
+   no se conteste, eso; con «como el plugin», solo audiencia.
+2. **«Con plaza» con una inscripción rechazada** (resuelta el 22/10 al integrar): para el plugin,
+   «activa» es cualquiera que no esté cancelada (`inc/stic-action.php:494`) y una `rejected` sale
+   como «Con plaza». Aquí el guard no cambia (no deja volver a apuntarse, como el plugin), pero la
+   tarjeta y la ficha enseñan su estado en rojo (`myRegistrationStatus`) en vez de «Con plaza»:
+   decir «tienes plaza» a quien la tiene rechazada es mentir.

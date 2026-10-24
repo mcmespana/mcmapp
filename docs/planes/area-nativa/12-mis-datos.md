@@ -298,14 +298,16 @@ El `msg=…` con que volvía un guardado se ignora. El «Tus datos personales» 
 
 ## Preguntas abiertas
 
-1. **El documento de quien no lo tiene.** «Mis datos» lo bloquea («escribe a tu referente») pero el
-   rebote del pago lleva a páginas donde se edita. El plan deja escribir solo lo **vacío** y solo con
-   `completar=pago`. ¿Así, o siempre que esté vacío?
-2. **La etapa en `CAMPOS.md` se contradice**: §1 da a `ajmcm_etapa_c` solo `MIC`, `COM` y `LC`; la
+1. **El documento de quien no lo tiene** (decidida al integrar): «Mis datos» lo bloquea («escribe a
+   tu referente») pero el rebote del pago lleva a páginas donde se edita. Se queda como dice el plan:
+   solo lo **vacío** y solo con `completar=pago`, que es el único sitio donde hace falta. Abrirlo a
+   cualquier momento es cambiar una condición.
+2. 🔒 (`campos-crm`) **La etapa en `CAMPOS.md` se contradice**: §1 da a `ajmcm_etapa_c` solo `MIC`, `COM` y `LC`; la
    cabecera y el pendiente 1 añaden `lcincorporado`, `asesora` y `apoyo`, y la página usa
    `lcincorporado` para enseñar el año de incorporación. El servidor manda las opciones que tenga el
    CRM; falta corregir `CAMPOS.md`.
-3. **`stic_primary_address_region_c`** sale como «No» (sin usar) en `CAMPOS.md` §4, pero «Mis datos»
+3. 🔒 (`campos-crm`) **`stic_primary_address_region_c`** sale como «No» (sin usar) en `CAMPOS.md` §4, pero «Mis datos»
    lo escribe («Comunidad Autónoma»). ¿Se usa?
 4. **El plugin sigue convirtiendo «sin contestar» en «no»** (regla 8) y callando los errores de la
-   foto, para quien guarda desde la web. No es de este plan, pero conviene arreglarlo allí.
+   foto, para quien guarda desde la web. No es de este plan: se le ha avisado al propietario (22/10)
+   para arreglarlo en el plugin.

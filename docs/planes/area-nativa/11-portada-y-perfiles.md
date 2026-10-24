@@ -275,10 +275,10 @@ Nada: todo lo de este plan es nativo.
 
 ## Preguntas abiertas
 
-1. **El equipo viendo a un hijo** (decisión de este plan, contra el código): el plugin esconde «Pasar
-   lista» y compañía mientras se ve a un hijo; aquí se enseñan siempre, porque son de quien ha entrado.
-   ¿Conforme?
-2. **`yo/index.tsx` lo reclaman dos planes**: el 02 («Tu cuenta») y el 09 («Mis datos de monitor»).
-   Este plan enlaza por destino y no le afecta, pero hay que mover uno (propuesta: `yo/monitor.tsx`).
+1. 🔒 (`equipo-hijo`) **El equipo viendo a un hijo** (decisión de este plan, contra el código): el
+   plugin esconde «Pasar lista» y compañía mientras se ve a un hijo; aquí se enseñan siempre, porque
+   son de quien ha entrado. Se hace así salvo que el propietario diga «como el plugin».
+2. **`yo/index.tsx` lo reclamaban dos planes** (resuelta al integrar): es «Tu cuenta» (02); «Mis datos
+   de monitor» (09) pasa a `yo/monitor.tsx`.
 3. **Documento contra código**: `docs/design-system.md` §6.2 dice que el familiar a secas no ve Pagos;
    el código (`sticpa_visible_sections`) y el propio §6.5 dicen que sí. Se sigue el código.

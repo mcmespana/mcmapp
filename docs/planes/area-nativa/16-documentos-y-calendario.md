@@ -100,7 +100,7 @@ Todo cuelga de `/v1/profiles/:pid/…` (plan 11; `pid` es uno mismo o un hijo co
 | `DELETE …/documents/:id?clientId=` | → `WriteResult` | Borrado lógico; nunca por `GET` ni por enlace |
 | `GET …/calendar` | → `CalendarData` | Ventana −14 … +12 meses (`stic-calendar.php` l. 544-553) |
 | `GET …/sessions/:id` | → `{ generatedAt, session: SessionDetail }` | Solo con inscripción activa (no cancelada) a su evento; si no, `forbidden` |
-| `GET …/events/:eid/files/:fid` | → bytes, `inline` | El archivo cuelga de ese evento **y** el evento es para `pid` (audiencia); si no, `forbidden` |
+| `GET …/events/:eventId/documents/:documentId` | → bytes, `inline` | **La define el plan 13**; aquí solo la usa el abridor. El archivo cuelga de ese evento y el evento es para `pid`; si no, `not_found` |
 
 ```
 DocumentSummary { id, name: string, fileName: string | null, status: { key, label } | null,
@@ -112,7 +112,7 @@ CalendarData    { generatedAt, sessions: CalendarSession[],
 CalendarSession { id, name, eventId, eventName, startsAt, endsAt: string | null, attendance: Mark }
 CalendarEvent   { id, name, startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' | null }
 SessionDetail   CalendarSession & { description: string | null }
-EventFile       { id, title, mimeType, isImage }   // si el plan 13 ya la define, se usa la suya
+// Los archivos de un evento son los { documentId } del plan 13 (cartel, galería, adjuntos, cuerpo).
 ```
 
 - **Para el plan del servidor:** `attendance` es el `Mark` del glosario (el clasificador tolerante,
@@ -128,11 +128,13 @@ EventFile       { id, title, mimeType, isImage }   // si el plan 13 ya la define
   dirección, ni correo) y se borra al salir (plan 01). **Los archivos no se quedan**: se bajan a
   `cacheDirectory/comunica/open/` y se borran al cerrar el visor, al volver la app a primer plano,
   al abrir Documentos y siempre al salir.
-- **Cola** (plan 01): subir con `key: 'documents.create.<clientId>'`, copiando el archivo a
-  `documentDirectory/comunica/uploads/` como el 09 (la copia se borra al aplicarse y al salir);
-  editar con `key: 'documents.edit.<id>'` llevando **todo** lo que difiere de lo confirmado (la
-  lección del 09); borrar con `key: 'documents.delete.<id>'`, que descarta la edición pendiente.
-  Optimista: la subida sale arriba con `UploadStatus`; lo borrado se va y vuelve si acaba `failed`.
+- **Sin cola** (regla de familias, ajustada al integrar el 22/10, como 12, 14 y 15): subir, editar
+  y borrar son llamadas directas, con conexión y con `clientId` (el mismo en los reintentos de una
+  misma acción). La cola del plan 01 deja el cuerpo y el archivo en disco hasta que suben, y aquí
+  pueden ser un informe médico o un DNI. El archivo elegido se copia a
+  `cacheDirectory/comunica/uploads/` solo mientras sube y se borra al acabar, al salir de la
+  pantalla y al cerrar sesión. Editar manda solo lo que difiere de lo confirmado. La subida en curso
+  sale arriba de la lista con `UploadStatus`; lo borrado se quita al confirmarlo el servidor.
 - **Cliente** (`services/comunica/`): `downloadFile(path) → { localUri, fileName, mimeType }` con la
   cabecera de sesión (`expo-file-system/legacy` con `createDownloadResumable`, como ya usa la app)
   y `fileSource(path) → { uri, headers }` para `expo-image` (el `photoSource` del plan 05). En web,
@@ -141,7 +143,7 @@ EventFile       { id, title, mimeType, isImage }   // si el plan 13 ya la define
   fixtures, un documento sin archivo, uno caducado y uno en «Draft»; un curso con ~24 sesiones y
   las cuatro marcas más sin marcar, una convivencia con plaza sin sesiones, una inscripción
   cancelada y un evento de otra delegación (no salen), dos abiertos; un evento con un PDF y tres
-  imágenes para el 13; con «CRM caído», las subidas esperan en la cola.
+  imágenes para el 13; con «CRM caído», subir y borrar fallan con «Reintentar» (mismo `clientId`, sin duplicar).
 
 ## Comportamiento y reglas que no se pueden perder
 
@@ -165,7 +167,7 @@ EventFile       { id, title, mimeType, isImage }   // si el plan 13 ya la define
    disponible», «Vuelve al listado y entra de nuevo desde ahí.» y «Volver» (`stic-security.php`
    l. 504-518); nunca «no es tuyo».
 6. **Subir:** se elige el archivo y rellena el nombre (sin extensión, editable). Se valida **antes**
-   de encolar, como el handler antes de escribir (`stic-action.php` l. 255-262): más de 0 bytes,
+   de enviar, como el handler antes de escribir (`stic-action.php` l. 255-262): más de 0 bytes,
    6 MB como mucho («Ese archivo pesa más de 6 MB») y extensión de `pdf, jpg, jpeg, png, gif, heic,
    webp, doc, docx, odt, xls, xlsx, ods, txt` (`stic-security.php` l. 475-478; «Ese tipo de archivo
    no se puede subir»). El plugin deja crear un documento **sin archivo**; aquí «Subir documento» no
@@ -191,7 +193,7 @@ EventFile       { id, title, mimeType, isImage }   // si el plan 13 ya la define
   `anchor` en iPad). «Compartir» siempre en la cabecera del visor y en la ficha.
 - C2. Sin conexión no se abre: «Necesitas conexión para abrir el documento». Mientras baja, el
   botón enseña el progreso; si falla, «No se ha podido descargar. Inténtalo otra vez.»
-- C3. Un archivo de evento se pide siempre con su evento (`…/events/:eid/files/:fid`), nunca por la
+- C3. Un archivo de evento se pide siempre con su evento (`…/events/:eventId/documents/:documentId`, plan 13), nunca por la
   ruta de documentos: no son tuyos, son del evento (EVENTOS.md §9.3).
 
 **Calendario**
@@ -223,9 +225,9 @@ EventFile       { id, title, mimeType, isImage }   // si el plan 13 ya la define
 
 | Pantalla | Cargando | Vacío | Error / 403 | Sin conexión | Pendiente |
 |---|---|---|---|---|---|
-| Documentos | 3 tarjetas esqueleto | Regla 1 | «Reintentar» | Lo que haya en memoria; si nada, «Los documentos se ven con conexión» | Subidas arriba con `UploadStatus`; atascada → «Reintentar» / «Descartar» |
-| Ficha | Esqueleto | — | 403 de la regla 5 | «Abrir» y «Guardar» avisan (C2) | Nombre y descripción con «Guardado en el móvil» |
-| Subir | — | — | Error de validación bajo el campo | Se encola igual | Vuelve a la lista con la tarjeta pendiente |
+| Documentos | 3 tarjetas esqueleto | Regla 1 | «Reintentar» | Lo que haya en memoria; si nada, «Los documentos se ven con conexión» | La subida en curso arriba con `UploadStatus`; si falla, «Reintentar» / «Descartar» |
+| Ficha | Esqueleto | — | 403 de la regla 5 | «Abrir», «Guardar» y «Eliminar» apagados, con «Necesitas conexión» (C2) | «Guardando…» en el botón |
+| Subir | — | — | Error de validación bajo el campo | «Subir documento» apagado: «Necesitas conexión para subir» | Vuelve a la lista con la tarjeta «Subiendo…» |
 | Calendario | Rejilla esqueleto | Mes sin nada: C6 | «Reintentar» | Lo guardado + `SyncBadge` | — (no escribe) |
 | Sesión | Esqueleto en la hoja | — | «Esta sesión ya no está disponible» | Si está en el calendario guardado, desde ahí | — |
 
@@ -257,11 +259,11 @@ EventFile       { id, title, mimeType, isImage }   // si el plan 13 ya la define
 | 2 | Contrato y falso de calendario, sesión y archivos de evento | Tests: la cancelada y la de otra delegación no salen; sesión sin inscripción → 403 |
 | 3 | `utils/comunica/files.ts` (validación, tipo, MIME por extensión, nombre seguro) y `documents.ts` (nombre visible, caducado, orden). Si el 09 ya tiene la validación en `monitorProfile.ts`, se mueve aquí con su lista de certificados (`pdf, jpg, jpeg, png`) | Tests puros |
 | 4 | `utils/comunica/calendar.ts`: colores (C4), bandas (C5), días de un evento largo, puntitos por día, día elegido al cambiar de mes, leyenda, `upcomingAgendaItems` | Tests puros |
-| 5 | Cliente: `downloadFile`, `fileSource`, limpieza de `comunica/open/` y `comunica/uploads/` (en el borrado de salir del 01, dicho en el commit) | Test: tras cerrar el visor y al salir no queda nada |
+| 5 | Cliente: `downloadFile`, `fileSource`, limpieza de `comunica/open/` y `comunica/uploads/` (en el borrado de salir del 01, dicho en el commit). Si el 13 ya creó el abridor, se reutiliza | Test: tras cerrar el visor y al salir no queda nada |
 | 6 | `useOpenFile` y `archivo.tsx` (C1-C3) | Capturas web de imagen y PDF; test del reparto por tipo y plataforma |
 | 7 | `documentos/index.tsx` con tarjetas, botón de descarga y vacío | Captura 375 px claro/oscuro; test con el falso: orden y caducado |
-| 8 | `documentos/[id].tsx`: lectura, editar por la cola, sustituir, eliminar con `Alert` | Test: editar dos veces sin conexión lo lleva todo; borrar solo tras confirmar |
-| 9 | `documentos/subir.tsx` con `FileField` del 09 y la cola | Test con el selector simulado: 7 MB y `.exe` rechazados; con «CRM caído» espera y luego sale |
+| 8 | `documentos/[id].tsx`: lectura, editar directo, sustituir, eliminar con `Alert` | Test: editar manda solo lo cambiado; sin conexión, apagado; borrar solo tras confirmar |
+| 9 | `documentos/subir.tsx` con `FileField` del 09, llamada directa | Test con el selector simulado: 7 MB y `.exe` rechazados; con «CRM caído», error y «Reintentar» sin duplicar |
 | 10 | Prop `markingType` en `SwipeableMonthCalendar`, `calendario/index.tsx` (Mes, día, leyenda, Agenda) | Captura de un mes con las cuatro marcas; la pestaña Calendario de la app sigue igual (su test) |
 | 11 | `calendario/sesion/[id].tsx` | Test: con inscripción se ve; sin ella, «Esta sesión ya no está disponible» |
 | 12 | Visibilidad (plan 11), cambio de perfil (regla 9), filas del mapa de enlaces para el plan 10, enlace del 09 | Test de la puerta: el familiar solo familiar no ve las entradas |
@@ -274,10 +276,11 @@ EventFile       { id, title, mimeType, isImage }   // si el plan 13 ya la define
   documentos, no en certificados); futura con `no_unjustified` sigue «Próxima», pasada sin marca
   «Sin registrar», `partial` → «Asististe»; evento de tres días con puntito en los tres; banda
   oculta si hay sesiones; el día 1 cuando hoy no cae en el mes.
-- **De pantalla, con el falso:** lista → ficha → abrir → visor; subir sin conexión y reconectar;
-  borrar con el CRM caído y que vuelva; calendario de un hijo distinto del de otro hijo.
+- **De pantalla, con el falso:** lista → ficha → abrir → visor; subir con el CRM caído y reintentar
+  sin duplicar; borrar con el CRM caído y que vuelva; calendario de un hijo distinto del de otro hijo.
 - **Guardarraíles:** la consulta de documentos es `persist: false` y nunca llega al almacén;
-  `cacheDirectory/comunica/open/` y `documentDirectory/comunica/uploads/` vacíos tras salir; ningún
+  ninguna escritura de documentos usa `enqueueWrite`;
+  `cacheDirectory/comunica/open/` y `cacheDirectory/comunica/uploads/` vacíos tras salir; ningún
   enlace del mapa lleva a borrar; ningún fichero de `documentos/` ni `calendario/` hace `fetch` ni
   arma URLs del servidor; los archivos de evento no pasan por la ruta de documentos.
 
@@ -286,15 +289,21 @@ EventFile       { id, title, mimeType, isImage }   // si el plan 13 ya la define
 1. 🔒 (`fotos-documentos`) **Cámara y galería.** Mientras, solo `expo-document-picker`. Si entra
    `expo-image-picker`, «Hacer una foto» y «Elegir de la galería» van en el `FileField` del 09 y
    sirven aquí también (JPG, sin recortar).
-2. **«Parcial» y «Justificada» en el calendario.** Pasar Lista los escribe y el calendario los junta:
-   una falta justificada sale en rojo, «No asististe». ¿Se copia así (el código de hoy) o se
-   encienden los dos, con su color y su fila en la leyenda? Es una constante.
-3. **Delegación del documento subido.** El formulario la manda, pero `sticpa_forbidden_fields()` la
-   quita (`stic-security.php` l. 143-150): lo subido desde el área no queda asignado a su
-   delegación, contra la regla del `CLAUDE.md` del plugin. ¿El servidor lo asigna a la de la persona?
-4. **PDF en Android.** Sin `expo-intent-launcher` (nativo, no está) no hay «Abrir con…»: la hoja de
-   compartir no siempre ofrece un visor de PDF. ¿Se añade en una build o se queda la hoja?
+2. 🔒 (`calendario-marcas`) **«Parcial» y «Justificada» en el calendario.** Pasar Lista los escribe
+   y el calendario los junta: una falta justificada sale en rojo, «No asististe». Recomendado:
+   encender los dos, con su color y su fila en la leyenda. Mientras, como el código (C4). Es una
+   constante.
+3. **Delegación del documento subido** (resuelta al integrar): el formulario la manda, pero
+   `sticpa_forbidden_fields()` la quita (`stic-security.php` l. 143-150) y lo subido desde el área
+   queda sin delegación, contra la regla del `CLAUDE.md` del plugin («todo lo que se cree en el CRM
+   va asignado a su delegación»). **El servidor lo asigna a la delegación de la persona**: manda la
+   regla. Es un fallo del plugin y se le avisa al propietario.
+4. **PDF en Android** (resuelta al integrar): `expo-intent-launcher` («Abrir con…» el visor de PDF
+   del móvil) entra con los paquetes nativos de la 2.2, como decidió el propietario en `paquetes`.
+   Hasta que esté, la hoja de compartir.
 5. **Borrar un certificado** (el que sube el plan 09) desde aquí no apaga su indicador en la ficha
-   del monitor (tampoco en el plugin): el aviso del 09 no vuelve. ¿Se queda así?
-6. Los campos de `Documents` (`status_id`, `category_id`, `stic_shared_document_link_c`) y sus
-   claves no están en `CAMPOS.md`; el servidor los necesita (la app pinta neutro ante la duda).
+   del monitor (tampoco en el plugin): el aviso del 09 no vuelve. Se queda como el plugin y se
+   apunta para el plan del servidor.
+6. 🔒 (`campos-crm`) Los campos de `Documents` (`status_id`, `category_id`,
+   `stic_shared_document_link_c`) y sus claves no están en `CAMPOS.md`; el servidor los necesita (la
+   app pinta neutro ante la duda).

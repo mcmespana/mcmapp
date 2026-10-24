@@ -35,7 +35,13 @@ plan del servidor, no de este).
 | Relación persona-grupo (`stic_Contacts_Relationships`) | `Membership` | — |
 | Evento (`stic_Events`) | `Event` | nombre del evento |
 | Sesión (`stic_Sessions`: un sábado, una reunión, un día de evento) | `Session` | su fecha («sábado 25 de octubre») |
-| Inscripción (`stic_Registrations`) | `Registration` | no se enseña: es fontanería |
+| Inscripción (`stic_Registrations`) | `Registration` | En monitores no se enseña (fontanería). En familias, «inscripción» («Mis inscripciones»), pero nunca «inscrito/a»: «plaza», «apuntarse» |
+| Compromiso de pago (`stic_Payment_Commitments`) | — (no entra en el contrato) | nunca se enseña (plan 041 del plugin, D-6) |
+| Pago (`stic_Payments`) | `Payment`, `amountCents` | «pago»; importes en céntimos en el contrato, «35,00 €» en pantalla |
+| Intento de pago con tarjeta | `CardAttempt` | «la pasarela del banco» para el TPV |
+| Documento (`Documents`) | `Document` | «documento» |
+| Perfil que se ve (uno mismo o un hijo) | `profile`, `pid` | «Viendo a Lucía» |
+| Audiencia (`miembro`, `familiar`, `participante` en el plugin) | `Audience`: `member`, `guardian`, `child` | — |
 | Asistencia (`stic_Attendances`) | `Attendance`, `mark` | ver estados abajo |
 | Lista (`LIS_listas`) | `RollCall` | «lista» |
 | Aviso (`AVI_avisos`, nivel 1-3) | `Notice` | «aviso» |
@@ -63,8 +69,11 @@ plan del servidor, no de este).
 - **Errores**: `{ error: { code, message } }` con `code` ∈ `unauthenticated`
   (401), `forbidden` (403, también para lo que no existe fuera de tu alcance:
   nunca 404 que confirme que existe), `not_found`, `validation`,
-  `crm_unavailable` (503: el CRM no contesta; la escritura se queda en la
-  cola), `conflict`, `rate_limited`.
+  `crm_unavailable` (503: el CRM no contesta; en monitores la escritura se
+  queda en la cola, en familias se reintenta a mano con el mismo `clientId`),
+  `conflict`, `rate_limited`. Opcionales: `reason` (p. ej. `already_registered`,
+  `window_closed`, `not_payable`) y `field` (el campo que falla en `validation`),
+  que añaden los planes 14 y 15.
 - **Fechas**: instantes en ISO 8601 con zona (`2026-10-25T10:00:00+02:00`);
   días como `YYYY-MM-DD` en hora de Madrid. La trampa del CRM («UTC sin zona»)
   la resuelve el servidor; la app nunca adivina.
@@ -76,8 +85,10 @@ plan del servidor, no de este).
 - Nada de nombres del CRM en el contrato (`ajmcm_…`, `stic_…`): el servidor
   traduce. Así un cambio en el CRM no toca la app.
 - **La salud nunca viaja en las lecturas que se guardan.** Las listas y fichas
-  llevan `hasHealthNote: boolean`; el texto, solo `GET /v1/people/:id/health`,
-  que la app pide con conexión y no persiste (plan 01).
+  llevan `hasHealthNote: boolean`; el texto, solo `GET /v1/people/:id/health`
+  (ficha de un chaval, plan 05) y `GET /v1/profiles/:pid/health` (los datos
+  propios o de un hijo, plan 12), que la app pide con conexión y no persiste
+  (plan 01).
 - Listas acotadas por alcance (tu delegación, tus grupos): sin paginación en
   esta fase. Si una respuesta supera 1.000 elementos, es un fallo de alcance.
 
@@ -98,7 +109,7 @@ RollCallSummary  { sessionId, groupId?, status: 'taken'|'skipped', takenAt, coun
 WriteResult      { clientId, status: 'applied'|'queued', crmIds? }
 ```
 
-Cada plan de pantallas (04-09) define **su trozo** del contrato (rutas y
+Cada plan de pantallas (04-16) define **su trozo** del contrato (rutas y
 formas) en su sección «Datos», y al ejecutarse lo añade a `contract.ts` y al
 servidor falso. Este plan solo deja lo compartido y la maquinaria.
 
@@ -113,6 +124,14 @@ Catálogo previsto (lo detallan los planes que se indican):
 | Eventos | `GET /v1/events`, `GET /v1/events/:id/roll` (con los grupos de actividad dentro), `PUT /v1/events/:id/roll` | 07 |
 | Avisos | `POST /v1/devices` (token de push), `DELETE /v1/devices/:id` | 08 |
 | Mis datos de monitor | `GET /v1/me/monitor`, `PATCH /v1/me/monitor`, `POST /v1/me/documents` | 09 |
+| Enrutador y legado | `POST /v1/web-pass`, `POST /v1/auth/exchange` | 10 |
+| **Familias** (todo cuelga de `/v1/profiles/:pid/…`; el servidor comprueba en cada petición que `pid` es quien ha entrado o un hijo con relación vigente) | | |
+| Perfiles y portada | `GET /v1/me/profiles` (la agenda sale del calendario del 16) | 11 |
+| Mis datos | `GET`/`PATCH …/details`, `GET`/`PUT …/health`, `POST …/photo`, `GET …/photo` | 12 |
+| Eventos | `GET …/events`, `GET …/events/:eventId`, `GET …/events/by-slug/:slug`, `GET …/events/:eventId/documents/:documentId`; sin sesión, `GET /v1/public/events/:slug` | 13 |
+| Inscripciones | `GET …/events/:eventId/signup`, `POST …/events/:eventId/advanced-form`, `GET`/`POST …/registrations`, `GET`/`PATCH …/registrations/:rid`, `POST …/registrations/:rid/cancel` | 14 |
+| Pagos | `GET …/payments`, `GET …/payments/:id`, `GET …/card-checkout`, `POST …/card-attempts`, `POST …/card-attempts/:id/check`; del servidor, sin la app, `…/v1/card-return/:attemptId/` | 15 |
+| Documentos y calendario | `GET`/`POST …/documents`, `GET`/`PATCH`/`DELETE …/documents/:id`, `GET …/documents/:id/file`, `GET …/calendar`, `GET …/sessions/:id` | 16 |
 
 ## 4. Servidor falso
 
@@ -124,7 +143,10 @@ Catálogo previsto (lo detallan los planes que se indican):
   generados con semilla fija: dos delegaciones ficticias, unos 6 grupos de dos
   etapas, ~60 chavales con nombres inventados, ~8 monitores, un curso con ~24
   sesiones y asistencias variadas (rachas de 3 faltas incluidas), dos eventos
-  (uno con grupos de actividad), avisos y seguimientos. Nada sacado del CRM.
+  (uno con grupos de actividad), avisos y seguimientos; y, para familias
+  (11-16), familias con uno, dos y ningún hijo, eventos abiertos y cerrados,
+  inscripciones, pagos en todos los estados y documentos (cada plan añade los
+  suyos). Nada sacado del CRM.
 - **Mandos** para probar estados: latencia (300 ms por defecto), sin
   conexión, CRM caído (las escrituras devuelven `crm_unavailable`), error en
   una ruta concreta, y «otra persona»: entrar como monitor, como coordinación
@@ -154,10 +176,10 @@ Catálogo previsto (lo detallan los planes que se indican):
 - Ningún fichero fuera de `services/comunica/` importa `fake/` (test que
   recorre los imports).
 - Cada ruta del contrato tiene datos en el falso (test que lo recorre).
-- Ningún esquema del contrato tiene un campo de texto de salud salvo el de
-  `/people/:id/health` (test sobre los esquemas).
+- Ningún esquema del contrato tiene un campo de texto de salud salvo los de
+  `/people/:id/health` y `/profiles/:pid/health` (test sobre los esquemas).
 
 ## 7. Fuera de este plan
 
 El servidor de verdad (repo `mcm-comunica-api`), la caché en el móvil y la
-cola (plan 01) y las formas concretas de cada bloque (planes 02, 04-09).
+cola (plan 01) y las formas concretas de cada bloque (planes 02, 04-16).

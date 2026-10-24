@@ -87,18 +87,30 @@ Reglas:
   minutos. El enlace mágico del plugin no es de un solo uso; por eso la
   caducidad corta.
 - Si la persona que se ve es un hijo (familias, plan 11), el pase es del
-  familiar y el destino lleva al hijo como hace hoy el plugin (selector de
-  perfil); si el plugin no lo permite por URL, el pase abre la portada del
-  legado en ese hijo y se apunta.
+  familiar (`profileId` en `POST /v1/web-pass`) y, tras entrar, la WebView
+  carga el cambio de perfil del plugin, que es un GET con sesión:
+  `admin-post.php?action=single_stic_profile_selection&profile_selected_id=<hijo>&dest=<destino>`
+  (validado por `sticpa_allowed_profile`). Así el legado se abre en ese hijo y
+  en la página que toca (lo resolvió el plan 11).
 - **Servidor falso:** devuelve una URL de una página local de muestra («Esto
   sería la web del plugin: <destino>»), para probar el flujo sin red.
 - El **token permanente** (`?token=`) no lo usa la app para saltar: viaja en
   la URL y no caduca. Solo se acepta cuando llega de fuera (§3).
 
-**Qué va a la web**: la lista final sale de los planes 11-16 (cada uno tiene su
-tabla «Qué va a la web y por qué»). Regla: solo lo muy complicado o lo que el
-CRM pinta él mismo (el formulario web avanzado de inscripción, el TPV de
-Redsys si el plan 15 no lo hace en hoja propia).
+**Qué va a la web** (la lista final, cerrada el 22/10 con los planes 11-16;
+cada uno tiene su tabla «Qué va a la web y por qué»):
+
+| Qué | Cómo | Plan |
+|---|---|---|
+| El **formulario web avanzado** del CRM (el Foro, el Congreso) | `web.tsx` con la URL ya rellena que da nuestro servidor; no es del plugin, así que va **sin** pase. Su vuelta al área se intercepta y abre «Mis inscripciones» | 14 |
+| La **pasarela del banco** (Redsys) | Hoja propia con WebView (`pagos/pasarela.tsx`), no `web.tsx` | 15 |
+| Las páginas del plugin **sin pantalla nativa** (`custom_html`, `single_stic_relationships`, `list_stic_contacts`, `single_csme_member_organizations`…) | `openLegacy` con su destino | §4 |
+| «Abrir la versión web» de «Tu cuenta» | `openLegacy` a la portada del legado | 02 |
+| Mientras un plan no esté hecho, sus pantallas | `openLegacy` interino; cada plan lo quita al hacerse | 04-16 |
+
+Todo lo demás, monitores y familias, es nativo. La página pública de una
+actividad y los enlaces externos del cuerpo de un evento se abren en el
+navegador del sistema dentro de la app (`expo-web-browser`): no son el área.
 
 ## 3. Los enlaces que llegan
 
@@ -134,8 +146,10 @@ Redsys si el plan 15 no lo hace en hoja propia).
      Cancelar).
 2. **Trae destino** (`internalpage` y compañía): se busca en el mapa (§4). Con
    pantalla nativa, se abre esa; si no, `openLegacy` con el mismo destino.
-3. **Página pública de una actividad** (`/actividades?e=<slug>`): la ficha
-   nativa del evento (plan 13), buscada por su `slug`.
+3. **Página pública de una actividad** (`/actividades?e=<slug o id>`):
+   `actividades/publica/[slug]` del plan 13. Con sesión, busca el evento
+   (`…/events/by-slug/:slug`) y abre su ficha nativa; sin sesión, pinta la
+   ficha pública (`GET /v1/public/events/:slug`) con «Entra para apuntarte».
 4. **Cualquier otra página del dominio** (formularios públicos, páginas de
    WordPress): el legado con esa URL tal cual, que no necesita sesión.
 5. **Nada válido** (otro dominio, `javascript:`, parámetros con forma rara):
@@ -144,6 +158,11 @@ Redsys si el plan 15 no lo hace en hoja propia).
 
 Los **avisos del móvil** (plan 08) usan el mismo mapa: un aviso lleva un
 destino (`internalpage` y compañía), nunca una ruta de la app.
+
+**Esquema propio de la app**: `+native-intent.ts` deja pasar también
+`mcmapp://comunica/pagos/vuelta?intento=…&r=ok|ko`, la vuelta del pago con
+tarjeta cuando se paga en el navegador del sistema (camino de reserva del
+plan 15). Ningún otro `mcmapp://comunica/…` se acepta.
 
 ## 4. El mapa de páginas internas
 
@@ -171,10 +190,17 @@ Las desactivadas del plugin no se construyen, pero su enlace lleva a la
 pantalla nativa más cercana, nunca a un error.
 
 **Enlaces a `admin-post.php`** (descargar un documento, el archivo de un
-evento con `sticpa_evento_archivo`, volver de la pasarela de pago): viven en
+evento con `sticpa_evento_archivo`, el formulario avanzado con
+`sticpa_evento_fwa`, las acciones de Pagos que solo redirigen): viven en
 `/wp-admin/`, que no abre la app (§3), así que solo llegan **desde dentro del
-legado** (`web.tsx` los intercepta) o dentro de un aviso. Van al mismo mapa,
-por su `action`, con las filas que dan los planes 15 y 16.
+legado** (`web.tsx` los intercepta). Van al mismo mapa, por su `action`, con
+las filas que dan los planes 13, 14, 15 y 16. La vuelta de la pasarela no pasa
+por ahí: llega como `msg=pagado` o `single_stic_payment_error` (plan 15).
+
+**Elegir hijo antes**: si el destino es de familia y quien entra es solo
+familiar con varios hijos y sin haber elegido, o se ve a sí mismo y el
+destino es un evento, el mapa manda primero a `perfiles?destino=…` (plan 11,
+FAM-a1) y de ahí al destino.
 
 ## 5. Datos: su trozo del contrato
 
@@ -209,6 +235,5 @@ con los mismos límites de intentos que el código (plan 02).
 
 ## 8. Preguntas abiertas
 
-- Ninguna que bloquee. Si al ejecutar el plan 11 resulta que el plugin no deja
-  abrir el perfil de un hijo por URL, el pase a la web de ese hijo abre su
-  portada (§2) y se apunta aquí.
+- Ninguna. La que había (abrir el legado en un hijo) la resolvió el plan 11:
+  ver §2.

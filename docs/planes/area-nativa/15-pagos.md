@@ -226,7 +226,8 @@ del Congreso. Sus intentos devuelven `simulated: true`: la hoja pinta `Simulated
    «Pagar 35,00 € con tarjeta» solo si `canPayByCard`.
 5. **Pagar** (`single_stic_payment_form.php`): un **resumen, no un formulario**. Nada editable salvo
    el importe tras «Pagar otra cantidad» («¿Cuánto vas a pagar?», teclado decimal, coma o punto,
-   mínimo 1 €, dos decimales; la nota «Solo si te han dicho que pagues otra cantidad: un descuento,
+   mínimo 1 €, como mucho lo indicado (🔒 `tope-importe`: «No puede pasar de 35,00 €»), dos
+   decimales; la nota «Solo si te han dicho que pagues otra cantidad: un descuento,
    una beca, un arreglo con tu delegación. Lo que pagues es lo que quedará como pagado.»). El botón
    repite el importe («Pagar 20,50 €»), se desactiva si no vale y no se puede pulsar dos veces. Se
    trata como **un descuento, no un pago parcial**: lo que no se paga no queda pendiente.
@@ -323,7 +324,7 @@ del Congreso. Sus intentos devuelven `simulated: true`: la hoja pinta `Simulated
 ## Tests
 
 - **Unitarios** (`__tests__/comunica/`): bloques y orden; `not_paid`/`not_remitted` nunca «ok»; «20,5»,
-  «20,50», «20.50» → 2050 céntimos; «0,99», «abc» y vacío no valen; transiciones de `cardAttempt`
+  «20,50», «20.50» → 2050 céntimos; «0,99», «abc», vacío y más de lo indicado no valen; transiciones de `cardAttempt`
   (también «KO pero el CRM dice pagado» → pagado); URL de vuelta con `ok`, `ko` y basura.
 - **De pantalla con el falso**: los bloques y la nota «Pago hecho»; ficha devuelta; rebotes de
   «Pagar»; las cuatro salidas de la pasarela simulada; reintentar crea un intento con `clientId`
@@ -339,12 +340,12 @@ del Congreso. Sus intentos devuelven `simulated: true`: la hoja pinta `Simulated
 
 ## Preguntas abiertas
 
-- **Intento con vuelta OK que el CRM no cobra en 24 h.** El plugin lo cerraría como abandonado (no sabe
-  de la vuelta). El plan pide al servidor **no cerrarlo y avisar** (§Datos 7). ¿De acuerdo, y a quién
-  se avisa (correo de la delegación dueña o a quien mantiene)?
-- **Pago doble** (dos intentos cobrados para el mismo pago): el plugin no lo detecta. ¿Quién devuelve
-  el dinero y por dónde se avisa?
-- **«Pagar otra cantidad» no tiene tope** en el plugin (vale 3.500 € por un 35 mal escrito; el banco
-  enseña el importe antes de cobrar). Se queda 1:1 salvo que el propietario quiera un máximo.
-- **«¿Ya lo has pagado? Tu delegación lo marcará en cuanto lo vea.»** solo sale en la inscripción; el
-  plan la pone también en la ficha del pago (mismo caso). Para 1:1 estricto, se quita de la tarea 5.
+- 🔒 (`aviso-pagos`) **Intento con vuelta OK que el CRM no cobra en 24 h, y pago doble.** El plugin
+  cerraría el primero como abandonado (no sabe de la vuelta) y no detecta el segundo. El plan pide al
+  servidor **no cerrarlo y avisar** en los dos casos (§Datos 7). Falta a quién (la delegación dueña
+  del pago, la oficina técnica o las dos) y quién devuelve un cobro doble. No cambia la app.
+- 🔒 (`tope-importe`) **«Pagar otra cantidad» no tiene tope** en el plugin (vale 3.500 € por un 35
+  mal escrito; el banco enseña el importe antes de cobrar). Recomendado: como mucho lo indicado (la
+  nota ya dice que es para descuentos y becas). Mientras no se conteste, ese tope.
+- **«¿Ya lo has pagado? Tu delegación lo marcará en cuanto lo vea.»** (decidida al integrar): sale
+  también en la ficha del pago, no solo en la inscripción. Es el mismo caso y el mismo texto.

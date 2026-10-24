@@ -340,7 +340,7 @@ En `__tests__/comunica/`, con el servidor falso.
 
 ## Preguntas abiertas
 
-1. **Necesidades especiales.** `special_needs` no está en `CAMPOS.md`; el plugin trata `1` como
+1. 🔒 (`campos-crm`) **Necesidades especiales.** `special_needs` no está en `CAMPOS.md`; el plugin trata `1` como
    «sí» (`inc/stic-registrations.php:1686-1690`) y pinta el desplegable que dé el CRM. Mientras,
    el servidor manda las opciones de la definición y `yesValue: '1'`. Hay que mirar sus claves en
    Studio y apuntarlas en `CAMPOS.md`.

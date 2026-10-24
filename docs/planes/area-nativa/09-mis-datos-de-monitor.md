@@ -38,8 +38,9 @@ coordinación) están todos menos `ajmcm_vol_descripcion_c` y `ajmcm_vol_program
 | `app/(tabs)/comunica/yo/monitor.tsx` | «Mis datos de monitor»: secciones, «Guardar» y archivos. Se llega desde el menú de cuenta del área (plan 02), desde «Tu perfil» de la portada (plan 11) y desde el aviso. (`yo/index.tsx` es «Tu cuenta», del plan 02) |
 | `CertificatePendingAlert` (`components/comunica/yo/`) | El aviso: arriba en esta pantalla (sin botón) y en la portada «Hoy» del plan 04 (con «Subir certificado»), debajo de la tarjeta de hoy y de las listas que faltan |
 
-«Revisarlo en Documentos →» y «Tus datos personales» abren `web.tsx` (plan 01) con
-`list_stic_documents` y `single_stic_comunica_perfil`. Código: `utils/comunica/monitorProfile.ts`
+«Revisarlo en Documentos →» y «Tus datos personales» abren, por el mapa de enlaces del plan 10,
+`list_stic_documents` y `single_stic_comunica_perfil`: las pantallas nativas de los planes 16 y 12
+(mientras no existan, el legado con `openLegacy`). Código: `utils/comunica/monitorProfile.ts`
 (puro); `hooks/comunica/useMonitorProfile.ts`, `useMonitorProfileForm.ts` y `useDocumentUpload.ts`;
 y las piezas de formulario en `components/comunica/comun/form/` (las reutilizarán las familias en la
 fase 2): `FormSection`, `FormField` (etiqueta, ⓘ, hint, error), `SelectField`, `CheckListField`,
@@ -189,7 +190,7 @@ la relación con la persona, la revisión con el archivo y el indicador a `1`, a
 | 5 | Sección del certificado: tarjetas, el bloque de cada opción y sus enlaces | Test: elegir «Manual» enseña el archivo y el aviso |
 | 6 | `FileField` y `useDocumentUpload`: elegir, validar, copiar, encolar, subir y borrar la copia | Test con el selector simulado: grande o HEIC, rechazado; la subida llega; la copia se borra |
 | 7 | `CertificatePendingAlert` aquí y en la portada del plan 04 | Test: sale, se esconde con el certificado en la cola y vuelve si falla |
-| 8 | Enlaces a `web.tsx` (Documentos y Mis datos) y la entrada en el menú de cuenta | Toque a toque en web con el falso |
+| 8 | Enlaces a Documentos y Mis datos por el mapa del plan 10, y la entrada en el menú de cuenta | Toque a toque en web con el falso |
 | 9 | `CHANGELOG.md` y el plan marcado en el README | Revisión |
 
 ## Tests
