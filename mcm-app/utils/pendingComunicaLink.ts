@@ -44,6 +44,21 @@ export function buildComunicaAuthUrl(params: Record<string, string>): string {
   return `${COMUNICA_BASE_URL}?${[...query, 'app=1'].join('&')}`;
 }
 
+/**
+ * La URL del legado para un enlace del área: el token (si lo trae) y el
+ * destino (`internalpage` y compañía, ya validado), siempre con `app=1`.
+ */
+export function buildComunicaLegacyUrl(
+  auth: Record<string, string | undefined> | null,
+  destinationQuery: string,
+): string {
+  const query = COMUNICA_AUTH_PARAMS.filter((key) => auth?.[key]).map(
+    (key) => `${key}=${encodeURIComponent(auth![key] as string)}`,
+  );
+  if (destinationQuery) query.push(destinationQuery);
+  return `${COMUNICA_BASE_URL}?${[...query, 'app=1'].join('&')}`;
+}
+
 /** Deja una URL de acceso pendiente (o se la pasa a la pantalla si ya escucha). */
 export function setPendingComunicaAuthUrl(url: string) {
   if (listener) {

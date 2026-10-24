@@ -532,3 +532,10 @@ export const FAKE_LINK_TOKENS: Record<string, PersonaId | null> = {
   'enlace-valido': 'monitor',
   'enlace-caducado': null,
 };
+
+/** Enlaces del plugin que el falso canjea: `acceso_magico` y token permanente. */
+export const FAKE_PLUGIN_LINKS: Record<string, PersonaId> = {
+  'magico-valido': 'monitor',
+  'token-valido': 'monitor',
+  'magico-coordinacion': 'coordination',
+};

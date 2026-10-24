@@ -100,7 +100,27 @@
             {
               "scheme": "https",
               "host": "comunica.movimientoconsolacion.com",
-              "pathPrefix": "/app/acceso"
+              "pathPrefix": "/ap"
+            },
+            {
+              "scheme": "https",
+              "host": "comunica.movimientoconsolacion.com",
+              "pathPrefix": "/app"
+            },
+            {
+              "scheme": "https",
+              "host": "comunica.movimientoconsolacion.com",
+              "pathPrefix": "/area-privada"
+            },
+            {
+              "scheme": "https",
+              "host": "comunica.movimientoconsolacion.com",
+              "pathPrefix": "/actividades"
+            },
+            {
+              "scheme": "https",
+              "host": "comunica.movimientoconsolacion.com",
+              "path": "/"
             }
           ]
         }

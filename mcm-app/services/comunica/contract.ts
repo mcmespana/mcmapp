@@ -252,6 +252,35 @@ export const RefreshRequest = z.object({ refreshToken: z.string().min(1) });
 export const RefreshResponse = Tokens;
 export type RefreshResponse = z.infer<typeof RefreshResponse>;
 
+/** `POST /v1/auth/exchange` — un enlace del plugin por una sesión nativa (plan 10). */
+export const ExchangeRequest = z.union([
+  z.object({ magic: z.string().min(1) }),
+  z.object({ token: z.string().min(1) }),
+]);
+export type ExchangeRequest = z.infer<typeof ExchangeRequest>;
+
+/** `POST /v1/web-pass` — abrir una página del plugin con la sesión puesta. */
+export const WebPassRequest = z.object({
+  internalpage: z.string().regex(/^[a-z0-9_]{1,64}$/),
+  action: z.enum(['detail', 'create', 'edit']).optional(),
+  id: z
+    .string()
+    .regex(/^[a-f0-9-]{10,64}$/i)
+    .optional(),
+  from: z
+    .string()
+    .regex(/^[a-z_]{1,32}$/)
+    .optional(),
+  profileId: Id.optional(),
+});
+export type WebPassRequest = z.infer<typeof WebPassRequest>;
+export const WebPass = z.object({
+  /** URL completa del plugin con un `acceso_magico` de 2 minutos. */
+  url: z.url(),
+  expiresAt: Instant,
+});
+export type WebPass = z.infer<typeof WebPass>;
+
 /** Motivos de `validation` en el acceso. */
 export const AUTH_REJECTIONS = [
   'bad_code',
@@ -382,6 +411,18 @@ export const ROUTES = {
     method: 'POST',
     path: '/v1/auth/refresh',
     response: RefreshResponse,
+    persist: false,
+  },
+  exchange: {
+    method: 'POST',
+    path: '/v1/auth/exchange',
+    response: VerifyResponse,
+    persist: false,
+  },
+  webPass: {
+    method: 'POST',
+    path: '/v1/web-pass',
+    response: WebPass,
     persist: false,
   },
   me: { method: 'GET', path: '/v1/me', response: MeResponse, persist: true },

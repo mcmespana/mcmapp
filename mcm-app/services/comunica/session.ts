@@ -208,6 +208,8 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     verify: (b) => api.verify(b),
     refresh: (t) => api.refresh(t),
     logout: (t) => api.logout(t),
+    exchange: (b) => api.exchange(b),
+    webPass: authed((b) => api.webPass(b)),
     getMe: authed(() => api.getMe()),
     getGroups: authed((o) => api.getGroups(o)),
     getToday: authed((o) => api.getToday(o)),

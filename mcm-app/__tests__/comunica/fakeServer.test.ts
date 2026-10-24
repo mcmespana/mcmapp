@@ -85,6 +85,8 @@ describe('servidor falso', () => {
       code,
       verify: verified,
       refresh: refreshed,
+      exchange: await s.exchange({ magic: 'magico-valido' }),
+      webPass: await s.webPass({ internalpage: 'list_stic_payments' }),
       me: await s.getMe(),
       groups,
       today: await s.getToday(),

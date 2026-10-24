@@ -12,6 +12,9 @@
 import { z } from 'zod';
 import {
   type CodeRequest,
+  type ExchangeRequest,
+  WebPass,
+  type WebPassRequest,
   CodeResponse,
   ErrorBody,
   type ErrorCode,
@@ -39,6 +42,10 @@ export interface ComunicaApi {
   verify(body: VerifyRequest): Promise<VerifyResponse>;
   refresh(refreshToken: string): Promise<RefreshResponse>;
   logout(refreshToken: string): Promise<void>;
+  /** Un enlace del plugin (`acceso_magico` o `token`) por una sesión (plan 10). */
+  exchange(body: ExchangeRequest): Promise<VerifyResponse>;
+  /** Pase de 2 minutos para abrir una página del plugin con la sesión (plan 10). */
+  webPass(body: WebPassRequest): Promise<WebPass>;
 
   getMe(): Promise<MeResponse>;
   getGroups(opts?: ReadOptions): Promise<GroupsResponse>;
@@ -201,6 +208,10 @@ export function createHttpClient({
     logout: async (refreshToken) => {
       await request('POST', '/v1/auth/logout', z.unknown(), { refreshToken });
     },
+    exchange: (body) =>
+      request('POST', '/v1/auth/exchange', VerifyResponse, body),
+    // El pase nunca se registra: es una llave de 2 minutos.
+    webPass: (body) => request('POST', '/v1/web-pass', WebPass, body),
     getMe: () => request('GET', '/v1/me', MeResponse, undefined, READ_RETRIES),
     getGroups: (opts) =>
       request(

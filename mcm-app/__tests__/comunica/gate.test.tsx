@@ -25,6 +25,9 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   useRouter: () => ({ push: jest.fn() }),
 }));
+jest.mock('@/hooks/comunica/useComunicaLinks', () => ({
+  useComunicaLinks: () => {},
+}));
 jest.mock('@/components/comunica/comun/ComunicaAreaProvider', () => ({
   useArea: () => ({ session: { status: 'signedIn', me: null } }),
 }));

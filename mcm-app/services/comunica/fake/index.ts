@@ -32,8 +32,11 @@ import {
   type RollCallSummary,
   type Role,
   type Me,
+  ExchangeRequest,
   VerifyRequest,
   VerifyResponse,
+  WebPass,
+  WebPassRequest,
   type Tokens,
 } from '../contract';
 import { ComunicaApiError, type ComunicaApi } from '../client';
@@ -42,6 +45,7 @@ import {
   FAKE_DNIS,
   FAKE_EMAILS,
   FAKE_LINK_TOKENS,
+  FAKE_PLUGIN_LINKS,
   FAKE_RATE_LIMITED_EMAIL,
   generateFakeData,
   markOf,
@@ -468,6 +472,40 @@ export function createFakeServer(
       await gate('refresh', false, false);
       const t = refreshTokens.get(refreshToken);
       if (t) revokedFamilies.add(t.family);
+    },
+
+    async exchange(body) {
+      await gate('exchange', false, false);
+      const parsed = ExchangeRequest.safeParse(body);
+      const key = parsed.success
+        ? 'magic' in parsed.data
+          ? parsed.data.magic
+          : parsed.data.token
+        : '';
+      const p = FAKE_PLUGIN_LINKS[key];
+      if (!p) throw validation('link_expired', 'El enlace ha caducado');
+      return VerifyResponse.parse({ ...issue(p), me: meOf(p) });
+    },
+
+    async webPass(body) {
+      await gate('webPass');
+      const parsed = WebPassRequest.safeParse(body);
+      if (!parsed.success)
+        throw validation('bad_destination', 'Destino no válido');
+      const d = parsed.data;
+      // Sin red de verdad: la página real del plugin, SIN pase (enseña su
+      // pantalla de entrada). Con el servidor de verdad llevaría un
+      // `acceso_magico` de 2 minutos.
+      const q = (['internalpage', 'action', 'id', 'from'] as const)
+        .filter((k) => d[k])
+        .map((k) => `${k}=${encodeURIComponent(d[k] as string)}`)
+        .join('&');
+      return WebPass.parse({
+        url: `https://comunica.movimientoconsolacion.com/ap/?app=1&${q}`,
+        expiresAt: new Date(now().getTime() + 2 * 60_000)
+          .toISOString()
+          .replace(/\.\d{3}Z$/, 'Z'),
+      });
     },
 
     async getMe() {

@@ -4,6 +4,20 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-24 05:30 — Área nativa de Comunica: enlaces y salto a la web (rama `nuevoComunicaChulo`)
+
+- **Cualquier enlace de Comunica abre la app** donde toca (plan 10): con un
+  destino (`internalpage`), la pantalla nativa si existe o el área privada en
+  la WebView en esa página con la sesión puesta (pase de 2 minutos); con el
+  token del plugin, en la nativa se canjea por una sesión y pregunta si el
+  enlace es de otra persona; en el legado, como siempre. Mapa de todas las
+  páginas del plugin en `services/comunica/links.ts`.
+- **Android**: `intentFilters` con `/ap`, `/app`, `/area-privada`,
+  `/actividades` y `/` del dominio de Comunica (nativo: entra en la 2.2).
+  En iOS lo decide el fichero que sirve el plugin, cambiado en su rama
+  `nuevoComunicaChulo` (sin desplegar).
+- `global.comunicaNativa` en el seed de `/profileConfig` (`"alpha"`).
+
 ## 2026-10-24 04:30 — Área nativa de Comunica: entrar con código y cola de escrituras (rama `nuevoComunicaChulo`)
 
 - **Acceso nativo** (plan 02): «Entra en tu área» con el correo de la cuenta

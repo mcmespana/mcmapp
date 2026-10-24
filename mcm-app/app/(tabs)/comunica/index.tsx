@@ -17,6 +17,7 @@ import { useArea } from '@/components/comunica/comun/ComunicaAreaProvider';
 import { useComunicaTheme } from '@/components/comunica/comun/useComunicaTheme';
 import ComunicaHome from '@/components/comunica/pasar-lista/ComunicaHome';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useComunicaLinks } from '@/hooks/comunica/useComunicaLinks';
 import { useComunicaMode } from '@/hooks/comunica/useComunicaMode';
 
 export default function ComunicaGate() {
@@ -34,6 +35,7 @@ export default function ComunicaGate() {
 
 function NativeGate() {
   const { session } = useArea();
+  useComunicaLinks();
   const t = useComunicaTheme();
   if (session.status === 'loading') {
     return (
