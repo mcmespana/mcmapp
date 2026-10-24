@@ -16,7 +16,8 @@
 //   · Las respuestas de lectura llevan `generatedAt` (el «actualizado hace»).
 //
 // Este fichero tiene lo compartido (plan 00 §3), el trozo de Pasar Lista
-// (plan 04 «Datos») y el de Grupos y fichas (plan 05). Cada plan de
+// (plan 04 «Datos»), el de Grupos y fichas (plan 05) y el de Coordinación
+// (plan 06). Cada plan de
 // pantallas añade aquí su trozo al ejecutarse.
 
 // El esquema y su tipo se llaman igual (`Me` el valor, `Me` el tipo): es el
@@ -618,6 +619,381 @@ export type MembershipGroupWrite = z.infer<typeof MembershipGroupWrite>;
 /** Motivos de `validation` de las escrituras de Grupos y fichas. */
 export const PEOPLE_REJECTIONS = ['empty_reason', 'season_closed'] as const;
 
+// ── Coordinación (plan 06 «Datos») ──────────────────────────────────────────
+
+/**
+ * Un monitor del equipo de quien coordina o acompaña. `stage` es la sección
+ * en la que sale (la de su curso más bajo); `otherStages`, las demás etapas en
+ * las que también lleva grupo (para el «También lleva grupo de esta etapa…»).
+ * `null` = «Sin etapa» (sin grupo de la delegación).
+ */
+export const TeamMember = z.object({
+  id: Id,
+  firstName: z.string(),
+  lastName: z.string(),
+  photoUrl: z.url().optional(),
+  /** Códigos de sus grupos, en orden natural («C1», «C2»). */
+  groupCodes: z.array(z.string()),
+  stage: Stage.nullable(),
+  otherStages: z.array(Stage),
+  schoolLevel: SchoolLevel.optional(),
+  /**
+   * Tiene relación de monitor, pero no cuelga de ningún grupo de la
+   * delegación (vacío, comodín o un grupo fuera de Pasar Lista). Solo lo ve
+   * quien coordina toda la delegación. `membershipId` es la relación que se
+   * vincula.
+   */
+  unassigned: z
+    .object({ membershipId: Id, outsideGroupName: z.string().optional() })
+    .optional(),
+});
+export type TeamMember = z.infer<typeof TeamMember>;
+
+/** El recuento nocturno de un grupo. La app decide si es fresco (≤ 3 días). */
+export const Headcount = z.object({
+  participants: z.number().int().nonnegative(),
+  monitors: z.number().int().nonnegative(),
+  countedAt: Instant,
+});
+export type Headcount = z.infer<typeof Headcount>;
+
+export const ROLL_CELLS = ['taken', 'skipped'] as const;
+/** Una celda de la tira: `null` = falta (la sesión ya se celebró). */
+export const RollCell = z.enum(ROLL_CELLS).nullable();
+export type RollCell = z.infer<typeof RollCell>;
+
+/** Las tiras de una etapa: sus sesiones celebradas y una fila por grupo. */
+export const StageStrip = z.object({
+  stage: Stage,
+  /** Celebradas, de la más antigua a la más reciente (como mucho `stripLimit`). */
+  sessions: z.array(SessionSummary),
+  rows: z.array(
+    z.object({
+      group: z.object({
+        id: Id,
+        code: z.string().nullable(),
+        name: z.string(),
+      }),
+      /** Quién lo lleva (relaciones de monitor vigentes). */
+      monitors: z.array(z.object({ id: Id, name: z.string() })),
+      /** Sin relaciones: el texto de monitores del grupo en el CRM. */
+      monitorsText: z.string().optional(),
+      headcount: Headcount.nullable(),
+      /** Una por sesión de `sessions`, en el mismo orden. */
+      cells: z.array(RollCell),
+    }),
+  ),
+});
+export type StageStrip = z.infer<typeof StageStrip>;
+
+/** `GET /v1/coordination` — la pantalla «Coordinación». */
+export const CoordinationHome = read({
+  /** Solo a coordinación: la lista de monitores de la última sesión celebrada. */
+  weeklyMonitorsRoll: z
+    .object({ session: SessionSummary, rollCall: RollCallSummary.nullable() })
+    .nullable(),
+  /** Las tiras de la última sesión, de los grupos de tu alcance. */
+  lastSession: z.array(StageStrip),
+  team: z.array(TeamMember),
+});
+export type CoordinationHome = z.infer<typeof CoordinationHome>;
+
+export const LoosePerson = z.object({
+  id: Id,
+  firstName: z.string(),
+  lastName: z.string(),
+  photoUrl: z.url().optional(),
+});
+export type LoosePerson = z.infer<typeof LoosePerson>;
+
+/** `GET /v1/coordination/summary` — el Resumen de grupos (todo el equipo). */
+export const CoordinationSummary = read({
+  season: z.string(),
+  /** Alcance acotado: `mine` es lo tuyo y `rest`, el resto de la delegación. */
+  scoped: z.boolean(),
+  stripLimit: z.number().int().positive(),
+  mine: z.array(StageStrip),
+  rest: z.array(StageStrip),
+  review: z.object({
+    participantsWithoutGroup: z.array(LoosePerson),
+    groupsWithoutCode: z.array(z.object({ id: Id, name: z.string() })),
+  }),
+});
+export type CoordinationSummary = z.infer<typeof CoordinationSummary>;
+
+export const MONITORS_ROLL_KINDS = ['weekly', 'meeting'] as const;
+export const MonitorsRollKind = z.enum(MONITORS_ROLL_KINDS);
+export type MonitorsRollKind = z.infer<typeof MonitorsRollKind>;
+
+export const MonitorsRollRow = z.object({
+  member: TeamMember,
+  /** `null` = sin asistencia todavía (se pinta y se guarda como «vino»). */
+  mark: SetMark.nullable(),
+  reason: z.string().nullable(),
+  /** Una por sesión celebrada del evento de la lista, antigua → reciente. */
+  seasonMarks: z.array(Mark),
+});
+export type MonitorsRollRow = z.infer<typeof MonitorsRollRow>;
+
+/** `GET /v1/coordination/monitors-roll?kind=&stage=&session=` */
+export const MonitorsRoll = read({
+  kind: MonitorsRollKind,
+  /**
+   * Semanal: las etapas del alcance con evento (una lista por etapa, cada una
+   * sobre su evento) y la que es esta. En una reunión, vacías y `null`.
+   */
+  stages: z.array(Stage),
+  stage: Stage.nullable(),
+  event: z.object({ id: Id, name: z.string() }).nullable(),
+  session: SessionSummary.extend({ name: z.string().optional() }).nullable(),
+  /** Todas las del evento (la app no ofrece las futuras). */
+  sessions: z.array(SessionSummary),
+  /** Las listas de monitores ya pasadas de ese evento (para el selector). */
+  rollCalls: z.array(RollCallSummary),
+  rollCall: RollCallSummary.nullable(),
+  rows: z.array(MonitorsRollRow),
+  /** De otra etapa, pero también llevan grupo de esta (no se marcan aquí). */
+  borrowed: z.array(TeamMember),
+});
+export type MonitorsRoll = z.infer<typeof MonitorsRoll>;
+
+/** `PUT /v1/sessions/:id/monitors-roll` — TODAS las filas, ninguna `null`. */
+export const MonitorsRollWrite = z.object({
+  clientId: ClientId,
+  kind: MonitorsRollKind,
+  marks: z.array(
+    z.object({
+      personId: Id,
+      mark: SetMark,
+      /** El servidor lo recorta a 255. */
+      reason: z.string().optional(),
+    }),
+  ),
+});
+export type MonitorsRollWrite = z.infer<typeof MonitorsRollWrite>;
+export const MonitorsRollWriteResult = WriteResult.extend({
+  rollCall: RollCallSummary,
+});
+export type MonitorsRollWriteResult = z.infer<typeof MonitorsRollWriteResult>;
+
+export const Meeting = z.object({
+  session: SessionSummary,
+  name: z.string(),
+  durationHours: z.number().positive().nullable(),
+  rollCall: RollCallSummary.nullable(),
+});
+export type Meeting = z.infer<typeof Meeting>;
+
+/** `GET /v1/coordination/meetings` — de la más reciente a la más antigua. */
+export const MeetingsResponse = read({
+  season: z.string(),
+  meetings: z.array(Meeting),
+});
+export type MeetingsResponse = z.infer<typeof MeetingsResponse>;
+
+export const MEETING_DURATIONS = [1, 1.5, 2, 3, 4] as const;
+export const MEETING_NAME_MAX = 120;
+
+/** `POST /v1/meetings` — el servidor crea el evento del curso si no existe. */
+export const MeetingWrite = z.object({
+  clientId: ClientId,
+  name: z.string().trim().min(1).max(MEETING_NAME_MAX),
+  date: Day,
+  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  durationHours: z.union([
+    z.literal(1),
+    z.literal(1.5),
+    z.literal(2),
+    z.literal(3),
+    z.literal(4),
+  ]),
+});
+export type MeetingWrite = z.infer<typeof MeetingWrite>;
+export const MeetingWriteResult = WriteResult.extend({ meeting: Meeting });
+export type MeetingWriteResult = z.infer<typeof MeetingWriteResult>;
+
+/** Un teléfono ya preparado por el servidor. */
+export const Phone = z.object({
+  /** Como está escrito: es lo que se reconoce. */
+  display: z.string(),
+  /** Para `tel:`. */
+  tel: z.string(),
+  /** Para `https://wa.me/…`. */
+  whatsapp: z.string(),
+});
+export type Phone = z.infer<typeof Phone>;
+
+/** Un cuadradito de una pista de asistencia de la ficha del monitor. */
+export const Square = z.object({
+  sessionId: Id,
+  date: Day,
+  /** En las reuniones, su nombre (es lo que las identifica). */
+  name: z.string().optional(),
+  mark: Mark,
+  reason: z.string().optional(),
+});
+export type Square = z.infer<typeof Square>;
+
+export const LIST_SQUARE_STATES = [
+  'mine',
+  'other',
+  'skipped',
+  'missing',
+] as const;
+
+const LabelValue = z.object({ label: z.string(), value: z.string() });
+
+/** `GET /v1/monitors/:id` — la ficha del monitor (sin seguimientos). */
+export const MonitorDetail = read({
+  monitor: TeamMember.extend({
+    age: z.number().int().nonnegative().optional(),
+    monitorSinceYear: z.number().int().optional(),
+    mobile: Phone.optional(),
+    otherPhone: Phone.optional(),
+    email: z.string().optional(),
+    doNotCall: z.boolean(),
+  }),
+  /** Sábados (celebrados). `null` = sin evento de sesiones que mirar. */
+  weekly: z
+    .object({ registered: z.boolean(), squares: z.array(Square) })
+    .nullable(),
+  /** Reuniones de programación. `null` = no hay evento de reuniones. */
+  meetings: z
+    .object({ registered: z.boolean(), squares: z.array(Square) })
+    .nullable(),
+  /** Las listas de los grupos que lleva: quién las pasó. */
+  rollCalls: z.array(
+    z.object({
+      group: z.object({ id: Id, code: z.string().nullable() }),
+      squares: z.array(
+        z.object({
+          sessionId: Id,
+          date: Day,
+          state: z.enum(LIST_SQUARE_STATES),
+        }),
+      ),
+    }),
+  ),
+  groups: z.array(
+    z.object({
+      group: z.object({
+        id: Id,
+        code: z.string().nullable(),
+        name: z.string(),
+        schoolLevels: z.array(z.string()),
+        inRollCall: z.boolean(),
+      }),
+      /** `leads` = monitor del grupo; `member` = su grupo como miembro. */
+      role: z.enum(['leads', 'member']),
+      since: Day.optional(),
+      counts: z.object({
+        participants: z.number().int().nonnegative().nullable(),
+        monitors: z.number().int().nonnegative(),
+      }),
+      colleagues: z.array(z.object({ id: Id, name: z.string() })),
+    }),
+  ),
+  /** Por dónde ha pasado: solo relaciones de monitor, curso a curso. */
+  history: z.array(
+    z.object({
+      season: z.string(),
+      current: z.boolean(),
+      groups: z.array(
+        z.object({
+          code: z.string().nullable(),
+          name: z.string(),
+          schoolLevels: z.array(z.string()),
+          colleagues: z.array(z.string()),
+        }),
+      ),
+    }),
+  ),
+  /** El papeleo, con las etiquetas ya traducidas por el servidor. */
+  paperwork: z.object({
+    compliance: z.array(
+      z.object({
+        label: z.string(),
+        ok: z.boolean(),
+        /** `false` = un permiso (LOPD, imágenes): un «no» no es incumplir. */
+        required: z.boolean(),
+        note: z.string().optional(),
+      }),
+    ),
+    mcm: z.array(LabelValue),
+    training: z.array(
+      z.object({
+        label: z.string(),
+        value: z.string(),
+        ok: z.boolean(),
+        note: z.string().optional(),
+        warn: z.string().optional(),
+      }),
+    ),
+    congresses: z.array(z.string()),
+    academic: z.string().optional(),
+    personal: z.array(LabelValue),
+  }),
+});
+export type MonitorDetail = z.infer<typeof MonitorDetail>;
+
+export const FOLLOW_UP_TYPES = [
+  'incident',
+  'assessment',
+  'accompaniment',
+] as const;
+export const FollowUpType = z.enum(FOLLOW_UP_TYPES);
+export type FollowUpType = z.infer<typeof FollowUpType>;
+
+export const FollowUp = z.object({
+  id: Id,
+  type: FollowUpType,
+  /** La fecha del HECHO. `null` = sin fecha (sale siempre, en cualquier curso). */
+  date: Day.nullable(),
+  text: z.string(),
+  author: z.string(),
+});
+export type FollowUp = z.infer<typeof FollowUp>;
+
+/**
+ * `GET /v1/monitors/:id/follow-ups` — NUNCA se guarda en el móvil: es lo que
+ * una persona escribió sobre otra. Todos los cursos (la app filtra). Sobre uno
+ * mismo, `readable` y `writable` vacíos.
+ */
+export const FollowUpsResponse = read({
+  readable: z.array(FollowUpType),
+  writable: z.array(FollowUpType),
+  items: z.array(FollowUp),
+});
+export type FollowUpsResponse = z.infer<typeof FollowUpsResponse>;
+
+export const FOLLOW_UP_TEXT_MAX = 4000;
+
+/** `POST /v1/monitors/:id/follow-ups` */
+export const FollowUpWrite = z.object({
+  clientId: ClientId,
+  type: FollowUpType,
+  date: Day,
+  text: z.string().trim().min(1).max(FOLLOW_UP_TEXT_MAX),
+});
+export type FollowUpWrite = z.infer<typeof FollowUpWrite>;
+export const FollowUpWriteResult = WriteResult.extend({ item: FollowUp });
+export type FollowUpWriteResult = z.infer<typeof FollowUpWriteResult>;
+
+/** `POST /v1/events/:id/sessions/today` — si ya existe, se reutiliza. */
+export const SessionTodayWrite = z.object({ clientId: ClientId });
+export type SessionTodayWrite = z.infer<typeof SessionTodayWrite>;
+export const SessionTodayResult = WriteResult.extend({
+  session: SessionSummary,
+});
+export type SessionTodayResult = z.infer<typeof SessionTodayResult>;
+
+/** Motivos de `validation` de las escrituras de coordinación. */
+export const COORDINATION_REJECTIONS = [
+  'session_in_future',
+  'wrong_kind',
+  'bad_type',
+] as const;
+
 // ── Salud (lo único que lleva texto de salud; nunca se guarda) ──────────────
 
 export const HEALTH_KINDS = [
@@ -749,6 +1125,67 @@ export const ROUTES = {
     method: 'PUT',
     path: '/v1/memberships/:id/group',
     response: WriteResult,
+    persist: false,
+  },
+  coordination: {
+    method: 'GET',
+    path: '/v1/coordination',
+    response: CoordinationHome,
+    persist: true,
+  },
+  summary: {
+    method: 'GET',
+    path: '/v1/coordination/summary',
+    response: CoordinationSummary,
+    persist: true,
+  },
+  monitorsRoll: {
+    method: 'GET',
+    path: '/v1/coordination/monitors-roll',
+    response: MonitorsRoll,
+    persist: true,
+  },
+  saveMonitorsRoll: {
+    method: 'PUT',
+    path: '/v1/sessions/:id/monitors-roll',
+    response: MonitorsRollWriteResult,
+    persist: false,
+  },
+  meetings: {
+    method: 'GET',
+    path: '/v1/coordination/meetings',
+    response: MeetingsResponse,
+    persist: true,
+  },
+  createMeeting: {
+    method: 'POST',
+    path: '/v1/meetings',
+    response: MeetingWriteResult,
+    persist: false,
+  },
+  monitor: {
+    method: 'GET',
+    path: '/v1/monitors/:id',
+    response: MonitorDetail,
+    persist: true,
+  },
+  followUps: {
+    method: 'GET',
+    path: '/v1/monitors/:id/follow-ups',
+    response: FollowUpsResponse,
+    // Lo que una persona escribió sobre otra: como la salud, nunca al disco.
+    persist: false,
+  },
+  createFollowUp: {
+    method: 'POST',
+    path: '/v1/monitors/:id/follow-ups',
+    response: FollowUpWriteResult,
+    persist: false,
+  },
+  sessionToday: {
+    method: 'POST',
+    path: '/v1/events/:id/sessions/today',
+    response: SessionTodayResult,
     persist: false,
   },
 } as const;

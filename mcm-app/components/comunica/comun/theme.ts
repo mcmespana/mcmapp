@@ -77,7 +77,7 @@ export const NOTICE_FILL: Record<1 | 2 | 3, string> = ComunicaColors.notice;
 export const BRAND_GRADIENT = ComunicaColors.gradient;
 
 export type ChipTone =
-  'neutral' | 'positive' | 'warning' | 'negative' | 'accent';
+  'neutral' | 'positive' | 'warning' | 'negative' | 'accent' | 'info';
 
 /** Roles de color del área para el modo activo. */
 export function comunicaTheme(isDark: boolean) {
@@ -111,7 +111,9 @@ export function comunicaTheme(isDark: boolean) {
               ? SwipeColors.remove
               : tone === 'accent'
                 ? accentFill
-                : null;
+                : tone === 'info'
+                  ? brand.info
+                  : null;
       if (!fill) {
         return { background: base.backgroundSunken, text: base.textSecondary };
       }

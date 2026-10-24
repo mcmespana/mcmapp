@@ -23,6 +23,15 @@
 //     foto en la mitad (imágenes abstractas), ~15 % sin grupo, avisos (2 y 3),
 //     eventos del curso y pañuelos. Todo con una SEGUNDA semilla, para no
 //     mover ni un dato de los de arriba.
+//   · Coordinación (plan 06), con una TERCERA semilla y añadido al final:
+//     listas de monitores de los sábados (una racha de 3 faltas, uno por
+//     debajo del 60 % y uno con solo 3 marcas), tres reuniones (pasada con
+//     faltas y motivos, sin pasar, futura), un monitor en MIC y COM, dos sin
+//     grupo (comodín y grupo fuera de Pasar Lista), un grupo sin código, un
+//     recuento de hace 5 días, fichas de monitor con su papeleo y
+//     seguimientos de los tres tipos (del curso anterior, sin fecha, de un tipo
+//     desconocido y sobre una persona de coordinación). Personas nuevas:
+//     coordinación COM · COM 2 y quien coordina y acompaña a la vez.
 
 import type {
   Consents,
@@ -40,6 +49,7 @@ import type {
   Stage,
 } from '../contract';
 import { addDays, madridInstant } from '@/utils/comunica/madrid';
+import { generateCoordination } from './fixturesCoordination';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export const FIXTURE_SEED = 20262027;
@@ -170,9 +180,96 @@ export interface FakeData {
   unregistrable: string[];
   /** Personas de prueba con las que se «entra». */
   personas: Record<PersonaId, { personId: string; name: string }>;
+  // ── Coordinación (plan 06) ──
+  /** Listas de MONITORES, una por sesión (semanal o reunión). */
+  monitorRolls: FakeMonitorRoll[];
+  /** Inscripciones de monitores por evento (sin ella no hay asistencias). */
+  monitorRegistrations: Record<string, string[]>;
+  /** Inscripciones que ha creado el falso al guardar (el bug del 26/09). */
+  registrationsCreated: number;
+  /** Relaciones de monitor SIN grupo de la delegación. */
+  monitorMemberships: FakeMonitorMembership[];
+  /** Ficha de cada monitor (lo que un participante no tiene). */
+  monitorProfiles: Record<string, FakeMonitorProfile>;
+  /** Seguimientos por monitor, con su tipo tal cual (puede ser raro). */
+  followUps: Record<string, FakeFollowUp[]>;
+  /** Días que tiene el recuento nocturno de cada grupo (`null` = no hay). */
+  headcountAgeDays: Record<string, number | null>;
+  /** Quién pasó cada lista de grupo (`sesión:grupo` → persona). */
+  rollTakers: Record<string, string>;
+  /** Nombre de cada evento (semanales y reuniones). */
+  eventNames: Record<string, string>;
 }
 
-export type PersonaId = 'monitor' | 'coordination' | 'accompaniment' | 'other';
+export type PersonaId =
+  | 'monitor'
+  | 'coordination'
+  | 'accompaniment'
+  | 'other'
+  /** Coordinación de COM · COM 2 (alcance acotado). */
+  | 'coordinationCom2'
+  /** Coordina toda la delegación y además acompaña (y es monitor de M1). */
+  | 'both';
+
+export interface FakeMonitorRoll {
+  sessionId: string;
+  status: 'taken' | 'skipped';
+  takenAt: string;
+  marks: Record<string, SetMark>;
+  notes: Record<string, string>;
+}
+
+export interface FakeMonitorMembership {
+  id: string;
+  personId: string;
+  delegationId: string;
+  /** Cuelga de un grupo que no entra en Pasar Lista. */
+  outsideGroupName?: string;
+}
+
+export interface FakeMonitorProfile {
+  age: number;
+  sinceYear: number;
+  photo?: string;
+  mobile?: string;
+  otherPhone?: string;
+  email?: string;
+  doNotCall: boolean;
+  /** Desde cuándo lleva cada grupo. */
+  groupsSince: Record<string, string>;
+  /** Etiquetas de «En regla» que le faltan (obligatorias o permisos). */
+  missing: string[];
+  mcm: { label: string; value: string }[];
+  training: {
+    label: string;
+    value: string;
+    ok: boolean;
+    note?: string;
+    warn?: string;
+  }[];
+  congresses: string[];
+  academic?: string;
+  personal: { label: string; value: string }[];
+  /** Por dónde ha pasado antes de este curso. */
+  history: {
+    season: string;
+    groups: {
+      code: string | null;
+      name: string;
+      schoolLevels: string[];
+      colleagues: string[];
+    }[];
+  }[];
+}
+
+export interface FakeFollowUp {
+  id: string;
+  /** Tal cual en el CRM: puede ser un tipo que no se conoce. */
+  type: string;
+  date: string | null;
+  text: string;
+  author: string;
+}
 
 // ── Nombres de mentira ──────────────────────────────────────────────────────
 
@@ -564,6 +661,12 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
     return `${p.firstName} ${p.lastName}`;
   };
 
+  const personaIds = {
+    monitor: shared.id,
+    coordination: coordinator.id,
+    accompaniment: companion.id,
+    other: otherMonitor,
+  };
   const extra = generateProfiles({
     people,
     groups,
@@ -576,6 +679,23 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
     seed,
   });
 
+  const coord = generateCoordination({
+    people,
+    groups,
+    sessions,
+    rolls,
+    used: new Set(people.map((p) => `${p.firstName} ${p.lastName}`)),
+    coordinatorName: name(coordinator.id),
+    companionName: name(companion.id),
+    rand: seededRandom(seed + 6),
+    delegationId: D1,
+    lastNames: LAST,
+    streets: STREETS,
+    fixtureToday: FIXTURE_TODAY,
+    season: SEASON,
+  });
+
+  const persona = (id: string) => ({ personId: id, name: name(id) });
   return {
     season: SEASON,
     delegations: [
@@ -592,11 +712,14 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
     hiddenGroups: { [D1]: 2 },
     unregistrable,
     personas: {
-      monitor: { personId: shared.id, name: name(shared.id) },
-      coordination: { personId: coordinator.id, name: name(coordinator.id) },
-      accompaniment: { personId: companion.id, name: name(companion.id) },
-      other: { personId: otherMonitor, name: name(otherMonitor) },
+      monitor: persona(personaIds.monitor),
+      coordination: persona(personaIds.coordination),
+      accompaniment: persona(personaIds.accompaniment),
+      other: persona(personaIds.other),
+      coordinationCom2: persona(coord.personaIds.coordinationCom2),
+      both: persona(coord.personaIds.both),
     },
+    ...coord.data,
   };
 }
 
@@ -980,6 +1103,8 @@ export const FAKE_EMAILS: Record<string, PersonaId[]> = {
   'acompanamiento@ejemplo.org': ['accompaniment'],
   'otra@ejemplo.org': ['other'],
   'dos@ejemplo.org': ['monitor', 'coordination'],
+  'com2@ejemplo.org': ['coordinationCom2'],
+  'ambas@ejemplo.org': ['both'],
 };
 
 export const FAKE_DNIS: Record<string, PersonaId> = {

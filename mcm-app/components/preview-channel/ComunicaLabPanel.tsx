@@ -86,6 +86,8 @@ export function ComunicaLabPanel() {
           ['monitor', 'Monitor'],
           ['coordination', 'Coordinación'],
           ['accompaniment', 'Acompañamiento'],
+          ['coordinationCom2', 'Coord. COM 2'],
+          ['both', 'Coord. + acomp.'],
           ['other', 'Otra delegación'],
         ]}
         onChange={(persona) => {
@@ -97,8 +99,8 @@ export function ComunicaLabPanel() {
       />
       <Text style={styles.hint}>
         O desde «Entra en tu área»: monitor@ejemplo.org, coordinacion@,
-        acompanamiento@, otra@ o dos@ (dos fichas), o el DNI 12345678Z. El
-        código es siempre {FAKE_CODE}.
+        acompanamiento@, com2@, ambas@, otra@ o dos@ (dos fichas), o el DNI
+        12345678Z. El código es siempre {FAKE_CODE}.
       </Text>
 
       <Text style={styles.label}>Reloj del servidor</Text>

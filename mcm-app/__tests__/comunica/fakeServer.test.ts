@@ -127,6 +127,34 @@ describe('servidor falso', () => {
           groupId: gid,
         });
       })(),
+      // Coordinación (plan 06), como coordinación de toda la delegación.
+      coordination: await s.getCoordination(),
+      summary: await s.getCoordinationSummary(),
+      monitorsRoll: await s.getMonitorsRoll({ kind: 'weekly' }),
+      saveMonitorsRoll: await s.saveMonitorsRoll('f-ses-reunion-01', {
+        clientId: CLIENT(23),
+        kind: 'meeting',
+        marks: [],
+      }),
+      meetings: await s.getMeetings(),
+      createMeeting: await s.createMeeting({
+        clientId: CLIENT(24),
+        name: 'Reunión de prueba',
+        date: '2026-11-10',
+        startTime: '19:00',
+        durationHours: 1,
+      }),
+      monitor: await s.getMonitor(s.data.groups[0].monitorIds[0]),
+      followUps: await s.getFollowUps(s.data.groups[0].monitorIds[0]),
+      createFollowUp: await s.createFollowUp(s.data.groups[0].monitorIds[0], {
+        clientId: CLIENT(25),
+        type: 'incident',
+        date: '2026-10-24',
+        text: 'Prueba',
+      }),
+      sessionToday: await s.createSessionToday('f-evt-vcom', {
+        clientId: CLIENT(26),
+      }),
     };
     for (const [name, value] of Object.entries(results)) {
       expect(
