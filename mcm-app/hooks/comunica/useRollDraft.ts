@@ -61,10 +61,16 @@ export function useRollDraft(key: string, initial: RollDraft) {
     [persist],
   );
 
-  const clearDraft = useCallback(async () => {
-    setRestored(false);
-    persist(null);
-  }, [persist]);
+  /** Pone el borrador a `next` y lo borra del móvil (o lo guarda si se pide). */
+  const resetTo = useCallback(
+    (next: RollDraft, keep = false) => {
+      touched.current = true;
+      setRestored(false);
+      setDraftState(next);
+      persist(keep ? next : null);
+    },
+    [persist],
+  );
 
-  return { draft, setDraft, clearDraft, restored };
+  return { draft, setDraft, resetTo, restored };
 }

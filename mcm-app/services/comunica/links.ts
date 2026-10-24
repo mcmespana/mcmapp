@@ -97,6 +97,14 @@ export interface NativeHref {
  */
 const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
   single_stic_pasar_lista: () => ({ pathname: '/comunica' }),
+  single_stic_pasar_lista_grupos: () => ({
+    pathname: '/comunica/pasar-lista/grupos',
+  }),
+  // El plugin lleva aquí el grupo y la sesión en parámetros propios que el
+  // pase no conserva: se abre el árbol para elegir.
+  single_stic_pasar_lista_marcar: () => ({
+    pathname: '/comunica/pasar-lista/grupos',
+  }),
   single_stic_password_change: () => ({ pathname: '/comunica/yo' }),
   single_stic_unsubscribe: () => ({ pathname: '/comunica/yo' }),
 };

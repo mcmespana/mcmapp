@@ -47,6 +47,24 @@ type IconMapping = {
   'chart.bar': 'bar-chart';
   lock: 'lock';
   'person.crop.circle': 'account-circle';
+  'chevron.down': 'expand-more';
+  magnifyingglass: 'search';
+  'phone.fill': 'phone';
+  'message.fill': 'chat';
+  'arrow.up.right': 'open-in-new';
+  'bell.fill': 'notifications';
+  'square.and.pencil': 'edit';
+  'person.3': 'groups';
+  'chart.pie': 'pie-chart';
+  creditcard: 'credit-card';
+  'doc.text': 'description';
+  camera: 'photo-camera';
+  house: 'home';
+  ticket: 'confirmation-number';
+  bus: 'directions-bus';
+  graduationcap: 'school';
+  'heart.text.square': 'health-and-safety';
+  flag: 'flag';
 };
 
 type IconSymbolName = keyof IconMapping;
@@ -98,6 +116,24 @@ const MAPPING: IconMapping = {
   'chart.bar': 'bar-chart',
   lock: 'lock',
   'person.crop.circle': 'account-circle',
+  'chevron.down': 'expand-more',
+  magnifyingglass: 'search',
+  'phone.fill': 'phone',
+  'message.fill': 'chat',
+  'arrow.up.right': 'open-in-new',
+  'bell.fill': 'notifications',
+  'square.and.pencil': 'edit',
+  'person.3': 'groups',
+  'chart.pie': 'pie-chart',
+  creditcard: 'credit-card',
+  'doc.text': 'description',
+  camera: 'photo-camera',
+  house: 'home',
+  ticket: 'confirmation-number',
+  bus: 'directions-bus',
+  graduationcap: 'school',
+  'heart.text.square': 'health-and-safety',
+  flag: 'flag',
 };
 
 /**

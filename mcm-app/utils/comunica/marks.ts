@@ -36,14 +36,30 @@ export const isAbsence = (m: Mark): boolean =>
   m === 'no_justified' || m === 'no_unjustified';
 
 /**
- * El gesto principal: tocar la fila. «Toca la fila para vino / no vino»: sin
- * marcar → vino → no vino → vino… Lo matizado (parcial, justificada) va por la
- * pulsación larga; un toque sobre ello vuelve a «vino». Tocar nunca desmarca:
- * quitar una marca guardada está pendiente de decidir (`desmarcar`).
+ * El gesto principal: tocar la fila (`sticpa_pl_next_state`). Sin marcar →
+ * Vino → No vino → sin marcar. Desde Parcial o Justificada, a Vino: lo
+ * matizado se pone con la pulsación larga.
  */
-export function nextMarkOnTap(current: Mark): SetMark {
-  return current === 'yes' ? 'no_unjustified' : 'yes';
+export function nextMarkOnTap(current: Mark): Mark {
+  if (current === null) return 'yes';
+  if (current === 'yes') return 'no_unjustified';
+  if (current === 'no_unjustified') return null;
+  return 'yes';
 }
+
+/** Lo que dice la marca bajo el nombre (las dos «normales» no dicen nada). */
+export const MARK_NOTE: Partial<Record<SetMark, string>> = {
+  partial: 'Parcial',
+  no_justified: 'Justificada',
+};
+
+/** Lo que explica la hoja de cada estado. */
+export const MARK_HELP: Record<SetMark, string> = {
+  yes: 'Ha venido',
+  partial: 'Cuenta como asistencia',
+  no_justified: 'No es necesario justificar, pero a veces avisan',
+  no_unjustified: 'No ha venido',
+};
 
 export interface MarkCounts {
   came: number;
@@ -98,6 +114,16 @@ export function groupLabel(g: { code: string | null; name: string }): string {
   const t = groupTitle(g);
   return [t.code, t.name].filter(Boolean).join(' · ');
 }
+
+/** «3 ausencias seguidas». */
+export const streakLabel = (n: number) =>
+  n === 1 ? '1 ausencia' : `${n} ausencias seguidas`;
+
+/** Plurales de los recuentos de la barra. */
+export const cameLabel = (n: number) => (n === 1 ? '1 vino' : `${n} vinieron`);
+export const missedLabel = (n: number) =>
+  n === 1 ? '1 ausencia' : `${n} ausencias`;
+export const unmarkedLabel = (n: number) => `${n} sin marcar`;
 
 /** «12 chavalines» (decisión del propietario para los recuentos). */
 export const participantsLabel = (n: number): string =>

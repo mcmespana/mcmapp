@@ -27,7 +27,7 @@ import brand, {
   ToastColors,
 } from '@/constants/colors';
 import type { SetMark, Stage } from '@/services/comunica/contract';
-import { hexAlpha, onColor } from '@/utils/colorUtils';
+import { hexAlpha, onColor, readableOn } from '@/utils/colorUtils';
 
 /** Relleno de los estados de una marca. */
 export const MARK_FILL: Record<SetMark, string> = {
@@ -63,6 +63,8 @@ export function comunicaTheme(isDark: boolean) {
     warningSoft: hexAlpha(ToastColors.warning, isDark ? '33' : '1F'),
     warningText: isDark ? brand.yellow : base.text,
     warningIcon: ToastColors.warning,
+    /** Rojo legible como texto («3 ausencias seguidas»), en los dos modos. */
+    dangerText: readableOn(SwipeColors.remove, base.card),
     /** Chips: fondo suave + texto legible por tono. */
     chip(tone: ChipTone) {
       const fill =

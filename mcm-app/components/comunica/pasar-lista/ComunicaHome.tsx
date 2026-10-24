@@ -1,40 +1,68 @@
 // components/comunica/pasar-lista/ComunicaHome.tsx
 //
-// Portada «Hoy» del área nativa para el equipo (primer corte del plan 04).
-// Mismo orden y mismas palabras que la home de Pasar Lista del plugin
-// (`design/pasar-lista/Main`): el atajo a tu grupo y su sesión, «Te faltan N
-// listas», tus otros grupos y «Pasar lista de otro grupo» por etapa.
+// Portada «Hoy» del área nativa para el equipo (plan 04). Mismo orden y mismas
+// palabras que la home de Pasar Lista del plugin (`design/pasar-lista/Main`,
+// `pages/single_stic_pasar_lista.php`):
 //
-// Falta, y lo trae el plan 04: la cola del móvil, el evento de hoy, el bloque
-// de coordinación y las pantallas a las que llevan las filas.
+//   1. «Pasar lista» y la fecha del atajo (o el curso).
+//   2. La cola del móvil: listas guardadas que aún no han subido.
+//   3. Los eventos que empiezan o acaban hoy.
+//   4. El atajo: tu grupo y su sesión.
+//   5. «Te faltan N listas».
+//   6. Tus otros grupos.
+//   7. «Pasar lista de otro grupo», por etapa.
+//   8. Pasar lista en un evento y el resumen de grupos.
+//   9. Coordinación (solo a quien coordina).
+//
+// Con conexión, precarga las listas del atajo y de lo que falta (cinco como
+// mucho), para el sábado sin red.
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
-import { comunicaNow, getFakeServer } from '@/services/comunica';
+import {
+  comunicaNow,
+  getComunicaApi,
+  getFakeServer,
+} from '@/services/comunica';
 import type {
   GroupsResponse,
+  Me,
   TodayResponse,
 } from '@/services/comunica/contract';
+import { nativeHrefFor, type Destination } from '@/services/comunica/links';
+import { areaKey, STALE } from '@/hooks/comunica/useAreaQuery';
 import { useMe } from '@/hooks/comunica/useMe';
 import { useGroups, useToday } from '@/hooks/comunica/usePasarLista';
+import { useFlushOutboxOnMount, useOutbox } from '@/hooks/comunica/useOutbox';
+import { useOpenLegacy } from '@/hooks/comunica/useOpenLegacy';
 import { longDay, relativeDay, shortDay } from '@/utils/comunica/dates';
 import { madridDay, madridTime } from '@/utils/comunica/madrid';
-import { groupTitle, participantsLabel } from '@/utils/comunica/marks';
+import {
+  cameLabel,
+  groupLabel,
+  groupTitle,
+  missedLabel,
+  participantsLabel,
+} from '@/utils/comunica/marks';
 import {
   compareGroups,
   missingRolls,
   proposeSession,
   rollIndex,
   rollKey,
+  sectionParam,
   sessionsForGroup,
   stageBuckets,
   type Proposal,
 } from '@/utils/comunica/pasarLista';
+import { pendingDisplay } from '@/utils/comunica/rollDraft';
+import { shortDate } from '@/utils/comunica/sessions';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
 import DateCapsule from '../comun/DateCapsule';
@@ -44,14 +72,16 @@ import Section from '../comun/Section';
 import SyncBadge from '../comun/SyncBadge';
 import { STAGE_COLOR } from '../comun/theme';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
+import { noticeFor } from './RollScreen';
 
-/** Con más de cuatro que faltan, se enseñan tres y «Y N más». */
-const MISSING_VISIBLE = 4;
+/** Listas que se precargan como mucho. */
+const PREFETCH_MAX = 5;
 
 export default function ComunicaHome() {
   const me = useMe();
   const groups = useGroups();
   const today = useToday();
+  useFlushOutboxOnMount();
 
   return (
     <AreaScreen
@@ -59,17 +89,18 @@ export default function ComunicaHome() {
         Promise.all([groups.refetch(), today.refetch(), me.refetch()])
       }
     >
-      <AreaState query={groups} skeleton="cards">
+      <AreaState
+        query={groups}
+        skeleton="cards"
+        empty={{
+          title: 'No hay grupos de tu delegación en este curso.',
+          subtitle: 'Si crees que es un error, avisa a coordinación.',
+          isEmpty: (d) => d.groups.length === 0,
+        }}
+      >
         {(g) => (
           <AreaState query={today} skeleton="cards">
-            {(td) => (
-              <HomeContent
-                groups={g}
-                today={td}
-                coordination={me.isCoordination}
-                accompaniment={!!me.me?.roles.includes('accompaniment')}
-              />
-            )}
+            {(td) => <HomeContent groups={g} today={td} me={me.me} />}
           </AreaState>
         )}
       </AreaState>
@@ -81,28 +112,53 @@ export default function ComunicaHome() {
   );
 }
 
+/** Un destino del plugin: nativo si ya lo hay, si no al legado con sesión. */
+function useGoTo() {
+  const router = useRouter();
+  const openLegacy = useOpenLegacy();
+  return (destination: Destination, title: string) => {
+    const native = nativeHrefFor(destination);
+    if (native) router.push(native as never);
+    else void openLegacy(destination, title);
+  };
+}
+
+function scopeLabel(me: Me | null): string {
+  if (!me || me.scope === 'delegation') return 'toda la delegación';
+  const seg = { com_1: 'COM I', com_2: 'COM II', com_3: 'COM III' } as const;
+  const parts = [
+    ...(me.scope.stages ?? []).map((s) => s.toUpperCase()),
+    ...(me.scope.segments ?? []).map((s) => seg[s]),
+  ];
+  return parts.join(', ') || 'toda la delegación';
+}
+
 function HomeContent({
   groups,
   today,
-  coordination,
-  accompaniment,
+  me,
 }: {
   groups: GroupsResponse;
   today: TodayResponse;
-  coordination: boolean;
-  accompaniment: boolean;
+  me: Me | null;
 }) {
   const t = useComunicaTheme();
   const router = useRouter();
+  const qc = useQueryClient();
+  const goTo = useGoTo();
+  const { pending } = useOutbox();
   const now = comunicaNow();
   const todayDay = madridDay(now);
+  const coordination = !!me?.roles.includes('coordination');
+  const accompaniment = !!me?.roles.includes('accompaniment');
+
+  const queuedRolls = pending.filter((e) => e.kind === 'roll');
 
   const model = useMemo(() => {
     const index = rollIndex(today.rollCalls);
     const mine = groups.groups
       .filter((g) => groups.myGroupIds.includes(g.id))
       .sort(compareGroups);
-    // El atajo: el primero de tus grupos que tenga sesión.
     let shortcut: { group: (typeof mine)[number]; proposal: Proposal } | null =
       null;
     for (const group of mine) {
@@ -115,42 +171,65 @@ function HomeContent({
         break;
       }
     }
+    const queued = new Set(
+      queuedRolls.map((e) => `${e.meta.sessionId}:${e.meta.groupId}`),
+    );
     const missing = missingRolls({
       groups: mine,
       stageEvents: groups.stageEvents,
       rollCalls: today.rollCalls,
       now,
+      queued,
       exclude: shortcut
         ? rollKey(shortcut.proposal.session.id, shortcut.group.id)
         : undefined,
     });
-    const others = mine.filter((g) => g.id !== shortcut?.group.id);
     return {
       index,
       shortcut,
       missing,
-      others,
+      others: mine.filter((g) => g.id !== shortcut?.group.id),
       buckets: stageBuckets(groups.groups),
     };
-    // `now` cambia en cada render; las reglas van por día, así que basta con
-    // recalcular cuando cambian los datos o el día.
+    // `now` cambia en cada render; las reglas van por día.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groups, today, todayDay]);
+  }, [groups, today, todayDay, queuedRolls.length]);
+
+  // Precarga para el sábado sin red: el atajo y lo que falta.
+  useEffect(() => {
+    const wanted = [
+      ...(model.shortcut
+        ? [
+            {
+              sid: model.shortcut.proposal.session.id,
+              gid: model.shortcut.group.id,
+            },
+          ]
+        : []),
+      ...model.missing.map((m) => ({ sid: m.session.id, gid: m.group.id })),
+    ].slice(0, PREFETCH_MAX);
+    for (const { sid, gid } of wanted) {
+      void qc.prefetchQuery({
+        queryKey: areaKey(['pasar-lista', 'roll', sid, gid]),
+        queryFn: () => getComunicaApi().getRoll(sid, gid),
+        staleTime: STALE.state,
+        meta: { persist: true },
+      });
+    }
+  }, [model, qc, todayDay]);
 
   const openRoll = (sessionId: string, groupId: string) =>
     router.push({
-      pathname: '/comunica/lista',
-      params: { sid: sessionId, gid: groupId },
+      pathname: '/comunica/pasar-lista/[groupId]',
+      params: { groupId, sesion: sessionId },
     });
 
   const shortcut = model.shortcut;
   const shortcutRoll = shortcut
     ? model.index.get(rollKey(shortcut.proposal.session.id, shortcut.group.id))
     : undefined;
-  const shownMissing =
-    model.missing.length > MISSING_VISIBLE
-      ? model.missing.slice(0, MISSING_VISIBLE - 1)
-      : model.missing;
+  const { shown, more } = pendingDisplay(model.missing);
+  const missingGroups = new Set(model.missing.map((m) => m.group.id));
 
   return (
     <>
@@ -175,6 +254,69 @@ function HomeContent({
         </View>
       </View>
 
+      {queuedRolls.length > 0 ? (
+        <Section
+          warning
+          title={
+            queuedRolls.length === 1
+              ? 'Tienes una lista guardada solo en el móvil'
+              : `Tienes ${queuedRolls.length} listas guardadas solo en el móvil`
+          }
+        >
+          <Text style={[styles.pad, { color: t.text }]}>
+            Se envía sola con cobertura; si no, ábrela y guárdala:
+          </Text>
+          {queuedRolls.map((e) => (
+            <NavRow
+              key={e.key}
+              title={`${e.meta.label} · ${shortDate(e.meta.date)}`}
+              subtitle={
+                e.status === 'stuck' || e.status === 'failed'
+                  ? 'No se ha podido enviar'
+                  : undefined
+              }
+              onPress={() => openRoll(e.meta.sessionId, e.meta.groupId)}
+            />
+          ))}
+        </Section>
+      ) : null}
+
+      {today.eventsToday.length > 0 ? (
+        <Section title="Hoy hay evento">
+          {today.eventsToday.map((ev) => (
+            <PressableFeedback
+              key={ev.id}
+              onPress={() =>
+                goTo(
+                  { internalpage: 'single_stic_pasar_lista_evento' },
+                  ev.name,
+                )
+              }
+              accessibilityRole="button"
+              style={styles.row}
+            >
+              <PressableFeedback.Highlight />
+              <DateCapsule day={todayDay} />
+              <View style={styles.rowBody}>
+                <Text style={[styles.rowSub, { color: t.textSecondary }]}>
+                  {ev.todayIs === 'start'
+                    ? 'Hoy empieza'
+                    : ev.todayIs === 'end'
+                      ? 'Hoy termina'
+                      : 'Hoy'}
+                </Text>
+                <Text style={[styles.rowTitle, { color: t.text }]}>
+                  {ev.name}
+                </Text>
+              </View>
+              <Text style={[styles.action, { color: t.accentText }]}>
+                Pasar lista ›
+              </Text>
+            </PressableFeedback>
+          ))}
+        </Section>
+      ) : null}
+
       {shortcut ? (
         <RecordCard
           featured
@@ -185,7 +327,7 @@ function HomeContent({
             shortcutRoll
               ? [
                   shortcut.group.schoolLevels.join(', '),
-                  `${shortcutRoll.counts.came} vinieron, ${shortcutRoll.counts.missed} ausencias`,
+                  `${cameLabel(shortcutRoll.counts.came)}, ${missedLabel(shortcutRoll.counts.missed)}`,
                 ]
                   .filter(Boolean)
                   .join(' · ')
@@ -196,8 +338,8 @@ function HomeContent({
                 ]
                   .filter(Boolean)
                   .join(' · '),
-            ...(noticeText(shortcut.proposal) && !shortcutRoll
-              ? [noticeText(shortcut.proposal)!]
+            ...(noticeFor(shortcut.proposal) && !shortcutRoll
+              ? [noticeFor(shortcut.proposal)!]
               : []),
           ]}
           day={shortcut.proposal.session.date}
@@ -218,18 +360,26 @@ function HomeContent({
               : `Te faltan ${model.missing.length} listas`
           }
         >
-          {shownMissing.map(({ group, session }) => (
+          {shown.map(({ group, session }) => (
             <MissingRow
               key={rollKey(session.id, group.id)}
               day={session.date}
-              group={groupLabelOf(group)}
+              group={groupLabel(group)}
               onPress={() => openRoll(session.id, group.id)}
             />
           ))}
-          {model.missing.length > shownMissing.length ? (
-            <Text style={[styles.more, { color: t.textSecondary }]}>
-              Y {model.missing.length - shownMissing.length} más
-            </Text>
+          {more > 0 ? (
+            <NavRow
+              title={`Y ${more} más · Ver todas`}
+              onPress={() =>
+                missingGroups.size === 1
+                  ? router.push({
+                      pathname: '/comunica/pasar-lista/[groupId]/historial',
+                      params: { groupId: [...missingGroups][0] },
+                    })
+                  : router.push('/comunica/pasar-lista/grupos')
+              }
+            />
           ) : null}
         </Section>
       ) : null}
@@ -248,14 +398,19 @@ function HomeContent({
             return (
               <NavRow
                 key={g.id}
-                title={groupLabelOf(g)}
+                title={groupLabel(g)}
                 subtitle={[
                   g.schoolLevels.join(', '),
                   p ? shortDay(p.session.date) : null,
                 ]
                   .filter(Boolean)
                   .join(' · ')}
-                onPress={p ? () => openRoll(p.session.id, g.id) : undefined}
+                onPress={() =>
+                  router.push({
+                    pathname: '/comunica/pasar-lista/[groupId]',
+                    params: { groupId: g.id },
+                  })
+                }
               />
             );
           })}
@@ -265,8 +420,7 @@ function HomeContent({
       {groups.myGroupIds.length === 0 ? (
         <Text style={[styles.body, { color: t.textSecondary }]}>
           No tienes ningún grupo asignado como monitor/a, así que no hay atajo.
-          Puedes pasar lista de cualquier grupo de tu delegación desde aquí
-          abajo.
+          Puedes pasar lista de cualquier grupo desde la lista de abajo.
         </Text>
       ) : null}
 
@@ -281,9 +435,85 @@ function HomeContent({
                 ? participantsLabel(b.participants)
                 : `${b.groups} grupos`
             }
+            onPress={() =>
+              router.push({
+                pathname: '/comunica/pasar-lista/grupos',
+                params: { seccion: sectionParam(b) },
+              })
+            }
           />
         ))}
+        <NavRow
+          title="Ver todos los grupos"
+          trailing={`${groups.groups.length} grupos`}
+          onPress={() => router.push('/comunica/pasar-lista/grupos')}
+        />
       </Section>
+
+      <Section>
+        {today.eventsThisSeason > 0 ? (
+          <NavRow
+            icon="bus"
+            title="Pasar lista en un evento"
+            trailing={`${today.eventsThisSeason} este curso`}
+            onPress={() =>
+              goTo(
+                { internalpage: 'single_stic_pasar_lista_evento' },
+                'Pasar lista en un evento',
+              )
+            }
+          />
+        ) : null}
+        <NavRow
+          icon="chart.bar"
+          title="Resumen de grupos"
+          onPress={() =>
+            goTo(
+              { internalpage: 'single_stic_pasar_lista_resumen' },
+              'Resumen de grupos',
+            )
+          }
+        />
+      </Section>
+
+      {coordination ? (
+        <Section title={`Coordinación · ${scopeLabel(me)}`}>
+          {today.pendingMeeting ? (
+            <MissingRow
+              day={today.pendingMeeting.date}
+              group={today.pendingMeeting.name}
+              onPress={() =>
+                goTo(
+                  { internalpage: 'single_stic_pasar_lista_reuniones' },
+                  'Reuniones de programación',
+                )
+              }
+            />
+          ) : null}
+          <NavRow
+            icon="person.3"
+            title="Lista de monitores"
+            subtitle="Quién ha venido el sábado"
+            onPress={() =>
+              goTo(
+                { internalpage: 'single_stic_pasar_lista_monitores' },
+                'Lista de monitores',
+              )
+            }
+          />
+          <NavRow
+            icon="calendar"
+            title="Reuniones de programación"
+            subtitle="Crearlas y pasar lista"
+            onPress={() =>
+              goTo(
+                { internalpage: 'single_stic_pasar_lista_reuniones' },
+                'Reuniones de programación',
+              )
+            }
+          />
+        </Section>
+      ) : null}
     </>
   );
 }
@@ -298,26 +528,6 @@ function kickerFor(p: Proposal, taken: boolean, today: string) {
     tone: 'warning' as const,
   };
 }
-
-function noticeText(p: Proposal): string | null {
-  switch (p.notice?.kind) {
-    case 'not_started':
-      return `Empieza a las ${madridTime(p.notice.startsAt)} — aún no han llegado`;
-    case 'days_ago':
-      return p.notice.days === 1
-        ? 'Es la sesión de ayer'
-        : `Es la sesión de hace ${p.notice.days} días`;
-    case 'next':
-      return `La próxima sesión es el ${longDay(p.notice.date)}`;
-    default:
-      return null;
-  }
-}
-
-const groupLabelOf = (g: { code: string | null; name: string }) => {
-  const t = groupTitle(g);
-  return [t.code, t.name].filter(Boolean).join(' · ');
-};
 
 function MissingRow({
   day,
@@ -344,22 +554,26 @@ function MissingRow({
         </Text>
         <Text style={[styles.rowSub, { color: t.textSecondary }]}>{group}</Text>
       </View>
-      <Text style={[styles.recover, { color: t.accentText }]}>Recuperar</Text>
+      <Text style={[styles.action, { color: t.accentText }]}>Recuperar</Text>
     </PressableFeedback>
   );
 }
+
+type NavIcon = 'bus' | 'chart.bar' | 'person.3' | 'calendar';
 
 function NavRow({
   title,
   subtitle,
   trailing,
   dot,
+  icon,
   onPress,
 }: {
   title: string;
   subtitle?: string;
   trailing?: string;
   dot?: string;
+  icon?: NavIcon;
   onPress?: () => void;
 }) {
   const t = useComunicaTheme();
@@ -374,6 +588,7 @@ function NavRow({
     >
       <PressableFeedback.Highlight />
       {dot ? <View style={[styles.dot, { backgroundColor: dot }]} /> : null}
+      {icon ? <IconSymbol name={icon} size={20} color={t.accentText} /> : null}
       <View style={styles.rowBody}>
         <Text style={[styles.rowTitle, { color: t.text }]}>{title}</Text>
         {subtitle ? (
@@ -416,6 +631,7 @@ const styles = StyleSheet.create({
   title: { ...typography.h2 },
   subtitle: { ...typography.subhead },
   body: { ...typography.body },
+  pad: { ...typography.subhead, paddingHorizontal: 16, paddingTop: 12 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -427,8 +643,7 @@ const styles = StyleSheet.create({
   rowBody: { flex: 1, gap: 2 },
   rowTitle: { ...typography.body, fontWeight: '600' },
   rowSub: { ...typography.caption },
-  recover: { ...typography.button },
-  more: { ...typography.caption, padding: 16 },
+  action: { ...typography.button },
   dot: { width: 10, height: 10, borderRadius: radii.pillFull },
   footer: { alignItems: 'center', gap: 8, paddingTop: 8 },
   sampler: { ...typography.caption, fontWeight: '600' },

@@ -184,3 +184,39 @@ export function compareGroups(
   const kb = b.code ?? b.name;
   return ka.localeCompare(kb, 'es', { numeric: true, sensitivity: 'base' });
 }
+
+/** El parámetro `seccion` del árbol para una fila de «otro grupo». */
+export function sectionParam(
+  b: Pick<StageBucket, 'stage' | 'segment'>,
+): string {
+  if (!b.stage) return '?';
+  if (b.stage === 'com') return `COM:${b.segment ?? 'none'}`;
+  return b.stage.toUpperCase();
+}
+
+/** Los grupos de una sección del árbol (sin sección, todos). */
+export function groupsInSection<
+  G extends Pick<GroupWithMonitors, 'stage' | 'segment'>,
+>(groups: readonly G[], section?: string): G[] {
+  if (!section) return [...groups];
+  if (section === '?') return groups.filter((g) => !g.stage);
+  const [stage, segment] = section.toLowerCase().split(':');
+  return groups.filter((g) => {
+    if (g.stage !== stage) return false;
+    if (!segment) return true;
+    return segment === 'none' ? !g.segment : g.segment === segment;
+  });
+}
+
+/** El nombre de una sección del árbol («COM II»). */
+export function sectionLabel(section: string): string {
+  const b = BUCKETS.find((x) => sectionParam(x) === section);
+  if (b) return b.label;
+  return section === 'COM' ? 'COM' : section;
+}
+
+/** El color de etapa de una sección (para su punto). */
+export function sectionStage(section: string): Stage | null {
+  if (section === '?') return null;
+  return (section.split(':')[0].toLowerCase() as Stage) ?? null;
+}

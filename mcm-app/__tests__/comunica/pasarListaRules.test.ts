@@ -170,11 +170,12 @@ describe('grupos', () => {
 });
 
 describe('marcas', () => {
-  it('tocar: sin marcar → vino → no vino → vino; nunca desmarca', () => {
+  it('tocar: sin marcar → vino → no vino → sin marcar; lo matizado, a vino', () => {
     expect(nextMarkOnTap(null)).toBe('yes');
     expect(nextMarkOnTap('yes')).toBe('no_unjustified');
-    expect(nextMarkOnTap('no_unjustified')).toBe('yes');
+    expect(nextMarkOnTap('no_unjustified')).toBeNull();
     expect(nextMarkOnTap('partial')).toBe('yes');
+    expect(nextMarkOnTap('no_justified')).toBe('yes');
   });
   it('recuentos y rachas', () => {
     expect(countMarks(['yes', 'partial', 'no_justified', null])).toEqual({

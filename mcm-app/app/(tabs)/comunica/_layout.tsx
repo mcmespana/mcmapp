@@ -5,7 +5,7 @@
 // su `Stack`, como `contigo/`:
 //
 //   index    → la puerta: área nativa o la WebView de siempre (el legado).
-//   lista    → marcar la lista de un grupo en una sesión (Pasar Lista).
+//   pasar-lista/grupos, pasar-lista/[groupId], …/historial → Pasar Lista.
 //   acceso-codigo, acceso-elegir → entrar (plan 02; «Entra en tu área» es la
 //              propia puerta cuando no hay sesión).
 //   yo       → tu cuenta y salir.
@@ -48,7 +48,18 @@ export default function ComunicaLayout() {
         }}
       >
         <Stack.Screen name="index" options={{ title: 'Comunica' }} />
-        <Stack.Screen name="lista" options={{ title: 'Lista' }} />
+        <Stack.Screen
+          name="pasar-lista/grupos"
+          options={{ title: 'Pasar lista' }}
+        />
+        <Stack.Screen
+          name="pasar-lista/[groupId]/index"
+          options={{ title: 'Lista' }}
+        />
+        <Stack.Screen
+          name="pasar-lista/[groupId]/historial"
+          options={{ title: 'Historial de listas' }}
+        />
         <Stack.Screen name="acceso-codigo" options={{ title: 'Código' }} />
         <Stack.Screen name="acceso-elegir" options={{ title: 'Elegir' }} />
         <Stack.Screen name="yo" options={{ title: 'Tu cuenta' }} />

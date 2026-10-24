@@ -101,3 +101,67 @@ export function applyDraft(
     },
   };
 }
+
+/** ¿Hay algo que guardar? Sin marcas, no; con la lista pasada e igual, tampoco. */
+export function hasSomethingToSave(
+  roll: RollDetail,
+  draft: RollDraft,
+): boolean {
+  if (!Object.values(draft.marks).some((m) => m)) return false;
+  if (roll.roll?.status === 'taken' && !isDirty(roll, draft)) return false;
+  return true;
+}
+
+/**
+ * El botón de «todos»: sin ninguna marca, «Han venido todos»; con alguna, «El
+ * resto ha venido (N)». Solo rellena lo sin marcar. Sin nadie por marcar, nada.
+ */
+export function fillRestLabel(draft: RollDraft): string | null {
+  const marks = Object.values(draft.marks);
+  const unmarked = marks.filter((m) => !m).length;
+  if (unmarked === 0) return null;
+  return unmarked === marks.length
+    ? 'Han venido todos'
+    : `El resto ha venido (${unmarked})`;
+}
+
+/**
+ * Lo que no ha quedado guardado (`sticpa_pl_check_saved`): lo que vuelve en
+ * `notSaved` y cualquier marca mandada que, releída, no está igual.
+ */
+export function checkSaved(
+  sent: Pick<RollWrite, 'marks'>,
+  reread: RollDetail,
+  notSaved: readonly { personId: string }[],
+): string[] {
+  const missing = new Set(notSaved.map((n) => n.personId));
+  const now = new Map(reread.entries.map((e) => [e.person.id, e.mark]));
+  for (const [id, mark] of Object.entries(sent.marks)) {
+    if (now.get(id) !== mark) missing.add(id);
+  }
+  return [...missing];
+}
+
+/** El borrador que queda tras guardar: solo lo que no entró. */
+export function draftAfterSave(
+  draft: RollDraft,
+  missing: readonly string[],
+): RollDraft | null {
+  if (missing.length === 0) return null;
+  const keep = new Set(missing);
+  const marks: RollDraft['marks'] = {};
+  const notes: RollDraft['notes'] = {};
+  for (const id of Object.keys(draft.marks)) {
+    if (keep.has(id)) {
+      marks[id] = draft.marks[id];
+      notes[id] = draft.notes[id] ?? '';
+    }
+  }
+  return { marks, notes };
+}
+
+/** «Te faltan…»: con más de `max`, se enseñan `max - 1` y «Y N más». */
+export function pendingDisplay<T>(items: readonly T[], max = 4) {
+  if (items.length <= max) return { shown: [...items], more: 0 };
+  return { shown: items.slice(0, max - 1), more: items.length - (max - 1) };
+}
