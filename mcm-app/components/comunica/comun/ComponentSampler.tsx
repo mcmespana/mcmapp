@@ -11,6 +11,7 @@ import typography from '@/constants/typography';
 import type { Mark, PersonSummary } from '@/services/comunica/contract';
 import { MARK_LABEL, nextMarkOnTap } from '@/utils/comunica/marks';
 import { addDays, madridDay } from '@/utils/comunica/madrid';
+import AreaPrimaryButton from './AreaPrimaryButton';
 import AreaScreen from './AreaScreen';
 import { AreaSkeleton, OfflineNotice } from './AreaState';
 import DateCapsule from './DateCapsule';
@@ -63,6 +64,16 @@ export default function ComponentSampler() {
 
   return (
     <AreaScreen>
+      <Group title="AreaPrimaryButton (la acción principal, una por pantalla)">
+        <AreaPrimaryButton label="Guardar lista" onPress={() => {}} />
+        <View style={styles.wrap}>
+          <StatusChip label="Acento" tone="accent" />
+          <Text style={[styles.caption, { color: t.accentText }]}>
+            Enlace en el acento del área
+          </Text>
+        </View>
+      </Group>
+
       <Group title="RecordCard">
         <RecordCard
           featured
