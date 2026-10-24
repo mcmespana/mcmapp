@@ -12,6 +12,22 @@
 import { z } from 'zod';
 import {
   type CodeRequest,
+  CoordinationHome,
+  CoordinationSummary,
+  FollowUpsResponse,
+  type FollowUpWrite,
+  FollowUpWriteResult,
+  MeetingsResponse,
+  type MeetingWrite,
+  MeetingWriteResult,
+  MonitorDetail,
+  MonitorsRoll,
+  type MonitorsRollKind,
+  type MonitorsRollWrite,
+  MonitorsRollWriteResult,
+  type SessionTodayWrite,
+  SessionTodayResult,
+  type Stage,
   type ExchangeRequest,
   WebPass,
   type WebPassRequest,
@@ -83,11 +99,43 @@ export interface ComunicaApi {
     membershipId: string,
     body: MembershipGroupWrite,
   ): Promise<WriteResult>;
+
+  // Coordinación (plan 06).
+  getCoordination(opts?: ReadOptions): Promise<CoordinationHome>;
+  getCoordinationSummary(opts?: ReadOptions): Promise<CoordinationSummary>;
+  getMonitorsRoll(
+    params: MonitorsRollParams,
+    opts?: ReadOptions,
+  ): Promise<MonitorsRoll>;
+  saveMonitorsRoll(
+    sessionId: string,
+    body: MonitorsRollWrite,
+  ): Promise<MonitorsRollWriteResult>;
+  getMeetings(opts?: ReadOptions): Promise<MeetingsResponse>;
+  createMeeting(body: MeetingWrite): Promise<MeetingWriteResult>;
+  getMonitor(monitorId: string, opts?: ReadOptions): Promise<MonitorDetail>;
+  /** Nunca se guarda: lo que una persona escribió sobre otra. */
+  getFollowUps(monitorId: string): Promise<FollowUpsResponse>;
+  createFollowUp(
+    monitorId: string,
+    body: FollowUpWrite,
+  ): Promise<FollowUpWriteResult>;
+  createSessionToday(
+    eventId: string,
+    body: SessionTodayWrite,
+  ): Promise<SessionTodayResult>;
   /**
    * Cómo pedir una foto (`photoUrl`): con el servidor de verdad, la URL con el
    * token; con el falso, su imagen inventada. Ninguna pantalla importa el falso.
    */
   photoSource(url: string): PhotoSource;
+}
+
+/** Qué lista de monitores: la semanal (de una etapa) o la de una reunión. */
+export interface MonitorsRollParams {
+  kind: MonitorsRollKind;
+  stage?: Stage;
+  session?: string;
 }
 
 /** Lo que entiende `expo-image` como `source`. */
@@ -316,6 +364,81 @@ export function createHttpClient({
       request('PUT', `/v1/people/${enc(id)}/scarf`, WriteResult, body),
     assignGroup: (mid, body) =>
       request('PUT', `/v1/memberships/${enc(mid)}/group`, WriteResult, body),
+    getCoordination: (opts) =>
+      request(
+        'GET',
+        `/v1/coordination${q(opts)}`,
+        CoordinationHome,
+        undefined,
+        READ_RETRIES,
+      ),
+    getCoordinationSummary: (opts) =>
+      request(
+        'GET',
+        `/v1/coordination/summary${q(opts)}`,
+        CoordinationSummary,
+        undefined,
+        READ_RETRIES,
+      ),
+    getMonitorsRoll: (params, opts) => {
+      const query = [
+        `kind=${enc(params.kind)}`,
+        params.stage ? `stage=${enc(params.stage)}` : '',
+        params.session ? `session=${enc(params.session)}` : '',
+        opts?.fresh ? 'fresh=1' : '',
+      ]
+        .filter(Boolean)
+        .join('&');
+      return request(
+        'GET',
+        `/v1/coordination/monitors-roll?${query}`,
+        MonitorsRoll,
+        undefined,
+        READ_RETRIES,
+      );
+    },
+    saveMonitorsRoll: (sid, body) =>
+      request(
+        'PUT',
+        `/v1/sessions/${enc(sid)}/monitors-roll`,
+        MonitorsRollWriteResult,
+        body,
+      ),
+    getMeetings: (opts) =>
+      request(
+        'GET',
+        `/v1/coordination/meetings${q(opts)}`,
+        MeetingsResponse,
+        undefined,
+        READ_RETRIES,
+      ),
+    createMeeting: (body) =>
+      request('POST', '/v1/meetings', MeetingWriteResult, body),
+    getMonitor: (id, opts) =>
+      request(
+        'GET',
+        `/v1/monitors/${enc(id)}${q(opts)}`,
+        MonitorDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    // Como la salud: no se reintenta ni se guarda; o llega, o «sin conexión».
+    getFollowUps: (id) =>
+      request('GET', `/v1/monitors/${enc(id)}/follow-ups`, FollowUpsResponse),
+    createFollowUp: (id, body) =>
+      request(
+        'POST',
+        `/v1/monitors/${enc(id)}/follow-ups`,
+        FollowUpWriteResult,
+        body,
+      ),
+    createSessionToday: (eventId, body) =>
+      request(
+        'POST',
+        `/v1/events/${enc(eventId)}/sessions/today`,
+        SessionTodayResult,
+        body,
+      ),
     photoSource: (url) => {
       // `expo-image` pide la foto él solo: el token va en la cabecera. Si aún
       // no hay token de acceso, sin cabecera (dará 401 y saldrán las iniciales).

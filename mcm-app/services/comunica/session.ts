@@ -245,6 +245,16 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     createNotice: authed((id, b) => api.createNotice(id, b)),
     setScarf: authed((id, b) => api.setScarf(id, b)),
     assignGroup: authed((id, b) => api.assignGroup(id, b)),
+    getCoordination: authed((o) => api.getCoordination(o)),
+    getCoordinationSummary: authed((o) => api.getCoordinationSummary(o)),
+    getMonitorsRoll: authed((p, o) => api.getMonitorsRoll(p, o)),
+    saveMonitorsRoll: authed((s, b) => api.saveMonitorsRoll(s, b)),
+    getMeetings: authed((o) => api.getMeetings(o)),
+    createMeeting: authed((b) => api.createMeeting(b)),
+    getMonitor: authed((id, o) => api.getMonitor(id, o)),
+    getFollowUps: authed((id) => api.getFollowUps(id)),
+    createFollowUp: authed((id, b) => api.createFollowUp(id, b)),
+    createSessionToday: authed((id, b) => api.createSessionToday(id, b)),
     photoSource: (url) => api.photoSource(url),
   };
 }

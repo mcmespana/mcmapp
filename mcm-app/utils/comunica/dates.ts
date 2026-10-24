@@ -49,6 +49,12 @@ export function shortDay(day: string): string {
   return `${WEEKDAYS[weekday(day)].slice(0, 3)} ${parts(day).d}`;
 }
 
+/** «sáb 15 nov» (el `D j M` del plugin). */
+export function shortDayMonth(day: string): string {
+  const { m, d } = parts(day);
+  return `${WEEKDAYS[weekday(day)].slice(0, 3)} ${d} ${MONTHS[m - 1].slice(0, 3)}`;
+}
+
 /** Día y mes de la cápsula: `{ day: '25', month: 'OCT' }`. */
 export function capsule(day: string): { day: string; month: string } {
   const { m, d } = parts(day);

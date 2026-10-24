@@ -68,6 +68,8 @@ import {
   type PersonaId,
 } from './fixtures';
 import { madridDay, madridInstant } from '@/utils/comunica/madrid';
+import { broadestScope, type CoordRelation } from '@/utils/comunica/scope';
+import { createCoordinationRoutes, pendingMeetingOf } from './coordination';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export interface FakeControls {
@@ -109,7 +111,29 @@ const PERSONA_ROLES: Record<PersonaId, { roles: Role[]; scope: Me['scope'] }> =
     coordination: { roles: ['monitor', 'coordination'], scope: 'delegation' },
     accompaniment: { roles: ['accompaniment'], scope: { segments: ['com_1'] } },
     other: { roles: ['monitor'], scope: 'delegation' },
+    // Coordinación (plan 06).
+    coordinationCom2: {
+      roles: ['monitor', 'coordination'],
+      scope: { stages: ['com'], segments: ['com_2'] },
+    },
+    both: {
+      roles: ['monitor', 'coordination', 'accompaniment'],
+      scope: 'delegation',
+    },
   };
+
+/**
+ * Las relaciones de coordinación VIGENTES de cada persona de prueba (etapa y
+ * segmento de su grupo). El alcance es la más amplia (`broadestScope`).
+ */
+const COORD_RELATIONS: Record<PersonaId, CoordRelation[]> = {
+  monitor: [],
+  coordination: [{}],
+  accompaniment: [],
+  other: [],
+  coordinationCom2: [{ stage: 'com', segment: 'com_2' }],
+  both: [{}],
+};
 
 export interface FakeServerOptions {
   /**
@@ -436,7 +460,29 @@ export function createFakeServer(
 
   const notify = () => listeners.forEach((l) => l());
 
-  const server: FakeServer = {
+  // Coordinación (plan 06): sus rutas viven en `coordination.ts`.
+  const coordination = createCoordinationRoutes({
+    data: () => data,
+    gate: (route, write) => gate(route, write),
+    persona: () => current,
+    roles: () => PERSONA_ROLES[current].roles,
+    coordScope: () =>
+      roles().includes('coordination')
+        ? broadestScope(COORD_RELATIONS[current])
+        : null,
+    delegationId,
+    now,
+    nowIso,
+    today,
+    seen: seenClientIds,
+    bumpWrites: (n = 1) => {
+      writeCount += n;
+    },
+  });
+
+  // Sin `...coordination` dentro del literal: Babel evaluaría los getters de
+  // abajo (`writeCount` se quedaría en 0). Se juntan al final.
+  const server: Omit<FakeServer, keyof typeof coordination> = {
     get controls() {
       return controls;
     },
@@ -665,9 +711,7 @@ export function createFakeServer(
         data.groups.filter((g) => g.delegationId === did).map((g) => g.id),
       );
       const events = data.events.filter((e) => e.delegationId === did);
-      const meeting = data.sessions.find(
-        (s) => s.delegationId === did && s.kind === 'meeting' && s.date <= day,
-      );
+      const meeting = pendingMeetingOf(data, did, now());
       const isCoordination =
         PERSONA_ROLES[current].roles.includes('coordination');
       return TodayResponse.parse({
@@ -691,9 +735,7 @@ export function createFakeServer(
           })),
         eventsThisSeason: events.length,
         pendingMeeting:
-          isCoordination &&
-          meeting &&
-          !data.rolls.some((r) => r.sessionId === meeting.id)
+          isCoordination && meeting
             ? {
                 sessionId: meeting.id,
                 date: meeting.date,
@@ -757,6 +799,7 @@ export function createFakeServer(
           writeCount += 1; // la lista
         }
         roll.status = 'taken';
+        data.rollTakers[`${sid}:${gid}`] = persona().personId;
         for (const [pid, mark] of Object.entries(write.marks)) {
           if (!g.participantIds.includes(pid)) {
             notSaved.push({ personId: pid, reason: 'not_in_group' });
@@ -1029,13 +1072,26 @@ export function createFakeServer(
       const m = data.memberships.find(
         (x) => x.id === mid && x.delegationId === delegationId(),
       );
-      if (!m) throw forbidden();
+      // La de un MONITOR sin grupo (plan 06): misma ruta, otra relación.
+      const mm = data.monitorMemberships.find(
+        (x) => x.id === mid && x.delegationId === delegationId(),
+      );
+      if (!m && !mm) throw forbidden();
       const g = myGroup(w.groupId);
       if (controls.seasonClosed) {
         throw validation('season_closed', 'El curso está cerrado');
       }
-      g.participantIds.push(m.personId);
-      data.memberships = data.memberships.filter((x) => x.id !== mid);
+      if (m) {
+        g.participantIds.push(m.personId);
+        data.memberships = data.memberships.filter((x) => x.id !== mid);
+      } else if (mm) {
+        g.monitorIds.push(mm.personId);
+        data.monitorMemberships = data.monitorMemberships.filter(
+          (x) => x.id !== mid,
+        );
+        const prof = data.monitorProfiles[mm.personId];
+        if (prof) prof.groupsSince[g.id] = today();
+      }
       writeCount += 1;
       const result = WriteResult.parse({
         clientId: w.clientId,
@@ -1050,5 +1106,5 @@ export function createFakeServer(
       return { uri: abstractImage(url), cacheKey: url };
     },
   };
-  return server;
+  return Object.assign(server, coordination);
 }
