@@ -1,32 +1,40 @@
 // components/comunica/comun/theme.ts
 //
-// El color del área privada nativa, en UN sitio (plan 03 §2).
+// El color del área privada nativa, en UN sitio (plan 03 §2). Territorio
+// «Comunica» (decisión `territorio` = A, 21/10/2026; fila en `design.md` §2):
+// estructura y tokens no cromáticos de la app, color del área privada web.
+// Los valores viven en `ComunicaColors` (`constants/colors.ts`); aquí se decide
+// qué va como relleno y qué como texto en cada modo, y nada de
+// `components/comunica/` lee `brand` ni hex por su cuenta.
 //
-// ⚠️ PROVISIONAL. Falta la decisión `territorio` del propietario (¿territorio
-// «Comunica» con su acento y el degradado solo en la acción principal, o
-// institucional puro?). Mientras tanto el área usa los tokens de la app, y
-// todo lo que tiene color en `components/comunica/` y en sus pantallas sale de
-// aquí: cuando se decida, se cambia este fichero y nada más.
-//
-// De dónde sale cada cosa, hoy:
-//   · Acento: el morado LC de la pestaña Comunica (`TabHeaderColors.comunica`,
-//     opaco: `brand.purple`). Como relleno, en los dos modos; como texto o
-//     icono, el rol `link` (el morado no se lee en oscuro, `design.md` §3).
+//   · Acento: el violeta Comunica. Como relleno, el mismo en los dos modos
+//     (texto blanco encima); como texto, icono o borde, `accentText`, que en
+//     oscuro es un violeta más claro con contraste AA sobre la card.
+//   · Degradado de marca (azul → violeta → magenta): SOLO en la acción
+//     principal de cada pantalla, a través de `AreaPrimaryButton`. Un test
+//     (`__tests__/comunica/territorio.test.ts`) impide usarlo en otro sitio.
 //   · Marcas de asistencia: los colores de sistema que ya hay (`SwipeColors`
 //     de Apple para el verde y el rojo, `ToastColors.warning` para el ámbar,
 //     `brand.info` para «Parcial»). Siempre como RELLENO con el icono encima en
-//     `onColor()`, nunca como texto suelto. Si se decide el territorio, aquí
-//     cabría una paleta propia de estados.
+//     `onColor()`, nunca como texto suelto.
 //   · Etapas: los colores de la marca de cada una (MIC rojo, COM verde, LC
-//     morado), como el punto de color del plugin.
+//     morado), como el punto de color del plugin; los segmentos COM II y COM
+//     III, los suyos del plugin.
+//   · Pañuelos y avisos: los del plugin, como tokens del territorio.
 
 import brand, {
+  ComunicaColors,
   SwipeColors,
   SystemGray,
   themeColors,
   ToastColors,
 } from '@/constants/colors';
-import type { Scarf, SetMark, Stage } from '@/services/comunica/contract';
+import type {
+  Scarf,
+  Segment,
+  SetMark,
+  Stage,
+} from '@/services/comunica/contract';
 import { hexAlpha, onColor, readableOn } from '@/utils/colorUtils';
 
 /** Relleno de los estados de una marca. */
@@ -45,33 +53,28 @@ export const STAGE_COLOR: Record<Stage, string> = {
   apoyo: SystemGray.light.gray,
 };
 
-/**
- * Pañuelos (plan 05). ⚠️ Provisional, como todo este fichero: el plugin usa
- * siete hex fijos propios y la app no los tiene; hasta que se decida
- * `territorio` (que también decide estos), los más parecidos de la app.
- * Siempre como RELLENO de un punto, con el nombre escrito al lado.
- */
-export const SCARF_FILL: Record<Scarf, string> = {
-  none: SystemGray.light.gray,
-  red: SwipeColors.remove,
-  green: SwipeColors.add,
-  blue: brand.info,
-  yellow: brand.yellow,
-  cross: brand.purple,
-  unknown: SystemGray.light.gray3,
+/** Punto de color de cada segmento del COM (verde → violeta → magenta). */
+export const SEGMENT_COLOR: Record<Segment, string> = {
+  com_1: brand.green,
+  com_2: ComunicaColors.segment.com2,
+  com_3: ComunicaColors.segment.com3,
 };
 
 /**
- * Escala de los avisos de comportamiento (ámbar → naranja → rojo), igual en
- * claro y en oscuro para que «el naranja» signifique siempre lo mismo. ⚠️
- * Provisional (`territorio`): el plugin tiene sus hex; aquí, los de la app.
- * El número de dentro, con `onColor()`.
+ * Pañuelos (plan 05): los siete del plugin. Siempre como RELLENO de un punto,
+ * con el nombre escrito al lado.
  */
-export const NOTICE_FILL: Record<1 | 2 | 3, string> = {
-  1: brand.yellow,
-  2: ToastColors.warning,
-  3: SwipeColors.remove,
-};
+export const SCARF_FILL: Record<Scarf, string> = ComunicaColors.scarf;
+
+/**
+ * Escala de los avisos de comportamiento (ámbar → naranja → rojo), igual en
+ * claro y en oscuro para que «el naranja» signifique siempre lo mismo. El
+ * número de dentro, con `onColor()`.
+ */
+export const NOTICE_FILL: Record<1 | 2 | 3, string> = ComunicaColors.notice;
+
+/** El degradado de marca, solo para `AreaPrimaryButton`. */
+export const BRAND_GRADIENT = ComunicaColors.gradient;
 
 export type ChipTone =
   'neutral' | 'positive' | 'warning' | 'negative' | 'accent';
@@ -79,14 +82,18 @@ export type ChipTone =
 /** Roles de color del área para el modo activo. */
 export function comunicaTheme(isDark: boolean) {
   const base = themeColors(isDark);
-  const accentFill = brand.purple;
+  const accentFill = ComunicaColors.accent;
   return {
     ...base,
     /** Relleno de la acción principal y lo que identifica al área. */
     accentFill,
     onAccent: onColor(accentFill),
     /** Acento como texto, icono o borde: legible en los dos modos. */
-    accentText: base.link,
+    accentText: isDark
+      ? ComunicaColors.accentText.dark
+      : ComunicaColors.accentText.light,
+    /** Texto e icono sobre el degradado de la acción principal. */
+    onGradient: '#fff',
     /** Fondo suave de los avisos ámbar («Te faltan 2 listas»). */
     warningSoft: hexAlpha(ToastColors.warning, isDark ? '33' : '1F'),
     warningText: isDark ? brand.yellow : base.text,

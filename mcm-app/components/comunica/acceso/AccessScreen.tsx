@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import AppTextField from '@/components/ui/AppTextField';
 import PageContainer from '@/components/ui/PageContainer';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -22,8 +21,10 @@ import { radii } from '@/constants/uiStyles';
 import { getComunicaApi } from '@/services/comunica';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { h } from '@/utils/haptics';
+import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import { accessErrorText, looksLikeDni, looksLikeEmail } from './copy';
+import { putCodeHandoff } from './handoff';
 
 export default function AccessScreen({ notice }: { notice?: string }) {
   const t = useComunicaTheme();
@@ -47,9 +48,10 @@ export default function AccessScreen({ notice }: { notice?: string }) {
     try {
       const body = via === 'email' ? { email: value } : { dni: value };
       const { sentTo } = await getComunicaApi().requestCode(body);
+      // El correo o el DNI van en memoria, no en la URL (`handoff.ts`).
       router.push({
         pathname: '/comunica/acceso-codigo',
-        params: { via, value, sentTo },
+        params: { k: putCodeHandoff({ via, value, sentTo }) },
       });
     } catch (e) {
       h.error();
@@ -151,12 +153,11 @@ export default function AccessScreen({ notice }: { notice?: string }) {
               </Text>
             ) : null}
 
-            <AppPrimaryButton
+            <AreaPrimaryButton
               label="Recibir código"
               onPress={send}
               disabled={!valid}
               loading={sending}
-              color={t.accentFill}
             />
 
             <PressableFeedback

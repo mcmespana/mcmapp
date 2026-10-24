@@ -2,7 +2,7 @@
 // 7; el globo de `js/stic-pasar-lista.js` l.1744-1840). Se pide al abrir, solo
 // con conexión, y nunca se guarda en el móvil (`useHealth`, `persist: false`).
 
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Skeleton } from 'heroui-native';
 import BottomSheet from '@/components/BottomSheet';
@@ -24,13 +24,17 @@ interface Props {
 }
 
 export default function HealthSheet({ person, onClose }: Props) {
+  // La última persona abierta se queda mientras la hoja se cierra: si no, la
+  // animación de salida bajaba una hoja vacía y sin título.
+  const [shown, setShown] = useState(person);
+  if (person && person !== shown) setShown(person);
   return (
     <BottomSheet
       visible={!!person}
       onClose={onClose}
-      title={person ? `${person.firstName} ${person.lastName}` : ''}
+      title={shown ? `${shown.firstName} ${shown.lastName}` : ''}
     >
-      {person ? <HealthBody personId={person.id} /> : <View />}
+      {shown ? <HealthBody personId={shown.id} /> : <View />}
     </BottomSheet>
   );
 }

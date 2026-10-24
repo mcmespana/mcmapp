@@ -3,7 +3,7 @@
 // sin subir, avisa antes.
 
 import React, { useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
@@ -12,12 +12,14 @@ import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { signOut } from '@/services/comunica/session';
 import { useMe } from '@/hooks/comunica/useMe';
+import { useOpenLegacy } from '@/hooks/comunica/useOpenLegacy';
 import { useOutbox } from '@/hooks/comunica/useOutbox';
 import { h } from '@/utils/haptics';
 import AreaScreen from '../comun/AreaScreen';
 import RoleChip from '../comun/RoleChip';
 import Section from '../comun/Section';
 import { useArea } from '../comun/ComunicaAreaProvider';
+import { confirmAction } from '../comun/confirm';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import { initials } from '../comun/PersonRow';
 
@@ -36,6 +38,7 @@ export default function AccountScreen() {
   const { session } = useArea();
   const me = useMe().me ?? session.me;
   const { pending } = useOutbox();
+  const openLegacy = useOpenLegacy();
   const [leaving, setLeaving] = useState(false);
 
   const leave = async () => {
@@ -46,19 +49,16 @@ export default function AccountScreen() {
     router.dismissAll();
   };
 
-  const confirmLeave = () => {
+  // Se pregunta SIEMPRE, también en web (`confirmAction`): antes allí salía
+  // sin preguntar y se llevaba por delante lo que estuviera sin subir.
+  const confirmLeave = async () => {
     const warn =
       pending.length > 0
         ? `Tienes ${pending.length === 1 ? 'una lista' : `${pending.length} listas`} sin subir. Si sales, se pierde${pending.length === 1 ? '' : 'n'}.`
         : 'Se borra del móvil todo lo del área. Para volver, te mandamos otro código.';
-    if (Platform.OS === 'web') {
-      void leave();
-      return;
+    if (await confirmAction('¿Salir del área?', warn, 'Salir', true)) {
+      await leave();
     }
-    Alert.alert('¿Salir del área?', warn, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salir', style: 'destructive', onPress: () => void leave() },
-    ]);
   };
 
   if (!me) return null;
@@ -97,13 +97,17 @@ export default function AccountScreen() {
         <Row
           icon="list.bullet.clipboard"
           label="Abrir la versión web"
-          onPress={() => router.push('/comunica/web')}
+          // La portada del legado con la sesión puesta (plan 10 §2): un pase
+          // de 2 minutos, no la web pidiendo entrar otra vez.
+          onPress={() =>
+            void openLegacy({ internalpage: 'single_stic_home' }, 'Comunica')
+          }
         />
         <Row
           icon="lock"
           label={leaving ? 'Saliendo…' : 'Salir'}
           destructive
-          onPress={confirmLeave}
+          onPress={() => void confirmLeave()}
         />
       </Section>
       <Text style={[styles.foot, { color: t.textMuted }]}>

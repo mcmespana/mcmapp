@@ -3,7 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { router } from 'expo-router';
 
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import { usePreviewChannel } from '@/contexts/PreviewChannelContext';
+import { ComunicaColors } from '@/constants/colors';
 import { durations } from '@/constants/animations';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
@@ -173,12 +175,21 @@ function Chips<K extends string>({
             key={key}
             onPress={() => onChange(key)}
             accessibilityRole={multi ? 'checkbox' : 'radio'}
-            accessibilityState={multi ? { checked: on } : { selected: on }}
+            accessibilityState={
+              multi ? { checked: on, selected: on } : { selected: on }
+            }
             accessibilityLabel={label}
             style={[styles.chip, on && styles.chipOn]}
           >
             <PressableFeedback.Highlight />
-            <Text style={styles.chipText}>{label}</Text>
+            {/* Elegido: relleno del acento del área y un check, que se vea
+                sin tener que comparar dos bordes casi iguales. */}
+            {on ? (
+              <IconSymbol name="checkmark" size={14} color={ON_INK} />
+            ) : null}
+            <Text style={[styles.chipText, on && { color: ON_INK }]}>
+              {label}
+            </Text>
           </PressableFeedback>
         );
       })}
@@ -208,6 +219,9 @@ function LabButton({
   );
 }
 
+/** Tinta sobre el violeta del chip elegido (6,7:1). */
+const ON_INK = '#fff';
+
 const styles = StyleSheet.create({
   card: {
     width: '100%',
@@ -235,16 +249,19 @@ const styles = StyleSheet.create({
   hint: { ...typography.caption, color: 'rgba(255,255,255,0.75)' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
-    minHeight: 36,
+    minHeight: 44,
     paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     justifyContent: 'center',
     borderRadius: radii.sm,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
   },
   chipOn: {
-    backgroundColor: 'rgba(230, 140, 205, 0.35)',
-    borderColor: 'rgba(240, 170, 220, 0.95)',
+    backgroundColor: ComunicaColors.accent,
+    borderColor: ComunicaColors.accentText.dark,
   },
   chipText: { ...typography.caption, color: '#fff', fontWeight: '600' },
   button: {

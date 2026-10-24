@@ -63,28 +63,33 @@ export default function PersonMarks({
       {badges.noPhotos ? pill(MARK_TEXT.noPhotos, neutral) : null}
       {badges.healthNote ? (
         onHealth ? (
+          // 44 pt de área táctil DE VERDAD, con la pastilla centrada dentro:
+          // con `hitSlop` se quedaba en ~40 y se metía en la fila de al lado.
           <PressableFeedback
             onPress={() => {
               h.select();
               onHealth();
             }}
-            hitSlop={10}
             accessibilityRole="button"
             accessibilityLabel={HEALTH_MARK_A11Y}
-            style={[
-              styles.pill,
-              styles.health,
-              { backgroundColor: warn.background },
-            ]}
+            style={styles.healthTarget}
           >
-            <IconSymbol
-              name="cross.case.fill"
-              size={12}
-              color={t.warningIcon}
-            />
-            <Text style={[styles.text, { color: warn.text }]}>
-              {MARK_TEXT.healthNote}
-            </Text>
+            <View
+              style={[
+                styles.pill,
+                styles.health,
+                { backgroundColor: warn.background },
+              ]}
+            >
+              <IconSymbol
+                name="cross.case.fill"
+                size={12}
+                color={t.warningIcon}
+              />
+              <Text style={[styles.text, { color: warn.text }]}>
+                {MARK_TEXT.healthNote}
+              </Text>
+            </View>
           </PressableFeedback>
         ) : (
           <View
@@ -110,12 +115,19 @@ export default function PersonMarks({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
   pill: {
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: radii.xs,
   },
   health: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  healthTarget: { minHeight: 44, minWidth: 44, justifyContent: 'center' },
   text: { ...typography.footnote, fontWeight: '600' },
 });

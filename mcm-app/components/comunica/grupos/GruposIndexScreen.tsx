@@ -61,7 +61,8 @@ import {
 } from '@/utils/comunica/people';
 import { groupTitle } from '@/utils/comunica/marks';
 import { levelDotOpacity } from '@/utils/comunica/schoolLevels';
-import AreaState from '../comun/AreaState';
+import AreaScreen from '../comun/AreaScreen';
+import AreaState, { isNetwork, OfflineNotice } from '../comun/AreaState';
 import AreaSwitch from '../comun/AreaSwitch';
 import PersonMarks, { marksA11y } from '../comun/PersonMarks';
 import PersonRow from '../comun/PersonRow';
@@ -98,14 +99,30 @@ export default function GruposIndexScreen({ view }: { view: GruposView }) {
     isPending: boolean;
     refetch: () => unknown;
   } = view === 'groups' ? groups : people;
+  // Sin datos todavía (cargando, error, sin acceso), los estados van dentro
+  // de `AreaScreen`: así respetan la cabecera transparente de iOS. Con datos,
+  // la lista; si además falla la red, el aviso va DENTRO de la lista.
   return (
     <>
       <Stack.Screen
         options={{ title: 'Grupos y fichas', headerLargeTitle: false }}
       />
-      <AreaState query={main} skeleton={view === 'groups' ? 'cards' : 'list'}>
-        {() => <IndexList key={view} view={view} />}
-      </AreaState>
+      {main.data === undefined ? (
+        <AreaScreen onRefresh={async () => main.refetch()}>
+          <AreaState
+            query={main}
+            skeleton={view === 'groups' ? 'cards' : 'list'}
+          >
+            {() => null}
+          </AreaState>
+        </AreaScreen>
+      ) : (
+        <IndexList
+          key={view}
+          view={view}
+          offline={!!main.error && isNetwork(main.error)}
+        />
+      )}
     </>
   );
 }
@@ -140,7 +157,7 @@ type Item =
   | { kind: 'loose'; key: string; count: number }
   | { kind: 'footer'; key: string };
 
-function IndexList({ view }: { view: GruposView }) {
+function IndexList({ view, offline }: { view: GruposView; offline: boolean }) {
   const t = useComunicaTheme();
   const router = useRouter();
   const openLegacy = useOpenLegacy();
@@ -344,6 +361,7 @@ function IndexList({ view }: { view: GruposView }) {
       case 'controls':
         return (
           <View style={styles.controls}>
+            {offline ? <OfflineNotice /> : null}
             <SegmentedControl
               options={VIEWS}
               value={view}
@@ -761,7 +779,6 @@ export function LinkButton({
       }}
       accessibilityRole="button"
       accessibilityLabel={label}
-      hitSlop={8}
       style={[styles.linkButton, { borderColor: t.accentText }]}
     >
       <Text style={[styles.linkLabel, { color: t.accentText }]}>{label}</Text>
@@ -791,7 +808,7 @@ const styles = StyleSheet.create({
   chipsBar: { paddingVertical: 8 },
   chips: { paddingHorizontal: 16, gap: 8 },
   chip: {
-    minHeight: 36,
+    minHeight: 44,
     paddingHorizontal: 12,
     borderRadius: radii.xl,
     borderWidth: StyleSheet.hairlineWidth,
@@ -855,7 +872,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   linkButton: {
-    minHeight: 32,
+    minHeight: 44,
     paddingHorizontal: 12,
     borderRadius: radii.sm,
     borderWidth: 1,

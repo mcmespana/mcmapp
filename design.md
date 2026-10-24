@@ -79,6 +79,7 @@ paletas distintas, y la divergencia es deliberada — está decidida y cerrada
 | **Institucional** | Todo lo demás                                  | `brand` + `TabHeaderColors`                              | Fondos blancos, azul MCM, radios 8–18, sombras sutiles                 |
 | **Contigo**       | `app/(tabs)/contigo/*`, `components/contigo/*` | `WARM_LIGHT`/`WARM_DARK` (`components/contigo/theme.ts`) | Dorado y beige, radios 20–22, gradientes permitidos, serif en lecturas |
 | **Evento**        | Pantallas de un evento concreto                | `tintColor` del propio evento (`constants/events.ts`)    | Estructura institucional, acento del evento                            |
+| **Comunica**      | `app/(tabs)/comunica/*`, `components/comunica/*` (área privada nativa) | `ComunicaColors` (`constants/colors.ts`), resuelto por modo en `components/comunica/comun/theme.ts` | Estructura institucional, acento violeta `#6c4b9e` (más claro en oscuro, AA); degradado de marca azul → violeta → magenta **solo** en la acción principal (`AreaPrimaryButton`, uno por pantalla); pañuelos, avisos y COM II/III como tokens. Decisión `territorio` = A (21/10/2026) |
 
 **Regla dura:** lo compartido son la **estructura y los tokens no cromáticos**
 —spacing, radios, sombras, glass, tipografía, animación, componentes de

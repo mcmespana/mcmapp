@@ -15,6 +15,7 @@ import { h } from '@/utils/haptics';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import CodeInput from './CodeInput';
 import { accessErrorText, RESEND_AFTER_S } from './copy';
+import { clearAccessHandoffs, putChooseHandoff } from './handoff';
 
 const LENGTH = 6;
 
@@ -45,6 +46,7 @@ export default function CodeScreen({
   }, [wait]);
 
   const done = () => {
+    clearAccessHandoffs();
     h.formSuccess();
     router.dismissAll();
   };
@@ -55,12 +57,10 @@ export default function CodeScreen({
     try {
       const res = await getComunicaApi().verify(body);
       if ('choose' in res) {
+        // El código y los nombres, en memoria: nunca en la URL.
         router.push({
           pathname: '/comunica/acceso-elegir',
-          params: {
-            body: JSON.stringify(body),
-            choices: JSON.stringify(res.choose),
-          },
+          params: { k: putChooseHandoff({ body, choices: res.choose }) },
         });
         return;
       }

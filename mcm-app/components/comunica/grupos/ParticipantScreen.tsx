@@ -53,6 +53,7 @@ import {
   type Phone,
 } from '@/utils/comunica/phone';
 import { STREAK_THRESHOLD } from '@/utils/comunica/attendance';
+import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
 import PersonAvatar from '../comun/PersonAvatar';
@@ -86,28 +87,27 @@ export default function ParticipantScreen(props: Props) {
   const t = useComunicaTheme();
   const q = useParticipant(props.personId);
   const forbidden = isComunicaApiError(q.error) && q.error.code === 'forbidden';
+  // Cargando, error y sin acceso van DENTRO de `AreaScreen`: así respetan la
+  // cabecera transparente de iOS y la barra flotante, como la ficha.
   return (
     <>
       <Stack.Screen options={{ title: 'Ficha', headerLargeTitle: false }} />
-      {forbidden ? (
-        // Sin decir si existe.
-        <EmptyState
-          icon="lock"
-          title="No tienes acceso a esta ficha."
-          titleColor={t.text}
-        />
-      ) : (
-        <AreaState query={q} skeleton="cards">
-          {(profile) => (
-            <Ficha
-              {...props}
-              profile={profile}
-              generatedAt={q.generatedAt}
-              refetch={() => q.refetch()}
-            />
-          )}
-        </AreaState>
-      )}
+      <AreaScreen onRefresh={() => q.refetch()}>
+        {forbidden ? (
+          // Sin decir si existe.
+          <EmptyState
+            icon="lock"
+            title="No tienes acceso a esta ficha."
+            titleColor={t.text}
+          />
+        ) : (
+          <AreaState query={q} skeleton="cards">
+            {(profile) => (
+              <Ficha {...props} profile={profile} generatedAt={q.generatedAt} />
+            )}
+          </AreaState>
+        )}
+      </AreaScreen>
     </>
   );
 }
@@ -118,11 +118,9 @@ function Ficha({
   sessionId,
   from,
   generatedAt,
-  refetch,
 }: Props & {
   profile: ParticipantProfile;
   generatedAt: string | null;
-  refetch: () => Promise<unknown>;
 }) {
   const t = useComunicaTheme();
   const router = useRouter();
@@ -239,7 +237,7 @@ function Ficha({
   const healthItems = health.data?.items.filter((i) => i.text.trim()) ?? [];
 
   return (
-    <AreaScreen onRefresh={refetch}>
+    <>
       {/* Identidad */}
       <View style={styles.identity}>
         <PersonAvatar person={p} size={72} background={t.card} />
@@ -412,7 +410,7 @@ function Ficha({
       <View style={styles.foot}>
         <SyncBadge generatedAt={generatedAt} />
       </View>
-    </AreaScreen>
+    </>
   );
 }
 
@@ -445,19 +443,14 @@ function QuickButtons({
           WhatsApp a {first}
         </Text>
       </PressableFeedback>
-      <PressableFeedback
-        onPress={() => {
-          h.tap();
-          void openUrl(telUrl(phone));
-        }}
-        accessibilityRole="button"
+      {/* La acción principal de la ficha: el degradado de marca. */}
+      <AreaPrimaryButton
+        label={call}
+        icon="phone.fill"
+        onPress={() => void openUrl(telUrl(phone))}
         accessibilityLabel={`Llamar a ${guardian.fullName}`}
-        style={[styles.quickButton, { backgroundColor: t.accentFill }]}
-      >
-        <PressableFeedback.Scale />
-        <IconSymbol name="phone.fill" size={18} color={t.onAccent} />
-        <Text style={[styles.quickLabel, { color: t.onAccent }]}>{call}</Text>
-      </PressableFeedback>
+        style={styles.quickPrimary}
+      />
     </View>
   );
 }
@@ -507,7 +500,7 @@ function ContactRow({
             onPress={() => void openUrl(mailtoUrl(email))}
             accessibilityRole="link"
             accessibilityLabel={`Escribir a ${email}`}
-            hitSlop={6}
+            style={styles.email}
           >
             <Text style={[styles.caption, { color: t.accentText }]}>
               {email}
@@ -602,6 +595,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   quickLabel: { ...typography.button, flexShrink: 1, textAlign: 'center' },
+  quickPrimary: { minHeight: 52 },
   essentials: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   essential: {
     flexDirection: 'row',
@@ -627,6 +621,8 @@ const styles = StyleSheet.create({
   contactBody: { flex: 1, gap: 2 },
   contactName: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   contactActions: { flexDirection: 'row', gap: 8 },
+  // 44 pt de verdad (no con `hitSlop`, que se pisaba con los botones de al lado).
+  email: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   tag: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: radii.xs },
   tagText: { ...typography.footnote, fontWeight: '700' },
   round: {

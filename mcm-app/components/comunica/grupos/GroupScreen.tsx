@@ -45,27 +45,29 @@ export default function GroupScreen({ groupId }: { groupId: string }) {
   const t = useComunicaTheme();
   const title = q.data ? groupLabel(q.data.group) : 'Grupo';
   const forbidden = isComunicaApiError(q.error) && q.error.code === 'forbidden';
+  // Los estados, dentro de `AreaScreen` (cabecera de iOS y barra flotante).
   return (
     <>
       <Stack.Screen options={{ title, headerLargeTitle: false }} />
-      {forbidden ? (
-        <EmptyState
-          icon="lock"
-          title="No tienes acceso a este grupo."
-          titleColor={t.text}
-        />
-      ) : (
-        <AreaState query={q} skeleton="list">
-          {(d) => (
-            <Body
-              data={d}
-              placeholder={q.isPlaceholderData}
-              generatedAt={q.isPlaceholderData ? null : q.generatedAt}
-              refetch={() => q.refetch()}
-            />
-          )}
-        </AreaState>
-      )}
+      <AreaScreen onRefresh={() => q.refetch()}>
+        {forbidden ? (
+          <EmptyState
+            icon="lock"
+            title="No tienes acceso a este grupo."
+            titleColor={t.text}
+          />
+        ) : (
+          <AreaState query={q} skeleton="list">
+            {(d) => (
+              <Body
+                data={d}
+                placeholder={q.isPlaceholderData}
+                generatedAt={q.isPlaceholderData ? null : q.generatedAt}
+              />
+            )}
+          </AreaState>
+        )}
+      </AreaScreen>
     </>
   );
 }
@@ -74,12 +76,10 @@ function Body({
   data,
   placeholder,
   generatedAt,
-  refetch,
 }: {
   data: NonNullable<ReturnType<typeof useGroupDetail>['data']>;
   placeholder: boolean;
   generatedAt: string | null;
-  refetch: () => Promise<unknown>;
 }) {
   const t = useComunicaTheme();
   const router = useRouter();
@@ -106,7 +106,7 @@ function Body({
     });
 
   return (
-    <AreaScreen onRefresh={refetch}>
+    <>
       <View style={styles.head}>
         <Text style={[styles.meta, { color: t.textSecondary }]}>
           {groupMetaLine(group)}
@@ -231,7 +231,7 @@ function Body({
         <SyncBadge generatedAt={generatedAt} />
       </View>
       <HealthSheet person={healthFor} onClose={() => setHealthFor(null)} />
-    </AreaScreen>
+    </>
   );
 }
 
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    minHeight: 36,
+    minHeight: 44,
     paddingHorizontal: 12,
     borderRadius: radii.xl,
     borderWidth: StyleSheet.hairlineWidth,

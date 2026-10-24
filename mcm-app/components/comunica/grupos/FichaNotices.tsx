@@ -24,6 +24,7 @@ import {
   type NumberedNotice,
 } from '@/utils/comunica/notices';
 import { shortDate } from '@/utils/comunica/sessions';
+import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaSwitch from '../comun/AreaSwitch';
 import { confirmAction } from '../comun/confirm';
 import { NOTICE_FILL } from '../comun/theme';
@@ -99,11 +100,19 @@ export default function FichaNotices({
             Ningún aviso este curso.
           </Text>
         ) : null}
-        {notices.map((n) => {
+        {notices.map((n, i) => {
           const fill = NOTICE_FILL[noticeTier(n.number)];
           const upload = n.outboxKey ? uploadOf(n.outboxKey) : undefined;
           return (
-            <View key={n.id} style={[styles.notice, { borderLeftColor: fill }]}>
+            // El nivel lo dice el círculo de color con su número; entre aviso
+            // y aviso, un hairline (`design.md` §8: nada de bordes gruesos).
+            <View
+              key={n.id}
+              style={[
+                styles.notice,
+                i > 0 && [styles.noticeNext, { borderTopColor: t.separator }],
+              ]}
+            >
               <View
                 style={[styles.num, { backgroundColor: fill }]}
                 accessible
@@ -206,12 +215,20 @@ function NoticeSheet({
   today: string;
   sessionId?: string;
 }) {
+  // Cada vez que se abre, el formulario empieza de cero (`key`); al cerrarse
+  // se queda montado durante la animación de salida, en vez de encogerse a
+  // una hoja vacía.
+  const [opened, setOpened] = useState(visible ? 1 : 0);
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    if (visible) setOpened((n) => n + 1);
+  }
   return (
     <BottomSheet visible={visible} onClose={onClose} title="Añadir un aviso">
-      {/* `key`: cada vez que se abre, el formulario empieza de cero. */}
-      {visible ? (
+      {opened > 0 ? (
         <NoticeForm
-          key={today}
+          key={`${today}-${opened}`}
           onDone={onClose}
           personId={personId}
           firstName={firstName}
@@ -335,16 +352,11 @@ function NoticeForm({
           />
         </View>
 
-        <PressableFeedback
+        <AreaPrimaryButton
+          label="Registrar el aviso"
           onPress={() => void submit()}
-          accessibilityRole="button"
-          style={[styles.submit, { backgroundColor: t.accentFill }]}
-        >
-          <PressableFeedback.Scale />
-          <Text style={[styles.submitLabel, { color: t.onAccent }]}>
-            Registrar el aviso
-          </Text>
-        </PressableFeedback>
+          style={styles.submit}
+        />
       </View>
     </ScrollView>
   );
@@ -358,12 +370,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scale: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   pip: { width: 10, height: 10, borderRadius: radii.pillFull },
-  notice: {
-    flexDirection: 'row',
-    gap: 12,
-    borderLeftWidth: 3,
-    paddingLeft: 10,
-  },
+  notice: { flexDirection: 'row', gap: 12 },
+  noticeNext: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 12 },
   num: {
     width: 28,
     height: 28,
@@ -422,12 +430,5 @@ const styles = StyleSheet.create({
     gap: 12,
     minHeight: 48,
   },
-  submit: {
-    minHeight: 48,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 6,
-  },
-  submitLabel: { ...typography.button },
+  submit: { marginTop: 6 },
 });

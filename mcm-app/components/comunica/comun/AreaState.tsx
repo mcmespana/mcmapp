@@ -29,7 +29,8 @@ interface Props<T> {
   empty?: { title: string; subtitle?: string; isEmpty: (data: T) => boolean };
 }
 
-const isNetwork = (e: unknown) =>
+/** ¿El fallo es de red (o el CRM no contesta)? Para la persona, lo mismo. */
+export const isNetwork = (e: unknown) =>
   isComunicaApiError(e) &&
   (e.code === 'network' || e.code === 'crm_unavailable');
 
