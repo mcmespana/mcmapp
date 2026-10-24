@@ -68,7 +68,7 @@ import {
   type PersonaId,
 } from './fixtures';
 import { madridDay, madridInstant } from '@/utils/comunica/madrid';
-import { broadestScope, type CoordRelation } from '@/utils/comunica/scope';
+import { unionScope, type CoordRelation } from '@/utils/comunica/scope';
 import { createCoordinationRoutes, pendingMeetingOf } from './coordination';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
@@ -123,16 +123,18 @@ const PERSONA_ROLES: Record<PersonaId, { roles: Role[]; scope: Me['scope'] }> =
   };
 
 /**
- * Las relaciones de coordinación VIGENTES de cada persona de prueba (etapa y
- * segmento de su grupo). El alcance es la más amplia (`broadestScope`).
+ * Las relaciones VIGENTES de coordinación y de acompañamiento de cada persona
+ * de prueba (etapa y segmento de su grupo). Lo que ve es LA SUMA
+ * (`unionScope`, ✅ `alcance-coord`), igual para los dos papeles; casa con
+ * su `Me.scope` de arriba.
  */
-const COORD_RELATIONS: Record<PersonaId, CoordRelation[]> = {
+const TEAM_RELATIONS: Record<PersonaId, CoordRelation[]> = {
   monitor: [],
   coordination: [{}],
-  accompaniment: [],
+  accompaniment: [{ stage: 'com', segment: 'com_1' }],
   other: [],
   coordinationCom2: [{ stage: 'com', segment: 'com_2' }],
-  both: [{}],
+  both: [{}, {}],
 };
 
 export interface FakeServerOptions {
@@ -466,10 +468,7 @@ export function createFakeServer(
     gate: (route, write) => gate(route, write),
     persona: () => current,
     roles: () => PERSONA_ROLES[current].roles,
-    coordScope: () =>
-      roles().includes('coordination')
-        ? broadestScope(COORD_RELATIONS[current])
-        : null,
+    teamScope: () => unionScope(TEAM_RELATIONS[current]),
     delegationId,
     now,
     nowIso,

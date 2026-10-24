@@ -133,8 +133,16 @@ describe('Coordinación en el servidor falso (plan 06)', () => {
     s.setControls({ persona: 'accompaniment' });
     const home = await s.getCoordination();
     expect(home.weeklyMonitorsRoll).toBeNull();
-    // Acompañamiento no ve a los monitores sin grupo (como el plugin).
+    // ✅ `alcance-coord`: acompaña COM 1 y ve lo suyo (C1 y C2), sin los sin
+    // grupo, que son de quien ve toda la delegación.
+    expect([...new Set(home.team.flatMap((m) => m.groupCodes))].sort()).toEqual(
+      ['C1', 'C2'],
+    );
     expect(home.team.some((m) => m.unassigned)).toBe(false);
+    s.setControls({ persona: 'both' });
+    expect(
+      (await s.getCoordination()).team.filter((m) => m.unassigned),
+    ).toHaveLength(2);
   });
 
   it('el equipo: sin grupo solo para toda la delegación, y uno de dos etapas', async () => {
@@ -260,13 +268,23 @@ describe('Coordinación en el servidor falso (plan 06)', () => {
     expect((await s.getToday()).pendingMeeting).toBeNull();
   });
 
-  it('rechaza el tipo equivocado y las futuras', async () => {
+  it('rechaza el tipo equivocado y las semanales futuras; una reunión futura, no', async () => {
     const s = server({ persona: 'coordination' });
+    // ✅ `futuras` = «como el plugin»: la reunión futura se guarda.
     const future = s.data.sessions.find((x) => x.id === 'f-ses-reunion-02')!;
+    const ok = await s.saveMonitorsRoll(future.id, {
+      clientId: CLIENT(12),
+      kind: 'meeting',
+      marks: [],
+    });
+    expect(ok.status).toBe('applied');
+    const nextSaturday = s.data.sessions.find(
+      (x) => x.stage === 'com' && x.date === '2026-11-07',
+    )!;
     await expectError(
-      s.saveMonitorsRoll(future.id, {
-        clientId: CLIENT(12),
-        kind: 'meeting',
+      s.saveMonitorsRoll(nextSaturday.id, {
+        clientId: CLIENT(14),
+        kind: 'weekly',
         marks: [],
       }),
       'validation',

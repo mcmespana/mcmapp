@@ -10,12 +10,13 @@ import type {
   TeamMember,
 } from '@/services/comunica/contract';
 import {
-  broadestScope,
+  unionScope,
   coordinationSubtitle,
   scopeLabel,
   scopeMatches,
 } from '@/utils/comunica/scope';
 import {
+  canMarkSession,
   effectiveMark,
   isMonitorsDirty,
   memberLine,
@@ -103,17 +104,27 @@ describe('alcance', () => {
     expect(scopeMatches('delegation', { stage: null })).toBe(true);
   });
 
-  it('gana la relación más amplia; entre iguales, la primera', () => {
-    expect(broadestScope([])).toBeNull();
-    expect(broadestScope([{ stage: 'com', segment: 'com_2' }, {}])).toBe(
+  it('varias relaciones: la suma (✅ alcance-coord)', () => {
+    expect(unionScope([])).toBeNull();
+    expect(unionScope([{ stage: 'com', segment: 'com_2' }, {}])).toBe(
       'delegation',
     );
+    // La etapa entera se come su segmento.
     expect(
-      broadestScope([{ stage: 'com', segment: 'com_2' }, { stage: 'com' }]),
+      unionScope([{ stage: 'com', segment: 'com_2' }, { stage: 'com' }]),
     ).toEqual({ stages: ['com'] });
-    expect(broadestScope([{ stage: 'mic' }, { stage: 'com' }])).toEqual({
-      stages: ['mic'],
+    expect(unionScope([{ stage: 'com' }, { stage: 'mic' }])).toEqual({
+      stages: ['mic', 'com'],
     });
+    const sum = unionScope([
+      { stage: 'mic' },
+      { stage: 'com', segment: 'com_2' },
+    ])!;
+    expect(sum).toEqual({ stages: ['mic', 'com'], segments: ['com_2'] });
+    expect(scopeLabel(sum)).toBe('MIC, COM · COM 2');
+    expect(scopeMatches(sum, { stage: 'mic' })).toBe(true);
+    expect(scopeMatches(sum, { stage: 'com', segment: 'com_2' })).toBe(true);
+    expect(scopeMatches(sum, { stage: 'com', segment: 'com_1' })).toBe(false);
   });
 
   it('el subtítulo: alcance si coordina; si solo acompaña, su papel', () => {
@@ -170,6 +181,26 @@ describe('lista de monitores (modo monitors)', () => {
     expect(marks[0]).toEqual({ personId: 'a', mark: 'yes' });
     expect(marks[1].reason).toHaveLength(255);
     expect(effectiveMark({ marks: {}, notes: {} }, 'x')).toBe('yes');
+  });
+
+  it('futuras (✅ como el plugin): reuniones sí; semanal, solo la próxima sin ninguna empezada', () => {
+    const now = new Date('2026-09-10T10:00:00Z');
+    const a = {
+      id: 'a',
+      date: '2026-09-19',
+      startsAt: '2026-09-19T16:30:00+02:00',
+    };
+    const b = {
+      id: 'b',
+      date: '2026-09-26',
+      startsAt: '2026-09-26T16:30:00+02:00',
+    };
+    expect(canMarkSession('weekly', a, [a, b], now)).toBe(true);
+    expect(canMarkSession('weekly', b, [a, b], now)).toBe(false);
+    expect(canMarkSession('meeting', b, [a, b], now)).toBe(true);
+    const later = new Date('2026-09-20T10:00:00Z');
+    expect(canMarkSession('weekly', a, [a, b], later)).toBe(true);
+    expect(canMarkSession('weekly', b, [a, b], later)).toBe(false);
   });
 
   it('cuentas: parcial cuenta como vino', () => {

@@ -7,8 +7,9 @@
 // Se porta como el plugin en lo que importa (`sticpa_pl_coord_*`,
 // `…_save_monitors`, `…_ensure_registrations`, `…_create_reunion`,
 // `…_seguimientos`):
-//   · Alcance de coordinación (la más amplia) y acompañamiento (toda la
-//     delegación, pero sin los monitores sin grupo: 🔒 `alcance-coord`).
+//   · Alcance: la SUMA de las relaciones de coordinación y acompañamiento
+//     (✅ `alcance-coord`); los monitores sin grupo, para quien ve toda la
+//     delegación.
 //   · La lista de monitores crea las inscripciones que faltan, no reescribe lo
 //     que no cambia, recorta el motivo a 255 y no duplica con el mismo
 //     `clientId`.
@@ -54,6 +55,7 @@ import {
   visibleFollowUps,
 } from '@/utils/comunica/followUps';
 import { madridDay, madridInstant } from '@/utils/comunica/madrid';
+import { canMarkSession } from '@/utils/comunica/monitorsRoll';
 import { pendingMeeting } from '@/utils/comunica/meetings';
 import { compareGroups, proposeSession } from '@/utils/comunica/pasarLista';
 import { courseRank, schoolLevelFromText } from '@/utils/comunica/schoolLevels';
@@ -66,8 +68,11 @@ export interface CoordinationCtx {
   gate: (route: RouteName, write?: boolean) => Promise<void>;
   persona: () => PersonaId;
   roles: () => readonly Role[];
-  /** El alcance de coordinación de quien llama (`null` = no coordina). */
-  coordScope: () => Scope | null;
+  /**
+   * El alcance de quien llama: la suma de sus relaciones de coordinación y de
+   * acompañamiento (`null` = ni coordina ni acompaña).
+   */
+  teamScope: () => Scope | null;
   delegationId: () => string;
   now: () => Date;
   nowIso: () => string;
@@ -112,7 +117,7 @@ export function createCoordinationRoutes(
   };
   const myGroups = () =>
     d().groups.filter((g) => g.delegationId === ctx.delegationId());
-  const isCoord = () => ctx.coordScope() !== null;
+  const isCoord = () => ctx.roles().includes('coordination');
   const isAcomp = () => ctx.roles().includes('accompaniment');
   const requireCoord = () => {
     if (!isCoord()) throw forbidden();
@@ -234,12 +239,13 @@ export function createCoordinationRoutes(
     });
 
   /**
-   * Los monitores que ve quien llama: los de los grupos de su alcance (y, si
-   * coordina toda la delegación, los sin grupo); acompañamiento, los de todos
-   * los grupos de la delegación. Quien hace las dos cosas, la unión.
+   * Los monitores que ve quien llama: los de los grupos de su alcance (la suma
+   * de sus relaciones de coordinación y acompañamiento) y, si ve toda la
+   * delegación, también los sin grupo (✅ `alcance-coord`, igual para los dos
+   * papeles).
    */
   const teamIds = (): string[] => {
-    const scope = ctx.coordScope();
+    const scope = ctx.teamScope();
     const ids = new Set<string>();
     if (scope) {
       for (const g of myGroups().filter((x) => scopeMatches(scope, x))) {
@@ -253,16 +259,13 @@ export function createCoordinationRoutes(
           .forEach((m) => ids.add(m.personId));
       }
     }
-    if (isAcomp()) {
-      myGroups().forEach((g) => g.monitorIds.forEach((id) => ids.add(id)));
-    }
     return sortTeam([...ids]);
   };
   const team = () => teamIds().map(memberOf);
 
   /** Los grupos que «se cuentan»: los del alcance si está acotado. */
   const scopedGroups = () => {
-    const scope = ctx.coordScope();
+    const scope = ctx.teamScope();
     return scope && isScoped(scope)
       ? myGroups().filter((g) => scopeMatches(scope, g))
       : myGroups();
@@ -376,7 +379,7 @@ export function createCoordinationRoutes(
       if (!ctx.roles().some((r) => r !== 'member' && r !== 'guardian')) {
         throw forbidden();
       }
-      const scope = ctx.coordScope();
+      const scope = ctx.teamScope();
       const scoped = !!scope && isScoped(scope);
       const mine = scopedGroups();
       const rest = scoped ? myGroups().filter((g) => !mine.includes(g)) : [];
@@ -531,7 +534,16 @@ export function createCoordinationRoutes(
         (w.kind === 'meeting' && s.kind === 'meeting');
       if (!kindOk)
         throw validation('wrong_kind', 'Esa sesión no es de esta lista');
-      if (s.date > ctx.today()) {
+      // ✅ `futuras` = «como el plugin»: reuniones futuras sí; de la semanal,
+      // solo la próxima cuando no ha empezado ninguna.
+      if (
+        !canMarkSession(
+          w.kind,
+          s,
+          eventSessions(s.eventId).map(sessionSummary),
+          ctx.now(),
+        )
+      ) {
         throw validation('session_in_future', 'Esta sesión aún no ha llegado');
       }
       const allowed = new Set(teamIds());

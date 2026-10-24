@@ -15,6 +15,7 @@ import type {
   Mark,
   MonitorsRoll,
   MonitorsRollWrite,
+  SessionSummary,
   SetMark,
   Stage,
   TeamMember,
@@ -23,8 +24,31 @@ import { NOTE_MAX } from '@/services/comunica/contract';
 import { isAbsence, isAttendance, MARK_NOTE } from './marks';
 import type { RollDraft } from './rollDraft';
 import { STAGE_TEXT } from './scope';
+import { isFutureSession } from './sessions';
 
 type Rows = MonitorsRoll['rows'];
+
+/**
+ * ¿Se puede marcar esta sesión? (✅ `futuras` = «como el plugin»): hoy y lo
+ * pasado, sí; una reunión, también si es futura; en la semanal, de las futuras
+ * solo la próxima cuando aún no ha empezado ninguna (es la que propone la
+ * regla del plan 04).
+ */
+export function canMarkSession(
+  kind: MonitorsRoll['kind'],
+  session: Pick<SessionSummary, 'id' | 'date' | 'startsAt'>,
+  sessions: readonly Pick<SessionSummary, 'id' | 'date' | 'startsAt'>[],
+  now: Date,
+): boolean {
+  if (kind === 'meeting' || !isFutureSession(session, now)) return true;
+  const sorted = [...sessions].sort((a, b) =>
+    a.startsAt < b.startsAt ? -1 : 1,
+  );
+  const anyStarted = sorted.some(
+    (s) => new Date(s.startsAt).getTime() <= now.getTime(),
+  );
+  return !anyStarted && sorted[0]?.id === session.id;
+}
 
 /** De dónde parte: lo guardado y, si no hay nada, «vino». */
 export function monitorsDraftFrom(rows: Rows): RollDraft {
