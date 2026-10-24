@@ -30,7 +30,7 @@ y el token permanente `?token=`. En el área nativa no existen.
 | `comunica/acceso.tsx` | «Entra en tu área»: correo (ya puesto si hay cuenta de la app, editable) o, con un enlace discreto, DNI/NIE. Botón «Recibir código» |
 | `comunica/acceso-codigo.tsx` | Seis casillas (`InputOTP` de heroui) con autocompletado del código (`textContentType="oneTimeCode"` / `autoComplete="one-time-code"`: iOS lo coge del correo de Mail). «Te lo hemos mandado a m•••@gmail.com». «Volver a mandar» con su cuenta atrás. «Cambiar el correo» |
 | `comunica/acceso-elegir.tsx` | Solo si el correo es de varias fichas del CRM: «¿Quién eres?» con nombre y delegación. Arregla lo de hoy (en el plugin entra la primera) |
-| `comunica/yo/index.tsx` | Tu cuenta: nombre, foto, delegación, papeles (con `RoleChip` solo lo excepcional), «Abrir la versión web», «Salir» |
+| `comunica/yo/index.tsx` (hecho como `yo.tsx`, 24/10) | Tu cuenta: nombre, foto, delegación, papeles (con `RoleChip` solo lo excepcional), «Abrir la versión web», «Salir» |
 
 El enlace del correo también entra: el servidor manda en el mismo correo el
 código y un enlace `https://comunica.movimientoconsolacion.com/app/acceso?acceso_app=<token>`.

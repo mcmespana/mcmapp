@@ -63,7 +63,13 @@ Ninguna bloquea empezar 00-03. Cada plan dice qué hace mientras tanto.
 | `alcance-coord` | Qué ve quien coordina o acompaña varias etapas | 06 |
 | `marcas-autobus` | Marcas del grupo en la lista del autobús | 07 |
 | `avisos-nombres` | Nombres de chavales en los avisos del móvil | 08 |
-| `fotos-documentos` | Fotos con la cámara para títulos (paquete nuevo en la 2.2) | 09 |
+| `fotos-documentos` | Fotos con la cámara para títulos (paquete nuevo en la 2.2) | 09, 12, 16 |
+| `equipo-hijo` | Lo del equipo («Pasar lista»…) sigue en la portada aunque se vea a un hijo (mientras, sí) | 11 |
+| `docs-con-plaza` | Quien tiene plaza ve los documentos del evento aunque ya no cumpla la audiencia (mientras, sí) | 13 |
+| `aviso-pagos` | A quién se avisa de un pago con tarjeta raro (cobrado dos veces, o sin confirmar en 24 h) y quién devuelve | 15 (servidor) |
+| `tope-importe` | «Pagar otra cantidad»: como mucho lo indicado (mientras, ese tope) | 15 |
+| `calendario-marcas` | «Parcial» y «Justificada» con su color en el calendario (mientras, como el plugin) | 16 |
+| `campos-crm` | Campos que faltan o se contradicen en `CAMPOS.md` (Documents, `special_needs`, la etapa, la comunidad autónoma) | 12, 14, 16 (servidor) |
 
 Antes de ejecutar un plan, se leen las respuestas de la página (colección
 `decisiones`) y se aplican.
@@ -150,8 +156,23 @@ app), textos de pantalla en castellano y con las palabras del área privada
   `fetch` ni importa el servidor falso (lo comprueba un test, plan 01).
 - Lecturas con TanStack Query: clave `['comunica', bloque, ...]`, persistida en
   el móvil salvo lo marcado `persist: false` (la salud, siempre).
-- Escrituras por la **cola** (`outbox.ts`): se guardan en el móvil al instante,
-  suben solas y la pantalla enseña su estado. Nada de esperar con una rueda.
+- Escrituras de **monitores (04-09)** por la **cola** (`outbox.ts`): se guardan
+  en el móvil al instante, suben solas y la pantalla enseña su estado. Nada de
+  esperar con una rueda.
+- Escrituras de **familias (11-16)**: **directas, con conexión**, con
+  `clientId` (el mismo en los reintentos de una acción), **nunca por la cola**:
+  datos personales, salud, IBAN y archivos no tocan el disco. Lo de familias
+  funciona con conexión (decisión `offline`); la caché solo abre rápido.
+- **Familias: todo cuelga de `/v1/profiles/:pid/…`** (plan 11) y las claves
+  llevan el `pid`. `persist: false` en lo sensible: datos y salud (12), la
+  ficha de una inscripción (14), pagos (15) y documentos (16).
+- **Conciliado con el código (24/10):** las claves que citan los planes son
+  la final (`['comunica', …]`); en el código se pasa sin `'comunica'`, que lo
+  pone `areaKey` de `useAreaQuery`. Cada ruta nueva va al registro de rutas de
+  `contract.ts` (con su `persist`), y cada pantalla nativa se registra en
+  `NATIVE` de `services/comunica/links.ts` con las filas de su tabla
+  «Enlaces que llegan aquí» (hay un test que recorre `PLUGIN_PAGES`). Los
+  mandos del servidor falso viven en el Laboratorio Alpha (`ComunicaLabPanel`).
 - **Datos inventados** en el servidor falso y en los tests: nombres, teléfonos
   y delegaciones ficticios. Nunca datos reales del CRM, y menos de menores.
 
@@ -203,8 +224,12 @@ ve nombres del CRM, solo los del contrato.
   (`design.md` §10). En dispositivo, con build de desarrollo, cuando el
   propietario pueda.
 - Paquetes nativos: los de la 2.2 (`expo-secure-store`, `expo-sqlite`,
-  `expo-local-authentication`) llegan a la rama al mergear `main`. Si un plan
-  necesita otro, para y pregunta. Los JS puros (TanStack Query, zod) se
+  `expo-local-authentication`, y `expo-intent-launcher` para abrir PDF en
+  Android, plan 16; `expo-image-picker` si sale «sí» en `fotos-documentos`)
+  llegan a la rama al mergear `main`. Si un plan necesita otro, para y
+  pregunta. Los JS puros (TanStack Query, zod) se
   añaden sin preguntar.
-- No se toca nada del CRM ni del plugin desde estos planes.
+- No se toca nada del CRM ni del plugin desde estos planes, salvo el
+  `apple-app-site-association` del plan 10 (hecho en la rama del plugin, sin
+  desplegar).
 - Al terminar un plan, se marca hecho en esta tabla con fecha y commit.

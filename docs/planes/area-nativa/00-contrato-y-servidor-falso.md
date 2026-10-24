@@ -71,9 +71,11 @@ plan del servidor, no de este).
   nunca 404 que confirme que existe), `not_found`, `validation`,
   `crm_unavailable` (503: el CRM no contesta; en monitores la escritura se
   queda en la cola, en familias se reintenta a mano con el mismo `clientId`),
-  `conflict`, `rate_limited`. Opcionales: `reason` (p. ej. `already_registered`,
-  `window_closed`, `not_payable`) y `field` (el campo que falla en `validation`),
-  que añaden los planes 14 y 15.
+  `conflict`, `rate_limited`. Opcionales: `reason` (ya en `ErrorBody`; los
+  planes 14 y 15 añaden valores como `already_registered`, `window_closed`,
+  `not_payable`), `retryAfter` (con `rate_limited`) y `field` (el campo que
+  falla en `validation`: **lo añade a `ErrorBody` el plan 14**, conciliado con
+  el código el 24/10).
 - **Fechas**: instantes en ISO 8601 con zona (`2026-10-25T10:00:00+02:00`);
   días como `YYYY-MM-DD` en hora de Madrid. La trampa del CRM («UTC sin zona»)
   la resuelve el servidor; la app nunca adivina.
@@ -150,9 +152,10 @@ Catálogo previsto (lo detallan los planes que se indican):
 - **Mandos** para probar estados: latencia (300 ms por defecto), sin
   conexión, CRM caído (las escrituras devuelven `crm_unavailable`), error en
   una ruta concreta, y «otra persona»: entrar como monitor, como coordinación
-  o como acompañamiento. Accesibles desde el panel secreto que ya existe
-  (`components/SecretPanelModal.tsx`) solo en desarrollo y en el canal
-  preview.
+  o como acompañamiento. Viven en el **Laboratorio Alpha**, panel «Comunica
+  nueva» (`components/preview-channel/ComunicaLabPanel.tsx`), como se hizo al
+  ejecutar este plan (`SecretPanelModal` es el editor de canciones). Los
+  planes de familias (11-16) añaden ahí sus personas y mandos.
 - Guarda lo que se escribe (en memoria), para que guardar una lista y volver
   a abrirla funcione igual que con el servidor de verdad.
 - **Las reglas de autorización también en el falso**: si «entras» como

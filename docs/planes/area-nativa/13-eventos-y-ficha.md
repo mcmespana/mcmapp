@@ -320,7 +320,7 @@ imágenes), `make-interfaces-feel-better`; y para revisar cada pantalla `fixing-
 | 8 | `actividades/[eventId]/index.tsx` con las cinco salidas de la acción y la CTA pegada | Capturas de cada salida y de iPad horizontal; test del orden de motivos |
 | 9 | Mapa, adjuntos (con `useOpenFile` del 16), galería y «Ver la página pública» | Tests: `Linking` con la URL esperada por plataforma; abrir un PDF pasa por `useOpenFile` |
 | 10 | `actividades/publica/[slug].tsx` (con y sin sesión) y el botón de compartir del plan 08 | Test sin sesión → «Entra para apuntarte»; con sesión → `replace` a la ficha |
-| 11 | Entradas del mapa de enlaces (plan 10), botones interinos con `openLegacy` y `CHANGELOG.md` | Test del mapa con cada enlace de la tabla |
+| 11 | Entradas del mapa de enlaces (plan 10: registrar en `NATIVE` de `links.ts`), el caso `event` de `useComunicaLinks` (hoy abre `/actividades/?e=` en la web) a `actividades/publica/[slug]`, botones interinos con `openLegacy` y `CHANGELOG.md` | Test del mapa con cada enlace de la tabla |
 
 ## Tests
 

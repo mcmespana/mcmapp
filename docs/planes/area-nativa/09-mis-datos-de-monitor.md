@@ -35,7 +35,7 @@ coordinación) están todos menos `ajmcm_vol_descripcion_c` y `ajmcm_vol_program
 
 | Ruta | Qué |
 |---|---|
-| `app/(tabs)/comunica/yo/monitor.tsx` | «Mis datos de monitor»: secciones, «Guardar» y archivos. Se llega desde el menú de cuenta del área (plan 02), desde «Tu perfil» de la portada (plan 11) y desde el aviso. (`yo/index.tsx` es «Tu cuenta», del plan 02) |
+| `app/(tabs)/comunica/yo/monitor.tsx` | «Mis datos de monitor»: secciones, «Guardar» y archivos. Se llega desde el menú de cuenta del área (plan 02), desde «Tu perfil» de la portada (plan 11) y desde el aviso. («Tu cuenta», del plan 02, ya existe como `yo.tsx`: al crear la carpeta `yo/`, se mueve a `yo/index.tsx` en el mismo commit, sin cambiar su ruta `/comunica/yo`) |
 | `CertificatePendingAlert` (`components/comunica/yo/`) | El aviso: arriba en esta pantalla (sin botón) y en la portada «Hoy» del plan 04 (con «Subir certificado»), debajo de la tarjeta de hoy y de las listas que faltan |
 
 «Revisarlo en Documentos →» y «Tus datos personales» abren, por el mapa de enlaces del plan 10,

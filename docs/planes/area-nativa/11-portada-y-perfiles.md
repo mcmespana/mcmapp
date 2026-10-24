@@ -52,7 +52,8 @@ En `/home/user/comunicaAreaPrivada/`; manda el código.
 
 La portada no conoce las rutas de otros planes: abre **destinos del plugin**
 (`{ internalpage: 'list_stic_events' }`, `{ internalpage: 'single_stic_events', action: 'detail', id }`)
-con la función de `links.ts` del plan 10, que ya sabe qué pantalla nativa (o el legado) toca.
+con lo del plan 10 (`nativeHrefFor` de `services/comunica/links.ts` y, si no hay pantalla nativa,
+`useOpenLegacy`), que ya sabe qué pantalla nativa (o el legado) toca.
 
 ## Datos: su trozo del contrato
 
@@ -254,7 +255,7 @@ Nada: todo lo de este plan es nativo.
 | 5 | `perfiles.tsx` con `ProfileCard`, destino y recarga | Test + capturas 375 px, claro y oscuro: dos hijos, ninguno, «¿A quién quieres apuntar?» |
 | 6 | `ActiveProfileBar` y `ProfileSwitcherSheet` | Tests: compartida se queda; personal vuelve; `guardian` a sí mismo desde Eventos vuelve |
 | 7 | `MemberHome` y `AreaHome`, con `PasarListaHome` (04) como contenido sin scroll propio (si el 04 ya lo tiene, se separa en un commit aparte); la puerta del 01 en sus casos 3 y 4 | Capturas de las seis personas del falso, 375 px e `isWide`, claro y oscuro, `fontScale` 1,3 |
-| 8 | «Hay que elegir» en `links.ts` (plan 10) | Test: enlace a un evento, dos hijos sin elegir → `perfiles` → elegir → la ficha |
+| 8 | «Hay que elegir» en `hooks/comunica/useComunicaLinks.ts`, donde se abren los destinos (`links.ts` es puro y corre antes de que arranque la app: no sabe del perfil) | Test: enlace a un evento, dos hijos sin elegir → `perfiles` → elegir → la ficha |
 | 9 | Este bloque en `docs/contratos/COMUNICA_API.md` (con la convención `/profiles/:pid`) y `CHANGELOG.md` | Revisión |
 
 ## Tests

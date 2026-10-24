@@ -199,8 +199,9 @@ por ahí: llega como `msg=pagado` o `single_stic_payment_error` (plan 15).
 
 **Elegir hijo antes**: si el destino es de familia y quien entra es solo
 familiar con varios hijos y sin haber elegido, o se ve a sí mismo y el
-destino es un evento, el mapa manda primero a `perfiles?destino=…` (plan 11,
-FAM-a1) y de ahí al destino.
+destino es un evento, `useComunicaLinks` manda primero a `perfiles?destino=…`
+(plan 11, FAM-a1) y de ahí al destino. `links.ts` no lo hace: es puro y no sabe
+del perfil.
 
 ## 5. Datos: su trozo del contrato
 

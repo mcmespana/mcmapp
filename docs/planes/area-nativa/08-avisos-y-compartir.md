@@ -48,7 +48,7 @@ Lo que dice el código de la app y hay que respetar:
 
 | Ruta | Qué |
 |---|---|
-| `app/(tabs)/comunica/yo/avisos.tsx` | «Avisos en este móvil»: estado del permiso, tres interruptores y «Ajustes del sistema». Se llega desde el menú de cuenta del área (junto a «Salir», plan 02) |
+| `app/(tabs)/comunica/yo/avisos.tsx` | «Avisos en este móvil»: estado del permiso, tres interruptores y «Ajustes del sistema». Se llega desde el menú de cuenta del área (junto a «Salir», plan 02, hoy `yo.tsx`: si este plan crea antes la carpeta `yo/`, mueve `yo.tsx` a `yo/index.tsx` en el mismo commit) |
 | La pantalla del evento del plan 07 | Este plan solo le añade el botón «Compartir» en la cabecera |
 | Destinos al tocar un aviso | Portada `/(tabs)/comunica` (plan 04), marcar ese grupo en esa sesión (plan 04), ficha del grupo (plan 05). Las rutas exactas son las que creen esos planes; un test comprueba que existen |
 
