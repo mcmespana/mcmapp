@@ -27,6 +27,8 @@ interface Props<T> {
   skeleton?: 'cards' | 'list';
   /** Si se da y `isEmpty(data)`, se pinta el vacío. */
   empty?: { title: string; subtitle?: string; isEmpty: (data: T) => boolean };
+  /** El 403 con sus palabras («Esta pantalla es de coordinación.»). */
+  forbidden?: { title: string; subtitle?: string };
 }
 
 const isNetwork = (e: unknown) =>
@@ -38,6 +40,7 @@ export default function AreaState<T>({
   children,
   skeleton = 'cards',
   empty,
+  forbidden,
 }: Props<T>) {
   const t = useComunicaTheme();
   const { data, error, isPending, refetch } = query;
@@ -67,7 +70,8 @@ export default function AreaState<T>({
     return (
       <EmptyState
         icon="lock"
-        title="No tienes acceso a esto"
+        title={forbidden?.title ?? 'No tienes acceso a esto'}
+        subtitle={forbidden?.subtitle}
         titleColor={t.text}
         subtitleColor={t.textSecondary}
       />

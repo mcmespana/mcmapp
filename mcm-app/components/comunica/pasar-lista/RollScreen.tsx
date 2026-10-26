@@ -30,7 +30,6 @@ import type {
   RollDetail,
   RollWrite,
   RollWriteResult,
-  SetMark,
   TodayResponse,
 } from '@/services/comunica/contract';
 import { areaKey } from '@/hooks/comunica/useAreaQuery';
@@ -47,12 +46,9 @@ import {
   cameLabel,
   countMarks,
   groupLabel,
-  MARK_LABEL,
-  MARK_NOTE,
   missedLabel,
   nextMarkOnTap,
   participantsLabel,
-  streakLabel,
   unmarkedLabel,
 } from '@/utils/comunica/marks';
 import {
@@ -83,11 +79,11 @@ import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
 import BottomActionBar from '../comun/BottomActionBar';
 import { MarkIcon, MarkLegend } from '../comun/MarkControl';
-import PersonRow from '../comun/PersonRow';
 import Section from '../comun/Section';
 import UploadStatus from '../comun/UploadStatus';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import MarkSheet from './MarkSheet';
+import RollRow from './RollRow';
 import SessionPicker from './SessionPicker';
 
 const NOT_SAVED_COPY = {
@@ -704,7 +700,7 @@ function RollEditor({
           return (
             <RollRow
               key={id}
-              entry={e}
+              person={e.person}
               mark={mark}
               note={draft.notes[id] ?? ''}
               streak={absenceStreak(e.previousMarks)}
@@ -782,84 +778,6 @@ function RollEditor({
   );
 }
 
-function RollRow({
-  entry,
-  mark,
-  note,
-  streak,
-  disabled,
-  onTap,
-  onSet,
-  onMore,
-}: {
-  entry: RollDetail['entries'][number];
-  mark: Mark;
-  note: string;
-  streak: number;
-  disabled: boolean;
-  onTap: () => void;
-  onSet: (m: SetMark) => void;
-  onMore: () => void;
-}) {
-  const t = useComunicaTheme();
-  const lines = [mark ? MARK_NOTE[mark] : undefined, note || undefined].filter(
-    Boolean,
-  ) as string[];
-  // Nombre y primer apellido.
-  const person = {
-    ...entry.person,
-    lastName: entry.person.lastName.split(' ')[0],
-  };
-  return (
-    <View
-      accessible
-      accessibilityLabel={[
-        `${entry.person.firstName} ${entry.person.lastName}`,
-        ...lines,
-        streak >= 2 ? streakLabel(streak) : null,
-        mark ? MARK_LABEL[mark] : 'Sin marcar',
-      ]
-        .filter(Boolean)
-        .join(', ')}
-      accessibilityHint="Toca para vino o no vino"
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      accessibilityActions={[
-        { name: 'activate' },
-        { name: 'partial', label: 'Parcial' },
-        { name: 'justified', label: 'Justificada' },
-        { name: 'more', label: 'Más opciones' },
-      ]}
-      onAccessibilityAction={(e) => {
-        if (disabled) return;
-        const name = e.nativeEvent.actionName;
-        if (name === 'activate') onTap();
-        if (name === 'partial') onSet('partial');
-        if (name === 'justified') onSet('no_justified');
-        if (name === 'more') onMore();
-      }}
-    >
-      <PersonRow
-        person={person}
-        subtitle={lines.join(' · ') || undefined}
-        disabled={disabled}
-        onPress={onTap}
-        onLongPress={onMore}
-        right={
-          <View style={styles.right}>
-            {streak >= 2 ? (
-              <Text style={[styles.streak, { color: t.dangerText }]}>
-                {streakLabel(streak)}
-              </Text>
-            ) : null}
-            <MarkIcon mark={mark} />
-          </View>
-        }
-      />
-    </View>
-  );
-}
-
 function Notice({
   icon,
   text,
@@ -921,13 +839,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
   },
   allCameLabel: { ...typography.button },
-  right: { alignItems: 'center', gap: 8, flexDirection: 'row' },
-  streak: {
-    ...typography.footnote,
-    fontWeight: '600',
-    maxWidth: 96,
-    textAlign: 'right',
-  },
   help: { gap: 8 },
   counts: {
     flexDirection: 'row',

@@ -2,6 +2,10 @@
 // cuatro estados con el actual marcado y lo que significa cada uno, el motivo
 // (solo con marca, 255 caracteres), «Ficha y teléfonos» y «Quitar la marca».
 // Cerrarla de cualquier forma guarda lo escrito.
+//
+// En la lista de MONITORES (plan 06, `mode="monitors"`) es la misma hoja: el
+// verde es el punto de partida, así que el motivo y «Quitar la marca» (que
+// vuelve a verde) solo salen con una falta o un parcial.
 
 import React from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
@@ -31,6 +35,7 @@ interface Props {
   onNote: (note: string) => void;
   onClose: () => void;
   onOpenFicha?: () => void;
+  mode?: 'participants' | 'monitors';
 }
 
 export default function MarkSheet({
@@ -42,8 +47,11 @@ export default function MarkSheet({
   onNote,
   onClose,
   onOpenFicha,
+  mode = 'participants',
 }: Props) {
   const t = useComunicaTheme();
+  // Con monitores, «vino» es el punto de partida: ni motivo ni quitar.
+  const marked = mode === 'monitors' ? !!mark && mark !== 'yes' : !!mark;
   // El motivo va directo al borrador a cada letra: cerrar la hoja de cualquier
   // forma ya lo deja guardado.
   const close = onClose;
@@ -95,12 +103,16 @@ export default function MarkSheet({
           })}
         </View>
 
-        {mark ? (
+        {marked ? (
           <TextInput
             value={note}
             onChangeText={onNote}
             maxLength={NOTE_MAX}
-            placeholder="Añadir un motivo (opcional)"
+            placeholder={
+              mode === 'monitors'
+                ? 'Añadir un motivo'
+                : 'Añadir un motivo (opcional)'
+            }
             placeholderTextColor={t.textMuted}
             accessibilityLabel="Motivo"
             multiline
@@ -128,7 +140,7 @@ export default function MarkSheet({
           ) : (
             <View />
           )}
-          {mark ? (
+          {marked ? (
             <PressableFeedback
               onPress={() => {
                 h.remove();

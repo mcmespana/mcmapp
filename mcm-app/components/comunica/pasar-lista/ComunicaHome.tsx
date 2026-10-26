@@ -567,9 +567,10 @@ function MissingRow({
   );
 }
 
-type NavIcon = 'bus' | 'chart.bar' | 'person.2' | 'person.3' | 'calendar';
+type NavIcon = React.ComponentProps<typeof IconSymbol>['name'];
 
-function NavRow({
+/** Fila de navegación del área: nombre, línea gris y flecha (también Coordinación). */
+export function NavRow({
   title,
   subtitle,
   trailing,
