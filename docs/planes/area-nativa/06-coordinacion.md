@@ -1,6 +1,6 @@
 # 06 — Coordinación
 
-> **Estado:** 🟢 listo para ejecutar en `nuevoComunicaChulo` · **Depende de:** 04, 05 · **Tamaño:** L · **Índice:** [README.md](README.md)
+> **Estado:** 🟠 empezado (tareas 1-3 hechas; pantallas sin hacer, ver la fila 06 de [README.md](README.md)) en `nuevoComunicaChulo` · **Depende de:** 04, 05 · **Tamaño:** L · **Índice:** [README.md](README.md)
 
 ## Para qué y para quién
 

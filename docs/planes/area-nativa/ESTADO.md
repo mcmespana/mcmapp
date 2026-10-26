@@ -1,4 +1,4 @@
-# Estado del área nativa y qué hacer ahora (24/10/2026)
+# Estado del área nativa y qué hacer ahora (24/10/2026, repasado el 26/10)
 
 > Para desarrollar poco a poco. La tabla de qué plan está hecho sigue en
 > [`README.md`](README.md) («Estado»); las decisiones, en
@@ -36,6 +36,31 @@ Informes completos: [`revision-24-10/A-servicios.md`](revision-24-10/A-servicios
   `production-comunica-falso`, con test.
 
 Verificado: typecheck, lint y **toda la suite** (179 ficheros, 2.130 tests) en verde.
+
+## Reconciliación del 26/10/2026
+
+Repaso del repo tras dos sesiones trabajando a la vez (sin desarrollar nada):
+
+- La rama local estaba 8 commits por detrás; puesta al día. Typecheck, lint y
+  la suite completa, en verde sobre `80b42e2` (ver el commit de esta nota).
+- **Plan 06**: hechas las tareas 1-3 (`ad565b4`, `baed441`). Un intento de
+  pantallas que se cortó por el límite de uso quedó guardado en la rama
+  **`wip/plan06-pantallas-a-medias`** (lista de monitores y `coordination.ts`,
+  sin terminar ni probar, sobre `baed441`). Choca con el `RollScreen.tsx`
+  actual: es referencia, no se mergea tal cual.
+- **El plugin cambió Coordinación después de escribirse el plan 06**: se ha
+  mergeado su `main` en su rama `nuevoComunicaChulo` (lista de monitores: los
+  que no van por grupos salen sin marcar; Apoyo destacado en Coordinación; la
+  portada y el calendario sin sesiones de los chavales; «Sin grupo» solo
+  MIC-COM). Leer esos commits del plugin antes de seguir con el 06.
+- **El parche `revision-24-10/a-medias-f1.patch` sigue sin aplicar.** Es lo
+  primero de la lista de abajo (A1, A2, A4, A6, A7, QA).
+- **Build de TestFlight**: el 24/10 por la mañana se lanzó el workflow
+  `eas-build.yml` desde esta rama (iOS, `production`, con envío); según la nota
+  de abajo, la build falló por las credenciales de Apple. Antes de otra:
+  credenciales en interactivo y el perfil `production-comunica-falso`.
+- `docs/planes/BACKLOG.md` §I y la tabla de `README.md` puestas al día con
+  esto (decisiones todas contestadas; 04 y 05 hechos; 06 empezado).
 
 ## Lo que falta, en este orden
 

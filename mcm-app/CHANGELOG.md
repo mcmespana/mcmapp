@@ -4,6 +4,26 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-26 07:38 — Área nativa de Comunica: lo que faltaba en este registro (rama `nuevoComunicaChulo`)
+
+Apunte de reconciliación: cambios del 24/10 que no se anotaron aquí.
+
+- **Pasar Lista completo** (plan 04): portada con la cola del móvil, el evento
+  de hoy y el bloque de coordinación; árbol de grupos con buscador; historial;
+  marcar con selector de fecha, hoja de estados y motivo, «Sin registro» y
+  rachas; guardar con borrador, cola y comprobación de lo releído.
+- **Decisiones aplicadas** tras la revisión del 24/10: quitar una marca la
+  borra en el CRM (`desmarcar`); la próxima sesión se puede pasar si no ha
+  empezado ninguna (`futuras`); la ficha enseña la salud aunque la marca de las
+  listas no (`salud-no`); territorio «Comunica» con acento violeta y el
+  degradado solo en la acción principal (`ComunicaColors`).
+- **Arreglos**: marcas que se perdían al salir con «Guardar»; estados de carga
+  dentro de la pantalla; táctiles de 44 pt; la web del plugin ya no queda
+  tapada; confirmaciones también en web; los datos del acceso ya no viajan en
+  la URL.
+- **Coordinación** (plan 06), empezado: contrato, servidor falso y reglas puras.
+  Las pantallas, sin hacer (ver `docs/planes/area-nativa/ESTADO.md`).
+
 ## 2026-10-24 11:30 — Comunica: el servidor falso sale del perfil `production` de EAS
 
 - `EXPO_PUBLIC_COMUNICA_API=fake` ya no va en el perfil `production` de

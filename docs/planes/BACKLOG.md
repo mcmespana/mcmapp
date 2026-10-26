@@ -37,7 +37,7 @@
 |                              |                                                                                                                                                                                                                                                                                      |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Ahora mismo**              | **Build de tienda 2.1.** Sentry y Aptabase ✅, diseño verificado en dispositivo ✅, subrayado ✅ (2026-10-08). Falta: compilar y pasar el resto del §5 (canales en Android real), fichas de privacidad, publicar (§6). Estado al día en la tabla de arriba de `BUILD_AGOSTO_2026.md` |
-| **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`) · **Área privada nativa**: 18 decisiones que faltan en su página (§2.I; 6 nuevas de los planes de familias, 24/10)                                                                                                                                                            |
+| **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`) · **Área privada nativa**: ninguna (todas contestadas el 24/10, copia en `area-nativa/decisiones/`)                                                                                                                                                            |
 | **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                                                                                                                     |
 | **⚠️ Roto y sin dueño**      | 🚨 **Android no muestra las notificaciones con categoría** desde el 2026-08-03: el Panel manda `channelId` y la app de `production` no tiene esos canales. **Decidido (2026-09-26): no se toca `production`, se arregla con la build 2.1** (`mcm-app/TODO.md`, Notificaciones)       |
 | **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                                                                                               |
@@ -205,7 +205,7 @@ guardan para la siguiente build de tienda.
 | ------------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Widgets de Contigo** — hábitos + racha + evangelio del día (WidgetKit iOS / App Widget Android + App Group) | 0%     | Es una feature entera, no un extra. Los tres comparten target, payload y deep links: se hacen juntos. `docs/planes/PLAN_WIDGET_CONTIGO.md`                                                                                      |
 | **Firebase App Check** (DeviceCheck / Play Integrity)                                                         | 0%     | Arrastra `@react-native-firebase` entero junto al SDK JS que ya se usa, y un _enforcement_ mal configurado deja sin datos a toda la base instalada. Además la Integración D (reglas) sigue abierta, que es el agujero de verdad |
-| **Enlaces de Comunica en Android**: `intentFilters` de `app.json` con los prefijos `/ap`, `/app`, `/area-privada`, `/actividades` y `/` del dominio de Comunica (hoy solo `/app/acceso`) | 0% — **pedido por el usuario** (2026-10-22) | Para que cualquier enlace de Comunica abra la app en la pantalla que toca. Es nativo: o entra en la 2.2 o espera otra build. En iOS no hace falta build (lo decide el fichero que sirve el plugin). `area-nativa/10` §3 |
+| **Enlaces de Comunica en Android**: `intentFilters` de `app.json` con los prefijos `/ap`, `/app`, `/area-privada`, `/actividades` y `/` del dominio de Comunica (hoy solo `/app/acceso`) | ✅ Hecho en la rama `nuevoComunicaChulo` (`743b514`, 24/10) — entra en la build cuando se mergee | Para que cualquier enlace de Comunica abra la app en la pantalla que toca. Es nativo: o entra en la 2.2 o espera otra build. En iOS no hace falta build (lo decide el fichero que sirve el plugin). `area-nativa/10` §3 |
 | **Paquetes nativos del área privada nativa, sin usar** (`expo-secure-store`, `expo-sqlite` con SQLCipher, `expo-local-authentication`, `expo-intent-launcher` para abrir PDF en Android — plan 16 del área nativa, añadido el 24/10) | 0% — **decidido** (2026-10-21) | Para que el área nativa pueda salir luego por OTA sobre la 2.2, como el NFC del 19/10. Solo instalar y configurar; nada de código que los use. `ANALISIS_AREA_PRIVADA_NATIVA.md` §3.5 y §7 |
 
 #### C.4 — Sigue bloqueado por una decisión tuya
@@ -349,10 +349,9 @@ monitores, con un backend nuevo que no sea el plugin.
   sin espejo** (el servidor lee la BBDD del CRM y escribe por la API), Vercel +
   Neon gratis, repo nuevo, código por correo con el correo de la app ya puesto,
   lanzamiento para todos con vuelta atrás.
-- 🔒 **Faltan 18:** `tecnicas` (rehecha con sus comentarios, por confirmar) e
-  `ipfija`, del servidor; y dieciséis que salen de los planes de la app (seis
-  de ellas, de los de familias, añadidas el 24/10), listadas en
-  [`area-nativa/README.md`](area-nativa/README.md) (ninguna bloquea empezar). Antes de preguntar nada, lee lo que ya haya marcado.
+- ✅ **Todas las decisiones contestadas** (24/10/2026). Copia de la página,
+  con cada respuesta, en
+  [`area-nativa/decisiones/`](area-nativa/decisiones/README.md).
 - **Rama: `nuevoComunicaChulo`** (en `mcmapp` y en `comunicaAreaPrivada`).
 - 📝 **Planes de la app (front) escritos** el 21 y 22/10/2026 en
   [`area-nativa/`](area-nativa/README.md): **toda el área privada, 1:1**
@@ -361,11 +360,11 @@ monitores, con un backend nuevo que no sea el plugin.
   de Comunica abriendo la app donde toca. Se pueden ejecutar sin servidor (van
   contra el servidor falso), cuando el usuario lo diga. Los del servidor,
   aparte, en su repo.
-- 🛠️ **En desarrollo desde el 23/10** en la rama: hechos 00, 01, 10 y buena
-  parte de 02, 03, 04 y 05 (estado fila a fila en
-  [`area-nativa/README.md`](area-nativa/README.md)). Los planes de familias
-  (11-16) quedaron en local por un push que no llegó; se subieron el 24/10
-  conciliados con lo ya hecho.
+- 🛠️ **En desarrollo desde el 23/10** en la rama: hechos 00, 01, 04, 05 y 10;
+  02 y 03 casi (falta lo que llega con la 2.2 y el catálogo); 06 empezado.
+  Estado fila a fila en [`area-nativa/README.md`](area-nativa/README.md) y
+  **lo que toca ahora, en orden**, en [`area-nativa/ESTADO.md`](area-nativa/ESTADO.md)
+  (primero los arreglos de la revisión del 24/10, luego seguir con los planes).
 - Lo único que se puede adelantar sin plan está en §13 del análisis (pedir a
   SinergiaTIC usuario de lectura y `/TEST`, protección de datos, equivalencias
   de delegaciones). Toca la 2.2 solo una cosa, y solo si se decide: los
@@ -438,7 +437,6 @@ ningún sitio compartido.
 | **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D"                                                          | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                                                        |
 | **Sacar la caza de Carismochitos del laboratorio** — ⏳ **pendiente de Izan** (2026-10-16) | Carismochito  | `docs/funcionalidades/CARISMOCHITO.md` + las 4 propuestas en `docs/planes/PLAN_PULIDO_2026_10.md` §Decisiones | Lo decide **Izan**. Si detectas que hablas con Izan, díselo tal cual: **«Izan, fiera, el asunto del carismocho.»** Propuesta recomendada: la caza sale con el propio modo de agitar y la colección se abre tocando el logo verde de Inicio, con interruptor en el Panel |
 | **Pañuelo — por definir**                                                                  | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md`                                                                           | Idea parcial contada el 2026-09-29 (medallas 3D por evento, en el pañuelo, pop-up al tocar; prueba ya en el laboratorio). Falta: **cómo se reparten** y cómo es el pañuelo. No propongas la propuesta escrita como si estuviera decidida.                               |
-| **Área privada nativa — 18 que faltan** (lista en `area-nativa/README.md`)                    | El plan del área nativa (§2.I) | `docs/planes/ANALISIS_AREA_PRIVADA_NATIVA.md` §10 + la página <https://claude.ai/artifact/B3ABkV5CYJLUTo2hnWW8t5> | No preguntes en el chat lo que ya esté marcado: lee primero la colección `decisiones` de la página con la herramienta de datos del artefacto. Pregunta solo lo que falte, con la recomendación del §10 |
 
 ---
 
