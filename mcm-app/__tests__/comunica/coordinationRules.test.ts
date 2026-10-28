@@ -142,14 +142,56 @@ const row = (
   mark: MonitorsRoll['rows'][number]['mark'] = null,
   patch: Partial<TeamMember> = {},
   reason: string | null = null,
+  optional = false,
 ): MonitorsRoll['rows'][number] => ({
   member: member(id, patch),
+  optional,
   mark,
   reason,
   seasonMarks: [],
 });
 
 describe('lista de monitores (modo monitors)', () => {
+  it('las filas opcionales arrancan sin marcar y no van si no se tocan', () => {
+    const sup = {
+      groupCodes: [],
+      stage: null,
+      unassigned: {
+        membershipId: 'r',
+        kind: 'support' as const,
+        outsideGroupName: 'Monitores Apoyo',
+      },
+    };
+    const rows = [
+      row('a'),
+      row('s', null, sup, null, true),
+      row('t', 'yes', sup, null, true),
+    ];
+    const d = monitorsDraftFrom(rows);
+    expect(d.marks).toEqual({ a: 'yes', s: null, t: 'yes' });
+    // «-» → vino → no vino → «-».
+    expect(nextMonitorMarkOnTap(null, true)).toBe('yes');
+    expect(nextMonitorMarkOnTap('yes', true)).toBe('no_unjustified');
+    expect(nextMonitorMarkOnTap('no_unjustified', true)).toBeNull();
+    expect(nextMonitorMarkOnTap('no_justified', true)).toBeNull();
+    // Sin marca, no va ni cuenta.
+    expect(monitorsMarks(rows, d).map((m) => m.personId)).toEqual(['a', 't']);
+    expect(monitorsCounts(rows, d)).toEqual({ came: 2, missed: 0 });
+    // «Quitar la marca» en una opcional vuelve a «-».
+    const cleared = setMonitorMark(d, 't', null, true);
+    expect(cleared.marks.t).toBeNull();
+    expect(isMonitorsDirty(rows, cleared)).toBe(true);
+    expect(monitorsMarks(rows, cleared).map((m) => m.personId)).toEqual(['a']);
+    // Al final: Apoyo desplegado y los demás plegados.
+    const other = row('o', null, { groupCodes: [], stage: null }, null, true);
+    const secs = monitorSections([...rows, other]);
+    expect(secs.map((x) => [x.label, x.optional ?? null, x.count])).toEqual([
+      ['COM', null, 1],
+      ['Apoyo', 'support', 2],
+      ['Otros monitores', 'others', 1],
+    ]);
+  });
+
   it('arranca todo en verde y el toque alterna vino ⇄ no vino', () => {
     const rows = [row('a'), row('b', 'no_justified', {}, 'Examen')];
     const d = monitorsDraftFrom(rows);
@@ -276,11 +318,26 @@ describe('lista de monitores (modo monitors)', () => {
       memberLine(
         member('a', {
           groupCodes: [],
-          unassigned: { membershipId: 'r', outsideGroupName: 'Coro' },
+          unassigned: {
+            membershipId: 'r',
+            kind: 'outside',
+            outsideGroupName: 'Coro',
+          },
         }),
-        { outside: true },
       ),
-    ).toBe('Coro · no entra en Pasar Lista');
+    ).toBe('Coro');
+    expect(
+      memberLine(
+        member('a', {
+          groupCodes: [],
+          unassigned: {
+            membershipId: 'r',
+            kind: 'none',
+            outsideGroupName: 'POR DEFINIR',
+          },
+        }),
+      ),
+    ).toBe('Sin grupo asignado');
     expect(monitorNote('no_justified', 'Examen', null)).toEqual({
       text: 'Justificada · Examen',
       danger: false,
@@ -723,28 +780,63 @@ describe('tu equipo', () => {
       firstName: 'Sara',
       groupCodes: [],
       stage: null,
-      unassigned: { membershipId: 'r1' },
+      unassigned: { membershipId: 'r1', kind: 'none' },
+    }),
+    member('d', {
+      firstName: 'Nerea',
+      groupCodes: [],
+      stage: null,
+      unassigned: {
+        membershipId: 'r2',
+        kind: 'outside',
+        outsideGroupName: 'Najar',
+      },
+    }),
+    member('e', {
+      firstName: 'Pablo',
+      groupCodes: [],
+      stage: null,
+      unassigned: {
+        membershipId: 'r3',
+        kind: 'support',
+        outsideGroupName: 'Monitores Apoyo',
+      },
     }),
   ];
 
-  it('sin grupo primero y después por etapa', () => {
+  it('sin grupo, Apoyo, por etapa y los de otros grupos al final', () => {
     const v = teamSections(team);
     expect(v.unassigned.map((m) => m.id)).toEqual(['c']);
+    expect(v.support.map((m) => m.id)).toEqual(['e']);
     expect(v.sections.map((s) => s.label)).toEqual(['MIC', 'COM']);
-    expect(teamOrder(team).map((m) => m.id)).toEqual(['c', 'a', 'b']);
+    expect(v.outside.map((m) => m.id)).toEqual(['d']);
+    expect(teamOrder(team).map((m) => m.id)).toEqual(['c', 'e', 'a', 'b', 'd']);
   });
 
-  it('el buscador: sin acentos ni mayúsculas, por nombre o código', () => {
+  it('el buscador: sin acentos ni mayúsculas, por nombre, código o grupo', () => {
     expect(searchTeam(team, 'alvaro').map((m) => m.id)).toEqual(['a']);
     expect(searchTeam(team, 'c2').map((m) => m.id)).toEqual(['b']);
-    expect(searchTeam(team, '  ')).toHaveLength(3);
+    expect(searchTeam(team, 'najar').map((m) => m.id)).toEqual(['d']);
+    expect(searchTeam(team, '  ')).toHaveLength(5);
+  });
+
+  it('un «Vincular» en cola solo mueve a los sin grupo de verdad', () => {
+    const { pendingIds } = withPendingAssignments(
+      team,
+      new Map([
+        ['r2', 'g3'],
+        ['r3', 'g3'],
+      ]),
+      [{ id: 'g3', code: 'C3', name: 'Senderos', stage: 'com' }],
+    );
+    expect(pendingIds.size).toBe(0);
   });
 
   it('vecinos sin dar la vuelta', () => {
     const order = teamOrder(team);
     expect(neighborsOf(order, 'c')).toMatchObject({ prev: null });
-    expect(neighborsOf(order, 'b').next).toBeNull();
-    expect(neighborsOf(order, 'a').prev?.id).toBe('c');
+    expect(neighborsOf(order, 'd').next).toBeNull();
+    expect(neighborsOf(order, 'a').prev?.id).toBe('e');
   });
 
   it('un «Vincular» en cola mueve al monitor a su etapa', () => {

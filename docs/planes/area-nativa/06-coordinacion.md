@@ -42,6 +42,34 @@ dos datos por revisar y, para vincular, enlaza a «Grupos y fichas» (plan 05).
 `RECUENTOS.md` §5 dice que el resumen no lee los recuentos: sí los lee (3 días
 de frescura). `SEGUIMIENTOS.md` §7 agrupa por trimestre: el código no.
 
+## Cambios del plugin después de escribir este plan (revisado el 28/10)
+
+El `main` del plugin cambió Coordinación entre el 23 y el 25/10. Ya están en
+el contrato, el servidor falso y las reglas puras (commit de este plan, 28/10):
+
+- **Tres clases de «sin grupo de Pasar Lista»** (`TeamMember.unassigned.kind`):
+  `none` (sin grupo de verdad o el comodín: «Vincular», solo quien ve toda la
+  delegación), `support` (Apoyo: lo ven **todas** las coordinaciones, con su
+  ficha a mano) y `outside` (Najar, Ruah…: nada que arreglar, solo quien ve
+  toda la delegación). Commits `f2a163c`, `162a31b`, `4d6eef8` del plugin.
+- **«Tu equipo»**: «Sin grupo» (solo `none`, con su aviso y «Vincular») →
+  «Apoyo» (con enlace a la ficha; la línea dice su grupo) → por etapa →
+  «Monitores de grupos que no pasan lista» **plegado** al final, ordenado por
+  grupo y nombre (`teamSections`).
+- **Lista de monitores semanal**: las filas de quien no va por grupos son
+  `optional`: arrancan **«-» (sin marcar)**, el toque cicla «-» → vino → no
+  vino → «-», sin marca no se manda ni cuenta, y no llevan % ni aviso. Van al
+  final: «Apoyo» desplegado y «Otros monitores» plegado, los dos con la pista
+  «No se les pasa lista: salen con «-». Toca solo si han venido.» y **de joven
+  a mayor** (lo ordena el servidor). Las **reuniones no cambian**: se espera a
+  todos y ninguna fila es opcional. Esto sustituye a la regla 5 («Sin etapa»).
+- «Sin grupo asignado» de los **chavales** (resumen, árbol, «Sueltos»): solo
+  participantes MIC-COM, no adultos de COM-LC (`db618a5`). Es del servidor.
+- **Varias delegaciones** (`09c3f5e`, 23/10): quien colabora con otra
+  delegación elige la de trabajo en un selector, y la coordinación solo vale en
+  su delegación. Es transversal (04, 05, 06): va en su propio plan,
+  [`17-varias-delegaciones.md`](17-varias-delegaciones.md).
+
 ## Pantallas y rutas
 
 En `app/(tabs)/comunica/coordinacion/` (Stack de `comunica/_layout.tsx`):

@@ -212,6 +212,7 @@ export function createCoordinationRoutes(
         ? {
             unassigned: {
               membershipId: loose.id,
+              kind: loose.kind,
               ...(loose.outsideGroupName
                 ? { outsideGroupName: loose.outsideGroupName }
                 : {}),
@@ -220,13 +221,46 @@ export function createCoordinationRoutes(
         : {}),
     };
   };
+  const looseOf = (pid: string) =>
+    groupsOfMonitor(pid).length === 0
+      ? d().monitorMemberships.find(
+          (m) => m.personId === pid && m.delegationId === ctx.delegationId(),
+        )
+      : undefined;
+  const ageOf = (pid: string) => d().monitorProfiles[pid]?.age ?? null;
 
-  /** Curso → grupo (natural) → apellido; los sin grupo, al final. */
-  const sortTeam = (ids: string[]) =>
+  /**
+   * Curso → grupo (natural) → apellido; los sin grupo, al final. Entre ellos,
+   * en la LISTA de monitores, de joven a mayor (sin edad, al final y por
+   * apellido: `sticpa_pl_cmp_joven_a_mayor`); en «Tu equipo», Apoyo por
+   * nombre y los de otros grupos por grupo y nombre, como el plugin.
+   */
+  const sortTeam = (ids: string[], forRoll = false) =>
     ids.sort((a, b) => {
       const ga = groupsOfMonitor(a)[0];
       const gb = groupsOfMonitor(b)[0];
       if (!ga !== !gb) return ga ? -1 : 1;
+      if (!ga && !gb) {
+        const la = looseOf(a);
+        const lb = looseOf(b);
+        if (forRoll) {
+          const aa = ageOf(a);
+          const ab = ageOf(b);
+          if ((aa === null) !== (ab === null)) return aa === null ? 1 : -1;
+          if (aa !== null && ab !== null && aa !== ab) return aa - ab;
+        } else if (la?.kind === 'outside' && lb?.kind === 'outside') {
+          const g = (la.outsideGroupName ?? '').localeCompare(
+            lb.outsideGroupName ?? '',
+            'es',
+          );
+          if (g) return g;
+        }
+        const name = (pid: string) =>
+          forRoll
+            ? (person(pid)?.lastName ?? '')
+            : `${person(pid)?.firstName ?? ''} ${person(pid)?.lastName ?? ''}`;
+        return name(a).localeCompare(name(b), 'es');
+      }
       const rank =
         courseRank(ga?.schoolLevels[0]) - courseRank(gb?.schoolLevels[0]);
       if (rank) return rank;
@@ -244,24 +278,26 @@ export function createCoordinationRoutes(
    * delegación, también los sin grupo (✅ `alcance-coord`, igual para los dos
    * papeles).
    */
-  const teamIds = (): string[] => {
+  const teamIds = (forRoll = false): string[] => {
     const scope = ctx.teamScope();
     const ids = new Set<string>();
     if (scope) {
       for (const g of myGroups().filter((x) => scopeMatches(scope, x))) {
         g.monitorIds.forEach((id) => ids.add(id));
       }
-      if (!isScoped(scope)) {
-        d()
-          .monitorMemberships.filter(
-            (m) => m.delegationId === ctx.delegationId(),
-          )
-          .forEach((m) => ids.add(m.personId));
-      }
+      // Apoyo lo ven todas las coordinaciones; los sin grupo y los de otros
+      // grupos que no pasan lista, solo quien ve toda la delegación.
+      d()
+        .monitorMemberships.filter(
+          (m) =>
+            m.delegationId === ctx.delegationId() &&
+            (m.kind === 'support' || !isScoped(scope)),
+        )
+        .forEach((m) => ids.add(m.personId));
     }
-    return sortTeam([...ids]);
+    return sortTeam([...ids], forRoll);
   };
-  const team = () => teamIds().map(memberOf);
+  const team = (forRoll = false) => teamIds(forRoll).map(memberOf);
 
   /** Los grupos que «se cuentan»: los del alcance si está acotado. */
   const scopedGroups = () => {
@@ -408,7 +444,7 @@ export function createCoordinationRoutes(
     async getMonitorsRoll(params) {
       await ctx.gate('monitorsRoll');
       requireCoord();
-      const members = team();
+      const members = team(true);
       const now = ctx.now();
       if (params.kind === 'meeting') {
         const list = meetingSessions();
@@ -444,6 +480,8 @@ export function createCoordinationRoutes(
           rows: s
             ? members.map((m) => ({
                 member: m,
+                // A una reunión se espera a todos: ninguna fila es opcional.
+                optional: false,
                 mark: roll?.marks[m.id] ?? null,
                 reason: roll?.notes[m.id] ?? null,
                 seasonMarks: held.map(
@@ -484,8 +522,9 @@ export function createCoordinationRoutes(
       }
       const roll = s ? monitorRollOf(s.id) : undefined;
       const held = list.filter(started);
-      // Una lista por etapa, sobre su evento. Los sin grupo, en la primera
-      // (la que abre por defecto), como en el plugin.
+      // Una lista por etapa, sobre su evento. Los que no van por grupos
+      // (Apoyo, otros grupos, sin grupo), en la primera (la que abre por
+      // defecto), como en el plugin: opcionales, «sin marcar» de partida.
       const rowsOf = members.filter(
         (m) =>
           m.stage === stage ||
@@ -506,6 +545,7 @@ export function createCoordinationRoutes(
         rollCall: roll ? rollSummary(roll) : null,
         rows: rowsOf.map((m) => ({
           member: m,
+          optional: !!m.unassigned,
           mark: roll?.marks[m.id] ?? null,
           reason: roll?.notes[m.id] ?? null,
           seasonMarks: held.map(

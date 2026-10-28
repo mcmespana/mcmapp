@@ -223,7 +223,9 @@ export interface FakeMonitorMembership {
   id: string;
   personId: string;
   delegationId: string;
-  /** Cuelga de un grupo que no entra en Pasar Lista. */
+  /** Sin grupo de verdad, de Apoyo o de otro grupo que no pasa lista. */
+  kind: 'none' | 'support' | 'outside';
+  /** El grupo que no entra en Pasar Lista (`support` y `outside`). */
   outsideGroupName?: string;
 }
 

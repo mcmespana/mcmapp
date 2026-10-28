@@ -110,8 +110,14 @@ describe('datos de coordinación', () => {
       '2026-10-20',
       '2026-11-17',
     ]);
-    expect(d.monitorMemberships).toHaveLength(2);
-    expect(d.monitorMemberships.some((m) => m.outsideGroupName)).toBe(true);
+    // Sin grupo de verdad, Apoyo (dos) y otros grupos que no pasan lista.
+    expect(d.monitorMemberships.map((m) => m.kind).sort()).toEqual([
+      'none',
+      'outside',
+      'outside',
+      'support',
+      'support',
+    ]);
     expect(d.groups.some((g) => g.code === null)).toBe(true);
     expect(Object.values(d.headcountAgeDays)).toContain(5);
     const types = Object.values(d.followUps)
@@ -133,23 +139,26 @@ describe('Coordinación en el servidor falso (plan 06)', () => {
     s.setControls({ persona: 'accompaniment' });
     const home = await s.getCoordination();
     expect(home.weeklyMonitorsRoll).toBeNull();
-    // ✅ `alcance-coord`: acompaña COM 1 y ve lo suyo (C1 y C2), sin los sin
-    // grupo, que son de quien ve toda la delegación.
+    // ✅ `alcance-coord`: acompaña COM 1 y ve lo suyo (C1 y C2) y Apoyo (lo
+    // ven todos); los sin grupo y los de otros grupos, solo quien ve toda la
+    // delegación.
     expect([...new Set(home.team.flatMap((m) => m.groupCodes))].sort()).toEqual(
       ['C1', 'C2'],
     );
-    expect(home.team.some((m) => m.unassigned)).toBe(false);
+    expect(
+      home.team.filter((m) => m.unassigned).map((m) => m.unassigned!.kind),
+    ).toEqual(['support', 'support']);
     s.setControls({ persona: 'both' });
     expect(
       (await s.getCoordination()).team.filter((m) => m.unassigned),
-    ).toHaveLength(2);
+    ).toHaveLength(5);
   });
 
   it('el equipo: sin grupo solo para toda la delegación, y uno de dos etapas', async () => {
     const s = server({ persona: 'coordination' });
     const home = await s.getCoordination();
     const loose = home.team.filter((m) => m.unassigned);
-    expect(loose).toHaveLength(2);
+    expect(loose).toHaveLength(5);
     expect(loose.every((m) => m.stage === null)).toBe(true);
     const dual = home.team.find((m) => m.otherStages.length > 0)!;
     expect(dual.stage).toBe('mic');
@@ -158,7 +167,10 @@ describe('Coordinación en el servidor falso (plan 06)', () => {
 
     s.setControls({ persona: 'coordinationCom2' });
     const com2 = await s.getCoordination();
-    expect(com2.team.some((m) => m.unassigned)).toBe(false);
+    // Con alcance acotado, de los que no van por grupos solo Apoyo.
+    expect(
+      com2.team.every((m) => !m.unassigned || m.unassigned.kind === 'support'),
+    ).toBe(true);
     // Solo los grupos de COM 2 (el sin segmento no entra).
     expect(
       com2.lastSession.flatMap((x) => x.rows.map((r) => r.group.code)),
@@ -197,8 +209,18 @@ describe('Coordinación en el servidor falso (plan 06)', () => {
     const com = await s.getMonitorsRoll({ kind: 'weekly' });
     expect(com.stages).toEqual(['mic', 'com']);
     expect(com.stage).toBe('com');
-    // Los sin grupo van en la lista por defecto; el de dos etapas, en MIC.
-    expect(com.rows.filter((r) => r.member.unassigned)).toHaveLength(2);
+    // Los que no van por grupos (Apoyo, otros, sin grupo) van en la lista
+    // por defecto, opcionales y de joven a mayor; el de dos etapas, en MIC.
+    const optional = com.rows.filter((r) => r.optional);
+    expect(optional).toHaveLength(5);
+    expect(optional.every((r) => r.member.unassigned)).toBe(true);
+    expect(com.rows.filter((r) => !r.optional && r.member.unassigned)).toEqual(
+      [],
+    );
+    const ages = optional.map(
+      (r) => s.data.monitorProfiles[r.member.id]?.age ?? 99,
+    );
+    expect([...ages].sort((a, b) => a - b)).toEqual(ages);
     expect(com.borrowed).toHaveLength(1);
     const mic = await s.getMonitorsRoll({ kind: 'weekly', stage: 'mic' });
     expect(mic.rows.some((r) => r.member.otherStages.includes('com'))).toBe(

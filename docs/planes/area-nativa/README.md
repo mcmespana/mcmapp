@@ -105,6 +105,7 @@ respuestas. Lo que hay que cambiar está en [`ESTADO.md`](ESTADO.md).
 | [`14-inscripciones.md`](14-inscripciones.md) | Inscribirse (alta corta), mis inscripciones, modificar y cancelar | 13 | L |
 | [`15-pagos.md`](15-pagos.md) | Pagos y arrancar un pago con tarjeta desde la app | 11, 14 | L |
 | [`16-documentos-y-calendario.md`](16-documentos-y-calendario.md) | Documentos (ver, subir, borrar) y calendario con asistencia | 01, 03, 11 | M |
+| [`17-varias-delegaciones.md`](17-varias-delegaciones.md) | La delegación de trabajo: quien colabora con otra delegación la elige (plugin, 23/10) | 01, 04, 05, 06 | M |
 
 ### Estado (28/10/2026)
 
@@ -136,7 +137,7 @@ respuestas. Lo que hay que cambiar está en [`ESTADO.md`](ESTADO.md).
 (monitores) y 11-16 (familias) se pueden repartir entre varias sesiones,
 porque cada uno vive en sus carpetas; dentro de familias, 11 va primero.
 
-**Construir el área entera** = ejecutar estos 17 planes y, aparte, los del
+**Construir el área entera** = ejecutar estos 18 planes y, aparte, los del
 servidor. Lo que el plan del servidor tiene que dar sale de la sección «Datos»
 de cada uno (`docs/contratos/COMUNICA_API.md`, plan 00 tarea 7).
 

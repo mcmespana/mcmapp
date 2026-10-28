@@ -145,11 +145,12 @@ export function generateCoordination({
   const looseA = adult();
   const looseB = adult();
   const monitorMemberships: FakeMonitorMembership[] = [
-    { id: 'f-relm-01', personId: looseA.id, delegationId: D1 },
+    { id: 'f-relm-01', personId: looseA.id, delegationId: D1, kind: 'none' },
     {
       id: 'f-relm-02',
       personId: looseB.id,
       delegationId: D1,
+      kind: 'outside',
       outsideGroupName: 'Coro de jóvenes',
     },
   ];
@@ -309,7 +310,7 @@ export function generateCoordination({
     'Formación en protección del menor',
     'Código de conducta',
   ];
-  allMonitors.forEach((pid, i) => {
+  const buildProfile = (pid: string, i: number) => {
     const p = people.find((x) => x.id === pid)!;
     const age = 18 + Math.floor(r() * 12);
     const sinceYear = Math.min(2026, 2026 - Math.floor(r() * (age - 16)));
@@ -414,7 +415,8 @@ export function generateCoordination({
             ]
           : [],
     };
-  });
+  };
+  allMonitors.forEach(buildProfile);
 
   // Seguimientos: de los tres tipos sobre el de la racha (con uno del curso
   // anterior, uno sin fecha y uno de un tipo que no se conoce) y una
@@ -476,6 +478,38 @@ export function generateCoordination({
       },
     ],
   };
+
+  // Apoyo (lo ven todas las coordinaciones) y otro grupo que no pasa lista,
+  // al final para no mover el azar de lo de antes (plugin, 24-25/10/2026).
+  const apoyoA = adult();
+  const apoyoB = adult();
+  const najar = adult();
+  monitorMemberships.push(
+    {
+      id: 'f-relm-03',
+      personId: apoyoA.id,
+      delegationId: D1,
+      kind: 'support',
+      outsideGroupName: 'Monitores Apoyo',
+    },
+    {
+      id: 'f-relm-04',
+      personId: apoyoB.id,
+      delegationId: D1,
+      kind: 'support',
+      outsideGroupName: 'Monitores Apoyo',
+    },
+    {
+      id: 'f-relm-05',
+      personId: najar.id,
+      delegationId: D1,
+      kind: 'outside',
+      outsideGroupName: 'Najar',
+    },
+  );
+  [apoyoA.id, apoyoB.id, najar.id].forEach((pid, k) =>
+    buildProfile(pid, allMonitors.length + k),
+  );
 
   return {
     personaIds: { coordinationCom2: com2.id, both: both.id },

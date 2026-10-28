@@ -638,13 +638,23 @@ export const TeamMember = z.object({
   otherStages: z.array(Stage),
   schoolLevel: SchoolLevel.optional(),
   /**
-   * Tiene relación de monitor, pero no cuelga de ningún grupo de la
-   * delegación (vacío, comodín o un grupo fuera de Pasar Lista). Solo lo ve
-   * quien coordina toda la delegación. `membershipId` es la relación que se
-   * vincula.
+   * Tiene relación de monitor, pero no cuelga de ningún grupo de Pasar Lista
+   * de la delegación. Tres casos (plugin, 24-25/10/2026):
+   *   · `none`: sin grupo de verdad (vacío o el comodín «POR DEFINIR»). Es lo
+   *     que hay que arreglar: «Vincular» (`membershipId` es la relación). Solo
+   *     lo ve quien coordina toda la delegación.
+   *   · `support`: de un grupo de Apoyo (no pasa lista). Lo ven todas las
+   *     coordinaciones, con su ficha a mano.
+   *   · `outside`: de otro grupo que no pasa lista (Najar, Ruah…). No hay nada
+   *     que arreglar; solo quien coordina toda la delegación, plegado.
+   * `outsideGroupName`: el nombre de ese grupo (`support` y `outside`).
    */
   unassigned: z
-    .object({ membershipId: Id, outsideGroupName: z.string().optional() })
+    .object({
+      membershipId: Id,
+      kind: z.enum(['none', 'support', 'outside']),
+      outsideGroupName: z.string().optional(),
+    })
     .optional(),
 });
 export type TeamMember = z.infer<typeof TeamMember>;
@@ -727,7 +737,17 @@ export type MonitorsRollKind = z.infer<typeof MonitorsRollKind>;
 
 export const MonitorsRollRow = z.object({
   member: TeamMember,
-  /** `null` = sin asistencia todavía (se pinta y se guarda como «vino»). */
+  /**
+   * No se le pasa lista de grupo (Apoyo, otros grupos, sin grupo; solo en la
+   * semanal): arranca SIN MARCAR, el toque cicla «-» → vino → no vino → «-»,
+   * sin marca no se escribe ni cuenta, y no lleva % ni aviso (plugin,
+   * 25/10/2026). En las reuniones se espera a todos: nunca es opcional.
+   */
+  optional: z.boolean(),
+  /**
+   * `null` = sin asistencia todavía: se pinta y se guarda como «vino», salvo
+   * en una fila `optional`, que se queda sin marcar.
+   */
   mark: SetMark.nullable(),
   reason: z.string().nullable(),
   /** Una por sesión celebrada del evento de la lista, antigua → reciente. */
@@ -757,7 +777,10 @@ export const MonitorsRoll = read({
 });
 export type MonitorsRoll = z.infer<typeof MonitorsRoll>;
 
-/** `PUT /v1/sessions/:id/monitors-roll` — TODAS las filas, ninguna `null`. */
+/**
+ * `PUT /v1/sessions/:id/monitors-roll` — TODAS las filas, ninguna `null`,
+ * salvo las `optional` sin marcar, que no van (sin marca no se escribe).
+ */
 export const MonitorsRollWrite = z.object({
   clientId: ClientId,
   kind: MonitorsRollKind,
