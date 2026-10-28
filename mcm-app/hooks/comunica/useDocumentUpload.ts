@@ -111,3 +111,9 @@ export function useDocumentUpload(kind: DocumentKind) {
     retry: () => void retryUpload(kind),
   };
 }
+
+/** Solo en qué está la subida de un tipo (para el aviso del certificado). */
+export function useUploadPhase(kind: DocumentKind) {
+  const entry = useSyncExternalStore(subscribeUploads, () => getUpload(kind));
+  return entry?.phase ?? null;
+}

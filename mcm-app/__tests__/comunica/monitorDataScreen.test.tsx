@@ -71,6 +71,18 @@ jest.mock('expo-image', () => ({
   },
 }));
 
+const mockGetDocument = jest.fn();
+jest.mock('expo-document-picker', () => ({
+  getDocumentAsync: (o: unknown) => mockGetDocument(o),
+}));
+jest.mock('expo-image-picker', () => ({
+  UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' },
+}));
+jest.mock('@/services/comunica/localFiles', () => ({
+  deleteLocalCopy: jest.fn(),
+  localFileSize: () => null,
+}));
+
 import ComunicaAreaProvider from '@/components/comunica/comun/ComunicaAreaProvider';
 import MonitorDataScreen from '@/components/comunica/yo/MonitorDataScreen';
 import {
@@ -81,6 +93,7 @@ import {
 import type { FakeServer } from '@/services/comunica/fake';
 import { __resetSessionForTests, signIn } from '@/services/comunica/session';
 import { memoryBackend, setStorageBackend } from '@/services/comunica/storage';
+import { clearUploads } from '@/services/comunica/uploads';
 import type { PersonaId } from '@/services/comunica/fake/fixtures';
 
 const METRICS = {
@@ -150,6 +163,7 @@ async function setup(persona: PersonaId = 'monitor') {
 }
 
 afterEach(() => {
+  clearUploads();
   __resetComunicaApiForTests();
   __resetSessionForTests();
   jest.clearAllMocks();
@@ -202,6 +216,79 @@ describe('Mis datos de monitor', () => {
   it('sin papel de monitor: «Esta sección es para monitores» y volver', async () => {
     const { tree, qc } = await setup('accompaniment');
     await until(() => texts(tree).includes('Esta sección es para monitores'));
+    act(() => tree.unmount());
+    qc.clear();
+  });
+});
+
+describe('el certificado de delitos sexuales', () => {
+  const ALERT = 'Te falta subir tu Certificado de Delitos Sexuales';
+
+  it('elegir «Manual» enseña el archivo y el aviso', async () => {
+    // Coordinación eligió «Automático»: ni aviso ni archivo.
+    const { tree, qc } = await setup('coordination');
+    await until(() => texts(tree).includes('Trayectoria'));
+    expect(texts(tree)).not.toContain(ALERT);
+    expect(texts(tree)).toContain(
+      "Ver tutorial para autorizarnos en 'Mi Carpeta Ciudadana'",
+    );
+    expect(texts(tree)).not.toContain('Subir Certificado de Delitos Sexuales');
+    await press(
+      tree,
+      'Manual. Envío aquí el certificado y lo renovaré cada septiembre.',
+    );
+    expect(texts(tree)).toContain(ALERT);
+    expect(texts(tree)).toContain('Subir Certificado de Delitos Sexuales');
+    expect(texts(tree)).toContain('Ir al trámite del Ministerio de Justicia');
+    expect(touchable(tree, 'Guardar').props.isDisabled).toBe(false);
+    act(() => tree.unmount());
+    qc.clear();
+  });
+
+  it('el monitor en «Manual» ve el aviso, sube y el aviso se va', async () => {
+    const { fake, tree, qc } = await setup('monitor');
+    await until(() => texts(tree).includes(ALERT));
+    mockGetDocument.mockResolvedValueOnce({
+      canceled: false,
+      assets: [
+        {
+          uri: 'file:///cache/DocumentPicker/cert.pdf',
+          name: 'cert.pdf',
+          size: 1000,
+          mimeType: 'application/pdf',
+        },
+      ],
+    });
+    await press(tree, 'Elegir: Subir Certificado de Delitos Sexuales');
+    await press(tree, 'Elegir un archivo');
+    await until(() => !texts(tree).includes(ALERT));
+    expect(fake.uploads()).toHaveLength(1);
+    expect((await fake.getMyMonitorProfile()).files.sexOffenceCertificate).toBe(
+      true,
+    );
+    act(() => tree.unmount());
+    qc.clear();
+  });
+
+  it('si la subida falla, el aviso vuelve', async () => {
+    const { fake, tree, qc } = await setup('monitor');
+    await until(() => texts(tree).includes(ALERT));
+    fake.setControls({ crmDown: true });
+    mockGetDocument.mockResolvedValueOnce({
+      canceled: false,
+      assets: [
+        {
+          uri: 'file:///cache/DocumentPicker/cert.pdf',
+          name: 'cert.pdf',
+          size: 1000,
+          mimeType: 'application/pdf',
+        },
+      ],
+    });
+    await press(tree, 'Elegir: Subir Certificado de Delitos Sexuales');
+    await press(tree, 'Elegir un archivo');
+    await until(() => texts(tree).includes('El CRM no responde ahora mismo'));
+    expect(texts(tree)).toContain(ALERT);
     act(() => tree.unmount());
     qc.clear();
   });

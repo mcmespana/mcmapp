@@ -25,11 +25,13 @@ import {
   usePendingMonitorChanges,
 } from '@/hooks/comunica/useMonitorProfile';
 import { useMonitorProfileForm } from '@/hooks/comunica/useMonitorProfileForm';
+import { useUploadPhase } from '@/hooks/comunica/useDocumentUpload';
 import { useFlushOutboxOnMount } from '@/hooks/comunica/useOutbox';
 import { useOpenLegacy } from '@/hooks/comunica/useOpenLegacy';
 import { h } from '@/utils/haptics';
 import {
   COURSE_LABEL,
+  isCertificatePending,
   MONITOR_OF_LABEL,
   optionsOf,
   PRE_MONITOR_LABEL,
@@ -53,7 +55,9 @@ import { TextFormField } from '../comun/form/FormField';
 import FormSection, { FormNote } from '../comun/form/FormSection';
 import SelectField from '../comun/form/SelectField';
 import SwitchField from '../comun/form/SwitchField';
+import CertificatePendingAlert from './CertificatePendingAlert';
 import { MONITOR_COPY as C } from './copy';
+import { CertificateSection, DocumentField } from './MonitorParts';
 
 const MONITOR_OF_OPTIONS = optionsOf(MONITOR_OF_LABEL);
 const PRE_MONITOR_OPTIONS = optionsOf(PRE_MONITOR_LABEL);
@@ -131,6 +135,15 @@ function MonitorForm({
   const f = useMonitorProfileForm(profile, pending.changes);
   const { form, set } = f;
   const blocked = Object.keys(f.errors).length > 0;
+  const certPhase = useUploadPhase('sex_offence_certificate');
+  // El aviso sigue a lo que hay en pantalla: elegir «Manual» lo enseña.
+  const certificatePending = isCertificatePending({
+    mode: form.sexOffenceCertificateMode,
+    hasFile: profile.files.sexOffenceCertificate || certPhase === 'applied',
+    uploading: certPhase === 'sending',
+  });
+  const toDocuments = () =>
+    goTo({ internalpage: 'list_stic_documents' }, 'Documentos');
 
   // El aviso del plugin cuando el servidor lo aplica (o lo rechaza) con la
   // pantalla abierta. Solo en el cambio de estado, no al entrar.
@@ -205,6 +218,7 @@ function MonitorForm({
     >
       <Stack.Screen options={{ title: C.title }} />
       {isNetwork(error) ? <OfflineNotice /> : null}
+      {certificatePending ? <CertificatePendingAlert /> : null}
       <Text style={[styles.intro, { color: t.textSecondary }]}>{C.intro}</Text>
 
       <FormSection title={C.sections.path}>
@@ -343,6 +357,39 @@ function MonitorForm({
         />
       </FormSection>
 
+      <CertificateSection
+        mode={form.sexOffenceCertificateMode}
+        onMode={(m) => set('sexOffenceCertificateMode', m)}
+        hasFile={profile.files.sexOffenceCertificate}
+        onReview={toDocuments}
+      />
+
+      <FormSection title={C.sections.files}>
+        <FormNote>{C.files.note}</FormNote>
+        <DocumentField
+          kind="mat"
+          label={C.files.mat}
+          hasFile={profile.files.mat}
+          onReview={toDocuments}
+        />
+        <DocumentField
+          kind="dat"
+          label={C.files.dat}
+          hasFile={profile.files.dat}
+          onReview={toDocuments}
+        />
+        <DocumentField
+          kind="other_training"
+          label={C.files.other}
+          hasFile={profile.files.otherTraining}
+          onReview={toDocuments}
+        >
+          <Text style={[styles.note, { color: t.textSecondary }]}>
+            {C.files.otherNote}
+          </Text>
+        </DocumentField>
+      </FormSection>
+
       <Section>
         <NavRow
           icon="person.crop.circle"
@@ -367,6 +414,7 @@ function MonitorForm({
 const styles = StyleSheet.create({
   intro: { ...typography.subhead, paddingHorizontal: 4 },
   strong: { fontWeight: '600' },
+  note: { ...typography.caption },
   yearInput: { alignSelf: 'flex-start', minWidth: 112 },
   status: { alignItems: 'center' },
   footer: { alignItems: 'center' },
