@@ -290,7 +290,12 @@ describe('FileField', () => {
   it('sin archivo: la pista del plugin y la hoja con las tres fuentes', () => {
     const onChoose = jest.fn();
     const tree = mount(
-      <FileField label="Título MAT" hasFile={false} onChoose={onChoose} />,
+      <FileField
+        label="Título MAT"
+        hasFile={false}
+        showHints
+        onChoose={onChoose}
+      />,
     );
     expect(texts(tree)).toContain(FILE_HINT_EMPTY);
     expect(texts(tree)).not.toContain('Ya subido');
@@ -308,6 +313,7 @@ describe('FileField', () => {
       <FileField
         label="Título DAT"
         hasFile
+        showHints
         onChoose={() => {}}
         onReview={() => {}}
       />,

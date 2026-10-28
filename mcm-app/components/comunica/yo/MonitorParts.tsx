@@ -55,9 +55,11 @@ export function DocumentField({
   label,
   hasFile,
   onReview,
+  showHints,
   children,
 }: {
   kind: DocumentKind;
+  showHints?: boolean;
   label: string;
   hasFile: boolean;
   onReview: () => void;
@@ -73,6 +75,7 @@ export function DocumentField({
       onChoose={(s) => void u.choose(s)}
       onRetry={u.retry}
       onReview={onReview}
+      showHints={showHints}
     >
       {children}
     </FileField>
@@ -184,6 +187,7 @@ export function CertificateSection({
             label={C.upload}
             hasFile={hasFile}
             onReview={onReview}
+            showHints
           >
             <ExternalLink label={C.ministry} url={LINKS.ministry} />
           </DocumentField>

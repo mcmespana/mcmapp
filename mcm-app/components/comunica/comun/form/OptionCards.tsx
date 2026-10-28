@@ -64,7 +64,6 @@ export default function OptionCards<V extends string>({
               },
             ]}
           >
-            <PressableFeedback.Highlight />
             <View style={styles.head}>
               {o.icon ? (
                 <IconSymbol name={o.icon} size={20} color={t.accentText} />
@@ -79,6 +78,8 @@ export default function OptionCards<V extends string>({
             <Text style={[styles.desc, { color: t.textSecondary }]}>
               {o.description}
             </Text>
+            {/* Al final: en web, delante, el hueco (`gap`) movía el contenido. */}
+            <PressableFeedback.Highlight />
           </PressableFeedback>
         );
       })}

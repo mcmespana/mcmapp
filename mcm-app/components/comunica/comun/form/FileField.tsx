@@ -59,6 +59,7 @@ export default function FileField({
   hasFile,
   upload,
   problem,
+  showHints = false,
   onChoose,
   onRetry,
   onReview,
@@ -70,6 +71,12 @@ export default function FileField({
   upload?: FileFieldUpload | null;
   /** Lo elegido no vale («Ese archivo pesa más de 6 MB.»). */
   problem?: string | null;
+  /**
+   * Las pistas del plugin bajo el campo (formatos, o «Sube uno nuevo para
+   * sustituirlo»). En una sección con varios archivos NO: la de formatos va
+   * una vez al pie de la sección, y «Cambiar» ya dice que se sustituye.
+   */
+  showHints?: boolean;
   onChoose: (source: FileSource) => void;
   onRetry?: () => void;
   /** «Revisarlo en Documentos →». */
@@ -86,31 +93,69 @@ export default function FileField({
   );
   return (
     <View style={styles.field}>
-      <FieldLabel label={label} />
-      {uploaded && upload?.state !== 'applied' ? (
-        <LockedRow
-          value="Ya subido"
-          action={
-            onReview
-              ? { label: 'Revisarlo en Documentos →', onPress: onReview }
-              : undefined
-          }
-        />
-      ) : null}
+      <View style={styles.row}>
+        <View style={styles.head}>
+          <FieldLabel label={label} />
+          {uploaded && upload?.state !== 'applied' ? (
+            <LockedRow
+              value="Ya subido"
+              action={
+                onReview
+                  ? { label: 'Revisarlo en Documentos →', onPress: onReview }
+                  : undefined
+              }
+            />
+          ) : !upload ? (
+            <Text style={[styles.state, { color: t.textMuted }]}>
+              Sin subir
+            </Text>
+          ) : null}
+        </View>
+        <PressableFeedback
+          onPress={() => {
+            h.tap();
+            setChoosing(true);
+          }}
+          isDisabled={sending}
+          accessibilityRole="button"
+          accessibilityLabel={`${uploaded ? 'Sustituir' : 'Elegir'}: ${label}`}
+          accessibilityState={{ disabled: sending }}
+          style={[
+            styles.button,
+            { borderColor: sending ? t.separator : t.accentText },
+          ]}
+        >
+          <IconSymbol
+            name="paperclip"
+            size={16}
+            color={sending ? t.textMuted : t.accentText}
+          />
+          <Text
+            style={[
+              styles.buttonText,
+              { color: sending ? t.textMuted : t.accentText },
+            ]}
+          >
+            {uploaded ? 'Cambiar' : 'Elegir'}
+          </Text>
+          {/* Al final: en web, delante, el hueco (`gap`) movía el contenido. */}
+          <PressableFeedback.Highlight />
+        </PressableFeedback>
+      </View>
       {upload ? (
         <View
           style={[styles.upload, { backgroundColor: t.backgroundSunken }]}
           accessible
           accessibilityLabel={`${upload.name}, ${upload.sizeText}`}
         >
-          <IconSymbol name="paperclip" size={18} color={t.textSecondary} />
+          <IconSymbol name="doc.text" size={18} color={t.textSecondary} />
           <View style={styles.uploadBody}>
             <Text
               style={[styles.fileName, { color: t.text }]}
               numberOfLines={1}
               ellipsizeMode="middle"
             >
-              {upload.name}
+              {upload.name} · {upload.sizeText}
             </Text>
             <UploadStatus state={upload.state} onRetry={onRetry} />
             {upload.state === 'failed' && upload.message ? (
@@ -122,27 +167,16 @@ export default function FileField({
         </View>
       ) : null}
       <FieldHint
-        hint={uploaded ? FILE_HINT_REPLACE : FILE_HINT_EMPTY}
+        hint={
+          !showHints
+            ? undefined
+            : uploaded
+              ? FILE_HINT_REPLACE
+              : FILE_HINT_EMPTY
+        }
         error={problem ?? undefined}
       />
-      <PressableFeedback
-        onPress={() => {
-          h.tap();
-          setChoosing(true);
-        }}
-        isDisabled={sending}
-        accessibilityRole="button"
-        accessibilityLabel={`${uploaded ? 'Sustituir' : 'Elegir'}: ${label}`}
-        accessibilityState={{ disabled: sending }}
-        style={[styles.button, { borderColor: t.accentText }]}
-      >
-        <PressableFeedback.Highlight />
-        <IconSymbol name="paperclip" size={18} color={t.accentText} />
-        <Text style={[styles.buttonText, { color: t.accentText }]}>
-          {uploaded ? 'Subir otro archivo' : 'Elegir archivo'}
-        </Text>
-      </PressableFeedback>
-      {Platform.OS === 'ios' ? (
+      {Platform.OS === 'ios' && !uploaded ? (
         <Text style={[styles.message, { color: t.textSecondary }]}>
           {PAPER_HINT}
         </Text>
@@ -171,11 +205,11 @@ export default function FileField({
                 },
               ]}
             >
-              <PressableFeedback.Highlight />
               <IconSymbol name={s.icon} size={20} color={t.accentText} />
               <Text style={[styles.optionText, { color: t.text }]}>
                 {s.label}
               </Text>
+              <PressableFeedback.Highlight />
             </PressableFeedback>
           ))}
         </View>
@@ -188,7 +222,10 @@ export default function FileField({
 }
 
 const styles = StyleSheet.create({
-  field: { paddingHorizontal: 16, paddingVertical: 14, gap: 10 },
+  field: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  head: { flex: 1, gap: 2 },
+  state: { ...typography.subhead },
   upload: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -203,10 +240,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'flex-start',
-    gap: 8,
+    gap: 6,
     minHeight: 44,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     borderRadius: radii.sm,
     borderWidth: 1,
     overflow: 'hidden',

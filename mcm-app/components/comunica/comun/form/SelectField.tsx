@@ -56,7 +56,6 @@ export default function SelectField<V extends string>({
         accessibilityHint="Abre las opciones"
         style={styles.row}
       >
-        <PressableFeedback.Highlight />
         <Text style={[styles.label, { color: t.text }]}>{label}</Text>
         {/* La ⓘ es su propio botón, dentro de la fila (gana el toque). */}
         {help ? <HelpButton label={label} text={help} /> : null}
@@ -70,6 +69,8 @@ export default function SelectField<V extends string>({
           {shown}
         </Text>
         <IconSymbol name="chevron.down" size={14} color={t.textMuted} />
+        {/* Al final: en web, delante, el hueco (`gap`) movía el contenido. */}
+        <PressableFeedback.Highlight />
       </PressableFeedback>
       <BottomSheet visible={open} onClose={() => setOpen(false)} title={label}>
         <View
@@ -93,7 +94,6 @@ export default function SelectField<V extends string>({
                   },
                 ]}
               >
-                <PressableFeedback.Highlight />
                 <Text
                   style={[
                     styles.optionLabel,
@@ -111,6 +111,7 @@ export default function SelectField<V extends string>({
                 {selected ? (
                   <IconSymbol name="checkmark" size={18} color={t.accentText} />
                 ) : null}
+                <PressableFeedback.Highlight />
               </PressableFeedback>
             );
           })}

@@ -45,7 +45,6 @@ export default function CheckListField({
             accessibilityLabel={o.label}
             style={styles.option}
           >
-            <PressableFeedback.Highlight />
             <IconSymbol
               name={on ? 'checkmark.circle.fill' : 'circle'}
               size={22}
@@ -54,6 +53,8 @@ export default function CheckListField({
             <Text style={[styles.optionLabel, { color: t.text }]}>
               {o.label}
             </Text>
+            {/* Al final: en web, delante, el hueco (`gap`) movía el contenido. */}
+            <PressableFeedback.Highlight />
           </PressableFeedback>
         );
       })}

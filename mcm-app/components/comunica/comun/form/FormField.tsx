@@ -71,13 +71,38 @@ export function TextFormField({
   error,
   value,
   onChangeText,
+  inline,
   ...input
 }: FieldProps &
   Omit<TextInputProps, 'value' | 'onChangeText'> & {
     value: string;
     onChangeText: (v: string) => void;
+    /** Etiqueta a la izquierda y el campo corto a la derecha (un año). */
+    inline?: boolean;
   }) {
   const t = useComunicaTheme();
+  if (inline) {
+    return (
+      <View style={styles.inlineField}>
+        <View style={styles.inlineRow}>
+          <View style={styles.inlineLabel}>
+            <FieldLabel label={label} help={help} />
+          </View>
+          <AppTextField
+            value={value}
+            onChangeText={onChangeText}
+            accessibilityLabel={label}
+            accessibilityHint={error ?? hint}
+            accentColor={t.accentText}
+            error={!!error}
+            style={styles.inlineInput}
+            {...input}
+          />
+        </View>
+        <FieldHint hint={hint} error={error} />
+      </View>
+    );
+  }
   return (
     <FormField label={label} help={help} hint={hint} error={error}>
       <AppTextField
@@ -96,6 +121,11 @@ export function TextFormField({
 const styles = StyleSheet.create({
   field: { paddingHorizontal: 16, paddingVertical: 14, gap: 8 },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  label: { ...typography.subhead, fontWeight: '600', flexShrink: 1 },
+  label: { ...typography.body, flexShrink: 1 },
   hint: { ...typography.caption },
+  inlineField: { paddingHorizontal: 16, paddingVertical: 8, gap: 4 },
+  inlineRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  inlineLabel: { flex: 1 },
+  // Cabe «AAAA» con la letra grande; el número va alineado como en Ajustes.
+  inlineInput: { width: 96, textAlign: 'center' },
 });

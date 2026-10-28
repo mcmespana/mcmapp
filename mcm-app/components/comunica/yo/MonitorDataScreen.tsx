@@ -52,6 +52,7 @@ import UploadStatus from '../comun/UploadStatus';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import CheckListField from '../comun/form/CheckListField';
 import { TextFormField } from '../comun/form/FormField';
+import { FILE_HINT_EMPTY } from '../comun/form/FileField';
 import FormSection, { FormNote } from '../comun/form/FormSection';
 import SelectField from '../comun/form/SelectField';
 import SwitchField from '../comun/form/SwitchField';
@@ -232,7 +233,7 @@ function MonitorForm({
           keyboardType="number-pad"
           inputMode="numeric"
           maxLength={4}
-          style={styles.yearInput}
+          inline
         />
         <SelectField
           label={C.monitorOf.label}
@@ -266,7 +267,7 @@ function MonitorForm({
           keyboardType="number-pad"
           inputMode="numeric"
           maxLength={4}
-          style={styles.yearInput}
+          inline
         />
       </FormSection>
 
@@ -364,7 +365,7 @@ function MonitorForm({
         onReview={toDocuments}
       />
 
-      <FormSection title={C.sections.files}>
+      <FormSection title={C.sections.files} footer={FILE_HINT_EMPTY}>
         <FormNote>{C.files.note}</FormNote>
         <DocumentField
           kind="mat"
@@ -415,7 +416,6 @@ const styles = StyleSheet.create({
   intro: { ...typography.subhead, paddingHorizontal: 4 },
   strong: { fontWeight: '600' },
   note: { ...typography.caption },
-  yearInput: { alignSelf: 'flex-start', minWidth: 112 },
   status: { alignItems: 'center' },
   footer: { alignItems: 'center' },
 });
