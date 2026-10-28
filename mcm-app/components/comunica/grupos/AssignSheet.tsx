@@ -71,9 +71,9 @@ export default function AssignSheet({ person, groups, onClose }: Props) {
           },
         ]}
       >
-        <PressableFeedback.Highlight />
         <Text style={[styles.optionLabel, { color: t.text }]}>{o.label}</Text>
         <IconSymbol name="link" size={18} color={t.accentText} />
+        <PressableFeedback.Highlight />
       </PressableFeedback>
     ));
 

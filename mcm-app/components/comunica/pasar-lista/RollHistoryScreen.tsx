@@ -140,7 +140,6 @@ function History({
                 accessibilityLabel={`${longDay(o.session.date)}, ${detail}`}
                 style={styles.row}
               >
-                <PressableFeedback.Highlight />
                 <View style={styles.rowBody}>
                   <Text style={[styles.rowTitle, { color: t.text }]}>
                     {longDay(o.session.date)} · {madridTime(o.session.startsAt)}
@@ -159,6 +158,7 @@ function History({
                   size={16}
                   color={t.textMuted}
                 />
+                <PressableFeedback.Highlight />
               </PressableFeedback>
             );
           })}

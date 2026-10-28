@@ -175,7 +175,6 @@ function Tree({
           .join(', ')}
         style={styles.row}
       >
-        <PressableFeedback.Highlight />
         <View style={styles.rowBody}>
           <Text style={[styles.rowTitle, { color: t.text }]} numberOfLines={1}>
             {gt.code ? <Text style={styles.code}>{gt.code}</Text> : null}
@@ -191,6 +190,7 @@ function Tree({
         </View>
         {state ? <RollStateDot state={state} /> : null}
         <IconSymbol name="chevron.right" size={16} color={t.textMuted} />
+        <PressableFeedback.Highlight />
       </PressableFeedback>
     );
   };

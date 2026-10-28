@@ -73,7 +73,6 @@ export function EventListRow({
       accessibilityLabel={`${event.name}, ${dates}`}
       style={styles.row}
     >
-      <PressableFeedback.Highlight />
       <DateCapsule day={event.startDate} />
       <View style={styles.body}>
         <Text
@@ -85,6 +84,7 @@ export function EventListRow({
         <Text style={[styles.sub, { color: t.textSecondary }]}>{dates}</Text>
       </View>
       <IconSymbol name="chevron.right" size={16} color={t.textMuted} />
+      <PressableFeedback.Highlight />
     </PressableFeedback>
   );
 }

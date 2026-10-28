@@ -192,13 +192,13 @@ function Body({
                 accessibilityHint="Abre su ficha"
                 style={styles.monitor}
               >
-                <PressableFeedback.Highlight />
                 {body}
                 <IconSymbol
                   name="chevron.right"
                   size={16}
                   color={t.textMuted}
                 />
+                <PressableFeedback.Highlight />
               </PressableFeedback>
             ) : (
               <View

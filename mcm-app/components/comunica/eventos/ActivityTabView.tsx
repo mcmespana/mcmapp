@@ -339,11 +339,11 @@ export default function ActivityTabView({
               accessibilityRole="button"
               style={styles.linkRow}
             >
-              <PressableFeedback.Highlight />
               <Text style={[styles.link, { color: t.accentText }]}>
                 Pasar lista de este grupo
               </Text>
               <IconSymbol name="chevron.right" size={16} color={t.accentText} />
+              <PressableFeedback.Highlight />
             </PressableFeedback>
           </ListCell>
         );

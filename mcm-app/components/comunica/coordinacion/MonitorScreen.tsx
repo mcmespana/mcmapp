@@ -217,13 +217,13 @@ function Ficha({
                   accessibilityHint="Abre su lista"
                   style={styles.groupRow}
                 >
-                  <PressableFeedback.Highlight />
                   <View style={styles.flex}>{body}</View>
                   <IconSymbol
                     name="chevron.right"
                     size={16}
                     color={t.textMuted}
                   />
+                  <PressableFeedback.Highlight />
                 </PressableFeedback>
               ) : (
                 <View key={g.group.id} style={styles.groupRow}>
@@ -425,8 +425,8 @@ function Round({
       accessibilityLabel={label}
       style={[styles.round, { backgroundColor: t.backgroundSunken }]}
     >
-      <PressableFeedback.Highlight />
       <IconSymbol name={icon} size={18} color={t.accentText} />
+      <PressableFeedback.Highlight />
     </PressableFeedback>
   );
 }
@@ -460,7 +460,6 @@ function TrackRow({ title, view }: { title: string; view: TrackView | null }) {
         accessibilityHint="Abre cada sesión con su marca"
         style={styles.row}
       >
-        <PressableFeedback.Highlight />
         <View style={styles.trackHead}>
           <Text style={[styles.body, styles.bold, { color: t.text }]}>
             {title}
@@ -485,6 +484,7 @@ function TrackRow({ title, view }: { title: string; view: TrackView | null }) {
             {a.what} · {a.why}
           </Text>
         ))}
+        <PressableFeedback.Highlight />
       </PressableFeedback>
       <SquaresSheet
         title={title}
@@ -520,7 +520,6 @@ function ListsRow({
         accessibilityLabel={`${title}: ${score}. ${foot}`}
         style={styles.row}
       >
-        <PressableFeedback.Highlight />
         <View style={styles.trackHead}>
           <Text style={[styles.body, styles.bold, { color: t.text }]}>
             {title}
@@ -550,6 +549,7 @@ function ListsRow({
         {foot ? (
           <Text style={[styles.small, { color: t.textSecondary }]}>{foot}</Text>
         ) : null}
+        <PressableFeedback.Highlight />
       </PressableFeedback>
       <BottomSheet visible={open} onClose={() => setOpen(false)} title={title}>
         <View style={styles.sheet}>

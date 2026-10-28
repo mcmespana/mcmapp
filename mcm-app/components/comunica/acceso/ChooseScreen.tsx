@@ -74,7 +74,6 @@ export default function ChooseScreen({
                 accessibilityLabel={`${c.name}, ${c.delegation}`}
                 style={styles.row}
               >
-                <PressableFeedback.Highlight />
                 <View style={styles.rowBody}>
                   <Text style={[styles.name, { color: t.text }]}>{c.name}</Text>
                   <Text style={[styles.sub, { color: t.textSecondary }]}>
@@ -89,6 +88,7 @@ export default function ChooseScreen({
                   size={16}
                   color={t.textMuted}
                 />
+                <PressableFeedback.Highlight />
               </PressableFeedback>
             ))}
           </Section>

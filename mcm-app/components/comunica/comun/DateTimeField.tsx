@@ -95,13 +95,13 @@ export default function DateTimeField({
       accessibilityLabel={`${label}: ${shownValue(mode, value)}`}
       style={styles.row}
     >
-      <PressableFeedback.Highlight />
       <Text style={[styles.label, { color: t.text }]}>{label}</Text>
       <View style={[styles.value, { backgroundColor: t.backgroundSunken }]}>
         <Text style={[styles.valueText, { color: t.accentText }]}>
           {shownValue(mode, value)}
         </Text>
       </View>
+      <PressableFeedback.Highlight />
     </PressableFeedback>
   );
 }
