@@ -44,6 +44,7 @@ import {
   type FakeRegistration,
 } from './fixturesEvents';
 import { daysBetween, madridInstant } from '@/utils/comunica/madrid';
+import { courseOf } from '@/utils/comunica/events';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export interface EventsCtx {
@@ -72,13 +73,6 @@ const validation = (reason: string, message: string) =>
 
 const MAX_DAYS = 50;
 const TEAM: readonly Role[] = ['monitor', 'coordination', 'accompaniment'];
-
-/** El curso que contiene `day`: del 1 de septiembre al 31 de agosto. */
-export function courseOf(day: string) {
-  const [y, m] = day.split('-').map(Number);
-  const start = m >= 9 ? y : y - 1;
-  return { start: `${start}-09-01`, end: `${start + 1}-08-31` };
-}
 
 export function createEventRoutes(ctx: EventsCtx): EventsApi & {
   /** Los datos de eventos (para los tests). */
@@ -335,7 +329,7 @@ export function createEventRoutes(ctx: EventsCtx): EventsApi & {
       const course = courseOf(ctx.today());
       return EventsResponse.parse({
         generatedAt: ctx.nowIso(),
-        season: `${course.start.slice(0, 4)}-${course.end.slice(0, 4)}`,
+        season: course.label,
         events: offered().map(summaryOf),
       });
     },
