@@ -102,6 +102,10 @@ export default function ComunicaLayout() {
         <Stack.Screen name="acceso-codigo" options={{ title: 'Código' }} />
         <Stack.Screen name="acceso-elegir" options={{ title: 'Elegir' }} />
         <Stack.Screen name="yo/index" options={{ title: 'Tu cuenta' }} />
+        <Stack.Screen
+          name="yo/monitor"
+          options={{ title: 'Mis datos de monitor' }}
+        />
         <Stack.Screen name="web" options={{ headerShown: false }} />
         <Stack.Screen name="muestra" options={{ title: 'Muestra' }} />
       </Stack>
