@@ -71,6 +71,8 @@ import { madridDay, madridInstant } from '@/utils/comunica/madrid';
 import { canMarkSession } from '@/utils/comunica/sessions';
 import { unionScope, type CoordRelation } from '@/utils/comunica/scope';
 import { createCoordinationRoutes, pendingMeetingOf } from './coordination';
+import { createEventRoutes } from './events';
+import type { FakeEventData } from './fixturesEvents';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export interface FakeControls {
@@ -93,6 +95,11 @@ export interface FakeControls {
    * participante tiene la relación vigente (Grupos y fichas, plan 05).
    */
   seasonClosed: boolean;
+  /**
+   * Pasar lista en un evento: se escribe, pero la relectura no lo confirma
+   * (`crm_unavailable`); la cola reintenta sin duplicar (plan 07).
+   */
+  eventRereadFails: boolean;
 }
 
 export const DEFAULT_CONTROLS: FakeControls = {
@@ -104,6 +111,7 @@ export const DEFAULT_CONTROLS: FakeControls = {
   clock: null,
   cannotRegister: false,
   seasonClosed: false,
+  eventRereadFails: false,
 };
 
 const PERSONA_ROLES: Record<PersonaId, { roles: Role[]; scope: Me['scope'] }> =
@@ -164,6 +172,8 @@ export interface FakeServer extends ComunicaApi {
   reset(): void;
   /** Los datos en bruto, para los tests. */
   readonly data: FakeData;
+  /** Los eventos para pasar lista (plan 07), en bruto. */
+  readonly eventData: FakeEventData;
   /** Entra directamente como una persona de prueba (Laboratorio Alpha). */
   issueSession(persona: PersonaId): Tokens & { me: Me };
   /** Revoca todas las sesiones: el siguiente refresco falla. */
@@ -497,9 +507,32 @@ export function createFakeServer(
     },
   });
 
+  // Pasar lista en un evento (plan 07): sus rutas viven en `events.ts`.
+  const events = createEventRoutes({
+    data: () => data,
+    gate: (route, write) => gate(route, write),
+    roles: () => PERSONA_ROLES[current].roles,
+    delegationId,
+    today,
+    nowIso,
+    rereadFails: () => controls.eventRereadFails,
+    photoUrlOf,
+    seen: seenClientIds,
+    bumpWrites: (n = 1) => {
+      writeCount += n;
+    },
+  });
+
   // Sin `...coordination` dentro del literal: Babel evaluaría los getters de
   // abajo (`writeCount` se quedaría en 0). Se juntan al final.
-  const server: Omit<FakeServer, keyof typeof coordination> = {
+  const server: Omit<
+    FakeServer,
+    | keyof typeof coordination
+    | 'getEvents'
+    | 'getEventRoll'
+    | 'saveEventRoll'
+    | 'eventData'
+  > = {
     get controls() {
       return controls;
     },
@@ -1138,5 +1171,16 @@ export function createFakeServer(
       return { uri: abstractImage(url), cacheKey: url };
     },
   };
-  return Object.assign(server, coordination);
+  Object.defineProperty(server, 'eventData', {
+    get: () => events.eventData,
+  });
+  return Object.assign(
+    server as typeof server & { eventData: FakeEventData },
+    coordination,
+    {
+      getEvents: events.getEvents,
+      getEventRoll: events.getEventRoll,
+      saveEventRoll: events.saveEventRoll,
+    },
+  );
 }

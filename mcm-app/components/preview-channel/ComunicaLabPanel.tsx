@@ -120,6 +120,7 @@ export function ComunicaLabPanel() {
             controls.latencyMs > 1000 && 'slow',
             controls.cannotRegister && 'register',
             controls.seasonClosed && 'closed',
+            controls.eventRereadFails && 'reread',
           ].filter(Boolean) as string[]
         }
         options={[
@@ -128,6 +129,7 @@ export function ComunicaLabPanel() {
           ['slow', 'Lento (2 s)'],
           ['register', 'No se puede inscribir'],
           ['closed', 'Curso cerrado'],
+          ['reread', 'Evento: la relectura falla'],
         ]}
         onChange={(k) =>
           set(
@@ -139,7 +141,9 @@ export function ComunicaLabPanel() {
                   ? { latencyMs: controls.latencyMs > 1000 ? 300 : 2000 }
                   : k === 'register'
                     ? { cannotRegister: !controls.cannotRegister }
-                    : { seasonClosed: !controls.seasonClosed },
+                    : k === 'closed'
+                      ? { seasonClosed: !controls.seasonClosed }
+                      : { eventRereadFails: !controls.eventRereadFails },
           )
         }
       />

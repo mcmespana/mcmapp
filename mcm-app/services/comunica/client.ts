@@ -11,6 +11,10 @@
 
 import { z } from 'zod';
 import {
+  EventsResponse,
+  EventRollWriteResult,
+  EventRollWrite,
+  EventRoll,
   type CodeRequest,
   CoordinationHome,
   CoordinationSummary,
@@ -124,6 +128,14 @@ export interface ComunicaApi {
     eventId: string,
     body: SessionTodayWrite,
   ): Promise<SessionTodayResult>;
+
+  // Pasar lista en un evento (plan 07).
+  getEvents(opts?: ReadOptions): Promise<EventsResponse>;
+  getEventRoll(eventId: string, opts?: ReadOptions): Promise<EventRoll>;
+  saveEventRoll(
+    eventId: string,
+    body: EventRollWrite,
+  ): Promise<EventRollWriteResult>;
   /**
    * Cómo pedir una foto (`photoUrl`): con el servidor de verdad, la URL con el
    * token; con el falso, su imagen inventada. Ninguna pantalla importa el falso.
@@ -446,6 +458,24 @@ export function createHttpClient({
         SessionTodayResult,
         body,
       ),
+    getEvents: (opts) =>
+      request(
+        'GET',
+        `/v1/events${q(opts)}`,
+        EventsResponse,
+        undefined,
+        READ_RETRIES,
+      ),
+    getEventRoll: (id, opts) =>
+      request(
+        'GET',
+        `/v1/events/${enc(id)}/roll${q(opts)}`,
+        EventRoll,
+        undefined,
+        READ_RETRIES,
+      ),
+    saveEventRoll: (id, body) =>
+      request('PUT', `/v1/events/${enc(id)}/roll`, EventRollWriteResult, body),
     photoSource: (url) => {
       // `expo-image` pide la foto él solo: el token va en la cabecera, y SOLO
       // si la foto es de nuestro servidor (una `photoUrl` de otro dominio no se

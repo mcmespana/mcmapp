@@ -1017,6 +1017,161 @@ export const COORDINATION_REJECTIONS = [
   'bad_type',
 ] as const;
 
+// ── Pasar lista en un evento (plan 07 «Datos») ──────────────────────────────
+
+/**
+ * Un evento de la delegación que se puede pasar (`sticpa_pl_ev_clasificar`):
+ * del curso, con fecha de inicio, de 50 días o menos, sin el de sesiones
+ * semanales ni el de reuniones. La app lo clasifica con la fecha de hoy.
+ */
+export const EventSummary = z.object({
+  id: Id,
+  name: z.string(),
+  /** Días en Madrid; sin fin, el de inicio. */
+  startDate: Day,
+  endDate: Day,
+  startsAt: Instant,
+  endsAt: Instant,
+});
+export type EventSummary = z.infer<typeof EventSummary>;
+
+/** `GET /v1/events` — los de hoy, próximos y pasados del curso (la app clasifica). */
+export const EventsResponse = read({
+  season: z.string(),
+  events: z.array(EventSummary),
+});
+export type EventsResponse = z.infer<typeof EventsResponse>;
+
+/** Una marca de un evento: nunca `null` (sin marcar = no está). */
+export const MarkEntry = z.object({
+  mark: SetMark,
+  reason: z.string().max(NOTE_MAX).optional(),
+});
+export type MarkEntry = z.infer<typeof MarkEntry>;
+
+export const EVENT_ROLES = ['participant', 'monitor', 'team'] as const;
+export const EventRole = z.enum(EVENT_ROLES);
+export type EventRole = z.infer<typeof EventRole>;
+
+export const NOT_GOING_STATUSES = [
+  'cancelled',
+  'rejected',
+  'not_invited',
+  'did_not_take_part',
+] as const;
+export const NotGoingStatus = z.enum(NOT_GOING_STATUSES);
+export type NotGoingStatus = z.infer<typeof NotGoingStatus>;
+
+/** Una persona de la lista del evento (`sticpa_pl_ev_lista`). */
+export const EventPerson = z.object({
+  person: PersonSummary,
+  /** Curso: el de la inscripción o el de su relación de participante. */
+  schoolLevel: SchoolLevel.nullable(),
+  role: EventRole,
+  /** Del curso; si no, la del grupo; si no, la de la ficha. */
+  stage: z.enum(['mic', 'com', 'lc']).nullable(),
+  /** Su grupo de los sábados en la delegación (abre su ficha). */
+  homeGroup: z.object({ id: Id, code: z.string().nullable() }).nullable(),
+  /** `null` = de la delegación del evento. */
+  otherDelegation: Delegation.nullable(),
+  activityGroupIds: z.array(Id),
+  /** Solo en `notGoing`. */
+  registrationStatus: NotGoingStatus.optional(),
+});
+export type EventPerson = z.infer<typeof EventPerson>;
+
+export const ACTIVITY_TYPES = [
+  'patrol',
+  'dynamics',
+  'room',
+  'olympics',
+  'cleaning',
+  'subgroup',
+  'clan',
+  'house',
+  'large_group',
+  'other',
+] as const;
+export const ActivityType = z.enum(ACTIVITY_TYPES);
+export type ActivityType = z.infer<typeof ActivityType>;
+
+/** Una pestaña: un tipo y, si la hay, su tanda («Mitades»). */
+export const ActivityTab = z.object({
+  key: z.string(),
+  type: ActivityType,
+  batch: z.string().nullable(),
+  groupCount: z.number().int().nonnegative(),
+});
+export type ActivityTab = z.infer<typeof ActivityTab>;
+
+export const ActivityGroup = z.object({
+  id: Id,
+  tabKey: z.string(),
+  name: z.string(),
+  type: ActivityType,
+  /** Plazas (las habitaciones). */
+  capacity: z.number().int().positive().nullable(),
+  /** «Con monitor»: sus monitores van arriba como «Monitor/a». */
+  withMonitors: z.boolean(),
+});
+export type ActivityGroup = z.infer<typeof ActivityGroup>;
+
+/**
+ * Un miembro de un grupo. `personId` nulo o fuera de `people` (un monitor que
+ * no se inscribió): se enseña con su `name` y no se marca.
+ */
+export const ActivityMember = z.object({
+  groupId: Id,
+  tabKey: z.string(),
+  role: z.enum(['monitor', 'participant']),
+  personId: Id.nullable(),
+  name: z.string(),
+});
+export type ActivityMember = z.infer<typeof ActivityMember>;
+
+/**
+ * `GET /v1/events/:id/roll` — TODO lo que hace falta sin cobertura en una sola
+ * consulta: el evento, sus días, las marcas de cada día, quién va, quién no y
+ * los grupos de actividad (solo lectura).
+ */
+export const EventRoll = read({
+  event: EventSummary,
+  /** `kind: 'event'`; `[]` = el evento no tiene días en el CRM. */
+  sessions: z.array(SessionSummary),
+  marksBySession: z.record(Id, z.record(Id, MarkEntry)),
+  people: z.array(EventPerson),
+  notGoing: z.array(EventPerson),
+  activity: z.object({
+    tabs: z.array(ActivityTab),
+    groups: z.array(ActivityGroup),
+    members: z.array(ActivityMember),
+  }),
+});
+export type EventRoll = z.infer<typeof EventRoll>;
+
+/**
+ * `PUT /v1/events/:id/roll` — las marcas puestas de esa lista (nunca `null`).
+ * Con `sessionId: null`, el servidor busca la sesión de `day` y, si no hay, la
+ * crea. Lo no enviado no se toca.
+ */
+export const EventRollWrite = z.object({
+  clientId: ClientId,
+  sessionId: Id.nullable(),
+  day: Day,
+  marks: z.record(Id, MarkEntry),
+});
+export type EventRollWrite = z.infer<typeof EventRollWrite>;
+export const EventRollWriteResult = WriteResult.extend({
+  sessionId: Id,
+  counts: z.object({
+    came: z.number().int().nonnegative(),
+    missed: z.number().int().nonnegative(),
+  }),
+  /** Gente que no es de `people`: no se escribe, sin error. */
+  skipped: z.array(Id),
+});
+export type EventRollWriteResult = z.infer<typeof EventRollWriteResult>;
+
 // ── Salud (lo único que lleva texto de salud; nunca se guarda) ──────────────
 
 export const HEALTH_KINDS = [
@@ -1209,6 +1364,26 @@ export const ROUTES = {
     method: 'POST',
     path: '/v1/events/:id/sessions/today',
     response: SessionTodayResult,
+    persist: false,
+  },
+  // Pasar lista en un evento (plan 07).
+  events: {
+    method: 'GET',
+    path: '/v1/events',
+    response: EventsResponse,
+    persist: true,
+  },
+  eventRoll: {
+    method: 'GET',
+    path: '/v1/events/:id/roll',
+    response: EventRoll,
+    // Es lo que se usa sin cobertura (la puerta del autobús).
+    persist: true,
+  },
+  saveEventRoll: {
+    method: 'PUT',
+    path: '/v1/events/:id/roll',
+    response: EventRollWriteResult,
     persist: false,
   },
 } as const;
