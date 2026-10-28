@@ -52,9 +52,24 @@ export function onComunicaNotice(
   };
 }
 
+const syncNudges = new Set<() => void>();
+
+/** Volver a mirar el alta del móvil ya (acaban de conceder el permiso). */
+export function nudgeDeviceSync(): void {
+  syncNudges.forEach((l) => l());
+}
+
+export function onDeviceSyncNudge(listener: () => void): () => void {
+  syncNudges.add(listener);
+  return () => {
+    syncNudges.delete(listener);
+  };
+}
+
 /** Solo tests. */
 export function __resetBridgeForTests(): void {
   active = null;
   outboxListeners.clear();
   noticeListeners.clear();
+  syncNudges.clear();
 }

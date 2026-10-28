@@ -70,6 +70,8 @@ type IconMapping = {
   plus: 'add';
   link: 'link';
   'chevron.up': 'expand-less';
+  'bell.slash': 'notifications-off';
+  gearshape: 'settings';
 };
 
 type IconSymbolName = keyof IconMapping;
@@ -144,6 +146,8 @@ const MAPPING: IconMapping = {
   plus: 'add',
   link: 'link',
   'chevron.up': 'expand-less',
+  'bell.slash': 'notifications-off',
+  gearshape: 'settings',
 };
 
 /**

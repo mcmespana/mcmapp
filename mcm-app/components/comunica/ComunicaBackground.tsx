@@ -23,6 +23,7 @@ import { getCachedPushToken } from '@/services/pushNotificationService';
 import { getComunicaApi, isComunicaApiAvailable } from '@/services/comunica';
 import {
   getActiveOutbox,
+  onDeviceSyncNudge,
   subscribeActiveOutbox,
 } from '@/services/comunica/bridge';
 import {
@@ -71,6 +72,9 @@ function Engine() {
     () => installDeviceSignOut(() => getComunicaApi(), cancelAreaNotices),
     [],
   );
+
+  // «Avisos en este móvil» acaba de conseguir el permiso: se mira ya.
+  useEffect(() => onDeviceSyncNudge(() => setWakes((n) => n + 1)), []);
 
   // El alta, por la cola de esta persona.
   useEffect(() => {

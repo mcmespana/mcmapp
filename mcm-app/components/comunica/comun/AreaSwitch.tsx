@@ -10,10 +10,13 @@ export default function AreaSwitch({
   value,
   onChange,
   label,
+  disabled = false,
 }: {
   value: boolean;
   onChange: (v: boolean) => void;
   label: string;
+  /** Apagado y sin tocar (p. ej. sin permiso de avisos, plan 08). */
+  disabled?: boolean;
 }) {
   const t = useComunicaTheme();
   const web =
@@ -28,6 +31,7 @@ export default function AreaSwitch({
       trackColor={{ true: t.accentFill, false: t.separator }}
       thumbColor={Platform.OS === 'android' ? '#fff' : undefined}
       accessibilityLabel={label}
+      disabled={disabled}
       {...web}
     />
   );

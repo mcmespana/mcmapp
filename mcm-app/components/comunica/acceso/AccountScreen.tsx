@@ -16,6 +16,7 @@ import { useOpenLegacy } from '@/hooks/comunica/useOpenLegacy';
 import { useOutbox } from '@/hooks/comunica/useOutbox';
 import { h } from '@/utils/haptics';
 import AreaScreen from '../comun/AreaScreen';
+import NavRow from '../comun/NavRow';
 import RoleChip from '../comun/RoleChip';
 import Section from '../comun/Section';
 import { useArea } from '../comun/ComunicaAreaProvider';
@@ -92,6 +93,16 @@ export default function AccountScreen() {
             {ROLE_LABEL[r]}
           </Text>
         ))}
+      </Section>
+
+      {/* Plan 08: los avisos de este móvil. */}
+      <Section>
+        <NavRow
+          icon="bell.fill"
+          title="Avisos en este móvil"
+          subtitle="Pasar lista, listas sin subir y novedades"
+          onPress={() => router.push('/comunica/yo/avisos')}
+        />
       </Section>
 
       <Section>
