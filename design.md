@@ -325,6 +325,11 @@ error de revisión, no una preferencia.
 Componentes de `components/ui/` reciben color por prop. Si el tuyo necesita
 saber en qué territorio está, va mal diseñado.
 
+**En el área nativa de Comunica** hay además piezas propias del territorio
+(`components/comunica/comun/`) y reglas aprendidas mirando capturas: están en
+[`docs/desarrollo/AREA_NATIVA_DISENO.md`](docs/desarrollo/AREA_NATIVA_DISENO.md).
+Léelo antes de pintar una pantalla del área.
+
 **Pantalla ancha** (web y tablet): pantallas internas dentro de
 `PageContainer`. Dos columnas con el `isWide` de `useResponsiveLayout()`
 (≥ 720). Los cortes salen de `constants/breakpoints.ts` — no escribas un

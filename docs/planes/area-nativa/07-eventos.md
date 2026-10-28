@@ -1,7 +1,28 @@
 # 07 — Pasar lista en un evento y grupos de actividad
 
-> **Estado:** 🟢 listo para ejecutar en `nuevoComunicaChulo` · **Depende de:** 04
+> **Estado:** ✅ hecho (28/10/2026) en `nuevoComunicaChulo` (tareas 1-12 y
+> 14; la 13, «Solo mirar», sigue esperando el GO de F8) · **Depende de:** 04
 > (y con él 00, 01 y 03) · **Tamaño:** L · Índice y reglas comunes: [`README.md`](README.md).
+>
+> **Dónde está:** contrato y falso (`services/comunica/contract.ts`,
+> `fake/events.ts`, `fake/fixturesEvents.ts`, que genera los eventos contra el
+> «hoy» del falso: el Laboratorio siempre tiene una convivencia que empieza
+> hoy), reglas puras (`utils/comunica/events.ts`, `eventRoll.ts`,
+> `activityGroups.ts`, `nameKey.ts`), hooks (`hooks/comunica/events.ts`) y
+> pantallas (`components/comunica/eventos/`, rutas `eventos/`). Tests:
+> `eventsFake`, `eventUtils` y `eventScreens` (el caso estrella sin cobertura
+> de punta a punta con la cola de verdad).
+>
+> **Decisiones al hacerlo** (ninguna cambia lo que se ve del plugin, sí cómo):
+> la tarjeta de hoy es neutra con «Pasar lista ›» en el acento (`RecordCard`
+> gana `cta`), no un botón que repita el toque; los chips y el buscador son
+> los de Grupos y fichas, que pasan a `comun/` (`FilterChips`, `SearchField`);
+> los monitores llevan el avatar en el acento (`PersonRow.avatarTone`); un
+> grupo que se llama solo «14» se titula «Habitación 14»
+> (`groupHeading`); con todos marcados, «Ya están todos marcados» apagado en
+> vez de «El resto está (0)»; las pestañas son el `SegmentedControl` hasta
+> tres y chips con más. Lo pendiente: verlo en un dispositivo (los chips
+> pegados con la cabecera transparente de iOS).
 
 ## Para qué y para quién
 

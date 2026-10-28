@@ -182,6 +182,14 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 
 ### Mejoras, sin prisa
 
+- [ ] **H10. Filas pulsables corridas en web.** En web, una fila con
+      `PressableFeedback` + `PressableFeedback.Highlight` dentro de un
+      contenedor con `gap` sale ~12 px más a la derecha que una fila quieta
+      (el `Highlight` cuenta para el `gap`). Se ve en la pestaña de grupos de
+      un evento (plan 07, 28/10). En el móvil no pasa. Arreglo probable: el
+      `Highlight` fuera del flujo o el `gap` en un hijo interior; revisar
+      `PersonRow`, `NavRow` y `RecordCard` a la vez.
+
 - [ ] **H1-ter.** `SegmentedControl` no tiene indicador de foco. Ahí el pulsado
       y el seleccionado ya compiten por el mismo espacio visual: hay que
       pensarlo, no copiar el patrón del botón.

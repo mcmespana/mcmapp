@@ -199,6 +199,60 @@ coordinación y acompañamiento vigentes (`alcance-coord`).
 - `PUT /v1/memberships/:id/group` (el de Grupos y fichas) vincula también a
   un monitor `unassigned.kind = 'none'`.
 
+### Pasar lista en un evento (plan 07)
+
+Esquemas en `services/comunica/contract.ts` (bloque «Pasar lista en un
+evento»). Dos ajustes al catálogo del plan 00: `GET /v1/events/today` pasa a
+ser **`GET /v1/events`** (la app clasifica hoy/próximos/pasados), y los grupos
+de actividad van **dentro** de `GET /v1/events/:id/roll` (lo que tiene que
+funcionar sin cobertura es una sola consulta). Origen en el plugin:
+`inc/stic-pasar-lista-eventos.php` (`sticpa_pl_ev_*`) e
+`inc/stic-grupos-actividad.php` (`sticpa_gac_*`).
+
+- **Quién**: `monitor`, `coordination` o `accompaniment`; el alcance de
+  coordinación no recorta (los eventos son de toda la delegación).
+- `GET /v1/events` → `{ generatedAt, season, events: EventSummary[] }`, con
+  `EventSummary { id, name, startDate, endDate, startsAt, endsAt }` (días de
+  Madrid). **Qué eventos** (`sticpa_pl_ev_clasificar`): de la delegación
+  dueña, que tocan el curso (1 sep - 31 ago), con fecha de inicio, de **50
+  días o menos**, sin el de sesiones semanales ni el de reuniones. Los
+  nacionales no salen (`plans/043`: «para más adelante»).
+- `GET /v1/events/:id/roll` → `EventRoll { generatedAt, event, sessions,
+  marksBySession, people, notGoing, activity }`. Un evento fuera de la lista
+  de arriba → `forbidden`, exista o no.
+  - `sessions`: `kind: 'event'`; `[]` = el evento no tiene días en el CRM.
+  - `marksBySession`: `sessionId → personId → { mark, reason? }` (nunca
+    `null`: sin marcar = no está).
+  - `people` (se marcan) y `notGoing` («No van»: cancelada, rechazada, sin
+    invitación, no participa; llevan `registrationStatus`). **Una vez por
+    persona** (con dos inscripciones, la activa). `EventPerson { person,
+    schoolLevel, role, stage, homeGroup, otherDelegation, activityGroupIds }`.
+    Curso: el de la inscripción o el de la relación de participante vigente
+    más reciente. Etapa: del curso (primaria → `mic`; ESO, Bachillerato, FP →
+    `com`), si no la del grupo, si no la de la ficha. `role: 'monitor'` =
+    inscrito como organizador **o** con relación vigente de monitor o
+    acompañamiento; `'team'` = inscrito como «equipo». Los monitores no
+    llevan curso ni `homeGroup`. Sin texto de salud: solo `badges`.
+  - `activity { tabs, groups, members }`: de la delegación dueña y de ese
+    evento. Los grupos anulados no salen, **salvo** con el evento terminado y
+    alguien dentro. Un miembro no inscrito lleva `personId: null` (o uno que
+    no está en `people`): se enseña con su `name` y no se marca. Sin el
+    módulo en el CRM, todo vacío. La pestaña es `tipo|tanda en minúsculas`
+    (la misma clave que Comunica Tools).
+- `PUT /v1/events/:id/roll` `{ clientId, sessionId | null, day, marks }` →
+  `WriteResult` + `{ sessionId, counts { came, missed }, skipped }`.
+  - Solo gente de `people`; el resto vuelve en `skipped`, sin error. Motivo
+    hasta 255 (`validation`). **Lo no enviado no se toca** (una marca no se
+    borra, como en el plugin).
+  - Con `sessionId: null`, busca la sesión de `day` releyendo sin caché y, si
+    no hay, **la crea**: la hora del evento si ese día empieza o acaba, si no
+    las 9:00; una hora; del dueño del evento. Dos envíos del mismo día crean
+    UNA sesión. La app solo manda `null` si hoy cae dentro de las fechas del
+    evento.
+  - No crea `RollCall` (no cuenta en el Resumen de coordinación).
+  - `applied` solo si al releer está todo; si no, `crm_unavailable` y la cola
+    reintenta (sin duplicar: misma sesión del día y mismo `clientId`).
+
 ### Salud
 
 - `GET /v1/people/:id/health` → `{ generatedAt, personId, items: [{ kind,
@@ -212,7 +266,7 @@ coordinación y acompañamiento vigentes (`alcance-coord`).
 ## 4. Lo que vendrá
 
 Cada plan de pantallas añade su trozo al ejecutarse (catálogo en el plan 00
-§3): eventos (07), avisos (08), mis
+§3): avisos (08), mis
 datos de monitor (09), familias (11-16) y el pase a la web del legado
 (`POST /v1/web-pass`, plan 10). Y la delegación de trabajo de quien colabora
 con varias (`X-Comunica-Delegation`, plan 17).

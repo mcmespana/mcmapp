@@ -116,8 +116,8 @@ seleccionado del Laboratorio más visible; buscadores con
 marca la activa; en web la barra lleva elementos de más («⏷», «visitapapa»).
 
 **3. Por planes:** 03 (catálogo y revisar el territorio con capturas), 04-05
-(lo que dice su fila en la tabla del README); 06 hecho el 28/10; seguir con
-07-09, 17 (varias delegaciones) y 11-16.
+(lo que dice su fila en la tabla del README); 06 y 07 hechos el 28/10; seguir
+con 08-09, 17 (varias delegaciones) y 11-16.
 
 ## Cómo probarlo
 

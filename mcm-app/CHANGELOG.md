@@ -4,6 +4,28 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-28 21:00 — Área nativa de Comunica: pasar lista en un evento (plan 07, rama `nuevoComunicaChulo`)
+
+- **Eventos**: nueva pantalla para elegir en qué evento pasar lista (los de
+  hoy en tarjeta, próximos y ya pasados del curso; buscador con más de 8). La
+  tarjeta del evento de hoy y la fila «Pasar lista en un evento» de la portada
+  de Pasar Lista dejan de abrir la web y van a lo nativo.
+- **La lista del autobús**: los inscritos por etapa y curso, las otras
+  delegaciones detrás con su pastilla, los monitores plegados y «No van» al
+  final. Chips por curso pegados arriba, buscador sin acentos, el mismo gesto
+  de marcar que los grupos y «Están todos» solo sobre lo que se ve.
+- **Sin cobertura**: se marca y se guarda igual; la cola lo sube al volver la
+  red. Si el evento no tiene días en el CRM, el servidor crea la lista de hoy
+  al guardar (una sola, aunque llegue dos veces).
+- **Grupos de actividad** (patrullas, habitaciones… de Comunica Tools):
+  pestañas de solo lectura («7/8 plazas», «Sin patrulla», monitores arriba) y
+  «Pasar lista por patrullas» / «de este grupo», que es la misma lista del
+  día partida por grupos.
+- Contrato `GET /v1/events`, `GET/PUT /v1/events/:id/roll` y su servidor
+  falso (eventos generados contra «hoy»; mando «la relectura falla» en el
+  Laboratorio). Componentes comunes nuevos: `FilterChips`, `SearchField`.
+  Sin paquetes nuevos.
+
 ## 2026-10-28 18:00 — Área nativa de Comunica: Coordinación entera (plan 06, rama `nuevoComunicaChulo`)
 
 - **Coordinación** nativa: lo que falta (la reunión sin pasar), «Lista de
