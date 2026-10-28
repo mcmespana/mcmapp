@@ -37,7 +37,8 @@ export default function AccountScreen() {
   const qc = useQueryClient();
   const { session } = useArea();
   const me = useMe().me ?? session.me;
-  const { pending } = useOutbox();
+  // El alta del móvil para los avisos (plan 08) no es nada que se pierda.
+  const pending = useOutbox().pending.filter((e) => e.kind !== 'device');
   const openLegacy = useOpenLegacy();
   const [leaving, setLeaving] = useState(false);
 

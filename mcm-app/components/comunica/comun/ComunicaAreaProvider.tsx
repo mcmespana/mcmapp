@@ -42,6 +42,7 @@ import {
   isComunicaApiAvailable,
 } from '@/services/comunica';
 import type {
+  DeviceRegistration,
   FollowUpsResponse,
   FollowUpWrite,
   FollowUpWriteResult,
@@ -262,6 +263,12 @@ export default function ComunicaAreaProvider({
           }),
         'session-today': (e) =>
           getComunicaApi().createSessionToday(e.meta.eventId, {
+            clientId: e.clientId,
+          }),
+        // Avisos en el móvil (plan 08): el alta de este móvil.
+        device: (e) =>
+          getComunicaApi().registerDevice({
+            ...(e.payload as Omit<DeviceRegistration, 'clientId'>),
             clientId: e.clientId,
           }),
       },

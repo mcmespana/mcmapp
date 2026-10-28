@@ -83,6 +83,9 @@ let initPromise: Promise<void> | null = null;
 let epoch = 0;
 const listeners = new Set<() => void>();
 const signOutCleanups = new Set<() => unknown>();
+const beforeSignOut = new Set<() => Promise<unknown>>();
+/** Lo que se hace con la sesión aún viva al salir espera esto como mucho. */
+export const BEFORE_SIGN_OUT_MS = 3_000;
 const sessionEndHooks = new Set<() => void>();
 
 /**
@@ -94,6 +97,18 @@ export function addSignOutCleanup(fn: () => unknown): () => void {
   signOutCleanups.add(fn);
   return () => {
     signOutCleanups.delete(fn);
+  };
+}
+
+/**
+ * Lo que hay que hacer al salir CON la sesión todavía viva (dar de baja el
+ * móvil en nuestro servidor, plan 08): corre antes que nada, con un tope de
+ * `BEFORE_SIGN_OUT_MS` entre todo. Si falla o tarda, se sale igual.
+ */
+export function addBeforeSignOut(fn: () => Promise<unknown>): () => void {
+  beforeSignOut.add(fn);
+  return () => {
+    beforeSignOut.delete(fn);
   };
 }
 
@@ -255,11 +270,21 @@ async function endSession(reason: 'signedOut' | 'revoked') {
 }
 
 /**
- * Salir, en este orden: se acaba la sesión (la cola se apaga y ya no hay
+ * Salir, en este orden: lo de `addBeforeSignOut` (con tope), se acaba la sesión (la cola se apaga y ya no hay
  * token), se revoca en el servidor si se puede y se borra TODO lo del área.
  * Así ningún reintento de la cola escribe ni sube nada después de borrar.
  */
 export async function signOut(): Promise<void> {
+  if (beforeSignOut.size > 0) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      Promise.all([...beforeSignOut].map((fn) => fn().catch(() => {}))),
+      new Promise((r) => {
+        timer = setTimeout(r, BEFORE_SIGN_OUT_MS);
+      }),
+    ]);
+    clearTimeout(timer);
+  }
   const refresh = await deps?.secrets.get(REFRESH_KEY).catch(() => null);
   const logout = deps?.logout;
   await endSession('signedOut');
@@ -353,5 +378,6 @@ export function __resetSessionForTests(): void {
   epoch = 0;
   listeners.clear();
   signOutCleanups.clear();
+  beforeSignOut.clear();
   sessionEndHooks.clear();
 }
