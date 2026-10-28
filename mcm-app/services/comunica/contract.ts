@@ -20,6 +20,8 @@
 // (plan 04 «Datos»), el de Grupos y fichas (plan 05) y el de Coordinación
 // (plan 06). Cada plan de
 // pantallas añade aquí su trozo al ejecutarse. Avisos en el móvil: plan 08.
+// Familias (plan 11): perfiles, la convención `/v1/profiles/:pid` y el
+// calendario que adelanta del 16.
 
 // El esquema y su tipo se llaman igual (`Me` el valor, `Me` el tipo): es el
 // patrón de zod, y lo que la regla toma por redeclaración es justo eso.
@@ -1367,6 +1369,79 @@ export const DocumentUploadFields = z.object({
 });
 export type DocumentUploadFields = z.infer<typeof DocumentUploadFields>;
 
+// ── Familias: perfiles (plan 11 «Datos») ────────────────────────────────────
+//
+// CONVENCIÓN PARA TODOS LOS PLANES DE FAMILIAS (12-16): lo de la persona que
+// se está viendo cuelga de `/v1/profiles/:pid/…`. `pid` es quien ha entrado o
+// un hijo con relación VIGENTE (`sticpa_allowed_profile`); el servidor lo
+// comprueba en CADA petición y, si no, `forbidden` (403, nunca 404). Estas
+// rutas son personales: no llevan la cabecera de la delegación de trabajo.
+// En la app, sus consultas van por `useProfileQuery` y su clave lleva el pid:
+// `['comunica', bloque, pid, …]`.
+
+/** El prefijo de las rutas de familias. */
+export const PROFILE_PATH_PREFIX = '/v1/profiles/:pid';
+
+export const GENDERS = ['female', 'male'] as const;
+
+/**
+ * Una persona que se puede ver: uno mismo o un hijo. Nombres `null` si el CRM
+ * no los da (se enseña «Participante»: perder el acceso es peor que un nombre
+ * feo). `gender` sirve para «Yo mismo» / «Yo misma».
+ */
+export const ProfileRef = z.object({
+  id: Id,
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  gender: z.enum(GENDERS).nullable(),
+});
+export type ProfileRef = z.infer<typeof ProfileRef>;
+
+/**
+ * `GET /v1/me/profiles[?fresh=1]` — quién ha entrado y sus hijos con relación
+ * vigente, por nombre. Si el CRM no contesta, `crm_unavailable`: NUNCA
+ * `children: []` (sería decir que no tiene hijos).
+ */
+export const MyProfiles = read({
+  self: ProfileRef,
+  children: z.array(ProfileRef),
+});
+export type MyProfiles = z.infer<typeof MyProfiles>;
+
+// ── Calendario (plan 16 «Datos»; lo adelanta el 11 para la portada) ─────────
+
+/** Una sesión de un evento en el que tiene plaza `pid`, con su asistencia. */
+export const CalendarSession = z.object({
+  id: Id,
+  name: z.string(),
+  eventId: Id,
+  eventName: z.string(),
+  startsAt: Instant,
+  endsAt: Instant.nullable(),
+  attendance: Mark,
+});
+export type CalendarSession = z.infer<typeof CalendarSession>;
+
+export const CalendarEvent = z.object({
+  id: Id,
+  name: z.string(),
+  startDate: Day,
+  endDate: Day.nullable(),
+});
+export type CalendarEvent = z.infer<typeof CalendarEvent>;
+
+/**
+ * `GET /v1/profiles/:pid/calendar` — ventana de −14 días a +12 meses.
+ * `openEvents`: abiertos a inscripción para la audiencia de `pid`, sin los que
+ * ya tiene con plaza. `registeredEvents`: con plaza (las canceladas no).
+ */
+export const CalendarData = read({
+  sessions: z.array(CalendarSession),
+  registeredEvents: z.array(CalendarEvent),
+  openEvents: z.array(CalendarEvent),
+});
+export type CalendarData = z.infer<typeof CalendarData>;
+
 // ── Rutas ───────────────────────────────────────────────────────────────────
 
 /**
@@ -1590,6 +1665,21 @@ export const ROUTES = {
     path: '/v1/me/documents',
     response: WriteResult,
     persist: false,
+  },
+  // Familias (plan 11). Los nombres de los propios hijos: se guardan.
+  myProfiles: {
+    method: 'GET',
+    path: '/v1/me/profiles',
+    response: MyProfiles,
+    persist: true,
+  },
+  // Plan 16 (adelantada por el 11 para «Próximas actividades»). Actividades,
+  // fechas y marcas: se guarda para abrir rápido.
+  profileCalendar: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/calendar',
+    response: CalendarData,
+    persist: true,
   },
 } as const;
 export type RouteName = keyof typeof ROUTES;

@@ -67,6 +67,8 @@ import {
   type DocumentUploadFields,
   MonitorProfile,
   type MonitorProfileWrite,
+  MyProfiles,
+  CalendarData,
 } from './contract';
 import { logger } from '@/utils/logger';
 
@@ -161,6 +163,11 @@ export interface ComunicaApi {
     fields: DocumentUploadFields,
     file: UploadFile,
   ): Promise<WriteResult>;
+  // Familias (plan 11). Todo lo de `pid` cuelga de `/v1/profiles/:pid/…`.
+  /** Quién ha entrado y sus hijos. `fresh` al abrir «¿A quién ves?». */
+  getMyProfiles(opts?: ReadOptions): Promise<MyProfiles>;
+  /** El calendario de `pid` (plan 16; la portada saca de aquí su agenda). */
+  getProfileCalendar(pid: string, opts?: ReadOptions): Promise<CalendarData>;
   /**
    * Cómo pedir una foto (`photoUrl`): con el servidor de verdad, la URL con el
    * token; con el falso, su imagen inventada. Ninguna pantalla importa el falso.
@@ -550,6 +557,22 @@ export function createHttpClient({
         '/v1/me/documents',
         WriteResult,
         uploadForm(fields, file),
+      ),
+    getMyProfiles: (opts) =>
+      request(
+        'GET',
+        `/v1/me/profiles${q(opts)}`,
+        MyProfiles,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileCalendar: (pid, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/calendar${q(opts)}`,
+        CalendarData,
+        undefined,
+        READ_RETRIES,
       ),
     photoSource: (url) => {
       // `expo-image` pide la foto él solo: el token va en la cabecera, y SOLO

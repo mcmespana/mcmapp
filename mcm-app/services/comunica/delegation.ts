@@ -62,11 +62,12 @@ export async function withWriteDelegation<T>(
 
 /**
  * Rutas que NO son de equipo (no llevan la cabecera): entrar, lo personal y el
- * móvil. Las de familias (`/v1/profiles/…`, planes 11-16) tampoco.
+ * móvil. Las de familias (`/v1/me/profiles` y `/v1/profiles/…`, planes 11-16)
+ * tampoco: van con la delegación de la ficha.
  */
 const PERSONAL = [
   /^\/v1\/auth\//,
-  /^\/v1\/me\/(monitor|documents)/,
+  /^\/v1\/me\/(monitor|documents|profiles)/,
   /^\/v1\/devices/,
   /^\/v1\/profiles\//,
   /^\/v1\/web-pass/,

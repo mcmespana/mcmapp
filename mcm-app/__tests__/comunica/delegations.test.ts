@@ -35,7 +35,8 @@ describe('el falso con una persona de dos delegaciones', () => {
     const home = await s.getMe();
     expect(home.me.delegation.id).toBe(D1);
     expect(home.me.teamDelegations?.map((x) => x.id)).toEqual([D1, D2]);
-    expect(home.me.roles).toEqual(['monitor']);
+    // `member` es de la persona (plan 11): ser del equipo es ser miembro.
+    expect(home.me.roles).toEqual(['monitor', 'member']);
     expect((await s.getGroups()).myGroupIds).toEqual([]);
 
     d = D2;

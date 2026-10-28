@@ -190,6 +190,11 @@ describe('servidor falso', () => {
           size: 1000,
         },
       ),
+      // Familias (plan 11).
+      myProfiles: await s.getMyProfiles(),
+      profileCalendar: await s.getProfileCalendar(
+        (await s.getMe()).me.personId,
+      ),
     };
     for (const [name, value] of Object.entries(results)) {
       expect(

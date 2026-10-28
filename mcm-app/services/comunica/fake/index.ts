@@ -76,6 +76,12 @@ import { createEventRoutes } from './events';
 import type { FakeEventData } from './fixturesEvents';
 import * as fakeDevices from './devices';
 import { monitorRoutes, type MineKeys, type UploadsLog } from './myMonitor';
+import {
+  activeChildIds,
+  profilesRoutes,
+  type ProfileKeys,
+  type ProfilesFake,
+} from './profiles';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export interface FakeControls {
@@ -103,6 +109,10 @@ export interface FakeControls {
    * (`crm_unavailable`); la cola reintenta sin duplicar (plan 07).
    */
   eventRereadFails: boolean;
+  /** Familias (plan 11): el CRM no contesta a «quiénes son tus hijos» (503). */
+  childrenDown: boolean;
+  /** Familias: un hijo recién vinculado, que llega con el siguiente `fresh=1`. */
+  newChild: boolean;
 }
 
 export const DEFAULT_CONTROLS: FakeControls = {
@@ -115,6 +125,8 @@ export const DEFAULT_CONTROLS: FakeControls = {
   cannotRegister: false,
   seasonClosed: false,
   eventRereadFails: false,
+  childrenDown: false,
+  newChild: false,
 };
 
 const PERSONA_ROLES: Record<PersonaId, { roles: Role[]; scope: Me['scope'] }> =
@@ -135,6 +147,13 @@ const PERSONA_ROLES: Record<PersonaId, { roles: Role[]; scope: Me['scope'] }> =
     // En su delegación (la de la ficha), monitor sin grupo; en Puerto Alto,
     // abajo (`ROLES_IN`).
     twoDelegations: { roles: ['monitor'], scope: 'delegation' },
+    // Familias (plan 11): sin papel de equipo, salvo la monitora. `member` y
+    // `guardian` los pone `meOf` (son de la persona, no de la delegación).
+    guardianTwo: { roles: [], scope: 'delegation' },
+    guardianOne: { roles: [], scope: 'delegation' },
+    guardianNone: { roles: [], scope: 'delegation' },
+    monitorParent: { roles: ['monitor'], scope: 'delegation' },
+    member: { roles: [], scope: 'delegation' },
   };
 
 /**
@@ -173,6 +192,11 @@ const TEAM_RELATIONS: Record<PersonaId, CoordRelation[]> = {
   coordinationCom2: [{ stage: 'com', segment: 'com_2' }],
   both: [{}, {}],
   twoDelegations: [],
+  guardianTwo: [],
+  guardianOne: [],
+  guardianNone: [],
+  monitorParent: [],
+  member: [],
 };
 
 export interface FakeServerOptions {
@@ -197,7 +221,7 @@ const CODE_TTL_MS = 40 * 60_000;
 const MAX_BAD_CODES = 10;
 
 export interface FakeServer
-  extends ComunicaApi, fakeDevices.DevicesFake, UploadsLog {
+  extends ComunicaApi, fakeDevices.DevicesFake, UploadsLog, ProfilesFake {
   controls: FakeControls;
   setControls(patch: Partial<FakeControls>): void;
   subscribe(listener: () => void): () => void;
@@ -311,7 +335,19 @@ export function createFakeServer(
     const p = data.people.find(
       (x) => x.id === data.personas[persona].personId,
     )!;
-    const { roles, scope } = rolesIn(persona);
+    const { roles: teamRoles, scope } = rolesIn(persona);
+    // Los papeles de la PERSONA (plan 11), en cualquier delegación: `member`
+    // si tiene una marca que no es solo `familiar_menor` o es del equipo;
+    // `guardian` si tiene algún hijo con relación vigente.
+    const member =
+      data.members.includes(p.id) ||
+      teamRoles.some((r) => TEAM_ROLES.includes(r));
+    const guardian = activeChildIds(data, p.id, today()).length > 0;
+    const roles: Role[] = [
+      ...teamRoles,
+      ...(member ? (['member'] as const) : []),
+      ...(guardian ? (['guardian'] as const) : []),
+    ];
     const byId = (id: string) => data.delegations.find((d) => d.id === id)!;
     return {
       personId: p.id,
@@ -578,6 +614,15 @@ export function createFakeServer(
   };
   const coordination = createCoordinationRoutes(routesCtx);
   const mine = monitorRoutes(routesCtx); // Mis datos de monitor (plan 09).
+  // Familias (plan 11): perfiles, `pid` permitido y el calendario del 16.
+  const familyRoutes = profilesRoutes({
+    data: () => data,
+    gate: (route, write) => gate(route, write),
+    persona: () => current,
+    controls: () => controls,
+    today,
+    nowIso,
+  });
 
   // Avisos en el móvil (plan 08): los móviles registrados, en `devices.ts`.
   const devices = fakeDevices.routes(gate, () => current, seenClientIds);
@@ -601,7 +646,13 @@ export function createFakeServer(
   // abajo (`writeCount` se quedaría en 0). Se juntan al final.
   const server: Omit<
     fakeDevices.Core<typeof coordination>,
-    'getEvents' | 'getEventRoll' | 'saveEventRoll' | 'eventData' | MineKeys
+    | 'getEvents'
+    | 'getEventRoll'
+    | 'saveEventRoll'
+    | 'eventData'
+    | MineKeys
+    | ProfileKeys
+    | keyof ProfilesFake
   > = {
     get controls() {
       return controls;
@@ -630,6 +681,7 @@ export function createFakeServer(
       codes.clear();
       badCodes.clear();
       devices.deviceRegistry.clear();
+      familyRoutes.resetProfiles();
       notify();
     },
     issueSession(p) {
@@ -771,6 +823,9 @@ export function createFakeServer(
       if (!parsed.success)
         throw validation('bad_destination', 'Destino no válido');
       const d = parsed.data;
+      // Viendo a un hijo (plan 11): solo un perfil permitido.
+      if (d.profileId && !familyRoutes.allowedProfile(d.profileId))
+        throw forbidden();
       // Sin red de verdad: la página real del plugin, SIN pase (enseña su
       // pantalla de entrada). Con el servidor de verdad llevaría un
       // `acceso_magico` de 2 minutos.
@@ -1253,6 +1308,7 @@ export function createFakeServer(
     coordination,
     devices,
     mine,
+    familyRoutes,
     {
       getEvents: events.getEvents,
       getEventRoll: events.getEventRoll,
