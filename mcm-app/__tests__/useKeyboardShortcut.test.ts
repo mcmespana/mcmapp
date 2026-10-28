@@ -104,6 +104,24 @@ describe('useKeyboardShortcut', () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
+  it("shift: 'any' acepta la tecla con y sin Shift (el + del teclado US)", async () => {
+    const handler = jest.fn();
+    await renderHook(() =>
+      useKeyboardShortcut(['+', '='], handler, { shift: 'any' }),
+    );
+    await act(async () =>
+      fakeWindow.fire('keydown', { key: '+', shiftKey: true }),
+    );
+    await act(async () => fakeWindow.fire('keydown', { key: '+' }));
+    expect(handler).toHaveBeenCalledTimes(2);
+
+    // Pero sigue sin colarse con ⌘/Ctrl (⌘+ es el zoom del navegador).
+    await act(async () =>
+      fakeWindow.fire('keydown', { key: '+', metaKey: true }),
+    );
+    expect(handler).toHaveBeenCalledTimes(2);
+  });
+
   it('no dispara mientras se escribe en un input, salvo con meta', async () => {
     const handler = jest.fn();
     await renderHook(() => useKeyboardShortcut('k', handler));

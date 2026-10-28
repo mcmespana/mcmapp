@@ -30,6 +30,22 @@ import { logger } from '@/utils/logger';
 export const CARISMOCHITO_ICON = 'Carismochito';
 
 /**
+ * Último icono que ESTE proceso ha aplicado con éxito (`undefined` = ninguno
+ * todavía). En Android `getAppIconName()` lee el componente de la Activity que
+ * está corriendo, y esa no cambia hasta relanzar la app: tras activar el modo
+ * sigue diciendo `null` (icono por defecto) aunque el launcher ya muestre la
+ * mascota, y salir en el mismo arranque no revertía el icono. Por eso, una vez
+ * aplicado algo, mandamos lo que sabemos y no lo que lee el sistema. En iOS
+ * `getAppIconName()` sí se actualiza al momento, así que ahí coinciden.
+ */
+let lastApplied: string | null | undefined;
+
+/** Olvida el icono aplicado (solo para tests, que comparten el módulo). */
+export function resetAppIconCache(): void {
+  lastApplied = undefined;
+}
+
+/**
  * Pone el icono del launcher acorde al modo Carismochito. `true` → mascota,
  * `false` → icono normal de la app. No hace nada si ya está como toca.
  */
@@ -39,8 +55,10 @@ export async function syncAppIcon(carismochitoActive: boolean): Promise<void> {
   const wanted = carismochitoActive ? CARISMOCHITO_ICON : null;
   try {
     // `getAppIconName()` devuelve `null` cuando está el icono por defecto.
-    if (getAppIconName() === wanted) return;
+    const current = lastApplied !== undefined ? lastApplied : getAppIconName();
+    if (current === wanted) return;
     await setAlternateAppIcon(wanted);
+    lastApplied = wanted;
   } catch (error) {
     // Que no se pueda cambiar el icono no es motivo para romper nada: se anota
     // y el modo sigue su curso.

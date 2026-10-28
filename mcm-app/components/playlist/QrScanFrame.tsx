@@ -23,6 +23,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
+import { springs } from '@/constants/animations';
 
 /** Lado del hueco transparente por el que se apunta al QR. */
 export const FRAME_SIZE = 250;
@@ -58,11 +59,13 @@ export default function QrScanFrame({ found }: Props) {
 
   useEffect(() => {
     if (!found) return;
-    // Golpe seco hacia fuera y vuelta: el marco "atrapa" el código.
+    // Golpe seco hacia fuera y vuelta: el marco "atrapa" el código. Muelles de
+    // token: los `{ stiffness, damping }` sueltos de antes cogían la `mass: 4`
+    // de Reanimated 4 y oscilaban (ζ≈0,2).
     hit.set(
       withSequence(
         withTiming(1, { duration: 160, easing: Easing.out(Easing.quad) }),
-        withSpring(0.6, { stiffness: 200, damping: 12 }),
+        withSpring(0.6, springs.snap),
       ),
     );
   }, [found, hit]);
@@ -101,12 +104,7 @@ function FrameCorner({
   const enter = useSharedValue(0);
 
   useEffect(() => {
-    enter.set(
-      withDelay(
-        140 + index * 70,
-        withSpring(1, { stiffness: 170, damping: 12 }),
-      ),
-    );
+    enter.set(withDelay(140 + index * 70, withSpring(1, springs.snap)));
   }, [enter, index]);
 
   const style = useAnimatedStyle(() => ({

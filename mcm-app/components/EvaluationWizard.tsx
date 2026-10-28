@@ -2,6 +2,7 @@ import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  BackHandler,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -26,6 +27,7 @@ import colors, { Colors, themeColors } from '@/constants/colors';
 import { readableOn } from '@/utils/colorUtils';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { h } from '@/utils/haptics';
 import type { EvaluationConfig } from '@/constants/evaluation';
 import WelcomePhase from '@/components/evaluation/WelcomePhase';
@@ -163,6 +165,29 @@ export default function EvaluationWizard({
 
   const exit = () => navigation.goBack();
 
+  // Atrás del sistema en Android (botón o gesto) = el «Atrás» de la UI: una
+  // pregunta atrás. Antes sacaba de la pantalla y se perdían las respuestas.
+  // En la bienvenida y en el agradecimiento no hay paso anterior: ahí sale
+  // como siempre. Mientras se envía, se ignora (no hay que dejar a medias el
+  // envío ni cambiar de pregunta debajo de él).
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (done || alreadyDone) return false;
+      if (submitting) return true;
+      if (step < 0) return false;
+      h.tap();
+      setDir('back');
+      setStep((s) => s - 1);
+      return true;
+    });
+    return () => sub.remove();
+  }, [step, done, alreadyDone, submitting]);
+
+  // Con el teclado abierto, el pie no necesita el hueco de la barra de gestos:
+  // el teclado ya la tapa, y sumarlo deja el botón flotando muy por encima.
+  const keyboardVisible = useKeyboardVisible();
+
   const finish = async () => {
     setSubmitting(true);
     try {
@@ -285,21 +310,24 @@ export default function EvaluationWizard({
         </Pressable>
       </View>
 
-      {step < 0 ? (
-        <WelcomePhase
-          title={config.title}
-          intro={config.intro}
-          total={total}
-          accent={accentReadable}
-          theme={theme}
-        />
-      ) : (
-        // Fase de pregunta
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={20}
-        >
+      {/* El pie va DENTRO del KeyboardAvoidingView para que el botón suba con
+          el teclado, y con `padding` en las dos plataformas: en Android
+          `behavior` era `undefined` (no hacía nada) y, con la ventana en
+          edge-to-edge, el sistema tampoco redimensiona — el teclado tapaba la
+          respuesta y el botón. Sin `keyboardVerticalOffset`: la pantalla va
+          sin header, así que el marco del KAV ya está en coordenadas de
+          pantalla. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+        {step < 0 ? (
+          <WelcomePhase
+            title={config.title}
+            intro={config.intro}
+            total={total}
+            accent={accentReadable}
+            theme={theme}
+          />
+        ) : (
+          // Fase de pregunta
           <ScrollView
             style={{ flex: 1 }}
             contentContainerStyle={styles.phaseScroll}
@@ -334,42 +362,47 @@ export default function EvaluationWizard({
               />
             </Animated.View>
           </ScrollView>
-        </KeyboardAvoidingView>
-      )}
-
-      {/* Footer: botón principal */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 14 }]}>
-        {step < 0 ? (
-          <AppPrimaryButton
-            label="Empezar"
-            color={accentReadable}
-            icon="arrow-forward"
-            iconPosition="right"
-            onPress={goNext}
-            style={styles.footerButton}
-          />
-        ) : isLast ? (
-          <AppPrimaryButton
-            label={submitting ? 'Enviando…' : 'Enviar evaluación'}
-            color={accentReadable}
-            icon="send"
-            disabled={!canContinue || submitting}
-            loading={submitting}
-            onPress={finish}
-            style={styles.footerButton}
-          />
-        ) : (
-          <AppPrimaryButton
-            label={canContinue && !currentAnswered ? 'Saltar' : 'Continuar'}
-            color={accentReadable}
-            icon="arrow-forward"
-            iconPosition="right"
-            disabled={!canContinue}
-            onPress={goNext}
-            style={styles.footerButton}
-          />
         )}
-      </View>
+
+        {/* Footer: botón principal */}
+        <View
+          style={[
+            styles.footer,
+            { paddingBottom: (keyboardVisible ? 0 : insets.bottom) + 14 },
+          ]}
+        >
+          {step < 0 ? (
+            <AppPrimaryButton
+              label="Empezar"
+              color={accentReadable}
+              icon="arrow-forward"
+              iconPosition="right"
+              onPress={goNext}
+              style={styles.footerButton}
+            />
+          ) : isLast ? (
+            <AppPrimaryButton
+              label={submitting ? 'Enviando…' : 'Enviar evaluación'}
+              color={accentReadable}
+              icon="send"
+              disabled={!canContinue || submitting}
+              loading={submitting}
+              onPress={finish}
+              style={styles.footerButton}
+            />
+          ) : (
+            <AppPrimaryButton
+              label={canContinue && !currentAnswered ? 'Saltar' : 'Continuar'}
+              color={accentReadable}
+              icon="arrow-forward"
+              iconPosition="right"
+              disabled={!canContinue}
+              onPress={goNext}
+              style={styles.footerButton}
+            />
+          )}
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }

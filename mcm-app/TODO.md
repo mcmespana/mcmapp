@@ -16,36 +16,6 @@
 
 > Orden propuesto (repriorízalo si no lo ves).
 
-### 0. CI — ✅ ARREGLADO (2026-09-09)
-
-**La causa era que el workflow estaba desactivado a mano.** `ci.yml` figuraba en
-estado `disabled_manually` desde el 2026-05-25 (alguien le dio a "Disable
-workflow" en la pestaña Actions). Con ese estado GitHub **no crea el run**: no
-sale ni en rojo ni en gris, simplemente no existe, y la PR parece "clean" al
-mergear. No era la cuenta sin minutos (el repo es **público**: los runners
-estándar son gratis y no tocan la cuota) ni un ajuste de organización.
-
-Arreglado registrando el guardarraíl en una ruta nueva —
-`.github/workflows/pr.yml`— porque el estado "desactivado" va pegado a la ruta
-del workflow, no a su contenido: en una ruta nueva nace activo, sin depender de
-entrar en la web. De paso se borró `.github/workflows/disabled/` (tres archivos
-con `on: {}` que no ejecutaban nada) y el scraper bajó de dos disparos diarios
-a uno.
-
-**Verificado el 2026-09-10**: en la PR
-[#344](https://github.com/mcmespana/mcmapp/pull/344) apareció y corrió el check
-`verify / verify` — el primer run de verdad desde el 2026-04-10. Si algún día
-vuelve a "no ejecutarse nada", lo PRIMERO que hay que mirar es el estado del
-workflow (Actions → PR → "..." → Enable workflow), no el disparador.
-
-Aun así sigue siendo buena costumbre pasar los cuatro pasos en local antes de
-empujar, que es más rápido que esperar al runner:
-
-```bash
-cd mcm-app
-npm run typecheck && npm run typecheck:tests && npm run lint && npm test -- --ci
-```
-
 ### 1. Sacar la build de tienda de agosto
 
 - [ ] **Todo el paso a paso está en `docs/desarrollo/BUILD_AGOSTO_2026.md`**
@@ -64,63 +34,19 @@ Es lo que desbloquea el resto: `main` ya lleva SDK 57, barra flotante,
 Reanimated 4, NSE de iOS, Sentry, analítica, icono de Carismochito y subrayado
 nativo (entró en la #313 el 2026-08-04). Todo NATIVO, nada sale por OTA.
 
-- [x] **Quitado `updates.disableAntiBrickingMeasures: true` de `app.json`**
-      (2026-10-08, commit con `[skip-ota]`). El modo tester ya usa
-      `setUpdateRequestHeadersOverride`, que no lo necesita; con el flag puesto
-      se perdía la protección para arreglar un update roto con otro update.
-
-### 1-bis. `expo export --platform web` — ✅ ARREGLADO (2026-08-08)
-
-Fallaba con `The method or property expo-modules-core.requireNativeViewManager
-is not available on web` y no generaba ni `index.html` ni el bundle. La causa no
-era el renderizado estático en sí: `app/(tabs)/_layout.tsx` importaba
-**estáticamente** los tres layouts de pestañas, así que el grafo de módulos de
-web llegaba a `expo-native-compact-tabs` — que llama a
-`requireNativeViewManager()` al cargarse y no trae shim web. Con importarlo
-bastaba, aunque la rama de `Platform.OS` no llegara a ejecutarse nunca.
-
-Arreglado con resolución por plataforma (`components/tabs/PlatformTabsLayout.tsx`
-
-- `.web.tsx`), que es la convención que ya usa el repo: en web Metro empaqueta el
-  shim y el paquete nativo no entra en el bundle. Candado en
-  `__tests__/tabsLayoutWebSafety.test.ts` para que un `import` directo no lo vuelva
-  a romper — el fallo solo se vería al desplegar.
-
-### 2. React Compiler — ✅ REPASADO A FONDO (2026-08-15)
-
-**No mantengas aquí una segunda lista de warnings.** El repaso completo está en
-[`docs/desarrollo/WARNINGS.md`](../docs/desarrollo/WARNINGS.md), que es la única
-referencia: cuenta actual, reparto por regla y el motivo por el que cada grupo
-se queda.
-
-Resumen: **111 → 51 warnings**, sin silenciar ninguno. Lo que quedaba de verdad
-(asignaciones tiradas por render, `exhaustive-deps` reales, un ajuste de estado
-que leía y escribía un ref en render, y dos efectos que leían en zona muerta)
-está arreglado. Los 51 restantes son irreducibles hoy: falsos positivos de
-Reanimated, el patrón oficial de "ref al último callback", código congelado
-(Wordle) y los tres gigantes exentos por decisión.
+### 2. React Compiler y headers — solo lo que sigue abierto
 
 - [ ] **Cuando `useEffectEvent` deje de ser experimental**, migrar de golpe la
-      categoría `react-hooks/refs` (18 warnings). Es la única acción pendiente
-      real y no depende de nosotros.
-- [ ] **Subir `react-hooks/refs` a `error`** solo DESPUÉS de esa migración: hoy
-      obligaría a poner 18 `eslint-disable` que solo añaden ruido.
+      categoría `react-hooks/refs` (18 warnings; cuenta y reparto en
+      [`docs/desarrollo/WARNINGS.md`](../docs/desarrollo/WARNINGS.md), que es la
+      única referencia: no mantengas aquí una segunda lista). Y solo DESPUÉS,
+      subir `react-hooks/refs` a `error`: hoy obligaría a poner 18
+      `eslint-disable` que solo añaden ruido.
+- [ ] **Headers (dispositivo)**: en Fotos y Calendario, que ahora no tienen
+      barra opaca, comprobar que el contenido no queda pegado a la barra de
+      estado ni le falta respiro arriba.
 
-Lo único que se pide en el día a día: **no añadir warnings nuevos**. Si tu
-cambio sube la cuenta por encima de 51, ese es tuyo.
-
-### 3. Headers que se esconden al hacer scroll — ✅ CERRADO (2026-08-03)
-
-Ya no queda ninguna pantalla con barra opaca fija. Fotos (sin hero) y Calendario
-(`headerShown: false`) fueron las dos últimas. **Los headers de evento ya eran
-transparentes con glass en iOS** desde junio — este TODO decía lo contrario y
-estaba desfasado; en Android/web siguen opacos a propósito, porque allí no hay
-glass del sistema que usar.
-
-Pendiente de mirar en dispositivo: que en Fotos y Calendario el contenido no
-quede pegado a la barra de estado ni le falte respiro arriba.
-
-### 4. Varios de prioridad alta
+### 3. Varios de prioridad alta
 
 - [ ] **Revisar las 4 dependencias que se quedaron atrás** (2026-08-01). No se
       subieron por incompatibilidad REAL comprobada, no por prudencia — hay que
@@ -135,10 +61,6 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       chordsheetjs 18 (el parser del cantoral) y Aptabase 0.6. Cada una con su
       changelog y sus pruebas; ninguna corre prisa.
 - [ ] **PDF — número de página y pie por canción**: parcial. Hecho: pie con nombre de playlist + "Página N" vía margin boxes de `@page` (funciona en web Chrome ≥131 y Android; iOS/WebKit no los soporta → validar y, si se quiere también en iOS, haría falta paginación JS). Pendiente: el "1 de 3" por canción multipágina — no viable con CSS de impresión, requeriría paginar por JS midiendo alturas.
-- [ ] **Examen del día (Revisión) — segunda versión APARCADA** (decisión del
-      usuario, 2026-10-16: «nada por ahora»). Ya no hay que recordárselo. El
-      pulido de la versión actual (`app/(tabs)/contigo/revision.tsx`) va en
-      `docs/planes/PLAN_PULIDO_2026_10.md` (paquete E).
 - [ ] **Contigo — pulido pendiente tras la pasada del 2026-10-03.** Hecho:
       navegación por días/meses de la oración y el submenú de días de la home.
       Queda: el tiempo de oración (el usuario pide **propuestas**, no cambios
@@ -164,10 +86,7 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       hoy usan el "floating header" opaco (`eventScreenOptions` con
       `FloatingHeaderBackground`). Unificar al glass del sistema — cambio mayor,
       revisar el inset de cada hero. (`app/screens/eventStackScreens.tsx`)
-- [x] **Fase 2 (componentes unificados) — CERRADA (2026-08-03)**:
-      `SegmentedControl` creado y adoptado en el calendario, `AppPrimaryButton`
-      en `ArrangementInputModal`, `EmptyState` en 11 pantallas (SongList y
-      Grupos migrados de sus versiones a mano).
+- **Fase 2 (componentes unificados): cerrada (2026-08-03).**
 
   **Los `TextInput` que quedan NO se migran, y está decidido**: los
   buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
@@ -182,10 +101,6 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 > par de sacudidas fuertes (sin semáforo), el badge ahora abre la explicación, y
 > onboarding persistido con teaser de futuro.
 
-- [x] **Carismochito aparece en (casi) todas las pantallas**, excepto lectura y
-      presentación — hecho el 2026-09-26.
-- [x] **Colección + contador** al tocarlo — hecho el 2026-09-26, **escondido en
-      el Laboratorio Alpha**. Sin sesión se guarda en el móvil y se avisa.
 - [ ] **Sacar la caza del laboratorio** cuando el usuario lo decida
       (`docs/planes/BACKLOG.md` §4).
 - [ ] **Widgets de Contigo — los TRES** (ampliado el 2026-09-19, ver
@@ -224,24 +139,77 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       (2) que el Panel mande `channelId: 'default'` hasta que salga la build 2.1.
       Pendiente además: **verificar en un Android real** el heads-up y el sonido
       de cada canal. Tabla en `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8.
-- [x] **(Panel) Corregir el contrato** — hecho en `mcmpanel` (comprobado el
-      2026-09-26 en `api/_lib/push.ts`): segmenta por `topics`/`profileType`/
-      `delegationId` con 4 ejes y AND/OR, y `categoryId` (iOS) va desacoplado
-      de `data.category` (`resolveCategoryId`).
+
+---
+
+## Restos del pulido de octubre (2026-10-17)
+
+El plan (`docs/planes/archivo/pulido-2026-10/`) está ejecutado y archivado;
+esto es lo que quedó fuera a propósito. El `id` es el del hallazgo en
+`hallazgos.json` de esa carpeta, con su evidencia y su arreglo propuesto.
+
+**🔒 Necesitan tu decisión:**
+
+- [ ] **`global.css` no se importa en ningún sitio** (nunca se ha importado):
+      en web los componentes de heroui que van por `className` salen sin
+      estilos (el Dialog de la paleta ⌘K, por ejemplo). Importarlo en
+      `app/_layout.tsx` mete el reset de Tailwind en toda la web: hay que
+      decidir y repasar la web entera con él.
+- [ ] **Escala de letra del sistema en la hoja** (`android-webview-textzoom`):
+      hoy solo Android la respeta, vía `textZoom` del WebView. Lo coherente es
+      aplicar `fontScale` a la hoja en las dos plataformas, pero cambia cómo se
+      ve en iOS.
+- [ ] **Hoja de canción**, tres detalles que se hicieron en la versión más
+      sobria: el mapa no sale en el PDF de la playlist; el pre-estribillo sale
+      como «P»; la pantalla completa del navegador no entra sola (F o botón).
+
+**Para hacer (sin decisión):**
+
+- [ ] Añadir a mano en la consola de Firebase `".indexOn": ["createdAt"]` en
+      `/notifications` y, después, la parte B de `perf-notificaciones-nodo-entero`
+      (suscripción con `limitToLast(100)`).
+- [ ] `web-bundle-asyncroutes` / `web-bundle-split-measure`: rutas asíncronas
+      en web (el bundle inicial sigue en 6,7 MB).
+- [ ] `bug-app-screens-son-rutas`: `app/screens/*` se publican como rutas
+      reales en web; sacarlas de `app/`.
+- [ ] Web: F5 en `/cancionero/Categories` o en una lista da 404 (solo el
+      detalle de canción tiene URL estable, `/cancion?f=`).
+- [ ] `android-pressable-ripple`: ripple de Android en vez del resaltado de iOS.
+- [ ] `backlog-swipeable-reanimated-necesita-dispositivo`: migrar el
+      `Swipeable` legacy a `ReanimatedSwipeable` (probar en dispositivo).
+- [ ] `animation-readingcalendar-reanimated-dentro-de-bottomsheet`.
+- [ ] `web-playlist-reorder-dnd`: arrastrar para reordenar la playlist en web.
+- [ ] `backlog-home-cancion-del-dia`: tarjeta «Canción del día» en la Home.
+- [ ] Sueltos: gris `#8E8E93` de `PlaylistRow.authorText`; muelle a mano e
+      import directo de expo-haptics en `MaintenanceScreen.tsx`; comentario
+      viejo del toast («Android Tabs custom 80»); `ux-copy-tone` en
+      `AppsScreen` y la Home; el admin del cantoral podría pasar `songMap` a su
+      vista previa.
+
+**Comprobar en dispositivo** (lo que solo se ve en un teléfono real): hojas
+con teclado en Android (que llegue `keyboardDidShow` dentro del `Modal`);
+transponer sin recarga en iOS/Android/web; splash sin 🌐 en arranques normales
+y nunca colgado más de 3 s; scroll de pestañas en iOS y volver arriba tras una
+pantalla anidada; hero del Jubileo con texto oscuro y banner de encuesta con
+acento poco contrastado; accesos rápidos de la Home en claro/oscuro; atrás de
+Android en onboarding, encuestas, menú de la canción y Panel/Gestión; icono de
+notificación y enlaces `mcmapp://` con Carismochito activo (build nativo).
 
 ---
 
 ## Mantenimiento
 
 - [ ] **Ampliar cobertura de tests — tarea ideal para "quemar tokens"** (anotado
-      2026-08-01). Hoy hay 325 tests en 34 ficheros, pero **casi todos son de
-      lógica pura**: no hay ni un test que renderice una pantalla. Justo el tipo
-      de bug que se coló con la barra de tabs (`ActionButton` remontándose en
-      cada render) lo habría cazado un render test.
+      2026-08-01; cifras al 2026-10-17: ~1.950 tests en 158 suites). La receta
+      paso a paso está en `docs/desarrollo/COBERTURA.md`. Casi todo es lógica
+      pura; hay una red de humo (`__tests__/screenSmoke.test.tsx`) que monta
+      cada pantalla, pero no hay tests de comportamiento de pantalla (el tipo
+      de bug de la barra de tabs, `ActionButton` remontándose en cada render,
+      solo lo caza uno).
 
   Por dónde empezar, en orden de rentabilidad:
-  1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
-     Más): que monten sin reventar con datos vacíos, con datos y offline.
+  1. **Tests de comportamiento de las pantallas de tab** (Home, Cantoral,
+     Contigo, Más): con datos vacíos, con datos y offline.
   2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
      hook con sus contextos).
   3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
@@ -251,8 +219,7 @@ quede pegado a la barra de estado ni le falte respiro arriba.
   Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
   lee la suite entera para tocar código: lee los tests del área que toca. Lo
   que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
-  de en una build de 20 minutos— y evita iteraciones enteras como la del
-  tamaño de los iconos. El coste real de una suite grande es de
+  de en una build de 20 minutos—. El coste real de una suite grande es de
   MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
   detalles internos) que hay que reescribir en cada refactor. Por eso la
   lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
@@ -274,9 +241,6 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 - [ ] **Peso de fuente inconsistente** (`PLAN_DISENO` §C): section labels usan
       `fontWeight: '800'`, títulos de cards `'700'`, botones `'500'`/`'700'`.
       La escala decidida está en `design.md` §4; falta aplicarla.
-- [x] ~~Migrar componentes existentes a tokens~~ — hecho en agosto de 2026 para
-      color (de 1.363 hex literales a 793), sombras y radios. Lo que queda de
-      hex está en `PLAN_DISENO` §A5/§A6.
 
 ---
 
@@ -333,8 +297,8 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 
 > Análisis técnico transversal completo en **`docs/planes/archivo/MEJORAS.md`** (raíz del monorepo). Cada item de abajo tiene su sección con archivo:línea y propuesta concreta. Los quick wins de aquella primera tanda ya están hechos.
 
-- [ ] Auditar si `react-native-render-html` compensa (solo se usa en `FormattedContent.tsx`). Si BBCode simple bastara, ahorraría peso de bundle. Ver MEJORAS.md §1.10.
-- [ ] Cómo medir antes/después (cold start, transpose, bytes de red, memoria) → MEJORAS.md "Lo que NO se ha cubierto" §1.
+- [ ] Auditar si `react-native-render-html` compensa (solo se usa en `FormattedContent.tsx`). Si BBCode simple bastara, ahorraría peso de bundle. Contexto (foto de mayo 2026, archivada): `docs/planes/archivo/MEJORAS.md` §1.10.
+- [ ] Cómo medir antes/después (cold start, transpose, bytes de red, memoria) → `docs/planes/archivo/MEJORAS.md` "Lo que NO se ha cubierto" §1.
 
 ### Animaciones — lo que quedó de la auditoría de agosto 2026
 
@@ -354,11 +318,19 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       lento con el hilo ocupado el dedo va por delante de la hoja.
       ⚠️ Comprobar ANTES de nada que la hoja aparece de verdad, y con el mismo
       caso de prueba de la cabecera del fichero.
-- [ ] Pasar a Reanimated los core `Animated` que **no** viven dentro de un Modal
-      transparente: `WordleScreen`, `notifications`, `PlaylistRow`,
-      `OTAUpdatePrompt`, `SongListItem`, `NotificationListItem`,
-      `CarismochitoDialogs`. Ninguno tiene un dedo encima, así que funcionan; es
-      coherencia, no urgencia.
+- [ ] **Core `Animated` que quedan: qué se migra y qué NO** (veredicto
+      verificado el 2026-10-17). **NO migrar** `OTAUpdatePrompt`,
+      `CarismochitoDialogs` ni `NotificationListItem`: los tres viven dentro de
+      un `<Modal transparent>` (el último, vía `NotificationsBottomSheet` →
+      `BottomSheet`), y ahí Reanimated pinta invisible — es justo el fallo del
+      `BottomSheet` de agosto; su core `Animated` es el correcto. `WordleScreen`
+      está congelado. Lo que SÍ queda: (1) `SongListItem`: solo la animación de
+      fondo, que se puede pasar sin tocar el resto; (2) `PlaylistRow`,
+      `SongListItem` (su swipe), `NotificationListItem` y `app/notifications.tsx`
+      usan core `Animated` porque el `Swipeable` legacy de gesture-handler les
+      entrega `progress`/`dragX` como `Animated.AnimatedInterpolation`:
+      migrarlos es cambiar a `ReanimatedSwipeable`, no cambiar de librería de
+      animación, y necesita dispositivo. Hasta entonces, no tocar.
 
 "Reducir movimiento" ya está completo en toda la app menos Carismochito, que
 se queda como está por decisión del usuario (es un huevo de pascua que se
@@ -368,7 +340,7 @@ activa a propósito agitando el móvil, quien entre ahí es porque quiere).
 
 ## Seguridad y observabilidad
 
-- [ ] **Firebase App Check** (DeviceCheck/Play Integrity) para evitar abuso de las API keys públicas (`EXPO_PUBLIC_*`). Ver MEJORAS.md §7.2.
+- [ ] **Firebase App Check** (DeviceCheck/Play Integrity) para evitar abuso de las API keys públicas (`EXPO_PUBLIC_*`). Contexto (foto de mayo 2026, archivada): `docs/planes/archivo/MEJORAS.md` §7.2.
 - [ ] **Fichas de privacidad de las tiendas** ⚠️ **bloquea publicar**: con la
       analítica encendida hay que declarar "datos de uso" en App Store y en el
       Data Safety de Play, y decirlo en la política de privacidad. Detalle y
@@ -378,32 +350,25 @@ activa a propósito agitando el móvil, quien entre ahí es porque quiere).
 
 ---
 
-## DX / CI / Build
-
-- [ ] **Documentar criterios de promoción OTA preview → production** (quién valida, cómo se hace rollback). Ver MEJORAS.md §12.2.
-
----
-
 ## Offline / red / PWA
 
-- [ ] **Auditar política de caché PWA** (`useRegisterServiceWorker`): stale-while-revalidate, cabeceras correctas. Ver MEJORAS.md §9.3.
+- [ ] **Auditar política de caché PWA** (`useRegisterServiceWorker`): stale-while-revalidate, cabeceras correctas. Contexto (foto de mayo 2026, archivada): `docs/planes/archivo/MEJORAS.md` §9.3.
 
 ---
 
 ## Backend Firebase
 
-- [x] **Backend de notificaciones push** — no hacía falta una Cloud Function: el envío vive en el **Panel** (`mcmpanel/api/notifications/send.ts`, `schedule.ts` y `process-scheduled.ts` + `api/_lib/push.ts`): Expo Push API por lotes, audiencias por perfil/delegación/evento, programadas por cron y limpieza de tokens. Comprobado el 2026-09-26. Lo que queda de ese lado es seguridad (Integración D1/D5).
-- [ ] **Cleanup adicional**: reflexiones antiguas, notificaciones por usuario antiguas. Ver MEJORAS.md §13.3.
-- [ ] **Valorar Firestore** para `songs` y `compartiendo` cuando el dataset crezca (paginación, queries indexadas). Mantener RTDB para configuración y datos pequeños. Ver MEJORAS.md §13.1.
+- [ ] **Cleanup adicional**: reflexiones antiguas, notificaciones por usuario antiguas. Contexto (foto de mayo 2026, archivada): `docs/planes/archivo/MEJORAS.md` §13.3.
+- [ ] **Valorar Firestore** para `songs` y `compartiendo` cuando el dataset crezca (paginación, queries indexadas). Mantener RTDB para configuración y datos pequeños. Contexto (foto de mayo 2026, archivada): `docs/planes/archivo/MEJORAS.md` §13.1.
 
 ---
 
 ## Internacionalización
 
-- [ ] **Decisión i18n**: ¿castellano monolingüe o se quiere catalán/euskera/portugués/inglés? Si "no por ahora", dejarlo explícito en CLAUDE.md para que ningún agente lo añada. Si "sí más adelante", introducir `i18n-js` + `expo-localization` ya con un único `es.json`. Ver MEJORAS.md §10.
+- [ ] **Decisión i18n**: ¿castellano monolingüe o se quiere catalán/euskera/portugués/inglés? Si "no por ahora", dejarlo explícito en CLAUDE.md para que ningún agente lo añada. Si "sí más adelante", introducir `i18n-js` + `expo-localization` ya con un único `es.json`. Contexto (foto de mayo 2026, archivada): `docs/planes/archivo/MEJORAS.md` §10.
 
 ---
 
 ## Documentación
 
-- [ ] **ADR mínimo** (Architecture Decision Records) en algún sitio: por qué RTDB vs Firestore, por qué heroui-native vs Paper, por qué no react-query, etc. Ver MEJORAS.md §14.3.
+- [ ] **ADR mínimo** (Architecture Decision Records) en algún sitio: por qué RTDB vs Firestore, por qué heroui-native vs Paper, por qué no react-query, etc. Contexto (foto de mayo 2026, archivada): `docs/planes/archivo/MEJORAS.md` §14.3.

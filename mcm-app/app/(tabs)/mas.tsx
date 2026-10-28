@@ -4,12 +4,13 @@ import { useTabReselect } from '@/components/tabs/tabBarController';
 import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { themeColors } from '@/constants/colors';
 
 import MasHomeScreen from '../screens/MasHomeScreen';
 import ComunicaScreen from '../screens/ComunicaScreen';
 import ComunicaGestionScreen from '../screens/ComunicaGestionScreen';
 import McmPanelScreen from '../screens/McmPanelScreen';
-import AlbumListScreen from '../screens/AlbumListScreen';
+import { FotosScreen, fotosHeaderOptions } from './fotos';
 import { CalendarScreen } from './calendario';
 import EventosPasadosScreen from '../screens/EventosPasadosScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
@@ -103,14 +104,20 @@ export default function MasTab() {
         />
         <Stack.Screen
           name="Fotos"
-          component={AlbumListScreen}
+          component={FotosScreen}
           options={{
-            // Fotos se comporta como un tab "de plataforma" (cantoral,
-            // calendario): pinta su franja de color desde TabScreenWrapper
-            // dentro de la propia pantalla en lugar de un header pesado.
-            // El gesto de swipe-back de iOS / botón nativo Android cubren
-            // la navegación de vuelta.
-            headerShown: false,
+            // La MISMA pantalla que el tab de Fotos, como hace Calendario
+            // (antes era AlbumListScreen, una copia antigua que en Android
+            // quedaba bajo la barra de pestañas flotante y en web no tenía
+            // botón de volver). Con su header transparente, que es con el que
+            // cuenta la pantalla; aquí con título, porque no hay pestaña que
+            // diga dónde estás.
+            ...fotosHeaderOptions(isDark),
+            title: 'Fotos',
+            headerTitleStyle: {
+              fontWeight: '700' as const,
+              color: themeColors(isDark).headerTint,
+            },
           }}
         />
         <Stack.Screen

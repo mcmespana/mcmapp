@@ -9,6 +9,9 @@
 //
 // **El formato es un contrato con el código nativo.** Si cambia la forma, se
 // sube `version` y el widget tiene que saber leer las dos.
+//
+// PREPARADO PARA EL WIDGET: aún no tiene consumidor en la app (solo su test).
+// No es código muerto, no lo borres: es la mitad JS del plan de widgets.
 
 import type { DayRecord } from '@/contexts/ContigoHabitsContext';
 import type { DailyReadings } from '@/hooks/useDailyReadings';

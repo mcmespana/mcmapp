@@ -90,11 +90,12 @@ export const styles = StyleSheet.create({
   } as ViewStyle,
 
   section: { marginBottom: spacing.lg + 4 } as ViewStyle,
-  sectionLabel: {
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: spacing.sm,
-  } as TextStyle,
+  // `SectionHeader` trae su propio padding lateral (20) y margen superior:
+  // en la Home la sección ya va dentro del padding de página.
+  sectionHeader: {
+    paddingHorizontal: 0,
+    marginTop: 0,
+  } as ViewStyle,
 
   // ── Notification card ──
   notifCard: {
@@ -204,9 +205,8 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   } as ViewStyle,
   quickLabel: {
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    ...typography.footnote,
+    fontWeight: '600',
     textAlign: 'center',
   } as TextStyle,
 
@@ -282,7 +282,6 @@ export const styles = StyleSheet.create({
     marginTop: spacing.sm + 2,
     marginBottom: spacing.xs,
     marginLeft: spacing.xs,
-    opacity: 0.7,
   } as TextStyle,
   calendarButton: {
     alignItems: 'center',
@@ -314,7 +313,6 @@ export const styles = StyleSheet.create({
     ...typography.micro,
     marginTop: 2,
     lineHeight: 15,
-    opacity: 0.8,
   } as TextStyle,
 
   // ── CTA "Evalúa la actividad" (destacado) ──
@@ -340,14 +338,14 @@ export const styles = StyleSheet.create({
   evalCtaTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#fff',
+    color: colors.white,
     letterSpacing: -0.2,
   } as TextStyle,
   evalCtaBody: {
     ...typography.footnote,
     lineHeight: 16,
     marginTop: 2,
-    color: 'rgba(255,255,255,0.9)',
+    color: colors.white,
   } as TextStyle,
   evalCtaBtn: {
     flexDirection: 'row',
@@ -390,13 +388,12 @@ export const styles = StyleSheet.create({
     ...typography.micro,
     marginTop: 2,
     lineHeight: 15,
-    opacity: 0.8,
   } as TextStyle,
 
   // ── Footer ──
   footer: { alignItems: 'center', paddingTop: spacing.xs } as ViewStyle,
   feedbackLink: { padding: spacing.sm, marginTop: 4 } as ViewStyle,
-  feedbackText: { fontSize: 12, opacity: 0.6 } as TextStyle,
+  feedbackText: { ...typography.footnote } as TextStyle,
   tagline: {
     ...typography.micro,
     opacity: 0.3,

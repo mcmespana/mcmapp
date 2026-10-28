@@ -1,14 +1,12 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, Stack } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated from 'react-native-reanimated';
@@ -19,10 +17,14 @@ import { useDailyReadings } from '@/hooks/useDailyReadings';
 import {
   MONTHS_CAP,
   WARM_DARK,
-  WARM_LIGHT,
   formatDateLong,
+  habitColor,
   warm,
 } from '@/components/contigo/theme';
+import {
+  contigoHeaderChrome,
+  useContigoHeaderInset,
+} from '@/components/contigo/headerChrome';
 import {
   HabitTile,
   HeroCard,
@@ -37,17 +39,24 @@ import { useContigoDayMenu } from '@/hooks/useContigoDayMenu';
 import LoginNudgeBanner from '@/components/LoginNudgeBanner';
 import { useAuth } from '@/contexts/AuthContext';
 import { h } from '@/utils/haptics';
+import CelebrationBurst from '@/components/ui/CelebrationBurst';
+import {
+  DAY_COMPLETE_MS,
+  dayCompleteParticles,
+  hasCelebratedDay,
+  markDayCelebrated,
+} from '@/utils/contigoDayComplete';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 
 export default function ContigoScreen() {
-  const insets = useSafeAreaInsets();
   // Pantalla raíz del tab Contigo.
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const router = useRouter();
   const scheme = useColorScheme();
   const { user: authUser } = useAuth();
   const isDark = scheme === 'dark';
+  const headerInset = useContigoHeaderInset();
   const W = warm(isDark);
   const { width: windowWidth } = useWindowDimensions();
   // iPad / large tablet / desktop web — cap content width so the layout
@@ -82,6 +91,40 @@ export default function ContigoScreen() {
   const doneCount = [readingDone, prayerDone, revisionDone].filter(
     Boolean,
   ).length;
+
+  // Los tres hábitos hechos: UNA celebración al día, sobria, la primera vez que
+  // se vuelve a la home con 3/3 (no mientras está tapada por la pantalla del
+  // hábito, que ya tiene la suya). Se re-evalúa al cambiar `doneCount` estando
+  // enfocada. Ver `utils/contigoDayComplete`.
+  const [dayBurst, setDayBurst] = useState(false);
+  const dayBurstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (dayBurstTimer.current) clearTimeout(dayBurstTimer.current);
+    },
+    [],
+  );
+  useFocusEffect(
+    useCallback(() => {
+      if (doneCount < 3 || !todayStr) return;
+      let cancelled = false;
+      (async () => {
+        if (await hasCelebratedDay(todayStr)) return;
+        if (cancelled) return;
+        await markDayCelebrated(todayStr);
+        h.formSuccess();
+        setDayBurst(true);
+        if (dayBurstTimer.current) clearTimeout(dayBurstTimer.current);
+        dayBurstTimer.current = setTimeout(() => {
+          dayBurstTimer.current = null;
+          setDayBurst(false);
+        }, DAY_COMPLETE_MS);
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [doneCount, todayStr]),
+  );
 
   const prayStreak = getStreak('prayer');
   const totalMins = getTotalMinutesWeek(todayStr);
@@ -120,10 +163,6 @@ export default function ContigoScreen() {
     closeDayMenu,
   } = useContigoDayMenu();
 
-  const bgGradient = isDark
-    ? ([WARM_DARK.bg, WARM_DARK.bgDeep] as const)
-    : ([WARM_LIGHT.bg, '#F0E8D8'] as const);
-
   return (
     <View style={styles.container}>
       {/* Header NATIVO: título pequeño "Contigo" + badge litúrgico y favoritos
@@ -151,18 +190,19 @@ export default function ContigoScreen() {
                 style={{ padding: 4 }}
                 accessibilityLabel="Ver evangelios guardados"
               >
-                <MaterialIcons name="bookmarks" size={22} color={W.accent} />
+                <MaterialIcons
+                  name="bookmarks"
+                  size={22}
+                  color={W.accentText}
+                />
               </TouchableOpacity>
             </View>
           ),
-          ...(Platform.OS === 'ios' &&
-          parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
+          ...contigoHeaderChrome(isDark),
         }}
       />
       <LinearGradient
-        colors={bgGradient}
+        colors={W.bgGradient}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
@@ -173,7 +213,7 @@ export default function ContigoScreen() {
         scrollEventThrottle={16}
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingTop: insets.top + 52,
+          paddingTop: headerInset,
           paddingBottom: contentPaddingBottom,
         }}
         showsVerticalScrollIndicator={false}
@@ -247,7 +287,7 @@ export default function ContigoScreen() {
 
           {/* ── Esta semana ────────────────────────────── */}
           <View style={[styles.section, { paddingTop: 18 }]}>
-            <Text style={[styles.smallLabel, { color: W.textMuted }]}>
+            <Text style={[styles.smallLabel, { color: W.textSec }]}>
               ÚLTIMOS 7 DÍAS
             </Text>
             <View
@@ -282,7 +322,7 @@ export default function ContigoScreen() {
               icon="timer"
               value={`${totalMins}'`}
               label={'min\nesta sem.'}
-              color={W.accent}
+              color={W.accentText}
               isDark={isDark}
             />
             <StatCard
@@ -306,14 +346,14 @@ export default function ContigoScreen() {
                   <MaterialIcons
                     name="chevron-left"
                     size={20}
-                    color={W.textMuted}
+                    color={W.textSec}
                   />
                 </TouchableOpacity>
                 <Text
                   style={[
                     styles.smallLabel,
                     styles.monthNavLabel,
-                    { color: W.textMuted },
+                    { color: W.textSec },
                   ]}
                 >
                   {monthLabel.toUpperCase()}
@@ -326,7 +366,7 @@ export default function ContigoScreen() {
                   <MaterialIcons
                     name="chevron-right"
                     size={20}
-                    color={W.textMuted}
+                    color={W.textSec}
                   />
                 </TouchableOpacity>
                 {!isCurrentMonth ? (
@@ -338,7 +378,11 @@ export default function ContigoScreen() {
                     hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
                     accessibilityLabel="Volver al mes de hoy"
                   >
-                    <MaterialIcons name="today" size={16} color={W.accent} />
+                    <MaterialIcons
+                      name="today"
+                      size={16}
+                      color={W.accentText}
+                    />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -352,7 +396,7 @@ export default function ContigoScreen() {
                   },
                 ]}
               >
-                <Text style={[styles.monthBadgeText, { color: W.accent }]}>
+                <Text style={[styles.monthBadgeText, { color: W.accentText }]}>
                   {activeDays}{' '}
                   {activeDays === 1 ? 'día activo' : 'días activos'}
                 </Text>
@@ -379,6 +423,16 @@ export default function ContigoScreen() {
           </View>
         </View>
       </Animated.ScrollView>
+
+      <CelebrationBurst
+        visible={dayBurst}
+        particles={dayCompleteParticles([
+          habitColor('evangelio', isDark),
+          habitColor('oracion', isDark),
+          habitColor('revision', isDark),
+        ])}
+        emoji="✨"
+      />
 
       <DayActionSheet
         visible={!!dayMenu}

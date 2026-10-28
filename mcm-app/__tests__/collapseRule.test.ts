@@ -4,6 +4,7 @@ import {
   collapseStep,
   COLLAPSE_AT,
   EXPAND_AT,
+  shouldReportInset,
   type CollapseState,
 } from '@/components/tabs/collapseRule';
 
@@ -153,5 +154,37 @@ describe('collapseStep — pantalla recién montada', () => {
     // `interacted` lo activa el propio `onBeginDrag` del scroller.
     const dragging = { ...arrived, interacted: true };
     expect(run(dragging, PLAIN, [0]).compact).toBe(false);
+  });
+});
+
+describe('shouldReportInset — salto al hilo de JS por el inset', () => {
+  it('manda el primer inset real', () => {
+    expect(shouldReportInset(100, -1)).toBe(true);
+  });
+
+  it('no lo repite mientras no cambie (un salto por pantalla, no por fotograma)', () => {
+    const frames = [100, 100, 100, 100, 100];
+    let last = -1;
+    let sent = 0;
+    for (const inset of frames) {
+      if (shouldReportInset(inset, last)) {
+        last = inset;
+        sent += 1;
+      }
+    }
+    expect(sent).toBe(1);
+  });
+
+  it('vuelve a mandarlo si el inset cambia', () => {
+    expect(shouldReportInset(64, 100)).toBe(true);
+  });
+
+  it('ignora el inset 0 (Android, pantallas sin header transparente)', () => {
+    expect(shouldReportInset(0, -1)).toBe(false);
+  });
+
+  it('rearmado a -1 (nuevo arrastre) vuelve a mandar el mismo valor', () => {
+    expect(shouldReportInset(100, 100)).toBe(false);
+    expect(shouldReportInset(100, -1)).toBe(true);
   });
 });

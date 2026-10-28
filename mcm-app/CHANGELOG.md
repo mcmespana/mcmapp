@@ -15,6 +15,69 @@
 - Añadido `react-native-nfc-manager` y su plugin en `app.json` (permiso NFC + entitlement NDEF en iOS) para que el próximo build nativo ya lo incluya. Todavía no hay código que lo use.
 - Requiere build nativo: no llega por OTA.
 
+## 2026-10-17 13:30 — Pulido de octubre: rendimiento, Android, web, Contigo y limpieza
+
+Ejecutados los 12 paquetes de `PLAN_PULIDO_2026_10` (archivado). Lo que queda
+está en `mcm-app/TODO.md` («Restos del pulido de octubre»).
+
+- **Datos**: `useFirebaseData` sirve la caché en memoria en el primer render
+  (adiós al «Cargando canciones…» al abrir cada categoría) y expone
+  `refresh()`. El contador de notificaciones no leídas ya no descarga
+  `/notifications` una segunda vez (`getUnreadNotificationsCount` recibe el
+  histórico del contexto).
+- **Cantoral**: esqueleto de carga (`ListSkeleton`), pull-to-refresh en la
+  portada, vacíos «Sin conexión»/«Sin resultados» unificados, la pantalla de
+  seleccionadas pasa a llamarse **«Tu selección»**, toast «Añadida» con «Ver».
+- **Canción**: la pantalla no se apaga en el detalle ni en pantalla completa
+  (`useKeepAwakeWhileFocused`); transponer o cambiar la notación **no recarga
+  la hoja ni vuelve arriba** (`utils/songDisplayBridge.ts`); **mapa de la
+  canción** («1 · E · 2 · E×2», ajuste «Mapa», apagado de serie); iconos de la
+  cabecera legibles en Android.
+- **Android**: la barra flotante ya no tapa el final de las pantallas
+  (`useTabBarPaddingBottom`); las hojas inferiores esquivan el teclado; atrás
+  del sistema paso a paso en onboarding y encuestas, y en el menú de la canción
+  y los WebViews de Panel/Gestión; háptica del sistema en vez del Vibrator;
+  headers de Contigo y de eventos legibles; pestañas en segundo plano
+  congeladas (`freezeOnBlur`); un `file://`/`content://` aterriza en el
+  cantoral. **Fotos desde «Más» monta la misma `FotosScreen` del tab
+  (`AlbumListScreen` borrada).**
+- **Pantalla ancha**: las hojas inferiores van centradas a 560 px en web y
+  iPad (`sheetMaxWidth`).
+- **Web**: paleta ⌘K/Ctrl+K que busca y abre canciones; ruta nueva
+  **`/cancion?f=<fichero>`** (F5 conserva la canción, enlace compartible);
+  título de pestaña por pantalla; atajos de teclado en el detalle; pantalla
+  completa del navegador (F), pedal sin clic previo; «Imprimir» una canción;
+  **Sentry fuera de la web** (`utils/sentry.web.ts`, bundle inicial de 8,2 a
+  6,7 MB); `react-native-render-html` a demanda; el service worker (v4) poda
+  bundles viejos y no cachea errores; zoom con pellizco permitido.
+- **Contigo**: el dorado como texto pasa a `accentText` (contraste);
+  examen del día que dice si ya está guardado y no guarda en blanco; tiempo de
+  oración de 5 en 5 con pulsación mantenida y arranque en la última duración;
+  celebración sobria al cerrar los tres hábitos del día; confirmación al quitar
+  un guardado con subrayados.
+- **Home y Más**: accesos rápidos con el color de su pestaña; `/notifications`
+  y la hoja de la campana comparten tarjeta (categoría y hasta 3 botones); la
+  hoja navega con los alias del panel.
+- **Eventos**: el lema sale de `EventConfig.motto` (solo la Visita del Papa lo
+  tiene); tinta sobre el tinte del evento por contraste real.
+- **Carismochito** (dentro del laboratorio): no se asoma en la Revisión ni en
+  la hoja de canción, se puede salir sin agitar, el acelerómetro se pausa en
+  pantallas de lectura y el icono de Android revierte al salir.
+- **Arranque y animación**: el splash nativo se queda hasta saber si toca la
+  bienvenida (`utils/splashGate.ts`, tope 3 s); el scroll de pestañas ya no
+  salta al hilo de JS en cada fotograma; muelles con token; trinquete nuevo
+  `__tests__/noLooseMotion.test.ts`.
+- **Nativo** (`[skip-ota]`): icono de notificación monocromo y
+  `monochromeImage` de Android; los enlaces `mcmapp://` abren la app con el
+  icono de Carismochito; fuera `web.meta`/`web.manifest` de `app.json`.
+- **Limpieza**: borrados `StatCard`, `TeaserCard`, `GlassFAB`, `TopColorBar`,
+  `.jules/`, `.gemini/`, tokens y scripts muertos; cuarentena en
+  `/_para-borrar/`; docs al día y `docs/desarrollo/OTA.md` nuevo.
+- **Repo del cantoral** (rama homónima): fuera los 481 backups versionados y
+  duplicados; los `songs-vX.json` pasan a ser **solo Firebase** (el workflow ya
+  no los commitea); botones de exportar y guardar versión en el admin;
+  Benedictus renombrado a `.cho`; `mcm-sheet.js` regenerado.
+
 ## 2026-10-16 23:40 — Buscador del cantoral sin tildes y auditoría de pulido
 
 - **Buscador del cantoral**: ya no distingue tildes — «senor» encuentra

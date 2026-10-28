@@ -23,16 +23,16 @@ import { TAB_ICONS } from '@/constants/tabIcons';
 import { TAB_BAR_HEIGHT, TAB_BAR_COMPACT_HEIGHT } from '@/constants/spacing';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useCarismochito } from '@/contexts/CarismochitoContext';
-import { Colors } from '@/constants/colors';
+import { CarismoColors, Colors } from '@/constants/colors';
 import { tabBarController } from '@/components/tabs/tabBarController';
 import { h } from '@/utils/haptics';
 import { hrefForTab, selectedIndexFor } from '@/utils/tabRoutes';
 
 /* Verdes del modo carismochito (ver app/(tabs)/_layout.tsx para el detalle). */
-const CARISMO_ACTIVE_DARK = '#9DE86B';
-const CARISMO_INACTIVE_DARK = '#4E8C5F';
-const CARISMO_ACTIVE_LIGHT = '#1B9E4B';
-const CARISMO_INACTIVE_LIGHT = '#6FA77E';
+const CARISMO_ACTIVE_DARK = CarismoColors.dark;
+const CARISMO_INACTIVE_DARK = CarismoColors.inactiveDark;
+const CARISMO_ACTIVE_LIGHT = CarismoColors.light;
+const CARISMO_INACTIVE_LIGHT = CarismoColors.inactiveLight;
 
 interface CompactTabBarProps {
   /** Tabs que van en la barra, ya recortados por `splitTabsForBar`. */

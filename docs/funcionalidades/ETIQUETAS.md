@@ -53,7 +53,9 @@ Misma familia que la directiva propia `{arr:}` ([`ARREGLOS.md`](ARREGLOS.md)):
 ```
 
 - Una sola directiva `{tags:}` por canción, valores separados por comas.
-- El generador la vuelca a `tags: string[]` en cada entrada de `songs-vX.json`.
+- El generador la vuelca a `tags: string[]` en cada entrada del `songs-vX.json`
+  que sube a Firebase (ese JSON ya no se commitea en el repo del cantoral: vive
+  solo en Firebase).
 - La app **vuelve a normalizar** todo lo que le llega (`slugifyTag`), así que
   `Domingo de Ramos`, `domingo-de-ramos` y `DOMINGO DE RAMOS` son la misma
   etiqueta aunque el generador no normalice.

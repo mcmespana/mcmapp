@@ -106,6 +106,7 @@ export const EVENTO_2027: EventConfig = {
   title: 'Evento 2027',                    // título del header
   tintColor: '#E15C62',                    // color de acento del evento
   firebasePrefix: 'activities/evento2027', // ← prefijo en Firebase
+  motto: 'Lema del encuentro',             // opcional (ver abajo)
   sections: [
     {
       label: 'Horario',
@@ -134,6 +135,11 @@ export const EVENTS: Record<string, EventConfig> = {
   [EVENTO_2027.id]: EVENTO_2027,  // ← registrar aquí
 };
 ```
+
+> **`motto`** (opcional, `EventConfig.motto` en `constants/events.ts`): lema del
+> encuentro, al pie del hub del evento (`EventHomeScreen`). Solo se pinta si el
+> evento lo tiene; el hub es genérico y no inventa el de otro. Hoy solo lo
+> lleva la Visita del Papa («Alzad la mirada»).
 
 > Para Jubileo, `firebasePrefix` es `'jubileo'` (no `'activities/jubileo'`) porque Jubileo vive en la raíz de Firebase por motivos históricos.
 

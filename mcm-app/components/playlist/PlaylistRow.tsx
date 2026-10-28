@@ -372,7 +372,7 @@ const createStyles = (isDark: boolean) =>
     capoPill: {
       paddingHorizontal: 6,
       paddingVertical: 3,
-      borderRadius: 5,
+      borderRadius: radii.xs,
       backgroundColor: isDark ? '#3A3A3C' : '#EBEBEB',
     },
     capoPillOverridden: {
@@ -394,7 +394,7 @@ const createStyles = (isDark: boolean) =>
     keyPill: {
       paddingHorizontal: 8,
       paddingVertical: 3,
-      borderRadius: 6,
+      borderRadius: radii.xs,
       backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     keyText: {
@@ -418,7 +418,7 @@ const createStyles = (isDark: boolean) =>
       alignItems: 'center',
       paddingHorizontal: 8,
       paddingVertical: 3,
-      borderRadius: 6,
+      borderRadius: radii.xs,
       backgroundColor: HighlightColors.light.bg,
       borderWidth: 1,
       borderColor: UIColors.accentYellow,

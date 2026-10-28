@@ -30,14 +30,17 @@ import {
   useHeaderHeight,
 } from 'expo-router/react-navigation';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { hexAlpha } from '@/utils/colorUtils';
+import { hexAlpha, readableOn } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import { localISO } from '@/utils/localDate';
 import SwipeableMonthCalendar from '@/components/calendar/SwipeableMonthCalendar';
 import CalendarSubscribeBottomSheet from '@/components/CalendarSubscribeBottomSheet';
 import EventDetailsBottomSheet from '@/components/EventDetailsBottomSheet';
 import EmptyState from '@/components/ui/EmptyState';
-import { createStyles } from '@/components/calendar/calendarioStyles';
+import {
+  calendarInfoInk,
+  createStyles,
+} from '@/components/calendar/calendarioStyles';
 import TabTintBar from '@/components/ui/TabTintBar';
 
 LocaleConfig.locales['es'] = {
@@ -129,6 +132,11 @@ export function CalendarScreen() {
     useTabScroll('calendario');
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const isDark = scheme === 'dark';
+  const infoInk = calendarInfoInk(isDark);
+  // El color de cada calendario lo decide el Panel (hay pasteles): como
+  // relleno, punto o borde va tal cual; como texto, en su variante legible.
+  const calendarInk = (color: string) =>
+    readableOn(color, themeColors(isDark).background);
   const layout = useResponsiveLayout();
   // En iPad landscape mostramos el calendario en dos paneles (mes a la
   // izquierda, eventos del día a la derecha). En portrait/estrecho es una sola
@@ -460,7 +468,10 @@ export function CalendarScreen() {
                 style={[styles.calendarDot, { backgroundColor: calColor }]}
               />
               <Text
-                style={[styles.calendarBadgeText, { color: calColor }]}
+                style={[
+                  styles.calendarBadgeText,
+                  { color: calendarInk(calColor) },
+                ]}
                 numberOfLines={1}
               >
                 {calendarConfigs[ev.calendarIndex]?.name || ''}
@@ -521,7 +532,10 @@ export function CalendarScreen() {
                 borderColor: cal.color,
               },
             ]}
-            onPress={() => toggleCalendarVisibility(idx)}
+            onPress={() => {
+              h.toggle();
+              toggleCalendarVisibility(idx);
+            }}
             activeOpacity={0.7}
             hitSlop={{ top: 5, bottom: 5 }}
           >
@@ -540,14 +554,21 @@ export function CalendarScreen() {
             <Text
               style={[
                 styles.chipLabel,
-                isActive && { color: cal.color, fontWeight: '600' },
+                isActive && {
+                  color: calendarInk(cal.color),
+                  fontWeight: '600',
+                },
               ]}
               numberOfLines={1}
             >
               {cal.name}
             </Text>
             {isActive && (
-              <MaterialIcons name="check" size={12} color={cal.color} />
+              <MaterialIcons
+                name="check"
+                size={12}
+                color={calendarInk(cal.color)}
+              />
             )}
           </TouchableOpacity>
         );
@@ -646,7 +667,11 @@ export function CalendarScreen() {
                       </View>
                     </View>
                     {selectedDate !== todayStr && (
-                      <BackToTodayPill onPress={goToToday} styles={styles} />
+                      <BackToTodayPill
+                        onPress={goToToday}
+                        styles={styles}
+                        isDark={isDark}
+                      />
                     )}
                   </View>
 
@@ -670,27 +695,29 @@ export function CalendarScreen() {
             {/* Agenda view header */}
             <View style={styles.agendaHeader}>
               <TouchableOpacity
-                onPress={() => changeMonth(-1)}
+                onPress={() => {
+                  h.select();
+                  changeMonth(-1);
+                }}
                 style={styles.agendaNavBtn}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Mes anterior"
               >
-                <MaterialIcons
-                  name="chevron-left"
-                  size={28}
-                  color={colors.info}
-                />
+                <MaterialIcons name="chevron-left" size={28} color={infoInk} />
               </TouchableOpacity>
               <Text style={styles.monthLabel}>{monthLabel}</Text>
               <TouchableOpacity
-                onPress={() => changeMonth(1)}
+                onPress={() => {
+                  h.select();
+                  changeMonth(1);
+                }}
                 style={styles.agendaNavBtn}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Mes siguiente"
               >
-                <MaterialIcons
-                  name="chevron-right"
-                  size={28}
-                  color={colors.info}
-                />
+                <MaterialIcons name="chevron-right" size={28} color={infoInk} />
               </TouchableOpacity>
             </View>
 
@@ -699,7 +726,11 @@ export function CalendarScreen() {
 
             {visibleMonth.slice(0, 7) !== todayStr.slice(0, 7) && (
               <View style={styles.agendaBackToTodayRow}>
-                <BackToTodayPill onPress={goToToday} styles={styles} />
+                <BackToTodayPill
+                  onPress={goToToday}
+                  styles={styles}
+                  isDark={isDark}
+                />
               </View>
             )}
 
@@ -856,9 +887,10 @@ export default function CalendarioTab() {
 interface BackToTodayPillProps {
   onPress: () => void;
   styles: ReturnType<typeof createStyles>;
+  isDark: boolean;
 }
 
-function BackToTodayPill({ onPress, styles }: BackToTodayPillProps) {
+function BackToTodayPill({ onPress, styles, isDark }: BackToTodayPillProps) {
   return (
     <TouchableOpacity
       style={styles.backToTodayPill}
@@ -871,7 +903,7 @@ function BackToTodayPill({ onPress, styles }: BackToTodayPillProps) {
       accessibilityRole="button"
       accessibilityLabel="Volver a hoy"
     >
-      <MaterialIcons name="today" size={14} color={colors.info} />
+      <MaterialIcons name="today" size={14} color={calendarInfoInk(isDark)} />
       <Text style={styles.backToTodayLabel}>Volver a hoy</Text>
     </TouchableOpacity>
   );

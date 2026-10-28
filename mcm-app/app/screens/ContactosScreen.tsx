@@ -29,6 +29,7 @@ import colors, { Colors, themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import typography from '@/constants/typography';
 
 interface Contacto {
@@ -148,6 +149,7 @@ export default function ContactosScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const bottomPadding = useTabBarPaddingBottom(24);
   const event = useCurrentEvent();
   const { data: contacts, loading } = useFirebaseData<Contacto[]>(
     getEventFirebasePath(event, 'contactos'),
@@ -295,12 +297,12 @@ export default function ContactosScreen() {
             query.trim().length >= 2 ? (
               <EmptyState
                 icon="search-off"
-                title="Sin coincidencias"
+                title="Sin resultados"
                 subtitle={`No hay contactos que coincidan con "${query}".`}
               />
             ) : null
           }
-          contentContainerStyle={styles.content}
+          contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}
           initialNumToRender={12}
           windowSize={9}
@@ -347,9 +349,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     container: {
       flex: 1,
       backgroundColor: theme.background,
-    },
-    content: {
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
     },
     searchContainer: {
       marginHorizontal: 16,

@@ -185,14 +185,55 @@ describe('salir del modo', () => {
     expect(hook.result.current.isActive).toBe(true);
   });
 
-  it('las sacudidas de salida caducan a 1,5 s', async () => {
+  it('las sacudidas de salida caducan a los 3 s', async () => {
     const hook = await mount();
     await activarSinDialogos(hook);
     await shake(hook, 1);
     await act(async () => {
-      jest.advanceTimersByTime(1500);
+      jest.advanceTimersByTime(3000);
     });
     await shake(hook, 1);
+    expect(hook.result.current.exitConfirmVisible).toBe(false);
+  });
+
+  it('dos sacudidas separadas 1,3 s (tras el cooldown del detector) abren la confirmación', async () => {
+    const hook = await mount();
+    await activarSinDialogos(hook);
+    await shake(hook, 1);
+    await act(async () => {
+      jest.advanceTimersByTime(1300);
+    });
+    await shake(hook, 1);
+    expect(hook.result.current.exitConfirmVisible).toBe(true);
+  });
+
+  it('requestExit cierra la explicación y abre la confirmación tras una pausa', async () => {
+    const hook = await mount();
+    await activar(hook);
+    expect(hook.result.current.onboardingVisible).toBe(true);
+    await act(async () => hook.result.current.requestExit());
+    // Dos Modal a la vez no se apilan bien: primero se retira la explicación.
+    expect(hook.result.current.onboardingVisible).toBe(false);
+    expect(hook.result.current.exitConfirmVisible).toBe(false);
+    await act(async () => {
+      jest.advanceTimersByTime(500);
+    });
+    expect(hook.result.current.exitConfirmVisible).toBe(true);
+    expect(hook.result.current.isActive).toBe(true);
+    // Y cuenta como explicación vista.
+    expect(await AsyncStorage.getItem(ONBOARDING_KEY)).toBe('1');
+    await act(async () => hook.result.current.confirmExit());
+    expect(hook.result.current.isActive).toBe(false);
+  });
+
+  it('desactivar antes de la pausa anula la apertura de la confirmación', async () => {
+    const hook = await mount();
+    await activarSinDialogos(hook);
+    await act(async () => hook.result.current.requestExit());
+    await act(async () => hook.result.current.deactivate());
+    await act(async () => {
+      jest.advanceTimersByTime(500);
+    });
     expect(hook.result.current.exitConfirmVisible).toBe(false);
   });
 

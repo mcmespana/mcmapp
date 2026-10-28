@@ -84,6 +84,13 @@ export const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
+  // Con el aviso de «elige el tiempo» justo debajo, la etiqueta pierde su hueco.
+  sectionLabelWithHint: { marginBottom: 6 },
+  durationHint: {
+    ...typography.caption,
+    marginBottom: 14,
+  },
+
   // Emotions
   emotionRow: {
     flexDirection: 'row',
@@ -174,6 +181,12 @@ export const styles = StyleSheet.create({
   saveBtnWrap: {
     borderRadius: radii.pillFull,
     minHeight: 56,
+  },
+  // Sin tiempo elegido: apagado y sin sombra (el motivo está bajo «Tiempo»).
+  saveBtnBlocked: {
+    opacity: 0.5,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   saveBtnInner: {
     flexDirection: 'row',

@@ -20,6 +20,7 @@ import * as Haptics from 'expo-haptics';
 import brand, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
+import { springs } from '@/constants/animations';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import { openAppStore } from '@/utils/storeLinks';
@@ -179,7 +180,7 @@ function SkipEscape({
 
   useEffect(() => {
     if (visible) {
-      reveal.set(withSpring(1, { stiffness: 160, damping: 14 }));
+      reveal.set(withSpring(1, springs.settle));
     }
   }, [visible, reveal]);
 
