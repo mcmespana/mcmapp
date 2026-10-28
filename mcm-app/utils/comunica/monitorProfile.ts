@@ -299,3 +299,23 @@ export function fileSizeText(bytes: number): string {
   }
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
+
+/** Por qué no ha subido un archivo, en palabras de persona. */
+export function uploadErrorText(code: string, reason?: string): string {
+  if (code === 'network') {
+    return 'Sin conexión: no se ha subido. Reinténtalo cuando tengas cobertura.';
+  }
+  if (code === 'crm_unavailable') {
+    return 'El CRM no responde ahora mismo. Reinténtalo en un rato.';
+  }
+  if (code === 'validation') {
+    if (reason === 'file_too_big') return FILE_PROBLEM_TEXT.too_big;
+    if (reason === 'bad_file_type') return FILE_PROBLEM_TEXT.bad_type;
+    if (reason === 'empty_file') return FILE_PROBLEM_TEXT.empty;
+  }
+  if (code === 'unauthenticated') {
+    return 'Tu sesión ha terminado. Vuelve a entrar y súbelo otra vez.';
+  }
+  if (code === 'forbidden') return 'Esta sección es para monitores.';
+  return 'No se ha podido subir. Prueba otra vez.';
+}
