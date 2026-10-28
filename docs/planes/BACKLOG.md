@@ -370,15 +370,17 @@ monitores, con un backend nuevo que no sea el plugin.
   02, 04, 05, **06** (Coordinación) y **07** (eventos y grupos de actividad,
   el caso estrella sin cobertura) y 10; 03 casi (falta el catálogo); los
   fallos de la revisión del 24/10, arreglados (caché en SQLite cifrado, sesión
-  en el llavero). **08** (avisos) y **09** (mis datos de monitor) en marcha;
-  luego **17** (varias delegaciones, escrito el 28/10) y 11-16 (familias).
+  en el llavero). **08** (avisos y compartir) y **09** (mis datos de monitor) hechos
+  también el 28/10. Siguen **17** (varias delegaciones, escrito el 28/10) y
+  11-16 (familias).
   Estado fila a fila en [`area-nativa/README.md`](area-nativa/README.md) y lo
   que toca, en orden, en [`area-nativa/ESTADO.md`](area-nativa/ESTADO.md).
 - **Diseño del área:** el usuario pide «darle cariño» (28/10). Las piezas y
   las reglas aprendidas, en
   [`docs/desarrollo/AREA_NATIVA_DISENO.md`](../desarrollo/AREA_NATIVA_DISENO.md).
-- **Merge a `main`:** se propone cuando 08 y 09 estén dentro y la rama esté en
-  verde; entra apagada para quien no tenga el modo alpha.
+- **Merge a `main`:** con 04-10 dentro y la rama en verde, se propone ya
+  (entra apagada para quien no tenga el modo alpha); 17 y 11-16 pueden ir en
+  otro merge después.
 - Lo único que se puede adelantar fuera de la app está en §13 del análisis
   (pedir a SinergiaTIC usuario de lectura y `/TEST`, protección de datos,
   equivalencias de delegaciones).

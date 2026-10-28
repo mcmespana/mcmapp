@@ -82,6 +82,23 @@ el plan 07 iba a duplicar los chips y el buscador de Grupos y fichas; pasaron a
 14. **El texto que sale de la app (compartir), como lo diría una persona:**
     fechas humanas, «hasta el 5» (el día cuenta entero), nada de barras.
 
+15. **Un solo estilo de etiqueta por tarjeta de formulario** (plan 09):
+    todas en `typography.body`, como Ajustes. Lo corto (un año) en línea con
+    el campo estrecho a la derecha; encima del campo, solo lo largo. Las
+    piezas están en `components/comunica/comun/form/`.
+16. **Una pista repetida no se repite.** «Formatos: pdf, jpg…» una vez, al
+    pie de la sección (`FormSection footer`); en cada campo, su estado («Sin
+    subir», «Ya subido») y una acción corta («Elegir», «Cambiar»).
+17. **Doce campos seguidos no se recorren:** se parten en tarjetas por tema,
+    con el orden y las palabras del plugin, sin títulos grandilocuentes.
+18. **Un párrafo legal largo se parte** en párrafos cortos y viñetas con
+    icono, con sus negritas y enlaces. Mismo contenido, sin muro.
+19. **Un dato bloqueado se pinta como dato** («Ya subido» con su sello y el
+    enlace), no como un control apagado.
+20. **Un fallo que se reintenta solo no merece un toast de error**; uno que
+    necesita a la persona, sí. El estado de la cola va encima del botón, en
+    la `BottomActionBar`.
+
 ## 3. Cómo se comprueba (antes de cada commit con pantallas)
 
 - Tests: `npx tsc --noEmit && npm run lint && npm test` (en particular
@@ -97,8 +114,9 @@ el plan 07 iba a duplicar los chips y el buscador de Grupos y fichas; pasaron a
 
 ## 4. Lo que la web no enseña bien (no lo «arregles» mirando solo la web)
 
-- En web, una fila pulsable (`PressableFeedback` con `Highlight` y `gap`)
-  queda unos 12 px más a la derecha que una fila quieta al lado. Es de la web,
-  no del móvil: está apuntado en `PLAN_DISENO.md` (H10).
+- En web, una fila pulsable con `PressableFeedback.Highlight` como PRIMER
+  hijo y `gap` queda unos 8-12 px más a la derecha que una fila quieta al
+  lado (el `gap` cuenta el `Highlight`). En filas nuevas, **el `Highlight`
+  va el último hijo** (plan 09). Las que ya existen, en `PLAN_DISENO.md` (H10).
 - La cabecera de iOS es transparente: lo que se pega arriba (chips) hay que
   verlo en un dispositivo.
