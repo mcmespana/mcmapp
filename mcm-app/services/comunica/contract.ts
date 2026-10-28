@@ -1039,6 +1039,105 @@ export const HealthNote = read({
 });
 export type HealthNote = z.infer<typeof HealthNote>;
 
+// ── Mis datos de monitor (plan 09 «Datos») ──────────────────────────────────
+
+/** Las opciones de un desplegable que da el servidor (crecen cada año). */
+const Options = z.array(z.object({ value: z.string(), label: z.string() }));
+/** Premonitores I y II: no, en curso, finalizado. */
+export const PreMonitorStatus = z.enum(['no', 'in_progress', 'finished']);
+/** MAT, DAT y FA: no, en curso, prácticas, pendiente título, titulado. */
+export const CourseStatus = z.enum([
+  'no',
+  'in_progress',
+  'internship',
+  'pending_certificate',
+  'certified',
+]);
+/** «Monitor/a de…»: una etapa (con Apoyo) u «Otros». */
+export const MonitorOf = z.enum([...STAGES, 'other']);
+export const SexOffenceMode = z.enum(['automatic', 'manual']);
+export const DocumentKind = z.enum([
+  'sex_offence_certificate',
+  'mat',
+  'dat',
+  'other_training',
+]);
+export type DocumentKind = z.infer<typeof DocumentKind>;
+
+export const MONITOR_SHORT_TEXT_MAX = 255;
+export const MONITOR_LONG_TEXT_MAX = 4000;
+const shortText = z.string().max(MONITOR_SHORT_TEXT_MAX).nullable();
+const longText = z.string().max(MONITOR_LONG_TEXT_MAX).nullable();
+
+/** Lo que el monitor puede cambiar. `null` = sin indicar (no es un «no»). */
+export const MonitorProfileEditable = z.object({
+  /** Solo el año (el CRM guarda `AAAA-01-01`). */
+  monitorSince: z.number().int().min(1000).max(9999).nullable(),
+  monitorOf: MonitorOf.nullable(),
+  preMonitors1: PreMonitorStatus.nullable(),
+  preMonitors2: PreMonitorStatus.nullable(),
+  /** Texto libre en el CRM, aunque se pida como año. */
+  preMonitorsYear: shortText,
+  mat: CourseStatus.nullable(),
+  /** Una clave de `options.matCourses`. */
+  matCourse: z.string().nullable(),
+  dat: CourseStatus.nullable(),
+  fa: CourseStatus.nullable(),
+  datYearAndSchool: shortText,
+  faYearAndSchool: shortText,
+  foodHandling: z.boolean().nullable(),
+  /** Claves de `options.congresses`. */
+  congresses: z.array(z.string()),
+  academicBackground: longText,
+  volunteeringDescription: longText,
+  volunteeringPrograms: longText,
+  sexOffenceCertificateMode: SexOffenceMode.nullable(),
+});
+export type MonitorProfileEditable = z.infer<typeof MonitorProfileEditable>;
+
+/** «Archivo subido» de cada título: solo lectura, lo pone el servidor. */
+export const MonitorFiles = z.object({
+  sexOffenceCertificate: z.boolean(),
+  mat: z.boolean(),
+  dat: z.boolean(),
+  otherTraining: z.boolean(),
+});
+
+/**
+ * `GET /v1/me/monitor` — los datos de monitor de quien ha entrado. Solo con
+ * papel `monitor` (si no, `forbidden`). Se guarda: son suyos y sin salud.
+ */
+export const MonitorProfile = read({
+  ...MonitorProfileEditable.shape,
+  files: MonitorFiles,
+  options: z.object({ matCourses: Options, congresses: Options }),
+});
+export type MonitorProfile = z.infer<typeof MonitorProfile>;
+
+/**
+ * `PATCH /v1/me/monitor` — SOLO lo que cambia, y estricto: una clave de más
+ * (`files`, un nombre del CRM) es `validation`.
+ */
+export const MonitorProfileWrite = z
+  .object({
+    clientId: ClientId,
+    changes: MonitorProfileEditable.partial().strict(),
+  })
+  .strict();
+export type MonitorProfileWrite = z.infer<typeof MonitorProfileWrite>;
+
+/**
+ * `POST /v1/me/documents` (multipart): estos dos campos y `file` (PDF, JPG o
+ * PNG de hasta 6 MB). Motivos de `validation`: `empty_file`, `file_too_big`,
+ * `bad_file_type`. Crea el Documento con su categoría, lo ata a la persona y
+ * pone su «archivo subido».
+ */
+export const DocumentUploadFields = z.object({
+  clientId: ClientId,
+  kind: DocumentKind,
+});
+export type DocumentUploadFields = z.infer<typeof DocumentUploadFields>;
+
 // ── Rutas ───────────────────────────────────────────────────────────────────
 
 /**
@@ -1209,6 +1308,25 @@ export const ROUTES = {
     method: 'POST',
     path: '/v1/events/:id/sessions/today',
     response: SessionTodayResult,
+    persist: false,
+  },
+  // Mis datos de monitor (plan 09).
+  myMonitor: {
+    method: 'GET',
+    path: '/v1/me/monitor',
+    response: MonitorProfile,
+    persist: true,
+  },
+  updateMyMonitor: {
+    method: 'PATCH',
+    path: '/v1/me/monitor',
+    response: WriteResult,
+    persist: false,
+  },
+  uploadMyDocument: {
+    method: 'POST',
+    path: '/v1/me/documents',
+    response: WriteResult,
     persist: false,
   },
 } as const;

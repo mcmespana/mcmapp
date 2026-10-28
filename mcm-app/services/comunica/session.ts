@@ -336,6 +336,10 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     getFollowUps: authed((id) => api.getFollowUps(id)),
     createFollowUp: authed((id, b) => api.createFollowUp(id, b)),
     createSessionToday: authed((id, b) => api.createSessionToday(id, b)),
+    // Mis datos de monitor (plan 09).
+    getMyMonitorProfile: authed((o) => api.getMyMonitorProfile(o)),
+    updateMyMonitorProfile: authed((b) => api.updateMyMonitorProfile(b)),
+    uploadMyDocument: authed((f, file) => api.uploadMyDocument(f, file)),
     photoSource: (url) => api.photoSource(url),
   };
 }

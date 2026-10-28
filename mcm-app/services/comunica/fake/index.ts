@@ -71,6 +71,7 @@ import { madridDay, madridInstant } from '@/utils/comunica/madrid';
 import { canMarkSession } from '@/utils/comunica/sessions';
 import { unionScope, type CoordRelation } from '@/utils/comunica/scope';
 import { createCoordinationRoutes, pendingMeetingOf } from './coordination';
+import { monitorRoutes, type MineKeys, type UploadsLog } from './myMonitor';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export interface FakeControls {
@@ -154,7 +155,7 @@ const CODE_TTL_MS = 40 * 60_000;
 /** Códigos fallidos que bloquean esa vía una hora. */
 const MAX_BAD_CODES = 10;
 
-export interface FakeServer extends ComunicaApi {
+export interface FakeServer extends ComunicaApi, UploadsLog {
   controls: FakeControls;
   setControls(patch: Partial<FakeControls>): void;
   subscribe(listener: () => void): () => void;
@@ -481,9 +482,9 @@ export function createFakeServer(
   const notify = () => listeners.forEach((l) => l());
 
   // Coordinación (plan 06): sus rutas viven en `coordination.ts`.
-  const coordination = createCoordinationRoutes({
+  const routesCtx = {
     data: () => data,
-    gate: (route, write) => gate(route, write),
+    gate: (route: RouteName, write?: boolean) => gate(route, write),
     persona: () => current,
     roles: () => PERSONA_ROLES[current].roles,
     teamScope: () => unionScope(TEAM_RELATIONS[current]),
@@ -495,11 +496,13 @@ export function createFakeServer(
     bumpWrites: (n = 1) => {
       writeCount += n;
     },
-  });
+  };
+  const coordination = createCoordinationRoutes(routesCtx);
+  const mine = monitorRoutes(routesCtx); // Mis datos de monitor (plan 09).
 
   // Sin `...coordination` dentro del literal: Babel evaluaría los getters de
   // abajo (`writeCount` se quedaría en 0). Se juntan al final.
-  const server: Omit<FakeServer, keyof typeof coordination> = {
+  const server: Omit<FakeServer, keyof typeof coordination | MineKeys> = {
     get controls() {
       return controls;
     },
@@ -1138,5 +1141,5 @@ export function createFakeServer(
       return { uri: abstractImage(url), cacheKey: url };
     },
   };
-  return Object.assign(server, coordination);
+  return Object.assign(server, coordination, mine);
 }
