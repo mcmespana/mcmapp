@@ -80,7 +80,7 @@ import { useComunicaTheme } from '../comun/useComunicaTheme';
 import MarkSheet from './MarkSheet';
 import { Count, Counts, FillButton, Notice } from './RollBits';
 import RollRow from './RollRow';
-import SaveRollButton from './SaveRollButton';
+import SaveRollButton, { SAVED_LABEL } from './SaveRollButton';
 import ScreenState from './ScreenState';
 import SessionPicker from './SessionPicker';
 
@@ -374,7 +374,7 @@ function RollEditor({
   const saveLabel = future
     ? 'Aún no ha llegado'
     : saved
-      ? 'Guardada ✓'
+      ? SAVED_LABEL
       : counts.unmarked > 0 && counts.came + counts.missed > 0
         ? `Guardar (${unmarkedLabel(counts.unmarked)})`
         : 'Guardar lista';

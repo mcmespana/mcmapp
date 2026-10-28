@@ -93,7 +93,7 @@ import ListCell, { cellPosition, type CellPosition } from '../grupos/ListCell';
 import MarkSheet from '../pasar-lista/MarkSheet';
 import { Count, Counts, FillButton, Notice } from '../pasar-lista/RollBits';
 import RollRow from '../pasar-lista/RollRow';
-import SaveRollButton from '../pasar-lista/SaveRollButton';
+import SaveRollButton, { SAVED_LABEL } from '../pasar-lista/SaveRollButton';
 
 type Item =
   | { kind: 'head'; key: string }
@@ -546,7 +546,7 @@ export default function EventRollList({
   const saveLabel = pick.locked
     ? 'Aún no ha llegado'
     : !dirty && hasMarks && !uploading && !restored
-      ? 'Guardada ✓'
+      ? SAVED_LABEL
       : counts.unmarked > 0 && hasMarks
         ? `Guardar (${unmarkedLabel(counts.unmarked)})`
         : 'Guardar lista';
@@ -619,7 +619,7 @@ export default function EventRollList({
         </Counts>
         <SaveRollButton
           label={saveLabel}
-          enabled={!pick.locked && saveLabel !== 'Guardada ✓'}
+          enabled={!pick.locked && saveLabel !== SAVED_LABEL}
           onPress={() => void save()}
         />
       </BottomActionBar>

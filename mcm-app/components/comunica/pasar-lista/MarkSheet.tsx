@@ -40,7 +40,7 @@ interface Props {
   mode?: 'participants' | 'monitors';
   /** Monitores: una fila sin grupo de Pasar Lista (parte de «-»). */
   optional?: boolean;
-  /** El texto del enlace a la ficha («Ficha y teléfonos ›»). */
+  /** El texto del enlace a la ficha («Ficha y teléfonos»); la flecha la pone la hoja. */
   fichaLabel?: string;
 }
 
@@ -55,7 +55,7 @@ export default function MarkSheet({
   onOpenFicha,
   mode = 'participants',
   optional = false,
-  fichaLabel = 'Ficha y teléfonos ›',
+  fichaLabel = 'Ficha y teléfonos',
 }: Props) {
   const t = useComunicaTheme();
   const monitors = mode === 'monitors';
@@ -144,9 +144,16 @@ export default function MarkSheet({
               accessibilityRole="button"
               style={styles.linkTarget}
             >
-              <Text style={[styles.link, { color: t.accentText }]}>
-                {fichaLabel}
-              </Text>
+              <View style={styles.linkRow}>
+                <Text style={[styles.link, { color: t.accentText }]}>
+                  {fichaLabel}
+                </Text>
+                <IconSymbol
+                  name="chevron.right"
+                  size={14}
+                  color={t.accentText}
+                />
+              </View>
             </PressableFeedback>
           ) : (
             <View />
@@ -182,7 +189,8 @@ const styles = StyleSheet.create({
     minHeight: 56,
     paddingHorizontal: 12,
     borderRadius: radii.md,
-    borderWidth: 2,
+    // Lo elegido se marca con el borde; uno fino, como el resto del área.
+    borderWidth: StyleSheet.hairlineWidth * 2,
   },
   optionText: { flex: 1, gap: 2 },
   optionLabel: { ...typography.body, fontWeight: '600' },
@@ -195,6 +203,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     textAlignVertical: 'top',
   },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   links: {
     flexDirection: 'row',
     justifyContent: 'space-between',

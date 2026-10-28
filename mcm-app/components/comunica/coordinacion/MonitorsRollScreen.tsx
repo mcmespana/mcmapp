@@ -91,7 +91,7 @@ import { useComunicaTheme } from '../comun/useComunicaTheme';
 import MarkSheet from '../pasar-lista/MarkSheet';
 import RollRow, { memberAsPerson } from '../pasar-lista/RollRow';
 import { noticeFor } from '../pasar-lista/RollScreen';
-import SaveRollButton from '../pasar-lista/SaveRollButton';
+import SaveRollButton, { SAVED_LABEL } from '../pasar-lista/SaveRollButton';
 import SessionPicker from '../pasar-lista/SessionPicker';
 
 export const FORBIDDEN_COORDINATION = {
@@ -491,7 +491,7 @@ function Editor({
   const saveLabel = !editable
     ? 'Aún no ha llegado'
     : saved
-      ? 'Guardada ✓'
+      ? SAVED_LABEL
       : 'Guardar';
   const barNotice = uploading
     ? null
@@ -754,7 +754,7 @@ function Editor({
           }
         }}
         onClose={() => setSheetFor(null)}
-        fichaLabel="Ficha del monitor ›"
+        fichaLabel="Ficha del monitor"
         onOpenFicha={() => {
           if (!sheetFor) return;
           router.push({
