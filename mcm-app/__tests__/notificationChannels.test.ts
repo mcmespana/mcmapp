@@ -1,10 +1,12 @@
 import {
+  COMUNICA_CHANNELS,
   channelIdForCategory,
   DEFAULT_CHANNEL_ID,
   isKnownChannelId,
   NOTIFICATION_CHANNELS,
 } from '@/constants/notificationChannels';
 import type { NotificationCategory } from '@/types/notifications';
+import { COMUNICA_CHANNEL_IDS } from '@/services/comunica/contract';
 
 /**
  * Las categorías que el Panel puede mandar en `data.category`. Copiadas a mano
@@ -23,7 +25,9 @@ const PANEL_CATEGORIES: NotificationCategory[] = [
 
 describe('catálogo de canales', () => {
   it('tiene un canal por cada categoría del Panel', () => {
-    const covered = NOTIFICATION_CHANNELS.map((c) => c.category).sort();
+    const covered = NOTIFICATION_CHANNELS.filter((c) => c.source !== 'comunica')
+      .map((c) => c.category)
+      .sort();
     expect(covered).toEqual([...PANEL_CATEGORIES].sort());
   });
 
@@ -82,5 +86,50 @@ describe('isKnownChannelId', () => {
 
   it('rechaza los que no están (se borran del sistema al sincronizar)', () => {
     expect(isKnownChannelId('canal-viejo')).toBe(false);
+  });
+});
+
+/**
+ * Guardarraíl del plan 08 (área privada de Comunica): los dos canales del área
+ * NO se quitan nunca ni cambian de importancia. Si un bundle los quitara, la
+ * limpieza del arranque (`notifications/androidChannels.ts`) los borraría y el
+ * servidor seguiría mandando a un canal que Android tira sin decir nada. Y la
+ * importancia de un canal ya creado no se puede cambiar: se acierta a la
+ * primera.
+ */
+describe('canales del área de Comunica', () => {
+  it('siguen en el catálogo con su importancia', () => {
+    const spec = Object.fromEntries(
+      COMUNICA_CHANNELS.map((c) => [c.id, c.importance]),
+    );
+    expect(spec).toEqual({
+      'comunica-listas': 'high',
+      'comunica-grupos': 'default',
+    });
+    for (const id of Object.keys(spec)) expect(isKnownChannelId(id)).toBe(true);
+  });
+
+  it('son los que el móvil declara al registrarse (contrato)', () => {
+    expect(COMUNICA_CHANNELS.map((c) => c.id).sort()).toEqual(
+      Object.values(COMUNICA_CHANNEL_IDS).sort(),
+    );
+  });
+
+  it('no tienen categoría del Panel', () => {
+    for (const c of COMUNICA_CHANNELS) expect(c.category).toBeUndefined();
+  });
+
+  it('channelIdForCategory nunca devuelve un canal del área', () => {
+    const area = new Set(COMUNICA_CHANNELS.map((c) => c.id));
+    const tries = [
+      ...PANEL_CATEGORIES,
+      'comunica',
+      'comunica-listas',
+      'comunica-grupos',
+      undefined,
+    ];
+    for (const category of tries) {
+      expect(area.has(channelIdForCategory(category))).toBe(false);
+    }
   });
 });
