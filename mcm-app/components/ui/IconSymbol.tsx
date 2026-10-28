@@ -70,6 +70,12 @@ type IconMapping = {
   plus: 'add';
   link: 'link';
   'chevron.up': 'expand-less';
+  // Mis datos de monitor (plan 09)
+  'info.circle': 'info-outline';
+  circle: 'radio-button-unchecked';
+  'photo.on.rectangle': 'photo-library';
+  paperclip: 'attach-file';
+  'checkmark.seal.fill': 'verified';
 };
 
 type IconSymbolName = keyof IconMapping;
@@ -144,6 +150,12 @@ const MAPPING: IconMapping = {
   plus: 'add',
   link: 'link',
   'chevron.up': 'expand-less',
+  // Mis datos de monitor (plan 09)
+  'info.circle': 'info-outline',
+  circle: 'radio-button-unchecked',
+  'photo.on.rectangle': 'photo-library',
+  paperclip: 'attach-file',
+  'checkmark.seal.fill': 'verified',
 };
 
 /**
