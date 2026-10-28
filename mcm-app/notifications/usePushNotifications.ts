@@ -40,6 +40,13 @@ import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useEventSubscriptions } from '@/contexts/EventSubscriptionsContext';
 import { router } from 'expo-router';
+import { useComunicaMode } from '@/hooks/comunica/useComunicaMode';
+import { emitComunicaNotice } from '@/services/comunica/bridge';
+import {
+  isComunicaNotice,
+  parseComunicaNotice,
+  routeForComunicaNotice,
+} from '@/utils/comunica/noticeRoutes';
 
 /**
  * Genera un ID estable y determinístico para una notificación.
@@ -108,6 +115,13 @@ export default function usePushNotifications() {
   const resolved = useResolvedProfileConfig();
   const { profile } = useUserProfile();
   const { eventTopics } = useEventSubscriptions();
+  // ¿Área nativa de Comunica encendida? Sus avisos van a la nativa o, si no,
+  // a la pestaña (la WebView). Plan 08 de `docs/planes/area-nativa/`.
+  const comunicaMode = useComunicaMode();
+  const comunicaNativeRef = useRef(comunicaMode === 'native');
+  useEffect(() => {
+    comunicaNativeRef.current = comunicaMode === 'native';
+  }, [comunicaMode]);
 
   // Metadata para segmentación en Firebase. Solo la construimos cuando el
   // usuario ya tiene perfil/delegación definidos (post onboarding). Antes,
@@ -168,6 +182,15 @@ export default function usePushNotifications() {
     // Listener para notificaciones recibidas (app en foreground)
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
+        // Avisos del área de Comunica (plan 08): NO van a la campana (son
+        // operativos y su sitio es la portada del área). Se refresca lo que
+        // tocan para que la pantalla ya lo enseñe.
+        const comunica = notification.request.content.data;
+        if (isComunicaNotice(comunica)) {
+          const parsed = parseComunicaNotice(comunica);
+          if (parsed) emitComunicaNotice(parsed);
+          return;
+        }
         const notificationId = getStableNotificationId(
           notification.request.content,
         );
@@ -207,6 +230,21 @@ export default function usePushNotifications() {
       Notifications.addNotificationResponseReceivedListener((response) => {
         const data = response.notification.request.content.data;
         const actionIdentifier = response.actionIdentifier;
+
+        // Avisos del área de Comunica (plan 08), lo primero: el destino lo
+        // decide la app (nunca una ruta que venga en el aviso) y no pasan por
+        // la campana. Analítica sin ids.
+        if (isComunicaNotice(data)) {
+          trackEvent('notificacion_abierta', { categoria: 'comunica' });
+          try {
+            router.navigate(
+              routeForComunicaNotice(data, {
+                nativeOn: comunicaNativeRef.current,
+              }) as any,
+            );
+          } catch {}
+          return;
+        }
 
         // ID estable de la notificación (lo necesitamos también para el
         // deep-link al centro de notificaciones).

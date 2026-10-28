@@ -66,6 +66,7 @@ import {
 import { readDrawer, writeDrawer } from '@/services/comunica/storage';
 import { dehydrateArea, fitForStorage } from '@/services/comunica/persist';
 import { areaKey } from '@/hooks/comunica/useAreaQuery';
+import { useAreaBridge } from '@/hooks/comunica/useAreaBridge';
 import { logger } from '@/utils/logger';
 
 export function createAreaQueryClient() {
@@ -366,6 +367,9 @@ export default function ComunicaAreaProvider({
       box.dispose();
     };
   }, [outbox]);
+
+  // Avisos (plan 08): la cola para la raíz y refrescar al llegar un aviso.
+  useAreaBridge(qc, outbox);
 
   const value = useMemo(
     () => ({
