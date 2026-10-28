@@ -71,6 +71,7 @@ import { madridDay, madridInstant } from '@/utils/comunica/madrid';
 import { canMarkSession } from '@/utils/comunica/sessions';
 import { unionScope, type CoordRelation } from '@/utils/comunica/scope';
 import { createCoordinationRoutes, pendingMeetingOf } from './coordination';
+import * as fakeDevices from './devices';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export interface FakeControls {
@@ -154,7 +155,7 @@ const CODE_TTL_MS = 40 * 60_000;
 /** Códigos fallidos que bloquean esa vía una hora. */
 const MAX_BAD_CODES = 10;
 
-export interface FakeServer extends ComunicaApi {
+export interface FakeServer extends ComunicaApi, fakeDevices.DevicesFake {
   controls: FakeControls;
   setControls(patch: Partial<FakeControls>): void;
   subscribe(listener: () => void): () => void;
@@ -497,9 +498,11 @@ export function createFakeServer(
     },
   });
 
+  // Avisos en el móvil (plan 08): los móviles registrados, en `devices.ts`.
+  const devices = fakeDevices.routes(gate, () => current, seenClientIds);
   // Sin `...coordination` dentro del literal: Babel evaluaría los getters de
   // abajo (`writeCount` se quedaría en 0). Se juntan al final.
-  const server: Omit<FakeServer, keyof typeof coordination> = {
+  const server: fakeDevices.Core<typeof coordination> = {
     get controls() {
       return controls;
     },
@@ -526,6 +529,7 @@ export function createFakeServer(
       seenClientIds.clear();
       codes.clear();
       badCodes.clear();
+      devices.deviceRegistry.clear();
       notify();
     },
     issueSession(p) {
@@ -1138,5 +1142,5 @@ export function createFakeServer(
       return { uri: abstractImage(url), cacheKey: url };
     },
   };
-  return Object.assign(server, coordination);
+  return Object.assign(server, coordination, devices);
 }

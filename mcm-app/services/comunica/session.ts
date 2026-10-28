@@ -336,6 +336,8 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     getFollowUps: authed((id) => api.getFollowUps(id)),
     createFollowUp: authed((id, b) => api.createFollowUp(id, b)),
     createSessionToday: authed((id, b) => api.createSessionToday(id, b)),
+    registerDevice: authed((b) => api.registerDevice(b)),
+    unregisterDevice: authed((id) => api.unregisterDevice(id)),
     photoSource: (url) => api.photoSource(url),
   };
 }

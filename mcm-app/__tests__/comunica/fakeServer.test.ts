@@ -155,6 +155,17 @@ describe('servidor falso', () => {
       sessionToday: await s.createSessionToday('f-evt-vcom', {
         clientId: CLIENT(26),
       }),
+      // Avisos en el móvil (plan 08).
+      registerDevice: await s.registerDevice({
+        clientId: CLIENT(27),
+        deviceId: CLIENT(28),
+        pushToken: 'ExponentPushToken[prueba]',
+        platform: 'ios',
+        appVersion: '2.1.0',
+        channels: { rollCall: 'comunica-listas', groups: 'comunica-grupos' },
+        prefs: { rollCallDue: true, groupChanges: true },
+      }),
+      unregisterDevice: await s.unregisterDevice(CLIENT(28)),
     };
     for (const [name, value] of Object.entries(results)) {
       expect(
