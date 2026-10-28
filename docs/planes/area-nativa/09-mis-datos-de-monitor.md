@@ -1,6 +1,8 @@
 # 09 — Mis datos de monitor
 
-> **Estado:** 🟢 listo para ejecutar en `nuevoComunicaChulo` · **Depende de:** 01 y 03 · **Tamaño:** M ·
+> **Estado:** ✅ hecho el 28/10/2026 en `nuevoComunicaChulo` (rama de trabajo
+> `worktree-agent-ae12c04e871af66c0`, tareas 1-9; ver «Al ejecutarlo» abajo) ·
+> **Depende de:** 01 y 03 · **Tamaño:** M ·
 > **Índice:** [README.md](README.md)
 
 ## Para qué y para quién
@@ -225,3 +227,40 @@ la relación con la persona, la revisión con el archivo y el indicador a `1`, a
    `ajmcm_aut_del_sex_c`, lo segundo. La app copia la página.
 5. **El recortador del plugin** deja en cuadrado las fotos de los certificados (regla 9). No es de
    este plan, pero conviene arreglarlo en el plugin.
+
+## Al ejecutarlo (28/10/2026)
+
+Lo que se decidió al construirlo y lo que cambia respecto a lo escrito arriba:
+
+- **Los archivos van DIRECTOS, con conexión, y no por la cola** (cambia
+  «Datos» y la regla 10). La cola se guarda en el móvil y la regla común dice
+  que los archivos no tocan el disco; un certificado de delitos sexuales, el
+  que menos. `services/comunica/uploads.ts` los lleva solo en memoria: se
+  suben en cuanto se eligen, sin conexión dicen «no se ha subido» y
+  «Reintentar» (mismo `clientId`), y la copia que deja el selector en la caché
+  se borra al subir, al descartar y al salir (`localFiles.ts`). No hay
+  `documentDirectory/comunica/uploads/`. El `PATCH` sí va por la cola
+  (`me.monitor`), como manda la regla de monitores.
+- El aviso cuenta como «en camino» un certificado **subiendo** (no «en la
+  cola»), y vuelve si falla.
+- En la pantalla, el aviso sigue a lo que hay en pantalla: elegir «Manual» lo
+  enseña antes de guardar (lo pide el test de la tarea 5). En la portada, lo
+  confirmado con lo que espera en la cola encima.
+- «Formación» va en tres tarjetas (Premonitores, Cursos oficiales, Otra
+  formación): el orden y los textos son los del plugin, pero doce campos
+  seguidos en una tarjeta no se recorren en un móvil.
+- Cada archivo de «Archivos» es una fila compacta (nombre, «Sin subir» / «Ya
+  subido», «Elegir» / «Cambiar»); la pista de formatos va una vez al pie de la
+  sección y no en cada archivo. En el certificado, que va solo, salen las dos
+  pistas del plugin.
+- Los años van en línea (etiqueta a la izquierda, campo corto a la derecha).
+- La nota del certificado va entera, en párrafos y dos viñetas con icono (sin
+  💨 📥); el ⏳ del acuerdo de voluntariado es un icono de reloj.
+- Cursos MAT y congresos del servidor falso: con lugares inventados.
+- `expo-document-picker` y `expo-image-picker` ya estaban en la 2.1: nada
+  nativo nuevo.
+- El contrato quedó a 1 línea del tope de `max-lines`: el siguiente plan que
+  añada rutas tendrá que sacar su trozo a otro fichero (no se puede importar
+  de vuelta sin ciclo: hará falta mover las primitivas).
+
+Siguen abiertas las preguntas 2-5 de arriba (la app copia el plugin en todas).

@@ -75,6 +75,7 @@ import { createCoordinationRoutes, pendingMeetingOf } from './coordination';
 import { createEventRoutes } from './events';
 import type { FakeEventData } from './fixturesEvents';
 import * as fakeDevices from './devices';
+import { monitorRoutes, type MineKeys, type UploadsLog } from './myMonitor';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export interface FakeControls {
@@ -164,7 +165,8 @@ const CODE_TTL_MS = 40 * 60_000;
 /** Códigos fallidos que bloquean esa vía una hora. */
 const MAX_BAD_CODES = 10;
 
-export interface FakeServer extends ComunicaApi, fakeDevices.DevicesFake {
+export interface FakeServer
+  extends ComunicaApi, fakeDevices.DevicesFake, UploadsLog {
   controls: FakeControls;
   setControls(patch: Partial<FakeControls>): void;
   subscribe(listener: () => void): () => void;
@@ -493,9 +495,9 @@ export function createFakeServer(
   const notify = () => listeners.forEach((l) => l());
 
   // Coordinación (plan 06): sus rutas viven en `coordination.ts`.
-  const coordination = createCoordinationRoutes({
+  const routesCtx = {
     data: () => data,
-    gate: (route, write) => gate(route, write),
+    gate: (route: RouteName, write?: boolean) => gate(route, write),
     persona: () => current,
     roles: () => PERSONA_ROLES[current].roles,
     teamScope: () => unionScope(TEAM_RELATIONS[current]),
@@ -507,7 +509,9 @@ export function createFakeServer(
     bumpWrites: (n = 1) => {
       writeCount += n;
     },
-  });
+  };
+  const coordination = createCoordinationRoutes(routesCtx);
+  const mine = monitorRoutes(routesCtx); // Mis datos de monitor (plan 09).
 
   // Avisos en el móvil (plan 08): los móviles registrados, en `devices.ts`.
   const devices = fakeDevices.routes(gate, () => current, seenClientIds);
@@ -531,7 +535,7 @@ export function createFakeServer(
   // abajo (`writeCount` se quedaría en 0). Se juntan al final.
   const server: Omit<
     fakeDevices.Core<typeof coordination>,
-    'getEvents' | 'getEventRoll' | 'saveEventRoll' | 'eventData'
+    'getEvents' | 'getEventRoll' | 'saveEventRoll' | 'eventData' | MineKeys
   > = {
     get controls() {
       return controls;
@@ -1179,6 +1183,7 @@ export function createFakeServer(
     server as typeof server & { eventData: FakeEventData },
     coordination,
     devices,
+    mine,
     {
       getEvents: events.getEvents,
       getEventRoll: events.getEventRoll,

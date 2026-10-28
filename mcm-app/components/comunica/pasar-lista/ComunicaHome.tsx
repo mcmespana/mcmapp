@@ -8,7 +8,8 @@
 //   2. La cola del móvil: listas guardadas que aún no han subido.
 //   3. Los eventos que empiezan o acaban hoy.
 //   4. El atajo: tu grupo y su sesión.
-//   5. «Te faltan N listas».
+//   5. «Te faltan N listas» y, a quien es monitor y lo eligió manual, el
+//      aviso del certificado de delitos sexuales (plan 09).
 //   6. Tus otros grupos.
 //   7. «Pasar lista de otro grupo», por etapa.
 //   8. Grupos y fichas (plan 05), pasar lista en un evento y el resumen.
@@ -78,6 +79,7 @@ import SyncBadge from '../comun/SyncBadge';
 import { STAGE_COLOR } from '../comun/theme';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import { noticeFor } from './RollScreen';
+import HomeCertificateAlert from '../yo/HomeCertificateAlert';
 
 /** Listas que se precargan como mucho. */
 const PREFETCH_MAX = 5;
@@ -383,6 +385,9 @@ function HomeContent({
           ) : null}
         </Section>
       ) : null}
+
+      {/* Plan 09: «Te falta subir tu Certificado…», solo a monitores. */}
+      <HomeCertificateAlert me={me} />
 
       {model.others.length > 0 ? (
         <Section

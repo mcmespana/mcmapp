@@ -106,6 +106,14 @@ export default function AccountScreen() {
       </Section>
 
       <Section>
+        {me.roles.includes('monitor') ? (
+          <Row
+            icon="graduationcap"
+            label="Mis datos de monitor"
+            // Plan 09: trayectoria, formación, certificado y títulos.
+            onPress={() => router.push('/comunica/yo/monitor')}
+          />
+        ) : null}
         <Row
           icon="list.bullet.clipboard"
           label="Abrir la versión web"
@@ -135,7 +143,7 @@ function Row({
   onPress,
   destructive,
 }: {
-  icon: 'lock' | 'list.bullet.clipboard';
+  icon: 'lock' | 'list.bullet.clipboard' | 'graduationcap';
   label: string;
   onPress: () => void;
   destructive?: boolean;

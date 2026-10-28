@@ -59,6 +59,9 @@ import {
   TodayResponse,
   type VerifyRequest,
   VerifyResponse,
+  type DocumentUploadFields,
+  MonitorProfile,
+  type MonitorProfileWrite,
 } from './contract';
 import { logger } from '@/utils/logger';
 
@@ -142,6 +145,17 @@ export interface ComunicaApi {
   registerDevice(body: DeviceRegistration): Promise<WriteResult>;
   /** Al salir: se borra este móvil (solo el tuyo). */
   unregisterDevice(deviceId: string): Promise<void>;
+  // Mis datos de monitor (plan 09).
+  getMyMonitorProfile(opts?: ReadOptions): Promise<MonitorProfile>;
+  updateMyMonitorProfile(body: MonitorProfileWrite): Promise<WriteResult>;
+  /**
+   * Subir un título o certificado (multipart). Va DIRECTO, con conexión: el
+   * archivo nunca se guarda en la cola del móvil.
+   */
+  uploadMyDocument(
+    fields: DocumentUploadFields,
+    file: UploadFile,
+  ): Promise<WriteResult>;
   /**
    * Cómo pedir una foto (`photoUrl`): con el servidor de verdad, la URL con el
    * token; con el falso, su imagen inventada. Ninguna pantalla importa el falso.
@@ -154,6 +168,19 @@ export interface MonitorsRollParams {
   kind: MonitorsRollKind;
   stage?: Stage;
   session?: string;
+}
+
+/**
+ * Un archivo elegido en el móvil para subir: la ruta local (nativo) o el
+ * `Blob` del navegador (web). No es del contrato: es cómo viaja el `file`.
+ */
+export interface UploadFile {
+  uri: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  /** En web, el `File` que da el selector. */
+  blob?: Blob;
 }
 
 /** Lo que entiende `expo-image` como `source`. */
@@ -234,23 +261,33 @@ export function createHttpClient({
   const root = baseUrl.replace(/\/+$/, '');
 
   async function request<S extends z.ZodType>(
-    method: 'GET' | 'PUT' | 'POST' | 'DELETE',
+    method: 'GET' | 'PUT' | 'POST' | 'PATCH' | 'DELETE',
     path: string,
     schema: S,
     body?: unknown,
     retries = 0,
   ): Promise<z.infer<S>> {
     const token = getToken ? await getToken() : null;
+    // Un archivo va en multipart: el `Content-Type` (con su frontera) lo pone
+    // `fetch`, y el cuerpo no se pasa a JSON.
+    const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
     let res: Response;
     try {
       res = await doFetch(`${root}${path}`, {
         method,
         headers: {
           Accept: 'application/json',
-          ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+          ...(body !== undefined && !isForm
+            ? { 'Content-Type': 'application/json' }
+            : {}),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: body !== undefined ? JSON.stringify(body) : undefined,
+        body:
+          body === undefined
+            ? undefined
+            : isForm
+              ? (body as FormData)
+              : JSON.stringify(body),
       });
     } catch {
       if (retries > 0) return request(method, path, schema, body, retries - 1);
@@ -487,6 +524,23 @@ export function createHttpClient({
     unregisterDevice: async (deviceId) => {
       await request('DELETE', `/v1/devices/${enc(deviceId)}`, NoContent);
     },
+    getMyMonitorProfile: (opts) =>
+      request(
+        'GET',
+        `/v1/me/monitor${q(opts)}`,
+        MonitorProfile,
+        undefined,
+        READ_RETRIES,
+      ),
+    updateMyMonitorProfile: (body) =>
+      request('PATCH', '/v1/me/monitor', WriteResult, body),
+    uploadMyDocument: (fields, file) =>
+      request(
+        'POST',
+        '/v1/me/documents',
+        WriteResult,
+        uploadForm(fields, file),
+      ),
     photoSource: (url) => {
       // `expo-image` pide la foto él solo: el token va en la cabecera, y SOLO
       // si la foto es de nuestro servidor (una `photoUrl` de otro dominio no se
@@ -502,4 +556,25 @@ export function createHttpClient({
         : { uri: url, cacheKey: url };
     },
   };
+}
+
+/** El multipart de `POST /v1/me/documents`: `clientId`, `kind` y `file`. */
+export function uploadForm(
+  fields: DocumentUploadFields,
+  file: UploadFile,
+): FormData {
+  const form = new FormData();
+  form.append('clientId', fields.clientId);
+  form.append('kind', fields.kind);
+  if (file.blob) {
+    form.append('file', file.blob, file.name);
+  } else {
+    // React Native sube el archivo desde su ruta con esta forma.
+    form.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.mimeType,
+    } as unknown as Blob);
+  }
+  return form;
 }

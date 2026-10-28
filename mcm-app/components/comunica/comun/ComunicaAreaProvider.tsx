@@ -47,6 +47,7 @@ import type {
   FollowUpWrite,
   FollowUpWriteResult,
   MeetingWrite,
+  MonitorProfile,
   MonitorsRollWrite,
   EventRollWrite,
   NoticeWrite,
@@ -66,6 +67,7 @@ import {
   type SessionState,
 } from '@/services/comunica/session';
 import { readDrawer, writeDrawer } from '@/services/comunica/storage';
+import type { MonitorChanges } from '@/utils/comunica/monitorProfile';
 import { dehydrateArea, fitForStorage } from '@/services/comunica/persist';
 import { areaKey } from '@/hooks/comunica/useAreaQuery';
 import { useAreaBridge } from '@/hooks/comunica/useAreaBridge';
@@ -279,6 +281,12 @@ export default function ComunicaAreaProvider({
             ...(e.payload as Omit<DeviceRegistration, 'clientId'>),
             clientId: e.clientId,
           }),
+        // Mis datos de monitor (plan 09): solo lo que difiere de lo confirmado.
+        'me-monitor': (e) =>
+          getComunicaApi().updateMyMonitorProfile({
+            changes: (e.payload as { changes: MonitorChanges }).changes,
+            clientId: e.clientId,
+          }),
       },
       onApplied: (e, result) => {
         if (e.kind === 'roll') {
@@ -338,6 +346,15 @@ export default function ComunicaAreaProvider({
           void qc.invalidateQueries({
             queryKey: areaKey(['events', e.meta.eventId, 'roll']),
           });
+        }
+        if (e.kind === 'me-monitor') {
+          // Lo subido pasa a ser lo confirmado al momento, y luego se relee.
+          const { changes } = e.payload as { changes: MonitorChanges };
+          const key = areaKey(['yo', 'monitor']);
+          qc.setQueryData<MonitorProfile>(key, (old) =>
+            old ? { ...old, ...changes } : old,
+          );
+          void qc.invalidateQueries({ queryKey: key });
         }
         if (e.kind === 'membership-group') {
           void qc.invalidateQueries({

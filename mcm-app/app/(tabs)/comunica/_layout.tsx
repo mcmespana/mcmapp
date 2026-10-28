@@ -107,6 +107,10 @@ export default function ComunicaLayout() {
         <Stack.Screen name="eventos/[eventId]" options={{ title: 'Evento' }} />
         <Stack.Screen name="yo/index" options={{ title: 'Tu cuenta' }} />
         <Stack.Screen name="yo/avisos" options={{ title: 'Avisos' }} />
+        <Stack.Screen
+          name="yo/monitor"
+          options={{ title: 'Mis datos de monitor' }}
+        />
         <Stack.Screen name="web" options={{ headerShown: false }} />
         <Stack.Screen name="muestra" options={{ title: 'Muestra' }} />
       </Stack>

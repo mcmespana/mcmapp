@@ -175,6 +175,21 @@ describe('servidor falso', () => {
         prefs: { rollCallDue: true, groupChanges: true },
       }),
       unregisterDevice: await s.unregisterDevice(CLIENT(28)),
+      // Mis datos de monitor (plan 09), como coordinación (también es monitora).
+      myMonitor: await s.getMyMonitorProfile(),
+      updateMyMonitor: await s.updateMyMonitorProfile({
+        clientId: CLIENT(30),
+        changes: { foodHandling: false },
+      }),
+      uploadMyDocument: await s.uploadMyDocument(
+        { clientId: CLIENT(31), kind: 'dat' },
+        {
+          uri: 'file:///tmp/dat.pdf',
+          name: 'dat.pdf',
+          mimeType: 'application/pdf',
+          size: 1000,
+        },
+      ),
     };
     for (const [name, value] of Object.entries(results)) {
       expect(

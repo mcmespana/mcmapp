@@ -52,6 +52,28 @@
   Laboratorio). Componentes comunes nuevos: `FilterChips`, `SearchField`.
   Sin paquetes nuevos.
 
+## 2026-10-28 20:30 — Área nativa de Comunica: «Mis datos de monitor» (plan 09, rama `nuevoComunicaChulo`)
+
+- **Pantalla nueva** `comunica/yo/monitor`: trayectoria, formación,
+  voluntariado, el certificado de delitos sexuales (Automático / Manual) y los
+  títulos, con los campos, el orden y los textos del plugin. Se llega desde
+  «Tu cuenta» (solo monitores), desde el aviso de «Hoy» y por cualquier enlace
+  del plugin a «Mis datos de monitor».
+- **Guardar** va por la cola de escrituras (`me.monitor`): sin cobertura se
+  queda en el móvil y sube sola; cada entrada lleva todo lo pendiente. Salir con
+  cambios sin guardar pregunta.
+- **Subir títulos y certificados** con foto, galería o archivo (PDF, JPG o PNG
+  hasta 6 MB, comprobado antes de subir): **directo, con conexión, sin pasar
+  por la cola** — el archivo no se queda en el móvil y la copia del selector se
+  borra al subir y al salir. Usa `expo-image-picker`, `expo-document-picker` y
+  `expo-file-system`, ya en la build 2.1 (nada nativo nuevo).
+- **Aviso del certificado** («Te falta subir tu Certificado de Delitos
+  Sexuales») arriba de la pantalla y en la portada «Hoy», solo a monitores que
+  eligieron «Manual» y no lo han subido.
+- Contrato nuevo: `GET`/`PATCH /v1/me/monitor` y `POST /v1/me/documents`
+  (`docs/contratos/COMUNICA_API.md`), con el servidor falso. Piezas de
+  formulario reutilizables en `components/comunica/comun/form/`.
+
 ## 2026-10-28 18:00 — Área nativa de Comunica: Coordinación entera (plan 06, rama `nuevoComunicaChulo`)
 
 - **Coordinación** nativa: lo que falta (la reunión sin pasar), «Lista de
