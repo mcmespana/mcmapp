@@ -118,6 +118,7 @@ export default function ComunicaLayout() {
             name="yo/monitor"
             options={{ title: 'Mis datos de monitor' }}
           />
+          <Stack.Screen name="perfiles" options={{ title: 'Perfiles' }} />
           <Stack.Screen name="web" options={{ headerShown: false }} />
           <Stack.Screen name="muestra" options={{ title: 'Muestra' }} />
         </Stack>
