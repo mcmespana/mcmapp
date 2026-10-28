@@ -199,6 +199,42 @@ coordinación y acompañamiento vigentes (`alcance-coord`).
 - `PUT /v1/memberships/:id/group` (el de Grupos y fichas) vincula también a
   un monitor `unassigned.kind = 'none'`.
 
+### Mis datos de monitor (plan 09)
+
+- `GET /v1/me/monitor` → `MonitorProfile` (`generatedAt`, los campos
+  editables, `files` y `options`). Solo la propia persona y solo con papel
+  `monitor` (el id sale del token); si no, 403. **Se guarda en el móvil** (son
+  sus datos, sin salud) y se borra al salir. `null` = sin indicar (no es un
+  «no»). Campos: `monitorSince` (año de 4 cifras; el CRM guarda `AAAA-01-01`),
+  `monitorOf` (`mic`, `com`, `lc`, `apoyo`, `other`), `preMonitors1/2`
+  (`no`, `in_progress`, `finished`), `preMonitorsYear` (texto, ≤ 255), `mat`,
+  `dat`, `fa` (`no`, `in_progress`, `internship`, `pending_certificate`,
+  `certified`), `matCourse` (una clave de `options.matCourses`),
+  `datYearAndSchool`, `faYearAndSchool` (≤ 255), `foodHandling` (bool),
+  `congresses` (claves de `options.congresses`), `academicBackground`,
+  `volunteeringDescription`, `volunteeringPrograms` (≤ 4000),
+  `sexOffenceCertificateMode` (`automatic` = `1`, `manual` = `0`, `null` =
+  vacío). `files` (`sexOffenceCertificate`, `mat`, `dat`, `otherTraining`):
+  los «archivo subido» del CRM, **solo lectura**. `options`: `{ value, label }`
+  que da el servidor (crecen cada año). Traducción a nombres del CRM: tabla
+  «Datos» de `docs/planes/area-nativa/09-mis-datos-de-monitor.md`.
+- `PATCH /v1/me/monitor` `{ clientId, changes }` → `WriteResult`. **Estricto**:
+  una clave de más (`files`, un nombre del CRM) → `validation` / `bad_body`;
+  una opción que no existe → `validation` / `bad_option`. `changes` lleva SOLO
+  lo que cambia, pero la app manda en cada entrada TODO lo que difiere de lo
+  último confirmado (en la cola gana la última). El servidor no reescribe lo
+  que no cambia y no duplica con el mismo `clientId`. Va por la cola
+  (`me.monitor`).
+- `POST /v1/me/documents` (multipart: `clientId`, `kind`, `file`) →
+  `WriteResult`. `kind`: `sex_offence_certificate`, `mat`, `dat`,
+  `other_training`. PDF, JPG o PNG de 1 byte a 6 MB; si no, `validation` con
+  `empty_file`, `file_too_big` o `bad_file_type`. Crea un Documento con su
+  categoría (`legal_cert_delitos`, `formacion_titulo_mat`, la del DAT —ver las
+  preguntas del plan— y `formacion_titulo_otros`), lo ata a la persona, sube la
+  revisión, pone su «archivo subido» y lo asigna a la delegación. **Directo,
+  con conexión: la app no lo pone en la cola** (el archivo no se guarda en el
+  móvil); reintentar va con el mismo `clientId`.
+
 ### Salud
 
 - `GET /v1/people/:id/health` → `{ generatedAt, personId, items: [{ kind,
@@ -212,7 +248,6 @@ coordinación y acompañamiento vigentes (`alcance-coord`).
 ## 4. Lo que vendrá
 
 Cada plan de pantallas añade su trozo al ejecutarse (catálogo en el plan 00
-§3): eventos (07), avisos (08), mis
-datos de monitor (09), familias (11-16) y el pase a la web del legado
+§3): eventos (07), avisos (08), familias (11-16) y el pase a la web del legado
 (`POST /v1/web-pass`, plan 10). Y la delegación de trabajo de quien colabora
 con varias (`X-Comunica-Delegation`, plan 17).
