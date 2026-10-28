@@ -134,6 +134,8 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
           params: { id: d.id },
         }
       : { pathname: '/comunica/coordinacion' },
+  // Mis datos de monitor (plan 09).
+  single_stic_comunica_monitor: () => ({ pathname: '/comunica/yo/monitor' }),
   single_stic_password_change: () => ({ pathname: '/comunica/yo' }),
   single_stic_unsubscribe: () => ({ pathname: '/comunica/yo' }),
 };

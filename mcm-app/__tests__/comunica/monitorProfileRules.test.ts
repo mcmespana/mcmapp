@@ -2,6 +2,7 @@
  * Reglas puras de «Mis datos de monitor» (plan 09, tarea 2).
  */
 import type { MonitorProfile } from '@/services/comunica/contract';
+import { nativeHrefFor } from '@/services/comunica/links';
 import {
   changesFrom,
   DOCUMENT_MAX_BYTES,
@@ -170,5 +171,13 @@ describe('qué archivo vale', () => {
     expect(fileSizeText(2.4 * 1024 * 1024)).toBe('2,4 MB');
     expect(fileSizeText(640 * 1024)).toBe('640 KB');
     expect(fileSizeText(10)).toBe('1 KB');
+  });
+});
+
+describe('enlaces (plan 10)', () => {
+  it('«Mis datos de monitor» del plugin abre la pantalla nativa', () => {
+    expect(
+      nativeHrefFor({ internalpage: 'single_stic_comunica_monitor' }),
+    ).toEqual({ pathname: '/comunica/yo/monitor' });
   });
 });
