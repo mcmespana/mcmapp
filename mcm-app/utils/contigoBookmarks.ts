@@ -50,6 +50,16 @@ export function countHighlights(b: StoredBookmark | undefined | null): number {
   );
 }
 
+/**
+ * Aviso que se enseña antes de quitar un guardado que lleva subrayados: se
+ * borran con él (en local y en la nube) y son trabajo personal de quien lee.
+ */
+export function removeBookmarkWarning(nHighlights: number): string {
+  return nHighlights === 1
+    ? 'Se borrará también tu subrayado.'
+    : `Se borrarán también tus ${nHighlights} subrayados.`;
+}
+
 // ── Almacenamiento local ────────────────────────────────────────────────────
 
 /** Lee los bookmarks locales, migrando el formato antiguo (array de strings de

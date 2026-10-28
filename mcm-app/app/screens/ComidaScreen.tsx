@@ -6,7 +6,6 @@ import {
   StyleSheet,
   useWindowDimensions,
   ScrollView,
-  Platform,
 } from 'react-native';
 import { useNavigation } from 'expo-router/react-navigation';
 import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
@@ -14,6 +13,7 @@ import { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { MasStackParamList } from '../(tabs)/mas';
 import { radii } from '@/constants/uiStyles';
@@ -54,6 +54,7 @@ export default function ComidaScreen() {
   const scheme = useColorScheme();
   const event = useCurrentEvent();
   const styles = React.useMemo(() => createStyles(scheme ?? 'light'), [scheme]);
+  const bottomPadding = useTabBarPaddingBottom(spacing.md);
   const { width, height } = useWindowDimensions();
   const containerPadding = spacing.md;
   const gap = spacing.md;
@@ -66,7 +67,10 @@ export default function ComidaScreen() {
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: bottomPadding },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.gridContainer}>
@@ -103,7 +107,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
     scrollContent: {
       flexGrow: 1,
       padding: spacing.md,
-      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.md,
     },
     gridContainer: {
       flexDirection: 'row',

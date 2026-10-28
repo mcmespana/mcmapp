@@ -2,37 +2,77 @@ import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
 const isNative = Platform.OS !== 'web';
+const isAndroid = Platform.OS === 'android';
+
+const { AndroidHaptics } = Haptics;
+
+/**
+ * Háptica del SISTEMA en Android (`View.performHapticFeedback`), no el
+ * `Vibrator`.
+ *
+ * `impactAsync` y `notificationAsync` en Android se simulan con el motor de
+ * vibración: un zumbido, no el clic seco que hace el sistema al pulsar una
+ * tecla o abrir un menú. La propia doc de expo-haptics desaconseja el
+ * `Vibrator` para esto y remite a `performAndroidHapticsAsync`, que además
+ * respeta el ajuste «Respuesta táctil» del teléfono.
+ *
+ * Varios tipos son de Android 11+ (`Confirm`, `Reject`, `Gesture_End`) o 14+
+ * (`Segment_Tick`): en un teléfono más viejo la promesa se rechaza, y entonces
+ * se reintenta con `fallback`, que tiene que ser uno de los que existen en
+ * todas las versiones (`Context_Click`, `Clock_Tick`, `Virtual_Key`,
+ * `Long_Press`, `Keyboard_Tap`).
+ */
+function android(
+  type: Haptics.AndroidHaptics,
+  fallback: Haptics.AndroidHaptics = AndroidHaptics.Context_Click,
+): Promise<void> {
+  return Haptics.performAndroidHapticsAsync(type).catch(() =>
+    type === fallback
+      ? undefined
+      : Haptics.performAndroidHapticsAsync(fallback).catch(() => {}),
+  );
+}
+
+function impact(
+  style: Haptics.ImpactFeedbackStyle,
+  androidType: Haptics.AndroidHaptics,
+): Promise<void> | undefined {
+  if (!isNative) return;
+  if (isAndroid) return android(androidType);
+  return Haptics.impactAsync(style).catch(() => {});
+}
+
+function notify(
+  type: Haptics.NotificationFeedbackType,
+  androidType: Haptics.AndroidHaptics,
+): Promise<void> | undefined {
+  if (!isNative) return;
+  if (isAndroid) return android(androidType, AndroidHaptics.Long_Press);
+  return Haptics.notificationAsync(type).catch(() => {});
+}
 
 export const h = {
   tap: () =>
-    isNative &&
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}),
+    impact(Haptics.ImpactFeedbackStyle.Light, AndroidHaptics.Context_Click),
 
-  select: () =>
-    isNative &&
-    (Platform.OS === 'ios'
-      ? Haptics.selectionAsync().catch(() => {})
-      : Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})),
+  select: () => {
+    if (!isNative) return;
+    if (isAndroid)
+      return android(AndroidHaptics.Segment_Tick, AndroidHaptics.Clock_Tick);
+    return Haptics.selectionAsync().catch(() => {});
+  },
 
   add: () =>
-    isNative &&
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}),
+    impact(Haptics.ImpactFeedbackStyle.Medium, AndroidHaptics.Virtual_Key),
 
   remove: () =>
-    isNative &&
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {}),
+    impact(Haptics.ImpactFeedbackStyle.Rigid, AndroidHaptics.Gesture_End),
 
   success: () =>
-    isNative &&
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-      () => {},
-    ),
+    notify(Haptics.NotificationFeedbackType.Success, AndroidHaptics.Confirm),
 
   error: () =>
-    isNative &&
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
-      () => {},
-    ),
+    notify(Haptics.NotificationFeedbackType.Error, AndroidHaptics.Reject),
 
   /**
    * Tope alcanzado: el gesto era válido pero no se puede ir más allá (cejilla
@@ -41,29 +81,31 @@ export const h = {
    * de "no puede bajar más".
    */
   limit: () =>
-    isNative &&
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(
-      () => {},
-    ),
+    notify(Haptics.NotificationFeedbackType.Warning, AndroidHaptics.Reject),
 
   toggle: () =>
-    isNative &&
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {}),
+    impact(Haptics.ImpactFeedbackStyle.Rigid, AndroidHaptics.Clock_Tick),
 
   menuOpen: () =>
-    isNative &&
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}),
+    impact(Haptics.ImpactFeedbackStyle.Medium, AndroidHaptics.Virtual_Key),
 
   menuClose: () =>
-    isNative &&
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}),
+    impact(Haptics.ImpactFeedbackStyle.Light, AndroidHaptics.Context_Click),
 
   navigate: () =>
-    isNative &&
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}),
+    impact(Haptics.ImpactFeedbackStyle.Light, AndroidHaptics.Context_Click),
 
+  /**
+   * Envío de formulario completado. En iOS, tres golpes que crecen; en Android
+   * UNO solo (`Confirm`): encadenar vibraciones ahí es un zumbido largo, y el
+   * patrón de confirmación del sistema ya dice "hecho".
+   */
   formSuccess: () => {
     if (!isNative) return;
+    if (isAndroid) {
+      android(AndroidHaptics.Confirm, AndroidHaptics.Long_Press);
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setTimeout(
       () =>
@@ -80,6 +122,8 @@ export const h = {
   },
 
   // --- Carismochito (easter egg) ---
+  // Se quedan con el Vibrator también en Android a propósito: aquí el zumbido
+  // festivo ES el efecto, no un clic de interfaz.
   /** Golpe seco al detectar el agitado del móvil. */
   shake: () =>
     isNative &&

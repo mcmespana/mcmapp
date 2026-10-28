@@ -17,6 +17,7 @@ import {
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -27,10 +28,18 @@ import { PressableFeedback } from 'heroui-native';
 import SongDisplay from '@/components/SongDisplay';
 import { useSongProcessor } from '@/hooks/useSongProcessor';
 import { useForceCompact } from '@/components/tabs/tabBarController';
+import { useKeepAwakeWhileFocused } from '@/hooks/useKeepAwakeWhileFocused';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 import { trackEvent } from '@/utils/analytics';
 import SongControls from '@/components/SongControls';
 import type { SheetViewOptions } from '@/components/SongFontBottomSheet';
-import { RouteProp, NavigationProp } from 'expo-router/react-navigation';
+import {
+  RouteProp,
+  NavigationProp,
+  useHeaderHeight,
+  useIsFocused,
+} from 'expo-router/react-navigation';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
@@ -41,13 +50,11 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import ArrangementInputModal from '@/components/ArrangementInputModal';
 import * as Clipboard from 'expo-clipboard';
-import brandColors, {
-  SwipeColors,
-  UIColors,
-  themeColors,
-} from '@/constants/colors';
-import { durations } from '@/constants/animations';
+import brandColors, { SwipeColors, themeColors } from '@/constants/colors';
+import { cantoralHeaderTint } from '@/utils/cantoralHeader';
+import { durations, reaEasings, springs } from '@/constants/animations';
 import { h } from '@/utils/haptics';
+import { useToast } from '@/contexts/AppToastContext';
 import { pushWithRetry } from '@/services/firebaseWrites';
 import { hasSongMedia } from '@/types/songMedia';
 import { useSongTags } from '@/hooks/useSongTags';
@@ -57,6 +64,7 @@ import FloatingMediaPlayer, {
   type FloatingMediaSource,
 } from '@/components/song-media/FloatingMediaPlayer';
 import { radii } from '@/constants/uiStyles';
+import { useSongWebLocation } from '@/hooks/useSongWebLocation';
 import SongLinkViewer, {
   type SongLinkSource,
 } from '@/components/song-media/SongLinkViewer';
@@ -67,6 +75,11 @@ import SongLinkViewer, {
 const APPLE_SYSTEM_GREEN = SwipeColors.add;
 
 const availableFonts = SONG_FONTS.map((f) => ({ ...f }));
+
+// Atajos de teclado del detalle (web). Fuera del componente: un array nuevo en
+// cada render haría que el atajo se volviera a registrar cada vez.
+const KEYS_TRANSPOSE_UP = ['+', '='];
+const KEYS_TRANSPOSE_DOWN = ['-'];
 
 type SongDetailScreenRouteProp = RouteProp<RootStackParamList, 'SongDetail'>;
 type SongDetailScreenNavigationProp = NavigationProp<
@@ -89,6 +102,12 @@ export default function SongDetailScreen({
   // La barra de pestañas se queda COMPACTA mientras se lee una canción: aquí
   // lo que importa es que quepa la mayor cantidad de letra posible.
   useForceCompact(true);
+  // Con el móvil en el atril la pantalla no se apaga a mitad de canción. Solo
+  // con el foco: al abrir la pantalla completa encima o irse a otra pestaña,
+  // el detalle sigue montado y no hace falta.
+  useKeepAwakeWhileFocused('song-detail');
+  // Es la hoja con la que se canta: Carismochito no se asoma aquí.
+  useSuppressCarismochito();
 
   const {
     filename,
@@ -103,6 +122,9 @@ export default function SongDetailScreen({
     source,
     firebaseCategory,
   } = route.params;
+
+  // Web: título de la pestaña y URL `/cancion?f=…` de la canción abierta.
+  useSongWebLocation(filename, _navScreenTitle);
 
   // Analítica: una canción abierta por navegación, no por render. `source` lo
   // pone quien navega: 'category' desde una categoría, 'selection' desde la
@@ -128,10 +150,14 @@ export default function SongDetailScreen({
     setTranspose: setSelectionTranspose,
     setCapoOverride: setSelectionCapoOverride,
   } = useSelectedSongs();
+  const { toast } = useToast();
   const choir = useChoirSession();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const insets = useSafeAreaInsets();
+  // Alto real del header transparente (incluye la barra de estado). En iPad
+  // es más alto que los 44 pt del iPhone que se daban por hechos.
+  const headerHeight = useHeaderHeight();
 
   const { settings, setSettings, isLoadingSettings, isAdmin } = useSettings();
   const {
@@ -144,6 +170,7 @@ export default function SongDetailScreen({
     chorusStyle,
     chorusLabel,
     airy,
+    songMap,
   } = settings;
 
   // Edición de arreglos por long-press (solo admin). El índice apunta a una
@@ -228,6 +255,7 @@ export default function SongDetailScreen({
     chorusStyle,
     chorusLabel,
     airy,
+    songMap,
     currentFontSizeEm,
     currentFontFamily,
     notation,
@@ -360,7 +388,9 @@ export default function SongDetailScreen({
   // items; el back y la transparencia los pone el stack. Sin título para no
   // tapar letra. El FAB de abajo (SongControls) se queda.
   useLayoutEffect(() => {
-    const headerIconColor = isDark ? UIColors.accentYellow : '#3d79b9';
+    // Mismo color que el back del stack: en Android/web la cabecera es la
+    // barra amarilla sólida y el amarillo/azul de iOS no se leía sobre ella.
+    const headerIconColor = cantoralHeaderTint(isDark);
     navigation.setOptions({
       headerShown: true,
       headerTitle: '',
@@ -395,7 +425,7 @@ export default function SongDetailScreen({
               <MaterialIcons
                 name="ondemand-video"
                 size={22}
-                color={isDark ? brandColors.secondary : brandColors.primary}
+                color={headerIconColor}
               />
             </TouchableOpacity>
           )}
@@ -407,18 +437,32 @@ export default function SongDetailScreen({
               } else {
                 h.add();
                 addSong(filename);
+                toast.show({
+                  label: 'Añadida a tu selección',
+                  actionLabel: 'Ver',
+                  onActionPress: ({ hide }) => {
+                    hide();
+                    navigation.navigate('SelectedSongs');
+                  },
+                });
               }
             }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={{ paddingHorizontal: 6, paddingVertical: 4 }}
             accessibilityLabel={
-              isSelected ? 'Quitar de selección' : 'Añadir a selección'
+              isSelected ? 'Quitar de tu selección' : 'Añadir a tu selección'
             }
           >
             <IconSymbol
               name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
               size={24}
-              color={isSelected ? APPLE_SYSTEM_GREEN : headerIconColor}
+              // El estado ya lo dice la forma (✓ relleno frente a +). El
+              // verde de iOS no se lee sobre la barra amarilla de Android/web.
+              color={
+                isSelected && Platform.OS === 'ios'
+                  ? APPLE_SYSTEM_GREEN
+                  : headerIconColor
+              }
             />
           </TouchableOpacity>
         </View>
@@ -433,6 +477,7 @@ export default function SongDetailScreen({
     addSong,
     removeSong,
     openFullscreen,
+    toast,
   ]);
 
   useEffect(() => {
@@ -497,6 +542,7 @@ export default function SongDetailScreen({
     chorusLabel,
     verseNumbers,
     airy,
+    songMap: { available: sheetInfo.hasSongMap, on: songMap },
     onChange: (patch) => setSettings(patch),
   };
   const handleSetTranspose = (semitones: number) => {
@@ -619,24 +665,34 @@ export default function SongDetailScreen({
     }
   };
 
-  const animateAndSet = (params: any, direction: 'next' | 'prev') => {
+  const animateAndSet = (
+    params: any,
+    direction: 'next' | 'prev',
+    velocity = 0,
+  ) => {
     const toValue = direction === 'next' ? -screenWidth : screenWidth;
-    // La canción actual se va por un lado; al terminar se cambian los params y
-    // la nueva entra desde el lado contrario.
+    // La canción actual se va por un lado (acelerando: algo que se va sí
+    // acelera); al terminar se cambian los params y la nueva entra desde el
+    // lado contrario con un muelle que hereda la velocidad del dedo, en vez
+    // de una curva que la reiniciaba.
     const swapAndSlideIn = () => {
       navigation.setParams(params);
       slideAnim.set(-toValue);
-      slideAnim.set(withTiming(0, { duration: durations.quick }));
+      slideAnim.set(withSpring(0, { ...springs.snap, velocity }));
     };
     slideAnim.set(
-      withTiming(toValue, { duration: durations.quick }, () => {
-        'worklet';
-        scheduleOnRN(swapAndSlideIn);
-      }),
+      withTiming(
+        toValue,
+        { duration: durations.quick, easing: reaEasings.exit },
+        () => {
+          'worklet';
+          scheduleOnRN(swapAndSlideIn);
+        },
+      ),
     );
   };
 
-  const handleSwipeLeft = () => {
+  const handleSwipeLeft = (velocity = 0) => {
     if (
       navigationList &&
       typeof currentIndex === 'number' &&
@@ -647,11 +703,12 @@ export default function SongDetailScreen({
       animateAndSet(
         { ...prevSong, navigationList, currentIndex: currentIndex - 1, source },
         'prev',
+        velocity,
       );
     }
   };
 
-  const handleSwipeRight = () => {
+  const handleSwipeRight = (velocity = 0) => {
     if (
       navigationList &&
       typeof currentIndex === 'number' &&
@@ -662,9 +719,51 @@ export default function SongDetailScreen({
       animateAndSet(
         { ...nextSong, navigationList, currentIndex: currentIndex + 1, source },
         'next',
+        velocity,
       );
     }
   };
+
+  // ── Teclado (web) ──
+  // ←/→ cambian de canción (en web no hay swipe), +/− transponen, C muestra u
+  // oculta los acordes, F abre la pantalla completa y Esc vuelve. Solo con la
+  // pantalla delante (la pantalla completa se apila ENCIMA y este detalle
+  // sigue montado) y sin nada abierto por encima: el menú del FAB, sus hojas
+  // y modales, la ficha de multimedia, el visor de enlaces o el de arreglos.
+  // Con el foco dentro de la letra también llegan: el iframe las reenvía.
+  const isFocused = useIsFocused();
+  const [controlsOverlayOpen, setControlsOverlayOpen] = useState(false);
+  const keysOff =
+    Platform.OS !== 'web' ||
+    !isFocused ||
+    controlsOverlayOpen ||
+    showMediaSheet ||
+    arrModalVisible ||
+    linkSource !== null;
+  const keyOpts = { disabled: keysOff };
+  useKeyboardShortcut('arrowright', () => handleSwipeRight(), keyOpts);
+  useKeyboardShortcut('arrowleft', () => handleSwipeLeft(), keyOpts);
+  // Con Shift o sin él: «+» es Shift+= en un teclado inglés y una tecla
+  // propia en el español.
+  useKeyboardShortcut(
+    KEYS_TRANSPOSE_UP,
+    () => handleSetTranspose(currentTranspose + 1),
+    { ...keyOpts, shift: 'any' },
+  );
+  useKeyboardShortcut(
+    KEYS_TRANSPOSE_DOWN,
+    () => handleSetTranspose(currentTranspose - 1),
+    { ...keyOpts, shift: 'any' },
+  );
+  useKeyboardShortcut('c', handleToggleChords, keyOpts);
+  useKeyboardShortcut('f', openFullscreen, keyOpts);
+  useKeyboardShortcut(
+    'escape',
+    () => {
+      if (navigation.canGoBack()) navigation.goBack();
+    },
+    { ...keyOpts, preventDefault: false },
+  );
 
   if (isLoadingSettings) {
     // Brief settings loading
@@ -691,8 +790,11 @@ export default function SongDetailScreen({
         isLoading={isSongProcessing || isLoadingSettings}
         styleState={styleState}
         onMessage={isAdmin ? handleSongMessage : undefined}
+        // Misma canción → transponer o cambiar la notación se pinta sin
+        // recargar la hoja (ni volver arriba).
+        docKey={filename}
         fullBleed
-        topInset={insets.top + 44}
+        topInset={headerHeight > 0 ? headerHeight : insets.top + 44}
       />
       <SongControls
         chordsVisible={chordsVisible}
@@ -725,6 +827,7 @@ export default function SongDetailScreen({
         firebaseCategory={firebaseCategory}
         currentCapoOverride={currentCapoOverride}
         onSetCapoOverride={handleSetCapoOverride}
+        onOverlayChange={setControlsOverlayOpen}
       />
     </Animated.View>
   );
@@ -740,8 +843,8 @@ export default function SongDetailScreen({
           if (event.nativeEvent.state !== State.END) return;
           const { translationX, velocityX } = event.nativeEvent;
           if (Math.abs(translationX) < 60 || Math.abs(velocityX) < 150) return;
-          if (translationX > 0) handleSwipeLeft();
-          else handleSwipeRight();
+          if (translationX > 0) handleSwipeLeft(velocityX);
+          else handleSwipeRight(velocityX);
         }}
       >
         {contentView}

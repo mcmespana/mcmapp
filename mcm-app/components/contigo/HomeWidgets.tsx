@@ -16,6 +16,8 @@ import {
 } from './theme';
 import type { DayRecord } from '@/hooks/useContigoHabits';
 import { styles } from '@/components/contigo/homeWidgetsStyles';
+import PressableScale from '@/components/ui/PressableScale';
+import { h } from '@/utils/haptics';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ProgressRing — pure-View dotted ring (no SVG dependency, works everywhere)
@@ -93,7 +95,7 @@ export function HeroCard({
     '¿Cuándo empezamos?',
     '¿Buscamos un ratito más?',
     '¡Casi un día completo!',
-    '¡Día completo! 🎉',
+    'Día completo',
   ];
   const motiv = motivs[Math.min(doneCount, motivs.length - 1)];
 
@@ -165,14 +167,25 @@ export function HabitTile({
   onPress: () => void;
   isDark: boolean;
 }) {
-  const h = HABITS[habitKey];
+  const habit = HABITS[habitKey];
   const accent = habitColor(habitKey, isDark);
   const W = warm(isDark);
+  // La tarjeta es un botón y su estado (hecho / pendiente) se anuncia: antes
+  // solo se veía por el degradado y la marca.
+  const a11y = {
+    accessibilityRole: 'button' as const,
+    accessibilityLabel: `${habit.label}${done ? ', hecho hoy' : ', pendiente'}`,
+    accessibilityState: { checked: done },
+  };
+  const handlePress = () => {
+    h.tap();
+    onPress();
+  };
 
   const inner = (
     <View style={styles.tileContent}>
       <MaterialIcons
-        name={h.icon as any}
+        name={habit.icon as any}
         size={26}
         color={done ? '#fff' : accent}
       />
@@ -183,7 +196,7 @@ export function HabitTile({
         ]}
         numberOfLines={1}
       >
-        {h.label}
+        {habit.label}
       </Text>
     </View>
   );
@@ -197,29 +210,25 @@ export function HabitTile({
   if (done) {
     return (
       <View style={[styles.tileWrap, { shadowColor: accent }]}>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={onPress}
-          style={styles.tileClip}
-        >
+        <PressableScale onPress={handlePress} style={styles.tileClip} {...a11y}>
           <LinearGradient
-            colors={h.grad}
+            colors={habit.grad}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.tileGrad}
           >
             {inner}
           </LinearGradient>
-        </TouchableOpacity>
+        </PressableScale>
         {checkBadge}
       </View>
     );
   }
   return (
     <View style={styles.tileWrap}>
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={onPress}
+      <PressableScale
+        onPress={handlePress}
+        {...a11y}
         style={[
           styles.tileClip,
           styles.tileWrapEmpty,
@@ -230,7 +239,7 @@ export function HabitTile({
         ]}
       >
         {inner}
-      </TouchableOpacity>
+      </PressableScale>
     </View>
   );
 }
@@ -438,7 +447,7 @@ export function WeekStrip({
               <Text
                 style={[
                   styles.weekHdr,
-                  { color: isToday ? W.accentText : W.textMuted },
+                  { color: isToday ? W.accentText : W.textSec },
                 ]}
               >
                 {weekdayLetter(ds)}
@@ -461,7 +470,7 @@ export function WeekStrip({
                 style={[
                   styles.weekDay,
                   {
-                    color: isToday ? W.accentText : W.textMuted,
+                    color: isToday ? W.accentText : W.textSec,
                     fontWeight: isToday ? '800' : '400',
                   },
                 ]}
@@ -528,14 +537,14 @@ export function WeekStrip({
                 { backgroundColor: habitColor(key, isDark) + '80' },
               ]}
             />
-            <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+            <Text style={[styles.weekLegendText, { color: W.textSec }]}>
               {label}
             </Text>
           </View>
         ))}
         <View style={styles.weekLegendItem}>
           <Text style={[styles.weekLegendStar, { color: W.green }]}>✦</Text>
-          <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+          <Text style={[styles.weekLegendText, { color: W.textSec }]}>
             Los 3
           </Text>
         </View>
@@ -585,7 +594,7 @@ export function StatCard({
       >
         {value}
       </Text>
-      <Text style={[styles.statLabel, { color: W.textMuted }]}>{label}</Text>
+      <Text style={[styles.statLabel, { color: W.textSec }]}>{label}</Text>
     </View>
   );
 }
@@ -621,7 +630,7 @@ export function MonthHeatmap({
     <View>
       <View style={styles.heatmapHdr}>
         {WEEKDAYS.map((d) => (
-          <Text key={d} style={[styles.heatmapHdrText, { color: W.textMuted }]}>
+          <Text key={d} style={[styles.heatmapHdrText, { color: W.textSec }]}>
             {d}
           </Text>
         ))}
@@ -689,7 +698,7 @@ export function MonthHeatmap({
                       ? W.accentText
                       : rd || pd || rv
                         ? W.text
-                        : W.textMuted,
+                        : W.textSec,
                     fontWeight: isToday || rd || pd || rv ? '700' : '500',
                   },
                 ]}
@@ -728,7 +737,7 @@ export function MonthHeatmap({
               },
             ]}
           />
-          <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+          <Text style={[styles.weekLegendText, { color: W.textSec }]}>
             Evangelio
           </Text>
         </View>
@@ -743,7 +752,7 @@ export function MonthHeatmap({
               },
             ]}
           />
-          <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+          <Text style={[styles.weekLegendText, { color: W.textSec }]}>
             Oración
           </Text>
         </View>
@@ -758,7 +767,7 @@ export function MonthHeatmap({
               },
             ]}
           />
-          <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+          <Text style={[styles.weekLegendText, { color: W.textSec }]}>
             Revisión
           </Text>
         </View>
@@ -773,7 +782,7 @@ export function MonthHeatmap({
               },
             ]}
           />
-          <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+          <Text style={[styles.weekLegendText, { color: W.textSec }]}>
             Los 3
           </Text>
         </View>

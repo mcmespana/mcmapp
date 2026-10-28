@@ -4,6 +4,7 @@ import {
   StyleSheet,
   View,
   Platform,
+  RefreshControl,
   TouchableOpacity,
 } from 'react-native';
 import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
@@ -18,7 +19,8 @@ import {
 } from 'react';
 import Animated from 'react-native-reanimated';
 import { useTabListScroll } from '@/components/tabs/useTabScroll';
-import ProgressWithMessage from '@/components/ProgressWithMessage';
+import ListSkeleton from '@/components/ListSkeleton';
+import EmptyState from '@/components/ui/EmptyState';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -26,10 +28,10 @@ import colors, {
   Colors,
   KeyPillColors,
   SystemGray,
-  UIColors,
   themeColors,
 } from '@/constants/colors';
-import { radii } from '@/constants/uiStyles';
+import { cantoralHeaderTint } from '@/utils/cantoralHeader';
+import { radii, shadows } from '@/constants/uiStyles';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
@@ -61,8 +63,6 @@ const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
 const SELECTED_SONGS_CATEGORY_ID = '__SELECTED_SONGS__';
 
-const isIOS = Platform.OS === 'ios';
-
 export default function CategoriesScreen({
   navigation,
 }: {
@@ -84,10 +84,26 @@ export default function CategoriesScreen({
     [scheme, layout.isWide, layout.contentMaxWidth],
   );
   const isDark = scheme === 'dark';
-  const { data: songsData, loading } = useFirebaseData<Record<
+  const {
+    data: songsData,
+    loading,
+    offline,
+    refresh,
+  } = useFirebaseData<Record<
     string,
     { categoryTitle: string; songs: any[] }
   > | null>('songs', 'songs', filterSongsData);
+
+  // Pull-to-refresh: la canción que se subió justo antes de misa, sin salir y
+  // volver a entrar. Revalida por `updatedAt`: si nada cambió no se descarga
+  // el cantoral entero.
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refresh();
+    h.tap();
+    setRefreshing(false);
+  }, [refresh]);
   const { selectedSongs } = useSelectedSongs();
   // ⚡ Bolt Optimization:
   // Split the useMemo to prevent re-sorting and re-mapping all categories
@@ -213,11 +229,7 @@ export default function CategoriesScreen({
   // liquid-glass del sistema (igual que el back/buscar de dentro de una
   // categoría). Antes vivían en un header inline dentro del scroll, por eso NO
   // tenían ese efecto. El título "Cantoral" lo pone el screenOptions del stack.
-  const headerIconColor = isIOS
-    ? isDark
-      ? UIColors.accentYellow
-      : '#3d79b9'
-    : '#1a1a1a';
+  const headerIconColor = cantoralHeaderTint(isDark);
   useLayoutEffect(() => {
     // Título pequeño nativo (centrado, heredado del stack) + los 2 botones
     // separados. "Sugerir" a la IZQUIERDA y "Buscar" a la DERECHA → son dos bar
@@ -449,10 +461,10 @@ export default function CategoriesScreen({
           <Text style={styles.heroTitle}>Tu selección</Text>
           <Text style={styles.heroSubtitle}>
             {selectionItem.songCount === 0
-              ? 'Añade canciones a tu playlist para tenerlas a mano'
+              ? 'Añade canciones para tenerlas a mano'
               : `${selectionItem.songCount} ${
                   selectionItem.songCount === 1 ? 'canción' : 'canciones'
-                } en tu playlist`}
+                }`}
           </Text>
         </View>
         <MaterialIcons
@@ -496,7 +508,31 @@ export default function CategoriesScreen({
   );
 
   if (loading && sortedCategories.length === 0) {
-    return <ProgressWithMessage message="Cargando canciones..." />;
+    return (
+      <ListSkeleton
+        isDark={isDark}
+        label="Cargando el cantoral"
+        maxWidth={isWideLayout ? layout.contentMaxWidth : undefined}
+      />
+    );
+  }
+
+  // Sin caché y sin haber podido descargar (primer arranque sin red): antes
+  // quedaba una única fila, «Tu selección», sin ninguna explicación, y parecía
+  // que el cantoral estaba roto. El reintento lo hace el hook solo al volver
+  // la red; si hay red y aun así falló, se puede reintentar a mano.
+  if (!loading && sortedCategories.length === 0) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <EmptyState
+          icon={offline ? 'cloud-off' : 'library-music'}
+          title={offline ? 'Sin conexión' : 'No hay canciones'}
+          subtitle="El cantoral se descarga la primera vez que hay internet y luego funciona sin conexión."
+          actionLabel={offline ? undefined : 'Reintentar'}
+          onAction={offline ? undefined : onRefresh}
+        />
+      </View>
+    );
   }
 
   return (
@@ -523,6 +559,15 @@ export default function CategoriesScreen({
         columnWrapperStyle={numColumns > 1 ? styles.gridRow : undefined}
         // Cambiar numColumns en runtime requiere remontar la lista.
         key={`cats-${numColumns}`}
+        refreshControl={
+          Platform.OS === 'web' ? undefined : (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={headerIconColor}
+            />
+          )
+        }
       />
 
       <TagCloudSheet
@@ -560,25 +605,16 @@ const createStyles = (
   contentMaxWidth: number,
 ) => {
   const isDark = scheme === 'dark';
-  const gridCardShadow =
-    Platform.OS === 'web'
-      ? ({
-          boxShadow: isDark
-            ? '0 2px 10px rgba(0,0,0,0.4)'
-            : '0 2px 10px rgba(0,0,0,0.06)',
-        } as any)
-      : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDark ? 0.3 : 0.06,
-          shadowRadius: 8,
-          elevation: 2,
-        };
 
   return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: themeColors(isDark).backgroundSunken,
+    },
+    // Vacío/error a pantalla completa: centrado, para que en iOS no quede
+    // debajo de la cabecera transparente.
+    centered: {
+      justifyContent: 'center',
     },
     // Botones del header NATIVO (sugerir/buscar). Minimal —solo padding, sin
     // fondo— para que iOS 26 los envuelva en su cápsula liquid-glass.
@@ -735,7 +771,6 @@ const createStyles = (
     },
     heroTitle: {
       ...typography.h2,
-      fontWeight: '800',
       letterSpacing: -0.4,
       color: themeColors(isDark).link,
       marginBottom: 4,
@@ -757,7 +792,9 @@ const createStyles = (
       paddingHorizontal: 18,
       minHeight: 140,
       justifyContent: 'flex-start',
-      ...gridCardShadow,
+      // La sombra de card del sistema (≤ 0,1). La propia llegaba a 0,3 en
+      // oscuro (0,4 en web) y dejaba un halo sucio alrededor de cada tarjeta.
+      ...shadows.card,
     },
     gridCardEmojiWrap: {
       width: 52,

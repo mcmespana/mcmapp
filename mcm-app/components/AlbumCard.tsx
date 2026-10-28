@@ -1,19 +1,14 @@
 import { logger } from '@/utils/logger';
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  useWindowDimensions,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import typography from '@/constants/typography';
-import { radii } from '@/constants/uiStyles';
+import spacing from '@/constants/spacing';
+import { radii, shadows } from '@/constants/uiStyles';
 interface AlbumCardProps {
   album: {
     id: string;
@@ -116,19 +111,9 @@ const createStyles = (screenWidth: number) =>
       width: '100%',
       aspectRatio: screenWidth > 600 ? 1.6 : 1.8,
       borderRadius: radii.xl,
-      marginBottom: 14,
+      marginBottom: spacing.md,
       backgroundColor: '#2C2C2E',
-      ...(Platform.OS === 'web'
-        ? {
-            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-          }
-        : {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
-            elevation: 5,
-          }),
+      ...shadows.raised,
     },
     cardContent: {
       flex: 1,

@@ -85,8 +85,11 @@ const BUDGET = {
   // Y a 204 / 394 el 2026-09-26: `app/` ya estaba en 204 sin que nadie bajase
   // el tope, y los nueve colores sueltos del dibujo de Carismochito pasaron a
   // `CarismochitoPalettes` en constants/colors.ts.
-  app: 177,
-  components: 329,
+  // Y a 133 / 275 el 2026-10-17 (pulido de octubre): verdes de Carismochito
+  // a `CarismoColors`, accesos rápidos de la Home y tarjetas de Más con el
+  // color de su pestaña, grises de la hoja de medios a roles.
+  app: 133,
+  components: 275,
 };
 
 describe('no se añaden colores a mano', () => {
@@ -131,8 +134,8 @@ describe('no se añaden colores a mano', () => {
  * hay que migrar uno a uno porque ahí el spread sí puede cambiar el render.
  */
 const FONT_SIZE_BUDGET = {
-  app: 80,
-  components: 178,
+  app: 77,
+  components: 164,
 };
 
 const INLINE_FONT_SIZE = /fontSize: \d+/g;
@@ -188,7 +191,8 @@ const RADIUS_BUDGET = {
   // Antes de esto: 107 → 95 al migrar los `borderRadius: 100` (mismo caso), y
   // 300 → 122 al colapsar la escala en agosto de 2026.
   app: 4,
-  components: 49,
+  // 40 el 2026-10-17: radios sueltos de SongMediaSheet y PlaylistRow a la escala.
+  components: 40,
 };
 
 const INLINE_RADIUS = /borderRadius: \d+/g;

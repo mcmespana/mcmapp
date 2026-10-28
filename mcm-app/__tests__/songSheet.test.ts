@@ -8,10 +8,14 @@ import { ChordProParser } from 'chordsheetjs';
 import { preprocessArrangements } from '@/utils/arrangements';
 import {
   buildSheet,
+  buildSongMap,
   CHORUS_REF_SENTINEL,
   lyricsSimilarity,
   normalizeLyrics,
   renderSheetHtml,
+  renderSongMapHtml,
+  songMapText,
+  songMapWorthShowing,
   splitIntoAtoms,
   type SheetLine,
   type SheetModel,
@@ -318,5 +322,67 @@ describe('buildSheet — numeración siempre igual', () => {
   it('las estrofas sin número siguen la cuenta de las numeradas a mano', () => {
     const m = sheet('1. Una [G]estrofa\n\nOtra [C]estrofa\n\n3. La [D]tercera');
     expect(m.sections.map((s) => s.number)).toEqual([1, 2, 3]);
+  });
+});
+
+describe('mapa de la canción', () => {
+  const CHORUS = '{soc}\n[C]Seas quien seas\n[F]esta es tu casa\n{eoc}';
+  const map = (src: string, o?: { instrumentals?: boolean }) =>
+    songMapText(buildSongMap(sheet(src), o));
+
+  it('estrofas por su número y el estribillo con «E»', () => {
+    expect(
+      map(`[G]Una\n\n${CHORUS}\n\n[G]Dos\n\n${CHORUS}\n\n[G]Tres\n\n${CHORUS}`),
+    ).toBe('1 · E · 2 · E · 3 · E');
+  });
+
+  it('las repeticiones seguidas se juntan («E×2»)', () => {
+    expect(map(`[G]Una\n\n${CHORUS}\n\n[G]Dos\n\n${CHORUS}\n\n{chorus}`)).toBe(
+      '1 · E · 2 · E×2',
+    );
+  });
+
+  it('puente «P» e intro por su nombre', () => {
+    expect(
+      map(
+        `{c: INTRO}\n [G] [C]\n\n[G]Una\n\n${CHORUS}\n\n{c: Puente}\n[Am]Puente\n\n${CHORUS}\n\n[G]Dos`,
+      ),
+    ).toBe('Intro · 1 · E · P · E · 2');
+  });
+
+  it('con una sola estrofa (sin número), «Estrofa»; sin intros, lo que queda se vuelve a juntar', () => {
+    const src = `[G]Una\n\n${CHORUS}\n\n{c: Solo}\n [G] [C]\n\n${CHORUS}`;
+    expect(map(src)).toBe('Estrofa · E · Solo · E');
+    expect(map(src, { instrumentals: false })).toBe('Estrofa · E×2');
+  });
+
+  it('solo merece la pena con estribillo o puente y tres pasos', () => {
+    const worth = (src: string) =>
+      songMapWorthShowing(buildSongMap(sheet(src)));
+    expect(worth('[G]Una\n\n[G]Dos\n\n[G]Tres')).toBe(false);
+    expect(worth(`[G]Una\n\n${CHORUS}`)).toBe(false);
+    expect(worth(`[G]Una\n\n${CHORUS}\n\n[G]Dos`)).toBe(true);
+  });
+
+  it('HTML: una línea con su lectura para el lector de pantalla', () => {
+    const html = renderSongMapHtml(
+      sheet(`[G]Una\n\n${CHORUS}\n\n[G]Dos\n\n${CHORUS}\n\n{chorus}`),
+    );
+    expect(html).toContain('class="song-map mp-all"');
+    expect(html).toContain(
+      'aria-label="Orden de la canción: Estrofa 1, Estribillo, Estrofa 2, Estribillo (2 veces)"',
+    );
+    expect(text(html)).toBe('1E2E×2');
+    expect(renderSongMapHtml(sheet('[G]Una\n\n[G]Dos'))).toBe('');
+  });
+
+  it('HTML: si sin acordes cambia, van las dos versiones', () => {
+    const html = renderSongMapHtml(
+      sheet(
+        `{c: Intro}\n [G] [C]\n\n[G]Una\n\n${CHORUS}\n\n[G]Dos\n\n${CHORUS}`,
+      ),
+    );
+    expect(html).toContain('song-map mp-all has-alt');
+    expect(html).toContain('song-map mp-lyr');
   });
 });

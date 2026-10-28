@@ -12,7 +12,11 @@ import {
   supportsAlternateIcons,
 } from 'expo-alternate-app-icons';
 import { logger } from '@/utils/logger';
-import { syncAppIcon, CARISMOCHITO_ICON } from '@/utils/appIcon';
+import {
+  syncAppIcon,
+  resetAppIconCache,
+  CARISMOCHITO_ICON,
+} from '@/utils/appIcon';
 
 jest.mock('expo-alternate-app-icons', () => ({
   getAppIconName: jest.fn(),
@@ -35,6 +39,7 @@ const mockModule = jest.requireMock('expo-alternate-app-icons') as {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  resetAppIconCache();
   mockModule.supportsAlternateIcons = true;
 });
 
@@ -75,5 +80,32 @@ describe('syncAppIcon', () => {
     (setAlternateAppIcon as jest.Mock).mockRejectedValue(new Error('boom'));
     await expect(syncAppIcon(true)).resolves.toBeUndefined();
     expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it('Android: salir en el mismo arranque revierte aunque el sistema siga leyendo el icono viejo', async () => {
+    // La Activity en marcha no cambia hasta relanzar: siempre dice `null`.
+    (getAppIconName as jest.Mock).mockReturnValue(null);
+    (setAlternateAppIcon as jest.Mock).mockResolvedValue(undefined);
+    await syncAppIcon(true);
+    await syncAppIcon(false);
+    expect(setAlternateAppIcon).toHaveBeenNthCalledWith(1, CARISMOCHITO_ICON);
+    expect(setAlternateAppIcon).toHaveBeenNthCalledWith(2, null);
+  });
+
+  it('no repite la llamada si ya aplicó ese icono en este arranque', async () => {
+    (getAppIconName as jest.Mock).mockReturnValue(null);
+    (setAlternateAppIcon as jest.Mock).mockResolvedValue(undefined);
+    await syncAppIcon(true);
+    await syncAppIcon(true);
+    expect(setAlternateAppIcon).toHaveBeenCalledTimes(1);
+  });
+
+  it('si el cambio falla no da el icono por aplicado: el siguiente intento reintenta', async () => {
+    (getAppIconName as jest.Mock).mockReturnValue(null);
+    (setAlternateAppIcon as jest.Mock).mockRejectedValueOnce(new Error('boom'));
+    (setAlternateAppIcon as jest.Mock).mockResolvedValueOnce(undefined);
+    await syncAppIcon(true);
+    await syncAppIcon(true);
+    expect(setAlternateAppIcon).toHaveBeenCalledTimes(2);
   });
 });

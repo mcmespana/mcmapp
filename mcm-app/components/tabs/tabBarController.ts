@@ -28,7 +28,11 @@ import {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { ARM_AT, collapseStep } from '@/components/tabs/collapseRule';
+import {
+  ARM_AT,
+  collapseStep,
+  shouldReportInset,
+} from '@/components/tabs/collapseRule';
 
 type Scrollable = {
   scrollTo: (opts: { y: number; animated?: boolean }) => void;
@@ -180,6 +184,18 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
    * barra sola. El estado compacto se hereda entre pantallas.
    */
   const interacted = useSharedValue(false);
+  /**
+   * Último `contentInset.top` que se ha mandado al hilo de JS. El inset casi
+   * nunca cambia, y saltar al hilo de JS en CADA evento de scroll (60-120 Hz
+   * en iOS con header transparente) solo para escribir el mismo número en un
+   * Map quitaba al JS el tiempo que necesita la lista para montar filas.
+   *
+   * Se rearma (-1) al empezar cada arrastre: las pantallas anidadas de un tab
+   * comparten clave en `insetTops`, y al volver a la de abajo su inset tiene
+   * que volver a escribirse aunque ESTE scroller ya lo hubiera mandado. Así
+   * queda un salto por gesto en vez de uno por fotograma.
+   */
+  const lastInset = useSharedValue(-1);
 
   useEffect(() => {
     if (!tabName) return;
@@ -208,6 +224,7 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
   const onScroll = useAnimatedScrollHandler({
     onBeginDrag: (event) => {
       interacted.set(true);
+      lastInset.set(-1);
       anchor.set(event.contentOffset.y);
     },
     onScroll: (event) => {
@@ -215,7 +232,10 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
       // con header grande arranca en negativo, y recortarlo era justo lo que
       // hacía que la barra tardara tanto en compactarse.
       const insetTop = event.contentInset?.top ?? 0;
-      if (insetTop > 0) scheduleOnRN(rememberInset, insetTop);
+      if (shouldReportInset(insetTop, lastInset.get())) {
+        lastInset.set(insetTop);
+        scheduleOnRN(rememberInset, insetTop);
+      }
 
       // Límites REALES del recorrido, para que `collapseStep` pueda descartar
       // el rebote elástico de los extremos.

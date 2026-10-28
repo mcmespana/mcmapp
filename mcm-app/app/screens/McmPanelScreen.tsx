@@ -15,6 +15,8 @@ import { WebView } from 'react-native-webview';
 import { useToast } from '@/contexts/AppToastContext';
 import { Colors as ThemeColors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useWebViewBackHandler } from '@/hooks/useWebViewBackHandler';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 
 // CSS module reutilizado del iframe (solo aplica en web)
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -33,17 +35,19 @@ export default function McmPanelScreen() {
   const tintColor = ThemeColors[scheme].tint;
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  // Android: el atrás navega primero por el historial de la web.
+  const { webViewRef, onNavigationStateChange } = useWebViewBackHandler();
 
-  // El panel se monta como Stack.Screen DENTRO del tab "Más", así que la tab
-  // bar sigue visible. En iOS es una NativeTabs (UITabBar TRANSLÚCIDO) y el
-  // WebView se dibujaba por debajo, por eso (a) no se podía hacer scroll hasta
-  // el final —la última franja quedaba bajo la barra— y (b) el blanco del panel
-  // traspasaba el cristal creando un "aura". Reservamos la altura real de la
-  // barra (≈49 + safe-area) para que el WebView termine justo encima, y
-  // pintamos ese hueco con el fondo del sistema (no blanco) para que el cristal
-  // no brille. En Android la tab bar es opaca y el contenido ya queda por
-  // encima → no hace falta reservar nada (un spacer dejaría un hueco vacío).
-  const tabBarSpace = Platform.OS === 'ios' ? insets.bottom + 49 : 0;
+  // El panel se monta como Stack.Screen DENTRO del tab "Más", así que la barra
+  // de pestañas sigue visible, y FLOTA sobre el contenido en iOS y en Android.
+  // El WebView se dibujaba por debajo: (a) no se podía hacer scroll hasta el
+  // final —la última franja quedaba bajo la barra— y (b) el blanco del panel
+  // traspasaba el cristal creando un "aura". Reservamos el hueco real de la
+  // barra para que el WebView termine justo encima, y pintamos ese hueco con
+  // el fondo del sistema (no blanco) para que el cristal no brille. (Antes era
+  // `insets.bottom + 49`, la UITabBar de iOS, y 0 en Android, de cuando allí
+  // la barra era opaca.) En web devuelve 0: la barra ocupa su propio sitio.
+  const tabBarSpace = useTabBarClearance();
   const screenBg = themeColors(scheme === 'dark').backgroundSunken;
 
   const dynamicStyles = useMemo(
@@ -108,7 +112,9 @@ export default function McmPanelScreen() {
         />
       )}
       <WebView
+        ref={webViewRef}
         source={{ uri: MCM_PANEL_URL }}
+        onNavigationStateChange={onNavigationStateChange}
         style={[styles.webview, { backgroundColor: screenBg }]}
         javaScriptEnabled={true}
         domStorageEnabled={true}

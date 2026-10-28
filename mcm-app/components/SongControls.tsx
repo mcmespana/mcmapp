@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,13 @@ import {
   Platform,
   Pressable,
   TouchableOpacity,
+  BackHandler,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import Animated, {
+  FadeIn,
+  FadeOut,
+  ZoomIn,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -19,6 +24,7 @@ import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import { transposeLabel } from '@/utils/transposeKey';
+import { buildSongPrintHtml, printHtmlInNewWindow } from '@/utils/printSong';
 import SongFontBottomSheet, {
   type SheetViewOptions,
 } from './SongFontBottomSheet';
@@ -28,10 +34,17 @@ import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
-import { KeyPillColors, SwipeColors, themeColors } from '@/constants/colors';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
+import {
+  KeyPillColors,
+  SwipeColors,
+  SystemGray,
+  themeColors,
+} from '@/constants/colors';
 import { onColor } from '@/utils/colorUtils';
 import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
+import { durations, motionEasings, springs } from '@/constants/animations';
 
 interface FontOption {
   name: string;
@@ -75,6 +88,12 @@ interface SongControlsProps {
   /** Override de cejilla para esta sesión/playlist. undefined = no disponible. */
   currentCapoOverride?: number | null;
   onSetCapoOverride?: (capo: number | null) => void;
+  /**
+   * Avisa cuando se abre o se cierra algo de lo suyo (el menú, una hoja o un
+   * modal), para que la pantalla no reaccione a sus propios atajos de teclado
+   * mientras tanto.
+   */
+  onOverlayChange?: (open: boolean) => void;
 }
 
 /**
@@ -167,6 +186,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   firebaseCategory,
   currentCapoOverride,
   onSetCapoOverride,
+  onOverlayChange,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
   const [showTransposeBottomSheet, setShowTransposeBottomSheet] =
@@ -206,16 +226,53 @@ const SongControls: React.FC<SongControlsProps> = ({
     .filter(Boolean)
     .join(' · ');
 
-  const toggleMenu = () => {
-    const toOpen = !showActionButtons;
-    if (toOpen) {
-      h.menuOpen();
-    } else {
-      h.menuClose();
-    }
-    setShowActionButtons(toOpen);
-    rotateAnim.set(withSpring(toOpen ? 1 : 0, { damping: 6, mass: 1 }));
-  };
+  const setMenuOpen = useCallback(
+    (toOpen: boolean) => {
+      if (toOpen) {
+        h.menuOpen();
+      } else {
+        h.menuClose();
+      }
+      setShowActionButtons(toOpen);
+      // Muelle con `dampingRatio` explícito: el `{ damping: 6, mass: 1 }` de
+      // antes, con los defaults de Reanimated 4 (stiffness 900), oscilaba con
+      // ζ≈0,1 — el «+» se pasaba de 45° a casi 80° y tardaba un segundo.
+      rotateAnim.set(withSpring(toOpen ? 1 : 0, springs.snap));
+    },
+    [rotateAnim],
+  );
+  const toggleMenu = () => setMenuOpen(!showActionButtons);
+
+  // Web: Esc cierra el menú, como tocar el velo. Si hay una hoja o un modal
+  // encima, ese Esc es suyo (lo cierra la pila de overlays): uno cada vez.
+  const sheetOpen =
+    showTransposeBottomSheet ||
+    showFontPanel ||
+    showReportBugsModal ||
+    showSecretPanel;
+  useKeyboardShortcut('escape', () => setMenuOpen(false), {
+    disabled: !showActionButtons || sheetOpen,
+    preventDefault: false,
+  });
+
+  const overlayOpen = showActionButtons || sheetOpen;
+  useEffect(() => {
+    onOverlayChange?.(overlayOpen);
+  }, [overlayOpen, onOverlayChange]);
+
+  // Android: con el menú abierto, el atrás lo cierra (como tocar el velo) en
+  // vez de salir de la canción. Por foco: con la pantalla completa encima, el
+  // atrás es de ella.
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android' || !showActionButtons) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        setMenuOpen(false);
+        return true;
+      });
+      return () => sub.remove();
+    }, [showActionButtons, setMenuOpen]),
+  );
 
   const fabIconStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotateAnim.get() * 45}deg` }],
@@ -276,7 +333,13 @@ const SongControls: React.FC<SongControlsProps> = ({
         ]}
       >
         {showActionButtons && (
-          <View
+          // Solo opacidad, sin entradas encadenadas por ítem: el menú no
+          // salta de la nada justo encima del dedo.
+          <Animated.View
+            entering={FadeIn.duration(durations.quick).easing(
+              motionEasings.out,
+            )}
+            exiting={FadeOut.duration(durations.quick)}
             style={[styles.menuContainer, isDark && styles.menuContainerDark]}
           >
             <ActionButton
@@ -359,17 +422,58 @@ const SongControls: React.FC<SongControlsProps> = ({
               label="Pantalla completa"
               onPress={onNavigateToFullscreen}
             />
+            {Platform.OS === 'web' && !!songContent && (
+              <ActionButton
+                isDark={isDark}
+                icon="print"
+                label="Imprimir"
+                onPress={() => {
+                  // La hoja en papel, como el PDF de la playlist: con el
+                  // tono, la cejilla y la vista que se tienen ahora.
+                  const html = buildSongPrintHtml(
+                    {
+                      title: songTitle ?? '',
+                      author: songAuthor,
+                      key: songKey,
+                      capo: songCapo,
+                      capoOverride: currentCapoOverride,
+                      content: songContent,
+                      transpose: currentTranspose,
+                    },
+                    {
+                      notation,
+                      showChords: chordsVisible,
+                      compact: compactView,
+                      chorusStyle: view?.chorusStyle,
+                      chorusLabel: view?.chorusLabel,
+                      verseNumbers: view?.verseNumbers,
+                    },
+                  );
+                  if (!printHtmlInNewWindow(html)) {
+                    toast.show({
+                      label: 'Permite las ventanas emergentes para imprimir',
+                    });
+                  }
+                }}
+              />
+            )}
             <ActionButton
               isDark={isDark}
               icon="bug-report"
               label="Reportar error"
               onPress={() => setShowReportBugsModal(true)}
             />
-          </View>
+          </Animated.View>
         )}
         <View style={{ position: 'relative' }}>
           {!!songBadge && !showActionButtons && (
-            <View
+            // Es la única señal de que la canción va transportada: entra con
+            // un zoom corto (sin rebote) para que se vea al cerrar la hoja.
+            <Animated.View
+              entering={ZoomIn.duration(durations.base).easing(
+                motionEasings.out,
+              )}
+              exiting={FadeOut.duration(durations.quick)}
               style={[styles.badge, isDark && styles.badgeDark]}
               pointerEvents="none"
             >
@@ -382,7 +486,7 @@ const SongControls: React.FC<SongControlsProps> = ({
               >
                 {songBadge}
               </Text>
-            </View>
+            </Animated.View>
           )}
           <TouchableOpacity
             style={[
@@ -504,8 +608,13 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  // En oscuro el menú y el FAB tienen el mismo relleno que la pantalla
+  // (`background`): sin sombra visible en Android oscuro, solo los separa un
+  // contorno fino.
   menuContainerDark: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: themeColors(true).background,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: SystemGray.dark.gray3,
     ...Platform.select({
       web: {
         boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
@@ -582,7 +691,9 @@ const styles = StyleSheet.create({
     }),
   },
   fabMainDark: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: themeColors(true).background,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: SystemGray.dark.gray3,
   },
   fabMainOpen: {
     backgroundColor: SwipeColors.remove,

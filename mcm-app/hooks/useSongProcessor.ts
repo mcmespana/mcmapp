@@ -40,6 +40,8 @@ export interface UseSongProcessorParams {
    * con un toque en el borde o con un pedal. Default false.
    */
   paged?: boolean;
+  /** Mapa de la canción («1 · E · 2 · E×2») encima de la letra. Default false. */
+  songMap?: boolean;
   currentFontSizeEm: number;
   currentFontFamily: string;
   notation: Notation;
@@ -83,6 +85,7 @@ export const useSongProcessor = ({
   chorusLabel = true,
   airy = false,
   paged = false,
+  songMap = false,
   currentFontSizeEm,
   currentFontFamily,
   notation,
@@ -129,6 +132,7 @@ export const useSongProcessor = ({
       chorusLabel,
       airy,
       paged,
+      songMap,
       topPadding,
       bottomPadding,
     }),
@@ -144,6 +148,7 @@ export const useSongProcessor = ({
       chorusLabel,
       airy,
       paged,
+      songMap,
       topPadding,
       bottomPadding,
     ],

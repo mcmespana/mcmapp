@@ -76,6 +76,11 @@ export interface PdfBuildOptions {
   chorusLabel?: boolean;
   /** Números de estrofa (de serie, sí). */
   verseNumbers?: boolean;
+  /**
+   * Portada con el índice (de serie, sí). Sin ella, para imprimir una sola
+   * canción: empieza por la canción y el pie sale ya en la primera página.
+   */
+  cover?: boolean;
 }
 
 const escapeHtml = (s: string) =>
@@ -276,19 +281,6 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
     .filter(Boolean)
     .join(' ');
 
-  const printedDate =
-    opts.printedDate !== undefined
-      ? opts.printedDate.trim()
-      : new Date().toLocaleDateString('es-ES', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        });
-  const coverMeta = [
-    `${opts.songs.length} ${opts.songs.length === 1 ? 'canción' : 'canciones'}`,
-    ...(printedDate ? [escapeHtml(printedDate)] : []),
-  ].join(' · ');
-
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -317,10 +309,14 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
         font-variant-numeric: tabular-nums;
       }
     }
-    /* La portada va limpia, sin pie. */
+    ${
+      opts.cover === false
+        ? ''
+        : `/* La portada va limpia, sin pie. */
     @page :first {
       @bottom-left { content: none; }
       @bottom-right { content: none; }
+    }`
     }
     * { box-sizing: border-box; }
     html, body {
@@ -545,7 +541,26 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
   </style>
 </head>
 <body class="${bodyClass}">
-  <section class="cover">
+  ${opts.cover === false ? '' : coverHtml(opts)}
+  ${songs}
+</body>
+</html>`;
+}
+
+function coverHtml(opts: PdfBuildOptions): string {
+  const printedDate =
+    opts.printedDate !== undefined
+      ? opts.printedDate.trim()
+      : new Date().toLocaleDateString('es-ES', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+  const coverMeta = [
+    `${opts.songs.length} ${opts.songs.length === 1 ? 'canción' : 'canciones'}`,
+    ...(printedDate ? [escapeHtml(printedDate)] : []),
+  ].join(' · ');
+  return `<section class="cover">
     <div class="cover-eyebrow">Playlist · MCM</div>
     <h1 class="cover-title">${escapeHtml(opts.playlistName)}</h1>
     <div class="cover-rule"></div>
@@ -578,8 +593,5 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
         })
         .join('')}
     </div>
-  </section>
-  ${songs}
-</body>
-</html>`;
+  </section>`;
 }

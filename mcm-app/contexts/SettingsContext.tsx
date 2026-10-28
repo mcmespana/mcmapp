@@ -40,6 +40,8 @@ export interface SongSettings {
    * en vez de scroll.
    */
   pagedFullscreen: boolean;
+  /** Mapa de la canción («1 · E · 2 · E×2») encima de la letra. */
+  songMap: boolean;
   /**
    * Versión del onboarding del cantoral que ya se ha visto (0 = nunca). Si
    * es menor que `CANTORAL_ONBOARDING_VERSION`, se abre solo una vez al
@@ -103,6 +105,7 @@ const defaultSettings: SongSettings = {
   chorusLabel: true,
   airy: false,
   pagedFullscreen: false,
+  songMap: false,
   cantoralOnboarding: 0,
   featuredTags: [],
   hideHiddenTagSongs: false,

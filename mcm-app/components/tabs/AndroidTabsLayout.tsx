@@ -54,6 +54,13 @@ export default function AndroidTabsLayout({ barTabs }: AndroidTabsLayoutProps) {
             // el hueco lo ponen las pantallas con useTabBarClearance().
             sceneStyle: { paddingBottom: 0 },
             animation: 'shift',
+            // Una pestaña ya visitada sigue montada; sin esto seguía
+            // re-renderizando en segundo plano con cada cambio de los
+            // contextos que consume (Inicio: notificaciones, OTA,
+            // Carismochito…) mientras se usa otra. Congelada, se pone al día
+            // al volver a tener el foco. Los stacks internos ya lo hacían
+            // (cancionero.tsx); faltaba el nivel de pestañas.
+            freezeOnBlur: true,
           }}
         >
           {TABS_CONFIG.map((tab) => {

@@ -8,6 +8,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors, themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { getEvent } from '@/constants/events';
+import { onColor } from '@/utils/colorUtils';
 
 import EventHomeScreen from './EventHomeScreen';
 import HorarioScreen from './HorarioScreen';
@@ -123,6 +124,12 @@ type EventStackNavigator = ReturnType<
 
 type EventScreenRoute = { params?: { eventId?: string } };
 
+/** Lo que React Navigation pasa a un `options` en forma de función. */
+type EventScreenOptionsArgs = {
+  route: EventScreenRoute;
+  theme?: { dark: boolean };
+};
+
 // Helper para obtener estilos del header según la plataforma.
 // Web sigue el mismo patrón ligero que el cantoral: fondo tintado + hairline,
 // sin sombra pesada — así los headers se sienten coherentes en toda la app.
@@ -146,11 +153,14 @@ export const getHeaderStyle = (tintColor: string) => {
 // iOS y web usan siempre texto oscuro (coherente con el resto de tabs, p.ej.
 // el cantoral, que pinta texto oscuro sobre su franja de color). Antes web
 // volteaba a blanco para tints medios/oscuros (el verde de Jubileo), lo que
-// rompía la coherencia visual con el resto de la app. Android sigue la
-// convención Material de texto blanco sobre la barra de color.
-// (El parámetro se mantiene por compatibilidad de firma.)
-export const getTextColor = (_tintColor?: string) => {
-  return Platform.OS === 'android' ? '#fff' : '#1a1a1a';
+// rompía la coherencia visual con el resto de la app.
+// Android pinta la barra ENTERA del color del evento, así que el texto se
+// decide por contraste con ese color (`onColor`, design.md §5). Antes era
+// blanco siempre: 2,13:1 sobre el verde del Jubileo y 1,46:1 sobre el
+// amarillo de Visita Papa, ilegible.
+export const getTextColor = (tintColor?: string) => {
+  if (Platform.OS === 'android') return tintColor ? onColor(tintColor) : '#fff';
+  return '#1a1a1a';
 };
 
 /**
@@ -163,7 +173,7 @@ export const eventScreenOptions =
     title: string,
     opts?: { hideHeaderTitle?: boolean; webHeaderTitle?: boolean },
   ) =>
-  ({ route }: { route: EventScreenRoute }) => {
+  ({ route, theme }: EventScreenOptionsArgs) => {
     const event = getEvent(route.params?.eventId);
     const tint = event.tintColor;
     const textColor = getTextColor(tint);
@@ -210,6 +220,13 @@ export const eventScreenOptions =
                 : {}),
             }
           : { headerBackground: () => <FloatingHeaderBackground /> }),
+        // En Android la flecha nativa hereda el `headerTintColor` blanco del
+        // navegador (pensado para la barra gris), y aquí el fondo es el de la
+        // pantalla: en claro era blanco sobre blanco, invisible. Va con el rol
+        // del tema, como el texto del header en iOS.
+        ...(Platform.OS === 'android'
+          ? { headerTintColor: themeColors(!!theme?.dark).headerTint }
+          : {}),
         // En iOS/Android usamos el back NATIVO (icono solo) — iOS 26 ya le pone
         // su cápsula liquid-glass. El GlassBackButton custom se "envolvía dos
         // veces" (cápsula dentro de cápsula). En web mantenemos el custom.
@@ -248,8 +265,8 @@ export const eventScreenOptions =
 export const eventHubScreenOptions = ({
   route,
   navigation,
-}: {
-  route: EventScreenRoute;
+  theme,
+}: EventScreenOptionsArgs & {
   navigation: { getState?: () => { index?: number } | undefined };
 }) => {
   const event = getEvent(route.params?.eventId);
@@ -260,7 +277,10 @@ export const eventHubScreenOptions = ({
   const idx = navigation.getState?.()?.index ?? 0;
   const isPushed = idx > 0;
   return {
-    ...eventScreenOptions(event.title, { hideHeaderTitle: true })({ route }),
+    ...eventScreenOptions(event.title, { hideHeaderTitle: true })({
+      route,
+      theme,
+    }),
     headerShown: isPushed,
     headerRight: undefined,
   };

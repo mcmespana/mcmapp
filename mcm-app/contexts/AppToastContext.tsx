@@ -25,7 +25,13 @@ import { radii } from '@/constants/uiStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { h } from '@/utils/haptics';
+import {
+  durations,
+  motionEasings,
+  reaEasings,
+  springs,
+} from '@/constants/animations';
 
 type ToastVariant = 'default' | 'success' | 'danger' | 'warning';
 
@@ -105,25 +111,22 @@ const VARIANT_STYLES: Record<ToastVariant, VariantStyle> = {
   },
 };
 
+/** `h` ya ignora web y se traga los fallos del módulo nativo. */
 function triggerHaptic(variant: ToastVariant) {
-  if (Platform.OS === 'web') return;
-  try {
-    switch (variant) {
-      case 'success':
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        break;
-      case 'danger':
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        break;
-      case 'warning':
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        break;
-      default:
-        Haptics.selectionAsync();
-        break;
-    }
-  } catch {
-    // Haptics unavailable on this device — silently ignore.
+  switch (variant) {
+    case 'success':
+      h.success();
+      break;
+    case 'danger':
+      h.error();
+      break;
+    case 'warning':
+      // `limit` es la notificación Warning de iOS (y Reject en Android).
+      h.limit();
+      break;
+    default:
+      h.select();
+      break;
   }
 }
 
@@ -145,12 +148,14 @@ function ToastItem({
 
   const hide = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
+    // Salida: se va de pantalla, así que aquí sí vale acelerar.
+    const exit = { duration: durations.base, easing: reaEasings.exit };
     if (!reducedMotion) {
-      translateY.set(withTiming(20, { duration: 200 }));
-      scale.set(withTiming(0.97, { duration: 200 }));
+      translateY.set(withTiming(20, exit));
+      scale.set(withTiming(0.97, exit));
     }
     opacity.set(
-      withTiming(0, { duration: 200 }, () => {
+      withTiming(0, exit, () => {
         'worklet';
         scheduleOnRN(onHide);
       }),
@@ -159,17 +164,14 @@ function ToastItem({
 
   useEffect(() => {
     triggerHaptic(t.variant ?? 'default');
-    // `tension/friction` de RN Animated → `stiffness/damping` aquí.
-    opacity.set(withTiming(1, { duration: 220 }));
+    // Un aviso funcional entra sin rebote: el `bouncy` es para celebrar
+    // (design.md §6). Antes eran muelles a mano con ζ≈0,5.
+    opacity.set(
+      withTiming(1, { duration: durations.base, easing: motionEasings.out }),
+    );
     if (!reducedMotion) {
-      translateY.set(
-        withSpring(0, {
-          stiffness: 110,
-          damping: 11,
-          mass: 1,
-        }),
-      );
-      scale.set(withSpring(1, { stiffness: 130, damping: 12, mass: 1 }));
+      translateY.set(withSpring(0, springs.settle));
+      scale.set(withSpring(1, springs.settle));
     }
 
     const duration = t.duration ?? (t.actionLabel ? 5200 : 3400);

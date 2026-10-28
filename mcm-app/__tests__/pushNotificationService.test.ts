@@ -345,31 +345,41 @@ describe('marcar como leídas', () => {
 
 describe('getUnreadNotificationsCount', () => {
   const hoy = () => new Date().toISOString();
+  const remota = (id: string, createdAt: string) =>
+    ({
+      id,
+      title: `T-${id}`,
+      body: `B-${id}`,
+      createdAt,
+    }) as NotificationData;
 
   it('cuenta local + Firebase sin repetir el mismo contenido', async () => {
     await AsyncStorage.setItem(
       HISTORY_KEY,
       JSON.stringify([local('1', hoy())]),
     );
-    mGet.mockResolvedValueOnce(
-      // 'T-1|B-1' es el mismo contenido que la local → no debe contarse dos veces.
-      snap({
-        1: { title: 'T-1', body: 'B-1', createdAt: hoy() },
-        2: { title: 'T-2', body: 'B-2', createdAt: hoy() },
-      }),
-    );
-    expect(await getUnreadNotificationsCount()).toBe(2);
+    // 'T-1|B-1' es el mismo contenido que la local → no debe contarse dos veces.
+    expect(
+      await getUnreadNotificationsCount([
+        remota('1', hoy()),
+        remota('2', hoy()),
+      ]),
+    ).toBe(2);
+  });
+
+  it('usa el historial que recibe y no vuelve a descargar /notifications', async () => {
+    await getUnreadNotificationsCount([remota('1', hoy())]);
+    expect(mGet).not.toHaveBeenCalled();
   });
 
   it('descuenta las marcadas como leídas', async () => {
     await AsyncStorage.setItem(READ_KEY, JSON.stringify(['2']));
-    mGet.mockResolvedValueOnce(
-      snap({
-        1: { title: 'T-1', body: 'B-1', createdAt: hoy() },
-        2: { title: 'T-2', body: 'B-2', createdAt: hoy() },
-      }),
-    );
-    expect(await getUnreadNotificationsCount()).toBe(1);
+    expect(
+      await getUnreadNotificationsCount([
+        remota('1', hoy()),
+        remota('2', hoy()),
+      ]),
+    ).toBe(1);
   });
 
   it('descuenta las locales con isRead', async () => {
@@ -377,33 +387,29 @@ describe('getUnreadNotificationsCount', () => {
       HISTORY_KEY,
       JSON.stringify([{ ...local('1', hoy()), isRead: true }]),
     );
-    mGet.mockResolvedValueOnce(snap(null));
-    expect(await getUnreadNotificationsCount()).toBe(0);
+    expect(await getUnreadNotificationsCount([])).toBe(0);
   });
 
   it('no cuenta las de más de 60 días', async () => {
     const vieja = new Date(Date.now() - 70 * 24 * 60 * 60 * 1000).toISOString();
-    mGet.mockResolvedValueOnce(
-      snap({ 1: { title: 'T', body: 'B', createdAt: vieja } }),
+    await AsyncStorage.setItem(
+      HISTORY_KEY,
+      JSON.stringify([local('9', vieja)]),
     );
-    expect(await getUnreadNotificationsCount()).toBe(0);
+    expect(await getUnreadNotificationsCount([remota('1', vieja)])).toBe(0);
   });
 
   it('aplica el filtro de audiencia sobre las de Firebase', async () => {
-    mGet.mockResolvedValueOnce(
-      snap({
-        1: { title: 'T-1', body: 'B-1', createdAt: hoy() },
-        2: { title: 'T-2', body: 'B-2', createdAt: hoy() },
-      }),
+    const count = await getUnreadNotificationsCount(
+      [remota('1', hoy()), remota('2', hoy())],
+      (n) => n.id === '1',
     );
-    const count = await getUnreadNotificationsCount((n) => n.id === '1');
     expect(count).toBe(1);
   });
 
   it('devuelve 0 si algo peta', async () => {
     await AsyncStorage.setItem(HISTORY_KEY, 'no-json');
-    mGet.mockResolvedValueOnce(snap(null));
-    expect(await getUnreadNotificationsCount()).toBe(0);
+    expect(await getUnreadNotificationsCount([])).toBe(0);
   });
 });
 

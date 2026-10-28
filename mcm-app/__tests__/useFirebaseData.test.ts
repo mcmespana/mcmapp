@@ -9,7 +9,7 @@
  * - Que se aplique la función de transformación si se proporciona
  * - Que se detecte correctamente el estado offline
  */
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import {
   useFirebaseData,
   __resetNodeCacheForTests,
@@ -227,6 +227,61 @@ describe('useFirebaseData — caché de módulo compartida (dedupe)', () => {
     expect(b.result.current.data).toEqual({ n: 1 });
   });
 
+  it('con la caché de módulo poblada, el PRIMER render ya trae data y loading=false', async () => {
+    // Pantalla A (Categorías) carga el nodo; pantalla B (una categoría) se
+    // monta después. Antes B arrancaba con `data=null, loading=true` y no
+    // servía la caché hasta pasar por `getNetworkStateAsync`: asomaba
+    // «Cargando canciones…» durante la animación de entrada.
+    __setMockNode('songs', {
+      updatedAt: '100',
+      data: { n: 1 },
+      hidden: true,
+    });
+    const a = await renderHook(() =>
+      useFirebaseData<{ n: number }>('songs', 'first_paint'),
+    );
+    await waitFor(() => expect(a.result.current.loading).toBe(false));
+    const getsAfterA = (get as jest.Mock).mock.calls.length;
+
+    const transformSpy = jest.fn((d: { n: number }) => ({ doble: d.n * 2 }));
+    const renders: {
+      data: { doble: number } | null;
+      loading: boolean;
+      hidden: boolean;
+    }[] = [];
+    const b = await renderHook(() => {
+      const r = useFirebaseData('songs', 'first_paint', transformSpy);
+      renders.push({ data: r.data, loading: r.loading, hidden: r.hidden });
+      return r;
+    });
+
+    expect(renders[0]).toEqual({
+      data: { doble: 2 },
+      loading: false,
+      hidden: true,
+    });
+    // Sigue revalidando contra Firebase (patrón updatedAt/hidden)…
+    await waitFor(() =>
+      expect((get as jest.Mock).mock.calls.length).toBeGreaterThan(getsAfterA),
+    );
+    // …pero, con el mismo updatedAt, no vuelve a transformar ni estrena
+    // identidad: el inicializador ya rellenó el memo de la instancia.
+    expect(transformSpy).toHaveBeenCalledTimes(1);
+    expect(b.result.current.data).toBe(renders[0].data);
+  });
+
+  it('sin caché de módulo, el primer render sigue en loading=true y data=null', async () => {
+    __setMockNode('songs', { updatedAt: '100', data: { n: 1 } });
+    const renders: { data: unknown; loading: boolean }[] = [];
+    const { result } = await renderHook(() => {
+      const r = useFirebaseData('songs', 'cold_paint');
+      renders.push({ data: r.data, loading: r.loading });
+      return r;
+    });
+    expect(renders[0]).toEqual({ data: null, loading: true });
+    await waitFor(() => expect(result.current.data).toEqual({ n: 1 }));
+  });
+
   it('aplica el transform de cada instancia sobre los mismos datos crudos', async () => {
     __setMockNode('songs', { updatedAt: '100', data: [1, 2, 3] });
 
@@ -319,5 +374,52 @@ describe('useFirebaseData — memo del transform por instancia (Plan 007)', () =
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.data).toEqual({ raw: true });
+  });
+});
+
+describe('useFirebaseData — refresh (pull-to-refresh)', () => {
+  it('trae datos nuevos si el updatedAt remoto cambió', async () => {
+    __setMockNode('songs', { updatedAt: '1', data: { v: 1 } });
+    const { result } = await renderHook(() =>
+      useFirebaseData<{ v: number }>('songs', 'refresh_new'),
+    );
+    await waitFor(() => expect(result.current.data).toEqual({ v: 1 }));
+
+    __setMockNode('songs', { updatedAt: '2', data: { v: 2 } });
+    await act(async () => {
+      await result.current.refresh();
+    });
+    expect(result.current.data).toEqual({ v: 2 });
+  });
+
+  it('con el mismo updatedAt no vuelve a descargar `data`', async () => {
+    __setMockNode('songs', { updatedAt: '1', data: { v: 1 } });
+    const { result } = await renderHook(() =>
+      useFirebaseData<{ v: number }>('songs', 'refresh_same'),
+    );
+    await waitFor(() => expect(result.current.data).toEqual({ v: 1 }));
+    const before = dataFetches();
+    const sameData = result.current.data;
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+    expect(dataFetches()).toBe(before);
+    expect(result.current.data).toBe(sameData);
+  });
+
+  it('un fallo de red no rechaza y deja los datos que había', async () => {
+    __setMockNode('songs', { updatedAt: '1', data: { v: 1 } });
+    const { result } = await renderHook(() =>
+      useFirebaseData<{ v: number }>('songs', 'refresh_fail'),
+    );
+    await waitFor(() => expect(result.current.data).toEqual({ v: 1 }));
+
+    (get as jest.Mock).mockRejectedValue(new Error('Network error'));
+    await act(async () => {
+      await expect(result.current.refresh()).resolves.toBeUndefined();
+    });
+    // (El `beforeEach` devuelve `get` a su implementación con `__resetMockDb`.)
+    expect(result.current.data).toEqual({ v: 1 });
   });
 });

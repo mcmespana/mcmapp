@@ -7,6 +7,8 @@
 import { Platform, StyleSheet, type TextStyle } from 'react-native';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
+import spacing from '@/constants/spacing';
+import colors from '@/constants/colors';
 
 /**
  * Tipografía ÚNICA para todo lo que el usuario escribe (los tres campos de los
@@ -69,11 +71,8 @@ export const styles = StyleSheet.create({
   },
   dateSub: { fontSize: 10, marginTop: 1 },
   pillRow: { alignItems: 'center', paddingTop: 10 },
-  pillText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-  },
+  // Kicker: el token `overline` (el uppercase lo pone él, no el texto).
+  pillText: { ...typography.overline },
 
   stepRow: {
     flexDirection: 'row',
@@ -103,14 +102,22 @@ export const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 18,
   },
-  modeRow: { flexDirection: 'row', gap: 6, marginBottom: 18 },
-  modeChip: {
-    height: 34,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1.5,
+  modeSwitch: { marginBottom: spacing.md },
+  // Aviso de «este día ya tiene examen»: la versión de oración, en verde suave.
+  entryBanner: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: radii.xl,
+    marginBottom: spacing.md,
+  },
+  entryBannerText: {
+    ...typography.caption,
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 18,
   },
   // La fila ES la caja: el borde y el fondo viven aquí, y la estrella y el
   // input son hermanos centrados en flex. Antes la estrella iba absoluta con un
@@ -194,10 +201,17 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nextBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: 'white',
-    letterSpacing: -0.2,
+  nextBtnInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  nextBtnText: { ...typography.button, color: colors.white },
+  // «Guardar» sin nada escrito: apagado, con el motivo justo encima.
+  nextBtnBlocked: { opacity: 0.5 },
+  blockedHint: {
+    ...typography.caption,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
   },
 });

@@ -13,12 +13,10 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    catScrollContent: {
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
-    },
+    // El `paddingBottom` de estas dos lo pone la pantalla con
+    // `useTabBarPaddingBottom` (hueco de la barra de pestañas flotante).
     listContent: {
       padding: 16,
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
       gap: 10,
     },
     catList: {
@@ -118,12 +116,11 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingVertical: 6,
       backgroundColor: themeColors(isDark).backgroundSunken,
     },
+    // Cabecera de sección: el mismo `overline` que `SectionHeader`, en vez de
+    // un uppercase con tracking propio.
     searchSectionHeaderText: {
-      ...typography.caption,
-      fontWeight: '700',
-      color: themeColors(isDark).text,
-      letterSpacing: 0.3,
-      textTransform: 'uppercase',
+      ...typography.overline,
+      color: themeColors(isDark).textSecondary,
     },
     searchSectionCount: {
       ...typography.footnote,

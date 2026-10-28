@@ -8,11 +8,23 @@ import { Platform, StyleSheet } from 'react-native';
 import colors, { Colors, themeColors } from '@/constants/colors';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
-import { hexAlpha } from '@/utils/colorUtils';
+import { hexAlpha, readableOn } from '@/utils/colorUtils';
+
+/**
+ * `brand.info` como TINTA (texto e icono) sobre el fondo del calendario.
+ *
+ * El celeste solo da 2,6:1 sobre blanco (design.md §3): de relleno vale, de
+ * texto no. Se mide contra el fondo hundido porque es el más oscuro de los
+ * dos en claro (así sirve también sobre las cards blancas); en oscuro el
+ * celeste ya cumple y sale tal cual.
+ */
+export const calendarInfoInk = (isDark: boolean) =>
+  readableOn(colors.info, themeColors(isDark).backgroundSunken);
 
 export const createStyles = (scheme: 'light' | 'dark') => {
   const isDark = scheme === 'dark';
   const theme = Colors[scheme];
+  const infoInk = calendarInfoInk(isDark);
 
   return StyleSheet.create({
     container: {
@@ -164,7 +176,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     backToTodayLabel: {
       ...typography.footnote,
       fontWeight: '600',
-      color: colors.info,
+      color: infoInk,
       letterSpacing: -0.1,
     },
     agendaBackToTodayRow: {
@@ -182,7 +194,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     eventSectionDay: {
       fontSize: 34,
       fontWeight: '700',
-      color: colors.info,
+      color: infoInk,
       lineHeight: 40,
       fontVariant: ['tabular-nums'],
     },
@@ -195,7 +207,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     eventSectionCount: {
       ...typography.footnote,
       fontWeight: '500',
-      color: isDark ? '#636366' : '#AEAEB2',
+      color: themeColors(isDark).textMuted,
       marginTop: 1,
     },
 
@@ -347,7 +359,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       letterSpacing: 0.5,
     },
     todayAccent: {
-      color: colors.info,
+      color: infoInk,
     },
     sectionDivider: {
       flex: 1,

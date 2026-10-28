@@ -14,6 +14,7 @@ import { Calendar, CalendarProps } from 'react-native-calendars';
 import colors, { themeColors } from '@/constants/colors';
 import { h } from '@/utils/haptics';
 import { radii } from '@/constants/uiStyles';
+import { springs } from '@/constants/animations';
 
 interface SwipeableMonthCalendarProps {
   /** Mes visible, en formato `YYYY-MM-DD` (normalmente el día 1). */
@@ -105,7 +106,10 @@ export default function SwipeableMonthCalendar({
           ),
         );
       } else {
-        dx.set(withSpring(0, { damping: 18, stiffness: 200 }));
+        // Vuelta a su sitio tras un arrastre corto: muelle de token con la
+        // velocidad del dedo. El `{ damping: 18, stiffness: 200 }` de antes,
+        // sin `mass`, cogía la de Reanimated 4 (4) y rebotaba (ζ≈0,32).
+        dx.set(withSpring(0, { ...springs.snap, velocity: e.velocityX }));
       }
     });
 
