@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-10-28 (paquetes del área privada nativa adelantados a la 2.1, §C.1). 2026-10-21 (área privada nativa: análisis, decisiones tomadas y pasarela sin espejo, §2.I; paquetes nativos a la 2.2, §C-bis). 2026-10-10 (hoja de canción: decisiones confirmadas, pantalla completa y etiquetas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> Última actualización: 2026-10-28 noche (área privada nativa: planes 06 y 07 hechos, 08 y 09 en marcha, sale con la 2.1 en modo alpha, §2.I). 2026-10-28 (paquetes del área privada nativa adelantados a la 2.1, §C.1). 2026-10-21 (área privada nativa: análisis, decisiones tomadas y pasarela sin espejo, §2.I; paquetes nativos a la 2.2, §C-bis). 2026-10-10 (hoja de canción: decisiones confirmadas, pantalla completa y etiquetas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
 > de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
@@ -332,18 +332,23 @@ usuario el 2026-10-09 («la mejor experiencia para músicos y cantantes»).
 - 📝 Queda, en este orden (§11 del plan): aplicar las etiquetas que el
   usuario apruebe en el repaso → mapa de la canción → pedal en un iPad.
 
-### I. Área privada nativa — después de la 2.2 (análisis hecho, sin plan)
+### I. Área privada nativa — en desarrollo en `nuevoComunicaChulo` (sale con la 2.1 en modo alpha)
 
 **Documento: [`ANALISIS_AREA_PRIVADA_NATIVA.md`](ANALISIS_AREA_PRIVADA_NATIVA.md).**
 Pedido por el usuario el 2026-10-21: rehacer en nativo el área privada de
 Comunica (hoy la WebView de la pestaña `comunica`), sobre todo lo de
 monitores, con un backend nuevo que no sea el plugin.
 
-- **No es bolsa oportunista ni entra en «seguimos».** Es una línea propia que
-  empieza **después de la 2.1/2.2**, en una rama aparte (decidido por el
-  usuario).
-- **Es un análisis, no un plan: no se ejecuta.** El plan se escribe cuando
-  estén las decisiones, en otra sesión.
+- **No es bolsa oportunista ni entra en «seguimos».** Es una línea propia, en
+  una rama aparte (`nuevoComunicaChulo`).
+- **Cuándo sale (decisión del usuario, 28/10/2026):** con la 2.1. Si no está
+  acabada, solo para el **modo alpha** (el enrutador ya lo hace: alpha →
+  nativa, normal → la WebView de siempre); si está acabada, para todos. Los
+  paquetes nativos ya van en la 2.1 (§C.1, PR #349), así que lo demás llega
+  por OTA. La TestFlight la hace el usuario.
+- **Plan del servidor (`mcm-comunica-api`): por ahora no** (usuario,
+  28/10). La app va contra el servidor falso, que cumple el contrato
+  (`docs/contratos/COMUNICA_API.md`).
 - ✅ **Decidido el 2026-10-21** (página
   <https://claude.ai/artifact/B3ABkV5CYJLUTo2hnWW8t5>, colección
   `decisiones`; resumen en §10 del análisis): monitores primero, **pasarela
@@ -361,15 +366,22 @@ monitores, con un backend nuevo que no sea el plugin.
   de Comunica abriendo la app donde toca. Se pueden ejecutar sin servidor (van
   contra el servidor falso), cuando el usuario lo diga. Los del servidor,
   aparte, en su repo.
-- 🛠️ **En desarrollo desde el 23/10** en la rama: hechos 00, 01, 04, 05 y 10;
-  02 y 03 casi (falta lo que llega con la 2.2 y el catálogo); 06 empezado.
-  Estado fila a fila en [`area-nativa/README.md`](area-nativa/README.md) y
-  **lo que toca ahora, en orden**, en [`area-nativa/ESTADO.md`](area-nativa/ESTADO.md)
-  (primero los arreglos de la revisión del 24/10, luego seguir con los planes).
-- Lo único que se puede adelantar sin plan está en §13 del análisis (pedir a
-  SinergiaTIC usuario de lectura y `/TEST`, protección de datos, equivalencias
-  de delegaciones). Toca la 2.2 solo una cosa, y solo si se decide: los
-  paquetes nativos (§C-bis).
+- 🛠️ **En desarrollo desde el 23/10** en la rama. Al 28/10: hechos 00, 01,
+  02, 04, 05, **06** (Coordinación) y **07** (eventos y grupos de actividad,
+  el caso estrella sin cobertura) y 10; 03 casi (falta el catálogo); los
+  fallos de la revisión del 24/10, arreglados (caché en SQLite cifrado, sesión
+  en el llavero). **08** (avisos) y **09** (mis datos de monitor) en marcha;
+  luego **17** (varias delegaciones, escrito el 28/10) y 11-16 (familias).
+  Estado fila a fila en [`area-nativa/README.md`](area-nativa/README.md) y lo
+  que toca, en orden, en [`area-nativa/ESTADO.md`](area-nativa/ESTADO.md).
+- **Diseño del área:** el usuario pide «darle cariño» (28/10). Las piezas y
+  las reglas aprendidas, en
+  [`docs/desarrollo/AREA_NATIVA_DISENO.md`](../desarrollo/AREA_NATIVA_DISENO.md).
+- **Merge a `main`:** se propone cuando 08 y 09 estén dentro y la rama esté en
+  verde; entra apagada para quien no tenga el modo alpha.
+- Lo único que se puede adelantar fuera de la app está en §13 del análisis
+  (pedir a SinergiaTIC usuario de lectura y `/TEST`, protección de datos,
+  equivalencias de delegaciones).
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
