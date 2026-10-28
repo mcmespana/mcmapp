@@ -1,105 +1,229 @@
 // Los enlaces de Comunica que abren la app, en el área NATIVA (plan 10 §3).
 // La puerta lo monta: recoge el enlace pendiente (si la app se abrió con él)
 // y los que lleguen con la app ya abierta.
+//
+// Lo que hace con cada enlace vive en `handleComunicaLink`, sin React, para
+// poder probarlo: sobre todo el caso delicado, un enlace de OTRA persona con
+// la sesión abierta. Antes de cambiar se intenta subir lo pendiente; si aún
+// queda algo, se dice cuánto se perdería, y nunca se acepta solo (ni en web).
+//
+// La puerta sigue montada debajo de toda la pila de Comunica, así que también
+// vigila aquí que una sesión REVOCADA (un 401 sin refresco posible) no deje a
+// nadie atrapado en una pantalla interna: vuelve a la puerta, que pide entrar.
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Alert, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { getComunicaApi } from '@/services/comunica';
+import { isComunicaApiError } from '@/services/comunica/client';
 import {
-  COMUNICA_ORIGIN,
   nativeHrefFor,
+  publicPageUrl,
   type ComunicaLink,
+  type Destination,
 } from '@/services/comunica/links';
+import { unsent, type Outbox } from '@/services/comunica/outbox';
 import {
   consumePendingNativeLink,
   subscribeNativeLink,
 } from '@/services/comunica/pendingLink';
 import { getSessionState, signIn, signOut } from '@/services/comunica/session';
 import { consumePendingComunicaAuthUrl } from '@/utils/pendingComunicaLink';
+import { useArea } from '@/components/comunica/comun/ComunicaAreaProvider';
 import { useToast } from '@/contexts/AppToastContext';
 import { useOpenLegacy } from './useOpenLegacy';
 
-const confirm = (title: string, body: string) =>
-  new Promise<boolean>((resolve) => {
-    if (Platform.OS === 'web') {
-      resolve(true);
-      return;
-    }
+/** Pregunta sí/no. En web, `window.confirm`; sin él, NO (nunca se acepta solo). */
+export function confirmSwitch(title: string, body: string): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    const ask = (globalThis as { confirm?: (m: string) => boolean }).confirm;
+    return Promise.resolve(
+      typeof ask === 'function' ? ask(`${title}\n\n${body}`) : false,
+    );
+  }
+  return new Promise<boolean>((resolve) => {
     Alert.alert(title, body, [
       { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
       { text: 'Entrar', onPress: () => resolve(true) },
     ]);
   });
+}
+
+/** El aviso cuando falla el canje del enlace: no todo es «caducado». */
+export function exchangeErrorText(e: unknown): string {
+  if (isComunicaApiError(e)) {
+    if (e.code === 'validation' && e.reason === 'link_expired') {
+      return 'El enlace ha caducado. Entra con un código.';
+    }
+    if (e.code === 'network' || e.code === 'crm_unavailable') {
+      return 'Necesitas conexión para usar este enlace. Inténtalo en un rato.';
+    }
+    if (e.code === 'rate_limited') {
+      return 'Demasiados intentos. Espera un poco y vuelve a probar.';
+    }
+  }
+  return 'No se ha podido usar el enlace. Entra con un código.';
+}
+
+export const CHOOSE_TEXT =
+  'Este enlace es de varias personas. Entra con un código para elegir quién eres.';
+
+/** «una cosa» / «3 cosas» sin subir. */
+const pendingText = (n: number) =>
+  n === 1 ? 'un cambio sin subir' : `${n} cambios sin subir`;
+
+export interface LinkDeps {
+  push: (href: { pathname: string; params?: Record<string, string> }) => void;
+  toast: (label: string) => void;
+  openLegacy: (destination: Destination, title: string) => Promise<void>;
+  confirm: (title: string, body: string) => Promise<boolean>;
+  /** La cola de quien está dentro (para subir antes de cambiar). */
+  outbox: Outbox | null;
+  /** Vaciar la caché en memoria tras salir. */
+  clearQueries: () => void;
+}
+
+/**
+ * Antes de salir para entrar como otra persona: se intenta subir lo
+ * pendiente, ya, con la sesión de quien está dentro. Devuelve lo que no ha
+ * podido subir.
+ */
+async function tryToUpload(outbox: Outbox | null): Promise<number> {
+  if (!outbox) return 0;
+  for (const e of unsent(outbox.entries())) {
+    // `retry` pone el intento a ahora (también lo atascado) y sube.
+    await outbox.retry(e.key);
+  }
+  return unsent(outbox.entries()).length;
+}
+
+export async function handleComunicaLink(
+  link: ComunicaLink,
+  deps: LinkDeps,
+): Promise<void> {
+  // Este modo se queda el enlace: el del legado sobra.
+  consumePendingComunicaAuthUrl();
+  if (link.kind === 'appAccess') {
+    deps.push({
+      pathname: '/comunica/acceso-codigo',
+      params: { link: link.linkToken },
+    });
+    return;
+  }
+  const publicUrl = publicPageUrl(link);
+  if (publicUrl) {
+    // La ficha nativa del evento llega con el plan 13; hasta entonces, su
+    // página pública (como cualquier otra página del dominio).
+    deps.push({ pathname: '/comunica/web', params: { url: publicUrl } });
+    return;
+  }
+  if (link.kind !== 'page') return;
+  if (link.auth) {
+    let res;
+    try {
+      res = await getComunicaApi().exchange(
+        link.auth.magic
+          ? { magic: link.auth.magic }
+          : { token: link.auth.token! },
+      );
+    } catch (e) {
+      deps.toast(exchangeErrorText(e));
+      return;
+    }
+    if ('choose' in res) {
+      deps.toast(CHOOSE_TEXT);
+      return;
+    }
+    const current = getSessionState();
+    if (
+      current.status === 'signedIn' &&
+      current.me &&
+      current.me.personId !== res.me.personId
+    ) {
+      const first = res.me.name.split(' ')[0];
+      const left = await tryToUpload(deps.outbox);
+      const ok = await deps.confirm(
+        `Este enlace es para ${first}`,
+        left > 0
+          ? `Tienes ${pendingText(left)}. Si sales, se ${left === 1 ? 'pierde' : 'pierden'}. ¿Salir y entrar como ${res.me.name}?`
+          : `¿Salir y entrar como ${res.me.name}?`,
+      );
+      if (!ok) return;
+      await signOut();
+      deps.clearQueries();
+    }
+    await signIn(res, res.me);
+  }
+  if (link.destination) {
+    const native = nativeHrefFor(link.destination);
+    if (native) deps.push(native);
+    else await deps.openLegacy(link.destination, 'Comunica');
+  }
+}
+
+/**
+ * ¿Hay que volver a la puerta? Solo si la sesión se acaba de revocar y se está
+ * en una pantalla interna de Comunica (no en otra pestaña, ni en la puerta).
+ * «Salir» a propósito ya vuelve solo desde «Tu cuenta».
+ */
+export const shouldReturnToGate = (
+  session: { status: string; reason?: string },
+  pathname: string | null | undefined,
+) =>
+  session.status === 'signedOut' &&
+  session.reason === 'revoked' &&
+  !!pathname?.startsWith('/comunica/');
+
+function useBackToGateWhenRevoked() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { session } = useArea();
+  const revoked =
+    session.status === 'signedOut' && session.reason === 'revoked';
+  const pathRef = useRef(pathname);
+  useEffect(() => {
+    pathRef.current = pathname;
+  }, [pathname]);
+  // Solo al revocarse la sesión, no a cada navegación.
+  useEffect(() => {
+    if (!revoked) return;
+    if (!shouldReturnToGate(getSessionState(), pathRef.current)) return;
+    if (router.canDismiss()) router.dismissAll();
+    router.navigate('/comunica');
+  }, [revoked, router]);
+}
 
 export function useComunicaLinks() {
+  useBackToGateWhenRevoked();
   const router = useRouter();
   const qc = useQueryClient();
   const { toast } = useToast();
   const openLegacy = useOpenLegacy();
+  // La cola cambia con la persona; el manejador lee siempre la de ahora.
+  const { outbox } = useArea();
+  const outboxRef = useRef(outbox);
+  useEffect(() => {
+    outboxRef.current = outbox;
+  }, [outbox]);
 
   useEffect(() => {
-    const handle = async (link: ComunicaLink) => {
-      // Este modo se queda el enlace: el del legado sobra.
-      consumePendingComunicaAuthUrl();
-      if (link.kind === 'appAccess') {
-        router.push({
-          pathname: '/comunica/acceso-codigo',
-          params: { link: link.linkToken },
+    const handle = (link: ComunicaLink) =>
+      handleComunicaLink(link, {
+        push: (href) => router.push(href as never),
+        toast: (label) => toast.show({ variant: 'warning', label }),
+        openLegacy,
+        confirm: confirmSwitch,
+        get outbox() {
+          return outboxRef.current;
+        },
+        clearQueries: () => qc.clear(),
+      }).catch(() => {
+        toast.show({
+          variant: 'warning',
+          label: 'No se ha podido usar el enlace. Entra con un código.',
         });
-        return;
-      }
-      if (link.kind === 'event') {
-        // La ficha nativa del evento llega con el plan 13.
-        router.push({
-          pathname: '/comunica/web',
-          params: { url: `${COMUNICA_ORIGIN}/actividades/?e=${link.slug}` },
-        });
-        return;
-      }
-      if (link.kind === 'other') {
-        router.push({ pathname: '/comunica/web', params: { url: link.url } });
-        return;
-      }
-      if (link.auth) {
-        try {
-          const res = await getComunicaApi().exchange(
-            link.auth.magic
-              ? { magic: link.auth.magic }
-              : { token: link.auth.token! },
-          );
-          if ('choose' in res) return;
-          const current = getSessionState();
-          if (
-            current.status === 'signedIn' &&
-            current.me &&
-            current.me.personId !== res.me.personId
-          ) {
-            const first = res.me.name.split(' ')[0];
-            const ok = await confirm(
-              `Este enlace es para ${first}`,
-              `¿Salir y entrar como ${res.me.name}?`,
-            );
-            if (!ok) return;
-            await signOut();
-            qc.clear();
-          }
-          await signIn(res, res.me);
-        } catch {
-          toast.show({
-            variant: 'warning',
-            label: 'El enlace ha caducado. Entra con un código.',
-          });
-          return;
-        }
-      }
-      if (link.destination) {
-        const native = nativeHrefFor(link.destination);
-        if (native) router.push(native as never);
-        else await openLegacy(link.destination, 'Comunica');
-      }
-    };
+      });
     const pending = consumePendingNativeLink();
     if (pending) void handle(pending);
     return subscribeNativeLink((l) => void handle(l));

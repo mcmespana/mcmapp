@@ -7,10 +7,17 @@ import {
   nativeHrefFor,
   parseDestination,
   PLUGIN_PAGES,
+  publicPageUrl,
 } from '@/services/comunica/links';
 import { redirectSystemPath } from '@/app/+native-intent';
-import { consumePendingNativeLink } from '@/services/comunica/pendingLink';
-import { consumePendingComunicaAuthUrl } from '@/utils/pendingComunicaLink';
+import {
+  consumePendingNativeLink,
+  subscribeNativeLink,
+} from '@/services/comunica/pendingLink';
+import {
+  consumePendingComunicaAuthUrl,
+  setPendingComunicaAuthUrl,
+} from '@/utils/pendingComunicaLink';
 
 const O = 'https://comunica.movimientoconsolacion.com';
 
@@ -195,6 +202,48 @@ describe('enlaces que llegan (+native-intent)', () => {
       linkToken: 'tok',
     });
     expect(consumePendingComunicaAuthUrl()).toBeNull();
+  });
+});
+
+describe('con la app ya abierta en el área nativa', () => {
+  it('el hueco del legado no se queda con el token (se rellena antes)', () => {
+    // El manejador nativo vacía el hueco del legado nada más llegar, como
+    // `useComunicaLinks`.
+    const seen: string[] = [];
+    const off = subscribeNativeLink((l) => {
+      seen.push(l.kind);
+      consumePendingComunicaAuthUrl();
+    });
+    redirectSystemPath({
+      path: `${O}/ap/?token=abcDEF123&internalpage=list_stic_payments`,
+      initial: false,
+    });
+    off();
+    expect(seen).toEqual(['page']);
+    expect(consumePendingComunicaAuthUrl()).toBeNull();
+  });
+
+  it('el hueco del legado caduca a los 2 minutos', () => {
+    const now = Date.now();
+    const spy = jest.spyOn(Date, 'now').mockReturnValue(now);
+    setPendingComunicaAuthUrl(`${O}/ap/?token=abc&app=1`);
+    spy.mockReturnValue(now + 2 * 60_000 + 1);
+    expect(consumePendingComunicaAuthUrl()).toBeNull();
+    spy.mockRestore();
+  });
+
+  it('la actividad pública se abre en web.tsx (antes caía en el portal entero)', () => {
+    expect(
+      publicPageUrl(classifyComunicaLink(`${O}/actividades/?e=foro-2026`)),
+    ).toBe(`${O}/actividades/?e=foro-2026`);
+    expect(publicPageUrl(classifyComunicaLink(`${O}/formularios/x`))).toBe(
+      `${O}/formularios/x`,
+    );
+    expect(
+      publicPageUrl(
+        classifyComunicaLink(`${O}/ap/?internalpage=list_stic_payments`),
+      ),
+    ).toBeNull();
   });
 });
 

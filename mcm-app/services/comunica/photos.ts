@@ -13,15 +13,28 @@ export async function clearPhotoCache(): Promise<void> {
   await Promise.all([Image.clearDiskCache(), Image.clearMemoryCache()]);
 }
 
-/** Precarga (de cuatro en cuatro las pide quien llama). */
+/**
+ * Precarga (de cuatro en cuatro las pide quien llama). Las cabeceras van con
+ * cada foto según su `PhotoSource`: las que no llevan sesión (otro dominio) se
+ * piden aparte y sin ella.
+ */
 export async function prefetchPhotos(sources: PhotoSource[]): Promise<void> {
   const remote = sources.filter((s) => /^https?:/.test(s.uri));
-  if (remote.length === 0) return;
+  const withAuth = remote.filter((s) => s.headers);
+  const plain = remote.filter((s) => !s.headers);
   try {
-    await Image.prefetch(
-      remote.map((s) => s.uri),
-      { cachePolicy: 'disk', headers: remote[0].headers },
-    );
+    if (withAuth.length > 0) {
+      await Image.prefetch(
+        withAuth.map((s) => s.uri),
+        { cachePolicy: 'disk', headers: withAuth[0].headers },
+      );
+    }
+    if (plain.length > 0) {
+      await Image.prefetch(
+        plain.map((s) => s.uri),
+        { cachePolicy: 'disk' },
+      );
+    }
   } catch (e) {
     logger.warn('[comunica] no se han podido precargar fotos', e);
   }

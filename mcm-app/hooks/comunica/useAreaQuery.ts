@@ -4,12 +4,14 @@
 // cliente de `services/comunica/`, con la clave siempre bajo `['comunica', …]`,
 // lo guardado pintado al instante y el refresco por detrás.
 //
-// `persist: false` marca lo que NUNCA toca el disco (la salud). Hoy la caché
-// vive en memoria; cuando llegue `expo-sqlite` con la 2.2, el persistidor
-// solo guardará las consultas con `meta.persist === true`.
+// Qué se guarda en el móvil lo dice el CONTRATO: con `route`, el `persist` de
+// `ROUTES` (la salud y los datos personales, `false`). `ComunicaAreaProvider`
+// solo guarda las consultas con `meta.persist === true` y, además, nunca las
+// de salud ni datos personales. Sin `route`, se guarda salvo `persist: false`.
 
 import { useQuery, type QueryKey } from '@tanstack/react-query';
 import { isComunicaApiError } from '@/services/comunica/client';
+import { ROUTES, type RouteName } from '@/services/comunica/contract';
 
 export const STALE = {
   /** Estructura: grupos, personas. */
@@ -22,6 +24,9 @@ interface Options<T> {
   /** Sin el prefijo: `['pasar-lista', 'groups']`. */
   key: QueryKey;
   fetch: () => Promise<T>;
+  /** La ruta del contrato que se lee: de ahí sale si se guarda. */
+  route?: RouteName;
+  /** Solo para apagar el guardado (nunca enciende lo que `route` no deja). */
   persist?: boolean;
   staleTime?: number;
   enabled?: boolean;
@@ -38,6 +43,7 @@ export const areaKey = (key: QueryKey): QueryKey => ['comunica', ...key];
 export function useAreaQuery<T extends { generatedAt: string }>({
   key,
   fetch,
+  route,
   persist = true,
   staleTime = STALE.state,
   enabled = true,
@@ -50,7 +56,7 @@ export function useAreaQuery<T extends { generatedAt: string }>({
     queryFn: fetch,
     staleTime,
     enabled,
-    meta: { persist },
+    meta: { persist: persist && (route ? ROUTES[route].persist : true) },
     gcTime,
     // `T` es siempre un objeto (una respuesta), nunca una función: el guarda
     // de tipos de TanStack no lo puede saber con un genérico.

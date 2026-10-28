@@ -4,6 +4,25 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-28 13:30 — Área nativa de Comunica: arreglos de la revisión y almacén cifrado (rama `nuevoComunicaChulo`)
+
+- **Salir o cambiar de persona** apaga la cola de escrituras antes de borrar
+  nada: ya no puede subir lo de una persona con la sesión de otra. Un enlace
+  de otra persona intenta subir lo pendiente y avisa de lo que se perdería
+  (también en web).
+- **Sin cobertura** la lista queda «Guardada en el móvil» y sube sola al
+  volver la red, sin gastar intentos; los textos distinguen CRM caído y
+  atascada. Un rechazo definitivo ya no se reenvía en cada arranque.
+- **Datos en el móvil**: la caché, la cola y los borradores del área van a una
+  base de datos **SQLite cifrada** (SQLCipher, clave en el llavero) y el token
+  de refresco al **llavero**. Lo que hubiera en AsyncStorage se pasa solo. En
+  web, como antes.
+- La salud y los datos personales no se guardan nunca aunque una consulta
+  venga mal marcada; el token solo va a fotos de nuestro servidor; el enlace
+  de un token caduca a los 2 minutos; la sesión revocada vuelve a la puerta.
+- Guardarraíles nuevos: ningún token ni pase en los logs; nada nativo del área
+  en el bundle de web.
+
 ## 2026-10-28 10:30 — Paquetes nativos del área privada en la 2.1 (aún sin usar)
 
 - Añadidos `expo-secure-store`, `expo-sqlite` (con SQLCipher), `expo-local-authentication`, `expo-intent-launcher` y `expo-image-picker` con sus plugins en `app.json`, para que el área privada nativa pueda llegar luego por OTA sobre la 2.1. Todavía no hay código que los use.

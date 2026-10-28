@@ -2,6 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createFakeServer } from '@/services/comunica/fake';
 import { FAKE_CODE } from '@/services/comunica/fake/fixtures';
 import {
+  __resetComunicaApiForTests,
+  getComunicaApi,
+} from '@/services/comunica';
+import {
   __resetSessionForTests,
   configureSession,
   currentAccessToken,
@@ -9,6 +13,7 @@ import {
   getSessionState,
   initSession,
   memorySecretStore,
+  onSessionEnd,
   signIn,
   signOut,
   withSession,
@@ -20,6 +25,20 @@ import {
   writeDrawer,
 } from '@/services/comunica/storage';
 import { ComunicaApiError } from '@/services/comunica/client';
+
+// El llavero de este binario (`expo-secure-store`), en memoria: el de Jest no
+// guarda nada.
+const mockKeychain = new Map<string, string>();
+jest.mock('expo-secure-store', () => ({
+  AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 0,
+  getItemAsync: async (k: string) => mockKeychain.get(k) ?? null,
+  setItemAsync: async (k: string, v: string) => {
+    mockKeychain.set(k, v);
+  },
+  deleteItemAsync: async (k: string) => {
+    mockKeychain.delete(k);
+  },
+}));
 
 function setup() {
   __resetSessionForTests();
@@ -139,7 +158,7 @@ describe('sesión', () => {
     expect(await readDrawer(t.me.personId, 'outbox')).toEqual([{ key: 'x' }]);
   });
 
-  it('salir revoca y borra todo lo del área', async () => {
+  it('salir revoca y borra los cajones (de punta a punta: areaProvider.test)', async () => {
     const { fake, secrets } = setup();
     const t = fake.issueSession('monitor');
     await signIn(t, t.me);
@@ -169,16 +188,135 @@ describe('sesión', () => {
     });
   });
 
-  // Guardarraíl (plan 02 «Tests»): con el servidor de verdad, el refresco no
-  // pasa nunca por AsyncStorage.
-  it('el token de refresco no toca AsyncStorage con un almacén de secretos', async () => {
+  it('salir apaga lo de la sesión ANTES de borrar el móvil', async () => {
     const { fake } = setup();
     const t = fake.issueSession('monitor');
-    (AsyncStorage.setItem as jest.Mock).mockClear();
     await signIn(t, t.me);
-    const written = (AsyncStorage.setItem as jest.Mock).mock.calls.map((c) =>
-      String(c[1]),
+    const order: string[] = [];
+    onSessionEnd(() => order.push('fin de sesión'));
+    const be = memoryBackend();
+    setStorageBackend({
+      ...be,
+      removeItem: async (k) => {
+        order.push('borrar');
+        await be.removeItem(k);
+      },
+    });
+    await writeDrawer(t.me.personId, 'outbox', [{ key: 'x' }]);
+    await signOut();
+    expect(order[0]).toBe('fin de sesión');
+    expect(order).toContain('borrar');
+  });
+
+  it('un refresco en vuelo al salir no reescribe el token ni lo usa', async () => {
+    __resetSessionForTests();
+    setStorageBackend(memoryBackend());
+    const secrets = memorySecretStore();
+    let finish: (v: unknown) => void = () => {};
+    configureSession({
+      refresh: () => new Promise((r) => (finish = r as never)),
+      logout: async () => {},
+      secrets,
+    });
+    const fake = createFakeServer({ latencyMs: 0 });
+    const t = fake.issueSession('monitor');
+    await signIn({ ...t, expiresIn: 0 }, t.me);
+    const pending = getAccessToken();
+    await new Promise((r) => setTimeout(r, 0));
+    await signOut();
+    finish({ accessToken: 'nuevo', refreshToken: 'rotado', expiresIn: 900 });
+    expect(await pending).toBeNull();
+    expect(await secrets.get('@comunica/refresh')).toBeNull();
+    expect(currentAccessToken()).toBeNull();
+  });
+
+  it('lo que empezó con A no se repite con el token de B', async () => {
+    const { fake, api } = setup();
+    const a = fake.issueSession('monitor');
+    await signIn(a, a.me);
+    // Una llamada de A se queda colgada en el servidor…
+    fake.setControls({ latencyMs: 50 });
+    const call = api.getMe().catch((e) => e);
+    fake.setControls({ latencyMs: 0 });
+    // …mientras A sale y entra B.
+    await signOut();
+    const b = fake.issueSession('coordination');
+    await signIn(b, b.me);
+    // Sin la época, la llamada de A llegaba al servidor con el token de B y
+    // volvía contestada como B.
+    expect(await call).toMatchObject({
+      code: 'unauthenticated',
+      reason: 'session_changed',
+    });
+    expect(getSessionState().me?.personId).toBe(b.me.personId);
+  });
+
+  it('un 401 sin con qué refrescar acaba la sesión (revocada)', async () => {
+    const { fake, api, secrets } = setup();
+    const t = fake.issueSession('monitor');
+    await signIn(t, t.me);
+    await secrets.remove('@comunica/refresh');
+    fake.revokeAll();
+    await expect(api.getMe()).rejects.toMatchObject({
+      code: 'unauthenticated',
+    });
+    expect(getSessionState()).toMatchObject({
+      status: 'signedOut',
+      reason: 'revoked',
+    });
+  });
+});
+
+// Guardarraíl (plan 02 «Tests»): con el servidor DE VERDAD, el refresco no
+// pasa nunca por AsyncStorage. Usa el cableado real de `getComunicaApi()`
+// (qué almacén de secretos elige) y el cliente HTTP con un `fetch` falso.
+describe('con el servidor de verdad', () => {
+  const realFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = realFetch;
+    delete process.env.EXPO_PUBLIC_COMUNICA_API;
+    __resetComunicaApiForTests();
+    __resetSessionForTests();
+  });
+
+  it('el token de refresco no toca AsyncStorage (ni al entrar ni al refrescar)', async () => {
+    __resetSessionForTests();
+    __resetComunicaApiForTests();
+    process.env.EXPO_PUBLIC_COMUNICA_API = 'https://api.example.org';
+    const me = {
+      personId: 'p1',
+      name: 'Lucía',
+      delegation: { id: 'd1', name: 'Villaclara' },
+      roles: ['monitor'],
+      scope: 'delegation',
+      canSeeHealth: false,
+    };
+    let refreshes = 0;
+    global.fetch = jest.fn(async (url: string) => {
+      const json = String(url).endsWith('/v1/auth/refresh')
+        ? {
+            accessToken: `acc-${++refreshes}`,
+            refreshToken: `REFRESCO-ROTADO-${refreshes}`,
+            expiresIn: 900,
+          }
+        : { generatedAt: '2026-10-24T10:00:00+02:00', me };
+      return { ok: true, status: 200, json: async () => json } as Response;
+    }) as never;
+    const api = getComunicaApi();
+    (AsyncStorage.setItem as jest.Mock).mockClear();
+    await signIn(
+      { accessToken: 'a0', refreshToken: 'REFRESCO-INICIAL', expiresIn: 0 },
+      me as never,
     );
-    expect(written.some((v) => v.includes(t.refreshToken))).toBe(false);
+    await api.getMe(); // caducado: refresca y rota
+    expect(refreshes).toBe(1);
+    const written = (AsyncStorage.setItem as jest.Mock).mock.calls
+      .map((c) => `${c[0]}=${c[1]}`)
+      .join('\n');
+    expect(written).not.toMatch(/REFRESCO-/);
+    // Y sí guarda quién es (no es secreto).
+    expect(written).toMatch(/session-person/);
+    // El de refresco, rotado, vive en el llavero.
+    expect(mockKeychain.get('comunica_refresh')).toBe('REFRESCO-ROTADO-1');
   });
 });

@@ -15,6 +15,7 @@
 
 import { createHttpClient, type ComunicaApi } from './client';
 import { createFakeServer, type FakeServer } from './fake';
+import { secureSecretStore } from './nativeStores';
 import { clearPhotoCache } from './photos';
 import {
   addSignOutCleanup,
@@ -23,6 +24,7 @@ import {
   fakeOnlyAsyncSecretStore,
   memorySecretStore,
   withSession,
+  type SecretStore,
 } from './session';
 
 export type { FakeControls, FakeServer } from './fake';
@@ -31,6 +33,19 @@ export { FAKE_CODE } from './fake/fixtures';
 
 export type ComunicaApiTarget =
   { kind: 'fake' } | { kind: 'http'; baseUrl: string } | { kind: 'off' };
+
+/**
+ * Dónde vive el token de refresco (plan 02): con el servidor de verdad, en el
+ * llavero; si el binario no lo tiene (o en web), en memoria. NUNCA en
+ * AsyncStorage: eso solo con el falso, cuyos tokens no abren nada.
+ */
+export function chooseSecretStore(
+  kind: 'fake' | 'http',
+  secure: () => SecretStore | null,
+): SecretStore {
+  if (kind === 'fake') return fakeOnlyAsyncSecretStore;
+  return secure() ?? memorySecretStore();
+}
 
 /** Puro, para poder probarlo: qué servidor toca con esta variable. */
 export function resolveComunicaApiTarget(
@@ -90,9 +105,7 @@ export function getComunicaApi(): ComunicaApi {
   configureSession({
     refresh: (r) => raw.refresh(r),
     logout: (r) => raw.logout(r),
-    // Hasta que llegue `expo-secure-store` (2.2), el refresco del servidor de
-    // verdad vive solo en memoria. Ver `session.ts`.
-    secrets: t.kind === 'fake' ? fakeOnlyAsyncSecretStore : memorySecretStore(),
+    secrets: chooseSecretStore(t.kind, secureSecretStore),
   });
   // Salir vacía también las fotos de las fichas (plan 05).
   addSignOutCleanup(clearPhotoCache);

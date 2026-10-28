@@ -22,10 +22,10 @@ export function useOutbox() {
   };
 }
 
-/** Abrir una pantalla del área también sube lo pendiente. */
+/** Abrir una pantalla del área también sube lo pendiente (ya, sin esperar). */
 export function useFlushOutboxOnMount() {
   const { outbox } = useArea();
   useEffect(() => {
-    void outbox?.flush();
+    void outbox?.wake();
   }, [outbox]);
 }

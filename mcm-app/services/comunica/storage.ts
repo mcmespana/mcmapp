@@ -10,10 +10,10 @@
 //   · `outbox`  — la cola de escrituras.
 //   · `drafts`  — los borradores de las listas a medio marcar.
 //
-// Hoy va sobre AsyncStorage. El plan pide `expo-sqlite` (sin el tope de 6 MB
-// de Android) y llega con la 2.2: entonces se cambia `backend` y nada más.
+// En el móvil va sobre `expo-sqlite` cifrado (`nativeStores.ts`, desde la
+// build 2.1); en web y en un binario sin el paquete, sobre AsyncStorage.
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { defaultKvBackend } from './nativeStores';
 import { logger } from '@/utils/logger';
 
 export type Drawer = 'queries' | 'outbox' | 'drafts';
@@ -29,11 +29,17 @@ export interface KvBackend {
   removeItem(key: string): Promise<void>;
 }
 
-let backend: KvBackend = AsyncStorage;
+let chosen: KvBackend | null = null;
+const backend = {
+  getItem: (k: string) => (chosen ??= defaultKvBackend()).getItem(k),
+  setItem: (k: string, v: string) =>
+    (chosen ??= defaultKvBackend()).setItem(k, v),
+  removeItem: (k: string) => (chosen ??= defaultKvBackend()).removeItem(k),
+};
 
-/** Solo tests (y la 2.2): cambiar dónde se guarda. */
+/** Solo tests: cambiar dónde se guarda. */
 export function setStorageBackend(next: KvBackend): void {
-  backend = next;
+  chosen = next;
 }
 
 export function memoryBackend(): KvBackend & {
@@ -80,16 +86,29 @@ export async function readDrawer<T>(
   }
 }
 
+/**
+ * Guarda un cajón. Nunca lanza: si el móvil no deja escribir (lleno, una fila
+ * demasiado grande en Android), se avisa y devuelve `false`. Quien guarda en
+ * segundo plano no tiene que acordarse de capturar nada, y lo que había antes
+ * se queda como estaba.
+ */
 export async function writeDrawer(
   personId: string,
   drawer: Drawer,
   value: unknown,
-): Promise<void> {
-  const list = await people();
-  if (!list.includes(personId)) {
-    await backend.setItem(PEOPLE_KEY, JSON.stringify([...list, personId]));
+): Promise<boolean> {
+  try {
+    const json = JSON.stringify(value);
+    const list = await people();
+    if (!list.includes(personId)) {
+      await backend.setItem(PEOPLE_KEY, JSON.stringify([...list, personId]));
+    }
+    await backend.setItem(keyOf(personId, drawer), json);
+    return true;
+  } catch (e) {
+    logger.warn('[comunica] no se ha podido guardar', drawer, e);
+    return false;
   }
-  await backend.setItem(keyOf(personId, drawer), JSON.stringify(value));
 }
 
 /** Borra lo de una persona. */

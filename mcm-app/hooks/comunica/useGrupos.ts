@@ -1,8 +1,8 @@
 // Lecturas y escrituras de Grupos y fichas (plan 05 «Datos»).
 //
 //   · `people`, un grupo y la ficha se guardan en el móvil (sin la salud ni
-//     los datos personales, que van en sus propias rutas con `persist: false`
-//     y solo se piden con conexión).
+//     los datos personales, que van en sus propias rutas, `persist: false` en
+//     `ROUTES`, y solo se piden con conexión).
 //   · Las escrituras (aviso, pañuelo, vincular) van por la cola: la pantalla
 //     las enseña al momento con su `UploadStatus`.
 //   · Con conexión se precargan las fichas y fotos de TUS grupos, de cuatro en
@@ -43,6 +43,7 @@ const SECRET_GC_MS = 60_000;
 export function usePeople() {
   return useAreaQuery({
     key: GRUPOS_KEYS.people,
+    route: 'people',
     fetch: () => getComunicaApi().getPeople(),
     staleTime: STALE.structure,
   });
@@ -56,6 +57,7 @@ export function useGroupDetail(groupId: string) {
   const qc = useQueryClient();
   return useAreaQuery({
     key: GRUPOS_KEYS.group(groupId),
+    route: 'group',
     fetch: () => getComunicaApi().getGroupDetail(groupId),
     staleTime: STALE.structure,
     enabled: !!groupId,
@@ -88,6 +90,7 @@ export function groupPlaceholder(
 export function useParticipant(personId: string) {
   return useAreaQuery({
     key: GRUPOS_KEYS.person(personId),
+    route: 'person',
     fetch: () => getComunicaApi().getPerson(personId),
     staleTime: STALE.state,
     enabled: !!personId,
@@ -98,8 +101,8 @@ export function useParticipant(personId: string) {
 export function usePersonal(personId: string, enabled: boolean) {
   return useAreaQuery({
     key: GRUPOS_KEYS.personal(personId),
+    route: 'personal',
     fetch: () => getComunicaApi().getPersonal(personId),
-    persist: false,
     gcTime: SECRET_GC_MS,
     staleTime: 0,
     enabled: enabled && !!personId,
@@ -111,8 +114,8 @@ export function usePersonal(personId: string, enabled: boolean) {
 export function useHealth(personId: string, enabled: boolean) {
   return useAreaQuery({
     key: GRUPOS_KEYS.health(personId),
+    route: 'health',
     fetch: () => getComunicaApi().getHealth(personId),
-    persist: false,
     gcTime: SECRET_GC_MS,
     staleTime: 0,
     enabled: enabled && !!personId,

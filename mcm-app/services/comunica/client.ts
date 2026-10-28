@@ -180,7 +180,13 @@ export class ComunicaApiError extends Error {
 export const isComunicaApiError = (e: unknown): e is ComunicaApiError =>
   e instanceof ComunicaApiError;
 
+/**
+ * Sin cuerpo de error del contrato, el código sale del estado HTTP. Un 400 es
+ * la petición (no se arregla insistiendo); lo que no esté aquí (500, 502…) se
+ * toma por CRM caído y se reintenta.
+ */
 const STATUS_CODE: Record<number, ErrorCode> = {
+  400: 'validation',
   401: 'unauthenticated',
   403: 'forbidden',
   404: 'not_found',
@@ -281,6 +287,7 @@ export function createHttpClient({
   }
 
   const q = (opts?: ReadOptions) => (opts?.fresh ? '?fresh=1' : '');
+  const isOwnUrl = (url: string) => url.startsWith(`${root}/`);
   const enc = encodeURIComponent;
 
   return {
@@ -440,9 +447,11 @@ export function createHttpClient({
         body,
       ),
     photoSource: (url) => {
-      // `expo-image` pide la foto él solo: el token va en la cabecera. Si aún
-      // no hay token de acceso, sin cabecera (dará 401 y saldrán las iniciales).
-      const token = getToken?.();
+      // `expo-image` pide la foto él solo: el token va en la cabecera, y SOLO
+      // si la foto es de nuestro servidor (una `photoUrl` de otro dominio no se
+      // lleva la sesión). Si aún no hay token de acceso, sin cabecera (dará 401
+      // y saldrán las iniciales).
+      const token = isOwnUrl(url) ? getToken?.() : null;
       return typeof token === 'string'
         ? {
             uri: url,

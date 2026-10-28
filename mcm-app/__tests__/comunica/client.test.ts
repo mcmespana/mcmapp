@@ -115,4 +115,35 @@ describe('services/comunica/client', () => {
     );
     expect(f.mock.calls[0][1].headers.Authorization).toBeUndefined();
   });
+
+  it('400 sin cuerpo es `validation` (no se reintenta); 500 sigue siendo reintentable', async () => {
+    const f400 = jest.fn().mockResolvedValue(respond(400, {}));
+    await expect(client(f400).getMe()).rejects.toMatchObject({
+      code: 'validation',
+      retryable: false,
+    });
+    expect(f400).toHaveBeenCalledTimes(1);
+    const f500 = jest
+      .fn()
+      .mockResolvedValueOnce(respond(500, {}))
+      .mockResolvedValueOnce(respond(200, me));
+    await expect(client(f500).getMe()).resolves.toEqual(me);
+    expect(f500).toHaveBeenCalledTimes(2);
+  });
+
+  it('la foto lleva el token SOLO si es de nuestro servidor', () => {
+    const c = client(jest.fn());
+    expect(c.photoSource('https://api.test/v1/photos/p1?v=2')).toEqual({
+      uri: 'https://api.test/v1/photos/p1?v=2',
+      headers: { Authorization: 'Bearer tok' },
+      cacheKey: 'https://api.test/v1/photos/p1?v=2',
+    });
+    for (const url of [
+      'https://otro.example/p1.jpg',
+      'https://api.test.evil.example/p1.jpg',
+      'http://api.test/v1/photos/p1',
+    ]) {
+      expect(c.photoSource(url).headers).toBeUndefined();
+    }
+  });
 });

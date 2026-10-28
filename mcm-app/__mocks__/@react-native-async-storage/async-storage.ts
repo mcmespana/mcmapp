@@ -23,6 +23,14 @@ const AsyncStorage = {
     keys.forEach((key) => delete store[key]);
     return Promise.resolve();
   }),
+  // El área de Comunica busca sus claves para pasarlas a SQLite.
+  getAllKeys: jest.fn(() => Promise.resolve(Object.keys(store))),
+  multiSet: jest.fn((pairs: [string, string][]) => {
+    pairs.forEach(([key, value]) => {
+      store[key] = value;
+    });
+    return Promise.resolve();
+  }),
   clear: jest.fn(() => {
     Object.keys(store).forEach((key) => delete store[key]);
     return Promise.resolve();

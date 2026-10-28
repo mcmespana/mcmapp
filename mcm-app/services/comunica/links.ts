@@ -241,6 +241,18 @@ export function classifyComunicaLink(url: string): ComunicaLink | null {
   };
 }
 
+/**
+ * La página PÚBLICA que abre el legado sin sesión para un enlace: la ficha de
+ * una actividad (hasta que sea nativa, plan 13) u otra página del dominio, ya
+ * reconstruida por `classifyComunicaLink`. `null` si no es de esas.
+ */
+export function publicPageUrl(link: ComunicaLink | null): string | null {
+  if (link?.kind === 'event')
+    return `${COMUNICA_ORIGIN}/actividades/?e=${link.slug}`;
+  if (link?.kind === 'other') return link.url;
+  return null;
+}
+
 /** La query de un destino, en el orden del plugin. */
 export function destinationQuery(d: Destination): string {
   return (['internalpage', 'action', 'id', 'from'] as const)

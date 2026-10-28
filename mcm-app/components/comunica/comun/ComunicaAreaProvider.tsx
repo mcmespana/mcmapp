@@ -6,10 +6,15 @@
 //   · La sesión (plan 02): se lee al montar.
 //   · La caché, guardada en el móvil POR PERSONA: al entrar se recupera (sin
 //     cobertura se ve lo de la última vez) y se va guardando. Solo las
-//     consultas con `persist: true`: la salud nunca toca el disco.
+//     consultas con `persist: true` (`ROUTES` del contrato), y NUNCA las de
+//     salud ni datos personales aunque alguien las marque. Si no cabe, se
+//     sacrifican las fichas más viejas, no la caché entera; si el móvil no
+//     deja escribir, se queda lo de la vez anterior.
 //   · La cola de escrituras de esa persona, que sube al encolar, al
 //     reconectar, al volver la app y al abrir una pantalla del área. Sabe
 //     subir listas (plan 04), avisos, pañuelos y vincular a un grupo (plan 05).
+//     Se crea al entrar y se APAGA (`dispose`) al salir o cambiar de persona:
+//     ni reintentos ni escrituras de A después.
 
 import React, {
   createContext,
@@ -22,7 +27,6 @@ import React, {
 import { AppState, Platform } from 'react-native';
 import * as Network from 'expo-network';
 import {
-  dehydrate,
   focusManager,
   hydrate,
   onlineManager,
@@ -48,10 +52,12 @@ import { createOutbox, type Outbox } from '@/services/comunica/outbox';
 import {
   getSessionState,
   initSession,
+  onSessionEnd,
   subscribeSession,
   type SessionState,
 } from '@/services/comunica/session';
 import { readDrawer, writeDrawer } from '@/services/comunica/storage';
+import { dehydrateArea, fitForStorage } from '@/services/comunica/persist';
 import { areaKey } from '@/hooks/comunica/useAreaQuery';
 import { logger } from '@/utils/logger';
 
@@ -91,13 +97,11 @@ function wireManagers() {
 /** Cada cuánto, como mucho, se guarda la caché en el móvil. */
 const PERSIST_DEBOUNCE_MS = 1_000;
 
-/** Solo se guarda lo que es de guardar: `meta.persist` y con datos. */
-export function dehydrateArea(qc: QueryClient): DehydratedState {
-  return dehydrate(qc, {
-    shouldDehydrateQuery: (q) =>
-      q.state.status === 'success' && q.meta?.persist === true,
-  });
-}
+/** ¿Sigue dentro esta persona? Lo de otra (o de nadie) no se guarda. */
+const stillSignedIn = (personId: string) => {
+  const s = getSessionState();
+  return s.status === 'signedIn' && s.me?.personId === personId;
+};
 
 interface AreaContextValue {
   session: SessionState;
@@ -158,35 +162,53 @@ export default function ComunicaAreaProvider({
     if (!personId) return;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
-    void readDrawer<DehydratedState>(personId, 'queries').then((saved) => {
-      if (cancelled) return;
-      if (saved) {
-        try {
-          hydrate(qc, saved);
-        } catch (e) {
-          logger.warn('[comunica] caché ilegible', e);
+    const stop = () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      timer = null;
+    };
+    // Al salir, se para ANTES de que se borre nada (no espera a React).
+    const offEnd = onSessionEnd(stop);
+    readDrawer<DehydratedState>(personId, 'queries')
+      .then((saved) => {
+        if (cancelled) return;
+        if (saved) {
+          try {
+            hydrate(qc, saved);
+          } catch (e) {
+            logger.warn('[comunica] caché ilegible', e);
+          }
         }
-      }
-      setRestoredFor(personId);
-    });
+        setRestoredFor(personId);
+      })
+      .catch((e) => logger.warn('[comunica] caché ilegible', e));
     const unsub = qc.getQueryCache().subscribe(() => {
-      if (timer) return;
+      if (timer || cancelled) return;
       timer = setTimeout(() => {
         timer = null;
-        if (!cancelled) {
-          void writeDrawer(personId, 'queries', dehydrateArea(qc));
+        if (cancelled || !stillSignedIn(personId)) return;
+        try {
+          // `writeDrawer` no lanza: si no cabe, se queda lo de antes.
+          void writeDrawer(
+            personId,
+            'queries',
+            fitForStorage(dehydrateArea(qc)),
+          );
+        } catch (e) {
+          logger.warn('[comunica] no se ha podido guardar la caché', e);
         }
       }, PERSIST_DEBOUNCE_MS);
     });
     return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
+      stop();
+      offEnd();
       unsub();
     };
   }, [qc, personId]);
 
-  // La cola de esta persona.
-  const outbox = useMemo(() => {
+  // La cola de esta persona: se crea al entrar (sin efectos: solo memoria) y
+  // se apaga al salir o cambiar de persona (abajo).
+  const outbox = useMemo<Outbox | null>(() => {
     if (!personId) return null;
     return createOutbox({
       personId,
@@ -270,16 +292,24 @@ export default function ComunicaAreaProvider({
 
   useEffect(() => {
     if (!outbox) return;
-    void outbox.load().then(() => outbox.flush());
+    const box = outbox;
+    // Salir la apaga en el acto, antes de borrar el móvil.
+    const offEnd = onSessionEnd(() => box.dispose());
+    box
+      .load()
+      .then(() => box.wake())
+      .catch((e) => logger.warn('[comunica] cola ilegible', e));
     const offOnline = onlineManager.subscribe((online) => {
-      if (online) void outbox.flush();
+      if (online) void box.wake();
     });
     const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') void outbox.flush();
+      if (s === 'active') void box.wake();
     });
     return () => {
+      offEnd();
       offOnline();
       sub.remove();
+      box.dispose();
     };
   }, [outbox]);
 

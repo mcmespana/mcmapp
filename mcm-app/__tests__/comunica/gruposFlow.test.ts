@@ -16,7 +16,7 @@ import {
 } from '@/services/comunica/session';
 import { memoryBackend, setStorageBackend } from '@/services/comunica/storage';
 import { clearPhotoCache } from '@/services/comunica/photos';
-import { dehydrateArea } from '@/components/comunica/comun/ComunicaAreaProvider';
+import { dehydrateArea } from '@/services/comunica/persist';
 import { areaKey } from '@/hooks/comunica/useAreaQuery';
 import {
   GRUPOS_KEYS,

@@ -15,6 +15,10 @@
  *    la URL espera aquí y `consume…()` la recoge al montar el WebView.
  *  - **App abierta** (lo normal si vienes del Mail y ya tenías la app detrás):
  *    la pantalla ya está montada, así que hay que avisarla → `subscribe…()`.
+ *
+ * Lo que espera aquí caduca a los 2 minutos (como el hueco del área nativa,
+ * `services/comunica/pendingLink.ts`): una URL con el token de alguien que
+ * nadie recogió no se aplica horas después por sorpresa.
  */
 
 /** Base del área privada, sin query. */
@@ -30,7 +34,9 @@ export const COMUNICA_BASE_URL =
  */
 export const COMUNICA_AUTH_PARAMS = ['acceso_magico', 'token'] as const;
 
-let pendingUrl: string | null = null;
+const TTL_MS = 2 * 60_000;
+
+let pending: { url: string; at: number } | null = null;
 let listener: ((url: string) => void) | null = null;
 
 /**
@@ -65,14 +71,15 @@ export function setPendingComunicaAuthUrl(url: string) {
     listener(url);
     return;
   }
-  pendingUrl = url;
+  pending = { url, at: Date.now() };
 }
 
 /** Recoge la URL pendiente, si la hay. Se consume una sola vez. */
 export function consumePendingComunicaAuthUrl(): string | null {
-  const url = pendingUrl;
-  pendingUrl = null;
-  return url;
+  const p = pending;
+  pending = null;
+  if (!p || Date.now() - p.at > TTL_MS) return null;
+  return p.url;
 }
 
 /**

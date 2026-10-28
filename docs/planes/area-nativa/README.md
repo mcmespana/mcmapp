@@ -106,7 +106,7 @@ respuestas. Lo que hay que cambiar está en [`ESTADO.md`](ESTADO.md).
 | [`15-pagos.md`](15-pagos.md) | Pagos y arrancar un pago con tarjeta desde la app | 11, 14 | L |
 | [`16-documentos-y-calendario.md`](16-documentos-y-calendario.md) | Documentos (ver, subir, borrar) y calendario con asistencia | 01, 03, 11 | M |
 
-### Estado (26/10/2026)
+### Estado (28/10/2026)
 
 > Lo que falta **en orden** (arreglos de la revisión del 24/10 antes que planes
 > nuevos) está en [`ESTADO.md`](ESTADO.md). Esta tabla dice qué hay de cada plan.
@@ -114,8 +114,8 @@ respuestas. Lo que hay que cambiar está en [`ESTADO.md`](ESTADO.md).
 | Plan | Estado |
 |---|---|
 | 00 | ✅ Hecho: contrato (compartido + Pasar Lista), cliente, servidor falso con mandos, selector, `COMUNICA_API.md`. Los mandos viven en el **Laboratorio Alpha** («Comunica nueva»), no en `SecretPanelModal` (que es el editor de canciones) |
-| 01 | ✅ Hecho: carpeta `comunica/` con puerta y legado, `ComunicaAreaProvider` (consultas, sesión, caché guardada POR PERSONA sin la salud, cola), `useAreaQuery`/`useMe`, `outbox.ts` (gana la última, mismo `clientId`, atascada a los 5, sube al encolar/reconectar/volver/abrir), borrador por lista, estados de pantalla y guardarraíles. **Pendiente de la 2.2**: cambiar AsyncStorage por `expo-sqlite` en `storage.ts` (`setStorageBackend`). Falta el panel de diagnóstico |
-| 02 | 🟡 Hecho: contrato y falso del acceso (código `123456`, dos fichas, límites, enlace), `session.ts` (acceso en memoria, refresco que rota, 401 → refresca y repite, revocada sin borrar la cola), pantallas «Entra en tu área» (correo de la cuenta ya puesto / DNI), código de 6 casillas, «¿Quién eres?» y «Tu cuenta» con «Salir». Enlace `acceso_app` hecho con el plan 10. **Falta** `expo-secure-store` (2.2; hasta entonces, con el servidor de verdad el refresco vive en memoria) |
+| 01 | ✅ Hecho: carpeta `comunica/` con puerta y legado, `ComunicaAreaProvider` (consultas, sesión, caché guardada POR PERSONA sin la salud, cola), `useAreaQuery`/`useMe`, `outbox.ts` (gana la última, mismo `clientId`, atascada a los 5, sube al encolar/reconectar/volver/abrir), borrador por lista, estados de pantalla y guardarraíles. Desde el 28/10, los cajones van a **SQLite cifrado** (`nativeStores.ts`; AsyncStorage solo en web o sin el paquete) y la cola se apaga al salir (`dispose`). Falta el panel de diagnóstico |
+| 02 | ✅ Hecho: contrato y falso del acceso (código `123456`, dos fichas, límites, enlace), `session.ts` (acceso en memoria, refresco que rota, 401 → refresca y repite, revocada sin borrar la cola), pantallas «Entra en tu área» (correo de la cuenta ya puesto / DNI), código de 6 casillas, «¿Quién eres?» y «Tu cuenta» con «Salir». Enlace `acceso_app` hecho con el plan 10. Desde el 28/10, el refresco del servidor de verdad va al **llavero** (`expo-secure-store`, en la 2.1) |
 | 03 | 🟡 Hecho: componentes de §4, página `muestra` y **territorio decidido y aplicado** (A, 24/10: acento violeta `#6c4b9e` en `ComunicaColors` de `constants/colors.ts`, degradado solo en la acción principal; commit `9fe7211`). **Falta**: el catálogo de pantallas (tarea 1) y revisar el territorio con capturas |
 | 04 | 🟡 Hecho (commit `bc924d1`, arreglos `11420d6` y `edcb622` del 24/10): portada completa (cola del móvil, evento de hoy, atajo, «Te faltan N listas», otros grupos, por etapa, evento/resumen, coordinación, precarga), árbol con buscador, historial, marcar (selector de fecha, hoja de estados con motivo, «Sin registro», rachas, accesibilidad) y guardar con cola, borrador y comprobación de lo releído; decisiones `desmarcar` (borrar) y `futuras` (como el plugin) aplicadas. **Falta**: anillo de la pulsación larga y su pista, buscador de cabecera nativo, tests de pantalla, y lo que liste [`ESTADO.md`](ESTADO.md) |
 | 05 | 🟡 Hecho (commits `9b66ff6`, `4db00e9`, `b6c09df`, `68da56a`; `salud-no` aplicada el 24/10 en `33c22c5`: la ficha enseña la salud, la marca de las listas no): Grupos y fichas (tres vistas, chips, buscador, «Asignar grupos»), un grupo, «Sin grupo» con «Vincular», hoja de salud y la ficha entera; marcar abre la ficha con la sesión; salir vacía las fotos. **Falta**: buscador nativo de cabecera, enlace a la ficha del monitor (plan 06), tests de pantalla con `screenSmoke`; preguntas 2 y 3 siguen como el plugin |
@@ -239,10 +239,11 @@ ve nombres del CRM, solo los del contrato.
   y en claro y oscuro). Las pantallas se miran, no se suponen
   (`design.md` §10). En dispositivo, con build de desarrollo, cuando el
   propietario pueda.
-- Paquetes nativos: los de la 2.2 (`expo-secure-store`, `expo-sqlite`,
-  `expo-local-authentication`, y `expo-intent-launcher` para abrir PDF en
-  Android, plan 16; `expo-image-picker` por `fotos-documentos`)
-  llegan a la rama al mergear `main`. Si un plan necesita otro, para y
+- Paquetes nativos: `expo-secure-store`, `expo-sqlite` (SQLCipher),
+  `expo-local-authentication`, `expo-intent-launcher` (abrir PDF en Android,
+  plan 16) y `expo-image-picker` (`fotos-documentos`) entran en la **2.1**
+  (PR #349, 28/10) y ya están en esta rama. Se cargan detrás de adaptadores
+  (`services/comunica/nativeStores.ts` y su `.web.ts`; un test lo vigila). Si un plan necesita otro, para y
   pregunta. Los JS puros (TanStack Query, zod) se
   añaden sin preguntar.
 - No se toca nada del CRM ni del plugin desde estos planes, salvo el

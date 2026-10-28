@@ -40,7 +40,11 @@ export function redirectSystemPath({
     const link = classifyComunicaLink(path);
     if (!link) return path;
 
-    setPendingNativeLink(link);
+    // Primero el hueco del LEGADO y después el nativo: con la app abierta en
+    // el área nativa, `setPendingNativeLink` llama a su manejador en el acto y
+    // este vacía el hueco del legado. Al revés, la URL con el token se quedaba
+    // esperando y la WebView entraba luego como esa persona.
+    //
     // El legado solo sabe de tokens y destinos del área. Sin ninguno de los
     // dos, al tab y ya está (si hay sesión con cookie, entra directo).
     if (link.kind === 'page') {
@@ -56,6 +60,7 @@ export function redirectSystemPath({
         );
       }
     }
+    setPendingNativeLink(link);
     return '/(tabs)/comunica';
   } catch {
     // Nunca reventar por un enlace raro: mejor abrir la app por su inicio.

@@ -1,4 +1,4 @@
-# Estado del área nativa y qué hacer ahora (24/10/2026, repasado el 26/10)
+# Estado del área nativa y qué hacer ahora (24/10/2026, repasado el 26 y el 28/10)
 
 > Para desarrollar poco a poco. La tabla de qué plan está hecho sigue en
 > [`README.md`](README.md) («Estado»); las decisiones, en
@@ -53,8 +53,8 @@ Repaso del repo tras dos sesiones trabajando a la vez (sin desarrollar nada):
   que no van por grupos salen sin marcar; Apoyo destacado en Coordinación; la
   portada y el calendario sin sesiones de los chavales; «Sin grupo» solo
   MIC-COM). Leer esos commits del plugin antes de seguir con el 06.
-- **El parche `revision-24-10/a-medias-f1.patch` sigue sin aplicar.** Es lo
-  primero de la lista de abajo (A1, A2, A4, A6, A7, QA).
+- El parche `revision-24-10/a-medias-f1.patch` quedó sin aplicar ese día (se
+  aplicó y revisó el 28/10, ver abajo).
 - **Build de TestFlight**: el 24/10 por la mañana se lanzó el workflow
   `eas-build.yml` desde esta rama (iOS, `production`, con envío); según la nota
   de abajo, la build falló por las credenciales de Apple. Antes de otra:
@@ -62,41 +62,61 @@ Repaso del repo tras dos sesiones trabajando a la vez (sin desarrollar nada):
 - `docs/planes/BACKLOG.md` §I y la tabla de `README.md` puestas al día con
   esto (decisiones todas contestadas; 04 y 05 hechos; 06 empezado).
 
+## Arreglado el 28/10/2026
+
+Lo de «Antes de que lo use nadie con datos de verdad» y lo de «Pronto», todo
+hecho y con test:
+
+- **El parche a medias** (`a-medias-f1.patch`) se aplicó con fusión a tres
+  bandas, se revisó pieza a pieza y se borró del repo (vive en la historia):
+  - **A1** la cola se apaga (`dispose`) al salir o cambiar de persona, ANTES de
+    borrar; cada entrada y salida abre una «época» en `session.ts` y una
+    llamada de A que acaba con B dentro falla como 401 sin repetirse con el
+    token de B (`areaProvider.test.tsx`, con el proveedor de verdad).
+  - **A2** el enlace de otra persona intenta subir lo pendiente, dice cuánto se
+    perdería y nunca se acepta solo, tampoco en web (`linkSwitch.test.ts`).
+  - **A3** un rechazo definitivo ya no se reenvía al arrancar (`NEVER` en vez
+    de `Infinity`, que pasaba por JSON como `null`).
+  - **A4** el hueco del legado se rellena antes que el nativo y caduca a los
+    2 minutos.
+  - **A6** el `persist` sale de `ROUTES` (`route:` en `useAreaQuery`) y
+    `persist.ts` descarta salud y datos personales aunque vengan mal marcados.
+  - **A7** la cabecera con el token solo va a fotos de nuestro servidor.
+  - **A9** el enlace a una actividad abre su página pública.
+  - **QA** sin red la lista sigue «Guardada en el móvil» (`pending`), sin
+    gastar intentos, y sube sola al volver la red (`wake`). CRM caído: «no
+    responde, se volverá a intentar sola»; atascada: «pulsa Reintentar».
+  - 400 → `validation`; los 401 no cuentan para el límite de 5; un fallo de
+    la app (`internal`) no se reintenta solo; la sesión revocada a mitad de
+    pila vuelve a la puerta.
+- **A8 de verdad**: los paquetes nativos entran en la **2.1** (PR #349), así
+  que los cajones van ya a **SQLite cifrado con SQLCipher**
+  (`services/comunica/nativeStores.ts`, clave de `randomblob` en el llavero) y
+  el token de refresco del servidor de verdad, al **llavero**
+  (`expo-secure-store`). Lo que hubiera en AsyncStorage se pasa a SQLite la
+  primera vez. En web o en un binario sin los paquetes, AsyncStorage y memoria.
+  Si la caché no cabe, se sacrifican las fichas más viejas (`fitForStorage`).
+- **A10** guardarraíles nuevos: `noSecretsInLogs.test.ts` (el pase y los
+  tokens no salen en ningún log aunque el servidor conteste roto) y el área en
+  `tabsLayoutWebSafety.test.ts` (solo el adaptador carga `expo-sqlite` y
+  `expo-secure-store`, con su `.web.ts`). «Salir borra todo» se prueba con la
+  cola real.
+
 ## Lo que falta, en este orden
 
-El trabajo de la capa de servicios se quedó a medias (límite de uso): está
-guardado, sin aplicar, en
-[`revision-24-10/a-medias-f1.patch`](revision-24-10/a-medias-f1.patch). Úsalo
-de referencia; **no lo apliques sin revisarlo y pasar los tests**.
+**1. Pulido de pantallas** (QA y B-pantallas.md): rendimiento de marcar con
+~60 (B9: `React.memo` en `RollRow`, rachas en `useMemo`, `key` estable en
+`Section`); aviso de sin conexión repetido en «Hoy»; «1 grupos»; COM I/II/III
+igual en portada y árbol; decir qué lista falta en el árbol; chip
+seleccionado del Laboratorio más visible; buscadores con
+`headerSearchBarOptions`; anillo de la pulsación larga; bordes de 2-3 px,
+«✓»/«›» como texto, `HealthSheet` vacía al cerrarse.
 
-**1. Antes de que lo use nadie con datos de verdad** (A-servicios.md):
-
-| # | Qué | Dónde |
-|---|---|---|
-| A1 | La cola sigue viva tras «Salir»: puede subir lo de una persona con la sesión de otra | `outbox.ts` (`dispose`), `ComunicaAreaProvider.tsx`, `signOut` |
-| A2 | Abrir el enlace de otra persona borra listas sin subir sin avisar | `useComunicaLinks.ts` |
-| A4 | El token de un enlace se queda en el hueco del legado sin caducar | `+native-intent.ts`, `useComunicaLinks.ts` |
-| A6 | El guardarraíl de salud no puede fallar: que `persist` salga de `ROUTES` y test con los hooks reales | `useAreaQuery.ts`, `persistence.test.ts` |
-| A7 | El token se manda a cualquier dominio de foto: solo a la `baseUrl` | `client.ts`, `photos.ts` |
-| QA | Guardar sin conexión dice «No se ha guardado» aunque se suba sola: un error de red es `pending`, no `failed` | `outbox.ts` + textos de `RollScreen` |
-
-**2. Pronto:** A3 (un rechazo definitivo se reenvía en cada arranque), A8
-(caché en un solo JSON: puede perderse en Android), A9 (enlace a una actividad
-abre el portal entero), A10 (guardarraíles: tokens fuera de los logs, «Salir
-borra todo» con la cola real), 400 → `validation`, los 401 no cuentan para el
-límite de 5, y la sesión revocada a mitad de pila vuelve a la puerta.
-
-**3. Pulido de pantallas** (QA y B-pantallas.md, BAJA): aviso de sin conexión
-repetido en «Hoy»; «1 grupos»; COM I/II/III igual en portada y árbol; decir qué
-lista falta en el árbol; chip seleccionado del Laboratorio más visible;
-buscadores con `headerSearchBarOptions`; anillo de la pulsación larga.
-
-**4. Fuera del área pero visto en el QA:** en oscuro la barra de pestañas no
+**2. Fuera del área pero visto en el QA:** en oscuro la barra de pestañas no
 marca la activa; en web la barra lleva elementos de más («⏷», «visitapapa»).
 
-**5. Después, por planes:** cerrar 02 (`expo-secure-store` con la 2.2), 03
-(catálogo y revisar el territorio con capturas), 04-05 (lo que dice su fila
-en la tabla del README), y seguir con 06-09 y 11-16.
+**3. Por planes:** 03 (catálogo y revisar el territorio con capturas), 04-05
+(lo que dice su fila en la tabla del README), y seguir con 06-09 y 11-16.
 
 ## Cómo probarlo
 

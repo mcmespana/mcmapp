@@ -3,7 +3,7 @@
  * llega al almacén del móvil. Y los textos del acceso.
  */
 import { QueryClient } from '@tanstack/react-query';
-import { dehydrateArea } from '@/components/comunica/comun/ComunicaAreaProvider';
+import { dehydrateArea } from '@/services/comunica/persist';
 import {
   accessErrorText,
   looksLikeDni,

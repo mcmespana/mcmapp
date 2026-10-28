@@ -4,21 +4,28 @@
 //
 //   · Token de ACCESO (corto, ~15 min): solo en memoria.
 //   · Token de REFRESCO (meses, rota en cada uso): en el almacén de secretos.
-//     Con el servidor de verdad, `expo-secure-store` (llega con la 2.2; hasta
-//     entonces, en memoria: se vuelve a entrar al abrir la app). Con el
-//     servidor FALSO sus tokens no valen nada fuera del móvil, y se guardan en
-//     AsyncStorage para que los probadores no tengan que entrar cada vez. Un
-//     test vigila que con el de verdad nunca toque AsyncStorage.
+//     Con el servidor de verdad, el llavero (`expo-secure-store`, desde la
+//     build 2.1; sin él, en memoria: se vuelve a entrar al abrir la app). Con
+//     el servidor FALSO sus tokens no valen nada fuera del móvil, y se guardan
+//     en AsyncStorage para que los probadores no tengan que entrar cada vez.
+//     Un test vigila que con el de verdad nunca toque AsyncStorage
+//     (`chooseSecretStore` de `index.ts`).
 //   · Quién es (`personId` y su `Me`): en AsyncStorage, no es secreto, y hace
 //     falta para entrar sin cobertura y para el espacio por persona (plan 01).
 //
 // Ante un 401: se refresca una vez y se repite (`withSession`). Si el refresco
-// falla, la sesión acaba ('revoked'), pero NO se borra nada en silencio: lo que
-// haya en la cola sigue ahí hasta que la persona salga o vuelva a entrar.
+// falla (o no hay con qué refrescar), la sesión acaba ('revoked'), pero NO se
+// borra nada en silencio: lo que haya en la cola sigue ahí hasta que la persona
+// salga o vuelva a entrar.
+//
+// Cada entrada y cada salida abre una «época» nueva. Lo que empezó en una
+// época y acaba en otra no vale: una llamada de A que termina con B dentro
+// falla como 401 (y no se repite con el token de B), y un refresco de A que
+// vuelve tras salir no reescribe nada.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ComunicaApi } from './client';
-import { isComunicaApiError } from './client';
+import { ComunicaApiError, isComunicaApiError } from './client';
 import type { Me, Tokens } from './contract';
 import { clearAll } from './storage';
 import { logger } from '@/utils/logger';
@@ -73,8 +80,10 @@ let accessToken: string | null = null;
 let accessExp = 0;
 let refreshing: Promise<string | null> | null = null;
 let initPromise: Promise<void> | null = null;
+let epoch = 0;
 const listeners = new Set<() => void>();
 const signOutCleanups = new Set<() => unknown>();
+const sessionEndHooks = new Set<() => void>();
 
 /**
  * Algo más que borrar al salir (las fotos de `expo-image`, plan 05). Lo
@@ -87,6 +96,26 @@ export function addSignOutCleanup(fn: () => unknown): () => void {
     signOutCleanups.delete(fn);
   };
 }
+
+/**
+ * Lo que hay que apagar en cuanto se acaba la sesión (salir o revocada), antes
+ * de borrar nada: la cola de esa persona (`ComunicaAreaProvider`). Síncrono.
+ */
+export function onSessionEnd(fn: () => void): () => void {
+  sessionEndHooks.add(fn);
+  return () => {
+    sessionEndHooks.delete(fn);
+  };
+}
+
+/** El 401 de una llamada que empezó con otra sesión. */
+const sessionChanged = () =>
+  new ComunicaApiError(
+    'unauthenticated',
+    'La sesión ha cambiado',
+    401,
+    'session_changed',
+  );
 
 const emit = (next: SessionState) => {
   state = next;
@@ -108,12 +137,15 @@ export function subscribeSession(listener: () => void): () => void {
 /** Al arrancar: ¿había sesión guardada? Sin red se entra igual. */
 export function initSession(): Promise<void> {
   if (initPromise) return initPromise;
+  const started = epoch;
   initPromise = (async () => {
     try {
       const [refresh, rawMe] = await Promise.all([
         deps?.secrets.get(REFRESH_KEY) ?? null,
         AsyncStorage.getItem(PERSON_KEY),
       ]);
+      // Si mientras se leía alguien ha entrado (un enlace), manda eso.
+      if (epoch !== started) return;
       const me = rawMe ? (JSON.parse(rawMe) as Me) : null;
       emit(
         refresh && me
@@ -122,7 +154,7 @@ export function initSession(): Promise<void> {
       );
     } catch (e) {
       logger.warn('[comunica] sesión ilegible', e);
-      emit({ status: 'signedOut', me: null });
+      if (epoch === started) emit({ status: 'signedOut', me: null });
     }
   })();
   return initPromise;
@@ -136,6 +168,7 @@ function setAccess(tokens: Tokens) {
 
 export async function signIn(tokens: Tokens, me: Me): Promise<void> {
   if (!deps) throw new Error('Sesión sin configurar');
+  epoch += 1;
   setAccess(tokens);
   await deps.secrets.set(REFRESH_KEY, tokens.refreshToken);
   await AsyncStorage.setItem(PERSON_KEY, JSON.stringify(me));
@@ -156,43 +189,82 @@ export const currentAccessToken = (): string | null =>
 
 /** Un token de acceso válido, refrescando si hace falta (una vez a la vez). */
 export async function getAccessToken(force = false): Promise<string | null> {
+  // Sin sesión no se refresca nada (ni lo que quede de la anterior).
+  if (state.status !== 'signedIn') return null;
   if (!force && currentAccessToken()) return accessToken;
   if (refreshing) return refreshing;
-  refreshing = (async () => {
+  const started = epoch;
+  let p: Promise<string | null> | null = null;
+  p = (async () => {
     try {
       const refresh = await deps?.secrets.get(REFRESH_KEY);
-      if (!deps || !refresh) return null;
+      if (epoch !== started) return null;
+      if (!deps || !refresh) {
+        // Un 401 sin con qué refrescar: la sesión no sirve. A la puerta.
+        if (force) await endSession('revoked');
+        return null;
+      }
       const tokens = await deps.refresh(refresh);
+      // Se ha salido (o ha entrado otra persona) mientras tanto: ni se usa ni
+      // se guarda.
+      if (epoch !== started) return null;
       setAccess(tokens);
       await deps.secrets.set(REFRESH_KEY, tokens.refreshToken);
       return tokens.accessToken;
     } catch (e) {
-      if (isComunicaApiError(e) && e.code === 'unauthenticated') {
+      if (
+        epoch === started &&
+        isComunicaApiError(e) &&
+        e.code === 'unauthenticated'
+      ) {
         await endSession('revoked');
       }
       // Sin red: se sigue «dentro» con lo guardado; la petición fallará por
       // red y la cola reintentará.
       return null;
     } finally {
-      refreshing = null;
+      // El de otra época ya no es «el refresco en vuelo».
+      if (refreshing === p) refreshing = null;
     }
   })();
-  return refreshing;
+  refreshing = p;
+  return p;
 }
 
 async function endSession(reason: 'signedOut' | 'revoked') {
+  // Primero, que nada de esta sesión siga: época nueva, sin token, la cola
+  // apagada y el estado fuera. Luego se borra lo guardado.
+  epoch += 1;
   accessToken = null;
   accessExp = 0;
-  await deps?.secrets.remove(REFRESH_KEY);
-  await AsyncStorage.removeItem(PERSON_KEY);
+  refreshing = null;
+  sessionEndHooks.forEach((fn) => {
+    try {
+      fn();
+    } catch (e) {
+      logger.warn('[comunica] al acabar la sesión', e);
+    }
+  });
   emit({ status: 'signedOut', me: null, reason });
+  try {
+    await deps?.secrets.remove(REFRESH_KEY);
+    await AsyncStorage.removeItem(PERSON_KEY);
+  } catch (e) {
+    logger.warn('[comunica] no se ha podido borrar la sesión', e);
+  }
 }
 
-/** Salir: revoca en el servidor (si se puede) y borra TODO lo del área. */
+/**
+ * Salir, en este orden: se acaba la sesión (la cola se apaga y ya no hay
+ * token), se revoca en el servidor si se puede y se borra TODO lo del área.
+ * Así ningún reintento de la cola escribe ni sube nada después de borrar.
+ */
 export async function signOut(): Promise<void> {
-  const refresh = await deps?.secrets.get(REFRESH_KEY);
-  if (refresh && deps) {
-    await deps.logout(refresh).catch(() => {});
+  const refresh = await deps?.secrets.get(REFRESH_KEY).catch(() => null);
+  const logout = deps?.logout;
+  await endSession('signedOut');
+  if (refresh && logout) {
+    await logout(refresh).catch(() => {});
   }
   await clearAll();
   await Promise.all(
@@ -204,7 +276,6 @@ export async function signOut(): Promise<void> {
       }
     }),
   );
-  await endSession('signedOut');
 }
 
 /**
@@ -215,14 +286,24 @@ export function withSession(api: ComunicaApi): ComunicaApi {
   const authed =
     <A extends unknown[], R>(fn: (...a: A) => Promise<R>) =>
     async (...args: A): Promise<R> => {
+      const started = epoch;
+      // Cada paso comprueba que sigue la misma sesión: lo de A nunca se pide
+      // (ni se repite) con el token de B, ni su respuesta llega a B.
+      const call = async () => {
+        if (epoch !== started) throw sessionChanged();
+        const r = await fn(...args);
+        if (epoch !== started) throw sessionChanged();
+        return r;
+      };
       await getAccessToken();
       try {
-        return await fn(...args);
+        return await call();
       } catch (e) {
         if (!isComunicaApiError(e) || e.code !== 'unauthenticated') throw e;
+        if (epoch !== started) throw e;
         const token = await getAccessToken(true);
         if (!token) throw e;
-        return fn(...args);
+        return call();
       }
     };
   return {
@@ -267,6 +348,8 @@ export function __resetSessionForTests(): void {
   accessExp = 0;
   refreshing = null;
   initPromise = null;
+  epoch = 0;
   listeners.clear();
   signOutCleanups.clear();
+  sessionEndHooks.clear();
 }

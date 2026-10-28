@@ -398,13 +398,17 @@ function RollEditor({
       ? 'Guardado en el móvil. Se enviará solo al volver la cobertura.'
       : queued.status === 'sending'
         ? 'Guardando…'
-        : queued.error && !queued.error.auto
-          ? queued.error.reason === 'session_in_future'
-            ? 'Esta sesión aún no ha llegado.'
-            : queued.error.code === 'forbidden'
-              ? 'No tienes acceso a esto.'
-              : queued.error.message
-          : 'No se ha guardado. Tus marcas siguen aquí: vuelve a guardar.';
+        : queued.status === 'stuck'
+          ? 'Comunica lleva un rato sin responder. Tus marcas siguen en el móvil: pulsa «Reintentar».'
+          : queued.error?.auto
+            ? 'Comunica no responde ahora. Se volverá a intentar sola.'
+            : queued.error?.reason === 'session_in_future'
+              ? 'Esta sesión aún no ha llegado.'
+              : queued.error?.code === 'forbidden'
+                ? 'No tienes acceso a esto.'
+                : queued.error?.code === 'validation' && queued.error.message
+                  ? queued.error.message
+                  : 'No se ha guardado. Tus marcas siguen aquí: vuelve a guardar.';
 
   return (
     <AreaScreen

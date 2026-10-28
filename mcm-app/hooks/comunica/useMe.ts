@@ -11,6 +11,7 @@ import { STALE, useAreaQuery } from './useAreaQuery';
 export function useMe() {
   const q = useAreaQuery({
     key: ['me'],
+    route: 'me',
     fetch: () => getComunicaApi().getMe(),
     staleTime: STALE.structure,
   });
