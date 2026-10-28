@@ -2,7 +2,9 @@
 //
 //   · `participants` (la lista de un grupo): bajo el nombre, lo matizado
 //     (Parcial, Justificada) y el motivo; a la derecha, la racha de ausencias.
-//     Toca: sin marcar → vino → no vino.
+//     Toca: sin marcar → vino → no vino. En la lista de un evento (plan 07)
+//     lleva además `line` («4 EP · M4.1 · Patrulla 3»), la pastilla de otra
+//     delegación (`lead`) y el avatar en el acento si es monitor.
 //   · `monitors` (la lista de monitores, plan 06): una línea fija con sus
 //     grupos y curso, el % pequeño al final (rojo si es bajo, solo con 4
 //     marcas o más) y, debajo, la nota: lo matizado, el aviso en rojo («3
@@ -23,6 +25,7 @@ import type {
 } from '@/services/comunica/contract';
 import { MARK_LABEL, MARK_NOTE, streakLabel } from '@/utils/comunica/marks';
 import { MarkIcon } from '../comun/MarkControl';
+import PersonBadges, { badgesLabel } from '../comun/PersonBadges';
 import PersonRow from '../comun/PersonRow';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 
@@ -61,7 +64,15 @@ interface Common {
 
 type Props = Common &
   (
-    | { mode?: 'participants'; note: string; streak: number }
+    | {
+        mode?: 'participants';
+        note: string;
+        streak: number;
+        /** Lista de un evento: curso, grupo y grupos del evento. */
+        line?: string;
+        lead?: { text: string; color: string; background: string };
+        avatarBackground?: string;
+      }
     | {
         mode: 'monitors';
         /** «C1 · C2 · 2 ESO», «Monitores Apoyo» o «Sin grupo asignado». */
@@ -125,7 +136,27 @@ function RollRow(props: Props) {
       mark ? MARK_NOTE[mark] : undefined,
       props.note || undefined,
     ].filter(Boolean) as string[];
-    subtitle = lines.join(' · ') || undefined;
+    if (props.line !== undefined) {
+      // Evento: la línea fija arriba; lo matizado y el motivo, debajo.
+      subtitle = props.line || undefined;
+      const hasBadges = Object.values(person.badges).some(Boolean);
+      below =
+        hasBadges || lines.length > 0 ? (
+          <>
+            {hasBadges ? <PersonBadges badges={person.badges} /> : null}
+            {lines.length > 0 ? (
+              <Text
+                style={[styles.line, { color: t.textSecondary }]}
+                numberOfLines={2}
+              >
+                {lines.join(' · ')}
+              </Text>
+            ) : null}
+          </>
+        ) : null;
+    } else {
+      subtitle = lines.join(' · ') || undefined;
+    }
     if (props.streak >= 2) {
       right = (
         <View style={styles.right}>
@@ -137,6 +168,8 @@ function RollRow(props: Props) {
       );
     }
     a11y = [
+      props.lead?.text,
+      props.line,
       ...lines,
       props.streak >= 2 ? streakLabel(props.streak) : null,
       mark ? MARK_LABEL[mark] : 'Sin marcar',
@@ -179,7 +212,17 @@ function RollRow(props: Props) {
         person={shown}
         subtitle={subtitle}
         below={below ?? undefined}
-        marksLabel={monitors ? '' : undefined}
+        marksLabel={
+          monitors
+            ? ''
+            : props.line !== undefined
+              ? badgesLabel(person.badges)
+              : undefined
+        }
+        subtitleLead={props.mode !== 'monitors' ? props.lead : undefined}
+        avatarBackground={
+          props.mode !== 'monitors' ? props.avatarBackground : undefined
+        }
         disabled={disabled}
         onPress={() => onTap(id)}
         onLongPress={() => onMore(id)}

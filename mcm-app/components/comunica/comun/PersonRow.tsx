@@ -39,6 +39,8 @@ interface Props {
   onAccessibilityAction?: (name: string) => void;
   /** Una pastilla delante de la línea secundaria («Sin grupo» en ámbar). */
   subtitleLead?: { text: string; color: string; background: string };
+  /** Fondo del avatar (los monitores de un evento, en el acento). */
+  avatarBackground?: string;
 }
 
 export const initials = initialsOf;
@@ -57,6 +59,7 @@ export default function PersonRow({
   accessibilityActions,
   onAccessibilityAction,
   subtitleLead,
+  avatarBackground,
 }: Props) {
   const t = useComunicaTheme();
   const name = `${person.firstName} ${person.lastName}`;
@@ -72,7 +75,7 @@ export default function PersonRow({
 
   const content = (
     <>
-      <PersonAvatar person={person} />
+      <PersonAvatar person={person} background={avatarBackground} />
       <View style={styles.body}>
         <Text style={[styles.name, { color: t.text }]} numberOfLines={2}>
           <Text style={styles.first}>{person.firstName}</Text> {person.lastName}

@@ -47,6 +47,7 @@ import type {
   FollowUpWriteResult,
   MeetingWrite,
   MonitorsRollWrite,
+  EventRollWrite,
   NoticeWrite,
   NoticeWriteResult,
   ParticipantProfile,
@@ -263,6 +264,13 @@ export default function ComunicaAreaProvider({
           getComunicaApi().createSessionToday(e.meta.eventId, {
             clientId: e.clientId,
           }),
+        // Pasar lista en un evento (plan 07): el día viaja en el payload, así
+        // que lo que sube mañana crea la sesión de HOY.
+        'event-roll': (e) =>
+          getComunicaApi().saveEventRoll(e.meta.eventId, {
+            ...(e.payload as Omit<EventRollWrite, 'clientId'>),
+            clientId: e.clientId,
+          }),
       },
       onApplied: (e, result) => {
         if (e.kind === 'roll') {
@@ -317,6 +325,11 @@ export default function ComunicaAreaProvider({
               : old,
           );
           void qc.invalidateQueries({ queryKey: [...key, 'followUps'] });
+        }
+        if (e.kind === 'event-roll') {
+          void qc.invalidateQueries({
+            queryKey: areaKey(['events', e.meta.eventId, 'roll']),
+          });
         }
         if (e.kind === 'membership-group') {
           void qc.invalidateQueries({

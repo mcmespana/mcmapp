@@ -19,7 +19,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 import { Stack, useNavigation, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { themeColors } from '@/constants/colors';
@@ -74,11 +73,12 @@ import {
 import AreaScreen from '../comun/AreaScreen';
 import BottomActionBar from '../comun/BottomActionBar';
 import { confirmAction } from '../comun/confirm';
-import { MarkIcon, MarkLegend } from '../comun/MarkControl';
+import { MarkLegend } from '../comun/MarkControl';
 import Section from '../comun/Section';
 import UploadStatus from '../comun/UploadStatus';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import MarkSheet from './MarkSheet';
+import { Count, Counts, FillButton, Notice } from './RollBits';
 import RollRow from './RollRow';
 import SaveRollButton from './SaveRollButton';
 import ScreenState from './ScreenState';
@@ -433,13 +433,13 @@ function RollEditor({
               {barNotice}
             </Text>
           ) : null}
-          <View style={styles.counts} accessibilityLiveRegion="polite">
+          <Counts>
             <Count mark="yes" label={cameLabel(counts.came)} />
             <Count mark="no_unjustified" label={missedLabel(counts.missed)} />
             {counts.unmarked > 0 ? (
               <Count mark={null} label={unmarkedLabel(counts.unmarked)} warn />
             ) : null}
-          </View>
+          </Counts>
           <SaveRollButton
             label={saveLabel}
             enabled={canSave}
@@ -538,23 +538,10 @@ function RollEditor({
       </View>
 
       {fillLabel ? (
-        <PressableFeedback
-          onPress={() => {
-            h.add();
-            setDraft(markAllUnmarked);
-          }}
-          accessibilityRole="button"
-          style={[
-            styles.allCame,
-            { backgroundColor: t.chip('positive').background },
-          ]}
-        >
-          <PressableFeedback.Scale />
-          <IconSymbol name="checkmark" size={18} color={t.text} />
-          <Text style={[styles.allCameLabel, { color: t.text }]}>
-            {fillLabel}
-          </Text>
-        </PressableFeedback>
+        <FillButton
+          label={fillLabel}
+          onPress={() => setDraft(markAllUnmarked)}
+        />
       ) : null}
 
       <Section>
@@ -629,44 +616,6 @@ function RollEditor({
   );
 }
 
-function Notice({
-  icon,
-  text,
-}: {
-  icon: 'clock' | 'exclamationmark.triangle.fill';
-  text: string;
-}) {
-  const t = useComunicaTheme();
-  return (
-    <View style={styles.notice}>
-      <IconSymbol name={icon} size={16} color={t.warningIcon} />
-      <Text style={[styles.noticeText, { color: t.warningText }]}>{text}</Text>
-    </View>
-  );
-}
-
-function Count({
-  label,
-  mark,
-  warn,
-}: {
-  label: string;
-  mark: Mark;
-  warn?: boolean;
-}) {
-  const t = useComunicaTheme();
-  return (
-    <View style={styles.count}>
-      <MarkIcon mark={mark} size={14} />
-      <Text
-        style={[styles.countText, { color: warn ? t.warningText : t.text }]}
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   head: { gap: 6 },
   day: { ...typography.h3 },
@@ -674,29 +623,10 @@ const styles = StyleSheet.create({
   small: { ...typography.caption },
   centerText: { textAlign: 'center' },
   center: { alignItems: 'center', gap: 2 },
-  notice: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  noticeText: { ...typography.caption, flex: 1 },
   outcome: { padding: 12, borderRadius: radii.md, gap: 8 },
   nextSteps: { flexDirection: 'row', gap: 24 },
   link: { ...typography.button },
   skip: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
   tapTarget: { minHeight: 44, justifyContent: 'center' },
-  allCame: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    minHeight: 48,
-    borderRadius: radii.md,
-  },
-  allCameLabel: { ...typography.button },
   help: { gap: 8 },
-  counts: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  count: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  countText: { ...typography.caption, fontWeight: '600' },
 });
