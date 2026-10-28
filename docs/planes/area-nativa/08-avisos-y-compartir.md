@@ -1,7 +1,32 @@
 # 08 — Avisos y compartir
 
-> **Estado:** 🟢 listo para ejecutar en `nuevoComunicaChulo` · **Depende de:** 01 · **Tamaño:** M ·
+> **Estado:** ✅ hecho el 28/10/2026 (tareas 1-9; el botón «Compartir» queda
+> listo en `components/comunica/eventos/ShareEventButton.tsx` para montarlo en
+> la cabecera de la pantalla del evento cuando exista, plan 07) · **Depende de:** 01 · **Tamaño:** M ·
 > **Índice:** [README.md](README.md)
+>
+> **Cómo quedó (y en qué se separa de lo escrito abajo):**
+> - El registro del móvil lo hace `ComunicaBackground` (raíz) **por la cola de
+>   la persona**, que vive en el proveedor del área: la cola se publica a la
+>   raíz por `services/comunica/bridge.ts` (`useAreaBridge`). Si en un
+>   arranque no se abre la pestaña Comunica, el alta espera a que se abra.
+> - La baja al salir usa un gancho nuevo de `session.ts`,
+>   `addBeforeSignOut` (con la sesión aún viva y 3 s de tope en total), porque
+>   `addSignOutCleanup` corre ya sin token. Olvidar el `deviceId` y cancelar
+>   los avisos locales van en `addSignOutCleanup`.
+> - El `deviceId`, la huella y las preferencias van en AsyncStorage con
+>   claves `@mcm_comunica_*` (no `@comunica/`, que `nativeStores.ts` muda a
+>   SQLite en cada arranque).
+> - Tercer interruptor: «Listas sin subir» (el aviso local), que el plan
+>   pedía respetar pero no listaba. Las listas que cuenta incluyen las que
+>   están «subiendo» (si el sistema duerme la app a mitad, quedan pendientes).
+> - Las claves de consulta reales que se refrescan: `['pasar-lista','today']`,
+>   `['pasar-lista','groups']`, `['grupos','group',id]` y `['grupos','people']`.
+> - `eventShare.ts` define su propio `ShareableEvent`; si el evento no trae
+>   `share` del servidor, calcula el enlace como el plugin (`published` +
+>   `slug` → pública; si no, la ficha del área). Admite `registrationOpensOn`
+>   para no poner plazo a una inscripción aún no abierta.
+> - En web «Simular aviso» no hace nada (no hay avisos locales).
 
 ## Para qué y para quién
 
@@ -249,3 +274,10 @@ ya lo enseñe. Analítica: `notificacion_abierta` con `categoria: 'comunica'`, s
    ¿Se añade al plan 05?
 3. **El texto del plazo.** F5 pone «Apúntate antes del 5/11»; `EVENTOS.md` §5.2 y el código dicen que
    el día de fin cuenta entero. Va «hasta el 5 de noviembre», por el código. ¿Confirmas?
+4. **(28/10, al ejecutar)** ¿Avisos del área sin abrir la pestaña? La cola vive en el proveedor de la
+   pestaña Comunica, así que si en un arranque nadie la abre, ni el alta del móvil ni la subida de lo
+   pendiente ocurren hasta que se abra (el recordatorio local sí lee la cola guardada). Subir el motor
+   del área a la raíz lo arreglaría, pero toca el plan 01. Se queda así salvo que digas lo contrario.
+5. **(28/10)** «Simular aviso» con la app delante no se ve: la app esconde todos los avisos en primer
+   plano (`NotificationHandler.ts`, para no duplicar la campana). ¿Se enseñan los del área en primer
+   plano como banner? Hoy no.

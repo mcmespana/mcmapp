@@ -199,6 +199,77 @@ coordinación y acompañamiento vigentes (`alcance-coord`).
 - `PUT /v1/memberships/:id/group` (el de Grupos y fichas) vincula también a
   un monitor `unassigned.kind = 'none'`.
 
+### Avisos en el móvil (plan 08)
+
+Registro del móvil y preferencias. Lo que manda el servidor va como
+**requisitos** (abajo), no como rutas: no hay más endpoints que estos dos.
+
+- `POST /v1/devices` `DeviceRegistration` → `WriteResult`. Alta o cambio,
+  **idempotente por `deviceId`** (y por `clientId`). Lo manda la cola del
+  móvil (`key: 'device'`: gana la última) y solo si algo cambió.
+
+  ```
+  DeviceRegistration { clientId, deviceId,        // UUID v4 del móvil; con otra persona, otro
+    pushToken,                                    // ExponentPushToken[…], el mismo proyecto de Expo que el Panel
+    platform: 'ios' | 'android', appVersion,
+    channels: { rollCall: 'comunica-listas', groups: 'comunica-grupos' },  // los que crea ESTE bundle
+    prefs: { rollCallDue: boolean, groupChanges: boolean } }
+  ```
+
+- `DELETE /v1/devices/:deviceId` → 204. Al salir, **directo (no por la
+  cola)**, con la sesión aún viva y 3 s de tope, antes del `logout`. Solo el
+  tuyo: el de otra sesión → `forbidden`; uno que ya no existe, 204.
+- Las dos con sesión (401 sin ella). Ninguna se guarda en la caché del
+  móvil (`persist: false`).
+- **El `data` de cada aviso** (`ComunicaPushData`, zod en `contract.ts`):
+  `{ source: 'comunica', v: 1, id: 'comunica:<uuid>', type:
+  'rollcall_due' | 'group_changed' | 'outbox_pending', groupId?, sessionId? }`.
+  **Sin texto libre** (lo vigila un test) y **sin rutas**: la app decide a
+  dónde va (`utils/comunica/noticeRoutes.ts`). `groupId`/`sessionId` con
+  forma `[A-Za-z0-9_-]{1,64}`; otra versión, otro tipo o ids raros → la app
+  abre la portada.
+
+**Requisitos para el plan del servidor** (no se diseñan aquí):
+
+1. Guardar los dispositivos. **Un `pushToken`, un dispositivo y una
+   persona**: si llega con otro `deviceId`, el anterior se borra. Al cerrar
+   o revocar una sesión, borrar sus dispositivos. Borrar los que Expo
+   devuelva como `DeviceNotRegistered`.
+2. Mandar por la Expo Push API, como el Panel, con el `channelId` que
+   declaró el móvil en `channels` (nunca uno escrito a mano: un canal que la
+   app no declara, Android lo tira), `data` según `ComunicaPushData`, **sin
+   `badge`** (pisaría el contador de la campana) y sin `categoryId`. Si el
+   proyecto de Expo tiene la seguridad de push activada, su token de acceso
+   va como secreto del servidor.
+3. **Ni nombres completos ni salud** en el título, el cuerpo o `data`: la
+   pantalla bloqueada la ve cualquiera y el texto pasa por Expo, Apple y
+   Google. Solo nombre del grupo, fecha y recuentos; si hace falta un nombre,
+   el de pila y la inicial («Lucía H.», decisión `avisos-nombres`, con
+   `shortChildName()`; con dos, «Lucía H. y 1 más»).
+4. «¿Has pasado lista?»: a los monitores vigentes del grupo, una vez por
+   sesión y grupo, **después** del fin de la sesión y solo si no hay lista
+   (ni pasada ni «sin registro»), en grupos que pasan lista; nada entre las
+   22:00 y las 8:00 de Madrid. Texto: «¿Has pasado lista?» / «C1 · Los Peques,
+   sábado 25 de octubre. Si ya la tienes en el móvil, ábrela y se sube
+   sola.» Canal `channels.rollCall`; `data` con `groupId` y `sessionId`.
+5. «Novedades en tu grupo»: altas y bajas de chavales en los grupos donde la
+   persona es monitor, agrupadas (una al día por grupo como mucho). Texto:
+   «Novedades en C1 · Los Peques» / «1 chaval nuevo y 1 baja». Canal
+   `channels.groups`; `data` con `groupId`.
+6. Respetar `prefs`. Con las dos en `false`, no se manda nada a ese móvil.
+
+«Tienes N listas sin subir» (`outbox_pending`) no lo manda el servidor: lo
+programa el propio móvil, que es el único que sabe qué hay en su cola.
+
+**Al evento del plan 07** se le añaden, para «Compartir»: `share: { url,
+kind: 'public' | 'area' } | null` (la URL la calcula el servidor: la página
+pública `…/actividades/?e=<slug o id>` si `web_publicar_c`, y si no la ficha
+del área `…/ap/?internalpage=single_stic_events&action=detail&id=…`; `null`
+= no se comparte), `place?` y `registrationClosesOn?` (`YYYY-MM-DD`, el día
+de fin cuenta entero) y, si se quiere el «aún no abierta», `registrationOpensOn?`.
+Mientras no lleguen, la app calcula el enlace igual con `published` y `slug`
+(`utils/comunica/eventShare.ts`).
+
 ### Salud
 
 - `GET /v1/people/:id/health` → `{ generatedAt, personId, items: [{ kind,
@@ -212,7 +283,7 @@ coordinación y acompañamiento vigentes (`alcance-coord`).
 ## 4. Lo que vendrá
 
 Cada plan de pantallas añade su trozo al ejecutarse (catálogo en el plan 00
-§3): eventos (07), avisos (08), mis
+§3): eventos (07), mis
 datos de monitor (09), familias (11-16) y el pase a la web del legado
 (`POST /v1/web-pass`, plan 10). Y la delegación de trabajo de quien colabora
 con varias (`X-Comunica-Delegation`, plan 17).
