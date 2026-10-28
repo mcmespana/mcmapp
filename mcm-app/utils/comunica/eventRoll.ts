@@ -75,7 +75,7 @@ export interface ListSection {
 export interface Chip {
   key: string;
   label: string;
-  n: number;
+  count: number;
 }
 
 const courseTitle = (p: EventPerson) => p.schoolLevel?.label ?? 'Sin curso';
@@ -165,14 +165,14 @@ export function courseChips(rows: readonly EventRow[]): Chip[] {
     byCourse.set(r.chip, c);
   }
   if (byCourse.size + (monitors > 0 ? 1 : 0) < 2) return [];
-  const chips: Chip[] = [{ key: '', label: 'Todos', n: rows.length }];
+  const chips: Chip[] = [{ key: '', label: 'Todos', count: rows.length }];
   [...byCourse.entries()]
     .sort(
       (a, b) => a[1].order - b[1].order || a[1].label.localeCompare(b[1].label),
     )
-    .forEach(([key, c]) => chips.push({ key, label: c.label, n: c.n }));
+    .forEach(([key, c]) => chips.push({ key, label: c.label, count: c.n }));
   if (monitors > 0) {
-    chips.push({ key: MONITOR_CHIP, label: 'Monitores', n: monitors });
+    chips.push({ key: MONITOR_CHIP, label: 'Monitores', count: monitors });
   }
   return chips;
 }
@@ -322,7 +322,8 @@ export function groupSections(
   ) => {
     const regrouped = people.map((r) => ({ ...r, chip: key }));
     all.push(...regrouped);
-    if (people.length > 0) chips.push({ key, label: title, n: people.length });
+    if (people.length > 0)
+      chips.push({ key, label: title, count: people.length });
     const shown = regrouped.filter((r) => matches(r, chip, q));
     if (shown.length === 0) return;
     const data: ListItem[] = [];
@@ -370,7 +371,7 @@ export function groupSections(
     sections,
     chips:
       chips.length > 0
-        ? [{ key: '', label: 'Todos', n: all.length }, ...chips]
+        ? [{ key: '', label: 'Todos', count: all.length }, ...chips]
         : [],
     rows: all,
   };

@@ -14,14 +14,7 @@
 // ScrollView), con los chips como cabecera pegada.
 
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-  Platform,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Stack, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -64,8 +57,10 @@ import { levelDotOpacity } from '@/utils/comunica/schoolLevels';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState, { isNetwork, OfflineNotice } from '../comun/AreaState';
 import AreaSwitch from '../comun/AreaSwitch';
+import FilterChips from '../comun/FilterChips';
 import PersonMarks, { marksA11y } from '../comun/PersonMarks';
 import PersonRow from '../comun/PersonRow';
+import SearchField from '../comun/SearchField';
 import SyncBadge from '../comun/SyncBadge';
 import UploadStatus, { type UploadState } from '../comun/UploadStatus';
 import { STAGE_COLOR } from '../comun/theme';
@@ -388,58 +383,15 @@ function IndexList({ view, offline }: { view: GruposView; offline: boolean }) {
         );
       case 'chips':
         return chips ? (
-          <View
-            style={[styles.chipsBar, { backgroundColor: t.backgroundSunken }]}
-          >
-            <Animated.ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chips}
-              accessibilityRole="tablist"
-              accessibilityLabel="Filtrar por curso"
-            >
-              {chips.map((c) => {
-                const active = chip === c.key;
-                const tone = t.chip(
-                  c.warning ? 'warning' : active ? 'accent' : 'neutral',
-                );
-                return (
-                  <PressableFeedback
-                    key={c.key}
-                    onPress={() => {
-                      h.select();
-                      setChip((cur) => toggleChip(cur, c.key));
-                      listRef.current?.scrollToOffset({
-                        offset: 0,
-                        animated: true,
-                      });
-                    }}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    accessibilityLabel={`${c.label}, ${c.count}`}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: active
-                          ? t.accentFill
-                          : tone.background,
-                        borderColor: active ? t.accentFill : t.separator,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.chipLabel,
-                        { color: active ? t.onAccent : tone.text },
-                      ]}
-                    >
-                      {c.label} <Text style={styles.chipCount}>{c.count}</Text>
-                    </Text>
-                  </PressableFeedback>
-                );
-              })}
-            </Animated.ScrollView>
-          </View>
+          <FilterChips
+            chips={chips}
+            value={chip}
+            label="Filtrar por curso"
+            onChange={(k) => {
+              setChip((cur) => toggleChip(cur, k));
+              listRef.current?.scrollToOffset({ offset: 0, animated: true });
+            }}
+          />
         ) : null;
       case 'assignHint':
         return (
@@ -734,35 +686,6 @@ function IndexList({ view, offline }: { view: GruposView; offline: boolean }) {
   );
 }
 
-export function SearchField({
-  value,
-  onChange,
-  placeholder,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-}) {
-  const t = useComunicaTheme();
-  return (
-    <View style={[styles.search, { backgroundColor: t.card }]}>
-      <IconSymbol name="magnifyingglass" size={16} color={t.textMuted} />
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor={t.textMuted}
-        accessibilityLabel={placeholder.replace(/…$/, '')}
-        autoCorrect={false}
-        autoCapitalize="none"
-        clearButtonMode="while-editing"
-        style={[styles.searchInput, { color: t.text }]}
-        {...(Platform.OS === 'web' ? {} : { returnKeyType: 'search' as const })}
-      />
-    </View>
-  );
-}
-
 export function LinkButton({
   label,
   onPress,
@@ -796,26 +719,6 @@ const styles = StyleSheet.create({
   },
   caption: { ...typography.caption },
   center: { textAlign: 'center' },
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    borderRadius: radii.md,
-    minHeight: 44,
-  },
-  searchInput: { ...typography.body, flex: 1, paddingVertical: 8 },
-  chipsBar: { paddingVertical: 8 },
-  chips: { paddingHorizontal: 16, gap: 8 },
-  chip: {
-    minHeight: 44,
-    paddingHorizontal: 12,
-    borderRadius: radii.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    justifyContent: 'center',
-  },
-  chipLabel: { ...typography.subhead, fontWeight: '600' },
-  chipCount: { fontWeight: '400' },
   hint: {
     marginHorizontal: 16,
     marginTop: 8,

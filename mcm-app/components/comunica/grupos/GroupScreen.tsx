@@ -33,7 +33,7 @@ import PersonRow from '../comun/PersonRow';
 import Section from '../comun/Section';
 import SyncBadge from '../comun/SyncBadge';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
-import { SearchField } from './GruposIndexScreen';
+import SearchField from '../comun/SearchField';
 import HealthSheet from './HealthSheet';
 import { SEARCH_EMPTY } from './copy';
 

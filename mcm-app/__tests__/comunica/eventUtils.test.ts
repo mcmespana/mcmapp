@@ -179,9 +179,17 @@ describe('la lista del autobús', () => {
 
   it('los monitores no cuentan en los chips de curso', () => {
     const chips = courseChips(rowsOf());
-    expect(chips[0]).toEqual({ key: '', label: 'Todos', n: rowsOf().length });
-    expect(chips.at(-1)).toEqual({ key: 'monitor', label: 'Monitores', n: 4 });
-    const courses = chips.slice(1, -1).reduce((n, c) => n + c.n, 0);
+    expect(chips[0]).toEqual({
+      key: '',
+      label: 'Todos',
+      count: rowsOf().length,
+    });
+    expect(chips.at(-1)).toEqual({
+      key: 'monitor',
+      label: 'Monitores',
+      count: 4,
+    });
+    const courses = chips.slice(1, -1).reduce((n, c) => n + c.count, 0);
     expect(courses).toBe(rowsOf().length - 4);
   });
 
@@ -193,7 +201,7 @@ describe('la lista del autobús', () => {
       only
         .filter((s) => s.kind !== 'notGoing')
         .reduce((n, s) => n + s.count, 0),
-    ).toBe(c.n);
+    ).toBe(c.count);
     expect(only.some((s) => s.kind === 'monitors')).toBe(false);
     const monitor = rows.find((r) => r.monitor)!;
     const found = courseSections(rows, outRows(roll), {

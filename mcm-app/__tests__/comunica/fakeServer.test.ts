@@ -155,6 +155,15 @@ describe('servidor falso', () => {
       sessionToday: await s.createSessionToday('f-evt-vcom', {
         clientId: CLIENT(26),
       }),
+      // Pasar lista en un evento (plan 07).
+      events: await s.getEvents(),
+      eventRoll: await s.getEventRoll('f-ev-convivencia'),
+      saveEventRoll: await s.saveEventRoll('f-ev-excursion', {
+        clientId: CLIENT(27),
+        sessionId: null,
+        day: s.eventData.events[1].startDay,
+        marks: {},
+      }),
     };
     for (const [name, value] of Object.entries(results)) {
       expect(
