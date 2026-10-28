@@ -9,9 +9,15 @@
 // solo guarda las consultas con `meta.persist === true` y, además, nunca las
 // de salud ni datos personales. Sin `route`, se guarda salvo `persist: false`.
 
+import { useSyncExternalStore } from 'react';
 import { useQuery, type QueryKey } from '@tanstack/react-query';
 import { isComunicaApiError } from '@/services/comunica/client';
 import { ROUTES, type RouteName } from '@/services/comunica/contract';
+import {
+  getWorkingDelegation,
+  subscribeWorkingDelegation,
+  TEAM_BLOCKS,
+} from '@/services/comunica/delegation';
 
 export const STALE = {
   /** Estructura: grupos, personas. */
@@ -38,7 +44,33 @@ interface Options<T> {
   retry?: boolean;
 }
 
-export const areaKey = (key: QueryKey): QueryKey => ['comunica', ...key];
+/**
+ * La clave de una consulta del área. Las de equipo llevan la delegación de
+ * trabajo si no es la de la ficha (`['comunica', 'd:<id>', …]`, plan 17):
+ * cambiar de delegación no mezcla cachés ni enseña un instante lo de la otra.
+ */
+export const areaKeyIn = (key: QueryKey, d: string | null): QueryKey =>
+  d && typeof key[0] === 'string' && TEAM_BLOCKS.includes(key[0])
+    ? ['comunica', `d:${d}`, ...key]
+    : ['comunica', ...key];
+
+/**
+ * La de ahora. ⚠️ En el cuerpo de un componente, NO: el compilador de React
+ * la cree pura y guarda el resultado aunque cambie la delegación (pasó: la
+ * portada se quedaba en la de antes). Ahí, `areaKeyIn(key, useWorkingDelegation())`.
+ * En callbacks y efectos (`setQueryData`, `invalidateQueries`), sí.
+ */
+export const areaKey = (key: QueryKey): QueryKey =>
+  areaKeyIn(key, getWorkingDelegation());
+
+/** La delegación de trabajo, para repintar al cambiarla. */
+export function useWorkingDelegation(): string | null {
+  return useSyncExternalStore(
+    subscribeWorkingDelegation,
+    getWorkingDelegation,
+    getWorkingDelegation,
+  );
+}
 
 export function useAreaQuery<T extends { generatedAt: string }>({
   key,
@@ -51,8 +83,10 @@ export function useAreaQuery<T extends { generatedAt: string }>({
   placeholderData,
   retry = true,
 }: Options<T>) {
+  // Al cambiar de delegación, la clave cambia y se repinta con la otra caché.
+  const delegation = useWorkingDelegation();
   const query = useQuery<T, Error, T>({
-    queryKey: areaKey(key),
+    queryKey: areaKeyIn(key, delegation),
     queryFn: fetch,
     staleTime,
     enabled,

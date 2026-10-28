@@ -31,6 +31,11 @@ import type {
   SetMark,
 } from '@/services/comunica/contract';
 import { useGroups, useRoll, useToday } from '@/hooks/comunica/usePasarLista';
+import {
+  useDelegation,
+  useFollowGroupDelegation,
+} from '@/hooks/comunica/useDelegation';
+import { useGroupDetail } from '@/hooks/comunica/useGrupos';
 import { useOutbox } from '@/hooks/comunica/useOutbox';
 import { useRollDraft } from '@/hooks/comunica/useRollDraft';
 import { useRollSave } from '@/hooks/comunica/useRollSave';
@@ -106,6 +111,11 @@ export default function RollScreen({
   const now = comunicaNow();
 
   const group = groups.data?.groups.find((g) => g.id === groupId);
+  // ¿Un grupo de otra de tus delegaciones? Se mira de cuál y se cambia
+  // (plan 17). Solo si no está entre los de la delegación de ahora.
+  const { several } = useDelegation();
+  const other = useGroupDetail(groups.data && !group && several ? groupId : '');
+  useFollowGroupDelegation(other.data?.delegationId);
   const sessions = useMemo(
     () =>
       group && groups.data

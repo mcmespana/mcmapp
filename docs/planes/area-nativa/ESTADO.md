@@ -117,7 +117,7 @@ marca la activa; en web la barra lleva elementos de más («⏷», «visitapapa�
 
 **3. Por planes:** 03 (catálogo y revisar el territorio con capturas), 04-05
 (lo que dice su fila en la tabla del README); 06, 07, 08 y 09 hechos el 28/10;
-seguir con 17 (varias delegaciones) y 11-16. Preguntas abiertas que dejan 08
+17 (varias delegaciones) hecho en su rama; seguir con 11-16. Preguntas abiertas que dejan 08
 (2: altas y bajas en la ficha del grupo; 3: «hasta el 5»; 4: el motor del
 área sube a la raíz para registrar el móvil sin abrir la pestaña; 5: avisos
 con la app delante) y 09 (2-5, como el plugin mientras tanto).

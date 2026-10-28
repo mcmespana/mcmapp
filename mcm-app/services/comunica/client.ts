@@ -11,6 +11,11 @@
 
 import { z } from 'zod';
 import {
+  DELEGATION_HEADER,
+  delegationForRequest,
+  isTeamPath,
+} from './delegation';
+import {
   EventsResponse,
   EventRollWriteResult,
   EventRollWrite,
@@ -268,6 +273,10 @@ export function createHttpClient({
     retries = 0,
   ): Promise<z.infer<S>> {
     const token = getToken ? await getToken() : null;
+    // La delegación de trabajo (plan 17), solo en lo de equipo.
+    const delegation = isTeamPath(path)
+      ? delegationForRequest(method !== 'GET')
+      : null;
     // Un archivo va en multipart: el `Content-Type` (con su frontera) lo pone
     // `fetch`, y el cuerpo no se pasa a JSON.
     const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
@@ -281,6 +290,7 @@ export function createHttpClient({
             ? { 'Content-Type': 'application/json' }
             : {}),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(delegation ? { [DELEGATION_HEADER]: delegation } : {}),
         },
         body:
           body === undefined

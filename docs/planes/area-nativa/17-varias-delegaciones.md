@@ -1,6 +1,27 @@
 # 17 — Varias delegaciones (la delegación de trabajo)
 
-> **Estado:** ⬜ sin empezar · **Depende de:** 01, 04, 05, 06 · **Tamaño:** M · **Índice:** [README.md](README.md)
+> **Estado:** ✅ hecho (28/10/2026, rama `claude/area-nativa-17-delegaciones`,
+> sale de `nuevoComunicaChulo`) · **Depende de:** 01, 04, 05, 06 · **Tamaño:** M · **Índice:** [README.md](README.md)
+>
+> **Dónde está:** `services/comunica/delegation.ts` (estado, cabecera, qué
+> rutas son de equipo, `withWriteDelegation`), `client.ts` (la cabecera),
+> `outbox.ts` (cada entrada guarda su delegación y sube con ella),
+> `useAreaQuery.ts` (`areaKeyIn`: las claves de equipo llevan `d:<id>` si no
+> es la de la ficha), `hooks/comunica/useDelegation.ts` (selector y
+> `useFollowGroupDelegation`), `comun/DelegationSwitcher.tsx` (en «Hoy», Grupos
+> y fichas y Coordinación) y el falso (persona `delegaciones@ejemplo.org`:
+> Villaclara, monitor sin grupo; Puerto Alto, coordina y lleva P1). Tests:
+> `delegations.test.ts`.
+>
+> **Al hacerlo:** las lecturas van SIEMPRE con la delegación de trabajo; solo
+> las escrituras de la cola llevan la suya (la cola sube de una en una, así
+> que no se pisan). `GET /v1/me` usa la cabecera en vez de `?delegation=`.
+> Elegir la de la ficha se guarda como «ninguna» (las claves de la caché de
+> quien tiene una sola delegación no cambian). ⚠️ Trampa encontrada: el
+> compilador de React memoriza `areaKey(key)` en el cuerpo de un componente
+> (lee un global y lo cree pura): la portada se quedaba en la delegación de
+> antes. En el cuerpo, `areaKeyIn(key, useWorkingDelegation())`; lo vigila un
+> test.
 >
 > Escrito el 28/10/2026 al revisar el plugin: el `main` del plugin lo resolvió
 > el 23/10 (commit `09c3f5e`) y ningún plan del área nativa lo recogía.

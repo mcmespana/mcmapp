@@ -132,7 +132,32 @@ const PERSONA_ROLES: Record<PersonaId, { roles: Role[]; scope: Me['scope'] }> =
       roles: ['monitor', 'coordination', 'accompaniment'],
       scope: 'delegation',
     },
+    // En su delegación (la de la ficha), monitor sin grupo; en Puerto Alto,
+    // abajo (`ROLES_IN`).
+    twoDelegations: { roles: ['monitor'], scope: 'delegation' },
   };
+
+/**
+ * Varias delegaciones (plan 17): las OTRAS delegaciones del equipo de cada
+ * persona y lo que es en cada una. La coordinación solo vale en su delegación.
+ */
+const OTHER_DELEGATIONS: Partial<
+  Record<
+    PersonaId,
+    Record<
+      string,
+      { roles: Role[]; scope: Me['scope']; relations: CoordRelation[] }
+    >
+  >
+> = {
+  twoDelegations: {
+    'f-del-puertoalto': {
+      roles: ['monitor', 'coordination'],
+      scope: 'delegation',
+      relations: [{}],
+    },
+  },
+};
 
 /**
  * Las relaciones VIGENTES de coordinación y de acompañamiento de cada persona
@@ -147,6 +172,7 @@ const TEAM_RELATIONS: Record<PersonaId, CoordRelation[]> = {
   other: [],
   coordinationCom2: [{ stage: 'com', segment: 'com_2' }],
   both: [{}, {}],
+  twoDelegations: [],
 };
 
 export interface FakeServerOptions {
@@ -156,6 +182,11 @@ export interface FakeServerOptions {
    * como `controls.persona`.
    */
   getAccessToken?: () => string | null | Promise<string | null>;
+  /**
+   * La delegación de trabajo de la petición (la cabecera
+   * `X-Comunica-Delegation` del de verdad, plan 17). `null`, la de la ficha.
+   */
+  getDelegation?: (write: boolean) => string | null;
 }
 
 /** Lo que dura el token de acceso del falso (como el de verdad, ~15 min). */
@@ -211,6 +242,8 @@ export function createFakeServer(
   let tokenSeq = 0;
   /** La persona de la petición en curso (la pone `gate`). */
   let current: PersonaId = controls.persona;
+  /** Su delegación de trabajo (`null` = la de la ficha; la pone `gate`). */
+  let currentDelegation: string | null = null;
 
   const now = () => (controls.clock ? new Date(controls.clock) : new Date());
   const nowIso = () =>
@@ -220,6 +253,7 @@ export function createFakeServer(
   const today = () => madridDay(now());
 
   async function gate(route: RouteName, write = false, auth = true) {
+    const wanted = options.getDelegation?.(write) ?? null;
     if (controls.latencyMs > 0) {
       await new Promise((r) => setTimeout(r, controls.latencyMs));
     }
@@ -238,6 +272,18 @@ export function createFakeServer(
         current = controls.persona;
       }
     }
+    if (auth) {
+      // Solo una de SUS delegaciones del equipo (plan 17).
+      if (wanted && !teamDelegationIds(current).includes(wanted)) {
+        throw new ComunicaApiError(
+          'forbidden',
+          'Esa delegación no es tuya',
+          403,
+          'wrong_delegation',
+        );
+      }
+      currentDelegation = wanted;
+    }
     if (controls.failRoute === route || (write && controls.crmDown)) {
       throw new ComunicaApiError('crm_unavailable', 'El CRM no responde', 503);
     }
@@ -248,15 +294,30 @@ export function createFakeServer(
       (k) => data.personas[k].personId === personId,
     );
 
+  /** La de la ficha y las otras donde tiene relación de equipo vigente. */
+  function teamDelegationIds(persona: PersonaId): string[] {
+    const home = data.people.find(
+      (x) => x.id === data.personas[persona].personId,
+    )!.delegationId;
+    return [home, ...Object.keys(OTHER_DELEGATIONS[persona] ?? {})];
+  }
+
+  /** Papeles y alcance EN la delegación de trabajo (plan 17, regla 5). */
+  const rolesIn = (persona: PersonaId) =>
+    (currentDelegation && OTHER_DELEGATIONS[persona]?.[currentDelegation]) ||
+    PERSONA_ROLES[persona];
+
   function meOf(persona: PersonaId): Me {
     const p = data.people.find(
       (x) => x.id === data.personas[persona].personId,
     )!;
-    const { roles, scope } = PERSONA_ROLES[persona];
+    const { roles, scope } = rolesIn(persona);
+    const byId = (id: string) => data.delegations.find((d) => d.id === id)!;
     return {
       personId: p.id,
       name: `${p.firstName} ${p.lastName}`,
-      delegation: data.delegations.find((d) => d.id === p.delegationId)!,
+      delegation: byId(p.delegationId),
+      teamDelegations: teamDelegationIds(persona).map(byId),
       roles,
       scope,
       canSeeHealth: true,
@@ -314,7 +375,7 @@ export function createFakeServer(
 
   const persona = () => data.personas[current];
   const me = () => data.people.find((p) => p.id === persona().personId)!;
-  const delegationId = () => me().delegationId;
+  const delegationId = () => currentDelegation ?? me().delegationId;
   const person = (id: string) => data.people.find((p) => p.id === id);
 
   /** Un grupo de MI delegación, o `forbidden`. */
@@ -403,7 +464,7 @@ export function createFakeServer(
 
   // ── Grupos y fichas (plan 05) ─────────────────────────────────────────────
 
-  const roles = () => PERSONA_ROLES[current].roles;
+  const roles = () => rolesIn(current).roles;
   const requireTeam = () => {
     if (!roles().some((r) => TEAM_ROLES.includes(r))) throw forbidden();
   };
@@ -499,8 +560,13 @@ export function createFakeServer(
     data: () => data,
     gate: (route: RouteName, write?: boolean) => gate(route, write),
     persona: () => current,
-    roles: () => PERSONA_ROLES[current].roles,
-    teamScope: () => unionScope(TEAM_RELATIONS[current]),
+    roles: () => rolesIn(current).roles,
+    teamScope: () =>
+      unionScope(
+        (currentDelegation &&
+          OTHER_DELEGATIONS[current]?.[currentDelegation]?.relations) ||
+          TEAM_RELATIONS[current],
+      ),
     delegationId,
     now,
     nowIso,
@@ -519,7 +585,7 @@ export function createFakeServer(
   const events = createEventRoutes({
     data: () => data,
     gate: (route, write) => gate(route, write),
-    roles: () => PERSONA_ROLES[current].roles,
+    roles: () => rolesIn(current).roles,
     delegationId,
     today,
     nowIso,
@@ -767,8 +833,7 @@ export function createFakeServer(
       );
       const events = data.events.filter((e) => e.delegationId === did);
       const meeting = pendingMeetingOf(data, did, now());
-      const isCoordination =
-        PERSONA_ROLES[current].roles.includes('coordination');
+      const isCoordination = rolesIn(current).roles.includes('coordination');
       return TodayResponse.parse({
         generatedAt: nowIso(),
         rollCalls: data.rolls
@@ -949,9 +1014,13 @@ export function createFakeServer(
     async getGroupDetail(gid) {
       await gate('group');
       requireTeam();
-      const g = myGroup(gid);
+      // Cualquier grupo de sus delegaciones del equipo (plan 17, regla 6).
+      const g = data.groups.find((x) => x.id === gid);
+      if (!g || !teamDelegationIds(current).includes(g.delegationId))
+        throw forbidden();
       return GroupDetail.parse({
         generatedAt: nowIso(),
+        delegationId: g.delegationId,
         group: groupSummaryOf(g),
         monitors: g.monitorIds
           .map((id) => person(id)!)

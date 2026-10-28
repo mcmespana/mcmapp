@@ -33,6 +33,7 @@
 // sesión de B.
 
 import { isComunicaApiError } from './client';
+import { getWorkingDelegation, withWriteDelegation } from './delegation';
 import { readDrawer, writeDrawer } from './storage';
 import { logger } from '@/utils/logger';
 
@@ -193,7 +194,13 @@ export function createOutbox({
     if (disposed) return;
     const sentClientId = entry.clientId;
     try {
-      const result = await handler(entry);
+      // Sube con la delegación con la que se hizo (plan 17): '' = la de la
+      // ficha; sin el dato (entradas de antes), la de trabajo.
+      const d = entry.meta.delegation;
+      const result = await withWriteDelegation(
+        d === undefined ? undefined : d || null,
+        () => handler(entry),
+      );
       if (disposed) return;
       // Si mientras subía se encoló otra versión, esa sigue pendiente.
       const currentEntry = list.find((e) => e.key === entry.key);
@@ -284,8 +291,12 @@ export function createOutbox({
       listeners.forEach((l) => l());
     },
 
-    async enqueue({ key, kind, payload, clientId, meta = {} }) {
+    async enqueue({ key, kind, payload, clientId, meta: given = {} }) {
       if (disposed) return;
+      const meta =
+        'delegation' in given
+          ? given
+          : { ...given, delegation: getWorkingDelegation() ?? '' };
       const t = now();
       const prev = list.find((e) => e.key === key);
       const entry: OutboxEntry = {

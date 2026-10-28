@@ -41,7 +41,7 @@ import type {
   SetMark,
   Stage,
 } from '@/services/comunica/contract';
-import { areaKey } from '@/hooks/comunica/useAreaQuery';
+import { areaKeyIn, useWorkingDelegation } from '@/hooks/comunica/useAreaQuery';
 import {
   COORDINATION_KEYS,
   coordinationOutboxKeys,
@@ -112,8 +112,11 @@ export default function MonitorsRollScreen({
   const isDark = useColorScheme() === 'dark';
   const tint = Platform.OS === 'ios' ? themeColors(isDark).headerTint : '#fff';
   const q = useMonitorsRoll({ kind, stage, session: sessionId });
-  const queryKey = areaKey(
+  // En el cuerpo, con la delegación explícita (ver `areaKey`).
+  const delegation = useWorkingDelegation();
+  const queryKey = areaKeyIn(
     COORDINATION_KEYS.monitorsRoll(kind, stage, sessionId),
+    delegation,
   );
   useFlushOutboxOnMount();
   const data = q.data;

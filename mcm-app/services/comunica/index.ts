@@ -14,6 +14,7 @@
 // datos inventados mientras no haya servidor.
 
 import { createHttpClient, type ComunicaApi } from './client';
+import { delegationForRequest } from './delegation';
 import { createFakeServer, type FakeServer } from './fake';
 import { secureSecretStore } from './nativeStores';
 import { clearPhotoCache } from './photos';
@@ -91,7 +92,13 @@ export function getComunicaApi(): ComunicaApi {
   if (t.kind === 'off') throw new Error('Área nativa de Comunica sin servidor');
   let raw: ComunicaApi;
   if (t.kind === 'fake') {
-    fake = createFakeServer({}, { getAccessToken: currentAccessToken });
+    fake = createFakeServer(
+      {},
+      {
+        getAccessToken: currentAccessToken,
+        getDelegation: delegationForRequest,
+      },
+    );
     raw = fake;
     // Los mandos del falso, a mano para las capturas de web (Playwright no
     // llega al Laboratorio Alpha). Solo el falso: datos inventados.

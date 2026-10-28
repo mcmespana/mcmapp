@@ -360,6 +360,35 @@ Mientras no lleguen, la app calcula el enlace igual con `published` y `slug`
   con conexión: la app no lo pone en la cola** (el archivo no se guarda en el
   móvil); reintentar va con el mismo `clientId`.
 
+### Varias delegaciones (plan 17)
+
+Quien colabora con otra delegación (coordina Burriana siendo de Castellón)
+trabaja con la que elige en un selector. Origen: `sticpa_pl_delegation()`,
+`sticpa_pl_team_delegations()` y «Varias delegaciones» de
+`PASAR-LISTA-COORDINACION.md` del plugin (23/10/2026).
+
+- `Me.teamDelegations: Delegation[]` (opcional): la de la ficha **la
+  primera** y cada una donde tenga una relación **vigente** de monitor,
+  coordinación o acompañamiento. Ser participante no cuenta. Sin el campo, la
+  app entiende que solo hay la de la ficha. `Me.delegation` sigue siendo la de
+  la ficha: manda en lo personal (planes 11-16).
+- **Cabecera `X-Comunica-Delegation: <id>`** en toda petición de equipo
+  (Pasar Lista, Grupos y fichas, Coordinación, eventos, y `GET /v1/me`). Sin
+  cabecera, la de la ficha. Si no es una de `teamDelegations`, 403 con
+  `reason: 'wrong_delegation'`. No la llevan: `/v1/auth/…`, `/v1/me/monitor`,
+  `/v1/me/documents`, `/v1/devices`, `/v1/profiles/…` y `/v1/web-pass` (lo
+  personal), y el servidor la ignora ahí.
+- `GET /v1/me` con la cabecera devuelve `roles` y `scope` **de esa
+  delegación**: la coordinación de Burriana no vale en Castellón. Una relación
+  sin delegación cuenta solo en la de la ficha.
+- `GET /v1/groups/:id` lleva `delegationId` y se sirve para **cualquier**
+  grupo de las delegaciones del equipo (no solo la de trabajo): si no es la de
+  trabajo, la app cambia el selector (un enlace o un aviso a un grupo de
+  Burriana abre Burriana).
+- **Las escrituras** llevan la cabecera de la delegación con la que se
+  hicieron: la cola guarda la delegación en cada entrada y sube con esa,
+  aunque luego se cambie el selector.
+
 ### Salud
 
 - `GET /v1/people/:id/health` → `{ generatedAt, personId, items: [{ kind,
@@ -374,5 +403,4 @@ Mientras no lleguen, la app calcula el enlace igual con `published` y `slug`
 
 Cada plan de pantallas añade su trozo al ejecutarse (catálogo en el plan 00
 §3): familias (11-16) y el pase a la web del legado
-(`POST /v1/web-pass`, plan 10). Y la delegación de trabajo de quien colabora
-con varias (`X-Comunica-Delegation`, plan 17).
+(`POST /v1/web-pass`, plan 10).

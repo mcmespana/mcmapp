@@ -14,6 +14,7 @@ import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import type { ParticipantRow } from '@/services/comunica/contract';
 import { isComunicaApiError } from '@/services/comunica/client';
+import { useFollowGroupDelegation } from '@/hooks/comunica/useDelegation';
 import { useGroupDetail } from '@/hooks/comunica/useGrupos';
 import { useMe } from '@/hooks/comunica/useMe';
 import { coordinationAccess } from '@/utils/comunica/scope';
@@ -43,6 +44,7 @@ const line = (p: ParticipantRow) =>
 
 export default function GroupScreen({ groupId }: { groupId: string }) {
   const q = useGroupDetail(groupId);
+  useFollowGroupDelegation(q.data?.delegationId);
   const t = useComunicaTheme();
   const title = q.data ? groupLabel(q.data.group) : 'Grupo';
   const forbidden = isComunicaApiError(q.error) && q.error.code === 'forbidden';

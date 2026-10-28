@@ -39,8 +39,12 @@ export function dehydrateArea(qc: QueryClient): DehydratedState {
  */
 export const MAX_SAVED_CHARS = 1_000_000;
 
-const isFicha = (key: readonly unknown[]) =>
-  key[1] === 'grupos' && key[2] === 'person';
+/** Una ficha, con o sin la delegación de trabajo delante (`d:<id>`, plan 17). */
+const isFicha = (key: readonly unknown[]) => {
+  const k =
+    typeof key[1] === 'string' && key[1].startsWith('d:') ? key.slice(1) : key;
+  return k[1] === 'grupos' && k[2] === 'person';
+};
 
 /**
  * Si la caché no cabe, se quitan fichas (de la más vieja a la más nueva) hasta

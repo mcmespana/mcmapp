@@ -70,6 +70,7 @@ import NotificationPermissionBanner from '@/components/NotificationPermissionBan
 import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
 import DateCapsule from '../comun/DateCapsule';
+import DelegationSwitcher from '../comun/DelegationSwitcher';
 import RecordCard from '../comun/RecordCard';
 import RoleChip from '../comun/RoleChip';
 import NavRow from '../comun/NavRow';
@@ -96,6 +97,8 @@ export default function ComunicaHome() {
         Promise.all([groups.refetch(), today.refetch(), me.refetch()])
       }
     >
+      {/* Quien trabaja con varias delegaciones elige aquí (plan 17). */}
+      <DelegationSwitcher />
       <AreaState
         query={groups}
         skeleton="cards"

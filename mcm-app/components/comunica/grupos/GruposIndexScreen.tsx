@@ -57,6 +57,7 @@ import { levelDotOpacity } from '@/utils/comunica/schoolLevels';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState, { isNetwork, OfflineNotice } from '../comun/AreaState';
 import AreaSwitch from '../comun/AreaSwitch';
+import DelegationSwitcher from '../comun/DelegationSwitcher';
 import FilterChips from '../comun/FilterChips';
 import PersonMarks, { marksA11y } from '../comun/PersonMarks';
 import PersonRow from '../comun/PersonRow';
@@ -104,6 +105,7 @@ export default function GruposIndexScreen({ view }: { view: GruposView }) {
       />
       {main.data === undefined ? (
         <AreaScreen onRefresh={async () => main.refetch()}>
+          <DelegationSwitcher />
           <AreaState
             query={main}
             skeleton={view === 'groups' ? 'cards' : 'list'}
@@ -356,6 +358,7 @@ function IndexList({ view, offline }: { view: GruposView; offline: boolean }) {
       case 'controls':
         return (
           <View style={styles.controls}>
+            <DelegationSwitcher />
             {offline ? <OfflineNotice /> : null}
             <SegmentedControl
               options={VIEWS}

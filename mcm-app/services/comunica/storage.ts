@@ -16,8 +16,14 @@
 import { defaultKvBackend } from './nativeStores';
 import { logger } from '@/utils/logger';
 
-export type Drawer = 'queries' | 'outbox' | 'drafts';
-const DRAWERS: readonly Drawer[] = ['queries', 'outbox', 'drafts'];
+/** `delegation`: la delegación de trabajo elegida (plan 17); no es secreta. */
+export type Drawer = 'queries' | 'outbox' | 'drafts' | 'delegation';
+const DRAWERS: readonly Drawer[] = [
+  'queries',
+  'outbox',
+  'drafts',
+  'delegation',
+];
 
 const PREFIX = '@comunica';
 /** Personas con algo guardado, para poder borrarlo todo al salir. */

@@ -67,6 +67,7 @@ import {
   type SessionState,
 } from '@/services/comunica/session';
 import { readDrawer, writeDrawer } from '@/services/comunica/storage';
+import { setWorkingDelegation } from '@/services/comunica/delegation';
 import type { MonitorChanges } from '@/utils/comunica/monitorProfile';
 import { dehydrateArea, fitForStorage } from '@/services/comunica/persist';
 import { areaKey } from '@/hooks/comunica/useAreaQuery';
@@ -167,6 +168,23 @@ export default function ComunicaAreaProvider({
       qc.invalidateQueries({ queryKey: ['comunica'] });
     });
   }, [qc, available]);
+
+  // La delegación de trabajo de ESTA persona (plan 17): la que eligió, si
+  // eligió; al salir o cambiar de persona, la de la ficha.
+  useEffect(() => {
+    setWorkingDelegation(null);
+    if (!personId) return;
+    let cancelled = false;
+    const offEnd = onSessionEnd(() => setWorkingDelegation(null));
+    void readDrawer<string>(personId, 'delegation').then((saved) => {
+      if (!cancelled && typeof saved === 'string' && saved)
+        setWorkingDelegation(saved);
+    });
+    return () => {
+      cancelled = true;
+      offEnd();
+    };
+  }, [personId]);
 
   // La caché de ESTA persona: se recupera al entrar y se guarda al cambiar.
   useEffect(() => {

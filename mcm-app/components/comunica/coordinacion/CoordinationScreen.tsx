@@ -46,6 +46,7 @@ import {
   withPendingAssignments,
 } from '@/utils/comunica/team';
 import AreaScreen from '../comun/AreaScreen';
+import DelegationSwitcher from '../comun/DelegationSwitcher';
 import AreaState from '../comun/AreaState';
 import NavRow from '../comun/NavRow';
 import PersonRow from '../comun/PersonRow';
@@ -180,6 +181,7 @@ function Coordination({
 
   return (
     <AreaScreen onRefresh={refetch}>
+      <DelegationSwitcher />
       <Text style={[styles.subtitle, { color: t.textSecondary }]}>
         {me ? coordinationSubtitle(me) : ''}
       </Text>

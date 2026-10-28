@@ -209,7 +209,12 @@ export type PersonaId =
   /** Coordinación de COM · COM 2 (alcance acotado). */
   | 'coordinationCom2'
   /** Coordina toda la delegación y además acompaña (y es monitor de M1). */
-  | 'both';
+  | 'both'
+  /**
+   * De Villaclara (su ficha), monitor sin grupo allí, y coordina Puerto Alto,
+   * donde además lleva P1 (plan 17, «varias delegaciones»).
+   */
+  | 'twoDelegations';
 
 export interface FakeMonitorRoll {
   sessionId: string;
@@ -697,6 +702,17 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
     season: SEASON,
   });
 
+  // Varias delegaciones (plan 17): sin azar, al final, para no mover nada.
+  const dual: FakePerson = {
+    id: 'f-per-dos-delegaciones',
+    firstName: 'Sergio',
+    lastName: 'Bellés Vidal',
+    badges: { healthNote: false, noPhotos: false, notHomeAlone: false },
+    delegationId: D1,
+  };
+  people.push(dual);
+  groups.find((g) => g.code === 'P1')?.monitorIds.push(dual.id);
+
   const persona = (id: string) => ({ personId: id, name: name(id) });
   return {
     season: SEASON,
@@ -720,6 +736,7 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
       other: persona(personaIds.other),
       coordinationCom2: persona(coord.personaIds.coordinationCom2),
       both: persona(coord.personaIds.both),
+      twoDelegations: persona(dual.id),
     },
     ...coord.data,
   };
@@ -1107,6 +1124,7 @@ export const FAKE_EMAILS: Record<string, PersonaId[]> = {
   'dos@ejemplo.org': ['monitor', 'coordination'],
   'com2@ejemplo.org': ['coordinationCom2'],
   'ambas@ejemplo.org': ['both'],
+  'delegaciones@ejemplo.org': ['twoDelegations'],
 };
 
 export const FAKE_DNIS: Record<string, PersonaId> = {

@@ -18,7 +18,8 @@ import { useComunicaTheme } from './useComunicaTheme';
 export interface FilterChip<K extends string = string> {
   key: K;
   label: string;
-  count: number;
+  /** Sin número, el chip solo lleva el nombre. */
+  count?: number;
   warning?: boolean;
 }
 
@@ -56,7 +57,9 @@ export default function FilterChips<K extends string>({
               }}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={`${c.label}, ${c.count}`}
+              accessibilityLabel={
+                c.count === undefined ? c.label : `${c.label}, ${c.count}`
+              }
               style={[
                 styles.chip,
                 {
@@ -71,7 +74,10 @@ export default function FilterChips<K extends string>({
                   { color: active ? t.onAccent : tone.text },
                 ]}
               >
-                {c.label} <Text style={styles.chipCount}>{c.count}</Text>
+                {c.label}
+                {c.count === undefined ? null : (
+                  <Text style={styles.chipCount}> {c.count}</Text>
+                )}
               </Text>
             </PressableFeedback>
           );

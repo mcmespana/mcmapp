@@ -99,6 +99,15 @@ el plan 07 iba a duplicar los chips y el buscador de Grupos y fichas; pasaron a
     necesita a la persona, sí. El estado de la cola va encima del botón, en
     la `BottomActionBar`.
 
+21. **La clave de una consulta en el cuerpo de un componente, con la
+    delegación explícita**: `areaKeyIn(key, useWorkingDelegation())`, nunca
+    `areaKey(key)`. El compilador de React memoriza lo que cree puro y
+    `areaKey` lee un global: la portada se quedaba en la delegación de antes
+    (plan 17). En callbacks y efectos, `areaKey` sirve. Lo vigila un test.
+22. **Un selector de contexto (delegación) arriba del todo y fuera de los
+    estados de carga**: si va dentro de `AreaState`, desaparece mientras carga
+    lo de la otra y parece que no ha hecho nada.
+
 ## 3. Cómo se comprueba (antes de cada commit con pantallas)
 
 - Tests: `npx tsc --noEmit && npm run lint && npm test` (en particular

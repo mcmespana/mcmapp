@@ -4,6 +4,20 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-29 00:30 — Área nativa de Comunica: varias delegaciones (plan 17, rama `claude/area-nativa-17-delegaciones`)
+
+- Quien colabora con otra delegación además de la suya (coordina o lleva un
+  grupo allí) elige con cuál trabaja en un selector arriba de «Hoy», Grupos y
+  fichas y Coordinación. Solo sale con más de una; se recuerda por persona y
+  se borra al salir.
+- Todo lo de equipo va con esa delegación (cabecera
+  `X-Comunica-Delegation`); lo personal, con la de la ficha. Cada delegación
+  tiene su caché, y una lista guardada en el móvil sube con la delegación con
+  la que se marcó aunque luego se cambie el selector.
+- Un enlace o un aviso a un grupo de otra de tus delegaciones cambia el
+  selector solo.
+- Servidor falso: `delegaciones@ejemplo.org` (Villaclara y Puerto Alto).
+
 ## 2026-10-28 23:30 — Área nativa de Comunica: avisos en el móvil y compartir un evento (plan 08, rama `nuevoComunicaChulo`)
 
 - **Avisos del área** («¿Has pasado lista?», «Novedades en tu grupo» y

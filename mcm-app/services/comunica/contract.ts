@@ -103,7 +103,15 @@ export const Me = z.object({
   personId: Id,
   name: z.string(),
   photoUrl: PhotoUrl.optional(),
+  /** La de su ficha: manda en lo personal (eventos, inscripciones, pagos). */
   delegation: Delegation,
+  /**
+   * La de la ficha (la primera) y cada una donde tenga una relación VIGENTE de
+   * monitor, coordinación o acompañamiento (plan 17). Con más de una, sale el
+   * selector de la delegación de trabajo. Sin el campo, solo la de la ficha.
+   */
+  teamDelegations: z.array(Delegation).optional(),
+  /** Papeles y alcance EN la delegación de trabajo (la de la cabecera). */
   roles: z.array(Role),
   /** `'delegation'` = toda la delegación; si no, las etapas/segmentos que ve. */
   scope: z.union([
@@ -463,6 +471,11 @@ export type MonitorRow = z.infer<typeof MonitorRow>;
 
 /** `GET /v1/groups/:id` */
 export const GroupDetail = read({
+  /**
+   * La delegación del grupo (plan 17). Se sirve cualquier grupo de las
+   * delegaciones del equipo: si no es la de trabajo, la app cambia el selector.
+   */
+  delegationId: Id.optional(),
   group: GroupSummary,
   monitors: z.array(MonitorRow),
   participants: z.array(ParticipantRow),
