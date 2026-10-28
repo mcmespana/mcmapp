@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { Platform, Switch } from 'react-native';
+import { SystemGray } from '@/constants/colors';
 import { h } from '@/utils/haptics';
 import { useComunicaTheme } from './useComunicaTheme';
 
@@ -28,7 +29,12 @@ export default function AreaSwitch({
         h.toggle();
         onChange(v);
       }}
-      trackColor={{ true: t.accentFill, false: t.separator }}
+      // Apagado: en oscuro el `separator` es el mismo gris que la card y la
+      // pista desaparecía (solo se veía la bolita); va el gris 2 de Apple.
+      trackColor={{
+        true: t.accentFill,
+        false: t.isDark ? SystemGray.dark.gray2 : t.separator,
+      }}
       thumbColor={Platform.OS === 'android' ? '#fff' : undefined}
       accessibilityLabel={label}
       disabled={disabled}

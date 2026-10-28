@@ -140,33 +140,33 @@ function NativeNotices() {
               </Text>
             </View>
           ) : (
-            <View
-              style={[styles.blocked, { backgroundColor: t.warningSoft }]}
-              accessibilityRole="alert"
+            // El mismo aviso ámbar que la portada («Te faltan 2 listas»):
+            // título fuera, una superficie, y la única acción principal.
+            <Section
+              warning
+              title={
+                permission === 'denied'
+                  ? 'Los avisos están desactivados'
+                  : 'Aún no has activado los avisos'
+              }
             >
-              <View style={styles.blockedHead}>
-                <IconSymbol name="bell.slash" size={22} color={t.warningIcon} />
-                <Text style={[styles.blockedTitle, { color: t.warningText }]}>
+              <View style={styles.blocked}>
+                <Text style={[styles.body, { color: t.text }]}>
                   {permission === 'denied'
-                    ? 'Los avisos están desactivados'
-                    : 'Aún no has activado los avisos'}
+                    ? 'Primero activa los avisos de MCM App en Ajustes.'
+                    : 'Te recordamos pasar lista y te avisamos si una lista no se ha subido.'}
                 </Text>
+                <AreaPrimaryButton
+                  label={
+                    permission === 'denied'
+                      ? 'Abrir Ajustes'
+                      : 'Activar los avisos'
+                  }
+                  icon="bell.fill"
+                  onPress={() => void activate()}
+                />
               </View>
-              <Text style={[styles.body, { color: t.text }]}>
-                {permission === 'denied'
-                  ? 'Primero activa los avisos de MCM App en Ajustes.'
-                  : 'Te recordamos pasar lista y te avisamos si una lista no se ha subido.'}
-              </Text>
-              <AreaPrimaryButton
-                label={
-                  permission === 'denied'
-                    ? 'Abrir Ajustes'
-                    : 'Activar los avisos'
-                }
-                icon="bell.fill"
-                onPress={() => void activate()}
-              />
-            </View>
+            </Section>
           )}
 
           <Section title="Te avisamos de">
@@ -281,9 +281,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   statusText: { ...typography.body, flex: 1 },
-  blocked: { borderRadius: radii.lg, padding: 16, gap: 12 },
-  blockedHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  blockedTitle: { ...typography.body, fontWeight: '700', flex: 1 },
+  blocked: { padding: 16, gap: 16 },
   body: { ...typography.body },
   row: {
     flexDirection: 'row',
