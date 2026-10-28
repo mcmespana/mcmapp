@@ -13,7 +13,8 @@
 //              y la ficha del monitor (plan 06).
 //   acceso-codigo, acceso-elegir → entrar (plan 02; «Entra en tu área» es la
 //              propia puerta cuando no hay sesión).
-//   yo       → tu cuenta y salir.
+//   yo       → tu cuenta y salir (carpeta: avisos y mis datos de monitor,
+//              planes 08 y 09).
 //   web      → el legado abierto a propósito (comparar, o lo que no es nativo).
 //   muestra  → los componentes del área de un vistazo (solo desarrollo/preview).
 //
@@ -100,7 +101,7 @@ export default function ComunicaLayout() {
         />
         <Stack.Screen name="acceso-codigo" options={{ title: 'Código' }} />
         <Stack.Screen name="acceso-elegir" options={{ title: 'Elegir' }} />
-        <Stack.Screen name="yo" options={{ title: 'Tu cuenta' }} />
+        <Stack.Screen name="yo/index" options={{ title: 'Tu cuenta' }} />
         <Stack.Screen name="web" options={{ headerShown: false }} />
         <Stack.Screen name="muestra" options={{ title: 'Muestra' }} />
       </Stack>
