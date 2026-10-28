@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-28 10:30 — Paquetes nativos del área privada en la 2.1 (aún sin usar)
+
+- Añadidos `expo-secure-store`, `expo-sqlite` (con SQLCipher), `expo-local-authentication`, `expo-intent-launcher` y `expo-image-picker` con sus plugins en `app.json`, para que el área privada nativa pueda llegar luego por OTA sobre la 2.1. Todavía no hay código que los use.
+- Textos de permisos en castellano: Face ID, fotos y cámara. El de la cámara ahora cubre el escáner QR y las fotos de documentos (los dos plugins escriben la misma clave). Micrófono del selector de fotos desactivado.
+- Requiere build nativo: no llega por OTA.
+
 ## 2026-10-19 12:00 — Módulo NFC instalado (aún sin usar)
 
 - Añadido `react-native-nfc-manager` y su plugin en `app.json` (permiso NFC + entitlement NDEF en iOS) para que el próximo build nativo ya lo incluya. Todavía no hay código que lo use.

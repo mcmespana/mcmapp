@@ -13,20 +13,21 @@
 
 ## 📍 Estado a 2026-10-08
 
-| Paso                                                   | Estado                                                                                                    |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| §0 Desplegar la Cloud Function del calendario          | ⏳ **Sin hacer** (no bloquea)                                                                             |
-| §2.1–2.4 Sentry y Aptabase (cuentas + claves)          | ✅ Hecho (usuario, antes del 2026-10-08)                                                                  |
-| §2.5 Credenciales de la NSE                            | ⏳ Se resuelven en el primer build de iOS (quédate delante)                                               |
-| §2.6 Huellas SHA-1 de Android                          | ⏳ Sin confirmar                                                                                          |
-| §3 Comprobaciones en frío (lint/tsc/test)              | ✅ En verde el 2026-10-08                                                                                 |
-| `disableAntiBrickingMeasures` fuera de `app.json`      | ✅ Quitado el 2026-10-08 (`[skip-ota]`)                                                                   |
-| §5 "Subrayar" en el menú nativo                        | ✅ Probado                                                                                                |
-| §5 iPad horizontal                                     | ➖ No se prueba en físico (decisión del usuario: "confiamos")                                             |
-| §5 Pantallas de la pasada de diseño (`PLAN_DISENO` H9) | ✅ Verificadas en dispositivo — ya no bloquea publicar                                                    |
-| §5 Canales de Android en un Android real               | ⏳ **Sin hacer**                                                                                          |
-| §5 Resto del checklist                                 | ⏳ Pendiente de la build de desarrollo                                                                    |
-| §6 Política de privacidad + fichas de las tiendas      | ⏳ **Bloquea publicar.** Con la clave de Aptabase ya creada hay que declararlo (o no meterla en el build) |
+| Paso                                                   | Estado                                                                                                                                                                              |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §0 Desplegar la Cloud Function del calendario          | ⏳ **Sin hacer** (no bloquea)                                                                                                                                                       |
+| §2.1–2.4 Sentry y Aptabase (cuentas + claves)          | ✅ Hecho (usuario, antes del 2026-10-08)                                                                                                                                            |
+| §2.5 Credenciales de la NSE                            | ⏳ Se resuelven en el primer build de iOS (quédate delante)                                                                                                                         |
+| §2.6 Huellas SHA-1 de Android                          | ⏳ Sin confirmar                                                                                                                                                                    |
+| §3 Comprobaciones en frío (lint/tsc/test)              | ✅ En verde el 2026-10-08                                                                                                                                                           |
+| `disableAntiBrickingMeasures` fuera de `app.json`      | ✅ Quitado el 2026-10-08 (`[skip-ota]`)                                                                                                                                             |
+| §5 "Subrayar" en el menú nativo                        | ✅ Probado                                                                                                                                                                          |
+| §5 iPad horizontal                                     | ➖ No se prueba en físico (decisión del usuario: "confiamos")                                                                                                                       |
+| §5 Pantallas de la pasada de diseño (`PLAN_DISENO` H9) | ✅ Verificadas en dispositivo — ya no bloquea publicar                                                                                                                              |
+| §5 Canales de Android en un Android real               | ⏳ **Sin hacer**                                                                                                                                                                    |
+| §5 Resto del checklist                                 | ⏳ Pendiente de la build de desarrollo                                                                                                                                              |
+| Paquetes del área privada nativa (sin usar todavía)    | ✅ En `main` desde el 2026-10-28 (`[skip-ota]`): `expo-secure-store`, `expo-sqlite` (SQLCipher), `expo-local-authentication`, `expo-intent-launcher`, `expo-image-picker`. Ver §5.1 |
+| §6 Política de privacidad + fichas de las tiendas      | ⏳ **Bloquea publicar.** Con la clave de Aptabase ya creada hay que declararlo (o no meterla en el build)                                                                           |
 
 ---
 
@@ -502,6 +503,16 @@ se dejó fuera de `production` a propósito porque toca el hook central de datos
 - [ ] Con el móvil en avión: sale lo cacheado, sin pantalla de error.
 - [ ] Cambia algo en Firebase y reabre: el cambio llega sin reinstalar.
 - [ ] Cantoral y Fotos: mismo hook, comprobar que no tardan más que antes.
+
+**Paquetes del área privada nativa** (entran en esta build sin usarse; el área
+nativa llega después por OTA, primero solo en modo alpha):
+
+- [ ] La app arranca y se usa con normalidad (los cinco módulos solo se cargan;
+      no hay pantalla que los llame todavía).
+- [ ] En iOS, Ajustes → MCM App: los textos de **Cámara** y **Fotos** salen en
+      castellano y hablan del cantoral y del área privada.
+- [ ] El escáner QR de playlists y del coro sigue pidiendo la cámara y funciona
+      (comparte el texto del permiso con el selector de fotos).
 
 ### 5.2 Lo de siempre (regresión)
 
