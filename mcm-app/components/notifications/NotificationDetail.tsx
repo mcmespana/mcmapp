@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { useTabNavigation } from '@/hooks/useTabNavigation';
 import colors, { themeColors, Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
@@ -41,6 +41,7 @@ export default function NotificationDetail({
   bottomInset: number;
 }) {
   const theme = Colors[scheme];
+  const { goToPath } = useTabNavigation();
   const date = new Date(
     'receivedAt' in notification
       ? notification.receivedAt
@@ -58,7 +59,7 @@ export default function NotificationDetail({
     const clean = normalizeRoute(route);
     setTimeout(() => {
       try {
-        router.push(clean as any);
+        goToPath(clean);
       } catch {}
     }, 320);
   };

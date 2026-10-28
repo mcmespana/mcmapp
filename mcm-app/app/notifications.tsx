@@ -15,7 +15,8 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useTabNavigation } from '@/hooks/useTabNavigation';
 import colors, { Colors, themeColors } from '@/constants/colors';
 import EmptyState from '@/components/ui/EmptyState';
 import AppChip from '@/components/ui/AppChip';
@@ -191,23 +192,28 @@ export default function NotificationsScreen() {
     [],
   );
 
-  const safePushRoute = useCallback((route: string) => {
-    if (!route) return;
-    const clean = normalizeRoute(route);
-    try {
-      router.push(clean as any);
-    } catch (e) {
-      logger.warn(
-        'Navigation failed for ' + clean + ', trying direct route...',
-        e,
-      );
+  const { goToPath } = useTabNavigation();
+
+  const safePushRoute = useCallback(
+    (route: string) => {
+      if (!route) return;
+      const clean = normalizeRoute(route);
       try {
-        router.push(route as any);
-      } catch (err) {
-        logger.error('All navigation fallbacks failed:', err);
+        goToPath(clean);
+      } catch (e) {
+        logger.warn(
+          'Navigation failed for ' + clean + ', trying direct route...',
+          e,
+        );
+        try {
+          goToPath(route);
+        } catch (err) {
+          logger.error('All navigation fallbacks failed:', err);
+        }
       }
-    }
-  }, []);
+    },
+    [goToPath],
+  );
 
   const handleActionButtonPress = useCallback(
     (
@@ -455,18 +461,20 @@ function NotificationDetailModal({
       ? getEvent(notification.eventId).title
       : null;
 
+  const { goToPath } = useTabNavigation();
+
   const safePushRoute = (route: string) => {
     if (!route) return;
     const clean = normalizeRoute(route);
     try {
-      router.push(clean as any);
+      goToPath(clean);
     } catch (e) {
       logger.warn(
         'Navigation failed for ' + clean + ', trying direct route...',
         e,
       );
       try {
-        router.push(route as any);
+        goToPath(route);
       } catch (err) {
         logger.error('All navigation fallbacks failed:', err);
       }

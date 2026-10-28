@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-28 13:30 — Notificaciones y botones del panel: los tabs de «Más» en iOS ya se abren
+
+- Una notificación (al tocarla o desde el centro de notificaciones) o un botón de acción del panel que apunta a un tab (`/calendario`, `/fotos`, `/comunica`…) usaba `router.push` directo. En iOS, si ese tab no está en la barra (perfil con 6+ tabs o evento en curso), no hacía nada. Ahora pasa por `goToPath` (`hooks/useTabNavigation.ts`), que entra por «Más» y arrastra la fecha del calendario. Las rutas que no son la raíz de un tab siguen como antes.
+- `utils/tabNavigation.ts`: nueva `parseTabPath`. Tests en `tabNavigation.test.ts` y `useTabNavigation.test.tsx`.
+
 ## 2026-10-28 10:30 — Paquetes nativos del área privada en la 2.1 (aún sin usar)
 
 - Añadidos `expo-secure-store`, `expo-sqlite` (con SQLCipher), `expo-local-authentication`, `expo-intent-launcher` y `expo-image-picker` con sus plugins en `app.json`, para que el área privada nativa pueda llegar luego por OTA sobre la 2.1. Todavía no hay código que los use.

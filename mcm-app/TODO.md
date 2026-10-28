@@ -197,19 +197,17 @@ notificación y enlaces `mcmapp://` con Carismochito activo (build nativo).
 
 ---
 
-## Rama aparcada: atajos de la Home (`claude/home-shortcuts-resilience-iq250b`)
+## ✅ Atajos de la Home: rama `claude/home-shortcuts-resilience-iq250b` revisada y cerrada (2026-10-28)
 
-Revisada el 2026-10-28. **No se mergea tal cual** (16 ficheros, el calendario y la Home han cambiado mucho desde agosto), pero **no se borra la rama**: es una segunda solución al mismo bug que `main` arregló por su cuenta (`2e5dec80`, `a6808d76`: `utils/tabNavigation.ts` con `resolveTabRoute` + `hooks/useTabNavigation.ts`). Commit de la rama: `775ca1cc` (`utils/tabNavigation.ts` con `resolveTabTarget`, `hooks/useTabNavigator.ts`).
+Era una segunda solución al bug que `main` ya arregló (`utils/tabNavigation.ts` + `hooks/useTabNavigation.ts`). Revisada pieza a pieza:
 
-Lo que la rama hace y `main` hoy NO (a evaluar uno a uno, cada cosa suelta):
+- **Fecha del calendario por un store propio**: no hace falta. `main` la pasa por params y `calendario.tsx` ya lee los de expo-router y los de React Navigation (la vía «Más»).
+- **`?date=` que salta de mes**: ya está en `main` (`setVisibleMonth(monthStart(dateParam))`).
+- **Deep-links de notificación y botones del panel por el navegador de tabs**: **portado** (`goToPath` + `parseTabPath`). En iOS, `router.push` a un tab que no está en la barra no hacía nada; ahora entra por «Más». La paleta de comandos es solo web y no lo necesita.
+- **Solape del conmutador Mes/Agenda en iOS**: no aplica, `main` rehízo ese header.
+- **Aviso cuando el destino no está en ninguna vía**: descartado, caso casi imposible (el perfil tendría que no traer ni el tab ni «Más»).
 
-- [ ] **Fecha del calendario por un store propio** (`utils/calendarNavigation.ts`, con caducidad de 15 s): la tarjeta de «Próximos eventos» abre el calendario en ese día por cualquier vía (tab o «Más»). Comprobar si en `main` el salto de día falla por alguna vía.
-- [ ] **`?date=` del deep-link salta también de mes** (`calendario.tsx`).
-- [ ] **Deep-links de notificación y paleta de comandos por el mismo navegador** (`usePushNotifications.ts`, `NotificationDetail`, `NotificationsBottomSheet`, `CommandPalette`): en `main` siguen con su propia lógica.
-- [ ] **Aviso al usuario si el destino no está en ninguna vía** (en `main` no hace nada).
-- [ ] El arreglo del solape del conmutador Mes/Agenda con el título en iOS **ya no aplica**: `main` rehízo ese header.
-
-Cómo retomarlo: `git diff main...claude/home-shortcuts-resilience-iq250b -- mcm-app/utils mcm-app/hooks` y portar solo lo que se confirme que falta, sobre el `tabNavigation.ts` de `main`. Test de la rama: `__tests__/tabNavigation.test.ts` (160 líneas).
+La rama ya no aporta nada: se puede borrar.
 
 ## Mantenimiento
 
