@@ -246,6 +246,30 @@ loader propio para la primera carga**; si falla, la app ofrece «Reintentar».
 En las navegaciones siguientes dentro del portal no se tapa nada: solo aparece un
 hilo de progreso arriba, como en un navegador.
 
+### 4.b Barra fija abajo: ocultar la cápsula de la app
+
+Cuando una pantalla del área privada trae su propia barra fija abajo (p. ej. el
+«Guardar» de Pasar Lista), la cápsula atrás/adelante de la app la taparía. La web
+lo avisa **en cada carga de página** con un mensaje al WebView:
+
+```js
+window.ReactNativeWebView?.postMessage(
+  JSON.stringify({ type: 'sticpa:barra', abajo: true }), // true = hay barra fija abajo
+);
+```
+
+Qué hace la app (`ComunicaScreen.tsx`, `onMessage`), en iOS y Android:
+
+| Mensaje | Efecto |
+| ------- | ------ |
+| `abajo: true` | Oculta `WebViewNavControls` e inyecta en `<html>` la clase `sticpa-app-sin-flechas` y la variable `--stic-app-tabbar: <N>px`, con `N = TAB_BAR_HEIGHT + insets.bottom + 8` (la misma altura a la que se apoyaba la cápsula) |
+| `abajo: false` | Vuelve a enseñar la cápsula y quita la clase y la variable |
+| Empieza otra navegación | Igual que `abajo: false`; la nueva página decide con su propio mensaje |
+| No llega ningún mensaje (área antigua) | Todo sigue como antes: cápsula visible |
+
+La barra fija de la web debe apoyarse justo encima del tab bar con
+`bottom: var(--stic-app-tabbar, 0px)`.
+
 ## 5. Navegación
 
 La app pone su propia cápsula flotante **atrás/adelante** (abajo a la izquierda)

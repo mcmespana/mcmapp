@@ -199,8 +199,41 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "MCM App usa la cámara para escanear los códigos QR de playlists y sesiones de coro.",
+          "cameraPermission": "MCM App usa la cámara para escanear los códigos QR de playlists y sesiones de coro, y para hacer fotos de títulos y documentos en tu área privada.",
           "recordAudioAndroid": false
+        }
+      ],
+      [
+        "react-native-nfc-manager",
+        {
+          "nfcPermission": "MCM App usa NFC para leer tarjetas y pegatinas del movimiento.",
+          "includeNdefEntitlement": true
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "MCM App usa Face ID para proteger el acceso a tu área privada."
+        }
+      ],
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "MCM App usa Face ID para proteger el acceso a tu área privada."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "MCM App usa tus fotos para subir títulos, certificados y documentos a tu área privada.",
+          "cameraPermission": "MCM App usa la cámara para escanear los códigos QR de playlists y sesiones de coro, y para hacer fotos de títulos y documentos en tu área privada.",
+          "microphonePermission": false
         }
       ]
     ],

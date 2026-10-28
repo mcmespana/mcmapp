@@ -4,6 +4,33 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-28 10:30 — Paquetes nativos del área privada en la 2.1 (aún sin usar)
+
+- Añadidos `expo-secure-store`, `expo-sqlite` (con SQLCipher), `expo-local-authentication`, `expo-intent-launcher` y `expo-image-picker` con sus plugins en `app.json`, para que el área privada nativa pueda llegar luego por OTA sobre la 2.1. Todavía no hay código que los use.
+- Textos de permisos en castellano: Face ID, fotos y cámara. El de la cámara ahora cubre el escáner QR y las fotos de documentos (los dos plugins escriben la misma clave). Micrófono del selector de fotos desactivado.
+- Requiere build nativo: no llega por OTA.
+
+## 2026-10-19 12:00 — Módulo NFC instalado (aún sin usar)
+
+- Añadido `react-native-nfc-manager` y su plugin en `app.json` (permiso NFC + entitlement NDEF en iOS) para que el próximo build nativo ya lo incluya. Todavía no hay código que lo use.
+- Requiere build nativo: no llega por OTA.
+
+## 2026-10-16 23:40 — Buscador del cantoral sin tildes y auditoría de pulido
+
+- **Buscador del cantoral**: ya no distingue tildes — «senor» encuentra
+  «Señor» y «jesus», «Jesús» (`foldForSearch` en `utils/songTags.ts`).
+- **Rendimiento de la lista de canciones**: las etiquetas destacadas de cada
+  fila salen del mismo array entre renders, así que el `React.memo` de
+  `SongListItem` vuelve a servir y teclear en el buscador ya no repinta todas
+  las filas.
+- **Auditoría de pulido** (rendimiento, Android, web/iPad, diseño, animación,
+  limpieza de los dos repos y Carismochito): 184 hallazgos verificados y
+  repartidos en 12 paquetes, en `docs/planes/PLAN_PULIDO_2026_10.md`.
+
+## 2026-10-11 12:00 — Comunica: la cápsula atrás/adelante se oculta si la web trae barra fija abajo
+
+`ComunicaScreen` escucha `{type:'sticpa:barra', abajo}` desde la web: con `abajo: true` oculta la cápsula (iOS y Android) e inyecta la clase `sticpa-app-sin-flechas` y `--stic-app-tabbar`; con `false` o al empezar otra navegación lo deshace. Contrato en `docs/contratos/COMUNICA_WEBVIEW.md` §4.b.
+
 ## Formato
 
 ```
