@@ -85,6 +85,7 @@ jest.mock('@/services/comunica/localFiles', () => ({
 
 import ComunicaAreaProvider from '@/components/comunica/comun/ComunicaAreaProvider';
 import MonitorDataScreen from '@/components/comunica/yo/MonitorDataScreen';
+import HomeCertificateAlert from '@/components/comunica/yo/HomeCertificateAlert';
 import {
   __resetComunicaApiForTests,
   getComunicaApi,
@@ -93,8 +94,9 @@ import {
 import type { FakeServer } from '@/services/comunica/fake';
 import { __resetSessionForTests, signIn } from '@/services/comunica/session';
 import { memoryBackend, setStorageBackend } from '@/services/comunica/storage';
-import { clearUploads } from '@/services/comunica/uploads';
+import { clearUploads, startUpload } from '@/services/comunica/uploads';
 import type { PersonaId } from '@/services/comunica/fake/fixtures';
+import type { Me } from '@/services/comunica/contract';
 
 const METRICS = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
@@ -135,7 +137,10 @@ const until = async (fn: () => boolean, ms = 3000) => {
   throw new Error('No ha pasado a tiempo');
 };
 
-async function setup(persona: PersonaId = 'monitor') {
+async function setup(
+  persona: PersonaId = 'monitor',
+  screen?: (me: Me) => React.ReactElement,
+) {
   __resetSessionForTests();
   __resetComunicaApiForTests();
   setStorageBackend(memoryBackend());
@@ -153,7 +158,7 @@ async function setup(persona: PersonaId = 'monitor') {
       <SafeAreaProvider initialMetrics={METRICS}>
         <HeroUINativeProvider>
           <ComunicaAreaProvider client={qc}>
-            <MonitorDataScreen />
+            {screen ? screen(s.me) : <MonitorDataScreen />}
           </ComunicaAreaProvider>
         </HeroUINativeProvider>
       </SafeAreaProvider>,
@@ -289,6 +294,48 @@ describe('el certificado de delitos sexuales', () => {
     await press(tree, 'Elegir un archivo');
     await until(() => texts(tree).includes('El CRM no responde ahora mismo'));
     expect(texts(tree)).toContain(ALERT);
+    act(() => tree.unmount());
+    qc.clear();
+  });
+});
+
+describe('el aviso en la portada «Hoy»', () => {
+  const ALERT = 'Te falta subir tu Certificado de Delitos Sexuales';
+  const cert = {
+    uri: 'file:///cache/cert.pdf',
+    name: 'cert.pdf',
+    mimeType: 'application/pdf',
+    size: 1000,
+  };
+
+  it('sale, se esconde con el certificado en camino y vuelve si falla', async () => {
+    const { fake, tree, qc } = await setup('monitor', (me) => (
+      <HomeCertificateAlert me={me} />
+    ));
+    await until(() => texts(tree).includes(ALERT));
+    // Lleva a «Mis datos de monitor».
+    await press(tree, `${ALERT}. Subir certificado`);
+    expect(mockRouter.push).toHaveBeenCalledWith('/comunica/yo/monitor');
+    // En camino (el CRM tarda y luego falla): se esconde…
+    fake.setControls({ latencyMs: 300, crmDown: true });
+    await act(async () => {
+      void startUpload('sex_offence_certificate', cert);
+    });
+    expect(texts(tree)).not.toContain(ALERT);
+    // …y vuelve al fallar.
+    await until(() => texts(tree).includes(ALERT));
+    act(() => tree.unmount());
+    qc.clear();
+  });
+
+  it('a quien no es monitor no le cuesta ni una lectura', async () => {
+    const { fake, tree, qc } = await setup('accompaniment', (me) => (
+      <HomeCertificateAlert me={me} />
+    ));
+    const spy = jest.spyOn(fake, 'getMyMonitorProfile');
+    await wait(100);
+    expect(texts(tree)).toBe('');
+    expect(spy).not.toHaveBeenCalled();
     act(() => tree.unmount());
     qc.clear();
   });
