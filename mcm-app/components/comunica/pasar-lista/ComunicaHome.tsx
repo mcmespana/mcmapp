@@ -36,11 +36,13 @@ import type {
 } from '@/services/comunica/contract';
 import { nativeHrefFor, type Destination } from '@/services/comunica/links';
 import { areaKey, STALE } from '@/hooks/comunica/useAreaQuery';
+import { useEvents, usePrefetchEventRolls } from '@/hooks/comunica/events';
 import { useMe } from '@/hooks/comunica/useMe';
 import { useGroups, useToday } from '@/hooks/comunica/usePasarLista';
 import { useFlushOutboxOnMount, useOutbox } from '@/hooks/comunica/useOutbox';
 import { useOpenLegacy } from '@/hooks/comunica/useOpenLegacy';
 import { longDay, relativeDay, shortDay } from '@/utils/comunica/dates';
+import { classifyEvents, isHomeCard } from '@/utils/comunica/events';
 import { madridDay, madridTime } from '@/utils/comunica/madrid';
 import {
   cameLabel,
@@ -70,6 +72,7 @@ import RecordCard from '../comun/RecordCard';
 import RoleChip from '../comun/RoleChip';
 import NavRow from '../comun/NavRow';
 import Section from '../comun/Section';
+import { EventsEntryRow, TodayEventCard } from '../eventos/EventCards';
 import SyncBadge from '../comun/SyncBadge';
 import { STAGE_COLOR } from '../comun/theme';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
@@ -144,6 +147,18 @@ function HomeContent({
   const accompaniment = !!me?.roles.includes('accompaniment');
 
   const queuedRolls = pending.filter((e) => e.kind === 'roll');
+  const queuedEventRolls = pending.filter((e) => e.kind === 'event-roll');
+  const queuedCount = queuedRolls.length + queuedEventRolls.length;
+
+  // Eventos (plan 07): la tarjeta sale solo si el evento EMPIEZA o ACABA hoy;
+  // la fila, siempre que haya eventos este curso. Y se precargan sus listas.
+  const events = useEvents();
+  usePrefetchEventRolls(events.data?.events);
+  const eventBuckets = events.data
+    ? classifyEvents(events.data.events, todayDay)
+    : null;
+  const homeEvents = eventBuckets?.today.filter(isHomeCard) ?? [];
+  const eventsCount = eventBuckets?.count ?? today.eventsThisSeason;
 
   const model = useMemo(() => {
     const index = rollIndex(today.rollCalls);
@@ -245,13 +260,13 @@ function HomeContent({
         </View>
       </View>
 
-      {queuedRolls.length > 0 ? (
+      {queuedCount > 0 ? (
         <Section
           warning
           title={
-            queuedRolls.length === 1
+            queuedCount === 1
               ? 'Tienes una lista guardada solo en el móvil'
-              : `Tienes ${queuedRolls.length} listas guardadas solo en el móvil`
+              : `Tienes ${queuedCount} listas guardadas solo en el móvil`
           }
         >
           <Text style={[styles.pad, { color: t.text }]}>
@@ -269,44 +284,29 @@ function HomeContent({
               onPress={() => openRoll(e.meta.sessionId, e.meta.groupId)}
             />
           ))}
-        </Section>
-      ) : null}
-
-      {today.eventsToday.length > 0 ? (
-        <Section title="Hoy hay evento">
-          {today.eventsToday.map((ev) => (
-            <PressableFeedback
-              key={ev.id}
-              onPress={() =>
-                goTo(
-                  { internalpage: 'single_stic_pasar_lista_evento' },
-                  ev.name,
-                )
+          {queuedEventRolls.map((e) => (
+            <NavRow
+              key={e.key}
+              title={e.meta.label}
+              subtitle={
+                e.status === 'stuck' || e.status === 'failed'
+                  ? 'No se ha podido enviar'
+                  : undefined
               }
-              accessibilityRole="button"
-              style={styles.row}
-            >
-              <PressableFeedback.Highlight />
-              <DateCapsule day={todayDay} />
-              <View style={styles.rowBody}>
-                <Text style={[styles.rowSub, { color: t.textSecondary }]}>
-                  {ev.todayIs === 'start'
-                    ? 'Hoy empieza'
-                    : ev.todayIs === 'end'
-                      ? 'Hoy termina'
-                      : 'Hoy'}
-                </Text>
-                <Text style={[styles.rowTitle, { color: t.text }]}>
-                  {ev.name}
-                </Text>
-              </View>
-              <Text style={[styles.action, { color: t.accentText }]}>
-                Pasar lista ›
-              </Text>
-            </PressableFeedback>
+              onPress={() =>
+                router.push({
+                  pathname: '/comunica/eventos/[eventId]',
+                  params: { eventId: e.meta.eventId },
+                })
+              }
+            />
           ))}
         </Section>
       ) : null}
+
+      {homeEvents.map((c) => (
+        <TodayEventCard key={c.event.id} item={c} />
+      ))}
 
       {shortcut ? (
         <RecordCard
@@ -450,19 +450,7 @@ function HomeContent({
           subtitle="Teléfonos y fichas, sin pasar lista"
           onPress={() => router.push('/comunica/grupos')}
         />
-        {today.eventsThisSeason > 0 ? (
-          <NavRow
-            icon="bus"
-            title="Pasar lista en un evento"
-            trailing={`${today.eventsThisSeason} este curso`}
-            onPress={() =>
-              goTo(
-                { internalpage: 'single_stic_pasar_lista_evento' },
-                'Pasar lista en un evento',
-              )
-            }
-          />
-        ) : null}
+        {eventsCount > 0 ? <EventsEntryRow count={eventsCount} /> : null}
         <NavRow
           icon="chart.bar"
           title="Resumen de grupos"

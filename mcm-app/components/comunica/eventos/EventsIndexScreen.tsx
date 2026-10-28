@@ -108,7 +108,7 @@ export default function EventsIndexScreen() {
             {buckets.today.length > 0 ? (
               <Section title="Hoy" bare>
                 {buckets.today.map((c) => (
-                  <TodayEventCard key={c.event.id} item={c} today={today} />
+                  <TodayEventCard key={c.event.id} item={c} />
                 ))}
               </Section>
             ) : null}

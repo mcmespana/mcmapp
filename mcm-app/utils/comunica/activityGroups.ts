@@ -77,6 +77,18 @@ export function shortGroupLabel(type: ActivityType, name: string): string {
   return plainVowels(n).startsWith(prefix) ? n : `${short} ${n}`;
 }
 
+/**
+ * El título de un grupo en su pestaña: el nombre, y si es solo un número o
+ * una letra («14», «B»), con el tipo delante («Habitación 14»). Un «14» suelto
+ * como título de sección no se entiende (en el plugin salía así).
+ */
+export function groupHeading(type: ActivityType, name: string): string {
+  const n = clean(name);
+  if (!/^[\p{N}\p{L}]{1,3}$/u.test(n) || !/\d|^[A-Z]$/.test(n)) return n;
+  const singular = ACTIVITY_NAMES[type]?.[0];
+  return singular && type !== 'other' ? `${singular} ${n}` : n;
+}
+
 /** El nombre de la pestaña: la tanda si la hay; si no, el tipo en plural. */
 export function tabLabel(tab: Pick<ActivityTab, 'type' | 'batch'>): string {
   const batch = clean(tab.batch);

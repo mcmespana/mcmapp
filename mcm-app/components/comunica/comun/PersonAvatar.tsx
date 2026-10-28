@@ -28,9 +28,16 @@ interface Props {
   size?: number;
   /** Fondo de las iniciales (sobre el fondo hundido, el de tarjeta). */
   background?: string;
+  /** Color de las iniciales (sobre un `background` de color). */
+  ink?: string;
 }
 
-export default function PersonAvatar({ person, size = 40, background }: Props) {
+export default function PersonAvatar({
+  person,
+  size = 40,
+  background,
+  ink,
+}: Props) {
   const t = useComunicaTheme();
   const source = useMemo(
     () =>
@@ -56,7 +63,7 @@ export default function PersonAvatar({ person, size = 40, background }: Props) {
       <Text
         style={[
           big ? styles.initialsBig : styles.initials,
-          { color: t.textSecondary },
+          { color: ink ?? t.textSecondary },
         ]}
       >
         {initialsOf(person)}

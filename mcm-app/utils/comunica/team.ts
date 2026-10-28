@@ -10,12 +10,9 @@
 import type { Stage, TeamMember } from '@/services/comunica/contract';
 import { STAGE_ORDER, stageTitle } from './monitorsRoll';
 
-/** Sin acentos y en minúsculas. */
-export const fold = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
+import { fold } from './search';
+
+export { fold };
 
 /** Sin grupo de verdad (vacío o comodín): lo que se vincula. */
 export const isUnassigned = (

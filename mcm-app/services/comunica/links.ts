@@ -134,6 +134,10 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
           params: { id: d.id },
         }
       : { pathname: '/comunica/coordinacion' },
+  single_stic_pasar_lista_evento: (d) =>
+    d.id
+      ? { pathname: '/comunica/eventos/[eventId]', params: { eventId: d.id } }
+      : { pathname: '/comunica/eventos' },
   single_stic_password_change: () => ({ pathname: '/comunica/yo' }),
   single_stic_unsubscribe: () => ({ pathname: '/comunica/yo' }),
 };

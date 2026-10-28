@@ -11,6 +11,8 @@
 //   coordinacion, …/resumen, …/monitores, …/reuniones, …/monitor/[id]
 //            → Coordinación, el resumen, la lista de monitores, las reuniones
 //              y la ficha del monitor (plan 06).
+//   eventos, eventos/[eventId] → pasar lista en un evento y sus grupos de
+//            actividad (plan 07).
 //   acceso-codigo, acceso-elegir → entrar (plan 02; «Entra en tu área» es la
 //              propia puerta cuando no hay sesión).
 //   yo       → tu cuenta y salir (carpeta: avisos y mis datos de monitor,
@@ -101,6 +103,8 @@ export default function ComunicaLayout() {
         />
         <Stack.Screen name="acceso-codigo" options={{ title: 'Código' }} />
         <Stack.Screen name="acceso-elegir" options={{ title: 'Elegir' }} />
+        <Stack.Screen name="eventos/index" options={{ title: 'Eventos' }} />
+        <Stack.Screen name="eventos/[eventId]" options={{ title: 'Evento' }} />
         <Stack.Screen name="yo/index" options={{ title: 'Tu cuenta' }} />
         <Stack.Screen name="web" options={{ headerShown: false }} />
         <Stack.Screen name="muestra" options={{ title: 'Muestra' }} />

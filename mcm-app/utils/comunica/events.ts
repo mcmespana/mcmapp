@@ -148,9 +148,7 @@ export function eventsToPrefetch(
   return events.filter((e) => e.startDate <= until && e.endDate >= today);
 }
 
-/** Lo que el buscador compara: sin acentos ni mayúsculas. */
-export const fold = (s: string) =>
-  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+export { fold } from './search';
 
 /** Con más de 8 eventos, buscador. */
 export const EVENTS_SEARCH_FROM = 9;

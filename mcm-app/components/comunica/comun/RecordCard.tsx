@@ -13,6 +13,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { radii, shadows } from '@/constants/uiStyles';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
 import { h } from '@/utils/haptics';
 import DateCapsule from './DateCapsule';
@@ -29,6 +30,12 @@ interface Props {
   day?: string;
   featured?: boolean;
   onPress?: () => void;
+  /**
+   * Con `onPress`: lo que pasa al tocarla, en el acento y con flecha
+   * («Pasar lista ›»). Dice que la tarjeta entera es el enlace sin pintar un
+   * botón que lo repita.
+   */
+  cta?: string;
   action?: { label: string; onPress: () => void };
   accessibilityLabel?: string;
 }
@@ -41,6 +48,7 @@ export default function RecordCard({
   day,
   featured = false,
   onPress,
+  cta,
   action,
   accessibilityLabel,
 }: Props) {
@@ -95,6 +103,23 @@ export default function RecordCard({
               {l}
             </Text>
           ))}
+          {cta && onPress && !action ? (
+            <View style={styles.cta}>
+              <Text
+                style={[
+                  styles.ctaLabel,
+                  { color: featured ? t.onAccent : t.accentText },
+                ]}
+              >
+                {cta}
+              </Text>
+              <IconSymbol
+                name="chevron.right"
+                size={14}
+                color={featured ? t.onAccent : t.accentText}
+              />
+            </View>
+          ) : null}
         </View>
         {day ? <DateCapsule day={day} /> : null}
       </View>
@@ -170,6 +195,8 @@ const styles = StyleSheet.create({
   titleBig: { ...typography.h2 },
   code: { fontWeight: '800' },
   line: { ...typography.subhead },
+  cta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  ctaLabel: { ...typography.button },
   action: {
     minHeight: 48,
     borderRadius: radii.md,

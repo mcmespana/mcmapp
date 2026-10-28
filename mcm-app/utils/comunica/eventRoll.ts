@@ -18,13 +18,18 @@ import type {
 } from '@/services/comunica/contract';
 import { NOTE_MAX } from '@/services/comunica/contract';
 import {
+  groupHeading,
   NOT_GOING_LABEL,
   sortKeyOf,
   withoutLabel,
   type ArmedTab,
 } from './activityGroups';
 import { fold } from './events';
+import { longDay } from './dates';
+import { madridDay, madridTime } from './madrid';
+import { proposeSession } from './pasarLista';
 import { levelOrder, levelSectionKey } from './schoolLevels';
+import { canMarkSession } from './sessions';
 import type { RollDraft } from './rollDraft';
 
 export const MONITOR_CHIP = 'monitor';
@@ -341,7 +346,7 @@ export function groupSections(
     const members = [...g.monitors, ...g.participants];
     pushGroup(
       g.group.id,
-      g.group.name,
+      groupHeading(g.group.type, g.group.name),
       members
         .filter((m) => m.markable && m.person)
         .map((m) => byId.get(m.person!.person.id))
@@ -421,9 +426,11 @@ export function markVisibleUnmarked(
 export function fillVisibleLabel(draft: RollDraft, visible: readonly string[]) {
   const pending = visible.filter((id) => !draft.marks[id]).length;
   const any = Object.values(draft.marks).some(Boolean);
+  if (pending === 0)
+    return { label: 'Ya están todos marcados', enabled: false };
   return {
     label: any ? `El resto está (${pending})` : 'Están todos',
-    enabled: pending > 0,
+    enabled: true,
   };
 }
 
@@ -487,3 +494,68 @@ export const todayWithin = (
   e: { startDate: string; endDate: string },
   today: string,
 ) => e.startDate <= today && e.endDate >= today;
+
+// ── Qué día se marca ────────────────────────────────────────────────────────
+
+export interface EventDay {
+  /** La sesión que se marca; `null` = el evento no tiene días en el CRM. */
+  session: SessionSummary | null;
+  /** El día de la lista (el de la sesión, o hoy). */
+  day: string;
+  /** No se puede marcar (un día que aún no ha llegado, o fuera de fechas). */
+  locked: boolean;
+  /** El aviso de encima de la lista, si toca. */
+  notice: { text: string; tone: 'warning' | 'info' } | null;
+}
+
+/**
+ * El día de la lista: el que se pide o la regla del plan 04 (hoy, si no la
+ * última que pasó, si no la próxima). Sin días en el CRM, hoy —solo si cae
+ * dentro de sus fechas— y el servidor crea la sesión al guardar.
+ */
+export function pickEventDay(
+  roll: Pick<EventRoll, 'event' | 'sessions'>,
+  requested: string | undefined,
+  now: Date,
+): EventDay {
+  const today = madridDay(now);
+  const { sessions } = roll;
+  if (sessions.length === 0) {
+    const within = todayWithin(roll.event, today);
+    return {
+      session: null,
+      day: today,
+      locked: !within,
+      notice: within
+        ? {
+            text: `Este evento no tiene días en el CRM. Al guardar se crea la lista del ${longDay(today)}.`,
+            tone: 'info',
+          }
+        : {
+            text: 'Este evento no tiene días en el CRM y hoy no es uno de sus días: no se puede pasar lista.',
+            tone: 'warning',
+          },
+    };
+  }
+  const proposal = proposeSession(sessions, now);
+  const session =
+    (requested && sessions.find((s) => s.id === requested)) ||
+    proposal!.session;
+  const locked = !canMarkSession(session, sessions, now);
+  return {
+    session,
+    day: session.date,
+    locked,
+    notice: locked
+      ? {
+          text: 'Este día aún no ha llegado: no se puede pasar lista.',
+          tone: 'warning',
+        }
+      : session.date !== today
+        ? {
+            text: `Es la lista del ${longDay(session.date)}, ${madridTime(session.startsAt)}.`,
+            tone: 'warning',
+          }
+        : null,
+  };
+}

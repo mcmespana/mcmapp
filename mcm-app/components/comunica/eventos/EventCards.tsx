@@ -35,13 +35,7 @@ export function useOpenEvent() {
     });
 }
 
-export function TodayEventCard({
-  item,
-  today,
-}: {
-  item: ClassifiedEvent;
-  today: string;
-}) {
+export function TodayEventCard({ item }: { item: ClassifiedEvent }) {
   const open = useOpenEvent();
   const when = todayLabel(item);
   const dates = eventDates(item.event);
@@ -49,12 +43,9 @@ export function TodayEventCard({
     <RecordCard
       kicker={{ label: when, tone: 'accent' }}
       title={item.event.name}
-      lines={[
-        item.event.startDate === item.event.endDate
-          ? 'Pasar lista'
-          : `${dates} · Pasar lista`,
-      ]}
-      day={today}
+      lines={item.event.startDate === item.event.endDate ? [] : [dates]}
+      cta="Pasar lista"
+      day={item.event.startDate}
       onPress={() => open(item.event.id)}
       accessibilityLabel={`${when}: ${item.event.name}, ${dates}. Pasar lista`}
     />

@@ -7,6 +7,7 @@ import { createFakeServer } from '@/services/comunica/fake';
 import {
   armTab,
   groupCount,
+  groupHeading,
   groupLabelsByPerson,
   shortGroupLabel,
   tabLabel,
@@ -135,6 +136,14 @@ describe('grupos de actividad', () => {
     expect(shortGroupLabel('clan', 'Los del norte del pueblo de arriba')).toBe(
       'Clan Los del norte del pue…',
     );
+  });
+
+  it('título de un grupo: el número suelto lleva el tipo', () => {
+    expect(groupHeading('room', '14')).toBe('Habitación 14');
+    expect(groupHeading('subgroup', 'B')).toBe('Subgrupo B');
+    expect(groupHeading('room', 'Hab. 15 (chicas)')).toBe('Hab. 15 (chicas)');
+    expect(groupHeading('patrol', 'Halcones')).toBe('Halcones');
+    expect(groupHeading('other', '3')).toBe('3');
   });
 
   it('nombre de la pestaña y «Sin …»', () => {

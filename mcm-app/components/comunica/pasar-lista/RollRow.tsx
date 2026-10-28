@@ -71,7 +71,7 @@ type Props = Common &
         /** Lista de un evento: curso, grupo y grupos del evento. */
         line?: string;
         lead?: { text: string; color: string; background: string };
-        avatarBackground?: string;
+        avatarTone?: 'accent';
       }
     | {
         mode: 'monitors';
@@ -220,9 +220,7 @@ function RollRow(props: Props) {
               : undefined
         }
         subtitleLead={props.mode !== 'monitors' ? props.lead : undefined}
-        avatarBackground={
-          props.mode !== 'monitors' ? props.avatarBackground : undefined
-        }
+        avatarTone={props.mode !== 'monitors' ? props.avatarTone : undefined}
         disabled={disabled}
         onPress={() => onTap(id)}
         onLongPress={() => onMore(id)}
