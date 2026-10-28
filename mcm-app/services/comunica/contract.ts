@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- un solo contrato: docs/desarrollo/WARNINGS.md §3 */
 // services/comunica/contract.ts
 //
 // El contrato entre la app y el servidor del área privada nativa

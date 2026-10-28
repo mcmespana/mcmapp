@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- el falso entero de un vistazo: docs/desarrollo/WARNINGS.md §3 */
 // services/comunica/fake/index.ts
 //
 // Servidor falso del área nativa (plan 00 §4): implementa `ComunicaApi` en
