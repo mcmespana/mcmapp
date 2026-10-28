@@ -61,6 +61,27 @@ el plan 07 iba a duplicar los chips y el buscador de Grupos y fichas; pasaron a
    subtítulo pequeño (curso) y una superficie por bloque. Pliegues con
    chevron y `accessibilityState.expanded`.
 
+8. **Antes de inventar una tarjeta, el patrón vecino.** El aviso de «sin
+   permiso» de los avisos (plan 08) nació como tarjeta ámbar propia; es
+   `Section warning`, el mismo de «Te faltan 2 listas».
+9. **Acción principal solo si hay algo que desbloquear.** Con los avisos
+   activados, la pantalla de ajustes no tiene `AreaPrimaryButton`: los
+   interruptores son el contenido. Sin permiso, la acción es activarlo.
+10. **La explicación de una fila de interruptor, en `body` gris**, no en
+    `caption`; el porqué de que esté apagada va UNA vez en el aviso de
+    arriba, no repetido en cada fila.
+11. **Mira el oscuro de cada token.** En oscuro `separator` y `card` son el
+    mismo gris: un interruptor apagado sobre una tarjeta se quedaba en una
+    bolita flotando (plan 08). Para pistas y bordes sobre una tarjeta oscura,
+    `SystemGray.dark.gray2`.
+12. **En web, «aquí no» con un `EmptyState` tranquilo** («Los avisos solo
+    funcionan en la app del móvil»), sin esconder la pantalla. Decide el
+    adaptador `.web.ts`; la pantalla solo pregunta.
+13. **Iconos de cabecera: 44 × 44 de toque y la tinta de la cabecera**
+    (`headerTint` en iOS, blanco sobre la barra en Android y web).
+14. **El texto que sale de la app (compartir), como lo diría una persona:**
+    fechas humanas, «hasta el 5» (el día cuenta entero), nada de barras.
+
 ## 3. Cómo se comprueba (antes de cada commit con pantallas)
 
 - Tests: `npx tsc --noEmit && npm run lint && npm test` (en particular
@@ -71,6 +92,8 @@ el plan 07 iba a duplicar los chips y el buscador de Grupos y fichas; pasaron a
   dejado pantallas en esqueleto que con toques cargan bien: toca.
 - Mira la captura buscando lo de §2 y el test de entornar los ojos de
   `design.md` §10.
+- **Las capturas, a la vez que la pantalla, no al final**: en el plan 08 los
+  dos fallos de verdad solo salieron en la captura en oscuro.
 
 ## 4. Lo que la web no enseña bien (no lo «arregles» mirando solo la web)
 
