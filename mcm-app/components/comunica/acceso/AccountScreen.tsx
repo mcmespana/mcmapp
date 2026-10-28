@@ -157,13 +157,13 @@ function Row({
       accessibilityLabel={label}
       style={styles.action}
     >
-      <PressableFeedback.Highlight />
       <IconSymbol
         name={icon}
         size={20}
         color={destructive ? t.warningIcon : t.accentText}
       />
       <Text style={[styles.actionLabel, { color }]}>{label}</Text>
+      <PressableFeedback.Highlight />
     </PressableFeedback>
   );
 }

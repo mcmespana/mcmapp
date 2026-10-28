@@ -557,7 +557,6 @@ function MissingRow({
       accessibilityLabel={`${longDay(day)}, ${group}. Recuperar`}
       style={styles.row}
     >
-      <PressableFeedback.Highlight />
       <DateCapsule day={day} />
       <View style={styles.rowBody}>
         <Text style={[styles.rowTitle, { color: t.text }]}>
@@ -566,6 +565,7 @@ function MissingRow({
         <Text style={[styles.rowSub, { color: t.textSecondary }]}>{group}</Text>
       </View>
       <Text style={[styles.action, { color: t.accentText }]}>Recuperar</Text>
+      <PressableFeedback.Highlight />
     </PressableFeedback>
   );
 }

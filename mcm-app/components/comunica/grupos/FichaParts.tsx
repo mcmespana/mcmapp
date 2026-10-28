@@ -85,7 +85,6 @@ export function Fold({
         accessibilityLabel={[title, summary].filter(Boolean).join(', ')}
         style={styles.foldHead}
       >
-        <PressableFeedback.Highlight />
         <Text style={[styles.foldTitle, { color: t.text }]}>{title}</Text>
         {summary ? (
           <Text
@@ -102,6 +101,7 @@ export function Fold({
           size={16}
           color={t.textMuted}
         />
+        <PressableFeedback.Highlight />
       </PressableFeedback>
       {open ? (
         <View style={[styles.foldBody, { borderTopColor: t.separator }]}>
@@ -331,13 +331,13 @@ export function ScarfBlock({
                   },
                 ]}
               >
-                <PressableFeedback.Highlight />
                 <View
                   style={[styles.scarfDot, { backgroundColor: SCARF_FILL[s] }]}
                 />
                 <Text style={[styles.scarfLabel, { color: t.text }]}>
                   {SCARF_LABEL[s]}
                 </Text>
+                <PressableFeedback.Highlight />
               </PressableFeedback>
             ))}
           </View>
@@ -382,7 +382,6 @@ export function Pager({
           { backgroundColor: t.card },
         ]}
       >
-        <PressableFeedback.Highlight />
         {dir === 'prev' ? (
           <IconSymbol name="chevron.left" size={16} color={t.accentText} />
         ) : null}
@@ -397,6 +396,7 @@ export function Pager({
         {dir === 'next' ? (
           <IconSymbol name="chevron.right" size={16} color={t.accentText} />
         ) : null}
+        <PressableFeedback.Highlight />
       </PressableFeedback>
     ) : (
       // El hueco del lado que falta se guarda: el otro botón no se descoloca.

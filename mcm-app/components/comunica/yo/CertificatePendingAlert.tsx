@@ -64,8 +64,8 @@ export default function CertificatePendingAlert({
       accessibilityLabel={`${CERTIFICATE_ALERT.title}. ${CERTIFICATE_ALERT.cta}`}
       style={style}
     >
-      <PressableFeedback.Highlight />
       {body}
+      <PressableFeedback.Highlight />
     </PressableFeedback>
   );
 }

@@ -181,11 +181,11 @@ export default function FichaNotices({
           accessibilityRole="button"
           style={[styles.add, { borderColor: t.separator }]}
         >
-          <PressableFeedback.Highlight />
           <IconSymbol name="plus" size={18} color={t.accentText} />
           <Text style={[styles.addLabel, { color: t.accentText }]}>
             Añadir un aviso
           </Text>
+          <PressableFeedback.Highlight />
         </PressableFeedback>
       </View>
       <NoticeSheet

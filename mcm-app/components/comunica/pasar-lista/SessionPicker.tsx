@@ -69,7 +69,6 @@ export default function SessionPicker({
                 accessibilityState={{ selected }}
                 style={[styles.row, { borderBottomColor: t.separator }]}
               >
-                <PressableFeedback.Highlight />
                 <View style={styles.rowText}>
                   <Text style={[styles.rowTitle, { color: t.text }]}>
                     {o.label} · {ROLL_STATE_LABEL[o.state]}
@@ -81,6 +80,7 @@ export default function SessionPicker({
                 {selected ? (
                   <IconSymbol name="checkmark" size={18} color={t.accentText} />
                 ) : null}
+                <PressableFeedback.Highlight />
               </PressableFeedback>
             );
           })}

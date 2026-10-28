@@ -40,7 +40,6 @@ export default function NavRow({
       accessibilityLabel={label}
       style={styles.row}
     >
-      <PressableFeedback.Highlight />
       {dot ? <View style={[styles.dot, { backgroundColor: dot }]} /> : null}
       {icon ? <IconSymbol name={icon} size={20} color={t.accentText} /> : null}
       <View style={styles.rowBody}>
@@ -62,6 +61,7 @@ export default function NavRow({
         </Text>
       ) : null}
       <IconSymbol name="chevron.right" size={16} color={t.textMuted} />
+      <PressableFeedback.Highlight />
     </PressableFeedback>
   );
 }

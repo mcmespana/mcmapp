@@ -437,11 +437,11 @@ function QuickButtons({
         accessibilityLabel={`WhatsApp a ${guardian.fullName}`}
         style={[styles.quickButton, { backgroundColor: t.card }]}
       >
-        <PressableFeedback.Highlight />
         <IconSymbol name="message.fill" size={18} color={t.accentText} />
         <Text style={[styles.quickLabel, { color: t.accentText }]}>
           WhatsApp a {first}
         </Text>
+        <PressableFeedback.Highlight />
       </PressableFeedback>
       {/* La acción principal de la ficha: el degradado de marca. */}
       <AreaPrimaryButton
@@ -548,8 +548,8 @@ function RoundButton({
       accessibilityLabel={label}
       style={[styles.round, { backgroundColor: t.backgroundSunken }]}
     >
-      <PressableFeedback.Highlight />
       <IconSymbol name={icon} size={18} color={t.accentText} />
+      <PressableFeedback.Highlight />
     </PressableFeedback>
   );
 }

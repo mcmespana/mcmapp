@@ -487,7 +487,6 @@ function IndexList({ view, offline }: { view: GruposView; offline: boolean }) {
                 .join(', ')}
               style={styles.groupRow}
             >
-              <PressableFeedback.Highlight />
               <View style={styles.groupBody}>
                 <Text
                   style={[styles.groupTitle, { color: t.text }]}
@@ -507,6 +506,7 @@ function IndexList({ view, offline }: { view: GruposView; offline: boolean }) {
                 ) : null}
               </View>
               <IconSymbol name="chevron.right" size={16} color={t.textMuted} />
+              <PressableFeedback.Highlight />
             </PressableFeedback>
           </ListCell>
         );
@@ -598,7 +598,6 @@ function IndexList({ view, offline }: { view: GruposView; offline: boolean }) {
             accessibilityRole="button"
             style={[styles.looseCard, { backgroundColor: t.warningSoft }]}
           >
-            <PressableFeedback.Highlight />
             <IconSymbol name="person.2" size={22} color={t.warningIcon} />
             <View style={styles.groupBody}>
               <Text
@@ -617,6 +616,7 @@ function IndexList({ view, offline }: { view: GruposView; offline: boolean }) {
               </Text>
             </View>
             <IconSymbol name="chevron.right" size={16} color={t.warningIcon} />
+            <PressableFeedback.Highlight />
           </PressableFeedback>
         );
       case 'footer':

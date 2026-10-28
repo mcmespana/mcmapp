@@ -98,7 +98,6 @@ export default function MarkSheet({
                   },
                 ]}
               >
-                <PressableFeedback.Highlight />
                 <MarkIcon mark={m} />
                 <View style={styles.optionText}>
                   <Text style={[styles.optionLabel, { color: t.text }]}>
@@ -111,6 +110,7 @@ export default function MarkSheet({
                 {selected ? (
                   <IconSymbol name="checkmark" size={18} color={t.accentText} />
                 ) : null}
+                <PressableFeedback.Highlight />
               </PressableFeedback>
             );
           })}

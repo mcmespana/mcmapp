@@ -149,8 +149,8 @@ export default function PersonRow({
       }
       style={[styles.row, disabled && styles.disabled]}
     >
-      <PressableFeedback.Highlight />
       {content}
+      <PressableFeedback.Highlight />
     </PressableFeedback>
   );
 }
