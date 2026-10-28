@@ -4,6 +4,29 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-28 18:00 — Área nativa de Comunica: Coordinación entera (plan 06, rama `nuevoComunicaChulo`)
+
+- **Coordinación** nativa: lo que falta (la reunión sin pasar), «Lista de
+  monitores», «Reuniones de programación», «Resumen de grupos» y **Tu
+  equipo** con buscador en la cabecera: «Sin grupo» (con «Vincular»), Apoyo,
+  por etapa y, plegados, los monitores de grupos que no pasan lista.
+- **Lista de monitores**: la misma fila y la misma hoja que pasar lista, una
+  por etapa; arranca en verde y se marca a quien no vino. Los de Apoyo y otros
+  grupos salen con «-» y solo se apuntan si se tocan (como el plugin desde el
+  25/10). Se guarda por la cola y se relee del servidor.
+- **Reuniones de programación**: la lista del curso y «Nueva reunión»
+  (nombre, día, hora y duración).
+- **Resumen de grupos**: tarjeta por etapa, la última sesión con qué listas
+  faltan (cada una abre esa lista), la tira de cada grupo y los datos por
+  revisar.
+- **Ficha del monitor**: contacto, sábados, reuniones y las listas de sus
+  grupos, sus grupos, por dónde ha pasado, el papeleo y los seguimientos (que
+  nunca se guardan en el móvil; sobre uno mismo no existen).
+- «Hoy» lleva el bloque de Coordinación también a acompañamiento, y en
+  Grupos y fichas el nombre de un monitor abre su ficha.
+- El botón «Guardar» de las listas es ya la acción principal con el degradado
+  de Comunica. Plan nuevo, el 17: varias delegaciones.
+
 ## 2026-10-28 13:30 — Área nativa de Comunica: arreglos de la revisión y almacén cifrado (rama `nuevoComunicaChulo`)
 
 - **Salir o cambiar de persona** apaga la cola de escrituras antes de borrar

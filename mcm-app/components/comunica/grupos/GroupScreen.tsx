@@ -16,6 +16,7 @@ import type { ParticipantRow } from '@/services/comunica/contract';
 import { isComunicaApiError } from '@/services/comunica/client';
 import { useGroupDetail } from '@/hooks/comunica/useGrupos';
 import { useMe } from '@/hooks/comunica/useMe';
+import { coordinationAccess } from '@/utils/comunica/scope';
 import { h } from '@/utils/haptics';
 import { groupLabel } from '@/utils/comunica/marks';
 import {
@@ -98,6 +99,7 @@ function Body({
     (m) => !q || `${m.firstName} ${m.lastName}`.toLowerCase().includes(q),
   );
   const canSeeHealth = !!me?.canSeeHealth;
+  const canOpenMonitors = coordinationAccess(me?.roles).any;
   // Llegar de un grupo da anterior/siguiente en la ficha.
   const open = (p: ParticipantRow) =>
     router.push({
@@ -163,20 +165,50 @@ function Body({
         </Section>
       ) : shownMonitors.length > 0 ? (
         <Section title="Monitores">
-          {shownMonitors.map((m) => (
-            // La ficha del monitor es del plan 06: hasta que exista, sin enlace.
-            <View
-              key={m.id}
-              style={styles.monitor}
-              accessible
-              accessibilityLabel={`${m.firstName} ${m.lastName}, monitor`}
-            >
-              <PersonAvatar person={m} size={36} />
-              <Text style={[styles.monitorName, { color: t.text }]}>
-                <Text style={styles.bold}>{m.firstName}</Text> {m.lastName}
-              </Text>
-            </View>
-          ))}
+          {shownMonitors.map((m) => {
+            const body = (
+              <>
+                <PersonAvatar person={m} size={36} />
+                <Text style={[styles.monitorName, { color: t.text }]}>
+                  <Text style={styles.bold}>{m.firstName}</Text> {m.lastName}
+                </Text>
+              </>
+            );
+            // Su ficha (plan 06): solo coordinación y acompañamiento; con
+            // anterior/siguiente sobre los monitores de este grupo.
+            return canOpenMonitors ? (
+              <PressableFeedback
+                key={m.id}
+                onPress={() =>
+                  router.push({
+                    pathname: '/comunica/coordinacion/monitor/[id]',
+                    params: { id: m.id, desde: `grupo:${group.id}` },
+                  })
+                }
+                accessibilityRole="button"
+                accessibilityLabel={`${m.firstName} ${m.lastName}, monitor`}
+                accessibilityHint="Abre su ficha"
+                style={styles.monitor}
+              >
+                <PressableFeedback.Highlight />
+                {body}
+                <IconSymbol
+                  name="chevron.right"
+                  size={16}
+                  color={t.textMuted}
+                />
+              </PressableFeedback>
+            ) : (
+              <View
+                key={m.id}
+                style={styles.monitor}
+                accessible
+                accessibilityLabel={`${m.firstName} ${m.lastName}, monitor`}
+              >
+                {body}
+              </View>
+            );
+          })}
         </Section>
       ) : null}
 

@@ -8,6 +8,9 @@
 //   pasar-lista/grupos, pasar-lista/[groupId], …/historial → Pasar Lista.
 //   grupos, grupos/[groupId], grupos/sin-grupo, grupos/persona/[personId]
 //            → Grupos y fichas y la ficha del participante (plan 05).
+//   coordinacion, …/resumen, …/monitores, …/reuniones, …/monitor/[id]
+//            → Coordinación, el resumen, la lista de monitores, las reuniones
+//              y la ficha del monitor (plan 06).
 //   acceso-codigo, acceso-elegir → entrar (plan 02; «Entra en tu área» es la
 //              propia puerta cuando no hay sesión).
 //   yo       → tu cuenta y salir.
@@ -73,6 +76,26 @@ export default function ComunicaLayout() {
         />
         <Stack.Screen
           name="grupos/persona/[personId]"
+          options={{ title: 'Ficha' }}
+        />
+        <Stack.Screen
+          name="coordinacion/index"
+          options={{ title: 'Coordinación' }}
+        />
+        <Stack.Screen
+          name="coordinacion/resumen"
+          options={{ title: 'Resumen de grupos' }}
+        />
+        <Stack.Screen
+          name="coordinacion/monitores"
+          options={{ title: 'Lista de monitores' }}
+        />
+        <Stack.Screen
+          name="coordinacion/reuniones"
+          options={{ title: 'Reuniones de programación' }}
+        />
+        <Stack.Screen
+          name="coordinacion/monitor/[id]"
           options={{ title: 'Ficha' }}
         />
         <Stack.Screen name="acceso-codigo" options={{ title: 'Código' }} />

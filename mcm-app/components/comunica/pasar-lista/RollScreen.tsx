@@ -15,7 +15,7 @@
 //     pasa a la cola, que lo sube sola. Al contestar, se compara lo mandado con
 //     lo releído: nunca «guardada» sin comprobarlo.
 
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 import { Stack, useNavigation, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -40,17 +40,15 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import { longDay } from '@/utils/comunica/dates';
 import { madridTime } from '@/utils/comunica/madrid';
+import { uploadText } from '@/utils/comunica/uploadText';
 import {
   absenceStreak,
   cameLabel,
   countMarks,
   groupLabel,
-  MARK_LABEL,
-  MARK_NOTE,
   missedLabel,
   nextMarkOnTap,
   participantsLabel,
-  streakLabel,
   unmarkedLabel,
 } from '@/utils/comunica/marks';
 import {
@@ -77,11 +75,11 @@ import AreaScreen from '../comun/AreaScreen';
 import BottomActionBar from '../comun/BottomActionBar';
 import { confirmAction } from '../comun/confirm';
 import { MarkIcon, MarkLegend } from '../comun/MarkControl';
-import PersonRow from '../comun/PersonRow';
 import Section from '../comun/Section';
 import UploadStatus from '../comun/UploadStatus';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import MarkSheet from './MarkSheet';
+import RollRow from './RollRow';
 import SaveRollButton from './SaveRollButton';
 import ScreenState from './ScreenState';
 import SessionPicker from './SessionPicker';
@@ -392,24 +390,6 @@ function RollEditor({
           ? 'Cambios sin guardar · los datos están solo en tu móvil'
           : null;
 
-  const uploadText = !queued
-    ? ''
-    : queued.status === 'pending'
-      ? 'Guardado en el móvil. Se enviará solo al volver la cobertura.'
-      : queued.status === 'sending'
-        ? 'Guardando…'
-        : queued.status === 'stuck'
-          ? 'Comunica lleva un rato sin responder. Tus marcas siguen en el móvil: pulsa «Reintentar».'
-          : queued.error?.auto
-            ? 'Comunica no responde ahora. Se volverá a intentar sola.'
-            : queued.error?.reason === 'session_in_future'
-              ? 'Esta sesión aún no ha llegado.'
-              : queued.error?.code === 'forbidden'
-                ? 'No tienes acceso a esto.'
-                : queued.error?.code === 'validation' && queued.error.message
-                  ? queued.error.message
-                  : 'No se ha guardado. Tus marcas siguen aquí: vuelve a guardar.';
-
   return (
     <AreaScreen
       onRefresh={refetch}
@@ -428,7 +408,7 @@ function RollEditor({
                   { color: t.textSecondary },
                 ]}
               >
-                {uploadText}
+                {uploadText(queued)}
               </Text>
               {queued.status === 'stuck' ? (
                 <PressableFeedback
@@ -581,7 +561,7 @@ function RollEditor({
         {roll.entries.map((e) => (
           <RollRow
             key={e.person.id}
-            entry={e}
+            person={e.person}
             mark={draft.marks[e.person.id] ?? null}
             note={draft.notes[e.person.id] ?? ''}
             streak={streaks[e.person.id] ?? 0}
@@ -649,85 +629,6 @@ function RollEditor({
   );
 }
 
-const RollRow = memo(function RollRow({
-  entry,
-  mark,
-  note,
-  streak,
-  disabled,
-  onTap,
-  onSet,
-  onMore,
-}: {
-  entry: RollDetail['entries'][number];
-  mark: Mark;
-  note: string;
-  streak: number;
-  disabled: boolean;
-  onTap: (id: string) => void;
-  onSet: (id: string, m: SetMark) => void;
-  onMore: (id: string) => void;
-}) {
-  const id = entry.person.id;
-  const t = useComunicaTheme();
-  const lines = [mark ? MARK_NOTE[mark] : undefined, note || undefined].filter(
-    Boolean,
-  ) as string[];
-  // Nombre y primer apellido.
-  const person = {
-    ...entry.person,
-    lastName: entry.person.lastName.split(' ')[0],
-  };
-  return (
-    <View
-      accessible
-      accessibilityLabel={[
-        `${entry.person.firstName} ${entry.person.lastName}`,
-        ...lines,
-        streak >= 2 ? streakLabel(streak) : null,
-        mark ? MARK_LABEL[mark] : 'Sin marcar',
-      ]
-        .filter(Boolean)
-        .join(', ')}
-      accessibilityHint="Toca para vino o no vino"
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      accessibilityActions={[
-        { name: 'activate' },
-        { name: 'partial', label: 'Parcial' },
-        { name: 'justified', label: 'Justificada' },
-        { name: 'more', label: 'Más opciones' },
-      ]}
-      onAccessibilityAction={(e) => {
-        if (disabled) return;
-        const name = e.nativeEvent.actionName;
-        if (name === 'activate') onTap(id);
-        if (name === 'partial') onSet(id, 'partial');
-        if (name === 'justified') onSet(id, 'no_justified');
-        if (name === 'more') onMore(id);
-      }}
-    >
-      <PersonRow
-        person={person}
-        subtitle={lines.join(' · ') || undefined}
-        disabled={disabled}
-        onPress={() => onTap(id)}
-        onLongPress={() => onMore(id)}
-        right={
-          <View style={styles.right}>
-            {streak >= 2 ? (
-              <Text style={[styles.streak, { color: t.dangerText }]}>
-                {streakLabel(streak)}
-              </Text>
-            ) : null}
-            <MarkIcon mark={mark} />
-          </View>
-        }
-      />
-    </View>
-  );
-});
-
 function Notice({
   icon,
   text,
@@ -789,13 +690,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
   },
   allCameLabel: { ...typography.button },
-  right: { alignItems: 'center', gap: 8, flexDirection: 'row' },
-  streak: {
-    ...typography.footnote,
-    fontWeight: '600',
-    maxWidth: 96,
-    textAlign: 'right',
-  },
   help: { gap: 8 },
   counts: {
     flexDirection: 'row',

@@ -23,6 +23,7 @@ type IconMapping = {
   'music.note.list': 'queue-music';
   trash: 'delete';
   'checkmark.circle.fill': 'check-circle';
+  'xmark.circle.fill': 'cancel';
   'tray.and.arrow.down': 'file-download';
   'square.and.arrow.up.on.square': 'file-upload';
   // Área privada nativa de Comunica
@@ -96,6 +97,7 @@ const MAPPING: IconMapping = {
   'music.note.list': 'queue-music',
   trash: 'delete',
   'checkmark.circle.fill': 'check-circle',
+  'xmark.circle.fill': 'cancel',
   'tray.and.arrow.down': 'file-download',
   'square.and.arrow.up.on.square': 'file-upload',
   // Área privada nativa de Comunica

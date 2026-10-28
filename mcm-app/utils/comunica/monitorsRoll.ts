@@ -21,7 +21,6 @@ import type {
   MonitorsRoll,
   MonitorsRollWrite,
   SessionSummary,
-  SetMark,
   Stage,
   TeamMember,
 } from '@/services/comunica/contract';

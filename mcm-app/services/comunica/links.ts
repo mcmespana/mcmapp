@@ -115,6 +115,25 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
           params: { personId: d.id },
         }
       : { pathname: '/comunica/grupos' },
+  // Coordinación (plan 06). La ficha del monitor lleva al monitor en
+  // `monitor`, que el destino no conserva: con un `id`, su ficha.
+  single_stic_coordinacion: () => ({ pathname: '/comunica/coordinacion' }),
+  single_stic_pasar_lista_resumen: () => ({
+    pathname: '/comunica/coordinacion/resumen',
+  }),
+  single_stic_pasar_lista_monitores: () => ({
+    pathname: '/comunica/coordinacion/monitores',
+  }),
+  single_stic_pasar_lista_reuniones: () => ({
+    pathname: '/comunica/coordinacion/reuniones',
+  }),
+  single_stic_pasar_lista_monitor: (d) =>
+    d.id
+      ? {
+          pathname: '/comunica/coordinacion/monitor/[id]',
+          params: { id: d.id },
+        }
+      : { pathname: '/comunica/coordinacion' },
   single_stic_password_change: () => ({ pathname: '/comunica/yo' }),
   single_stic_unsubscribe: () => ({ pathname: '/comunica/yo' }),
 };

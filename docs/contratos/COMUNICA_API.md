@@ -147,6 +147,58 @@ El glosario completo está en el plan 00 §1. Lo mínimo:
 - Si el CRM no contesta: `crm_unavailable`, **nunca una lista vacía**.
   Una relación con fin vacío o `0000-00-00` está vigente.
 
+### Coordinación (plan 06)
+
+Esquemas en `services/comunica/contract.ts` (bloque «Coordinación»). Todo de
+la delegación de quien llama; el alcance es **la suma** de sus relaciones de
+coordinación y acompañamiento vigentes (`alcance-coord`).
+
+- `GET /v1/coordination` → `{ generatedAt, weeklyMonitorsRoll, lastSession,
+  team }`. Coordinación o acompañamiento (si no, 403). `weeklyMonitorsRoll`
+  solo a coordinación. `team`: `TeamMember[]` ordenados por curso → grupo →
+  apellido; los que no van por grupos de Pasar Lista llevan `unassigned`
+  `{ membershipId, kind, outsideGroupName? }` (plugin, 24-25/10/2026):
+  - `kind: 'none'`: sin grupo de verdad (vacío o el comodín «POR DEFINIR»).
+    Se vincula. Solo para quien ve toda la delegación.
+  - `kind: 'support'`: de un grupo de **Apoyo** (no pasa lista). Lo ven
+    **todas** las coordinaciones, también las de una etapa.
+  - `kind: 'outside'`: de otro grupo que no pasa lista (Najar, Ruah…). Solo
+    para quien ve toda la delegación; la app lo pliega al final.
+- `GET /v1/coordination/summary` → el Resumen de grupos: `{ season, scoped,
+  stripLimit, mine, rest, review }`. Todo el equipo. «Sin grupo asignado» de
+  `review` = solo **participantes MIC-COM** (no adultos de COM-LC).
+- `GET /v1/coordination/monitors-roll?kind=weekly|meeting&stage=&session=` →
+  la lista de monitores. Solo coordinación. Semanal: una por etapa del alcance,
+  cada una sobre su evento (`stages`, `stage`). Cada fila lleva `optional`:
+  en la semanal, `true` para quien no va por grupos (Apoyo, otros grupos, sin
+  grupo), que van en la lista de la etapa por defecto, **de joven a mayor**
+  (sin fecha de nacimiento, al final y por apellido). En una reunión, nunca.
+- `PUT /v1/sessions/:id/monitors-roll` `{ clientId, kind, marks }` →
+  `WriteResult` + `rollCall`. **Una marca por fila, ninguna `null`**: el verde
+  es un dato y se escribe `yes`. Las filas `optional` sin marcar **no van** y
+  no se escriben ni cuentan. El servidor crea las inscripciones que falten, no
+  reescribe lo que no cambia, recorta el motivo a 255 y no duplica con el mismo
+  `clientId`. Sesión futura (salvo la próxima si no ha empezado ninguna, o una
+  reunión) → `validation` / `session_in_future`.
+- `GET /v1/coordination/meetings` → las reuniones de programación del curso,
+  de la más reciente a la más antigua. Solo coordinación.
+- `POST /v1/meetings` `{ clientId, name (1-120), date, startTime, durationHours
+  (1 · 1,5 · 2 · 3 · 4) }` → `WriteResult` + `meeting`. Crea el evento del
+  curso si no existe.
+- `GET /v1/monitors/:id` → la ficha del monitor (sin seguimientos, sin
+  familia, sin salud). Coordinación (monitor de su alcance) o acompañamiento;
+  si no, 403.
+- `GET /v1/monitors/:id/follow-ups` → `{ readable, writable, items }`. **El
+  móvil no lo guarda nunca.** Sobre uno mismo, `readable` y `writable`
+  vacíos. Incidencias y valoraciones: las escribe coordinación y las leen
+  coordinación y acompañamiento; las de acompañamiento, solo acompañamiento.
+- `POST /v1/monitors/:id/follow-ups` `{ clientId, type, date, text }` →
+  `WriteResult` + `item`. Un tipo que no está en `writable` → 403.
+- `POST /v1/events/:id/sessions/today` `{ clientId }` → `WriteResult` +
+  `session`; si ya existe, se reutiliza.
+- `PUT /v1/memberships/:id/group` (el de Grupos y fichas) vincula también a
+  un monitor `unassigned.kind = 'none'`.
+
 ### Salud
 
 - `GET /v1/people/:id/health` → `{ generatedAt, personId, items: [{ kind,
@@ -160,6 +212,7 @@ El glosario completo está en el plan 00 §1. Lo mínimo:
 ## 4. Lo que vendrá
 
 Cada plan de pantallas añade su trozo al ejecutarse (catálogo en el plan 00
-§3): coordinación (06), eventos (07), avisos (08), mis
+§3): eventos (07), avisos (08), mis
 datos de monitor (09), familias (11-16) y el pase a la web del legado
-(`POST /v1/web-pass`, plan 10).
+(`POST /v1/web-pass`, plan 10). Y la delegación de trabajo de quien colabora
+con varias (`X-Comunica-Delegation`, plan 17).

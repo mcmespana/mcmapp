@@ -1,6 +1,6 @@
 # 06 — Coordinación
 
-> **Estado:** 🟠 empezado (tareas 1-3 hechas; pantallas sin hacer, ver la fila 06 de [README.md](README.md)) en `nuevoComunicaChulo` · **Depende de:** 04, 05 · **Tamaño:** L · **Índice:** [README.md](README.md)
+> **Estado:** ✅ hecho (28/10/2026) en `nuevoComunicaChulo`: tareas 1-12, con los cambios del plugin del 23-25/10 (abajo). Falta revisarlo en un dispositivo · **Depende de:** 04, 05 · **Tamaño:** L · **Índice:** [README.md](README.md)
 
 ## Para qué y para quién
 

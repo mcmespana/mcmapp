@@ -2,6 +2,12 @@
 // cuatro estados con el actual marcado y lo que significa cada uno, el motivo
 // (solo con marca, 255 caracteres), «Ficha y teléfonos» y «Quitar la marca».
 // Cerrarla de cualquier forma guarda lo escrito.
+//
+// En la lista de MONITORES (plan 06, `mode="monitors"`) es la misma hoja: el
+// verde es el punto de partida, así que el motivo y «Quitar la marca» (que
+// vuelve a verde) solo salen con una falta o un parcial. En una fila
+// `optional` (Apoyo, otros grupos) el punto de partida es «-»: «Quitar la
+// marca» vuelve a «-».
 
 import React from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
@@ -31,6 +37,11 @@ interface Props {
   onNote: (note: string) => void;
   onClose: () => void;
   onOpenFicha?: () => void;
+  mode?: 'participants' | 'monitors';
+  /** Monitores: una fila sin grupo de Pasar Lista (parte de «-»). */
+  optional?: boolean;
+  /** El texto del enlace a la ficha («Ficha y teléfonos ›»). */
+  fichaLabel?: string;
 }
 
 export default function MarkSheet({
@@ -42,8 +53,18 @@ export default function MarkSheet({
   onNote,
   onClose,
   onOpenFicha,
+  mode = 'participants',
+  optional = false,
+  fichaLabel = 'Ficha y teléfonos ›',
 }: Props) {
   const t = useComunicaTheme();
+  const monitors = mode === 'monitors';
+  // De qué se parte: «-» (chavales y monitores opcionales) o «vino».
+  const baseline: Mark = monitors && !optional ? 'yes' : null;
+  const canClear = mark !== baseline;
+  // El motivo: con cualquier marca en los chavales; en monitores, solo con
+  // una falta o un parcial.
+  const withNote = monitors ? !!mark && mark !== 'yes' : !!mark;
   // El motivo va directo al borrador a cada letra: cerrar la hoja de cualquier
   // forma ya lo deja guardado.
   const close = onClose;
@@ -95,12 +116,14 @@ export default function MarkSheet({
           })}
         </View>
 
-        {mark ? (
+        {withNote ? (
           <TextInput
             value={note}
             onChangeText={onNote}
             maxLength={NOTE_MAX}
-            placeholder="Añadir un motivo (opcional)"
+            placeholder={
+              monitors ? 'Añadir un motivo' : 'Añadir un motivo (opcional)'
+            }
             placeholderTextColor={t.textMuted}
             accessibilityLabel="Motivo"
             multiline
@@ -122,13 +145,13 @@ export default function MarkSheet({
               style={styles.linkTarget}
             >
               <Text style={[styles.link, { color: t.accentText }]}>
-                Ficha y teléfonos ›
+                {fichaLabel}
               </Text>
             </PressableFeedback>
           ) : (
             <View />
           )}
-          {mark ? (
+          {canClear ? (
             <PressableFeedback
               onPress={() => {
                 h.remove();

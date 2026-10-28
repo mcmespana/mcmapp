@@ -22,7 +22,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useQueryClient } from '@tanstack/react-query';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import {
@@ -63,11 +62,13 @@ import {
 } from '@/utils/comunica/pasarLista';
 import { pendingDisplay } from '@/utils/comunica/rollDraft';
 import { shortDate } from '@/utils/comunica/sessions';
+import { scopeLabel } from '@/utils/comunica/scope';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
 import DateCapsule from '../comun/DateCapsule';
 import RecordCard from '../comun/RecordCard';
 import RoleChip from '../comun/RoleChip';
+import NavRow from '../comun/NavRow';
 import Section from '../comun/Section';
 import SyncBadge from '../comun/SyncBadge';
 import { STAGE_COLOR } from '../comun/theme';
@@ -121,16 +122,6 @@ function useGoTo() {
     if (native) router.push(native as never);
     else void openLegacy(destination, title);
   };
-}
-
-function scopeLabel(me: Me | null): string {
-  if (!me || me.scope === 'delegation') return 'toda la delegación';
-  const seg = { com_1: 'COM I', com_2: 'COM II', com_3: 'COM III' } as const;
-  const parts = [
-    ...(me.scope.stages ?? []).map((s) => s.toUpperCase()),
-    ...(me.scope.segments ?? []).map((s) => seg[s]),
-  ];
-  return parts.join(', ') || 'toda la delegación';
 }
 
 function HomeContent({
@@ -484,41 +475,50 @@ function HomeContent({
         />
       </Section>
 
-      {coordination ? (
-        <Section title={`Coordinación · ${scopeLabel(me)}`}>
-          {today.pendingMeeting ? (
+      {coordination || accompaniment ? (
+        <Section
+          title={
+            coordination
+              ? `Coordinación · ${scopeLabel(me?.scope ?? 'delegation')}`
+              : 'Acompañamiento'
+          }
+        >
+          {coordination && today.pendingMeeting ? (
             <MissingRow
               day={today.pendingMeeting.date}
               group={today.pendingMeeting.name}
               onPress={() =>
-                goTo(
-                  { internalpage: 'single_stic_pasar_lista_reuniones' },
-                  'Reuniones de programación',
-                )
+                router.push({
+                  pathname: '/comunica/coordinacion/monitores',
+                  params: {
+                    tipo: 'reunion',
+                    sesion: today.pendingMeeting!.sessionId,
+                  },
+                })
               }
             />
           ) : null}
+          {coordination ? (
+            <NavRow
+              icon="person.3"
+              title="Lista de monitores"
+              subtitle="Quién ha venido el sábado"
+              onPress={() => router.push('/comunica/coordinacion/monitores')}
+            />
+          ) : null}
+          {coordination ? (
+            <NavRow
+              icon="calendar"
+              title="Reuniones de programación"
+              subtitle="Crearlas y pasar lista"
+              onPress={() => router.push('/comunica/coordinacion/reuniones')}
+            />
+          ) : null}
           <NavRow
-            icon="person.3"
-            title="Lista de monitores"
-            subtitle="Quién ha venido el sábado"
-            onPress={() =>
-              goTo(
-                { internalpage: 'single_stic_pasar_lista_monitores' },
-                'Lista de monitores',
-              )
-            }
-          />
-          <NavRow
-            icon="calendar"
-            title="Reuniones de programación"
-            subtitle="Crearlas y pasar lista"
-            onPress={() =>
-              goTo(
-                { internalpage: 'single_stic_pasar_lista_reuniones' },
-                'Reuniones de programación',
-              )
-            }
+            icon="person.2"
+            title="Tu equipo"
+            subtitle="Los monitores, sus fichas y seguimientos"
+            onPress={() => router.push('/comunica/coordinacion')}
           />
         </Section>
       ) : null}
@@ -563,54 +563,6 @@ function MissingRow({
         <Text style={[styles.rowSub, { color: t.textSecondary }]}>{group}</Text>
       </View>
       <Text style={[styles.action, { color: t.accentText }]}>Recuperar</Text>
-    </PressableFeedback>
-  );
-}
-
-type NavIcon = 'bus' | 'chart.bar' | 'person.2' | 'person.3' | 'calendar';
-
-function NavRow({
-  title,
-  subtitle,
-  trailing,
-  dot,
-  icon,
-  onPress,
-}: {
-  title: string;
-  subtitle?: string;
-  trailing?: string;
-  dot?: string;
-  icon?: NavIcon;
-  onPress?: () => void;
-}) {
-  const t = useComunicaTheme();
-  const label = [title, subtitle, trailing].filter(Boolean).join(', ');
-  return (
-    <PressableFeedback
-      onPress={onPress}
-      isDisabled={!onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={styles.row}
-    >
-      <PressableFeedback.Highlight />
-      {dot ? <View style={[styles.dot, { backgroundColor: dot }]} /> : null}
-      {icon ? <IconSymbol name={icon} size={20} color={t.accentText} /> : null}
-      <View style={styles.rowBody}>
-        <Text style={[styles.rowTitle, { color: t.text }]}>{title}</Text>
-        {subtitle ? (
-          <Text style={[styles.rowSub, { color: t.textSecondary }]}>
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
-      {trailing ? (
-        <Text style={[styles.rowSub, { color: t.textSecondary }]}>
-          {trailing}
-        </Text>
-      ) : null}
-      <IconSymbol name="chevron.right" size={16} color={t.textMuted} />
     </PressableFeedback>
   );
 }

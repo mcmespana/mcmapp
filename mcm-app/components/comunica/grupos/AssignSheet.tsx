@@ -20,7 +20,11 @@ import { confirmAction } from '../comun/confirm';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 
 interface Props {
-  person: ParticipantRow | null;
+  /** Un chaval «sin grupo» (plan 05) o un monitor sin grupo (plan 06). */
+  person: Pick<
+    ParticipantRow,
+    'id' | 'firstName' | 'schoolLevel' | 'unassignedMembershipId'
+  > | null;
   groups: readonly GroupWithMonitors[];
   onClose: () => void;
 }

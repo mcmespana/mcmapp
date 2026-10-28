@@ -12,7 +12,9 @@
 //     deja escribir, se queda lo de la vez anterior.
 //   · La cola de escrituras de esa persona, que sube al encolar, al
 //     reconectar, al volver la app y al abrir una pantalla del área. Sabe
-//     subir listas (plan 04), avisos, pañuelos y vincular a un grupo (plan 05).
+//     subir listas (plan 04), avisos, pañuelos y vincular a un grupo (plan 05),
+//     y la lista de monitores, reuniones, seguimientos y la sesión de hoy
+//     (plan 06).
 //     Se crea al entrar y se APAGA (`dispose`) al salir o cambiar de persona:
 //     ni reintentos ni escrituras de A después.
 
@@ -40,6 +42,11 @@ import {
   isComunicaApiAvailable,
 } from '@/services/comunica';
 import type {
+  FollowUpsResponse,
+  FollowUpWrite,
+  FollowUpWriteResult,
+  MeetingWrite,
+  MonitorsRollWrite,
   NoticeWrite,
   NoticeWriteResult,
   ParticipantProfile,
@@ -236,6 +243,26 @@ export default function ComunicaAreaProvider({
             groupId: (e.payload as { groupId: string }).groupId,
             clientId: e.clientId,
           }),
+        // Coordinación (plan 06).
+        'monitors-roll': (e) =>
+          getComunicaApi().saveMonitorsRoll(e.meta.sessionId, {
+            ...(e.payload as Omit<MonitorsRollWrite, 'clientId'>),
+            clientId: e.clientId,
+          }),
+        meeting: (e) =>
+          getComunicaApi().createMeeting({
+            ...(e.payload as Omit<MeetingWrite, 'clientId'>),
+            clientId: e.clientId,
+          }),
+        'follow-up': (e) =>
+          getComunicaApi().createFollowUp(e.meta.monitorId, {
+            ...(e.payload as Omit<FollowUpWrite, 'clientId'>),
+            clientId: e.clientId,
+          }),
+        'session-today': (e) =>
+          getComunicaApi().createSessionToday(e.meta.eventId, {
+            clientId: e.clientId,
+          }),
       },
       onApplied: (e, result) => {
         if (e.kind === 'roll') {
@@ -267,7 +294,34 @@ export default function ComunicaAreaProvider({
           );
           void qc.invalidateQueries({ queryKey: personKey });
         }
+        // Coordinación: lo que diga el servidor es la verdad (la lista de
+        // monitores NO se verifica comparando con lo de antes, plan 06 §3).
+        if (e.kind === 'monitors-roll' || e.kind === 'session-today') {
+          void qc.invalidateQueries({ queryKey: areaKey(['coordination']) });
+          void qc.invalidateQueries({
+            queryKey: areaKey(['pasar-lista', 'today']),
+          });
+        }
+        if (e.kind === 'meeting') {
+          void qc.invalidateQueries({ queryKey: areaKey(['coordination']) });
+          void qc.invalidateQueries({
+            queryKey: areaKey(['pasar-lista', 'today']),
+          });
+        }
+        if (e.kind === 'follow-up') {
+          const { item } = result as FollowUpWriteResult;
+          const key = areaKey(['coordination', 'monitor', e.meta.monitorId]);
+          qc.setQueryData<FollowUpsResponse>([...key, 'followUps'], (old) =>
+            old && !old.items.some((x) => x.id === item.id)
+              ? { ...old, items: [item, ...old.items] }
+              : old,
+          );
+          void qc.invalidateQueries({ queryKey: [...key, 'followUps'] });
+        }
         if (e.kind === 'membership-group') {
+          void qc.invalidateQueries({
+            queryKey: areaKey(['coordination', 'home']),
+          });
           const { groupId } = e.payload as { groupId: string };
           qc.setQueryData<PeopleIndex>(
             areaKey(['grupos', 'people']),
