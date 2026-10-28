@@ -35,6 +35,7 @@ import { useComunicaTheme } from '../comun/useComunicaTheme';
 import SessionPicker from '../pasar-lista/SessionPicker';
 import ActivityTabView from './ActivityTabView';
 import EventRollList from './EventRollList';
+import ShareEventButton from './ShareEventButton';
 
 /** Con más pestañas que esto, fila de chips en vez de segmentado. */
 const MAX_SEGMENTS = 3;
@@ -106,17 +107,21 @@ export default function EventScreen({
         options={{
           title: roll?.event.name ?? 'Evento',
           headerLargeTitle: false,
-          headerRight:
-            !tab && current
-              ? () => (
-                  <SessionPicker
-                    options={options}
-                    current={current}
-                    tint={tint}
-                    onPick={(sid) => router.setParams({ session: sid })}
-                  />
-                )
-              : undefined,
+          headerRight: roll
+            ? () => (
+                <View style={styles.headerRight}>
+                  <ShareEventButton event={roll.event} />
+                  {!tab && current ? (
+                    <SessionPicker
+                      options={options}
+                      current={current}
+                      tint={tint}
+                      onPick={(sid) => router.setParams({ session: sid })}
+                    />
+                  ) : null}
+                </View>
+              )
+            : undefined,
         }}
       />
       {!roll || !pick ? (
@@ -230,6 +235,7 @@ function EventHead({
 
 const styles = StyleSheet.create({
   head: { gap: 12, paddingHorizontal: 16, paddingTop: 16 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   meta: { ...typography.subhead },
   tabsRow: { marginHorizontal: -16 },
 });

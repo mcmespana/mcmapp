@@ -159,11 +159,22 @@ describe('servidor falso', () => {
       events: await s.getEvents(),
       eventRoll: await s.getEventRoll('f-ev-convivencia'),
       saveEventRoll: await s.saveEventRoll('f-ev-excursion', {
-        clientId: CLIENT(27),
+        clientId: CLIENT(29),
         sessionId: null,
         day: s.eventData.events[1].startDay,
         marks: {},
       }),
+      // Avisos en el móvil (plan 08).
+      registerDevice: await s.registerDevice({
+        clientId: CLIENT(27),
+        deviceId: CLIENT(28),
+        pushToken: 'ExponentPushToken[prueba]',
+        platform: 'ios',
+        appVersion: '2.1.0',
+        channels: { rollCall: 'comunica-listas', groups: 'comunica-grupos' },
+        prefs: { rollCallDue: true, groupChanges: true },
+      }),
+      unregisterDevice: await s.unregisterDevice(CLIENT(28)),
     };
     for (const [name, value] of Object.entries(results)) {
       expect(

@@ -19,7 +19,7 @@
 // Este fichero tiene lo compartido (plan 00 §3), el trozo de Pasar Lista
 // (plan 04 «Datos»), el de Grupos y fichas (plan 05) y el de Coordinación
 // (plan 06). Cada plan de
-// pantallas añade aquí su trozo al ejecutarse.
+// pantallas añade aquí su trozo al ejecutarse. Avisos en el móvil: plan 08.
 
 // El esquema y su tipo se llaman igual (`Me` el valor, `Me` el tipo): es el
 // patrón de zod, y lo que la regla toma por redeclaración es justo eso.
@@ -1173,6 +1173,66 @@ export const EventRollWriteResult = WriteResult.extend({
 });
 export type EventRollWriteResult = z.infer<typeof EventRollWriteResult>;
 
+// ── Avisos en el móvil (plan 08 «Datos») ────────────────────────────────────
+
+/**
+ * Los canales de Android que crea ESTE bundle para los avisos del área
+ * (`constants/notificationChannels.ts`, `source: 'comunica'`). El móvil los
+ * declara al registrarse y el servidor manda con ellos, nunca con uno escrito
+ * a mano: un canal que la app no declara, Android lo tira sin decir nada.
+ */
+export const COMUNICA_CHANNEL_IDS = {
+  rollCall: 'comunica-listas',
+  groups: 'comunica-grupos',
+} as const;
+
+/** `POST /v1/devices` — alta o cambio del móvil; idempotente por `deviceId`. */
+export const DeviceRegistration = z.object({
+  clientId: ClientId,
+  /** UUID v4 del móvil, guardado con la sesión (se borra al salir). */
+  deviceId: z.uuid(),
+  /** El token de Expo, del MISMO proyecto que usa el Panel. */
+  pushToken: z.string().regex(/^Expo(nent)?PushToken\[[^\]]+\]$/),
+  platform: z.enum(['ios', 'android']),
+  appVersion: z.string().min(1),
+  channels: z.object({
+    rollCall: z.literal(COMUNICA_CHANNEL_IDS.rollCall),
+    groups: z.literal(COMUNICA_CHANNEL_IDS.groups),
+  }),
+  /** Con las dos en `false`, el servidor no manda nada a este móvil. */
+  prefs: z.object({ rollCallDue: z.boolean(), groupChanges: z.boolean() }),
+});
+export type DeviceRegistration = z.infer<typeof DeviceRegistration>;
+
+/** `DELETE /v1/devices/:deviceId` — 204, sin cuerpo. */
+export const NoContent = z.union([z.null(), z.undefined()]);
+
+export const COMUNICA_PUSH_TYPES = [
+  'rollcall_due',
+  'group_changed',
+  'outbox_pending',
+] as const;
+
+/** Un id que viene en un aviso: corto y sin nada raro (si no, a la portada). */
+const NoticeRef = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
+
+/**
+ * El `data` de cada aviso del área. SIN texto libre (ni nombres ni salud: la
+ * pantalla bloqueada la ve cualquiera, y el texto pasa por Expo, Apple y
+ * Google): solo el tipo y los ids a los que lleva. Nunca una ruta: la app
+ * decide a dónde va (`utils/comunica/noticeRoutes.ts`).
+ */
+export const ComunicaPushData = z.object({
+  source: z.literal('comunica'),
+  v: z.literal(1),
+  /** `comunica:<uuid>`: no choca con los ids del Panel. */
+  id: z.string().regex(/^comunica:[0-9a-f-]{36}$/i),
+  type: z.enum(COMUNICA_PUSH_TYPES),
+  groupId: NoticeRef.optional(),
+  sessionId: NoticeRef.optional(),
+});
+export type ComunicaPushData = z.infer<typeof ComunicaPushData>;
+
 // ── Salud (lo único que lleva texto de salud; nunca se guarda) ──────────────
 
 export const HEALTH_KINDS = [
@@ -1385,6 +1445,19 @@ export const ROUTES = {
     method: 'PUT',
     path: '/v1/events/:id/roll',
     response: EventRollWriteResult,
+    persist: false,
+  },
+  // Avisos en el móvil (plan 08).
+  registerDevice: {
+    method: 'POST',
+    path: '/v1/devices',
+    response: WriteResult,
+    persist: false,
+  },
+  unregisterDevice: {
+    method: 'DELETE',
+    path: '/v1/devices/:deviceId',
+    response: NoContent,
     persist: false,
   },
 } as const;

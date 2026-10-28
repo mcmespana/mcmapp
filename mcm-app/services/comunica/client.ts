@@ -16,6 +16,8 @@ import {
   EventRollWrite,
   EventRoll,
   type CodeRequest,
+  type DeviceRegistration,
+  NoContent,
   CoordinationHome,
   CoordinationSummary,
   FollowUpsResponse,
@@ -136,6 +138,10 @@ export interface ComunicaApi {
     eventId: string,
     body: EventRollWrite,
   ): Promise<EventRollWriteResult>;
+  // Avisos en el móvil (plan 08).
+  registerDevice(body: DeviceRegistration): Promise<WriteResult>;
+  /** Al salir: se borra este móvil (solo el tuyo). */
+  unregisterDevice(deviceId: string): Promise<void>;
   /**
    * Cómo pedir una foto (`photoUrl`): con el servidor de verdad, la URL con el
    * token; con el falso, su imagen inventada. Ninguna pantalla importa el falso.
@@ -476,6 +482,11 @@ export function createHttpClient({
       ),
     saveEventRoll: (id, body) =>
       request('PUT', `/v1/events/${enc(id)}/roll`, EventRollWriteResult, body),
+    // Por la cola (el alta) o directa con tope (el borrado, al salir).
+    registerDevice: (body) => request('POST', '/v1/devices', WriteResult, body),
+    unregisterDevice: async (deviceId) => {
+      await request('DELETE', `/v1/devices/${enc(deviceId)}`, NoContent);
+    },
     photoSource: (url) => {
       // `expo-image` pide la foto él solo: el token va en la cabecera, y SOLO
       // si la foto es de nuestro servidor (una `photoUrl` de otro dominio no se

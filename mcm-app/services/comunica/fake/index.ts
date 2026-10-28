@@ -74,6 +74,7 @@ import { unionScope, type CoordRelation } from '@/utils/comunica/scope';
 import { createCoordinationRoutes, pendingMeetingOf } from './coordination';
 import { createEventRoutes } from './events';
 import type { FakeEventData } from './fixturesEvents';
+import * as fakeDevices from './devices';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export interface FakeControls {
@@ -163,7 +164,7 @@ const CODE_TTL_MS = 40 * 60_000;
 /** Códigos fallidos que bloquean esa vía una hora. */
 const MAX_BAD_CODES = 10;
 
-export interface FakeServer extends ComunicaApi {
+export interface FakeServer extends ComunicaApi, fakeDevices.DevicesFake {
   controls: FakeControls;
   setControls(patch: Partial<FakeControls>): void;
   subscribe(listener: () => void): () => void;
@@ -508,6 +509,8 @@ export function createFakeServer(
     },
   });
 
+  // Avisos en el móvil (plan 08): los móviles registrados, en `devices.ts`.
+  const devices = fakeDevices.routes(gate, () => current, seenClientIds);
   // Pasar lista en un evento (plan 07): sus rutas viven en `events.ts`.
   const events = createEventRoutes({
     data: () => data,
@@ -527,12 +530,8 @@ export function createFakeServer(
   // Sin `...coordination` dentro del literal: Babel evaluaría los getters de
   // abajo (`writeCount` se quedaría en 0). Se juntan al final.
   const server: Omit<
-    FakeServer,
-    | keyof typeof coordination
-    | 'getEvents'
-    | 'getEventRoll'
-    | 'saveEventRoll'
-    | 'eventData'
+    fakeDevices.Core<typeof coordination>,
+    'getEvents' | 'getEventRoll' | 'saveEventRoll' | 'eventData'
   > = {
     get controls() {
       return controls;
@@ -560,6 +559,7 @@ export function createFakeServer(
       seenClientIds.clear();
       codes.clear();
       badCodes.clear();
+      devices.deviceRegistry.clear();
       notify();
     },
     issueSession(p) {
@@ -1178,6 +1178,7 @@ export function createFakeServer(
   return Object.assign(
     server as typeof server & { eventData: FakeEventData },
     coordination,
+    devices,
     {
       getEvents: events.getEvents,
       getEventRoll: events.getEventRoll,

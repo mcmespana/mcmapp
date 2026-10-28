@@ -42,6 +42,7 @@ import {
   isComunicaApiAvailable,
 } from '@/services/comunica';
 import type {
+  DeviceRegistration,
   FollowUpsResponse,
   FollowUpWrite,
   FollowUpWriteResult,
@@ -67,6 +68,7 @@ import {
 import { readDrawer, writeDrawer } from '@/services/comunica/storage';
 import { dehydrateArea, fitForStorage } from '@/services/comunica/persist';
 import { areaKey } from '@/hooks/comunica/useAreaQuery';
+import { useAreaBridge } from '@/hooks/comunica/useAreaBridge';
 import { logger } from '@/utils/logger';
 
 export function createAreaQueryClient() {
@@ -271,6 +273,12 @@ export default function ComunicaAreaProvider({
             ...(e.payload as Omit<EventRollWrite, 'clientId'>),
             clientId: e.clientId,
           }),
+        // Avisos en el móvil (plan 08): el alta de este móvil.
+        device: (e) =>
+          getComunicaApi().registerDevice({
+            ...(e.payload as Omit<DeviceRegistration, 'clientId'>),
+            clientId: e.clientId,
+          }),
       },
       onApplied: (e, result) => {
         if (e.kind === 'roll') {
@@ -379,6 +387,9 @@ export default function ComunicaAreaProvider({
       box.dispose();
     };
   }, [outbox]);
+
+  // Avisos (plan 08): la cola para la raíz y refrescar al llegar un aviso.
+  useAreaBridge(qc, outbox);
 
   const value = useMemo(
     () => ({

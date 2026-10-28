@@ -17,6 +17,8 @@ import {
 } from '@/services/comunica';
 
 import { signIn } from '@/services/comunica/session';
+import { scheduleSampleNotice } from '@/services/comunica/localNotices';
+import { sampleNoticeData } from '@/services/comunica/sampleNotices';
 
 import {
   addDays,
@@ -148,6 +150,26 @@ export function ComunicaLabPanel() {
         }
       />
 
+      {/* Plan 08: un aviso LOCAL con el `data` de cada tipo, para probar a
+          dónde lleva sin servidor (también en el simulador de iOS). */}
+      <Text style={styles.label}>Simular aviso (llega a los 5 s)</Text>
+      <Text style={styles.hint}>
+        Sal de la app antes de que llegue y tócalo: abre su pantalla. Con la app
+        delante no se ve.
+      </Text>
+      <Chips
+        value={[] as SampleKind[]}
+        options={[
+          ['rollcall_due', '¿Has pasado lista?'],
+          ['group_changed', 'Novedades en tu grupo'],
+          ['outbox_pending', 'Listas sin subir'],
+        ]}
+        onChange={(type) => {
+          h.formSuccess();
+          void scheduleSampleNotice(sampleNoticeData(fake, type));
+        }}
+      />
+
       <LabButton label="Abrir la WebView de siempre" onPress={openLegacy} />
       <LabButton
         label="Empezar de cero (datos y mandos)"
@@ -224,6 +246,8 @@ function LabButton({
     </PressableFeedback>
   );
 }
+
+type SampleKind = 'rollcall_due' | 'group_changed' | 'outbox_pending';
 
 /** Tinta sobre el violeta del chip elegido (6,7:1). */
 const ON_INK = '#fff';

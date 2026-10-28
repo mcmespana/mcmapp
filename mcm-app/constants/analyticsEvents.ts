@@ -63,7 +63,8 @@ export interface AnalyticsEvents {
 
   /** El usuario toca una notificación y entra en la app. */
   notificacion_abierta: {
-    categoria: NotificationCategory | 'sin_categoria';
+    /** `comunica`: un aviso del área privada nativa (plan 08), sin ids. */
+    categoria: NotificationCategory | 'sin_categoria' | 'comunica';
   };
 
   /**

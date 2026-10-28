@@ -65,6 +65,7 @@ import {
 import { pendingDisplay } from '@/utils/comunica/rollDraft';
 import { shortDate } from '@/utils/comunica/sessions';
 import { scopeLabel } from '@/utils/comunica/scope';
+import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
 import DateCapsule from '../comun/DateCapsule';
@@ -259,6 +260,12 @@ function HomeContent({
           ) : null}
         </View>
       </View>
+
+      {/* Plan 08: sin permiso, invitar a activar los avisos del área. */}
+      <NotificationPermissionBanner
+        placement="comunica"
+        accentColor={t.accentText}
+      />
 
       {queuedCount > 0 ? (
         <Section

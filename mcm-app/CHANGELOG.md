@@ -4,6 +4,32 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-28 23:30 — Área nativa de Comunica: avisos en el móvil y compartir un evento (plan 08, rama `nuevoComunicaChulo`)
+
+- **Avisos del área** («¿Has pasado lista?», «Novedades en tu grupo» y
+  «Tienes N listas sin subir»): el móvil se registra en el servidor del área
+  (`POST /v1/devices`, por la cola) cuando hay sesión, permiso y token, y se
+  da de baja al salir. Lo hace `components/comunica/ComunicaBackground.tsx`,
+  montado en la raíz (`app/_layout.tsx`); solo con el área nativa encendida y
+  nunca en web.
+- **Dos canales de Android nuevos**, `comunica-listas` (HIGH) y
+  `comunica-grupos` (DEFAULT), sin categoría del Panel. No se pueden quitar
+  nunca: lo vigila un test.
+- `usePushNotifications` atiende primero los avisos con `source: 'comunica'`:
+  no van a la campana, refrescan la portada del área y al tocarlos la app
+  decide el destino (marcar ese grupo, la ficha del grupo o la portada).
+- **Aviso local** «Tienes N listas sin subir» al dejar la app con listas en la
+  cola (a la hora; de noche, a las 8:30).
+- **«Avisos en este móvil»** en «Tu cuenta»: el permiso, tres interruptores y
+  los ajustes del sistema. La portada del área invita a activar los avisos.
+- **Compartir un evento**: el texto ya escrito («Convivencia COM · sáb 14 y
+  dom 15 de noviembre · Benicàssim · Apúntate hasta el 5 de noviembre:
+  enlace») con el botón «Compartir» en la cabecera de la pantalla del evento
+  (plan 07).
+- Laboratorio Alpha: «Simular aviso» para probar los destinos sin servidor.
+- `session.ts` gana `addBeforeSignOut` (lo que se hace con la sesión viva al
+  salir, con 3 s de tope).
+
 ## 2026-10-28 21:00 — Área nativa de Comunica: pasar lista en un evento (plan 07, rama `nuevoComunicaChulo`)
 
 - **Eventos**: nueva pantalla para elegir en qué evento pasar lista (los de
