@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-29 13:00 — Dependencias al día dentro de Expo 57
+
+- `npx expo install --fix`: `expo` 57.0.31, `expo-router` 57.0.29, `expo-notifications` 57.0.24, `expo-updates` 57.0.26, `expo-dev-client`, `expo-linking`, `expo-network`, `expo-observe`, `expo-sharing`, `expo-splash-screen`, `jest-expo`. Más parches: `google-signin` 16.2.0, `heroui-native` 1.0.11, `prettier`, `eslint-plugin-prettier`, `@types/node`.
+- Sin cambios de código: tipos, lint (38 warnings, los mismos) y los 2209 tests siguen igual.
+- **Sin tocar a propósito** (saltos mayores que piden decisión y prueba en dispositivo): Expo 58, `@sentry/react-native` 8, `firebase` 13, `eslint` 10, `jest` 30, `react` 19.3, `chordsheetjs` 18, `@react-native-async-storage` 3.
+- Requiere build nativo: no llega por OTA.
+
 ## 2026-10-29 12:00 — NFC: sin entitlement NDEF (Apple rechazó el build 58 con ITMS-90778)
 
 - App Store Connect rechazó la 2.1.0 (build 58): con SDK 26.5 y mínimo iOS 16.4 el entitlement `com.apple.developer.nfc.readersession.formats` ya no admite `NDEF`. En el plugin de `react-native-nfc-manager` (`app.json`), `includeNdefEntitlement` pasa a `false`, así que el entitlement queda solo con `TAG`.
