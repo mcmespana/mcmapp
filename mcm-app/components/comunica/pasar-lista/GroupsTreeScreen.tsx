@@ -295,8 +295,9 @@ function Tree({
             style={styles.footLink}
           >
             <Text style={[styles.sub, { color: t.textSecondary }]}>
-              {data.hiddenGroups} grupos más en el CRM sin marcar para Pasar
-              Lista.
+              {data.hiddenGroups === 1
+                ? '1 grupo más en el CRM sin marcar para Pasar Lista.'
+                : `${data.hiddenGroups} grupos más en el CRM sin marcar para Pasar Lista.`}
             </Text>
           </PressableFeedback>
         ) : null}

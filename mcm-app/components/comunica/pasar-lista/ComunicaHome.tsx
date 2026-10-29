@@ -441,7 +441,9 @@ function HomeContent({
             trailing={
               b.participants > 0
                 ? participantsLabel(b.participants)
-                : `${b.groups} grupos`
+                : b.groups === 1
+                  ? '1 grupo'
+                  : `${b.groups} grupos`
             }
             onPress={() =>
               router.push({
@@ -453,7 +455,11 @@ function HomeContent({
         ))}
         <NavRow
           title="Ver todos los grupos"
-          trailing={`${groups.groups.length} grupos`}
+          trailing={
+            groups.groups.length === 1
+              ? '1 grupo'
+              : `${groups.groups.length} grupos`
+          }
           onPress={() => router.push('/comunica/pasar-lista/grupos')}
         />
       </Section>

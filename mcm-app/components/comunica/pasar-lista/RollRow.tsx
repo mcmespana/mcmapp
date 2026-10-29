@@ -16,7 +16,7 @@
 // recibe los callbacks por id: marcar una fila no repinta las otras sesenta.
 
 import React, { memo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import typography from '@/constants/typography';
 import type {
   Mark,
@@ -182,16 +182,21 @@ function RollRow(props: Props) {
     ? person
     : { ...person, lastName: person.lastName.split(' ')[0] };
 
+  // La fila entera es UN botón para VoiceOver/TalkBack, con las acciones
+  // («Parcial», «Justificada»…). En web no: ahí `accessibilityRole="button"`
+  // pinta un <button> que envuelve el de `PersonRow` (HTML inválido) y que no
+  // hace nada al pulsarlo; el botón que cuenta es el de dentro.
+  const native = Platform.OS !== 'web';
   return (
     <View
-      accessible
+      accessible={native}
       accessibilityLabel={[`${person.firstName} ${person.lastName}`, ...a11y]
         .filter(Boolean)
         .join(', ')}
       accessibilityHint={
         monitors ? 'Toca para marcar una falta' : 'Toca para vino o no vino'
       }
-      accessibilityRole="button"
+      accessibilityRole={native ? 'button' : undefined}
       accessibilityState={{ disabled }}
       accessibilityActions={[
         { name: 'activate' },
