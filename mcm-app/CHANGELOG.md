@@ -4,6 +4,26 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-29 23:30 — Área nativa de Comunica: repaso antes de pasar a `main`
+
+Recorrido automático con el servidor falso (monitor, coordinación y varias
+delegaciones: 56 pantallas y 350 botones). Ninguna pantalla rota. Arreglado:
+
+- **Pantallas en el esqueleto para siempre al abrirlas en frío** (enlace,
+  aviso o recargar la web): resumen de grupos, árbol de «Pasar lista» e
+  historial. La pantalla pedía sus datos antes de que la sesión acabara de
+  restaurarse y el `clear()` del cambio de persona la dejaba huérfana. Ahora
+  lo que no se ve se borra y lo que se ve se reinicia y se vuelve a pedir
+  (`forgetPreviousPerson` en `ComunicaAreaProvider`). Test:
+  `areaProviderColdLink.test.tsx`.
+- Servidor falso: al recargar, `twoDelegations` y `coordinationCom2` volvían a
+  la pantalla de entrar (el token se reconocía con `[a-z]+`).
+- «1 grupos» → «1 grupo» en la portada y el árbol.
+- La fila de pasar lista ya no pinta un `<button>` vacío alrededor del suyo en
+  web (en el móvil sigue siendo un botón para VoiceOver, con sus acciones).
+- Al traer `main`: vuelve `components/ui/StatCard.tsx`, que `main` había
+  borrado por estar sin uso y que usa el resumen de Coordinación.
+
 ## 2026-10-29 13:00 — Dependencias al día dentro de Expo 57
 
 - `npx expo install --fix`: `expo` 57.0.31, `expo-router` 57.0.29, `expo-notifications` 57.0.24, `expo-updates` 57.0.26, `expo-dev-client`, `expo-linking`, `expo-network`, `expo-observe`, `expo-sharing`, `expo-splash-screen`, `jest-expo`. Más parches: `google-signin` 16.2.0, `heroui-native` 1.0.11, `prettier`, `eslint-plugin-prettier`, `@types/node`.

@@ -89,6 +89,25 @@ export function createAreaQueryClient() {
   });
 }
 
+/**
+ * Cambio de persona (entrar, salir, otra persona): nada de la anterior se
+ * queda en la caché. No vale `clear()`: deja huérfana cualquier consulta con
+ * una pantalla montada, y al abrir una pantalla en frío (un enlace, un aviso,
+ * recargar la web) la pantalla pide sus datos ANTES de que la sesión acabe de
+ * restaurarse, así que se quedaba en el esqueleto para siempre. Lo que no se
+ * ve se borra; lo que se ve vuelve a su estado inicial y, si hay persona, se
+ * pide de nuevo como ella.
+ */
+function forgetPreviousPerson(qc: QueryClient, signedIn: boolean) {
+  qc.getMutationCache().clear();
+  qc.removeQueries({ predicate: (q) => q.getObserversCount() === 0 });
+  if (signedIn) void qc.resetQueries();
+  else
+    qc.getQueryCache()
+      .getAll()
+      .forEach((q) => q.reset());
+}
+
 let wired = false;
 function wireManagers() {
   if (wired || Platform.OS === 'web') return;
@@ -188,7 +207,7 @@ export default function ComunicaAreaProvider({
 
   // La caché de ESTA persona: se recupera al entrar y se guarda al cambiar.
   useEffect(() => {
-    qc.clear();
+    forgetPreviousPerson(qc, !!personId);
     if (!personId) return;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
