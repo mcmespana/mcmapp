@@ -27,6 +27,7 @@ import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useIncomingPlaylist } from '@/hooks/useIncomingPlaylist';
 import { useRegisterServiceWorker } from '@/hooks/useRegisterServiceWorker';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { trackEvent } from '@/utils/analytics';
 import { tramoTamano } from '@/constants/analyticsEvents';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -49,6 +50,11 @@ import '@/constants/iconAssets';
 import colors from '@/constants/colors';
 import AppProviders from '@/components/AppProviders';
 import ComunicaBackground from '@/components/comunica/ComunicaBackground';
+import { holdSplash, releaseSplash } from '@/utils/splashGate';
+
+// El splash nativo se queda hasta que el layout sabe qué pintar (ver
+// `utils/splashGate.ts`, que además lo suelta solo si algo se cuelga).
+holdSplash();
 
 function RootLayout() {
   return (
@@ -67,8 +73,17 @@ function RootLayout() {
   );
 }
 
+/**
+ * - `checking`: aún no se sabe si toca la bienvenida; se pinta `null` y el
+ *   splash nativo sigue encima.
+ * - `show`: primer arranque de la vida de la app → HelloWave 600 ms.
+ * - `done`: la app.
+ */
+type WelcomePhase = 'checking' | 'show' | 'done';
+
 function InnerLayout() {
-  const [showAnimation, setShowAnimation] = useState(true);
+  const [welcome, setWelcome] = useState<WelcomePhase>('checking');
+  const showAnimation = welcome !== 'done';
   const { isReady, isDownloading, applyUpdate, dismissed, setDismissed } =
     useOTAContext();
   const scheme = useColorScheme();
@@ -124,25 +139,34 @@ function InnerLayout() {
   // Analítica: arranca Aptabase y registra cada cambio de pantalla. Sin
   // EXPO_PUBLIC_APTABASE_KEY no hace nada.
   useScreenTracking();
+  // Web: título de la pestaña del navegador según la pantalla.
+  useDocumentTitle();
 
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
+    const showWelcome = () => {
+      setWelcome('show');
+      timer = setTimeout(() => setWelcome('done'), 600);
+    };
     AsyncStorage.getItem('seenWelcomeOnce')
       .then((seen) => {
         if (seen) {
-          setShowAnimation(false);
+          setWelcome('done');
           return;
         }
         AsyncStorage.setItem('seenWelcomeOnce', '1').catch(() => {});
-        timer = setTimeout(() => setShowAnimation(false), 600);
+        showWelcome();
       })
-      .catch(() => {
-        timer = setTimeout(() => setShowAnimation(false), 600);
-      });
+      .catch(showWelcome);
     return () => clearTimeout(timer);
   }, []);
+
+  // En cuanto hay algo que pintar (la bienvenida o la app), fuera el splash.
+  useEffect(() => {
+    if (welcome !== 'checking') releaseSplash();
+  }, [welcome]);
 
   // Redirigir al onboarding si:
   //   - la config global pide onboarding (`showOnboarding`)
@@ -173,7 +197,9 @@ function InnerLayout() {
   // Registra el service worker en web (PWA)
   useRegisterServiceWorker();
 
-  if (showAnimation) {
+  if (welcome === 'checking') return null;
+
+  if (welcome === 'show') {
     return (
       <View
         style={[
@@ -244,6 +270,8 @@ function InnerLayout() {
             headerShown: false,
           }}
         />
+        {/* Enlace a una canción (`/cancion?f=…`): puente al cantoral. */}
+        <Stack.Screen name="cancion" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <AddToHomeBanner />

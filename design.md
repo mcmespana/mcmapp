@@ -86,7 +86,7 @@ paletas distintas, y la divergencia es deliberada — está decidida y cerrada
 `components/ui/`—. Lo **no** compartido es el color.
 
 - El resto de la app **no adopta** el dorado de Contigo. Sí adopta sus patrones
-  (cards hero, `ProgressRing`, `TeaserCard`, `CelebrationBurst`).
+  (cards hero, `ProgressRing`, `CelebrationBurst`).
 - Contigo **no adopta** el azul institucional en su superficie propia.
 - Un componente de `components/ui/` es agnóstico de paleta **por contrato**:
   recibe el color por prop (`tintColor`, `accentColor`, `color`). Si te ves
@@ -102,7 +102,7 @@ paletas distintas, y la divergencia es deliberada — está decidida y cerrada
 ```
 mcm-app/constants/colors.ts          brand, Colors (light/dark), UIColors, TabHeaderColors,
                                      ToastColors, StateColors, SwipeColors, KeyPillColors,
-                                     EmotionColors(+Soft), FeedbackCategoryColors
+                                     FeedbackCategoryColors
 mcm-app/components/contigo/theme.ts  WARM_LIGHT / WARM_DARK / HABITS   ← excepción sancionada
 mcm-app/global.css                   variables CSS de HeroUI/uniwind (capa web/className)
 ```
@@ -193,7 +193,7 @@ dentro de una rama `isDark` es un bug esperando.
 ## 4. Tipografía
 
 Fuente del **sistema** siempre (San Francisco / Roboto). No hay fuente de marca
-y no se añade ninguna. `SpaceMono` solo para acordes y código. `typography.serif`
+y no se añade ninguna. La monoespaciada del sistema (`monospace`/`Courier`) solo para acordes y código. `typography.serif`
 (Palatino) **solo** para lectura contemplativa larga dentro de Contigo.
 
 Escala en `constants/typography.ts` — úsala en vez de `fontSize` suelto:
@@ -265,12 +265,24 @@ estaba resuelto cinco veces en el repo con cinco números distintos, y ninguno
 acertaba que **sobre el rojo MIC gana el texto oscuro** (4,79:1) y no el
 blanco (3,55:1).
 
+**Tinta sobre un tinte.** Un icono del color de su pestaña sobre una pastilla
+teñida de ese color (accesos rápidos, «Más») usa `tintedGlyph` de
+`utils/tintColors.ts`: el glifo se lleva a 3:1 contra la pastilla (el amarillo
+del cantoral sobre blanco no se lee). Sobre el acento de un evento o encuesta:
+`utils/tintInk.ts`. Los iconos del header del cantoral salen de
+`cantoralHeaderTint` (`utils/cantoralHeader.ts`): no los decidas por pantalla.
+
+**Hojas y barra de pestañas.** Una hoja inferior en pantalla ancha no pasa de
+`sheetMaxWidth` (`constants/breakpoints.ts`). El final de un scroll bajo la
+barra flotante lleva `useTabBarPaddingBottom` / `useTabBarClearance`, nunca un
+`Platform.OS === 'ios' ? 100 : 24`.
+
 ---
 
 ## 6. Glass, plataforma y movimiento
 
 **Glass** está centralizado en `components/ui/GlassSurface(.ios).tsx`. Todo lo
-demás (`GlassHeader`, `GlassFAB`, `GlassCard`, `GlassTabBarBackground`) delega
+demás (`GlassHeader`, `GlassActionGroup`, `GlassBackButton`) delega
 en él. **No vuelvas a llamar a `isLiquidGlassAvailable()` en un componente
 nuevo**; no repliques la cascada iOS 18 / BlurView / backdrop-filter / sólido.
 Android no emula blur: fondo sólido tintado y ya.
@@ -290,7 +302,10 @@ sueltos **nuevos** están prohibidos (decisión cerrada, `PLAN_UI_NATIVA.md` §4
 `sheet` para sheets. Muelles (`springs`) siempre que haya intervenido un dedo:
 un muelle conserva la velocidad del gesto, una curva la reinicia.
 **Nunca `ease-in` en algo que entra.** Siempre native driver. Bouncy solo para
-celebración.
+celebración. En `Animated` de core, la curva de un sheet es `easings.sheet`
+(la de Reanimated no se puede ejecutar ahí). Hay un trinquete,
+`__tests__/noLooseMotion.test.ts`: un muelle a mano o un `duration: <número>`
+nuevo lo pone en rojo; su tope solo baja.
 
 ---
 
@@ -299,28 +314,28 @@ celebración.
 Antes de escribir un componente, busca aquí. Reinventar uno de estos es un
 error de revisión, no una preferencia.
 
-| Necesitas                  | Usa                                                           |
-| -------------------------- | ------------------------------------------------------------- |
-| Capa glass                 | `GlassSurface`                                                |
-| Card destacada             | `GlassCard` (compound Header/Body/Footer)                     |
-| Card estándar              | Card local con `radii.lg` + `shadows.sm`                      |
-| Card con preview y CTA     | `TeaserCard`                                                  |
-| Hero de pantalla           | `ScreenHero`                                                  |
-| Cabecera de sección        | `SectionHeader`                                               |
-| Métrica compacta           | `StatCard`                                                    |
-| Progreso circular          | `ProgressRing`                                                |
-| "No hay nada aquí"         | `EmptyState` — **siempre**, ~20 sitios lo reinventan          |
-| Campo de texto             | `AppTextField` (props `error`, `accentColor`)                 |
-| CTA principal              | `AppPrimaryButton` (prop `color`)                             |
-| Botón de icono             | `AppIconButton`                                               |
-| Grupo de acciones en barra | `GlassActionGroup`                                            |
-| Segmentado / toggle        | `SegmentedControl`                                            |
-| FAB                        | `GlassFAB`                                                    |
-| Barra de color de tab      | `TopColorBar` / `TabTintBar`                                  |
-| Ancho máximo en web        | `PageContainer`                                               |
-| Icono                      | `IconSymbol` (SF Symbols en iOS, Material en Android)         |
-| Feedback positivo          | `CelebrationBurst`                                            |
-| Layout responsive          | hook `useResponsiveLayout()` — **es el único**, no crees otro |
+| Necesitas                  | Usa                                                                         |
+| -------------------------- | --------------------------------------------------------------------------- |
+| Capa glass                 | `GlassSurface`                                                              |
+| Card (cualquiera)          | Card local con `radii.lg` + `shadows.card`/`hero`, o `Card` de heroui       |
+| Hero de pantalla           | `ScreenHero`                                                                |
+| Cabecera de sección        | `SectionHeader` (`textStyle` si hay que ajustar la tinta)                   |
+| Carga de una lista         | `ListSkeleton` (la forma de la lista, no un spinner)                        |
+| Confirmar un gesto         | `confirmAsync` de `utils/confirmDialog.ts` (`Alert.alert` no existe en web) |
+| Botón «+/−» mantenido      | `useRepeatPress`                                                            |
+| Progreso circular          | `ProgressRing`                                                              |
+| "No hay nada aquí"         | `EmptyState` — **siempre**, ~20 sitios lo reinventan                        |
+| Campo de texto             | `AppTextField` (props `error`, `accentColor`)                               |
+| CTA principal              | `AppPrimaryButton` (prop `color`)                                           |
+| Grupo de acciones en barra | `GlassActionGroup`                                                          |
+| Segmentado / toggle        | `SegmentedControl`                                                          |
+| Botón de icono             | `PressableScale` o `PressableFeedback` (no hay componente)                  |
+| FAB                        | Propio con `PressableScale` + `shadows.overlay` (no hay componente)         |
+| Barra de color de tab      | `TabTintBar`                                                                |
+| Ancho máximo en web        | `PageContainer`                                                             |
+| Icono                      | `IconSymbol` (SF Symbols en iOS, Material en Android)                       |
+| Feedback positivo          | `CelebrationBurst`                                                          |
+| Layout responsive          | hook `useResponsiveLayout()` — **es el único**, no crees otro               |
 
 Componentes de `components/ui/` reciben color por prop. Si el tuyo necesita
 saber en qué territorio está, va mal diseñado.

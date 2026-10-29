@@ -1,14 +1,8 @@
 import React, { useCallback } from 'react';
-import {
-  ActivityIndicator,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { getDatabase, get, ref } from 'firebase/database';
-import { MaterialIcons } from '@expo/vector-icons';
 
+import EmptyState from '@/components/ui/EmptyState';
 import EvaluationWizard, {
   EvaluationAnswers,
 } from '@/components/EvaluationWizard';
@@ -157,13 +151,11 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
         : 'Esta encuesta está dirigida a otro grupo de personas.';
     return (
       <View style={[styles.center, { backgroundColor: theme.background }]}>
-        <MaterialIcons
-          name={closed ? 'lock-clock' : 'inbox'}
-          size={48}
-          color={theme.icon}
+        <EmptyState
+          icon={closed ? 'lock-clock' : 'inbox'}
+          title={title}
+          subtitle={body}
         />
-        <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
-        <Text style={[styles.body, { color: theme.icon }]}>{body}</Text>
       </View>
     );
   }
@@ -186,17 +178,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 32,
     gap: 12,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  body: {
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-    maxWidth: 320,
   },
 });

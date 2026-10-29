@@ -1,11 +1,26 @@
-import React from 'react';
-import { useWindowDimensions, TouchableOpacity, Text } from 'react-native';
-import RenderHTML from 'react-native-render-html';
+import React, { Suspense } from 'react';
+import {
+  ActivityIndicator,
+  useWindowDimensions,
+  TouchableOpacity,
+  Text,
+} from 'react-native';
 import colors, { themeColors, Colors } from '@/constants/colors';
 import { formatBBCodeToHtml } from '@/utils/formatText';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import { radii } from '@/constants/uiStyles';
+
+/**
+ * `react-native-render-html` se carga A DEMANDA. Con sus dependencias (ramda,
+ * entities, htmlparser2, urijs, el motor de CSS…) son unos 450 KB del bundle
+ * web, y solo lo usan Profundiza y Materiales: con un import estático entraba
+ * en el bundle inicial aunque nadie abriera nunca esas pantallas. Con
+ * `React.lazy`, en web Metro lo saca a un trozo aparte que se descarga la
+ * primera vez que se pinta un `FormattedContent`; en nativo el módulo va en
+ * el binario igual, pero no se evalúa al arrancar.
+ */
+const RenderHTML = React.lazy(() => import('react-native-render-html'));
 
 interface FormattedContentProps {
   text: string;
@@ -255,22 +270,33 @@ export default function FormattedContent({
   );
 
   return (
-    <RenderHTML
-      contentWidth={width}
-      source={{ html }}
-      defaultTextProps={{ selectable: true }}
-      tagsStyles={dynamicTagsStyles as any}
-      classesStyles={dynamicClassesStyles as any}
-      renderers={{
-        span: ({ tnode }: { tnode: any }) => {
-          const className = tnode.attributes?.class;
-          if (className === 'btn-primary')
-            return renderButton(colors.primary, tnode);
-          if (className === 'btn-secondary')
-            return renderButton(colors.accent, tnode);
-          return undefined;
-        },
-      }}
-    />
+    <Suspense
+      fallback={
+        <ActivityIndicator
+          size="small"
+          color={themeColors(scheme === 'dark').textMuted}
+          style={{ alignSelf: 'flex-start', marginVertical: 8 * fontScale }}
+          accessibilityLabel="Cargando contenido"
+        />
+      }
+    >
+      <RenderHTML
+        contentWidth={width}
+        source={{ html }}
+        defaultTextProps={{ selectable: true }}
+        tagsStyles={dynamicTagsStyles as any}
+        classesStyles={dynamicClassesStyles as any}
+        renderers={{
+          span: ({ tnode }: { tnode: any }) => {
+            const className = tnode.attributes?.class;
+            if (className === 'btn-primary')
+              return renderButton(colors.primary, tnode);
+            if (className === 'btn-secondary')
+              return renderButton(colors.accent, tnode);
+            return undefined;
+          },
+        }}
+      />
+    </Suspense>
   );
 }

@@ -12,13 +12,28 @@ jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
   notificationAsync: jest.fn(() => Promise.resolve()),
   selectionAsync: jest.fn(() => Promise.resolve()),
+  performAndroidHapticsAsync: jest.fn(() => Promise.resolve()),
   ImpactFeedbackStyle: {
     Light: 'light',
     Medium: 'medium',
     Heavy: 'heavy',
     Rigid: 'rigid',
   },
-  NotificationFeedbackType: { Success: 'success', Error: 'error' },
+  NotificationFeedbackType: {
+    Success: 'success',
+    Error: 'error',
+    Warning: 'warning',
+  },
+  AndroidHaptics: {
+    Confirm: 'confirm',
+    Reject: 'reject',
+    Gesture_End: 'gesture-end',
+    Clock_Tick: 'clock-tick',
+    Context_Click: 'context-click',
+    Long_Press: 'long-press',
+    Virtual_Key: 'virtual-key',
+    Segment_Tick: 'segment-tick',
+  },
 }));
 
 function loadHaptics(os: 'ios' | 'android' | 'web') {
@@ -63,6 +78,7 @@ describe('en web no se llama a expo-haptics', () => {
     expect(Haptics.impactAsync).not.toHaveBeenCalled();
     expect(Haptics.notificationAsync).not.toHaveBeenCalled();
     expect(Haptics.selectionAsync).not.toHaveBeenCalled();
+    expect(Haptics.performAndroidHapticsAsync).not.toHaveBeenCalled();
   });
 });
 
@@ -100,11 +116,77 @@ describe('en iOS', () => {
 });
 
 describe('en Android', () => {
-  it('select cae a un impacto ligero', () => {
+  // Háptica del sistema (performHapticFeedback), nunca el Vibrator: en Android
+  // `impactAsync`/`notificationAsync` son un zumbido de motor.
+  it('mapea cada acción a una háptica del sistema y no toca el Vibrator', () => {
     const { h, Haptics } = loadHaptics('android');
+    const perform = Haptics.performAndroidHapticsAsync;
+    h.tap();
+    expect(perform).toHaveBeenLastCalledWith('context-click');
+    h.navigate();
+    expect(perform).toHaveBeenLastCalledWith('context-click');
+    h.menuClose();
+    expect(perform).toHaveBeenLastCalledWith('context-click');
     h.select();
+    expect(perform).toHaveBeenLastCalledWith('segment-tick');
+    h.add();
+    expect(perform).toHaveBeenLastCalledWith('virtual-key');
+    h.menuOpen();
+    expect(perform).toHaveBeenLastCalledWith('virtual-key');
+    h.remove();
+    expect(perform).toHaveBeenLastCalledWith('gesture-end');
+    h.toggle();
+    expect(perform).toHaveBeenLastCalledWith('clock-tick');
+    h.success();
+    expect(perform).toHaveBeenLastCalledWith('confirm');
+    h.error();
+    expect(perform).toHaveBeenLastCalledWith('reject');
+    h.limit();
+    expect(perform).toHaveBeenLastCalledWith('reject');
+    expect(Haptics.impactAsync).not.toHaveBeenCalled();
+    expect(Haptics.notificationAsync).not.toHaveBeenCalled();
     expect(Haptics.selectionAsync).not.toHaveBeenCalled();
-    expect(Haptics.impactAsync).toHaveBeenCalledWith('light');
+  });
+
+  it('formSuccess es UN solo golpe de confirmación, sin la cadena de iOS', () => {
+    jest.useFakeTimers();
+    try {
+      const { h, Haptics } = loadHaptics('android');
+      h.formSuccess();
+      jest.advanceTimersByTime(500);
+      expect(Haptics.performAndroidHapticsAsync).toHaveBeenCalledTimes(1);
+      expect(Haptics.performAndroidHapticsAsync).toHaveBeenCalledWith(
+        'confirm',
+      );
+      expect(Haptics.impactAsync).not.toHaveBeenCalled();
+      expect(Haptics.notificationAsync).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('si el tipo no existe en ese Android, cae a uno que sí existe', async () => {
+    const { h, Haptics } = loadHaptics('android');
+    const perform = Haptics.performAndroidHapticsAsync as jest.Mock;
+    // Segment_Tick es de Android 14: en uno más viejo la promesa se rechaza.
+    perform.mockImplementationOnce(() => Promise.reject(new Error('n/a')));
+    await h.select();
+    expect(perform).toHaveBeenNthCalledWith(1, 'segment-tick');
+    expect(perform).toHaveBeenNthCalledWith(2, 'clock-tick');
+
+    perform.mockClear();
+    perform.mockImplementationOnce(() => Promise.reject(new Error('n/a')));
+    await h.success();
+    expect(perform).toHaveBeenNthCalledWith(2, 'long-press');
+  });
+
+  it('un fallo de la háptica nunca sale como promesa rechazada', async () => {
+    const { h, Haptics } = loadHaptics('android');
+    (Haptics.performAndroidHapticsAsync as jest.Mock).mockImplementation(() =>
+      Promise.reject(new Error('sin motor')),
+    );
+    await expect(h.tap()).resolves.toBeUndefined();
+    await expect(h.error()).resolves.toBeUndefined();
   });
 });
 

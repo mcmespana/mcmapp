@@ -120,7 +120,7 @@ Censo real (`app/` + `components/`):
 
 **Plan (por lotes revertibles, validando en dispositivo):**
 
-1. **`AppIconButton`** (nuevo) — botón-icono con la **cápsula** estándar (el look
+1. ~~**`AppIconButton`** (nuevo)~~ _(descartado: nunca se montó y se borró; ver `design.md` §7)_ — botón-icono con la **cápsula** estándar (el look
    glass de los headers). Unifica botones de acción sueltos. **Resuelve el
    "Inicio híbrido"**: los botones de Inicio pasan a usarlo manteniendo la
    animación del badge.
@@ -203,8 +203,10 @@ acciones de evento). Clasificación:
 
 ## 5. Fase 2 — cola de trabajo (componentes ya creados y por crear)
 
-Ya creados (reutilizar): `GlassActionGroup`, `AppIconButton`, `AppTextField`,
-`AppPrimaryButton`, `EmptyState`, `ScreenHero`.
+Ya creados (reutilizar): `GlassActionGroup`, `AppTextField`,
+`AppPrimaryButton`, `EmptyState`, `ScreenHero`. (`AppIconButton`, que figuraba
+aquí, se borró: nadie lo montaba; el botón de icono es `PressableScale` o
+`PressableFeedback`.)
 
 > **Pulsación estándar decidida (§4): `PressableFeedback` (heroui).** Los
 > componentes nuevos de Fase 2 la usan; prohibido `TouchableOpacity`/`Pressable`

@@ -9,6 +9,7 @@
  */
 import {
   MAS_EVENT_HUB_SCREEN,
+  parseTabPath,
   resolveEventScreenRoute,
   resolveTabRoute,
 } from '@/utils/tabNavigation';
@@ -155,5 +156,27 @@ describe('resolveEventScreenRoute', () => {
       via: 'masScreen',
       screen: 'Evaluacion',
     });
+  });
+});
+
+describe('parseTabPath — rutas sueltas de notificación', () => {
+  it('reconoce la raíz de un tab, con o sin el grupo (tabs)', () => {
+    expect(parseTabPath('/calendario')).toEqual({ tabName: 'calendario' });
+    expect(parseTabPath('/(tabs)/fotos')).toEqual({ tabName: 'fotos' });
+  });
+
+  it('pasa los params de la query', () => {
+    expect(parseTabPath('/(tabs)/calendario?date=2026-11-02')).toEqual({
+      tabName: 'calendario',
+      params: { date: '2026-11-02' },
+    });
+  });
+
+  it('deja fuera index, mas, las subrutas y lo que no es un tab', () => {
+    expect(parseTabPath('/')).toBeNull();
+    expect(parseTabPath('/(tabs)/mas')).toBeNull();
+    expect(parseTabPath('/(tabs)/contigo/oracion')).toBeNull();
+    expect(parseTabPath('/notifications')).toBeNull();
+    expect(parseTabPath('https://mcm.expo.app/playlist')).toBeNull();
   });
 });

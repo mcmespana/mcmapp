@@ -12,10 +12,17 @@ import SongFullscreenScreen from '../screens/SongFullscreenScreen';
 import SelectedSongsScreen from '../screens/SelectedSongsScreen';
 
 import { SettingsProvider } from '../../contexts/SettingsContext';
-import { TabHeaderColors, UIColors, themeColors } from '@/constants/colors';
+import { TabHeaderColors, themeColors } from '@/constants/colors';
+import { cantoralHeaderTint } from '@/utils/cantoralHeader';
 import TabTintBar from '@/components/ui/TabTintBar';
 import { useChoirSession } from '../../contexts/ChoirSessionContext';
 import { extractSongMedia, type SongMedia } from '@/types/songMedia';
+import {
+  consumePendingSongOpen,
+  requestSongOpen,
+  subscribeSongOpen,
+} from '@/utils/pendingSongOpen';
+import type { SongOpenParams } from '@/utils/songIndex';
 
 export interface SongNavItem {
   title: string;
@@ -139,6 +146,24 @@ export default function CancioneroTab() {
     choir.session?.current?.updatedAt,
   ]);
 
+  // Canción pedida desde FUERA del stack (paleta ⌘K de la web o el enlace
+  // `/cancion?f=…`): la deja en `pendingSongOpen` y navega a este tab. Al
+  // montar se recoge la que esperase; con el tab ya montado llega por la
+  // suscripción, esté donde esté el stack. Mismo `navigate` que el coro.
+  useEffect(() => {
+    const open = (params: SongOpenParams) => {
+      const nav = stackNavRef.current;
+      if (!nav) return false;
+      nav.navigate('SongDetail', params);
+      return true;
+    };
+    const waiting = consumePendingSongOpen();
+    if (waiting && !open(waiting)) requestSongOpen(waiting);
+    return subscribeSongOpen((params) => {
+      open(params);
+    });
+  }, []);
+
   return (
     <SettingsProvider>
       {/* Raya amarilla del cantoral pegada arriba, como la roja de Fotos. */}
@@ -160,11 +185,7 @@ export default function CancioneroTab() {
                     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
                   } as any)
                 : ({ backgroundColor: TabHeaderColors.cancionero } as any),
-            headerTintColor: isIOS
-              ? scheme === 'dark'
-                ? UIColors.accentYellow
-                : '#3d79b9ff'
-              : '#1a1a1a',
+            headerTintColor: cantoralHeaderTint(scheme === 'dark'),
             headerTitleStyle: {
               fontWeight: '700' as const,
               fontSize: 17,
@@ -231,7 +252,7 @@ export default function CancioneroTab() {
           name="SelectedSongs"
           component={SelectedSongsScreen}
           options={{
-            title: 'Seleccionadas',
+            title: 'Tu selección',
           }}
         />
       </Stack.Navigator>

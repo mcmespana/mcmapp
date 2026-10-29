@@ -13,7 +13,12 @@ import { UIColors } from '@/constants/colors';
 import { convertChord, Notation } from './chordNotation';
 import { transposeKey } from './transposeKey';
 import { preprocessArrangements } from './arrangements';
-import { buildSheet, CHORUS_REF_SENTINEL, renderSheetHtml } from './songSheet';
+import {
+  buildSheet,
+  CHORUS_REF_SENTINEL,
+  renderSheetHtml,
+  renderSongMapHtml,
+} from './songSheet';
 import {
   CHORUS_STYLE_CLASSES,
   SHEET_CSS,
@@ -38,6 +43,8 @@ export interface SongStyleState {
   chorusLabel: boolean;
   airy: boolean;
   paged: boolean;
+  /** Mapa de la canción («1 · E · 2 · E×2») encima de la letra. De serie, no. */
+  songMap?: boolean;
   topPadding: number;
   bottomPadding: number;
 }
@@ -73,12 +80,15 @@ export interface SongSheetInfo {
   hasRepeats: boolean;
   hasVerseNumbers: boolean;
   hasChorus: boolean;
+  /** Tiene mapa («1 · E · 2…»): si no, el ajuste «Mapa» no se ofrece. */
+  hasSongMap: boolean;
 }
 
 export const NO_SHEET_INFO: SongSheetInfo = {
   hasRepeats: false,
   hasVerseNumbers: false,
   hasChorus: false,
+  hasSongMap: false,
 };
 
 export interface ParsedResult {
@@ -466,6 +476,7 @@ export const bodyClasses = (s: SongStyleState): string =>
     !s.chorusLabel && 'ch-nolabel',
     s.airy && 'airy',
     s.paged && 'paged',
+    s.songMap && 'show-map',
   ]
     .filter(Boolean)
     .join(' ');
@@ -532,10 +543,14 @@ export function buildSongDocument(
     currentTranspose !== 0 ? baseSong.transpose(currentTranspose) : baseSong;
 
   const model = buildSheet(songForFormatting, { notation });
+  // El mapa va siempre en el HTML (oculto si el ajuste está apagado): así
+  // encenderlo no recarga la página.
+  const songMapHtml = renderSongMapHtml(model);
   const sheetInfo: SongSheetInfo = {
     hasRepeats: model.sections.some((x) => x.repeatOf !== null),
     hasVerseNumbers: model.sections.some((x) => x.number !== null),
     hasChorus: model.sections.some((x) => x.kind === 'chorus'),
+    hasSongMap: songMapHtml !== '',
   };
   // En modo admin cada línea lleva su número en el ChordPro original
   // (`data-line`) para insertar arreglos con un toque largo.
@@ -607,6 +622,7 @@ export function buildSongDocument(
   const finalSongContentWithMeta =
     (songTitle ? `<h1>${songTitle}</h1>` : '') +
     metaInsert +
+    songMapHtml +
     '<div class="rot-hint" hidden></div>' +
     `<div class="pager">${sheetHtml}</div>`;
 
@@ -650,6 +666,9 @@ export function buildSongDocument(
         }
         if (typeof s.paged === 'boolean') {
           document.body.classList.toggle('paged', s.paged);
+        }
+        if (typeof s.songMap === 'boolean') {
+          document.body.classList.toggle('show-map', s.songMap);
         }
         // Tamaño, letra, acordes o vista cambian el ancho de las palabras:
         // hay que volver a elegir dónde se parte cada línea.

@@ -5,8 +5,10 @@
 import {
   normalizeRoute,
   getRouteLabel,
+  getActionButtons,
   formatDate,
 } from '@/components/notifications/notificationDisplay';
+import type { NotificationData } from '@/types/notifications';
 
 describe('normalizeRoute', () => {
   it('devuelve cadena vacía para entrada vacía', () => {
@@ -82,5 +84,42 @@ describe('formatDate', () => {
     expect(typeof out).toBe('string');
     expect(out).not.toBe('Ahora');
     expect(out.startsWith('Hace')).toBe(false);
+  });
+});
+
+describe('normalizeRoute con alias del panel', () => {
+  it('resuelve las rutas heredadas que el panel puede seguir mandando', () => {
+    expect(normalizeRoute('actividades')).toBe('/(tabs)/mas');
+    expect(normalizeRoute('albums')).toBe('/(tabs)/fotos');
+    expect(normalizeRoute('(tabs)/notifications')).toBe('/notifications');
+  });
+});
+
+describe('getActionButtons', () => {
+  const base = {
+    id: '1',
+    title: 't',
+    body: 'b',
+    createdAt: '2026-10-01T10:00:00.000Z',
+  } as never as NotificationData;
+  const a = { text: 'A', url: '/a', isInternal: true };
+  const b = { text: 'B', url: 'https://b.es', isInternal: false };
+
+  it('prefiere el array actionButtons', () => {
+    expect(getActionButtons({ ...base, actionButtons: [a, b] })).toEqual([
+      a,
+      b,
+    ]);
+  });
+
+  it('cae al actionButton único (legacy) si no hay array o está vacío', () => {
+    expect(getActionButtons({ ...base, actionButton: a })).toEqual([a]);
+    expect(
+      getActionButtons({ ...base, actionButtons: [], actionButton: b }),
+    ).toEqual([b]);
+  });
+
+  it('devuelve [] si no hay ninguno', () => {
+    expect(getActionButtons(base)).toEqual([]);
   });
 });

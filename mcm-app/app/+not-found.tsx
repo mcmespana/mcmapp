@@ -1,21 +1,31 @@
-import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { Stack, router } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
 
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import EmptyState from '@/components/ui/EmptyState';
+import { themeColors } from '@/constants/colors';
+import spacing from '@/constants/spacing';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function NotFoundScreen() {
+  const isDark = useColorScheme() === 'dark';
   return (
     <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <ThemedView style={styles.container}>
-        <ThemedText type="title">Ups, un fallito 😅</ThemedText>
-        <Link href="/" style={styles.link}>
-          <ThemedText type="link">
-            Vuelve a la pantalla de inicio y lo arreglamos
-          </ThemedText>
-        </Link>
-      </ThemedView>
+      <Stack.Screen options={{ title: 'Página no encontrada' }} />
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: themeColors(isDark).background },
+        ]}
+      >
+        <EmptyState
+          icon="link-off"
+          title="Esta página no existe"
+          subtitle="Puede que el enlace sea antiguo."
+          actionLabel="Ir al inicio"
+          onAction={() => router.replace('/')}
+          accentColor={themeColors(isDark).link}
+        />
+      </View>
     </>
   );
 }
@@ -25,10 +35,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
+    padding: spacing.md,
   },
 });

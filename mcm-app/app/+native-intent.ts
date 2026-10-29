@@ -18,7 +18,9 @@
  *
  * También se acepta el esquema propio `mcmapp://comunica?acceso_magico=…`, que
  * es la vía de escape para clientes de correo que envuelven los enlaces en un
- * redirector (los universal links no sobreviven a un redirect).
+ * redirector (los universal links no sobreviven a un redirect). *
+ * Y los ficheros `.mcm` (playlists) que se abren con la app: ver
+ * `isFileUrl` abajo.
  */
 import {
   classifyComunicaLink,
@@ -30,6 +32,14 @@ import {
   setPendingComunicaAuthUrl,
 } from '@/utils/pendingComunicaLink';
 
+/** Pestaña del cantoral: destino de un fichero de playlist abierto. */
+const CANTORAL_ROUTE = '/(tabs)/cancionero';
+
+/** ¿Es la URL de un fichero (y no un enlace)? */
+function isFileUrl(url: string): boolean {
+  return /^(file|content):\/\//i.test(url);
+}
+
 export function redirectSystemPath({
   path,
 }: {
@@ -37,6 +47,13 @@ export function redirectSystemPath({
   initial: boolean;
 }): string {
   try {
+    // Un fichero abierto con la app (`.mcm` desde Archivos, el «Abrir con» de
+    // Android…) llega como `file://` o `content://`. No es una ruta: si se le
+    // pasa al router tal cual, aterriza en «ruta no encontrada». La playlist la
+    // importa `useIncomingPlaylist` (en el layout raíz) por su cuenta; aquí
+    // solo hay que dejar a la persona en el cantoral, que es donde la va a
+    // buscar.
+    if (isFileUrl(path)) return CANTORAL_ROUTE;
     const link = classifyComunicaLink(path);
     if (!link) return path;
 

@@ -1,140 +1,77 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  type TextInput,
 } from 'react-native';
-import { Dialog, SearchField } from 'heroui-native';
+import { Dialog, PressableFeedback, SearchField } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import { useEscapeToClose } from '@/hooks/useEscapeToClose';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors, themeColors } from '@/constants/colors';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
+import EmptyState from '@/components/ui/EmptyState';
+import { Colors, StateColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
+import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
+import { filterSongsData, type SongsData } from '@/utils/filterSongsData';
+import {
+  MIN_SONG_QUERY,
+  buildSongIndex,
+  searchSongIndex,
+  songOpenParams,
+  type IndexedSong,
+} from '@/utils/songIndex';
+import { requestSongOpen } from '@/utils/pendingSongOpen';
+import {
+  PALETTE_COMMANDS,
+  matchCommand,
+  stepIndex,
+  type PaletteCommand,
+  type PaletteIconName,
+} from '@/utils/commandPalette';
+import { modShortcutLabel } from '@/utils/shortcutLabel';
 
-type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
+/** Canciones como mucho en la lista: es para saltar, no para explorar. */
+const MAX_SONGS = 8;
 
-interface Command {
-  id: string;
-  title: string;
-  subtitle?: string;
-  icon: MaterialIconName;
-  /** Path passed to `router.push`. Top-level routes only — sub-screens of
-   *  nested non-router stacks (cancionero / mas) aren't reachable directly. */
-  path: string;
-  /** Extra search terms (synonyms, abbreviations, related concepts). */
-  keywords?: string[];
-}
-
-const COMMANDS: Command[] = [
-  {
-    id: 'home',
-    title: 'Inicio',
-    subtitle: 'Pantalla principal',
-    icon: 'home',
-    path: '/',
-    keywords: ['home', 'principal', 'menú'],
-  },
-  {
-    id: 'cancionero',
-    title: 'Cantoral',
-    subtitle: 'Canciones con acordes',
-    icon: 'music-note',
-    path: '/cancionero',
-    keywords: ['canciones', 'songs', 'acordes', 'cantar', 'cancionero'],
-  },
-  {
-    id: 'calendario',
-    title: 'Calendario',
-    subtitle: 'Eventos y celebraciones',
-    icon: 'event',
-    path: '/calendario',
-    keywords: ['eventos', 'agenda', 'fechas', 'calendar'],
-  },
-  {
-    id: 'fotos',
-    title: 'Fotos',
-    subtitle: 'Galería de imágenes',
-    icon: 'photo-library',
-    path: '/fotos',
-    keywords: ['gallery', 'imágenes', 'galería', 'álbum'],
-  },
-  {
-    id: 'mas',
-    title: 'Más',
-    subtitle: 'Grupos, Materiales, Visitas...',
-    icon: 'apps',
-    path: '/mas',
-    keywords: ['más', 'mas', 'grupos', 'materiales', 'visitas', 'contactos'],
-  },
-  {
-    id: 'notifications',
-    title: 'Notificaciones',
-    icon: 'notifications',
-    path: '/notifications',
-    keywords: ['avisos', 'mensajes', 'noti'],
-  },
-  {
-    id: 'wordle',
-    title: 'Wordle',
-    subtitle: 'Juego diario',
-    icon: 'sports-esports',
-    path: '/wordle',
-    keywords: ['juego', 'game', 'palabras'],
-  },
-];
-
-function matchCommand(cmd: Command, query: string): boolean {
-  if (!query.trim()) return true;
-  const q = query.trim().toLowerCase();
-  if (cmd.title.toLowerCase().includes(q)) return true;
-  if (cmd.subtitle?.toLowerCase().includes(q)) return true;
-  return Boolean(cmd.keywords?.some((k) => k.toLowerCase().includes(q)));
-}
+type PaletteItem =
+  | { kind: 'command'; key: string; command: PaletteCommand }
+  | { kind: 'song'; key: string; song: IndexedSong };
 
 /**
- * Global command palette (Cmd/Ctrl + K). Web-only — returns `null` on
- * native. Lives at root so the shortcut works from anywhere in the app.
+ * Paleta de comandos global (⌘K en Mac, Ctrl+K en el resto). Solo web: en
+ * nativo devuelve `null`. Vive en la raíz para que el atajo funcione desde
+ * cualquier pantalla.
  *
- * v1 only navigates between top-level expo-router screens. Deep-linking
- * into nested stacks (e.g. specific song detail) needs the cancionero/mas
- * stacks to expose their navigation ref — out of scope here.
+ * Salta a las pantallas de primer nivel y, desde la v2, busca canciones del
+ * cantoral (sin tildes, como el buscador de la lista) y las abre en el stack
+ * del cantoral vía `utils/pendingSongOpen`. Se maneja sin soltar el teclado:
+ * escribir, ↑/↓ e Intro; Esc cierra.
+ *
+ * Ligera a propósito: el cuerpo (y con él la lectura del nodo `songs`) solo
+ * se monta con la paleta abierta, y con ella cerrada no escucha más tecla que
+ * su atajo — las flechas e Intro son de la pantalla de debajo.
  */
 export default function CommandPalette() {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
-  const styles = useMemo(() => createStyles(scheme), [scheme]);
-
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
 
-  const handleOpen = useCallback(() => {
-    setQuery('');
-    setOpen(true);
-  }, []);
-
+  const handleOpen = useCallback(() => setOpen(true), []);
   const handleClose = useCallback(() => setOpen(false), []);
 
   useKeyboardShortcut('k', handleOpen, { meta: true });
   useEscapeToClose(open, handleClose);
-
-  const filtered = useMemo(
-    () => COMMANDS.filter((c) => matchCommand(c, query)),
-    [query],
-  );
-
-  const handleSelect = useCallback((path: string) => {
-    setOpen(false);
-    setQuery('');
-    // expo-router accepts string paths; cast required because the typed
-    // Href union doesn't include arbitrary tab-internal routes.
-    router.push(path as never);
-  }, []);
 
   if (Platform.OS !== 'web') return null;
 
@@ -148,60 +85,219 @@ export default function CommandPalette() {
       <Dialog.Portal>
         <Dialog.Overlay />
         <Dialog.Content>
-          <View style={styles.body}>
-            <SearchField value={query} onChange={setQuery}>
-              <SearchField.Group>
-                <SearchField.SearchIcon />
-                <SearchField.Input placeholder="Saltar a..." autoFocus />
-                <SearchField.ClearButton />
-              </SearchField.Group>
-            </SearchField>
-            <ScrollView
-              style={styles.list}
-              contentContainerStyle={styles.listContent}
-              keyboardShouldPersistTaps="handled"
-            >
-              {filtered.map((cmd) => (
-                <Pressable
-                  key={cmd.id}
-                  onPress={() => handleSelect(cmd.path)}
-                  style={({ pressed }) => [
-                    styles.item,
-                    pressed && styles.itemPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel={cmd.title}
-                >
-                  <View style={styles.itemIcon}>
-                    <MaterialIcons
-                      name={cmd.icon}
-                      size={20}
-                      color={themeColors(isDark).textSecondary}
-                    />
-                  </View>
-                  <View style={styles.itemText}>
-                    <Text style={styles.itemTitle}>{cmd.title}</Text>
-                    {cmd.subtitle ? (
-                      <Text style={styles.itemSubtitle}>{cmd.subtitle}</Text>
-                    ) : null}
-                  </View>
-                </Pressable>
-              ))}
-              {filtered.length === 0 ? (
-                <View style={styles.empty}>
-                  <Text style={styles.emptyText}>Sin resultados</Text>
-                </View>
-              ) : null}
-            </ScrollView>
-            <View style={styles.footer}>
-              <Text style={styles.footerHint}>
-                Esc para cerrar · ⌘K para abrir
-              </Text>
-            </View>
-          </View>
+          {open ? <PaletteBody onClose={handleClose} /> : null}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog>
+  );
+}
+
+function PaletteBody({ onClose }: { onClose: () => void }) {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  const styles = useMemo(() => createStyles(scheme), [scheme]);
+
+  const [query, setQuery] = useState('');
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Mismo nodo y mismo filtro (sin borradores) que las pantallas del
+  // cantoral: sale de la caché de `useFirebaseData`, sin descarga extra.
+  const { data: songsData, loading: songsLoading } = useFirebaseData<SongsData>(
+    'songs',
+    'songs',
+    filterSongsData as (data: unknown) => SongsData,
+  );
+  const songIndex = useMemo(() => buildSongIndex(songsData), [songsData]);
+
+  const items = useMemo<PaletteItem[]>(() => {
+    const commands = PALETTE_COMMANDS.filter((c) => matchCommand(c, query)).map(
+      (command): PaletteItem => ({
+        kind: 'command',
+        key: `cmd:${command.id}`,
+        command,
+      }),
+    );
+    const songs = searchSongIndex(songIndex, query, MAX_SONGS).map(
+      (song): PaletteItem => ({
+        kind: 'song',
+        key: `song:${song.filename}`,
+        song,
+      }),
+    );
+    return [...commands, ...songs];
+  }, [query, songIndex]);
+
+  const handleQuery = useCallback((text: string) => {
+    setQuery(text);
+    setActiveIndex(0);
+  }, []);
+
+  const handleSelect = useCallback(
+    (item: PaletteItem) => {
+      onClose();
+      if (item.kind === 'song') {
+        // Primero el pedido y luego el tab: si el cantoral ya está montado,
+        // su stack abre la canción mientras el router cambia de pestaña.
+        requestSongOpen(songOpenParams(item.song));
+        router.push('/cancionero' as never);
+        return;
+      }
+      // expo-router acepta rutas en string; el cast es porque la unión
+      // tipada de Href no incluye todas las rutas de primer nivel.
+      router.push(item.command.path as never);
+    },
+    [onClose],
+  );
+
+  // Teclado mientras la paleta está abierta (y SOLO entonces: este listener
+  // vive en el cuerpo, que se desmonta al cerrar). En fase de captura y
+  // cortando la propagación, para que ↑/↓/Intro no le lleguen también a los
+  // atajos de la pantalla de debajo (el detalle de canción tiene los suyos).
+  // Intro solo se toma desde el buscador: sobre una fila enfocada con Tab, o
+  // sobre el botón de borrar, Intro hace lo de ese botón.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.isComposing) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        setActiveIndex((i) =>
+          stepIndex(i, e.key === 'ArrowDown' ? 1 : -1, items.length),
+        );
+        return;
+      }
+      if (e.key !== 'Enter') return;
+      const target = e.target as { tagName?: string } | null;
+      if (target?.tagName?.toUpperCase() !== 'INPUT') return;
+      const item = items[activeIndex];
+      if (!item) return;
+      e.preventDefault();
+      e.stopPropagation();
+      handleSelect(item);
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [items, activeIndex, handleSelect]);
+
+  // `autoFocus` no basta: el diálogo monta el campo mientras anima la entrada
+  // y el navegador deja el foco en el `body`, así que lo que se teclea nada
+  // más pulsar ⌘K se perdía. Se enfoca a mano en el siguiente fotograma.
+  const inputRef = useRef<TextInput>(null);
+  useEffect(() => {
+    const id = setTimeout(() => inputRef.current?.focus(), 0);
+    return () => clearTimeout(id);
+  }, []);
+
+  // El resaltado siempre a la vista al moverse con las flechas. En web el
+  // ref de un `View` es el nodo del DOM.
+  const rowRefs = useRef<(View | null)[]>([]);
+  useEffect(() => {
+    const node = rowRefs.current[activeIndex] as unknown as {
+      scrollIntoView?: (opts: { block: string }) => void;
+    } | null;
+    node?.scrollIntoView?.({ block: 'nearest' });
+  }, [activeIndex]);
+
+  const firstSongIndex = items.findIndex((i) => i.kind === 'song');
+  const searchingSongs =
+    query.trim().length >= MIN_SONG_QUERY &&
+    songsLoading &&
+    songIndex.length === 0;
+  const muted = themeColors(isDark).textMuted;
+
+  return (
+    <View style={styles.body}>
+      <SearchField value={query} onChange={handleQuery}>
+        <SearchField.Group>
+          <SearchField.SearchIcon />
+          <SearchField.Input
+            ref={inputRef}
+            placeholder="Busca una canción o salta a…"
+            autoFocus
+            accessibilityLabel="Buscar canciones y pantallas"
+          />
+          <SearchField.ClearButton />
+        </SearchField.Group>
+      </SearchField>
+      <ScrollView
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        {items.map((item, index) => {
+          const active = index === activeIndex;
+          const isSong = item.kind === 'song';
+          const title = isSong ? item.song.title : item.command.title;
+          const subtitle = isSong
+            ? [item.song.author, item.song.categoryName]
+                .filter(Boolean)
+                .join(' · ')
+            : item.command.subtitle;
+          const icon: PaletteIconName = isSong
+            ? 'music-note'
+            : item.command.icon;
+          return (
+            <View
+              key={item.key}
+              ref={(node) => {
+                rowRefs.current[index] = node;
+              }}
+            >
+              {index === firstSongIndex ? (
+                <Text style={styles.sectionLabel}>Canciones</Text>
+              ) : null}
+              <PressableFeedback
+                onPress={() => handleSelect(item)}
+                onHoverIn={() => setActiveIndex(index)}
+                onFocus={() => setActiveIndex(index)}
+                style={[styles.item, active && styles.itemActive]}
+                accessibilityRole="button"
+                accessibilityLabel={isSong ? `Canción: ${title}` : title}
+                accessibilityHint={subtitle || undefined}
+                accessibilityState={{ selected: active }}
+              >
+                <View style={styles.itemIcon}>
+                  <MaterialIcons
+                    name={icon}
+                    size={20}
+                    color={themeColors(isDark).textSecondary}
+                  />
+                </View>
+                <View style={styles.itemText}>
+                  <Text style={styles.itemTitle} numberOfLines={1}>
+                    {title}
+                  </Text>
+                  {subtitle ? (
+                    <Text style={styles.itemSubtitle} numberOfLines={1}>
+                      {subtitle}
+                    </Text>
+                  ) : null}
+                </View>
+                {active ? (
+                  <MaterialIcons
+                    name="keyboard-return"
+                    size={16}
+                    color={muted}
+                  />
+                ) : null}
+              </PressableFeedback>
+            </View>
+          );
+        })}
+        {searchingSongs ? (
+          <Text style={styles.status}>Cargando el cantoral…</Text>
+        ) : items.length === 0 ? (
+          <EmptyState compact icon="search-off" title="Sin resultados" />
+        ) : null}
+      </ScrollView>
+      <View style={styles.footer}>
+        <Text style={styles.footerHint}>
+          ↑↓ para moverte · Intro para abrir · Esc para cerrar ·{' '}
+          {modShortcutLabel('k')} desde cualquier pantalla
+        </Text>
+      </View>
+    </View>
   );
 }
 
@@ -211,14 +307,21 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   return StyleSheet.create({
     body: {
       gap: 10,
-      paddingVertical: 4,
+      paddingVertical: spacing.xs,
     },
     list: {
       maxHeight: 360,
     },
     listContent: {
       gap: 2,
-      paddingVertical: 4,
+      paddingVertical: spacing.xs,
+    },
+    sectionLabel: {
+      ...typography.overline,
+      color: themeColors(isDark).textMuted,
+      paddingHorizontal: 12,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xs,
     },
     item: {
       flexDirection: 'row',
@@ -228,8 +331,10 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       borderRadius: radii.md,
       gap: 12,
     },
-    itemPressed: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+    itemActive: {
+      backgroundColor: isDark
+        ? StateColors.pressedOverlayDark
+        : StateColors.pressedOverlay,
     },
     itemIcon: {
       width: 28,
@@ -240,22 +345,18 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     itemTitle: {
       ...typography.button,
-      fontWeight: '600',
       color: theme.text,
     },
     itemSubtitle: {
       ...typography.footnote,
-      color: isDark ? '#AEAEB2' : '#8E8E93',
+      color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
-    empty: {
-      paddingVertical: 24,
-      alignItems: 'center',
-    },
-    emptyText: {
+    status: {
       ...typography.subhead,
       color: themeColors(isDark).textMuted,
-      fontStyle: 'italic',
+      textAlign: 'center',
+      paddingVertical: spacing.md,
     },
     footer: {
       paddingTop: 6,
@@ -265,6 +366,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       ...typography.micro,
       color: themeColors(isDark).textMuted,
       letterSpacing: 0.3,
+      textAlign: 'center',
     },
   });
 };

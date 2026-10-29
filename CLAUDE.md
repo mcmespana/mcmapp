@@ -17,10 +17,13 @@
 │   ├── contratos/          Contratos de datos App ↔ MCM Panel (notificaciones, encuestas, perfiles)
 │   ├── planes/             BACKLOG.md (★ orden de ejecución) + README.md (★★ qué plan está VIVO y cuál HECHO)
 │   │   └── archivo/        🗄️ Planes YA EJECUTADOS o anulados — NO se re-ejecutan
-│   ├── desarrollo/         Sistema de diseño, tabs, build de tienda y WARNINGS.md
+│   ├── desarrollo/         Sistema de diseño, tabs, OTA (preview → production, rollback), build de tienda y WARNINGS.md
 │   └── SEGURIDAD.md        Reglas Firebase RTDB y gestión de credenciales
 ├── scraper-lecturas/       ← Scraper Python de lecturas litúrgicas (corre vía GitHub Action)
-├── portadas-albumes/       ← Assets de portadas de álbumes (imágenes)
+├── portadas-albumes/       ← Portadas de álbumes: las URLs de Firebase apuntan aquí — NO borrar
+├── medallas-3d/            ← Modelos .glb de las medallas; la app los descarga vía jsDelivr — NO borrar
+├── .agents/skills/         ← Skills de UI para agentes (lockfile: skills-lock.json)
+├── _para-borrar/           ← Cuarentena de ficheros dudosos; su README dice qué es cada uno
 └── README.md               ← Guía rápida para humanos (setup, builds, releases)
 ```
 
@@ -35,11 +38,11 @@
 7. **Que algo NO sea OTA no es un motivo para no hacerlo, ni un riesgo a debatir.** El usuario decide cuándo le viene mal esperar al siguiente build nativo. Si un cambio lleva código nativo: añade `[skip-ota]` al commit y cierra la respuesta con UNA línea al final, sin dramatizar ni repetirlo en el cuerpo del texto:
    - `OTA: ❌ — requiere build nativo (paquetes: [lista]). Commit con [skip-ota].`
    - `OTA: ✅ — solo JS.`
-     (detalles del workflow en OTA de `mcm-app/CLAUDE.md`)
+     (detalles del workflow en OTA de `mcm-app/CLAUDE.md`; flujo preview → production y rollback en `docs/desarrollo/OTA.md`)
 8. **Sin acceso a Firebase, usa `mcm-app/firebase-seed/`** como referencia de la estructura real de los nodos (perfiles, encuestas, eventos como el Jubileo 2025) para construir JSONs nuevos
 9. **Antes de retomar o priorizar cualquier plan/tarea de fondo, lee `docs/planes/BACKLOG.md` ENTERO** — es la fuente única de verdad del orden de ejecución, qué está bloqueado por una decisión pendiente del usuario, y el protocolo de trabajo (qué hacer cuando dicen "seguimos" o "me sobran tokens"). No priorices desde cero ni mires un solo `PLAN_*.md` suelto sin pasar antes por ahí.
 10. **Un plan dentro de `docs/planes/archivo/` está HECHO o ANULADO: NO lo re-ejecutes.** El índice de qué sigue vivo es `docs/planes/README.md`. Al terminar un plan, muévelo a `archivo/` **en el mismo commit** que cierra el trabajo — dejarlo en su sitio con una cabecera de "✅ hecho" no basta, ya provocó que dos sesiones ejecutaran los mismos 15 planes en paralelo.
-11. **Antes de "arreglar los warnings" del linter, lee `docs/desarrollo/WARNINGS.md`** — los 51 que quedan están clasificados y justificados uno a uno; casi todos son falsos positivos de Reanimated o del patrón de "ref al último callback". Lo que sí se pide es no añadir warnings NUEVOS.
+11. **Antes de "arreglar los warnings" del linter, lee `docs/desarrollo/WARNINGS.md`** — los que quedan están clasificados y justificados uno a uno (la cifra vigente y el techo están en ese documento); casi todos son falsos positivos de Reanimated o del patrón de "ref al último callback". Lo que sí se pide es no añadir warnings NUEVOS.
 12. **Antes de tocar interfaz, lee [`design.md`](design.md)** (raíz del
     monorepo). Es la guía **prescriptiva** de diseño para agentes: criterio,
     orden de prioridad cuando dos requisitos chocan, los tres territorios
@@ -80,6 +83,11 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Incoherencias de diseño pendientes de unificar                           | `docs/planes/PLAN_DISENO.md`                                                 |
 | Diseño del área nativa de Comunica: piezas y reglas aprendidas           | `docs/desarrollo/AREA_NATIVA_DISENO.md`                                      |
 | Notificaciones push (sistema completo)                                   | `docs/funcionalidades/NOTIFICACIONES.md`                                     |
+| Inicio de sesión (Google/Apple) y huellas SHA-1 de Android               | `docs/funcionalidades/LOGIN.md`                                              |
+| Modo tester: canal `preview` de EAS Update (Laboratorio Alpha)           | `docs/funcionalidades/CANAL_PREVIEW.md`                                      |
+| Enlaces de una canción (Spotify, partituras, webs)                       | `docs/funcionalidades/ENLACES_CANCION.md`                                    |
+| Reglas de Firebase RTDB: qué falta y cómo desplegarlas                   | `docs/desarrollo/FIREBASE_REGLAS.md`                                         |
+| **OTA: `main` → `preview` → `production`, cuándo no empujar y rollback** | `docs/desarrollo/OTA.md`                                                     |
 | Contrato de notificaciones con el panel                                  | `docs/contratos/NOTIFICACIONES_CONTRATO.md`                                  |
 | Eventos (Jubileo, encuentros, retiros…)                                  | `docs/funcionalidades/EVENTOS.md`                                            |
 | Calendarios ICS y su precacheo (Cloud Function)                          | `docs/funcionalidades/CALENDARIOS.md`                                        |

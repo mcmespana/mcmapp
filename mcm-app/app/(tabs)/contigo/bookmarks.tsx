@@ -6,23 +6,26 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   useWindowDimensions,
-  Platform,
 } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { HABITS, formatDateLong, warm } from '@/components/contigo/theme';
 import {
-  WARM_DARK,
-  WARM_LIGHT,
-  formatDateLong,
-  warm,
-} from '@/components/contigo/theme';
+  contigoHeaderChrome,
+  useContigoHeaderInset,
+} from '@/components/contigo/headerChrome';
 import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
-import { countHighlights } from '@/utils/contigoBookmarks';
+import { h } from '@/utils/haptics';
+import { confirmAsync } from '@/utils/confirmDialog';
+import {
+  countHighlights,
+  removeBookmarkWarning,
+} from '@/utils/contigoBookmarks';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import EmptyState from '@/components/ui/EmptyState';
@@ -32,9 +35,9 @@ export default function BookmarksScreen() {
   // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const headerInset = useContigoHeaderInset();
   const W = warm(isDark);
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 720;
@@ -54,6 +57,22 @@ export default function BookmarksScreen() {
     }, [reload]),
   );
 
+  // Quitar borra el guardado Y sus subrayados, en local y en la nube, y no hay
+  // deshacer: con subrayados de por medio se pregunta antes.
+  const handleRemove = async (date: string, nHighlights: number) => {
+    if (nHighlights > 0) {
+      const ok = await confirmAsync({
+        title: '¿Quitar de guardados?',
+        message: removeBookmarkWarning(nHighlights),
+        confirmLabel: 'Quitar',
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    h.remove();
+    await removeBookmark(date);
+  };
+
   return (
     <View style={styles.container}>
       {/* Header NATIVO: back del sistema (con gota iOS 26) + título. */}
@@ -66,20 +85,10 @@ export default function BookmarksScreen() {
           headerShadowVisible: false,
           headerTintColor: W.text,
           headerTitleStyle: { color: W.text, fontWeight: '700', fontSize: 17 },
-          ...(Platform.OS === 'ios' &&
-          parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
+          ...contigoHeaderChrome(isDark),
         }}
       />
-      <LinearGradient
-        colors={
-          isDark
-            ? ([WARM_DARK.bg, WARM_DARK.bgDeep] as const)
-            : ([WARM_LIGHT.bg, '#F0E8D8'] as const)
-        }
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient colors={W.bgGradient} style={StyleSheet.absoluteFill} />
 
       {isLoading ? (
         <View style={styles.center}>
@@ -88,10 +97,10 @@ export default function BookmarksScreen() {
       ) : bookmarks.length === 0 ? (
         <View style={styles.center}>
           <EmptyState
-            emoji="🔖"
+            icon="bookmark-border"
             title="Sin guardados aún"
             subtitle="Guarda evangelios para releerlos cuando quieras"
-            accentColor={W.accent}
+            accentColor={W.accentText}
             titleColor={W.text}
             subtitleColor={W.textSec}
           />
@@ -104,7 +113,7 @@ export default function BookmarksScreen() {
           contentContainerStyle={[
             styles.listWrap,
             {
-              paddingTop: insets.top + 56,
+              paddingTop: headerInset,
               paddingBottom: contentPaddingBottom,
             },
           ]}
@@ -140,7 +149,7 @@ export default function BookmarksScreen() {
                   ]}
                 >
                   <LinearGradient
-                    colors={['#E8A838', WARM_LIGHT.accent]}
+                    colors={HABITS.oracion.grad}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.cardBar}
@@ -150,14 +159,14 @@ export default function BookmarksScreen() {
                       <View style={{ flex: 1 }}>
                         {ev?.cita ? (
                           <Text
-                            style={[styles.cita, { color: W.accent }]}
+                            style={[styles.cita, { color: W.accentText }]}
                             numberOfLines={1}
                           >
                             {ev.cita}
                           </Text>
                         ) : null}
                         <Text
-                          style={[styles.dateText, { color: W.textMuted }]}
+                          style={[styles.dateText, { color: W.textSec }]}
                           numberOfLines={1}
                         >
                           {formatDateLong(b.date)}
@@ -167,10 +176,13 @@ export default function BookmarksScreen() {
                             <MaterialIcons
                               name="border-color"
                               size={11}
-                              color={W.accent}
+                              color={W.accentText}
                             />
                             <Text
-                              style={[styles.hlChipText, { color: W.accent }]}
+                              style={[
+                                styles.hlChipText,
+                                { color: W.accentText },
+                              ]}
                             >
                               {nHighlights} subrayado
                               {nHighlights !== 1 ? 's' : ''}
@@ -178,8 +190,10 @@ export default function BookmarksScreen() {
                           </View>
                         ) : null}
                       </View>
-                      <TouchableOpacity
-                        onPress={() => removeBookmark(b.date)}
+                      <PressableFeedback
+                        onPress={() => handleRemove(b.date, nHighlights)}
+                        // 28 de círculo + 8 por lado = 44 pt de área táctil.
+                        hitSlop={8}
                         style={[
                           styles.removeBtn,
                           {
@@ -188,14 +202,15 @@ export default function BookmarksScreen() {
                               : 'rgba(0,0,0,0.05)',
                           },
                         ]}
+                        accessibilityRole="button"
                         accessibilityLabel="Quitar de guardados"
                       >
                         <MaterialIcons
                           name="close"
                           size={14}
-                          color={W.textMuted}
+                          color={W.textSec}
                         />
-                      </TouchableOpacity>
+                      </PressableFeedback>
                     </View>
                     <Text
                       style={[styles.cardTitle, { color: W.text }]}
@@ -228,7 +243,7 @@ export default function BookmarksScreen() {
                         },
                       ]}
                     >
-                      <Text style={[styles.openText, { color: W.accent }]}>
+                      <Text style={[styles.openText, { color: W.accentText }]}>
                         Leer evangelio →
                       </Text>
                     </TouchableOpacity>

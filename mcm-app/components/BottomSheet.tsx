@@ -14,17 +14,19 @@ import {
   Text,
   Animated,
   StyleSheet,
-  Dimensions,
   Keyboard,
-  useWindowDimensions,
 } from 'react-native';
 import useAnimatedValue from '@/hooks/useAnimatedValue';
-import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { durations, easings } from '@/constants/animations';
+import { breakpoints, sheetMaxWidth } from '@/constants/breakpoints';
 import { UIColors, Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useEscapeToClose } from '@/hooks/useEscapeToClose';
+import { keyboardEventsFor } from '@/hooks/useKeyboardVisible';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { h } from '@/utils/haptics';
 
 // ⚠️ Estas animaciones van con el `Animated` de React Native A PROPÓSITO, NO
 // con Reanimated. Dentro de un `Modal` TRANSPARENTE de RN los estilos animados
@@ -48,11 +50,7 @@ import { useEscapeToClose } from '@/hooks/useEscapeToClose';
 // commit— está abajo y no depende del hilo en el que corra.
 const nativeDriver = Platform.OS !== 'web';
 
-// Sitio de partida/salida de la hoja. Se mide una vez al cargar el módulo, así
-// que en horizontal puede quedar más grande que la pantalla: sobrar da igual
-// (la hoja acaba fuera de vista), faltar dejaría la hoja asomando.
-const OFF_SCREEN = Dimensions.get('window').height;
-const DURATION = 300;
+const DURATION = durations.slow;
 
 /** Arrastrar la hoja más de esto hacia abajo y soltar la cierra. */
 const CLOSE_THRESHOLD = 80;
@@ -76,6 +74,26 @@ const VELOCITY_THRESHOLD = 0.5;
  * se nota que el tope es un tope.
  */
 const UPWARD_RESISTANCE = 0.2;
+
+/**
+ * Duración del desplazamiento de la hoja con el teclado. iOS manda la de su
+ * animación; Android manda 0 (el teclado ya está arriba cuando avisa), y un 0
+ * sería un salto seco: ahí, una microtransición.
+ */
+export function keyboardShiftDuration(eventDuration: number | undefined) {
+  return eventDuration || durations.quick;
+}
+
+/**
+ * Ancho de la hoja: todo el de la pantalla en móvil; en pantalla ancha (web
+ * de escritorio, iPad) `sheetMaxWidth` y centrada. Decisión del usuario,
+ * 2026-10-16.
+ */
+export function sheetWidthFor(windowWidth: number): number | undefined {
+  return windowWidth >= breakpoints.md
+    ? Math.min(windowWidth, sheetMaxWidth)
+    : undefined;
+}
 
 /**
  * ¿Cierra el gesto al soltar? Velocidad **o** distancia: un flick es
@@ -161,15 +179,26 @@ export default function BottomSheet({
 
   const [kbHeight, setKbHeight] = useState(0);
   const insets = useSafeAreaInsets();
-  // `useWindowDimensions` y no `Dimensions.get(...)`: leído a pelo en el render
-  // no se recalcula al girar el dispositivo, y la hoja se quedaba con el tope
-  // de altura del portrait estando en horizontal.
-  const { height: screenHeight } = useWindowDimensions();
+  // `useWindowDimensions` (vía `useResponsiveLayout`) y no `Dimensions.get`:
+  // leído a pelo en el render —o peor, al cargar el módulo— no se recalcula al
+  // girar el dispositivo ni al redimensionar la ventana en web, y la hoja se
+  // quedaba con el tope de altura del portrait estando en horizontal.
+  const { height: screenHeight, width: screenWidth } = useResponsiveLayout();
+  const sheetWidth = sheetWidthFor(screenWidth);
+  // Sitio de partida/salida de la hoja: el alto ACTUAL de la ventana. Antes era
+  // una constante leída al cargar el módulo, y un iPad que arrancaba en
+  // horizontal y giraba a vertical hacía nacer la hoja ya asomando. Va en un
+  // ref actualizado en efecto (no en render) porque solo lo leen las
+  // animaciones, y cambiarlo no debe relanzar la de entrada.
+  const offScreenRef = useRef(screenHeight);
+  useEffect(() => {
+    offScreenRef.current = screenHeight;
+  }, [screenHeight]);
   // Altura máxima de la hoja: siempre deja sitio para el safe-area superior y,
   // si el teclado está abierto, para el teclado. Así la hoja nunca se sale por
   // arriba al subir, y el ScrollView interno scrollea al campo enfocado.
   const sheetMaxHeight = screenHeight - insets.top - kbHeight - 8;
-  const slideAnim = useAnimatedValue(OFF_SCREEN);
+  const slideAnim = useAnimatedValue(screenHeight);
   const opacityAnim = useAnimatedValue(0);
   const dragAnim = useAnimatedValue(0);
   // Keyboard offset: negative value moves the sheet up. Kept separate from
@@ -213,17 +242,22 @@ export default function BottomSheet({
       setClosing(false);
       dragAnim.setValue(0);
       keyboardOffsetAnim.setValue(0);
-      slideAnim.setValue(OFF_SCREEN);
+      slideAnim.setValue(offScreenRef.current);
       opacityAnim.setValue(0);
+      // Curva de sheet (arranca rápida y se posa): con el default de
+      // `Animated.timing` (ease-in-out) la hoja arrancaba lenta justo en el
+      // instante que se mira. design.md §6: nunca ease-in en algo que entra.
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
           duration: DURATION,
+          easing: easings.sheet,
           useNativeDriver: nativeDriver,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
           duration: DURATION,
+          easing: easings.sheet,
           useNativeDriver: nativeDriver,
         }),
       ]).start();
@@ -236,13 +270,15 @@ export default function BottomSheet({
     setClosing(true);
     Animated.parallel([
       Animated.timing(slideAnim, {
-        toValue: OFF_SCREEN,
+        toValue: offScreenRef.current,
         duration: DURATION,
+        easing: easings.sheet,
         useNativeDriver: nativeDriver,
       }),
       Animated.timing(opacityAnim, {
         toValue: 0,
         duration: DURATION,
+        easing: easings.sheet,
         useNativeDriver: nativeDriver,
       }),
     ]).start(() => {
@@ -271,33 +307,47 @@ export default function BottomSheet({
     fireCloseComplete,
   ]);
 
-  // Shift the sheet up when the keyboard appears (iOS only).
+  // Shift the sheet up when the keyboard appears — en iOS y también en
+  // Android (ver `keyboardEventsFor`). En Android no se puede contar con el
+  // sistema: el `Modal` de RN 0.86 abre su ventana en edge-to-edge
+  // (`setDecorFitsSystemWindows(false)`) y en ese modo `adjustResize` ya no
+  // redimensiona nada, así que sin esto el teclado tapaba el campo y el botón
+  // de enviar de todas las hojas con formulario.
   // Uses a separate Animated.Value so it can share the native driver with
   // translateY — mixing useNativeDriver: false and true on one Animated.View
   // crashes React Native.
+  //
+  // En Android la altura que da RN es la del teclado MENOS la barra de
+  // navegación (ReactRootView: `ime.bottom - systemBars.bottom`), y la hoja ya
+  // reserva ese inset en su `paddingBottom`: al subir esa altura, el inset
+  // queda detrás del teclado y el último control justo encima. No se resta
+  // nada más.
   useEffect(() => {
-    if (Platform.OS !== 'ios') return;
+    const events = keyboardEventsFor(Platform.OS);
+    if (!events) return;
     const showSub = Keyboard.addListener(
-      'keyboardWillShow',
-      (e: { endCoordinates: { height: number }; duration: number }) => {
+      events.show,
+      (e: { endCoordinates: { height: number }; duration?: number }) => {
         // Guardamos la altura del teclado para CAPAR la altura de la hoja (que
         // quepa encima del teclado) y que su tope no se salga de pantalla al
         // subir. El scroll interno lleva el campo enfocado a la vista.
         setKbHeight(e.endCoordinates.height);
         Animated.timing(keyboardOffsetAnim, {
           toValue: -e.endCoordinates.height,
-          duration: e.duration ?? 250,
+          duration: keyboardShiftDuration(e.duration),
+          easing: easings.sheet,
           useNativeDriver: nativeDriver,
         }).start();
       },
     );
     const hideSub = Keyboard.addListener(
-      'keyboardWillHide',
-      (e: { duration: number }) => {
+      events.hide,
+      (e: { duration?: number }) => {
         setKbHeight(0);
         Animated.timing(keyboardOffsetAnim, {
           toValue: 0,
-          duration: e.duration ?? 250,
+          duration: keyboardShiftDuration(e.duration),
+          easing: easings.sheet,
           useNativeDriver: nativeDriver,
         }).start();
       },
@@ -332,11 +382,7 @@ export default function BottomSheet({
         // Háptica en el instante en que el gesto se compromete, no al acabar la
         // animación: un toque que llega tarde se lee como un fallo, no como
         // respuesta. Y nunca es el único feedback — la hoja se va igual.
-        if (Platform.OS !== 'web') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
-            () => {},
-          );
-        }
+        h.menuClose();
         onCloseRef.current();
       } else {
         snapBack(vy);
@@ -403,8 +449,12 @@ export default function BottomSheet({
       <Animated.View
         style={[
           styles.sheetPositioner,
+          sheetWidth !== undefined && styles.sheetPositionerWide,
           { transform: [{ translateY: keyboardOffsetAnim }] },
         ]}
+        // El hueco a los lados de una hoja centrada es fondo: que el toque
+        // llegue al `Pressable` de detrás y cierre, como en el resto.
+        pointerEvents="box-none"
       >
         {/* Inner: slide-in / drag animation */}
         <Animated.View
@@ -415,6 +465,7 @@ export default function BottomSheet({
               paddingBottom: safeAreaBottom ? 8 + insets.bottom : 8,
               transform: [{ translateY }],
               maxHeight: sheetMaxHeight,
+              ...(sheetWidth !== undefined && { width: sheetWidth }),
               ...(height !== undefined && { height }),
             },
           ]}
@@ -477,6 +528,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+  },
+  sheetPositionerWide: {
+    alignItems: 'center',
   },
   sheet: {
     borderTopLeftRadius: radii.xl,

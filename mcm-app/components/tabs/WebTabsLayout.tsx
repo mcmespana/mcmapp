@@ -16,7 +16,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Colors } from '@/constants/colors';
+import { CarismoColors, Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import { HapticTab } from '@/components/HapticTab';
 import { TABS_CONFIG } from '@/constants/tabsCatalog';
@@ -27,12 +27,12 @@ import { useCarismochito } from '@/contexts/CarismochitoContext';
 
 /* Modo carismochito: en claro el fondo se queda blanco y sólo se tiñen los
    iconos; en oscuro se usa el verde casi negro. */
-const CARISMO_BG_DARK = '#06210F';
-const CARISMO_ACTIVE_DARK = '#9DE86B';
-const CARISMO_INACTIVE_DARK = '#4E8C5F';
+const CARISMO_BG_DARK = CarismoColors.deep;
+const CARISMO_ACTIVE_DARK = CarismoColors.dark;
+const CARISMO_INACTIVE_DARK = CarismoColors.inactiveDark;
 const CARISMO_BG_LIGHT = '#FFFFFF';
-const CARISMO_ACTIVE_LIGHT = '#1B9E4B';
-const CARISMO_INACTIVE_LIGHT = '#6FA77E';
+const CARISMO_ACTIVE_LIGHT = CarismoColors.light;
+const CARISMO_INACTIVE_LIGHT = CarismoColors.inactiveLight;
 
 export default function WebTabsLayout() {
   const scheme = useColorScheme();

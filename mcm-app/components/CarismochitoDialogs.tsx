@@ -9,17 +9,19 @@ import {
   View,
 } from 'react-native';
 import useAnimatedValue from '@/hooks/useAnimatedValue';
+import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import CarismochitoMascot from '@/components/CarismochitoMascot';
 import { h } from '@/utils/haptics';
+import { CarismoColors } from '@/constants/colors';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 
 /* Verdes del modo (en línea con CarismochitoOverlay). */
-const G = '#1B9E4B';
-const G_LIGHT = '#9DE86B';
-const G_GLOW = '#5AE08A';
-const G_DARK = '#06210F';
+const G = CarismoColors.light;
+const G_LIGHT = CarismoColors.dark;
+const G_GLOW = CarismoColors.glow;
+const G_DARK = CarismoColors.deep;
 
 /**
  * Tarjeta central con animación de entrada (escala + fade).
@@ -56,7 +58,7 @@ function PopCard({ children }: { children: React.ReactNode }) {
     <View style={styles.backdrop}>
       <Animated.View style={[styles.card, cardStyle]}>
         <LinearGradient
-          colors={['#0C3D1C', G_DARK]}
+          colors={[CarismoColors.deepEdge, G_DARK]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -74,10 +76,16 @@ function PopCard({ children }: { children: React.ReactNode }) {
 export function CarismochitoOnboarding({
   visible,
   onDismiss,
+  onExit,
   huntEnabled = false,
 }: {
   visible: boolean;
   onDismiss: () => void;
+  /**
+   * Botón "Salir del modo" para quien no puede (o no quiere) agitar el móvil,
+   * p. ej. con el iPad sobre el atril. Sin esta prop no se muestra.
+   */
+  onExit?: () => void;
   /** Con la caza del Laboratorio Alpha encendida ya se pueden atrapar. */
   huntEnabled?: boolean;
 }) {
@@ -136,6 +144,20 @@ export function CarismochitoOnboarding({
         >
           <Text style={styles.primaryBtnText}>¡Entendido!</Text>
         </Pressable>
+
+        {onExit ? (
+          <PressableFeedback
+            onPress={() => {
+              h.tap();
+              onExit();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Salir del modo Carismochito"
+            style={styles.exitLink}
+          >
+            <Text style={styles.exitLinkText}>Salir del modo</Text>
+          </PressableFeedback>
+        ) : null}
       </PopCard>
     </Modal>
   );
@@ -239,7 +261,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
-    color: '#E8FFB8',
+    color: CarismoColors.onDeep,
     fontSize: 21,
     fontWeight: '900',
     textAlign: 'center',
@@ -250,7 +272,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 14,
   },
   body: {
-    color: '#D4F5A0',
+    color: CarismoColors.onDeepSoft,
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
@@ -272,10 +294,10 @@ const styles = StyleSheet.create({
   },
   teaserStrong: {
     fontWeight: '900',
-    color: '#E8FFB8',
+    color: CarismoColors.onDeep,
   },
   hint: {
-    color: '#A3D86E',
+    color: CarismoColors.onDeepMuted,
     ...typography.footnote,
     textAlign: 'center',
     marginTop: 16,
@@ -293,6 +315,18 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     ...typography.body,
     letterSpacing: 0.5,
+  },
+  exitLink: {
+    marginTop: 8,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exitLinkText: {
+    color: CarismoColors.onDeepMuted,
+    ...typography.subhead,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
   row: {
     flexDirection: 'row',

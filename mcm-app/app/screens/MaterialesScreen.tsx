@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, Text, Platform } from 'react-native';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
@@ -108,6 +109,7 @@ export default function MaterialesScreen() {
   const route = useRoute<MaterialesScreenRoute>();
   const scheme = useColorScheme();
   const fontScale = useFontScale(1.2);
+  const bottomPadding = useTabBarPaddingBottom(spacing.xl);
   const styles = React.useMemo(
     () => createStyles(scheme, fontScale),
     [scheme, fontScale],
@@ -184,7 +186,12 @@ export default function MaterialesScreen() {
         />
       </View>
       <PageContainer>
-        <ScrollView contentContainerStyle={styles.list}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.list,
+            { paddingBottom: bottomPadding },
+          ]}
+        >
           {dia.actividades.map((act: Actividad, idx: number) => (
             <PressableFeedback
               key={idx}
@@ -229,7 +236,6 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
     list: {
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.md,
-      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.xl,
     },
     card: {
       borderRadius: radii.lg,

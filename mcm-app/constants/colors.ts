@@ -182,6 +182,13 @@ export const UIColors = {
   chordSecondaryText: '#6c757d',
   /** Amarillo del cantoral — FAB principal y color de su tab. */
   accentYellow: '#f4c11e',
+  /**
+   * Botones de la cabecera del cantoral en iOS claro (header transparente
+   * sobre fondo blanco/gris, 4,5:1). Estaba escrito a mano en tres sitios con
+   * este mismo valor; se le da nombre sin cambiar un píxel. Quién lo usa y en
+   * qué plataforma lo decide `utils/cantoralHeader.ts`.
+   */
+  cantoralHeaderTintLight: '#3d79b9',
   modalOverlay: 'rgba(0, 0, 0, 0.5)',
 } as const;
 
@@ -331,24 +338,6 @@ export const KeyPillColors = {
   borderDark: '#2A3D66',
 } as const;
 
-// Colores de emociones — usado en Contigo (oración) y disponible para futuros trackers.
-export const EmotionColors = {
-  joy: '#FCD200', // Alegría — amarillo COM
-  sadness: '#31AADF', // Tristeza — celeste
-  anger: '#E15C62', // Enfado — rojo MIC
-  fear: '#6B3FA0', // Miedo — púrpura
-  disgust: '#3A7D44', // Asco — verde bosque
-} as const;
-
-// Versiones suaves (light) de cada emoción para fondos de chips/cards.
-export const EmotionColorsSoft = {
-  joy: '#FDE68A',
-  sadness: '#BFDBFE',
-  anger: '#FECACA',
-  fear: '#DDD6FE',
-  disgust: '#BBF7D0',
-} as const;
-
 // Colores de las categorías del modal de feedback (sustituye magic numbers en AppFeedbackModal).
 export const FeedbackCategoryColors = {
   bug: '#FF6B6B', // Error / bug
@@ -366,10 +355,30 @@ export const HighlightColors = {
   dark: { bg: '#3A2D0A', fg: '#F4C11E', border: '#7A5A00' },
 } as const;
 
-/** Verde de Carismochito. Estaba duplicado como constante en 3 ficheros. */
+/**
+ * Verdes del modo Carismochito. `light`/`dark` son el acento por tema; el resto
+ * son los tonos del HUD (cuenta atrás, avisos, diálogos), que viven sobre fondo
+ * verde oscuro en ambos temas.
+ */
 export const CarismoColors = {
   light: '#1B9E4B',
   dark: '#9DE86B',
+  /** Brillo: halos, sombras, anillo de la cuenta atrás. */
+  glow: '#5AE08A',
+  /** Verde casi negro: fondo de tarjetas, texto sobre botones lima. */
+  deep: '#06210F',
+  /** Extremos del degradado de fondo del HUD. */
+  deepEdge: '#0C3D1C',
+  abyss: '#011A0A',
+  /** Pestañas inactivas del modo (barra compacta y web). */
+  inactiveLight: '#6FA77E',
+  inactiveDark: '#4E8C5F',
+  /** Texto claro sobre `deep`: títulos, cuerpo y pistas. */
+  onDeep: '#E8FFB8',
+  onDeepSoft: '#D4F5A0',
+  onDeepMuted: '#A3D86E',
+  /** Verde hoja: solo para el confeti. */
+  leaf: '#7AC943',
 } as const;
 
 /** Las piezas de color del dibujo vectorial de Carismochito. */

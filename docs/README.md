@@ -13,20 +13,21 @@
 
 Cómo funciona cada sistema de la app, de principio a fin.
 
-| Documento                                              | Qué cubre                                                                                                                                                   |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [LOGIN.md](funcionalidades/LOGIN.md)                   | Inicio de sesión con Google y Apple en iOS, Android y web: arquitectura, variables de entorno, **huellas SHA-1 de Android** y diagnóstico de errores        |
-| [NOTIFICACIONES.md](funcionalidades/NOTIFICACIONES.md) | Sistema de notificaciones push: cliente implementado, backend, plan de pruebas                                                                              |
-| [EVENTOS.md](funcionalidades/EVENTOS.md)               | Sistema de eventos (Jubileo, encuentros, retiros…): paths de Firebase y cómo añadir un evento nuevo                                                         |
-| [CALENDARIOS.md](funcionalidades/CALENDARIOS.md)       | Calendarios ICS: por qué son lentos (medido), la Cloud Function que los precachea cada 2 h y el fallback                                                    |
-| [ENCUESTAS.md](funcionalidades/ENCUESTAS.md)           | Sistema de encuestas y evaluaciones (guía funcional)                                                                                                        |
-| [COROS.md](funcionalidades/COROS.md)                   | Coros, playlists compartidas y coro en vivo: `/choirs`, importar «la última», actualizar vs subir nueva, contraseña y caducidad de 24 h                     |
-| [HOJA_CANCION.md](funcionalidades/HOJA_CANCION.md)     | Cómo se pinta una canción: palabras, secciones, estribillos repetidos y `{chorus}`, cortes de línea por frase, vista compacta, columnas en iPad, onboarding |
-| [ARREGLOS.md](funcionalidades/ARREGLOS.md)             | Directiva `{arr:}` del cantoral (anotaciones de arreglos) + prompt del generador ChordPro                                                                   |
-| [ETIQUETAS.md](funcionalidades/ETIQUETAS.md)           | Etiquetas del cantoral: directiva `{tags:}`, catálogo `songs/tags`, botón del header, nube y pantalla `__TAG__:`                                            |
-| [SUBRAYADO.md](funcionalidades/SUBRAYADO.md)           | Subrayado de las lecturas de Contigo: rangos, componente de texto nativo y qué falta (build nativa) para el ítem "Subrayar" del menú del sistema            |
-| [CANAL_PREVIEW.md](funcionalidades/CANAL_PREVIEW.md)   | Modo tester ("Laboratorio Alpha"): cómo un dispositivo recibe los OTA de `preview` en vez de los de `production`, y cómo comprobarlo                        |
-| [CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)     | Modo Carismochito (agitar el móvil) y la caza de Carismochitos con su colección, escondida en el Laboratorio Alpha                                          |
+| Documento                                                | Qué cubre                                                                                                                                                   |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [LOGIN.md](funcionalidades/LOGIN.md)                     | Inicio de sesión con Google y Apple en iOS, Android y web: arquitectura, variables de entorno, **huellas SHA-1 de Android** y diagnóstico de errores        |
+| [NOTIFICACIONES.md](funcionalidades/NOTIFICACIONES.md)   | Sistema de notificaciones push: cliente implementado, backend, plan de pruebas                                                                              |
+| [EVENTOS.md](funcionalidades/EVENTOS.md)                 | Sistema de eventos (Jubileo, encuentros, retiros…): paths de Firebase y cómo añadir un evento nuevo                                                         |
+| [CALENDARIOS.md](funcionalidades/CALENDARIOS.md)         | Calendarios ICS: por qué son lentos (medido), la Cloud Function que los precachea cada 2 h y el fallback                                                    |
+| [ENCUESTAS.md](funcionalidades/ENCUESTAS.md)             | Sistema de encuestas y evaluaciones (guía funcional)                                                                                                        |
+| [COROS.md](funcionalidades/COROS.md)                     | Coros, playlists compartidas y coro en vivo: `/choirs`, importar «la última», actualizar vs subir nueva, contraseña y caducidad de 24 h                     |
+| [HOJA_CANCION.md](funcionalidades/HOJA_CANCION.md)       | Cómo se pinta una canción: palabras, secciones, estribillos repetidos y `{chorus}`, cortes de línea por frase, vista compacta, columnas en iPad, onboarding |
+| [ARREGLOS.md](funcionalidades/ARREGLOS.md)               | Directiva `{arr:}` del cantoral (anotaciones de arreglos) + prompt del generador ChordPro                                                                   |
+| [ETIQUETAS.md](funcionalidades/ETIQUETAS.md)             | Etiquetas del cantoral: directiva `{tags:}`, catálogo `songs/tags`, botón del header, nube y pantalla `__TAG__:`                                            |
+| [SUBRAYADO.md](funcionalidades/SUBRAYADO.md)             | Subrayado de las lecturas de Contigo: rangos, componente de texto nativo y qué falta (build nativa) para el ítem "Subrayar" del menú del sistema            |
+| [ENLACES_CANCION.md](funcionalidades/ENLACES_CANCION.md) | Enlaces de una canción: `audioLinks` (suenan dentro de la app) frente a enlaces externos (Spotify, partituras, webs)                                        |
+| [CANAL_PREVIEW.md](funcionalidades/CANAL_PREVIEW.md)     | Modo tester ("Laboratorio Alpha"): cómo un dispositivo recibe los OTA de `preview` en vez de los de `production`, y cómo comprobarlo                        |
+| [CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)       | Modo Carismochito (agitar el móvil) y la caza de Carismochitos con su colección, escondida en el Laboratorio Alpha                                          |
 
 ## Contratos de datos (App ↔ MCM Panel)
 
@@ -55,17 +56,17 @@ Si cambias uno de estos formatos, actualiza el contrato.
 
 **🟢 Vivos:**
 
-| Documento                                                                 | Qué cubre                                                                                                                                      |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| [BACKLOG.md](planes/BACKLOG.md)                                           | ★ Orden de ejecución, decisiones pendientes, protocolo de trabajo                                                                              |
-| [planes/README.md](planes/README.md)                                      | ★★ Índice de estado: qué plan está vivo, cuál archivado y cuál es futuro lejano                                                                |
-| [PLAN_UI_NATIVA.md](planes/PLAN_UI_NATIVA.md)                             | Unificación de UI y componentes nativos (headers, botones, inputs, color) — 🟡 Fase 2 en curso                                                 |
-| [PLAN_HOJA_CANCION.md](planes/PLAN_HOJA_CANCION.md)                       | Hoja de canción para músicos y cantantes — en rama: hoja, modo atril, onboarding, canciones repasadas; queda el admin fiel a la app            |
-| [PLAN_INTEGRACIONES.md](planes/PLAN_INTEGRACIONES.md)                     | Integraciones app ↔ panel ↔ cantoral — 🟡 solo queda la **Integración D** (reglas Firebase)                                                    |
-| [PLAN_CALIDAD.md](planes/PLAN_CALIDAD.md)                                 | Saneamiento de código — 🟡 Fase 0 hecha; **Fase 1 descartada**. Su §0 explica cómo organizar código que solo edita una IA                      |
-| [archivo/PLAN_CARISMOCHITO.md](planes/archivo/PLAN_CARISMOCHITO.md)       | ✅ Hecho (2026-09-26). Cómo funciona hoy: [funcionalidades/CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)                                   |
-| [PLAN_DISENO.md](planes/PLAN_DISENO.md)                                   | ⏳ Unificación del diseño: incoherencias de tokens con evidencia + mejoras. Bolsa oportunista, tareas sueltas de un commit                     |
-| [ANALISIS_AREA_PRIVADA_NATIVA.md](planes/ANALISIS_AREA_PRIVADA_NATIVA.md) | 🔬 Análisis: el área privada de Comunica en nativo con backend propio. Planes de la app en [planes/area-nativa/](planes/area-nativa/README.md) |
+| Documento                                                                 | Qué cubre                                                                                                                                                                            |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [BACKLOG.md](planes/BACKLOG.md)                                           | ★ Orden de ejecución, decisiones pendientes, protocolo de trabajo                                                                                                                    |
+| [planes/README.md](planes/README.md)                                      | ★★ Índice de estado: qué plan está vivo, cuál archivado y cuál es futuro lejano                                                                                                      |
+| [PLAN_UI_NATIVA.md](planes/PLAN_UI_NATIVA.md)                             | Unificación de UI y componentes nativos (headers, botones, inputs, color) — 🟡 ⏸️ En pausa (2026-09-24); Fase 1 ✅, Fase 2 ~80%                                                      |
+| [PLAN_HOJA_CANCION.md](planes/PLAN_HOJA_CANCION.md)                       | Hoja de canción para músicos y cantantes — hecho y en `main` (hoja, modo atril, onboarding, admin fiel, PDF); queda el repaso de etiquetas, el mapa de la canción y el pedal en iPad |
+| [PLAN_INTEGRACIONES.md](planes/PLAN_INTEGRACIONES.md)                     | Integraciones app ↔ panel ↔ cantoral — 🟡 solo queda la **Integración D** (reglas Firebase)                                                                                          |
+| [PLAN_CALIDAD.md](planes/PLAN_CALIDAD.md)                                 | Saneamiento de código — 🟡 Fase 0 hecha; **Fase 1 descartada**. Su §0 explica cómo organizar código que solo edita una IA                                                            |
+| [archivo/PLAN_CARISMOCHITO.md](planes/archivo/PLAN_CARISMOCHITO.md)       | ✅ Hecho (2026-09-26). Cómo funciona hoy: [funcionalidades/CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)                                                                         |
+| [PLAN_DISENO.md](planes/PLAN_DISENO.md)                                   | ⏳ Unificación del diseño: incoherencias de tokens con evidencia + mejoras. Bolsa oportunista, tareas sueltas de un commit                                                           |
+| [ANALISIS_AREA_PRIVADA_NATIVA.md](planes/ANALISIS_AREA_PRIVADA_NATIVA.md) | 🔬 Análisis: el área privada de Comunica en nativo con backend propio. Planes de la app en [planes/area-nativa/](planes/area-nativa/README.md)                                       |
 
 **🔵 Futuro lejano** (no se tocan hasta que el usuario lo pida — decisión de 2026-08-15):
 
@@ -90,15 +91,16 @@ Las tareas accionables derivadas de estos planes están en
 
 Referencia técnica sobre cómo está construida la app por dentro.
 
-| Documento                                                 | Qué cubre                                                                                                                               |
-| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| [DESIGN.md](desarrollo/DESIGN.md)                         | Inventario del sistema de diseño (tokens, colores, tipografía, glass, componentes). Las **reglas** están en [`design.md`](../design.md) |
-| [AREA_NATIVA_DISENO.md](desarrollo/AREA_NATIVA_DISENO.md) | Diseño del área nativa de Comunica: qué pieza usar y las reglas aprendidas mirando capturas                                             |
-| [TABS_MAINTENANCE.md](desarrollo/TABS_MAINTENANCE.md)     | Implementación dual de tabs (iOS NativeTabs vs Android/Web)                                                                             |
-| [FIREBASE_REGLAS.md](desarrollo/FIREBASE_REGLAS.md)       | Reglas de la base de datos: qué falta, qué debe cambiar el Panel y cómo desplegarlas                                                    |
-| [BUILD_AGOSTO_2026.md](desarrollo/BUILD_AGOSTO_2026.md)   | ★ Paso a paso de la build de tienda: variables de Sentry, credenciales, pruebas                                                         |
-| [COBERTURA.md](desarrollo/COBERTURA.md)                   | ★ Receta para subir la cobertura de tests. **Es LA tarea cuando el usuario dice "me sobran créditos"**                                  |
-| [WARNINGS.md](desarrollo/WARNINGS.md)                     | Los 51 warnings del compilador de React: clasificados uno a uno y por qué cada grupo se queda. **Léelo antes de "arreglar warnings"**   |
+| Documento                                                 | Qué cubre                                                                                                                                 |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| [DESIGN.md](desarrollo/DESIGN.md)                         | Inventario del sistema de diseño (tokens, colores, tipografía, glass, componentes). Las **reglas** están en [`design.md`](../design.md)   |
+| [TABS_MAINTENANCE.md](desarrollo/TABS_MAINTENANCE.md)     | Tabs: tres implementaciones (iOS, Android, Web) y cómo mantenerlas                                                                        |
+| [FIREBASE_REGLAS.md](desarrollo/FIREBASE_REGLAS.md)       | Reglas de la base de datos: qué falta, qué debe cambiar el Panel y cómo desplegarlas                                                      |
+| [BUILD_AGOSTO_2026.md](desarrollo/BUILD_AGOSTO_2026.md)   | ★ Paso a paso de la build de tienda: variables de Sentry, credenciales, pruebas                                                           |
+| [COBERTURA.md](desarrollo/COBERTURA.md)                   | ★ Receta para subir la cobertura de tests. **Es LA tarea cuando el usuario dice "me sobran créditos"**                                    |
+| [OTA.md](desarrollo/OTA.md)                               | ★ Flujo `main` → `preview` → `production`, cuándo NO empujar y cómo hacer rollback de una OTA mala                                        |
+| [WARNINGS.md](desarrollo/WARNINGS.md)                     | Los warnings del linter que quedan (38 hoy): clasificados uno a uno y por qué cada grupo se queda. **Léelo antes de "arreglar warnings"** |
+| [AREA_NATIVA_DISENO.md](desarrollo/AREA_NATIVA_DISENO.md) | Diseño del área nativa de Comunica: qué pieza usar y las reglas aprendidas mirando capturas                                               |
 
 ## Seguridad
 

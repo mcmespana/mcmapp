@@ -213,3 +213,28 @@ describe('goToEventScreen', () => {
     expect(takePendingEventScreen()).toBeNull();
   });
 });
+
+describe('goToPath — rutas sueltas de notificaciones y botones del panel', () => {
+  it('iOS con calendario en overflow: entra por "Más" y arrastra la fecha', () => {
+    render().goToPath('/(tabs)/calendario?date=2026-11-02');
+
+    expect(mockPush).toHaveBeenCalledWith('/mas');
+    expect(takePendingMasScreen()).toEqual({
+      screen: 'Calendario',
+      params: { date: '2026-11-02' },
+    });
+  });
+
+  it('un tab de la barra va directo a su ruta', () => {
+    render().goToPath('/(tabs)/cancionero');
+
+    expect(mockPush).toHaveBeenCalledWith('/cancionero');
+  });
+
+  it('lo que no es la raíz de un tab sigue por router.push tal cual', () => {
+    render().goToPath('/(tabs)/contigo/oracion');
+
+    expect(mockPush).toHaveBeenCalledWith('/(tabs)/contigo/oracion');
+    expect(takePendingMasScreen()).toBeNull();
+  });
+});

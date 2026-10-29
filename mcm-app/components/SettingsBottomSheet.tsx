@@ -17,7 +17,7 @@ import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import SegmentedControl, {
   type SegmentedOption,
 } from '@/components/ui/SegmentedControl';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useActiveSurveys } from '@/hooks/useActiveSurveys';
@@ -31,6 +31,7 @@ import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 import typography from '@/constants/typography';
+import SectionHeader from '@/components/ui/SectionHeader';
 
 interface Props {
   visible: boolean;
@@ -47,6 +48,9 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
   const { settings, setSettings } = useAppSettings();
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
+  // Pistas y descripciones: `textSecondary` llega a 4,5:1 sobre la superficie;
+  // `icon` con opacity encima se quedaba en ~3:1.
+  const hintColor = themeColors(scheme === 'dark').textSecondary;
   const fontScale = useFontScale();
   const resolved = useResolvedProfileConfig();
   const { rawConfig } = useProfileConfigContext();
@@ -113,7 +117,8 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
         onPress={() => setPanelView('settings')}
         accessibilityRole="button"
         accessibilityLabel="Volver a ajustes"
-        style={{ padding: 4 }}
+        style={styles.backButton}
+        hitSlop={spacing.xs}
       >
         <MaterialIcons name="arrow-back" size={22} color={theme.text} />
       </TouchableOpacity>
@@ -162,7 +167,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                         {p.label}
                       </Text>
                       <Text
-                        style={[styles.optionDesc, { color: theme.icon }]}
+                        style={[styles.optionDesc, { color: hintColor }]}
                         numberOfLines={2}
                       >
                         {p.description}
@@ -229,9 +234,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
           {panelView === 'settings' && (
             <>
               {/* ── Sección: Cuenta ── */}
-              <Text style={[styles.sectionLabel, { color: theme.icon }]}>
-                CUENTA
-              </Text>
+              <SectionHeader label="Cuenta" style={styles.sectionHeader} />
               <View
                 style={[
                   styles.surface,
@@ -246,14 +249,10 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
               </View>
 
               {/* ── Sección: Tu perfil MCM ── */}
-              <Text
-                style={[
-                  styles.sectionLabel,
-                  { color: theme.icon, marginTop: spacing.md },
-                ]}
-              >
-                TU PERFIL EN MCM
-              </Text>
+              <SectionHeader
+                label="Tu perfil en MCM"
+                style={styles.sectionHeaderSpaced}
+              />
 
               <PressableFeedback
                 style={[
@@ -272,7 +271,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                     <Text style={[styles.surfaceLabel, { color: theme.text }]}>
                       Perfil
                     </Text>
-                    <Text style={[styles.surfaceHint, { color: theme.icon }]}>
+                    <Text style={[styles.surfaceHint, { color: hintColor }]}>
                       {profileLabel}
                     </Text>
                   </View>
@@ -302,7 +301,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                     <Text style={[styles.surfaceLabel, { color: theme.text }]}>
                       Delegación
                     </Text>
-                    <Text style={[styles.surfaceHint, { color: theme.icon }]}>
+                    <Text style={[styles.surfaceHint, { color: hintColor }]}>
                       {delegationLabel}
                     </Text>
                   </View>
@@ -316,14 +315,10 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
               </PressableFeedback>
 
               {/* ── Sección: Apariencia ── */}
-              <Text
-                style={[
-                  styles.sectionLabel,
-                  { color: theme.icon, marginTop: spacing.md },
-                ]}
-              >
-                APARIENCIA
-              </Text>
+              <SectionHeader
+                label="Apariencia"
+                style={styles.sectionHeaderSpaced}
+              />
 
               {/* Theme segmented control */}
               <View style={[styles.surface, { backgroundColor: surfaceBg }]}>
@@ -404,14 +399,10 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
               </View>
 
               {/* ── Sección: Sobre la app ── */}
-              <Text
-                style={[
-                  styles.sectionLabel,
-                  { color: theme.icon, marginTop: spacing.md },
-                ]}
-              >
-                SOBRE LA APP
-              </Text>
+              <SectionHeader
+                label="Sobre la app"
+                style={styles.sectionHeaderSpaced}
+              />
 
               <PressableFeedback
                 style={[
@@ -437,7 +428,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                     <Text style={[styles.surfaceLabel, { color: theme.text }]}>
                       Evalúa la app
                     </Text>
-                    <Text style={[styles.surfaceHint, { color: theme.icon }]}>
+                    <Text style={[styles.surfaceHint, { color: hintColor }]}>
                       Errores, utilidad e ideas
                     </Text>
                   </View>
@@ -493,13 +484,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   } as TextStyle,
 
-  sectionLabel: {
-    ...typography.micro,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    marginBottom: spacing.sm,
-    marginLeft: 2,
-  } as TextStyle,
+  // `SectionHeader` trae padding lateral y margen propios: aquí el contenedor
+  // ya tiene su padding y la primera sección va pegada arriba.
+  sectionHeader: {
+    paddingHorizontal: 0,
+    marginTop: 0,
+  } as ViewStyle,
+  sectionHeaderSpaced: {
+    paddingHorizontal: 0,
+    marginTop: spacing.md,
+  } as ViewStyle,
+  // Zona táctil de «volver» en las subvistas: 22 de icono + 2×8 = 38, y el
+  // hitSlop la lleva a 46 (mínimo 44).
+  backButton: { padding: spacing.sm } as ViewStyle,
 
   surface: {
     borderRadius: radii.lg,
@@ -524,7 +521,6 @@ const styles = StyleSheet.create({
   surfaceHint: {
     ...typography.footnote,
     marginTop: 2,
-    opacity: 0.75,
   } as TextStyle,
 
   fontBtn: {
@@ -575,7 +571,6 @@ const styles = StyleSheet.create({
   optionDesc: {
     ...typography.footnote,
     marginTop: 2,
-    opacity: 0.8,
     lineHeight: 16,
   } as TextStyle,
 });

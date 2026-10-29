@@ -99,3 +99,14 @@ export function collapseStep(
   }
   return state;
 }
+
+/**
+ * ¿Hay que mandar este `contentInset.top` al hilo de JS? Solo si es real
+ * (> 0) y distinto del último enviado: el inset casi no cambia, y saltar al
+ * hilo de JS en cada fotograma de scroll para escribir el mismo número era
+ * puro coste. `lastSent = -1` significa "aún no se ha mandado nada".
+ */
+export function shouldReportInset(insetTop: number, lastSent: number): boolean {
+  'worklet';
+  return insetTop > 0 && insetTop !== lastSent;
+}

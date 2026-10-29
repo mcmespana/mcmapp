@@ -142,7 +142,7 @@ export default function DayActionSheet({
                 <Text style={[styles.rowTitle, { color: W.text }]}>
                   {opt.title}
                 </Text>
-                <Text style={[styles.rowSubtitle, { color: W.textMuted }]}>
+                <Text style={[styles.rowSubtitle, { color: W.textSec }]}>
                   {opt.subtitle}
                 </Text>
               </View>

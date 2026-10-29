@@ -4,6 +4,19 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-29 13:00 — Dependencias al día dentro de Expo 57
+
+- `npx expo install --fix`: `expo` 57.0.31, `expo-router` 57.0.29, `expo-notifications` 57.0.24, `expo-updates` 57.0.26, `expo-dev-client`, `expo-linking`, `expo-network`, `expo-observe`, `expo-sharing`, `expo-splash-screen`, `jest-expo`. Más parches: `google-signin` 16.2.0, `heroui-native` 1.0.11, `prettier`, `eslint-plugin-prettier`, `@types/node`.
+- Sin cambios de código: tipos, lint (38 warnings, los mismos) y los 2209 tests siguen igual.
+- **Sin tocar a propósito** (saltos mayores que piden decisión y prueba en dispositivo): Expo 58, `@sentry/react-native` 8, `firebase` 13, `eslint` 10, `jest` 30, `react` 19.3, `chordsheetjs` 18, `@react-native-async-storage` 3.
+- Requiere build nativo: no llega por OTA.
+
+## 2026-10-29 12:00 — NFC: sin entitlement NDEF (Apple rechazó el build 58 con ITMS-90778)
+
+- App Store Connect rechazó la 2.1.0 (build 58): con SDK 26.5 y mínimo iOS 16.4 el entitlement `com.apple.developer.nfc.readersession.formats` ya no admite `NDEF`. En el plugin de `react-native-nfc-manager` (`app.json`), `includeNdefEntitlement` pasa a `false`, así que el entitlement queda solo con `TAG`.
+- Consecuencia: la lectura de etiquetas se hará con sesiones de tipo TAG (`NfcManager.requestTechnology`), no con la sesión NDEF del sistema. Todavía no hay código que use NFC.
+- Requiere build nativo nuevo (build > 58): no llega por OTA.
+
 ## 2026-10-29 00:30 — Área nativa de Comunica: varias delegaciones (plan 17, rama `claude/area-nativa-17-delegaciones`)
 
 - Quien colabora con otra delegación además de la suya (coordina o lleva un
@@ -130,6 +143,11 @@
 - Guardarraíles nuevos: ningún token ni pase en los logs; nada nativo del área
   en el bundle de web.
 
+## 2026-10-28 13:30 — Notificaciones y botones del panel: los tabs de «Más» en iOS ya se abren
+
+- Una notificación (al tocarla o desde el centro de notificaciones) o un botón de acción del panel que apunta a un tab (`/calendario`, `/fotos`, `/comunica`…) usaba `router.push` directo. En iOS, si ese tab no está en la barra (perfil con 6+ tabs o evento en curso), no hacía nada. Ahora pasa por `goToPath` (`hooks/useTabNavigation.ts`), que entra por «Más» y arrastra la fecha del calendario. Las rutas que no son la raíz de un tab siguen como antes.
+- `utils/tabNavigation.ts`: nueva `parseTabPath`. Tests en `tabNavigation.test.ts` y `useTabNavigation.test.tsx`.
+
 ## 2026-10-28 10:30 — Paquetes nativos del área privada en la 2.1 (aún sin usar)
 
 - Añadidos `expo-secure-store`, `expo-sqlite` (con SQLCipher), `expo-local-authentication`, `expo-intent-launcher` y `expo-image-picker` con sus plugins en `app.json`, para que el área privada nativa pueda llegar luego por OTA sobre la 2.1. Todavía no hay código que los use.
@@ -212,8 +230,8 @@ Apunte de reconciliación: cambios del 24/10 que no se anotaron aquí.
   caché se guarda por persona (nunca la salud) y salir lo borra todo. Sobre
   AsyncStorage hasta que llegue `expo-sqlite` con la 2.2.
 - La build de TestFlight lanzada desde esta rama lleva el servidor falso
-  (`eas.json`, perfil `production`). *Corregido a las 11:30: ahora va en un
-  perfil propio, `production-comunica-falso`.*
+  (`eas.json`, perfil `production`). _Corregido a las 11:30: ahora va en un
+  perfil propio, `production-comunica-falso`._
 
 ## 2026-10-24 02:00 — Área privada nativa de Comunica: cimientos con datos inventados (rama `nuevoComunicaChulo`)
 
@@ -249,6 +267,69 @@ nada del CRM:
 
 - Añadido `react-native-nfc-manager` y su plugin en `app.json` (permiso NFC + entitlement NDEF en iOS) para que el próximo build nativo ya lo incluya. Todavía no hay código que lo use.
 - Requiere build nativo: no llega por OTA.
+
+## 2026-10-17 13:30 — Pulido de octubre: rendimiento, Android, web, Contigo y limpieza
+
+Ejecutados los 12 paquetes de `PLAN_PULIDO_2026_10` (archivado). Lo que queda
+está en `mcm-app/TODO.md` («Restos del pulido de octubre»).
+
+- **Datos**: `useFirebaseData` sirve la caché en memoria en el primer render
+  (adiós al «Cargando canciones…» al abrir cada categoría) y expone
+  `refresh()`. El contador de notificaciones no leídas ya no descarga
+  `/notifications` una segunda vez (`getUnreadNotificationsCount` recibe el
+  histórico del contexto).
+- **Cantoral**: esqueleto de carga (`ListSkeleton`), pull-to-refresh en la
+  portada, vacíos «Sin conexión»/«Sin resultados» unificados, la pantalla de
+  seleccionadas pasa a llamarse **«Tu selección»**, toast «Añadida» con «Ver».
+- **Canción**: la pantalla no se apaga en el detalle ni en pantalla completa
+  (`useKeepAwakeWhileFocused`); transponer o cambiar la notación **no recarga
+  la hoja ni vuelve arriba** (`utils/songDisplayBridge.ts`); **mapa de la
+  canción** («1 · E · 2 · E×2», ajuste «Mapa», apagado de serie); iconos de la
+  cabecera legibles en Android.
+- **Android**: la barra flotante ya no tapa el final de las pantallas
+  (`useTabBarPaddingBottom`); las hojas inferiores esquivan el teclado; atrás
+  del sistema paso a paso en onboarding y encuestas, y en el menú de la canción
+  y los WebViews de Panel/Gestión; háptica del sistema en vez del Vibrator;
+  headers de Contigo y de eventos legibles; pestañas en segundo plano
+  congeladas (`freezeOnBlur`); un `file://`/`content://` aterriza en el
+  cantoral. **Fotos desde «Más» monta la misma `FotosScreen` del tab
+  (`AlbumListScreen` borrada).**
+- **Pantalla ancha**: las hojas inferiores van centradas a 560 px en web y
+  iPad (`sheetMaxWidth`).
+- **Web**: paleta ⌘K/Ctrl+K que busca y abre canciones; ruta nueva
+  **`/cancion?f=<fichero>`** (F5 conserva la canción, enlace compartible);
+  título de pestaña por pantalla; atajos de teclado en el detalle; pantalla
+  completa del navegador (F), pedal sin clic previo; «Imprimir» una canción;
+  **Sentry fuera de la web** (`utils/sentry.web.ts`, bundle inicial de 8,2 a
+  6,7 MB); `react-native-render-html` a demanda; el service worker (v4) poda
+  bundles viejos y no cachea errores; zoom con pellizco permitido.
+- **Contigo**: el dorado como texto pasa a `accentText` (contraste);
+  examen del día que dice si ya está guardado y no guarda en blanco; tiempo de
+  oración de 5 en 5 con pulsación mantenida y arranque en la última duración;
+  celebración sobria al cerrar los tres hábitos del día; confirmación al quitar
+  un guardado con subrayados.
+- **Home y Más**: accesos rápidos con el color de su pestaña; `/notifications`
+  y la hoja de la campana comparten tarjeta (categoría y hasta 3 botones); la
+  hoja navega con los alias del panel.
+- **Eventos**: el lema sale de `EventConfig.motto` (solo la Visita del Papa lo
+  tiene); tinta sobre el tinte del evento por contraste real.
+- **Carismochito** (dentro del laboratorio): no se asoma en la Revisión ni en
+  la hoja de canción, se puede salir sin agitar, el acelerómetro se pausa en
+  pantallas de lectura y el icono de Android revierte al salir.
+- **Arranque y animación**: el splash nativo se queda hasta saber si toca la
+  bienvenida (`utils/splashGate.ts`, tope 3 s); el scroll de pestañas ya no
+  salta al hilo de JS en cada fotograma; muelles con token; trinquete nuevo
+  `__tests__/noLooseMotion.test.ts`.
+- **Nativo** (`[skip-ota]`): icono de notificación monocromo y
+  `monochromeImage` de Android; los enlaces `mcmapp://` abren la app con el
+  icono de Carismochito; fuera `web.meta`/`web.manifest` de `app.json`.
+- **Limpieza**: borrados `StatCard`, `TeaserCard`, `GlassFAB`, `TopColorBar`,
+  `.jules/`, `.gemini/`, tokens y scripts muertos; cuarentena en
+  `/_para-borrar/`; docs al día y `docs/desarrollo/OTA.md` nuevo.
+- **Repo del cantoral** (rama homónima): fuera los 481 backups versionados y
+  duplicados; los `songs-vX.json` pasan a ser **solo Firebase** (el workflow ya
+  no los commitea); botones de exportar y guardar versión en el admin;
+  Benedictus renombrado a `.cho`; `mcm-sheet.js` regenerado.
 
 ## 2026-10-16 23:40 — Buscador del cantoral sin tildes y auditoría de pulido
 
@@ -1841,6 +1922,41 @@ composer dejan de funcionar al desplegar. No tienen bandera a propósito
 (`/users` es el diario de Contigo; `/pushTokens` enumerable es poder mandar push
 a todos). Se arreglan con auth real en el panel — decisión D2.
 
+## 2026-08-12 21:40 — Archivar un evento desde el panel ya funciona de verdad
+
+- **B1 completo.** La app solo aplicaba el `_meta` que edita el MCM Panel
+  (`title`/`tintColor`/`bannerText`/`status`) al **evento activo**. Todo lo
+  demás salía del registry hardcodeado, así que archivar o desarchivar
+  cualquier otro evento desde el panel no tenía ningún efecto, y la lista de
+  "Eventos pasados" ignoraba también el título y el color que dijera el panel.
+- Ahora se leen los `_meta` de **todos** los eventos del registry y se mergean;
+  "Eventos pasados" se construye de esa lista ya mergeada, así que el estado
+  archivado sale siempre de lo que diga el panel, sin publicar versión.
+- **C3**: tipados `global.appReviewMode` y `data.appReviewBackup` como
+  opcionales (el modo revisión de las tiendas que gestiona el panel) y
+  documentado el mecanismo en `docs/contratos/PANEL_PERFILES.md` §1.6. La app
+  no los lee: el efecto le llega ya aplicado en las `tabs`.
+- Archivos: `hooks/useEventMeta.ts` (nuevo `useEventsMeta`),
+  `contexts/ActiveEventContext.tsx` (expone `events` mergeados),
+  `app/screens/EventosPasadosScreen.tsx`, `types/profileConfig.ts`.
+- Docs: `PANEL_PERFILES.md`, `PLAN_INTEGRACIONES.md`, `BACKLOG.md`, `COROS.md`.
+
+## 2026-08-12 20:35 — Menú de la playlist: opciones vivas, orden por uso y arreglos
+
+- **Solo se ofrece lo que se puede hacer**: con la lista vacía siguen visibles
+  las de importar, el hub del coro y el enlace del coro (que no depende de tu
+  selección) — antes ese enlace desaparecía sin motivo. Vaciar, exportar, subir
+  y compartir siguen ocultándose.
+- **Orden por frecuencia real**: Mi coro → Exportar y compartir → Coro en vivo →
+  Códigos y QR → Archivo → Vaciar (Archivo baja, que es lo más raro de usar).
+- **Arreglo**: en una sesión en vivo que cuelga de un coro ya no se ofrece
+  «cambiar el código» — la clave _es_ el coro, así que cambiarla la desataba de
+  él y el resto del coro no la encontraba. Su QR usa ahora `?coro=<id>`.
+- **Un toque menos**: si abres «guardar» sin tener coro elegido, después de
+  elegirlo la hoja vuelve a guardar en vez de dejarte en el inicio.
+- Archivos: `app/screens/SelectedSongsScreen.tsx`,
+  `components/playlist/ChoirSheet.tsx`.
+
 ## 2026-08-12 20:35 — Menú de la playlist: opciones vivas, orden por uso y arreglos
 
 - **Solo se ofrece lo que se puede hacer**: con la lista vacía siguen visibles
@@ -1890,41 +2006,6 @@ a todos). Se arreglan con auth real en el panel — decisión D2.
   `components/playlist/ChoirSheet.tsx`, `components/playlist/PlaylistHeaderBar.tsx`,
   `app/screens/SelectedSongsScreen.tsx`, `app/playlist.tsx`, `app/coro.tsx`,
   `database.rules.json`. Documentación: `docs/funcionalidades/COROS.md`.
-
-## 2026-08-12 21:40 — Archivar un evento desde el panel ya funciona de verdad
-
-- **B1 completo.** La app solo aplicaba el `_meta` que edita el MCM Panel
-  (`title`/`tintColor`/`bannerText`/`status`) al **evento activo**. Todo lo
-  demás salía del registry hardcodeado, así que archivar o desarchivar
-  cualquier otro evento desde el panel no tenía ningún efecto, y la lista de
-  "Eventos pasados" ignoraba también el título y el color que dijera el panel.
-- Ahora se leen los `_meta` de **todos** los eventos del registry y se mergean;
-  "Eventos pasados" se construye de esa lista ya mergeada, así que el estado
-  archivado sale siempre de lo que diga el panel, sin publicar versión.
-- **C3**: tipados `global.appReviewMode` y `data.appReviewBackup` como
-  opcionales (el modo revisión de las tiendas que gestiona el panel) y
-  documentado el mecanismo en `docs/contratos/PANEL_PERFILES.md` §1.6. La app
-  no los lee: el efecto le llega ya aplicado en las `tabs`.
-- Archivos: `hooks/useEventMeta.ts` (nuevo `useEventsMeta`),
-  `contexts/ActiveEventContext.tsx` (expone `events` mergeados),
-  `app/screens/EventosPasadosScreen.tsx`, `types/profileConfig.ts`.
-- Docs: `PANEL_PERFILES.md`, `PLAN_INTEGRACIONES.md`, `BACKLOG.md`, `COROS.md`.
-
-## 2026-08-12 20:35 — Menú de la playlist: opciones vivas, orden por uso y arreglos
-
-- **Solo se ofrece lo que se puede hacer**: con la lista vacía siguen visibles
-  las de importar, el hub del coro y el enlace del coro (que no depende de tu
-  selección) — antes ese enlace desaparecía sin motivo. Vaciar, exportar, subir
-  y compartir siguen ocultándose.
-- **Orden por frecuencia real**: Mi coro → Exportar y compartir → Coro en vivo →
-  Códigos y QR → Archivo → Vaciar (Archivo baja, que es lo más raro de usar).
-- **Arreglo**: en una sesión en vivo que cuelga de un coro ya no se ofrece
-  «cambiar el código» — la clave _es_ el coro, así que cambiarla la desataba de
-  él y el resto del coro no la encontraba. Su QR usa ahora `?coro=<id>`.
-- **Un toque menos**: si abres «guardar» sin tener coro elegido, después de
-  elegirlo la hoja vuelve a guardar en vez de dejarte en el inicio.
-- Archivos: `app/screens/SelectedSongsScreen.tsx`,
-  `components/playlist/ChoirSheet.tsx`.
 
 ## 2026-08-12 19:40 — Rediseño de «Tu selección»: las playlists cuelgan de un coro
 
@@ -4583,27 +4664,6 @@ Pasada de diseño para iPad (portrait y landscape). **Todo es JS puro
   `contexts/SelectedSongsContext.tsx`).
 - **OTA-safe** (solo JS).
 
-## 2026-06-08 — Notificaciones: descripción extendida (`bodyLong`)
-
-- Nuevo campo opcional **`bodyLong`** en las notificaciones: descripción larga que se
-  muestra en el **modal de detalle** (scrollable, respeta saltos de línea). La
-  **tarjeta** sigue usando el `body` corto. El detalle muestra `bodyLong` si existe;
-  si no, cae a `body` (fallback).
-- La deduplicación de la lista ahora **fusiona** `bodyLong` entre la copia local (push)
-  y la de Firebase, de modo que el texto largo aparece aunque solo venga por uno de los
-  dos orígenes (p. ej. si el panel lo manda solo a Firebase para no inflar el payload).
-- Tipos: campo `bodyLong?` en `NotificationData` y `ReceivedNotification`.
-- Archivos: `types/notifications.ts`, `app/notifications.tsx`,
-  `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
-  debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
-
-## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
-
-- **Nuevo**: opción "Ver QR offline" en el menú de la playlist (Seleccionadas). Genera un QR con la playlist **entera embebida** en un deep link `mcmapp://playlist?d=<payload>`. Un dispositivo con la app instalada y el cantoral cacheado puede escanearlo con la cámara normal y abrir la playlist **sin conexión a internet** (no descarga nada de Firebase, a diferencia del QR "en la nube" con código de 4 dígitos).
-- **Codificación compacta**: cada canción se codifica como categoría (1 letra, alineada con `songUtils`) + número de canción + tono (`t±n` semitonos) y cejilla (`cN`) opcionales; el orden se deduce de la posición. Respaldo "crudo" por `filename` para canciones sin categoría/número conocidos. Así el QR es pequeño aunque haya muchas canciones. El receptor resuelve categoría+número → `filename` contra su catálogo cacheado; las canciones que no tenga se omiten avisando al usuario.
-- **Toggle online/offline** dentro del `ShareQrModal`: si hay también código en la nube, se puede alternar entre los dos QR.
-- Archivos: `utils/offlinePlaylist.ts` (nuevo, + test), `utils/pendingCloudPlaylist.ts`, `app/playlist.tsx`, `app/screens/CategoriesScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`, `components/playlist/ShareQrModal.tsx`. Sin dependencias nuevas ni código nativo (OTA normal).
-
 ## 2026-06-13 — Fix: la selección de calendarios se perdía al reabrir la app
 
 - **Bug**: la visibilidad de calendarios se guardaba como array **por índice** (`boolean[]`) y se reconciliaba contra el `fallbackConfigs` (1 solo calendario) durante el instante en que Firebase aún cargaba. Eso truncaba el array guardado a longitud 1, lo persistía, y al llegar los datos reales rellenaba con los defaults — perdiendo la selección del usuario.
@@ -4813,6 +4873,20 @@ Pasada de diseño para iPad (portrait y landscape). **Todo es JS puro
   `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
   debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
 
+## 2026-06-08 — Notificaciones: descripción extendida (`bodyLong`)
+
+- Nuevo campo opcional **`bodyLong`** en las notificaciones: descripción larga que se
+  muestra en el **modal de detalle** (scrollable, respeta saltos de línea). La
+  **tarjeta** sigue usando el `body` corto. El detalle muestra `bodyLong` si existe;
+  si no, cae a `body` (fallback).
+- La deduplicación de la lista ahora **fusiona** `bodyLong` entre la copia local (push)
+  y la de Firebase, de modo que el texto largo aparece aunque solo venga por uno de los
+  dos orígenes (p. ej. si el panel lo manda solo a Firebase para no inflar el payload).
+- Tipos: campo `bodyLong?` en `NotificationData` y `ReceivedNotification`.
+- Archivos: `types/notifications.ts`, `app/notifications.tsx`,
+  `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
+  debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
+
 ---
 
 ## 2026-06-07 — Evaluación: wizard tipo onboarding + ajustes de ubicación
@@ -4860,6 +4934,13 @@ Pasada de diseño para iPad (portrait y landscape). **Todo es JS puro
   `app/(tabs)/index.tsx`.
 
 ---
+
+## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
+
+- **Nuevo**: opción "Ver QR offline" en el menú de la playlist (Seleccionadas). Genera un QR con la playlist **entera embebida** en un deep link `mcmapp://playlist?d=<payload>`. Un dispositivo con la app instalada y el cantoral cacheado puede escanearlo con la cámara normal y abrir la playlist **sin conexión a internet** (no descarga nada de Firebase, a diferencia del QR "en la nube" con código de 4 dígitos).
+- **Codificación compacta**: cada canción se codifica como categoría (1 letra, alineada con `songUtils`) + número de canción + tono (`t±n` semitonos) y cejilla (`cN`) opcionales; el orden se deduce de la posición. Respaldo "crudo" por `filename` para canciones sin categoría/número conocidos. Así el QR es pequeño aunque haya muchas canciones. El receptor resuelve categoría+número → `filename` contra su catálogo cacheado; las canciones que no tenga se omiten avisando al usuario.
+- **Toggle online/offline** dentro del `ShareQrModal`: si hay también código en la nube, se puede alternar entre los dos QR.
+- Archivos: `utils/offlinePlaylist.ts` (nuevo, + test), `utils/pendingCloudPlaylist.ts`, `app/playlist.tsx`, `app/screens/CategoriesScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`, `components/playlist/ShareQrModal.tsx`. Sin dependencias nuevas ni código nativo (OTA normal).
 
 ## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
 

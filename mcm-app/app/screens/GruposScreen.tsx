@@ -13,6 +13,7 @@ import { Button, PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import colors from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import ScreenHero from '@/components/ui/ScreenHero';
@@ -52,6 +53,7 @@ export default function GruposScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const bottomPadding = useTabBarPaddingBottom(24);
   const event = useCurrentEvent();
   const { profile } = useUserProfile();
   const myName = (profile?.name || '').trim();
@@ -400,7 +402,10 @@ export default function GruposScreen() {
                   onPress={() => setGrupo(item)}
                 />
               )}
-              contentContainerStyle={styles.listContent}
+              contentContainerStyle={[
+                styles.listContent,
+                { paddingBottom: bottomPadding },
+              ]}
               initialNumToRender={12}
               windowSize={9}
               removeClippedSubviews={Platform.OS !== 'web'}
@@ -495,7 +500,7 @@ export default function GruposScreen() {
             ListEmptyComponent={
               <EmptyState
                 icon="search-off"
-                title="No he encontrado nada, ya lo siento 😔"
+                title="Sin resultados"
                 subtitle="Prueba con otro nombre o apellido."
               />
             }
@@ -521,7 +526,7 @@ export default function GruposScreen() {
         ) : (
           <ScrollView
             style={styles.flexList}
-            contentContainerStyle={styles.catScrollContent}
+            contentContainerStyle={{ paddingBottom: bottomPadding }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >

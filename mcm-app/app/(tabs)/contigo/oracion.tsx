@@ -1,21 +1,23 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Platform,
   TouchableOpacity,
-  Alert,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
+import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
+import { h } from '@/utils/haptics';
 import { useContigoHabits, Emotion } from '@/hooks/useContigoHabits';
 import colors, { Colors } from '@/constants/colors';
-import Animated from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  withSpring,
+} from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -23,22 +25,34 @@ import { getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { DateNavigator } from '@/components/contigo/DateNavigator';
 import { styles } from '@/components/contigo/oracionStyles';
-import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
+import { HABITS, WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
+import {
+  contigoHeaderChrome,
+  useContigoHeaderInset,
+} from '@/components/contigo/headerChrome';
 import { radii } from '@/constants/uiStyles';
+import { springs } from '@/constants/animations';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
+import { useRepeatPress } from '@/hooks/useRepeatPress';
+import {
+  PRAYER_DEFAULT_MINUTES,
+  lastPrayerMinutes,
+  prayerCalendarCellSize,
+  prayerDurationEnum,
+  stepPrayerMinutes,
+} from '@/utils/contigoPrayer';
 
 // ── Screen geometry ──
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// Cap at MAX_CONTENT_W so the calendar stays compact on web / wide screens. El
+// lado de las celdas se calcula DENTRO de la pantalla con el ancho actual de la
+// ventana (`prayerCalendarCellSize`), no una vez al cargar el módulo.
 const MAX_CONTENT_W = 500;
-// Cap at MAX_CONTENT_W so calendar cells stay compact on web / wide screens
-const effectiveW = Math.min(SCREEN_WIDTH, MAX_CONTENT_W);
-// 7 cells + 6 gaps of 5px, inside card (20px padding each side) inside screen (16px padding each side)
-const CELL_SIZE = Math.floor((effectiveW - 72 - 30) / 7);
 
 // ── Warm palette (aligned with redesign tokens) ──
 const WARM = {
   light: {
     accent: WARM_LIGHT.accent,
+    accentText: WARM_LIGHT.accentText,
     accentGlow: 'rgba(196,146,42,0.28)',
     bg1: WARM_LIGHT.bg,
     bg2: WARM_LIGHT.bgDeep,
@@ -51,6 +65,7 @@ const WARM = {
   },
   dark: {
     accent: WARM_DARK.accent,
+    accentText: WARM_DARK.accentText,
     accentGlow: 'rgba(218,165,32,0.25)',
     bg1: WARM_DARK.bg,
     bg2: '#131210',
@@ -195,19 +210,123 @@ function prayerFormFor(
   };
 }
 
+type WarmPalette = typeof WARM.light | typeof WARM.dark;
+
+/**
+ * Una emoción de «¿Cómo ha ido tu oración?». Al elegirla el círculo crece con
+ * un muelle sin rebote (el rebote es solo para celebrar) y suena la háptica de
+ * selección; con «reducir movimiento» pasa a la escala final directamente.
+ * Es una opción de un grupo de selección única: lo dice a los lectores de
+ * pantalla.
+ */
+function EmotionOption({
+  emo,
+  selected,
+  warm,
+  onSelect,
+}: {
+  emo: (typeof EMOTIONS)[number];
+  selected: boolean;
+  warm: WarmPalette;
+  onSelect: (id: Emotion) => void;
+}) {
+  const reducedMotion = useReducedMotion();
+  const target = selected ? 1.1 : 1;
+  const circleScale = useAnimatedStyle(() => ({
+    transform: [
+      { scale: reducedMotion ? target : withSpring(target, springs.settle) },
+    ],
+  }));
+  return (
+    <TouchableOpacity
+      activeOpacity={0.72}
+      accessibilityRole="radio"
+      accessibilityState={{ selected, checked: selected }}
+      accessibilityLabel={emo.label}
+      onPress={() => {
+        if (!selected) h.select();
+        onSelect(emo.id);
+      }}
+      style={[styles.emotionItem, !selected && styles.emotionDimmed]}
+    >
+      <Animated.View
+        style={[
+          styles.emotionCircle,
+          { backgroundColor: emo.color },
+          selected && {
+            borderWidth: 2.5,
+            borderColor: warm.accent,
+            shadowColor: warm.accent,
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.38,
+            shadowRadius: 8,
+            elevation: 6,
+          },
+          circleScale,
+        ]}
+      >
+        <MaterialIcons name={emo.icon as any} size={30} color={emo.iconColor} />
+      </Animated.View>
+      <Text
+        style={[
+          styles.emotionLabel,
+          {
+            color: selected ? warm.accentText : warm.warmGray,
+            fontWeight: selected ? '700' : '500',
+          },
+        ]}
+      >
+        {emo.label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+/**
+ * Botón de más/menos del paso a paso de minutos: un toque da un paso de cinco y
+ * mantenerlo pulsado repite hasta soltar o llegar al tope.
+ */
+function StepperButton({
+  icon,
+  label,
+  onStep,
+  color,
+  style,
+}: {
+  icon: 'add' | 'remove';
+  label: string;
+  onStep: () => boolean;
+  color: string;
+  style: React.ComponentProps<typeof PressableFeedback>['style'];
+}) {
+  const press = useRepeatPress(onStep);
+  return (
+    <PressableFeedback
+      {...press}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={style}
+    >
+      <MaterialIcons name={icon} size={26} color={color} />
+    </PressableFeedback>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export default function OracionScreen() {
   useSuppressCarismochito();
   // Subruta de Contigo: se registra con la clave del tab (gana el último
   // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
-  const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const headerInset = useContigoHeaderInset();
   const theme = Colors[scheme ?? 'light'];
   const warm = isDark ? WARM.dark : WARM.light;
 
-  const { setPrayerDone, todayStr, getRecord } = useContigoHabits();
+  const { setPrayerDone, todayStr, getRecord, records } = useContigoHabits();
+  const { width: windowWidth } = useWindowDimensions();
+  const cellSize = prayerCalendarCellSize(windowWidth, MAX_CONTENT_W);
 
   const params = useLocalSearchParams<{ date?: string }>();
   const initialDate = useMemo(() => {
@@ -243,8 +362,34 @@ export default function OracionScreen() {
     setIsCustom(next.isCustom);
   }
 
-  const handleDecrease = () => setDuration((p) => Math.max(1, (p || 15) - 1));
-  const handleIncrease = () => setDuration((p) => Math.min(120, (p || 15) + 1));
+  // El paso a paso («Personalizado») arranca en la última duración que se
+  // apuntó, no en un 15 fijo.
+  const startMinutes = useMemo(
+    () => lastPrayerMinutes(records) ?? PRAYER_DEFAULT_MINUTES,
+    [records],
+  );
+
+  // Con la pulsación mantenida los pasos llegan más rápido de lo que React
+  // vuelve a pintar, así que el valor vigente se lleva también en una ref: dos
+  // pasos seguidos parten cada uno del resultado del anterior.
+  const durationRef = useRef(duration);
+  useEffect(() => {
+    durationRef.current = duration;
+  }, [duration]);
+
+  /** Un paso de cinco minutos. `false` = tope: el hook deja de repetir. */
+  const nudgeDuration = (direction: 1 | -1): boolean => {
+    const current = durationRef.current ?? startMinutes;
+    const next = stepPrayerMinutes(current, direction);
+    if (next === current) {
+      h.limit();
+      return false;
+    }
+    durationRef.current = next;
+    setDuration(next);
+    h.select();
+    return true;
+  };
 
   // El calendario «Tu mes» navega por meses sin mover el día elegido. Sigue al
   // día elegido cuando este cambia de mes (con las flechas de arriba).
@@ -271,34 +416,18 @@ export default function OracionScreen() {
   };
 
   const handleSave = async () => {
-    if (!duration) {
-      Alert.alert(
-        'Tiempo requerido',
-        'Selecciona o anota el tiempo dedicado a tu rato de oración.',
-      );
-      return;
-    }
+    // El botón ya está apagado sin tiempo (y avisa debajo de «Tiempo
+    // dedicado»); esto es solo la guardia. Un Alert aquí no se veía en web.
+    if (!duration) return;
 
-    let durationEnum: any = 'more_than_15';
-    if (duration < 1) durationEnum = 'less_than_1';
-    else if (duration <= 4) durationEnum = '2_to_4';
-    else if (duration <= 10) durationEnum = '5_to_10';
-    else if (duration <= 15) durationEnum = '10_to_15';
+    await setPrayerDone(
+      selectedDate,
+      prayerDurationEnum(duration),
+      emotion,
+      duration,
+    );
 
-    await setPrayerDone(selectedDate, durationEnum, emotion, duration);
-
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setTimeout(
-        () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
-        100,
-      );
-      setTimeout(
-        () =>
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
-        250,
-      );
-    }
+    h.formSuccess();
 
     setShowCheck(true);
     setTimeout(() => setShowCheck(false), 2800);
@@ -346,10 +475,7 @@ export default function OracionScreen() {
             fontWeight: '700',
             fontSize: 17,
           },
-          ...(Platform.OS === 'ios' &&
-          parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
+          ...contigoHeaderChrome(isDark),
         }}
       />
 
@@ -372,8 +498,8 @@ export default function OracionScreen() {
           { paddingBottom: contentPaddingBottom },
           {
             // El header nativo es transparente y flota sobre el contenido,
-            // así que reservamos su altura (≈44 iOS / 56 Android + safe-area).
-            paddingTop: insets.top + (Platform.OS === 'android' ? 68 : 56),
+            // así que reservamos su altura real.
+            paddingTop: headerInset,
             maxWidth: MAX_CONTENT_W,
             width: '100%',
             alignSelf: 'center',
@@ -435,55 +561,20 @@ export default function OracionScreen() {
             <Text style={[styles.sectionLabel, { color: warm.warmGray }]}>
               ¿CÓMO HA IDO TU ORACIÓN?
             </Text>
-            <View style={styles.emotionRow}>
-              {EMOTIONS.map((emo) => {
-                const isSelected = emotion === emo.id;
-                return (
-                  <TouchableOpacity
-                    key={emo.id}
-                    activeOpacity={0.72}
-                    onPress={() => setEmotion(emo.id)}
-                    style={[
-                      styles.emotionItem,
-                      !isSelected && styles.emotionDimmed,
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.emotionCircle,
-                        { backgroundColor: emo.color },
-                        isSelected && {
-                          borderWidth: 2.5,
-                          borderColor: warm.accent,
-                          transform: [{ scale: 1.1 }],
-                          shadowColor: warm.accent,
-                          shadowOffset: { width: 0, height: 3 },
-                          shadowOpacity: 0.38,
-                          shadowRadius: 8,
-                          elevation: 6,
-                        },
-                      ]}
-                    >
-                      <MaterialIcons
-                        name={emo.icon as any}
-                        size={30}
-                        color={emo.iconColor}
-                      />
-                    </View>
-                    <Text
-                      style={[
-                        styles.emotionLabel,
-                        {
-                          color: isSelected ? warm.accent : warm.warmGray,
-                          fontWeight: isSelected ? '700' : '500',
-                        },
-                      ]}
-                    >
-                      {emo.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <View
+              style={styles.emotionRow}
+              accessibilityRole="radiogroup"
+              accessibilityLabel="¿Cómo ha ido tu oración?"
+            >
+              {EMOTIONS.map((emo) => (
+                <EmotionOption
+                  key={emo.id}
+                  emo={emo}
+                  selected={emotion === emo.id}
+                  warm={warm}
+                  onSelect={setEmotion}
+                />
+              ))}
             </View>
           </View>
 
@@ -494,11 +585,28 @@ export default function OracionScreen() {
               { backgroundColor: warm.surface, borderColor: warm.border },
             ]}
           >
-            <Text style={[styles.sectionLabel, { color: warm.warmGray }]}>
+            <Text
+              style={[
+                styles.sectionLabel,
+                { color: warm.warmGray },
+                !duration && styles.sectionLabelWithHint,
+              ]}
+            >
               TIEMPO DEDICADO
             </Text>
+            {/* Sin tiempo no se puede guardar: el motivo va junto a la acción
+                (un Alert no sale en web y en móvil queda lejos). */}
+            {!duration ? (
+              <Text style={[styles.durationHint, { color: warm.warmGray }]}>
+                Elige cuánto tiempo has rezado para guardar
+              </Text>
+            ) : null}
 
-            <View style={styles.bucketGrid}>
+            <View
+              style={styles.bucketGrid}
+              accessibilityRole="radiogroup"
+              accessibilityLabel="Tiempo dedicado"
+            >
               {DURATION_BUCKETS.map((b) => {
                 const isActive = isCustom
                   ? b.id === 'custom'
@@ -507,10 +615,17 @@ export default function OracionScreen() {
                   <TouchableOpacity
                     key={b.id}
                     activeOpacity={0.72}
+                    accessibilityRole="radio"
+                    accessibilityState={{
+                      selected: isActive,
+                      checked: isActive,
+                    }}
+                    accessibilityLabel={b.label}
                     onPress={() => {
+                      if (!isActive) h.select();
                       if (b.id === 'custom') {
                         setIsCustom(true);
-                        if (!duration) setDuration(15);
+                        if (!duration) setDuration(startMinutes);
                       } else {
                         setIsCustom(false);
                         setDuration(b.val as number);
@@ -567,12 +682,14 @@ export default function OracionScreen() {
                 ]}
               >
                 <Text style={[styles.customLabel, { color: warm.warmGray }]}>
-                  MINUTOS EXACTOS
+                  MINUTOS
                 </Text>
                 <View style={styles.stepperRow}>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={handleDecrease}
+                  <StepperButton
+                    icon="remove"
+                    label="Cinco minutos menos"
+                    onStep={() => nudgeDuration(-1)}
+                    color={warm.accentText}
                     style={[
                       styles.stepperBtn,
                       {
@@ -582,13 +699,7 @@ export default function OracionScreen() {
                         borderColor: warm.border,
                       },
                     ]}
-                  >
-                    <MaterialIcons
-                      name="remove"
-                      size={26}
-                      color={warm.accent}
-                    />
-                  </TouchableOpacity>
+                  />
 
                   <View style={styles.stepperValueRow}>
                     <Text style={[styles.stepperNumber, { color: theme.text }]}>
@@ -601,9 +712,11 @@ export default function OracionScreen() {
                     </Text>
                   </View>
 
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={handleIncrease}
+                  <StepperButton
+                    icon="add"
+                    label="Cinco minutos más"
+                    onStep={() => nudgeDuration(1)}
+                    color={warm.accentText}
                     style={[
                       styles.stepperBtn,
                       {
@@ -613,9 +726,7 @@ export default function OracionScreen() {
                         borderColor: warm.border,
                       },
                     ]}
-                  >
-                    <MaterialIcons name="add" size={26} color={warm.accent} />
-                  </TouchableOpacity>
+                  />
                 </View>
               </View>
             )}
@@ -625,6 +736,9 @@ export default function OracionScreen() {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleSave}
+            disabled={!duration}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !duration }}
             style={[
               styles.saveBtnWrap,
               record?.prayerDone
@@ -644,6 +758,8 @@ export default function OracionScreen() {
                     shadowRadius: 14,
                     elevation: 6,
                   },
+              // Al final: tiene que ganar a la sombra de arriba.
+              !duration && styles.saveBtnBlocked,
             ]}
           >
             {record?.prayerDone ? (
@@ -664,7 +780,7 @@ export default function OracionScreen() {
               </View>
             ) : (
               <LinearGradient
-                colors={['#E8A838', WARM_LIGHT.accent]}
+                colors={HABITS.oracion.grad}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.saveBtnGradient}
@@ -731,8 +847,12 @@ export default function OracionScreen() {
                   },
                 ]}
               >
-                <MaterialIcons name="favorite" size={12} color={warm.accent} />
-                <Text style={[styles.statText, { color: warm.accent }]}>
+                <MaterialIcons
+                  name="favorite"
+                  size={12}
+                  color={warm.accentText}
+                />
+                <Text style={[styles.statText, { color: warm.accentText }]}>
                   {prayedThisMonth}{' '}
                   {prayedThisMonth === 1 ? 'día rezado' : 'días rezados'}
                 </Text>
@@ -742,10 +862,7 @@ export default function OracionScreen() {
             {/* Weekday headers */}
             <View style={styles.weekdayRow}>
               {WEEKDAYS.map((d) => (
-                <View
-                  key={d}
-                  style={[styles.weekdayCell, { width: CELL_SIZE }]}
-                >
+                <View key={d} style={[styles.weekdayCell, { width: cellSize }]}>
                   <Text style={[styles.weekdayText, { color: warm.warmGray }]}>
                     {d}
                   </Text>
@@ -761,7 +878,7 @@ export default function OracionScreen() {
                   return (
                     <View
                       key={`e${idx}`}
-                      style={{ width: CELL_SIZE, height: CELL_SIZE }}
+                      style={{ width: cellSize, height: cellSize }}
                     />
                   );
                 }
@@ -798,8 +915,8 @@ export default function OracionScreen() {
                     style={[
                       styles.calCell,
                       {
-                        width: CELL_SIZE,
-                        height: CELL_SIZE,
+                        width: cellSize,
+                        height: cellSize,
                         borderRadius: radii.sm,
                         backgroundColor: cellBg,
                         borderWidth: isToday ? 2 : isSelected ? 1.5 : 0,
@@ -823,7 +940,7 @@ export default function OracionScreen() {
                               ? '#2D2008'
                               : '#3D3225'
                             : isToday
-                              ? warm.accent
+                              ? warm.accentText
                               : isFuture
                                 ? isDark
                                   ? 'rgba(255,255,255,0.3)'

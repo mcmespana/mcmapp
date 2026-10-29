@@ -30,7 +30,7 @@
 // día se reordena y cae ahí un tab sin espejo, se aterriza en la raíz de "Más"
 // (`masRoot`) en vez de no hacer nada.
 
-import { splitTabsForBar } from '@/constants/tabsCatalog';
+import { splitTabsForBar, TABS_CONFIG } from '@/constants/tabsCatalog';
 
 /**
  * Tabs con pantalla ESPEJO en el stack de "Más" (`app/(tabs)/mas.tsx`). Es la
@@ -135,4 +135,30 @@ export function resolveEventScreenRoute(
   return route.via === 'tab'
     ? { via: 'eventTab', path: route.path }
     : { via: 'masScreen', screen };
+}
+
+/**
+ * Si `route` (ya pasada por `normalizeNotificationRoute`) es la raíz de un tab
+ * —`/(tabs)/calendario?date=2026-11-02`—, devuelve el tab y sus params para
+ * dejar que `resolveTabRoute` decida el camino. Las rutas de notificación y los
+ * botones del panel llegan como un `href` suelto, y en iOS `router.push` a un
+ * tab que no está en la barra no hace nada. `index` y `mas` quedan fuera (no
+ * tienen espejo) y también las subrutas (`contigo/oracion`): esas siguen por
+ * `router.push`.
+ */
+export function parseTabPath(
+  route: string,
+): { tabName: string; params?: Record<string, string> } | null {
+  const match = /^\/(?:\(tabs\)\/)?([^/?#]+)(?:\?([^#]*))?$/.exec(route.trim());
+  if (!match) return null;
+  const tabName = match[1];
+  if (tabName === 'index' || tabName === 'mas') return null;
+  if (!TABS_CONFIG.some((tab) => tab.name === tabName)) return null;
+  const query = match[2];
+  if (!query) return { tabName };
+  const params: Record<string, string> = {};
+  new URLSearchParams(query).forEach((value, key) => {
+    params[key] = value;
+  });
+  return Object.keys(params).length ? { tabName, params } : { tabName };
 }

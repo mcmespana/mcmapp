@@ -9,14 +9,13 @@ import {
   View,
   StyleSheet,
   Platform,
-  Share,
   TouchableOpacity,
   TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import ProgressWithMessage from '@/components/ProgressWithMessage';
+import ListSkeleton from '@/components/ListSkeleton';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { filterSongsData } from '@/utils/filterSongsData';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
@@ -46,10 +45,13 @@ import {
 import { useSongListTags } from '@/hooks/useSongListTags';
 import HiddenSongsNote from '@/components/song-tags/HiddenSongsNote';
 import { h } from '@/utils/haptics';
+import { shareText } from '@/utils/shareText';
+import { useToast } from '@/contexts/AppToastContext';
 import { extractTrailingEmoji, stripCategoryPrefix } from '@/utils/songUtils';
 import { radii } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
-import { SwipeColors, UIColors, themeColors } from '@/constants/colors';
+import { SystemGray, themeColors } from '@/constants/colors';
+import { cantoralHeaderTint } from '@/utils/cantoralHeader';
 import typography from '@/constants/typography';
 
 interface Song {
@@ -100,24 +102,18 @@ type ListRow =
       last?: boolean;
     };
 
+// Sin try/catch: son comprobaciones de tipo, no hay nada que pueda lanzar.
 const getSongsData = (data: any): Record<string, SongCategory> => {
-  try {
-    if (data === null) return {};
-    if (data && typeof data === 'object' && !Array.isArray(data)) {
-      return data as Record<string, SongCategory>;
-    }
-    if (Array.isArray(data)) {
-      return { All: { categoryTitle: 'All', songs: data } };
-    }
-    logger.error('Unexpected songs data format:', data);
-    return {};
-  } catch (error) {
-    logger.error('Error parsing songs data:', error);
-    return {};
-  }
+  if (data === null) return {};
+  if (Array.isArray(data))
+    return { All: { categoryTitle: 'All', songs: data } };
+  if (typeof data === 'object') return data as Record<string, SongCategory>;
+  logger.error('Unexpected songs data format:', data);
+  return {};
 };
 
-const isIOS = Platform.OS === 'ios';
+/** Alto aproximado de una fila de canción (título + autor), para el esqueleto. */
+const SONG_ROW_HEIGHT = 64;
 
 /** Margen lateral de la lista en modo etiqueta (tarjetas por categoría). */
 const TAG_LIST_INSET = spacing.md;
@@ -149,7 +145,7 @@ function buildTagSongList(
   songsData: Record<string, SongCategory>,
   slugs: string[],
   tagIndex: SongTagIndex,
-): { songs: Song[]; error: string | null } {
+): { songs: Song[]; error: SongListError | null } {
   const categoryKeys = Object.keys(songsData).sort((a, b) =>
     (songsData[a]?.categoryTitle ?? a).localeCompare(
       songsData[b]?.categoryTitle ?? b,
@@ -246,6 +242,29 @@ function toGroupedRows(songs: Song[]): ListRow[] {
 }
 
 /**
+ * Por qué no hay lista. Antes era un texto crudo («Categoría 'X' no
+ * encontrada») que se pintaba en rojo junto a la lista de claves de Firebase:
+ * depuración en producción. Ahora cada caso tiene su copy: [título, pista].
+ * `offline` es cuando aún no se ha descargado nada (primer arranque sin red
+ * entrando por enlace): no es que la categoría no exista.
+ */
+type SongListError = 'not-found' | 'failed';
+const ERROR_COPY: Record<SongListError | 'offline', [string, string]> = {
+  'not-found': [
+    'No encontramos esta categoría',
+    'Puede que haya cambiado de nombre. Vuelve al cantoral y ábrela de nuevo.',
+  ],
+  failed: [
+    'No se pudieron cargar las canciones',
+    'Vuelve al cantoral e inténtalo de nuevo.',
+  ],
+  offline: [
+    'Sin conexión',
+    'El cantoral se descarga la primera vez que hay internet y luego funciona sin conexión.',
+  ],
+};
+
+/**
  * Construye la lista de canciones de una categoría —o de TODAS, con
  * `__ALL__`— ya ordenada y con los campos derivados que usan el buscador y el
  * índice alfabético.
@@ -258,7 +277,7 @@ function buildSongList(
   songsData: Record<string, SongCategory>,
   categoryId: string,
   tagIndex?: SongTagIndex,
-): { songs: Song[]; error: string | null } {
+): { songs: Song[]; error: SongListError | null } {
   try {
     if (categoryId === '__ALL__') {
       const allSongs: Song[] = [];
@@ -315,15 +334,12 @@ function buildSongList(
       (key) => key.trim().toLowerCase() === categoryId.trim().toLowerCase(),
     );
     if (!categoryKey) {
-      return { songs: [], error: `Categoría '${categoryId}' no encontrada` };
+      return { songs: [], error: 'not-found' };
     }
 
     const categorySongs = songsData[categoryKey].songs;
     if (!categorySongs || !Array.isArray(categorySongs)) {
-      return {
-        songs: [],
-        error: `No se encontraron canciones de '${categoryKey}'`,
-      };
+      return { songs: [], error: 'failed' };
     }
 
     const songsWithNumericPart = categorySongs.map((song) => {
@@ -351,10 +367,7 @@ function buildSongList(
     return { songs: songsWithNumericPart, error: null };
   } catch (err) {
     logger.error('Error loading songs:', err);
-    return {
-      songs: [],
-      error: 'Error al cargar las canciones, lo sentimos :(',
-    };
+    return { songs: [], error: 'failed' };
   }
 }
 
@@ -369,9 +382,11 @@ export default function SongsListScreen({
     setOptions: (opts: object) => void;
   };
 }) {
-  const { data: firebaseSongs, loading: loadingSongs } = useFirebaseData<
-    Record<string, SongCategory>
-  >(
+  const {
+    data: firebaseSongs,
+    loading: loadingSongs,
+    offline,
+  } = useFirebaseData<Record<string, SongCategory>>(
     'songs',
     'songs',
     filterSongsData as (data: any) => Record<string, SongCategory>,
@@ -399,7 +414,7 @@ export default function SongsListScreen({
   const { addSong, removeSong, isSongSelected, getSelectedSong } =
     useSelectedSongs();
   const [search, setSearch] = useState('');
-  const [searchToggled, setSearchToggled] = useState(false);
+  const { toast } = useToast();
 
   // ── Modo etiqueta ────────────────────────────────────────────────────────
   // La categoría virtual `__TAG__:<slug>` (hermana de `__ALL__`) hereda gratis
@@ -492,14 +507,11 @@ export default function SongsListScreen({
   const isSearchAll = categoryId === '__ALL__';
   // Búsqueda NATIVA de iOS/Android (headerSearchBarOptions) en TODAS las
   // categorías —no solo en "Buscar general"— para que sea el mismo buscador en
-  // todas partes. En web native-stack no la soporta, así que ahí seguimos con
-  // el input/toggle propio.
+  // todas partes. En web native-stack no la soporta, así que ahí va un input
+  // propio, también SIEMPRE visible: antes se escondía tras una lupa sin
+  // etiqueta en cada categoría, un paso de más para quien prepara canciones
+  // con teclado y ratón (y distinto de iOS/Android).
   const nativeSearch = Platform.OS !== 'web';
-
-  // En "Buscar general" el buscador está SIEMPRE visible; en una categoría lo
-  // enseña y lo esconde el botón de la cabecera. Derivado, no sincronizado con
-  // un efecto.
-  const searchVisible = isSearchAll || searchToggled;
 
   // Header: title + optional search toggle button
   useLayoutEffect(() => {
@@ -536,9 +548,7 @@ export default function SongsListScreen({
           }
         : undefined,
       // En modo etiqueta el header lleva además el botón de etiquetas, para
-      // saltar a otra sin volver al cantoral. En el resto, el botón-lupa
-      // custom solo en web (donde no hay barra nativa): en iOS/Android la
-      // barra nativa lo sustituye.
+      // saltar a otra sin volver al cantoral.
       headerRight: isTagMode
         ? () => (
             <TouchableOpacity
@@ -553,35 +563,16 @@ export default function SongsListScreen({
               <MaterialIcons
                 name="sell"
                 size={22}
-                color={
-                  isIOS ? UIColors.accentYellow : themeColors(isDark).headerTint
-                }
+                color={cantoralHeaderTint(isDark)}
               />
             </TouchableOpacity>
           )
-        : nativeSearch
-          ? undefined
-          : isSearchAll
-            ? undefined
-            : () => (
-                <TouchableOpacity
-                  onPress={() => setSearchToggled((v) => !v)}
-                  style={styles.headerButton}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <MaterialIcons
-                    name={searchVisible ? 'search-off' : 'search'}
-                    size={24}
-                    color={isIOS ? UIColors.accentYellow : '#1a1a1a'}
-                  />
-                </TouchableOpacity>
-              ),
+        : undefined,
     });
   }, [
     navigation,
     categoryName,
     isSearchAll,
-    searchVisible,
     styles.headerButton,
     nativeSearch,
     isDark,
@@ -644,12 +635,24 @@ export default function SongsListScreen({
   const handleMenuSelect = useCallback(() => {
     if (!menuSong) return;
     if (isSongSelected(menuSong.filename)) {
+      h.remove();
       removeSong(menuSong.filename);
     } else {
+      h.add();
       addSong(menuSong.filename);
+      // Desde el menú no se ve el puntito verde de la fila (la hoja lo
+      // tapa): se confirma dónde ha ido y cómo llegar.
+      toast.show({
+        label: 'Añadida a tu selección',
+        actionLabel: 'Ver',
+        onActionPress: ({ hide }) => {
+          hide();
+          navigation.navigate('SelectedSongs');
+        },
+      });
     }
     setMenuSong(null);
-  }, [menuSong, isSongSelected, addSong, removeSong]);
+  }, [menuSong, isSongSelected, addSong, removeSong, toast, navigation]);
 
   // Captures the share message and closes the sheet. The actual Share.share()
   // call happens in handleSheetCloseComplete, fired after the Modal is gone.
@@ -666,9 +669,10 @@ export default function SongsListScreen({
     const msg = pendingShareRef.current;
     if (msg) {
       pendingShareRef.current = null;
-      Share.share({ message: msg });
+      // En un navegador sin Web Share copia y avisa, en vez de fallar mudo.
+      shareText(msg, { notify: (label) => toast.show({ label }) });
     }
-  }, []);
+  }, [toast]);
 
   const handleSongPress = useCallback(
     (song: Song) => {
@@ -714,7 +718,7 @@ export default function SongsListScreen({
   const listHeaderComponent = useMemo(
     () => (
       <View>
-        {searchVisible && !nativeSearch && (
+        {!nativeSearch && (
           <View style={styles.searchContainer}>
             <View style={styles.searchBox}>
               <MaterialIcons
@@ -728,7 +732,7 @@ export default function SongsListScreen({
                 placeholderTextColor={themeColors(isDark).textMuted}
                 value={search}
                 onChangeText={setSearch}
-                autoFocus={!isSearchAll}
+                autoFocus={isSearchAll}
                 returnKeyType="search"
                 clearButtonMode="while-editing"
               />
@@ -736,6 +740,8 @@ export default function SongsListScreen({
                 <TouchableOpacity
                   onPress={() => setSearch('')}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Borrar la búsqueda"
                 >
                   <MaterialIcons
                     name="cancel"
@@ -791,7 +797,6 @@ export default function SongsListScreen({
       </View>
     ),
     [
-      searchVisible,
       search,
       isSearchAll,
       nativeSearch,
@@ -888,18 +893,26 @@ export default function SongsListScreen({
 
   if (loadingSongs && songs.length === 0) {
     return (
-      <ProgressWithMessage message="Cargando canciones un momentito porfi..." />
+      <ListSkeleton
+        isDark={isDark}
+        rowHeight={SONG_ROW_HEIGHT}
+        label="Cargando canciones"
+        maxWidth={layout.isWide ? layout.readableMaxWidth : undefined}
+      />
     );
   }
 
   if (error) {
+    const kind = firebaseSongs ? error : offline ? 'offline' : 'failed';
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>{error}</Text>
-        <Text style={styles.debugText}>
-          Categorías disponibles:{' '}
-          {songsData ? Object.keys(songsData).join(', ') : 'N/A'}
-        </Text>
+      <View style={[styles.container, styles.centered]}>
+        <EmptyState
+          icon={kind === 'offline' ? 'cloud-off' : 'error-outline'}
+          title={ERROR_COPY[kind][0]}
+          subtitle={ERROR_COPY[kind][1]}
+          actionLabel="Volver al cantoral"
+          onAction={() => navigation.goBack()}
+        />
       </View>
     );
   }
@@ -931,7 +944,9 @@ export default function SongsListScreen({
                 { color: themeColors(isDark).text },
               ]}
             >
-              {menuSongSelected ? 'Quitar de la lista' : 'Añadir a la lista'}
+              {menuSongSelected
+                ? 'Quitar de tu selección'
+                : 'Añadir a tu selección'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuAction} onPress={handleMenuShare}>
@@ -983,19 +998,21 @@ export default function SongsListScreen({
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
+          // El mismo molde que Grupos y Contactos: icono, «Sin resultados»
+          // y una pista concreta. Nada de emoji como icono (design.md §8).
           isTagMode && search.length === 0 ? (
             <EmptyState
-              emoji="🏷️"
+              icon="label-off"
               title="Ninguna canción con estas etiquetas"
-              subtitle="Suelta alguna de las etiquetas de arriba para ver más"
+              subtitle="Suelta alguna de las etiquetas de arriba para ver más."
             />
           ) : (
             <EmptyState
-              emoji="🔍"
-              title="No hemos encontrado esa canción"
+              icon="search-off"
+              title="Sin resultados"
               subtitle={
                 search.length > 0
-                  ? 'Prueba con otro título o nombre de autor'
+                  ? 'Prueba con otro título o autor.'
                   : undefined
               }
             />
@@ -1018,6 +1035,11 @@ const createStyles = (
       flex: 1,
       backgroundColor: themeColors(isDark).backgroundSunken,
     },
+    // Vacío/error a pantalla completa: centrado, para que en iOS no quede
+    // debajo de la cabecera transparente.
+    centered: {
+      justifyContent: 'center',
+    },
     headerButton: {
       padding: 8,
       marginRight: Platform.OS === 'web' ? 8 : 0,
@@ -1030,8 +1052,8 @@ const createStyles = (
     searchBox: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
-      borderRadius: isWide ? 14 : 10,
+      backgroundColor: isDark ? SystemGray.dark.gray5 : SystemGray.light.gray5,
+      borderRadius: radii.md,
       paddingHorizontal: isWide ? 14 : 10,
       paddingVertical: isWide ? 12 : Platform.OS === 'ios' ? 9 : 7,
       gap: 8,
@@ -1053,7 +1075,8 @@ const createStyles = (
     },
     songCount: {
       ...typography.footnote,
-      color: isDark ? '#636366' : '#AEAEB2',
+      // Era un gris a mano que se quedaba en 2:1 (claro) y 2,8:1 (oscuro).
+      color: themeColors(isDark).textMuted,
       letterSpacing: 0.2,
     },
     legend: {
@@ -1122,20 +1145,6 @@ const createStyles = (
             alignSelf: 'center',
           }
         : null),
-    },
-    errorText: {
-      ...typography.body,
-      color: SwipeColors.remove,
-      textAlign: 'center',
-      margin: 20,
-      fontWeight: '600',
-    },
-    debugText: {
-      ...typography.subhead,
-      color: themeColors(isDark).textMuted,
-      textAlign: 'center',
-      margin: 10,
-      fontFamily: 'monospace',
     },
     menuActions: {
       paddingBottom: 8,

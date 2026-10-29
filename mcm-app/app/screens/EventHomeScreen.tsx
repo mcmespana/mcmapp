@@ -23,8 +23,8 @@ import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/na
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { hexAlpha, darkenHex } from '@/utils/colorUtils';
-import { getBrightness } from '@/components/ui/glass';
+import { hexAlpha, darkenHex, readableOn } from '@/utils/colorUtils';
+import { eventHeroColors } from '@/utils/tintInk';
 import { radii, shadows } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
 import { EventStackParamList } from './eventStackScreens';
@@ -168,14 +168,9 @@ export default function EventHomeScreen() {
   );
 
   const tint = event.tintColor;
-  const tintIsLight = getBrightness(tint) > 175;
-  const heroFg = tintIsLight ? '#1A1A1A' : '#FFFFFF';
-  const heroMuted = tintIsLight
-    ? 'rgba(26,26,26,0.72)'
-    : 'rgba(255,255,255,0.9)';
-  const emblemBg = tintIsLight
-    ? 'rgba(255,255,255,0.5)'
-    : 'rgba(255,255,255,0.16)';
+  // Tinta del hero por contraste real con el tinte (onColor), no por un
+  // umbral de brillo: con el verde del Jubileo, el umbral elegía blanco (2,1:1).
+  const { fg: heroFg, muted: heroMuted, emblemBg } = eventHeroColors(tint);
 
   // La campana de suscripción va SIEMPRE en el hero, para que todos los eventos
   // se vean igual tanto si se abren como tab propio (Visita Papa) como apilados
@@ -281,30 +276,36 @@ export default function EventHomeScreen() {
           ))}
         </View>
 
-        {/* ── Lema del encuentro ── */}
-        <View style={styles.motto}>
-          <View
-            style={[
-              styles.mottoLine,
-              { backgroundColor: hexAlpha(tint, '55') },
-            ]}
-          />
-          <MaterialIcons name="arrow-upward" size={15} color={tint} />
-          <Text
-            style={[
-              styles.mottoText,
-              { color: isDark ? '#C7C7CC' : '#6B7280' },
-            ]}
-          >
-            Alzad la mirada
-          </Text>
-          <View
-            style={[
-              styles.mottoLine,
-              { backgroundColor: hexAlpha(tint, '55') },
-            ]}
-          />
-        </View>
+        {/* ── Lema del encuentro (solo si el evento tiene) ── */}
+        {event.motto ? (
+          <View style={styles.motto}>
+            <View
+              style={[
+                styles.mottoLine,
+                { backgroundColor: hexAlpha(tint, '55') },
+              ]}
+            />
+            <MaterialIcons
+              name="arrow-upward"
+              size={15}
+              color={readableOn(tint, themeColors(isDark).background, 3)}
+            />
+            <Text
+              style={[
+                styles.mottoText,
+                { color: themeColors(isDark).textSecondary },
+              ]}
+            >
+              {event.motto}
+            </Text>
+            <View
+              style={[
+                styles.mottoLine,
+                { backgroundColor: hexAlpha(tint, '55') },
+              ]}
+            />
+          </View>
+        ) : null}
       </Animated.ScrollView>
     </SafeAreaView>
   );

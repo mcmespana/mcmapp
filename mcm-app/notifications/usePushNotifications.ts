@@ -11,6 +11,8 @@
 //      b. notificationResponse — usuario toca la notificación: navega a la ruta correspondiente y marca como leída
 //
 import { useEffect, useMemo, useRef } from 'react';
+import { useTabNavigation } from '@/hooks/useTabNavigation';
+import { parseTabPath } from '@/utils/tabNavigation';
 import { AppState, AppStateStatus, Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 import * as Notifications from 'expo-notifications';
@@ -111,6 +113,11 @@ export default function usePushNotifications() {
   const notificationListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
   const { refreshCount } = useNotifications();
+  // Ref al último `goToPath`: el listener se registra una sola vez y tiene que
+  // ver siempre el reparto de tabs actual (en iOS un tab de overflow no tiene ruta).
+  const { goToPath } = useTabNavigation();
+  const goToPathRef = useRef(goToPath);
+  goToPathRef.current = goToPath;
 
   const resolved = useResolvedProfileConfig();
   const { profile } = useUserProfile();
@@ -299,7 +306,10 @@ export default function usePushNotifications() {
               params: { openId: notificationId },
             } as any);
           } else {
-            router.navigate(normalized as any);
+            // Los tabs (puede estar en "Más" en iOS) los resuelve `goToPath`;
+            // el resto de rutas sigue con `navigate`, que no apila duplicados.
+            if (parseTabPath(normalized)) goToPathRef.current(normalized);
+            else router.navigate(normalized as any);
           }
         } catch {}
 

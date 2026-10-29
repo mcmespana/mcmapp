@@ -9,12 +9,19 @@
   tiñe de verde, confeti, y el icono del launcher cambia (esto último, desde la
   build de tienda 2.1). Se recuerda al reabrir la app.
 - La primera vez sale una **explicación** del modo; después se reabre tocando el
-  aviso flotante.
-- **Para salir**: un par de sacudidas fuertes → pide confirmación.
+  aviso flotante o el **logo verde de Inicio** (con el modo puesto, el logo de
+  la cabecera pasa a ser un botón).
+- **Para salir**: un par de sacudidas fuertes (con 3 s de margen entre una y
+  otra) → pide confirmación; o «Salir del modo» en la explicación, para quien
+  no puede agitar el móvil (p. ej. con el iPad sobre el atril). Al salir, el
+  icono del launcher vuelve al normal también en Android.
 - Mientras está activo, **Carismochito se asoma por los bordes** de vez en
   cuando (cada 45-90 s), menos en pantallas de lectura y presentación:
-  evangelio, oración, canción a pantalla completa, materiales y profundiza
-  (`hooks/useSuppressCarismochito.ts`, que va por foco de pantalla).
+  evangelio, oración, Revisión, la hoja de canción, canción a pantalla
+  completa, materiales y profundiza (`hooks/useSuppressCarismochito.ts`, que va
+  por foco de pantalla). En esas pantallas el acelerómetro **también se
+  pausa**: agitar el móvil mientras se lee o se canta no activa ni apaga el
+  modo.
 
 Código: `contexts/CarismochitoContext.tsx` (la máquina de estados),
 `components/CarismochitoOverlay.tsx` (cuenta atrás, confeti, asomadas),
