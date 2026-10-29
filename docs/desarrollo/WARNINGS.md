@@ -101,6 +101,14 @@ Razonamiento completo en `docs/planes/PLAN_CALIDAD.md` §0 y `BACKLOG.md` §2.A.
 El techo de 1.000 líneas del ESLint se mantiene **como aviso para código
 nuevo**, no como deuda a saldar.
 
+Dos más del área nativa, apagados en su primera línea con
+`eslint-disable max-lines` y el motivo (28/10/2026, plan 07):
+`services/comunica/contract.ts` (el contrato es UN sitio: partirlo crea
+importaciones circulares con `ROUTES`) y `services/comunica/fake/index.ts` (el
+corazón del falso; lo de cada plan grande ya vive aparte, `coordination.ts`,
+`events.ts`). Un fichero nuevo que pase de 1.000 **no** se apaga así sin
+apuntarlo aquí.
+
 ## 4. Código congelado (3) — no se toca por definición
 
 `app/screens/WordleScreen.tsx` (2 × `set-state-in-effect`, 1 × `purity`).

@@ -198,6 +198,14 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
 
 ### Mejoras, sin prisa
 
+- [ ] **H10. Filas pulsables corridas en web.** En web, una fila con
+      `PressableFeedback` + `PressableFeedback.Highlight` dentro de un
+      contenedor con `gap` sale ~12 px más a la derecha que una fila quieta
+      (el `Highlight` cuenta para el `gap`). Se ve en la pestaña de grupos de
+      un evento (plan 07, 28/10). En el móvil no pasa. Arreglo comprobado en el plan 09:
+      poner el `Highlight` el ÚLTIMO hijo de la fila. Falta aplicarlo a
+      `PersonRow`, `NavRow`, `EventListRow` y las filas de `SessionPicker`.
+
 - [ ] **Muelles (`springs`) sin adoptar.** `constants/animations.ts` exporta
       `springs`, el token que `design.md` §6 prescribe para todo lo que mueve un
       dedo (drag, sheets), pero **ningún componente lo importa todavía**:

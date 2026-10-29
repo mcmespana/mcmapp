@@ -49,6 +49,7 @@ import { useVersionGate } from '@/contexts/VersionGateContext';
 import '@/constants/iconAssets';
 import colors from '@/constants/colors';
 import AppProviders from '@/components/AppProviders';
+import ComunicaBackground from '@/components/comunica/ComunicaBackground';
 import { holdSplash, releaseSplash } from '@/utils/splashGate';
 
 // El splash nativo se queda hasta que el layout sabe qué pintar (ver
@@ -283,6 +284,8 @@ function InnerLayout() {
       />
       <PreviewChannelModal />
       <CarismochitoOverlay />
+      {/* Avisos del área de Comunica: registro del móvil y aviso local (plan 08). */}
+      <ComunicaBackground />
     </NavThemeProvider>
   );
 }

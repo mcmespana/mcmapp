@@ -74,7 +74,8 @@ app/                            # Rutas (expo-router). Una pantalla por fichero
 ├── +native-intent.ts           # Reescribe enlaces entrantes (universal links, custom scheme)
 ├── +html.tsx / +not-found.tsx  # Template HTML web / 404
 ├── (tabs)/                     # Tabs: _layout.tsx + index (Home), cancionero, contigo/,
-│                               #   comunica, calendario, fotos, mas, visitapapa (oculta)
+│                               #   comunica/ (puerta nativa/legado, docs/planes/area-nativa/),
+│                               #   calendario, fotos, mas, visitapapa (oculta)
 ├── screens/                    # Pantallas "de contenido" que montan las rutas y los
 │                               #   stacks internos (cantoral, Más, eventos, evaluación…)
 ├── onboarding.tsx              # Perfil + delegación (primer arranque)

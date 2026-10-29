@@ -36,6 +36,27 @@ import { tryRegisterPushToken } from '@/notifications/usePushNotifications';
 import typography from '@/constants/typography';
 
 const DISMISSED_KEY = '@mcm_notif_permission_banner_dismissed_at';
+/**
+ * La portada del área de Comunica (plan 08) lleva su propio descarte:
+ * descartarlo en Inicio no lo esconde allí, ni al revés.
+ */
+const COMUNICA_DISMISSED_KEY = '@mcm_notif_permission_banner_comunica_at';
+
+type Placement = 'home' | 'notifications' | 'comunica';
+const dismissKey = (placement: Placement) =>
+  placement === 'comunica' ? COMUNICA_DISMISSED_KEY : DISMISSED_KEY;
+
+/** Lo que dice el banner en cada sitio. */
+const COPY: Record<'default' | 'comunica', { title: string; body: string }> = {
+  default: {
+    title: 'Activa las notificaciones',
+    body: 'No te pierdas nada. La app funciona mejor con avisos en tiempo real.',
+  },
+  comunica: {
+    title: 'Activa los avisos',
+    body: 'Te recordamos pasar lista y te avisamos si una lista no se ha subido.',
+  },
+};
 const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 
 type Status = 'loading' | 'granted' | 'denied' | 'undetermined' | 'hidden';
@@ -53,9 +74,9 @@ async function readPermissionStatus(): Promise<Exclude<Status, 'loading'>> {
   }
 }
 
-async function isWithinCooldown(): Promise<boolean> {
+async function isWithinCooldown(placement: Placement): Promise<boolean> {
   try {
-    const raw = await AsyncStorage.getItem(DISMISSED_KEY);
+    const raw = await AsyncStorage.getItem(dismissKey(placement));
     if (!raw) return false;
     const ts = Number(raw);
     if (!Number.isFinite(ts)) return false;
@@ -69,18 +90,21 @@ async function isWithinCooldown(): Promise<boolean> {
  * Qué variante del banner toca mostrar. Solo CALCULA: no toca estado de React,
  * así que sirve tanto para la consulta inicial como para refrescar a mano.
  */
-async function resolveStatus(): Promise<Status> {
+async function resolveStatus(placement: Placement): Promise<Status> {
   if (Platform.OS === 'web') return 'hidden';
   const perm = await readPermissionStatus();
   if (perm === 'granted' || perm === 'hidden') return perm;
-  if (await isWithinCooldown()) return 'hidden';
+  if (await isWithinCooldown(placement)) return 'hidden';
   return perm;
 }
 
 export default function NotificationPermissionBanner({
   placement = 'home',
+  accentColor: accentOverride,
 }: {
-  placement?: 'home' | 'notifications';
+  placement?: Placement;
+  /** El acento del territorio en el que se pinta (Comunica: su violeta). */
+  accentColor?: string;
 }) {
   const scheme = useColorScheme() || 'light';
   const theme = Colors[scheme];
@@ -91,15 +115,15 @@ export default function NotificationPermissionBanner({
   );
 
   const refresh = useCallback(async () => {
-    setStatus(await resolveStatus());
-  }, []);
+    setStatus(await resolveStatus(placement));
+  }, [placement]);
 
   // Consulta inicial, y otra al volver al foreground: cubre el caso de "vuelvo
   // de Ajustes tras conceder permisos" sin tener que reiniciar la app.
   useEffect(() => {
     let alive = true;
     const apply = () => {
-      resolveStatus().then((next) => {
+      resolveStatus(placement).then((next) => {
         if (alive) setStatus(next);
       });
     };
@@ -111,7 +135,7 @@ export default function NotificationPermissionBanner({
       alive = false;
       sub.remove();
     };
-  }, []);
+  }, [placement]);
 
   const handleActivate = useCallback(async () => {
     if (status === 'undetermined') {
@@ -138,16 +162,18 @@ export default function NotificationPermissionBanner({
 
   const handleDismiss = useCallback(async () => {
     try {
-      await AsyncStorage.setItem(DISMISSED_KEY, String(Date.now()));
+      await AsyncStorage.setItem(dismissKey(placement), String(Date.now()));
     } catch {}
     setStatus('hidden');
-  }, []);
+  }, [placement]);
 
   if (status === 'loading' || status === 'hidden' || status === 'granted') {
     return null;
   }
 
-  const accentColor = scheme === 'dark' ? colors.info : colors.primary;
+  const accentColor =
+    accentOverride ?? (scheme === 'dark' ? colors.info : colors.primary);
+  const copy = COPY[placement === 'comunica' ? 'comunica' : 'default'];
   const ctaLabel = status === 'denied' ? 'Abrir Ajustes' : 'Activar';
 
   const isNotifications = placement === 'notifications';
@@ -161,7 +187,9 @@ export default function NotificationPermissionBanner({
           borderColor: hexAlpha(accentColor, '30'),
           marginHorizontal: isNotifications ? spacing.md : 0,
           marginTop: isNotifications ? spacing.sm : 0,
-          marginBottom: isNotifications ? 0 : spacing.md,
+          // En el área va dentro de `AreaScreen`, que ya separa los bloques.
+          marginBottom:
+            isNotifications || placement === 'comunica' ? 0 : spacing.md,
         },
       ]}
       accessibilityRole="alert"
@@ -179,11 +207,9 @@ export default function NotificationPermissionBanner({
         />
       </View>
       <View style={styles.textBlock}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          Activa las notificaciones
-        </Text>
+        <Text style={[styles.title, { color: theme.text }]}>{copy.title}</Text>
         <Text style={[styles.body, { color: theme.icon }]} numberOfLines={3}>
-          No te pierdas nada. La app funciona mejor con avisos en tiempo real.
+          {copy.body}
         </Text>
         <TouchableOpacity
           onPress={handleActivate}

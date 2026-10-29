@@ -340,6 +340,50 @@ El backend debe:
 
 ---
 
+## Avisos del área privada de Comunica (plan 08, octubre 2026)
+
+Los avisos del área nativa de Comunica (monitores) **no son del Panel** y van
+aparte de todo lo de arriba. Plan: `docs/planes/area-nativa/08-avisos-y-compartir.md`;
+contrato y requisitos del servidor: `docs/contratos/COMUNICA_API.md` («Avisos
+en el móvil»).
+
+| Aviso | Lo manda | Canal Android | Al tocarlo |
+|---|---|---|---|
+| «¿Has pasado lista?» | El servidor del área (`mcm-comunica-api`) | `comunica-listas` (HIGH) | Marcar ese grupo en esa sesión |
+| «Novedades en tu grupo» | El servidor del área | `comunica-grupos` (DEFAULT) | La ficha del grupo |
+| «Tienes N listas sin subir» | **La app** (aviso local) | `comunica-listas` | La portada del área |
+
+- **Mismo permiso y mismo token de Expo** que el resto de la app; no se pide
+  otro. El móvil se registra en **nuestro** servidor (no en `/pushTokens`)
+  desde `components/comunica/ComunicaBackground.tsx` (montado en la raíz),
+  por la cola del área, y se da de baja al salir del área.
+- `data.source === 'comunica'` → rama propia y **primera** en
+  `notifications/usePushNotifications.ts`: se valida con zod
+  (`ComunicaPushData`), **no va a la campana** ni en primer plano ni al
+  tocar (son operativos: su sitio es la portada del área), en primer plano
+  refresca las consultas del área (`services/comunica/bridge.ts`) y al
+  tocarlo el destino lo decide `utils/comunica/noticeRoutes.ts` — **nunca**
+  una ruta que venga en el aviso. Con el área nativa apagada, todo va a la
+  pestaña Comunica (la WebView). Analítica: `notificacion_abierta` con
+  `categoria: 'comunica'`, sin ids.
+- Los dos canales están en `constants/notificationChannels.ts` con
+  `source: 'comunica'` y **sin categoría**: el Panel no llega a ellos por
+  `category`. **Una vez publicados no se quitan nunca** (la limpieza del
+  arranque los borraría y Android tiraría lo que llegue): lo vigila
+  `__tests__/notificationChannels.test.ts`.
+- El aviso local (`services/comunica/localNotices.ts`, `.web.ts` vacío): al
+  irse la app a segundo plano con listas sin subir, uno a los 60 min (de
+  22:00 a 8:30 de Madrid, a las 8:30), id fijo `comunica-outbox`; se cancela
+  al volver, al vaciarse la cola y al salir.
+- Preferencias por móvil en «Tu cuenta» → «Avisos en este móvil»
+  (`app/(tabs)/comunica/yo/avisos.tsx`); la portada del área pinta
+  `NotificationPermissionBanner placement="comunica"` (descarte propio).
+- **Probar sin servidor**: Laboratorio Alpha → «Comunica nueva» → «Simular
+  aviso» programa un aviso local a los 5 s con el `data` de cada tipo (sal de
+  la app para verlo; vale en el simulador de iOS).
+
+---
+
 ## Rutas internas disponibles para deep linking
 
 ```

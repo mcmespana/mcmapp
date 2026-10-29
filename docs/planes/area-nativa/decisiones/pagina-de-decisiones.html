@@ -1,0 +1,548 @@
+<title>Área privada nativa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Una columna de lectura: lo decidido, cómo queda, precios y las tarjetas de
+   decisión (la recomendada marcada, las cambiadas señaladas) con su comentario. */
+:root {
+  --bg: #f3f4f8; --card: #ffffff; --fg: #161a2c; --muted: #565d75; --line: #dcdfea;
+  --accent: #253883; --accent-soft: #e7eaf6; --rec: #3c6e0f; --rec-soft: #edf5df;
+  --warn: #8a5a00; --warn-soft: #fdf3dc;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10121a; --card: #1a1d29; --fg: #eceef6; --muted: #a3a9be; --line: #2c3044;
+  --accent: #a9b8ff; --accent-soft: #1f2542; --rec: #b6d35c; --rec-soft: #222a14;
+  --warn: #e3b35c; --warn-soft: #2f2614; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #10121a; --card: #1a1d29; --fg: #eceef6; --muted: #a3a9be; --line: #2c3044;
+  --accent: #a9b8ff; --accent-soft: #1f2542; --rec: #b6d35c; --rec-soft: #222a14;
+  --warn: #e3b35c; --warn-soft: #2f2614; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 740px; margin: 0 auto; padding-block: 24px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 14px; }
+h1 { font-size: 1.6rem; line-height: 1.2; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+.lead { color: var(--muted); margin: 0; max-width: 62ch; }
+.estado { font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; margin: 0; }
+h2 { font-size: .76rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin: 22px 0 0; }
+.box, .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px;
+  display: grid; gap: 10px; min-width: 0; }
+.box ul, .card ul { margin: 0; padding-left: 1.15em; display: grid; gap: 6px; }
+.box p { margin: 0; }
+b { font-weight: 650; }
+a { color: var(--accent); }
+/* Lo decidido: dos columnas etiqueta / valor que se apilan en el móvil. */
+.decidido { display: grid; grid-template-columns: minmax(0, 13em) minmax(0, 1fr); gap: 6px 14px; margin: 0; }
+.decidido dt { color: var(--muted); font-size: .9rem; }
+.decidido dd { margin: 0; font-weight: 600; }
+.decidido dd.pend { color: var(--warn); font-weight: 600; }
+@media (max-width: 520px) { .decidido { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .decidido dd { margin-bottom: 8px; } }
+/* Esquema: filas de nodos. */
+.fila { display: grid; gap: 6px; }
+.tag { font-size: .74rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 650; }
+.cadena { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.nodo { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: var(--bg); font-size: .88rem; }
+.nodo.lento { border-color: var(--warn); background: var(--warn-soft); color: var(--warn); font-weight: 600; }
+.nodo.rapido { border-color: var(--rec); background: var(--rec-soft); color: var(--rec); font-weight: 600; }
+.flecha { color: var(--muted); font-size: .85rem; }
+.nota { font-size: .85rem; color: var(--muted); }
+/* Precios. */
+.tabla { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; min-width: 520px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 650; font-size: .8rem; }
+td.cifra { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+/* Tarjetas de decisión. */
+.card h3 { margin: 0; font-size: 1.04rem; line-height: 1.35; text-wrap: balance; }
+.card .ctx { margin: 0; color: var(--muted); }
+.card.hecha { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.cambio { margin: 0; font-size: .84rem; color: var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 6px 10px; justify-self: start; }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.opt { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: start; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: var(--card); }
+.opt input { margin: 3px 0 0; width: 18px; height: 18px; accent-color: var(--accent); }
+.opt .t { font-weight: 600; }
+.opt .d { grid-column: 2; color: var(--muted); font-size: .9rem; }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.opt:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pill { display: inline-block; margin-left: 6px; font-size: .72rem; font-weight: 700; letter-spacing: .02em;
+  padding: 1px 8px; border-radius: 999px; background: var(--rec-soft); color: var(--rec); vertical-align: 1px; white-space: nowrap; }
+.porque { font-size: .88rem; color: var(--rec); margin: 0; }
+.pie { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; justify-content: space-between; }
+label.cl { font-size: .82rem; color: var(--muted); }
+textarea { font: inherit; width: 100%; box-sizing: border-box; min-height: 56px; padding: 9px 12px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--fg); resize: vertical; }
+textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.quitar { font: inherit; font-size: .82rem; color: var(--muted); background: none; border: 0; padding: 4px 0;
+  text-decoration: underline; cursor: pointer; }
+.aviso { font-size: .85rem; color: var(--warn); margin: 0; }
+code { font-family: var(--mono); font-size: .86em; background: var(--accent-soft); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: no-preference) { .opt { transition: background-color .12s, border-color .12s; } }
+</style>
+
+<div class="wrap">
+  <h1>Área privada nativa</h1>
+  <p class="lead">Tus respuestas siguen marcadas. El 24/10 he añadido seis tarjetas que salen de los planes de familias (portada, mis datos, eventos, inscripciones, pagos, documentos y calendario). Mientras no contestes, cada plan sigue la recomendada. Puedes cambiar lo que quieras: se guarda solo.</p>
+  <p class="estado" id="estado">Cargando…</p>
+
+  <h2>Lo que has decidido</h2>
+  <section class="box" aria-live="polite">
+    <dl class="decidido" id="resumen"></dl>
+  </section>
+
+  <h2>Cómo queda</h2>
+  <section class="box">
+    <ul>
+      <li><b>Pasarela primero, sin espejo.</b> La app nativa habla solo con nuestro servidor, en Vercel como el MCP. El servidor lee el CRM directamente de su base de datos (con el usuario de solo lectura que pediremos a SinergiaTIC) y escribe por la API, como el plugin.</li>
+      <li><b>Por qué basta.</b> Leyendo la base de datos, una pantalla son 1-3 consultas (~0,1 s) en vez de 3-8 llamadas a la API (1-3 s). Y la app guarda en el móvil lo último que vio y lo que marcas: abre al instante, pasa lista sin cobertura y nunca se queda esperando al CRM.</li>
+      <li><b>El espejo, solo si algún día hace falta.</b> Como la app solo conoce a nuestro servidor, el espejo se pone detrás de él sin tocar la app. Mientras SinergiaTIC no nos dé la lectura directa, el servidor lee por la API: más lento la primera vez, pero la app no cambia.</li>
+      <li><b>Coste: 0 € al mes</b> (Vercel y Neon gratis). Unos 6 € al mes si SinergiaTIC exige una IP fija.</li>
+      <li><b>Esfuerzo:</b> lo de monitores, del orden de 3-5 meses (sin espejo, un mes menos que antes); familias, 2-3 más.</li>
+    </ul>
+  </section>
+
+  <section class="box" aria-label="Hoy, la primera versión y más adelante">
+    <div class="fila"><span class="tag">Hoy</span>
+      <div class="cadena"><span class="nodo">App</span><span class="flecha">→</span><span class="nodo">WebView</span><span class="flecha">→</span><span class="nodo">WordPress</span><span class="flecha">→</span><span class="nodo lento">CRM · hasta 8 esperas por pantalla</span></div>
+    </div>
+    <div class="fila"><span class="tag">Primera versión</span>
+      <div class="cadena"><span class="nodo rapido">App · datos en el móvil</span><span class="flecha">⇄</span><span class="nodo">Nuestro servidor</span><span class="flecha">→ lee</span><span class="nodo">BBDD del CRM</span><span class="flecha">· escribe →</span><span class="nodo">API del CRM</span></div>
+    </div>
+    <div class="fila"><span class="tag">Si algún día hace falta</span>
+      <div class="cadena"><span class="nodo">App (igual)</span><span class="flecha">⇄</span><span class="nodo">Nuestro servidor</span><span class="flecha">⇄</span><span class="nodo">Espejo</span><span class="flecha">⇄ por detrás</span><span class="nodo">CRM</span></div>
+    </div>
+    <p class="nota">Cuándo haría falta el espejo: si la base de datos del CRM contesta lenta desde Vercel, si el CRM se cae a menudo o si coordinación necesita cálculos pesados (rachas, porcentajes de todo el curso).</p>
+  </section>
+
+  <h2>Precios reales (consultados el 21/10/2026)</h2>
+  <section class="box">
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Pieza</th><th>Gratis</th><th>Si hubiera que pagar</th></tr></thead>
+        <tbody>
+          <tr><td>Servidor · Vercel</td><td>Hobby: 1 millón de llamadas y 4 h de CPU al mes; tareas programadas solo 1 vez al día; para uso no comercial</td><td class="cifra">Pro 20 $/mes</td></tr>
+          <tr><td>Base de datos · Neon</td><td>100 proyectos, 1 GB y 100 horas de cómputo por proyecto al mes; se duerme a los 5 min sin uso</td><td class="cifra">Por uso, sin mínimo</td></tr>
+          <tr><td>Base de datos · Supabase</td><td>2 proyectos por persona (los tuyos ya están usados); se pausa tras 1 semana sin uso; sin copias de seguridad</td><td class="cifra">Pro 25 $/mes</td></tr>
+          <tr><td>IP fija, solo si la piden</td><td>No hay gratis</td><td class="cifra">Servidor pequeño ~6 €/mes · Vercel 100 $/mes</td></tr>
+          <tr><td>Correos · Resend</td><td>3.000 al mes, 100 al día</td><td class="cifra">Pro 20 $/mes</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="nota">Cuenta rápida: 200 monitores abriendo la app unas 20 veces por semana son unas 150.000-200.000 llamadas al mes. Cabe de sobra en lo gratis de Vercel. La base de datos propia solo guarda códigos de acceso, sesiones y un diario de lo que se escribe: cabe en Neon gratis.</p>
+  </section>
+
+  <div id="cuerpo"></div>
+
+  <h2>Más detalle</h2>
+  <section class="box">
+    <p>Todo vive en la rama <code>nuevoComunicaChulo</code> del repo de la app.</p>
+    <p>El análisis, ya con estas decisiones: <a href="https://github.com/mcmespana/mcmapp/blob/nuevoComunicaChulo/docs/planes/ANALISIS_AREA_PRIVADA_NATIVA.md" target="_blank" rel="noopener"><code>docs/planes/ANALISIS_AREA_PRIVADA_NATIVA.md</code></a>.</p>
+    <p>Los planes de la app (contrato y servidor falso, cimientos, acceso, diseño y cada bloque de pantallas): <a href="https://github.com/mcmespana/mcmapp/blob/nuevoComunicaChulo/docs/planes/area-nativa/README.md" target="_blank" rel="noopener"><code>docs/planes/area-nativa/</code></a>. Se pueden ejecutar sin servidor.</p>
+  </section>
+</div>
+
+<script>
+const GRUPOS = [
+  ["Lo grande", [
+    { id: "alcance", corto: "Qué va primero", t: "¿Qué va nativo primero?",
+      ctx: "Rehacerlo todo antes de sacar nada son muchos meses sin entregar. Lo de monitores es lo más usado en el móvil y lo que más sufre la lentitud.",
+      rec: "monitores", porque: "Recomiendo monitores primero: es donde está el problema.",
+      ops: [
+        ["monitores", "Monitores primero", "Pasar lista, Grupos y fichas, coordinación y eventos, en nativo. Familias y pagos siguen en la web dentro de la app hasta la fase 2."],
+        ["todo", "Todo de golpe", "No sale nada hasta tener también familias, inscripciones y pagos: unos 7-9 meses sin entregar."],
+        ["familias", "Familias primero", "Lo más sencillo antes, pero no arregla lo que más duele."]
+      ] },
+    { id: "velocidad", corto: "De dónde sale la velocidad", t: "¿De dónde sale la velocidad?",
+      cambio: "Cambiada: ahora también recomiendo la pasarela, como elegiste.",
+      ctx: "El documento del espejo (agosto) concluyó que, con caché y llamadas en paralelo, quizá no hacía falta. Descartó Neon porque el plugin vive en un hosting PHP (driver, latencia, protección de datos); para la app nativa, Neon sí vale. Y con la lectura directa de la base de datos del CRM, la pasarela ya va rápida.",
+      rec: "pasarela", porque: "Tenías razón: con lectura directa, la pasarela da casi toda la velocidad con mucho menos trabajo. La clave es que la app solo hable con nuestro servidor; así cambiar luego al espejo no toca la app.",
+      ops: [
+        ["pasarela", "Pasarela primero, espejo si hace falta", "El servidor lee el CRM en directo: por SQL de solo lectura o, mientras no lo haya, por la API, como el plugin. La app guarda lo último. Si un día se queda corto, el espejo se pone detrás del mismo servidor."],
+        ["espejo", "Espejo desde el principio", "Lo más rápido y robusto, pero 2-3 semanas más antes de ver nada y una pieza más que vigilar."]
+      ] },
+    { id: "sinergiatic", corto: "Qué pedir a SinergiaTIC", t: "¿Qué pedimos a SinergiaTIC?",
+      cambio: "Ahora pesa más: la velocidad de la pasarela depende de la lectura directa.",
+      ctx: "Según su manual, pueden dar un usuario de solo lectura de la base de datos del CRM y clonar la instancia para pruebas (/TEST). Hoy solo existe el CRM de producción.",
+      rec: "ambas", porque: "Recomiendo pedir las dos cosas ya: es lo que más tarda y no depende de nosotros. El borrador del mensaje está en el análisis.",
+      ops: [
+        ["ambas", "Las dos cosas", "Con la lectura directa, cada pantalla es una consulta rápida y sin las trampas de la API. Con /TEST se prueba sin miedo."],
+        ["lectura", "Solo el usuario de lectura", "Las pruebas de escritura se harían en el CRM real, con una delegación de prueba."],
+        ["test", "Solo la instancia de pruebas", "El servidor leería siempre por la API: más lento la primera vez y con sus trampas."],
+        ["nada", "Ninguna", "Todo por la API y probando en el CRM real."]
+      ] },
+    { id: "ipfija", corto: "Si piden IP fija", t: "¿Y si SinergiaTIC pide una IP fija para dejarnos leer su base de datos?",
+      cambio: "Nueva: sale de elegir Vercel gratis.",
+      ctx: "Es lo normal cuando se abre una base de datos a Internet. Vercel gratis no tiene IP fija, y en Pro cuesta 100 $ al mes por proyecto.",
+      rec: "servidor", porque: "Recomiendo el servidor pequeño. Solo si la piden: si no, todo sigue en Vercel gratis.",
+      ops: [
+        ["servidor", "Un servidor pequeño con IP fija", "Desde unos 6 € al mes (Hetzner, en Alemania). Ahí va el servidor de la app, o solo el trozo que lee la base de datos. La app no nota la diferencia."],
+        ["vercel", "IP fija de Vercel", "100 $ al mes por proyecto, y además hay que pasar a Pro."],
+        ["api", "Renunciar a la lectura directa", "Seguir leyendo por la API: 0 €, pero más lento la primera vez y con sus trampas."]
+      ] }
+  ]],
+  ["Cómo se construye", [
+    { id: "almacen", corto: "Servidor y base de datos", t: "¿Dónde van el servidor y la base de datos propia?",
+      cambio: "Cambiada: precios reales, y Neon con Vercel pasa a ser la recomendada.",
+      ctx: "Con la pasarela, la base de datos propia es pequeña: códigos de acceso, sesiones y un diario de lo que se escribe. El espejo, si llega, iría también ahí.",
+      rec: "neon", porque: "Recomiendo Neon con Vercel: gratis sin trucos, Postgres normal y Vercel ya lo usáis. Ojo, Vercel gratis es para uso no comercial: un área privada sin cobros ni personal pagado encaja, pero si hay dudas se pregunta a Vercel o se pasa a Pro (20 $/mes).",
+      ops: [
+        ["neon", "Vercel gratis y Neon gratis: 0 €/mes", "Servidor en Vercel, como el MCP, y base de datos en Neon, en Frankfurt. Neon se duerme a los 5 min sin uso: la primera consulta tarda un poco más, por eso las sesiones no lo consultan en cada toque."],
+        ["supabase", "Supabase en una cuenta nueva: 0 €/mes", "Funciona: el límite de 2 proyectos gratis es por persona. Pero se pausa tras una semana sin uso y no tiene copias de seguridad. Pro, 25 $/mes."],
+        ["firebase", "Firebase, el de la app", "Ya está pagado, pero no es relacional, sus funciones están en EE. UU. y sus reglas de seguridad nuevas siguen sin desplegar."]
+      ] },
+    { id: "repo", corto: "Dónde vive el código", t: "¿Dónde vive el código del servidor?",
+      ctx: "Preguntabas si podía ir en el repo del MCP. Se puede, pero no conviene.",
+      rec: "nuevo", porque: "Recomiendo un repo nuevo. Del MCP se copian las piezas que sirven (unas 500 líneas del cliente del CRM).",
+      ops: [
+        ["nuevo", "Repo nuevo", "Por ejemplo, mcm-comunica-api, con sus secretos, su despliegue y sus tests. La app y el servidor se entienden por un contrato escrito."],
+        ["mcp", "Dentro del repo del MCP", "Mezcla un servidor para agentes de IA (una clave compartida, escritura para todos) con una API para personas, y un despliegue puede romper el otro."],
+        ["monorepo", "Dentro del repo de la app", "Un agente ve app y servidor a la vez, pero mete los secretos del CRM y otro despliegue en un repo que ya va muy cargado."]
+      ] },
+    { id: "diseno", corto: "Cómo se pasa el diseño", t: "¿Cómo se pasa el diseño del área privada a la app?",
+      cambio: "Nueva: sale de tu comentario sobre el diseño.",
+      ctx: "El área privada ha quedado bien y la idea es conservarla: las mismas pantallas y el mismo concepto, rehechas en Expo y con alguna decisión para que encajen con el resto de la app.",
+      rec: "traducir", porque: "Recomiendo traducirla pantalla a pantalla: el plugin ya tiene con qué hacerlo (los artboards de design/pasar-lista y los arneses tests/manual/render-*.php pintan cada pantalla sin datos reales).",
+      ops: [
+        ["traducir", "Traducción pantalla a pantalla", "Se captura cada pantalla del área a 375 px, en claro y en oscuro, y se apunta qué se queda igual y qué cambia por ser app: cabecera y buscador nativos, hojas en vez de ventanas, deslizar para refrescar, gestos. Lo revisas antes de construir."],
+        ["identica", "Idéntica a la web", "Lo más rápido de decidir, pero desentona con el resto de la app (cabeceras, pestañas, hojas)."],
+        ["nueva", "Rediseñarla desde cero para la app", "Más trabajo, y se pierde lo que ya funciona."]
+      ] },
+    { id: "territorio", corto: "Color del área nativa", t: "¿De qué color va el área nativa dentro de la app?",
+      cambio: "Nueva: sale de preparar los planes de la app.",
+      ctx: "La web usa el azul Comunica y un degradado azul-violeta-magenta en la acción principal. La app usa el azul MCM plano y no deja degradados fuera de Contigo; la pestaña Comunica ya va en morado. La app admite «territorios» con su propio acento, como los eventos.",
+      rec: "territorio", porque: "Recomiendo un territorio propio: se reconoce como el área de siempre sin romper las reglas de la app.",
+      ops: [
+        ["territorio", "Territorio «Comunica»", "Piezas y forma de la app, con el acento de Comunica y el degradado solo en la acción principal de cada pantalla («Guardar lista»), como en la web."],
+        ["institucional", "Como el resto de la app", "Azul MCM plano y sin degradado. Más coherente con la app, menos parecida a la web que ya conocen."],
+        ["calco", "Igual que la web", "Degradados y cristal como en el plugin. Choca con las reglas de diseño de la app."]
+      ] },
+    { id: "login", corto: "Cómo se entra", t: "¿Cómo se entra en el área nativa?",
+      cambio: "Cambiada: con tu idea del correo ya puesto.",
+      ctx: "Hoy llega un correo con enlace y código, se puede rescatar con el DNI, hay contraseña (guardada en claro en el CRM) y un token que no caduca.",
+      rec: "codigo", porque: "Recomiendo el código: es lo que la gente ya conoce y no obliga a guardar contraseñas.",
+      ops: [
+        ["codigo", "Código por correo o DNI, y sesión de meses", "Si ya entraste en la app con Google o Apple, tu correo sale puesto: tocas «Recibir código», lo escribes y estás dentro. Si no, pones tu correo o tu DNI. No vuelves a entrar en meses. Sin contraseña."],
+        ["google", "Lo mismo, pero sin código si el correo coincide", "Si el correo de tu cuenta Google o Apple es el del CRM, entras sin código. Algo más de trabajo, y muchas familias usan otro correo."],
+        ["contrasena", "Mantener también usuario y contraseña", "Como hoy en la web. No lo recomiendo: habría que guardarlas bien, y hoy están en claro."]
+      ] },
+    { id: "dni", corto: "DNI que no existe", t: "Si alguien escribe un DNI que no está en el CRM, ¿se le dice?",
+      cambio: "Nueva: sale del plan de acceso.",
+      ctx: "Con el correo nunca se dice si existe: la pantalla es la misma. Con el DNI, la web sí dice «no existe». Decirlo ayuda a quien se equivoca, pero deja comprobar quién está en el CRM.",
+      rec: "igual", porque: "Recomiendo contestar igual que con el correo: son datos de menores y de familias.",
+      ops: [
+        ["igual", "Contestar igual que con el correo", "«Si el DNI es correcto, te llegará un código al correo que diste a tu delegación.»"],
+        ["decir", "Decir que no existe, como hoy en la web", "Más claro para quien se equivoca de número."]
+      ] },
+    { id: "offline", corto: "Sin cobertura", t: "¿Qué tiene que funcionar sin cobertura?",
+      ctx: "Campamentos, excursiones y el autobús. Hoy, en la web, sin cobertura solo funciona pasar lista.",
+      rec: "lista", porque: "Recomiendo pasar lista y ver los grupos: cubre el uso real sin llenar los móviles de datos de menores.",
+      ops: [
+        ["lista", "Pasar lista y ver mis grupos", "Nombres, fotos, teléfonos de los tutores y las marcas del grupo se guardan en el móvil. Las listas suben solas al volver la cobertura."],
+        ["todo", "Todo lo de monitores", "También fichas completas, coordinación y seguimientos. Más datos de menores en móviles personales."],
+        ["nada", "Nada: siempre con conexión", "Más sencillo, pero no sirve en campamentos."]
+      ] },
+    { id: "salud", corto: "Salud sin cobertura", t: "¿Y los datos de salud sin cobertura?",
+      ctx: "Hoy ya es regla que el texto de salud nunca se guarda en el móvil: solo la marca de que hay algo.",
+      rec: "marca", porque: "Recomiendo seguir como hoy, sin complicarlo.",
+      ops: [
+        ["marca", "Solo la marca, como hoy", "Sin cobertura se ve «Alergia o tratamiento»; el detalle, con conexión."],
+        ["detalle", "También el detalle, cifrado", "Solo de sus grupos y para quien tiene permiso de salud, cifrado y borrado al cerrar sesión. Necesita una evaluación de impacto."]
+      ] },
+    { id: "extras", multi: true, corto: "Extras de la primera versión", t: "¿Qué extras nativos quieres en la primera versión?",
+      ctx: "Cosas que la web no puede hacer. Marca las que quieras; cada una suma algo de trabajo.",
+      rec: ["push", "faceid"], porque: "Recomendaba avisos y Face ID. Lo que has marcado (avisos y compartir) también es buena primera tanda: compartir es barato.",
+      ops: [
+        ["push", "Avisos en el móvil", "«Hoy toca pasar lista», «tienes 2 listas sin subir» y cambios en tu grupo."],
+        ["faceid", "Bloqueo con Face ID o huella", "Para abrir el área en un móvil compartido o perdido."],
+        ["compartir", "Compartir un evento", "Con la hoja de compartir del móvil y el texto ya escrito (la propuesta F5)."],
+        ["nfc", "Pasar lista con NFC", "Acercando una tarjeta o una pegatina. El NFC ya está instalado en la app, sin uso."],
+        ["widget", "Widget «hoy toca pasar lista»", "En la pantalla de inicio del móvil."]
+      ] },
+    { id: "tecnicas", corto: "Lo técnico", t: "Lo técnico que doy por hecho",
+      cambio: "Cambiada con tus dos comentarios: el diseño y la lectura directa sin espejo.",
+      lista: [
+        "Primera versión sin espejo: el servidor lee la base de datos del CRM y escribe por la API v4.1, con lo aprendido en el plugin (importes, enlaces, pagos sin persona). La fuente de datos es intercambiable.",
+        "El diseño parte de las pantallas actuales del área privada (tarjeta «¿Cómo se pasa el diseño?»).",
+        "TypeScript en todo: servidor y app.",
+        "Toda la autorización (delegación, rol, familia) en un solo sitio del servidor, con un test que falla si un endpoint se la salta. Leyendo la base de datos, el CRM no filtra nada: filtramos nosotros.",
+        "Cada escritura lleva un id propio, para que reintentar no duplique, y queda apuntada en un diario para ver qué ha fallado.",
+        "Un usuario técnico del CRM nuevo, solo para esto. Sentry en la app y en el servidor."
+      ],
+      rec: "vale", porque: "",
+      ops: [
+        ["vale", "Vale", ""],
+        ["hablar", "Quiero hablar alguna", "Dime cuál en el comentario."]
+      ] }
+  ]],
+  ["De los planes de pantallas (nuevas)", [
+    { id: "futuras", corto: "Listas de días futuros", t: "¿Se puede pasar lista de un día que aún no ha llegado?",
+      cambio: "Nueva: sale de los planes 04, 06 y 07.",
+      ctx: "El documento de Pasar Lista dice que no. El plugin, en algunos casos, sí: la próxima sesión si aún no ha empezado ninguna, una reunión futura, o crear el día de hoy en un evento fuera de sus fechas.",
+      rec: "no", porque: "Recomiendo que no: una lista del futuro casi siempre es una fecha equivocada.",
+      ops: [
+        ["no", "Hoy sí, días posteriores no", "El día de hoy se marca aunque no haya empezado; un día posterior se ve, pero no se marca."],
+        ["plugin", "Como el plugin", "Se deja marcar la próxima sesión si aún no ha empezado ninguna, y las reuniones futuras."]
+      ] },
+    { id: "desmarcar", corto: "Quitar una marca guardada", t: "Si alguien quita una marca ya guardada, ¿se borra en el CRM?",
+      cambio: "Nueva: sale del plan 04.",
+      ctx: "Hoy el plugin no escribe lo que queda sin marcar: si se puso «Vino» por error y se quita, en el CRM sigue «Vino» y al volver a abrir la lista reaparece.",
+      rec: "borrar", porque: "Recomiendo que se borre: si no, lo que se ve no es lo que hay.",
+      ops: [
+        ["borrar", "Sí: queda sin marcar también en el CRM", "Lo que ve el monitor es lo que queda guardado."],
+        ["plugin", "No, como hoy", "Para corregirla, hay que poner la marca buena."]
+      ] },
+    { id: "salud-no", corto: "Salud sin autorización", t: "Si la familia dijo «no» a compartir la salud, ¿la ficha la enseña?",
+      cambio: "Nueva: sale del plan 05.",
+      ctx: "Hoy el plugin la enseña en la ficha, pero la esconde en la marca y en el globo de la lista. En la app solo puede ser de una manera.",
+      rec: "no", porque: "Recomiendo que no: es lo que autorizó la familia.",
+      ops: [
+        ["no", "No: ni la marca ni el texto", "Lo que la familia no autorizó, el monitor no lo ve."],
+        ["si", "Sí, en la ficha", "Como hoy la ficha del plugin, por si hay una urgencia."]
+      ] },
+    { id: "alcance-coord", corto: "Qué ve coordinación", t: "¿Qué grupos ve quien coordina o acompaña?",
+      cambio: "Nueva: sale del plan 06.",
+      ctx: "Si alguien coordina dos etapas (MIC y COM), el plugin solo le da la primera que encuentra. Y acompañamiento ve toda la delegación, pero de rebote no ve a los monitores sin grupo.",
+      rec: "suma", porque: "Recomiendo la suma: lo del plugin parece un descuido.",
+      ops: [
+        ["suma", "La suma de sus relaciones, igual para los dos papeles", "Quien coordina MIC y COM ve las dos. Acompañamiento ve lo mismo que coordinación en su alcance, monitores sin grupo incluidos."],
+        ["plugin", "Como el plugin", "La primera relación, y acompañamiento sin los monitores sin grupo."]
+      ] },
+    { id: "marcas-autobus", corto: "Marcas en el autobús", t: "En la lista del autobús, ¿salen las marcas «No se va solo», «Sin fotos» y «Alergia o tratamiento»?",
+      cambio: "Nueva: sale del plan 07.",
+      ctx: "En las listas del grupo salen; en la de un evento, el plugin no las pinta.",
+      rec: "si", porque: "Recomiendo que sí: en un viaje es cuando más falta hacen.",
+      ops: [
+        ["si", "Sí, como en las del grupo", "Sin decir cuál es la alergia, igual que en el grupo."],
+        ["no", "No, como hoy", "La lista del evento queda más limpia."]
+      ] },
+    { id: "avisos-nombres", corto: "Nombres en los avisos", t: "¿Los avisos del móvil llevan el nombre del chaval?",
+      cambio: "Nueva: sale del plan 08.",
+      ctx: "Por ejemplo, «Novedades en C1: Lucía se ha apuntado». La pantalla bloqueada la ve cualquiera, y el texto pasa por los servidores de Apple y Google.",
+      rec: "sin", porque: "Recomiendo sin nombres: son menores.",
+      ops: [
+        ["sin", "Sin nombres", "«1 chaval nuevo en C1». El nombre se ve al abrir el aviso."],
+        ["pila", "Con el nombre de pila", "«Lucía se ha apuntado a C1»."]
+      ] },
+    { id: "fotos-documentos", corto: "Fotos de títulos", t: "Para subir títulos y certificados, ¿se podrá hacer una foto con el móvil?",
+      cambio: "Nueva: sale del plan 09.",
+      ctx: "Con lo que ya tiene la app se elige un archivo (en el iPhone, la app Archivos, no la galería). Hacer una foto necesita un paquete nativo nuevo y cambiar el texto del permiso de cámara, que va en la build.",
+      rec: "si", porque: "Recomiendo que sí: casi todo el mundo los tiene en fotos, y así no hace falta otra build.",
+      ops: [
+        ["si", "Sí, y su paquete entra en la 2.2", "Con los demás paquetes del área, sin usarlo todavía: «Hacer una foto» o «Elegir de la galería»."],
+        ["no", "No: solo archivos", "Un título en papel hay que escanearlo antes."]
+      ] }
+  ]],
+  ["De los planes de familias (nuevas, 24/10)", [
+    { id: "equipo-hijo", corto: "Equipo viendo a un hijo", t: "Si una monitora mira la ficha de su hija, ¿sigue viendo «Pasar lista» en la portada?",
+      cambio: "Nueva: sale del plan 11.",
+      ctx: "En el plugin, al ver a un hijo toda la sesión pasa a ser el hijo: desaparece lo del equipo hasta que vuelve a elegirse a sí misma.",
+      rec: "si", porque: "Recomiendo que sí: «Pasar lista» es de quien ha entrado, no de quien se está viendo.",
+      ops: [
+        ["si", "Sí, siempre", "Lo del equipo arriba; el selector «Viendo a» solo cambia la parte de familia."],
+        ["plugin", "Como el plugin", "Viendo a un hijo, lo del equipo se esconde."]
+      ] },
+    { id: "docs-con-plaza", corto: "Documentos con plaza", t: "Quien ya tiene plaza en una convivencia, ¿puede abrir sus documentos aunque ya no cumpla la audiencia?",
+      cambio: "Nueva: sale del plan 13.",
+      ctx: "Pasa si le cambian el curso después de apuntarse. Hoy el plugin le deja ver la ficha, pero no abrir el PDF de la convivencia.",
+      rec: "si", porque: "Recomiendo que sí: está apuntado, los documentos son para él.",
+      ops: [
+        ["si", "Sí: con plaza o con audiencia", "Quien está apuntado ve todo lo de su actividad."],
+        ["plugin", "Como el plugin", "Solo si cumple la audiencia."]
+      ] },
+    { id: "aviso-pagos", corto: "Pagos con tarjeta raros", t: "Si un pago con tarjeta sale raro, ¿a quién avisamos?",
+      cambio: "Nueva: sale del plan 15.",
+      ctx: "Dos casos: el banco dijo «pagado» pero el CRM no lo apunta en 24 horas (puede haber dinero sin anotar), o alguien paga dos veces lo mismo. El plugin no detecta ninguno de los dos; el servidor nuevo sí. Quien reciba el aviso es quien lo mira y, si hace falta, devuelve el dinero.",
+      rec: "ambos", porque: "Recomiendo a la delegación dueña del pago, con copia a la oficina técnica: es su dinero, y la oficina ve si se repite.",
+      ops: [
+        ["ambos", "Delegación dueña, con copia a la oficina técnica", "Un correo a cada una."],
+        ["delegacion", "Solo a la delegación dueña del pago", ""],
+        ["oficina", "Solo a la oficina técnica", ""]
+      ] },
+    { id: "tope-importe", corto: "Pagar otra cantidad", t: "Al pagar con tarjeta, «Pagar otra cantidad», ¿tiene tope?",
+      cambio: "Nueva: sale del plan 15.",
+      ctx: "Sirve para descuentos y becas. Hoy no tiene tope: un «3500» por un «35» mal escrito llega al banco (que enseña el importe antes de cobrar).",
+      rec: "tope", porque: "Recomiendo que como mucho sea lo indicado: es para pagar menos, no más.",
+      ops: [
+        ["tope", "Como mucho lo indicado", "«No puede pasar de 35,00 €»."],
+        ["plugin", "Sin tope, como hoy", ""]
+      ] },
+    { id: "calendario-marcas", corto: "Colores del calendario", t: "En el calendario de las familias, ¿«Parcial» y «Justificada» salen con su color?",
+      cambio: "Nueva: sale del plan 16.",
+      ctx: "Pasar Lista ya los apunta, pero el calendario los junta: una falta justificada sale en rojo como «No asististe», y un parcial como «Asististe».",
+      rec: "si", porque: "Recomiendo que sí: a una familia que avisó, ver «No asististe» en rojo le sabe mal.",
+      ops: [
+        ["si", "Sí, cada uno con su color y su línea en la leyenda", ""],
+        ["plugin", "Como el plugin", "Se juntan con «Asististe» y «No asististe»."]
+      ] },
+    { id: "campos-crm", corto: "Campos que faltan", t: "Faltan campos en CAMPOS.md: ¿los miro en el CRM y los apunto?",
+      cambio: "Nueva: sale de los planes 12, 14 y 16.",
+      ctx: "Los de Documentos (estado, categoría, enlace), las «necesidades especiales» de las inscripciones, los valores de la etapa (que se contradicen dentro del propio documento) y la comunidad autónoma (marcada como sin uso, pero Mis datos la escribe). La regla es no usar un campo que no esté ahí. No bloquea la app: lo necesita el servidor.",
+      rec: "yo", porque: "Recomiendo que los mire yo por el MCP, con cuidado, y te deje las diferencias para que las confirmes.",
+      ops: [
+        ["yo", "Sí, míralos y déjame las diferencias", "No se cambia nada en el CRM: solo se lee y se apunta."],
+        ["tu", "Lo hago yo", ""]
+      ] }
+  ]],
+  ["Convivencia y lanzamiento", [
+    { id: "plugin", corto: "El plugin", t: "¿Qué pasa con el plugin de WordPress?",
+      ctx: "Dentro de la app, lo nativo sustituye a la web. Fuera, hay familias que entran desde el navegador y monitores desde el ordenador.",
+      rec: "web", porque: "Recomiendo que se quede para la web.",
+      ops: [
+        ["web", "Se queda para la web", "Sigue sirviendo a quien entra desde el navegador y, en la app, a lo que todavía no sea nativo."],
+        ["apagar", "Se apaga cuando lo nativo lo tenga todo", "Una sola cosa que mantener, pero quien usa el ordenador dependería de la versión web de la app."],
+        ["par", "Los dos a la par siempre", "Todo se hace dos veces."]
+      ] },
+    { id: "congelar", corto: "Monitores en el plugin", t: "Mientras se construye, ¿lo de monitores sigue creciendo en el plugin?",
+      ctx: "Cada novedad de monitores en el plugin es una más que copiar luego en nativo. El plan 043 va antes y no se toca.",
+      rec: "arreglos", porque: "Recomiendo solo arreglos desde que arranque lo nativo.",
+      ops: [
+        ["arreglos", "Solo arreglos desde que arranque lo nativo", "Lo nuevo de monitores se hace solo en nativo. Lo de familias sigue normal en el plugin."],
+        ["normal", "Sigue normal", "Más cosas que copiar, y lo nativo persigue un objetivo que se mueve."]
+      ] },
+    { id: "paquetes", corto: "Paquetes en la 2.2", t: "¿Metemos ya en la build 2.2 los paquetes nativos que necesitará?",
+      cambio: "Ajustada: Face ID no entra en la primera versión, pero su paquete sí, por si luego se quiere.",
+      ctx: "Como se hizo con el NFC: se instalan sin usarlos. Son el almacén seguro de la sesión, la base de datos local (con el cifrado preparado) y el de Face ID. No cambia nada visible.",
+      rec: "si", porque: "Recomiendo que sí: ahorra una vuelta por las tiendas.",
+      ops: [
+        ["si", "Sí, en la 2.2", "Cuando lo nativo esté listo, podrá salir por OTA sin esperar otra build de tienda."],
+        ["no", "No, que lleve su propia build", "Lo nativo saldrá con una build de tienda propia (2.3 o 3.0)."]
+      ] },
+    { id: "piloto", corto: "Lanzamiento", t: "¿Cómo se lanza?",
+      cambio: "Ajustada a tu elección: para todos, con un interruptor para volver a la web.",
+      ctx: "Elegiste para todos a la vez. Hasta entonces, lo nuevo solo se ve con el modo alpha encendido; en modo normal, la web de siempre (el legado). Y queda un interruptor en la configuración de perfiles: si algo sale mal, en un minuto todos vuelven a la web, sin build ni OTA.",
+      rec: "piloto", porque: "Recomendaba un piloto, pero con el interruptor de vuelta atrás, lanzar para todos es razonable.",
+      ops: [
+        ["piloto", "Piloto con una delegación", "Una delegación ve lo nativo y el resto, la web, mientras se prueba."],
+        ["todos", "Para todos a la vez, con vuelta atrás", "Más sencillo. Si algo falla, se apaga desde la configuración y todos vuelven a la web."]
+      ] }
+  ]]
+];
+
+const DECIS = GRUPOS.flatMap(g => g[1]);
+const estado = {};
+const colas = {};
+let db = null;
+const cuerpo = document.getElementById("cuerpo");
+
+function el(tag, cls, texto) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (texto) n.textContent = texto;
+  return n;
+}
+
+for (const [titulo, items] of GRUPOS) {
+  cuerpo.appendChild(el("h2", "", titulo));
+  for (const d of items) {
+    const c = el("section", "card"); c.dataset.id = d.id;
+    c.appendChild(el("h3", "", d.t));
+    if (d.cambio) c.appendChild(el("p", "cambio", d.cambio));
+    if (d.ctx) c.appendChild(el("p", "ctx", d.ctx));
+    if (d.lista) { const ul = el("ul"); d.lista.forEach(x => ul.appendChild(el("li", "", x))); c.appendChild(ul); }
+    const fs = el("fieldset"); fs.appendChild(el("legend", "", d.t));
+    const recs = Array.isArray(d.rec) ? d.rec : [d.rec];
+    for (const [v, lab, det] of d.ops) {
+      const l = el("label", "opt");
+      const i = document.createElement("input");
+      i.type = d.multi ? "checkbox" : "radio"; i.name = "d-" + d.id; i.value = v; i.id = "d-" + d.id + "-" + v;
+      i.addEventListener("change", () => {
+        if (d.multi) {
+          const marcadas = [...fs.querySelectorAll("input:checked")].map(x => x.value);
+          guardar(d.id, { opciones: marcadas });
+        } else {
+          guardar(d.id, { opcion: v });
+        }
+      });
+      const t = el("span", "t", lab);
+      if (recs.includes(v)) t.appendChild(el("span", "pill", "Recomendado"));
+      l.append(i, t);
+      if (det) l.appendChild(el("span", "d", det));
+      fs.appendChild(l);
+    }
+    c.appendChild(fs);
+    if (d.porque) c.appendChild(el("p", "porque", d.porque));
+    const lab = el("label", "cl", "Comentario"); lab.htmlFor = "c-" + d.id;
+    const ta = document.createElement("textarea"); ta.id = "c-" + d.id;
+    let t0;
+    ta.addEventListener("input", e => { clearTimeout(t0); const val = e.target.value; t0 = setTimeout(() => guardar(d.id, { comentario: val }), 700); });
+    const pie = el("div", "pie");
+    pie.appendChild(lab);
+    const q = el("button", "quitar", "Quitar respuesta"); q.type = "button";
+    q.addEventListener("click", () => guardar(d.id, d.multi ? { opciones: [] } : { opcion: "" }));
+    pie.appendChild(q);
+    c.append(pie, ta);
+    cuerpo.appendChild(c);
+  }
+}
+
+function decidida(d) {
+  const s = estado[d.id] || {};
+  return d.multi ? Array.isArray(s.opciones) && s.opciones.length > 0 : !!s.opcion;
+}
+
+function elegido(d) {
+  const s = estado[d.id] || {};
+  const nombres = d.multi ? (s.opciones || []) : (s.opcion ? [s.opcion] : []);
+  const txt = nombres.map(v => (d.ops.find(o => o[0] === v) || [v, v])[1]).join(" · ");
+  return d.id === "tecnicas" && s.opcion === "hablar" ? "Querías hablar: rehecha, mírala" : txt;
+}
+
+function pintarResumen() {
+  const dl = document.getElementById("resumen");
+  dl.replaceChildren();
+  for (const d of DECIS) {
+    dl.appendChild(el("dt", "", d.corto));
+    const pendiente = !decidida(d) || (d.id === "tecnicas" && (estado[d.id] || {}).opcion === "hablar");
+    dl.appendChild(el("dd", pendiente ? "pend" : "", decidida(d) ? elegido(d) : "Por decidir"));
+  }
+}
+
+function pintar() {
+  for (const d of DECIS) {
+    const c = cuerpo.querySelector('[data-id="' + d.id + '"]'); const s = estado[d.id] || {};
+    c.querySelectorAll("input").forEach(i => {
+      i.checked = d.multi ? (s.opciones || []).includes(i.value) : s.opcion === i.value;
+    });
+    c.classList.toggle("hecha", decidida(d));
+    const ta = c.querySelector("textarea");
+    if (document.activeElement !== ta && typeof s.comentario === "string") ta.value = s.comentario;
+  }
+  pintarResumen();
+  const n = DECIS.filter(decidida).length;
+  document.getElementById("estado").textContent = n + " de " + DECIS.length + " decididas" + (db ? " · se guarda solo" : "");
+}
+
+function guardar(id, cambio) {
+  estado[id] = Object.assign({}, estado[id], cambio);
+  pintar();
+  if (!db) {
+    try { localStorage.setItem("decisionesNativa", JSON.stringify(estado)); } catch (e) {}
+    return;
+  }
+  const cuerpoDoc = Object.assign({}, estado[id], { actualizado: new Date().toISOString() });
+  colas[id] = (colas[id] || Promise.resolve()).then(() => db.doc("decisiones/" + id).set(cuerpoDoc)).catch(() => {
+    document.getElementById("estado").textContent = "No se ha podido guardar. Vuelve a marcarlo en un momento.";
+  });
+}
+
+try { Object.assign(estado, JSON.parse(localStorage.getItem("decisionesNativa") || "{}")); } catch (e) {}
+pintar();
+
+(async () => {
+  db = window.claude ? await window.claude.use("db") : null;
+  if (!db) {
+    document.getElementById("estado").insertAdjacentElement("afterend",
+      el("p", "aviso", "Aquí no se guarda para Claude (sin sesión). Lo que marques se queda solo en este navegador."));
+    pintar(); return;
+  }
+  db.collection("decisiones").onSnapshot(snap => {
+    snap.docs.forEach(doc => { estado[doc.id] = Object.assign({}, doc.data()); });
+    pintar();
+  }, () => {
+    document.getElementById("estado").textContent = "Se ha perdido la conexión con lo guardado. Recarga la página.";
+  });
+})();
+</script>

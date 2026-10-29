@@ -23,8 +23,60 @@ type IconMapping = {
   'music.note.list': 'queue-music';
   trash: 'delete';
   'checkmark.circle.fill': 'check-circle';
+  'xmark.circle.fill': 'cancel';
   'tray.and.arrow.down': 'file-download';
   'square.and.arrow.up.on.square': 'file-upload';
+  // Área privada nativa de Comunica
+  checkmark: 'check';
+  xmark: 'close';
+  minus: 'remove';
+  'circle.lefthalf.filled': 'contrast';
+  'cross.case.fill': 'medical-services';
+  'eye.slash': 'visibility-off';
+  'figure.and.child.holdinghands': 'family-restroom';
+  'exclamationmark.triangle.fill': 'warning';
+  clock: 'schedule';
+  'arrow.clockwise': 'refresh';
+  'wifi.slash': 'wifi-off';
+  'icloud.and.arrow.up': 'cloud-upload';
+  'checkmark.icloud': 'cloud-done';
+  'xmark.icloud': 'cloud-off';
+  iphone: 'smartphone';
+  'person.2': 'group';
+  calendar: 'event';
+  'list.bullet.clipboard': 'assignment';
+  'chart.bar': 'bar-chart';
+  lock: 'lock';
+  'person.crop.circle': 'account-circle';
+  'chevron.down': 'expand-more';
+  magnifyingglass: 'search';
+  'phone.fill': 'phone';
+  'message.fill': 'chat';
+  'arrow.up.right': 'open-in-new';
+  'bell.fill': 'notifications';
+  'square.and.pencil': 'edit';
+  'person.3': 'groups';
+  'chart.pie': 'pie-chart';
+  creditcard: 'credit-card';
+  'doc.text': 'description';
+  camera: 'photo-camera';
+  house: 'home';
+  ticket: 'confirmation-number';
+  bus: 'directions-bus';
+  graduationcap: 'school';
+  'heart.text.square': 'health-and-safety';
+  flag: 'flag';
+  envelope: 'mail';
+  plus: 'add';
+  link: 'link';
+  'chevron.up': 'expand-less';
+  gearshape: 'settings';
+  // Mis datos de monitor (plan 09)
+  'info.circle': 'info-outline';
+  circle: 'radio-button-unchecked';
+  'photo.on.rectangle': 'photo-library';
+  paperclip: 'attach-file';
+  'checkmark.seal.fill': 'verified';
 };
 
 type IconSymbolName = keyof IconMapping;
@@ -52,8 +104,60 @@ const MAPPING: IconMapping = {
   'music.note.list': 'queue-music',
   trash: 'delete',
   'checkmark.circle.fill': 'check-circle',
+  'xmark.circle.fill': 'cancel',
   'tray.and.arrow.down': 'file-download',
   'square.and.arrow.up.on.square': 'file-upload',
+  // Área privada nativa de Comunica
+  checkmark: 'check',
+  xmark: 'close',
+  minus: 'remove',
+  'circle.lefthalf.filled': 'contrast',
+  'cross.case.fill': 'medical-services',
+  'eye.slash': 'visibility-off',
+  'figure.and.child.holdinghands': 'family-restroom',
+  'exclamationmark.triangle.fill': 'warning',
+  clock: 'schedule',
+  'arrow.clockwise': 'refresh',
+  'wifi.slash': 'wifi-off',
+  'icloud.and.arrow.up': 'cloud-upload',
+  'checkmark.icloud': 'cloud-done',
+  'xmark.icloud': 'cloud-off',
+  iphone: 'smartphone',
+  'person.2': 'group',
+  calendar: 'event',
+  'list.bullet.clipboard': 'assignment',
+  'chart.bar': 'bar-chart',
+  lock: 'lock',
+  'person.crop.circle': 'account-circle',
+  'chevron.down': 'expand-more',
+  magnifyingglass: 'search',
+  'phone.fill': 'phone',
+  'message.fill': 'chat',
+  'arrow.up.right': 'open-in-new',
+  'bell.fill': 'notifications',
+  'square.and.pencil': 'edit',
+  'person.3': 'groups',
+  'chart.pie': 'pie-chart',
+  creditcard: 'credit-card',
+  'doc.text': 'description',
+  camera: 'photo-camera',
+  house: 'home',
+  ticket: 'confirmation-number',
+  bus: 'directions-bus',
+  graduationcap: 'school',
+  'heart.text.square': 'health-and-safety',
+  flag: 'flag',
+  envelope: 'mail',
+  plus: 'add',
+  link: 'link',
+  'chevron.up': 'expand-less',
+  gearshape: 'settings',
+  // Mis datos de monitor (plan 09)
+  'info.circle': 'info-outline',
+  circle: 'radio-button-unchecked',
+  'photo.on.rectangle': 'photo-library',
+  paperclip: 'attach-file',
+  'checkmark.seal.fill': 'verified',
 };
 
 /**
