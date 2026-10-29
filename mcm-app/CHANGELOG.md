@@ -4,6 +4,19 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-29 18:00 — Expo 58 (React Native 0.88, React 19.3) y dependencias mayores
+
+- **Expo SDK 57 → 58** (`expo install`): React Native 0.88, React 19.3, Reanimated 4.7, worklets 0.13, **gesture-handler 3**, `@sentry/react-native` 8, expo-router 58, `jest-expo` 58 + Jest 30. Además `firebase` 13, `chordsheetjs` 18 y `@aptabase/react-native` 0.6. `async-storage` se queda en 2.2 (Expo 58 lo sigue fijando ahí).
+- **`runtimeVersion` 2.1.0 → 2.2.0.** Por el cambio de SDK: los binarios de la 2.1 (SDK 57) dejan de recibir las OTA que se publiquen desde esta rama. La `version` de la app sigue en 2.1.0.
+- **Node 24 en los workflows** (verify, OTA, build de tienda y deploy web): `@expo/cli` 58 pide Node ≥ 22.13 y firebase 13 ≥ 24.12. El de reglas de Firebase sigue en 20.
+- **Navegación (expo-router 58):** `createNativeStackNavigator` se importa de `expo-router/native-stack`; `initialRouteName` ya no es prop de los layouts (`contigo` usa `unstable_settings.anchor`); `Tabs` de Android y web ya no reciben `initialRouteName={defaultTab}` (en iOS no se usaba, así que `defaultTab` ≠ `index` no se respeta en ninguna plataforma); `initialParams` desaparece: el `eventId` de la pestaña de la Visita del Papa viaja por `EventIdContext` (`hooks/useCurrentEvent.ts`).
+- **Filas deslizables:** `Swipeable` ya no existe en gesture-handler 3. `SongListItem`, `PlaylistRow` y `NotificationListItem` pasan a `ReanimatedSwipeable` con un componente nuevo, `components/ui/SwipeActionContent.tsx` (acciones animadas con Reanimated).
+- **RN 0.88:** refs con `ScrollViewInstance` / `TextInputInstance` / `ViewInstance`; fuera `backgroundColor` y `translucent` de `StatusBar`; `ListEmptyComponent` sin `null`; `StyleSheet.create<T>` con `type` en vez de `interface`.
+- **Parches** (`patch-package`): `react-native-webview` 14.0.1 (`WebView<P = undefined>` volvía `never` las props en TypeScript) y `expo-native-compact-tabs` (tipo de `ScrollView`).
+- **Tests:** el test de DOM pasa a `*.dom.test.ts` y corre en un proyecto Jest propio (`jsdom`, sin React Native), porque el setup de RN 0.88 redefine `window`; resolver de tests de Reanimated en lugar del de worklets; `jestSetup` de gesture-handler y mock oficial de worklets; `react-test-renderer` 19.3 declarado a mano (ya no lo trae `jest-expo`) y fuera de `overrides`; registro de assets mockeado en `jest.setup.js`.
+- Sin cambios de comportamiento a propósito. **Pendiente de probar en dispositivo:** navegación y tabs (iOS/Android), deslizar filas (cantoral, selección, notificaciones), animaciones, login con Firebase y que `freezeOnBlur` (la guía de expo-router 58 dice que se quite, pero los tipos lo siguen aceptando) siga congelando las pestañas.
+- Requiere build nativo: no llega por OTA.
+
 ## 2026-10-29 13:00 — Dependencias al día dentro de Expo 57
 
 - `npx expo install --fix`: `expo` 57.0.31, `expo-router` 57.0.29, `expo-notifications` 57.0.24, `expo-updates` 57.0.26, `expo-dev-client`, `expo-linking`, `expo-network`, `expo-observe`, `expo-sharing`, `expo-splash-screen`, `jest-expo`. Más parches: `google-signin` 16.2.0, `heroui-native` 1.0.11, `prettier`, `eslint-plugin-prettier`, `@types/node`.

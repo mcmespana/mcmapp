@@ -26,7 +26,7 @@ import DateSelector from '@/components/DateSelector';
 import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
 import { useNavigation } from 'expo-router/react-navigation';
-import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
+import { NativeStackNavigationProp } from 'expo-router/native-stack';
 import { MasStackParamList } from '../(tabs)/mas';
 
 type Nav = NativeStackNavigationProp<MasStackParamList, 'Materiales'>;

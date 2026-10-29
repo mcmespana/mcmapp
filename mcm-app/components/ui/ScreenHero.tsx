@@ -95,7 +95,7 @@ export default function ScreenHero({
       right={right}
       compact={compact}
       titleStyle={titleStyle}
-      style={StyleSheet.flatten([insetStyle, style])}
+      style={StyleSheet.flatten([insetStyle, style]) ?? undefined}
     />
   );
 }

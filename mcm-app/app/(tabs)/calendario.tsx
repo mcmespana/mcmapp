@@ -1,6 +1,6 @@
 // app/(tabs)/calendario.tsx
 import React, { useState, useMemo, useCallback, useLayoutEffect } from 'react';
-import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
+import { createNativeStackNavigator } from 'expo-router/native-stack';
 import {
   View,
   ScrollView,

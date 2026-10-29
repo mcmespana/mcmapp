@@ -6,7 +6,7 @@
 
 MCM App es la aplicación de MCM España (Movimiento Consolación para el Mundo). Proporciona cantoral/cancionero con acordes, calendario de eventos, fotos, grupos, reflexiones, materiales, juego Wordle y notificaciones push.
 
-**Stack:** Expo 57 · React Native 0.86 · React 19.2 · TypeScript · Firebase Realtime Database · **heroui-native** · ChordSheetJS
+**Stack:** Expo 58 · React Native 0.88 · React 19.3 · TypeScript · Firebase Realtime Database · **heroui-native** · ChordSheetJS
 
 ## Comandos de desarrollo
 
@@ -289,6 +289,7 @@ completo, en `docs/desarrollo/DESIGN.md`.
 - **Importaciones**: usar `@/` siempre, no rutas relativas largas
 - **Plataforma**: usar `Platform.OS` para diferencias, archivos `.ios.tsx` para componentes iOS-only
 - **Tamaño de archivo**: el techo son **1.000 líneas** (ESLint avisa con `max-lines`); a partir de **1.500** hay que trocear de verdad — extraer subcomponentes a `components/<área>/` y la lógica a un hook `use<Pantalla>.ts` **ANTES** de añadir la feature. Umbrales subidos desde 400/600 el 2026-08-08: con agentes de IA leyendo el código, un archivo largo pero coherente cuesta menos que la misma lógica repartida en seis ficheros que hay que reconstruir mentalmente. Los gigantes que ya hay **se quedan**: no hace falta trocearlos por tamaño.
+- **Tests con DOM real (jsdom):** se llaman `*.dom.test.ts` y corren en el proyecto `dom` de `jest.config.js`, sin React Native (el setup de RN redefine `window` y revienta en jsdom). El resto va en el proyecto `native`.
 - **Logging**: nunca `console.*` (ESLint lo bloquea como error). Usar el logger central `@/utils/logger` (`logger.debug/info/warn/error`).
 - **Una regla que se puede romper sin enterarse va en un test, no en un documento.** Este código lo edita siempre una IA, y una IA puede no leer un párrafo — pero no puede ignorar un test en rojo. El modelo es `__tests__/tabsLayoutWebSafety.test.ts`: no comprueba una función, comprueba que **nadie vuelva a importar** el módulo nativo de tabs en el grafo de web (el fallo real solo se veía al desplegar). Cuando algo se rompa por no saber una regla, el arreglo correcto no es ampliar este archivo: es un test-guardarraíl que falle solo. Razonamiento completo en `docs/planes/PLAN_CALIDAD.md` §0.
 
@@ -379,7 +380,7 @@ Documentar NO:
 - **Apple Team ID**: `5P53S6QB23`
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
 - **App version**: 2.1.0
-- **Runtime version**: 2.1.0
+- **Runtime version**: 2.2.0 (SDK 58; la 2.1.0 era SDK 57 — los binarios viejos no reciben OTAs nuevas)
 
 ## HeroUI Native — UI Library
 

@@ -15,7 +15,7 @@ import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import DateSelector from '@/components/DateSelector';
 import { MasStackParamList } from '../(tabs)/mas';
-import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
+import { NativeStackNavigationProp } from 'expo-router/native-stack';
 import {
   useNavigation,
   useRoute,

@@ -1,5 +1,11 @@
 import React, { forwardRef, useState } from 'react';
-import { TextInput, TextInputProps, StyleSheet, Platform } from 'react-native';
+import {
+  TextInput,
+  TextInputProps,
+  type TextInputInstance,
+  StyleSheet,
+  Platform,
+} from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors, SwipeColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
@@ -27,7 +33,7 @@ interface AppTextFieldProps extends TextInputProps {
 const ACCENT = SwipeColors.add; // verde "completado" de iOS
 const ERROR = SwipeColors.remove; // rojo de error de iOS
 
-const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
+const AppTextField = forwardRef<TextInputInstance, AppTextFieldProps>(
   function AppTextField(
     {
       style,

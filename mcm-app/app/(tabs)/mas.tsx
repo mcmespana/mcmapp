@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Platform } from 'react-native';
 import { useTabReselect } from '@/components/tabs/tabBarController';
-import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
+import { createNativeStackNavigator } from 'expo-router/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { themeColors } from '@/constants/colors';

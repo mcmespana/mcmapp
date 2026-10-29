@@ -18,7 +18,6 @@ import {
 
 import { TABS_CONFIG } from '@/constants/tabsCatalog';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useVisibleTabs } from '@/hooks/useVisibleTabs';
 import CompactTabBar from '@/components/tabs/CompactTabBar';
 import type { TabConfig } from '@/constants/tabsCatalog';
@@ -31,14 +30,12 @@ interface AndroidTabsLayoutProps {
 export default function AndroidTabsLayout({ barTabs }: AndroidTabsLayoutProps) {
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
-  const resolved = useResolvedProfileConfig();
   const visibleTabs = useVisibleTabs();
 
   return (
     <ThemeProvider value={theme}>
       <View style={styles.container}>
         <Tabs
-          initialRouteName={resolved.defaultTab}
           // La barra del navegador desaparece: la que se ve es CompactTabBar.
           // Sigue siendo `Tabs` para conservar headers y el estado por pestaña.
           tabBar={() => null}

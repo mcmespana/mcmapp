@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
+import { createNativeStackNavigator } from 'expo-router/native-stack';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useTabListScroll } from '@/components/tabs/useTabScroll';
 import { Button } from 'heroui-native';
@@ -53,7 +53,7 @@ function isAlbumVisibleForProfile(
   return albumTags.some((tag) => profileTags.includes(tag));
 }
 
-interface FotosScreenStyles {
+type FotosScreenStyles = {
   container: ViewStyle;
 
   listContentContainer: ViewStyle;
@@ -61,7 +61,7 @@ interface FotosScreenStyles {
   albumCardContainerTwoColumns: ViewStyle;
   albumCardContainerThreeColumns: ViewStyle;
   loadMoreButton: ViewStyle;
-}
+};
 
 export function FotosScreen() {
   const { listRef, onScroll, contentPaddingBottom } =

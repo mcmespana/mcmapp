@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useNavigation } from 'expo-router/react-navigation';
-import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
+import { NativeStackNavigationProp } from 'expo-router/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -426,7 +426,7 @@ function SectionCard({
   );
 }
 
-interface Styles {
+type Styles = {
   container: ViewStyle;
   scrollView: ViewStyle;
   scrollContent: ViewStyle;
@@ -458,7 +458,7 @@ interface Styles {
   cardTitle: TextStyle;
   cardSubtitle: TextStyle;
   arrowPill: ViewStyle;
-}
+};
 
 const createStyles = (isDark: boolean) =>
   StyleSheet.create<Styles>({

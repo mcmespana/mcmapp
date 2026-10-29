@@ -2,10 +2,14 @@ import React from 'react';
 import { Stack } from 'expo-router';
 import { ContigoHabitsProvider } from '@/contexts/ContigoHabitsContext';
 
+// SDK 58: `initialRouteName` ya no es prop del navegador; el ancla da el
+// destino al que se vuelve al entrar por enlace.
+export const unstable_settings = { anchor: 'index' };
+
 export default function ContigoLayout() {
   return (
     <ContigoHabitsProvider>
-      <Stack initialRouteName="index">
+      <Stack>
         <Stack.Screen
           name="index"
           options={{

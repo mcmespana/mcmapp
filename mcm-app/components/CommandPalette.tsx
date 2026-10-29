@@ -11,7 +11,8 @@ import {
   StyleSheet,
   Text,
   View,
-  type TextInput,
+  type TextInputInstance,
+  type ViewInstance,
 } from 'react-native';
 import { Dialog, PressableFeedback, SearchField } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -183,7 +184,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
   // `autoFocus` no basta: el diálogo monta el campo mientras anima la entrada
   // y el navegador deja el foco en el `body`, así que lo que se teclea nada
   // más pulsar ⌘K se perdía. Se enfoca a mano en el siguiente fotograma.
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
   useEffect(() => {
     const id = setTimeout(() => inputRef.current?.focus(), 0);
     return () => clearTimeout(id);
@@ -191,7 +192,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
 
   // El resaltado siempre a la vista al moverse con las flechas. En web el
   // ref de un `View` es el nodo del DOM.
-  const rowRefs = useRef<(View | null)[]>([]);
+  const rowRefs = useRef<(ViewInstance | null)[]>([]);
   useEffect(() => {
     const node = rowRefs.current[activeIndex] as unknown as {
       scrollIntoView?: (opts: { block: string }) => void;

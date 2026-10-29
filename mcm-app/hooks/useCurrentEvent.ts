@@ -1,6 +1,14 @@
+import { createContext, useContext } from 'react';
 import { useRoute } from 'expo-router/react-navigation';
 import { getEvent, EventConfig } from '@/constants/events';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
+
+/**
+ * `eventId` por defecto de un stack de evento (p. ej. la pestaña propia de un
+ * evento). Sustituye a `initialParams` de `Stack.Screen`, que expo-router 58
+ * ya no admite. El route param, si lo hay, manda sobre este valor.
+ */
+export const EventIdContext = createContext<string | undefined>(undefined);
 
 /**
  * Lee `eventId` del route param actual y devuelve la config del evento.
@@ -19,6 +27,7 @@ import { useActiveMeta } from '@/contexts/ActiveEventContext';
 export function useCurrentEvent(): EventConfig {
   const route = useRoute();
   const params = (route.params ?? {}) as { eventId?: string };
+  const contextEventId = useContext(EventIdContext);
   const { activeEventId } = useActiveMeta();
-  return getEvent(params.eventId ?? activeEventId);
+  return getEvent(params.eventId ?? contextEventId ?? activeEventId);
 }

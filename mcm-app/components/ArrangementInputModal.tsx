@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
+  type TextInputInstance,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
@@ -42,7 +42,7 @@ export default function ArrangementInputModal({
   const theme = Colors[scheme ?? 'light'];
   const isDark = scheme === 'dark';
   const [text, setText] = useState('');
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
 
   // El campo se vacía al ABRIR, ajustando el estado durante el render (el
   // patrón que documenta React para "cambiar estado cuando cambia una prop").

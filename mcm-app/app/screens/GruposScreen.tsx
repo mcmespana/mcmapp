@@ -349,7 +349,7 @@ export default function GruposScreen() {
                 <Text style={styles.emptyInline}>
                   Nadie coincide con &quot;{memberFilter}&quot; en este grupo.
                 </Text>
-              ) : null
+              ) : undefined
             }
             initialNumToRender={20}
             windowSize={11}

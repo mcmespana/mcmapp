@@ -74,7 +74,7 @@ export default function TagChip({
           size={15}
           color={
             variant === 'active'
-              ? StyleSheet.flatten(styles.label).color
+              ? StyleSheet.flatten(styles.label)?.color
               : themeColors(isDark).textMuted
           }
           style={styles.addIcon}

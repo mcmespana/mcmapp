@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Platform, View, StyleSheet } from 'react-native';
 import { useNavigation } from 'expo-router';
 import { useTabReselect } from '@/components/tabs/tabBarController';
-import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
+import { createNativeStackNavigator } from 'expo-router/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -10,6 +10,7 @@ import EventHomeScreen from '../screens/EventHomeScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import EventActionButtons from '@/components/EventActionButtons';
 import { getEvent } from '@/constants/events';
+import { EventIdContext } from '@/hooks/useCurrentEvent';
 import { takePendingEventScreen } from '@/utils/eventNavigation';
 import {
   EVENT_SUB_ROUTES,
@@ -26,7 +27,7 @@ const EVENT_ID = 'visitapapa26';
  *
  * Reusa el mismo stack genérico de evento que el tab "Más" (Jubileo) pero con
  * su propio header y `eventId` fijo (`visitapapa26`) inyectado vía
- * `initialParams`. Para crear otra actividad-tab basta con duplicar este
+ * `EventIdContext`. Para crear otra actividad-tab basta con duplicar este
  * archivo cambiando el `eventId` + registrar el tab en los catálogos.
  */
 const Stack = createNativeStackNavigator<EventStackParamList>();
@@ -97,31 +98,37 @@ export default function VisitaPapaTab() {
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
       />
-      <Stack.Navigator
-        initialRouteName="JubileoHome"
-        screenOptions={eventStackScreenOptions({
-          webStatusBarHeight,
-          isDark,
-          onNavReady: (nav) => {
-            stackNavRef.current = nav;
-          },
-        })}
-        screenListeners={{
-          state: (e) => {
-            const navState: any = (e.data as any)?.state;
-            const route = navState?.routes?.[navState.index];
-            if (route?.name) setActiveRoute(route.name);
-          },
-        }}
-      >
-        <Stack.Screen
-          name="JubileoHome"
-          component={EventHomeScreen}
-          initialParams={{ eventId: EVENT_ID }}
-          options={eventHubScreenOptions}
-        />
-        {renderEventScreens(Stack, { skipHub: true, includeExtras: false })}
-      </Stack.Navigator>
+      <EventIdContext.Provider value={EVENT_ID}>
+        <Stack.Navigator
+          initialRouteName="JubileoHome"
+          screenOptions={eventStackScreenOptions({
+            webStatusBarHeight,
+            isDark,
+            onNavReady: (nav) => {
+              stackNavRef.current = nav;
+            },
+          })}
+          screenListeners={{
+            state: (e) => {
+              const navState: any = (e.data as any)?.state;
+              const route = navState?.routes?.[navState.index];
+              if (route?.name) setActiveRoute(route.name);
+            },
+          }}
+        >
+          <Stack.Screen
+            name="JubileoHome"
+            component={EventHomeScreen}
+            options={(args) =>
+              eventHubScreenOptions({
+                ...args,
+                route: { params: { eventId: EVENT_ID, ...args.route.params } },
+              })
+            }
+          />
+          {renderEventScreens(Stack, { skipHub: true, includeExtras: false })}
+        </Stack.Navigator>
+      </EventIdContext.Provider>
       {(EVENT_SUB_ROUTES as readonly string[]).includes(activeRoute) && (
         <EventActionButtons
           onSettings={() => setSettingsVisible(true)}

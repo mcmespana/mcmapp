@@ -98,11 +98,7 @@ export default function McmPanelScreen() {
   // ── iOS / Android: WebView nativo con barra de color en el notch ────────
   return (
     <View style={[styles.container, { backgroundColor: screenBg }]}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={NOTCH_COLOR}
-        translucent
-      />
+      <StatusBar barStyle="light-content" />
       {insets.top > 0 && (
         <View
           style={[

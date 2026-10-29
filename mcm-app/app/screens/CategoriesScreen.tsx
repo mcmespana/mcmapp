@@ -7,7 +7,7 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
-import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
+import { NativeStackNavigationProp } from 'expo-router/native-stack';
 import { useIsFocused } from 'expo-router/react-navigation';
 import {
   useLayoutEffect,

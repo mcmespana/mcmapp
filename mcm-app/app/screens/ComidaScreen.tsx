@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useNavigation } from 'expo-router/react-navigation';
-import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
+import { NativeStackNavigationProp } from 'expo-router/native-stack';
 import { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';

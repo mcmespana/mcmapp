@@ -44,7 +44,9 @@ export default function useOTAUpdate({
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const checkedRef = useRef(false);
-  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const appStateRef = useRef<AppStateStatus>(
+    (AppState.currentState ?? 'active') as AppStateStatus,
+  );
 
   const checkAndFetch = useCallback(async () => {
     // Updates.isEnabled es `false` en Expo Go y en dev clients sin canal OTA.

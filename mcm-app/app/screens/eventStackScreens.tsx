@@ -1,6 +1,6 @@
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
+import { createNativeStackNavigator } from 'expo-router/native-stack';
 
 import GlassHeader from '@/components/ui/GlassHeader.ios';
 import GlassBackButton from '@/components/ui/GlassBackButton';
@@ -350,7 +350,7 @@ export function eventStackScreenOptions({
  * Registra las sub-pantallas de un evento dentro de un Stack.Navigator.
  *
  * @param opts.skipHub        no registra `JubileoHome` (lo registra el tab con
- *                            sus `initialParams`).
+ *                            el `EventIdContext` de la pestaña).
  * @param opts.includeExtras  registra Comida/ComidaWeb/Wordle (solo Jubileo;
  *                            Visita Papa usa una sección-enlace para la comida).
  */

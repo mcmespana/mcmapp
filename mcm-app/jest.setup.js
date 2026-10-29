@@ -116,3 +116,34 @@ jest.mock('@sentry/react-native', () => ({
   reactNavigationIntegration: jest.fn(() => ({})),
   mobileReplayIntegration: jest.fn(() => ({})),
 }));
+
+// Registro de assets: `expo-asset` lee `AssetRegistry` de 'react-native', que en
+// RN 0.88 sale de `src/private/assets/AssetRegistry`; el mock de `jest-expo`
+// apunta a `react-native/asset-registry`, otro módulo. Con el registro real
+// vacío, cualquier icono de `@expo/vector-icons` que se monte revienta al
+// cargar su fuente (`Module "1" is missing from the asset registry`).
+jest.mock('react-native/src/private/assets/AssetRegistry', () => ({
+  AssetRegistry: {
+    registerAsset: jest.fn(() => 1),
+    getAssetByID: jest.fn(() => ({
+      fileSystemLocation: '/full/path/to/directory',
+      httpServerLocation: '/assets/full/path/to/directory',
+      scales: [1],
+      fileHashes: ['md5'],
+      name: 'name',
+      exists: true,
+      type: 'type',
+      hash: 'md5',
+      uri: 'uri',
+      width: 1,
+      height: 1,
+    })),
+  },
+}));
+
+// Worklets: bajo Jest no hay runtime nativo. El resolver de Reanimated carga la
+// versión web, que lanza en cuanto algo pide el runtime de UI
+// (`getUIRuntimeHolder is not supported on web`); el mock oficial lo evita.
+jest.mock('react-native-worklets', () =>
+  require('react-native-worklets/lib/module/mock'),
+);

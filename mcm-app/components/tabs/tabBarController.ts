@@ -20,7 +20,7 @@
 // scrollers que la gobiernan están repartidos por media app.
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
-import type { ScrollView } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 import {
   useAnimatedScrollHandler,
@@ -269,7 +269,10 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
     },
   });
 
-  return { scrollRef: scrollRef as React.RefObject<ScrollView>, onScroll };
+  return {
+    scrollRef: scrollRef as unknown as React.RefObject<ScrollViewInstance>,
+    onScroll,
+  };
 }
 
 /** Lo que hace falta del evento de scroll del WebView. */
