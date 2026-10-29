@@ -4,6 +4,19 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-29 13:00 — Dependencias al día dentro de Expo 57
+
+- `npx expo install --fix`: `expo` 57.0.31, `expo-router` 57.0.29, `expo-notifications` 57.0.24, `expo-updates` 57.0.26, `expo-dev-client`, `expo-linking`, `expo-network`, `expo-observe`, `expo-sharing`, `expo-splash-screen`, `jest-expo`. Más parches: `google-signin` 16.2.0, `heroui-native` 1.0.11, `prettier`, `eslint-plugin-prettier`, `@types/node`.
+- Sin cambios de código: tipos, lint (38 warnings, los mismos) y los 2209 tests siguen igual.
+- **Sin tocar a propósito** (saltos mayores que piden decisión y prueba en dispositivo): Expo 58, `@sentry/react-native` 8, `firebase` 13, `eslint` 10, `jest` 30, `react` 19.3, `chordsheetjs` 18, `@react-native-async-storage` 3.
+- Requiere build nativo: no llega por OTA.
+
+## 2026-10-29 12:00 — NFC: sin entitlement NDEF (Apple rechazó el build 58 con ITMS-90778)
+
+- App Store Connect rechazó la 2.1.0 (build 58): con SDK 26.5 y mínimo iOS 16.4 el entitlement `com.apple.developer.nfc.readersession.formats` ya no admite `NDEF`. En el plugin de `react-native-nfc-manager` (`app.json`), `includeNdefEntitlement` pasa a `false`, así que el entitlement queda solo con `TAG`.
+- Consecuencia: la lectura de etiquetas se hará con sesiones de tipo TAG (`NfcManager.requestTechnology`), no con la sesión NDEF del sistema. Todavía no hay código que use NFC.
+- Requiere build nativo nuevo (build > 58): no llega por OTA.
+
 ## 2026-10-28 13:30 — Notificaciones y botones del panel: los tabs de «Más» en iOS ya se abren
 
 - Una notificación (al tocarla o desde el centro de notificaciones) o un botón de acción del panel que apunta a un tab (`/calendario`, `/fotos`, `/comunica`…) usaba `router.push` directo. En iOS, si ese tab no está en la barra (perfil con 6+ tabs o evento en curso), no hacía nada. Ahora pasa por `goToPath` (`hooks/useTabNavigation.ts`), que entra por «Más» y arrastra la fecha del calendario. Las rutas que no son la raíz de un tab siguen como antes.

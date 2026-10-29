@@ -173,7 +173,7 @@
         "react-native-nfc-manager",
         {
           "nfcPermission": "MCM App usa NFC para leer tarjetas y pegatinas del movimiento.",
-          "includeNdefEntitlement": true
+          "includeNdefEntitlement": false
         }
       ],
       [
