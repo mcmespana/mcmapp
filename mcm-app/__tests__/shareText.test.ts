@@ -18,8 +18,16 @@ function setOS(os: string) {
   Object.defineProperty(Platform, 'OS', { get: () => os, configurable: true });
 }
 
+// Node 20 (el de CI) no tiene `navigator` global; Node 21+ sí.
+if (typeof globalThis.navigator === 'undefined') {
+  Object.defineProperty(globalThis, 'navigator', {
+    value: {},
+    configurable: true,
+    writable: true,
+  });
+}
 const nav = globalThis.navigator as unknown as Record<string, unknown>;
-const realShare = nav?.share;
+const realShare = nav.share;
 function setWebShare(fn: unknown) {
   Object.defineProperty(nav, 'share', {
     value: fn,
