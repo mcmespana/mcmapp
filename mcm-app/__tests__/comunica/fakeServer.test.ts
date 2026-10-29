@@ -454,6 +454,22 @@ describe('servidor falso', () => {
     await expectError(after.refresh('fr-1-constructor'), 'unauthenticated');
   });
 
+  it('la sesión sobrevive al reinicio con TODAS las personas de prueba', async () => {
+    // `twoDelegations` y `coordinationCom2` llevan mayúsculas y cifras: con
+    // ellas, recargar devolvía a la pantalla de entrar.
+    const personas = Object.keys(server().data.personas) as Parameters<
+      ReturnType<typeof server>['issueSession']
+    >[0][];
+    expect(personas).toEqual(
+      expect.arrayContaining(['twoDelegations', 'coordinationCom2']),
+    );
+    for (const persona of personas) {
+      const { refreshToken } = server().issueSession(persona);
+      const t = await server().refresh(refreshToken);
+      expect(t.refreshToken.endsWith(`-${persona}`)).toBe(true);
+    }
+  });
+
   it('las marcas anteriores salen de las sesiones previas, la última primero', async () => {
     const s = server();
     const c2 = s.data.groups.find((x) => x.code === 'C2')!;

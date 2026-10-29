@@ -344,7 +344,7 @@ export function createFakeServer(
    * nueva; la numeración sigue por encima para no repetir tokens.
    */
   function adopt(refreshToken: string) {
-    const m = /^fr-(\d{1,9})-([a-z]+)$/.exec(refreshToken);
+    const m = /^fr-(\d{1,9})-([A-Za-z0-9]+)$/.exec(refreshToken);
     if (!m || !Object.prototype.hasOwnProperty.call(data.personas, m[2]))
       return undefined;
     tokenSeq = Math.max(tokenSeq, Number(m[1]));
