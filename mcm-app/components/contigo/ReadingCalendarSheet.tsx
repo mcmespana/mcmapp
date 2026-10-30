@@ -15,6 +15,7 @@ import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
+import { springs } from '@/constants/animations';
 
 interface ReadingCalendarSheetProps {
   visible: boolean;
@@ -83,7 +84,7 @@ export function ReadingCalendarSheet({
     setMonthKey(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
     // Pequeño deslizamiento direccional al cambiar de mes.
     slide.set(delta * 26);
-    slide.set(withSpring(0, { stiffness: 90, damping: 12, mass: 1 }));
+    slide.set(withSpring(0, springs.settle));
   };
 
   const gridStyle = useAnimatedStyle(() => ({

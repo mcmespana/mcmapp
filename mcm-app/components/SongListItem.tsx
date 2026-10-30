@@ -1,12 +1,20 @@
-import React, { useCallback, useRef, useEffect, useMemo } from 'react';
+import React, {
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {
   TouchableOpacity,
   Text,
   View,
   StyleSheet,
   Animated,
+  Platform,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import { PressableFeedback } from 'heroui-native';
 import { h } from '@/utils/haptics';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -81,14 +89,24 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     const { settings } = useSettings();
     const { notation } = settings;
     const scheme = useColorScheme();
-    const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
     const isDark = scheme === 'dark';
+    // Estilos de módulo, uno por tema: antes cada fila hacía su propio
+    // `StyleSheet.create` de ~45 estilos al montarse.
+    const styles = isDark ? stylesDark : stylesLight;
     const swipeableRow = useRef<Swipeable>(null);
     const backgroundColorAnim = useRef(
       new Animated.Value(isSelected ? 1 : 0),
     ).current;
 
+    // El valor ya NACE en su destino (`isSelected ? 1 : 0`), así que en el
+    // montaje no hay nada que animar. Antes se lanzaba igualmente un
+    // `Animated.timing` de 0 a 0 sin driver nativo (250 ms de rAF en el hilo
+    // de JS) por cada fila que entraba al hacer scroll, compitiendo con el
+    // propio scroll. Solo se anima cuando la selección CAMBIA.
+    const prevSelected = useRef(isSelected);
     useEffect(() => {
+      if (prevSelected.current === isSelected) return;
+      prevSelected.current = isSelected;
       Animated.timing(backgroundColorAnim, {
         toValue: isSelected ? 1 : 0,
         duration: durations.base,
@@ -96,15 +114,29 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
       }).start();
     }, [isSelected, backgroundColorAnim]);
 
-    const animatedStyle = {
-      backgroundColor: backgroundColorAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [
-          isDark ? Colors.dark.background : Colors.light.background,
-          isDark ? StateColors.selectedBgDark : StateColors.selectedBgLight,
-        ],
+    const animatedStyle = useMemo(
+      () => ({
+        backgroundColor: backgroundColorAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [
+            isDark ? Colors.dark.background : Colors.light.background,
+            isDark ? StateColors.selectedBgDark : StateColors.selectedBgLight,
+          ],
+        }),
       }),
-    };
+      [backgroundColorAnim, isDark],
+    );
+
+    // Web: la fila reacciona al cursor y lleva un botón visible para añadir o
+    // quitar de «Tu selección». Con ratón, arrastrar la fila (el swipe) o
+    // descubrir el clic derecho no es una forma razonable de armar la lista.
+    const [hovered, setHovered] = useState(false);
+    const hoverProps = isWeb
+      ? {
+          onPointerEnter: () => setHovered(true),
+          onPointerLeave: () => setHovered(false),
+        }
+      : null;
 
     const renderRightActions = (
       progress: Animated.AnimatedInterpolation<number>,
@@ -119,6 +151,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         <TouchableOpacity
           style={styles.rightAction}
           onPress={() => {
+            h.add();
             onAddSong(song.filename);
             swipeableRow.current?.close();
           }}
@@ -130,7 +163,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
             ]}
           >
             <IconSymbol name="plus.circle" size={22} color="#fff" />
-            <Text style={styles.actionText}>Seleccionar</Text>
+            <Text style={styles.actionText}>Añadir</Text>
           </Animated.View>
         </TouchableOpacity>
       );
@@ -149,6 +182,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         <TouchableOpacity
           style={styles.leftAction}
           onPress={() => {
+            h.remove();
             onRemoveSong(song.filename);
             swipeableRow.current?.close();
           }}
@@ -170,7 +204,9 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
 
     // Indicador sutil de multimedia (▶ vídeo / 🎧 audio / 🔗 enlaces) en la fila.
     const kinds = useMemo(() => mediaKinds(extractSongMedia(song)), [song]);
-    const mediaIconColor = isDark ? '#5A5A5E' : '#B7B7BC';
+    // El mismo rol que la leyenda «vídeo · audio» de la cabecera de la lista:
+    // antes era un gris a mano que en claro se quedaba en 2:1 sobre blanco.
+    const mediaIconColor = themeColors(isDark).textMuted;
 
     const contextHandler = useCallback(() => {
       h.tap();
@@ -197,10 +233,17 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
           }
         }}
       >
-        <Animated.View style={[styles.songItemOuter, animatedStyle]}>
+        <Animated.View
+          style={[styles.songItemOuter, animatedStyle]}
+          {...hoverProps}
+        >
           <TouchableOpacity
             onPress={() => onPress(song)}
-            style={[styles.songItemInner, hideSeparator && styles.noSeparator]}
+            style={[
+              styles.songItemInner,
+              hideSeparator && styles.noSeparator,
+              hovered && styles.hovered,
+            ]}
             activeOpacity={0.6}
             {...contextMenuProps}
           >
@@ -349,6 +392,30 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                   </View>
                 )
               ) : null}
+              {isWeb && (
+                <PressableFeedback
+                  onPress={() =>
+                    isSelected
+                      ? onRemoveSong(song.filename)
+                      : onAddSong(song.filename)
+                  }
+                  style={styles.webSelectButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    isSelected
+                      ? `Quitar «${cleanTitle}» de tu selección`
+                      : `Añadir «${cleanTitle}» a tu selección`
+                  }
+                >
+                  <IconSymbol
+                    name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
+                    size={22}
+                    color={
+                      isSelected ? SwipeColors.add : themeColors(isDark).link
+                    }
+                  />
+                </PressableFeedback>
+              )}
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -356,6 +423,8 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     );
   },
 );
+
+const isWeb = Platform.OS === 'web';
 
 const createStyles = (scheme: 'light' | 'dark' | null) => {
   const isDark = scheme === 'dark';
@@ -372,6 +441,22 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     noSeparator: {
       borderBottomWidth: 0,
+    },
+    hovered: {
+      backgroundColor: isDark
+        ? StateColors.hoverOverlayDark
+        : StateColors.hoverOverlay,
+    },
+    // 44 pt de área táctil; el margen negativo lo come el padding de la fila
+    // para que la altura no crezca.
+    webSelectButton: {
+      width: 44,
+      height: 44,
+      marginVertical: -spacing.sm,
+      marginRight: -spacing.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radii.pillFull,
     },
     leftSection: {
       flex: 1,
@@ -549,5 +634,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
   });
 };
+
+const stylesLight = createStyles('light');
+const stylesDark = createStyles('dark');
 
 export default SongListItem;

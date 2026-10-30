@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   Linking,
-  Image,
   Platform,
   Text,
   TouchableOpacity,
@@ -13,11 +12,13 @@ import {
   Modal,
   useWindowDimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors, KeyPillColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
@@ -75,6 +76,7 @@ export default function VisitasScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const bottomPadding = useTabBarPaddingBottom(24);
   const { height: windowHeight } = useWindowDimensions();
   const event = useCurrentEvent();
   const { data: visitas, loading } = useFirebaseData<Visita[]>(
@@ -125,7 +127,12 @@ export default function VisitasScreen() {
     <View style={styles.container}>
       <ScreenHero title="Visitas" hideOnWeb floatingHeaderInset />
       <PageContainer>
-        <ScrollView contentContainerStyle={styles.list}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.list,
+            { paddingBottom: bottomPadding },
+          ]}
+        >
           {(visitas || []).map((v, idx) => (
             <PressableFeedback
               key={idx}
@@ -139,7 +146,9 @@ export default function VisitasScreen() {
                 <Image
                   source={{ uri: v.imagen }}
                   style={styles.image}
-                  resizeMode="cover"
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
                 />
               ) : null}
               <View style={styles.cardContent}>
@@ -202,7 +211,9 @@ export default function VisitasScreen() {
                   <Image
                     source={{ uri: selected.imagen }}
                     style={styles.modalImage}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
                   />
                 ) : null}
                 <TouchableOpacity
@@ -292,7 +303,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
     container: { flex: 1, backgroundColor: theme.background },
     list: {
       padding: 16,
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
       gap: 14,
     },
     card: {

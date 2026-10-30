@@ -1,11 +1,5 @@
-import {
-  View,
-  StyleSheet,
-  Text,
-  Image,
-  Animated,
-  Pressable,
-} from 'react-native';
+import { View, StyleSheet, Text, Animated, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { themeColors, Colors } from '@/constants/colors';
@@ -13,17 +7,26 @@ import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
-import { getRouteLabel, formatDate } from './notificationDisplay';
+import {
+  getRouteLabel,
+  getActionButtons,
+  formatDate,
+} from './notificationDisplay';
 import typography from '@/constants/typography';
+import AppChip from '@/components/ui/AppChip';
+import { categoryVisual } from '@/utils/notificationCategory';
+import { useContextMenu } from '@/hooks/useContextMenu';
 
 type Notification = NotificationData | ReceivedNotification;
 type ActionButton = NonNullable<Notification['actionButton']>;
 
 /**
  * Tarjeta de una notificación en la lista, con swipe-para-marcar-leída, dot de
- * no leída, chip de destino y chip de botón de acción. Extraído de
- * NotificationsBottomSheet. La lógica de marcado/navegación vive en el padre y
- * se recibe por props para no duplicar estado.
+ * no leída, chip de categoría, chip de destino y chips de los botones de
+ * acción (hasta 3). Es la ÚNICA tarjeta: la usan la hoja de la campana de
+ * Inicio y la pantalla `/notifications`, para que la misma notificación se vea
+ * igual entre por donde entres. La lógica de marcado/navegación vive en el
+ * padre y se recibe por props para no duplicar estado.
  */
 export default function NotificationListItem({
   notification,
@@ -35,6 +38,7 @@ export default function NotificationListItem({
   onMarkRead,
   onDestinationPress,
   onActionPress,
+  onLongPress,
 }: {
   notification: Notification;
   isRead: boolean;
@@ -45,8 +49,13 @@ export default function NotificationListItem({
   onMarkRead: (id: string) => void;
   onDestinationPress: (route: string) => void;
   onActionPress: (button: ActionButton) => void;
+  /** Long-press en nativo / clic derecho en web (menú contextual). */
+  onLongPress?: (notification: Notification) => void;
 }) {
   const isUnread = !isRead;
+  const ctx = useContextMenu(
+    onLongPress ? () => onLongPress(notification) : undefined,
+  );
   const date = new Date(
     'receivedAt' in notification
       ? notification.receivedAt
@@ -55,6 +64,8 @@ export default function NotificationListItem({
   const routeInfo = notification.internalRoute
     ? getRouteLabel(notification.internalRoute)
     : null;
+  const category = categoryVisual(notification.category);
+  const actionButtons = getActionButtons(notification);
 
   const renderRightActions = (
     _progress: Animated.AnimatedInterpolation<number>,
@@ -69,6 +80,8 @@ export default function NotificationListItem({
       <TouchableOpacity
         style={listStyles.rightAction}
         onPress={() => onMarkRead(notification.id)}
+        accessibilityLabel="Marcar como leída"
+        accessibilityRole="button"
       >
         <Animated.View
           style={[listStyles.actionContent, { transform: [{ scale }] }]}
@@ -103,11 +116,16 @@ export default function NotificationListItem({
           ]}
           onPress={() => onPress(notification)}
           activeOpacity={0.7}
+          accessibilityLabel={`${isUnread ? 'No leída: ' : ''}${notification.title}`}
+          accessibilityRole="button"
+          {...ctx}
         >
           {notification.icon && (
             <Image
               source={{ uri: notification.icon }}
               style={listStyles.icon}
+              contentFit="cover"
+              cachePolicy="memory-disk"
             />
           )}
 
@@ -127,8 +145,15 @@ export default function NotificationListItem({
                 {isUnread && <View style={listStyles.dot} />}
                 {isUnread && (
                   <Pressable
-                    onPress={() => onMarkRead(notification.id)}
+                    style={listStyles.markReadButton}
+                    onPress={(e) => {
+                      // Pressable anidado: que el toque no llegue a la tarjeta.
+                      e?.stopPropagation?.();
+                      onMarkRead(notification.id);
+                    }}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    accessibilityLabel="Marcar como leída"
+                    accessibilityRole="button"
                   >
                     <MaterialIcons
                       name="check-circle-outline"
@@ -152,6 +177,15 @@ export default function NotificationListItem({
                 {formatDate(date)}
               </Text>
               <View style={listStyles.chipsRow}>
+                {/* Categoría de negocio: solo las que tienen significado
+                    propio; "general"/desconocida no pinta chip. */}
+                {category && (
+                  <AppChip
+                    label={category.label}
+                    color={category.color}
+                    icon={category.icon as never}
+                  />
+                )}
                 {routeInfo && notification.internalRoute && (
                   <Pressable
                     style={[
@@ -164,10 +198,13 @@ export default function NotificationListItem({
                         ),
                       },
                     ]}
-                    onPress={() =>
-                      onDestinationPress(notification.internalRoute!)
-                    }
+                    onPress={(e) => {
+                      e?.stopPropagation?.();
+                      onDestinationPress(notification.internalRoute!);
+                    }}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityLabel={`Ir a ${routeInfo.label}`}
+                    accessibilityRole="button"
                   >
                     <Text
                       style={[
@@ -184,26 +221,28 @@ export default function NotificationListItem({
                     />
                   </Pressable>
                 )}
-                {notification.actionButton && (
+                {actionButtons.map((button, idx) => (
                   <Pressable
+                    key={`${button.url}-${idx}`}
                     style={listStyles.actionChip}
-                    onPress={() => onActionPress(notification.actionButton!)}
+                    onPress={(e) => {
+                      e?.stopPropagation?.();
+                      onActionPress(button);
+                    }}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    accessibilityLabel={button.text}
+                    accessibilityRole="button"
                   >
                     <Text style={listStyles.actionChipText} numberOfLines={1}>
-                      {notification.actionButton.text}
+                      {button.text}
                     </Text>
                     <MaterialIcons
-                      name={
-                        notification.actionButton.isInternal
-                          ? 'chevron-right'
-                          : 'open-in-new'
-                      }
+                      name={button.isInternal ? 'chevron-right' : 'open-in-new'}
                       size={11}
                       color="#fff"
                     />
                   </Pressable>
-                )}
+                ))}
               </View>
             </View>
           </View>
@@ -249,6 +288,7 @@ const listStyles = StyleSheet.create({
     gap: 6,
     flexShrink: 0,
   },
+  markReadButton: { padding: 2 },
   dot: {
     width: 8,
     height: 8,

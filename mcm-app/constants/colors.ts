@@ -182,6 +182,13 @@ export const UIColors = {
   chordSecondaryText: '#6c757d',
   /** Amarillo del cantoral — FAB principal y color de su tab. */
   accentYellow: '#f4c11e',
+  /**
+   * Botones de la cabecera del cantoral en iOS claro (header transparente
+   * sobre fondo blanco/gris, 4,5:1). Estaba escrito a mano en tres sitios con
+   * este mismo valor; se le da nombre sin cambiar un píxel. Quién lo usa y en
+   * qué plataforma lo decide `utils/cantoralHeader.ts`.
+   */
+  cantoralHeaderTintLight: '#3d79b9',
   modalOverlay: 'rgba(0, 0, 0, 0.5)',
 } as const;
 
@@ -237,6 +244,63 @@ export const TabHeaderColors = {
   contigo: '#C4922A',
 };
 
+/**
+ * Territorio «Comunica»: el área privada nativa de la pestaña Comunica
+ * (`components/comunica/`, `app/(tabs)/comunica/`). Decisión `territorio` = A
+ * del propietario (21/10/2026, `docs/planes/area-nativa/03` §2): estructura y
+ * tokens no cromáticos de la app, con el color del área privada web.
+ *
+ * Solo se leen a través de `components/comunica/comun/theme.ts`, que decide qué
+ * va como relleno y qué como texto en cada modo. Los valores son los del
+ * plugin (`comunicaAreaPrivada`), para que la gente reconozca lo que ya usa.
+ */
+const comunicaBlue = '#1c6fb3'; // Azul Comunica — primer tramo del degradado
+const comunicaViolet = '#6c4b9e'; // Violeta Comunica — «azul morado, más morado»
+const comunicaRed = '#dc2626';
+const comunicaAmber = '#f59e0b';
+
+export const ComunicaColors = {
+  /**
+   * Acento del área: chips de acento, interruptores, avatar, la barra de
+   * identidad. Como RELLENO vale en los dos modos (blanco encima, 6,7:1).
+   */
+  accent: comunicaViolet,
+  /**
+   * El acento como TEXTO, icono o borde, por modo. En claro es el mismo
+   * violeta (6,7:1 sobre blanco, 6,0:1 sobre el hundido); en oscuro el violeta
+   * se queda en 1,7:1 sobre la card, así que va uno más claro del mismo tono
+   * (5,1:1 sobre la card oscura). Lo prueba `__tests__/comunica/territorio`.
+   */
+  accentText: { light: comunicaViolet, dark: '#B9A3E0' },
+  /**
+   * El degradado de marca, de izquierda a derecha. SOLO en la acción principal
+   * de cada pantalla (`AreaPrimaryButton`), uno por pantalla: es la firma del
+   * área, no decoración. El texto encima, blanco (≥ 5,2:1 en los tres tramos).
+   */
+  gradient: [comunicaBlue, comunicaViolet, brand.purple] as const,
+  /**
+   * Segmentos del COM en las listas de grupos: el COM recorre verde → violeta
+   * → magenta según se crece (COM I lleva el verde COM de marca).
+   */
+  segment: { com2: '#7c3aed', com3: '#be185d' },
+  /** Colores de los pañuelos (`sticpa_pl_panuelos()`). Siempre de RELLENO. */
+  scarf: {
+    none: '#9ca3af',
+    red: comunicaRed,
+    green: '#2f9e44',
+    blue: comunicaBlue,
+    yellow: comunicaAmber,
+    cross: comunicaViolet,
+    unknown: '#d1d5db',
+  },
+  /**
+   * Escala de los avisos de comportamiento (`sticpa_pl_aviso_color()`): ámbar
+   * → naranja → rojo, iguales en los dos modos. El naranja es `#c2410c` y no
+   * otro más vivo porque con él el número blanco de dentro llega a 5,2:1.
+   */
+  notice: { 1: comunicaAmber, 2: '#c2410c', 3: comunicaRed },
+} as const;
+
 // Colores de toast — Material Design estándar
 export const ToastColors = {
   success: '#4CAF50',
@@ -274,24 +338,6 @@ export const KeyPillColors = {
   borderDark: '#2A3D66',
 } as const;
 
-// Colores de emociones — usado en Contigo (oración) y disponible para futuros trackers.
-export const EmotionColors = {
-  joy: '#FCD200', // Alegría — amarillo COM
-  sadness: '#31AADF', // Tristeza — celeste
-  anger: '#E15C62', // Enfado — rojo MIC
-  fear: '#6B3FA0', // Miedo — púrpura
-  disgust: '#3A7D44', // Asco — verde bosque
-} as const;
-
-// Versiones suaves (light) de cada emoción para fondos de chips/cards.
-export const EmotionColorsSoft = {
-  joy: '#FDE68A',
-  sadness: '#BFDBFE',
-  anger: '#FECACA',
-  fear: '#DDD6FE',
-  disgust: '#BBF7D0',
-} as const;
-
 // Colores de las categorías del modal de feedback (sustituye magic numbers en AppFeedbackModal).
 export const FeedbackCategoryColors = {
   bug: '#FF6B6B', // Error / bug
@@ -309,10 +355,30 @@ export const HighlightColors = {
   dark: { bg: '#3A2D0A', fg: '#F4C11E', border: '#7A5A00' },
 } as const;
 
-/** Verde de Carismochito. Estaba duplicado como constante en 3 ficheros. */
+/**
+ * Verdes del modo Carismochito. `light`/`dark` son el acento por tema; el resto
+ * son los tonos del HUD (cuenta atrás, avisos, diálogos), que viven sobre fondo
+ * verde oscuro en ambos temas.
+ */
 export const CarismoColors = {
   light: '#1B9E4B',
   dark: '#9DE86B',
+  /** Brillo: halos, sombras, anillo de la cuenta atrás. */
+  glow: '#5AE08A',
+  /** Verde casi negro: fondo de tarjetas, texto sobre botones lima. */
+  deep: '#06210F',
+  /** Extremos del degradado de fondo del HUD. */
+  deepEdge: '#0C3D1C',
+  abyss: '#011A0A',
+  /** Pestañas inactivas del modo (barra compacta y web). */
+  inactiveLight: '#6FA77E',
+  inactiveDark: '#4E8C5F',
+  /** Texto claro sobre `deep`: títulos, cuerpo y pistas. */
+  onDeep: '#E8FFB8',
+  onDeepSoft: '#D4F5A0',
+  onDeepMuted: '#A3D86E',
+  /** Verde hoja: solo para el confeti. */
+  leaf: '#7AC943',
 } as const;
 
 /** Las piezas de color del dibujo vectorial de Carismochito. */

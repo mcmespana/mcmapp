@@ -11,6 +11,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { Skeleton } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
@@ -34,6 +35,7 @@ export default function HorarioScreen() {
   const navigation = useNavigation<Nav>();
   const scheme = useColorScheme();
   const fontScale = useFontScale();
+  const bottomPadding = useTabBarPaddingBottom(spacing.xl * 2);
   const styles = React.useMemo(
     () => createStyles(scheme, fontScale),
     [scheme, fontScale],
@@ -214,7 +216,10 @@ export default function HorarioScreen() {
       </View>
       <PageContainer>
         <ScrollView
-          contentContainerStyle={styles.eventsContainer}
+          contentContainerStyle={[
+            styles.eventsContainer,
+            { paddingBottom: bottomPadding },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           <Animated.View
@@ -287,7 +292,6 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
     eventsContainer: {
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.lg,
-      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.xl * 2,
     },
   });
 };

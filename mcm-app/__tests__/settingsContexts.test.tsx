@@ -63,6 +63,7 @@ describe('SettingsContext (ajustes del cantoral)', () => {
       chorusLabel: true,
       airy: false,
       pagedFullscreen: false,
+      songMap: false,
       cantoralOnboarding: 0,
       featuredTags: [],
       hideHiddenTagSongs: false,

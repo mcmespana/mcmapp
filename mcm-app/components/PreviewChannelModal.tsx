@@ -34,6 +34,7 @@ import {
 import { LabStatusPanel } from '@/components/preview-channel/LabStatusPanel';
 import { CarismochitoLabPanel } from '@/components/preview-channel/CarismochitoLabPanel';
 import { MedallasLabPanel } from '@/components/preview-channel/MedallasLabPanel';
+import { ComunicaLabPanel } from '@/components/preview-channel/ComunicaLabPanel';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 
@@ -196,6 +197,10 @@ export function PreviewChannelModal() {
           {/* Medallas en 3D: primer paso del sistema de recompensas por ir a
               eventos. Visible para cualquiera que abra el laboratorio. */}
           <MedallasLabPanel />
+
+          {/* Comunica nueva: qué se ve, la WebView de siempre para comparar y
+              los mandos del servidor falso. Solo con datos inventados. */}
+          <ComunicaLabPanel />
 
           {/* Pergamino: el pacto */}
           <View style={styles.scrollCard}>

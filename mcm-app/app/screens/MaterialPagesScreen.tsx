@@ -10,6 +10,7 @@ import {
 import { RouteProp } from 'expo-router/react-navigation';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import {
@@ -45,6 +46,7 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
   const introBackgroundColor = actividad.color || colors.primary; // Fallback color
   const scheme = useColorScheme();
   const fontScale = useFontScale(1.2);
+  const bottomPadding = useTabBarPaddingBottom(spacing.md);
   const styles = React.useMemo(
     () => createStyles(scheme, introBackgroundColor, fontScale),
     [scheme, introBackgroundColor, fontScale],
@@ -142,7 +144,10 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
         getItemLayout={getItemLayout}
         ref={flatListRef}
       />
-      <View style={styles.dotsContainer}>
+      {/* Los puntos van al pie, bajo la barra de pestañas flotante: su
+          `paddingBottom` los deja por encima (el contenido de cada página ya
+          termina encima de ellos). */}
+      <View style={[styles.dotsContainer, { paddingBottom: bottomPadding }]}>
         {pages.map((_, i) => (
           <View key={i} style={[styles.dot, index === i && styles.dotActive]} />
         ))}
@@ -204,7 +209,6 @@ const createStyles = (
     },
     pageContent: {
       padding: spacing.lg,
-      paddingBottom: Platform.OS === 'ios' ? 120 : spacing.lg,
       flexGrow: 1,
       minHeight: '100%',
     },
@@ -216,7 +220,6 @@ const createStyles = (
       flexDirection: 'row',
       justifyContent: 'center',
       padding: spacing.md,
-      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.md,
       gap: 6,
     },
     dot: {

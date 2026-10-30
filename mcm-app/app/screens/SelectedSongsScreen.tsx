@@ -14,7 +14,6 @@ import {
   Text,
   FlatList,
   Platform,
-  Share,
   Modal,
   TouchableOpacity,
   TouchableWithoutFeedback,
@@ -22,8 +21,9 @@ import {
 import { PressableFeedback } from 'heroui-native';
 import AppTextField from '@/components/ui/AppTextField';
 import { useToast } from '@/contexts/AppToastContext';
+import { shareText } from '@/utils/shareText';
+import { printWhenReady } from '@/utils/printWhenReady';
 import { extractSongMedia } from '@/types/songMedia';
-import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -43,6 +43,7 @@ import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 
@@ -101,6 +102,7 @@ import { defaultPlaylistName } from '@/utils/playlistCodes';
 import { isChoirId } from '@/utils/choirIds';
 import { transposeLabel, transposeKey } from '@/utils/transposeKey';
 import { convertChord } from '@/utils/chordNotation';
+import { cantoralHeaderTint } from '@/utils/cantoralHeader';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
   encodeOfflinePlaylist,
@@ -156,6 +158,12 @@ const SelectedSongsScreen: React.FC = () => {
   const scheme = useColorScheme() || 'light';
   const isDark = scheme === 'dark';
   const layout = useResponsiveLayout();
+  // Hueco de la barra de pestañas flotante al final de las tres listas.
+  const tabBarBottom = useTabBarPaddingBottom(24);
+  const listBottom = useMemo(
+    () => ({ paddingBottom: tabBarBottom }),
+    [tabBarBottom],
+  );
   // En iOS el header es transparente (`headerTransparent`) y las FlatList lo
   // compensan con `contentInsetAdjustmentBehavior="automatic"`. La
   // `ReorderableList` (modo "Orden ajustado") NO respeta ese inset, así que su
@@ -470,21 +478,13 @@ const SelectedSongsScreen: React.FC = () => {
       accion: 'compartida',
       tamano: tramoTamano(flatSelectedSongs.length),
     });
-    const desktopLike =
-      Platform.OS === 'web' ||
-      Platform.OS === 'windows' ||
-      Platform.OS === 'macos';
-    if (desktopLike) {
-      Clipboard.setStringAsync(text)
-        .then(() => toast.show({ label: 'Lista copiada al portapapeles' }))
-        .catch(() => toast.show({ label: 'Error al copiar la lista' }));
-    } else {
-      try {
-        Share.share({ message: text });
-      } catch (e) {
-        logger.error(e);
-      }
-    }
+    // En escritorio se copia (es para pegarla en otro sitio); en móvil, hoja
+    // del sistema. `shareText` no deja promesas rechazadas sueltas.
+    shareText(text, {
+      notify: (label) => toast.show({ label }),
+      copiedLabel: 'Lista copiada al portapapeles',
+      copyOnDesktop: true,
+    });
     // `flatSelectedSongs.length` va en las deps aunque hoy `buildShareText` ya
     // cambie con la lista: sin él, el día que ese memo cambie de dependencias
     // la analítica empezaría a reportar el tamaño de una playlist vieja.
@@ -583,14 +583,11 @@ const SelectedSongsScreen: React.FC = () => {
           }
           w.document.open();
           w.document.write(html);
+          // Imprime cuando la hoja y la fuente (Inter) han llegado, no a
+          // ciegas: los saltos de página se calculan para Inter. Se engancha
+          // antes de `close()`, que es lo que dispara el `load`.
+          void printWhenReady(w);
           w.document.close();
-          // Pequeño delay para que Inter cargue antes de lanzar print.
-          setTimeout(() => {
-            try {
-              w.focus();
-              w.print();
-            } catch {}
-          }, 600);
         } else {
           const Print = await import('expo-print');
           const { uri } = await Print.printToFileAsync({
@@ -625,12 +622,10 @@ const SelectedSongsScreen: React.FC = () => {
           });
         }
         setShowExportPdfModal(false);
-        toast.show({ label: 'Tenemos tu PDF recién sacado del orno' });
+        toast.show({ label: 'PDF listo' });
       } catch (err) {
         logger.error('Error exportando PDF', err);
-        toast.show({
-          label: 'Error al generar el PDF, sorry, lo arreglaremos',
-        });
+        toast.show({ label: 'No se pudo generar el PDF' });
       }
     },
     [
@@ -1493,10 +1488,12 @@ const SelectedSongsScreen: React.FC = () => {
     [sharing],
   );
 
+  // En iOS el header es transparente (casi negro / blanco según el modo); en
+  // Android y web es la barra amarilla del cantoral, donde el blanco no se lee.
   const headerIconColor =
-    Platform.OS === 'ios' || Platform.OS === 'web'
+    Platform.OS === 'ios'
       ? themeColors(isDark).headerTint
-      : '#fff';
+      : cantoralHeaderTint(isDark);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -1563,16 +1560,17 @@ const SelectedSongsScreen: React.FC = () => {
           <MaterialIcons
             name="queue-music"
             size={56}
-            color={isDark ? '#636366' : '#C7C7CC'}
+            color={themeColors(isDark).textMuted}
           />
         </View>
         <Text style={styles.emptyTitle}>Sin canciones seleccionadas</Text>
         <Text style={styles.emptyDescription}>
-          Desliza una canción hacia la izquierda para añadirla o usa el botón +
-          en la pantalla de detalle.
+          {Platform.OS === 'web'
+            ? 'Pulsa el + de una canción en el cantoral, o haz clic derecho sobre ella.'
+            : 'Desliza una canción hacia la izquierda o usa el + al abrirla.'}
         </Text>
       </View>
-      <View style={{ gap: 10, marginBottom: Platform.OS === 'ios' ? 100 : 20 }}>
+      <View style={{ gap: 10, marginBottom: tabBarBottom }}>
         {/* Con la lista vacía, lo primero que quiere casi todo el mundo es
             traerse la del coro: va la primera y sin pedir ningún código. */}
         <PressableFeedback
@@ -1757,7 +1755,7 @@ const SelectedSongsScreen: React.FC = () => {
             renderItem={renderManualItem}
             keyExtractor={(it) => it.filename}
             ListHeaderComponent={headerComponent}
-            contentContainerStyle={styles.listContentContainer}
+            contentContainerStyle={[styles.listContentContainer, listBottom]}
             contentInsetAdjustmentBehavior="automatic"
             showsVerticalScrollIndicator={false}
           />
@@ -1770,6 +1768,7 @@ const SelectedSongsScreen: React.FC = () => {
             ListHeaderComponent={headerComponent}
             contentContainerStyle={[
               styles.listContentContainer,
+              listBottom,
               { paddingTop: reorderableTopInset },
             ]}
             contentInsetAdjustmentBehavior="never"
@@ -1782,7 +1781,7 @@ const SelectedSongsScreen: React.FC = () => {
           renderItem={renderCategoryGroup}
           keyExtractor={(it) => it.categoryKey}
           ListHeaderComponent={headerComponent}
-          contentContainerStyle={styles.listContentContainer}
+          contentContainerStyle={[styles.listContentContainer, listBottom]}
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
         />

@@ -11,6 +11,7 @@ import { setCarismochitoTheme } from '@/utils/heroUIRuntimeTheme';
 import { syncAppIcon } from '@/utils/appIcon';
 import { trackEvent } from '@/utils/analytics';
 import { h } from '@/utils/haptics';
+import { DEFAULT_SHAKE_COOLDOWN_MS } from '@/hooks/useShakeDetector';
 
 export type CarismochitoState = 'idle' | 'countingDown' | 'active';
 
@@ -43,6 +44,11 @@ interface CarismochitoContextValue {
   openOnboarding: () => void;
   /** Cierra la explicación y la marca como vista (no se repite sola). */
   dismissOnboarding: () => void;
+  /**
+   * Pide salir del modo sin agitar (botón de la explicación): cierra la
+   * explicación y abre la confirmación de salida.
+   */
+  requestExit: () => void;
   /** True mientras se pide confirmación para salir del modo. */
   exitConfirmVisible: boolean;
   /** Confirma la salida → desactiva el modo. */
@@ -60,7 +66,19 @@ const CHARGE_RESET_MS = 2500;
  * activar para que no se salga sin querer.
  */
 const EXIT_SHAKES_NEEDED = 2;
-const EXIT_WINDOW_MS = 1500;
+/**
+ * El detector no dispara dos veces en menos de `DEFAULT_SHAKE_COOLDOWN_MS`,
+ * así que la ventana tiene que ser bastante mayor que eso: con 1,5 s la segunda
+ * sacudida solo cabía en un hueco de ~300 ms y "un par de veces" casi nunca
+ * salía. Se reinicia con cada sacudida (es el hueco ENTRE dos).
+ */
+const EXIT_WINDOW_MS = DEFAULT_SHAKE_COOLDOWN_MS * 2 + 600;
+/**
+ * Pausa entre cerrar la explicación y abrir la confirmación de salida: dos
+ * `Modal` de RN no se apilan bien (en iOS el segundo no llega a presentarse si
+ * el primero aún se está retirando) y el fundido dura ~300 ms.
+ */
+const EXIT_AFTER_ONBOARDING_MS = 400;
 /** Clave de persistencia: recuerda si el modo quedó activo al cerrar la app. */
 const STORAGE_KEY = '@carismochito_active';
 /** Clave de persistencia: el onboarding del modo ya se mostró una vez. */
@@ -97,6 +115,8 @@ export function CarismochitoProvider({
   // Sacudidas acumuladas para SALIR (no se muestran como semáforo).
   const exitShakeRef = useRef(0);
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Apertura diferida de la confirmación de salida (ver `requestExit`).
+  const exitOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Espejo del estado para decidir en `toggleByShake` sin setState anidado.
   const stateRef = useRef<CarismochitoState>(state);
   stateRef.current = state;
@@ -160,6 +180,7 @@ export function CarismochitoProvider({
     stopTimer();
     resetCharge();
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    if (exitOpenTimerRef.current) clearTimeout(exitOpenTimerRef.current);
     exitShakeRef.current = 0;
     setExitConfirmVisible(false);
     setOnboardingVisible(false);
@@ -180,6 +201,18 @@ export function CarismochitoProvider({
     setOnboardingVisible(false);
     onboardingSeenRef.current = true;
     AsyncStorage.setItem(ONBOARDING_KEY, '1').catch(() => {});
+  }, []);
+
+  const requestExit = useCallback(() => {
+    // Cerrar la explicación cuenta como haberla visto.
+    setOnboardingVisible(false);
+    onboardingSeenRef.current = true;
+    AsyncStorage.setItem(ONBOARDING_KEY, '1').catch(() => {});
+    if (exitOpenTimerRef.current) clearTimeout(exitOpenTimerRef.current);
+    exitOpenTimerRef.current = setTimeout(
+      () => setExitConfirmVisible(true),
+      EXIT_AFTER_ONBOARDING_MS,
+    );
   }, []);
 
   const confirmExit = useCallback(() => {
@@ -269,6 +302,7 @@ export function CarismochitoProvider({
       stopTimer();
       if (chargeTimerRef.current) clearTimeout(chargeTimerRef.current);
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+      if (exitOpenTimerRef.current) clearTimeout(exitOpenTimerRef.current);
     },
     [stopTimer],
   );
@@ -289,6 +323,7 @@ export function CarismochitoProvider({
         onboardingVisible,
         openOnboarding,
         dismissOnboarding,
+        requestExit,
         exitConfirmVisible,
         confirmExit,
         cancelExit,

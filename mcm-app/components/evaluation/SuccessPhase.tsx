@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { radii } from '@/constants/uiStyles';
+import { springs } from '@/constants/animations';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -49,7 +50,8 @@ export default function SuccessPhase({
   const ripple = useSharedValue(0);
   useEffect(() => {
     if (reducedMotion) return;
-    scale.set(withSpring(1, { damping: 9, stiffness: 140 }));
+    // Celebración: aquí sí cabe un poco de rebote (`snap`, ζ = 0,8).
+    scale.set(withSpring(1, springs.snap));
     ripple.set(
       withDelay(
         250,

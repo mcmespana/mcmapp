@@ -9,6 +9,7 @@ import {
   ViewStyle,
   TextStyle,
   Platform,
+  BackHandler,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -1699,6 +1700,38 @@ export default function OnboardingScreen() {
     setAnimDir(dir);
     setStep(next);
   };
+
+  // Atrás del sistema en Android (botón o gesto predictivo) = la flecha de la
+  // UI: un paso atrás. El onboarding es una máquina de pasos dentro de UNA
+  // ruta, y en el primer arranque se entra con `router.replace`, así que es lo
+  // único que hay en el stack: sin esto, el gesto atrás en «Delegación» o
+  // «Login» CERRABA LA APP y al reabrir se empezaba de cero.
+  //
+  // En el resumen final (sin flecha en la UI) vuelve al paso del que se llegó,
+  // en vez de cerrar la app y perder lo elegido. En la bienvenida no hay paso
+  // anterior: ahí sí se deja salir.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      const needsLogin = profileType === 'monitor' || profileType === 'miembro';
+      const prev: Partial<Record<Step, Step>> = {
+        profile: 'welcome',
+        delegation: 'profile',
+        login: 'delegation',
+        success: needsLogin
+          ? 'login'
+          : profileType === OTROS_PROFILE_ID
+            ? 'profile'
+            : 'delegation',
+      };
+      const target = prev[step];
+      if (!target) return false;
+      setAnimDir('back');
+      setStep(target);
+      return true;
+    });
+    return () => sub.remove();
+  }, [step, profileType]);
 
   const persistAndExit = (
     values: {

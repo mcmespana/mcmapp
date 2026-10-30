@@ -5,59 +5,39 @@
  * navegación todavía), así que aquí solo se traduce una URL en otra ruta; el
  * trabajo de verdad lo hace la pantalla destino.
  *
- * Caso de uso actual: los **enlaces de acceso de Comunica** que llegan por
- * correo (`https://comunica.movimientoconsolacion.com/app/acceso?acceso_magico=…`).
- * Ese dominio está declarado como universal link (iOS) / app link (Android), así
- * que si la persona tiene la app instalada, el sistema la abre a ella en vez del
- * navegador. La ruta `/app/acceso` no existe en la app: hay que mandarla al tab
- * de Comunica y que su WebView cargue la URL real del área privada, para que
- * WordPress valide el token y cree la sesión DENTRO de la app.
+ * Los enlaces de **Comunica** (`https://comunica.movimientoconsolacion.com/…`)
+ * van a la pestaña Comunica (plan 10 de `docs/planes/area-nativa/`). Qué es
+ * cada enlace lo decide `services/comunica/links.ts`, y se deja para los dos
+ * modos de la pestaña, que recogen cada uno el suyo:
+ *
+ *   · el LEGADO (la WebView): la URL del área privada con el token y el
+ *     destino, para que WordPress valide el token y cree la sesión DENTRO de
+ *     la app — lo de siempre con `/app/acceso?acceso_magico=…`;
+ *   · el área NATIVA: el enlace clasificado (entrar, canjear el token, abrir
+ *     la pantalla que toca o el legado en esa página).
  *
  * También se acepta el esquema propio `mcmapp://comunica?acceso_magico=…`, que
  * es la vía de escape para clientes de correo que envuelven los enlaces en un
- * redirector (los universal links no sobreviven a un redirect).
+ * redirector (los universal links no sobreviven a un redirect). *
+ * Y los ficheros `.mcm` (playlists) que se abren con la app: ver
+ * `isFileUrl` abajo.
  */
 import {
-  buildComunicaAuthUrl,
-  COMUNICA_AUTH_PARAMS,
+  classifyComunicaLink,
+  destinationQuery,
+} from '@/services/comunica/links';
+import { setPendingNativeLink } from '@/services/comunica/pendingLink';
+import {
+  buildComunicaLegacyUrl,
   setPendingComunicaAuthUrl,
 } from '@/utils/pendingComunicaLink';
 
-const COMUNICA_HOST = 'comunica.movimientoconsolacion.com';
-/** Ruta "puente" que sirve WordPress y que reclamamos en iOS/Android. */
-const COMUNICA_APP_PATH = '/app/acceso';
+/** Pestaña del cantoral: destino de un fichero de playlist abierto. */
+const CANTORAL_ROUTE = '/(tabs)/cancionero';
 
-/**
- * Query string → objeto. No usamos `URL`/`URLSearchParams` porque el polyfill
- * de React Native va justo de funciones y esto entra antes de que arranque nada.
- */
-function parseQuery(url: string): Record<string, string> {
-  const start = url.indexOf('?');
-  if (start === -1) return {};
-  const out: Record<string, string> = {};
-  for (const pair of url.slice(start + 1).split('&')) {
-    if (!pair) continue;
-    const eq = pair.indexOf('=');
-    const key = eq === -1 ? pair : pair.slice(0, eq);
-    const value = eq === -1 ? '' : pair.slice(eq + 1);
-    try {
-      out[decodeURIComponent(key)] = decodeURIComponent(value);
-    } catch {
-      // Un `%` suelto rompe decodeURIComponent: nos quedamos con el crudo.
-      out[key] = value;
-    }
-  }
-  return out;
-}
-
-/** ¿Esta URL es un enlace de acceso a Comunica? */
-function isComunicaAccessLink(url: string): boolean {
-  const withoutQuery = url.split('?')[0];
-  return (
-    withoutQuery.includes(`${COMUNICA_HOST}${COMUNICA_APP_PATH}`) ||
-    withoutQuery.endsWith(COMUNICA_APP_PATH) ||
-    /^mcmapp:\/\/comunica\/?$/.test(withoutQuery)
-  );
+/** ¿Es la URL de un fichero (y no un enlace)? */
+function isFileUrl(url: string): boolean {
+  return /^(file|content):\/\//i.test(url);
 }
 
 export function redirectSystemPath({
@@ -67,15 +47,37 @@ export function redirectSystemPath({
   initial: boolean;
 }): string {
   try {
-    if (!isComunicaAccessLink(path)) return path;
+    // Un fichero abierto con la app (`.mcm` desde Archivos, el «Abrir con» de
+    // Android…) llega como `file://` o `content://`. No es una ruta: si se le
+    // pasa al router tal cual, aterriza en «ruta no encontrada». La playlist la
+    // importa `useIncomingPlaylist` (en el layout raíz) por su cuenta; aquí
+    // solo hay que dejar a la persona en el cantoral, que es donde la va a
+    // buscar.
+    if (isFileUrl(path)) return CANTORAL_ROUTE;
+    const link = classifyComunicaLink(path);
+    if (!link) return path;
 
-    const params = parseQuery(path);
-    const hasAuth = COMUNICA_AUTH_PARAMS.some((key) => params[key]);
-    // Sin token no hay nada que validar: al tab de Comunica y ya está (cargará
-    // la URL normal, que si hay sesión con cookie entra directo).
-    if (hasAuth) {
-      setPendingComunicaAuthUrl(buildComunicaAuthUrl(params));
+    // Primero el hueco del LEGADO y después el nativo: con la app abierta en
+    // el área nativa, `setPendingNativeLink` llama a su manejador en el acto y
+    // este vacía el hueco del legado. Al revés, la URL con el token se quedaba
+    // esperando y la WebView entraba luego como esa persona.
+    //
+    // El legado solo sabe de tokens y destinos del área. Sin ninguno de los
+    // dos, al tab y ya está (si hay sesión con cookie, entra directo).
+    if (link.kind === 'page') {
+      const dq = link.destination ? destinationQuery(link.destination) : '';
+      if (link.auth || dq) {
+        setPendingComunicaAuthUrl(
+          buildComunicaLegacyUrl(
+            link.auth
+              ? { acceso_magico: link.auth.magic, token: link.auth.token }
+              : null,
+            dq,
+          ),
+        );
+      }
     }
+    setPendingNativeLink(link);
     return '/(tabs)/comunica';
   } catch {
     // Nunca reventar por un enlace raro: mejor abrir la app por su inicio.

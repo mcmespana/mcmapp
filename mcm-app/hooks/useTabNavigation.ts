@@ -11,6 +11,7 @@ import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
 import { setPendingEventScreen } from '@/utils/eventNavigation';
 import {
+  parseTabPath,
   resolveEventScreenRoute,
   resolveTabRoute,
 } from '@/utils/tabNavigation';
@@ -23,6 +24,11 @@ export interface TabNavigation {
    * por su tab si lo tiene o por "Más" si está en overflow.
    */
   goToEventScreen: (screen: string, params?: Record<string, unknown>) => void;
+  /**
+   * Abre una ruta suelta de la app (notificación, botón del panel). Si es la
+   * raíz de un tab entra por `goToTab`; el resto va directo a `router.push`.
+   */
+  goToPath: (route: string) => void;
 }
 
 export function useTabNavigation(): TabNavigation {
@@ -83,7 +89,19 @@ export function useTabNavigation(): TabNavigation {
     [visibleTabs, eventTabName, eventId],
   );
 
-  return { goToTab, goToEventScreen };
+  const goToPath = useCallback(
+    (route: string) => {
+      const tab = parseTabPath(route);
+      if (tab) {
+        goToTab(tab.tabName, tab.params);
+        return;
+      }
+      router.push(route as never);
+    },
+    [goToTab],
+  );
+
+  return { goToTab, goToEventScreen, goToPath };
 }
 
 export default useTabNavigation;

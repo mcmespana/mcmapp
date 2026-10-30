@@ -173,6 +173,20 @@ Cuatro reglas, cada una arreglando algo que se notaba en uso:
    offset inicial, y eso expandía la barra al entrar en una pantalla anidada:
    ahora el estado compacto se hereda de la pantalla anterior.
 
+**El inset no salta al hilo de JS en cada fotograma.** `shouldReportInset`
+(`collapseRule.ts`, también `'worklet'`) decide si el `contentInset.top` del
+scroll se manda al hilo de JS: solo si es real (> 0) y distinto del último
+enviado. Antes se escribía el mismo número en cada fotograma de scroll.
+Lo usa `tabBarController.ts` y lo prueba `__tests__/collapseRule.test.ts`.
+
+### Pestañas en segundo plano (`freezeOnBlur`)
+
+`AndroidTabsLayout` pone `freezeOnBlur: true` en las opciones de las pestañas:
+una pestaña ya visitada sigue montada, y sin esto re-renderizaba con cada
+cambio de los contextos que consume (Inicio: notificaciones, OTA, Carismochito…)
+mientras se usaba otra. Congelada, se pone al día al recuperar el foco. Los
+stacks internos ya lo llevaban (`cancionero.tsx`, `eventStackScreens.tsx`).
+
 ## 📋 Cómo Añadir un Nuevo Tab
 
 ### 1. Añadir el tab a la configuración centralizada

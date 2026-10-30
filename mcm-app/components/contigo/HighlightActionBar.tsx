@@ -5,6 +5,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { onColor } from '@/utils/colorUtils';
@@ -19,6 +20,7 @@ import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { WARM_DARK, warm } from '@/components/contigo/theme';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
+import { durations, motionEasings, springs } from '@/constants/animations';
 
 interface HighlightActionBarProps {
   visible: boolean;
@@ -52,19 +54,23 @@ export function HighlightActionBar({
   // La barra de subrayado se coloca justo encima de la de pestañas.
   const tabBarClearance = useTabBarClearance();
   const anim = useSharedValue(0);
+  const opacity = useSharedValue(0);
 
   useEffect(() => {
-    anim.set(
-      withSpring(visible ? 1 : 0, {
-        stiffness: 60,
-        damping: 10,
-        mass: 1,
+    // Sin rebote: es una barra de herramientas, no una celebración. El muelle
+    // anterior (stiffness 60, damping 10) tardaba ~1 s en asentarse y botaba
+    // sobre su sitio. La opacidad va aparte para no heredar el muelle.
+    anim.set(withSpring(visible ? 1 : 0, springs.settle));
+    opacity.set(
+      withTiming(visible ? 1 : 0, {
+        duration: durations.base,
+        easing: motionEasings.out,
       }),
     );
-  }, [visible, anim]);
+  }, [visible, anim, opacity]);
 
   const barStyle = useAnimatedStyle(() => ({
-    opacity: anim.get(),
+    opacity: opacity.get(),
     transform: [{ translateY: interpolate(anim.get(), [0, 1], [120, 0]) }],
   }));
 

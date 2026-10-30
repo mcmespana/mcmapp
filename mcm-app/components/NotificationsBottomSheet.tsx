@@ -12,7 +12,7 @@ import {
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { useTabNavigation } from '@/hooks/useTabNavigation';
 import colors, { themeColors, Colors } from '@/constants/colors';
 import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -57,6 +57,7 @@ export default function NotificationsBottomSheet({
   onClose,
   initialNotification = null,
 }: Props) {
+  const { goToPath } = useTabNavigation();
   const scheme = useColorScheme() ?? 'light';
   const isDark = scheme === 'dark';
   const theme = Colors[scheme];
@@ -194,13 +195,13 @@ export default function NotificationsBottomSheet({
       const clean = normalizeRoute(route);
       setTimeout(() => {
         try {
-          router.push(clean as any);
+          goToPath(clean);
         } catch (e) {
           logger.error('Error navegando:', e);
         }
       }, 320);
     },
-    [onClose],
+    [onClose, goToPath],
   );
 
   const handleActionButtonPress = useCallback(
@@ -209,14 +210,14 @@ export default function NotificationsBottomSheet({
       setTimeout(() => {
         if (btn.isInternal) {
           try {
-            router.push(normalizeRoute(btn.url) as any);
+            goToPath(normalizeRoute(btn.url));
           } catch {}
         } else {
           Linking.openURL(btn.url).catch(logger.error);
         }
       }, 320);
     },
-    [onClose],
+    [onClose, goToPath],
   );
 
   const renderNotification = ({ item }: { item: Notification }) => (

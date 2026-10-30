@@ -53,7 +53,7 @@ describe('app: lecturas públicas', () => {
     ['songs/updatedAt', 'useFirebaseData'],
     ['songs/tags/data', 'useSongTags — catálogo de etiquetas'],
     ['songs/tags/updatedAt', 'useSongTags'],
-    ['albums/data', 'AlbumListScreen'],
+    ['albums/data', 'FotosScreen'],
     ['calendars/data', 'useCalendarConfigs'],
     ['profileConfig/data', 'ProfileConfigContext'],
     ['profileConfig/updatedAt', 'ProfileConfigContext'],

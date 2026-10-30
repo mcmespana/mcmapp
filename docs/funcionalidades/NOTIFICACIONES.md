@@ -1,6 +1,6 @@
 # Sistema de Notificaciones Push — MCM App
 
-> Documento consolidado. Reemplaza a: `NOTIS_APP_MEJORAS.md`, `NOTIS_DEVELOP_BACKEND.md`, `NOTIS_GUIA_PRUEBAS.md`, `PANEL_NOTIFICACIONES_NEXTJS.md`
+> Documento consolidado: es la única referencia del sistema de notificaciones push.
 
 ---
 
@@ -44,7 +44,7 @@ app/_layout.tsx
 ├── notifications/NotificationHandler.ts             ← Configuración global + categorías iOS
 ├── notifications/usePushNotifications.ts            ← Lifecycle + iOS action button routing
 ├── services/pushNotificationService.ts              ← Capa de datos: Firebase + AsyncStorage
-├── hooks/useUnreadNotificationsCount.ts             ← Badge: delega a NotificationsContext
+├── contexts/NotificationsContext.tsx                ← Badge: expone `unreadCount` (no hay hook aparte)
 ├── types/notifications.ts                           ← Tipos TypeScript
 └── app/notifications.tsx                            ← Pantalla (real-time, detalle modal, mark all)
 ```
@@ -66,7 +66,9 @@ Todo implementado:
 - `app/notifications.tsx` — reescrita con modal de detalle, botones marcar leída, rediseño de tarjetas
 - `notifications/usePushNotifications.ts` — routing de iOS action buttons (`actionIdentifier`)
 - `services/pushNotificationService.ts` — `markAllNotificationsAsRead()` batch, `initializeNewUserReadStatus()`
-- `hooks/useUnreadNotificationsCount.ts` — simplificado, delega a NotificationsContext
+- El contador de no leídas (`unreadCount`) lo expone `NotificationsContext` (`contexts/NotificationsContext.tsx`); no hay un hook aparte
+- `getUnreadNotificationsCount(firebaseHistory, filter?)` (`services/pushNotificationService.ts`) cuenta con el **histórico que el contexto ya tiene en memoria** por su suscripción en tiempo real: no hace otro `get()` de `/notifications`. `filter` descuenta del badge los avisos dirigidos a otra audiencia.
+- `/notifications` y la hoja de la campana de Inicio comparten una sola tarjeta, `components/notifications/NotificationListItem.tsx`: chip de categoría, dot de no leída, swipe para marcar leída, chip de destino y hasta 3 botones de acción.
 
 ---
 
@@ -338,6 +340,50 @@ El backend debe:
 
 ---
 
+## Avisos del área privada de Comunica (plan 08, octubre 2026)
+
+Los avisos del área nativa de Comunica (monitores) **no son del Panel** y van
+aparte de todo lo de arriba. Plan: `docs/planes/area-nativa/08-avisos-y-compartir.md`;
+contrato y requisitos del servidor: `docs/contratos/COMUNICA_API.md` («Avisos
+en el móvil»).
+
+| Aviso | Lo manda | Canal Android | Al tocarlo |
+|---|---|---|---|
+| «¿Has pasado lista?» | El servidor del área (`mcm-comunica-api`) | `comunica-listas` (HIGH) | Marcar ese grupo en esa sesión |
+| «Novedades en tu grupo» | El servidor del área | `comunica-grupos` (DEFAULT) | La ficha del grupo |
+| «Tienes N listas sin subir» | **La app** (aviso local) | `comunica-listas` | La portada del área |
+
+- **Mismo permiso y mismo token de Expo** que el resto de la app; no se pide
+  otro. El móvil se registra en **nuestro** servidor (no en `/pushTokens`)
+  desde `components/comunica/ComunicaBackground.tsx` (montado en la raíz),
+  por la cola del área, y se da de baja al salir del área.
+- `data.source === 'comunica'` → rama propia y **primera** en
+  `notifications/usePushNotifications.ts`: se valida con zod
+  (`ComunicaPushData`), **no va a la campana** ni en primer plano ni al
+  tocar (son operativos: su sitio es la portada del área), en primer plano
+  refresca las consultas del área (`services/comunica/bridge.ts`) y al
+  tocarlo el destino lo decide `utils/comunica/noticeRoutes.ts` — **nunca**
+  una ruta que venga en el aviso. Con el área nativa apagada, todo va a la
+  pestaña Comunica (la WebView). Analítica: `notificacion_abierta` con
+  `categoria: 'comunica'`, sin ids.
+- Los dos canales están en `constants/notificationChannels.ts` con
+  `source: 'comunica'` y **sin categoría**: el Panel no llega a ellos por
+  `category`. **Una vez publicados no se quitan nunca** (la limpieza del
+  arranque los borraría y Android tiraría lo que llegue): lo vigila
+  `__tests__/notificationChannels.test.ts`.
+- El aviso local (`services/comunica/localNotices.ts`, `.web.ts` vacío): al
+  irse la app a segundo plano con listas sin subir, uno a los 60 min (de
+  22:00 a 8:30 de Madrid, a las 8:30), id fijo `comunica-outbox`; se cancela
+  al volver, al vaciarse la cola y al salir.
+- Preferencias por móvil en «Tu cuenta» → «Avisos en este móvil»
+  (`app/(tabs)/comunica/yo/avisos.tsx`); la portada del área pinta
+  `NotificationPermissionBanner placement="comunica"` (descarte propio).
+- **Probar sin servidor**: Laboratorio Alpha → «Comunica nueva» → «Simular
+  aviso» programa un aviso local a los 5 s con el `data` de cada tipo (sal de
+  la app para verlo; vale en el simulador de iOS).
+
+---
+
 ## Rutas internas disponibles para deep linking
 
 ```
@@ -380,6 +426,7 @@ Notas:
 }]
 ```
 
+- **Icono de notificación de Android** (`assets/images/notification-icon.png`, 96×96) e icono monocromo del launcher (`monochrome-icon.png`): Android los pinta solo con el canal alfa, así que se generan a partir del logo con `node scripts/generate-notification-icon.js` (desde `mcm-app/`). Si cambia `adaptive-icon.png`, hay que regenerarlos.
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
 - **Canal Android**: "Notificaciones MCM" (importancia MAX)
 - **Categorías iOS**: general, eventos, fotos (con action buttons)
@@ -453,5 +500,7 @@ Notas:
   }
 }
 ```
+
+Pendiente: añadir a mano, en la consola de Firebase, `".indexOn": ["createdAt"]` en `/notifications` (no está desplegado; ver `mcm-app/TODO.md`).
 
 Nota: la escritura en `/notifications` se hace desde el backend con Firebase Admin SDK (bypasa rules).

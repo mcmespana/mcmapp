@@ -4,8 +4,11 @@ import { Platform } from 'react-native';
 export interface KeyboardShortcutOptions {
   /** Require ⌘ (mac) / Ctrl (other). Default: false. */
   meta?: boolean;
-  /** Require Shift. Default: false. */
-  shift?: boolean;
+  /**
+   * Require Shift. Default: false. `'any'` ignores Shift: for symbols like `+`,
+   * which need Shift on a US keyboard (Shift+=) but not on a Spanish one.
+   */
+  shift?: boolean | 'any';
   /** Require Alt/Option. Default: false. */
   alt?: boolean;
   /** Disable the listener without removing it from the call site. Default: false. */
@@ -69,7 +72,7 @@ export function useKeyboardShortcut(
 
       const metaPressed = Boolean(e.metaKey || e.ctrlKey);
       if (meta !== metaPressed) return;
-      if (shift !== Boolean(e.shiftKey)) return;
+      if (shift !== 'any' && shift !== Boolean(e.shiftKey)) return;
       if (alt !== Boolean(e.altKey)) return;
 
       // Don't hijack normal typing — but ⌘-prefixed shortcuts still fire.

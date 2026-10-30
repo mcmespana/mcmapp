@@ -15,12 +15,12 @@ const BREATH_MS = 2100;
 
 /**
  * "Para un momento..." breathing animation shown when entering the
- * Revisión screen. Inhale → exhale → inhale, then auto-dismiss.
- * Tap to skip.
+ * Revisión screen. Inhale → exhale → inhale, then auto-dismiss once the third
+ * breath has finished. Tap to skip.
  */
 export function BreathingPhase({ onDone }: { onDone: () => void }) {
-  // Con "reducir movimiento" los anillos no laten: el texto "Respira... /
-  // Inspira..." se sigue turnando al mismo ritmo, así que el ejercicio de
+  // Con "reducir movimiento" los anillos no laten: el texto "Inspira... /
+  // Espira..." se sigue turnando al mismo ritmo, así que el ejercicio de
   // respiración funciona igual sin el movimiento que marea. Esta pantalla es
   // contemplativa y puntual (entra a propósito al abrir Revisión), así que se
   // queda con opacidad y con el propio ciclo de la respiración: solo se quita
@@ -51,7 +51,9 @@ export function BreathingPhase({ onDone }: { onDone: () => void }) {
     breath(1.35, 'inhale');
     const t1 = setTimeout(() => breath(0.72, 'exhale'), BREATH_MS);
     const t2 = setTimeout(() => breath(1.35, 'inhale'), BREATH_MS * 2);
-    const t3 = setTimeout(() => fade(), 5000);
+    // Después de la tercera respiración COMPLETA (empieza en 2×, dura 1×): con
+    // el fundido a 5000 ms se cortaba a los 800 ms de empezarla.
+    const t3 = setTimeout(() => fade(), BREATH_MS * 3);
     return () => {
       [t1, t2, t3].forEach(clearTimeout);
       finished.current = true;
@@ -98,7 +100,7 @@ export function BreathingPhase({ onDone }: { onDone: () => void }) {
             <Animated.View style={[styles.ring2, ring2Style]} />
             <Animated.View style={[styles.ring1, ring1Style]}>
               <Text style={styles.phaseText}>
-                {phaseLabel === 'inhale' ? 'Respira...' : 'Inspira...'}
+                {phaseLabel === 'inhale' ? 'Inspira...' : 'Espira...'}
               </Text>
             </Animated.View>
           </View>

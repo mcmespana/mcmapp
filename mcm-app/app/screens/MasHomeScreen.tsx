@@ -9,7 +9,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { hexAlpha } from '@/utils/colorUtils';
+import { solidTint, tintedGlyph } from '@/utils/tintColors';
 import MasFooter from '@/components/mas/MasFooter';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { MasStackParamList } from '../(tabs)/mas';
@@ -26,14 +26,13 @@ import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { splitTabsForBar } from '@/constants/tabsCatalog';
 import spacing from '@/constants/spacing';
-import { radii } from '@/constants/uiStyles';
+import { radii, shadows } from '@/constants/uiStyles';
 import colors, { themeColors } from '@/constants/colors';
 import typography from '@/constants/typography';
 
 interface NavigationItem {
   label: string;
   subtitle: string;
-  emoji: string;
   materialIcon: ComponentProps<typeof MaterialIcons>['name'];
   /** Si está definido, navega a una ruta expo-router (overflow de tab). */
   routePath?: string;
@@ -47,7 +46,6 @@ interface NavigationItem {
 const MCM_PANEL_ITEM: NavigationItem = {
   label: 'MCM Panel',
   subtitle: 'Panel de administración de la app',
-  emoji: '🎛️',
   materialIcon: 'tune',
   target: 'McmPanel',
   tintColor: '#6D28D9',
@@ -57,15 +55,13 @@ const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
   comunica: {
     label: 'Comunica',
     subtitle: 'Portal de comunicación MCM',
-    emoji: '📣',
     materialIcon: 'forum',
     target: 'Comunica',
-    tintColor: '#E08A3C',
+    tintColor: colors.purple,
   },
   'comunica-gestion': {
     label: 'Gestión',
     subtitle: 'Administración y CRM',
-    emoji: '⚙️',
     materialIcon: 'admin-panel-settings',
     target: 'ComunicaGestion',
     tintColor: '#607D8B',
@@ -73,7 +69,6 @@ const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
   jubileo: {
     label: 'Jubileo',
     subtitle: 'Horarios, materiales, grupos...',
-    emoji: '🎉',
     materialIcon: 'celebration',
     target: 'JubileoHome',
     eventId: 'jubileo',
@@ -82,7 +77,6 @@ const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
   'eventos-pasados': {
     label: 'Eventos pasados',
     subtitle: 'Jubileo y otros encuentros',
-    emoji: '🗂️',
     materialIcon: 'history',
     target: 'EventosPasados',
     tintColor: '#9FA8DA',
@@ -92,7 +86,6 @@ const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
   //   items.push({
   //     label: 'Encuentro 2027',
   //     subtitle: 'Programa y materiales',
-  //     emoji: '✨',
   //     materialIcon: 'auto-awesome',
   //     target: 'JubileoHome',      // ← mismo hub genérico
   //     tintColor: colors.accent,
@@ -106,6 +99,12 @@ export default function MasHomeScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const [feedbackVisible, setFeedbackVisible] = useState(false);
+  // Pastilla del icono y de la flecha de cada tarjeta: el color de la tarjeta
+  // y un glifo que se lea sobre ella (el amarillo del cantoral sobre blanco no
+  // llega a 3:1 sin oscurecerlo).
+  const cardSurface = themeColors(isDark).background;
+  const iconPill = (tint: string) => tintedGlyph(tint, cardSurface, '18');
+  const arrowPill = (tint: string) => tintedGlyph(tint, cardSurface, '15');
   // Grid de 2 columnas en tablet/web amplio (iPad portrait y landscape
   // incluidos). En móvil se queda en una sola columna (lista vertical).
   const layout = useResponsiveLayout();
@@ -141,9 +140,9 @@ export default function MasHomeScreen() {
         items.push({
           label: tab.label,
           subtitle: tab.subtitle,
-          emoji: tab.emoji,
           materialIcon: tab.androidIcon,
-          tintColor: tab.tintColor,
+          // `TabHeaderColors.comunica` es un rgba: se pasa a hex sólido.
+          tintColor: solidTint(tab.tintColor),
           ...(stackTarget
             ? {
                 target: stackTarget,
@@ -218,17 +217,7 @@ export default function MasHomeScreen() {
                   {
                     backgroundColor: themeColors(isDark).background,
                   },
-                  Platform.OS !== 'web'
-                    ? {
-                        shadowColor: item.tintColor,
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: isDark ? 0.3 : 0.15,
-                        shadowRadius: 12,
-                        elevation: 4,
-                      }
-                    : {
-                        boxShadow: `0 4px 12px ${item.tintColor}30`,
-                      },
+                  shadows.card,
                 ]}
                 onPress={() => {
                   if (item.routePath) {
@@ -265,10 +254,14 @@ export default function MasHomeScreen() {
                   <View
                     style={[
                       styles.iconCircle,
-                      { backgroundColor: hexAlpha(item.tintColor, '18') },
+                      { backgroundColor: iconPill(item.tintColor).fill },
                     ]}
                   >
-                    <Text style={styles.emoji}>{item.emoji}</Text>
+                    <MaterialIcons
+                      name={item.materialIcon}
+                      size={28}
+                      color={iconPill(item.tintColor).glyph}
+                    />
                   </View>
 
                   {/* Texto */}
@@ -285,7 +278,7 @@ export default function MasHomeScreen() {
                     <Text
                       style={[
                         styles.cardSubtitle,
-                        { color: isDark ? '#8E8E93' : '#6B7280' },
+                        { color: themeColors(isDark).textSecondary },
                       ]}
                       numberOfLines={2}
                     >
@@ -297,13 +290,13 @@ export default function MasHomeScreen() {
                   <View
                     style={[
                       styles.arrowCircle,
-                      { backgroundColor: hexAlpha(item.tintColor, '15') },
+                      { backgroundColor: arrowPill(item.tintColor).fill },
                     ]}
                   >
                     <MaterialIcons
                       name="arrow-forward"
                       size={18}
-                      color={item.tintColor}
+                      color={arrowPill(item.tintColor).glyph}
                     />
                   </View>
                 </View>
@@ -367,9 +360,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
-  },
-  emoji: {
-    fontSize: 28,
   },
   cardTextArea: {
     flex: 1,

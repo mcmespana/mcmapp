@@ -28,6 +28,9 @@ export interface UseShakeDetectorOptions {
   enabled?: boolean;
 }
 
+/** Tiempo mínimo por defecto entre dos detecciones (ms). */
+export const DEFAULT_SHAKE_COOLDOWN_MS = 1200;
+
 export function useShakeDetector(
   onShake: () => void,
   options: UseShakeDetectorOptions = {},
@@ -36,7 +39,7 @@ export function useShakeDetector(
     threshold = 1.9,
     peaksRequired = 3,
     windowMs = 700,
-    cooldownMs = 1200,
+    cooldownMs = DEFAULT_SHAKE_COOLDOWN_MS,
     enabled = true,
   } = options;
 
@@ -51,8 +54,8 @@ export function useShakeDetector(
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { Accelerometer } = require('expo-sensors') as
-        typeof import('expo-sensors');
+      const { Accelerometer } =
+        require('expo-sensors') as typeof import('expo-sensors');
       Accelerometer.setUpdateInterval(80);
       const peaks: number[] = [];
       let lastFireAt = 0;

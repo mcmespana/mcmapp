@@ -4,11 +4,10 @@
 > clasificados abajo uno a uno. La mayoría son falsos positivos estructurales:
 > perseguirlos empeora el código.
 >
-> Estado: **39 warnings, 0 errores** (2026-08-19). Se venía de 51: la migración
-> de `.value` a `.get()`/`.set()` en los shared values de Reanimated se llevó 10
-> por delante —el React Compiler no puede seguir el acceso directo a `.value`—
-> y el resto salió de retoques de `TransposeBottomSheet`. Revisión completa
-> anterior: 2026-08-15 (se venía de 111). 1042 tests en verde, `tsc` limpio.
+> Estado: **38 warnings, 0 errores** (2026-10-17, `npx expo lint`). Es el
+> **techo**: es lo que hay y no debe subir. Historial: 111 (2026-08-15) → 51 →
+> 39 (2026-08-19, la migración de `.value` a `.get()`/`.set()` en los shared
+> values de Reanimated se llevó los falsos positivos) → 38.
 
 ## Contexto
 
@@ -27,47 +26,49 @@ qué se queda.
 ```bash
 cd mcm-app
 npm run lint 2>&1 | tail -3                       # total
-npm run lint 2>&1 | grep -oE 'react-hooks/[a-z-]+|max-lines' | sort | uniq -c | sort -rn
+# Reparto por regla (el grep sobre la salida de texto cuenta también las pistas
+# de cada mensaje; es más fiable el JSON, limitado a lo que lintea `expo lint`):
+npx eslint app components -f json | node -e "const c={};JSON.parse(require('fs').readFileSync(0)).forEach(f=>f.messages.forEach(m=>c[m.ruleId]=(c[m.ruleId]||0)+1));console.log(c)"
 ```
 
----
-
-## Reparto actual (51)
-
-| Regla                                     | Nº  | Veredicto                                                            |
-| ----------------------------------------- | --- | -------------------------------------------------------------------- |
-| `react-hooks/immutability`                | 19  | 12 falsos positivos de Reanimated · 7 a revisar caso a caso          |
-| `react-hooks/refs`                        | 18  | Patrón oficial "ref al último callback" — se quedan                  |
-| `react-hooks/set-state-in-effect`         | 6   | 2 de código congelado · 4 legítimos (sincronizar con algo externo)   |
-| `react-hooks/preserve-manual-memoization` | 2   | Informativos                                                         |
-| `react-hooks/purity`                      | 3   | 1 de código congelado · 2 de `Date.now()` al construir un payload    |
-| `max-lines`                               | 3   | **Exentos por decisión** del usuario (2026-08-15)                    |
-| `react-hooks/exhaustive-deps`             | 2   | Deps ajustadas a mano a propósito, con `eslint-disable` y comentario |
+> `expo lint` **solo recorre `app/` y `components/`**. `hooks/`, `contexts/` y
+> el resto no entran en la cuenta (hoy tienen ~18 avisos más del mismo patrón
+> "ref al último callback"). No cambia nada de lo que sigue, pero que no te
+> sorprenda si lanzas `eslint` a pelo y sale otra cifra.
 
 ---
 
-## 1. `immutability` en Reanimated (12) — falso positivo, NO tocar
+## Reparto actual (38)
 
-**Ficheros:** `components/ui/PressableScale.tsx`,
-`components/calendar/SwipeableMonthCalendar.tsx`,
-`components/evaluation/WizardButton.tsx`,
-`components/contigo/BreathingPhase.tsx`, `app/onboarding.tsx`.
+| Regla                                     | Nº  | Veredicto                                                         |
+| ----------------------------------------- | --- | ----------------------------------------------------------------- |
+| `react-hooks/refs`                        | 18  | Patrón oficial "ref al último callback" — se quedan               |
+| `react-hooks/set-state-in-effect`         | 7   | 2 de código congelado · 5 a mirar si se toca el fichero           |
+| `react-hooks/immutability`                | 5   | "Variable antes de declararla" y escrituras en refs — caso a caso |
+| `react-hooks/purity`                      | 3   | 1 de código congelado · 2 de `Date.now()` al construir un payload |
+| `max-lines`                               | 3   | **Exentos por decisión** del usuario (2026-08-15)                 |
+| `react-hooks/preserve-manual-memoization` | 2   | Informativos                                                      |
 
-Todos hacen `sharedValue.value = withTiming(...)`. **Escribir `.value` ES la
-API de Reanimated**: un shared value existe para mutarse fuera del ciclo de
-render de React, que es justo lo que le permite animar en el hilo de UI. El
-compilador ve una asignación a algo que considera inmutable y avisa.
+---
 
-Arreglarlo significaría dejar de usar Reanimated. No hay nada que hacer aquí
-hasta que Reanimated y el compilador se pongan de acuerdo aguas arriba.
+## 1. `immutability` (5) — ya no quedan los de Reanimated
+
+Antes eran 12 falsos positivos de Reanimated (`sharedValue.value = withTiming(...)`).
+La migración a `.get()`/`.set()` los eliminó. Quedan cinco:
+`components/contigo/BreathingPhase.tsx`, `components/tabs/useTabScroll.ts` (2),
+`components/NotificationsBottomSheet.tsx` y `app/screens/SelectedSongsScreen.tsx`
+("usada antes de declararse" y escrituras sobre refs). Ninguno ha dado problema
+observable y todos están en código con tests. **Si tocas uno de esos ficheros
+por otro motivo, míralo de paso**; no merecen una sesión dedicada.
 
 ## 2. `refs` — el patrón del "ref al último callback" (18) — se quedan
 
 **Ficheros:** `components/BottomSheet.tsx`, `components/SongDisplay.tsx`,
 `components/contigo/ReaderSettingsSheet.tsx`,
 `components/contigo/HighlightableReading.tsx`,
-`components/playlist/ChoirSheet.tsx`, `components/tabs/tabBarController.ts`,
-`app/(tabs)/mas.tsx`, `app/(tabs)/visitapapa.tsx`, y alguno más.
+`components/playlist/ChoirSheet.tsx`, `components/playlist/QrScannerModal.tsx`,
+`components/tabs/tabBarController.ts`, `app/(tabs)/mas.tsx`,
+`app/(tabs)/visitapapa.tsx`.
 
 El patrón es siempre el mismo:
 
@@ -89,8 +90,8 @@ nosotros.
 
 ## 3. `max-lines` (3) — exentos por decisión
 
-`app/onboarding.tsx` (1.756), `app/(tabs)/index.tsx` (1.196) y
-`app/screens/SelectedSongsScreen.tsx` (~1.790).
+`app/onboarding.tsx`, `app/(tabs)/index.tsx` y
+`app/screens/SelectedSongsScreen.tsx` (los tres por encima de 1.000 líneas).
 
 El usuario decidió el 2026-08-15 que **los gigantes se quedan gigantes**: quien
 edita este código es siempre una IA, que lee el archivo entero de una vez, y
@@ -99,6 +100,14 @@ Razonamiento completo en `docs/planes/PLAN_CALIDAD.md` §0 y `BACKLOG.md` §2.A.
 
 El techo de 1.000 líneas del ESLint se mantiene **como aviso para código
 nuevo**, no como deuda a saldar.
+
+Dos más del área nativa, apagados en su primera línea con
+`eslint-disable max-lines` y el motivo (28/10/2026, plan 07):
+`services/comunica/contract.ts` (el contrato es UN sitio: partirlo crea
+importaciones circulares con `ROUTES`) y `services/comunica/fake/index.ts` (el
+corazón del falso; lo de cada plan grande ya vive aparte, `coordination.ts`,
+`events.ts`). Un fichero nuevo que pase de 1.000 **no** se apaga así sin
+apuntarlo aquí.
 
 ## 4. Código congelado (3) — no se toca por definición
 
@@ -113,21 +122,20 @@ Firebase. No es impuro en el sentido que importa (el valor no se pinta, se
 manda), pero si algún día se toca esa pantalla, moverlo al `onPress` en vez de
 al cuerpo del componente lo arregla gratis. No merece un cambio dedicado.
 
-## 6. El resto (7 `immutability` sueltos + 2 `preserve-manual-memoization`)
+## 6. `set-state-in-effect` sueltos (5) y `preserve-manual-memoization` (2)
 
-`components/tabs/useTabScroll.ts`, `components/tabs/tabBarController.ts`,
-`components/NotificationsBottomSheet.tsx`, `app/notifications.tsx`,
-`app/screens/SelectedSongsScreen.tsx`.
-
-Son los únicos que podrían esconder algo real. Ninguno ha dado problema
-observable y todos están en código con tests. **Si tocas uno de esos ficheros
-por otro motivo, míralo de paso**; no merecen una sesión dedicada.
+`components/AddToHomeBanner.tsx`, `components/BottomSheet.tsx`,
+`components/playlist/ChoirSheet.tsx`, `app/notifications.tsx`,
+`app/screens/SelectedSongsScreen.tsx` (y la memoización de `notifications.tsx` y
+`NotificationsBottomSheet.tsx`). Son efectos que sincronizan con algo externo
+(abrir/cerrar una hoja, leer `localStorage`); funcionan. **Si tocas uno de esos
+ficheros por otro motivo, míralo de paso.**
 
 ---
 
 ## Lo que sí se pide
 
-**No añadas warnings nuevos.** Si tras tu cambio `npm run lint` pasa de 51,
+**No añadas warnings nuevos.** Si tras tu cambio `npm run lint` pasa de 38,
 el nuevo es tuyo y se arregla antes de commitear. Ese es el único guardarraíl
 que se mantiene activo.
 
