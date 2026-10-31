@@ -1,31 +1,12 @@
-/* eslint-disable max-lines -- un solo contrato: docs/desarrollo/WARNINGS.md §3 */
 // services/comunica/contract.ts
 //
-// El contrato entre la app y el servidor del área privada nativa
-// (`mcm-comunica-api`, aún por crear). Es lo ÚNICO que la app sabe del
-// servidor: detrás puede leer el CRM por SQL, por la API o desde un espejo, y
-// la app no se entera. Plan: `docs/planes/area-nativa/00-contrato-y-servidor-falso.md`.
-//
-// Reglas (las largas, en el plan 00 §2):
-//   · Los tipos salen de los esquemas (`z.infer`): no se escribe un tipo a mano.
-//   · El vocabulario es el del glosario del plan 00 §1. Un concepto se llama
-//     igual aquí, en el código y en la pantalla.
-//   · Nada de nombres del CRM (`ajmcm_…`, `stic_…`): los traduce el servidor.
-//   · La salud NUNCA viaja en una lectura que se guarda en el móvil: solo
-//     `hasHealthNote`/`badges.healthNote`. El texto, solo en `HealthNote`
-//     (`GET /v1/people/:id/health`). Lo vigila un test.
-//   · Las respuestas de lectura llevan `generatedAt` (el «actualizado hace»).
-//
-// Este fichero tiene lo compartido (plan 00 §3), el trozo de Pasar Lista
-// (plan 04 «Datos»), el de Grupos y fichas (plan 05) y el de Coordinación
-// (plan 06). Cada plan de
-// pantallas añade aquí su trozo al ejecutarse. Avisos en el móvil: plan 08.
-// Familias (plan 11): perfiles, la convención `/v1/profiles/:pid` y el
-// calendario que adelanta del 16.
-
-// El esquema y su tipo se llaman igual (`Me` el valor, `Me` el tipo): es el
-// patrón de zod, y lo que la regla toma por redeclaración es justo eso.
-/* eslint-disable @typescript-eslint/no-redeclare */
+// El contrato entre la app y su servidor, `comunicaMiddleware`. **El ORIGINAL
+// está en el middleware**: `src/contract.ts` (monitores) y
+// `src/contract-profile-{events,registrations,docs}.ts` (familias). Aquí van los
+// cuatro en UN fichero (sin importaciones circulares), en este orden: el de
+// monitores tal cual hasta `ROUTES`; los de familias sin sus `import`; lo que
+// es solo de la app; y `ROUTES`, que en la app también lleva las de familias.
+// Si cambia allí, se cambia aquí igual.
 
 import { z } from 'zod';
 
@@ -213,6 +194,31 @@ export type WriteResult = z.infer<typeof WriteResult>;
 /** Toda lectura lleva la hora del servidor. */
 const read = <T extends z.ZodRawShape>(shape: T) =>
   z.object({ generatedAt: Instant, ...shape });
+
+// ── Familias: a quién se ve (plan 11 de la app) ─────────────────────────────
+
+/**
+ * Una persona que se puede ver: quien ha entrado o uno de sus hijos. Los nombres pueden faltar (`null`): un hijo cuyo nombre no
+ * llega sale igual (perder el acceso es peor que un nombre feo). `gender` sirve para «Yo mismo» / «Yo misma».
+ */
+export const ProfileRef = z.object({
+  id: Id,
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  gender: z.enum(['female', 'male']).nullable(),
+});
+export type ProfileRef = z.infer<typeof ProfileRef>;
+
+/**
+ * `GET /v1/me/profiles[?fresh=1]`: quien ha entrado y a quiénes tiene a cargo (relación vigente de padre, madre, tutor o
+ * cuidador). Si el CRM no contesta, `crm_unavailable`: nunca `children: []`. Todo lo de familias cuelga de
+ * `/v1/profiles/:pid/…` y el servidor comprueba en cada petición que `pid` es `self` o uno de `children` (si no, `forbidden`, 403).
+ */
+export const MyProfiles = read({
+  self: ProfileRef,
+  children: z.array(ProfileRef),
+});
+export type MyProfiles = z.infer<typeof MyProfiles>;
 
 // ── Acceso (plan 02) ────────────────────────────────────────────────────────
 
@@ -634,6 +640,165 @@ export type NoticeWriteResult = z.infer<typeof NoticeWriteResult>;
 export const ScarfWrite = z.object({ clientId: ClientId, scarf: SetScarf });
 export type ScarfWrite = z.infer<typeof ScarfWrite>;
 
+// ── Familias: mis datos (plan 12 de la app) ─────────────────────────────────
+
+export const DETAIL_SECTIONS = [
+  'identity',
+  'contact',
+  'address',
+  'photo',
+  'mcm',
+  'health',
+  'consents',
+] as const;
+const DetailOptions = z.array(
+  z.object({ value: z.string(), label: z.string() }),
+);
+const Text = z.string().nullable();
+
+/**
+ * `GET /v1/profiles/:pid/details`: los datos de la persona que se ve (uno mismo o un hijo), SIN la salud (va aparte, `/health`).
+ * Las secciones las decide el servidor con la audiencia: `member`, las siete; `child` y `guardian`, sin `mcm`. Sin caché.
+ * `null` es «sin indicar»; en los consentimientos, «sin contestar» (nunca se convierte en «no»).
+ */
+export const PersonDetails = read({
+  sections: z.array(z.enum(DETAIL_SECTIONS)),
+  /** Solo lectura (salvo `identityFill`, para quien paga y no tiene el dato). */
+  identity: z.object({
+    firstName: z.string(),
+    lastName: z.string(),
+    documentType: Text,
+    documentNumber: Text,
+    birthDate: Day.nullable(),
+  }),
+  gender: Text,
+  documentSupportNumber: Text,
+  documentIssueDate: Day.nullable(),
+  emailNote: z.enum(['mcm_email_warning', 'mcm_email_soft']).nullable(),
+  contact: z.object({ email: Text, mobile: Text, emergencyPhone: Text }),
+  address: z.object({
+    street: Text,
+    city: Text,
+    province: Text,
+    postalCode: Text,
+    region: Text,
+  }),
+  photoUrl: PhotoUrl.nullable(),
+  mcm: z
+    .object({
+      stage: Text,
+      comLevel: Text,
+      shirtSize: Text,
+      groupName: Text,
+      localMcm: Text,
+      scarf: Scarf.nullable(),
+      lcIncorporationYear: z.number().int().nullable(),
+      memberSince: z.number().int().nullable(),
+    })
+    .nullable(),
+  consents: z.object({
+    dataProtection: z.boolean().nullable(),
+    healthData: z.boolean().nullable(),
+    photos: z.boolean().nullable(),
+  }),
+  options: z.object({
+    gender: DetailOptions,
+    documentType: DetailOptions,
+    stage: DetailOptions,
+    comLevel: DetailOptions,
+    shirtSize: DetailOptions,
+    localMcm: DetailOptions,
+    region: DetailOptions,
+  }),
+});
+export type PersonDetails = z.infer<typeof PersonDetails>;
+
+/**
+ * `PATCH /v1/profiles/:pid/details`: solo lo que cambia, ESTRICTO (una clave de más, o de una sección que la audiencia no tiene, es
+ * `validation`). Los consentimientos solo admiten `true` o `false` y solo se escribe el que llega. `identityFill` solo escribe lo que
+ * en el CRM está vacío (para quien paga y le falta el dato). Responde con los datos releídos; el diario guarda solo el resultado
+ * sin los datos.
+ */
+export const PersonDetailsWrite = z.strictObject({
+  clientId: ClientId,
+  changes: z.strictObject({
+    gender: Text.optional(),
+    documentSupportNumber: Text.optional(),
+    documentIssueDate: Day.nullable().optional(),
+    contact: z
+      .strictObject({
+        email: Text.optional(),
+        mobile: Text.optional(),
+        emergencyPhone: Text.optional(),
+      })
+      .optional(),
+    address: z
+      .strictObject({
+        street: Text.optional(),
+        city: Text.optional(),
+        province: Text.optional(),
+        postalCode: Text.optional(),
+        region: Text.optional(),
+      })
+      .optional(),
+    mcm: z
+      .strictObject({
+        stage: Text.optional(),
+        comLevel: Text.optional(),
+        shirtSize: Text.optional(),
+        groupName: Text.optional(),
+        localMcm: Text.optional(),
+        scarf: SetScarf.nullable().optional(),
+        lcIncorporationYear: z.number().int().nullable().optional(),
+        memberSince: z.number().int().nullable().optional(),
+      })
+      .optional(),
+    consents: z
+      .strictObject({
+        dataProtection: z.boolean().optional(),
+        healthData: z.boolean().optional(),
+        photos: z.boolean().optional(),
+      })
+      .optional(),
+    identityFill: z
+      .strictObject({
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+        documentType: z.string().optional(),
+        documentNumber: z.string().optional(),
+      })
+      .optional(),
+  }),
+});
+export type PersonDetailsWrite = z.infer<typeof PersonDetailsWrite>;
+export const DetailsWriteResult = WriteResult.extend({
+  details: PersonDetails,
+});
+export type DetailsWriteResult = z.infer<typeof DetailsWriteResult>;
+
+/** La salud de la persona que se ve: solo por `/health` (sin caché, nunca en el móvil, nunca en el diario de escrituras). */
+export const HealthInfo = z.object({
+  foodIntolerances: Text,
+  allergies: Text,
+  illnesses: Text,
+  treatments: Text,
+  other: Text,
+});
+export type HealthInfo = z.infer<typeof HealthInfo>;
+export const HealthResponse = read({ health: HealthInfo });
+export type HealthResponse = z.infer<typeof HealthResponse>;
+export const HealthWrite = z.strictObject({
+  clientId: ClientId,
+  health: z.strictObject({
+    foodIntolerances: Text.optional(),
+    allergies: Text.optional(),
+    illnesses: Text.optional(),
+    treatments: Text.optional(),
+    other: Text.optional(),
+  }),
+});
+export type HealthWrite = z.infer<typeof HealthWrite>;
+
 /**
  * `PUT /v1/memberships/:id/group` — poner grupo a una relación QUE YA EXISTE.
  * Solo coordinación; grupo y relación de su delegación. Nunca crea relaciones.
@@ -769,7 +934,8 @@ export const MonitorsRollRow = z.object({
    * No se le pasa lista de grupo (Apoyo, otros grupos, sin grupo; solo en la
    * semanal): arranca SIN MARCAR, el toque cicla «-» → vino → no vino → «-»,
    * sin marca no se escribe ni cuenta, y no lleva % ni aviso (plugin,
-   * 25/10/2026). En las reuniones se espera a todos: nunca es opcional.
+   * 25/10/2026). Desde el 31/10/2026, también en las reuniones (quizá no les
+   * toca ir).
    */
   optional: z.boolean(),
   /**
@@ -1376,7 +1542,7 @@ export type MonitorProfileWrite = z.infer<typeof MonitorProfileWrite>;
 
 /**
  * `POST /v1/me/documents` (multipart): estos dos campos y `file` (PDF, JPG o
- * PNG de hasta 6 MB). Motivos de `validation`: `empty_file`, `file_too_big`,
+ * PNG de hasta 4 MB). Motivos de `validation`: `empty_file`, `file_too_big`,
  * `bad_file_type`. Crea el Documento con su categoría, lo ata a la persona y
  * pone su «archivo subido».
  */
@@ -1386,48 +1552,450 @@ export const DocumentUploadFields = z.object({
 });
 export type DocumentUploadFields = z.infer<typeof DocumentUploadFields>;
 
-// ── Familias: perfiles (plan 11 «Datos») ────────────────────────────────────
-//
-// CONVENCIÓN PARA TODOS LOS PLANES DE FAMILIAS (12-16): lo de la persona que
-// se está viendo cuelga de `/v1/profiles/:pid/…`. `pid` es quien ha entrado o
-// un hijo con relación VIGENTE (`sticpa_allowed_profile`); el servidor lo
-// comprueba en CADA petición y, si no, `forbidden` (403, nunca 404). Estas
-// rutas son personales: no llevan la cabecera de la delegación de trabajo.
-// En la app, sus consultas van por `useProfileQuery` y su clave lleva el pid:
-// `['comunica', bloque, pid, …]`.
-
-/** El prefijo de las rutas de familias. */
-export const PROFILE_PATH_PREFIX = '/v1/profiles/:pid';
-
-export const GENDERS = ['female', 'male'] as const;
+// ── Rutas ───────────────────────────────────────────────────────────────────
 
 /**
- * Una persona que se puede ver: uno mismo o un hijo. Nombres `null` si el CRM
- * no los da (se enseña «Participante»: perder el acceso es peor que un nombre
- * feo). `gender` sirve para «Yo mismo» / «Yo misma».
+ * Catálogo de lo que hay hoy en el contrato, para los tests que lo recorren
+ * (cada ruta tiene datos en el servidor falso; ninguna lectura que se guarda
+ * lleva texto de salud).
  */
-export const ProfileRef = z.object({
+
+// ═══ Familias: copia de comunicaMiddleware/src/contract-profile-events.ts ═══
+/**
+ * FAMILIAS: EVENTOS Y SU FICHA (plan 13 de la app). Es parte del contrato de la app (`src/contract.ts`), en su propio fichero
+ * para que cada plan de familias añada el suyo sin pisar a los demás.
+ *
+ * Todo cuelga de `/v1/profiles/:pid/…`: el servidor comprueba, en cada petición, que `pid` es quien ha entrado o uno de sus
+ * hijos con relación vigente (`allowedProfile`, src/app/profiles.ts). Días en `YYYY-MM-DD` de Madrid. Ni un nombre del CRM ni
+ * una sola cadena de HTML: el cuerpo viaja troceado en BLOQUES, y esos bloques SON el contrato del cuerpo.
+ */
+
+export const ACTIVITY_TONES = ['ok', 'warn', 'danger', 'neutral'] as const;
+
+/** Un archivo del evento (`{ documentId }`, se baja con sesión por la ruta de documentos) o una imagen de fuera (`{ url }`). */
+export const ImageRef = z.union([
+  z.strictObject({ documentId: Id }),
+  z.strictObject({ url: z.url({ protocol: /^https?$/ }) }),
+]);
+export type ImageRef = z.infer<typeof ImageRef>;
+export const BodyHref = z.union([
+  z.strictObject({ url: z.string().min(1) }),
+  z.strictObject({ documentId: Id }),
+]);
+export type BodyHref = z.infer<typeof BodyHref>;
+
+export type BodyInline =
+  | { t: 'text'; v: string }
+  | { t: 'bold' | 'italic'; c: BodyInline[] }
+  | { t: 'link'; href: BodyHref; c: BodyInline[] }
+  | { t: 'break' };
+export const BodyInline: z.ZodType<BodyInline> = z.lazy(() =>
+  z.union([
+    z.strictObject({ t: z.literal('text'), v: z.string() }),
+    z.strictObject({ t: z.enum(['bold', 'italic']), c: z.array(BodyInline) }),
+    z.strictObject({
+      t: z.literal('link'),
+      href: BodyHref,
+      c: z.array(BodyInline),
+    }),
+    z.strictObject({ t: z.literal('break') }),
+  ]),
+);
+
+export const BodyBlock = z.union([
+  z.strictObject({
+    type: z.literal('heading'),
+    level: z.union([z.literal(1), z.literal(2)]),
+    text: z.array(BodyInline),
+  }),
+  z.strictObject({
+    type: z.enum(['paragraph', 'notice']),
+    text: z.array(BodyInline),
+  }),
+  z.strictObject({
+    type: z.literal('list'),
+    ordered: z.boolean(),
+    start: z.number().int(),
+    items: z.array(z.array(BodyInline)),
+    children: z.record(
+      z.string(),
+      z.strictObject({
+        ordered: z.boolean(),
+        items: z.array(z.array(BodyInline)),
+      }),
+    ),
+  }),
+  z.strictObject({
+    type: z.literal('button'),
+    label: z.string(),
+    href: BodyHref,
+  }),
+  z.strictObject({
+    type: z.literal('image'),
+    src: ImageRef,
+    caption: z.string().optional(),
+    alt: z.string().optional(),
+  }),
+  z.strictObject({ type: z.literal('gallery'), images: z.array(ImageRef) }),
+  z.strictObject({
+    type: z.literal('video'),
+    provider: z.enum(['youtube', 'vimeo']),
+    id: z.string(),
+    url: z.string(),
+  }),
+  z.strictObject({ type: z.literal('divider') }),
+]);
+export type BodyBlock = z.infer<typeof BodyBlock>;
+
+export const EventCard = z.object({
   id: Id,
-  firstName: z.string().nullable(),
-  lastName: z.string().nullable(),
-  gender: z.enum(GENDERS).nullable(),
+  name: z.string(),
+  startDate: Day.nullable(),
+  endDate: Day.nullable(),
+  /** El lugar y, si no, la dirección. */
+  place: z.string().nullable(),
+  /** La etiqueta del CRM; la de `registration` ya es «Inscripciones abiertas». */
+  statusLabel: z.string().nullable(),
+  window: z.object({ opensOn: Day.nullable(), closesOn: Day.nullable() }),
+  hasAdvancedForm: z.boolean(),
+  /** La inscripción NO cancelada de este perfil, si la tiene. */
+  myRegistrationId: Id.nullable(),
+  myRegistrationStatus: z
+    .object({ label: z.string(), tone: z.enum(ACTIVITY_TONES) })
+    .nullable(),
 });
-export type ProfileRef = z.infer<typeof ProfileRef>;
+export type EventCard = z.infer<typeof EventCard>;
+
+/** `toSignUp` (sin los ocultos ni los que no son para este perfil) y `signedUp` (con plaza: sin audiencia ni ocultos). */
+export const ActivityList = read({
+  toSignUp: z.array(EventCard),
+  signedUp: z.array(EventCard),
+});
+export type ActivityList = z.infer<typeof ActivityList>;
+
+export const EventAudience = z.union([
+  z.strictObject({ ok: z.literal(true) }),
+  z.strictObject({
+    ok: z.literal(false),
+    reason: z.enum(['delegation', 'profile', 'course']),
+    message: z.string(),
+  }),
+]);
+export type EventAudience = z.infer<typeof EventAudience>;
+
+export const EventDetail = read({
+  ...EventCard.shape,
+  tagline: z.string().nullable(),
+  /** Texto plano, saltos de línea incluidos. Solo si no hay información de la web (nunca las dos). */
+  description: z.string().nullable(),
+  timetable: z.string().nullable(),
+  address: z.string().nullable(),
+  /** `null` si es 0: un 0 no es un dato. */
+  capacity: z.number().int().nullable(),
+  price: z.number().nullable(),
+  map: z
+    .union([
+      z.strictObject({ url: z.string() }),
+      z.strictObject({ query: z.string() }),
+    ])
+    .nullable(),
+  cover: ImageRef.nullable(),
+  body: z.array(BodyBlock),
+  gallery: z.array(ImageRef),
+  attachments: z.array(z.strictObject({ documentId: Id, title: z.string() })),
+  /** Solo si está publicada. */
+  publicUrl: z.string().nullable(),
+  /** El enlace para compartir (plan 08): la página pública si la hay. */
+  share: z
+    .strictObject({ url: z.string(), kind: z.enum(['public', 'area']) })
+    .nullable(),
+  signup: z.strictObject({ audience: EventAudience }).nullable(),
+});
+export type EventDetail = z.infer<typeof EventDetail>;
+
+// ═══ Familias: copia de comunicaMiddleware/src/contract-profile-registrations.ts ═══
+/**
+ * FAMILIAS: INSCRIPCIONES (plan 14 de la app), lo de «Mis inscripciones»: la lista, la ficha, modificar y cancelar. Todo cuelga de
+ * `/v1/profiles/:pid/…` y pasa por `allowedProfile` (src/app/profiles.ts). Apuntarse (alta, pago, formulario avanzado) llega después.
+ * Días en `YYYY-MM-DD` de Madrid. Nunca viaja un IBAN ni el id de quien paga: la persona inscrita es siempre `pid`.
+ */
+
+export const PAYMENT_METHODS = [
+  'bizum',
+  'transfer',
+  'transfer_received',
+  'cash',
+  'direct_debit',
+  'card',
+] as const;
+export const PaymentMethod = z.enum(PAYMENT_METHODS);
+export type PaymentMethod = z.infer<typeof PaymentMethod>;
+
+export const RegistrationStatus = z.object({
+  /** Vacía = sin chip. La etiqueta sale de una tabla fija (las del CRM no se leen por SQL: duda 25 de docs/FASE3.md). */
+  label: z.string(),
+  tone: z.enum(ACTIVITY_TONES),
+});
+export type RegistrationStatus = z.infer<typeof RegistrationStatus>;
+
+export const RegistrationCard = z.object({
+  id: Id,
+  title: z.string(),
+  eventId: Id.nullable(),
+  eventStart: Day.nullable(),
+  eventEnd: Day.nullable(),
+  signedOn: Day.nullable(),
+  schoolLevel: z.string().nullable(),
+  classLabel: z.string().nullable(),
+  status: RegistrationStatus,
+  eventHidden: z.boolean(),
+});
+export type RegistrationCard = z.infer<typeof RegistrationCard>;
+
+/** `GET /v1/profiles/:pid/registrations`. Todas (también canceladas y rechazadas, con su chip); la app las ordena. */
+export const RegistrationsList = read({ items: z.array(RegistrationCard) });
+export type RegistrationsList = z.infer<typeof RegistrationsList>;
+
+export const Question = z.object({
+  n: z.union([z.literal(1), z.literal(2)]),
+  prompt: z.string().nullable(),
+  options: z.array(z.string()).min(2),
+});
+export type Question = z.infer<typeof Question>;
+
+export const SpecialNeedsDef = z.object({
+  label: z.string(),
+  options: z.array(z.object({ value: z.string(), label: z.string() })),
+  yesValue: z.string(),
+  descriptionLabel: z.string(),
+});
+export type SpecialNeedsDef = z.infer<typeof SpecialNeedsDef>;
+
+export const PaymentState = z.object({
+  state: z.enum([
+    'pending',
+    'returned',
+    'paid',
+    'direct_debit',
+    'no_commitment',
+    'none',
+  ]),
+  amount: z.number().nullable(),
+  method: PaymentMethod.nullable(),
+  methodLabel: z.string().nullable(),
+  date: Day.nullable(),
+  paymentId: Id.nullable(),
+});
+export type PaymentState = z.infer<typeof PaymentState>;
+
+export const RegistrationDetail = RegistrationCard.extend({
+  generatedAt: Instant,
+  amount: z.number().nullable(),
+  participation: z.string().nullable(),
+  attendancePercent: z.number().nullable(),
+  attendees: z.number().int(),
+  answers: z.array(z.string()),
+  specialNeeds: z.string().nullable(),
+  specialNeedsDescription: z.string().nullable(),
+  contacts: z.array(
+    z.object({
+      name: z.string(),
+      relationship: z.string().nullable(),
+      phone: z.string().nullable(),
+      email: z.string().nullable(),
+    }),
+  ),
+  payment: PaymentState,
+  manage: z.object({
+    canEdit: z.boolean(),
+    canCancel: z.boolean(),
+    reason: z.string().nullable(),
+    until: Day.nullable(),
+  }),
+  edit: z
+    .object({
+      questions: z.array(
+        Question.extend({ current: z.number().int().nullable() }),
+      ),
+      specialNeeds: SpecialNeedsDef,
+    })
+    .nullable(),
+});
+export type RegistrationDetail = z.infer<typeof RegistrationDetail>;
 
 /**
- * `GET /v1/me/profiles[?fresh=1]` — quién ha entrado y sus hijos con relación
- * vigente, por nombre. Si el CRM no contesta, `crm_unavailable`: NUNCA
- * `children: []` (sería decir que no tiene hijos).
+ * `PATCH /v1/profiles/:pid/registrations/:rid`: SOLO las respuestas (número de opción desde 1, de las preguntas de ese evento: todas) y las
+ * necesidades especiales (la descripción solo si es «sí»). Estricto. Sin derechos (cancelada, evento pasado, plazo cerrado), `conflict`
+ * `window_closed` y no se toca nada.
  */
-export const MyProfiles = read({
-  self: ProfileRef,
-  children: z.array(ProfileRef),
+export const RegistrationEdit = z.strictObject({
+  clientId: ClientId,
+  answers: z
+    .array(
+      z.strictObject({
+        n: z.union([z.literal(1), z.literal(2)]),
+        option: z.number().int().min(1).max(20),
+      }),
+    )
+    .max(2),
+  specialNeeds: z.string().max(50).nullable().optional(),
+  specialNeedsDescription: z.string().max(255).nullable().optional(),
 });
-export type MyProfiles = z.infer<typeof MyProfiles>;
+export type RegistrationEdit = z.infer<typeof RegistrationEdit>;
 
-// ── Calendario (plan 16 «Datos»; lo adelanta el 11 para la portada) ─────────
+/** `POST /v1/profiles/:pid/registrations/:rid/cancel`. */
+export const RegistrationCancel = z.strictObject({ clientId: ClientId });
+export type RegistrationCancel = z.infer<typeof RegistrationCancel>;
+export const RegistrationWriteResult = WriteResult;
+export type RegistrationWriteResult = z.infer<typeof RegistrationWriteResult>;
 
-/** Una sesión de un evento en el que tiene plaza `pid`, con su asistencia. */
+// ── Apuntarse (plan 14b) ────────────────────────────────────────────────────
+
+/**
+ * `GET /v1/profiles/:pid/events/:eventId/signup`: lo que la app necesita para el alta corta, y por qué no se puede (si no). El servidor
+ * vuelve a comprobarlo todo al enviar: lo que enseña la app es cortesía. Los medios de pago son los que el servidor tiene activados
+ * (`MW_PAYMENT_METHODS`; por defecto domiciliación y tarjeta, las únicas vistas en el CRM): nunca se escribe una clave a ciegas.
+ */
+export const SignupBlocked = z.union([
+  z.object({ reason: z.literal('already_registered'), registrationId: Id }),
+  z.object({
+    reason: z.enum(['audience', 'window']),
+    title: z.string(),
+    message: z.string(),
+  }),
+  z.object({ reason: z.literal('advanced_form') }),
+]);
+export type SignupBlocked = z.infer<typeof SignupBlocked>;
+
+export const SignupForm = read({
+  event: z.object({
+    id: Id,
+    name: z.string(),
+    startDate: Day.nullable(),
+    endDate: Day.nullable(),
+    description: z.string().nullable(),
+  }),
+  blocked: SignupBlocked.nullable(),
+  questions: z.array(Question),
+  price: z.number().nullable(),
+  paymentMethods: z.array(z.object({ key: PaymentMethod, label: z.string() })),
+  specialNeeds: SpecialNeedsDef,
+});
+export type SignupForm = z.infer<typeof SignupForm>;
+
+/**
+ * `POST /v1/profiles/:pid/registrations`: la persona inscrita es SIEMPRE `pid`; paga quien ha entrado (y el hijo, si es el caso, es el
+ * destinatario): ninguna de las dos personas viaja en el cuerpo. El IBAN solo con domiciliación (si no, el esquema lo rechaza) y nunca
+ * llega al diario, a un log ni a una respuesta. Respuestas: número de opción desde 1.
+ */
+export const SignupWrite = z
+  .strictObject({
+    clientId: ClientId,
+    eventId: Id,
+    answers: z
+      .array(
+        z.strictObject({
+          n: z.union([z.literal(1), z.literal(2)]),
+          option: z.number().int().min(1).max(20),
+        }),
+      )
+      .max(2),
+    payment: z
+      .strictObject({
+        method: PaymentMethod,
+        iban: z.string().max(60).optional(),
+      })
+      .nullable(),
+    specialNeeds: z.string().max(50).nullable().optional(),
+    specialNeedsDescription: z.string().max(255).nullable().optional(),
+  })
+  .refine(
+    (w) =>
+      !w.payment ||
+      w.payment.iban === undefined ||
+      w.payment.method === 'direct_debit',
+    {
+      path: ['payment', 'iban'],
+      message: 'El IBAN es solo para la domiciliación.',
+    },
+  );
+export type SignupWrite = z.infer<typeof SignupWrite>;
+
+/** `payment`: `none` (sin precio o sin medio), `noted` (compromiso anotado) o `error` (la inscripción queda y el pago no se pudo anotar). */
+export const SignupResult = WriteResult.extend({
+  registrationId: Id,
+  payment: z.enum(['none', 'noted', 'error']),
+  cardPaymentId: Id.nullable(),
+});
+export type SignupResult = z.infer<typeof SignupResult>;
+
+/** `POST /v1/profiles/:pid/events/:eventId/advanced-form` → la URL del formulario del CRM con los datos de `pid` ya puestos. */
+export const AdvancedFormResult = z.object({
+  url: z.url({ protocol: /^https?$/ }),
+});
+export type AdvancedFormResult = z.infer<typeof AdvancedFormResult>;
+
+// ═══ Familias: copia de comunicaMiddleware/src/contract-profile-docs.ts ═══
+/**
+ * FAMILIAS: DOCUMENTOS Y CALENDARIO (plan 16 de la app). Parte del contrato de la app (`src/contract.ts`), en su propio fichero para
+ * que cada plan de familias añada el suyo sin pisar a los demás. Todo cuelga de `/v1/profiles/:pid/…`: el servidor comprueba, en cada
+ * petición, que `pid` es quien ha entrado o uno de sus hijos con relación vigente (`allowedProfile`, src/app/profiles.ts).
+ */
+const KeyLabel = z.object({ key: z.string(), label: z.string() });
+
+// ── Documentos ──────────────────────────────────────────────────────────────
+
+/** Los documentos de la relación `documents` del perfil. Sin el contenido ni la descripción: eso, en la ficha. */
+export const DocumentSummary = z.object({
+  id: Id,
+  name: z.string(),
+  /** El del archivo de su revisión actual (con su extensión), o `null` si no tiene archivo. */
+  fileName: Text,
+  status: KeyLabel.nullable(),
+  activeOn: Day.nullable(),
+  expiresOn: Day.nullable(),
+});
+export type DocumentSummary = z.infer<typeof DocumentSummary>;
+
+export const DocumentDetail = DocumentSummary.extend({
+  description: Text,
+  category: KeyLabel.nullable(),
+  sharedLink: Text,
+});
+export type DocumentDetail = z.infer<typeof DocumentDetail>;
+
+/** `GET /v1/profiles/:pid/documents`: sin caché; nunca en el móvil. Lo más reciente primero y lo caducado al final. */
+export const DocumentsResponse = read({ documents: z.array(DocumentSummary) });
+export type DocumentsResponse = z.infer<typeof DocumentsResponse>;
+
+/** `GET /v1/profiles/:pid/documents/:id`: uno ajeno, borrado o inexistente es `forbidden` (nunca «no es tuyo»). */
+export const DocumentResponse = read({ document: DocumentDetail });
+export type DocumentResponse = z.infer<typeof DocumentResponse>;
+
+/**
+ * `POST /v1/profiles/:pid/documents` (multipart: estos campos y `file`) y `PATCH /v1/profiles/:pid/documents/:id` (multipart: `clientId`
+ * y lo que cambia, `name`, `description` y/o `file`). El archivo: hasta 4 MB (lo que cabe en Vercel), una extensión de la lista
+ * (`DOCUMENT_EXTENSIONS`) y un contenido que es de lo que dice la extensión. La descripción vacía la deja vacía.
+ */
+export const DocumentFields = z.object({
+  clientId: ClientId,
+  name: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(2000).optional(),
+});
+export const DocumentPatchFields = z.object({
+  clientId: ClientId,
+  name: z.string().trim().min(1).max(200).optional(),
+  description: z.string().trim().max(2000).optional(),
+});
+/** `DELETE /v1/profiles/:pid/documents/:id?clientId=`: nunca por GET, solo con el token en la cabecera. */
+export const DocumentDeleteQuery = z.object({ clientId: ClientId });
+
+// ── Calendario ──────────────────────────────────────────────────────────────
+
+/**
+ * Una sesión de un evento en el que el perfil tiene inscripción NO cancelada. `attendance` es la marca de su asistencia (`null` = sin
+ * registrar); «parcial» y «justificada» las junta la app con las otras dos mientras sus estados estén apagados (regla C4 del plan).
+ */
 export const CalendarSession = z.object({
   id: Id,
   name: z.string(),
@@ -1448,9 +2016,8 @@ export const CalendarEvent = z.object({
 export type CalendarEvent = z.infer<typeof CalendarEvent>;
 
 /**
- * `GET /v1/profiles/:pid/calendar` — ventana de −14 días a +12 meses.
- * `openEvents`: abiertos a inscripción para la audiencia de `pid`, sin los que
- * ya tiene con plaza. `registeredEvents`: con plaza (las canceladas no).
+ * `GET /v1/profiles/:pid/calendar`: ventana de 14 meses atrás a 12 adelante. `openEvents` va filtrado por la audiencia del perfil, sin
+ * los ocultos y sin los que ya tienen plaza; `registeredEvents` no (es su agenda); las inscripciones canceladas no cuentan.
  */
 export const CalendarData = read({
   sessions: z.array(CalendarSession),
@@ -1459,14 +2026,39 @@ export const CalendarData = read({
 });
 export type CalendarData = z.infer<typeof CalendarData>;
 
-// ── Rutas ───────────────────────────────────────────────────────────────────
+export const SessionDetail = CalendarSession.extend({ description: Text });
+export type SessionDetail = z.infer<typeof SessionDetail>;
+/** `GET /v1/profiles/:pid/sessions/:id`: solo con inscripción activa a su evento; si no, `forbidden`. */
+export const SessionResponse = read({ session: SessionDetail });
+export type SessionResponse = z.infer<typeof SessionResponse>;
+
+// ═══ Solo de la app (plan 11) ═══
 
 /**
- * Catálogo de lo que hay hoy en el contrato, para los tests que lo recorren
- * (cada ruta tiene datos en el servidor falso; ninguna lectura que se guarda
- * lleva texto de salud).
+ * CONVENCIÓN PARA TODOS LOS PLANES DE FAMILIAS (12-16): lo de la persona que se
+ * está viendo cuelga de `/v1/profiles/:pid/…`. `pid` es quien ha entrado o un
+ * hijo con relación VIGENTE; el servidor lo comprueba en CADA petición y, si no,
+ * `forbidden` (403, nunca 404). No llevan la cabecera de la delegación. En la
+ * app, sus consultas van por `useProfileQuery` y su clave lleva el pid.
  */
+export const PROFILE_PATH_PREFIX = '/v1/profiles/:pid';
+
+export const GENDERS = ['female', 'male'] as const;
+
 export const ROUTES = {
+  // ── Familias (planes 11-16): personales, con el pid en la clave ──
+  myProfiles: {
+    method: 'GET',
+    path: '/v1/me/profiles',
+    response: MyProfiles,
+    persist: true,
+  },
+  profileCalendar: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/calendar',
+    response: CalendarData,
+    persist: true,
+  },
   code: {
     method: 'POST',
     path: '/v1/auth/code',
@@ -1688,21 +2280,6 @@ export const ROUTES = {
     path: '/v1/me/documents',
     response: WriteResult,
     persist: false,
-  },
-  // Familias (plan 11). Los nombres de los propios hijos: se guardan.
-  myProfiles: {
-    method: 'GET',
-    path: '/v1/me/profiles',
-    response: MyProfiles,
-    persist: true,
-  },
-  // Plan 16 (adelantada por el 11 para «Próximas actividades»). Actividades,
-  // fechas y marcas: se guarda para abrir rápido.
-  profileCalendar: {
-    method: 'GET',
-    path: '/v1/profiles/:pid/calendar',
-    response: CalendarData,
-    persist: true,
   },
 } as const;
 export type RouteName = keyof typeof ROUTES;
