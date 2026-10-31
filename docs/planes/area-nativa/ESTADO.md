@@ -115,6 +115,12 @@ seleccionado del Laboratorio más visible; buscadores con
 **2. Fuera del área pero visto en el QA:** en oscuro la barra de pestañas no
 marca la activa; en web la barra lleva elementos de más («⏷», «visitapapa»).
 
+**2 bis. Cambios del plugin del 31/10 por portar** (plan 06, sección «⚠️ Cambios
+del plugin del 31/10/2026»): la ficha busca las listas de un grupo en las
+sesiones de su etapa (bug «sin lista» vs «todas pasadas»); en una reunión,
+la coordinación de una etapa ve a todos los monitores; y en las reuniones los
+monitores sin grupo salen con «-». Revisar antes de usar el área nativa.
+
 **3. Por planes:** 03 (catálogo y revisar el territorio con capturas), 04-05
 (lo que dice su fila en la tabla del README); 06, 07, 08 y 09 hechos el 28/10;
 17 (varias delegaciones) hecho en su rama; seguir con 11-16. Preguntas abiertas que dejan 08
