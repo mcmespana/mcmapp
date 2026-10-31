@@ -4,7 +4,7 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
-## 2026-10-31 21:00 — Expo 58: arreglos tras la primera build de TestFlight (iconos, pestañas, panel secreto)
+## 2026-10-31 20:05 — Expo 58: arreglos tras la primera build de TestFlight (iconos, pestañas, panel secreto)
 
 Fallos vistos en el móvil con la build de la rama (`docs/planes/PLAN_EXPO_58.md`, paso 10):
 

@@ -30,7 +30,7 @@ de `__tests__/router/` se han borrado y la regla queda pelada.
 
 **Primera build de TestFlight (31/10, noche):** salieron iconos en blanco en
 iOS, pestañas que volvían a su portada, el re-tap de Contigo y el panel
-secreto. Arreglados en la entrada del CHANGELOG de las 21:00; **hace falta
+secreto. Arreglados en la entrada del CHANGELOG de las 20:05; **hace falta
 otra build** para comprobarlos. Pendiente aparte: el login del área nativa de
 Comunica en modo alpha («no se ha podido»), a mirar en su propia sesión.
 
