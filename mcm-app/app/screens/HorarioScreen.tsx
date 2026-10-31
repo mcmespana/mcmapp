@@ -19,20 +19,15 @@ import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import { getClosestDateIndex } from '@/utils/dateUtils';
 import DateSelector from '@/components/DateSelector';
 import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
-import { useNavigation } from 'expo-router/react-navigation';
-import { NativeStackNavigationProp } from 'expo-router/native-stack';
-import { MasStackParamList } from '../(tabs)/mas';
-
-type Nav = NativeStackNavigationProp<MasStackParamList, 'Materiales'>;
 
 export default function HorarioScreen() {
-  const navigation = useNavigation<Nav>();
+  const { open } = useEventNavigation();
   const scheme = useColorScheme();
   const fontScale = useFontScale();
   const bottomPadding = useTabBarPaddingBottom(spacing.xl * 2);
@@ -154,7 +149,7 @@ export default function HorarioScreen() {
 
   // Handle navigation to materials with specific day
   const handleNavigateToMateriales = (dayIndex: number) => {
-    navigation.navigate('Materiales', {
+    open('Materiales', {
       initialDayIndex: dayIndex,
       eventId: event.id,
     });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import { createNativeStackNavigator } from 'expo-router/native-stack';
+import { Stack } from 'expo-router';
 
 import GlassHeader from '@/components/ui/GlassHeader.ios';
 import GlassBackButton from '@/components/ui/GlassBackButton';
@@ -9,30 +9,18 @@ import { Colors, themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { getEvent } from '@/constants/events';
 import { onColor } from '@/utils/colorUtils';
-
-import EventHomeScreen from './EventHomeScreen';
-import HorarioScreen from './HorarioScreen';
-import MaterialesScreen from './MaterialesScreen';
-import MaterialPagesScreen from './MaterialPagesScreen';
-import VisitasScreen from './VisitasScreen';
-import ProfundizaScreen from './ProfundizaScreen';
-import GruposScreen from './GruposScreen';
-import ContactosScreen from './ContactosScreen';
-import AppsScreen from './AppsScreen';
-import ReflexionesScreen from './ReflexionesScreen';
-import EvaluacionScreen from './EvaluacionScreen';
-import ComidaScreen from './ComidaScreen';
-import ComidaWebScreen from './ComidaWebScreen';
-import WordleScreen from './WordleScreen';
+import { EVENT_SLUGS } from '@/utils/eventRoutes';
 
 /**
  * Plumbing compartido del stack de un evento (Jubileo, Visita Papa, etc.).
  *
  * Las sub-pantallas de evento son las mismas en todos los eventos; este módulo
- * las registra una sola vez para que las consuman tanto el tab "Más"
- * (`app/(tabs)/mas.tsx`) como las tabs de evento propias (ej.
- * `app/(tabs)/visitapapa.tsx`). Añadir una actividad-tab nueva = un archivo
- * fino + 1 entrada en `constants/events.ts`.
+ * declara una sola vez sus opciones de header para que las consuman tanto el
+ * tab "Más" (`app/(tabs)/mas/_layout.tsx`) como las tabs de evento propias
+ * (ej. `app/(tabs)/visitapapa/_layout.tsx`). Cada pantalla es un FICHERO de
+ * ruta en cada una de esas carpetas (un `export { default } from …` de una
+ * línea): expo-router 58 ya no admite montar un navegador a mano. Las rutas y
+ * cómo se llega a ellas por nombre: `utils/eventRoutes.ts`.
  */
 
 /**
@@ -80,26 +68,6 @@ function WebHeaderTitle({ title }: { title: string }) {
   );
 }
 
-/**
- * Rutas de sub-pantalla de evento (todo menos el hub `JubileoHome`). Los tabs
- * de evento usan esta lista para decidir cuándo mostrar los FAB glass de
- * acción (`EventActionButtons`) por encima del navigator.
- */
-export const EVENT_SUB_ROUTES = [
-  'Horario',
-  'Materiales',
-  'MaterialPages',
-  'Visitas',
-  'Profundiza',
-  'Grupos',
-  'Contactos',
-  'Apps',
-  'Reflexiones',
-  'Comida',
-  'ComidaWeb',
-  'Wordle',
-] as const;
-
 /** Pantallas comunes a cualquier evento. */
 export type EventStackParamList = {
   JubileoHome: EventRouteParams | undefined;
@@ -118,9 +86,16 @@ export type EventStackParamList = {
   Evaluacion: EventRouteParams | undefined;
 };
 
-type EventStackNavigator = ReturnType<
-  typeof createNativeStackNavigator<EventStackParamList>
->;
+/** Pantallas del stack de «Más» (las de evento van en `EventStackParamList`). */
+export type MasStackParamList = EventStackParamList & {
+  MasHome: { directTo?: string } | undefined;
+  Fotos: undefined;
+  Calendario: undefined;
+  Comunica: undefined;
+  ComunicaGestion: undefined;
+  McmPanel: undefined;
+  EventosPasados: undefined;
+};
 
 type EventScreenRoute = { params?: { eventId?: string } };
 
@@ -347,117 +322,74 @@ export function eventStackScreenOptions({
 }
 
 /**
- * Registra las sub-pantallas de un evento dentro de un Stack.Navigator.
+ * Declara las sub-pantallas de un evento dentro del `<Stack>` de un layout. El
+ * `name` de cada una es su ruta (`horario`, `material`…): tiene que existir el
+ * fichero en esa carpeta (`utils/eventRoutes.ts` lista los trozos).
  *
- * @param opts.skipHub        no registra `JubileoHome` (lo registra el tab con
- *                            el `EventIdContext` de la pestaña).
- * @param opts.includeExtras  registra Comida/ComidaWeb/Wordle (solo Jubileo;
+ * Devuelve un ARRAY de `Stack.Screen`, no un fragmento ni un componente: el
+ * `Stack` de expo-router 58 recorre sus hijos con `Children.toArray`, que
+ * aplana arrays pero NO fragmentos (un `<>…</>` da «Unknown child element
+ * passed to Stack» y revienta al avisar). Lo cubre `tabsMountWithRouter`.
+ *
+ * @param opts.includeHub     declara el hub como `evento` (el de «Más»). La
+ *                            pestaña propia del evento declara su `index`.
+ * @param opts.includeExtras  declara Comida/ComidaWeb/Wordle (solo Jubileo;
  *                            Visita Papa usa una sección-enlace para la comida).
  */
-export function renderEventScreens(
-  Stack: EventStackNavigator,
-  opts?: { skipHub?: boolean; includeExtras?: boolean },
-) {
-  const { skipHub = false, includeExtras = false } = opts ?? {};
-  return (
-    <>
-      {!skipHub && (
-        <Stack.Screen
-          name="JubileoHome"
-          component={EventHomeScreen}
-          options={eventHubScreenOptions}
-        />
-      )}
-      <Stack.Screen
-        name="Horario"
-        component={HorarioScreen}
-        options={eventScreenOptions('Horario', {
-          hideHeaderTitle: true,
-          webHeaderTitle: true,
-        })}
-      />
-      <Stack.Screen
-        name="Materiales"
-        component={MaterialesScreen}
-        options={eventScreenOptions('Materiales', {
-          hideHeaderTitle: true,
-          webHeaderTitle: true,
-        })}
-      />
-      <Stack.Screen
-        name="MaterialPages"
-        component={MaterialPagesScreen}
-        options={eventScreenOptions('Material')}
-      />
-      <Stack.Screen
-        name="Visitas"
-        component={VisitasScreen}
-        options={eventScreenOptions('Visitas', {
-          hideHeaderTitle: true,
-          webHeaderTitle: true,
-        })}
-      />
-      <Stack.Screen
-        name="Profundiza"
-        component={ProfundizaScreen}
-        options={eventScreenOptions('Profundiza', {
-          hideHeaderTitle: true,
-          webHeaderTitle: true,
-        })}
-      />
-      <Stack.Screen
-        name="Grupos"
-        component={GruposScreen}
-        options={eventScreenOptions('Grupos', {
-          hideHeaderTitle: true,
-          webHeaderTitle: true,
-        })}
-      />
-      <Stack.Screen
-        name="Contactos"
-        component={ContactosScreen}
-        options={eventScreenOptions('Contactos', {
-          hideHeaderTitle: true,
-          webHeaderTitle: true,
-        })}
-      />
-      <Stack.Screen
-        name="Apps"
-        component={AppsScreen}
-        options={eventScreenOptions('Apps', {
-          hideHeaderTitle: true,
-          webHeaderTitle: true,
-        })}
-      />
-      <Stack.Screen
-        name="Reflexiones"
-        component={ReflexionesScreen}
-        options={eventScreenOptions('Compartiendo', { hideHeaderTitle: true })}
-      />
-      <Stack.Screen
-        name="Evaluacion"
-        component={EvaluacionScreen}
-        options={{ headerShown: false }}
-      />
-      {includeExtras && (
-        <>
-          <Stack.Screen
-            name="Comida"
-            component={ComidaScreen}
-            options={eventScreenOptions('Comida')}
-          />
-          <Stack.Screen
-            name="ComidaWeb"
-            component={ComidaWebScreen}
-            options={eventScreenOptions('Comida')}
-          />
-          <Stack.Screen
-            name="Wordle"
-            component={WordleScreen}
-            options={eventScreenOptions('Wordle Jubileo')}
-          />
-        </>
-      )}
-    </>
-  );
+export function renderEventScreens(opts?: {
+  includeHub?: boolean;
+  includeExtras?: boolean;
+}) {
+  const { includeHub = false, includeExtras = false } = opts ?? {};
+  const full = { hideHeaderTitle: true, webHeaderTitle: true };
+  const screens: { name: string; options: unknown }[] = [
+    ...(includeHub ? [{ name: 'evento', options: eventHubScreenOptions }] : []),
+    {
+      name: EVENT_SLUGS.Horario,
+      options: eventScreenOptions('Horario', full),
+    },
+    {
+      name: EVENT_SLUGS.Materiales,
+      options: eventScreenOptions('Materiales', full),
+    },
+    {
+      name: EVENT_SLUGS.MaterialPages,
+      options: eventScreenOptions('Material'),
+    },
+    {
+      name: EVENT_SLUGS.Visitas,
+      options: eventScreenOptions('Visitas', full),
+    },
+    {
+      name: EVENT_SLUGS.Profundiza,
+      options: eventScreenOptions('Profundiza', full),
+    },
+    { name: EVENT_SLUGS.Grupos, options: eventScreenOptions('Grupos', full) },
+    {
+      name: EVENT_SLUGS.Contactos,
+      options: eventScreenOptions('Contactos', full),
+    },
+    { name: EVENT_SLUGS.Apps, options: eventScreenOptions('Apps', full) },
+    {
+      name: EVENT_SLUGS.Reflexiones,
+      options: eventScreenOptions('Compartiendo', { hideHeaderTitle: true }),
+    },
+    { name: EVENT_SLUGS.Evaluacion, options: { headerShown: false } },
+    ...(includeExtras
+      ? [
+          { name: EVENT_SLUGS.Comida, options: eventScreenOptions('Comida') },
+          {
+            name: EVENT_SLUGS.ComidaWeb,
+            options: eventScreenOptions('Comida'),
+          },
+          {
+            name: EVENT_SLUGS.Wordle,
+            options: eventScreenOptions('Wordle Jubileo'),
+          },
+        ]
+      : []),
+  ];
+  return screens.map(({ name, options }) => (
+    <Stack.Screen key={name} name={name} options={options as never} />
+  ));
 }

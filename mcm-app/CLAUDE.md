@@ -133,14 +133,23 @@ RootLayout (Stack)
 │   ├── index (Home)           ← Grid de botones
 │   ├── cancionero             ← Stack interno: Categories → SongsList → SongDetail → SongFullscreen
 │   ├── contigo                ← Acompañamiento y oración
-│   ├── comunica               ← WebView del portal de comunicación
-│   ├── calendario             ← Eventos ICS
-│   ├── fotos                  ← Galería
-│   ├── visitapapa             ← Stack del evento (oculto mientras esté archivado)
-│   └── mas                    ← Stack interno: MasHome → Jubileo/Grupos/Materiales/etc.
+│   ├── comunica/              ← Área nativa (alpha) o WebView del portal; carpeta con _layout
+│   ├── calendario/            ← Eventos ICS (carpeta con _layout)
+│   ├── fotos/                 ← Galería (carpeta con _layout)
+│   ├── visitapapa/            ← Stack del evento (oculto mientras esté archivado)
+│   └── mas/                   ← Stack: index (MasHome) → fotos, calendario, evento, horario…
 ├── wordle                     ← Juego
 └── notifications              ← Lista de notificaciones
 ```
+
+**Los stacks de una pestaña son CARPETAS de rutas** (`_layout.tsx` con `Stack` de
+expo-router + un fichero por pantalla, que re-exporta la de `app/screens/`).
+Con expo-router 58 el estado de navegación sale de los ficheros: **no se monta
+`createNativeStackNavigator` en `app/`** (lo prohíbe `__tests__/router/`). Los
+params de ruta son texto, nunca objetos. Los nombres de pantalla de siempre
+(`'Horario'`, `'Fotos'`…) se traducen a rutas en `utils/eventRoutes.ts`.
+`renderEventScreens()` devuelve un array de `Stack.Screen`: el `Stack` no aplana
+fragmentos. Estado de la migración: `docs/planes/PLAN_EXPO_58.md`.
 
 **Tabs — tres implementaciones (ver `docs/desarrollo/TABS_MAINTENANCE.md`):**
 

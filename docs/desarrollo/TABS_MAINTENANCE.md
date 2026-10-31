@@ -107,7 +107,8 @@ El mapa de espejos vive en `utils/tabNavigation.ts` (`MAS_STACK_MIRROR`) y es
 **fuente única**: lo usan tanto `goToTab` como las tarjetas de overflow de
 `MasHomeScreen`. Si añades un tab que pueda quedar en overflow (o reordenas
 `TABS_CONFIG` y cambias quién se queda fuera), **regístrale su pantalla espejo en
-`mas.tsx` y su entrada en `MAS_STACK_MIRROR`** — si no, en iOS será inalcanzable.
+`app/(tabs)/mas/` (fichero de ruta + `<Stack.Screen>` en su `_layout.tsx`, y el nombre
+en `utils/eventRoutes.ts`) y su entrada en `MAS_STACK_MIRROR`** — si no, en iOS será inalcanzable.
 Cubierto por `__tests__/tabNavigation.test.ts`.
 
 ### La barra FLOTA: hay que reservarle hueco

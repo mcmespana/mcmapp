@@ -1,3 +1,1 @@
-import FotosScreen from '@/app/screens/FotosScreen';
-
-export default FotosScreen;
+export { default } from '@/app/screens/FotosScreen';

@@ -4,6 +4,21 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-31 12:00 — Expo 58: Fotos, Calendario, Visita del Papa y Más pasan a rutas de fichero
+
+Primer tramo de la migración a navegación por ficheros (`docs/planes/PLAN_EXPO_58.md`). En expo-router 58 el estado de navegación se crea de forma global a partir de las rutas de fichero, y la build 60 se cerraba al abrir por montar navegadores a mano (`createNativeStackNavigator`) dentro de las pestañas. **Quedan Cantoral (paso 5) y lo que se apoya en su stack (paso 6).**
+
+- **Fotos** y **Calendario**: de `fotos.tsx` / `calendario.tsx` a carpetas con `_layout.tsx` + `index.tsx`. Las pantallas viven ahora en `app/screens/FotosScreen.tsx` y `CalendarScreen.tsx` (las reutiliza Más). `CalendarScreen` decide dónde pone el conmutador Mes/Agenda por una prop `variant: 'tab' | 'stacked'` en vez de por el nombre de la ruta, y lee el `?date=` de la URL (ya no de React Navigation).
+- **Visita del Papa** (`app/(tabs)/visitapapa/`) y **Más** (`app/(tabs)/mas/`): un fichero de ruta por pantalla (22 en Más, 12 en Visita) que re-exporta la pantalla de `app/screens/`. Los layouts llevan lo que tenían los ficheros viejos: ajustes, botones de acción de evento, barra de color, re-tap del tab (`router.canDismiss()` + `dismissAll()`), vuelta a la raíz al volver de otro tab y el destino pendiente del banner «Evalúa».
+- **`utils/eventRoutes.ts`**: único sitio que traduce los nombres de pantalla de siempre (`'Horario'`, `'Fotos'`, `'JubileoHome'`…) a rutas (`/mas/horario`, `/visitapapa`, `/mas/evento`). `masNavigation`, `eventNavigation` y `tabNavigation` siguen hablando en nombres. Las pantallas de evento navegan con `useEventNavigation()`; la raíz (`/mas` o `/visitapapa`) la da `EventBaseContext`.
+- **Los params de ruta son texto.** `initialDayIndex` se lee como número desde la URL, y `MaterialPages` ya no recibe el objeto `actividad`: recibe `dia` y `act` (posiciones) y lo lee de la caché de `materiales`.
+- **`renderEventScreens()` devuelve un array, no un fragmento**: el `Stack` de expo-router 58 recorre los hijos con `Children.toArray`, que no aplana fragmentos, y habría reventado en el móvil.
+- **Comunica** (de `main`) sobre Expo 58: su layout usa `unstable_settings.anchor`, y «salir con cambios sin guardar» pasa de `beforeRemove` (ya no existe en el mapa de eventos) a `usePreventRemove` en las cuatro pantallas.
+- **Guardarraíles** (`__tests__/router/`): `tabsMountWithRouter` y `routeFoldersWalk` montan las pestañas y abren **cada ruta** de `mas/` y `visitapapa/` con `renderRouter` (router real), y fallan ante avisos de rutas; `noHandMadeNavigators` prohíbe `createNativeStackNavigator` en `app/` con una lista de pendientes que solo puede encogerse (hoy: Cantoral). `tabNavigationInvariants` pasa a comprobar los ficheros de `mas/`.
+- Jest: `standard-navigation` en `transformIgnorePatterns`. Lint: 36 avisos (bajan los de `mas.tsx` y `visitapapa.tsx`).
+- **Pendiente de probar en dispositivo:** re-tap de pestaña en Más y Visita, volver al tab del evento, el banner «Evalúa», abrir un día del calendario desde Home en iOS (entra por `/mas/calendario?date=…`), Materiales → actividad, `freezeOnBlur` (sin tocar, ver paso 7).
+- Requiere build nativo: no llega por OTA.
+
 ## 2026-10-29 23:30 — Área nativa de Comunica: repaso antes de pasar a `main`
 
 Recorrido automático con el servidor falso (monitor, coordinación y varias

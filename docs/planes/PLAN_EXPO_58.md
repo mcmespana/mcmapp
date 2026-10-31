@@ -15,7 +15,27 @@ cruzadas, y lo que falla solo se ve en el móvil.
 > `claude/deps-expo-58` (PR #353), trae `main` y sigue los pasos. Al acabar,
 > lanza una build de TestFlight y borra el plan.
 
-## Dónde estamos
+## Estado (2026-10-31) — pasos 1-4 hechos, faltan 5-11
+
+Hechos en la rama `claude/deps-expo-58` (PR #353): **1** `main` traído y
+`expo install --check` al día; **2** Comunica sobre Expo 58 (`anchor`,
+`usePreventRemove`); **3** guardarraíles en `__tests__/router/`; **4** Fotos,
+Calendario, Visita del Papa y Más migradas a carpetas de rutas (detalle y
+decisiones en la entrada del CHANGELOG del 2026-10-31 12:00).
+
+**Falta Cantoral (paso 5) y lo que se apoya en su stack (paso 6).** Hasta
+entonces el test `tabsMountWithRouter` marca `cancionero` como PENDIENTE y la
+pestaña sigue lanzando el error de la build 60: **no fusionar ni construir de
+tienda con esto**. Al migrarlo, el test se pone rojo solo y obliga a vaciar las
+dos listas de pendientes (`PENDIENTES` en `tabsMountWithRouter.test.tsx` y en
+`noHandMadeNavigators.test.ts`).
+
+Lo aprendido que conviene saber: el `Stack` de expo-router 58 no aplana
+fragmentos (devolver `<>…</>` de un helper revienta); los params de ruta son
+texto; las pantallas compartidas entre stacks se re-exportan en un fichero de
+una línea por carpeta (`export { default } from '@/app/screens/X'`).
+
+## Dónde estamos (antes de este tramo)
 
 - `main` (31f345b) está en **Expo 57**, con el arreglo del NFC (#352) y el área
   nativa de Comunica (#350). Funciona; build 61 en TestFlight.

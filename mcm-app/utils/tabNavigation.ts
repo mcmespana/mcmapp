@@ -33,7 +33,7 @@
 import { splitTabsForBar, TABS_CONFIG } from '@/constants/tabsCatalog';
 
 /**
- * Tabs con pantalla ESPEJO en el stack de "Más" (`app/(tabs)/mas.tsx`). Es la
+ * Tabs con pantalla ESPEJO en el stack de "Más" (`app/(tabs)/mas/`). Es la
  * única fuente de verdad: la consumen el resolver y las tarjetas de overflow de
  * `MasHomeScreen`.
  */
@@ -112,7 +112,7 @@ export function resolveTabRoute(
 
   // Un tab sin ruta aquí puede ser de overflow (iOS) o directamente no estar en
   // el perfil (evento archivado, calendario apagado…). En los dos casos el
-  // espejo de "Más" es la salida: `mas.tsx` registra Fotos, Calendario, Comunica
+  // espejo de "Más" es la salida: `app/(tabs)/mas/` registra Fotos, Calendario, Comunica
   // y las pantallas de evento SIEMPRE, mire el perfil lo que mire.
   return hasRoute(tabName) ? direct : viaMas();
 }

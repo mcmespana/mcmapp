@@ -19,7 +19,7 @@
  * de control (`contigo`, que ya es carpeta con `_layout`) demuestra que el
  * montaje sí puede salir bien: sin él, «falla» no probaría nada.
  */
-/* eslint-disable react/display-name, @typescript-eslint/no-require-imports, import/first */
+/* eslint-disable @typescript-eslint/no-require-imports, import/first */
 import React from 'react';
 import { renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
@@ -74,7 +74,7 @@ const TABS = [
 type Tab = (typeof TABS)[number];
 
 /** Las que todavía lo hacen (se vacía al migrar, ver arriba). */
-const PENDIENTES: readonly Tab[] = ['visitapapa', 'mas', 'cancionero'];
+const PENDIENTES: readonly Tab[] = ['cancionero'];
 
 const NAV_STATE_ERROR = /missing, partial, or incompatible navigation state/;
 

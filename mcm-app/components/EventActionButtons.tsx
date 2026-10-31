@@ -36,7 +36,7 @@ const H = 38;
  * mismo estilo neutro — coherente con los controles agrupados del cantoral.
  *
  * Se renderiza por encima del Stack.Navigator del evento (ver
- * `app/(tabs)/visitapapa.tsx` y `app/(tabs)/mas.tsx`).
+ * `app/(tabs)/visitapapa/_layout.tsx` y `app/(tabs)/mas/_layout.tsx`).
  */
 export default function EventActionButtons({
   onSettings,

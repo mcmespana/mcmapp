@@ -11,16 +11,10 @@ import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import DateSelector from '@/components/DateSelector';
-import { MasStackParamList } from '../(tabs)/mas';
-import { NativeStackNavigationProp } from 'expo-router/native-stack';
-import {
-  useNavigation,
-  useRoute,
-  RouteProp,
-} from 'expo-router/react-navigation';
+import { useLocalSearchParams } from 'expo-router';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
 interface Actividad {
@@ -29,9 +23,6 @@ interface Actividad {
   emoji?: string;
   paginas: any[];
 }
-
-type Nav = NativeStackNavigationProp<MasStackParamList, 'MaterialPages'>;
-type MaterialesScreenRoute = RouteProp<MasStackParamList, 'Materiales'>;
 
 function parseDateString(dateStr: string): Date | null {
   if (!dateStr) return null;
@@ -105,8 +96,15 @@ function getClosestDateIndex(data: any[]): number {
 
 export default function MaterialesScreen() {
   useSuppressCarismochito();
-  const navigation = useNavigation<Nav>();
-  const route = useRoute<MaterialesScreenRoute>();
+  const { open } = useEventNavigation();
+  // Los params de ruta son texto: `initialDayIndex` llega como «2».
+  const { initialDayIndex } = useLocalSearchParams<{
+    initialDayIndex?: string;
+  }>();
+  const initialDay =
+    initialDayIndex !== undefined && !Number.isNaN(Number(initialDayIndex))
+      ? Number(initialDayIndex)
+      : undefined;
   const scheme = useColorScheme();
   const fontScale = useFontScale(1.2);
   const bottomPadding = useTabBarPaddingBottom(spacing.xl);
@@ -125,11 +123,9 @@ export default function MaterialesScreen() {
   // en vez de sincronizarse con un efecto, así un refresco de Firebase ya no le
   // devuelve al día de hoy estando en otro.
   const defaultIndex = React.useMemo(() => {
-    if (route.params?.initialDayIndex !== undefined) {
-      return route.params.initialDayIndex;
-    }
+    if (initialDay !== undefined) return initialDay;
     return materialesData?.length ? getClosestDateIndex(materialesData) : 0;
-  }, [materialesData, route.params?.initialDayIndex]);
+  }, [materialesData, initialDay]);
 
   const [pickedIndex, setIndex] = useState<number | null>(null);
   // Acotado por si los datos encogen y el día elegido ya no existe.
@@ -203,9 +199,11 @@ export default function MaterialesScreen() {
                 { backgroundColor: act.color || colors.primary },
               ]}
               onPress={() =>
-                navigation.navigate('MaterialPages', {
-                  actividad: act,
-                  fecha: dia.fecha,
+                // La actividad NO viaja por la ruta (es un objeto): van el día
+                // y su posición, y `MaterialPages` la lee de la misma caché.
+                open('MaterialPages', {
+                  dia: index,
+                  act: idx,
                   eventId: event.id,
                 })
               }
