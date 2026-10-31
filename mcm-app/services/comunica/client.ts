@@ -58,6 +58,7 @@ import {
   type ScarfWrite,
   WriteResult,
   MeResponse,
+  MyProfiles,
   RollDetail,
   type RollWrite,
   RollWriteResult,
@@ -90,6 +91,8 @@ export interface ComunicaApi {
   webPass(body: WebPassRequest): Promise<WebPass>;
 
   getMe(): Promise<MeResponse>;
+  /** Familias (plan 11): quien ha entrado y sus hijos. Con `fresh`, se mira otra vez quiénes son los míos. */
+  getMyProfiles(opts?: ReadOptions): Promise<MyProfiles>;
   getGroups(opts?: ReadOptions): Promise<GroupsResponse>;
   getToday(opts?: ReadOptions): Promise<TodayResponse>;
   getRoll(
@@ -539,6 +542,14 @@ export function createHttpClient({
     unregisterDevice: async (deviceId) => {
       await request('DELETE', `/v1/devices/${enc(deviceId)}`, NoContent);
     },
+    getMyProfiles: (opts) =>
+      request(
+        'GET',
+        `/v1/me/profiles${q(opts)}`,
+        MyProfiles,
+        undefined,
+        READ_RETRIES,
+      ),
     getMyMonitorProfile: (opts) =>
       request(
         'GET',

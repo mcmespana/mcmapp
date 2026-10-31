@@ -374,6 +374,7 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     registerDevice: authed((b) => api.registerDevice(b)),
     unregisterDevice: authed((id) => api.unregisterDevice(id)),
     // Mis datos de monitor (plan 09).
+    getMyProfiles: authed((o) => api.getMyProfiles(o)),
     getMyMonitorProfile: authed((o) => api.getMyMonitorProfile(o)),
     updateMyMonitorProfile: authed((b) => api.updateMyMonitorProfile(b)),
     uploadMyDocument: authed((f, file) => api.uploadMyDocument(f, file)),

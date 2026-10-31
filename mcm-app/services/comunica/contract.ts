@@ -217,6 +217,35 @@ const read = <T extends z.ZodRawShape>(shape: T) =>
 export const MeResponse = read({ me: Me });
 export type MeResponse = z.infer<typeof MeResponse>;
 
+// ── Familias: a quién se ve (plan 11) ───────────────────────────────────────
+
+/**
+ * Una persona que se puede ver: quien ha entrado o uno de sus hijos. Los
+ * nombres pueden faltar (`null`): un hijo cuyo nombre no llega sale igual
+ * («Participante» en pantalla: perder el acceso es peor que un nombre feo).
+ * `gender` sirve para «Yo mismo» / «Yo misma».
+ */
+export const ProfileRef = z.object({
+  id: Id,
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  gender: z.enum(['female', 'male']).nullable(),
+});
+export type ProfileRef = z.infer<typeof ProfileRef>;
+
+/**
+ * `GET /v1/me/profiles[?fresh=1]`: quien ha entrado y a quiénes tiene a cargo
+ * (relación vigente de padre, madre, tutor o cuidador). Si el CRM no contesta,
+ * `crm_unavailable`: NUNCA `children: []`. Todo lo de familias cuelga de
+ * `/v1/profiles/:pid/…` y el servidor comprueba en cada petición que `pid` es
+ * `self` o uno de `children` (si no, `forbidden`, 403, nunca 404).
+ */
+export const MyProfiles = read({
+  self: ProfileRef,
+  children: z.array(ProfileRef),
+});
+export type MyProfiles = z.infer<typeof MyProfiles>;
+
 /** `POST /v1/auth/code` — misma respuesta exista o no el correo. */
 export const CodeRequest = z.union([
   z.object({ email: z.email() }),
@@ -1594,6 +1623,13 @@ export const ROUTES = {
     path: '/v1/devices/:deviceId',
     response: NoContent,
     persist: false,
+  },
+  // Familias (plan 11): a quién se ve. Son nombres de los propios hijos y nada sensible.
+  myProfiles: {
+    method: 'GET',
+    path: '/v1/me/profiles',
+    response: MyProfiles,
+    persist: true,
   },
   // Mis datos de monitor (plan 09).
   myMonitor: {

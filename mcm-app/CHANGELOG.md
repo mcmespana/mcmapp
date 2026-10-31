@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 — Comunica familias, plan 11 (base): a quién se ve
+
+- Contrato y servidor falso de `GET /v1/me/profiles` (quien ha entrado y sus hijos; un hijo sin nombre sale igual; el 503 nunca es una lista vacía), con cinco personas de familia y `allowedProfile`, la barrera de las rutas `/profiles/:pid/…` de los planes 12-16.
+- `utils/comunica/profiles.ts` (lógica pura), `useMyProfiles`, `useActiveProfile` y `useProfileScope`; lo recordado vive por persona en el cajón `profile` (un id y un booleano) y se borra al salir.
+- Sin pantallas todavía (`perfiles`, `ActiveProfileBar`, `MemberHome`): quedan para la siguiente parte del plan 11.
+
 ## 2026-10-31 21:00 — Comunica nativa: contra el middleware de verdad y entrar con la cuenta de la app
 
 - Builds (`preview`, `production`) y OTA (preview y producción) apuntan al middleware real
