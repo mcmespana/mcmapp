@@ -61,14 +61,63 @@ el contrato, el servidor falso y las reglas puras (commit de este plan, 28/10):
   vino → «-», sin marca no se manda ni cuenta, y no llevan % ni aviso. Van al
   final: «Apoyo» desplegado y «Otros monitores» plegado, los dos con la pista
   «No se les pasa lista: salen con «-». Toca solo si han venido.» y **de joven
-  a mayor** (lo ordena el servidor). Las **reuniones no cambian**: se espera a
-  todos y ninguna fila es opcional. Esto sustituye a la regla 5 («Sin etapa»).
+  a mayor** (lo ordena el servidor). ~~Las reuniones no cambian~~ → **cambiado
+  el 31/10, ver el aviso de abajo**: en las reuniones también son opcionales.
+  Esto sustituye a la regla 5 («Sin etapa»).
 - «Sin grupo asignado» de los **chavales** (resumen, árbol, «Sueltos»): solo
   participantes MIC-COM, no adultos de COM-LC (`db618a5`). Es del servidor.
 - **Varias delegaciones** (`09c3f5e`, 23/10): quien colabora con otra
   delegación elige la de trabajo en un selector, y la coordinación solo vale en
   su delegación. Es transversal (04, 05, 06): va en su propio plan,
   [`17-varias-delegaciones.md`](17-varias-delegaciones.md).
+
+## ⚠️ Cambios del plugin del 31/10/2026 — POR REVISAR cuando se vaya a usar
+
+Hechos en el plugin (`comunicaAreaPrivada`, rama `claude/relaxed-lamport-f2od04`)
+y **todavía no portados** aquí. Hay que mirarlos antes de dar por buena la
+paridad de Coordinación: tocan el servidor (contrato y reglas puras) y la
+lista de monitores nativa.
+
+1. **Las listas de un grupo, en las sesiones de SU etapa (bug de la ficha).**
+   En la ficha del monitor, «Listas del M4.1» decía «0 de 1 · sin lista» y el
+   resumen «todas pasadas». Causa: la ficha buscaba la lista del grupo en las
+   sesiones del evento con el que se abre —el del alcance de quien mira o, sin
+   etapa (coordina todo / acompaña), el primero que haya: **COM**—, y MIC y COM
+   tienen cada uno su evento y sus sesiones aunque caigan el mismo sábado: la
+   lista del M4.1 (MIC) cuelga de la sesión del MIC. Comprobado en el CRM el
+   31/10 (Castellón, 24/10: sesión MIC `0000005e…` con la lista, sesión COM
+   `0000097e…` sin ella). **Regla:** la pista «listas pasadas» de cada grupo
+   que lleva un monitor se calcula con las sesiones del evento de la etapa de
+   ese grupo (`sticpa_pl_seguimiento_monitor`, parámetro `$eventos`). Revisar
+   que el cálculo nativo de la ficha (y cualquier sitio que mire «listas de un
+   grupo» con un evento que no sea el del grupo) hace lo mismo.
+   *Aparte, sin tocar:* la fila «Sábados» de la ficha y la lista semanal de
+   monitores siguen usando el evento del alcance (o el primero, COM) para las
+   asistencias de los monitores: un monitor del MIC se inscribe y puntúa en el
+   evento COM si lo marca quien coordina toda la delegación. Es coherente entre
+   sí, pero conviene decidir si los monitores del MIC deberían ir contra el
+   evento MIC. **⏰ Anotado el 31/10 para mirarlo pronto** (BACKLOG §4): hay que
+   decidirlo antes de portar la lista de monitores y la fila «Sábados».
+2. **En una reunión de programación, quien coordina una etapa o un segmento
+   ve y marca a TODOS los monitores de la delegación.** En los sábados normales
+   cada coordinación sigue pasando lista solo de su alcance (no cambia). En la
+   reunión: lista de toda la delegación (cabecera «toda la delegación»), con
+   los de fuera de su alcance **sin enlace a la ficha ni aviso de seguimiento**
+   (lo que se abre al toque no se amplía, solo la lista). El servidor da la
+   lista ya completa si la petición es de reunión; la app no debe filtrarla
+   por el alcance.
+3. **En las reuniones, los monitores sin grupo de Pasar Lista (Apoyo, Najar,
+   Ruah, sin grupo, «Sin etapa») son opcionales como en la lista semanal:**
+   salen con «-», el toque cicla «-» → vino → no vino → «-», sin marca no se
+   escribe ni cuenta en los números, sin % ni aviso. La pista de esas filas en
+   reunión dice «Puede que no les toque venir: salen con «-». Toca solo si han
+   venido.» (en la semanal sigue «No se les pasa lista…»). **Esto sustituye lo
+   que dice más arriba: «las reuniones no cambian».**
+
+Nota de comportamiento: en el plugin, volver a «-» una marca ya guardada no la
+borra del CRM (igual que en la lista de los chavales); en la app la decisión
+`desmarcar` sí la borra. Al portar el punto 3, decidir qué pasa con un monitor
+opcional que ya tenía asistencia y vuelve a «-».
 
 ## Pantallas y rutas
 
