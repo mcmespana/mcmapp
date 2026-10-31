@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useNavigation } from 'expo-router/react-navigation';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha, darkenHex, readableOn } from '@/utils/colorUtils';

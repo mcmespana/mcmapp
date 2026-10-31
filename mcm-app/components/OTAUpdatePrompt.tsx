@@ -15,7 +15,7 @@ import { BlurView } from 'expo-blur';
 import { useReducedMotion } from 'react-native-reanimated';
 import { h } from '@/utils/haptics';
 import { durations, easings } from '@/constants/animations';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 
 import brand, { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';

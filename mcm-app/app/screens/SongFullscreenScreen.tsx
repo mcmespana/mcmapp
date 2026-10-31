@@ -16,7 +16,7 @@ import { useNavigation } from 'expo-router/react-navigation';
 import { router, useLocalSearchParams } from 'expo-router';
 import { WebView } from 'react-native-webview';
 import { BlurView } from 'expo-blur';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import * as Haptics from 'expo-haptics';
 import { PressableFeedback } from 'heroui-native';
 import { useRouteSong } from '@/hooks/useRouteSong';

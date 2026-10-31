@@ -28,6 +28,12 @@ Detalle y decisiones en las entradas del CHANGELOG del 2026-10-31 (12:00 y
 18:00). Ya no queda ningún navegador montado a mano: las listas de pendientes
 de `__tests__/router/` se han borrado y la regla queda pelada.
 
+**Primera build de TestFlight (31/10, noche):** salieron iconos en blanco en
+iOS, pestañas que volvían a su portada, el re-tap de Contigo y el panel
+secreto. Arreglados en la entrada del CHANGELOG de las 21:00; **hace falta
+otra build** para comprobarlos. Pendiente aparte: el login del área nativa de
+Comunica en modo alpha («no se ha podido»), a mirar en su propia sesión.
+
 **Lo que falta es lo que solo se ve en el móvil (paso 10)**: build de
 TestFlight desde la rama y recorrido en dispositivo; después, mergear (11).
 La build la lanza el usuario.

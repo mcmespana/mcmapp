@@ -21,6 +21,7 @@
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import type { ScrollViewInstance } from 'react-native';
+import { router } from 'expo-router';
 import type { SharedValue } from 'react-native-reanimated';
 import {
   useAnimatedScrollHandler,
@@ -325,3 +326,19 @@ export const tabBarController = {
   handleReselect,
   useCollapsingScroll,
 };
+
+/**
+ * Re-tap de una pestaña con pila (`app/(tabs)/<tab>/_layout.tsx`): vuelve a
+ * su portada. Es lo que hacen cantoral, Más, Visita, Contigo y Comunica; lo
+ * exige `__tests__/router/tabReselect.test.ts` a toda pestaña con pila.
+ * Devuelve `true` si había algo que cerrar (si no, la barra sube el scroll).
+ */
+export function useTabReselectToRoot(tabName: string) {
+  useTabReselect(tabName, () => {
+    if (router.canDismiss()) {
+      router.dismissAll();
+      return true;
+    }
+    return false;
+  });
+}

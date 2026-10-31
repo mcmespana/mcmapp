@@ -12,7 +12,7 @@ import {
   TextStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth, type AuthUser } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';

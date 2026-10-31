@@ -32,7 +32,7 @@ import {
   useRoute,
   useHeaderHeight,
 } from 'expo-router/react-navigation';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 
 import {
   useSelectedSongs,

@@ -32,7 +32,7 @@ import colors, {
 } from '@/constants/colors';
 import { cantoralHeaderTint } from '@/utils/cantoralHeader';
 import { radii, shadows } from '@/constants/uiStyles';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import SuggestSongModal from '@/components/SuggestSongModal';

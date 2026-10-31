@@ -13,7 +13,7 @@ import {
   DarkTheme,
   DefaultTheme,
 } from 'expo-router/react-navigation';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CarismoColors, Colors } from '@/constants/colors';

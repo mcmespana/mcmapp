@@ -5,7 +5,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import BottomSheet from '@/components/BottomSheet';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { warm, buildCalendar, WEEKDAYS, MONTHS_CAP } from './theme';

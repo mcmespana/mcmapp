@@ -15,7 +15,7 @@ import {
   Skeleton,
   useToast,
 } from 'heroui-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import PageContainer from '@/components/ui/PageContainer';
 import ContextMenuSheet from '@/components/ContextMenuSheet';
 import { useContextMenu } from '@/hooks/useContextMenu';

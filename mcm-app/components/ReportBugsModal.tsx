@@ -11,7 +11,7 @@ import {
 import BottomSheet from './BottomSheet';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import AppTextField from '@/components/ui/AppTextField';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { Colors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';

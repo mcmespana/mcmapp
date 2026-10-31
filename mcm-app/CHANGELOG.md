@@ -4,6 +4,17 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-31 21:00 — Expo 58: arreglos tras la primera build de TestFlight (iconos, pestañas, panel secreto)
+
+Fallos vistos en el móvil con la build de la rama (`docs/planes/PLAN_EXPO_58.md`, paso 10):
+
+- **Iconos en blanco en iOS** (casi todos los `MaterialIcons`). `@expo/vector-icons` carga la fuente al arrancar y, sin ella, pinta un `<Text />` vacío; en Expo 58 esa carga no llegaba (la causa exacta no se pudo ver sin el móvil). Ahora las fuentes van **dentro del binario** (plugin `expo-font` en `app.json`: `MaterialIcons.ttf` e `Ionicons.ttf`) y los iconos se pintan con ellas sin cargar nada: `components/ui/icons.ts` (`MaterialIcons-Regular`/`Ionicons` en iOS, nombre de fichero en Android; en web sigue `@expo/vector-icons`). Los 98 ficheros importan de ahí. Guardarraíl `__tests__/iconFonts.test.ts`: nadie importa `@expo/vector-icons` directamente, `app.json` embebe las dos fuentes y el nombre PostScript de cada .ttf es el que usa iOS. Comprobado con `expo prebuild`: `UIAppFonts` y el proyecto de Xcode las llevan.
+- **Volver a una pestaña la devolvía a su portada** (cantoral, Contigo…). Nuestra barra cambiaba de pestaña con `router.navigate('/cancionero')`, que en expo-router 58 va a la ruta de la portada. Ahora despacha `JUMP_TO` al navegador de pestañas, como la barra del sistema (`components/tabs/jumpToTab.ts`). Test con el router real: `__tests__/router/tabSwitchKeepsStack.test.tsx` (falla con el código viejo).
+- **Re-tocar Contigo (y Comunica) no volvía a la portada**: no se suscribían al re-tap. Nuevo `useTabReselectToRoot` (`tabBarController.ts`) y guardarraíl `__tests__/router/tabReselect.test.ts`: toda pestaña con pila tiene que hacerlo.
+- **Panel secreto**: al acertar la contraseña se desmontaba una hoja y se montaba otra a la vez (dos `Modal` de iOS relevándose, que iOS rechaza en silencio). Ahora es una sola hoja que cambia de contenido.
+- Subidas menores: `react-native-nfc-manager` 4.2 (sigue respetando `includeNdefEntitlement: false`), `react-native-qrcode-svg` 6.3.49, `react-native-reorderable-list` 0.18.2, `uniwind` 1.13.1. `react-native-render-html` sin mantenimiento: se queda (solo JS, último release, un componente), anotado en `TODO.md`.
+- Requiere build nativo: no llega por OTA.
+
 ## 2026-10-31 19:00 — Expo 58: repaso de los pasos 1-4, entrar en subrutas desde otra pestaña y `npm audit fix`
 
 - **Entrar en una subruta desde otra pestaña deja la portada debajo** (`withAnchor`). Con las pestañas convertidas en carpetas, un `router.push('/cancionero/cancion')` o `'/contigo/oracion'` desde fuera de esa pila la dejaba con esa pantalla sola, y «atrás» no tenía adónde volver. Ahora entran con `withAnchor`: la paleta ⌘K y el enlace `/cancion?f=` (cantoral), las rutas sueltas de los avisos (`goToPath`) y el botón de acción del aviso en Inicio, que además pasa por `goToPath` (llega a pestañas que en iOS no están en la barra). Dentro de la propia pila NO se usa: `withAnchor` la reinicia a portada + destino. Test en `cantoralJourney`.

@@ -10,7 +10,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import BottomSheet from '@/components/BottomSheet';
 import { useToast } from '@/contexts/AppToastContext';
 import { useColorScheme } from '@/hooks/useColorScheme';

@@ -13,7 +13,7 @@
  */
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import type { SelectedSongsStyles } from '@/components/playlist/selectedSongsStyles';
 import type { PlaylistLink } from '@/hooks/usePlaylistLink';

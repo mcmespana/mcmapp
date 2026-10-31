@@ -10,7 +10,7 @@
  *   app/evaluations/<pushId>                              (evaluación de la app)
  */
 import type { ComponentProps } from 'react';
-import type { MaterialIcons } from '@expo/vector-icons';
+import type { MaterialIcons } from '@/components/ui/icons';
 
 /**
  * Tipos de pregunta soportados por el wizard de encuestas/evaluaciones.

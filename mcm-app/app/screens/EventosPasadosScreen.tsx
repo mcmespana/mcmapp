@@ -11,7 +11,7 @@ import {
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import EmptyState from '@/components/ui/EmptyState';

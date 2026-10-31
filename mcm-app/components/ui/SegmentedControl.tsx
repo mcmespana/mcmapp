@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { themeColors } from '@/constants/colors';

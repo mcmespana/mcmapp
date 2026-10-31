@@ -25,7 +25,7 @@ import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useLocalSearchParams } from 'expo-router';
 import { useNavigation, useHeaderHeight } from 'expo-router/react-navigation';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { hexAlpha, readableOn } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import { localISO } from '@/utils/localDate';

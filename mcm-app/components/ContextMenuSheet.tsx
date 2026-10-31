@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import BottomSheet from './BottomSheet';
 import colors, { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';

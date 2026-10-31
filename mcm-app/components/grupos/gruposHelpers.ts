@@ -1,5 +1,5 @@
 import React from 'react';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 
 /**
  * Tipos y helpers puros de la pantalla de Grupos. Extraído de

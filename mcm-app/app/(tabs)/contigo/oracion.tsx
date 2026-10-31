@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { h } from '@/utils/haptics';
 import { useContigoHabits, Emotion } from '@/hooks/useContigoHabits';

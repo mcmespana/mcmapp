@@ -25,7 +25,7 @@ import { songRouteParams } from '@/utils/songNavList';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import SongListItem from '../../components/SongListItem';
 import BottomSheet from '@/components/BottomSheet';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import {
   extractSongMedia,
   mediaKinds,

@@ -211,6 +211,8 @@ La rama ya no aporta nada: se puede borrar.
 
 ## Mantenimiento
 
+- [ ] **`react-native-render-html` ya no se mantiene** (`expo-doctor`, 2026-10-31; silenciado en `package.json` → `expo.doctor`). Deuda pequeña, NO urgente: es solo JS (sin código nativo, no se rompe con RN nuevo), la 6.3.4 es la última y solo lo usa `components/FormattedContent.tsx` (Profundiza y Materiales de eventos). Si algún día falla: pintar el BBCode directamente con componentes RN (ya lo parseamos nosotros en `utils/formatText.ts`) y quitar el paquete.
+
 - [ ] **Ampliar cobertura de tests — tarea ideal para "quemar tokens"** (anotado
       2026-08-01; cifras al 2026-10-17: ~1.950 tests en 158 suites). La receta
       paso a paso está en `docs/desarrollo/COBERTURA.md`. Casi todo es lógica

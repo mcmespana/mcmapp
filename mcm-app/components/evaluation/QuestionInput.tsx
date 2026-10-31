@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import AppTextField from '@/components/ui/AppTextField';
 import StarRating from '@/components/StarRating';
 import { Colors } from '@/constants/colors';

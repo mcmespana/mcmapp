@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 
 import BottomSheet from './BottomSheet';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';

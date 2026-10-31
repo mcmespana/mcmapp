@@ -30,7 +30,7 @@ import {
   View,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut, ZoomIn } from 'react-native-reanimated';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CelebrationBurst from '@/components/ui/CelebrationBurst';
 import QrScanFrame from '@/components/playlist/QrScanFrame';

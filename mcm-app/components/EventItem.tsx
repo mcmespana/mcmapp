@@ -7,7 +7,7 @@ import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@/components/ui/icons';
 import { radii } from '@/constants/uiStyles';
 
 export interface EventItemData {

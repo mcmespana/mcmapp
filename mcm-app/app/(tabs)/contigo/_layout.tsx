@@ -1,12 +1,15 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 import { ContigoHabitsProvider } from '@/contexts/ContigoHabitsContext';
+import { useTabReselectToRoot } from '@/components/tabs/tabBarController';
 
 // SDK 58: `initialRouteName` ya no es prop del navegador; el ancla da el
 // destino al que se vuelve al entrar por enlace.
 export const unstable_settings = { anchor: 'index' };
 
 export default function ContigoLayout() {
+  // Re-tap del tab: vuelve a la portada de Contigo.
+  useTabReselectToRoot('contigo');
   return (
     <ContigoHabitsProvider>
       <Stack>

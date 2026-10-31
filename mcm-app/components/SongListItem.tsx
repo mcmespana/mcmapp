@@ -27,7 +27,7 @@ import { useContextMenu } from '@/hooks/useContextMenu';
 import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
 import { transposeKey, transposeLabel } from '../utils/transposeKey';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import {
   Colors,
   HighlightColors,

@@ -22,7 +22,7 @@
 import React, { useMemo, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import BottomSheet from '@/components/BottomSheet';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useHiddenTags } from '@/hooks/useHiddenTags';

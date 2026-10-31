@@ -1,5 +1,5 @@
 import { View, TextInput, Pressable } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import type { GruposStyles } from './gruposStyles';
 
 interface SearchBarProps {
