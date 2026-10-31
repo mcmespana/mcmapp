@@ -96,7 +96,8 @@ lista de monitores nativa.
    asistencias de los monitores: un monitor del MIC se inscribe y puntúa en el
    evento COM si lo marca quien coordina toda la delegación. Es coherente entre
    sí, pero conviene decidir si los monitores del MIC deberían ir contra el
-   evento MIC.
+   evento MIC. **⏰ Anotado el 31/10 para mirarlo pronto** (BACKLOG §4): hay que
+   decidirlo antes de portar la lista de monitores y la fila «Sábados».
 2. **En una reunión de programación, quien coordina una etapa o un segmento
    ve y marca a TODOS los monitores de la delegación.** En los sábados normales
    cada coordinación sigue pasando lista solo de su alcance (no cambia). En la
