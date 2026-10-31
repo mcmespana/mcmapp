@@ -128,6 +128,38 @@ describe('BottomSheet', () => {
     expect(onCloseComplete).toHaveBeenCalledTimes(1);
   });
 
+  it('cierra del todo aunque la animación de salida no avise al acabar', () => {
+    // Primera build de Expo 58: la hoja se veía cerrada pero el `Modal` seguía
+    // presentado (invisible) y lo de después —abrir el panel secreto tras
+    // «Reportar fallitos»— no pasaba nunca. Aquí la animación no llama nunca
+    // a su callback: tiene que cerrar igual, por tiempo.
+    const { Animated } = jest.requireActual('react-native');
+    const onCloseComplete = jest.fn();
+    const { tree, merged } = renderSheet({ visible: true, onCloseComplete });
+    const parallel = jest
+      .spyOn(Animated, 'parallel')
+      .mockImplementation(() => ({ start: () => {}, stop: () => {} }) as never);
+
+    act(() => {
+      tree.update(
+        <Wrap>
+          <BottomSheet
+            {...merged}
+            visible={false}
+            onCloseComplete={onCloseComplete}
+          />
+        </Wrap>,
+      );
+    });
+    act(() => {
+      jest.advanceTimersByTime(1500);
+    });
+    parallel.mockRestore();
+
+    expect(modalIsUp(tree)).toBe(false);
+    expect(onCloseComplete).toHaveBeenCalledTimes(1);
+  });
+
   it('no dispara `onCloseComplete` si nunca llegó a abrirse', () => {
     const onCloseComplete = jest.fn();
     renderSheet({ visible: false, onCloseComplete });

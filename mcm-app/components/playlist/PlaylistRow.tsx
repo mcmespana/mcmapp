@@ -17,10 +17,10 @@ import {
   Platform,
 } from 'react-native';
 import Swipeable, {
-  SwipeDirection,
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import type { SharedValue } from 'react-native-reanimated';
+import { openedActionsSide } from '@/utils/swipeSide';
 import SwipeActionContent from '@/components/ui/SwipeActionContent';
 import { MaterialIcons } from '@/components/ui/icons';
 import { h } from '@/utils/haptics';
@@ -137,7 +137,9 @@ const PlaylistRow: React.FC<Props> = ({
       ref={swipeableRef}
       renderLeftActions={renderLeftActions}
       onSwipeableOpen={(direction) => {
-        if (direction === SwipeDirection.LEFT) {
+        // El lado ABIERTO, no la dirección del dedo (ver `utils/swipeSide`):
+        // «Quitar» está a la izquierda.
+        if (openedActionsSide(direction) === 'left') {
           h.remove();
           swipeableRef.current?.close();
           onRemove();

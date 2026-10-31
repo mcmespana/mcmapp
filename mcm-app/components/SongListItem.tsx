@@ -14,10 +14,10 @@ import {
   Platform,
 } from 'react-native';
 import Swipeable, {
-  SwipeDirection,
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import type { SharedValue } from 'react-native-reanimated';
+import { openedActionsSide } from '@/utils/swipeSide';
 import SwipeActionContent from './ui/SwipeActionContent';
 import { PressableFeedback } from 'heroui-native';
 import { h } from '@/utils/haptics';
@@ -215,11 +215,13 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         renderRightActions={!isSelected ? renderRightActions : undefined}
         renderLeftActions={isSelected ? renderLeftActions : undefined}
         onSwipeableOpen={(direction) => {
-          if (direction === SwipeDirection.RIGHT && !isSelected) {
+          // El lado ABIERTO, no la dirección del dedo (ver `utils/swipeSide`).
+          const side = openedActionsSide(direction);
+          if (side === 'right' && !isSelected) {
             h.add();
             onAddSong(song.filename);
             swipeableRow.current?.close();
-          } else if (direction === SwipeDirection.LEFT && isSelected) {
+          } else if (side === 'left' && isSelected) {
             h.remove();
             onRemoveSong(song.filename);
             swipeableRow.current?.close();

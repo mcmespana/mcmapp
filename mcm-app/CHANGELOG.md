@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-31 20:19 — Expo 58: deslizar para añadir y cierre de las hojas
+
+- **Deslizar una canción del todo ya la añade (o la quita)**, sin tener que tocar el botón que destapa. En gesture-handler 3, `onSwipeableOpen` recibe la dirección hacia la que se movió la fila (`'left'` = se abren las acciones de la DERECHA) y el código seguía con la semántica del `Swipeable` viejo: la fila se quedaba abierta. Igual en la fila de la playlist (deslizar a la derecha para quitar no hacía nada). Una sola traducción, `utils/swipeSide.ts`; test `__tests__/swipeToAdd.test.tsx`, que además vigila que gesture-handler siga con esa semántica.
+- **`BottomSheet`: el cierre se completa aunque la animación de salida no avise.** Todo lo que viene después de cerrar una hoja (`onCloseComplete`: abrir el panel secreto tras «Reportar fallitos», las opciones del menú «⋯» de la selección…) colgaba del callback de fin de la animación; si no llega, la hoja se ve cerrada pero el `Modal` sigue presentado, invisible, y lo siguiente no ocurre. Ahora también se cierra por tiempo (lo primero que llegue). Test nuevo en `bottomSheetLifecycle`. Es la explicación más probable del panel secreto que «se cierra sin más» en la build de Expo 58, sin poder verlo en el móvil.
+
 ## 2026-10-31 20:05 — Expo 58: arreglos tras la primera build de TestFlight (iconos, pestañas, panel secreto)
 
 Fallos vistos en el móvil con la build de la rama (`docs/planes/PLAN_EXPO_58.md`, paso 10):
