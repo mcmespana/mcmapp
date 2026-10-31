@@ -30,7 +30,7 @@ const native = {
   // (2026-09-10) y es el mismo muro que se encontraría cualquier test de
   // render de los que pide `docs/desarrollo/COBERTURA.md`.
   transformIgnorePatterns: [
-    'node_modules/(?!(jest-)?react-native|@react-native|expo(nent)?|@expo(nent)?|expo-router|@expo-google-fonts/.*|react-clone-referenced-element|@react-navigation/.*|chordsheetjs|heroui-native|uniwind)',
+    'node_modules/(?!(jest-)?react-native|@react-native|expo(nent)?|@expo(nent)?|expo-router|@expo-google-fonts/.*|react-clone-referenced-element|@react-navigation/.*|chordsheetjs|heroui-native|uniwind|standard-navigation)',
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
