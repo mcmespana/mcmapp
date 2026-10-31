@@ -69,6 +69,14 @@ export interface GlobalConfig {
    * Ver `docs/contratos/PANEL_PERFILES.md`.
    */
   appReviewMode?: boolean;
+  /**
+   * Interruptor del área privada nativa de Comunica (plan 10 §1 de
+   * `docs/planes/area-nativa/`). Ausente = `alpha`.
+   *   · `off`   → todos ven la WebView de siempre (vuelta atrás sin build).
+   *   · `alpha` → solo quien enciende el Laboratorio Alpha ve la nativa.
+   *   · `all`   → la nativa para todos (el lanzamiento).
+   */
+  comunicaNativa?: 'off' | 'alpha' | 'all';
 }
 
 /**

@@ -18,6 +18,7 @@
 // los canales en el sistema vive en `notifications/androidChannels.ts`.
 
 import type { NotificationCategory } from '@/types/notifications';
+import { ComunicaColors } from './colors';
 
 /** Canal al que van las notificaciones sin `channelId` (o con uno desconocido). */
 export const DEFAULT_CHANNEL_ID = 'default';
@@ -37,8 +38,15 @@ export type ChannelImportance = 'max' | 'high' | 'default' | 'low';
 export interface NotificationChannelSpec {
   /** Id del canal. Es lo que el Panel manda en `channelId`. INMUTABLE. */
   id: string;
+  /**
+   * Quién manda a este canal. `panel` (por defecto): el MCM Panel, por su
+   * `category`. `comunica`: el servidor del área privada nativa (plan 08), con
+   * el id que el móvil declara al registrarse; NO tiene categoría, para que el
+   * Panel no pueda llegar a él por `category`.
+   */
+  source?: 'panel' | 'comunica';
   /** Categoría de negocio del Panel que se mapea a este canal. */
-  category: NotificationCategory;
+  category?: NotificationCategory;
   /** Nombre visible en los ajustes de Android. */
   name: string;
   /** Explicación bajo el nombre, para que se entienda qué se silencia. */
@@ -110,10 +118,38 @@ export const NOTIFICATION_CHANNELS: NotificationChannelSpec[] = [
     importance: 'low',
     lightColor: '#8A6D00',
   },
+  // ── Área privada de Comunica (plan 08 de `docs/planes/area-nativa/`) ──
+  // UNA VEZ PUBLICADOS NO SE QUITAN NUNCA: la limpieza del arranque borraría
+  // el canal y el servidor seguiría mandando a un canal que Android tira sin
+  // decir nada. Lo vigila `__tests__/notificationChannels.test.ts`.
+  {
+    id: 'comunica-listas',
+    source: 'comunica',
+    name: 'Comunica · Pasar lista',
+    description: 'Recordatorio de pasar lista y listas que no se han subido.',
+    importance: 'high',
+    lightColor: ComunicaColors.accent,
+  },
+  {
+    id: 'comunica-grupos',
+    source: 'comunica',
+    name: 'Comunica · Tus grupos',
+    description: 'Chavales que llegan a tus grupos o se van.',
+    importance: 'default',
+    lightColor: ComunicaColors.accent,
+  },
 ];
 
+/** Los canales del área privada (los que declara el móvil al registrarse). */
+export const COMUNICA_CHANNELS = NOTIFICATION_CHANNELS.filter(
+  (channel) => channel.source === 'comunica',
+);
+
+// Solo los del Panel: un canal del área nunca sale de una `category`.
 const BY_CATEGORY = new Map(
-  NOTIFICATION_CHANNELS.map((channel) => [channel.category, channel.id]),
+  NOTIFICATION_CHANNELS.filter(
+    (channel) => channel.source !== 'comunica' && channel.category,
+  ).map((channel) => [channel.category, channel.id]),
 );
 
 const KNOWN_IDS = new Set(NOTIFICATION_CHANNELS.map((channel) => channel.id));

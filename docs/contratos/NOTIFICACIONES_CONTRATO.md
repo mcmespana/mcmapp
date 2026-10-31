@@ -444,9 +444,25 @@ convenga derivarla de `category` en vez de escribirla a mano.
 
 `channelId` es **solo Android**; iOS lo ignora.
 
+### Dos ids reservados para el área privada de Comunica (no los uséis)
+
+Desde el plan 08 del área nativa (`docs/planes/area-nativa/08-avisos-y-compartir.md`)
+la app crea dos canales más, que **no son del Panel**:
+
+| `channelId`       | Nombre en ajustes        | Importancia | Quién manda |
+| ----------------- | ------------------------ | ----------- | ----------- |
+| `comunica-listas` | Comunica · Pasar lista   | `HIGH`      | El servidor del área (`mcm-comunica-api`) |
+| `comunica-grupos` | Comunica · Tus grupos    | `DEFAULT`   | El servidor del área |
+
+No tienen `category` y `channelIdForCategory` nunca los devuelve: el Panel no
+llega a ellos por `data.category`, y **no debe mandarlos a mano** en
+`channelId`. Sus avisos llevan `data.source: 'comunica'`, no se guardan en la
+campana ni en `/notifications` y no tienen `data.id` del Panel.
+
 ### Canales que ya no existen
 
-Al arrancar, la app borra del sistema cualquier channel que no esté en la tabla.
+Al arrancar, la app borra del sistema cualquier channel que no esté en la tabla
+(ni entre los dos reservados de arriba).
 Si el Panel usaba alguno inventado, deja de funcionar: usad los siete de arriba.
 
 ## 9. Prioridad

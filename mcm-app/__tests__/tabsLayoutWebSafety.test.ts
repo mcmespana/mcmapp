@@ -70,3 +70,46 @@ describe('el layout de pestañas es seguro para web', () => {
     expect(read('components/tabs/CompactTabBar.tsx')).toMatch(IMPORT_RE);
   });
 });
+
+/**
+ * Lo mismo para el área nativa de Comunica (plan 01 §7): `expo-sqlite` y
+ * `expo-secure-store` no tienen shim web útil, así que solo los carga el
+ * adaptador nativo (`services/comunica/nativeStores.ts`), con su `.web.ts` al
+ * lado para que Metro no los meta en el bundle de web.
+ */
+describe('el área nativa de Comunica es segura para web', () => {
+  const ROOT = path.join(__dirname, '..');
+  const walk = (dir: string): string[] =>
+    fs.existsSync(dir)
+      ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+          const p = path.join(dir, e.name);
+          if (e.isDirectory()) return walk(p);
+          return /\.(ts|tsx)$/.test(e.name) ? [p] : [];
+        })
+      : [];
+  const NATIVE_RE =
+    /(?:from\s+|require\(\s*|import\(\s*)'(expo-sqlite|expo-secure-store)'/;
+  const files = [
+    'app',
+    'components',
+    'hooks',
+    'contexts',
+    'utils',
+    'services',
+    'constants',
+  ]
+    .flatMap((d) => walk(path.join(ROOT, d)))
+    .map((f) => path.relative(ROOT, f).split(path.sep).join('/'));
+
+  it('solo el adaptador nativo carga expo-sqlite y expo-secure-store', () => {
+    const users = files.filter((f) => NATIVE_RE.test(read(f)));
+    expect(users).toEqual(['services/comunica/nativeStores.ts']);
+  });
+
+  it('el adaptador tiene su versión web, sin módulos nativos', () => {
+    const web = read('services/comunica/nativeStores.web.ts');
+    expect(web).not.toMatch(NATIVE_RE);
+    expect(web).toMatch(/export function defaultKvBackend/);
+    expect(web).toMatch(/export function secureSecretStore/);
+  });
+});

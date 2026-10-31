@@ -4,6 +4,26 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-29 23:30 — Área nativa de Comunica: repaso antes de pasar a `main`
+
+Recorrido automático con el servidor falso (monitor, coordinación y varias
+delegaciones: 56 pantallas y 350 botones). Ninguna pantalla rota. Arreglado:
+
+- **Pantallas en el esqueleto para siempre al abrirlas en frío** (enlace,
+  aviso o recargar la web): resumen de grupos, árbol de «Pasar lista» e
+  historial. La pantalla pedía sus datos antes de que la sesión acabara de
+  restaurarse y el `clear()` del cambio de persona la dejaba huérfana. Ahora
+  lo que no se ve se borra y lo que se ve se reinicia y se vuelve a pedir
+  (`forgetPreviousPerson` en `ComunicaAreaProvider`). Test:
+  `areaProviderColdLink.test.tsx`.
+- Servidor falso: al recargar, `twoDelegations` y `coordinationCom2` volvían a
+  la pantalla de entrar (el token se reconocía con `[a-z]+`).
+- «1 grupos» → «1 grupo» en la portada y el árbol.
+- La fila de pasar lista ya no pinta un `<button>` vacío alrededor del suyo en
+  web (en el móvil sigue siendo un botón para VoiceOver, con sus acciones).
+- Al traer `main`: vuelve `components/ui/StatCard.tsx`, que `main` había
+  borrado por estar sin uso y que usa el resumen de Coordinación.
+
 ## 2026-10-29 18:00 — Expo 58 (React Native 0.88, React 19.3) y dependencias mayores
 
 - **Expo SDK 57 → 58** (`expo install`): React Native 0.88, React 19.3, Reanimated 4.7, worklets 0.13, **gesture-handler 3**, `@sentry/react-native` 8, expo-router 58, `jest-expo` 58 + Jest 30. Además `firebase` 13, `chordsheetjs` 18 y `@aptabase/react-native` 0.6. `async-storage` se queda en 2.2 (Expo 58 lo sigue fijando ahí).
@@ -30,6 +50,132 @@
 - Consecuencia: la lectura de etiquetas se hará con sesiones de tipo TAG (`NfcManager.requestTechnology`), no con la sesión NDEF del sistema. Todavía no hay código que use NFC.
 - Requiere build nativo nuevo (build > 58): no llega por OTA.
 
+## 2026-10-29 00:30 — Área nativa de Comunica: varias delegaciones (plan 17, rama `claude/area-nativa-17-delegaciones`)
+
+- Quien colabora con otra delegación además de la suya (coordina o lleva un
+  grupo allí) elige con cuál trabaja en un selector arriba de «Hoy», Grupos y
+  fichas y Coordinación. Solo sale con más de una; se recuerda por persona y
+  se borra al salir.
+- Todo lo de equipo va con esa delegación (cabecera
+  `X-Comunica-Delegation`); lo personal, con la de la ficha. Cada delegación
+  tiene su caché, y una lista guardada en el móvil sube con la delegación con
+  la que se marcó aunque luego se cambie el selector.
+- Un enlace o un aviso a un grupo de otra de tus delegaciones cambia el
+  selector solo.
+- Servidor falso: `delegaciones@ejemplo.org` (Villaclara y Puerto Alto).
+
+## 2026-10-28 23:30 — Área nativa de Comunica: avisos en el móvil y compartir un evento (plan 08, rama `nuevoComunicaChulo`)
+
+- **Avisos del área** («¿Has pasado lista?», «Novedades en tu grupo» y
+  «Tienes N listas sin subir»): el móvil se registra en el servidor del área
+  (`POST /v1/devices`, por la cola) cuando hay sesión, permiso y token, y se
+  da de baja al salir. Lo hace `components/comunica/ComunicaBackground.tsx`,
+  montado en la raíz (`app/_layout.tsx`); solo con el área nativa encendida y
+  nunca en web.
+- **Dos canales de Android nuevos**, `comunica-listas` (HIGH) y
+  `comunica-grupos` (DEFAULT), sin categoría del Panel. No se pueden quitar
+  nunca: lo vigila un test.
+- `usePushNotifications` atiende primero los avisos con `source: 'comunica'`:
+  no van a la campana, refrescan la portada del área y al tocarlos la app
+  decide el destino (marcar ese grupo, la ficha del grupo o la portada).
+- **Aviso local** «Tienes N listas sin subir» al dejar la app con listas en la
+  cola (a la hora; de noche, a las 8:30).
+- **«Avisos en este móvil»** en «Tu cuenta»: el permiso, tres interruptores y
+  los ajustes del sistema. La portada del área invita a activar los avisos.
+- **Compartir un evento**: el texto ya escrito («Convivencia COM · sáb 14 y
+  dom 15 de noviembre · Benicàssim · Apúntate hasta el 5 de noviembre:
+  enlace») con el botón «Compartir» en la cabecera de la pantalla del evento
+  (plan 07).
+- Laboratorio Alpha: «Simular aviso» para probar los destinos sin servidor.
+- `session.ts` gana `addBeforeSignOut` (lo que se hace con la sesión viva al
+  salir, con 3 s de tope).
+
+## 2026-10-28 21:00 — Área nativa de Comunica: pasar lista en un evento (plan 07, rama `nuevoComunicaChulo`)
+
+- **Eventos**: nueva pantalla para elegir en qué evento pasar lista (los de
+  hoy en tarjeta, próximos y ya pasados del curso; buscador con más de 8). La
+  tarjeta del evento de hoy y la fila «Pasar lista en un evento» de la portada
+  de Pasar Lista dejan de abrir la web y van a lo nativo.
+- **La lista del autobús**: los inscritos por etapa y curso, las otras
+  delegaciones detrás con su pastilla, los monitores plegados y «No van» al
+  final. Chips por curso pegados arriba, buscador sin acentos, el mismo gesto
+  de marcar que los grupos y «Están todos» solo sobre lo que se ve.
+- **Sin cobertura**: se marca y se guarda igual; la cola lo sube al volver la
+  red. Si el evento no tiene días en el CRM, el servidor crea la lista de hoy
+  al guardar (una sola, aunque llegue dos veces).
+- **Grupos de actividad** (patrullas, habitaciones… de Comunica Tools):
+  pestañas de solo lectura («7/8 plazas», «Sin patrulla», monitores arriba) y
+  «Pasar lista por patrullas» / «de este grupo», que es la misma lista del
+  día partida por grupos.
+- Contrato `GET /v1/events`, `GET/PUT /v1/events/:id/roll` y su servidor
+  falso (eventos generados contra «hoy»; mando «la relectura falla» en el
+  Laboratorio). Componentes comunes nuevos: `FilterChips`, `SearchField`.
+  Sin paquetes nuevos.
+
+## 2026-10-28 20:30 — Área nativa de Comunica: «Mis datos de monitor» (plan 09, rama `nuevoComunicaChulo`)
+
+- **Pantalla nueva** `comunica/yo/monitor`: trayectoria, formación,
+  voluntariado, el certificado de delitos sexuales (Automático / Manual) y los
+  títulos, con los campos, el orden y los textos del plugin. Se llega desde
+  «Tu cuenta» (solo monitores), desde el aviso de «Hoy» y por cualquier enlace
+  del plugin a «Mis datos de monitor».
+- **Guardar** va por la cola de escrituras (`me.monitor`): sin cobertura se
+  queda en el móvil y sube sola; cada entrada lleva todo lo pendiente. Salir con
+  cambios sin guardar pregunta.
+- **Subir títulos y certificados** con foto, galería o archivo (PDF, JPG o PNG
+  hasta 6 MB, comprobado antes de subir): **directo, con conexión, sin pasar
+  por la cola** — el archivo no se queda en el móvil y la copia del selector se
+  borra al subir y al salir. Usa `expo-image-picker`, `expo-document-picker` y
+  `expo-file-system`, ya en la build 2.1 (nada nativo nuevo).
+- **Aviso del certificado** («Te falta subir tu Certificado de Delitos
+  Sexuales») arriba de la pantalla y en la portada «Hoy», solo a monitores que
+  eligieron «Manual» y no lo han subido.
+- Contrato nuevo: `GET`/`PATCH /v1/me/monitor` y `POST /v1/me/documents`
+  (`docs/contratos/COMUNICA_API.md`), con el servidor falso. Piezas de
+  formulario reutilizables en `components/comunica/comun/form/`.
+
+## 2026-10-28 18:00 — Área nativa de Comunica: Coordinación entera (plan 06, rama `nuevoComunicaChulo`)
+
+- **Coordinación** nativa: lo que falta (la reunión sin pasar), «Lista de
+  monitores», «Reuniones de programación», «Resumen de grupos» y **Tu
+  equipo** con buscador en la cabecera: «Sin grupo» (con «Vincular»), Apoyo,
+  por etapa y, plegados, los monitores de grupos que no pasan lista.
+- **Lista de monitores**: la misma fila y la misma hoja que pasar lista, una
+  por etapa; arranca en verde y se marca a quien no vino. Los de Apoyo y otros
+  grupos salen con «-» y solo se apuntan si se tocan (como el plugin desde el
+  25/10). Se guarda por la cola y se relee del servidor.
+- **Reuniones de programación**: la lista del curso y «Nueva reunión»
+  (nombre, día, hora y duración).
+- **Resumen de grupos**: tarjeta por etapa, la última sesión con qué listas
+  faltan (cada una abre esa lista), la tira de cada grupo y los datos por
+  revisar.
+- **Ficha del monitor**: contacto, sábados, reuniones y las listas de sus
+  grupos, sus grupos, por dónde ha pasado, el papeleo y los seguimientos (que
+  nunca se guardan en el móvil; sobre uno mismo no existen).
+- «Hoy» lleva el bloque de Coordinación también a acompañamiento, y en
+  Grupos y fichas el nombre de un monitor abre su ficha.
+- El botón «Guardar» de las listas es ya la acción principal con el degradado
+  de Comunica. Plan nuevo, el 17: varias delegaciones.
+
+## 2026-10-28 13:30 — Área nativa de Comunica: arreglos de la revisión y almacén cifrado (rama `nuevoComunicaChulo`)
+
+- **Salir o cambiar de persona** apaga la cola de escrituras antes de borrar
+  nada: ya no puede subir lo de una persona con la sesión de otra. Un enlace
+  de otra persona intenta subir lo pendiente y avisa de lo que se perdería
+  (también en web).
+- **Sin cobertura** la lista queda «Guardada en el móvil» y sube sola al
+  volver la red, sin gastar intentos; los textos distinguen CRM caído y
+  atascada. Un rechazo definitivo ya no se reenvía en cada arranque.
+- **Datos en el móvil**: la caché, la cola y los borradores del área van a una
+  base de datos **SQLite cifrada** (SQLCipher, clave en el llavero) y el token
+  de refresco al **llavero**. Lo que hubiera en AsyncStorage se pasa solo. En
+  web, como antes.
+- La salud y los datos personales no se guardan nunca aunque una consulta
+  venga mal marcada; el token solo va a fotos de nuestro servidor; el enlace
+  de un token caduca a los 2 minutos; la sesión revocada vuelve a la puerta.
+- Guardarraíles nuevos: ningún token ni pase en los logs; nada nativo del área
+  en el bundle de web.
+
 ## 2026-10-28 13:30 — Notificaciones y botones del panel: los tabs de «Más» en iOS ya se abren
 
 - Una notificación (al tocarla o desde el centro de notificaciones) o un botón de acción del panel que apunta a un tab (`/calendario`, `/fotos`, `/comunica`…) usaba `router.push` directo. En iOS, si ese tab no está en la barra (perfil con 6+ tabs o evento en curso), no hacía nada. Ahora pasa por `goToPath` (`hooks/useTabNavigation.ts`), que entra por «Más» y arrastra la fecha del calendario. Las rutas que no son la raíz de un tab siguen como antes.
@@ -40,6 +186,115 @@
 - Añadidos `expo-secure-store`, `expo-sqlite` (con SQLCipher), `expo-local-authentication`, `expo-intent-launcher` y `expo-image-picker` con sus plugins en `app.json`, para que el área privada nativa pueda llegar luego por OTA sobre la 2.1. Todavía no hay código que los use.
 - Textos de permisos en castellano: Face ID, fotos y cámara. El de la cámara ahora cubre el escáner QR y las fotos de documentos (los dos plugins escriben la misma clave). Micrófono del selector de fotos desactivado.
 - Requiere build nativo: no llega por OTA.
+
+## 2026-10-26 07:38 — Área nativa de Comunica: lo que faltaba en este registro (rama `nuevoComunicaChulo`)
+
+Apunte de reconciliación: cambios del 24/10 que no se anotaron aquí.
+
+- **Pasar Lista completo** (plan 04): portada con la cola del móvil, el evento
+  de hoy y el bloque de coordinación; árbol de grupos con buscador; historial;
+  marcar con selector de fecha, hoja de estados y motivo, «Sin registro» y
+  rachas; guardar con borrador, cola y comprobación de lo releído.
+- **Decisiones aplicadas** tras la revisión del 24/10: quitar una marca la
+  borra en el CRM (`desmarcar`); la próxima sesión se puede pasar si no ha
+  empezado ninguna (`futuras`); la ficha enseña la salud aunque la marca de las
+  listas no (`salud-no`); territorio «Comunica» con acento violeta y el
+  degradado solo en la acción principal (`ComunicaColors`).
+- **Arreglos**: marcas que se perdían al salir con «Guardar»; estados de carga
+  dentro de la pantalla; táctiles de 44 pt; la web del plugin ya no queda
+  tapada; confirmaciones también en web; los datos del acceso ya no viajan en
+  la URL.
+- **Coordinación** (plan 06), empezado: contrato, servidor falso y reglas puras.
+  Las pantallas, sin hacer (ver `docs/planes/area-nativa/ESTADO.md`).
+
+## 2026-10-24 11:30 — Comunica: el servidor falso sale del perfil `production` de EAS
+
+- `EXPO_PUBLIC_COMUNICA_API=fake` ya no va en el perfil `production` de
+  `eas.json`: una build de tienda desde `main` habría encendido el área nativa
+  con datos inventados. Para las builds de prueba con el área nativa y el
+  servidor falso hay un perfil propio, `production-comunica-falso` (extiende
+  `production`). Un test (`__tests__/comunica/easProfiles.test.ts`) impide
+  volver a meterlo en `production`.
+
+## 2026-10-24 09:20 — Área nativa de Comunica: Grupos y fichas y la ficha del participante (rama `nuevoComunicaChulo`)
+
+- **Grupos y fichas** (plan 05, `/comunica/grupos`): la gente de la
+  delegación sin pasar lista, en Grupos, Cursos y A-Z, con buscador, chips
+  por curso, fotos, marcas («No se va solo/a», «Sin fotos», «Alergia o
+  tratamiento», que abre la salud), la tarjeta de quien no tiene grupo y, a
+  coordinación, **«Vincular»** a un grupo (por la cola, con confirmación).
+  Pantallas nuevas: un grupo, «Sin grupo» y **la ficha del participante**
+  (contacto con botones al tutor 1, asistencia con cuadraditos y eventos,
+  avisos de comportamiento con alta por la cola, pañuelo, autorizaciones y
+  datos personales). Se llega desde la portada, el pie del árbol y la hoja
+  de marcar (con la sesión).
+- **Datos**: rutas nuevas del contrato (`/v1/people`, `/v1/groups/:id`,
+  `/v1/people/:id`, `/personal`, avisos, pañuelo y vincular); la salud pasa
+  a ir por campos. Ni la salud ni los datos personales se guardan en el
+  móvil; las fichas y fotos de tus grupos se precargan con conexión.
+- **Salir vacía la caché de fotos de `expo-image`** (también las demás
+  imágenes de la app, que se vuelven a bajar).
+- Laboratorio Alpha: mando «Curso cerrado».
+
+## 2026-10-24 05:30 — Área nativa de Comunica: enlaces y salto a la web (rama `nuevoComunicaChulo`)
+
+- **Cualquier enlace de Comunica abre la app** donde toca (plan 10): con un
+  destino (`internalpage`), la pantalla nativa si existe o el área privada en
+  la WebView en esa página con la sesión puesta (pase de 2 minutos); con el
+  token del plugin, en la nativa se canjea por una sesión y pregunta si el
+  enlace es de otra persona; en el legado, como siempre. Mapa de todas las
+  páginas del plugin en `services/comunica/links.ts`.
+- **Android**: `intentFilters` con `/ap`, `/app`, `/area-privada`,
+  `/actividades` y `/` del dominio de Comunica (nativo: entra en la 2.2).
+  En iOS lo decide el fichero que sirve el plugin, cambiado en su rama
+  `nuevoComunicaChulo` (sin desplegar).
+- `global.comunicaNativa` en el seed de `/profileConfig` (`"alpha"`).
+
+## 2026-10-24 04:30 — Área nativa de Comunica: entrar con código y cola de escrituras (rama `nuevoComunicaChulo`)
+
+- **Acceso nativo** (plan 02): «Entra en tu área» con el correo de la cuenta
+  de la app ya puesto (o el DNI), código de 6 cifras, «¿Quién eres?» si el
+  correo es de varias fichas y «Tu cuenta» con «Salir». Sesión con token de
+  acceso en memoria y de refresco que rota (`services/comunica/session.ts`).
+  Con el servidor falso el código es `123456`.
+- **Cola de escrituras y caché en el móvil** (plan 01): guardar una lista va
+  al móvil al instante y sube sola (al reconectar, al volver la app, al abrir
+  el área), con su estado en pantalla. Lo marcado se guarda a cada toque. La
+  caché se guarda por persona (nunca la salud) y salir lo borra todo. Sobre
+  AsyncStorage hasta que llegue `expo-sqlite` con la 2.2.
+- La build de TestFlight lanzada desde esta rama lleva el servidor falso
+  (`eas.json`, perfil `production`). _Corregido a las 11:30: ahora va en un
+  perfil propio, `production-comunica-falso`._
+
+## 2026-10-24 02:00 — Área privada nativa de Comunica: cimientos con datos inventados (rama `nuevoComunicaChulo`)
+
+Primeros planes de `docs/planes/area-nativa/` (00, parte del 01 y del 03, y un
+primer corte del 04), **solo visibles con el Laboratorio Alpha** y sin tocar
+nada del CRM:
+
+- **Contrato y servidor falso** (`services/comunica/`): esquemas zod de lo que
+  la app y el futuro `mcm-comunica-api` se piden (`docs/contratos/COMUNICA_API.md`),
+  cliente HTTP con errores tipados y un servidor falso en memoria con datos
+  inventados (dos delegaciones ficticias, grupos, chavales, sesiones de los
+  sábados, listas, rachas), autorización por delegación y rechazos de Pasar
+  Lista. Se elige con `EXPO_PUBLIC_COMUNICA_API` (`fake` en desarrollo y en la
+  OTA del canal preview; en producción, sin variable, el área nativa no se
+  enciende).
+- **Navegación**: `app/(tabs)/comunica.tsx` pasa a ser la carpeta
+  `app/(tabs)/comunica/` con su `Stack`. La puerta (`index`) enseña la WebView
+  de siempre salvo con el modo alpha (o `global.comunicaNativa: "all"` en
+  `/profileConfig`; `"off"` la apaga para todos). Rutas nuevas: `lista`,
+  `web` (el legado) y `muestra`.
+- **Pantallas**: portada «Pasar lista» (atajo a tu grupo, «Te faltan N
+  listas», tus otros grupos, por etapa) y pantalla de marcar (tocar = vino/no
+  vino, mantener = las cuatro marcas y el motivo, «Han venido todos», «Sin
+  registro»), con los componentes del área en `components/comunica/comun/` y
+  su tema provisional en un solo fichero (`theme.ts`, pendiente de la decisión
+  `territorio`).
+- **Laboratorio Alpha**: panel «Comunica nueva» con los mandos del servidor
+  falso (entrar como monitor/coordinación/acompañamiento/otra delegación,
+  reloj, sin conexión, CRM caído, lento) y acceso a la WebView para comparar.
+- **Dependencias**: `zod` y `@tanstack/react-query` (JS puro).
 
 ## 2026-10-19 12:00 — Módulo NFC instalado (aún sin usar)
 
@@ -1700,6 +1955,41 @@ composer dejan de funcionar al desplegar. No tienen bandera a propósito
 (`/users` es el diario de Contigo; `/pushTokens` enumerable es poder mandar push
 a todos). Se arreglan con auth real en el panel — decisión D2.
 
+## 2026-08-12 21:40 — Archivar un evento desde el panel ya funciona de verdad
+
+- **B1 completo.** La app solo aplicaba el `_meta` que edita el MCM Panel
+  (`title`/`tintColor`/`bannerText`/`status`) al **evento activo**. Todo lo
+  demás salía del registry hardcodeado, así que archivar o desarchivar
+  cualquier otro evento desde el panel no tenía ningún efecto, y la lista de
+  "Eventos pasados" ignoraba también el título y el color que dijera el panel.
+- Ahora se leen los `_meta` de **todos** los eventos del registry y se mergean;
+  "Eventos pasados" se construye de esa lista ya mergeada, así que el estado
+  archivado sale siempre de lo que diga el panel, sin publicar versión.
+- **C3**: tipados `global.appReviewMode` y `data.appReviewBackup` como
+  opcionales (el modo revisión de las tiendas que gestiona el panel) y
+  documentado el mecanismo en `docs/contratos/PANEL_PERFILES.md` §1.6. La app
+  no los lee: el efecto le llega ya aplicado en las `tabs`.
+- Archivos: `hooks/useEventMeta.ts` (nuevo `useEventsMeta`),
+  `contexts/ActiveEventContext.tsx` (expone `events` mergeados),
+  `app/screens/EventosPasadosScreen.tsx`, `types/profileConfig.ts`.
+- Docs: `PANEL_PERFILES.md`, `PLAN_INTEGRACIONES.md`, `BACKLOG.md`, `COROS.md`.
+
+## 2026-08-12 20:35 — Menú de la playlist: opciones vivas, orden por uso y arreglos
+
+- **Solo se ofrece lo que se puede hacer**: con la lista vacía siguen visibles
+  las de importar, el hub del coro y el enlace del coro (que no depende de tu
+  selección) — antes ese enlace desaparecía sin motivo. Vaciar, exportar, subir
+  y compartir siguen ocultándose.
+- **Orden por frecuencia real**: Mi coro → Exportar y compartir → Coro en vivo →
+  Códigos y QR → Archivo → Vaciar (Archivo baja, que es lo más raro de usar).
+- **Arreglo**: en una sesión en vivo que cuelga de un coro ya no se ofrece
+  «cambiar el código» — la clave _es_ el coro, así que cambiarla la desataba de
+  él y el resto del coro no la encontraba. Su QR usa ahora `?coro=<id>`.
+- **Un toque menos**: si abres «guardar» sin tener coro elegido, después de
+  elegirlo la hoja vuelve a guardar en vez de dejarte en el inicio.
+- Archivos: `app/screens/SelectedSongsScreen.tsx`,
+  `components/playlist/ChoirSheet.tsx`.
+
 ## 2026-08-12 20:35 — Menú de la playlist: opciones vivas, orden por uso y arreglos
 
 - **Solo se ofrece lo que se puede hacer**: con la lista vacía siguen visibles
@@ -1749,41 +2039,6 @@ a todos). Se arreglan con auth real en el panel — decisión D2.
   `components/playlist/ChoirSheet.tsx`, `components/playlist/PlaylistHeaderBar.tsx`,
   `app/screens/SelectedSongsScreen.tsx`, `app/playlist.tsx`, `app/coro.tsx`,
   `database.rules.json`. Documentación: `docs/funcionalidades/COROS.md`.
-
-## 2026-08-12 21:40 — Archivar un evento desde el panel ya funciona de verdad
-
-- **B1 completo.** La app solo aplicaba el `_meta` que edita el MCM Panel
-  (`title`/`tintColor`/`bannerText`/`status`) al **evento activo**. Todo lo
-  demás salía del registry hardcodeado, así que archivar o desarchivar
-  cualquier otro evento desde el panel no tenía ningún efecto, y la lista de
-  "Eventos pasados" ignoraba también el título y el color que dijera el panel.
-- Ahora se leen los `_meta` de **todos** los eventos del registry y se mergean;
-  "Eventos pasados" se construye de esa lista ya mergeada, así que el estado
-  archivado sale siempre de lo que diga el panel, sin publicar versión.
-- **C3**: tipados `global.appReviewMode` y `data.appReviewBackup` como
-  opcionales (el modo revisión de las tiendas que gestiona el panel) y
-  documentado el mecanismo en `docs/contratos/PANEL_PERFILES.md` §1.6. La app
-  no los lee: el efecto le llega ya aplicado en las `tabs`.
-- Archivos: `hooks/useEventMeta.ts` (nuevo `useEventsMeta`),
-  `contexts/ActiveEventContext.tsx` (expone `events` mergeados),
-  `app/screens/EventosPasadosScreen.tsx`, `types/profileConfig.ts`.
-- Docs: `PANEL_PERFILES.md`, `PLAN_INTEGRACIONES.md`, `BACKLOG.md`, `COROS.md`.
-
-## 2026-08-12 20:35 — Menú de la playlist: opciones vivas, orden por uso y arreglos
-
-- **Solo se ofrece lo que se puede hacer**: con la lista vacía siguen visibles
-  las de importar, el hub del coro y el enlace del coro (que no depende de tu
-  selección) — antes ese enlace desaparecía sin motivo. Vaciar, exportar, subir
-  y compartir siguen ocultándose.
-- **Orden por frecuencia real**: Mi coro → Exportar y compartir → Coro en vivo →
-  Códigos y QR → Archivo → Vaciar (Archivo baja, que es lo más raro de usar).
-- **Arreglo**: en una sesión en vivo que cuelga de un coro ya no se ofrece
-  «cambiar el código» — la clave _es_ el coro, así que cambiarla la desataba de
-  él y el resto del coro no la encontraba. Su QR usa ahora `?coro=<id>`.
-- **Un toque menos**: si abres «guardar» sin tener coro elegido, después de
-  elegirlo la hoja vuelve a guardar en vez de dejarte en el inicio.
-- Archivos: `app/screens/SelectedSongsScreen.tsx`,
-  `components/playlist/ChoirSheet.tsx`.
 
 ## 2026-08-12 19:40 — Rediseño de «Tu selección»: las playlists cuelgan de un coro
 
@@ -4442,27 +4697,6 @@ Pasada de diseño para iPad (portrait y landscape). **Todo es JS puro
   `contexts/SelectedSongsContext.tsx`).
 - **OTA-safe** (solo JS).
 
-## 2026-06-08 — Notificaciones: descripción extendida (`bodyLong`)
-
-- Nuevo campo opcional **`bodyLong`** en las notificaciones: descripción larga que se
-  muestra en el **modal de detalle** (scrollable, respeta saltos de línea). La
-  **tarjeta** sigue usando el `body` corto. El detalle muestra `bodyLong` si existe;
-  si no, cae a `body` (fallback).
-- La deduplicación de la lista ahora **fusiona** `bodyLong` entre la copia local (push)
-  y la de Firebase, de modo que el texto largo aparece aunque solo venga por uno de los
-  dos orígenes (p. ej. si el panel lo manda solo a Firebase para no inflar el payload).
-- Tipos: campo `bodyLong?` en `NotificationData` y `ReceivedNotification`.
-- Archivos: `types/notifications.ts`, `app/notifications.tsx`,
-  `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
-  debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
-
-## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
-
-- **Nuevo**: opción "Ver QR offline" en el menú de la playlist (Seleccionadas). Genera un QR con la playlist **entera embebida** en un deep link `mcmapp://playlist?d=<payload>`. Un dispositivo con la app instalada y el cantoral cacheado puede escanearlo con la cámara normal y abrir la playlist **sin conexión a internet** (no descarga nada de Firebase, a diferencia del QR "en la nube" con código de 4 dígitos).
-- **Codificación compacta**: cada canción se codifica como categoría (1 letra, alineada con `songUtils`) + número de canción + tono (`t±n` semitonos) y cejilla (`cN`) opcionales; el orden se deduce de la posición. Respaldo "crudo" por `filename` para canciones sin categoría/número conocidos. Así el QR es pequeño aunque haya muchas canciones. El receptor resuelve categoría+número → `filename` contra su catálogo cacheado; las canciones que no tenga se omiten avisando al usuario.
-- **Toggle online/offline** dentro del `ShareQrModal`: si hay también código en la nube, se puede alternar entre los dos QR.
-- Archivos: `utils/offlinePlaylist.ts` (nuevo, + test), `utils/pendingCloudPlaylist.ts`, `app/playlist.tsx`, `app/screens/CategoriesScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`, `components/playlist/ShareQrModal.tsx`. Sin dependencias nuevas ni código nativo (OTA normal).
-
 ## 2026-06-13 — Fix: la selección de calendarios se perdía al reabrir la app
 
 - **Bug**: la visibilidad de calendarios se guardaba como array **por índice** (`boolean[]`) y se reconciliaba contra el `fallbackConfigs` (1 solo calendario) durante el instante en que Firebase aún cargaba. Eso truncaba el array guardado a longitud 1, lo persistía, y al llegar los datos reales rellenaba con los defaults — perdiendo la selección del usuario.
@@ -4672,6 +4906,20 @@ Pasada de diseño para iPad (portrait y landscape). **Todo es JS puro
   `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
   debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
 
+## 2026-06-08 — Notificaciones: descripción extendida (`bodyLong`)
+
+- Nuevo campo opcional **`bodyLong`** en las notificaciones: descripción larga que se
+  muestra en el **modal de detalle** (scrollable, respeta saltos de línea). La
+  **tarjeta** sigue usando el `body` corto. El detalle muestra `bodyLong` si existe;
+  si no, cae a `body` (fallback).
+- La deduplicación de la lista ahora **fusiona** `bodyLong` entre la copia local (push)
+  y la de Firebase, de modo que el texto largo aparece aunque solo venga por uno de los
+  dos orígenes (p. ej. si el panel lo manda solo a Firebase para no inflar el payload).
+- Tipos: campo `bodyLong?` en `NotificationData` y `ReceivedNotification`.
+- Archivos: `types/notifications.ts`, `app/notifications.tsx`,
+  `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
+  debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
+
 ---
 
 ## 2026-06-07 — Evaluación: wizard tipo onboarding + ajustes de ubicación
@@ -4719,6 +4967,13 @@ Pasada de diseño para iPad (portrait y landscape). **Todo es JS puro
   `app/(tabs)/index.tsx`.
 
 ---
+
+## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
+
+- **Nuevo**: opción "Ver QR offline" en el menú de la playlist (Seleccionadas). Genera un QR con la playlist **entera embebida** en un deep link `mcmapp://playlist?d=<payload>`. Un dispositivo con la app instalada y el cantoral cacheado puede escanearlo con la cámara normal y abrir la playlist **sin conexión a internet** (no descarga nada de Firebase, a diferencia del QR "en la nube" con código de 4 dígitos).
+- **Codificación compacta**: cada canción se codifica como categoría (1 letra, alineada con `songUtils`) + número de canción + tono (`t±n` semitonos) y cejilla (`cN`) opcionales; el orden se deduce de la posición. Respaldo "crudo" por `filename` para canciones sin categoría/número conocidos. Así el QR es pequeño aunque haya muchas canciones. El receptor resuelve categoría+número → `filename` contra su catálogo cacheado; las canciones que no tenga se omiten avisando al usuario.
+- **Toggle online/offline** dentro del `ShareQrModal`: si hay también código en la nube, se puede alternar entre los dos QR.
+- Archivos: `utils/offlinePlaylist.ts` (nuevo, + test), `utils/pendingCloudPlaylist.ts`, `app/playlist.tsx`, `app/screens/CategoriesScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`, `components/playlist/ShareQrModal.tsx`. Sin dependencias nuevas ni código nativo (OTA normal).
 
 ## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
 

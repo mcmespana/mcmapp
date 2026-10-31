@@ -81,6 +81,7 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
 | **🎨 Reglas de diseño para agentes (★ antes de tocar UI)**               | **`design.md`** (raíz) — inventario en `docs/desarrollo/DESIGN.md`           |
 | Incoherencias de diseño pendientes de unificar                           | `docs/planes/PLAN_DISENO.md`                                                 |
+| Diseño del área nativa de Comunica: piezas y reglas aprendidas           | `docs/desarrollo/AREA_NATIVA_DISENO.md`                                      |
 | Notificaciones push (sistema completo)                                   | `docs/funcionalidades/NOTIFICACIONES.md`                                     |
 | Inicio de sesión (Google/Apple) y huellas SHA-1 de Android               | `docs/funcionalidades/LOGIN.md`                                              |
 | Modo tester: canal `preview` de EAS Update (Laboratorio Alpha)           | `docs/funcionalidades/CANAL_PREVIEW.md`                                      |

@@ -3,7 +3,7 @@
 > **Lee esto antes de abrir ningún `PLAN_*.md`.** Su único trabajo es que no
 > vuelvas a ejecutar algo que ya está hecho.
 >
-> Última actualización: 2026-10-17.
+> Última actualización: 2026-10-21.
 
 ## La regla, en una línea
 
@@ -24,6 +24,7 @@ El coste de mantener esta tabla al día es mucho menor que el de repetirlo.
 
 | Plan                                             | Estado real                                                                                                                                                                                                                       | Dónde manda el orden                                  |
 | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [`PLAN_EXPO_58.md`](PLAN_EXPO_58.md)             | 🔴 **Siguiente.** Migrar a Expo 58: las pestañas con stack propio pasan a rutas de fichero. Rama `claude/deps-expo-58` (#353). **Se borra al terminar**                                                                           | —                                                     |
 | [`PLAN_UI_NATIVA.md`](PLAN_UI_NATIVA.md)         | ⏸️ **En pausa** por decisión del usuario (2026-09-24) — Fase 1 ✅, Fase 2 ~80%. No se retoma hasta que lo diga                                                                                                                    | `BACKLOG.md` §1 fila 4                                |
 | [`PLAN_INTEGRACIONES.md`](PLAN_INTEGRACIONES.md) | 🟡 Solo queda **Integración D** (reglas Firebase). A, B, C, E cerrados el 2026-08-12                                                                                                                                              | `BACKLOG.md` §1 fila 5 — 🔒 bloqueado por decisión D2 |
 | [`PLAN_CALIDAD.md`](PLAN_CALIDAD.md)             | 🟡 Parcial — Fase 0 (guardarraíles) ✅. **Fase 1 (trocear gigantes) descartada por decisión del usuario** el 2026-08-15, ver abajo                                                                                                | `BACKLOG.md` §2.A                                     |
@@ -39,6 +40,16 @@ no entran en la bolsa oportunista, y no hace falta preguntar por ellos.
 | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`PLAN_WIDGET_CONTIGO.md`](PLAN_WIDGET_CONTIGO.md) | Feature entera + build de tienda dedicada (WidgetKit + App Group). Ampliado el 2026-09-19: son **tres** widgets (hábitos, racha, evangelio del día) |
 | [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md)   | ⚠️ **Por definir**: el usuario explicará la idea. Lo que hay escrito es solo una propuesta de Claude (2026-09-26), no un plan decidido              |
+
+## 🔬 En análisis — todavía no hay plan
+
+El análisis no se ejecuta. Los planes de `area-nativa/` sí, pero solo cuando el
+usuario lo pida y en su rama.
+
+| Documento                                                            | Estado                                                                                                                                                                |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`ANALISIS_AREA_PRIVADA_NATIVA.md`](ANALISIS_AREA_PRIVADA_NATIVA.md) | 🔬 Análisis del 2026-10-21: el área privada de Comunica en nativo, con backend propio. Decisiones tomadas casi todas (`BACKLOG.md` §2.I)                              |
+| [`area-nativa/`](area-nativa/README.md)                              | 🟢 Planes de la app (front), escritos el 2026-10-21. Se ejecutan en la rama `nuevoComunicaChulo` cuando el usuario lo diga; no necesitan el servidor (servidor falso) |
 
 ## 🗄️ Archivados — HECHOS o ANULADOS, no re-ejecutar
 

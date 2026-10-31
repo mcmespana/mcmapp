@@ -66,7 +66,8 @@ edita JSON. El cliente combina perfil + delegación + overrides al arrancar.
   "maintenanceMode": false,         // ⚠ true → toda la app muestra MaintenanceScreen
   "maintenanceMessage": "",         // mensaje opcional durante mantenimiento
   "minAppVersion": "0.0.0",         // semver mínima soportada. "0.0.0" = sin bloqueo
-  "appReviewMode": false            // modo revisión de tiendas — lo gestiona el panel (§1.6)
+  "appReviewMode": false,           // modo revisión de tiendas — lo gestiona el panel (§1.6)
+  "comunicaNativa": "alpha"         // área privada nativa: "off" | "alpha" | "all" (§1.7). Ausente = "alpha"
 }
 ```
 
@@ -238,6 +239,26 @@ Implicaciones prácticas:
 - Si el backup se pierde (borrado manual del nodo), apagar el modo deja las
   tabs recortadas: hay que volver a añadir Cantoral y Comunica a mano.
 - Implementación: `mcmpanel/src/lib/appReviewMode.ts`.
+
+### 1.7. `data.global.comunicaNativa` — el área privada nativa
+
+Interruptor de la pestaña Comunica: ¿área nativa o la WebView de siempre (el
+**legado**)? Lo lee la app (`utils/comunica/router.ts`); plan:
+`docs/planes/area-nativa/10-enrutador-enlaces-y-legado.md` §1.
+
+| Valor | Modo normal | Laboratorio Alpha encendido |
+| --- | --- | --- |
+| `"off"` | Legado | Legado |
+| `"alpha"` (o ausente) | Legado | **Nativa** |
+| `"all"` | Nativa | Nativa |
+
+- `"alpha"` es el estado de construcción: solo los probadores la ven.
+- `"all"` es el lanzamiento; `"off"`, la vuelta atrás de emergencia sin build
+  ni OTA (también apaga lo nuevo a quien está en alpha).
+- Sin servidor configurado en el bundle (`EXPO_PUBLIC_COMUNICA_API`), la app
+  enseña el legado diga lo que diga este campo. Hoy solo el canal preview lo
+  lleva, apuntando al servidor falso con datos inventados.
+- Hasta que el panel lo enseñe, se cambia desde la consola de Firebase.
 
 ---
 
