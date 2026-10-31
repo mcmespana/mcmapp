@@ -41,7 +41,9 @@ import { useEvents, usePrefetchEventRolls } from '@/hooks/comunica/events';
 import { useMe } from '@/hooks/comunica/useMe';
 import { TEAM_ROLES } from '@/services/comunica/contract';
 import { useArea } from '../comun/ComunicaAreaProvider';
-import AreaPrimaryButton from '../comun/AreaPrimaryButton';
+import { useActiveProfile } from '@/hooks/comunica/useActiveProfile';
+import MemberHome from '../inicio/MemberHome';
+import ProfilesScreen from '../perfiles/ProfilesScreen';
 import { useGroups, useToday } from '@/hooks/comunica/usePasarLista';
 import { useFlushOutboxOnMount, useOutbox } from '@/hooks/comunica/useOutbox';
 import { useOpenLegacy } from '@/hooks/comunica/useOpenLegacy';
@@ -90,43 +92,22 @@ const PREFETCH_MAX = 5;
 
 export default function ComunicaHome() {
   const { session } = useArea();
-  // Quien no es del equipo (familias, socios) aún no tiene pantallas nativas
-  // (planes 11-16): la versión web con la sesión puesta, en vez de un 403.
+  const active = useActiveProfile();
   const roles = session.me?.roles;
+  // Quien no es del equipo (familias, socios): solo la parte de familia
+  // (plan 11). Solo familiar con varios hijos sin elegir: antes, a quién ve.
   if (roles && !roles.some((r) => TEAM_ROLES.includes(r))) {
-    return <NotTeamHome />;
+    if (active.mustChoose) return <ProfilesScreen />;
+    return <FamilyHome />;
   }
   return <TeamHome />;
 }
 
-function NotTeamHome() {
-  const t = useComunicaTheme();
-  const router = useRouter();
-  const openLegacy = useOpenLegacy();
+function FamilyHome() {
+  const me = useMe();
   return (
-    <AreaScreen>
-      <View style={styles.notTeam}>
-        <Text style={[styles.notTeamTitle, { color: t.text }]}>
-          Tu área, de momento en la web
-        </Text>
-        <Text style={[styles.notTeamBody, { color: t.textSecondary }]}>
-          En la app ya está lo de monitores y coordinación. Lo tuyo (tus datos,
-          eventos e inscripciones) llega pronto; mientras, se abre la versión
-          web sin volver a entrar.
-        </Text>
-        <AreaPrimaryButton
-          label="Abrir la versión web"
-          onPress={() =>
-            void openLegacy({ internalpage: 'single_stic_home' }, 'Comunica')
-          }
-        />
-        <NavRow
-          icon="person.crop.circle"
-          title="Tu cuenta"
-          subtitle="Salir o entrar con otra persona"
-          onPress={() => router.push('/comunica/yo')}
-        />
-      </View>
+    <AreaScreen onRefresh={() => me.refetch()}>
+      <MemberHome />
     </AreaScreen>
   );
 }
@@ -160,6 +141,14 @@ function TeamHome() {
           </AreaState>
         )}
       </AreaState>
+      {/* Debajo, lo de familia y miembro (CAR-1: una sola portada). Lo del
+          equipo es de quien ha entrado y no cambia con «Viendo a». */}
+      <View style={styles.member}>
+        <MemberHome
+          isMonitor={!!me.me?.roles.includes('monitor')}
+          showGreeting={false}
+        />
+      </View>
       <View style={styles.footer}>
         <SyncBadge generatedAt={today.generatedAt} />
         <SamplerLink />
@@ -641,9 +630,7 @@ function SamplerLink() {
 }
 
 const styles = StyleSheet.create({
-  notTeam: { padding: 24, gap: 16 },
-  notTeamTitle: { ...typography.h2 },
-  notTeamBody: { ...typography.body },
+  member: { marginTop: 24 },
   intro: { gap: 4 },
   introLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { ...typography.h2 },
