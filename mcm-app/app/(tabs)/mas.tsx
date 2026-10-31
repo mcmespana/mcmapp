@@ -11,7 +11,7 @@ import ComunicaScreen from '../screens/ComunicaScreen';
 import ComunicaGestionScreen from '../screens/ComunicaGestionScreen';
 import McmPanelScreen from '../screens/McmPanelScreen';
 import { FotosScreen, fotosHeaderOptions } from '../screens/FotosScreen';
-import { CalendarScreen } from './calendario';
+import { CalendarScreen } from '../screens/CalendarScreen';
 import EventosPasadosScreen from '../screens/EventosPasadosScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import EventActionButtons from '@/components/EventActionButtons';
@@ -38,6 +38,9 @@ export type MasStackParamList = EventStackParamList & {
 };
 
 const Stack = createNativeStackNavigator<MasStackParamList>();
+
+// Apilado en «Más»: con su back y su título (ver `CalendarScreen`).
+const CalendarStacked = () => <CalendarScreen variant="stacked" />;
 
 export default function MasTab() {
   const [settingsVisible, setSettingsVisible] = useState(false);
@@ -122,7 +125,7 @@ export default function MasTab() {
         />
         <Stack.Screen
           name="Calendario"
-          component={CalendarScreen}
+          component={CalendarStacked}
           options={{
             // CalendarScreen pone su propio título ("Calendario") y el botón de
             // calendarios vía navigation.setOptions, usando el header nativo del

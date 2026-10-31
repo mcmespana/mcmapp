@@ -19,7 +19,6 @@ import path from 'path';
 const APP = path.join(__dirname, '..', '..', 'app');
 
 const PENDIENTES = [
-  'app/(tabs)/calendario.tsx',
   'app/(tabs)/cancionero.tsx',
   'app/(tabs)/mas.tsx',
   'app/(tabs)/visitapapa.tsx',

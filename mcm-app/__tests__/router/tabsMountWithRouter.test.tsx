@@ -58,6 +58,8 @@ jest.mock('react-native-webview', () => {
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { __resetMockDb, __setMockSnapshot } from '@/__mocks__/firebase';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppProviders from '@/components/AppProviders';
 import { Slot, Stack } from 'expo-router';
 
@@ -72,12 +74,7 @@ const TABS = [
 type Tab = (typeof TABS)[number];
 
 /** Las que todavía lo hacen (se vacía al migrar, ver arriba). */
-const PENDIENTES: readonly Tab[] = [
-  'calendario',
-  'visitapapa',
-  'mas',
-  'cancionero',
-];
+const PENDIENTES: readonly Tab[] = ['visitapapa', 'mas', 'cancionero'];
 
 const NAV_STATE_ERROR = /missing, partial, or incompatible navigation state/;
 
@@ -92,10 +89,20 @@ const rutasDe = (tab: Tab): Record<string, unknown> =>
           .default,
       };
 
+const METRICS = {
+  frame: { x: 0, y: 0, width: 390, height: 844 },
+  insets: { top: 47, left: 0, right: 0, bottom: 34 },
+};
+
+// La misma torre que `app/_layout.tsx`: gestos, safe area y providers.
 const raiz = () => (
-  <AppProviders>
-    <Slot />
-  </AppProviders>
+  <GestureHandlerRootView style={{ flex: 1 }}>
+    <SafeAreaProvider initialMetrics={METRICS}>
+      <AppProviders>
+        <Slot />
+      </AppProviders>
+    </SafeAreaProvider>
+  </GestureHandlerRootView>
 );
 const tabsLayout = () => <Stack screenOptions={{ headerShown: false }} />;
 
