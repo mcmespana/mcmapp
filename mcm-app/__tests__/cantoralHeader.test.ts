@@ -44,7 +44,7 @@ describe('cantoralHeaderTint', () => {
 describe('las pantallas del cantoral no deciden el color a mano', () => {
   const ROOT = path.join(__dirname, '..');
   it.each([
-    'app/(tabs)/cancionero.tsx',
+    'app/(tabs)/cancionero/_layout.tsx',
     'app/screens/CategoriesScreen.tsx',
     'app/screens/SongListScreen.tsx',
     'app/screens/SongDetailScreen.tsx',

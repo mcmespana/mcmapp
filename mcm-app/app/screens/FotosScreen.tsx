@@ -223,7 +223,7 @@ export function fotosHeaderOptions(isDark: boolean) {
     headerTransparent: true,
     headerTintColor: themeColors(isDark).headerTint,
     // iOS <26 necesita el blur explícito; en iOS 26+ lo pone el sistema
-    // (combinarlo provoca solape, ver cancionero.tsx).
+    // (combinarlo provoca solape, ver cancionero/_layout.tsx).
     ...(isIOS && parseInt(String(Platform.Version), 10) < 26
       ? { headerBlurEffect: 'systemChromeMaterial' as const }
       : {}),

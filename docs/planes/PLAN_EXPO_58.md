@@ -15,25 +15,48 @@ cruzadas, y lo que falla solo se ve en el móvil.
 > `claude/deps-expo-58` (PR #353), trae `main` y sigue los pasos. Al acabar,
 > lanza una build de TestFlight y borra el plan.
 
-## Estado (2026-10-31) — pasos 1-4 hechos, faltan 5-11
+## Estado (2026-10-31, tarde) — pasos 1-9 hechos, faltan 10-11
 
 Hechos en la rama `claude/deps-expo-58` (PR #353): **1** `main` traído y
 `expo install --check` al día; **2** Comunica sobre Expo 58 (`anchor`,
 `usePreventRemove`); **3** guardarraíles en `__tests__/router/`; **4** Fotos,
-Calendario, Visita del Papa y Más migradas a carpetas de rutas (detalle y
-decisiones en la entrada del CHANGELOG del 2026-10-31 12:00).
+Calendario, Visita del Papa y Más migradas a carpetas de rutas; **5-6**
+Cantoral migrado a `app/(tabs)/cancionero/` con todo lo que colgaba de su
+stack; **7** `freezeOnBlur` quitado (no tiene efecto en 58); **8** `defaultTab`
+sin tocar (no hace falta, ver abajo); **9** verificación hecha, incluida la web.
+Detalle y decisiones en las entradas del CHANGELOG del 2026-10-31 (12:00 y
+18:00). Ya no queda ningún navegador montado a mano: las listas de pendientes
+de `__tests__/router/` se han borrado y la regla queda pelada.
 
-**Falta Cantoral (paso 5) y lo que se apoya en su stack (paso 6).** Hasta
-entonces el test `tabsMountWithRouter` marca `cancionero` como PENDIENTE y la
-pestaña sigue lanzando el error de la build 60: **no fusionar ni construir de
-tienda con esto**. Al migrarlo, el test se pone rojo solo y obliga a vaciar las
-dos listas de pendientes (`PENDIENTES` en `tabsMountWithRouter.test.tsx` y en
-`noHandMadeNavigators.test.ts`).
+**Lo que falta es lo que solo se ve en el móvil (paso 10)**: build de
+TestFlight desde la rama y recorrido en dispositivo; después, mergear (11).
+La build la lanza el usuario.
+
+Decisiones de este tramo que conviene saber:
+
+- **`defaultTab` (paso 8):** es un valor GLOBAL del Panel (`global.defaultTab`,
+  hoy `index`), no por perfil, y ninguna pantalla lo lee: en iOS nunca se
+  respetó y en Android/web lo perdió la rama al quitar `initialRouteName`. Con
+  el valor actual no cambia nada. Si algún día el Panel pone otra pestaña, la
+  vía es que Inicio redirija una vez al arrancar en frío (cuidando no pisar un
+  enlace o una notificación de arranque).
+- **`freezeOnBlur` (paso 7):** en expo-router 58 está marcado «sin efecto» y
+  los navegadores lo fijan a `false`; se quitó de `AndroidTabsLayout`,
+  `eventStackScreens` y del cantoral. Las pestañas ya visitadas vuelven a
+  re-renderizar en segundo plano: mirar en el móvil si se nota (ver
+  `docs/desarrollo/TABS_MAINTENANCE.md`).
+- **Web en blanco (encontrado en el paso 9, ya arreglado):** en 58 el export
+  estático ya no inyecta el JS en el HTML; `app/+html.tsx` tiene que pintar
+  `headNodes`/`bodyNodes`. Lo vigila `__tests__/htmlTemplateAssets.test.tsx`.
 
 Lo aprendido que conviene saber: el `Stack` de expo-router 58 no aplana
 fragmentos (devolver `<>…</>` de un helper revienta); los params de ruta son
 texto; las pantallas compartidas entre stacks se re-exportan en un fichero de
-una línea por carpeta (`export { default } from '@/app/screens/X'`).
+una línea por carpeta (`export { default } from '@/app/screens/X'`). En tests
+con `renderRouter`, un toque que navega va en `await act(async () => …)` (la
+cola del router se vacía después del `act` síncrono de `fireEvent`), y a
+`renderRouter` se le pasa el MÓDULO del `_layout`, no su `default`, o se pierde
+`unstable_settings`.
 
 ## Dónde estamos (antes de este tramo)
 

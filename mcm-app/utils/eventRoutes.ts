@@ -116,3 +116,32 @@ export function lastSegment(pathname: string): string {
   const clean = pathname.split(/[?#]/)[0].replace(/\/+$/, '');
   return clean.slice(clean.lastIndexOf('/') + 1);
 }
+
+// ── Cantoral ───────────────────────────────────────────────────────────────
+// Las pantallas del cantoral (`app/(tabs)/cancionero/`). Los params de la
+// canción y su lista se arman en `utils/songNavList.ts`: aquí solo se sabe a
+// qué ruta va cada nombre.
+
+export const CANTORAL_BASE = '/cancionero';
+
+export const CANTORAL_SLUGS = {
+  Categories: '',
+  SongsList: 'categoria',
+  SongDetail: 'cancion',
+  SongFullscreen: 'pantalla-completa',
+  SelectedSongs: 'seleccion',
+} as const;
+
+export type CantoralScreenName = keyof typeof CANTORAL_SLUGS;
+
+/** Ruta de una pantalla del cantoral. */
+export function cantoralHref(
+  screen: CantoralScreenName,
+  params?: Record<string, unknown>,
+): ScreenHref {
+  const query = toRouteParams(params);
+  return {
+    pathname: join(CANTORAL_BASE, CANTORAL_SLUGS[screen]),
+    ...(query && { params: query }),
+  };
+}

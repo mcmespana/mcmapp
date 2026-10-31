@@ -12,12 +12,11 @@
  * Este monta cada pestaña con `renderRouter`, que es el router de verdad.
  *
  * ── Cómo se usa ─────────────────────────────────────────────────────────────
- * `PENDIENTES` son las pestañas que aún montan un navegador a mano: de ellas
- * se espera que fallen CON ESE MENSAJE (no con otro: un fallo por un mock que
- * falta no cuenta). Al migrar una pestaña deja de fallar y su caso se pone
- * rojo: obliga a quitarla de la lista, que así solo puede encogerse. El caso
- * de control (`contigo`, que ya es carpeta con `_layout`) demuestra que el
- * montaje sí puede salir bien: sin él, «falla» no probaría nada.
+ * Mientras duró la migración, una lista de PENDIENTES esperaba de cada pestaña
+ * sin migrar que fallase CON ESE MENSAJE; el último fue el Cantoral. Ahora
+ * todas son carpetas con `_layout` y todas tienen que arrancar. El caso de
+ * control (`contigo`) sigue: demuestra que el montaje sí puede salir bien con
+ * estos mocks, así que un rojo aquí es de la pestaña, no del test.
  */
 /* eslint-disable @typescript-eslint/no-require-imports, import/first */
 import React from 'react';
@@ -73,21 +72,11 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number];
 
-/** Las que todavía lo hacen (se vacía al migrar, ver arriba). */
-const PENDIENTES: readonly Tab[] = ['cancionero'];
-
-const NAV_STATE_ERROR = /missing, partial, or incompatible navigation state/;
-
-/** Rutas de una pestaña: fichero suelto (pendiente) o carpeta migrada. */
-const rutasDe = (tab: Tab): Record<string, unknown> =>
-  PENDIENTES.includes(tab)
-    ? { [`(tabs)/${tab}`]: require(`../../app/(tabs)/${tab}`).default }
-    : {
-        [`(tabs)/${tab}/_layout`]: require(`../../app/(tabs)/${tab}/_layout`)
-          .default,
-        [`(tabs)/${tab}/index`]: require(`../../app/(tabs)/${tab}/index`)
-          .default,
-      };
+/** Rutas de una pestaña: su carpeta (`_layout` + `index`). */
+const rutasDe = (tab: Tab): Record<string, unknown> => ({
+  [`(tabs)/${tab}/_layout`]: require(`../../app/(tabs)/${tab}/_layout`).default,
+  [`(tabs)/${tab}/index`]: require(`../../app/(tabs)/${tab}/index`).default,
+});
 
 const METRICS = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -132,17 +121,7 @@ describe('las pestañas arrancan con el router de verdad', () => {
     );
   });
 
-  for (const tab of TABS) {
-    if (PENDIENTES.includes(tab)) {
-      it(`${tab}: PENDIENTE, todavía monta un navegador a mano`, async () => {
-        await expect(abrir(rutasDe(tab), `/${tab}`)).rejects.toThrow(
-          NAV_STATE_ERROR,
-        );
-      });
-    } else {
-      it(`${tab} arranca`, async () => {
-        await abrir(rutasDe(tab), `/${tab}`);
-      });
-    }
-  }
+  it.each(TABS)('%s arranca', async (tab) => {
+    await abrir(rutasDe(tab), `/${tab}`);
+  });
 });

@@ -12,11 +12,11 @@ Hoy conviven **varios sistemas en paralelo**. Conteos reales sobre `app/` +
 
 ### 1.1. Headers — 3 paradigmas distintos
 
-| Paradigma                                | Dónde                                                                                                | Nativo |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------ |
-| Header **nativo** (`native-stack`)       | Cantoral (`cancionero.tsx`), `SongListScreen` (con large title + search nativos), Oración, Evangelio | ✅     |
-| **Floating glass custom** (hecho a mano) | Contigo (revisión, bookmarks, índice), eventos (`GlassHeader.ios`)                                   | ❌     |
-| `headerShown:false` + cabecera propia    | `index` (Inicio), `mas`, `SongDetail`, `eventStackScreens`                                           | ❌     |
+| Paradigma                                | Dónde                                                                                                    | Nativo |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------ |
+| Header **nativo** (`native-stack`)       | Cantoral (`cancionero/_layout`), `SongListScreen` (con large title + search nativos), Oración, Evangelio | ✅     |
+| **Floating glass custom** (hecho a mano) | Contigo (revisión, bookmarks, índice), eventos (`GlassHeader.ios`)                                       | ❌     |
+| `headerShown:false` + cabecera propia    | `index` (Inicio), `mas`, `SongDetail`, `eventStackScreens`                                               | ❌     |
 
 → 9 pantallas con `headerShown:false`. Resultado: el back/título/acciones se
 ven y se comportan distinto en cada zona. Solo el cantoral (y lo ya convertido)

@@ -1,6 +1,6 @@
 /**
  * Recorrido de las carpetas de ruta migradas (Expo 58): se abre CADA fichero de
- * ruta de `mas/` y `visitapapa/` con el router de verdad y se comprueba que
+ * ruta de `mas/`, `visitapapa/` y `cancionero/` con el router de verdad y se comprueba que
  * monta y que el `_layout` y los ficheros están de acuerdo.
  *
  * Lo que cubre y `tabsMountWithRouter` no: un `Stack.Screen` declarado sin
@@ -103,10 +103,18 @@ const avisosDeRutas = () =>
     .map((c) => String(c[0]))
     .filter((m) => AVISOS_DE_RUTAS.test(m));
 
+const QUERY_EVENTO =
+  'eventId=visitapapa26&dia=0&act=0&url=https%3A%2F%2Fexample.com&title=Comida';
+// Sin datos en la caché: la canción no aparece y el detalle lo dice (la
+// pantalla completa vuelve atrás). El recorrido con canciones de verdad está
+// en `cantoralJourney.test.tsx`.
+const QUERY_CANTORAL = 'categoryId=__ALL__&categoryName=Buscar&filename=x.cho';
+
 describe.each([
-  ['mas', '/mas'],
-  ['visitapapa', '/visitapapa'],
-])('recorrido de «%s»', (tab, base) => {
+  ['mas', '/mas', QUERY_EVENTO],
+  ['visitapapa', '/visitapapa', QUERY_EVENTO],
+  ['cancionero', '/cancionero', QUERY_CANTORAL],
+])('recorrido de «%s»', (tab, base, query) => {
   const rutas = () => ({
     _layout: raiz,
     '(tabs)/_layout': () => <Stack screenOptions={{ headerShown: false }} />,
@@ -124,7 +132,7 @@ describe.each([
 
   it.each(slugs)('abre /%s', async (slug) => {
     await renderRouter(rutas() as never, {
-      initialUrl: `${base}/${slug}?eventId=visitapapa26&dia=0&act=0&url=https%3A%2F%2Fexample.com&title=Comida`,
+      initialUrl: `${base}/${slug}?${query}`,
     });
     await waitFor(() => expect(screen.toJSON()).not.toBeNull());
     expect(avisosDeRutas()).toEqual([]);

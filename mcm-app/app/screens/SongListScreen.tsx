@@ -18,6 +18,10 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import ListSkeleton from '@/components/ListSkeleton';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { filterSongsData } from '@/utils/filterSongsData';
+import { useLocalSearchParams } from 'expo-router';
+import { useNavigation } from 'expo-router/react-navigation';
+import { openCantoral } from '@/utils/cantoralNavigation';
+import { songRouteParams } from '@/utils/songNavList';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import SongListItem from '../../components/SongListItem';
 import BottomSheet from '@/components/BottomSheet';
@@ -371,17 +375,14 @@ function buildSongList(
   }
 }
 
-export default function SongsListScreen({
-  route,
-  navigation,
-}: {
-  route: { params: { categoryId: string; categoryName: string } };
-  navigation: {
-    navigate: (screen: string, params?: object) => void;
-    goBack: () => void;
-    setOptions: (opts: object) => void;
-  };
-}) {
+export default function SongsListScreen() {
+  const navigation = useNavigation();
+  const params = useLocalSearchParams<{
+    categoryId?: string;
+    categoryName?: string;
+  }>();
+  const categoryId = params.categoryId ?? '__ALL__';
+  const categoryName = params.categoryName ?? '';
   const {
     data: firebaseSongs,
     loading: loadingSongs,
@@ -392,7 +393,6 @@ export default function SongsListScreen({
     filterSongsData as (data: any) => Record<string, SongCategory>,
   );
   const songsData = useMemo(() => getSongsData(firebaseSongs), [firebaseSongs]);
-  const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
@@ -647,12 +647,12 @@ export default function SongsListScreen({
         actionLabel: 'Ver',
         onActionPress: ({ hide }) => {
           hide();
-          navigation.navigate('SelectedSongs');
+          openCantoral('SelectedSongs');
         },
       });
     }
     setMenuSong(null);
-  }, [menuSong, isSongSelected, addSong, removeSong, toast, navigation]);
+  }, [menuSong, isSongSelected, addSong, removeSong, toast]);
 
   // Captures the share message and closes the sheet. The actual Share.share()
   // call happens in handleSheetCloseComplete, fired after the Modal is gone.
@@ -678,38 +678,35 @@ export default function SongsListScreen({
     (song: Song) => {
       const index = songs.findIndex((s) => s.filename === song.filename);
 
-      navigation.navigate('SongDetail', {
-        filename: song.filename,
-        title: song.title.replace(/^\d+\.\s*/, ''),
-        author: song.author,
-        key: song.key,
-        capo: song.capo,
-        content: song.content || '',
-        media: extractSongMedia(song) ?? undefined,
-        // En modo etiqueta la lista de navegación es la de la etiqueta: el
-        // swipe entre canciones se mueve dentro de la etiqueta, no de la
-        // categoría de la que salga cada canción.
-        navigationList:
-          categoryId === '__ALL__'
-            ? undefined
-            : songs.map((s) => ({
-                title: s.title,
-                filename: s.filename,
-                author: s.author,
-                key: s.key,
-                capo: s.capo,
-                content: s.content,
-                media: extractSongMedia(s) ?? undefined,
-              })),
-        currentIndex: categoryId === '__ALL__' ? undefined : index,
-        source: categoryId === '__ALL__' ? undefined : 'category',
-        firebaseCategory:
-          categoryId === '__ALL__' || isTagMode
-            ? song.originalCategoryKey
-            : categoryId,
-      });
+      openCantoral(
+        'SongDetail',
+        songRouteParams({
+          filename: song.filename,
+          // En modo etiqueta la lista de navegación es la de la etiqueta: el
+          // swipe entre canciones se mueve dentro de la etiqueta, no de la
+          // categoría de la que salga cada canción.
+          list:
+            categoryId === '__ALL__'
+              ? undefined
+              : songs.map((s) => ({
+                  title: s.title,
+                  filename: s.filename,
+                  author: s.author,
+                  key: s.key,
+                  capo: s.capo,
+                  content: s.content,
+                  media: extractSongMedia(s) ?? undefined,
+                })),
+          currentIndex: categoryId === '__ALL__' ? undefined : index,
+          source: categoryId === '__ALL__' ? undefined : 'category',
+          firebaseCategory:
+            categoryId === '__ALL__' || isTagMode
+              ? song.originalCategoryKey
+              : categoryId,
+        }),
+      );
     },
-    [songs, categoryId, isTagMode, navigation],
+    [songs, categoryId, isTagMode],
   );
 
   // ListHeaderComponent: search bar + song count

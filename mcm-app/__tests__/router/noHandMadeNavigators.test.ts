@@ -8,17 +8,13 @@
  * state», build 60). Lo correcto es una carpeta con `_layout.tsx` (`Stack` de
  * expo-router) y un fichero por pantalla: ver `app/(tabs)/contigo/`.
  *
- * `PENDIENTES` es la migración en curso (`docs/planes/PLAN_EXPO_58.md`): los
- * ficheros que todavía lo hacen. Solo puede encogerse: un fichero nuevo con
- * un navegador a mano falla aquí, y uno migrado obliga a quitarse de la lista.
- * Cuando esté vacía, se borra la lista y queda la regla pelada.
+ * Hubo una lista de pendientes mientras duró la migración (Expo 58): el último
+ * fue el Cantoral (`app/(tabs)/cancionero/`). Ya no queda ninguno.
  */
 import fs from 'fs';
 import path from 'path';
 
 const APP = path.join(__dirname, '..', '..', 'app');
-
-const PENDIENTES = ['app/(tabs)/cancionero.tsx'];
 
 function ficheros(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -37,13 +33,7 @@ const culpables = ficheros(APP)
   .sort();
 
 describe('nada monta un navegador a mano en app/', () => {
-  it('no hay ficheros nuevos con createNativeStackNavigator', () => {
-    const nuevos = culpables.filter((f) => !PENDIENTES.includes(f));
-    expect(nuevos).toEqual([]);
-  });
-
-  it('los pendientes que ya se migraron salen de la lista', () => {
-    const migrados = PENDIENTES.filter((f) => !culpables.includes(f));
-    expect(migrados).toEqual([]);
+  it('ningún fichero usa createNativeStackNavigator', () => {
+    expect(culpables).toEqual([]);
   });
 });

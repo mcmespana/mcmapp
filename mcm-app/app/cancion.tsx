@@ -1,14 +1,12 @@
 /**
  * Pantalla "puente" del enlace a una canción: `/cancion?f=<fichero>`.
  *
- * El cantoral es un stack montado a mano dentro de `/cancionero`, no rutas de
- * expo-router, así que una canción no tiene una URL propia que sobreviva a
- * recargar (el router escribe `/cancionero/SongDetail?…&content=<la letra>`,
- * que da 404 en el export estático). Este enlace se la da sin tocar esa
- * estructura: resuelve el fichero contra el catálogo (la misma
- * caché de `useFirebaseData` que las pantallas del cantoral), deja la canción
- * en `pendingSongOpen` y salta al tab, que la abre en su stack. Es lo mismo
- * que hace la paleta ⌘K.
+ * Es el enlace corto y estable de una canción (la ruta de verdad,
+ * `/cancionero/cancion?filename=…&list=…`, lleva detalles de la navegación
+ * que no sirven para compartir). Resuelve el fichero contra el catálogo (la
+ * misma caché de `useFirebaseData` que las pantallas del cantoral) y la abre
+ * en su ruta, sobre las categorías del cantoral. Es lo mismo que hace la
+ * paleta ⌘K.
  *
  * En web, el detalle de canción escribe este mismo enlace en la barra de
  * direcciones (`hooks/useSongWebLocation.ts`): así F5 vuelve a la canción y
@@ -29,7 +27,7 @@ import {
   findSongByFilename,
   songOpenParams,
 } from '@/utils/songIndex';
-import { requestSongOpen } from '@/utils/pendingSongOpen';
+import { cantoralHref } from '@/utils/eventRoutes';
 
 export default function SongDeepLink() {
   const params = useLocalSearchParams<{ f?: string }>();
@@ -53,8 +51,11 @@ export default function SongDeepLink() {
     // perdida: puede ser una canción nueva que la caché aún no tenía.
     if (filename && !song && loading) return;
     done.current = true;
-    if (song) requestSongOpen(songOpenParams(song));
-    router.replace('/(tabs)/cancionero' as never);
+    router.replace(
+      (song
+        ? cantoralHref('SongDetail', songOpenParams(song))
+        : cantoralHref('Categories')) as never,
+    );
   }, [data, loading, filename]);
 
   return (

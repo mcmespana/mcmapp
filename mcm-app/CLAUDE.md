@@ -73,7 +73,7 @@ app/                            # Rutas (expo-router). Una pantalla por fichero
 ├── _layout.tsx                 # Root layout: AppProviders + Stack navigator
 ├── +native-intent.ts           # Reescribe enlaces entrantes (universal links, custom scheme)
 ├── +html.tsx / +not-found.tsx  # Template HTML web / 404
-├── (tabs)/                     # Tabs: _layout.tsx + index (Home), cancionero, contigo/,
+├── (tabs)/                     # Tabs: _layout.tsx + index (Home), cancionero/, contigo/,
 │                               #   comunica/ (puerta nativa/legado, docs/planes/area-nativa/),
 │                               #   calendario, fotos, mas, visitapapa (oculta)
 ├── screens/                    # Pantallas "de contenido" que montan las rutas y los
@@ -131,7 +131,7 @@ public/                         # Web: manifest PWA, service worker, iconos
 RootLayout (Stack)
 ├── (tabs) ← Bottom Tabs
 │   ├── index (Home)           ← Grid de botones
-│   ├── cancionero             ← Stack interno: Categories → SongsList → SongDetail → SongFullscreen
+│   ├── cancionero/            ← Stack: index (Categorías) → categoria → cancion → pantalla-completa (+ seleccion)
 │   ├── contigo                ← Acompañamiento y oración
 │   ├── comunica/              ← Área nativa (alpha) o WebView del portal; carpeta con _layout
 │   ├── calendario/            ← Eventos ICS (carpeta con _layout)
@@ -150,6 +150,18 @@ params de ruta son texto, nunca objetos. Los nombres de pantalla de siempre
 (`'Horario'`, `'Fotos'`…) se traducen a rutas en `utils/eventRoutes.ts`.
 `renderEventScreens()` devuelve un array de `Stack.Screen`: el `Stack` no aplana
 fragmentos. Estado de la migración: `docs/planes/PLAN_EXPO_58.md`.
+
+**Una canción viaja por la ruta como texto**: `filename` (+ `list`,
+`currentIndex`, `source`, `firebaseCategory`). La pantalla la lee de la lista
+con la que se abrió (almacén en memoria, `utils/songNavList.ts`) o del
+catálogo (`hooks/useRouteSong.ts`). Para abrir una pantalla del cantoral:
+`openCantoral('SongDetail', songRouteParams({...}))`
+(`utils/cantoralNavigation.ts`); nunca la canción entera en los params.
+
+**`app/+html.tsx` tiene que pintar `headNodes` y `bodyNodes`**
+(`useServerDocumentContext`): en Expo 58 el export ya no mete el JS en el HTML
+por su cuenta, y sin ellos la web sale en blanco
+(`__tests__/htmlTemplateAssets.test.tsx`).
 
 **Tabs — tres implementaciones (ver `docs/desarrollo/TABS_MAINTENANCE.md`):**
 

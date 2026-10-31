@@ -12,17 +12,21 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  RouteProp,
-  useNavigation,
-  NavigationProp,
-} from 'expo-router/react-navigation';
+import { useNavigation } from 'expo-router/react-navigation';
+import { router, useLocalSearchParams } from 'expo-router';
 import { WebView } from 'react-native-webview';
 import { BlurView } from 'expo-blur';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 import { PressableFeedback } from 'heroui-native';
-import { RootStackParamList } from '../(tabs)/cancionero';
+import { useRouteSong } from '@/hooks/useRouteSong';
+import { cantoralHref } from '@/utils/eventRoutes';
+import {
+  songRouteParams,
+  type SongFullscreenRouteParams,
+  type SongNavItem,
+  type SongSource,
+} from '@/utils/songNavList';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { h } from '@/utils/haptics';
@@ -48,7 +52,17 @@ import { useBrowserFullscreen } from '@/hooks/useBrowserFullscreen';
 import { makeKeydownForwarder } from '@/utils/songDisplayBridge';
 import spacing from '@/constants/spacing';
 
-type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
+/** La canción con la que se abre, ya resuelta (ver `hooks/useRouteSong.ts`). */
+interface FullscreenParams extends SongNavItem {
+  /** Tono y cejilla con los que se estaba viendo la canción. */
+  transpose?: number;
+  capoOverride?: number | null;
+  /** La lista por la que se navega (categoría, etiqueta o playlist). */
+  navigationList?: SongNavItem[];
+  currentIndex?: number;
+  source?: SongSource;
+  firebaseCategory?: string;
+}
 
 const isIOS = Platform.OS === 'ios';
 const isWeb = Platform.OS === 'web';
@@ -264,16 +278,54 @@ function TranslucentBg({ isDark, style }: { isDark: boolean; style?: object }) {
 
 // ─── Pantalla ────────────────────────────────────────────────────────────────
 
-export default function SongFullscreenScreen({
+/**
+ * Ruta `/cancionero/pantalla-completa`. Params de texto como los del detalle
+ * más `transpose` y `capoOverride`; la canción (con la letra viva) y la lista
+ * llegan por `utils/songNavList`. Si no se encuentra (una recarga en web con
+ * una canción que ya no está), se vuelve.
+ */
+export default function SongFullscreenScreen() {
+  const params = useLocalSearchParams<SongFullscreenRouteParams>();
+  const navigation = useNavigation();
+  const { song, list, index, firebaseCategory, loading } = useRouteSong(params);
+  const missing = !song && !loading;
+  useEffect(() => {
+    if (!missing) return;
+    if (navigation.canGoBack()) navigation.goBack();
+    else router.replace(cantoralHref('Categories') as never);
+  }, [missing, navigation]);
+  if (!song) return <View style={{ flex: 1, backgroundColor: '#000' }} />;
+  const capoOverride = Number(params.capoOverride);
+  return (
+    <SongFullscreenBody
+      route={{
+        params: {
+          ...song,
+          transpose: Number(params.transpose) || 0,
+          capoOverride:
+            params.capoOverride !== undefined && Number.isFinite(capoOverride)
+              ? capoOverride
+              : null,
+          navigationList: list ?? undefined,
+          currentIndex: index,
+          source: params.source,
+          firebaseCategory,
+        },
+      }}
+    />
+  );
+}
+
+function SongFullscreenBody({
   route,
 }: {
-  route: SongFullscreenRouteProp;
+  route: { params: FullscreenParams };
 }) {
   useSuppressCarismochito();
   // Modo presentación: la pantalla no se apaga mientras se toca.
   useKeepAwakeWhileFocused('song-fullscreen');
   const params = route.params;
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const navigation = useNavigation();
   const choir = useChoirSession();
   const { getSelectedSong } = useSelectedSongs();
 
@@ -352,26 +404,20 @@ export default function SongFullscreenScreen({
     const moved = following
       ? song.filename !== params.filename
       : index !== null && index !== params.currentIndex;
-    const nav = navigation as unknown as {
-      popTo?: (name: string, p: object, o: { merge: boolean }) => void;
-    };
-    if (moved && nav.popTo) {
-      nav.popTo(
-        'SongDetail',
-        {
-          filename: song.filename,
-          title: song.title,
-          author: song.author,
-          key: song.key,
-          capo: song.capo,
-          content: song.content ?? '',
-          media: song.media,
-          navigationList: following ? undefined : list,
-          currentIndex: following ? undefined : (index ?? undefined),
-          source: params.source,
-          firebaseCategory: following ? remote?.firebaseCategory : undefined,
-        },
-        { merge: false },
+    if (moved) {
+      router.dismissTo(
+        cantoralHref(
+          'SongDetail',
+          songRouteParams({
+            filename: song.filename,
+            list: following || !list ? [song] : list,
+            currentIndex: following || !list ? 0 : (index ?? undefined),
+            source: params.source,
+            firebaseCategory: following
+              ? remote?.firebaseCategory
+              : params.firebaseCategory,
+          }),
+        ) as never,
       );
       return;
     }

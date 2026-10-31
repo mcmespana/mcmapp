@@ -125,25 +125,12 @@ describe('findSongByFilename / songOpenParams / songWebPath', () => {
 
   it('arma los parámetros de SongDetail como el buscador global', () => {
     const params = songOpenParams(findSongByFilename(index, 'alzad.cho')!);
-    expect(params).toMatchObject({
+    // Solo texto (es una ruta): la letra la lee el detalle del catálogo. Sin
+    // lista ni `source`: la analítica lo cuenta como «búsqueda».
+    expect(params).toEqual({
       filename: 'alzad.cho',
-      title: 'Alzad las manos',
-      author: 'Kairoi',
-      key: 'G',
-      capo: 2,
-      content: '{title: Alzad}',
       firebaseCategory: 'entrada',
     });
-    expect(params.media?.youtubeLinks).toHaveLength(1);
-    // Sin lista ni `source`: la analítica lo cuenta como «búsqueda».
-    expect(params.navigationList).toBeUndefined();
-    expect(params.source).toBeUndefined();
-  });
-
-  it('una canción sin letra en el catálogo abre con contenido vacío', () => {
-    expect(
-      songOpenParams(findSongByFilename(index, 'vienen.cho')!).content,
-    ).toBe('');
   });
 
   it('el enlace web codifica el fichero', () => {

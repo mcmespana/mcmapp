@@ -287,7 +287,6 @@ export function eventStackScreenOptions({
   return ({ navigation }: { navigation: any; route: any }) => {
     onNavReady?.(navigation);
     return {
-      freezeOnBlur: true,
       // Back solo con icono (sin la palabra "Atrás" al lado).
       headerBackButtonDisplayMode: 'minimal' as const,
       headerStyle:

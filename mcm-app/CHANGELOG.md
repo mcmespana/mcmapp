@@ -4,6 +4,22 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-31 18:00 — Expo 58: el Cantoral pasa a rutas de fichero (ya no queda ningún navegador a mano)
+
+Pasos 5-9 de `docs/planes/PLAN_EXPO_58.md`. Era lo que hacía que la build 60 se cerrara al abrir el Cantoral. **Falta la build de TestFlight y probar en el móvil (paso 10).**
+
+- **`app/(tabs)/cancionero/`**: `_layout.tsx` (el mismo `Stack` con sus cabeceras, la raya amarilla y `SettingsProvider`) + `index` (categorías), `categoria`, `cancion`, `pantalla-completa` y `seleccion`, que re-exportan las pantallas de `app/screens/`. `unstable_settings.anchor = 'index'`: una canción abierta en frío tiene las categorías debajo.
+- **Una canción ya no viaja entera por la ruta.** Los params son texto: `filename`, `list`, `currentIndex`, `source`, `firebaseCategory` (y `transpose`/`capoOverride` en pantalla completa). La lista de anterior/siguiente, la canción del líder del coro y la letra viva con un arreglo recién añadido van en un almacén en memoria (`utils/songNavList.ts`, 40 listas); la pantalla las lee con `hooks/useRouteSong.ts`, que si no hay lista (app reiniciada, recarga en web) lee la canción del catálogo `songs`. Si la canción no existe, el detalle lo dice («No encontramos esta canción»).
+- **Nombres → rutas** en `utils/eventRoutes.ts` (`cantoralHref`); `openCantoral(screen, params)` (`utils/cantoralNavigation.ts`) sustituye a los `navigation.navigate('SongDetail' | 'SongsList' | 'SelectedSongs' | 'SongFullscreen')` de Categorías, la lista, el detalle (etiqueta → lista, «Ver» la selección), la pantalla completa y «Tu selección». Cerrar la pantalla completa tras pasar de canción usa `router.dismissTo` (el detalle se queda en la canción a la que se llegó).
+- **Fuera `utils/pendingSongOpen.ts`**: la paleta ⌘K y el enlace `/cancion?f=` abren la canción en su ruta directamente.
+- **Lo que colgaba del stack a mano**, en el `_layout`: re-tap del tab (`router.dismissAll()`, como Más) y el **modo coro esclavo** (`useChoirFollower`). Cambio de comportamiento: antes, con el cantoral en segundo plano, la canción del líder se apilaba sin cambiar de pestaña; ahora navegar al cantoral cambia de pestaña, así que la canción del líder queda pendiente y se abre al volver al cantoral.
+- **`freezeOnBlur` fuera** (paso 7) de `AndroidTabsLayout`, `eventStackScreens` y el cantoral: en expo-router 58 «no tiene efecto» (los navegadores lo fijan a `false`). Las pestañas visitadas vuelven a re-renderizar en segundo plano; a vigilar en el móvil.
+- **`defaultTab`** (paso 8): sin cambios. Es global, vale `index` y ya no lo leía nadie; si el Panel lo cambia algún día, que Inicio redirija al arrancar.
+- **Web en blanco (fallo de la rama, no del cantoral):** en Expo 58 el export estático ya no mete el JS en el HTML; `app/+html.tsx` tiene que pintar `headNodes` y `bodyNodes` de `useServerDocumentContext()`. Sin eso `expo export -p web` daba una página sin un solo `<script>`. Guardarraíl: `__tests__/htmlTemplateAssets.test.tsx`.
+- **Tests:** `__tests__/router/cantoralJourney.test.tsx` recorre con el router real categorías → lista → canción → pantalla completa → siguiente → cerrar → atrás → atrás, y abre una canción en frío por su ruta; `routeFoldersWalk` abre cada ruta de `cancionero/`; las listas de pendientes de `tabsMountWithRouter` y `noHandMadeNavigators` desaparecen (la regla queda pelada). 238 suites / 2.707 tests, lint 36 avisos.
+- Web verificada con `expo export -p web` + Playwright: las seis pestañas y el recorrido entero del cantoral (incluidas las flechas, la recarga en una canción y `/cancion?f=`).
+- Requiere build nativo: no llega por OTA.
+
 ## 2026-10-31 12:00 — Expo 58: Fotos, Calendario, Visita del Papa y Más pasan a rutas de fichero
 
 Primer tramo de la migración a navegación por ficheros (`docs/planes/PLAN_EXPO_58.md`). En expo-router 58 el estado de navegación se crea de forma global a partir de las rutas de fichero, y la build 60 se cerraba al abrir por montar navegadores a mano (`createNativeStackNavigator`) dentro de las pestañas. **Quedan Cantoral (paso 5) y lo que se apoya en su stack (paso 6).**

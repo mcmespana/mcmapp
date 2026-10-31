@@ -34,7 +34,7 @@ import {
   songOpenParams,
   type IndexedSong,
 } from '@/utils/songIndex';
-import { requestSongOpen } from '@/utils/pendingSongOpen';
+import { openCantoral } from '@/utils/cantoralNavigation';
 import {
   PALETTE_COMMANDS,
   matchCommand,
@@ -57,8 +57,8 @@ type PaletteItem =
  * cualquier pantalla.
  *
  * Salta a las pantallas de primer nivel y, desde la v2, busca canciones del
- * cantoral (sin tildes, como el buscador de la lista) y las abre en el stack
- * del cantoral vía `utils/pendingSongOpen`. Se maneja sin soltar el teclado:
+ * cantoral (sin tildes, como el buscador de la lista) y las abre en su ruta
+ * (`/cancionero/cancion`). Se maneja sin soltar el teclado:
  * escribir, ↑/↓ e Intro; Esc cierra.
  *
  * Ligera a propósito: el cuerpo (y con él la lectura del nodo `songs`) solo
@@ -137,10 +137,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
     (item: PaletteItem) => {
       onClose();
       if (item.kind === 'song') {
-        // Primero el pedido y luego el tab: si el cantoral ya está montado,
-        // su stack abre la canción mientras el router cambia de pestaña.
-        requestSongOpen(songOpenParams(item.song));
-        router.push('/cancionero' as never);
+        openCantoral('SongDetail', songOpenParams(item.song));
         return;
       }
       // expo-router acepta rutas en string; el cast es porque la unión
