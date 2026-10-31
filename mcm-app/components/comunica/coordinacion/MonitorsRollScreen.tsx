@@ -74,6 +74,7 @@ import {
   monitorsMarks,
   nextMonitorMarkOnTap,
   OPTIONAL_HINT,
+  OPTIONAL_HINT_MEETING,
   setMonitorMark,
 } from '@/utils/comunica/monitorsRoll';
 import { proposeSession } from '@/utils/comunica/pasarLista';
@@ -324,7 +325,8 @@ function Editor({
       new Map(
         data.rows.map((r) => [
           r.member.id,
-          r.optional
+          // Fuera de su alcance (solo en reuniones): tampoco % ni aviso.
+          r.optional || r.outOfScope
             ? { pct: null, alert: null }
             : {
                 pct: rowPct(r.seasonMarks),
@@ -338,7 +340,15 @@ function Editor({
     () => (byRule ? proposeSession(data.sessions, comunicaNow()) : null),
     [byRule, data.sessions],
   );
-  const scope = me ? scopeLabel(me.scope) : '';
+  // Una reunión es de toda la delegación (plugin, 31/10/2026).
+  const scope =
+    data.kind === 'meeting'
+      ? 'Toda la delegación'
+      : me
+        ? scopeLabel(me.scope)
+        : '';
+  const optionalHint =
+    data.kind === 'meeting' ? OPTIONAL_HINT_MEETING : OPTIONAL_HINT;
   const when = `${longDay(session.date, true)} · ${madridTime(session.startsAt)}`;
 
   // Cuando la cola contesta: se vuelve a pedir la lista y el borrador pasa a
@@ -672,7 +682,7 @@ function Editor({
                   {othersOpen ? (
                     <>
                       <Text style={[styles.small, { color: t.textSecondary }]}>
-                        {OPTIONAL_HINT}
+                        {optionalHint}
                       </Text>
                       <Section>{sec.rows.map(renderRow)}</Section>
                     </>
@@ -689,7 +699,7 @@ function Editor({
                     {sec.rows.map(renderRow)}
                   </Section>
                   <Text style={[styles.small, { color: t.textSecondary }]}>
-                    {OPTIONAL_HINT}
+                    {optionalHint}
                   </Text>
                 </View>
               );
@@ -752,13 +762,18 @@ function Editor({
         }}
         onClose={() => setSheetFor(null)}
         fichaLabel="Ficha del monitor"
-        onOpenFicha={() => {
-          if (!sheetFor) return;
-          router.push({
-            pathname: '/comunica/coordinacion/monitor/[id]',
-            params: { id: sheetFor },
-          });
-        }}
+        // De fuera de su alcance (en una reunión): sin ficha.
+        onOpenFicha={
+          sheetRow?.outOfScope
+            ? undefined
+            : () => {
+                if (!sheetFor) return;
+                router.push({
+                  pathname: '/comunica/coordinacion/monitor/[id]',
+                  params: { id: sheetFor },
+                });
+              }
+        }
       />
     </AreaScreen>
   );

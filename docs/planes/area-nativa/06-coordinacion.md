@@ -71,7 +71,12 @@ el contrato, el servidor falso y las reglas puras (commit de este plan, 28/10):
   su delegación. Es transversal (04, 05, 06): va en su propio plan,
   [`17-varias-delegaciones.md`](17-varias-delegaciones.md).
 
-## ⚠️ Cambios del plugin del 31/10/2026 — POR REVISAR cuando se vaya a usar
+## ⚠️ Cambios del plugin del 31/10/2026 — PORTADOS el 31/10 (noche)
+
+> **Hecho** (app y middleware): 1 ya lo hacía el middleware (la ficha mira las sesiones de la etapa de cada
+> grupo); 2 y 3 portados (`outOfScope` en el contrato: en una reunión, toda la delegación; los de fuera del
+> alcance sin ficha, % ni aviso; los sin grupo con «-» y su pista de reunión). **Sigue pendiente** la decisión
+> de los sábados de los monitores del MIC (BACKLOG §4).
 
 Hechos en el plugin (`comunicaAreaPrivada`, rama `claude/relaxed-lamport-f2od04`)
 y **todavía no portados** aquí. Hay que mirarlos antes de dar por buena la

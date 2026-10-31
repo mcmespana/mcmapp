@@ -267,6 +267,18 @@ export const VerifyResponse = z.union([
 ]);
 export type VerifyResponse = z.infer<typeof VerifyResponse>;
 
+/**
+ * `POST /v1/auth/app-account` — entrar con la cuenta de Google o Apple de la app (decisión `identidad-app`): el `idToken` de
+ * Firebase de quien ha entrado en la app. Responde como `verify` (también «¿Quién eres?»: se repite con `personId`). Motivos de
+ * `validation`: `bad_app_token` (pase no válido o caducado: pedir otro) y `no_match` (ese correo no está en el CRM: ofrecer el
+ * código o el DNI).
+ */
+export const AppAccountRequest = z.object({
+  idToken: z.string().min(20).max(4096),
+  personId: Id.optional(),
+});
+export type AppAccountRequest = z.infer<typeof AppAccountRequest>;
+
 /** `POST /v1/auth/refresh` — el de refresco ROTA en cada uso. */
 export const RefreshRequest = z.object({ refreshToken: z.string().min(1) });
 export const RefreshResponse = Tokens;
@@ -758,6 +770,11 @@ export const MonitorsRollRow = z.object({
    * 25/10/2026). En las reuniones se espera a todos: nunca es opcional.
    */
   optional: z.boolean(),
+  /**
+   * Solo en una reunión: de fuera del alcance de quien coordina (la reunión es
+   * de toda la delegación). Se marca, pero sin ficha ni aviso ni %.
+   */
+  outOfScope: z.boolean().optional(),
   /**
    * `null` = sin asistencia todavía: se pinta y se guarda como «vino», salvo
    * en una fila `optional`, que se queda sin marcar.
@@ -1391,6 +1408,12 @@ export const ROUTES = {
     method: 'POST',
     path: '/v1/auth/refresh',
     response: RefreshResponse,
+    persist: false,
+  },
+  appAccount: {
+    method: 'POST',
+    path: '/v1/auth/app-account',
+    response: VerifyResponse,
     persist: false,
   },
   exchange: {

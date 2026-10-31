@@ -196,6 +196,15 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       alinea con el resto o si su header es deliberadamente más sobrio.
 - [ ] **G3.** Auditoría de vocabulario app ↔ panel ↔ contratos.
 
+### Área nativa de Comunica: rediseño (apuntado el 31/10/2026, sin pensar)
+
+El propietario: «ahora mismo me gusta más en web que en nativo». Primero el MVP que funcione (monitores y
+coordinación contra el middleware real); después, con calma y con créditos de sobra, **un rediseño con
+cariño del área nativa entera**, mirando la web del plugin (`comunicaAreaPrivada`, `design.md` de allí) como
+referencia de lo que gusta. No se arregla de paso: se piensa en una sesión propia, con capturas de las dos
+lado a lado en móvil, y se decide qué se trae de la web (densidad, tarjetas, jerarquía, color de etapa).
+Piezas y reglas actuales: `docs/desarrollo/AREA_NATIVA_DISENO.md`.
+
 ### Mejoras, sin prisa
 
 - [ ] **H10. Filas pulsables corridas en web.** En web, una fila con

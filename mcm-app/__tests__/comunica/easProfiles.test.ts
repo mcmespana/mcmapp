@@ -25,4 +25,17 @@ describe('perfiles de EAS y el servidor falso de Comunica', () => {
     expect(p?.extends).toBe('production');
     expect(p?.env?.EXPO_PUBLIC_COMUNICA_API).toBe('fake');
   });
+
+  it('builds y OTA llevan la MISMA URL del middleware (una OTA sin ella apagaría el área)', () => {
+    const url = eas.build.production.env?.EXPO_PUBLIC_COMUNICA_API;
+    expect(url).toMatch(/^https:\/\//);
+    expect(eas.build.preview.env?.EXPO_PUBLIC_COMUNICA_API).toBe(url);
+    for (const wf of ['ota-preview.yml', 'ota-production.yml']) {
+      const yml = fs.readFileSync(
+        path.join(__dirname, '..', '..', '..', '.github', 'workflows', wf),
+        'utf8',
+      );
+      expect(yml).toContain(`EXPO_PUBLIC_COMUNICA_API: ${url}`);
+    }
+  });
 });

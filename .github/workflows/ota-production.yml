@@ -90,6 +90,10 @@ jobs:
       # secretos: van embebidos en la app igualmente).
       EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: 333436090762-mimunbdpp07nv2hr8mvc2u52ncgrlsr3.apps.googleusercontent.com
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: 333436090762-tl5ltg6f1ad7lrqtbs3jq3ae2uu3v0sr.apps.googleusercontent.com
+      # Área nativa de Comunica: misma URL que eas.json y ota-preview.yml (si falta,
+      # la OTA apaga el área en las builds que la llevan). Solo la ve quien tenga el
+      # Laboratorio Alpha o `global.comunicaNativa = all`.
+      EXPO_PUBLIC_COMUNICA_API: https://comunica-middleware.vercel.app
       # Sentry: por lo mismo. El DSN se hornea en el bundle, así que si falta
       # aquí la primera OTA APAGA el crash reporting de la build de tienda sin
       # avisar. El DSN no es un secreto (va dentro de la app igualmente), pero

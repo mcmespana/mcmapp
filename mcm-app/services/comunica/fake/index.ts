@@ -44,6 +44,7 @@ import {
   type RollCallSummary,
   type Role,
   type Me,
+  AppAccountRequest,
   ExchangeRequest,
   VerifyRequest,
   VerifyResponse,
@@ -750,6 +751,59 @@ export function createFakeServer(
       await gate('refresh', false, false);
       const t = refreshTokens.get(refreshToken);
       if (t) revokedFamilies.add(t.family);
+    },
+
+    // El falso no puede comprobar la firma de Google: lee el correo del pase
+    // tal cual (datos inventados; no abre nada de verdad).
+    async appAccount(body) {
+      await gate('appAccount', false, false);
+      const parsed = AppAccountRequest.safeParse(body);
+      let email = '';
+      try {
+        const part = parsed.success ? parsed.data.idToken.split('.')[1] : '';
+        const json = JSON.parse(
+          globalThis.atob(part.replace(/-/g, '+').replace(/_/g, '/')),
+        ) as { email?: unknown };
+        if (typeof json.email === 'string') email = json.email.toLowerCase();
+      } catch {
+        email = '';
+      }
+      if (!parsed.success || !email) {
+        throw validation(
+          'bad_app_token',
+          'No se ha podido comprobar tu cuenta',
+        );
+      }
+      let candidates = personasFor({ email });
+      if (!candidates.length) {
+        throw validation(
+          'no_match',
+          'El correo de tu cuenta no está en Comunica',
+        );
+      }
+      if (parsed.data.personId) {
+        const chosen = personaOf(parsed.data.personId);
+        if (!chosen || !candidates.includes(chosen)) {
+          throw validation('bad_code', 'Esa ficha no es de este correo');
+        }
+        candidates = [chosen];
+      }
+      if (candidates.length > 1) {
+        return VerifyResponse.parse({
+          choose: candidates.map((c) => {
+            const m = meOf(c);
+            return {
+              personId: m.personId,
+              name: m.name,
+              delegation: m.delegation.name,
+            };
+          }),
+        });
+      }
+      return VerifyResponse.parse({
+        ...issue(candidates[0]),
+        me: meOf(candidates[0]),
+      });
     },
 
     async exchange(body) {

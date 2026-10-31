@@ -91,11 +91,12 @@ jobs:
       # Aptabase: idéntico razonamiento — si falta aquí, la primera OTA apaga
       # la analítica en toda la base instalada.
       EXPO_PUBLIC_APTABASE_KEY: ${{ secrets.EXPO_PUBLIC_APTABASE_KEY }}
-      # Área privada nativa de Comunica: mientras no exista `mcm-comunica-api`,
-      # el canal preview habla con el servidor FALSO, con datos inventados
-      # (`mcm-app/services/comunica/fake/`). En producción no va: sin variable,
-      # el área nativa no se enciende. Plan: docs/planes/area-nativa/00.
-      EXPO_PUBLIC_COMUNICA_API: fake
+      # Área privada nativa de Comunica: el middleware de verdad (comunicaMiddleware).
+      # La MISMA URL que eas.json (preview y production) y ota-production.yml: una
+      # OTA sin ella apagaría el área en las builds que la llevan. Quién la ve lo
+      # decide el Laboratorio Alpha y `global.comunicaNativa` (utils/comunica/router.ts).
+      # Con datos inventados: el perfil `production-comunica-falso`.
+      EXPO_PUBLIC_COMUNICA_API: https://comunica-middleware.vercel.app
     steps:
       - name: Checkout código
         uses: actions/checkout@v4

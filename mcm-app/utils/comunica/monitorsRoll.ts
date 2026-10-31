@@ -220,6 +220,9 @@ export function memberLine(
 /** «No se les pasa lista: salen con «-». Toca solo si han venido.» */
 export const OPTIONAL_HINT =
   'No se les pasa lista: salen con «-». Toca solo si han venido.';
+/** En una reunión (plugin, 31/10/2026): quizá no les toca ir. */
+export const OPTIONAL_HINT_MEETING =
+  'Puede que no les toque venir: salen con «-». Toca solo si han venido.';
 
 export const STAGE_ORDER: readonly (Stage | null)[] = [
   'mic',

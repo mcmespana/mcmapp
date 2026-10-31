@@ -39,6 +39,9 @@ import { nativeHrefFor, type Destination } from '@/services/comunica/links';
 import { areaKey, STALE } from '@/hooks/comunica/useAreaQuery';
 import { useEvents, usePrefetchEventRolls } from '@/hooks/comunica/events';
 import { useMe } from '@/hooks/comunica/useMe';
+import { TEAM_ROLES } from '@/services/comunica/contract';
+import { useArea } from '../comun/ComunicaAreaProvider';
+import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import { useGroups, useToday } from '@/hooks/comunica/usePasarLista';
 import { useFlushOutboxOnMount, useOutbox } from '@/hooks/comunica/useOutbox';
 import { useOpenLegacy } from '@/hooks/comunica/useOpenLegacy';
@@ -86,6 +89,49 @@ import HomeCertificateAlert from '../yo/HomeCertificateAlert';
 const PREFETCH_MAX = 5;
 
 export default function ComunicaHome() {
+  const { session } = useArea();
+  // Quien no es del equipo (familias, socios) aún no tiene pantallas nativas
+  // (planes 11-16): la versión web con la sesión puesta, en vez de un 403.
+  const roles = session.me?.roles;
+  if (roles && !roles.some((r) => TEAM_ROLES.includes(r))) {
+    return <NotTeamHome />;
+  }
+  return <TeamHome />;
+}
+
+function NotTeamHome() {
+  const t = useComunicaTheme();
+  const router = useRouter();
+  const openLegacy = useOpenLegacy();
+  return (
+    <AreaScreen>
+      <View style={styles.notTeam}>
+        <Text style={[styles.notTeamTitle, { color: t.text }]}>
+          Tu área, de momento en la web
+        </Text>
+        <Text style={[styles.notTeamBody, { color: t.textSecondary }]}>
+          En la app ya está lo de monitores y coordinación. Lo tuyo (tus datos,
+          eventos e inscripciones) llega pronto; mientras, se abre la versión
+          web sin volver a entrar.
+        </Text>
+        <AreaPrimaryButton
+          label="Abrir la versión web"
+          onPress={() =>
+            void openLegacy({ internalpage: 'single_stic_home' }, 'Comunica')
+          }
+        />
+        <NavRow
+          icon="person.crop.circle"
+          title="Tu cuenta"
+          subtitle="Salir o entrar con otra persona"
+          onPress={() => router.push('/comunica/yo')}
+        />
+      </View>
+    </AreaScreen>
+  );
+}
+
+function TeamHome() {
   const me = useMe();
   const groups = useGroups();
   const today = useToday();
@@ -595,6 +641,9 @@ function SamplerLink() {
 }
 
 const styles = StyleSheet.create({
+  notTeam: { padding: 24, gap: 16 },
+  notTeamTitle: { ...typography.h2 },
+  notTeamBody: { ...typography.body },
   intro: { gap: 4 },
   introLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { ...typography.h2 },

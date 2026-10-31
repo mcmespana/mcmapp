@@ -5,6 +5,35 @@
 > [`decisiones/`](decisiones/README.md) (todas contestadas). Este documento es
 > la revisión del código del 23-24/10 y la lista de lo que falta, en orden.
 
+## ⭐ 31/10/2026 (noche): MVP de monitores contra el middleware de verdad
+
+Decisión del propietario: sacar ya **toda la parte de monitores y coordinación** en nativo, contra el
+middleware real (`comunicaMiddleware`), y arreglar lo que falte por OTA.
+
+- **Por qué decía «no se ha podido»**: el middleware de producción contesta 503 `app_not_configured` a
+  `/v1/auth/code` porque en Vercel faltan `MW_APP_SECRET` y `MW_AUTH_DB_URL` (y, para guardar listas y ver
+  fotos, `MW_CRM_URL/USER/PASS`). Es del propietario: `comunicaMiddleware:docs/SIGUIENTE.md` arriba. El acceso
+  ahora enseña debajo del mensaje el código técnico (`crm_unavailable · app_not_configured · 503`).
+- **Builds y OTA apuntan al middleware**: `EXPO_PUBLIC_COMUNICA_API=https://comunica-middleware.vercel.app` en
+  `eas.json` (preview y production) y en `ota-preview.yml` y `ota-production.yml` (un test vigila que sea la
+  misma: una OTA sin ella apagaría el área). Quién la ve sigue igual: Laboratorio Alpha o
+  `global.comunicaNativa = all`. Con datos inventados: el perfil `production-comunica-falso`.
+  Cuando Vercel valide `api.comunica.movimientoconsolacion.com`, cambiar la URL en los cuatro sitios.
+- **Entrar con la cuenta de la app** (`identidad-app`): «Entrar como <correo>» en «Entra en tu área», con
+  `POST /v1/auth/app-account` (pase de Firebase; misma regla que el código, «¿Quién eres?» si el correo es de
+  varias fichas). La primera vez entra solo; tras «Salir» (Tu cuenta → Salir) ya no, para poder entrar con
+  otro correo, el DNI o como otra ficha. `services/comunica/appAccount.ts`; servidor:
+  `comunicaMiddleware:docs/ACCESO-APP.md`.
+- **Quien no es del equipo** (familias, socios): en vez de un 403, «Tu área, de momento en la web» con
+  «Abrir la versión web» (pase con sesión) hasta que lleguen los planes 11-16.
+- **Familias (planes 11-16)**: el servidor está hecho (`comunicaMiddleware`, fase 3, menos 15 pagos). La
+  app empezó el 11 en la rama **`plan11`** (5 commits del 28/10, sin fusionar, 167 por detrás de `main`):
+  **no se ha perdido**, se retoma desde ahí. Su contrato ya coincide con el del middleware.
+- **Reuniones como el plugin del 31/10** (plan 06 §«Cambios del plugin»): toda la delegación para quien
+  coordina una etapa (`outOfScope`: sin ficha ni aviso) y los sin grupo con «-» también en reuniones.
+- **Rediseño con cariño** (apuntado, sin pensar aún): al propietario le gusta más ahora la web que el nativo.
+  Ver `docs/planes/PLAN_DISENO.md` §«Área nativa de Comunica: rediseño».
+
 ## Veredicto de la revisión
 
 Base buena: contrato zod único, servidor falso con la misma interfaz, caché por
@@ -115,7 +144,7 @@ seleccionado del Laboratorio más visible; buscadores con
 **2. Fuera del área pero visto en el QA:** en oscuro la barra de pestañas no
 marca la activa; en web la barra lleva elementos de más («⏷», «visitapapa»).
 
-**2 bis. Cambios del plugin del 31/10 por portar** (plan 06, sección «⚠️ Cambios
+**2 bis. ✅ (31/10 noche) Cambios del plugin del 31/10, portados** (queda la decisión de los sábados del MIC) (plan 06, sección «⚠️ Cambios
 del plugin del 31/10/2026»): la ficha busca las listas de un grupo en las
 sesiones de su etapa (bug «sin lista» vs «todas pasadas»); en una reunión,
 la coordinación de una etapa ve a todos los monitores; y en las reuniones los
