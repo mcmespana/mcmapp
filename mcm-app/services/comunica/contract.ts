@@ -267,6 +267,18 @@ export const VerifyResponse = z.union([
 ]);
 export type VerifyResponse = z.infer<typeof VerifyResponse>;
 
+/**
+ * `POST /v1/auth/app-account` — entrar con la cuenta de Google o Apple de la app (decisión `identidad-app`): el `idToken` de
+ * Firebase de quien ha entrado en la app. Responde como `verify` (también «¿Quién eres?»: se repite con `personId`). Motivos de
+ * `validation`: `bad_app_token` (pase no válido o caducado: pedir otro) y `no_match` (ese correo no está en el CRM: ofrecer el
+ * código o el DNI).
+ */
+export const AppAccountRequest = z.object({
+  idToken: z.string().min(20).max(4096),
+  personId: Id.optional(),
+});
+export type AppAccountRequest = z.infer<typeof AppAccountRequest>;
+
 /** `POST /v1/auth/refresh` — el de refresco ROTA en cada uso. */
 export const RefreshRequest = z.object({ refreshToken: z.string().min(1) });
 export const RefreshResponse = Tokens;
@@ -1391,6 +1403,12 @@ export const ROUTES = {
     method: 'POST',
     path: '/v1/auth/refresh',
     response: RefreshResponse,
+    persist: false,
+  },
+  appAccount: {
+    method: 'POST',
+    path: '/v1/auth/app-account',
+    response: VerifyResponse,
     persist: false,
   },
   exchange: {

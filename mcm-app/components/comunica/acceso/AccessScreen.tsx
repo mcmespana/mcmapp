@@ -1,7 +1,9 @@
 // «Entra en tu área» (plan 02): correo (ya puesto si hay cuenta de la app) o,
 // con un enlace discreto, DNI/NIE. Un solo botón: «Recibir código».
+// Con cuenta de la app (Google o Apple), antes que nada «Entrar como …»
+// (`identidad-app`): la primera vez entra solo; tras «Salir», espera al botón.
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -19,12 +21,26 @@ import { useAuth } from '@/contexts/AuthContext';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { getComunicaApi } from '@/services/comunica';
+import {
+  appAccountOptedOut,
+  currentAppIdToken,
+} from '@/services/comunica/appAccount';
+import { signIn } from '@/services/comunica/session';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { h } from '@/utils/haptics';
 import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
-import { accessErrorText, looksLikeDni, looksLikeEmail } from './copy';
-import { putCodeHandoff } from './handoff';
+import {
+  accessErrorDetail,
+  accessErrorText,
+  looksLikeDni,
+  looksLikeEmail,
+} from './copy';
+import {
+  clearAccessHandoffs,
+  putChooseHandoff,
+  putCodeHandoff,
+} from './handoff';
 
 export default function AccessScreen({ notice }: { notice?: string }) {
   const t = useComunicaTheme();
@@ -35,7 +51,66 @@ export default function AccessScreen({ notice }: { notice?: string }) {
   const [dni, setDni] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detail, setDetail] = useState<string | null>(null);
+  const [linking, setLinking] = useState(false);
+  const [appAccountFailed, setAppAccountFailed] = useState(false);
+  const autoTried = useRef(false);
   const bottom = useTabBarClearance();
+
+  const showError = (e: unknown) => {
+    setError(accessErrorText(e));
+    setDetail(accessErrorDetail(e));
+  };
+
+  const enterWithAppAccount = async (auto: boolean) => {
+    if (linking) return;
+    setLinking(true);
+    setError(null);
+    setDetail(null);
+    try {
+      const idToken = await currentAppIdToken();
+      if (!idToken) {
+        if (!auto) {
+          setError('No hay cuenta de la app abierta. Entra con un código.');
+        }
+        setAppAccountFailed(true);
+        return;
+      }
+      const res = await getComunicaApi().appAccount({ idToken });
+      if ('choose' in res) {
+        router.push({
+          pathname: '/comunica/acceso-elegir',
+          params: {
+            k: putChooseHandoff({ body: { idToken }, choices: res.choose }),
+          },
+        });
+        return;
+      }
+      await signIn(res, res.me);
+      clearAccessHandoffs();
+      h.formSuccess();
+    } catch (e) {
+      setAppAccountFailed(true);
+      if (!auto) h.error();
+      showError(e);
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  // La primera vez, con cuenta de la app, se entra solo (sin «Salir» antes).
+  useEffect(() => {
+    if (!user?.email || autoTried.current) return;
+    autoTried.current = true;
+    let cancelled = false;
+    void appAccountOptedOut().then((out) => {
+      if (!cancelled && !out) void enterWithAppAccount(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al llegar la cuenta
+  }, [user?.email]);
 
   const value =
     via === 'email' ? email.trim().toLowerCase() : dni.trim().toUpperCase();
@@ -45,6 +120,7 @@ export default function AccessScreen({ notice }: { notice?: string }) {
     if (!valid || sending) return;
     setSending(true);
     setError(null);
+    setDetail(null);
     try {
       const body = via === 'email' ? { email: value } : { dni: value };
       const { sentTo } = await getComunicaApi().requestCode(body);
@@ -55,7 +131,7 @@ export default function AccessScreen({ notice }: { notice?: string }) {
       });
     } catch (e) {
       h.error();
-      setError(accessErrorText(e));
+      showError(e);
     } finally {
       setSending(false);
     }
@@ -95,6 +171,43 @@ export default function AccessScreen({ notice }: { notice?: string }) {
               >
                 {notice}
               </Text>
+            ) : null}
+
+            {user?.email ? (
+              <View style={styles.field}>
+                {/* Secundario a propósito: la acción principal de la pantalla
+                    sigue siendo «Recibir código» (una por pantalla). */}
+                <PressableFeedback
+                  onPress={() => void enterWithAppAccount(false)}
+                  isDisabled={linking}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Entrar como ${user.email}`}
+                  style={[styles.accountButton, { borderColor: t.accentText }]}
+                >
+                  <IconSymbol
+                    name="person.crop.circle"
+                    size={20}
+                    color={t.accentText}
+                  />
+                  <Text
+                    style={[
+                      styles.link,
+                      styles.accountLabel,
+                      { color: t.accentText },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {linking
+                      ? 'Entrando…'
+                      : `Entrar como ${user.email.toLowerCase()}`}
+                  </Text>
+                </PressableFeedback>
+                <Text style={[styles.hint, { color: t.textMuted }]}>
+                  {appAccountFailed
+                    ? 'O entra con un código, abajo.'
+                    : `Con tu cuenta de ${user.provider === 'apple' ? 'Apple' : 'Google'} de la app, sin código. O, si prefieres, con un código abajo.`}
+                </Text>
+              </View>
             ) : null}
 
             {via === 'email' ? (
@@ -152,6 +265,11 @@ export default function AccessScreen({ notice }: { notice?: string }) {
                 {error}
               </Text>
             ) : null}
+            {detail ? (
+              <Text style={[styles.hint, { color: t.textMuted }]} selectable>
+                {detail}
+              </Text>
+            ) : null}
 
             <AreaPrimaryButton
               label="Recibir código"
@@ -199,5 +317,16 @@ const styles = StyleSheet.create({
   hint: { ...typography.caption },
   error: { ...typography.subhead },
   switch: { alignSelf: 'center', paddingVertical: 8 },
+  accountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 48,
+    paddingHorizontal: 16,
+    borderWidth: 1.5,
+    borderRadius: radii.full,
+  },
+  accountLabel: { flexShrink: 1 },
   link: { ...typography.button },
 });

@@ -181,6 +181,9 @@ function setAccess(tokens: Tokens) {
   accessExp = Date.now() + (tokens.expiresIn - 60) * 1000;
 }
 
+/** Lo lee `appAccount.ts` (mismo valor): tras «Salir», no se entra solo. */
+export const APP_ACCOUNT_OPT_OUT_KEY = 'comunica.appAccount.optOut';
+
 export async function signIn(tokens: Tokens, me: Me): Promise<void> {
   if (!deps) throw new Error('Sesión sin configurar');
   epoch += 1;
@@ -288,6 +291,9 @@ export async function signOut(): Promise<void> {
   const refresh = await deps?.secrets.get(REFRESH_KEY).catch(() => null);
   const logout = deps?.logout;
   await endSession('signedOut');
+  // Ha salido a propósito: el acceso ya no entra solo con la cuenta de la app.
+  // (Después de cerrar: antes de la época nueva no puede haber ningún `await`.)
+  await AsyncStorage.setItem(APP_ACCOUNT_OPT_OUT_KEY, '1').catch(() => {});
   if (refresh && logout) {
     await logout(refresh).catch(() => {});
   }
@@ -336,6 +342,7 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     verify: (b) => api.verify(b),
     refresh: (t) => api.refresh(t),
     logout: (t) => api.logout(t),
+    appAccount: (b) => api.appAccount(b),
     exchange: (b) => api.exchange(b),
     webPass: authed((b) => api.webPass(b)),
     getMe: authed(() => api.getMe()),

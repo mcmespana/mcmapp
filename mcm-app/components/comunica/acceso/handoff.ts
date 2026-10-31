@@ -8,7 +8,11 @@
 // se ha recargado, o el enlace se ha copiado), la pantalla lo dice y manda a
 // empezar otra vez. Se olvida todo al entrar.
 
-import type { PersonChoice, VerifyRequest } from '@/services/comunica/contract';
+import type {
+  AppAccountRequest,
+  PersonChoice,
+  VerifyRequest,
+} from '@/services/comunica/contract';
 
 export interface CodeHandoff {
   via: 'email' | 'dni';
@@ -17,7 +21,8 @@ export interface CodeHandoff {
 }
 
 export interface ChooseHandoff {
-  body: VerifyRequest;
+  /** Lo que se repite con `personId`: el código/enlace, o el pase de la app. */
+  body: VerifyRequest | AppAccountRequest;
   choices: PersonChoice[];
 }
 

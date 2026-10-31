@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-31 21:00 — Comunica nativa: contra el middleware de verdad y entrar con la cuenta de la app
+
+- Builds (`preview`, `production`) y OTA (preview y producción) apuntan al middleware real
+  (`EXPO_PUBLIC_COMUNICA_API`); el área sigue saliendo solo con el Laboratorio Alpha o `comunicaNativa = all`.
+- «Entra en tu área»: «Entrar como <correo>» con la cuenta de Google o Apple de la app (sin código). La primera vez
+  entra solo; tras «Salir», espera al botón. Los fallos enseñan su código técnico debajo.
+- Quien no es del equipo ve «Tu área, de momento en la web» en vez de un error.
+
 ## 2026-10-31 20:19 — Expo 58: deslizar para añadir y cierre de las hojas
 
 - **Deslizar una canción del todo ya la añade (o la quita)**, sin tener que tocar el botón que destapa. En gesture-handler 3, `onSwipeableOpen` recibe la dirección hacia la que se movió la fila (`'left'` = se abren las acciones de la DERECHA) y el código seguía con la semántica del `Swipeable` viejo: la fila se quedaba abierta. Igual en la fila de la playlist (deslizar a la derecha para quitar no hacía nada). Una sola traducción, `utils/swipeSide.ts`; test `__tests__/swipeToAdd.test.tsx`, que además vigila que gesture-handler siga con esa semántica.

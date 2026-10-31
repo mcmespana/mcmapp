@@ -9,7 +9,11 @@ import PageContainer from '@/components/ui/PageContainer';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
 import { getComunicaApi } from '@/services/comunica';
-import type { PersonChoice, VerifyRequest } from '@/services/comunica/contract';
+import type {
+  AppAccountRequest,
+  PersonChoice,
+  VerifyRequest,
+} from '@/services/comunica/contract';
 import { signIn } from '@/services/comunica/session';
 import { h } from '@/utils/haptics';
 import Section from '../comun/Section';
@@ -21,7 +25,7 @@ export default function ChooseScreen({
   body,
   choices,
 }: {
-  body: VerifyRequest;
+  body: VerifyRequest | AppAccountRequest;
   choices: PersonChoice[];
 }) {
   const t = useComunicaTheme();
@@ -33,7 +37,11 @@ export default function ChooseScreen({
     setBusy(personId);
     setError(null);
     try {
-      const res = await getComunicaApi().verify({ ...body, personId });
+      const api = getComunicaApi();
+      const res =
+        'idToken' in body
+          ? await api.appAccount({ ...body, personId })
+          : await api.verify({ ...body, personId });
       if ('choose' in res) throw new Error('otra vez a elegir');
       await signIn(res, res.me);
       clearAccessHandoffs();

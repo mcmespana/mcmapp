@@ -16,6 +16,7 @@ import {
   isTeamPath,
 } from './delegation';
 import {
+  type AppAccountRequest,
   EventsResponse,
   EventRollWriteResult,
   EventRollWrite,
@@ -81,6 +82,8 @@ export interface ComunicaApi {
   verify(body: VerifyRequest): Promise<VerifyResponse>;
   refresh(refreshToken: string): Promise<RefreshResponse>;
   logout(refreshToken: string): Promise<void>;
+  /** El pase de Firebase de la cuenta de la app (Google o Apple) por una sesión (`identidad-app`). */
+  appAccount(body: AppAccountRequest): Promise<VerifyResponse>;
   /** Un enlace del plugin (`acceso_magico` o `token`) por una sesión (plan 10). */
   exchange(body: ExchangeRequest): Promise<VerifyResponse>;
   /** Pase de 2 minutos para abrir una página del plugin con la sesión (plan 10). */
@@ -363,6 +366,8 @@ export function createHttpClient({
     logout: async (refreshToken) => {
       await request('POST', '/v1/auth/logout', z.unknown(), { refreshToken });
     },
+    appAccount: (body) =>
+      request('POST', '/v1/auth/app-account', VerifyResponse, body),
     exchange: (body) =>
       request('POST', '/v1/auth/exchange', VerifyResponse, body),
     // El pase nunca se registra: es una llave de 2 minutos.

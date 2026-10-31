@@ -90,6 +90,9 @@ describe('servidor falso', () => {
       code,
       verify: verified,
       refresh: refreshed,
+      appAccount: await s.appAccount({
+        idToken: `${btoa('{}')}.${btoa(JSON.stringify({ email: 'monitor@ejemplo.org' }))}.x`,
+      }),
       exchange: await s.exchange({ magic: 'magico-valido' }),
       webPass: await s.webPass({ internalpage: 'list_stic_payments' }),
       me: await s.getMe(),
