@@ -40,9 +40,10 @@ let shareSpy: jest.SpyInstance;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  shareSpy = jest
-    .spyOn(Share, 'share')
-    .mockResolvedValue({ action: Share.sharedAction });
+  shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({
+    action: Share.sharedAction,
+    activityType: undefined,
+  });
   jest.spyOn(logger, 'warn').mockImplementation(() => {});
 });
 

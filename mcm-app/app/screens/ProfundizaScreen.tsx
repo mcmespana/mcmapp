@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View, Text } from 'react-native';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { h } from '@/utils/haptics';
 import FormattedContent from '@/components/FormattedContent';
 import colors, { Colors } from '@/constants/colors';

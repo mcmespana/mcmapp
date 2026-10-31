@@ -20,7 +20,7 @@ import {
   TextInput,
   Keyboard,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import {

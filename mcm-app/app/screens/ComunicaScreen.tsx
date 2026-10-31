@@ -296,7 +296,7 @@ export default function ComunicaScreen() {
   if (Platform.OS === 'ios') {
     return (
       <View style={[styles.container, { backgroundColor: pageBg }]}>
-        <StatusBar barStyle={barStyle} translucent />
+        <StatusBar barStyle={barStyle} />
         <WebView
           ref={webViewRef}
           source={{ uri: sourceUri }}
@@ -363,7 +363,7 @@ export default function ComunicaScreen() {
   // igual que en iOS.
   return (
     <View style={[styles.container, { backgroundColor: pageBg }]}>
-      <StatusBar barStyle={barStyle} backgroundColor={pageBg} translucent />
+      <StatusBar barStyle={barStyle} />
       <WebView
         ref={webViewRef}
         source={{ uri: sourceUri }}

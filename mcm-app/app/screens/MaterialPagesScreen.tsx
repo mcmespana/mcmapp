@@ -7,7 +7,7 @@ import {
   Platform,
   type ColorSchemeName,
 } from 'react-native';
-import { RouteProp } from 'expo-router/react-navigation';
+import { useLocalSearchParams } from 'expo-router';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
@@ -17,7 +17,10 @@ import {
   IntroPageItem,
   ContentPageItem,
 } from '@/components/materiales/MaterialPageItems';
-import { MasStackParamList } from '../(tabs)/mas';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
+import ComingSoon from '@/components/ui/ComingSoon';
 import { radii } from '@/constants/uiStyles';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
@@ -35,14 +38,49 @@ export interface Actividad {
   paginas: Pagina[];
 }
 
-type RouteProps = RouteProp<MasStackParamList, 'MaterialPages'>;
 export type MaterialPagesStyles = ReturnType<typeof createStyles>;
 
-export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
+/**
+ * Páginas de una actividad de materiales. La actividad NO llega por la ruta (es
+ * un objeto y los params de ruta son texto): llegan `dia` y `act`, sus
+ * posiciones, y se lee de la misma caché de `materiales` que `MaterialesScreen`.
+ */
+export default function MaterialPagesScreen() {
+  const { dia, act } = useLocalSearchParams<{ dia?: string; act?: string }>();
+  const event = useCurrentEvent();
+  const { data: materialesData } = useFirebaseData<
+    { fecha: string; actividades: Actividad[] }[]
+  >(
+    getEventFirebasePath(event, 'materiales'),
+    getEventCacheKey(event, 'materiales'),
+  );
+  const day = materialesData?.[Number(dia)];
+  const actividad = day?.actividades?.[Number(act)];
+  if (!day || !actividad) return <MaterialPagesEmpty tint={event.tintColor} />;
+  return <MaterialPagesContent actividad={actividad} fecha={day.fecha} />;
+}
+
+function MaterialPagesEmpty({ tint }: { tint: string }) {
+  const scheme = useColorScheme();
+  return (
+    <View
+      style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}
+    >
+      <ComingSoon accentColor={tint} />
+    </View>
+  );
+}
+
+function MaterialPagesContent({
+  actividad,
+  fecha,
+}: {
+  actividad: Actividad;
+  fecha: string;
+}) {
   useSuppressCarismochito();
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flatListRef = useRef<FlatList<any>>(null);
-  const { actividad, fecha } = route.params;
   const introBackgroundColor = actividad.color || colors.primary; // Fallback color
   const scheme = useColorScheme();
   const fontScale = useFontScale(1.2);

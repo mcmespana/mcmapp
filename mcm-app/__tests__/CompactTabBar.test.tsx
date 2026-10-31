@@ -14,12 +14,26 @@ import CompactTabBar from '@/components/tabs/CompactTabBar';
 import { TABS_CONFIG } from '@/constants/tabsCatalog';
 
 const mockRouterNavigate = jest.fn();
+const mockDispatch = jest.fn();
 let mockPathname = '/';
 
-jest.mock('expo-router', () => ({
-  router: { navigate: (...args: unknown[]) => mockRouterNavigate(...args) },
-  usePathname: () => mockPathname,
-}));
+// El estado de navegación mínimo: un navegador de pestañas con todas.
+jest.mock('expo-router', () => {
+  const { TABS_CONFIG: tabs } = jest.requireActual('@/constants/tabsCatalog');
+  return {
+    router: { navigate: (...args: unknown[]) => mockRouterNavigate(...args) },
+    usePathname: () => mockPathname,
+    useNavigationContainerRef: () => ({
+      getRootState: () => ({
+        type: 'tab',
+        key: 'pestañas',
+        routeNames: tabs.map((t: { name: string }) => t.name),
+        routes: [],
+      }),
+      dispatch: (action: unknown) => mockDispatch(action),
+    }),
+  };
+});
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
@@ -82,6 +96,7 @@ describe('CompactTabBar', () => {
   beforeEach(() => {
     mockPathname = '/';
     mockRouterNavigate.mockClear();
+    mockDispatch.mockClear();
     mockHandleReselect.mockClear();
     mockExpand.mockClear();
   });
@@ -114,7 +129,17 @@ describe('CompactTabBar', () => {
     });
 
     expect(mockExpand).toHaveBeenCalledTimes(1);
-    expect(mockRouterNavigate).toHaveBeenCalledWith(`/${barTabs[2].name}`);
+    // Como la barra del sistema: `JUMP_TO` al navegador de pestañas, que deja
+    // la pestaña como estaba. `router.navigate('/tab')` la devolvía a su
+    // portada (build 61).
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'JUMP_TO',
+        payload: expect.objectContaining({ name: barTabs[2].name }),
+        target: 'pestañas',
+      }),
+    );
+    expect(mockRouterNavigate).not.toHaveBeenCalled();
     expect(mockHandleReselect).not.toHaveBeenCalled();
   });
 
@@ -129,6 +154,7 @@ describe('CompactTabBar', () => {
 
     expect(mockHandleReselect).toHaveBeenCalledWith(barTabs[0].name);
     expect(mockRouterNavigate).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
   });
 
   it('ignora un índice fuera de rango sin lanzar', () => {

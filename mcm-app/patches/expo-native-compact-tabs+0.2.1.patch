@@ -100,3 +100,32 @@ index 8427b7f..778dd51 100644
        if let image { Self.imageCache.setObject(image, forKey: cacheKey) }
        DispatchQueue.main.async { completion(image) }
      }.resume()
+diff --git a/node_modules/expo-native-compact-tabs/src/scroll.ts b/node_modules/expo-native-compact-tabs/src/scroll.ts
+index d29cfec..f023754 100644
+--- a/node_modules/expo-native-compact-tabs/src/scroll.ts
++++ b/node_modules/expo-native-compact-tabs/src/scroll.ts
+@@ -1,5 +1,5 @@
+ import { useEffect, useRef, useSyncExternalStore } from 'react';
+-import type { ScrollView } from 'react-native';
++import type { ScrollViewInstance } from 'react-native';
+ import {
+   runOnJS,
+   useAnimatedScrollHandler,
+@@ -24,7 +24,7 @@ export function createCompactTabBarController({
+ }: CompactTabBarControllerOptions = {}) {
+   let compact = false;
+   const listeners = new Set<() => void>();
+-  const scrollRefs = new Map<string, { current: ScrollView | null }>();
++  const scrollRefs = new Map<string, { current: ScrollViewInstance | null }>();
+   const pendingScrolls = new Map<string, boolean>();
+ 
+   function setCompact(next: boolean) {
+@@ -65,7 +65,7 @@ export function createCompactTabBarController({
+ 
+   /** Registers this scroll view for cross-tab reset when a stable key is given. */
+   function useCollapsingScroll(key?: string) {
+-    const scrollRef = useRef<ScrollView>(null);
++    const scrollRef = useRef<ScrollViewInstance>(null);
+     const scrollY = useSharedValue(0);
+     const anchor = useSharedValue(0);
+ 

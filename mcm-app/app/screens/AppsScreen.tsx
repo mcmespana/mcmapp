@@ -16,7 +16,7 @@ import {
   PressableFeedback,
   Skeleton,
 } from 'heroui-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';

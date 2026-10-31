@@ -7,7 +7,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { UIColors, Colors, themeColors } from '@/constants/colors';
 import { focusRing, radii } from '@/constants/uiStyles';

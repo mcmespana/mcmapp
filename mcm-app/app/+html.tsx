@@ -1,4 +1,7 @@
-import { ScrollViewStyleReset } from 'expo-router/html';
+import {
+  ScrollViewStyleReset,
+  useServerDocumentContext,
+} from 'expo-router/html';
 import { focusRing } from '@/constants/uiStyles';
 import { APP_TITLE } from '@/utils/documentTitle';
 
@@ -6,9 +9,17 @@ import { APP_TITLE } from '@/utils/documentTitle';
 // Mantener sincronizado con `public/manifest.json`, que es el ÚNICO manifiesto:
 // con `web.output: "static"` Expo no usa `web.meta` ni `web.manifest` de
 // app.json (eran de webpack), así que ya no están.
+//
+// Expo 58: el export ya NO inyecta los <script> ni las hojas de estilo en el
+// HTML por su cuenta: los entrega como `headNodes` y `bodyNodes` y la plantilla
+// tiene que pintarlos (igual que la plantilla por defecto de expo-router). Sin
+// ellos la web exportada era una página en blanco. Lo vigila
+// `__tests__/htmlTemplateAssets.test.ts`.
 export default function Root({ children }: { children: React.ReactNode }) {
+  const { bodyAttributes, bodyNodes, htmlAttributes, headNodes } =
+    useServerDocumentContext();
   return (
-    <html lang="es">
+    <html lang="es" {...htmlAttributes}>
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -157,8 +168,12 @@ export default function Root({ children }: { children: React.ReactNode }) {
           `,
           }}
         />
+        {headNodes}
       </head>
-      <body>{children}</body>
+      <body {...bodyAttributes}>
+        {children}
+        {bodyNodes}
+      </body>
     </html>
   );
 }

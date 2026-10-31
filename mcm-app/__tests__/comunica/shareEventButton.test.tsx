@@ -67,7 +67,7 @@ describe('ShareEventButton', () => {
   it('abre la hoja del sistema con el mensaje y el enlace dentro', async () => {
     const spy = jest
       .spyOn(Share, 'share')
-      .mockResolvedValue({ action: 'sharedAction' });
+      .mockResolvedValue({ action: 'sharedAction', activityType: undefined });
     const tree = await mount(EVENT);
     await act(async () => button(tree).props.onPress());
     expect(spy).toHaveBeenCalledWith({

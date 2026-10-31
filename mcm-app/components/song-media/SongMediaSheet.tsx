@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useToast } from '@/contexts/AppToastContext';
 import { h } from '@/utils/haptics';

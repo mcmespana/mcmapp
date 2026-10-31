@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { h } from '@/utils/haptics';
 import { toDrivePreviewUrl } from '@/utils/googleDrive';
 import typography from '@/constants/typography';

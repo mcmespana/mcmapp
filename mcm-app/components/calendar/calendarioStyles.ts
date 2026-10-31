@@ -1,5 +1,5 @@
 /**
- * Estilos de `app/(tabs)/calendario.tsx`.
+ * Estilos de `app/screens/CalendarScreen.tsx`.
  *
  * Extraídos tal cual, sin tocar ni un valor: eran 360 líneas de las
  * 1175 del fichero. Mismo patrón que `components/grupos/gruposStyles.ts`.

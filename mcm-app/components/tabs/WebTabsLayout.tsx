@@ -13,7 +13,7 @@ import {
   DarkTheme,
   DefaultTheme,
 } from 'expo-router/react-navigation';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CarismoColors, Colors } from '@/constants/colors';
@@ -21,7 +21,6 @@ import { hexAlpha } from '@/utils/colorUtils';
 import { HapticTab } from '@/components/HapticTab';
 import { TABS_CONFIG } from '@/constants/tabsCatalog';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useVisibleTabs } from '@/hooks/useVisibleTabs';
 import { useCarismochito } from '@/contexts/CarismochitoContext';
 
@@ -42,7 +41,6 @@ export default function WebTabsLayout() {
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
   const bottomPad = Math.max(insets.bottom, 12);
-  const resolved = useResolvedProfileConfig();
   const visibleTabs = useVisibleTabs();
   const { isActive: carismoActive } = useCarismochito();
   const isDark = scheme === 'dark';
@@ -56,7 +54,6 @@ export default function WebTabsLayout() {
   return (
     <ThemeProvider value={theme}>
       <Tabs
-        initialRouteName={resolved.defaultTab}
         screenOptions={{
           headerShown: true,
           headerTintColor: '#fff',
@@ -105,7 +102,7 @@ export default function WebTabsLayout() {
                 tabBarIcon: ({ color, size }) => (
                   <MaterialIcons
                     name={tab.androidIcon}
-                    color={color}
+                    color={color as string}
                     size={size}
                   />
                 ),

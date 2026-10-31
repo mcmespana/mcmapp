@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import colors from '@/constants/colors';
 import { isMe, normalize, type SearchHit } from './gruposHelpers';
 import type { GruposStyles } from './gruposStyles';

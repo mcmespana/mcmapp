@@ -284,6 +284,6 @@ it('solo la puerta, web.tsx y Más importan ComunicaScreen', () => {
   expect(users).toEqual([
     'app/(tabs)/comunica/index.tsx',
     'app/(tabs)/comunica/web.tsx',
-    'app/(tabs)/mas.tsx',
+    'app/(tabs)/mas/comunica.tsx',
   ]);
 });

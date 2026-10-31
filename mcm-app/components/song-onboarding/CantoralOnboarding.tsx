@@ -24,7 +24,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { PressableFeedback } from 'heroui-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import SongDisplay from '@/components/SongDisplay';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import SegmentedControl from '@/components/ui/SegmentedControl';

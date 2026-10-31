@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { router } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import SegmentedControl, {

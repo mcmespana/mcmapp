@@ -11,10 +11,11 @@ import {
   StyleSheet,
   Text,
   View,
-  type TextInput,
+  type TextInputInstance,
+  type ViewInstance,
 } from 'react-native';
 import { Dialog, PressableFeedback, SearchField } from 'heroui-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { router } from 'expo-router';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import { useEscapeToClose } from '@/hooks/useEscapeToClose';
@@ -33,7 +34,7 @@ import {
   songOpenParams,
   type IndexedSong,
 } from '@/utils/songIndex';
-import { requestSongOpen } from '@/utils/pendingSongOpen';
+import { openCantoral } from '@/utils/cantoralNavigation';
 import {
   PALETTE_COMMANDS,
   matchCommand,
@@ -56,8 +57,8 @@ type PaletteItem =
  * cualquier pantalla.
  *
  * Salta a las pantallas de primer nivel y, desde la v2, busca canciones del
- * cantoral (sin tildes, como el buscador de la lista) y las abre en el stack
- * del cantoral vía `utils/pendingSongOpen`. Se maneja sin soltar el teclado:
+ * cantoral (sin tildes, como el buscador de la lista) y las abre en su ruta
+ * (`/cancionero/cancion`). Se maneja sin soltar el teclado:
  * escribir, ↑/↓ e Intro; Esc cierra.
  *
  * Ligera a propósito: el cuerpo (y con él la lectura del nodo `songs`) solo
@@ -136,10 +137,9 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
     (item: PaletteItem) => {
       onClose();
       if (item.kind === 'song') {
-        // Primero el pedido y luego el tab: si el cantoral ya está montado,
-        // su stack abre la canción mientras el router cambia de pestaña.
-        requestSongOpen(songOpenParams(item.song));
-        router.push('/cancionero' as never);
+        openCantoral('SongDetail', songOpenParams(item.song), {
+          fromOutside: true,
+        });
         return;
       }
       // expo-router acepta rutas en string; el cast es porque la unión
@@ -183,7 +183,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
   // `autoFocus` no basta: el diálogo monta el campo mientras anima la entrada
   // y el navegador deja el foco en el `body`, así que lo que se teclea nada
   // más pulsar ⌘K se perdía. Se enfoca a mano en el siguiente fotograma.
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
   useEffect(() => {
     const id = setTimeout(() => inputRef.current?.focus(), 0);
     return () => clearTimeout(id);
@@ -191,7 +191,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
 
   // El resaltado siempre a la vista al moverse con las flechas. En web el
   // ref de un `View` es el nodo del DOM.
-  const rowRefs = useRef<(View | null)[]>([]);
+  const rowRefs = useRef<(ViewInstance | null)[]>([]);
   useEffect(() => {
     const node = rowRefs.current[activeIndex] as unknown as {
       scrollIntoView?: (opts: { block: string }) => void;

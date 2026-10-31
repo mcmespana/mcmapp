@@ -21,7 +21,7 @@ import Animated, {
 import { HeaderHeightContext } from 'expo-router/react-navigation';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { h } from '@/utils/haptics';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { extractYouTubeId } from '@/utils/youtube';

@@ -11,7 +11,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { Platform, StyleSheet } from 'react-native';
-import { router, usePathname } from 'expo-router';
+import { useNavigationContainerRef, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   NativeCompactTabBar,
@@ -27,6 +27,7 @@ import { CarismoColors, Colors } from '@/constants/colors';
 import { tabBarController } from '@/components/tabs/tabBarController';
 import { h } from '@/utils/haptics';
 import { hrefForTab, selectedIndexFor } from '@/utils/tabRoutes';
+import { jumpToTab } from '@/components/tabs/jumpToTab';
 
 /* Verdes del modo carismochito (ver app/(tabs)/_layout.tsx para el detalle). */
 const CARISMO_ACTIVE_DARK = CarismoColors.dark;
@@ -46,6 +47,7 @@ export default function CompactTabBar({ tabs }: CompactTabBarProps) {
   const isDark = scheme === 'dark';
   const { isActive: carismoActive } = useCarismochito();
   const compact = tabBarController.useCompact();
+  const navRef = useNavigationContainerRef();
 
   const items = useMemo<NativeCompactTabBarItem[]>(
     () =>
@@ -97,9 +99,11 @@ export default function CompactTabBar({ tabs }: CompactTabBarProps) {
         return;
       }
 
-      router.navigate(href as never);
+      // Como la barra del sistema: la pestaña vuelve tal y como se dejó (ver
+      // `jumpToTab`). `router.navigate(href)` la devolvía a su portada.
+      jumpToTab(navRef, tab.name, href);
     },
-    [tabs, selectedIndex],
+    [tabs, selectedIndex, navRef],
   );
 
   const tintColor = carismoActive

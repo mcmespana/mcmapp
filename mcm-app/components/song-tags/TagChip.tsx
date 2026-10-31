@@ -20,7 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { h } from '@/utils/haptics';
 import type { ResolvedTag } from '@/utils/songTags';
 import { HighlightColors, UIColors, themeColors } from '@/constants/colors';
@@ -74,7 +74,7 @@ export default function TagChip({
           size={15}
           color={
             variant === 'active'
-              ? StyleSheet.flatten(styles.label).color
+              ? StyleSheet.flatten(styles.label)?.color
               : themeColors(isDark).textMuted
           }
           style={styles.addIcon}

@@ -107,7 +107,8 @@ El mapa de espejos vive en `utils/tabNavigation.ts` (`MAS_STACK_MIRROR`) y es
 **fuente única**: lo usan tanto `goToTab` como las tarjetas de overflow de
 `MasHomeScreen`. Si añades un tab que pueda quedar en overflow (o reordenas
 `TABS_CONFIG` y cambias quién se queda fuera), **regístrale su pantalla espejo en
-`mas.tsx` y su entrada en `MAS_STACK_MIRROR`** — si no, en iOS será inalcanzable.
+`app/(tabs)/mas/` (fichero de ruta + `<Stack.Screen>` en su `_layout.tsx`, y el nombre
+en `utils/eventRoutes.ts`) y su entrada en `MAS_STACK_MIRROR`** — si no, en iOS será inalcanzable.
 Cubierto por `__tests__/tabNavigation.test.ts`.
 
 ### La barra FLOTA: hay que reservarle hueco
@@ -181,11 +182,15 @@ Lo usa `tabBarController.ts` y lo prueba `__tests__/collapseRule.test.ts`.
 
 ### Pestañas en segundo plano (`freezeOnBlur`)
 
-`AndroidTabsLayout` pone `freezeOnBlur: true` en las opciones de las pestañas:
-una pestaña ya visitada sigue montada, y sin esto re-renderizaba con cada
-cambio de los contextos que consume (Inicio: notificaciones, OTA, Carismochito…)
-mientras se usaba otra. Congelada, se pone al día al recuperar el foco. Los
-stacks internos ya lo llevaban (`cancionero.tsx`, `eventStackScreens.tsx`).
+**Con expo-router 58 ya no se congelan.** Antes `AndroidTabsLayout` y los
+stacks internos (el del cantoral, `eventStackScreens.tsx`) ponían
+`freezeOnBlur: true`: una pestaña ya visitada sigue montada y, congelada, no
+re-renderizaba con cada cambio de los contextos que consume (Inicio:
+notificaciones, OTA, Carismochito…). En 58 la opción está marcada como «sin
+efecto en Expo Router» y los navegadores la fijan a `false` por dentro, así que
+se quitó (2026-10-31). Si en el móvil se nota que una pestaña en segundo plano
+gasta, la vía sería envolver su contenido en `Freeze` de `react-freeze` según
+el foco; no se ha hecho sin poder medirlo en dispositivo.
 
 ## 📋 Cómo Añadir un Nuevo Tab
 

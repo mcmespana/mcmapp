@@ -11,7 +11,7 @@
 // la lista arriba del todo.
 
 import { useEffect, useRef } from 'react';
-import type { ScrollView } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 
 import { tabBarController } from '@/components/tabs/tabBarController';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
@@ -85,10 +85,10 @@ export function useTabListScroll<T>(tabName: string | null, extraPadding = 0) {
       },
     };
 
-    const slot = scrollRef as { current: ScrollView | null };
-    slot.current = adapter as unknown as ScrollView;
+    const slot = scrollRef as { current: ScrollViewInstance | null };
+    slot.current = adapter as unknown as ScrollViewInstance;
     return () => {
-      if (slot.current === (adapter as unknown as ScrollView)) {
+      if (slot.current === (adapter as unknown as ScrollViewInstance)) {
         slot.current = null;
       }
     };

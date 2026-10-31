@@ -11,7 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { Colors, SwipeColors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -457,74 +457,10 @@ export default function SecretPanelModal({
     onClose();
   };
 
-  // Pantalla de autenticación
-  if (!isAuthenticated) {
-    const isDark = scheme === 'dark';
-    return (
-      <BottomSheet
-        visible={visible}
-        onClose={onClose}
-        title="🔒 Panel Secreto"
-        paddingHorizontal={0}
-      >
-        <View style={styles.authContainer}>
-          <View style={styles.mysteriousContent}>
-            <MaterialIcons
-              name="security"
-              size={64}
-              color={theme.icon}
-              style={{ alignSelf: 'center', marginBottom: 20 }}
-            />
-
-            <Text style={[styles.mysteriousText, { color: theme.text }]}>
-              Solo para usuarios autorizados...
-            </Text>
-
-            <Text style={[styles.mysteriousSubtext, { color: theme.icon }]}>
-              Este panel permite editar directamente los datos de las canciones
-              en Firebase.
-            </Text>
-
-            <TextInput
-              style={[
-                styles.passwordInput,
-                {
-                  backgroundColor: themeColors(isDark).background,
-                  color: theme.text,
-                  borderColor: password.trim() ? '#4CAF50' : theme.icon,
-                },
-              ]}
-              placeholder="Introduce la palabra secreta"
-              placeholderTextColor={theme.icon}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              onSubmitEditing={handlePasswordSubmit}
-              returnKeyType="done"
-            />
-
-            <TouchableOpacity
-              style={[
-                styles.authButton,
-                {
-                  backgroundColor: password.trim() ? '#4CAF50' : theme.icon,
-                  opacity: password.trim() ? 1 : 0.6,
-                },
-              ]}
-              onPress={handlePasswordSubmit}
-              disabled={!password.trim()}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons name="vpn-key" size={20} color="#fff" />
-              <Text style={styles.authButtonText}>Acceder</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </BottomSheet>
-    );
-  }
-
-  // Panel de edición
+  // UNA sola hoja para la contraseña y el editor: cambia el contenido, no la
+  // hoja. Antes eran dos `BottomSheet` distintos y al acertar la contraseña se
+  // desmontaba uno y se montaba otro a la vez: dos `Modal` de iOS relevándose
+  // en el mismo ciclo, que iOS rechaza en silencio (el editor no aparecía).
   const isDark = scheme === 'dark';
   const inputBg = themeColors(isDark).background;
   const inputBorder = themeColors(isDark).separator;
@@ -532,436 +468,521 @@ export default function SecretPanelModal({
   return (
     <BottomSheet
       visible={visible}
-      onClose={handleClose}
-      title="🛠️ Editor Avanzado"
-      height={Dimensions.get('window').height * 0.9}
+      onClose={isAuthenticated ? handleClose : onClose}
+      title={isAuthenticated ? '🛠️ Editor Avanzado' : '🔒 Panel Secreto'}
+      paddingHorizontal={isAuthenticated ? undefined : 0}
+      height={
+        isAuthenticated ? Dimensions.get('window').height * 0.9 : undefined
+      }
     >
-      <View style={styles.fullContainer}>
-        {songTitle && (
-          <Text style={[styles.songInfo, { color: theme.icon }]}>
-            Editando: &ldquo;{songTitle}&rdquo;
-          </Text>
-        )}
+      {isAuthenticated ? (
+        <>
+          <View style={styles.fullContainer}>
+            {songTitle && (
+              <Text style={[styles.songInfo, { color: theme.icon }]}>
+                Editando: &ldquo;{songTitle}&rdquo;
+              </Text>
+            )}
 
-        <ScrollView
-          style={styles.scrollContainer}
-          showsVerticalScrollIndicator={true}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* Título */}
-          <Text style={[styles.label, { color: theme.text }]}>Título *</Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: inputBg,
-                color: theme.text,
-                borderColor: editTitle.trim() ? SwipeColors.add : inputBorder,
-              },
-            ]}
-            placeholder="Título de la canción"
-            placeholderTextColor={theme.icon}
-            value={editTitle}
-            onChangeText={setEditTitle}
-            editable={!isSubmitting}
-          />
-
-          {/* Autor */}
-          <Text style={[styles.label, { color: theme.text }]}>Autor</Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: inputBg,
-                color: theme.text,
-                borderColor: editAuthor.trim() ? SwipeColors.add : inputBorder,
-              },
-            ]}
-            placeholder="Autor de la canción"
-            placeholderTextColor={theme.icon}
-            value={editAuthor}
-            onChangeText={setEditAuthor}
-            editable={!isSubmitting}
-          />
-
-          {/* Key y Capo en fila */}
-          <View style={styles.row}>
-            <View style={styles.halfWidth}>
-              <Text style={[styles.label, { color: theme.text }]}>Key</Text>
+            <ScrollView
+              style={styles.scrollContainer}
+              showsVerticalScrollIndicator={true}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.scrollContent}
+            >
+              {/* Título */}
+              <Text style={[styles.label, { color: theme.text }]}>
+                Título *
+              </Text>
               <TextInput
                 style={[
                   styles.textInput,
                   {
                     backgroundColor: inputBg,
                     color: theme.text,
-                    borderColor: editKey.trim() ? SwipeColors.add : inputBorder,
-                  },
-                ]}
-                placeholder="Ej: G, Am, C"
-                placeholderTextColor={theme.icon}
-                value={editKey}
-                onChangeText={setEditKey}
-                editable={!isSubmitting}
-              />
-            </View>
-            <View style={styles.halfWidth}>
-              <Text style={[styles.label, { color: theme.text }]}>Capo</Text>
-              <TextInput
-                style={[
-                  styles.textInput,
-                  {
-                    backgroundColor: inputBg,
-                    color: theme.text,
-                    borderColor: editCapo.trim()
+                    borderColor: editTitle.trim()
                       ? SwipeColors.add
                       : inputBorder,
                   },
                 ]}
-                placeholder="0"
+                placeholder="Título de la canción"
                 placeholderTextColor={theme.icon}
-                value={editCapo}
-                onChangeText={setEditCapo}
-                keyboardType="numeric"
+                value={editTitle}
+                onChangeText={setEditTitle}
                 editable={!isSubmitting}
               />
-            </View>
-          </View>
 
-          {/* Info */}
-          <Text style={[styles.label, { color: theme.text }]}>
-            Info adicional
-          </Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: inputBg,
-                color: theme.text,
-                borderColor: editInfo.trim() ? SwipeColors.add : inputBorder,
-              },
-            ]}
-            placeholder="Información adicional sobre la canción"
-            placeholderTextColor={theme.icon}
-            value={editInfo}
-            onChangeText={setEditInfo}
-            multiline
-            numberOfLines={2}
-            editable={!isSubmitting}
-          />
-
-          {/* Content */}
-          <Text style={[styles.label, { color: theme.text }]}>
-            Contenido de la canción *
-          </Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              styles.contentInput,
-              {
-                backgroundColor: inputBg,
-                color: theme.text,
-                borderColor: editContent.trim() ? SwipeColors.add : inputBorder,
-              },
-            ]}
-            placeholder="Contenido completo de la canción (ChordPro format)"
-            placeholderTextColor={theme.icon}
-            value={editContent}
-            onChangeText={setEditContent}
-            multiline
-            numberOfLines={10}
-            textAlignVertical="top"
-            scrollEnabled={true}
-            editable={!isSubmitting}
-          />
-
-          {/* ── Sección multimedia (solo admin; no visible aún al usuario) ── */}
-          <View style={styles.sectionDivider} />
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            🎬 Multimedia
-          </Text>
-          <Text style={[styles.sectionHint, { color: theme.icon }]}>
-            Estos campos aún no se muestran al usuario final. Sirven para que el
-            administrador los vaya rellenando.
-          </Text>
-
-          {/* Álbum y Ritmo en fila */}
-          <View style={styles.row}>
-            <View style={styles.halfWidth}>
-              <Text style={[styles.label, { color: theme.text }]}>Álbum</Text>
+              {/* Autor */}
+              <Text style={[styles.label, { color: theme.text }]}>Autor</Text>
               <TextInput
                 style={[
                   styles.textInput,
                   {
                     backgroundColor: inputBg,
                     color: theme.text,
-                    borderColor: editAlbum.trim()
+                    borderColor: editAuthor.trim()
                       ? SwipeColors.add
                       : inputBorder,
                   },
                 ]}
-                placeholder="Ej: ¡Alégrate!, 2004"
+                placeholder="Autor de la canción"
                 placeholderTextColor={theme.icon}
-                value={editAlbum}
-                onChangeText={setEditAlbum}
+                value={editAuthor}
+                onChangeText={setEditAuthor}
                 editable={!isSubmitting}
               />
-            </View>
-            <View style={styles.halfWidth}>
-              <Text style={[styles.label, { color: theme.text }]}>Ritmo</Text>
+
+              {/* Key y Capo en fila */}
+              <View style={styles.row}>
+                <View style={styles.halfWidth}>
+                  <Text style={[styles.label, { color: theme.text }]}>Key</Text>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      {
+                        backgroundColor: inputBg,
+                        color: theme.text,
+                        borderColor: editKey.trim()
+                          ? SwipeColors.add
+                          : inputBorder,
+                      },
+                    ]}
+                    placeholder="Ej: G, Am, C"
+                    placeholderTextColor={theme.icon}
+                    value={editKey}
+                    onChangeText={setEditKey}
+                    editable={!isSubmitting}
+                  />
+                </View>
+                <View style={styles.halfWidth}>
+                  <Text style={[styles.label, { color: theme.text }]}>
+                    Capo
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      {
+                        backgroundColor: inputBg,
+                        color: theme.text,
+                        borderColor: editCapo.trim()
+                          ? SwipeColors.add
+                          : inputBorder,
+                      },
+                    ]}
+                    placeholder="0"
+                    placeholderTextColor={theme.icon}
+                    value={editCapo}
+                    onChangeText={setEditCapo}
+                    keyboardType="numeric"
+                    editable={!isSubmitting}
+                  />
+                </View>
+              </View>
+
+              {/* Info */}
+              <Text style={[styles.label, { color: theme.text }]}>
+                Info adicional
+              </Text>
               <TextInput
                 style={[
                   styles.textInput,
                   {
                     backgroundColor: inputBg,
                     color: theme.text,
-                    borderColor: editRhythm.trim()
+                    borderColor: editInfo.trim()
                       ? SwipeColors.add
                       : inputBorder,
                   },
                 ]}
-                placeholder="Ej: 4x4"
+                placeholder="Información adicional sobre la canción"
                 placeholderTextColor={theme.icon}
-                value={editRhythm}
-                onChangeText={setEditRhythm}
+                value={editInfo}
+                onChangeText={setEditInfo}
+                multiline
+                numberOfLines={2}
                 editable={!isSubmitting}
               />
-            </View>
-          </View>
 
-          {/* Tiempo litúrgico */}
-          <Text style={[styles.label, { color: theme.text }]}>
-            Tiempo litúrgico
-          </Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: inputBg,
-                color: theme.text,
-                borderColor: editLiturgicalTime.trim()
-                  ? SwipeColors.add
-                  : inputBorder,
-              },
-            ]}
-            placeholder="Ej: Adviento, Cuaresma, Pascua…"
-            placeholderTextColor={theme.icon}
-            value={editLiturgicalTime}
-            onChangeText={setEditLiturgicalTime}
-            editable={!isSubmitting}
-          />
-
-          {/* Fuente */}
-          <Text style={[styles.label, { color: theme.text }]}>Fuente</Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: inputBg,
-                color: theme.text,
-                borderColor: editSource.trim() ? SwipeColors.add : inputBorder,
-              },
-            ]}
-            placeholder="Ej: doceacordes.es"
-            placeholderTextColor={theme.icon}
-            value={editSource}
-            onChangeText={setEditSource}
-            editable={!isSubmitting}
-          />
-
-          {/* Vídeo embebido */}
-          <Text style={[styles.label, { color: theme.text }]}>
-            Vídeo de YouTube
-          </Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: inputBg,
-                color: theme.text,
-                borderColor: editVideoInput.trim()
-                  ? SwipeColors.add
-                  : inputBorder,
-              },
-            ]}
-            placeholder="Pega una URL normal de YouTube"
-            placeholderTextColor={theme.icon}
-            value={editVideoInput}
-            onChangeText={setEditVideoInput}
-            autoCapitalize="none"
-            keyboardType="url"
-            editable={!isSubmitting}
-          />
-          {editVideoInput.trim() ? (
-            <Text style={[styles.embedPreview, { color: theme.icon }]}>
-              Se guardará como: {videoEmbedUrl}
-            </Text>
-          ) : null}
-
-          {/* Enlaces de YouTube (repetibles) */}
-          <Text style={[styles.label, { color: theme.text }]}>
-            Enlaces de YouTube
-          </Text>
-          {editYoutubeLinks.map((link, index) => (
-            <View key={`yt-${index}`} style={styles.linkRow}>
+              {/* Content */}
+              <Text style={[styles.label, { color: theme.text }]}>
+                Contenido de la canción *
+              </Text>
               <TextInput
                 style={[
                   styles.textInput,
-                  styles.linkLabelInput,
+                  styles.contentInput,
                   {
                     backgroundColor: inputBg,
                     color: theme.text,
-                    borderColor: inputBorder,
-                  },
-                ]}
-                placeholder="Etiqueta (opcional)"
-                placeholderTextColor={theme.icon}
-                value={link.label}
-                onChangeText={(t) =>
-                  updateLink(setEditYoutubeLinks, index, 'label', t)
-                }
-                editable={!isSubmitting}
-              />
-              <TextInput
-                style={[
-                  styles.textInput,
-                  styles.linkUrlInput,
-                  {
-                    backgroundColor: inputBg,
-                    color: theme.text,
-                    borderColor: link.url.trim()
+                    borderColor: editContent.trim()
                       ? SwipeColors.add
                       : inputBorder,
                   },
                 ]}
-                placeholder="URL"
+                placeholder="Contenido completo de la canción (ChordPro format)"
                 placeholderTextColor={theme.icon}
-                value={link.url}
-                onChangeText={(t) =>
-                  updateLink(setEditYoutubeLinks, index, 'url', t)
-                }
+                value={editContent}
+                onChangeText={setEditContent}
+                multiline
+                numberOfLines={10}
+                textAlignVertical="top"
+                scrollEnabled={true}
+                editable={!isSubmitting}
+              />
+
+              {/* ── Sección multimedia (solo admin; no visible aún al usuario) ── */}
+              <View style={styles.sectionDivider} />
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                🎬 Multimedia
+              </Text>
+              <Text style={[styles.sectionHint, { color: theme.icon }]}>
+                Estos campos aún no se muestran al usuario final. Sirven para
+                que el administrador los vaya rellenando.
+              </Text>
+
+              {/* Álbum y Ritmo en fila */}
+              <View style={styles.row}>
+                <View style={styles.halfWidth}>
+                  <Text style={[styles.label, { color: theme.text }]}>
+                    Álbum
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      {
+                        backgroundColor: inputBg,
+                        color: theme.text,
+                        borderColor: editAlbum.trim()
+                          ? SwipeColors.add
+                          : inputBorder,
+                      },
+                    ]}
+                    placeholder="Ej: ¡Alégrate!, 2004"
+                    placeholderTextColor={theme.icon}
+                    value={editAlbum}
+                    onChangeText={setEditAlbum}
+                    editable={!isSubmitting}
+                  />
+                </View>
+                <View style={styles.halfWidth}>
+                  <Text style={[styles.label, { color: theme.text }]}>
+                    Ritmo
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      {
+                        backgroundColor: inputBg,
+                        color: theme.text,
+                        borderColor: editRhythm.trim()
+                          ? SwipeColors.add
+                          : inputBorder,
+                      },
+                    ]}
+                    placeholder="Ej: 4x4"
+                    placeholderTextColor={theme.icon}
+                    value={editRhythm}
+                    onChangeText={setEditRhythm}
+                    editable={!isSubmitting}
+                  />
+                </View>
+              </View>
+
+              {/* Tiempo litúrgico */}
+              <Text style={[styles.label, { color: theme.text }]}>
+                Tiempo litúrgico
+              </Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: inputBg,
+                    color: theme.text,
+                    borderColor: editLiturgicalTime.trim()
+                      ? SwipeColors.add
+                      : inputBorder,
+                  },
+                ]}
+                placeholder="Ej: Adviento, Cuaresma, Pascua…"
+                placeholderTextColor={theme.icon}
+                value={editLiturgicalTime}
+                onChangeText={setEditLiturgicalTime}
+                editable={!isSubmitting}
+              />
+
+              {/* Fuente */}
+              <Text style={[styles.label, { color: theme.text }]}>Fuente</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: inputBg,
+                    color: theme.text,
+                    borderColor: editSource.trim()
+                      ? SwipeColors.add
+                      : inputBorder,
+                  },
+                ]}
+                placeholder="Ej: doceacordes.es"
+                placeholderTextColor={theme.icon}
+                value={editSource}
+                onChangeText={setEditSource}
+                editable={!isSubmitting}
+              />
+
+              {/* Vídeo embebido */}
+              <Text style={[styles.label, { color: theme.text }]}>
+                Vídeo de YouTube
+              </Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: inputBg,
+                    color: theme.text,
+                    borderColor: editVideoInput.trim()
+                      ? SwipeColors.add
+                      : inputBorder,
+                  },
+                ]}
+                placeholder="Pega una URL normal de YouTube"
+                placeholderTextColor={theme.icon}
+                value={editVideoInput}
+                onChangeText={setEditVideoInput}
                 autoCapitalize="none"
                 keyboardType="url"
                 editable={!isSubmitting}
               />
+              {editVideoInput.trim() ? (
+                <Text style={[styles.embedPreview, { color: theme.icon }]}>
+                  Se guardará como: {videoEmbedUrl}
+                </Text>
+              ) : null}
+
+              {/* Enlaces de YouTube (repetibles) */}
+              <Text style={[styles.label, { color: theme.text }]}>
+                Enlaces de YouTube
+              </Text>
+              {editYoutubeLinks.map((link, index) => (
+                <View key={`yt-${index}`} style={styles.linkRow}>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      styles.linkLabelInput,
+                      {
+                        backgroundColor: inputBg,
+                        color: theme.text,
+                        borderColor: inputBorder,
+                      },
+                    ]}
+                    placeholder="Etiqueta (opcional)"
+                    placeholderTextColor={theme.icon}
+                    value={link.label}
+                    onChangeText={(t) =>
+                      updateLink(setEditYoutubeLinks, index, 'label', t)
+                    }
+                    editable={!isSubmitting}
+                  />
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      styles.linkUrlInput,
+                      {
+                        backgroundColor: inputBg,
+                        color: theme.text,
+                        borderColor: link.url.trim()
+                          ? SwipeColors.add
+                          : inputBorder,
+                      },
+                    ]}
+                    placeholder="URL"
+                    placeholderTextColor={theme.icon}
+                    value={link.url}
+                    onChangeText={(t) =>
+                      updateLink(setEditYoutubeLinks, index, 'url', t)
+                    }
+                    autoCapitalize="none"
+                    keyboardType="url"
+                    editable={!isSubmitting}
+                  />
+                  <TouchableOpacity
+                    style={styles.linkRemoveBtn}
+                    onPress={() => removeLink(setEditYoutubeLinks, index)}
+                    disabled={isSubmitting}
+                  >
+                    <MaterialIcons name="close" size={20} color={theme.icon} />
+                  </TouchableOpacity>
+                </View>
+              ))}
               <TouchableOpacity
-                style={styles.linkRemoveBtn}
-                onPress={() => removeLink(setEditYoutubeLinks, index)}
+                style={[styles.addLinkBtn, { borderColor: inputBorder }]}
+                onPress={() => addLink(setEditYoutubeLinks)}
                 disabled={isSubmitting}
               >
-                <MaterialIcons name="close" size={20} color={theme.icon} />
+                <MaterialIcons name="add" size={18} color={theme.text} />
+                <Text style={[styles.addLinkText, { color: theme.text }]}>
+                  Añadir enlace de YouTube
+                </Text>
               </TouchableOpacity>
-            </View>
-          ))}
-          <TouchableOpacity
-            style={[styles.addLinkBtn, { borderColor: inputBorder }]}
-            onPress={() => addLink(setEditYoutubeLinks)}
-            disabled={isSubmitting}
-          >
-            <MaterialIcons name="add" size={18} color={theme.text} />
-            <Text style={[styles.addLinkText, { color: theme.text }]}>
-              Añadir enlace de YouTube
-            </Text>
-          </TouchableOpacity>
 
-          {/* Enlaces de audio (repetibles) */}
-          <Text style={[styles.label, { color: theme.text }]}>
-            Enlaces de audio
-          </Text>
-          {editAudioLinks.map((link, index) => (
-            <View key={`au-${index}`} style={styles.linkRow}>
-              <TextInput
-                style={[
-                  styles.textInput,
-                  styles.linkLabelInput,
-                  {
-                    backgroundColor: inputBg,
-                    color: theme.text,
-                    borderColor: inputBorder,
-                  },
-                ]}
-                placeholder="Etiqueta (opcional)"
-                placeholderTextColor={theme.icon}
-                value={link.label}
-                onChangeText={(t) =>
-                  updateLink(setEditAudioLinks, index, 'label', t)
-                }
-                editable={!isSubmitting}
-              />
-              <TextInput
-                style={[
-                  styles.textInput,
-                  styles.linkUrlInput,
-                  {
-                    backgroundColor: inputBg,
-                    color: theme.text,
-                    borderColor: link.url.trim()
-                      ? SwipeColors.add
-                      : inputBorder,
-                  },
-                ]}
-                placeholder="URL"
-                placeholderTextColor={theme.icon}
-                value={link.url}
-                onChangeText={(t) =>
-                  updateLink(setEditAudioLinks, index, 'url', t)
-                }
-                autoCapitalize="none"
-                keyboardType="url"
-                editable={!isSubmitting}
-              />
+              {/* Enlaces de audio (repetibles) */}
+              <Text style={[styles.label, { color: theme.text }]}>
+                Enlaces de audio
+              </Text>
+              {editAudioLinks.map((link, index) => (
+                <View key={`au-${index}`} style={styles.linkRow}>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      styles.linkLabelInput,
+                      {
+                        backgroundColor: inputBg,
+                        color: theme.text,
+                        borderColor: inputBorder,
+                      },
+                    ]}
+                    placeholder="Etiqueta (opcional)"
+                    placeholderTextColor={theme.icon}
+                    value={link.label}
+                    onChangeText={(t) =>
+                      updateLink(setEditAudioLinks, index, 'label', t)
+                    }
+                    editable={!isSubmitting}
+                  />
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      styles.linkUrlInput,
+                      {
+                        backgroundColor: inputBg,
+                        color: theme.text,
+                        borderColor: link.url.trim()
+                          ? SwipeColors.add
+                          : inputBorder,
+                      },
+                    ]}
+                    placeholder="URL"
+                    placeholderTextColor={theme.icon}
+                    value={link.url}
+                    onChangeText={(t) =>
+                      updateLink(setEditAudioLinks, index, 'url', t)
+                    }
+                    autoCapitalize="none"
+                    keyboardType="url"
+                    editable={!isSubmitting}
+                  />
+                  <TouchableOpacity
+                    style={styles.linkRemoveBtn}
+                    onPress={() => removeLink(setEditAudioLinks, index)}
+                    disabled={isSubmitting}
+                  >
+                    <MaterialIcons name="close" size={20} color={theme.icon} />
+                  </TouchableOpacity>
+                </View>
+              ))}
               <TouchableOpacity
-                style={styles.linkRemoveBtn}
-                onPress={() => removeLink(setEditAudioLinks, index)}
+                style={[styles.addLinkBtn, { borderColor: inputBorder }]}
+                onPress={() => addLink(setEditAudioLinks)}
                 disabled={isSubmitting}
               >
-                <MaterialIcons name="close" size={20} color={theme.icon} />
+                <MaterialIcons name="add" size={18} color={theme.text} />
+                <Text style={[styles.addLinkText, { color: theme.text }]}>
+                  Añadir enlace de audio
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.saveButton,
+                  {
+                    backgroundColor:
+                      editTitle.trim() && editContent.trim()
+                        ? '#4CAF50'
+                        : theme.icon,
+                    opacity: isSubmitting ? 0.7 : 1,
+                  },
+                ]}
+                onPress={handleSaveChanges}
+                disabled={
+                  !editTitle.trim() || !editContent.trim() || isSubmitting
+                }
+                activeOpacity={0.8}
+              >
+                <MaterialIcons
+                  name={isSubmitting ? 'hourglass-empty' : 'save'}
+                  size={20}
+                  color="#fff"
+                />
+                <Text style={styles.saveButtonText}>
+                  {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={[styles.disclaimer, { color: theme.icon }]}>
+                🔮 Este panel registra ediciones que serán revisadas y aplicadas
+                en la base de datos. Asegúrate de que los cambios sean correctos
+                antes de enviar.
+              </Text>
+            </ScrollView>
+          </View>
+        </>
+      ) : (
+        <>
+          <View style={styles.authContainer}>
+            <View style={styles.mysteriousContent}>
+              <MaterialIcons
+                name="security"
+                size={64}
+                color={theme.icon}
+                style={{ alignSelf: 'center', marginBottom: 20 }}
+              />
+
+              <Text style={[styles.mysteriousText, { color: theme.text }]}>
+                Solo para usuarios autorizados...
+              </Text>
+
+              <Text style={[styles.mysteriousSubtext, { color: theme.icon }]}>
+                Este panel permite editar directamente los datos de las
+                canciones en Firebase.
+              </Text>
+
+              <TextInput
+                style={[
+                  styles.passwordInput,
+                  {
+                    backgroundColor: themeColors(isDark).background,
+                    color: theme.text,
+                    borderColor: password.trim() ? '#4CAF50' : theme.icon,
+                  },
+                ]}
+                placeholder="Introduce la palabra secreta"
+                placeholderTextColor={theme.icon}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                onSubmitEditing={handlePasswordSubmit}
+                returnKeyType="done"
+              />
+
+              <TouchableOpacity
+                style={[
+                  styles.authButton,
+                  {
+                    backgroundColor: password.trim() ? '#4CAF50' : theme.icon,
+                    opacity: password.trim() ? 1 : 0.6,
+                  },
+                ]}
+                onPress={handlePasswordSubmit}
+                disabled={!password.trim()}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="vpn-key" size={20} color="#fff" />
+                <Text style={styles.authButtonText}>Acceder</Text>
               </TouchableOpacity>
             </View>
-          ))}
-          <TouchableOpacity
-            style={[styles.addLinkBtn, { borderColor: inputBorder }]}
-            onPress={() => addLink(setEditAudioLinks)}
-            disabled={isSubmitting}
-          >
-            <MaterialIcons name="add" size={18} color={theme.text} />
-            <Text style={[styles.addLinkText, { color: theme.text }]}>
-              Añadir enlace de audio
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.saveButton,
-              {
-                backgroundColor:
-                  editTitle.trim() && editContent.trim()
-                    ? '#4CAF50'
-                    : theme.icon,
-                opacity: isSubmitting ? 0.7 : 1,
-              },
-            ]}
-            onPress={handleSaveChanges}
-            disabled={!editTitle.trim() || !editContent.trim() || isSubmitting}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons
-              name={isSubmitting ? 'hourglass-empty' : 'save'}
-              size={20}
-              color="#fff"
-            />
-            <Text style={styles.saveButtonText}>
-              {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
-            </Text>
-          </TouchableOpacity>
-
-          <Text style={[styles.disclaimer, { color: theme.icon }]}>
-            🔮 Este panel registra ediciones que serán revisadas y aplicadas en
-            la base de datos. Asegúrate de que los cambios sean correctos antes
-            de enviar.
-          </Text>
-        </ScrollView>
-      </View>
+          </View>
+        </>
+      )}
     </BottomSheet>
   );
 }

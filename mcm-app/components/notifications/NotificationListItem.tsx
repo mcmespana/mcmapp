@@ -1,7 +1,10 @@
-import { View, StyleSheet, Text, Animated, Pressable } from 'react-native';
+import { View, StyleSheet, Text, Pressable } from 'react-native';
 import { Image } from 'expo-image';
-import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
-import { MaterialIcons } from '@expo/vector-icons';
+import { TouchableOpacity } from 'react-native-gesture-handler';
+import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import type { SharedValue } from 'react-native-reanimated';
+import SwipeActionContent from '@/components/ui/SwipeActionContent';
+import { MaterialIcons } from '@/components/ui/icons';
 import colors, { themeColors, Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
@@ -67,37 +70,31 @@ export default function NotificationListItem({
   const category = categoryVisual(notification.category);
   const actionButtons = getActionButtons(notification);
 
-  const renderRightActions = (
-    _progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>,
-  ) => {
-    const scale = dragX.interpolate({
-      inputRange: [-100, 0],
-      outputRange: [1, 0],
-      extrapolate: 'clamp',
-    });
-    return (
-      <TouchableOpacity
-        style={listStyles.rightAction}
-        onPress={() => onMarkRead(notification.id)}
-        accessibilityLabel="Marcar como leída"
-        accessibilityRole="button"
+  const renderRightActions = (translation: SharedValue<number>) => (
+    <TouchableOpacity
+      style={listStyles.rightAction}
+      onPress={() => onMarkRead(notification.id)}
+      accessibilityLabel="Marcar como leída"
+      accessibilityRole="button"
+    >
+      <SwipeActionContent
+        translation={translation}
+        inputRange={[-100, 0]}
+        outputRange={[1, 0]}
+        property="scale"
+        style={listStyles.actionContent}
       >
-        <Animated.View
-          style={[listStyles.actionContent, { transform: [{ scale }] }]}
-        >
-          <MaterialIcons name="check" size={24} color="#fff" />
-          <Text style={listStyles.actionText}>Leída</Text>
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  };
+        <MaterialIcons name="check" size={24} color="#fff" />
+        <Text style={listStyles.actionText}>Leída</Text>
+      </SwipeActionContent>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={{ marginBottom: spacing.md }}>
       <Swipeable
-        renderRightActions={(progress, dragX) =>
-          isUnread ? renderRightActions(progress, dragX) : null
+        renderRightActions={(_progress, translation) =>
+          isUnread ? renderRightActions(translation) : null
         }
         rightThreshold={40}
         overshootRight={false}

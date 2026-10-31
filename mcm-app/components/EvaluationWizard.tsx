@@ -20,7 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from 'expo-router/react-navigation';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import colors, { Colors, themeColors } from '@/constants/colors';

@@ -13,7 +13,12 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
+import Swipeable, {
+  type SwipeableMethods,
+} from 'react-native-gesture-handler/ReanimatedSwipeable';
+import type { SharedValue } from 'react-native-reanimated';
+import { openedActionsSide } from '@/utils/swipeSide';
+import SwipeActionContent from './ui/SwipeActionContent';
 import { PressableFeedback } from 'heroui-native';
 import { h } from '@/utils/haptics';
 import { IconSymbol } from './ui/IconSymbol';
@@ -22,7 +27,7 @@ import { useContextMenu } from '@/hooks/useContextMenu';
 import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
 import { transposeKey, transposeLabel } from '../utils/transposeKey';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import {
   Colors,
   HighlightColors,
@@ -93,7 +98,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     // Estilos de módulo, uno por tema: antes cada fila hacía su propio
     // `StyleSheet.create` de ~45 estilos al montarse.
     const styles = isDark ? stylesDark : stylesLight;
-    const swipeableRow = useRef<Swipeable>(null);
+    const swipeableRow = useRef<SwipeableMethods>(null);
     const backgroundColorAnim = useRef(
       new Animated.Value(isSelected ? 1 : 0),
     ).current;
@@ -139,66 +144,54 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
       : null;
 
     const renderRightActions = (
-      progress: Animated.AnimatedInterpolation<number>,
-      dragX: Animated.AnimatedInterpolation<number>,
-    ) => {
-      const trans = dragX.interpolate({
-        inputRange: [-100, 0],
-        outputRange: [0, 100],
-        extrapolate: 'clamp',
-      });
-      return (
-        <TouchableOpacity
-          style={styles.rightAction}
-          onPress={() => {
-            h.add();
-            onAddSong(song.filename);
-            swipeableRow.current?.close();
-          }}
+      _progress: SharedValue<number>,
+      translation: SharedValue<number>,
+    ) => (
+      <TouchableOpacity
+        style={styles.rightAction}
+        onPress={() => {
+          h.add();
+          onAddSong(song.filename);
+          swipeableRow.current?.close();
+        }}
+      >
+        <SwipeActionContent
+          translation={translation}
+          inputRange={[-100, 0]}
+          outputRange={[0, 100]}
+          property="translateX"
+          style={styles.actionContent}
         >
-          <Animated.View
-            style={[
-              styles.actionContent,
-              { transform: [{ translateX: trans }] },
-            ]}
-          >
-            <IconSymbol name="plus.circle" size={22} color="#fff" />
-            <Text style={styles.actionText}>Añadir</Text>
-          </Animated.View>
-        </TouchableOpacity>
-      );
-    };
+          <IconSymbol name="plus.circle" size={22} color="#fff" />
+          <Text style={styles.actionText}>Añadir</Text>
+        </SwipeActionContent>
+      </TouchableOpacity>
+    );
 
     const renderLeftActions = (
-      progress: Animated.AnimatedInterpolation<number>,
-      dragX: Animated.AnimatedInterpolation<number>,
-    ) => {
-      const trans = dragX.interpolate({
-        inputRange: [0, 100],
-        outputRange: [-100, 0],
-        extrapolate: 'clamp',
-      });
-      return (
-        <TouchableOpacity
-          style={styles.leftAction}
-          onPress={() => {
-            h.remove();
-            onRemoveSong(song.filename);
-            swipeableRow.current?.close();
-          }}
+      _progress: SharedValue<number>,
+      translation: SharedValue<number>,
+    ) => (
+      <TouchableOpacity
+        style={styles.leftAction}
+        onPress={() => {
+          h.remove();
+          onRemoveSong(song.filename);
+          swipeableRow.current?.close();
+        }}
+      >
+        <SwipeActionContent
+          translation={translation}
+          inputRange={[0, 100]}
+          outputRange={[-100, 0]}
+          property="translateX"
+          style={styles.actionContent}
         >
-          <Animated.View
-            style={[
-              styles.actionContent,
-              { transform: [{ translateX: trans }] },
-            ]}
-          >
-            <IconSymbol name="minus.circle" size={22} color="#fff" />
-            <Text style={styles.actionText}>Quitar</Text>
-          </Animated.View>
-        </TouchableOpacity>
-      );
-    };
+          <IconSymbol name="minus.circle" size={22} color="#fff" />
+          <Text style={styles.actionText}>Quitar</Text>
+        </SwipeActionContent>
+      </TouchableOpacity>
+    );
 
     const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
 
@@ -222,11 +215,13 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         renderRightActions={!isSelected ? renderRightActions : undefined}
         renderLeftActions={isSelected ? renderLeftActions : undefined}
         onSwipeableOpen={(direction) => {
-          if (direction === 'right' && !isSelected) {
+          // El lado ABIERTO, no la dirección del dedo (ver `utils/swipeSide`).
+          const side = openedActionsSide(direction);
+          if (side === 'right' && !isSelected) {
             h.add();
             onAddSong(song.filename);
             swipeableRow.current?.close();
-          } else if (direction === 'left' && isSelected) {
+          } else if (side === 'left' && isSelected) {
             h.remove();
             onRemoveSong(song.filename);
             swipeableRow.current?.close();

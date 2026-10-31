@@ -6,7 +6,7 @@
 
 MCM App es la aplicación de MCM España (Movimiento Consolación para el Mundo). Proporciona cantoral/cancionero con acordes, calendario de eventos, fotos, grupos, reflexiones, materiales, juego Wordle y notificaciones push.
 
-**Stack:** Expo 57 · React Native 0.86 · React 19.2 · TypeScript · Firebase Realtime Database · **heroui-native** · ChordSheetJS
+**Stack:** Expo 58 · React Native 0.88 · React 19.3 · TypeScript · Firebase Realtime Database · **heroui-native** · ChordSheetJS
 
 ## Comandos de desarrollo
 
@@ -73,7 +73,7 @@ app/                            # Rutas (expo-router). Una pantalla por fichero
 ├── _layout.tsx                 # Root layout: AppProviders + Stack navigator
 ├── +native-intent.ts           # Reescribe enlaces entrantes (universal links, custom scheme)
 ├── +html.tsx / +not-found.tsx  # Template HTML web / 404
-├── (tabs)/                     # Tabs: _layout.tsx + index (Home), cancionero, contigo/,
+├── (tabs)/                     # Tabs: _layout.tsx + index (Home), cancionero/, contigo/,
 │                               #   comunica/ (puerta nativa/legado, docs/planes/area-nativa/),
 │                               #   calendario, fotos, mas, visitapapa (oculta)
 ├── screens/                    # Pantallas "de contenido" que montan las rutas y los
@@ -131,16 +131,37 @@ public/                         # Web: manifest PWA, service worker, iconos
 RootLayout (Stack)
 ├── (tabs) ← Bottom Tabs
 │   ├── index (Home)           ← Grid de botones
-│   ├── cancionero             ← Stack interno: Categories → SongsList → SongDetail → SongFullscreen
+│   ├── cancionero/            ← Stack: index (Categorías) → categoria → cancion → pantalla-completa (+ seleccion)
 │   ├── contigo                ← Acompañamiento y oración
-│   ├── comunica               ← WebView del portal de comunicación
-│   ├── calendario             ← Eventos ICS
-│   ├── fotos                  ← Galería
-│   ├── visitapapa             ← Stack del evento (oculto mientras esté archivado)
-│   └── mas                    ← Stack interno: MasHome → Jubileo/Grupos/Materiales/etc.
+│   ├── comunica/              ← Área nativa (alpha) o WebView del portal; carpeta con _layout
+│   ├── calendario/            ← Eventos ICS (carpeta con _layout)
+│   ├── fotos/                 ← Galería (carpeta con _layout)
+│   ├── visitapapa/            ← Stack del evento (oculto mientras esté archivado)
+│   └── mas/                   ← Stack: index (MasHome) → fotos, calendario, evento, horario…
 ├── wordle                     ← Juego
 └── notifications              ← Lista de notificaciones
 ```
+
+**Los stacks de una pestaña son CARPETAS de rutas** (`_layout.tsx` con `Stack` de
+expo-router + un fichero por pantalla, que re-exporta la de `app/screens/`).
+Con expo-router 58 el estado de navegación sale de los ficheros: **no se monta
+`createNativeStackNavigator` en `app/`** (lo prohíbe `__tests__/router/`). Los
+params de ruta son texto, nunca objetos. Los nombres de pantalla de siempre
+(`'Horario'`, `'Fotos'`…) se traducen a rutas en `utils/eventRoutes.ts`.
+`renderEventScreens()` devuelve un array de `Stack.Screen`: el `Stack` no aplana
+fragmentos. Estado de la migración: `docs/planes/PLAN_EXPO_58.md`.
+
+**Una canción viaja por la ruta como texto**: `filename` (+ `list`,
+`currentIndex`, `source`, `firebaseCategory`). La pantalla la lee de la lista
+con la que se abrió (almacén en memoria, `utils/songNavList.ts`) o del
+catálogo (`hooks/useRouteSong.ts`). Para abrir una pantalla del cantoral:
+`openCantoral('SongDetail', songRouteParams({...}))`
+(`utils/cantoralNavigation.ts`); nunca la canción entera en los params.
+
+**`app/+html.tsx` tiene que pintar `headNodes` y `bodyNodes`**
+(`useServerDocumentContext`): en Expo 58 el export ya no mete el JS en el HTML
+por su cuenta, y sin ellos la web sale en blanco
+(`__tests__/htmlTemplateAssets.test.tsx`).
 
 **Tabs — tres implementaciones (ver `docs/desarrollo/TABS_MAINTENANCE.md`):**
 
@@ -290,6 +311,7 @@ completo, en `docs/desarrollo/DESIGN.md`.
 - **Importaciones**: usar `@/` siempre, no rutas relativas largas
 - **Plataforma**: usar `Platform.OS` para diferencias, archivos `.ios.tsx` para componentes iOS-only
 - **Tamaño de archivo**: el techo son **1.000 líneas** (ESLint avisa con `max-lines`); a partir de **1.500** hay que trocear de verdad — extraer subcomponentes a `components/<área>/` y la lógica a un hook `use<Pantalla>.ts` **ANTES** de añadir la feature. Umbrales subidos desde 400/600 el 2026-08-08: con agentes de IA leyendo el código, un archivo largo pero coherente cuesta menos que la misma lógica repartida en seis ficheros que hay que reconstruir mentalmente. Los gigantes que ya hay **se quedan**: no hace falta trocearlos por tamaño.
+- **Tests con DOM real (jsdom):** se llaman `*.dom.test.ts` y corren en el proyecto `dom` de `jest.config.js`, sin React Native (el setup de RN redefine `window` y revienta en jsdom). El resto va en el proyecto `native`.
 - **Logging**: nunca `console.*` (ESLint lo bloquea como error). Usar el logger central `@/utils/logger` (`logger.debug/info/warn/error`).
 - **Una regla que se puede romper sin enterarse va en un test, no en un documento.** Este código lo edita siempre una IA, y una IA puede no leer un párrafo — pero no puede ignorar un test en rojo. El modelo es `__tests__/tabsLayoutWebSafety.test.ts`: no comprueba una función, comprueba que **nadie vuelva a importar** el módulo nativo de tabs en el grafo de web (el fallo real solo se veía al desplegar). Cuando algo se rompa por no saber una regla, el arreglo correcto no es ampliar este archivo: es un test-guardarraíl que falle solo. Razonamiento completo en `docs/planes/PLAN_CALIDAD.md` §0.
 
@@ -380,7 +402,7 @@ Documentar NO:
 - **Apple Team ID**: `5P53S6QB23`
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
 - **App version**: 2.1.0
-- **Runtime version**: 2.1.0
+- **Runtime version**: 2.2.0 (SDK 58; la 2.1.0 era SDK 57 — los binarios viejos no reciben OTAs nuevas)
 
 ## HeroUI Native — UI Library
 

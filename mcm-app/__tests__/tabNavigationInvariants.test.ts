@@ -8,7 +8,7 @@
  * camino**.
  *
  * Y se atan las dos listas que tienen que cuadrar con la realidad:
- *   - todo espejo de `MAS_STACK_MIRROR` debe estar registrado en `mas.tsx`;
+ *   - todo espejo de `MAS_STACK_MIRROR` debe estar registrado en `app/(tabs)/mas/` (fichero de ruta + `_layout`);
  *   - todo tab que PUEDA caer en overflow debe tener espejo (si no, en iOS es
  *     inalcanzable).
  */
@@ -22,6 +22,7 @@ import {
   resolveTabRoute,
 } from '@/utils/tabNavigation';
 import type { TabRoute } from '@/utils/tabNavigation';
+import { EVENT_SLUGS, masHref, type MasScreenName } from '@/utils/eventRoutes';
 import {
   MAX_TAB_BAR_ITEMS,
   TABS_CONFIG,
@@ -47,23 +48,27 @@ function subsets(names: string[]): Set<string>[] {
 
 const ALL_SUBSETS = subsets(ALL_NAMES);
 
-/** Fuente de `mas.tsx`, para comprobar qué pantallas registra de verdad. */
-const MAS_SOURCE = fs.readFileSync(
-  path.join(__dirname, '..', 'app', '(tabs)', 'mas.tsx'),
-  'utf8',
-);
-const EVENT_SCREENS_SOURCE = fs.readFileSync(
-  path.join(__dirname, '..', 'app', 'screens', 'eventStackScreens.tsx'),
-  'utf8',
-);
+/** Carpeta de rutas de «Más» y su layout, para comprobar qué registra de verdad. */
+const MAS_DIR = path.join(__dirname, '..', 'app', '(tabs)', 'mas');
+const MAS_LAYOUT = fs.readFileSync(path.join(MAS_DIR, '_layout.tsx'), 'utf8');
 
-/** ¿`mas.tsx` registra esa pantalla (directamente o vía renderEventScreens)? */
+/**
+ * ¿«Más» registra esa pantalla? Hace falta el FICHERO de ruta (`mas/<ruta>.tsx`,
+ * la ruta la da `utils/eventRoutes.ts`) y que el layout la declare: o por su
+ * nombre, o vía `renderEventScreens` (y, para el hub, con `includeHub: true`).
+ */
 function masStackRegisters(screen: string): boolean {
-  if (MAS_SOURCE.includes(`name="${screen}"`)) return true;
-  return (
-    MAS_SOURCE.includes('renderEventScreens') &&
-    EVENT_SCREENS_SOURCE.includes(`name="${screen}"`)
+  const slug = masHref(screen as MasScreenName).pathname.replace(
+    /^\/mas\/?/,
+    '',
   );
+  const file = path.join(MAS_DIR, `${slug || 'index'}.tsx`);
+  if (!fs.existsSync(file)) return false;
+  if (MAS_LAYOUT.includes(`name="${slug}"`) || !slug) return true;
+  if (screen === MAS_EVENT_HUB_SCREEN) {
+    return /includeHub:\s*true/.test(MAS_LAYOUT);
+  }
+  return MAS_LAYOUT.includes('renderEventScreens') && screen in EVENT_SLUGS;
 }
 
 describe('las dos listas cuadran con el código real', () => {

@@ -215,6 +215,12 @@ export default function BottomSheet({
   // una acción diferida podría ejecutarse dos veces.
   const completePendingRef = useRef(false);
   const dismissFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Red de seguridad del CIERRE: si el callback de fin de la animación de
+  // salida no llega, la hoja se ve cerrada (bajó y se desvaneció) pero el
+  // `Modal` sigue presentado, invisible, y nada de lo que venía detrás
+  // (`onCloseComplete`: abrir otra hoja, el panel secreto…) ocurre. Ver
+  // `finishClose`.
+  const closeSafetyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fireCloseComplete = useCallback(() => {
     if (dismissFallbackRef.current) {
@@ -230,6 +236,7 @@ export default function BottomSheet({
   useEffect(
     () => () => {
       if (dismissFallbackRef.current) clearTimeout(dismissFallbackRef.current);
+      if (closeSafetyRef.current) clearTimeout(closeSafetyRef.current);
     },
     [],
   );
@@ -239,6 +246,10 @@ export default function BottomSheet({
     prevVisible.current = visible;
 
     if (visible) {
+      if (closeSafetyRef.current) {
+        clearTimeout(closeSafetyRef.current);
+        closeSafetyRef.current = null;
+      }
       setClosing(false);
       dragAnim.setValue(0);
       keyboardOffsetAnim.setValue(0);
@@ -268,20 +279,18 @@ export default function BottomSheet({
 
     completePendingRef.current = true;
     setClosing(true);
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: offScreenRef.current,
-        duration: DURATION,
-        easing: easings.sheet,
-        useNativeDriver: nativeDriver,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: DURATION,
-        easing: easings.sheet,
-        useNativeDriver: nativeDriver,
-      }),
-    ]).start(() => {
+    // El fin del cierre llega por el callback de la animación o, si ese no
+    // aparece (pasó con la primera build de Expo 58: el panel secreto no se
+    // abría tras «Reportar fallitos»), por tiempo. Lo que llegue primero; el
+    // otro no hace nada.
+    let finished = false;
+    const finishClose = () => {
+      if (finished) return;
+      finished = true;
+      if (closeSafetyRef.current) {
+        clearTimeout(closeSafetyRef.current);
+        closeSafetyRef.current = null;
+      }
       setClosing(false);
       // Android / Web: call directly — no native sequencing concern.
       // iOS: lo normal es que lo dispare `onDismiss` del Modal, cuando UIKit
@@ -297,7 +306,22 @@ export default function BottomSheet({
         return;
       }
       dismissFallbackRef.current = setTimeout(fireCloseComplete, 400);
-    });
+    };
+    closeSafetyRef.current = setTimeout(finishClose, DURATION + 150);
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: offScreenRef.current,
+        duration: DURATION,
+        easing: easings.sheet,
+        useNativeDriver: nativeDriver,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: DURATION,
+        easing: easings.sheet,
+        useNativeDriver: nativeDriver,
+      }),
+    ]).start(finishClose);
   }, [
     visible,
     slideAnim,

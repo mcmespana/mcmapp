@@ -24,7 +24,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { radii } from '@/constants/uiStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { h } from '@/utils/haptics';
 import {
   durations,

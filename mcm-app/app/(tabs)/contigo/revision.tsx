@@ -18,7 +18,7 @@ import {
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, {
   FadeIn,

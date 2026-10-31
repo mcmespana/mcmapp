@@ -9,7 +9,7 @@
 // Si añades un nuevo tab, añádelo aquí y a `constants/profileCatalog.KNOWN_TABS`.
 
 import type { ComponentProps } from 'react';
-import type { MaterialIcons } from '@expo/vector-icons';
+import type { MaterialIcons } from '@/components/ui/icons';
 import { TabHeaderColors } from '@/constants/colors';
 
 export interface TabConfig {

@@ -201,7 +201,7 @@ notificación y enlaces `mcmapp://` con Carismochito activo (build nativo).
 
 Era una segunda solución al bug que `main` ya arregló (`utils/tabNavigation.ts` + `hooks/useTabNavigation.ts`). Revisada pieza a pieza:
 
-- **Fecha del calendario por un store propio**: no hace falta. `main` la pasa por params y `calendario.tsx` ya lee los de expo-router y los de React Navigation (la vía «Más»).
+- **Fecha del calendario por un store propio**: no hace falta. `main` la pasa por params y `CalendarScreen` los lee de la URL (`useLocalSearchParams`), también apilado en «Más» (`/mas/calendario?date=…`).
 - **`?date=` que salta de mes**: ya está en `main` (`setVisibleMonth(monthStart(dateParam))`).
 - **Deep-links de notificación y botones del panel por el navegador de tabs**: **portado** (`goToPath` + `parseTabPath`). En iOS, `router.push` a un tab que no está en la barra no hacía nada; ahora entra por «Más». La paleta de comandos es solo web y no lo necesita.
 - **Solape del conmutador Mes/Agenda en iOS**: no aplica, `main` rehízo ese header.
@@ -210,6 +210,8 @@ Era una segunda solución al bug que `main` ya arregló (`utils/tabNavigation.ts
 La rama ya no aporta nada: se puede borrar.
 
 ## Mantenimiento
+
+- [ ] **`react-native-render-html` ya no se mantiene** (`expo-doctor`, 2026-10-31; silenciado en `package.json` → `expo.doctor`). Deuda pequeña, NO urgente: es solo JS (sin código nativo, no se rompe con RN nuevo), la 6.3.4 es la última y solo lo usa `components/FormattedContent.tsx` (Profundiza y Materiales de eventos). Si algún día falla: pintar el BBCode directamente con componentes RN (ya lo parseamos nosotros en `utils/formatText.ts`) y quitar el paquete.
 
 - [ ] **Ampliar cobertura de tests — tarea ideal para "quemar tokens"** (anotado
       2026-08-01; cifras al 2026-10-17: ~1.950 tests en 158 suites). La receta

@@ -231,10 +231,14 @@ describe('goToPath — rutas sueltas de notificaciones y botones del panel', () 
     expect(mockPush).toHaveBeenCalledWith('/cancionero');
   });
 
-  it('lo que no es la raíz de un tab sigue por router.push tal cual', () => {
+  it('lo que no es la raíz de un tab sigue por router.push, con la portada debajo', () => {
     render().goToPath('/(tabs)/contigo/oracion');
 
-    expect(mockPush).toHaveBeenCalledWith('/(tabs)/contigo/oracion');
+    // `withAnchor`: entrar en una subruta desde fuera de su pila deja la
+    // portada de la pestaña debajo; sin él, «atrás» no tiene adónde ir.
+    expect(mockPush).toHaveBeenCalledWith('/(tabs)/contigo/oracion', {
+      withAnchor: true,
+    });
     expect(takePendingMasScreen()).toBeNull();
   });
 });

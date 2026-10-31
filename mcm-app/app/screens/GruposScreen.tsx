@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Button, PressableFeedback, Skeleton } from 'heroui-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import colors from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
@@ -349,7 +349,7 @@ export default function GruposScreen() {
                 <Text style={styles.emptyInline}>
                   Nadie coincide con &quot;{memberFilter}&quot; en este grupo.
                 </Text>
-              ) : null
+              ) : undefined
             }
             initialNumToRender={20}
             windowSize={11}

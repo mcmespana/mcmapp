@@ -8,17 +8,21 @@
  *   - Numerador opcional (posición 1, 2, 3...).
  *   - Indicador opcional de "sonando ahora" (modo coro).
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated,
   Platform,
 } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import Swipeable, {
+  type SwipeableMethods,
+} from 'react-native-gesture-handler/ReanimatedSwipeable';
+import type { SharedValue } from 'react-native-reanimated';
+import { openedActionsSide } from '@/utils/swipeSide';
+import SwipeActionContent from '@/components/ui/SwipeActionContent';
+import { MaterialIcons } from '@/components/ui/icons';
 import { h } from '@/utils/haptics';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -94,6 +98,7 @@ const PlaylistRow: React.FC<Props> = ({
   const styles = useMemo(() => createStyles(isDark), [isDark]);
   const { settings } = useSettings();
   const { notation } = settings;
+  const swipeableRef = useRef<SwipeableMethods>(null);
 
   // Menú contextual: en nativo el long-press inicia el arrastre, así que solo
   // activamos el clic derecho en web (donde no hay drag & drop).
@@ -110,33 +115,33 @@ const PlaylistRow: React.FC<Props> = ({
   const transposeBadge = transposeLabel(transpose);
 
   const renderLeftActions = (
-    _progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>,
-  ) => {
-    const trans = dragX.interpolate({
-      inputRange: [0, 100],
-      outputRange: [-100, 0],
-      extrapolate: 'clamp',
-    });
-    return (
-      <TouchableOpacity style={styles.leftAction} onPress={onRemove}>
-        <Animated.View
-          style={[styles.actionContent, { transform: [{ translateX: trans }] }]}
-        >
-          <IconSymbol name="minus.circle" size={22} color="#fff" />
-          <Text style={styles.actionText}>Quitar</Text>
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  };
+    _progress: SharedValue<number>,
+    translation: SharedValue<number>,
+  ) => (
+    <TouchableOpacity style={styles.leftAction} onPress={onRemove}>
+      <SwipeActionContent
+        translation={translation}
+        inputRange={[0, 100]}
+        outputRange={[-100, 0]}
+        property="translateX"
+        style={styles.actionContent}
+      >
+        <IconSymbol name="minus.circle" size={22} color="#fff" />
+        <Text style={styles.actionText}>Quitar</Text>
+      </SwipeActionContent>
+    </TouchableOpacity>
+  );
 
   return (
     <Swipeable
+      ref={swipeableRef}
       renderLeftActions={renderLeftActions}
-      onSwipeableOpen={(direction, swipeable) => {
-        if (direction === 'left') {
+      onSwipeableOpen={(direction) => {
+        // El lado ABIERTO, no la dirección del dedo (ver `utils/swipeSide`):
+        // «Quitar» está a la izquierda.
+        if (openedActionsSide(direction) === 'left') {
           h.remove();
-          swipeable.close();
+          swipeableRef.current?.close();
           onRemove();
         }
       }}

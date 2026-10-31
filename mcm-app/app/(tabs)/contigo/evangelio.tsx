@@ -9,7 +9,7 @@ import {
   Platform,
   useWindowDimensions,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import { h } from '@/utils/haptics';
 import { Stack, useLocalSearchParams } from 'expo-router';

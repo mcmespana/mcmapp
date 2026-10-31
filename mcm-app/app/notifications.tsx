@@ -14,7 +14,7 @@ import { BottomSheet, Button } from 'heroui-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@/components/ui/icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useTabNavigation } from '@/hooks/useTabNavigation';
 import colors, { Colors, themeColors } from '@/constants/colors';

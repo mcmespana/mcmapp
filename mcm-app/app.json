@@ -3,7 +3,7 @@
     "name": "MCM App",
     "slug": "mcm-app",
     "version": "2.1.0",
-    "runtimeVersion": "2.1.0",
+    "runtimeVersion": "2.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mcmapp",
@@ -178,7 +178,15 @@
       ],
       ["expo-build-properties"],
       "@react-native-community/datetimepicker",
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf",
+            "./node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf"
+          ]
+        }
+      ],
       "expo-image",
       "expo-sharing",
       "expo-web-browser",

@@ -130,11 +130,7 @@ export default function ComunicaGestionScreen() {
   // ── iOS / Android: WebView nativo con barra de color en el notch ────────
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={NOTCH_COLOR}
-        translucent
-      />
+      <StatusBar barStyle="light-content" />
       {insets.top > 0 && (
         <View
           style={[

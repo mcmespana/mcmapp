@@ -1,4 +1,4 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { normalizeNotificationRoute } from '@/utils/notificationRoutes';
 import type {
   NotificationActionButtonData,

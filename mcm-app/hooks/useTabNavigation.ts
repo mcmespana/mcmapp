@@ -96,7 +96,11 @@ export function useTabNavigation(): TabNavigation {
         goToTab(tab.tabName, tab.params);
         return;
       }
-      router.push(route as never);
+      // Una subruta de otra pestaña (`/contigo/oracion`, `/mas/horario`…):
+      // `withAnchor` pone la portada de esa pestaña debajo, o «atrás» no
+      // tendría adónde volver. Se llega aquí desde FUERA de esa pila (avisos,
+      // botones de Inicio), que es cuando hace falta.
+      router.push(route as never, { withAnchor: true });
     },
     [goToTab],
   );

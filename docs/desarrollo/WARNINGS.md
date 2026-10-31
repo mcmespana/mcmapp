@@ -4,7 +4,7 @@
 > clasificados abajo uno a uno. La mayoría son falsos positivos estructurales:
 > perseguirlos empeora el código.
 >
-> Estado: **38 warnings, 0 errores** (2026-10-17, `npx expo lint`). Es el
+> Estado: **36 warnings, 0 errores** (2026-10-31, `npm run lint`). Es el
 > **techo**: es lo que hay y no debe subir. Historial: 111 (2026-08-15) → 51 →
 > 39 (2026-08-19, la migración de `.value` a `.get()`/`.set()` en los shared
 > values de Reanimated se llevó los falsos positivos) → 38.
@@ -38,11 +38,11 @@ npx eslint app components -f json | node -e "const c={};JSON.parse(require('fs')
 
 ---
 
-## Reparto actual (38)
+## Reparto actual (36)
 
 | Regla                                     | Nº  | Veredicto                                                         |
 | ----------------------------------------- | --- | ----------------------------------------------------------------- |
-| `react-hooks/refs`                        | 18  | Patrón oficial "ref al último callback" — se quedan               |
+| `react-hooks/refs`                        | 16  | Patrón oficial "ref al último callback" — se quedan               |
 | `react-hooks/set-state-in-effect`         | 7   | 2 de código congelado · 5 a mirar si se toca el fichero           |
 | `react-hooks/immutability`                | 5   | "Variable antes de declararla" y escrituras en refs — caso a caso |
 | `react-hooks/purity`                      | 3   | 1 de código congelado · 2 de `Date.now()` al construir un payload |
@@ -61,14 +61,14 @@ La migración a `.get()`/`.set()` los eliminó. Quedan cinco:
 observable y todos están en código con tests. **Si tocas uno de esos ficheros
 por otro motivo, míralo de paso**; no merecen una sesión dedicada.
 
-## 2. `refs` — el patrón del "ref al último callback" (18) — se quedan
+## 2. `refs` — el patrón del "ref al último callback" (16) — se quedan
 
 **Ficheros:** `components/BottomSheet.tsx`, `components/SongDisplay.tsx`,
 `components/contigo/ReaderSettingsSheet.tsx`,
 `components/contigo/HighlightableReading.tsx`,
 `components/playlist/ChoirSheet.tsx`, `components/playlist/QrScannerModal.tsx`,
-`components/tabs/tabBarController.ts`, `app/(tabs)/mas.tsx`,
-`app/(tabs)/visitapapa.tsx`.
+`components/tabs/tabBarController.ts`. (`mas.tsx` y `visitapapa.tsx`
+dejaron de existir al pasar a carpetas de rutas, 2026-10-31.)
 
 El patrón es siempre el mismo:
 
@@ -135,7 +135,7 @@ ficheros por otro motivo, míralo de paso.**
 
 ## Lo que sí se pide
 
-**No añadas warnings nuevos.** Si tras tu cambio `npm run lint` pasa de 38,
+**No añadas warnings nuevos.** Si tras tu cambio `npm run lint` pasa de 36,
 el nuevo es tuyo y se arregla antes de commitear. Ese es el único guardarraíl
 que se mantiene activo.
 

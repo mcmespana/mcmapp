@@ -15,9 +15,9 @@
 //     pasa a la cola, que lo sube sola. Al contestar, se compara lo mandado con
 //     lo releído: nunca «guardada» sin comprobarlo.
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
-import { Stack, useNavigation, useRouter } from 'expo-router';
+import { Stack, usePreventRemove, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
@@ -272,7 +272,6 @@ function RollEditor({
 }) {
   const t = useComunicaTheme();
   const router = useRouter();
-  const navigation = useNavigation();
   const online = useNetworkStatus();
   const { outbox, get } = useOutbox();
   const key = `roll:${roll.session.id}:${roll.groupId}`;
@@ -309,32 +308,31 @@ function RollEditor({
   // Salir con cambios sin guardar pregunta (el borrador se queda igual).
   // `save` es estable y lee el borrador del momento, no el de cuando se
   // registró esto.
-  useEffect(() => {
-    const unsub = navigation.addListener('beforeRemove', (e) => {
-      if (!dirty || future || Platform.OS === 'web') return;
-      if (queued && queued.status !== 'applied') return;
-      e.preventDefault();
-      Alert.alert(
-        'Tienes cambios sin guardar',
-        'Se quedan en el móvil si sales.',
-        [
-          {
-            text: 'Guardar',
-            onPress: () =>
-              void save('save').then((ok) => {
-                if (ok) navigation.dispatch(e.data.action);
-              }),
-          },
-          {
-            text: 'Salir sin guardar',
-            style: 'destructive',
-            onPress: () => navigation.dispatch(e.data.action),
-          },
-        ],
-      );
-    });
-    return unsub;
-  }, [navigation, dirty, future, queued, save]);
+  const blockLeave =
+    dirty &&
+    !future &&
+    Platform.OS !== 'web' &&
+    !(queued && queued.status !== 'applied');
+  usePreventRemove(blockLeave, ({ repeat }) => {
+    Alert.alert(
+      'Tienes cambios sin guardar',
+      'Se quedan en el móvil si sales.',
+      [
+        {
+          text: 'Guardar',
+          onPress: () =>
+            void save('save').then((ok) => {
+              if (ok) repeat();
+            }),
+        },
+        {
+          text: 'Salir sin guardar',
+          style: 'destructive',
+          onPress: repeat,
+        },
+      ],
+    );
+  });
 
   // Callbacks por id, estables: la fila (memo) no se repinta si no cambia.
   const onTap = useCallback(

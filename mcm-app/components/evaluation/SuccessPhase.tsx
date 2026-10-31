@@ -14,7 +14,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';

@@ -9,7 +9,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useTabNavigation } from '@/hooks/useTabNavigation';
 import colors, { themeColors, Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';

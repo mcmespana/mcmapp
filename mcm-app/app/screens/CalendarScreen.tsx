@@ -1,6 +1,6 @@
-// app/(tabs)/calendario.tsx
+// Pantalla del calendario. La montan `app/(tabs)/calendario/` (la pestaña) y el
+// stack de «Más» (`variant="stacked"`).
 import React, { useState, useMemo, useCallback, useLayoutEffect } from 'react';
-import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
 import {
   View,
   ScrollView,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { CalendarProps, LocaleConfig } from 'react-native-calendars';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import colors, { TabHeaderColors, themeColors } from '@/constants/colors';
+import colors, { themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import Animated from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -24,12 +24,8 @@ import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useLocalSearchParams } from 'expo-router';
-import {
-  useRoute,
-  useNavigation,
-  useHeaderHeight,
-} from 'expo-router/react-navigation';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useNavigation, useHeaderHeight } from 'expo-router/react-navigation';
+import { MaterialIcons } from '@/components/ui/icons';
 import { hexAlpha, readableOn } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import { localISO } from '@/utils/localDate';
@@ -41,7 +37,6 @@ import {
   calendarInfoInk,
   createStyles,
 } from '@/components/calendar/calendarioStyles';
-import TabTintBar from '@/components/ui/TabTintBar';
 
 LocaleConfig.locales['es'] = {
   monthNames: [
@@ -117,7 +112,16 @@ const addMonths = (dateStr: string, delta: number): string => {
   return dateToStr(new Date(y, m - 1 + delta, 1));
 };
 
-export function CalendarScreen() {
+/**
+ * `variant`: `'tab'` es la pestaña (header sin título, con el conmutador
+ * Mes/Agenda dentro); `'stacked'` es la pantalla apilada del stack de «Más»,
+ * con su back y su título, donde el conmutador se queda en el cuerpo.
+ */
+export function CalendarScreen({
+  variant = 'tab',
+}: {
+  variant?: 'tab' | 'stacked';
+}) {
   const scheme = useColorScheme();
   // Modo agenda: es el scroller que representa al tab (re-tap → arriba).
   const {
@@ -150,13 +154,9 @@ export function CalendarScreen() {
       }
     : null;
   const params = useLocalSearchParams<{ date?: string }>();
-  // En iOS, `calendario` es un tab "overflow" sin trigger nativo: se navega
-  // desde el stack de Más (React Navigation), cuyos params NO llegan a
-  // `useLocalSearchParams` (que sólo lee la URL de expo-router). Leemos también
-  // los params de React Navigation para soportar el salto a fecha desde Home.
-  const navRoute = useRoute();
-  const navParamDate = (navRoute.params as { date?: string } | undefined)?.date;
-  const dateParam = params.date ?? navParamDate;
+  // El salto a una fecha (`?date=`, desde Home o una notificación) llega por la
+  // URL, también cuando se abre apilada desde «Más».
+  const dateParam = params.date;
 
   const {
     calendarConfigs,
@@ -187,8 +187,7 @@ export function CalendarScreen() {
   // rejilla del mes. En el stack de "Más" NO se hace: allí es una pantalla
   // apilada, con su back y su título, y el conmutador se queda en el cuerpo.
   const navigation = useNavigation();
-  const switcherInHeader =
-    Platform.OS !== 'web' && navRoute.name !== 'Calendario';
+  const switcherInHeader = Platform.OS !== 'web' && variant === 'tab';
   // Ancho del conmutador dentro del header: TODO lo que hay desde el borde
   // hasta el botón de suscribirse. Se calcula desde el ancho real de la
   // ventana (no un número a ojo) para que cuadre igual en un iPhone pequeño,
@@ -842,47 +841,7 @@ export function CalendarScreen() {
   );
 }
 
-// Tab del calendario: envuelve la pantalla en un stack para tener header nativo
-// (SIN título — solo el botón de calendarios, que CalendarScreen añade como bar
-// item). Reusa el mismo CalendarScreen que el stack de "Más", donde sí lleva
-// título porque allí es una pantalla apilada.
-const CalStack = createNativeStackNavigator();
-export default function CalendarioTab() {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
-  return (
-    <>
-      {/* Raya celeste del calendario pegada arriba, como la roja de Fotos. */}
-      <TabTintBar color={TabHeaderColors.calendario} />
-      <CalStack.Navigator
-        screenOptions={{
-          headerShadowVisible: false,
-          headerTintColor: themeColors(isDark).headerTint,
-          headerTitleStyle: {
-            fontWeight: '700',
-            fontSize: 17,
-            color: themeColors(isDark).headerTint,
-          },
-          // Header transparente (como el cantoral): glass del sistema en iOS.
-          headerTransparent: Platform.OS === 'ios',
-          ...(Platform.OS === 'ios' &&
-          parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
-        }}
-      >
-        <CalStack.Screen
-          name="CalendarMain"
-          component={CalendarScreen}
-          // Sin título: la pestaña ya se llama Calendario. `headerTitle: ''` deja
-          // la barra vacía (transparente en iOS) para que el botón de
-          // suscribirse conviva con el conmutador Mes/Agenda de debajo.
-          options={{ headerTitle: '' }}
-        />
-      </CalStack.Navigator>
-    </>
-  );
-}
+export default CalendarScreen;
 
 interface BackToTodayPillProps {
   onPress: () => void;

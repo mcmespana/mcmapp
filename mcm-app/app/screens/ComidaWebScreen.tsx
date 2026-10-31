@@ -3,13 +3,13 @@ import { View, StyleSheet, Platform, Linking, Text } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Spinner, Button, PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import {
   useRoute,
   useNavigation,
   RouteProp,
 } from 'expo-router/react-navigation';
-import { MasStackParamList } from '../(tabs)/mas';
+import { MasStackParamList } from './eventStackScreens';
 import spacing from '@/constants/spacing';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';

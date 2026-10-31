@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useTabNavigation } from '@/hooks/useTabNavigation';
 import colors, { themeColors, Colors } from '@/constants/colors';
 import EmptyState from '@/components/ui/EmptyState';

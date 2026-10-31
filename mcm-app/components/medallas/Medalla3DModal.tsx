@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, StyleSheet, Text, View } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { PressableFeedback } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

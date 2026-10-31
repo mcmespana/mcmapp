@@ -4,7 +4,7 @@
  * Puro (sin React) para poder probarlo: `SongFullscreenScreen` solo le pasa
  * su estado. Ver `docs/funcionalidades/HOJA_CANCION.md` («Pantalla completa»).
  */
-import type { SongNavItem } from '@/app/(tabs)/cancionero';
+import type { SongNavItem } from '@/utils/songNavList';
 import type { ChoirCurrentSong } from '@/services/choirSessionService';
 
 export interface FullscreenInput {

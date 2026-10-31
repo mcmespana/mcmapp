@@ -6,7 +6,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import PressableScale from '@/components/ui/PressableScale';
 import { LiturgicalBadge } from '@/components/contigo/LiturgicalBadge';
 import { formatDateLong, offsetDate, warm } from '@/components/contigo/theme';

@@ -1,54 +1,44 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Platform } from 'react-native';
-import { useTabReselect } from '@/components/tabs/tabBarController';
-import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
+import { Stack, router, useGlobalSearchParams, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTabReselect } from '@/components/tabs/tabBarController';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { themeColors } from '@/constants/colors';
-
-import MasHomeScreen from '../screens/MasHomeScreen';
-import ComunicaScreen from '../screens/ComunicaScreen';
-import ComunicaGestionScreen from '../screens/ComunicaGestionScreen';
-import McmPanelScreen from '../screens/McmPanelScreen';
-import { FotosScreen, fotosHeaderOptions } from './fotos';
-import { CalendarScreen } from './calendario';
-import EventosPasadosScreen from '../screens/EventosPasadosScreen';
+import { fotosHeaderOptions } from '@/app/screens/FotosScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import EventActionButtons from '@/components/EventActionButtons';
 import {
-  EVENT_SUB_ROUTES,
-  EventStackParamList,
+  EVENT_SUB_SLUGS,
+  EVENT_SLUGS,
+  MAS_BASE,
+  eventHref,
+  lastSegment,
+} from '@/utils/eventRoutes';
+import {
   eventStackScreenOptions,
   renderEventScreens,
-} from '../screens/eventStackScreens';
+} from '@/app/screens/eventStackScreens';
+
+// expo-router 58: el arranque del stack se declara así, no con `initialRouteName`.
+export const unstable_settings = { anchor: 'index' };
 
 /**
  * Stack del tab "Más". Incluye las pantallas propias de Más más todas las
- * sub-pantallas de evento (compartidas con las tabs de evento vía
- * `app/screens/eventStackScreens.tsx`).
+ * sub-pantallas de evento (las mismas que usan las tabs de evento, vía
+ * `app/screens/eventStackScreens.tsx`). Cada pantalla es un fichero de esta
+ * carpeta; los nombres de pantalla de siempre (`'Fotos'`, `'Horario'`…) se
+ * traducen a rutas en `utils/eventRoutes.ts`.
  */
-export type MasStackParamList = EventStackParamList & {
-  MasHome: { directTo?: string } | undefined;
-  Fotos: undefined;
-  Calendario: undefined;
-  Comunica: undefined;
-  ComunicaGestion: undefined;
-  McmPanel: undefined;
-  EventosPasados: undefined;
-};
-
-const Stack = createNativeStackNavigator<MasStackParamList>();
-
-export default function MasTab() {
+export default function MasLayout() {
   const [settingsVisible, setSettingsVisible] = useState(false);
-  const [activeRoute, setActiveRoute] = useState<string>('MasHome');
-  const [activeEventId, setActiveEventId] = useState<string | undefined>(
-    undefined,
-  );
-  const stackNavRef = useRef<any>(null);
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
   const isDark = useColorScheme() === 'dark';
+  const activeSlug = lastSegment(usePathname());
+  const { eventId: activeEventId } = useGlobalSearchParams<{
+    eventId?: string;
+  }>();
 
   // Re-tap del tab activo → volver a la pantalla raíz del stack. Antes esto lo
   // daba el evento `tabPress` del navegador, pero con la barra del sistema
@@ -56,8 +46,8 @@ export default function MasTab() {
   // le dice a la barra que el gesto ya está gestionado y que NO haga además
   // scroll-arriba.
   useTabReselect('mas', () => {
-    if (stackNavRef.current?.canGoBack()) {
-      stackNavRef.current.popToTop();
+    if (router.canDismiss()) {
+      router.dismissAll();
       return true;
     }
     return false;
@@ -73,29 +63,11 @@ export default function MasTab() {
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
       />
-      <Stack.Navigator
-        initialRouteName="MasHome"
-        screenOptions={eventStackScreenOptions({
-          webStatusBarHeight,
-          isDark,
-          onNavReady: (nav) => {
-            stackNavRef.current = nav;
-          },
-        })}
-        screenListeners={{
-          state: (e) => {
-            const navState: any = (e.data as any)?.state;
-            const route = navState?.routes?.[navState.index];
-            if (route?.name) {
-              setActiveRoute(route.name);
-              setActiveEventId(route.params?.eventId);
-            }
-          },
-        }}
+      <Stack
+        screenOptions={eventStackScreenOptions({ webStatusBarHeight, isDark })}
       >
         <Stack.Screen
-          name="MasHome"
-          component={MasHomeScreen}
+          name="index"
           options={{
             title: 'Más',
             headerShown: false,
@@ -103,8 +75,7 @@ export default function MasTab() {
           }}
         />
         <Stack.Screen
-          name="Fotos"
-          component={FotosScreen}
+          name="fotos"
           options={{
             // La MISMA pantalla que el tab de Fotos, como hace Calendario
             // (antes era AlbumListScreen, una copia antigua que en Android
@@ -121,8 +92,7 @@ export default function MasTab() {
           }}
         />
         <Stack.Screen
-          name="Calendario"
-          component={CalendarScreen}
+          name="calendario"
           options={{
             // CalendarScreen pone su propio título ("Calendario") y el botón de
             // calendarios vía navigation.setOptions, usando el header nativo del
@@ -131,52 +101,52 @@ export default function MasTab() {
           }}
         />
         <Stack.Screen
-          name="Comunica"
-          component={ComunicaScreen}
+          name="comunica"
           options={{
             headerShown: false, // Pantalla completa — sin header
           }}
         />
         <Stack.Screen
-          name="ComunicaGestion"
-          component={ComunicaGestionScreen}
+          name="comunica-gestion"
           options={{
             headerShown: false, // Pantalla completa — sin header
           }}
         />
         <Stack.Screen
-          name="McmPanel"
-          component={McmPanelScreen}
+          name="mcm-panel"
           options={{
             headerShown: false, // Pantalla completa — sin header
           }}
         />
         <Stack.Screen
-          name="EventosPasados"
-          component={EventosPasadosScreen}
+          name="eventos-pasados"
           options={{
             title: 'Eventos pasados',
             // No es una pantalla de evento: sin botones settings/reflexiones.
             headerRight: () => null,
           }}
         />
-        {renderEventScreens(Stack as never, { includeExtras: true })}
-      </Stack.Navigator>
-      {(EVENT_SUB_ROUTES as readonly string[]).includes(activeRoute) && (
+        {renderEventScreens({ includeHub: true, includeExtras: true })}
+      </Stack>
+      {EVENT_SUB_SLUGS.includes(activeSlug) && (
         <EventActionButtons
           onSettings={() => setSettingsVisible(true)}
           onCompartiendo={() =>
-            stackNavRef.current?.navigate('Reflexiones', {
-              eventId: activeEventId,
-            })
+            router.push(
+              eventHref(MAS_BASE, 'Reflexiones', {
+                eventId: activeEventId,
+              }) as never,
+            )
           }
-          showCompartiendo={activeRoute !== 'Reflexiones'}
-          showAdd={activeRoute === 'Reflexiones'}
+          showCompartiendo={activeSlug !== EVENT_SLUGS.Reflexiones}
+          showAdd={activeSlug === EVENT_SLUGS.Reflexiones}
           onAdd={() =>
-            stackNavRef.current?.navigate('Reflexiones', {
-              eventId: activeEventId,
-              openFormNonce: Date.now(),
-            })
+            router.push(
+              eventHref(MAS_BASE, 'Reflexiones', {
+                eventId: activeEventId,
+                openFormNonce: Date.now(),
+              }) as never,
+            )
           }
         />
       )}

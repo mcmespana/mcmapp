@@ -29,15 +29,21 @@ import { Stack } from 'expo-router';
 import ComunicaAreaProvider from '@/components/comunica/comun/ComunicaAreaProvider';
 import { TabHeaderColors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabReselectToRoot } from '@/components/tabs/tabBarController';
+
+// expo-router 58: el arranque del stack se declara así, no con `initialRouteName`.
+export const unstable_settings = { anchor: 'index' };
 
 export default function ComunicaLayout() {
+  // Re-tap del tab: vuelve a la portada del área (lo que no esté guardado
+  // lo sigue preguntando `usePreventRemove` en cada pantalla).
+  useTabReselectToRoot('comunica');
   const isDark = useColorScheme() === 'dark';
   const ios = Platform.OS === 'ios';
   const tint = ios ? themeColors(isDark).headerTint : '#fff';
   return (
     <ComunicaAreaProvider>
       <Stack
-        initialRouteName="index"
         screenOptions={{
           headerBackButtonDisplayMode: 'minimal',
           headerTintColor: tint,

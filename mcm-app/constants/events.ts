@@ -23,7 +23,7 @@
  */
 import type { ComponentProps } from 'react';
 import type { ImageSourcePropType } from 'react-native';
-import type { MaterialIcons } from '@expo/vector-icons';
+import type { MaterialIcons } from '@/components/ui/icons';
 
 export interface EventSection {
   label: string;

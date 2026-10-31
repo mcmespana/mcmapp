@@ -21,7 +21,7 @@ import { h } from '@/utils/haptics';
 import { PressableFeedback } from 'heroui-native';
 import GlassSurface from '@/components/ui/GlassSurface';
 import { useToast } from '@/contexts/AppToastContext';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import { transposeLabel } from '@/utils/transposeKey';
 import { buildSongPrintHtml, printHtmlInNewWindow } from '@/utils/printSong';

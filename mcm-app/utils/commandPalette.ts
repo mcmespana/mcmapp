@@ -4,7 +4,7 @@
  * (`components/CommandPalette.tsx`) solo pinta y navega.
  */
 import type { ComponentProps } from 'react';
-import type MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import type { MaterialIcons } from '@/components/ui/icons';
 import { foldForSearch } from '@/utils/songTags';
 
 export type PaletteIconName = ComponentProps<typeof MaterialIcons>['name'];

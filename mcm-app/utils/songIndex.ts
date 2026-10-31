@@ -8,7 +8,6 @@
  * `filterSongsData` (sin borradores ni pendientes), y busca sin tildes con el
  * mismo `foldForSearch` que el buscador de la lista.
  */
-import type { RootStackParamList } from '@/app/(tabs)/cancionero';
 import type { SongEntry, SongsData } from '@/utils/filterSongsData';
 import { foldForSearch } from '@/utils/songTags';
 import {
@@ -16,10 +15,10 @@ import {
   extractTrailingEmoji,
   stripCategoryPrefix,
 } from '@/utils/songUtils';
-import { extractSongMedia } from '@/types/songMedia';
+import { songRouteParams, type SongRouteParams } from '@/utils/songNavList';
 
-/** Parámetros con los que se abre `SongDetail` en el stack del cantoral. */
-export type SongOpenParams = RootStackParamList['SongDetail'];
+/** Params de ruta con los que se abre `SongDetail` (`/cancionero/cancion`). */
+export type SongOpenParams = SongRouteParams;
 
 export interface IndexedSong {
   filename: string;
@@ -125,17 +124,11 @@ export function findSongByFilename(
  * «búsqueda».
  */
 export function songOpenParams(song: IndexedSong): SongOpenParams {
-  const { entry } = song;
-  return {
+  // La letra y la multimedia las lee el detalle del catálogo por `filename`.
+  return songRouteParams({
     filename: song.filename,
-    title: song.title,
-    author: entry.author,
-    key: entry.key,
-    capo: entry.capo,
-    content: entry.content || '',
-    media: extractSongMedia(entry) ?? undefined,
     firebaseCategory: song.categoryKey,
-  };
+  });
 }
 
 /** Ruta web que abre una canción. La sirve `app/cancion.tsx`. */

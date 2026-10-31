@@ -18,7 +18,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useNavigation } from 'expo-router/react-navigation';
 import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';

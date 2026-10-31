@@ -21,7 +21,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { PressableFeedback } from 'heroui-native';
@@ -34,13 +34,24 @@ import { trackEvent } from '@/utils/analytics';
 import SongControls from '@/components/SongControls';
 import type { SheetViewOptions } from '@/components/SongFontBottomSheet';
 import {
-  RouteProp,
-  NavigationProp,
   useHeaderHeight,
   useIsFocused,
+  useNavigation,
+  type NavigationProp,
+  type ParamListBase,
 } from 'expo-router/react-navigation';
+import { useLocalSearchParams } from 'expo-router';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
-import { RootStackParamList } from '../(tabs)/cancionero';
+import { useRouteSong } from '@/hooks/useRouteSong';
+import { openCantoral } from '@/utils/cantoralNavigation';
+import {
+  songRouteParams,
+  type SongFullscreenRouteParams,
+  type SongNavItem,
+  type SongRouteParams,
+  type SongSource,
+} from '@/utils/songNavList';
+import EmptyState from '@/components/ui/EmptyState';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -81,24 +92,87 @@ const availableFonts = SONG_FONTS.map((f) => ({ ...f }));
 const KEYS_TRANSPOSE_UP = ['+', '='];
 const KEYS_TRANSPOSE_DOWN = ['-'];
 
-type SongDetailScreenRouteProp = RouteProp<RootStackParamList, 'SongDetail'>;
-type SongDetailScreenNavigationProp = NavigationProp<
-  RootStackParamList,
-  'SongDetail'
-> & {
-  replace: (screen: keyof RootStackParamList, params: any) => void;
-  push: (screen: keyof RootStackParamList, params?: any) => void;
-};
-
-interface SongDetailScreenProps {
-  route: SongDetailScreenRouteProp;
-  navigation: SongDetailScreenNavigationProp;
+/** La canción que se pinta, ya resuelta (ver `hooks/useRouteSong.ts`). */
+interface SongDetailParams {
+  filename: string;
+  title?: string;
+  author?: string;
+  key?: string;
+  capo?: number;
+  content?: string;
+  media?: SongNavItem['media'];
+  /** Lista por la que se pasa de canción y su id en `utils/songNavList`. */
+  navigationList?: SongNavItem[];
+  currentIndex?: number;
+  source?: SongSource;
+  firebaseCategory?: string;
 }
 
-export default function SongDetailScreen({
+/**
+ * Ruta `/cancionero/cancion`. Los params son texto (`filename`, `list`,
+ * `currentIndex`…): la canción se lee de la lista con la que se abrió o del
+ * catálogo. Mientras el catálogo carga en frío (un enlace, una recarga) se
+ * espera; si no aparece, se dice.
+ */
+export default function SongDetailScreen() {
+  const params = useLocalSearchParams<SongRouteParams>();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const { song, list, index, firebaseCategory, loading } = useRouteSong(params);
+  const isDark = useColorScheme() === 'dark';
+  if (!song) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: themeColors(isDark).background },
+        ]}
+      >
+        {loading ? null : (
+          <EmptyState
+            icon="music-off"
+            title="No encontramos esta canción"
+            subtitle="Puede que la hayan quitado del cantoral o que el enlace esté mal copiado."
+            actionLabel="Volver"
+            onAction={() =>
+              navigation.canGoBack()
+                ? navigation.goBack()
+                : openCantoral('Categories')
+            }
+          />
+        )}
+      </View>
+    );
+  }
+  return (
+    <SongDetailBody
+      navigation={navigation}
+      route={{
+        params: {
+          filename: song.filename,
+          // En las listas el título lleva el número delante («18. Alegre…»).
+          title: song.title?.replace(/^\d+\.\s*/, ''),
+          author: song.author,
+          key: song.key,
+          capo: song.capo,
+          content: song.content ?? '',
+          media: song.media,
+          navigationList: list ?? undefined,
+          currentIndex: index,
+          source: params.source,
+          firebaseCategory,
+        },
+      }}
+    />
+  );
+}
+
+function SongDetailBody({
   route,
   navigation,
-}: SongDetailScreenProps) {
+}: {
+  route: { params: SongDetailParams };
+  navigation: NavigationProp<ParamListBase>;
+}) {
   // La barra de pestañas se queda COMPACTA mientras se lee una canción: aquí
   // lo que importa es que quepa la mayor cantidad de letra posible.
   useForceCompact(true);
@@ -348,30 +422,49 @@ export default function SongDetailScreen({
 
   // Pantalla completa: desde el menú «⋯» y, más a mano, desde la cabecera.
   const openFullscreen = useCallback(() => {
-    navigation.navigate('SongFullscreen', {
-      filename,
-      title: _navScreenTitle,
-      author,
-      key,
-      capo,
-      // La letra viva (con los arreglos que el admin acabe de añadir) y el
-      // tono con el que se está viendo: antes la pantalla completa volvía
-      // siempre al tono original.
-      content: originalChordPro ?? content ?? '',
-      transpose: currentTranspose,
-      capoOverride: currentCapoOverride,
-      navigationList,
-      currentIndex,
-      source,
-      firebaseCategory,
-    });
+    // La letra viva (con los arreglos que el admin acabe de añadir) y el tono
+    // con el que se está viendo: antes la pantalla completa volvía siempre al
+    // tono original. La letra no cabe en la ruta: viaja en la lista
+    // (`utils/songNavList`), que sin lista es solo esta canción.
+    const live = originalChordPro ?? content ?? '';
+    const inList =
+      navigationList && typeof currentIndex === 'number'
+        ? navigationList
+        : null;
+    const list: SongNavItem[] = inList
+      ? inList.map((s, i) => (i === currentIndex ? { ...s, content: live } : s))
+      : [
+          {
+            filename,
+            title: _navScreenTitle ?? filename,
+            author,
+            key,
+            capo,
+            content: live,
+            media: routeMedia,
+          },
+        ];
+    const params: SongFullscreenRouteParams = {
+      ...songRouteParams({
+        filename,
+        list,
+        currentIndex: inList ? currentIndex : 0,
+        source,
+        firebaseCategory,
+      }),
+      transpose: String(currentTranspose),
+      ...(currentCapoOverride !== null && {
+        capoOverride: String(currentCapoOverride),
+      }),
+    };
+    openCantoral('SongFullscreen', params);
   }, [
-    navigation,
     filename,
     _navScreenTitle,
     author,
     key,
     capo,
+    routeMedia,
     originalChordPro,
     content,
     currentTranspose,
@@ -442,7 +535,7 @@ export default function SongDetailScreen({
                   actionLabel: 'Ver',
                   onActionPress: ({ hide }) => {
                     hide();
-                    navigation.navigate('SelectedSongs');
+                    openCantoral('SelectedSongs');
                   },
                 });
               }
@@ -511,8 +604,8 @@ export default function SongDetailScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [choir.mode, filename]);
 
-  // (la navegación del esclavo se gestiona en `cancionero.tsx` mediante
-  //  un observador del contexto coro que opera sobre el navigator del stack)
+  // (la navegación del esclavo la lleva `useChoirFollower`, en
+  //  `app/(tabs)/cancionero/_layout.tsx`)
 
   const handleSetCapoOverride = (newCapo: number | null) => {
     if (selectedMeta) {
@@ -666,7 +759,7 @@ export default function SongDetailScreen({
   };
 
   const animateAndSet = (
-    params: any,
+    params: Pick<SongRouteParams, 'filename' | 'currentIndex'>,
     direction: 'next' | 'prev',
     velocity = 0,
   ) => {
@@ -701,7 +794,10 @@ export default function SongDetailScreen({
       h.navigate();
       const prevSong = navigationList[currentIndex - 1];
       animateAndSet(
-        { ...prevSong, navigationList, currentIndex: currentIndex - 1, source },
+        {
+          filename: prevSong.filename,
+          currentIndex: String(currentIndex - 1),
+        },
         'prev',
         velocity,
       );
@@ -717,7 +813,10 @@ export default function SongDetailScreen({
       h.navigate();
       const nextSong = navigationList[currentIndex + 1];
       animateAndSet(
-        { ...nextSong, navigationList, currentIndex: currentIndex + 1, source },
+        {
+          filename: nextSong.filename,
+          currentIndex: String(currentIndex + 1),
+        },
         'next',
         velocity,
       );
@@ -885,7 +984,7 @@ export default function SongDetailScreen({
           const pendingTag = pendingTagRef.current;
           if (pendingTag) {
             pendingTagRef.current = null;
-            navigation.push('SongsList', {
+            openCantoral('SongsList', {
               categoryId: tagCategoryId([pendingTag.slug]),
               categoryName: pendingTag.label,
             });

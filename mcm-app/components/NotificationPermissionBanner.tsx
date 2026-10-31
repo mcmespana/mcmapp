@@ -24,7 +24,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors, { Colors } from '@/constants/colors';
