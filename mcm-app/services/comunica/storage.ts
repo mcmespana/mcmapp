@@ -20,14 +20,17 @@ import { logger } from '@/utils/logger';
  * `delegation`: la delegación de trabajo elegida (plan 17); no es secreta.
  * `profile`: a quién se ve (uno mismo o un hijo) y si lo eligió ella (plan 11):
  * solo un id y un booleano, nada de nombres.
+ * `home`: lo de la portada que recuerda la persona (hasta cuándo oculta el saludo, plan 11).
  */
-export type Drawer = 'queries' | 'outbox' | 'drafts' | 'delegation' | 'profile';
+export type Drawer =
+  'queries' | 'outbox' | 'drafts' | 'delegation' | 'profile' | 'home';
 const DRAWERS: readonly Drawer[] = [
   'queries',
   'outbox',
   'drafts',
   'delegation',
   'profile',
+  'home',
 ];
 
 const PREFIX = '@comunica';

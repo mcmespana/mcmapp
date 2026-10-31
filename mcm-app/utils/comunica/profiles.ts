@@ -96,8 +96,9 @@ const DESTINATION_SECTION: Record<string, FamilySection> = {
   single_stic_events: 'events',
   list_stic_registrations: 'registrations',
   single_stic_registrations: 'registrations',
-  list_stic_calendar: 'calendar',
-  single_stic_calendar: 'calendar',
+  single_stic_activities_calendar: 'calendar',
+  single_stic_sessions: 'calendar',
+  list_stic_sessions: 'calendar',
   list_stic_payments: 'payments',
   single_stic_payments: 'payments',
   single_stic_payment_form: 'payments',
@@ -110,6 +111,12 @@ const SIGNUP_DESTINATIONS = new Set([
   'single_stic_events',
   'single_stic_registrations',
 ]);
+
+/** Para qué se elige a quién ver según el destino: apuntar (un evento o una inscripción) o ver. */
+export const pickerPurpose = (
+  internalpage: string | null | undefined,
+): PickerNeeded['purpose'] =>
+  internalpage && SIGNUP_DESTINATIONS.has(internalpage) ? 'signup' : 'view';
 
 export function sectionOfDestination(
   internalpage: string | null | undefined,
@@ -356,3 +363,13 @@ export function dataTitle(
   const first = firstNameOf(active);
   return first ? `Datos de ${first}` : 'Datos del participante';
 }
+
+/** La página del plugin de cada sección (para abrirla por su destino: nativa si ya existe, si no, la web con la sesión puesta). */
+export const SECTION_PAGE: Record<FamilySection, string> = {
+  profile: 'single_stic_comunica_perfil',
+  events: 'list_stic_events',
+  registrations: 'list_stic_registrations',
+  calendar: 'single_stic_activities_calendar',
+  payments: 'list_stic_payments',
+  documents: 'list_stic_documents',
+};

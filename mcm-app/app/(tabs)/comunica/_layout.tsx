@@ -17,6 +17,7 @@
 //              propia puerta cuando no hay sesión).
 //   yo       → tu cuenta y salir (carpeta: avisos y mis datos de monitor,
 //              planes 08 y 09).
+//   perfiles → «¿A quién ves?» (familias, plan 11).
 //   web      → el legado abierto a propósito (comparar, o lo que no es nativo).
 //   muestra  → los componentes del área de un vistazo (solo desarrollo/preview).
 //
@@ -111,6 +112,7 @@ export default function ComunicaLayout() {
           />
           <Stack.Screen name="acceso-codigo" options={{ title: 'Código' }} />
           <Stack.Screen name="acceso-elegir" options={{ title: 'Elegir' }} />
+          <Stack.Screen name="perfiles" options={{ title: '¿A quién ves?' }} />
           <Stack.Screen name="eventos/index" options={{ title: 'Eventos' }} />
           <Stack.Screen
             name="eventos/[eventId]"

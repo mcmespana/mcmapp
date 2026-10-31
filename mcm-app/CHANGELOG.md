@@ -8,7 +8,9 @@
 
 - Contrato y servidor falso de `GET /v1/me/profiles` (quien ha entrado y sus hijos; un hijo sin nombre sale igual; el 503 nunca es una lista vacía), con cinco personas de familia y `allowedProfile`, la barrera de las rutas `/profiles/:pid/…` de los planes 12-16.
 - `utils/comunica/profiles.ts` (lógica pura), `useMyProfiles`, `useActiveProfile` y `useProfileScope`; lo recordado vive por persona en el cajón `profile` (un id y un booleano) y se borra al salir.
-- Sin pantallas todavía (`perfiles`, `ActiveProfileBar`, `MemberHome`): quedan para la siguiente parte del plan 11.
+- Pantallas: «¿A quién ves?» (`/comunica/perfiles`, una tarjeta por hijo y la propia; con un evento o inscripción de destino pregunta «¿A quién quieres apuntar?»), la barra «Viendo a · X ▾» con su hoja «Ver como…» (solo con hijos) y `MemberHome` (saludo con × que vuelve al mes, «A quién tienes a tu cargo», actividades según a quién se ve, «Tu perfil»). `ComunicaHome` usa `FamilyHome` para quien no es del equipo y añade `MemberHome` bajo lo del equipo.
+- «Hay que elegir» en los enlaces: quien es solo familiar con varios hijos y no ha elegido nunca pasa antes por «¿A quién ves?» cuando abre un evento, una inscripción o un pago. Sin conexión no pregunta.
+- Pruebas de pantalla en `__tests__/comunica/familyScreens.test.tsx` (14).
 
 ## 2026-10-31 21:00 — Comunica nativa: contra el middleware de verdad y entrar con la cuenta de la app
 

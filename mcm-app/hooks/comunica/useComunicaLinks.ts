@@ -29,6 +29,14 @@ import {
   subscribeNativeLink,
 } from '@/services/comunica/pendingLink';
 import { getSessionState, signIn, signOut } from '@/services/comunica/session';
+import { readDrawer } from '@/services/comunica/storage';
+import {
+  initialProfile,
+  isGuardianOnly,
+  mustChooseFirst,
+  sectionOfDestination,
+  type ActiveChoice,
+} from '@/utils/comunica/profiles';
 import { consumePendingComunicaAuthUrl } from '@/utils/pendingComunicaLink';
 import { useArea } from '@/components/comunica/comun/ComunicaAreaProvider';
 import { useToast } from '@/contexts/AppToastContext';
@@ -98,6 +106,37 @@ async function tryToUpload(outbox: Outbox | null): Promise<number> {
   return unsent(outbox.entries()).length;
 }
 
+/**
+ * ¿Hay que elegir a quién ver antes de abrir este destino? Solo para un destino de familia y solo quien es familiar a secas; se pregunta al servidor
+ * quiénes son sus hijos AHORA (no se confía en lo pintado: el enlace puede llegar con la app recién abierta o recién entrada). Si no se puede
+ * saber (sin conexión), no se pregunta: se abre el destino como siempre.
+ */
+export async function mustPickProfileFirst(
+  destination: Destination,
+): Promise<boolean> {
+  const s = getSessionState();
+  if (
+    s.status !== 'signedIn' ||
+    !s.me ||
+    !sectionOfDestination(destination.internalpage) ||
+    !isGuardianOnly(s.me)
+  )
+    return false;
+  try {
+    const { children } = await getComunicaApi().getMyProfiles();
+    const saved = await readDrawer<ActiveChoice>(s.me.personId, 'profile');
+    const start = initialProfile(s.me, children, saved);
+    return !!mustChooseFirst(
+      s.me,
+      children,
+      { activeId: start.activeId, chosen: start.chosen },
+      destination.internalpage,
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function handleComunicaLink(
   link: ComunicaLink,
   deps: LinkDeps,
@@ -156,6 +195,21 @@ export async function handleComunicaLink(
     await signIn(res, res.me);
   }
   if (link.destination) {
+    // Familias (plan 11, FAM-a1): un enlace a una pantalla de familia, y quien entra es solo familiar con varios hijos que no ha elegido nunca (o
+    // la sección no es de a quien se ve): primero «¿A quién ves?», con el destino; al elegir se va al destino, no a la portada.
+    if (await mustPickProfileFirst(link.destination)) {
+      const d = link.destination;
+      deps.push({
+        pathname: '/comunica/perfiles',
+        params: {
+          internalpage: d.internalpage,
+          ...(d.action ? { action: d.action } : {}),
+          ...(d.id ? { id: d.id } : {}),
+          ...(d.from ? { from: d.from } : {}),
+        },
+      });
+      return;
+    }
     const native = nativeHrefFor(link.destination);
     if (native) deps.push(native);
     else await deps.openLegacy(link.destination, 'Comunica');
