@@ -278,11 +278,15 @@ export function createCoordinationRoutes(
    * delegación, también los sin grupo (✅ `alcance-coord`, igual para los dos
    * papeles).
    */
-  const teamIds = (forRoll = false): string[] => {
+  // `wholeDelegation`: el equipo de una reunión (toda la delegación, plugin
+  // 31/10/2026), sin mirar el alcance de quien coordina.
+  const teamIds = (forRoll = false, wholeDelegation = false): string[] => {
     const scope = ctx.teamScope();
     const ids = new Set<string>();
     if (scope) {
-      for (const g of myGroups().filter((x) => scopeMatches(scope, x))) {
+      for (const g of myGroups().filter(
+        (x) => wholeDelegation || scopeMatches(scope, x),
+      )) {
         g.monitorIds.forEach((id) => ids.add(id));
       }
       // Apoyo lo ven todas las coordinaciones; los sin grupo y los de otros
@@ -291,7 +295,7 @@ export function createCoordinationRoutes(
         .monitorMemberships.filter(
           (m) =>
             m.delegationId === ctx.delegationId() &&
-            (m.kind === 'support' || !isScoped(scope)),
+            (m.kind === 'support' || wholeDelegation || !isScoped(scope)),
         )
         .forEach((m) => ids.add(m.personId));
     }
@@ -447,6 +451,8 @@ export function createCoordinationRoutes(
       const members = team(true);
       const now = ctx.now();
       if (params.kind === 'meeting') {
+        const inScope = new Set(members.map((m) => m.id));
+        const everyone = teamIds(true, true).map(memberOf);
         const list = meetingSessions();
         let s = params.session ? mySession(params.session) : undefined;
         if (s && s.kind !== 'meeting') throw forbidden();
@@ -478,10 +484,12 @@ export function createCoordinationRoutes(
             .map(rollSummary),
           rollCall: roll ? rollSummary(roll) : null,
           rows: s
-            ? members.map((m) => ({
+            ? everyone.map((m) => ({
                 member: m,
-                // A una reunión se espera a todos: ninguna fila es opcional.
-                optional: false,
+                // Los que no van por grupos, con «-» también aquí (quizá no
+                // les toca ir); los de fuera del alcance, sin ficha ni aviso.
+                optional: !!m.unassigned,
+                ...(inScope.has(m.id) ? {} : { outOfScope: true }),
                 mark: roll?.marks[m.id] ?? null,
                 reason: roll?.notes[m.id] ?? null,
                 seasonMarks: held.map(
@@ -586,7 +594,8 @@ export function createCoordinationRoutes(
       ) {
         throw validation('session_in_future', 'Esta sesión aún no ha llegado');
       }
-      const allowed = new Set(teamIds());
+      // En una reunión, toda la delegación (plugin, 31/10/2026).
+      const allowed = new Set(teamIds(false, w.kind === 'meeting'));
       const regs = (d().monitorRegistrations[s.eventId] ??= []);
       let roll = monitorRollOf(sid);
       if (!roll) {

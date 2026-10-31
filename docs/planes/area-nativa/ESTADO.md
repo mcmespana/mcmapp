@@ -29,6 +29,8 @@ middleware real (`comunicaMiddleware`), y arreglar lo que falte por OTA.
 - **Familias (planes 11-16)**: el servidor está hecho (`comunicaMiddleware`, fase 3, menos 15 pagos). La
   app empezó el 11 en la rama **`plan11`** (5 commits del 28/10, sin fusionar, 167 por detrás de `main`):
   **no se ha perdido**, se retoma desde ahí. Su contrato ya coincide con el del middleware.
+- **Reuniones como el plugin del 31/10** (plan 06 §«Cambios del plugin»): toda la delegación para quien
+  coordina una etapa (`outOfScope`: sin ficha ni aviso) y los sin grupo con «-» también en reuniones.
 - **Rediseño con cariño** (apuntado, sin pensar aún): al propietario le gusta más ahora la web que el nativo.
   Ver `docs/planes/PLAN_DISENO.md` §«Área nativa de Comunica: rediseño».
 
@@ -142,7 +144,7 @@ seleccionado del Laboratorio más visible; buscadores con
 **2. Fuera del área pero visto en el QA:** en oscuro la barra de pestañas no
 marca la activa; en web la barra lleva elementos de más («⏷», «visitapapa»).
 
-**2 bis. Cambios del plugin del 31/10 por portar** (plan 06, sección «⚠️ Cambios
+**2 bis. ✅ (31/10 noche) Cambios del plugin del 31/10, portados** (queda la decisión de los sábados del MIC) (plan 06, sección «⚠️ Cambios
 del plugin del 31/10/2026»): la ficha busca las listas de un grupo en las
 sesiones de su etapa (bug «sin lista» vs «todas pasadas»); en una reunión,
 la coordinación de una etapa ve a todos los monitores; y en las reuniones los

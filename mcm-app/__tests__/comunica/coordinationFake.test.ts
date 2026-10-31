@@ -237,6 +237,23 @@ describe('Coordinación en el servidor falso (plan 06)', () => {
     expect(past.rows[0].seasonMarks.length).toBeGreaterThanOrEqual(5);
   });
 
+  it('en una reunión, quien coordina un segmento ve a toda la delegación; los de fuera, sin ficha', async () => {
+    const all = server({ persona: 'coordination' });
+    const seg = server({ persona: 'coordinationCom2' });
+    const meeting = { kind: 'meeting' as const, session: 'f-ses-reunion-01' };
+    const everyone = await all.getMonitorsRoll(meeting);
+    const mine = await seg.getMonitorsRoll(meeting);
+    expect(mine.rows.map((r) => r.member.id).sort()).toEqual(
+      everyone.rows.map((r) => r.member.id).sort(),
+    );
+    expect(mine.rows.some((r) => r.outOfScope)).toBe(true);
+    expect(mine.rows.some((r) => !r.outOfScope)).toBe(true);
+    expect(everyone.rows.some((r) => r.outOfScope)).toBe(false);
+    // La semanal sigue siendo solo de su alcance.
+    const weekly = await seg.getMonitorsRoll({ kind: 'weekly' });
+    expect(weekly.rows.length).toBeLessThan(mine.rows.length);
+  });
+
   it('primera lista de una reunión: crea las inscripciones; la segunda, ninguna', async () => {
     const s = server({ persona: 'coordination' });
     const meeting = s.data.sessions.find((x) => x.id === 'f-ses-reunion-01')!;
@@ -247,11 +264,14 @@ describe('Coordinación en el servidor falso (plan 06)', () => {
     expect(roll.rollCall).toBeNull();
     expect(roll.rows.every((r) => r.mark === null)).toBe(true);
     const draft = monitorsDraftFrom(roll.rows);
-    const absent = roll.rows[1].member.id;
+    const absent = roll.rows.filter((r) => !r.optional)[1].member.id;
     draft.marks[absent] = 'no_justified';
     draft.notes[absent] = 'x'.repeat(300);
     const marks = monitorsMarks(roll.rows, draft);
-    expect(marks).toHaveLength(roll.rows.length);
+    // Los que no van por grupos salen con «-» también en reuniones (plugin,
+    // 31/10/2026): sin tocar, no se mandan.
+    expect(roll.rows.some((r) => r.optional)).toBe(true);
+    expect(marks).toHaveLength(roll.rows.filter((r) => !r.optional).length);
     const before = s.data.registrationsCreated;
     const res = await s.saveMonitorsRoll(meeting.id, {
       clientId: CLIENT(10),
@@ -265,7 +285,9 @@ describe('Coordinación en el servidor falso (plan 06)', () => {
       session: meeting.id,
     });
     // Al volver se ven TODAS las marcas (el fallo del 26/09 era releer mal).
-    expect(again.rows.every((r) => r.mark !== null)).toBe(true);
+    expect(
+      again.rows.filter((r) => !r.optional).every((r) => r.mark !== null),
+    ).toBe(true);
     expect(again.rows.find((r) => r.member.id === absent)?.reason).toHaveLength(
       255,
     );

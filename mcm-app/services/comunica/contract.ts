@@ -771,6 +771,11 @@ export const MonitorsRollRow = z.object({
    */
   optional: z.boolean(),
   /**
+   * Solo en una reunión: de fuera del alcance de quien coordina (la reunión es
+   * de toda la delegación). Se marca, pero sin ficha ni aviso ni %.
+   */
+  outOfScope: z.boolean().optional(),
+  /**
    * `null` = sin asistencia todavía: se pinta y se guarda como «vino», salvo
    * en una fila `optional`, que se queda sin marcar.
    */
