@@ -137,7 +137,9 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
     (item: PaletteItem) => {
       onClose();
       if (item.kind === 'song') {
-        openCantoral('SongDetail', songOpenParams(item.song));
+        openCantoral('SongDetail', songOpenParams(item.song), {
+          fromOutside: true,
+        });
         return;
       }
       // expo-router acepta rutas en string; el cast es porque la unión

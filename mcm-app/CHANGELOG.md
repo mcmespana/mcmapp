@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-31 19:00 — Expo 58: repaso de los pasos 1-4, entrar en subrutas desde otra pestaña y `npm audit fix`
+
+- **Entrar en una subruta desde otra pestaña deja la portada debajo** (`withAnchor`). Con las pestañas convertidas en carpetas, un `router.push('/cancionero/cancion')` o `'/contigo/oracion'` desde fuera de esa pila la dejaba con esa pantalla sola, y «atrás» no tenía adónde volver. Ahora entran con `withAnchor`: la paleta ⌘K y el enlace `/cancion?f=` (cantoral), las rutas sueltas de los avisos (`goToPath`) y el botón de acción del aviso en Inicio, que además pasa por `goToPath` (llega a pestañas que en iOS no están en la barra). Dentro de la propia pila NO se usa: `withAnchor` la reinicia a portada + destino. Test en `cantoralJourney`.
+- **`npm audit fix`** (sin `--force`): solo parches de dependencias transitivas (`shell-quote`, `node-forge`, `js-yaml`, `joi`, `qs`, `compression`, `body-parser`, `@xmldom/xmldom`, `launch-editor`, `moment`, `typescript-eslint` 8.72…). De 73 avisos a 63, sin el crítico y de 12 altos a 5. Lo que queda es de herramientas de desarrollo (eslint, jest, CLI de RN) o `@grpc/grpc-js` dentro de Firestore, que la app no usa y que Firebase 13.1 (la última) sigue fijando en `~1.9`. Nada de eso entra en la app.
+- Repaso de los pasos 1-4 sin más fallos: `expo install --check` al día, `expo-doctor` 19/20 (solo avisa de que `react-native-render-html` no se mantiene), parches de `patch-package` aplicados, sin llamadas `navigation.navigate('Nombre')` sueltas, Materiales → actividad y `?date=` del calendario coherentes, `usePreventRemove` de Comunica bien usado.
+
 ## 2026-10-31 18:00 — Expo 58: el Cantoral pasa a rutas de fichero (ya no queda ningún navegador a mano)
 
 Pasos 5-9 de `docs/planes/PLAN_EXPO_58.md`. Era lo que hacía que la build 60 se cerrara al abrir el Cantoral. **Falta la build de TestFlight y probar en el móvil (paso 10).**

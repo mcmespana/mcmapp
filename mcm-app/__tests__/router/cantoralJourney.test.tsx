@@ -245,3 +245,41 @@ it('una canción abierta en frío por su ruta se lee del catálogo', async () =>
   await act(async () => router.back());
   await waitFor(() => expect(screen).toHavePathname('/cancionero'));
 });
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+it('desde otra pestaña (⌘K, enlace) la canción entra con las categorías debajo', async () => {
+  const { Tabs } = require('expo-router');
+  const { Text } = require('react-native');
+  const { openCantoral } = require('@/utils/cantoralNavigation');
+  app = await renderRouter(
+    {
+      _layout: raiz,
+      '(tabs)/_layout': () => <Tabs />,
+      '(tabs)/index': () => <Text>Inicio</Text>,
+      ...rutasCantoral(),
+    } as never,
+    { initialUrl: '/' },
+  );
+  await act(async () =>
+    openCantoral(
+      'SongDetail',
+      { filename: 'vienen.cho', firebaseCategory: 'entrada' },
+      { fromOutside: true },
+    ),
+  );
+  await waitFor(() => expect(screen).toHavePathname('/cancionero/cancion'));
+  // Se mira la pila y no «atrás»: con `Tabs` bajo Jest la pila anidada no
+  // llega a montarse y `router.back()` cambia de pestaña. Lo que importa es
+  // que la canción NO entre sola (sin `withAnchor`, `routes` sería
+  // `['cancion']` y en el móvil «atrás» no tendría adónde ir).
+  const pila = (estado: any): string[] | null => {
+    for (const r of estado?.routes ?? []) {
+      if (r.name === 'cancionero')
+        return r.state.routes.map((x: any) => x.name);
+      const dentro = pila(r.state);
+      if (dentro) return dentro;
+    }
+    return null;
+  };
+  expect(pila(app.getRouterState())).toEqual(['index', 'cancion']);
+});

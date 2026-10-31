@@ -51,10 +51,13 @@ export default function SongDeepLink() {
     // perdida: puede ser una canción nueva que la caché aún no tenía.
     if (filename && !song && loading) return;
     done.current = true;
+    // `withAnchor`: las categorías debajo de la canción, para que «atrás»
+    // lleve a ellas (ver `utils/cantoralNavigation.ts`).
     router.replace(
       (song
         ? cantoralHref('SongDetail', songOpenParams(song))
         : cantoralHref('Categories')) as never,
+      { withAnchor: true },
     );
   }, [data, loading, filename]);
 
