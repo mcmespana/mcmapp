@@ -7,15 +7,12 @@ import {
   useWindowDimensions,
   ScrollView,
 } from 'react-native';
-import { useNavigation } from 'expo-router/react-navigation';
-import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
 import { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
-import { useCurrentEvent } from '@/hooks/useCurrentEvent';
-import { MasStackParamList } from '../(tabs)/mas';
+import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
 import { radii } from '@/constants/uiStyles';
 
 interface Option {
@@ -47,10 +44,8 @@ const OPTIONS: Option[] = [
   },
 ];
 
-type Nav = NativeStackNavigationProp<MasStackParamList, 'ComidaWeb'>;
-
 export default function ComidaScreen() {
-  const navigation = useNavigation<Nav>();
+  const { open } = useEventNavigation();
   const scheme = useColorScheme();
   const event = useCurrentEvent();
   const styles = React.useMemo(() => createStyles(scheme ?? 'light'), [scheme]);
@@ -79,7 +74,7 @@ export default function ComidaScreen() {
               <TouchableOpacity
                 style={[styles.item, { width: itemWidth, height: itemHeight }]}
                 onPress={() =>
-                  navigation.navigate('ComidaWeb', {
+                  open('ComidaWeb', {
                     url: opt.url,
                     title: opt.label,
                     eventId: event.id,

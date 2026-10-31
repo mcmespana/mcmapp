@@ -9,7 +9,7 @@ import {
   useNavigation,
   RouteProp,
 } from 'expo-router/react-navigation';
-import { MasStackParamList } from '../(tabs)/mas';
+import { MasStackParamList } from './eventStackScreens';
 import spacing from '@/constants/spacing';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';

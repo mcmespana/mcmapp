@@ -40,6 +40,7 @@
  */
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import AppProviders from '@/components/AppProviders';
@@ -255,11 +256,13 @@ async function montar(Screen: React.ComponentType<any>) {
   // setState al resolver: sin esperarlo, React avisa de updates fuera de act.
   await act(async () => {
     tree = create(
-      <SafeAreaProvider initialMetrics={INITIAL_METRICS}>
-        <AppProviders>
-          <Screen {...NAV_PROPS} />
-        </AppProviders>
-      </SafeAreaProvider>,
+      <GestureHandlerRootView>
+        <SafeAreaProvider initialMetrics={INITIAL_METRICS}>
+          <AppProviders>
+            <Screen {...NAV_PROPS} />
+          </AppProviders>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>,
     );
   });
   trees.push(tree);

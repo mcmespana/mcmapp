@@ -4,7 +4,14 @@
 // también. (El `InputOTP` de heroui no pintaba las casillas en web.)
 
 import React, { forwardRef } from 'react';
-import { Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  type TextInputInstance,
+  View,
+} from 'react-native';
 import typography from '@/constants/typography';
 import { focusRing, radii } from '@/constants/uiStyles';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
@@ -18,7 +25,7 @@ interface Props {
   invalid?: boolean;
 }
 
-const CodeInput = forwardRef<TextInput, Props>(function CodeInput(
+const CodeInput = forwardRef<TextInputInstance, Props>(function CodeInput(
   { value, onChange, onComplete, length = 6, disabled, invalid },
   ref,
 ) {

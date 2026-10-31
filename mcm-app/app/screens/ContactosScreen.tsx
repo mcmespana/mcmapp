@@ -300,7 +300,7 @@ export default function ContactosScreen() {
                 title="Sin resultados"
                 subtitle={`No hay contactos que coincidan con "${query}".`}
               />
-            ) : null
+            ) : undefined
           }
           contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}

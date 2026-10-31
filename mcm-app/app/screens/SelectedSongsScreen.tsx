@@ -32,7 +32,6 @@ import {
   useRoute,
   useHeaderHeight,
 } from 'expo-router/react-navigation';
-import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import {
@@ -44,7 +43,8 @@ import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
-import { RootStackParamList } from '../(tabs)/cancionero';
+import { openCantoral } from '@/utils/cantoralNavigation';
+import { songRouteParams } from '@/utils/songNavList';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 
 import { h } from '@/utils/haptics';
@@ -133,11 +133,6 @@ interface CategorizedSongs {
   })[];
 }
 
-type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'SongDetail'
->;
-
 const WEB_BASE_URL = 'https://mcm.expo.app';
 /** Esquema propio para deep links offline (playlist embebida en la URL). */
 const APP_SCHEME = 'mcmapp://';
@@ -153,7 +148,7 @@ const SelectedSongsScreen: React.FC = () => {
   const nowPlayingFilename = choir.session?.current?.filename;
   const { settings } = useSettings();
 
-  const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
+  const navigation = useNavigation();
   const route = useRoute();
   const scheme = useColorScheme() || 'light';
   const isDark = scheme === 'dark';
@@ -373,31 +368,26 @@ const SelectedSongsScreen: React.FC = () => {
       const completeSong = allSongsMap.get(song.filename);
       if (!completeSong) return;
       const index = songIndexMap.get(completeSong.filename) ?? -1;
-      navigation.navigate('SongDetail', {
-        filename: completeSong.filename,
-        title: completeSong.title,
-        ...(completeSong.author && { author: completeSong.author }),
-        ...(completeSong.key && { key: completeSong.key }),
-        ...(typeof completeSong.capo !== 'undefined' && {
-          capo: completeSong.capo,
+      openCantoral(
+        'SongDetail',
+        songRouteParams({
+          filename: completeSong.filename,
+          list: flatSelectedSongs.map((s) => ({
+            title: s.title,
+            filename: s.filename,
+            author: s.author,
+            key: s.key,
+            capo: s.capo,
+            content: s.content,
+            media: extractSongMedia(s) ?? undefined,
+          })),
+          currentIndex: index,
+          source: 'selection',
+          firebaseCategory: completeSong.originalCategoryKey || 'entrada',
         }),
-        content: completeSong.content || '',
-        media: extractSongMedia(completeSong) ?? undefined,
-        navigationList: flatSelectedSongs.map((s) => ({
-          title: s.title,
-          filename: s.filename,
-          author: s.author,
-          key: s.key,
-          capo: s.capo,
-          content: s.content,
-          media: extractSongMedia(s) ?? undefined,
-        })),
-        currentIndex: index,
-        source: 'selection',
-        firebaseCategory: completeSong.originalCategoryKey || 'entrada',
-      });
+      );
     },
-    [allSongsMap, songIndexMap, flatSelectedSongs, navigation],
+    [allSongsMap, songIndexMap, flatSelectedSongs],
   );
 
   /** Texto formateado: usa el TONO TRANSPORTADO (no el original). */

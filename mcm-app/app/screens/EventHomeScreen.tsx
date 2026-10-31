@@ -19,7 +19,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useNavigation } from 'expo-router/react-navigation';
-import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -27,13 +26,12 @@ import { hexAlpha, darkenHex, readableOn } from '@/utils/colorUtils';
 import { eventHeroColors } from '@/utils/tintInk';
 import { radii, shadows } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
-import { EventStackParamList } from './eventStackScreens';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import useNetworkStatus from '@/hooks/useNetworkStatus';
 import OfflineBanner from '@/components/OfflineBanner';
 import SurveyBanner from '@/components/SurveyBanner';
 import { useActiveSurveys } from '@/hooks/useActiveSurveys';
-import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
 import { useEventSubscriptions } from '@/contexts/EventSubscriptionsContext';
 import { useToast } from '@/contexts/AppToastContext';
 import { h } from '@/utils/haptics';
@@ -58,8 +56,8 @@ import typography from '@/constants/typography';
  * Firebase a partir del mismo registry.
  */
 export default function EventHomeScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<EventStackParamList>>();
+  const navigation = useNavigation();
+  const { open: openEventScreen } = useEventNavigation();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const event = useCurrentEvent();
@@ -267,7 +265,7 @@ export default function EventHomeScreen() {
                   return;
                 }
                 if (section.target) {
-                  (navigation as any).navigate(section.target, {
+                  openEventScreen(section.target as never, {
                     eventId: event.id,
                   });
                 }
@@ -426,7 +424,7 @@ function SectionCard({
   );
 }
 
-interface Styles {
+type Styles = {
   container: ViewStyle;
   scrollView: ViewStyle;
   scrollContent: ViewStyle;
@@ -458,7 +456,7 @@ interface Styles {
   cardTitle: TextStyle;
   cardSubtitle: TextStyle;
   arrowPill: ViewStyle;
-}
+};
 
 const createStyles = (isDark: boolean) =>
   StyleSheet.create<Styles>({

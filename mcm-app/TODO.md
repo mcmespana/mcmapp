@@ -201,7 +201,7 @@ notificación y enlaces `mcmapp://` con Carismochito activo (build nativo).
 
 Era una segunda solución al bug que `main` ya arregló (`utils/tabNavigation.ts` + `hooks/useTabNavigation.ts`). Revisada pieza a pieza:
 
-- **Fecha del calendario por un store propio**: no hace falta. `main` la pasa por params y `calendario.tsx` ya lee los de expo-router y los de React Navigation (la vía «Más»).
+- **Fecha del calendario por un store propio**: no hace falta. `main` la pasa por params y `CalendarScreen` los lee de la URL (`useLocalSearchParams`), también apilado en «Más» (`/mas/calendario?date=…`).
 - **`?date=` que salta de mes**: ya está en `main` (`setVisibleMonth(monthStart(dateParam))`).
 - **Deep-links de notificación y botones del panel por el navegador de tabs**: **portado** (`goToPath` + `parseTabPath`). En iOS, `router.push` a un tab que no está en la barra no hacía nada; ahora entra por «Más». La paleta de comandos es solo web y no lo necesita.
 - **Solape del conmutador Mes/Agenda en iOS**: no aplica, `main` rehízo ese header.

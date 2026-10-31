@@ -12,7 +12,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Stack, useNavigation, useRouter } from 'expo-router';
+import { Stack, usePreventRemove, useRouter } from 'expo-router';
 import EmptyState from '@/components/ui/EmptyState';
 import typography from '@/constants/typography';
 import { useToast } from '@/contexts/AppToastContext';
@@ -128,7 +128,6 @@ function MonitorForm({
   generatedAt: string | null;
 }) {
   const t = useComunicaTheme();
-  const navigation = useNavigation();
   const { toast } = useToast();
   const goTo = useGoTo();
   const pending = usePendingMonitorChanges();
@@ -168,21 +167,16 @@ function MonitorForm({
 
   // Salir con cambios sin guardar pregunta (también en web).
   const dirty = f.dirty;
-  useEffect(() => {
-    const unsub = navigation.addListener('beforeRemove', (e) => {
-      if (!dirty) return;
-      e.preventDefault();
-      void confirmAction(
-        C.leave.title,
-        C.leave.message,
-        C.leave.action,
-        true,
-      ).then((leave) => {
-        if (leave) navigation.dispatch(e.data.action);
-      });
+  usePreventRemove(dirty, ({ repeat }) => {
+    void confirmAction(
+      C.leave.title,
+      C.leave.message,
+      C.leave.action,
+      true,
+    ).then((leave) => {
+      if (leave) repeat();
     });
-    return unsub;
-  }, [navigation, dirty]);
+  });
 
   const onSave = async () => {
     if (blocked) {

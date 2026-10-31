@@ -15,14 +15,10 @@ import { HeroUINativeProvider } from 'heroui-native';
 import { QueryClient } from '@tanstack/react-query';
 
 const mockRouter = { push: jest.fn(), back: jest.fn() };
-const mockNavigation = {
-  addListener: jest.fn(() => () => {}),
-  dispatch: jest.fn(),
-};
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   useRouter: () => mockRouter,
-  useNavigation: () => mockNavigation,
+  usePreventRemove: jest.fn(),
   useLocalSearchParams: () => ({}),
 }));
 jest.mock('@expo/vector-icons', () => {

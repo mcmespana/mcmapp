@@ -69,13 +69,13 @@ activo). Ver `docs/planes/PLAN_INTEGRACIONES.md`, Integración B.
 evento activo lo saca de todos los sitios donde estaba destacado y lo deja sólo
 en "Más > Eventos pasados":
 
-| Sitio                            | Quién lo filtra                               |
-| -------------------------------- | --------------------------------------------- |
-| Tab propia (`tabId`)             | `hooks/useVisibleTabs.ts` → `(tabs)/_layout`  |
-| Tarjeta de overflow en iOS       | `useVisibleTabs` → `MasHomeScreen`            |
-| Botón del grid de la Home        | `app/(tabs)/index.tsx` (`quickItems`)         |
-| Banner "modo evento" de la Home  | `app/(tabs)/index.tsx` (`showEventBanner`)    |
-| Lista "Eventos pasados"          | `EventosPasadosScreen` (lo AÑADE)             |
+| Sitio                           | Quién lo filtra                              |
+| ------------------------------- | -------------------------------------------- |
+| Tab propia (`tabId`)            | `hooks/useVisibleTabs.ts` → `(tabs)/_layout` |
+| Tarjeta de overflow en iOS      | `useVisibleTabs` → `MasHomeScreen`           |
+| Botón del grid de la Home       | `app/(tabs)/index.tsx` (`quickItems`)        |
+| Banner "modo evento" de la Home | `app/(tabs)/index.tsx` (`showEventBanner`)   |
+| Lista "Eventos pasados"         | `EventosPasadosScreen` (lo AÑADE)            |
 
 Ojo: el `status` es lo único que decide si un evento se destaca. `tabId` puede
 seguir en la lista `tabs` del perfil (`/profileConfig`) sin que el tab aparezca,
@@ -86,11 +86,11 @@ por defecto para routing/caché, simplemente no se destaca).
 
 Cada sección (nodo hijo del evento) tiene siempre:
 
-| Campo       | Tipo      | Obligatorio | Descripción                                                       |
-| ----------- | --------- | ----------- | ----------------------------------------------------------------- |
-| `updatedAt` | string    | sí          | Timestamp para invalidar caché. Cambia en cada modificación.      |
-| `data`      | cualquier | sí          | Contenido real de la sección (array, objeto, string…).            |
-| `hidden`    | boolean   | no          | Si `true`, oculta la sección en el hub. Ausente = `false`.        |
+| Campo       | Tipo      | Obligatorio | Descripción                                                  |
+| ----------- | --------- | ----------- | ------------------------------------------------------------ |
+| `updatedAt` | string    | sí          | Timestamp para invalidar caché. Cambia en cada modificación. |
+| `data`      | cualquier | sí          | Contenido real de la sección (array, objeto, string…).       |
+| `hidden`    | boolean   | no          | Si `true`, oculta la sección en el hub. Ausente = `false`.   |
 
 ## Cómo añadir un evento nuevo
 
@@ -102,29 +102,29 @@ Edita `mcm-app/constants/events.ts` y añade una config nueva:
 
 ```ts
 export const EVENTO_2027: EventConfig = {
-  id: 'evento2027',                        // identificador único en código
-  title: 'Evento 2027',                    // título del header
-  tintColor: '#E15C62',                    // color de acento del evento
-  firebasePrefix: 'activities/evento2027', // ← prefijo en Firebase
-  motto: 'Lema del encuentro',             // opcional (ver abajo)
+  id: "evento2027", // identificador único en código
+  title: "Evento 2027", // título del header
+  tintColor: "#E15C62", // color de acento del evento
+  firebasePrefix: "activities/evento2027", // ← prefijo en Firebase
+  motto: "Lema del encuentro", // opcional (ver abajo)
   sections: [
     {
-      label: 'Horario',
-      subtitle: 'Programa del encuentro',
-      emoji: '⏰',
-      materialIcon: 'schedule',
-      target: 'Horario',        // nombre de la sub-pantalla (ya registrada)
-      tintColor: '#FF8A65',
-      firebaseKey: 'horario',   // path final: activities/evento2027/horario
+      label: "Horario",
+      subtitle: "Programa del encuentro",
+      emoji: "⏰",
+      materialIcon: "schedule",
+      target: "Horario", // nombre de la sub-pantalla (ya registrada)
+      tintColor: "#FF8A65",
+      firebaseKey: "horario", // path final: activities/evento2027/horario
     },
     {
-      label: 'Materiales',
-      subtitle: 'Recursos y dinámicas',
-      emoji: '📦',
-      materialIcon: 'inventory-2',
-      target: 'Materiales',
-      tintColor: '#4FC3F7',
-      firebaseKey: 'materiales',
+      label: "Materiales",
+      subtitle: "Recursos y dinámicas",
+      emoji: "📦",
+      materialIcon: "inventory-2",
+      target: "Materiales",
+      tintColor: "#4FC3F7",
+      firebaseKey: "materiales",
     },
     // … añadir las secciones que tenga el evento
   ],
@@ -132,7 +132,7 @@ export const EVENTO_2027: EventConfig = {
 
 export const EVENTS: Record<string, EventConfig> = {
   [JUBILEO.id]: JUBILEO,
-  [EVENTO_2027.id]: EVENTO_2027,  // ← registrar aquí
+  [EVENTO_2027.id]: EVENTO_2027, // ← registrar aquí
 };
 ```
 
@@ -168,13 +168,13 @@ Edita `mcm-app/app/screens/MasHomeScreen.tsx`. Dentro de `getAllNavigationItems`
 
 ```ts
 items.push({
-  label: 'Evento 2027',
-  subtitle: 'Programa y materiales',
-  emoji: '✨',
-  materialIcon: 'auto-awesome',
-  target: 'JubileoHome',        // mismo hub genérico — no cambiar
-  tintColor: '#E15C62',
-  eventId: 'evento2027',        // ← id declarado en events.ts
+  label: "Evento 2027",
+  subtitle: "Programa y materiales",
+  emoji: "✨",
+  materialIcon: "auto-awesome",
+  target: "JubileoHome", // mismo hub genérico — no cambiar
+  tintColor: "#E15C62",
+  eventId: "evento2027", // ← id declarado en events.ts
 });
 ```
 
@@ -260,14 +260,15 @@ Las sub-pantallas (HorarioScreen, MaterialesScreen, etc.) son las mismas para to
 
 ## Archivos clave
 
-| Archivo                                           | Qué hace                                                 |
-| ------------------------------------------------- | -------------------------------------------------------- |
-| `mcm-app/constants/events.ts`                     | Registry de eventos + `getEventFirebasePath`/`…CacheKey` |
-| `mcm-app/hooks/useCurrentEvent.ts`                | Lee `eventId` del route, resuelve config                 |
-| `mcm-app/hooks/useFirebaseData.ts`                | Fetch + caché + lectura de `hidden`                      |
-| `mcm-app/app/screens/EventHomeScreen.tsx`         | Hub genérico (grid de secciones)                         |
-| `mcm-app/app/screens/MasHomeScreen.tsx`           | Menú de "Más" — añadir entrada por evento                |
-| `mcm-app/app/(tabs)/mas.tsx`                      | Stack con header dinámico por evento                     |
+| Archivo                                   | Qué hace                                                 |
+| ----------------------------------------- | -------------------------------------------------------- |
+| `mcm-app/constants/events.ts`             | Registry de eventos + `getEventFirebasePath`/`…CacheKey` |
+| `mcm-app/hooks/useCurrentEvent.ts`        | Lee `eventId` del route, resuelve config                 |
+| `mcm-app/hooks/useFirebaseData.ts`        | Fetch + caché + lectura de `hidden`                      |
+| `mcm-app/app/screens/EventHomeScreen.tsx` | Hub genérico (grid de secciones)                         |
+| `mcm-app/app/screens/MasHomeScreen.tsx`   | Menú de "Más" — añadir entrada por evento                |
+| `mcm-app/app/(tabs)/mas/_layout.tsx`      | Stack de «Más» (un fichero de ruta por pantalla)         |
+| `mcm-app/utils/eventRoutes.ts`            | Nombre de pantalla → ruta (`'Horario'` → `/mas/horario`) |
 
 ## Preguntas frecuentes
 

@@ -235,7 +235,7 @@ export default function Home() {
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('index');
   // Navegación a tabs que tiene en cuenta si el tab está en la barra o en el
   // overflow de "Más" (ver utils/tabNavigation.ts).
-  const { goToTab, goToEventScreen } = useTabNavigation();
+  const { goToTab, goToEventScreen, goToPath } = useTabNavigation();
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
   // Color neutro de los iconos en la cápsula glass (igual que EventActionButtons).
@@ -623,7 +623,9 @@ export default function Home() {
     const btn = latestNotification?.actionButton;
     if (!btn) return;
     if (btn.isInternal) {
-      router.push(normalizeRoute(btn.url) as any);
+      // Como la campana: `goToPath` sabe llegar a un tab que en iOS no está en
+      // la barra y pone la portada debajo de una subruta.
+      goToPath(normalizeRoute(btn.url));
     } else {
       Linking.openURL(btn.url).catch((e) => logger.error(e));
     }

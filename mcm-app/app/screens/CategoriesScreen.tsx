@@ -7,8 +7,8 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
-import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
-import { useIsFocused } from 'expo-router/react-navigation';
+import { useIsFocused, useNavigation } from 'expo-router/react-navigation';
+import { openCantoral } from '@/utils/cantoralNavigation';
 import {
   useLayoutEffect,
   useMemo,
@@ -63,16 +63,8 @@ const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
 const SELECTED_SONGS_CATEGORY_ID = '__SELECTED_SONGS__';
 
-export default function CategoriesScreen({
-  navigation,
-}: {
-  navigation: NativeStackNavigationProp<{
-    Categories: undefined;
-    SongsList: { categoryId: string; categoryName: string };
-    SongDetail: { songId: string; songTitle?: string };
-    SelectedSongs: { p?: string; c?: string; d?: string } | undefined;
-  }>;
-}) {
+export default function CategoriesScreen() {
+  const navigation = useNavigation();
   const scheme = useColorScheme();
   const layout = useResponsiveLayout();
   // Pantalla raíz del tab Cantoral: colapsa la barra flotante al scrollear y
@@ -155,11 +147,11 @@ export default function CategoriesScreen({
     const tag = pendingTagRef.current;
     if (!tag) return;
     pendingTagRef.current = null;
-    navigation.navigate('SongsList', {
+    openCantoral('SongsList', {
       categoryId: tagCategoryId([tag.slug]),
       categoryName: tag.label,
     });
-  }, [navigation]);
+  }, []);
 
   // ── Onboarding («?» del header) ──────────────────────────────────────────
   // Se abre solo la primera vez (por versión) y se vuelve a abrir con el «?».
@@ -192,11 +184,11 @@ export default function CategoriesScreen({
   }, [settings.featuredTags, tagIndex.tags]);
   const openTag = useCallback(
     (tag: ResolvedTag) =>
-      navigation.navigate('SongsList', {
+      openCantoral('SongsList', {
         categoryId: tagCategoryId([tag.slug]),
         categoryName: tag.label,
       }),
-    [navigation],
+    [],
   );
 
   const handleSuccessSubmit = () => {
@@ -214,15 +206,15 @@ export default function CategoriesScreen({
 
     if (pendingOffline) {
       // setParams no funciona para una nueva pantalla; usamos navigate.
-      navigation.navigate('SelectedSongs', { d: pendingOffline } as any);
+      openCantoral('SelectedSongs', { d: pendingOffline });
     } else if (pendingChoirImport) {
-      navigation.navigate('SelectedSongs', { coro: pendingChoirImport } as any);
+      openCantoral('SelectedSongs', { coro: pendingChoirImport });
     } else if (pendingPlaylist) {
-      navigation.navigate('SelectedSongs', { p: pendingPlaylist } as any);
+      openCantoral('SelectedSongs', { p: pendingPlaylist });
     } else if (pendingChoir) {
-      navigation.navigate('SelectedSongs', { c: pendingChoir } as any);
+      openCantoral('SelectedSongs', { c: pendingChoir });
     }
-  }, [navigation]);
+  }, []);
 
   // Header NATIVO: los botones "sugerir" + "buscar" van como bar items del
   // header nativo (headerRight) para que iOS 26 les aplique el efecto
@@ -282,7 +274,7 @@ export default function CategoriesScreen({
           )}
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate('SongsList', {
+              openCantoral('SongsList', {
                 categoryId: ALL_SONGS_CATEGORY_ID,
                 categoryName: ALL_SONGS_CATEGORY_NAME,
               })
@@ -328,9 +320,9 @@ export default function CategoriesScreen({
         : stripCategoryPrefix(cleanText);
       const onPress = () => {
         if (item.id === SELECTED_SONGS_CATEGORY_ID) {
-          navigation.navigate('SelectedSongs');
+          openCantoral('SelectedSongs');
         } else {
-          navigation.navigate('SongsList', {
+          openCantoral('SongsList', {
             categoryId: item.id,
             categoryName: item.name,
           });
@@ -440,7 +432,7 @@ export default function CategoriesScreen({
         </View>
       );
     },
-    [isDark, navigation, isWideLayout, styles, lastIndex],
+    [isDark, isWideLayout, styles, lastIndex],
   );
 
   // ── Hero "Tu selección" para iPad ────────────────────────────────────
@@ -450,7 +442,7 @@ export default function CategoriesScreen({
     if (!selectionItem) return null;
     return (
       <PressableFeedback
-        onPress={() => navigation.navigate('SelectedSongs')}
+        onPress={() => openCantoral('SelectedSongs')}
         style={styles.heroCard}
       >
         <PressableFeedback.Highlight />
@@ -474,7 +466,7 @@ export default function CategoriesScreen({
         />
       </PressableFeedback>
     );
-  }, [isWideLayout, displayCategories, navigation, isDark, styles]);
+  }, [isWideLayout, displayCategories, isDark, styles]);
 
   const sectionLabel = useCallback(() => {
     if (!isWideLayout) return null;

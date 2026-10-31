@@ -30,7 +30,7 @@ import {
   View,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { useNavigation, useRouter } from 'expo-router';
+import { usePreventRemove, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import EmptyState from '@/components/ui/EmptyState';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -136,7 +136,6 @@ export default function EventRollList({
 }) {
   const t = useComunicaTheme();
   const router = useRouter();
-  const navigation = useNavigation();
   const online = useNetworkStatus();
   const { outbox, get } = useOutbox();
   const tabClearance = useTabBarClearance();
@@ -204,32 +203,28 @@ export default function EventRollList({
     : longDay(pick.day);
 
   // Salir con cambios sin guardar pregunta (el borrador se queda igual).
-  useEffect(() => {
-    const unsub = navigation.addListener('beforeRemove', (e) => {
-      if (!dirty || pick.locked || Platform.OS === 'web') return;
-      if (uploading) return;
-      e.preventDefault();
-      Alert.alert(
-        'Tienes cambios sin guardar',
-        'Se quedan en el móvil si sales.',
-        [
-          {
-            text: 'Guardar',
-            onPress: () =>
-              void save().then((ok) => {
-                if (ok) navigation.dispatch(e.data.action);
-              }),
-          },
-          {
-            text: 'Salir sin guardar',
-            style: 'destructive',
-            onPress: () => navigation.dispatch(e.data.action),
-          },
-        ],
-      );
-    });
-    return unsub;
-  }, [navigation, dirty, pick.locked, uploading, save]);
+  const blockLeave =
+    dirty && !pick.locked && Platform.OS !== 'web' && !uploading;
+  usePreventRemove(blockLeave, ({ repeat }) => {
+    Alert.alert(
+      'Tienes cambios sin guardar',
+      'Se quedan en el móvil si sales.',
+      [
+        {
+          text: 'Guardar',
+          onPress: () =>
+            void save().then((ok) => {
+              if (ok) repeat();
+            }),
+        },
+        {
+          text: 'Salir sin guardar',
+          style: 'destructive',
+          onPress: repeat,
+        },
+      ],
+    );
+  });
 
   // ── Marcar ──
   const onTap = useCallback(

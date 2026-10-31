@@ -5,7 +5,7 @@ import { UIColors, themeColors } from '@/constants/colors';
  * Color de los botones (back, iconos de `headerRight`) de la cabecera del
  * cantoral.
  *
- * La cabecera NO es la misma en todas las plataformas (`app/(tabs)/cancionero.tsx`):
+ * La cabecera NO es la misma en todas las plataformas (`app/(tabs)/cancionero/_layout.tsx`):
  *  - iOS: transparente (glass) sobre el fondo de la pantalla → amarillo del
  *    cantoral en oscuro y azul en claro.
  *  - Android y web: barra amarilla SÓLIDA en los dos modos → siempre el casi

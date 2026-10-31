@@ -9,6 +9,7 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { TouchableOpacity } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 jest.mock('react-native-webview', () => {
@@ -30,9 +31,11 @@ const INITIAL_METRICS = {
 
 function Wrap({ children }: { children: React.ReactNode }) {
   return (
-    <SafeAreaProvider initialMetrics={INITIAL_METRICS}>
-      {children}
-    </SafeAreaProvider>
+    <GestureHandlerRootView>
+      <SafeAreaProvider initialMetrics={INITIAL_METRICS}>
+        {children}
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

@@ -4,6 +4,43 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-10-31 19:00 — Expo 58: repaso de los pasos 1-4, entrar en subrutas desde otra pestaña y `npm audit fix`
+
+- **Entrar en una subruta desde otra pestaña deja la portada debajo** (`withAnchor`). Con las pestañas convertidas en carpetas, un `router.push('/cancionero/cancion')` o `'/contigo/oracion'` desde fuera de esa pila la dejaba con esa pantalla sola, y «atrás» no tenía adónde volver. Ahora entran con `withAnchor`: la paleta ⌘K y el enlace `/cancion?f=` (cantoral), las rutas sueltas de los avisos (`goToPath`) y el botón de acción del aviso en Inicio, que además pasa por `goToPath` (llega a pestañas que en iOS no están en la barra). Dentro de la propia pila NO se usa: `withAnchor` la reinicia a portada + destino. Test en `cantoralJourney`.
+- **`npm audit fix`** (sin `--force`): solo parches de dependencias transitivas (`shell-quote`, `node-forge`, `js-yaml`, `joi`, `qs`, `compression`, `body-parser`, `@xmldom/xmldom`, `launch-editor`, `moment`, `typescript-eslint` 8.72…). De 73 avisos a 63, sin el crítico y de 12 altos a 5. Lo que queda es de herramientas de desarrollo (eslint, jest, CLI de RN) o `@grpc/grpc-js` dentro de Firestore, que la app no usa y que Firebase 13.1 (la última) sigue fijando en `~1.9`. Nada de eso entra en la app.
+- Repaso de los pasos 1-4 sin más fallos: `expo install --check` al día, `expo-doctor` 19/20 (solo avisa de que `react-native-render-html` no se mantiene), parches de `patch-package` aplicados, sin llamadas `navigation.navigate('Nombre')` sueltas, Materiales → actividad y `?date=` del calendario coherentes, `usePreventRemove` de Comunica bien usado.
+
+## 2026-10-31 18:00 — Expo 58: el Cantoral pasa a rutas de fichero (ya no queda ningún navegador a mano)
+
+Pasos 5-9 de `docs/planes/PLAN_EXPO_58.md`. Era lo que hacía que la build 60 se cerrara al abrir el Cantoral. **Falta la build de TestFlight y probar en el móvil (paso 10).**
+
+- **`app/(tabs)/cancionero/`**: `_layout.tsx` (el mismo `Stack` con sus cabeceras, la raya amarilla y `SettingsProvider`) + `index` (categorías), `categoria`, `cancion`, `pantalla-completa` y `seleccion`, que re-exportan las pantallas de `app/screens/`. `unstable_settings.anchor = 'index'`: una canción abierta en frío tiene las categorías debajo.
+- **Una canción ya no viaja entera por la ruta.** Los params son texto: `filename`, `list`, `currentIndex`, `source`, `firebaseCategory` (y `transpose`/`capoOverride` en pantalla completa). La lista de anterior/siguiente, la canción del líder del coro y la letra viva con un arreglo recién añadido van en un almacén en memoria (`utils/songNavList.ts`, 40 listas); la pantalla las lee con `hooks/useRouteSong.ts`, que si no hay lista (app reiniciada, recarga en web) lee la canción del catálogo `songs`. Si la canción no existe, el detalle lo dice («No encontramos esta canción»).
+- **Nombres → rutas** en `utils/eventRoutes.ts` (`cantoralHref`); `openCantoral(screen, params)` (`utils/cantoralNavigation.ts`) sustituye a los `navigation.navigate('SongDetail' | 'SongsList' | 'SelectedSongs' | 'SongFullscreen')` de Categorías, la lista, el detalle (etiqueta → lista, «Ver» la selección), la pantalla completa y «Tu selección». Cerrar la pantalla completa tras pasar de canción usa `router.dismissTo` (el detalle se queda en la canción a la que se llegó).
+- **Fuera `utils/pendingSongOpen.ts`**: la paleta ⌘K y el enlace `/cancion?f=` abren la canción en su ruta directamente.
+- **Lo que colgaba del stack a mano**, en el `_layout`: re-tap del tab (`router.dismissAll()`, como Más) y el **modo coro esclavo** (`useChoirFollower`). Cambio de comportamiento: antes, con el cantoral en segundo plano, la canción del líder se apilaba sin cambiar de pestaña; ahora navegar al cantoral cambia de pestaña, así que la canción del líder queda pendiente y se abre al volver al cantoral.
+- **`freezeOnBlur` fuera** (paso 7) de `AndroidTabsLayout`, `eventStackScreens` y el cantoral: en expo-router 58 «no tiene efecto» (los navegadores lo fijan a `false`). Las pestañas visitadas vuelven a re-renderizar en segundo plano; a vigilar en el móvil.
+- **`defaultTab`** (paso 8): sin cambios. Es global, vale `index` y ya no lo leía nadie; si el Panel lo cambia algún día, que Inicio redirija al arrancar.
+- **Web en blanco (fallo de la rama, no del cantoral):** en Expo 58 el export estático ya no mete el JS en el HTML; `app/+html.tsx` tiene que pintar `headNodes` y `bodyNodes` de `useServerDocumentContext()`. Sin eso `expo export -p web` daba una página sin un solo `<script>`. Guardarraíl: `__tests__/htmlTemplateAssets.test.tsx`.
+- **Tests:** `__tests__/router/cantoralJourney.test.tsx` recorre con el router real categorías → lista → canción → pantalla completa → siguiente → cerrar → atrás → atrás, y abre una canción en frío por su ruta; `routeFoldersWalk` abre cada ruta de `cancionero/`; las listas de pendientes de `tabsMountWithRouter` y `noHandMadeNavigators` desaparecen (la regla queda pelada). 238 suites / 2.707 tests, lint 36 avisos.
+- Web verificada con `expo export -p web` + Playwright: las seis pestañas y el recorrido entero del cantoral (incluidas las flechas, la recarga en una canción y `/cancion?f=`).
+- Requiere build nativo: no llega por OTA.
+
+## 2026-10-31 12:00 — Expo 58: Fotos, Calendario, Visita del Papa y Más pasan a rutas de fichero
+
+Primer tramo de la migración a navegación por ficheros (`docs/planes/PLAN_EXPO_58.md`). En expo-router 58 el estado de navegación se crea de forma global a partir de las rutas de fichero, y la build 60 se cerraba al abrir por montar navegadores a mano (`createNativeStackNavigator`) dentro de las pestañas. **Quedan Cantoral (paso 5) y lo que se apoya en su stack (paso 6).**
+
+- **Fotos** y **Calendario**: de `fotos.tsx` / `calendario.tsx` a carpetas con `_layout.tsx` + `index.tsx`. Las pantallas viven ahora en `app/screens/FotosScreen.tsx` y `CalendarScreen.tsx` (las reutiliza Más). `CalendarScreen` decide dónde pone el conmutador Mes/Agenda por una prop `variant: 'tab' | 'stacked'` en vez de por el nombre de la ruta, y lee el `?date=` de la URL (ya no de React Navigation).
+- **Visita del Papa** (`app/(tabs)/visitapapa/`) y **Más** (`app/(tabs)/mas/`): un fichero de ruta por pantalla (22 en Más, 12 en Visita) que re-exporta la pantalla de `app/screens/`. Los layouts llevan lo que tenían los ficheros viejos: ajustes, botones de acción de evento, barra de color, re-tap del tab (`router.canDismiss()` + `dismissAll()`), vuelta a la raíz al volver de otro tab y el destino pendiente del banner «Evalúa».
+- **`utils/eventRoutes.ts`**: único sitio que traduce los nombres de pantalla de siempre (`'Horario'`, `'Fotos'`, `'JubileoHome'`…) a rutas (`/mas/horario`, `/visitapapa`, `/mas/evento`). `masNavigation`, `eventNavigation` y `tabNavigation` siguen hablando en nombres. Las pantallas de evento navegan con `useEventNavigation()`; la raíz (`/mas` o `/visitapapa`) la da `EventBaseContext`.
+- **Los params de ruta son texto.** `initialDayIndex` se lee como número desde la URL, y `MaterialPages` ya no recibe el objeto `actividad`: recibe `dia` y `act` (posiciones) y lo lee de la caché de `materiales`.
+- **`renderEventScreens()` devuelve un array, no un fragmento**: el `Stack` de expo-router 58 recorre los hijos con `Children.toArray`, que no aplana fragmentos, y habría reventado en el móvil.
+- **Comunica** (de `main`) sobre Expo 58: su layout usa `unstable_settings.anchor`, y «salir con cambios sin guardar» pasa de `beforeRemove` (ya no existe en el mapa de eventos) a `usePreventRemove` en las cuatro pantallas.
+- **Guardarraíles** (`__tests__/router/`): `tabsMountWithRouter` y `routeFoldersWalk` montan las pestañas y abren **cada ruta** de `mas/` y `visitapapa/` con `renderRouter` (router real), y fallan ante avisos de rutas; `noHandMadeNavigators` prohíbe `createNativeStackNavigator` en `app/` con una lista de pendientes que solo puede encogerse (hoy: Cantoral). `tabNavigationInvariants` pasa a comprobar los ficheros de `mas/`.
+- Jest: `standard-navigation` en `transformIgnorePatterns`. Lint: 36 avisos (bajan los de `mas.tsx` y `visitapapa.tsx`).
+- **Pendiente de probar en dispositivo:** re-tap de pestaña en Más y Visita, volver al tab del evento, el banner «Evalúa», abrir un día del calendario desde Home en iOS (entra por `/mas/calendario?date=…`), Materiales → actividad, `freezeOnBlur` (sin tocar, ver paso 7).
+- Requiere build nativo: no llega por OTA.
+
 ## 2026-10-29 23:30 — Área nativa de Comunica: repaso antes de pasar a `main`
 
 Recorrido automático con el servidor falso (monitor, coordinación y varias
@@ -23,6 +60,19 @@ delegaciones: 56 pantallas y 350 botones). Ninguna pantalla rota. Arreglado:
   web (en el móvil sigue siendo un botón para VoiceOver, con sus acciones).
 - Al traer `main`: vuelve `components/ui/StatCard.tsx`, que `main` había
   borrado por estar sin uso y que usa el resumen de Coordinación.
+
+## 2026-10-29 18:00 — Expo 58 (React Native 0.88, React 19.3) y dependencias mayores
+
+- **Expo SDK 57 → 58** (`expo install`): React Native 0.88, React 19.3, Reanimated 4.7, worklets 0.13, **gesture-handler 3**, `@sentry/react-native` 8, expo-router 58, `jest-expo` 58 + Jest 30. Además `firebase` 13, `chordsheetjs` 18 y `@aptabase/react-native` 0.6. `async-storage` se queda en 2.2 (Expo 58 lo sigue fijando ahí).
+- **`runtimeVersion` 2.1.0 → 2.2.0.** Por el cambio de SDK: los binarios de la 2.1 (SDK 57) dejan de recibir las OTA que se publiquen desde esta rama. La `version` de la app sigue en 2.1.0.
+- **Node 24 en los workflows** (verify, OTA, build de tienda y deploy web): `@expo/cli` 58 pide Node ≥ 22.13 y firebase 13 ≥ 24.12. El de reglas de Firebase sigue en 20.
+- **Navegación (expo-router 58):** `createNativeStackNavigator` se importa de `expo-router/native-stack`; `initialRouteName` ya no es prop de los layouts (`contigo` usa `unstable_settings.anchor`); `Tabs` de Android y web ya no reciben `initialRouteName={defaultTab}` (en iOS no se usaba, así que `defaultTab` ≠ `index` no se respeta en ninguna plataforma); `initialParams` desaparece: el `eventId` de la pestaña de la Visita del Papa viaja por `EventIdContext` (`hooks/useCurrentEvent.ts`).
+- **Filas deslizables:** `Swipeable` ya no existe en gesture-handler 3. `SongListItem`, `PlaylistRow` y `NotificationListItem` pasan a `ReanimatedSwipeable` con un componente nuevo, `components/ui/SwipeActionContent.tsx` (acciones animadas con Reanimated).
+- **RN 0.88:** refs con `ScrollViewInstance` / `TextInputInstance` / `ViewInstance`; fuera `backgroundColor` y `translucent` de `StatusBar`; `ListEmptyComponent` sin `null`; `StyleSheet.create<T>` con `type` en vez de `interface`.
+- **Parches** (`patch-package`): `react-native-webview` 14.0.1 (`WebView<P = undefined>` volvía `never` las props en TypeScript) y `expo-native-compact-tabs` (tipo de `ScrollView`).
+- **Tests:** el test de DOM pasa a `*.dom.test.ts` y corre en un proyecto Jest propio (`jsdom`, sin React Native), porque el setup de RN 0.88 redefine `window`; resolver de tests de Reanimated en lugar del de worklets; `jestSetup` de gesture-handler y mock oficial de worklets; `react-test-renderer` 19.3 declarado a mano (ya no lo trae `jest-expo`) y fuera de `overrides`; registro de assets mockeado en `jest.setup.js`.
+- Sin cambios de comportamiento a propósito. **Pendiente de probar en dispositivo:** navegación y tabs (iOS/Android), deslizar filas (cantoral, selección, notificaciones), animaciones, login con Firebase y que `freezeOnBlur` (la guía de expo-router 58 dice que se quite, pero los tipos lo siguen aceptando) siga congelando las pestañas.
+- Requiere build nativo: no llega por OTA.
 
 ## 2026-10-29 13:00 — Dependencias al día dentro de Expo 57
 

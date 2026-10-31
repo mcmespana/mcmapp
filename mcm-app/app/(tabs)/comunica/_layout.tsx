@@ -30,6 +30,9 @@ import ComunicaAreaProvider from '@/components/comunica/comun/ComunicaAreaProvid
 import { TabHeaderColors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
+// expo-router 58: el arranque del stack se declara así, no con `initialRouteName`.
+export const unstable_settings = { anchor: 'index' };
+
 export default function ComunicaLayout() {
   const isDark = useColorScheme() === 'dark';
   const ios = Platform.OS === 'ios';
@@ -37,7 +40,6 @@ export default function ComunicaLayout() {
   return (
     <ComunicaAreaProvider>
       <Stack
-        initialRouteName="index"
         screenOptions={{
           headerBackButtonDisplayMode: 'minimal',
           headerTintColor: tint,

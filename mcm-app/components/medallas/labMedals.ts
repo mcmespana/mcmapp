@@ -1,5 +1,3 @@
-import type { ImageSourcePropType } from 'react-native';
-
 /**
  * Las medallas de prueba del Laboratorio Alpha.
  *
@@ -25,7 +23,7 @@ export type LabMedal = {
   /** Una línea bajo el nombre en el pop-up. */
   subtitle: string;
   glbUrl: string;
-  thumbnail: ImageSourcePropType;
+  thumbnail: number;
 };
 
 export const LAB_MEDALS: readonly LabMedal[] = [

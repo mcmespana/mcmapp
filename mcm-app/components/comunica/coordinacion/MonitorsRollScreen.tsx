@@ -22,7 +22,7 @@ import React, {
   useState,
 } from 'react';
 import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
-import { Stack, useNavigation, useRouter } from 'expo-router';
+import { Stack, usePreventRemove, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 import EmptyState from '@/components/ui/EmptyState';
@@ -282,7 +282,6 @@ function Editor({
   const t = useComunicaTheme();
   const qc = useQueryClient();
   const router = useRouter();
-  const navigation = useNavigation();
   const online = useNetworkStatus();
   const { me } = useMe();
   const { outbox, get } = useOutbox();
@@ -423,32 +422,27 @@ function Editor({
   ]);
 
   // Salir con cambios sin guardar pregunta (el borrador se queda igual).
-  useEffect(() => {
-    const unsub = navigation.addListener('beforeRemove', (e) => {
-      if (!dirty || !editable || Platform.OS === 'web') return;
-      if (uploading) return;
-      e.preventDefault();
-      Alert.alert(
-        'Tienes cambios sin guardar',
-        'Se quedan en el móvil si sales.',
-        [
-          {
-            text: 'Guardar',
-            onPress: () =>
-              void save().then((ok) => {
-                if (ok) navigation.dispatch(e.data.action);
-              }),
-          },
-          {
-            text: 'Salir sin guardar',
-            style: 'destructive',
-            onPress: () => navigation.dispatch(e.data.action),
-          },
-        ],
-      );
-    });
-    return unsub;
-  }, [navigation, dirty, editable, uploading, save]);
+  const blockLeave = dirty && editable && Platform.OS !== 'web' && !uploading;
+  usePreventRemove(blockLeave, ({ repeat }) => {
+    Alert.alert(
+      'Tienes cambios sin guardar',
+      'Se quedan en el móvil si sales.',
+      [
+        {
+          text: 'Guardar',
+          onPress: () =>
+            void save().then((ok) => {
+              if (ok) repeat();
+            }),
+        },
+        {
+          text: 'Salir sin guardar',
+          style: 'destructive',
+          onPress: repeat,
+        },
+      ],
+    );
+  });
 
   // Callbacks por id, estables: la fila (memo) no se repinta si no cambia.
   const onTap = useCallback(

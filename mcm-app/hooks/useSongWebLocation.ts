@@ -8,10 +8,9 @@ import {
 import { songWebPath } from '@/utils/songIndex';
 
 /**
- * ¿Es una URL del cantoral? expo-router serializa el stack interno a su
- * manera: `/cancionero/SongDetail?filename=…&content=<la letra entera>` —
- * una URL kilométrica que además da 404 al recargar, porque esa ruta no
- * existe en el export estático.
+ * ¿Es una URL del cantoral? La ruta de una canción
+ * (`/cancionero/cancion?filename=…&list=…&currentIndex=…`) lleva detalles de
+ * la navegación que no sirven para compartir, y la lista solo vive en memoria.
  */
 function isCantoralPath(pathname: string): boolean {
   return (

@@ -14,7 +14,8 @@ import * as Network from 'expo-network';
 // Antes cada consumidor del mismo path repetía el JSON.parse de la caché de
 // AsyncStorage (síncrono, en el hilo JS) y su propio round-trip a Firebase. El
 // nodo `songs` tiene 3 consumidores vivos a la vez (Categories, SongList,
-// SelectedSongs por `freezeOnBlur`). Esta caché de módulo deduplica ambos.
+// SelectedSongs, que siguen montadas debajo en el stack). Esta caché de
+// módulo deduplica ambos.
 //
 // Guarda lo CRUDO (sin `transform`): dos consumidores del mismo path pueden
 // tener transforms distintos —p.ej. `songs`, donde Categories/SongList filtran

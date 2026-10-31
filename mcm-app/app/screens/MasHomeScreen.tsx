@@ -2,8 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, StyleSheet, Text, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
-import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
@@ -12,7 +11,8 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { solidTint, tintedGlyph } from '@/utils/tintColors';
 import MasFooter from '@/components/mas/MasFooter';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
-import { MasStackParamList } from '../(tabs)/mas';
+import type { MasStackParamList } from './eventStackScreens';
+import { masHref } from '@/utils/eventRoutes';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useVisibleTabs } from '@/hooks/useVisibleTabs';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
@@ -94,8 +94,6 @@ const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
 
 export default function MasHomeScreen() {
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('mas');
-  const navigation =
-    useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const [feedbackVisible, setFeedbackVisible] = useState(false);
@@ -170,11 +168,9 @@ export default function MasHomeScreen() {
     useCallback(() => {
       const pending = takePendingMasScreen();
       if (pending) {
-        // navigate() overloads no aceptan tipos unión ni un screen con params
-        // `undefined` + params — usamos `as any` como escape hatch idiomático.
-        (navigation.navigate as any)(pending.screen, pending.params);
+        router.push(masHref(pending.screen, pending.params) as never);
       }
-    }, [navigation]),
+    }, []),
   );
 
   return (
@@ -231,11 +227,11 @@ export default function MasHomeScreen() {
                     return;
                   }
                   if (item.target) {
-                    navigation.navigate(
-                      item.target as any,
-                      item.eventId
-                        ? ({ eventId: item.eventId } as any)
-                        : undefined,
+                    router.push(
+                      masHref(
+                        item.target,
+                        item.eventId ? { eventId: item.eventId } : undefined,
+                      ) as never,
                     );
                   }
                 }}

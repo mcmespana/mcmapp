@@ -10,8 +10,7 @@ import {
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from 'expo-router/react-navigation';
-import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
+import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -21,7 +20,7 @@ import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { isEventArchived } from '@/constants/events';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
-import { MasStackParamList } from '../(tabs)/mas';
+import { masHref } from '@/utils/eventRoutes';
 import { themeColors } from '@/constants/colors';
 import typography from '@/constants/typography';
 
@@ -37,8 +36,6 @@ import typography from '@/constants/typography';
  * se construye de los eventos ya mergeados que publica `ActiveEventContext`.
  */
 export default function EventosPasadosScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
@@ -87,7 +84,9 @@ export default function EventosPasadosScreen() {
                     } as ViewStyle),
               ]}
               onPress={() =>
-                navigation.navigate('JubileoHome', { eventId: event.id })
+                router.push(
+                  masHref('JubileoHome', { eventId: event.id }) as never,
+                )
               }
               accessibilityRole="button"
               accessibilityLabel={event.title}
@@ -139,7 +138,7 @@ export default function EventosPasadosScreen() {
   );
 }
 
-interface Styles {
+type Styles = {
   safeArea: ViewStyle;
   container: ViewStyle;
   card: ViewStyle;
@@ -148,7 +147,7 @@ interface Styles {
   iconCircle: ViewStyle;
   cardTitle: TextStyle;
   arrowCircle: ViewStyle;
-}
+};
 
 const createStyles = (isDark: boolean) =>
   StyleSheet.create<Styles>({
