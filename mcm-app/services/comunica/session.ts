@@ -377,6 +377,9 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     getMyMonitorProfile: authed((o) => api.getMyMonitorProfile(o)),
     updateMyMonitorProfile: authed((b) => api.updateMyMonitorProfile(b)),
     uploadMyDocument: authed((f, file) => api.uploadMyDocument(f, file)),
+    // Familias (plan 11).
+    getMyProfiles: authed((o) => api.getMyProfiles(o)),
+    getProfileCalendar: authed((pid, o) => api.getProfileCalendar(pid, o)),
     photoSource: (url) => api.photoSource(url),
   };
 }

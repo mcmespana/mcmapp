@@ -73,7 +73,7 @@ describe('acceso en el servidor falso', () => {
       email: 'monitor@ejemplo.org',
       code: FAKE_CODE,
     });
-    expect('accessToken' in ok && ok.me.roles).toEqual(['monitor']);
+    expect('accessToken' in ok && ok.me.roles).toEqual(['monitor', 'member']);
     await expect(
       fake.verify({ email: 'coordinacion@ejemplo.org', code: FAKE_CODE }),
     ).rejects.toMatchObject({ reason: 'code_expired' });

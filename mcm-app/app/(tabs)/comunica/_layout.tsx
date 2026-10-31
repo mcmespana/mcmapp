@@ -21,12 +21,15 @@
 //   muestra  → los componentes del área de un vistazo (solo desarrollo/preview).
 //
 // El motor del área (consultas, sesión, caché por persona y cola) vive aquí y
-// no en la raíz: no toca al resto de la app y se va con el interruptor.
+// no en la raíz: no toca al resto de la app y se va con el interruptor. Dentro,
+// `ActiveProfileProvider` (plan 11): a quién se ve, uno mismo o un hijo, para
+// todas las pantallas de familias.
 
 import React from 'react';
 import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import ComunicaAreaProvider from '@/components/comunica/comun/ComunicaAreaProvider';
+import ActiveProfileProvider from '@/components/comunica/perfiles/ActiveProfileProvider';
 import { TabHeaderColors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTabReselectToRoot } from '@/components/tabs/tabBarController';
@@ -43,83 +46,90 @@ export default function ComunicaLayout() {
   const tint = ios ? themeColors(isDark).headerTint : '#fff';
   return (
     <ComunicaAreaProvider>
-      <Stack
-        screenOptions={{
-          headerBackButtonDisplayMode: 'minimal',
-          headerTintColor: tint,
-          headerShadowVisible: false,
-          // iOS: cabecera del sistema, transparente arriba y cristal al hacer
-          // scroll (como el cantoral). Android y web: la barra del color de la
-          // pestaña con el texto en blanco, como el resto de pestañas.
-          headerTransparent: ios,
-          headerStyle: ios
-            ? { backgroundColor: 'transparent' }
-            : { backgroundColor: TabHeaderColors.comunica },
-          headerTitleStyle: { color: tint },
-          ...(ios && parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
-        }}
-      >
-        <Stack.Screen name="index" options={{ title: 'Comunica' }} />
-        <Stack.Screen
-          name="pasar-lista/grupos"
-          options={{ title: 'Pasar lista' }}
-        />
-        <Stack.Screen
-          name="pasar-lista/[groupId]/index"
-          options={{ title: 'Lista' }}
-        />
-        <Stack.Screen
-          name="pasar-lista/[groupId]/historial"
-          options={{ title: 'Historial de listas' }}
-        />
-        <Stack.Screen
-          name="grupos/index"
-          options={{ title: 'Grupos y fichas' }}
-        />
-        <Stack.Screen name="grupos/[groupId]" options={{ title: 'Grupo' }} />
-        <Stack.Screen
-          name="grupos/sin-grupo"
-          options={{ title: 'Sin grupo' }}
-        />
-        <Stack.Screen
-          name="grupos/persona/[personId]"
-          options={{ title: 'Ficha' }}
-        />
-        <Stack.Screen
-          name="coordinacion/index"
-          options={{ title: 'Coordinación' }}
-        />
-        <Stack.Screen
-          name="coordinacion/resumen"
-          options={{ title: 'Resumen de grupos' }}
-        />
-        <Stack.Screen
-          name="coordinacion/monitores"
-          options={{ title: 'Lista de monitores' }}
-        />
-        <Stack.Screen
-          name="coordinacion/reuniones"
-          options={{ title: 'Reuniones de programación' }}
-        />
-        <Stack.Screen
-          name="coordinacion/monitor/[id]"
-          options={{ title: 'Ficha' }}
-        />
-        <Stack.Screen name="acceso-codigo" options={{ title: 'Código' }} />
-        <Stack.Screen name="acceso-elegir" options={{ title: 'Elegir' }} />
-        <Stack.Screen name="eventos/index" options={{ title: 'Eventos' }} />
-        <Stack.Screen name="eventos/[eventId]" options={{ title: 'Evento' }} />
-        <Stack.Screen name="yo/index" options={{ title: 'Tu cuenta' }} />
-        <Stack.Screen name="yo/avisos" options={{ title: 'Avisos' }} />
-        <Stack.Screen
-          name="yo/monitor"
-          options={{ title: 'Mis datos de monitor' }}
-        />
-        <Stack.Screen name="web" options={{ headerShown: false }} />
-        <Stack.Screen name="muestra" options={{ title: 'Muestra' }} />
-      </Stack>
+      {/* A quién se ve: uno mismo o un hijo (plan 11). */}
+      <ActiveProfileProvider>
+        <Stack
+          screenOptions={{
+            headerBackButtonDisplayMode: 'minimal',
+            headerTintColor: tint,
+            headerShadowVisible: false,
+            // iOS: cabecera del sistema, transparente arriba y cristal al hacer
+            // scroll (como el cantoral). Android y web: la barra del color de la
+            // pestaña con el texto en blanco, como el resto de pestañas.
+            headerTransparent: ios,
+            headerStyle: ios
+              ? { backgroundColor: 'transparent' }
+              : { backgroundColor: TabHeaderColors.comunica },
+            headerTitleStyle: { color: tint },
+            ...(ios && parseInt(String(Platform.Version), 10) < 26
+              ? { headerBlurEffect: 'systemChromeMaterial' as const }
+              : {}),
+          }}
+        >
+          <Stack.Screen name="index" options={{ title: 'Comunica' }} />
+          <Stack.Screen
+            name="pasar-lista/grupos"
+            options={{ title: 'Pasar lista' }}
+          />
+          <Stack.Screen
+            name="pasar-lista/[groupId]/index"
+            options={{ title: 'Lista' }}
+          />
+          <Stack.Screen
+            name="pasar-lista/[groupId]/historial"
+            options={{ title: 'Historial de listas' }}
+          />
+          <Stack.Screen
+            name="grupos/index"
+            options={{ title: 'Grupos y fichas' }}
+          />
+          <Stack.Screen name="grupos/[groupId]" options={{ title: 'Grupo' }} />
+          <Stack.Screen
+            name="grupos/sin-grupo"
+            options={{ title: 'Sin grupo' }}
+          />
+          <Stack.Screen
+            name="grupos/persona/[personId]"
+            options={{ title: 'Ficha' }}
+          />
+          <Stack.Screen
+            name="coordinacion/index"
+            options={{ title: 'Coordinación' }}
+          />
+          <Stack.Screen
+            name="coordinacion/resumen"
+            options={{ title: 'Resumen de grupos' }}
+          />
+          <Stack.Screen
+            name="coordinacion/monitores"
+            options={{ title: 'Lista de monitores' }}
+          />
+          <Stack.Screen
+            name="coordinacion/reuniones"
+            options={{ title: 'Reuniones de programación' }}
+          />
+          <Stack.Screen
+            name="coordinacion/monitor/[id]"
+            options={{ title: 'Ficha' }}
+          />
+          <Stack.Screen name="acceso-codigo" options={{ title: 'Código' }} />
+          <Stack.Screen name="acceso-elegir" options={{ title: 'Elegir' }} />
+          <Stack.Screen name="eventos/index" options={{ title: 'Eventos' }} />
+          <Stack.Screen
+            name="eventos/[eventId]"
+            options={{ title: 'Evento' }}
+          />
+          <Stack.Screen name="yo/index" options={{ title: 'Tu cuenta' }} />
+          <Stack.Screen name="yo/avisos" options={{ title: 'Avisos' }} />
+          <Stack.Screen
+            name="yo/monitor"
+            options={{ title: 'Mis datos de monitor' }}
+          />
+          <Stack.Screen name="web" options={{ headerShown: false }} />
+          <Stack.Screen name="muestra" options={{ title: 'Muestra' }} />
+          <Stack.Screen name="perfiles" options={{ title: 'Perfiles' }} />
+        </Stack>
+      </ActiveProfileProvider>
     </ComunicaAreaProvider>
   );
 }

@@ -11,13 +11,14 @@
 // vigila aquí que una sesión REVOCADA (un 401 sin refresco posible) no deje a
 // nadie atrapado en una pantalla interna: vuelve a la puerta, que pide entrar.
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Alert, Platform } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { getComunicaApi } from '@/services/comunica';
 import { isComunicaApiError } from '@/services/comunica/client';
 import {
+  destinationQuery,
   nativeHrefFor,
   publicPageUrl,
   type ComunicaLink,
@@ -32,6 +33,8 @@ import { getSessionState, signIn, signOut } from '@/services/comunica/session';
 import { consumePendingComunicaAuthUrl } from '@/utils/pendingComunicaLink';
 import { useArea } from '@/components/comunica/comun/ComunicaAreaProvider';
 import { useToast } from '@/contexts/AppToastContext';
+import { mustChooseFirst } from '@/utils/comunica/profiles';
+import { useActiveProfile, type ActiveProfile } from './useActiveProfile';
 import { useOpenLegacy } from './useOpenLegacy';
 
 /** Pregunta sí/no. En web, `window.confirm`; sin él, NO (nunca se acepta solo). */
@@ -82,6 +85,12 @@ export interface LinkDeps {
   outbox: Outbox | null;
   /** Vaciar la caché en memoria tras salir. */
   clearQueries: () => void;
+  /**
+   * ¿Hay que elegir a quién antes de abrirlo? (plan 11, `mustChooseFirst`):
+   * un familiar con varios hijos que aún no ha elegido, o viéndose a sí
+   * mismo con un enlace a un evento.
+   */
+  mustChoose?: (destination: Destination) => Promise<boolean>;
 }
 
 /**
@@ -156,6 +165,13 @@ export async function handleComunicaLink(
     await signIn(res, res.me);
   }
   if (link.destination) {
+    if (await deps.mustChoose?.(link.destination)) {
+      deps.push({
+        pathname: '/comunica/perfiles',
+        params: { destino: destinationQuery(link.destination) },
+      });
+      return;
+    }
     const native = nativeHrefFor(link.destination);
     if (native) deps.push(native);
     else await deps.openLegacy(link.destination, 'Comunica');
@@ -194,8 +210,43 @@ function useBackToGateWhenRevoked() {
   }, [revoked, router]);
 }
 
+/** Lo que tarda como mucho en saberse a quién se ve tras entrar con el enlace. */
+const PROFILE_WAIT_MS = 5000;
+
+/**
+ * El perfil activo de QUIEN ESTÁ DENTRO ahora, cuando se sepa: tras entrar
+ * con el enlace, el contexto tarda un momento en ser el de la persona nueva.
+ * Si no llega a tiempo (sin conexión), se abre sin preguntar: el servidor
+ * comprueba el `pid` igual.
+ */
+function useActiveProfileWhenReady() {
+  const active = useActiveProfile();
+  const ref = useRef(active);
+  const waiters = useRef<(() => void)[]>([]);
+  const isCurrent = (a: ActiveProfile) =>
+    a.ready && a.self?.id === getSessionState().me?.personId;
+  useEffect(() => {
+    ref.current = active;
+    if (isCurrent(active)) waiters.current.splice(0).forEach((w) => w());
+  }, [active]);
+  return useCallback(
+    (): Promise<ActiveProfile | null> =>
+      isCurrent(ref.current)
+        ? Promise.resolve(ref.current)
+        : new Promise((resolve) => {
+            const timer = setTimeout(() => resolve(null), PROFILE_WAIT_MS);
+            waiters.current.push(() => {
+              clearTimeout(timer);
+              resolve(ref.current);
+            });
+          }),
+    [],
+  );
+}
+
 export function useComunicaLinks() {
   useBackToGateWhenRevoked();
+  const whenReady = useActiveProfileWhenReady();
   const router = useRouter();
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -218,6 +269,19 @@ export function useComunicaLinks() {
           return outboxRef.current;
         },
         clearQueries: () => qc.clear(),
+        mustChoose: async (d) => {
+          const a = await whenReady();
+          return (
+            !!a &&
+            mustChooseFirst({
+              page: d.internalpage,
+              member: a.member,
+              childrenCount: a.children.length,
+              chosen: a.chosen,
+              audience: a.audience,
+            })
+          );
+        },
       }).catch(() => {
         toast.show({
           variant: 'warning',
@@ -227,5 +291,5 @@ export function useComunicaLinks() {
     const pending = consumePendingNativeLink();
     if (pending) void handle(pending);
     return subscribeNativeLink((l) => void handle(l));
-  }, [router, qc, toast, openLegacy]);
+  }, [router, qc, toast, openLegacy, whenReady]);
 }

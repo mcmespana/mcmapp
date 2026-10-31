@@ -32,6 +32,9 @@
 //     seguimientos de los tres tipos (del curso anterior, sin fecha, de un tipo
 //     desconocido y sobre una persona de coordinación). Personas nuevas:
 //     coordinación COM · COM 2 y quien coordina y acompaña a la vez.
+//   · Familias y miembros (plan 11), sin azar y al final
+//     (`fixturesFamilies.ts`): solo familiar con dos hijos (uno sin nombre),
+//     con uno y con ninguno; monitora con una hija; miembro sin hijos.
 
 import type {
   Consents,
@@ -50,6 +53,11 @@ import type {
 } from '../contract';
 import { addDays, madridInstant } from '@/utils/comunica/madrid';
 import { generateCoordination } from './fixturesCoordination';
+import {
+  generateFamilies,
+  NEW_CHILD,
+  type FakeFamilyLink,
+} from './fixturesFamilies';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export const FIXTURE_SEED = 20262027;
@@ -199,6 +207,13 @@ export interface FakeData {
   rollTakers: Record<string, string>;
   /** Nombre de cada evento (semanales y reuniones). */
   eventNames: Record<string, string>;
+  // ── Familias (plan 11) ──
+  /** Hijos de cada familiar (por id del familiar), con sus fechas. */
+  families: Record<string, FakeFamilyLink[]>;
+  /** Género de la ficha; `null` = vacío. */
+  genders: Record<string, 'female' | 'male' | null>;
+  /** Miembros del MCM sin papel de equipo. */
+  members: string[];
 }
 
 export type PersonaId =
@@ -214,7 +229,18 @@ export type PersonaId =
    * De Villaclara (su ficha), monitor sin grupo allí, y coordina Puerto Alto,
    * donde además lleva P1 (plan 17, «varias delegaciones»).
    */
-  | 'twoDelegations';
+  | 'twoDelegations'
+  // Familias (plan 11, `fixturesFamilies.ts`).
+  /** Solo familiar, con dos hijos (uno sin nombre). */
+  | 'guardianTwo'
+  /** Solo familiar, con un hijo. */
+  | 'guardianOne'
+  /** Solo familiar, sin hijos vinculados. */
+  | 'guardianNone'
+  /** Monitora y miembro, con una hija. */
+  | 'monitorParent'
+  /** Miembro del MCM sin hijos. */
+  | 'member';
 
 export interface FakeMonitorRoll {
   sessionId: string;
@@ -713,6 +739,10 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
   people.push(dual);
   groups.find((g) => g.code === 'P1')?.monitorIds.push(dual.id);
 
+  // Familias (plan 11): sin azar, al final.
+  const fam = generateFamilies(D1);
+  people.push(...fam.people, { ...NEW_CHILD, badges: { ...NEW_CHILD.badges } });
+
   const persona = (id: string) => ({ personId: id, name: name(id) });
   return {
     season: SEASON,
@@ -737,7 +767,15 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
       coordinationCom2: persona(coord.personaIds.coordinationCom2),
       both: persona(coord.personaIds.both),
       twoDelegations: persona(dual.id),
+      guardianTwo: persona(fam.personaIds.guardianTwo),
+      guardianOne: persona(fam.personaIds.guardianOne),
+      guardianNone: persona(fam.personaIds.guardianNone),
+      monitorParent: persona(fam.personaIds.monitorParent),
+      member: persona(fam.personaIds.member),
     },
+    families: fam.families,
+    genders: fam.genders,
+    members: fam.members,
     ...coord.data,
   };
 }
@@ -1125,6 +1163,12 @@ export const FAKE_EMAILS: Record<string, PersonaId[]> = {
   'com2@ejemplo.org': ['coordinationCom2'],
   'ambas@ejemplo.org': ['both'],
   'delegaciones@ejemplo.org': ['twoDelegations'],
+  // Familias (plan 11).
+  'familia@ejemplo.org': ['guardianTwo'],
+  'familia1@ejemplo.org': ['guardianOne'],
+  'familia0@ejemplo.org': ['guardianNone'],
+  'monitora@ejemplo.org': ['monitorParent'],
+  'miembro@ejemplo.org': ['member'],
 };
 
 export const FAKE_DNIS: Record<string, PersonaId> = {

@@ -192,4 +192,35 @@ describe('sesión revocada a mitad de pila', () => {
       ),
     ).toBe(false);
   });
+
+  it('si hay que elegir a quién (plan 11), va a «¿A quién?» con el destino', async () => {
+    const { d } = deps({ mustChoose: async () => true });
+    await handleComunicaLink(
+      {
+        kind: 'page',
+        destination: { internalpage: 'single_stic_events', id: 'ev1' },
+        auth: null,
+      },
+      d,
+    );
+    expect(d.push).toHaveBeenCalledWith({
+      pathname: '/comunica/perfiles',
+      params: { destino: 'internalpage=single_stic_events&id=ev1' },
+    });
+    expect(d.openLegacy).not.toHaveBeenCalled();
+  });
+
+  it('si no hay que elegir, abre el destino como siempre', async () => {
+    const { d } = deps({ mustChoose: async () => false });
+    await handleComunicaLink(
+      {
+        kind: 'page',
+        destination: { internalpage: 'single_stic_events', id: 'ev1' },
+        auth: null,
+      },
+      d,
+    );
+    expect(d.push).not.toHaveBeenCalled();
+    expect(d.openLegacy).toHaveBeenCalled();
+  });
 });

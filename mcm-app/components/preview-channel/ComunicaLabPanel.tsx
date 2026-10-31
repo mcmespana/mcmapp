@@ -91,6 +91,12 @@ export function ComunicaLabPanel() {
           ['coordinationCom2', 'Coord. COM 2'],
           ['both', 'Coord. + acomp.'],
           ['other', 'Otra delegación'],
+          // Familias y miembros (plan 11).
+          ['guardianTwo', 'Familia · 2 hijos'],
+          ['guardianOne', 'Familia · 1 hijo'],
+          ['guardianNone', 'Familia · sin hijos'],
+          ['monitorParent', 'Monitora con hija'],
+          ['member', 'Miembro'],
         ]}
         onChange={(persona) => {
           set({ persona });
@@ -101,8 +107,9 @@ export function ComunicaLabPanel() {
       />
       <Text style={styles.hint}>
         O desde «Entra en tu área»: monitor@ejemplo.org, coordinacion@,
-        acompanamiento@, com2@, ambas@, otra@ o dos@ (dos fichas), o el DNI
-        12345678Z. El código es siempre {FAKE_CODE}.
+        acompanamiento@, com2@, ambas@, otra@ o dos@ (dos fichas); familias:
+        familia@ (dos hijos), familia1@, familia0@, monitora@ o miembro@; o el
+        DNI 12345678Z. El código es siempre {FAKE_CODE}.
       </Text>
 
       <Text style={styles.label}>Reloj del servidor</Text>
@@ -123,6 +130,8 @@ export function ComunicaLabPanel() {
             controls.cannotRegister && 'register',
             controls.seasonClosed && 'closed',
             controls.eventRereadFails && 'reread',
+            controls.childrenDown && 'children',
+            controls.newChild && 'newChild',
           ].filter(Boolean) as string[]
         }
         options={[
@@ -132,6 +141,8 @@ export function ComunicaLabPanel() {
           ['register', 'No se puede inscribir'],
           ['closed', 'Curso cerrado'],
           ['reread', 'Evento: la relectura falla'],
+          ['children', 'Familias: el CRM no da los hijos'],
+          ['newChild', 'Familias: un hijo nuevo'],
         ]}
         onChange={(k) =>
           set(
@@ -145,7 +156,11 @@ export function ComunicaLabPanel() {
                     ? { cannotRegister: !controls.cannotRegister }
                     : k === 'closed'
                       ? { seasonClosed: !controls.seasonClosed }
-                      : { eventRereadFails: !controls.eventRereadFails },
+                      : k === 'children'
+                        ? { childrenDown: !controls.childrenDown }
+                        : k === 'newChild'
+                          ? { newChild: !controls.newChild }
+                          : { eventRereadFails: !controls.eventRereadFails },
           )
         }
       />

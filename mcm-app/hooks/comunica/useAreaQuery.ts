@@ -12,12 +12,17 @@
 import { useSyncExternalStore } from 'react';
 import { useQuery, type QueryKey } from '@tanstack/react-query';
 import { isComunicaApiError } from '@/services/comunica/client';
-import { ROUTES, type RouteName } from '@/services/comunica/contract';
+import {
+  PROFILE_PATH_PREFIX,
+  ROUTES,
+  type RouteName,
+} from '@/services/comunica/contract';
 import {
   getWorkingDelegation,
   subscribeWorkingDelegation,
   TEAM_BLOCKS,
 } from '@/services/comunica/delegation';
+import { isProfileKey } from './profileKeys';
 
 export const STALE = {
   /** Estructura: grupos, personas. */
@@ -72,6 +77,23 @@ export function useWorkingDelegation(): string | null {
   );
 }
 
+/**
+ * Una ruta de familias (`/v1/profiles/:pid/…`, plan 11) solo con su clave de
+ * familia (`[bloque, pid, …]`, la de `useProfileQuery`): si no, lo de un hijo
+ * acabaría en la caché de otro. Falla en voz alta, en desarrollo y en tests.
+ */
+export function assertProfileKey(route: RouteName | undefined, key: QueryKey) {
+  if (
+    route &&
+    ROUTES[route].path.startsWith(PROFILE_PATH_PREFIX) &&
+    !isProfileKey(key)
+  ) {
+    throw new Error(
+      `[comunica] La ruta ${route} es de familias: su clave lleva el pid (useProfileQuery).`,
+    );
+  }
+}
+
 export function useAreaQuery<T extends { generatedAt: string }>({
   key,
   fetch,
@@ -83,6 +105,7 @@ export function useAreaQuery<T extends { generatedAt: string }>({
   placeholderData,
   retry = true,
 }: Options<T>) {
+  assertProfileKey(route, key);
   // Al cambiar de delegación, la clave cambia y se repinta con la otra caché.
   const delegation = useWorkingDelegation();
   const query = useQuery<T, Error, T>({
