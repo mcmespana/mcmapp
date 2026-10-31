@@ -1,4 +1,5 @@
-// app/(tabs)/fotos.tsx
+// Pantalla de Fotos. La montan `app/(tabs)/fotos/` (la pestaña) y el stack de
+// «Más» (cuando Fotos no cabe en la barra).
 import { logger } from '@/utils/logger';
 import React from 'react';
 import {
@@ -12,7 +13,6 @@ import {
   Alert,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { createNativeStackNavigator } from 'expo-router/native-stack';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useTabListScroll } from '@/components/tabs/useTabScroll';
 import { Button } from 'heroui-native';
@@ -213,8 +213,8 @@ export function FotosScreen() {
  * Header de `FotosScreen`: NATIVO y transparente — las portadas pasan por
  * debajo y se funden con él al deslizar, igual que en el cantoral. La pantalla
  * cuenta con que es transparente (reserva `useHeaderHeight()` arriba), así que
- * quien la monte tiene que usar estas opciones: el tab de Fotos y el stack de
- * «Más» (cuando Fotos no cabe en la barra).
+ * quien la monte tiene que usar estas opciones: `app/(tabs)/fotos/_layout.tsx` y
+ * el stack de «Más» (cuando Fotos no cabe en la barra).
  */
 export function fotosHeaderOptions(isDark: boolean) {
   const isIOS = Platform.OS === 'ios';
@@ -241,22 +241,7 @@ export function fotosHeaderOptions(isDark: boolean) {
   };
 }
 
-/**
- * Tab de Fotos: stack propio para tener el header nativo transparente, SIN
- * texto de título (la pestaña ya se llama Fotos).
- */
-const FotosStack = createNativeStackNavigator();
-export default function FotosTab() {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
-  return (
-    <FotosStack.Navigator
-      screenOptions={{ title: '', ...fotosHeaderOptions(isDark) }}
-    >
-      <FotosStack.Screen name="FotosMain" component={FotosScreen} />
-    </FotosStack.Navigator>
-  );
-}
+export default FotosScreen;
 
 const createStyles = (scheme: 'light' | 'dark' | null) => {
   const theme = ThemeColors[scheme ?? 'light'];

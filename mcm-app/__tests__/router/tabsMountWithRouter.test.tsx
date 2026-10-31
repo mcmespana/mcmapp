@@ -56,6 +56,8 @@ jest.mock('react-native-webview', () => {
   };
 });
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { __resetMockDb, __setMockSnapshot } from '@/__mocks__/firebase';
 import AppProviders from '@/components/AppProviders';
 import { Slot, Stack } from 'expo-router';
 
@@ -71,7 +73,6 @@ type Tab = (typeof TABS)[number];
 
 /** Las que todavía lo hacen (se vacía al migrar, ver arriba). */
 const PENDIENTES: readonly Tab[] = [
-  'fotos',
   'calendario',
   'visitapapa',
   'mas',
@@ -80,7 +81,16 @@ const PENDIENTES: readonly Tab[] = [
 
 const NAV_STATE_ERROR = /missing, partial, or incompatible navigation state/;
 
-const loadTab = (tab: Tab) => require(`../../app/(tabs)/${tab}`).default;
+/** Rutas de una pestaña: fichero suelto (pendiente) o carpeta migrada. */
+const rutasDe = (tab: Tab): Record<string, unknown> =>
+  PENDIENTES.includes(tab)
+    ? { [`(tabs)/${tab}`]: require(`../../app/(tabs)/${tab}`).default }
+    : {
+        [`(tabs)/${tab}/_layout`]: require(`../../app/(tabs)/${tab}/_layout`)
+          .default,
+        [`(tabs)/${tab}/index`]: require(`../../app/(tabs)/${tab}/index`)
+          .default,
+      };
 
 const raiz = () => (
   <AppProviders>
@@ -88,6 +98,13 @@ const raiz = () => (
   </AppProviders>
 );
 const tabsLayout = () => <Stack screenOptions={{ headerShown: false }} />;
+
+/** Escenario «vacía» de `screenSmoke`: primer arranque, sin caché ni datos. */
+beforeEach(async () => {
+  await AsyncStorage.clear();
+  __resetMockDb();
+  __setMockSnapshot(null);
+});
 
 async function abrir(rutas: Record<string, unknown>, url: string) {
   await renderRouter(
@@ -111,13 +128,13 @@ describe('las pestañas arrancan con el router de verdad', () => {
   for (const tab of TABS) {
     if (PENDIENTES.includes(tab)) {
       it(`${tab}: PENDIENTE, todavía monta un navegador a mano`, async () => {
-        await expect(
-          abrir({ [`(tabs)/${tab}`]: loadTab(tab) }, `/${tab}`),
-        ).rejects.toThrow(NAV_STATE_ERROR);
+        await expect(abrir(rutasDe(tab), `/${tab}`)).rejects.toThrow(
+          NAV_STATE_ERROR,
+        );
       });
     } else {
       it(`${tab} arranca`, async () => {
-        await abrir({ [`(tabs)/${tab}`]: loadTab(tab) }, `/${tab}`);
+        await abrir(rutasDe(tab), `/${tab}`);
       });
     }
   }

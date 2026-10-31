@@ -10,7 +10,7 @@ import MasHomeScreen from '../screens/MasHomeScreen';
 import ComunicaScreen from '../screens/ComunicaScreen';
 import ComunicaGestionScreen from '../screens/ComunicaGestionScreen';
 import McmPanelScreen from '../screens/McmPanelScreen';
-import { FotosScreen, fotosHeaderOptions } from './fotos';
+import { FotosScreen, fotosHeaderOptions } from '../screens/FotosScreen';
 import { CalendarScreen } from './calendario';
 import EventosPasadosScreen from '../screens/EventosPasadosScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
