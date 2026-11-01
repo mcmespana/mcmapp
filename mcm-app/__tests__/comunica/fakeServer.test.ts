@@ -86,7 +86,72 @@ describe('servidor falso', () => {
     const refreshed = await s.refresh(
       'refreshToken' in verified ? verified.refreshToken : '',
     );
+    // Familias (planes 11-15): otra persona de prueba y el servidor ya con ella.
+    const fam = createFakeServer({ latencyMs: 0, persona: 'family' });
+    const famId = fam.data.personas.family.personId;
+    const LUCIA = 'f-hijo-lucia';
+    const NICO = 'f-hijo-sin-nombre';
+    const attempt = await fam.createCardAttempt(NICO, {
+      clientId: CLIENT(60),
+      source: { payment: 'pay-pend-1' },
+      amountCents: 3500,
+      channel: 'sheet',
+    });
     const results: Record<keyof typeof ROUTES, unknown> = {
+      myProfiles: await fam.getMyProfiles(),
+      profileDetails: await fam.getProfileDetails(famId),
+      updateProfileDetails: await fam.updateProfileDetails(famId, {
+        clientId: CLIENT(61),
+        changes: { contact: { mobile: '600000000' } },
+      }),
+      profileHealth: await fam.getProfileHealth(LUCIA),
+      updateProfileHealth: await fam.updateProfileHealth(LUCIA, {
+        clientId: CLIENT(62),
+        health: { other: 'Prueba' },
+      }),
+      profileActivities: await fam.getProfileActivities(LUCIA),
+      profileEvent: await fam.getProfileEvent(LUCIA, 'pev-convi'),
+      profileEventBySlug: await fam.getProfileEventBySlug(
+        LUCIA,
+        'convivencia-com',
+      ),
+      profileRegistrations: await fam.getProfileRegistrations(LUCIA),
+      profileRegistration: await fam.getProfileRegistration(
+        LUCIA,
+        'reg-lucia-sesiones',
+      ),
+      profileSignupForm: await fam.getSignupForm(LUCIA, 'pev-convi'),
+      profileSignUp: await fam.signUp(LUCIA, {
+        clientId: CLIENT(63),
+        eventId: 'pev-convi',
+        answers: [
+          { n: 1, option: 1 },
+          { n: 2, option: 1 },
+        ],
+        payment: { method: 'card' },
+      }),
+      updateRegistration: await fam.updateRegistration(NICO, 'reg-nico-convi', {
+        clientId: CLIENT(64),
+        answers: [
+          { n: 1, option: 2 },
+          { n: 2, option: 1 },
+        ],
+      }),
+      cancelRegistration: await fam.cancelRegistration(
+        LUCIA,
+        'reg-lucia-sesiones',
+        { clientId: CLIENT(65) },
+      ),
+      advancedForm: await fam.getAdvancedFormUrl(LUCIA, 'pev-fwa'),
+      profilePayments: await fam.getProfilePayments(famId),
+      profilePayment: await fam.getProfilePayment(LUCIA, 'pay-rejected'),
+      cardCheckout: await fam.getCardCheckout(LUCIA, {
+        payment: 'pay-transfer-110',
+      }),
+      createCardAttempt: attempt,
+      checkCardAttempt: await fam.checkCardAttempt(NICO, attempt.attemptId, {
+        returned: 'ok',
+      }),
       code,
       verify: verified,
       refresh: refreshed,

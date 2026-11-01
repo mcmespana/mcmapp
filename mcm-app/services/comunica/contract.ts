@@ -2417,7 +2417,8 @@ export const ROUTES = {
   createCardAttempt: {
     method: 'POST',
     path: '/v1/profiles/:pid/card-attempts',
-    response: CardAttempt,
+    // `simulated` SOLO lo devuelve el servidor falso; el cliente de verdad parsea con `CardAttempt` a secas (client.ts).
+    response: z.union([CardAttempt, SimulatedAttempt]),
     persist: false,
   },
   checkCardAttempt: {
