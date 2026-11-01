@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   download: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radii.pillFull,
     alignItems: 'center',
     justifyContent: 'center',
   },
