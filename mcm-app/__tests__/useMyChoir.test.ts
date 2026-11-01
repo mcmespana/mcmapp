@@ -91,3 +91,31 @@ describe('setChoir', () => {
     });
   });
 });
+
+describe('varias instancias', () => {
+  it('lo que elige una lo ve la otra (hoja del coro y onboarding a la vez)', async () => {
+    const a = await renderHook(() => useMyChoir());
+    const b = await renderHook(() => useMyChoir());
+    await waitFor(() => expect(b.result.current.isHydrated).toBe(true));
+    await act(async () =>
+      a.result.current.setChoir({ id: 'coro-1', name: 'Coro Uno' }),
+    );
+    expect(b.result.current.choir).toEqual({ id: 'coro-1', name: 'Coro Uno' });
+    await act(async () => a.result.current.setChoir(null));
+    expect(b.result.current.choir).toBeNull();
+  });
+
+  it('un coro elegido antes de terminar de leer el guardado no se pisa', async () => {
+    await AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ id: 'coro-viejo', name: 'Viejo' }),
+    );
+    const { result } = await renderHook(() => useMyChoir());
+    // Se elige ANTES de esperar a la hidratación.
+    await act(async () =>
+      result.current.setChoir({ id: 'coro-nuevo', name: 'Nuevo' }),
+    );
+    await waitFor(() => expect(result.current.isHydrated).toBe(true));
+    expect(result.current.choir).toEqual({ id: 'coro-nuevo', name: 'Nuevo' });
+  });
+});

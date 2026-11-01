@@ -67,6 +67,11 @@ indistintamente sesiones de coro (clave = id del coro) y sesiones sueltas
 Todo pasa por la hoja del coro (`components/playlist/ChoirSheet.tsx`), a un
 toque desde el icono de coro de la cabecera de «Tu selección».
 
+> Elegir o registrar el coro también se puede hacer **desde el tutorial del
+> cantoral** (último paso, «¿Formas parte de un coro?»,
+> `components/song-onboarding/ChoirStep.tsx`): usa el mismo `useMyChoir` y
+> `createChoir`, así que la hoja lo encuentra ya elegido.
+
 | Paso     | Qué hace |
 | -------- | -------- |
 | `choose` | Lista de coros existentes + «Crear un coro nuevo» |
