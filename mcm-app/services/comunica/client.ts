@@ -85,6 +85,8 @@ import {
   type HealthWrite,
   PersonDetails,
   type PersonDetailsWrite,
+  type PhotoFields,
+  PhotoWriteResult,
   ProfileHealth,
   RollDetail,
   type RollWrite,
@@ -223,6 +225,15 @@ export interface ComunicaApi {
   /** La salud de quien se ve. Nunca se guarda en el móvil. */
   getProfileHealth(pid: string): Promise<ProfileHealth>;
   updateProfileHealth(pid: string, body: HealthWrite): Promise<WriteResult>;
+  /**
+   * Familias (plan 12): la foto de quien se ve. Directa, con conexión y sin cola; el archivo, un JPEG o PNG ya recortado de hasta 4 MB.
+   * Con el mismo `clientId` se reintenta sin duplicar. Responde con la `photoUrl` nueva (versionada).
+   */
+  uploadProfilePhoto(
+    pid: string,
+    fields: PhotoFields,
+    file: UploadFile,
+  ): Promise<PhotoWriteResult>;
   getGroups(opts?: ReadOptions): Promise<GroupsResponse>;
   getToday(opts?: ReadOptions): Promise<TodayResponse>;
   getRoll(
@@ -864,6 +875,13 @@ export function createHttpClient({
       request('GET', `/v1/profiles/${enc(pid)}/health`, ProfileHealth),
     updateProfileHealth: (pid, body) =>
       request('PUT', `/v1/profiles/${enc(pid)}/health`, WriteResult, body),
+    uploadProfilePhoto: (pid, fields, file) =>
+      request(
+        'PUT',
+        `/v1/profiles/${enc(pid)}/photo`,
+        PhotoWriteResult,
+        documentForm({ clientId: fields.clientId }, file),
+      ),
     getMyMonitorProfile: (opts) =>
       request(
         'GET',

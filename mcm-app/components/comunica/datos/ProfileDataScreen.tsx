@@ -6,7 +6,7 @@
 //   · «Guardar» en la `BottomActionBar`, apagado sin cambios. Escribe DIRECTO y con conexión (sin cola: son datos personales y de salud) y solo lo que
 //     cambia. Salir con cambios sin guardar pregunta.
 //   · Nada de esto se guarda en el móvil (ver `usePersonDetails.ts`).
-//   · La foto: se ve, pero cambiarla desde la app llega después (el servidor aún no recibe fotos).
+//   · La foto se cambia aquí mismo y se sube en el acto, sin esperar a «Guardar» (`PhotoBlock`, `usePhotoUpload`): directa, con conexión, sin cola.
 
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -39,12 +39,12 @@ import { AreaSkeleton, isNetwork } from '../comun/AreaState';
 import BottomActionBar from '../comun/BottomActionBar';
 import { confirmAction } from '../comun/confirm';
 import DateTimeField from '../comun/DateTimeField';
-import PersonAvatar from '../comun/PersonAvatar';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import { TextFormField } from '../comun/form/FormField';
 import FormSection, { FormNote } from '../comun/form/FormSection';
 import SelectField from '../comun/form/SelectField';
 import { DATOS_COPY as C, HEALTH_FIELDS } from './copy';
+import PhotoBlock from './PhotoBlock';
 import {
   ConsentRow,
   LockedField,
@@ -465,17 +465,7 @@ function DataForm({
 
       {vis.sections.has('photo') ? (
         <FormSection title={C.sections.photo}>
-          <View style={styles.photo}>
-            <PersonAvatar person={person} size={96} />
-            <View style={styles.photoText}>
-              <Text style={[styles.photoLabel, { color: t.text }]}>
-                {details.photoUrl ? C.photo.change : C.photo.add}
-              </Text>
-              <Text style={[styles.hintPlain, { color: t.textSecondary }]}>
-                {C.photo.soon}
-              </Text>
-            </View>
-          </View>
+          <PhotoBlock pid={pid} person={person} offline={offline} />
         </FormSection>
       ) : null}
 
@@ -618,14 +608,6 @@ const styles = StyleSheet.create({
   offline: { ...typography.caption, textAlign: 'center' },
   hint: { ...typography.caption, paddingHorizontal: 16, paddingBottom: 12 },
   hintPlain: { ...typography.caption },
-  photo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    padding: 16,
-  },
-  photoText: { flex: 1, gap: 4 },
-  photoLabel: { ...typography.body, fontWeight: '600' },
   healthState: { padding: 16, gap: 8 },
   retry: { minHeight: 44, justifyContent: 'center' },
   retryText: { ...typography.button },

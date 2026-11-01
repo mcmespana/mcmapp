@@ -80,7 +80,15 @@ export const DATOS_COPY = {
   photo: {
     change: 'Cambiar foto de perfil',
     add: 'Sube una foto para conocernos mejor ✨',
-    soon: 'Cambiar la foto desde la app llegará pronto.',
+    buttonChange: 'Cambiar foto',
+    buttonAdd: 'Elegir foto',
+    hint: 'Formatos: jpg o png · Tamaño máximo: 4 MB',
+    offline: 'Necesitas conexión para cambiar la foto.',
+    sheetTitle: 'Foto de perfil',
+    camera: 'Hacer una foto',
+    library: 'Elegir de la galería',
+    sheetHint: 'Se recorta en cuadrado. JPG o PNG de hasta 4 MB.',
+    sheetHintWeb: 'JPG o PNG de hasta 4 MB.',
   },
   mcm: {
     stage: 'Etapa',

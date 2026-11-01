@@ -861,14 +861,25 @@ export type SessionDetail = z.infer<typeof SessionDetail>;
 export const SessionResponse = read({ session: SessionDetail });
 export type SessionResponse = z.infer<typeof SessionResponse>;
 
-/** `POST /v1/auth/code` — misma respuesta exista o no el correo. */
+/**
+ * `POST /v1/auth/code` — manda el código y el enlace al correo (o, con `dni`, al de la ficha). Igual que la web (31/10/2026), SE DICE si
+ * no existe. Errores:
+ *   · 422 `validation`, reason `bad_body`: ni un correo ni un DNI con forma válida.
+ *   · 422 `validation`, reason `no_match`: ese correo no está en Comunica («Ese correo no está en Comunica.») o ese documento no es
+ *     de nadie («No encontramos a nadie con ese documento.»). La app ofrece el DNI tras un correo que no está.
+ *   · 422 `validation`, reason `no_email` (solo por DNI): la ficha existe pero no tiene correo («escribe a la oficina técnica»).
+ *   · 429 `rate_limited`, reason `too_many_misses` (con `retryAfter`, 30 min): la IP ha fallado 8 veces en 30 min; ni se mira el CRM
+ *     (tampoco para un correo que sí existe). Sin reason: tope de envíos por correo/DNI (5 cada 20 min) o por IP (30 por hora).
+ *   · 503 `crm_unavailable`: el CRM no contesta. NO significa que no exista: la app no debe mandar al DNI por esto.
+ * `sentTo` es el correo al que se ha mandado, tapado («m•••@gmail.com»), también por DNI.
+ */
 export const CodeRequest = z.union([
   z.object({ email: z.email() }),
   z.object({ dni: z.string().min(5).max(12) }),
 ]);
 export type CodeRequest = z.infer<typeof CodeRequest>;
 export const CodeResponse = z.object({
-  /** El correo tapado: «m•••@gmail.com». */
+  /** El correo tapado: «m•••@gmail.com» (con el DNI, el de la ficha). */
   sentTo: z.string(),
 });
 export type CodeResponse = z.infer<typeof CodeResponse>;
@@ -1313,6 +1324,21 @@ export const DetailsWriteResult = WriteResult.extend({
   details: PersonDetails,
 });
 export type DetailsWriteResult = z.infer<typeof DetailsWriteResult>;
+
+/**
+ * `PUT /v1/profiles/:pid/photo` (multipart: `clientId` y `file`): sube la foto de la persona que se ve (uno mismo o un hijo con relación
+ * vigente; `allowedProfile` en cada petición). El servidor NO procesa la imagen: la app la recorta y la manda ya en JPEG (PNG también
+ * vale), de 4 MB como mucho (el tope de Vercel). Se comprueba el tamaño y la firma de los primeros bytes; SVG, GIF, WebP, HEIC y todo
+ * lo demás, 422 `bad_file_type`. Otros errores 422: `bad_body` (falta `clientId` o `file`), `empty_file`, `file_too_big`. Un `pid` ajeno,
+ * 403 (`profile_out_of_scope`). Si el CRM no contesta, 503 (`crm_timeout`, `crm_error`, `crm_not_confirmed`, `crm_not_configured`): la app
+ * reintenta con el MISMO `clientId` (un timeout no es un fallo: el CRM suele terminar la escritura después, y volver a subir la misma
+ * foto solo la pisa). La respuesta es la de una escritura (`clientId`, `status`) más la URL VERSIONADA nueva (`?v=`), la misma que sale
+ * en `details`: sustituye a la que tenía la app.
+ */
+export const PhotoFields = z.object({ clientId: ClientId });
+export type PhotoFields = z.infer<typeof PhotoFields>;
+export const PhotoWriteResult = WriteResult.extend({ photoUrl: PhotoUrl });
+export type PhotoWriteResult = z.infer<typeof PhotoWriteResult>;
 
 /** La salud de quien se ve: solo por `/health`, sin caché, NUNCA en el móvil ni en el diario. */
 export const HealthInfo = z.object({
@@ -2429,6 +2455,13 @@ export const ROUTES = {
     method: 'PUT',
     path: '/v1/profiles/:pid/health',
     response: WriteResult,
+    persist: false,
+  },
+  // Familias (plan 12): la foto. DIRECTA, con conexión y sin cola; la imagen no se queda en el móvil más que el tiempo de subirla.
+  uploadProfilePhoto: {
+    method: 'PUT',
+    path: '/v1/profiles/:pid/photo',
+    response: PhotoWriteResult,
     persist: false,
   },
   // Familias (plan 13): eventos de un perfil. Sin datos personales (el estado de su inscripción y poco más): se guardan para abrir rápido.
