@@ -30,9 +30,11 @@ import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { h } from '@/utils/haptics';
 import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
+import { DniCard, MissNotice, OfficeLink } from './AccessNotices';
 import {
   accessErrorDetail,
   accessErrorText,
+  codeRequestProblem,
   looksLikeDni,
   looksLikeEmail,
 } from './copy';
@@ -52,6 +54,10 @@ export default function AccessScreen({ notice }: { notice?: string }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<string | null>(null);
+  // Con el aviso de «ese correo no está»: el correo tecleado (el campo se queda relleno para corregir la errata) y, debajo, la tarjeta del DNI.
+  const [missEmail, setMissEmail] = useState<string | null>(null);
+  const [office, setOffice] = useState(false);
+  const [dniFocus, setDniFocus] = useState(false);
   const [linking, setLinking] = useState(false);
   const [appAccountFailed, setAppAccountFailed] = useState(false);
   const autoTried = useRef(false);
@@ -121,6 +127,8 @@ export default function AccessScreen({ notice }: { notice?: string }) {
     setSending(true);
     setError(null);
     setDetail(null);
+    setMissEmail(null);
+    setOffice(false);
     try {
       const body = via === 'email' ? { email: value } : { dni: value };
       const { sentTo } = await getComunicaApi().requestCode(body);
@@ -131,10 +139,27 @@ export default function AccessScreen({ notice }: { notice?: string }) {
       });
     } catch (e) {
       h.error();
-      showError(e);
+      const problem = codeRequestProblem(e, via);
+      if (problem.kind === 'email_miss') {
+        setMissEmail(value);
+      } else {
+        setError(problem.text);
+        setDetail(accessErrorDetail(e));
+        setOffice(problem.office);
+      }
     } finally {
       setSending(false);
     }
+  };
+
+  // Del aviso del correo a buscarse por el DNI: el correo se queda donde está por si se vuelve.
+  const goToDni = () => {
+    setError(null);
+    setDetail(null);
+    setMissEmail(null);
+    setOffice(false);
+    setDniFocus(true);
+    setVia('dni');
   };
 
   return (
@@ -226,6 +251,7 @@ export default function AccessScreen({ notice }: { notice?: string }) {
                   returnKeyType="send"
                   onSubmitEditing={send}
                   accentColor={t.accentText}
+                  error={missEmail !== null}
                 />
                 {user?.email &&
                 email.trim().toLowerCase() === user.email.toLowerCase() ? (
@@ -250,6 +276,7 @@ export default function AccessScreen({ notice }: { notice?: string }) {
                   returnKeyType="send"
                   onSubmitEditing={send}
                   accentColor={t.accentText}
+                  autoFocus={dniFocus}
                 />
                 <Text style={[styles.hint, { color: t.textMuted }]}>
                   Te lo mandamos al correo de tu ficha.
@@ -257,6 +284,12 @@ export default function AccessScreen({ notice }: { notice?: string }) {
               </View>
             )}
 
+            {via === 'email' && missEmail !== null ? (
+              <>
+                <MissNotice email={missEmail} />
+                <DniCard onPress={goToDni} />
+              </>
+            ) : null}
             {error ? (
               <Text
                 style={[styles.error, { color: t.warningText }]}
@@ -265,6 +298,7 @@ export default function AccessScreen({ notice }: { notice?: string }) {
                 {error}
               </Text>
             ) : null}
+            {office ? <OfficeLink /> : null}
             {detail ? (
               <Text style={[styles.hint, { color: t.textMuted }]} selectable>
                 {detail}
@@ -282,9 +316,16 @@ export default function AccessScreen({ notice }: { notice?: string }) {
               onPress={() => {
                 h.select();
                 setError(null);
+                setDetail(null);
+                setMissEmail(null);
+                setOffice(false);
+                setDniFocus(false);
                 setVia(via === 'email' ? 'dni' : 'email');
               }}
               accessibilityRole="button"
+              accessibilityLabel={
+                via === 'email' ? 'Entrar con el DNI' : 'Entrar con el correo'
+              }
               hitSlop={12}
               style={styles.switch}
             >
@@ -316,7 +357,11 @@ const styles = StyleSheet.create({
   label: { ...typography.subhead, fontWeight: '600' },
   hint: { ...typography.caption },
   error: { ...typography.subhead },
-  switch: { alignSelf: 'center', paddingVertical: 8 },
+  switch: {
+    alignSelf: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
+  },
   accountButton: {
     flexDirection: 'row',
     alignItems: 'center',

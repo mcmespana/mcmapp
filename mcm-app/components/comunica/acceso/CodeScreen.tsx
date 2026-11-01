@@ -14,7 +14,7 @@ import { signIn } from '@/services/comunica/session';
 import { h } from '@/utils/haptics';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import CodeInput from './CodeInput';
-import { accessErrorText, RESEND_AFTER_S } from './copy';
+import { accessErrorText, codeRequestProblem, RESEND_AFTER_S } from './copy';
 import { clearAccessHandoffs, putChooseHandoff } from './handoff';
 
 const LENGTH = 6;
@@ -100,7 +100,7 @@ export default function CodeScreen({
       h.success();
       setWait(RESEND_AFTER_S);
     } catch (e) {
-      setError(accessErrorText(e));
+      setError(codeRequestProblem(e, via).text);
     }
   };
 
@@ -160,8 +160,7 @@ export default function CodeScreen({
             </Text>
           ) : null}
           <Text style={[styles.hint, { color: t.textMuted }]}>
-            Si no te llega, mira en el correo no deseado o prueba con el correo
-            que diste a tu delegación, o con tu DNI.
+            Si no te llega, mira en el correo no deseado o pide otro código.
           </Text>
           <View style={styles.actions}>
             <PressableFeedback
