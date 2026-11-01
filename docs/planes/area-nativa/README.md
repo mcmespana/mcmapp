@@ -107,7 +107,7 @@ respuestas. Lo que hay que cambiar está en [`ESTADO.md`](ESTADO.md).
 | [`16-documentos-y-calendario.md`](16-documentos-y-calendario.md) | Documentos (ver, subir, borrar) y calendario con asistencia | 01, 03, 11 | M |
 | [`17-varias-delegaciones.md`](17-varias-delegaciones.md) | La delegación de trabajo: quien colabora con otra delegación la elige (plugin, 23/10) | 01, 04, 05, 06 | M |
 
-### Estado (28/10/2026)
+### Estado (actualizado 1/11/2026: 11-16 en `main`, contra el servidor falso; ver [`ESTADO.md`](ESTADO.md) arriba)
 
 > Lo que falta **en orden** (arreglos de la revisión del 24/10 antes que planes
 > nuevos) está en [`ESTADO.md`](ESTADO.md). Esta tabla dice qué hay de cada plan.
