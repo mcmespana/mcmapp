@@ -1,17 +1,38 @@
-# Build de tienda 2.1 (prevista para agosto de 2026)
+# Build de tienda 2.5 (prevista para agosto de 2026; se retrasó)
 
 > **Para el día que te sientes a sacarla.** Paso a paso, en orden, sin dar nada
 > por sabido. Lo que hay que configurar UNA vez está en §2; el día de la build
 > se hace §3 → §4 → §5 → §6.
 >
-> Rama: **`main`** · **App v2.1.0** · Expo SDK 57
+> Rama: **`main`** · **App v2.5.0** (`runtimeVersion` 2.5.0) · Expo SDK 58
 >
 > (La rama `claude/compact-tabs-bar-uxxaoz`, que traía todo esto, se mergeó en
 > la [#313](https://github.com/mcmespana/mcmapp/pull/313) el 2026-08-04 y ya no
 > existe. Se compila desde `main`. El nombre del fichero dice "agosto" porque
 > era la fecha prevista; se mantiene para no romper los enlaces.)
 
-## 📍 Estado a 2026-10-08
+## 📍 Qué falta a 2026-11-01 (marcado por el propietario en la checklist)
+
+La build es la **2.5.0 con SDK 58** y lleva el área privada nativa. La lista viva, con las pruebas del móvil punto por punto y comentarios, está en el artefacto «Checklist build 2.5». Resumen de lo marcado el 1/11:
+
+**Hecho:** política de privacidad y fichas de las tiendas · credenciales de la extensión de notificaciones (iOS) · canales de notificación en un Android real · variables `MW_CRM_*` en Vercel · una escritura contra el CRM real · revisión de seguridad del middleware · evaluación de impacto de protección de datos · foto de perfil · portada de familias (#371 fusionada).
+
+**Se hará:** estados de inscripción y medios de pago con el CRM real (dudas 8, 9, 10, 17, 33 y 34 de `FASE3.md`) · encender el pago con tarjeta (dudas 64, 65 y 67).
+
+**Sin marcar, sigue pendiente:**
+
+| Falta                                                                                                                                                   | Bloquea                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| §2.6 Huellas SHA-1 de Android (la del keystore de EAS antes de la build de desarrollo y las dos de Play App Signing después), dadas de alta en Firebase | Sí, el login en Android |
+| §5 Checklist de pruebas sobre la build de desarrollo, ahora desglosado en el artefacto                                                                  | Sí, lo que salga        |
+| §0 Desplegar la Cloud Function del calendario (`firebase deploy --only functions`): hace que el calendario abra más rápido; sin ella funciona igual     | No                      |
+| Fusionar la PR #372 (versión y `runtimeVersion` 2.5.0)                                                                                                  | Sí, para la build 2.5   |
+
+**Para más adelante** (anotado como «Futuro»): sábados de los monitores del MIC, firmas dentro de Documentos y el rediseño del área nativa.
+
+**No se hace** (decisión del 1/11): borrar las ramas viejas de David por ahora.
+
+## Estado a 2026-10-08 (histórico)
 
 | Paso                                                   | Estado                                                                                                                                                                              |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -340,7 +361,7 @@ npm run eas:build:android -- --profile production
 ```
 
 `autoIncrement` sube solo el número de build. La versión visible sigue siendo
-la de `app.json` (`2.1.0`) — cámbiala ahí si quieres que salga otra.
+la de `app.json` (`2.5.0`) — cámbiala ahí si quieres que salga otra.
 
 ### 4.2-bis Alternativa: lanzarla desde GitHub (o pedírsela a Claude)
 

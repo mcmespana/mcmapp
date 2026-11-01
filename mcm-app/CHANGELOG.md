@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 15:00 — Estado de la build 2.5 al día con las marcas del propietario
+
+- `BUILD_AGOSTO_2026.md` y `PENDIENTE-REVISAR.md`: lo hecho, lo que se hará, lo que sigue pendiente (SHA-1 de Android, pruebas del móvil, Cloud Function del calendario y la PR #372) y lo que queda para el futuro.
+
+## 2026-11-01 14:00 — Versión de la app y runtimeVersion: 2.5.0
+
+- `version` de `app.json` pasa de 2.1.0 a **2.5.0** para las próximas builds (también la de la extensión de notificaciones iOS, que la toma de ahí).
+- `runtimeVersion` pasa de 2.2.0 a **2.5.0** a la vez (decisión del propietario: solo hay builds de prueba y no se mandarán OTA a las anteriores). Las builds ya instaladas con runtime 2.2.0 **dejan de recibir OTA**.
 ## 2026-11-01 15:00 — Fotos en iPad, pantalla de versión mínima con ánimo y OTA que se aplica sola
 
 - **Fotos en iPad** (`global.fotosEnIpad`, panel → Perfiles → Sistema): con `false`, en **cualquier iPad** (MDM o no: la app no distingue) desaparecen la pestaña, el botón de Home y la tarjeta de «Más», y la pantalla (si se llega por enlace o notificación) dice que no está disponible sin leer `albums`. iPhone, Android y web no cambian. Ausente = se ven, como siempre. Es el resolver (`resolveProfileConfig`, ahora con `DeviceContext`) quien las quita; `Platform.isPad` en `utils/device.ts`.
