@@ -60,6 +60,10 @@ import {
   MeResponse,
   MyProfiles,
   ActivityList,
+  CalendarData,
+  DocumentResponse,
+  DocumentsResponse,
+  SessionResponse,
   CardAttempt,
   type CardAttemptCheck,
   type CardAttemptCreate,
@@ -116,6 +120,37 @@ export interface ComunicaApi {
   getMe(): Promise<MeResponse>;
   /** Familias (plan 11): quien ha entrado y sus hijos. Con `fresh`, se mira otra vez quiénes son los míos. */
   getMyProfiles(opts?: ReadOptions): Promise<MyProfiles>;
+  /** Familias (plan 16): los documentos del perfil. NUNCA se guardan en el móvil. */
+  getProfileDocuments(pid: string): Promise<DocumentsResponse>;
+  getProfileDocument(pid: string, id: string): Promise<DocumentResponse>;
+  /** Subir un documento: directo y con conexión (sin cola); el archivo, hasta 4 MB. `clientId` en memoria para reintentar sin duplicar. */
+  createProfileDocument(
+    pid: string,
+    fields: { clientId: string; name: string; description?: string },
+    file: UploadFile,
+  ): Promise<WriteResult>;
+  /** Editar: solo lo que cambia; un archivo nuevo es una revisión nueva. */
+  updateProfileDocument(
+    pid: string,
+    id: string,
+    fields: { clientId: string; name?: string; description?: string },
+    file?: UploadFile,
+  ): Promise<WriteResult>;
+  /** Borrado lógico. Solo por `DELETE` con el token en la cabecera: nunca por `GET` ni por un enlace. */
+  deleteProfileDocument(
+    pid: string,
+    id: string,
+    clientId: string,
+  ): Promise<WriteResult>;
+  /** El archivo de un documento, como lo entiende una descarga: con la sesión puesta. Ninguna pantalla construye URLs. */
+  documentFileSource(pid: string, id: string): PhotoSource;
+  /** El calendario del perfil (se guarda en el móvil). */
+  getProfileCalendar(pid: string, opts?: ReadOptions): Promise<CalendarData>;
+  getProfileSession(
+    pid: string,
+    id: string,
+    opts?: ReadOptions,
+  ): Promise<SessionResponse>;
   /** Familias (plan 15): los pagos del perfil. Nunca se guardan en el móvil. */
   getProfilePayments(pid: string): Promise<PaymentsList>;
   getProfilePayment(pid: string, id: string): Promise<PaymentDetail>;
@@ -645,6 +680,61 @@ export function createHttpClient({
         undefined,
         READ_RETRIES,
       ),
+    getProfileDocuments: (pid) =>
+      request('GET', `/v1/profiles/${enc(pid)}/documents`, DocumentsResponse),
+    getProfileDocument: (pid, id) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/documents/${enc(id)}`,
+        DocumentResponse,
+      ),
+    createProfileDocument: (pid, fields, file) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/documents`,
+        WriteResult,
+        documentForm(fields, file),
+      ),
+    updateProfileDocument: (pid, id, fields, file) =>
+      request(
+        'PATCH',
+        `/v1/profiles/${enc(pid)}/documents/${enc(id)}`,
+        WriteResult,
+        documentForm(fields, file),
+      ),
+    deleteProfileDocument: (pid, id, clientId) =>
+      request(
+        'DELETE',
+        `/v1/profiles/${enc(pid)}/documents/${enc(id)}?clientId=${enc(clientId)}`,
+        WriteResult,
+      ),
+    documentFileSource: (pid, id) => {
+      const uri = `${root}/v1/profiles/${enc(pid)}/documents/${enc(id)}/file`;
+      const token = getToken?.();
+      return typeof token === 'string'
+        ? {
+            uri,
+            headers: { Authorization: `Bearer ${token}` },
+            cacheKey: `doc-${id}`,
+          }
+        : { uri, cacheKey: `doc-${id}` };
+    },
+    getProfileCalendar: (pid, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/calendar${q(opts)}`,
+        CalendarData,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileSession: (pid, id, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/sessions/${enc(id)}${q(opts)}`,
+        SessionResponse,
+        undefined,
+        READ_RETRIES,
+      ),
     getProfilePayments: (pid) =>
       request('GET', `/v1/profiles/${enc(pid)}/payments`, PaymentsList),
     getProfilePayment: (pid, id) =>
@@ -806,6 +896,28 @@ export function createHttpClient({
         : { uri: url, cacheKey: url };
     },
   };
+}
+
+/** El multipart de crear o editar un documento de un perfil: los campos que hay y, si lo hay, `file`. */
+export function documentForm(
+  fields: Record<string, string | undefined>,
+  file?: UploadFile,
+): FormData {
+  const form = new FormData();
+  for (const [k, v] of Object.entries(fields))
+    if (v !== undefined) form.append(k, v);
+  if (file) {
+    if (file.blob) {
+      form.append('file', file.blob, file.name);
+    } else {
+      form.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType,
+      } as unknown as Blob);
+    }
+  }
+  return form;
 }
 
 /** El multipart de `POST /v1/me/documents`: `clientId`, `kind` y `file`. */

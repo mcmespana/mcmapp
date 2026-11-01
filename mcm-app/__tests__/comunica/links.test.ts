@@ -254,10 +254,10 @@ describe('dentro del legado', () => {
         `${O}/ap/?internalpage=single_stic_password_change`,
       ),
     ).toEqual({ allow: false, native: { pathname: '/comunica/yo' } });
-    // Lo que aún no es nativo (documentos, plan 16) sigue en la web; los pagos ya no (plan 15).
-    expect(
-      decideLegacyNavigation(`${O}/ap/?internalpage=list_stic_documents`),
-    ).toEqual({ allow: true });
+    // Lo que no tiene pantalla nativa (custom_html) sigue en la web; los pagos (plan 15) y los documentos (plan 16) ya no.
+    expect(decideLegacyNavigation(`${O}/ap/?internalpage=custom_html`)).toEqual(
+      { allow: true },
+    );
     expect(
       decideLegacyNavigation(`${O}/ap/?internalpage=list_stic_payments`),
     ).toEqual({ allow: false, native: { pathname: '/comunica/pagos' } });
