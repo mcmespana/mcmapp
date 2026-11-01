@@ -15,6 +15,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 import { nativeHrefFor, type Destination } from '@/services/comunica/links';
 import {
@@ -101,7 +102,7 @@ function Content({ embedded }: { embedded: boolean }) {
     <View style={styles.wrap}>
       <ActiveProfileBar scope="personal" />
       {showGreeting ? (
-        <View style={styles.greeting}>
+        <View style={[styles.greeting, { backgroundColor: t.card }]}>
           <View style={styles.greetingText}>
             <Text
               accessibilityRole="header"
@@ -188,7 +189,13 @@ function Content({ embedded }: { embedded: boolean }) {
 
 const styles = StyleSheet.create({
   wrap: { gap: 24 },
-  greeting: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  greeting: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 16,
+    borderRadius: radii.lg,
+  },
   greetingText: { flex: 1, gap: 4 },
   greetingTitle: { ...typography.h2 },
   greetingBody: { ...typography.body },
