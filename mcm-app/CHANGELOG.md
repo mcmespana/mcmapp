@@ -4,6 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 13:30 — Comunica: la portada de familias recupera el aspecto de la de David
+
+- «Viendo a» vuelve a ser una tarjeta con la inicial de quien se ve, su nombre y «Cambiar»; el saludo, una tarjeta. Solo cambia el aspecto: la lógica y la agenda de la portada son las de `main`.
+
 ## 2026-11-01 13:05 — Comunica: la foto de perfil se reduce a 800×800 (paquete nativo nuevo)
 
 - **`expo-image-manipulator`** (nativo, **requiere build, no sale por OTA**): tras el recorte cuadrado del selector, la foto de perfil se reduce a 800 px de lado y se recodifica a JPEG (0,85). Un PNG o un HEIC también acaban en JPEG y la foto pesa unos cientos de KB, lejos de los 4 MB del servidor.

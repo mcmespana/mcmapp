@@ -20,6 +20,7 @@ import {
 } from '@/utils/comunica/profiles';
 import { h } from '@/utils/haptics';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
+import ProfileInitial from './ProfileInitial';
 import ProfileSwitcherSheet from './ProfileSwitcherSheet';
 
 export default function ActiveProfileBar({
@@ -47,11 +48,9 @@ export default function ActiveProfileBar({
         }}
         accessibilityRole="button"
         accessibilityLabel={`Viendo a ${who}. Cambiar de persona`}
-        style={[
-          styles.bar,
-          { backgroundColor: t.card, borderColor: t.separator },
-        ]}
+        style={[styles.bar, { backgroundColor: t.card }]}
       >
+        <ProfileInitial profile={active} selected />
         <View style={styles.text}>
           <Text style={[styles.caption, { color: t.textSecondary }]}>
             Viendo a
@@ -60,7 +59,8 @@ export default function ActiveProfileBar({
             {who}
           </Text>
         </View>
-        <IconSymbol name="chevron.down" size={18} color={t.textMuted} />
+        <Text style={[styles.change, { color: t.accentText }]}>Cambiar</Text>
+        <IconSymbol name="chevron.down" size={16} color={t.accentText} />
         <PressableFeedback.Highlight />
       </PressableFeedback>
       <ProfileSwitcherSheet
@@ -79,15 +79,15 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    minHeight: 44,
-    paddingHorizontal: 16,
+    gap: 12,
+    minHeight: 56,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: radii.pillFull,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignSelf: 'flex-start',
+    borderRadius: radii.lg,
+    overflow: 'hidden',
   },
-  text: { flexDirection: 'row', alignItems: 'baseline', gap: 6, flexShrink: 1 },
+  text: { flex: 1 },
   caption: { ...typography.caption },
-  who: { ...typography.title, flexShrink: 1 },
+  who: { ...typography.body, fontWeight: '600' },
+  change: { ...typography.subhead, fontWeight: '600' },
 });
