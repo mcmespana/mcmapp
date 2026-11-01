@@ -134,10 +134,72 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
           params: { id: d.id },
         }
       : { pathname: '/comunica/coordinacion' },
+  // Eventos (plan 13). Sin `id` o con forma rara, el listado; con `id`, la ficha. La del plugin (`single_stic_events`) y su listado.
+  list_stic_events: () => ({ pathname: '/comunica/actividades' }),
+  single_stic_events: (d) =>
+    d.id
+      ? {
+          pathname: '/comunica/actividades/[eventId]',
+          params: { eventId: d.id },
+        }
+      : { pathname: '/comunica/actividades' },
+  // Inscripciones (plan 14). `create` sin evento o `delete` (desactivadas en el plugin) van al listado de eventos / a la ficha.
+  list_stic_registrations: () => ({ pathname: '/comunica/inscripciones' }),
+  single_stic_registrations: (d): NativeHref => {
+    const rid = d.id;
+    if (d.action === 'create')
+      return d.id && (!d.from || d.from === 'stic_events')
+        ? {
+            pathname: '/comunica/actividades/[eventId]/inscribirme',
+            params: { eventId: d.id },
+          }
+        : { pathname: '/comunica/actividades' };
+    if (!rid) return { pathname: '/comunica/inscripciones' };
+    return d.action === 'edit'
+      ? {
+          pathname: '/comunica/inscripciones/[registrationId]/modificar',
+          params: { registrationId: rid },
+        }
+      : {
+          pathname: '/comunica/inscripciones/[registrationId]',
+          params: { registrationId: rid },
+        };
+  },
+  // Pagos (plan 15). Lo desactivado (compromisos, crear/editar/borrar un pago) y la vuelta sin nada, a la lista. `msg=pagado` no se conserva en el destino.
+  list_stic_payments: () => ({ pathname: '/comunica/pagos' }),
+  list_stic_payment_commitments: () => ({ pathname: '/comunica/pagos' }),
+  single_stic_payment_commitments: () => ({ pathname: '/comunica/pagos' }),
+  single_stic_payments: (d): NativeHref =>
+    d.id && (!d.action || d.action === 'detail')
+      ? { pathname: '/comunica/pagos/[id]', params: { id: d.id } }
+      : { pathname: '/comunica/pagos' },
+  single_stic_payment_form: (d): NativeHref =>
+    d.id
+      ? { pathname: '/comunica/pagos/pagar', params: { pago: d.id } }
+      : { pathname: '/comunica/pagos' },
+  single_stic_payment_error: () => ({
+    pathname: '/comunica/pagos',
+    params: { nota: 'error' },
+  }),
+  // Mis datos (plan 12). El plugin no lleva a quién: con la persona que se ve ahora; la ficha del laico (retirada) y la del familiar
+  // son de uno mismo (`yo=1`).
+  single_stic_comunica_perfil: () => ({ pathname: '/comunica/datos' }),
+  single_stic_profile: () => ({ pathname: '/comunica/datos' }),
+  single_stic_comunica_laico: () => ({
+    pathname: '/comunica/datos',
+    params: { yo: '1' },
+  }),
+  single_stic_tutor_profile: () => ({
+    pathname: '/comunica/datos',
+    params: { yo: '1' },
+  }),
   single_stic_pasar_lista_evento: (d) =>
     d.id
       ? { pathname: '/comunica/eventos/[eventId]', params: { eventId: d.id } }
       : { pathname: '/comunica/eventos' },
+  // Familias (plan 11): la portada y «¿A quién ves?».
+  single_stic_home: () => ({ pathname: '/comunica' }),
+  single_stic_profile_selection: () => ({ pathname: '/comunica/perfiles' }),
   // Mis datos de monitor (plan 09).
   single_stic_comunica_monitor: () => ({ pathname: '/comunica/yo/monitor' }),
   single_stic_password_change: () => ({ pathname: '/comunica/yo' }),

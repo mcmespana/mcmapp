@@ -16,13 +16,29 @@
 import { defaultKvBackend } from './nativeStores';
 import { logger } from '@/utils/logger';
 
-/** `delegation`: la delegación de trabajo elegida (plan 17); no es secreta. */
-export type Drawer = 'queries' | 'outbox' | 'drafts' | 'delegation';
+/**
+ * `delegation`: la delegación de trabajo elegida (plan 17); no es secreta.
+ * `profile`: a quién se ve (uno mismo o un hijo) y si lo eligió ella (plan 11):
+ * solo un id y un booleano, nada de nombres.
+ * `home`: lo de la portada que recuerda la persona (hasta cuándo oculta el saludo, plan 11).
+ * `payattempt`: el intento de pago con tarjeta en curso (plan 15): `attemptId`, `pid`, de dónde sale y la hora. SIN importes; se borra al terminar y al salir.
+ */
+export type Drawer =
+  | 'queries'
+  | 'outbox'
+  | 'drafts'
+  | 'delegation'
+  | 'profile'
+  | 'home'
+  | 'payattempt';
 const DRAWERS: readonly Drawer[] = [
   'queries',
   'outbox',
   'drafts',
   'delegation',
+  'profile',
+  'home',
+  'payattempt',
 ];
 
 const PREFIX = '@comunica';

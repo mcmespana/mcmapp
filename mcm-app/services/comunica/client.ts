@@ -58,6 +58,30 @@ import {
   type ScarfWrite,
   WriteResult,
   MeResponse,
+  MyProfiles,
+  ActivityList,
+  CardAttempt,
+  type CardAttemptCheck,
+  type CardAttemptCreate,
+  type CardAttemptResult,
+  CardAttemptStatus,
+  CardCheckout,
+  PaymentDetail,
+  PaymentsList,
+  AdvancedFormResult,
+  RegistrationDetail,
+  RegistrationsList,
+  type RegistrationCancel,
+  type RegistrationEdit,
+  SignupForm,
+  type SignupWrite,
+  SignupResult,
+  DetailsWriteResult,
+  EventDetail,
+  type HealthWrite,
+  PersonDetails,
+  type PersonDetailsWrite,
+  ProfileHealth,
   RollDetail,
   type RollWrite,
   RollWriteResult,
@@ -90,6 +114,80 @@ export interface ComunicaApi {
   webPass(body: WebPassRequest): Promise<WebPass>;
 
   getMe(): Promise<MeResponse>;
+  /** Familias (plan 11): quien ha entrado y sus hijos. Con `fresh`, se mira otra vez quiénes son los míos. */
+  getMyProfiles(opts?: ReadOptions): Promise<MyProfiles>;
+  /** Familias (plan 15): los pagos del perfil. Nunca se guardan en el móvil. */
+  getProfilePayments(pid: string): Promise<PaymentsList>;
+  getProfilePayment(pid: string, id: string): Promise<PaymentDetail>;
+  /** Si se puede pagar con tarjeta y qué se pagaría. SOLO lee: no crea ningún intento. */
+  getCardCheckout(
+    pid: string,
+    source: { payment: string } | { registration: string },
+  ): Promise<CardCheckout>;
+  /** Crea un intento de pago con tarjeta: la URL de la pasarela (de un solo uso) y la de vuelta. Con el servidor falso, `simulated`. */
+  createCardAttempt(
+    pid: string,
+    body: CardAttemptCreate,
+  ): Promise<CardAttemptResult>;
+  /** Pregunta cómo va un intento. El estado lo decide SIEMPRE el servidor, con el cobro del CRM. */
+  checkCardAttempt(
+    pid: string,
+    id: string,
+    body: CardAttemptCheck,
+  ): Promise<CardAttemptStatus>;
+  /** Familias (plan 14): las inscripciones del perfil (todas; la app las ordena). */
+  getProfileRegistrations(
+    pid: string,
+    opts?: ReadOptions,
+  ): Promise<RegistrationsList>;
+  /** La ficha de una inscripción (con teléfonos de tutores e importes: nunca se guarda). */
+  getProfileRegistration(pid: string, rid: string): Promise<RegistrationDetail>;
+  /** Lo que hace falta para el alta corta, y por qué no se puede (si no). Sin caché: el guard de duplicados se mira al abrir. */
+  getSignupForm(pid: string, eventId: string): Promise<SignupForm>;
+  /** Apuntarse. DIRECTO y con conexión (nunca por la cola: lleva el IBAN). `clientId` en memoria para reintentar sin duplicar. */
+  signUp(pid: string, body: SignupWrite): Promise<SignupResult>;
+  updateRegistration(
+    pid: string,
+    rid: string,
+    body: RegistrationEdit,
+  ): Promise<WriteResult>;
+  cancelRegistration(
+    pid: string,
+    rid: string,
+    body: RegistrationCancel,
+  ): Promise<WriteResult>;
+  /** La URL del formulario avanzado del CRM con los datos de `pid` ya puestos. Lleva datos personales: ni se guarda ni se registra. */
+  getAdvancedFormUrl(pid: string, eventId: string): Promise<AdvancedFormResult>;
+  /** Familias (plan 13): los eventos de un perfil (a qué apuntarse y a qué ya está apuntado). */
+  getProfileActivities(pid: string, opts?: ReadOptions): Promise<ActivityList>;
+  /** La ficha de un evento de ese perfil, por id. Se sirve aunque no sea para él (con el motivo). */
+  getProfileEvent(
+    pid: string,
+    eventId: string,
+    opts?: ReadOptions,
+  ): Promise<EventDetail>;
+  /** Lo mismo por el slug o el id de la página pública (`/actividades/?e=`). */
+  getProfileEventBySlug(
+    pid: string,
+    slug: string,
+    opts?: ReadOptions,
+  ): Promise<EventDetail>;
+  /** Un archivo del evento (cartel, galería, PDF) como lo entiende `expo-image` o una descarga: con la sesión puesta. */
+  eventFileSource(
+    pid: string,
+    eventId: string,
+    documentId: string,
+  ): PhotoSource;
+  /** Familias (plan 12): los datos de quien se ve. Nunca se guardan en el móvil. */
+  getProfileDetails(pid: string): Promise<PersonDetails>;
+  /** Directo y con conexión (sin cola: son datos personales). Responde con lo releído. */
+  updateProfileDetails(
+    pid: string,
+    body: PersonDetailsWrite,
+  ): Promise<DetailsWriteResult>;
+  /** La salud de quien se ve. Nunca se guarda en el móvil. */
+  getProfileHealth(pid: string): Promise<ProfileHealth>;
+  updateProfileHealth(pid: string, body: HealthWrite): Promise<WriteResult>;
   getGroups(opts?: ReadOptions): Promise<GroupsResponse>;
   getToday(opts?: ReadOptions): Promise<TodayResponse>;
   getRoll(
@@ -539,6 +637,143 @@ export function createHttpClient({
     unregisterDevice: async (deviceId) => {
       await request('DELETE', `/v1/devices/${enc(deviceId)}`, NoContent);
     },
+    getMyProfiles: (opts) =>
+      request(
+        'GET',
+        `/v1/me/profiles${q(opts)}`,
+        MyProfiles,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfilePayments: (pid) =>
+      request('GET', `/v1/profiles/${enc(pid)}/payments`, PaymentsList),
+    getProfilePayment: (pid, id) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/payments/${enc(id)}`,
+        PaymentDetail,
+      ),
+    getCardCheckout: (pid, source) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/card-checkout?${
+          'payment' in source
+            ? `payment=${enc(source.payment)}`
+            : `registration=${enc(source.registration)}`
+        }`,
+        CardCheckout,
+      ),
+    // El servidor de verdad NUNCA devuelve `simulated`: si llega, es un fallo (`bad_response`), no una pasarela de mentira.
+    createCardAttempt: (pid, body) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/card-attempts`,
+        CardAttempt,
+        body,
+      ) as Promise<CardAttemptResult>,
+    checkCardAttempt: (pid, id, body) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/card-attempts/${enc(id)}/check`,
+        CardAttemptStatus,
+        body,
+      ),
+    getProfileRegistrations: (pid, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/registrations${q(opts)}`,
+        RegistrationsList,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileRegistration: (pid, rid) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/registrations/${enc(rid)}`,
+        RegistrationDetail,
+      ),
+    getSignupForm: (pid, eventId) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events/${enc(eventId)}/signup`,
+        SignupForm,
+      ),
+    signUp: (pid, body) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/registrations`,
+        SignupResult,
+        body,
+      ),
+    updateRegistration: (pid, rid, body) =>
+      request(
+        'PATCH',
+        `/v1/profiles/${enc(pid)}/registrations/${enc(rid)}`,
+        WriteResult,
+        body,
+      ),
+    cancelRegistration: (pid, rid, body) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/registrations/${enc(rid)}/cancel`,
+        WriteResult,
+        body,
+      ),
+    getAdvancedFormUrl: (pid, eventId) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/events/${enc(eventId)}/advanced-form`,
+        AdvancedFormResult,
+        {},
+      ),
+    getProfileActivities: (pid, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events${q(opts)}`,
+        ActivityList,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileEvent: (pid, id, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events/${enc(id)}${q(opts)}`,
+        EventDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileEventBySlug: (pid, slug, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events/by-slug/${enc(slug)}${q(opts)}`,
+        EventDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    eventFileSource: (pid, eventId, documentId) => {
+      const uri = `${root}/v1/profiles/${enc(pid)}/events/${enc(eventId)}/documents/${enc(documentId)}`;
+      const token = getToken?.();
+      return typeof token === 'string'
+        ? {
+            uri,
+            headers: { Authorization: `Bearer ${token}` },
+            cacheKey: documentId,
+          }
+        : { uri, cacheKey: documentId };
+    },
+    getProfileDetails: (pid) =>
+      request('GET', `/v1/profiles/${enc(pid)}/details`, PersonDetails),
+    updateProfileDetails: (pid, body) =>
+      request(
+        'PATCH',
+        `/v1/profiles/${enc(pid)}/details`,
+        DetailsWriteResult,
+        body,
+      ),
+    getProfileHealth: (pid) =>
+      request('GET', `/v1/profiles/${enc(pid)}/health`, ProfileHealth),
+    updateProfileHealth: (pid, body) =>
+      request('PUT', `/v1/profiles/${enc(pid)}/health`, WriteResult, body),
     getMyMonitorProfile: (opts) =>
       request(
         'GET',

@@ -59,7 +59,17 @@ export function HelpSheet({
   return (
     <BottomSheet visible={visible} onClose={onClose} title={title}>
       <View style={styles.body}>
-        <Text style={[styles.text, { color: t.text }]}>{text}</Text>
+        <Text style={[styles.text, { color: t.text }]}>
+          {text.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
+            part.startsWith('**') && part.endsWith('**') ? (
+              <Text key={i} style={styles.strong}>
+                {part.slice(2, -2)}
+              </Text>
+            ) : (
+              part
+            ),
+          )}
+        </Text>
       </View>
     </BottomSheet>
   );
@@ -78,4 +88,5 @@ const styles = StyleSheet.create({
   },
   body: { paddingBottom: 24 },
   text: { ...typography.body, lineHeight: 24 },
+  strong: { fontWeight: '700' },
 });

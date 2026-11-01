@@ -214,7 +214,15 @@ export type PersonaId =
    * De Villaclara (su ficha), monitor sin grupo allí, y coordina Puerto Alto,
    * donde además lleva P1 (plan 17, «varias delegaciones»).
    */
-  | 'twoDelegations';
+  | 'twoDelegations'
+  // Familias (plan 11): `family` = familiar con dos hijos (uno sin nombre),
+  // `familyOne` con uno, `familyNone` sin ninguno, `monitorMom` monitora con
+  // una hija (monitor + member + guardian) y `memberNoKids` miembro sin hijos.
+  | 'family'
+  | 'familyOne'
+  | 'familyNone'
+  | 'monitorMom'
+  | 'memberNoKids';
 
 export interface FakeMonitorRoll {
   sessionId: string;
@@ -713,6 +721,22 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
   people.push(dual);
   groups.find((g) => g.code === 'P1')?.monitorIds.push(dual.id);
 
+  // Familias (plan 11): sin azar y al final. Sus hijos viven en `fake/profiles.ts`.
+  const familyPeople: FakePerson[] = [
+    ['f-per-familia', 'Marta', 'Villarroya Pons'],
+    ['f-per-familia-uno', 'Pablo', 'Soler Gil'],
+    ['f-per-familia-ninguno', 'Carmen', 'Ibáñez Roca'],
+    ['f-per-monitora-madre', 'Laura', 'Gil Mas'],
+    ['f-per-miembro', 'Jaime', 'Roca Ferrer'],
+  ].map(([id, firstName, lastName]) => ({
+    id: id!,
+    firstName: firstName!,
+    lastName: lastName!,
+    badges: { healthNote: false, noPhotos: false, notHomeAlone: false },
+    delegationId: D1,
+  }));
+  people.push(...familyPeople);
+
   const persona = (id: string) => ({ personId: id, name: name(id) });
   return {
     season: SEASON,
@@ -737,6 +761,11 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
       coordinationCom2: persona(coord.personaIds.coordinationCom2),
       both: persona(coord.personaIds.both),
       twoDelegations: persona(dual.id),
+      family: persona('f-per-familia'),
+      familyOne: persona('f-per-familia-uno'),
+      familyNone: persona('f-per-familia-ninguno'),
+      monitorMom: persona('f-per-monitora-madre'),
+      memberNoKids: persona('f-per-miembro'),
     },
     ...coord.data,
   };
@@ -1125,6 +1154,12 @@ export const FAKE_EMAILS: Record<string, PersonaId[]> = {
   'com2@ejemplo.org': ['coordinationCom2'],
   'ambas@ejemplo.org': ['both'],
   'delegaciones@ejemplo.org': ['twoDelegations'],
+  // Familias (plan 11).
+  'familia@ejemplo.org': ['family'],
+  'familia-uno@ejemplo.org': ['familyOne'],
+  'familia-ninguno@ejemplo.org': ['familyNone'],
+  'monitora-madre@ejemplo.org': ['monitorMom'],
+  'miembro@ejemplo.org': ['memberNoKids'],
 };
 
 export const FAKE_DNIS: Record<string, PersonaId> = {

@@ -254,9 +254,13 @@ describe('dentro del legado', () => {
         `${O}/ap/?internalpage=single_stic_password_change`,
       ),
     ).toEqual({ allow: false, native: { pathname: '/comunica/yo' } });
+    // Lo que aún no es nativo (documentos, plan 16) sigue en la web; los pagos ya no (plan 15).
+    expect(
+      decideLegacyNavigation(`${O}/ap/?internalpage=list_stic_documents`),
+    ).toEqual({ allow: true });
     expect(
       decideLegacyNavigation(`${O}/ap/?internalpage=list_stic_payments`),
-    ).toEqual({ allow: true });
+    ).toEqual({ allow: false, native: { pathname: '/comunica/pagos' } });
     expect(decideLegacyNavigation('https://redsys.es/pago')).toEqual({
       allow: false,
       external: 'https://redsys.es/pago',

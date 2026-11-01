@@ -4,6 +4,53 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 — Comunica familias, plan 15 (parcial): pagos y pagar con tarjeta
+
+- **Pagos** (`/comunica/pagos`): «Pendiente de pagar», «Se cobrará por domiciliación», «Pagado» y «Otros», con el chip solo cuando dice algo nuevo (un devuelto en rojo, «Comprobando el pago»), el importe grande a la derecha y «Pagar con tarjeta» al pie en secundario. El dinero es de quien paga: viéndose a sí mismo, todo (con «Para Lucía»); viendo a un hijo, solo lo suyo.
+- **La ficha de un pago** (`/comunica/pagos/[id]`): importe como dato grande, datos en el orden del plugin (cuenta enmascarada, nº de operación), el motivo de un devuelto y «¿Ya lo has pagado?».
+- **Pagar con tarjeta** (`/comunica/pagos/pagar?pago=|inscripcion=`): resumen, «Pagar otra cantidad» (coma o punto, mínimo 1 €, sin tope; más del doble pide confirmar), la pasarela del banco en una hoja con WebView sin JavaScript inyectado, el resultado en la misma pantalla y el sondeo mientras el banco confirma. El estado lo decide SIEMPRE el servidor.
+- Los botones «Pagar» de las inscripciones (plan 14) y los enlaces `list_stic_payments`, `single_stic_payments`, `single_stic_payment_form` y `single_stic_payment_error` ya son nativos.
+- Nada de Pagos se guarda en el móvil (solo el intento en curso, sin importes, en el cajón `payattempt`). Servidor falso con pasarela simulada (`cardConfirmsAfter` para el banco que tarda).
+- **Falta**: pruebas de pantalla (lista, ficha, pagar, la hoja con la WebView), la reserva por el navegador probada, `msg=pagado` en los enlaces, el aviso de «Comprobando el pago» en la ficha de la inscripción, las notas de tiendas y capturas. **El servidor de verdad aún no tiene el pago con tarjeta encendido** (PR #14 del middleware, apagado por defecto): hoy solo funciona contra el servidor falso. Pruebas: `paymentsLogic` (34), `profilePaymentsFake` (22).
+
+## 2026-11-01 — Comunica familias, plan 14: inscripciones
+
+- **Alta corta** (`/comunica/actividades/[eventId]/inscribirme`): resumen («Te inscribes a» / «Inscribes a Lucía en»), bloqueos sin un solo campo (plaza ya cogida, audiencia o plazo, formulario avanzado), preguntas, «¿Cómo pagas?» con los medios que dé el CRM y el IBAN (módulo 97, agrupado de cuatro en cuatro) con domiciliación, y necesidades especiales. Si falta algo no se envía. Con tarjeta, tras apuntarse se abre el pago.
+- **Formulario avanzado**: «Inscribirme» pide la URL al servidor y abre `web.tsx` con cabecera nativa «Inscripción» (no pasa por `openLegacy`).
+- **«Mis inscripciones»** (`/comunica/inscripciones`): lo abierto por fecha, lo cerrado al revés, «Otros eventos» plegado, vacío con salida a Eventos.
+- **La ficha**: el pago en una línea (pagado, domiciliado, devuelto, pendiente, esperando al banco), «Pagar 35,00 € con tarjeta» pegada abajo cuando toca, tutores con «Llamar a …», «Modificar mis datos» y «Cancelar mi inscripción» con confirmación (con el plazo cerrado entre medias: «no se ha cambiado nada»; un curso no se cancela).
+- **Modificar** (`…/modificar`): lo contestado sale marcado; solo respuestas y necesidades especiales.
+- Sin cola: llamada directa con conexión y `clientId` en memoria. El IBAN solo vive en el formulario (ni caché, ni cola, ni logs); la ficha y el alta no se guardan en el móvil.
+- Los botones del plan 13 ya van a estas pantallas; los enlaces `list_stic_registrations` y `single_stic_registrations` (detalle, editar, alta) son nativos. Piezas comunes `comun/record/` (`FactList`, `RecordNote`).
+- Servidor falso (`fake/profileRegistrations.ts`, una sola fuente de inscripciones con «Eventos») y mandos: el CRM no genera el pago, falla el pago, otro móvil ya se apuntó.
+- **Falta**: las pantallas de pago del plan 15 (hoy «Pagar» y «Ver el pago» abren el formulario/lista de pagos de la web con la sesión), la intercepción de la vuelta del formulario avanzado a la lista refrescada y capturas. Pruebas: `registrationLogic` (26), `profileRegistrationsFake` (22), `registrationsScreen` (40).
+
+## 2026-11-01 — Comunica familias, plan 13: «Eventos» y su ficha
+
+- «Eventos» (`/comunica/actividades`): «Para apuntarte» y «Te has apuntado» (los títulos solo si hay los dos), lo pasado fuera por la fecha de fin, el chip por su orden (con plaza → plazo → etiqueta del CRM; con fechas mandan las fechas) y, al pie, «Inscribirme» o «Mi inscripción» solo si llevan a otro sitio. Cambiar de hijo se queda en la misma pantalla.
+- La ficha (`/comunica/actividades/[eventId]`): cartel a pantalla completa, datos en el orden del plugin (duración de 2 a 31 días, plazo, lugar con el botón del mapa del sistema, dirección, horario, plazas, precio), «Toda la información» con el cuerpo en bloques nativos (títulos, listas, aviso, botón, imagen, galería, vídeo) o «Sobre esta actividad», adjuntos PDF con sesión y compartir. La acción por su orden: pasado → con plaza → no es para ti → fuera de plazo → abierta, con «Inscribirme en esta actividad» pegada abajo.
+- El enlace público `/actividades/?e=<slug>` ya no abre la web: busca el evento con el perfil que se ve y va a su ficha. Los enlaces `list_stic_events` y `single_stic_events` también son nativos.
+- El cuerpo nunca es HTML: el servidor lo trocea y la app solo pinta bloques conocidos (un enlace que no sea `http(s)`, `tel:` o `mailto:` no se pinta como enlace).
+- Servidor falso (`fake/profileEvents.ts`) con 14 eventos (audiencias, plazos, ocultos, rechazada, cuerpo con todos los bloques).
+- **Falta**: la inscripción nativa (`Inscribirme` y `Mi inscripción` abren el legado hasta el plan 14), la ficha pública sin sesión (el servidor no la sirve aún), el visor con zoom, el cartel a la izquierda en iPad y las capturas. Pruebas: `activityLogic` (27), `profileEventsFake` (18), `activitiesScreen` (23).
+
+## 2026-11-01 — Comunica familias, plan 12: «Mis datos» y «Datos de Lucía»
+
+- Una sola pantalla (`/comunica/datos/[pid]`; `/comunica/datos` resuelve a quien se ve ahora, `?yo=1` a uno mismo) para las tres audiencias, con los campos, el orden y los textos del plugin (`single_stic_comunica_perfil.php`): datos personales (lo bloqueado, como dato con candado; género, soporte y expedición del DNI si ya los tenemos), contacto (con el aviso del correo `@movimientoconsolacion.com`), dirección, foto, MCM (solo miembros; «Nivel COM» con etapa COM, año de LC con LC Incorporado), información sanitaria y autorizaciones legales.
+- Guardar escribe DIRECTO y con conexión, solo lo que cambia, con un `clientId` por guardado; nada de datos ni de salud al disco (`persist: false`, memoria 5 min y 1 min). Las autorizaciones «sin contestar» siguen sin contestar si no se tocan (el plugin las convertía en «no»). Salir con cambios pregunta.
+- `?completar=pago`: quien paga y no tiene nombre, apellidos o documento los escribe (solo lo vacío; el documento con su letra) y vuelve al pago.
+- Los enlaces del plugin `single_stic_comunica_perfil`, `single_stic_profile`, `single_stic_comunica_laico` y `single_stic_tutor_profile` abren esta pantalla; «Tus datos personales» de monitor y «Mis datos»/«Datos de Lucía» de la portada ya no pasan por la web.
+- Servidor falso (`fake/profileDetails.ts`) como el de verdad: secciones por audiencia, `emailNote`, 403 con `pid` ajeno, estricto, contador de escrituras por campo, `identityFill`, salud aparte.
+- **Falta**: cambiar la foto desde la app (el servidor aún no recibe fotos) y verlo con el servidor real. Pruebas: `personDetails.test.ts` (33), `profileDetailsFake.test.ts` (24), `datosScreen.test.tsx` (20).
+
+## 2026-11-01 — Comunica familias, plan 11 (base): a quién se ve
+
+- Contrato y servidor falso de `GET /v1/me/profiles` (quien ha entrado y sus hijos; un hijo sin nombre sale igual; el 503 nunca es una lista vacía), con cinco personas de familia y `allowedProfile`, la barrera de las rutas `/profiles/:pid/…` de los planes 12-16.
+- `utils/comunica/profiles.ts` (lógica pura), `useMyProfiles`, `useActiveProfile` y `useProfileScope`; lo recordado vive por persona en el cajón `profile` (un id y un booleano) y se borra al salir.
+- Pantallas: «¿A quién ves?» (`/comunica/perfiles`, una tarjeta por hijo y la propia; con un evento o inscripción de destino pregunta «¿A quién quieres apuntar?»), la barra «Viendo a · X ▾» con su hoja «Ver como…» (solo con hijos) y `MemberHome` (saludo con × que vuelve al mes, «A quién tienes a tu cargo», actividades según a quién se ve, «Tu perfil»). `ComunicaHome` usa `FamilyHome` para quien no es del equipo y añade `MemberHome` bajo lo del equipo.
+- «Hay que elegir» en los enlaces: quien es solo familiar con varios hijos y no ha elegido nunca pasa antes por «¿A quién ves?» cuando abre un evento, una inscripción o un pago. Sin conexión no pregunta.
+- Pruebas de pantalla en `__tests__/comunica/familyScreens.test.tsx` (14).
+
 ## 2026-10-31 21:00 — Comunica nativa: contra el middleware de verdad y entrar con la cuenta de la app
 
 - Builds (`preview`, `production`) y OTA (preview y producción) apuntan al middleware real

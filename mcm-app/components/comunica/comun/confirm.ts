@@ -8,6 +8,7 @@ export function confirmAction(
   message: string | undefined,
   actionLabel: string,
   destructive = false,
+  cancelLabel = 'Cancelar',
 ): Promise<boolean> {
   if (Platform.OS === 'web') {
     const w = globalThis as { confirm?: (m: string) => boolean };
@@ -19,7 +20,7 @@ export function confirmAction(
   }
   return new Promise((resolve) => {
     Alert.alert(title, message, [
-      { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
+      { text: cancelLabel, style: 'cancel', onPress: () => resolve(false) },
       {
         text: actionLabel,
         style: destructive ? 'destructive' : 'default',

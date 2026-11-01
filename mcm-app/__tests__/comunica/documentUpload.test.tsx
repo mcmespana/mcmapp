@@ -254,7 +254,7 @@ describe('guardarraíles de los archivos', () => {
     );
   });
 
-  it('solo el adaptador carga expo-file-system en el área, y tiene su .web', () => {
+  it('solo los adaptadores (copias locales y archivos de eventos) cargan expo-file-system en el área, y tienen su .web', () => {
     const users = [
       'app/(tabs)/comunica',
       'components/comunica',
@@ -265,10 +265,15 @@ describe('guardarraíles de los archivos', () => {
       .flatMap((d) => walk(path.join(ROOT, d)))
       .filter((f) => /from 'expo-file-system/.test(fs.readFileSync(f, 'utf8')))
       .map(rel);
-    expect(users).toEqual(['services/comunica/localFiles.ts']);
-    expect(read('services/comunica/localFiles.web.ts')).not.toMatch(
-      /expo-file-system'/,
-    );
+    expect(users).toEqual([
+      'services/comunica/eventFiles.ts',
+      'services/comunica/localFiles.ts',
+    ]);
+    for (const web of [
+      'services/comunica/localFiles.web.ts',
+      'services/comunica/eventFiles.web.ts',
+    ])
+      expect(read(web)).not.toMatch(/expo-file-system'/);
   });
 
   it('ni yo/ ni comun/form/ suben nada por su cuenta', () => {

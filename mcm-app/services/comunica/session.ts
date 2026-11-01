@@ -374,6 +374,38 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     registerDevice: authed((b) => api.registerDevice(b)),
     unregisterDevice: authed((id) => api.unregisterDevice(id)),
     // Mis datos de monitor (plan 09).
+    getMyProfiles: authed((o) => api.getMyProfiles(o)),
+    getProfilePayments: authed((pid) => api.getProfilePayments(pid)),
+    getProfilePayment: authed((pid, id) => api.getProfilePayment(pid, id)),
+    getCardCheckout: authed((pid, s) => api.getCardCheckout(pid, s)),
+    createCardAttempt: authed((pid, b) => api.createCardAttempt(pid, b)),
+    checkCardAttempt: authed((pid, id, b) => api.checkCardAttempt(pid, id, b)),
+    getProfileRegistrations: authed((pid, o) =>
+      api.getProfileRegistrations(pid, o),
+    ),
+    getProfileRegistration: authed((pid, rid) =>
+      api.getProfileRegistration(pid, rid),
+    ),
+    getSignupForm: authed((pid, e) => api.getSignupForm(pid, e)),
+    signUp: authed((pid, b) => api.signUp(pid, b)),
+    updateRegistration: authed((pid, rid, b) =>
+      api.updateRegistration(pid, rid, b),
+    ),
+    cancelRegistration: authed((pid, rid, b) =>
+      api.cancelRegistration(pid, rid, b),
+    ),
+    getAdvancedFormUrl: authed((pid, e) => api.getAdvancedFormUrl(pid, e)),
+    getProfileActivities: authed((pid, o) => api.getProfileActivities(pid, o)),
+    getProfileEvent: authed((pid, id, o) => api.getProfileEvent(pid, id, o)),
+    getProfileEventBySlug: authed((pid, s, o) =>
+      api.getProfileEventBySlug(pid, s, o),
+    ),
+    eventFileSource: (pid, eventId, documentId) =>
+      api.eventFileSource(pid, eventId, documentId),
+    getProfileDetails: authed((pid) => api.getProfileDetails(pid)),
+    updateProfileDetails: authed((pid, b) => api.updateProfileDetails(pid, b)),
+    getProfileHealth: authed((pid) => api.getProfileHealth(pid)),
+    updateProfileHealth: authed((pid, b) => api.updateProfileHealth(pid, b)),
     getMyMonitorProfile: authed((o) => api.getMyMonitorProfile(o)),
     updateMyMonitorProfile: authed((b) => api.updateMyMonitorProfile(b)),
     uploadMyDocument: authed((f, file) => api.uploadMyDocument(f, file)),

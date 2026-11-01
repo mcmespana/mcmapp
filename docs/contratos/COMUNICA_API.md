@@ -360,6 +360,44 @@ Mientras no lleguen, la app calcula el enlace igual con `published` y `slug`
   con conexión: la app no lo pone en la cola** (el archivo no se guarda en el
   móvil); reintentar va con el mismo `clientId`.
 
+### Familias: mis datos (plan 12)
+
+Todo cuelga de `/v1/profiles/:pid/…`; el servidor comprueba en cada petición que `pid` es quien ha entrado o uno de sus hijos con relación vigente (si no, **403**, nunca 404). Son datos personales y de salud: **nada se guarda en el móvil** (`persist: false`), ni hay cola (se escribe directo y con conexión).
+
+- `GET /v1/profiles/:pid/details` → `PersonDetails`: `sections` (las decide el servidor con la audiencia: `member`, las siete; el hijo y el familiar, sin `mcm`), `identity` (solo lectura), `gender`, `documentSupportNumber`, `documentIssueDate` (la app los enseña solo si llegan con valor), `emailNote` (`mcm_email_warning` | `mcm_email_soft` | `null`), `contact`, `address`, `photoUrl`, `mcm` (`null` si no es de su audiencia), `consents` (`true` | `false` | `null` = **sin contestar**, nunca «no») y `options` (`{ value, label }` de género, tipo de documento, etapa, nivel COM, talla, MCM local y comunidad). **La salud no va aquí.**
+- `PATCH /v1/profiles/:pid/details` `{ clientId, changes }` → `WriteResult & { details }` (los datos **releídos**). **Estricto**: una clave de más o de una sección que la audiencia no tiene → `validation` (`bad_body`, `section_not_allowed`); formatos (`bad_email`, `bad_postal_code`, `bad_year`), opciones (`bad_option`) y documento (`bad_document`). `changes` lleva SOLO lo que cambia; lo escondido por la etapa (nivel COM, año de LC) no viaja. Las autorizaciones solo admiten `true`/`false` y solo se escribe la que llega. `identityFill` (nombre, apellidos, tipo y número de documento) solo escribe lo que en el CRM está vacío (`identity_already_set` si no) y el documento con su letra; lo usa quien viene a pagar (`completar=pago`). El mismo `clientId` no escribe dos veces.
+- `GET` y `PUT /v1/profiles/:pid/health` → `{ health }` / `WriteResult`: cinco textos (`foodIntolerances`, `allergies`, `illnesses`, `treatments`, `other`), solo los que cambian. El resultado de escribirla no lleva la salud.
+- `POST /v1/profiles/:pid/photo` y `GET /v1/profiles/:pid/photo`: **pendiente** en el servidor (la app enseña la foto y deja el cambio para después).
+
+La app: `ProfileDataScreen` (`/comunica/datos/[pid]`, o `/comunica/datos` para a quien se ve; `?yo=1` para uno mismo y `?completar=pago`), `usePersonDetails` (lectura 5 min en memoria, salud 1 min) y `utils/comunica/personDetails.ts` (qué se manda y qué formatos no dejan guardar).
+
+### Familias: eventos y su ficha (plan 13)
+
+Todo cuelga de `/v1/profiles/:pid/…` (403 con un `pid` ajeno, nunca 404). Días `YYYY-MM-DD` de Madrid. Ni un nombre del CRM ni una cadena de HTML.
+
+- `GET /v1/profiles/:pid/events` → `ActivityList { toSignUp, signedUp }` de `EventCard`. `signedUp` = los que el perfil tiene con inscripción no cancelada, **sin audiencia y sin «ocultar en el área privada»**; `toSignUp` = el resto, sin los ocultos y sin los que no son para ese perfil. Los pasados los quita la app con la fecha de hoy. `myRegistrationStatus { label, tone }` lleva el estado de la inscripción (una rechazada sale en rojo, no «Con plaza»).
+- `GET /v1/profiles/:pid/events/:eventId` y `…/by-slug/:slug` (slug o id) → `EventDetail`. Se sirve **aunque no sea para ti**, con el motivo en `signup.audience` (`delegation` | `profile` | `course` y su `message`); lo inexistente, `not_found`. `capacity` y `price` son `null` si son 0 (un 0 no es un dato). Con información de la web hay `body`, `cover`, `gallery`, `attachments` (PDF) y `tagline`, y **no** hay `description`; sin ella, al revés. `map`: `{ url }` propio (http/https) o `{ query }` con la dirección o el lugar. `share`: la página pública si la hay (`kind: 'public'`), si no la ficha del área.
+- **El cuerpo viaja troceado en bloques** (`BodyBlock`): `heading` (1 | 2), `paragraph`, `notice`, `list` (con un segundo nivel en `children`), `button`, `image`, `gallery`, `video` (YouTube o Vimeo) y `divider`; el texto en línea (`BodyInline`): texto, negrita, cursiva, salto y enlace. Esos bloques SON el contrato: la app los pinta con componentes nativos y no interpreta HTML (un bloque con `html` o de un tipo desconocido no pasa el esquema; una imagen solo `https`). Los archivos `{ documentId }` se bajan con sesión por `GET /v1/profiles/:pid/events/:eventId/documents/:documentId` (binario, solo si el documento es del evento y el evento es para el perfil o tiene plaza en él).
+- Se guardan en el móvil (`persist: true`: el estado de su inscripción y poco más); los archivos, nunca.
+- `GET /v1/public/events/:slug` (la ficha pública sin sesión): **pendiente** en el servidor; la app, sin sesión, dice «Entra para apuntarte».
+
+La app: `ActivitiesScreen` (`/comunica/actividades`), `EventDetailScreen` (`/comunica/actividades/[eventId]`) y el puente `…/publica/[slug]` del enlace `/actividades/?e=`; `utils/comunica/{eventWindow,activityList,eventSignup,recordDates,bodyLinks,eventMap}.ts` (el plazo, el listado, el orden de la acción, las fechas, los enlaces del cuerpo y el mapa).
+
+### Familias: inscripciones (plan 14)
+
+Todo cuelga de `/v1/profiles/:pid/…` (403 con un `pid` ajeno). Días `YYYY-MM-DD` de Madrid. **La persona inscrita es siempre `pid`**: paga quien ha entrado y ninguna de las dos personas viaja en el cuerpo.
+
+- `GET /v1/profiles/:pid/registrations` → `{ items: RegistrationCard[] }`: todas (también canceladas y rechazadas, con su chip `status { label, tone }`); la app las ordena (lo abierto por fecha, lo cerrado al revés, los eventos ocultos en «Otros eventos»). **Se guarda en el móvil.**
+- `GET /v1/profiles/:pid/registrations/:rid` → `RegistrationDetail`: importe, respuestas (texto), tutores (nombre, parentesco, teléfono, correo), `payment` (`pending` | `returned` | `paid` | `direct_debit` | `no_commitment` | `none`, con `paymentId`), `manage { canEdit, canCancel, reason, until }` y `edit` (las preguntas con `current` y las necesidades especiales). **No se guarda** (teléfonos, importes).
+- `GET /v1/profiles/:pid/events/:eventId/signup` → `SignupForm`: `blocked` (`already_registered` + `registrationId` | `audience` | `window` con título y mensaje | `advanced_form`), `questions` (2 como mucho, número de opción desde 1), `price`, `paymentMethods` (solo los que el servidor tiene activados) y `specialNeeds`. Sin caché: el guard de duplicados se mira al abrir.
+- `POST /v1/profiles/:pid/registrations` `SignupWrite → SignupResult { registrationId, payment: 'none' | 'noted' | 'error', cardPaymentId }`. **El guard es el servidor**: formulario avanzado → `conflict`/`advanced_form`; duplicado sin caché → `conflict`/`already_registered`; audiencia → `forbidden`/`audience`; plazo → `conflict`/`window_closed`; respuestas o pago mal → `validation` con `reason` `answers` o `payment` (con precio y medios: medio obligatorio y de la lista; domiciliación con IBAN válido). El IBAN solo con domiciliación (el esquema lo rechaza en otro caso) y **nunca** llega a un log, una respuesta ni una caché. Mismo `clientId` = misma inscripción. Con `payment: 'error'` la inscripción se queda. `cardPaymentId` es el pago pendiente con tarjeta (`null` si el CRM no lo generó: se paga por la inscripción).
+- `PATCH /v1/profiles/:pid/registrations/:rid` (solo respuestas y necesidades especiales) y `POST …/:rid/cancel` (estado «cancelada», no se borra): solo con derechos (no cancelada ni rechazada, evento sin pasar, plazo abierto; cancelar además no siendo un curso, de más de 31 días); si no, `conflict`/`window_closed` y no se toca nada.
+- `POST /v1/profiles/:pid/events/:eventId/advanced-form` → `{ url }`: la URL del formulario del CRM con los datos de `pid` ya puestos (solo `http(s)`). Lleva datos personales: ni se guarda ni se registra.
+
+**Apuntarse, modificar y cancelar NO van por la cola**: llamada directa con conexión y un `clientId` en memoria que se conserva mientras el fallo sea de red o del CRM. Al aplicarse se invalidan actividades, inscripciones, pagos y calendario del perfil.
+
+La app: `SignupScreen` (`/comunica/actividades/[eventId]/inscribirme`), `RegistrationsScreen` (`/comunica/inscripciones`), `RegistrationDetailScreen` (`…/[registrationId]`) y `RegistrationEditScreen` (`…/modificar`); `utils/comunica/{iban,signupForm,registrationList,paymentLine,registrationNotes}.ts`.
+
 ### Varias delegaciones (plan 17)
 
 Quien colabora con otra delegación (coordina Burriana siendo de Castellón)

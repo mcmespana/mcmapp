@@ -44,6 +44,12 @@ export function longDay(day: string, capital = false): string {
   return capital ? capitalize(s) : s;
 }
 
+/** «5 de mayo de 2014» (una fecha de nacimiento o de expedición). */
+export function fullDay(day: string): string {
+  const { y, m, d } = parts(day);
+  return `${d} de ${MONTHS[m - 1]} de ${y}`;
+}
+
 /** «sáb 25». */
 export function shortDay(day: string): string {
   return `${WEEKDAYS[weekday(day)].slice(0, 3)} ${parts(day).d}`;
