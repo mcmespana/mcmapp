@@ -7,14 +7,10 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
 import { radii, shadows } from '@/constants/uiStyles';
 import {
-  dayLabel,
   dayTitle,
-  dotsOf,
   itemLine,
   itemTone,
   LEGEND,
-  monthWeeks,
-  WEEKDAYS_SHORT,
   type DayItem,
   type Tone,
 } from '@/utils/comunica/calendar';
@@ -35,86 +31,6 @@ export function useToneColor() {
           : tone === 'accent'
             ? t.accentFill
             : t.textSecondary;
-}
-
-export function MonthGrid({
-  month,
-  today,
-  selected,
-  items,
-  onSelect,
-}: {
-  month: string;
-  today: string;
-  selected: string;
-  items: Map<string, DayItem[]>;
-  onSelect: (day: string) => void;
-}) {
-  const t = useComunicaTheme();
-  const color = useToneColor();
-  return (
-    <View style={[styles.grid, shadows.card, { backgroundColor: t.card }]}>
-      <View style={styles.week}>
-        {WEEKDAYS_SHORT.map((w) => (
-          <Text
-            key={w}
-            style={[styles.weekday, { color: t.textSecondary }]}
-            accessible={false}
-          >
-            {w}
-          </Text>
-        ))}
-      </View>
-      {monthWeeks(month).map((week, i) => (
-        <View key={i} style={styles.week}>
-          {week.map((day, j) => {
-            if (!day) return <View key={j} style={styles.cell} />;
-            const list = items.get(day) ?? [];
-            const isSelected = day === selected;
-            const isToday = day === today;
-            return (
-              <PressableFeedback
-                key={day}
-                onPress={() => {
-                  h.select();
-                  onSelect(day);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={dayLabel(day, list.length)}
-                accessibilityState={{ selected: isSelected }}
-                style={[
-                  styles.cell,
-                  isSelected && {
-                    backgroundColor: t.accentFill,
-                    borderRadius: radii.md,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.dayNumber,
-                    { color: isSelected ? t.onAccent : t.text },
-                    isToday &&
-                      !isSelected && { color: t.accentText, fontWeight: '700' },
-                  ]}
-                >
-                  {Number(day.slice(8))}
-                </Text>
-                <View style={styles.dots}>
-                  {dotsOf(list).map((tone, k) => (
-                    <View
-                      key={k}
-                      style={[styles.dot, { backgroundColor: color(tone) }]}
-                    />
-                  ))}
-                </View>
-              </PressableFeedback>
-            );
-          })}
-        </View>
-      ))}
-    </View>
-  );
 }
 
 export function Legend() {
@@ -242,23 +158,6 @@ export function AgendaList({
 }
 
 const styles = StyleSheet.create({
-  grid: { borderRadius: radii.lg, padding: 8, gap: 2 },
-  week: { flexDirection: 'row' },
-  weekday: {
-    ...typography.caption,
-    flex: 1,
-    textAlign: 'center',
-    paddingVertical: 4,
-  },
-  cell: {
-    flex: 1,
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  dayNumber: { ...typography.body },
-  dots: { flexDirection: 'row', gap: 2, height: 6 },
   dot: { width: 6, height: 6, borderRadius: radii.pillFull },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },

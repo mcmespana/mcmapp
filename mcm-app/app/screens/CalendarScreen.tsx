@@ -9,7 +9,7 @@ import {
   Platform,
   Text,
 } from 'react-native';
-import { CalendarProps, LocaleConfig } from 'react-native-calendars';
+import type { CalendarProps } from 'react-native-calendars';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import colors, { themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -38,48 +38,7 @@ import {
   createStyles,
 } from '@/components/calendar/calendarioStyles';
 
-LocaleConfig.locales['es'] = {
-  monthNames: [
-    'Enero',
-    'Febrero',
-    'Marzo',
-    'Abril',
-    'Mayo',
-    'Junio',
-    'Julio',
-    'Agosto',
-    'Septiembre',
-    'Octubre',
-    'Noviembre',
-    'Diciembre',
-  ],
-  monthNamesShort: [
-    'Ene',
-    'Feb',
-    'Mar',
-    'Abr',
-    'May',
-    'Jun',
-    'Jul',
-    'Ago',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dic',
-  ],
-  dayNames: [
-    'Domingo',
-    'Lunes',
-    'Martes',
-    'Miércoles',
-    'Jueves',
-    'Viernes',
-    'Sábado',
-  ],
-  dayNamesShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
-  today: 'Hoy',
-};
-LocaleConfig.defaultLocale = 'es';
+import '@/components/calendar/calendarLocale';
 
 // Reanimated 4 no trae `Animated.SectionList` hecho, hay que crearlo. Se hace
 // a nivel de módulo para que no se remonte la lista en cada render.

@@ -11,6 +11,21 @@
 - **No se reduce a 800×800**: el selector solo deja fijar la calidad, no los píxeles, y `expo-image-manipulator` es un paquete nativo que no se ha añadido (anotado en `docs/planes/area-nativa/12-mis-datos.md`). Sin paquetes nativos nuevos.
 - **Falta**: verlo en un móvil de verdad con el servidor real (recorte en iOS y Android, peso real de las fotos, texto del permiso de la galería, que menciona «títulos, certificados y documentos»).
 
+## 2026-11-01 — Comunica familias: «Próximas actividades» en la portada
+
+- La portada de familias enseña, entre «Actividades» y «Tu perfil», **«Próximas actividades»**: hasta 5 filas (primero los eventos abiertos a inscripción, luego las próximas sesiones) y «Ver calendario». Solo si se enseña Calendario a quien mira y hay algo cerca; sin datos, sin conexión o vacío, no se pinta. Tocar una fila abre la ficha del evento o de la sesión. (`UpcomingAgenda`; usaba `upcomingAgendaItems`, que estaba hecha y sin pintar.)
+
+## 2026-11-01 — Comunica familias: calendario que se desliza
+
+- El mes del calendario del área usa ahora `SwipeableMonthCalendar` (el de la pestaña Calendario): se desliza con el dedo y con las flechas, sin días de otros meses, con puntitos por actividad, el color del área y la frase para el lector de pantalla de cada día. En iPad y web anchos, mes y lista del día en dos paneles. La Agenda no cambia.
+- `SwipeableMonthCalendar` gana `markingType`, `hideExtraDays` y `accentColor` (por defecto, como antes); los meses y días en español salen a `components/calendar/calendarLocale.ts` para no depender de que se haya abierto la otra pantalla.
+- Idea tomada de la rama de David (`pantallitasDeDavid`); el resto de la pantalla sigue siendo la de `main`. Quitada la rejilla propia (`MonthGrid`).
+
+## 2026-11-01 — Comunica: certificados de monitor a 4 MB y revisión de lo de David
+
+- **Certificados de monitor (plan 09): el tope baja de 6 MB a 4 MB**, que es lo que acepta el servidor (lo que cabe en una función de Vercel). Antes, un certificado de 5 MB pasaba la comprobación de la app y fallaba después con `file_too_big`. Cambia la constante, los textos («Tamaño máximo: 4MB»), el contrato y el falso.
+- Revisada la rama `pantallitasDeDavid` (PR #365, borrador) contra `main`: 40 ficheros en conflicto y 44 que se fusionarían dejando dos versiones; no se fusiona. Lista de piezas que compensa traer, ramas que borrar y dudas en [`PENDIENTE-REVISAR.md`](../docs/planes/area-nativa/PENDIENTE-REVISAR.md).
+
 ## 2026-11-01 — Comunica familias, plan 16: documentos y calendario
 
 - **Documentos** (`/comunica/documentos`): «Mis documentos» / «Documentos de Lucía»; la tarjeta con el tipo en la cápsula (JPG, PDF, DOC…), el nombre, «Del 3 de octubre de 2026» y el chip («Caducado» en rojo o el estado), sin el nombre del archivo; lo más reciente arriba y lo caducado al final y apagado. Tocar la tarjeta abre la ficha; el botón redondo descarga y abre el archivo (visor para imágenes y PDF en iOS; la hoja del sistema para lo demás y el PDF en Android).

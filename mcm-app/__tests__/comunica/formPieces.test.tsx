@@ -330,7 +330,7 @@ describe('FileField', () => {
       <FileField
         label="Título MAT"
         hasFile={false}
-        problem="Ese archivo pesa más de 6 MB."
+        problem="Ese archivo pesa más de 4 MB."
         upload={{
           name: 'mat.pdf',
           sizeText: '1 MB',
@@ -344,7 +344,7 @@ describe('FileField', () => {
     expect(texts(tree)).toContain('mat.pdf');
     expect(texts(tree)).toContain('No se ha podido subir');
     expect(texts(tree)).toContain('Sin conexión.');
-    expect(texts(tree)).toContain('Ese archivo pesa más de 6 MB.');
+    expect(texts(tree)).toContain('Ese archivo pesa más de 4 MB.');
     press(tree, 'Reintentar');
     expect(onRetry).toHaveBeenCalled();
   });

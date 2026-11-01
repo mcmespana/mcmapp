@@ -121,13 +121,13 @@ afterEach(() => {
 });
 
 describe('subir un archivo', () => {
-  it('lo de más de 6 MB y una foto HEIC no se suben', async () => {
+  it('lo de más de 4 MB y una foto HEIC no se suben', async () => {
     const { fake, probe } = await setup();
     mockGetDocument.mockResolvedValueOnce(
       doc('cert.pdf', DOCUMENT_MAX_BYTES + 1, 'application/pdf'),
     );
     await act(async () => probe.hook!.choose('file'));
-    expect(probe.hook!.problem).toBe('Ese archivo pesa más de 6 MB.');
+    expect(probe.hook!.problem).toBe('Ese archivo pesa más de 4 MB.');
     expect(mockDelete).toHaveBeenCalledWith(
       'file:///cache/DocumentPicker/cert.pdf',
     );

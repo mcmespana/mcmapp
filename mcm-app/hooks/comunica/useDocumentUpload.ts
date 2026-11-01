@@ -1,5 +1,5 @@
 // Subir un título o certificado (plan 09, reglas 8-10): elegir, comprobar
-// (PDF, JPG o PNG, 6 MB) ANTES de subir, y subir en el acto, directo y con
+// (PDF, JPG o PNG, 4 MB) ANTES de subir, y subir en el acto, directo y con
 // conexión (`services/comunica/uploads.ts`: nunca por la cola, el archivo no
 // se queda en el móvil). Al subir, la ficha se marca «Ya subido» al momento y
 // se relee.

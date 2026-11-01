@@ -2204,7 +2204,7 @@ export type MonitorProfileWrite = z.infer<typeof MonitorProfileWrite>;
 
 /**
  * `POST /v1/me/documents` (multipart): estos dos campos y `file` (PDF, JPG o
- * PNG de hasta 6 MB). Motivos de `validation`: `empty_file`, `file_too_big`,
+ * PNG de hasta 4 MB). Motivos de `validation`: `empty_file`, `file_too_big`,
  * `bad_file_type`. Crea el Documento con su categoría, lo ata a la persona y
  * pone su «archivo subido».
  */

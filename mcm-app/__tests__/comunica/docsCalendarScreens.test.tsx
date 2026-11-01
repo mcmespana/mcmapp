@@ -9,6 +9,7 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { HeroUINativeProvider } from 'heroui-native';
 import { QueryClient } from '@tanstack/react-query';
 
@@ -104,7 +105,9 @@ import DocumentDetailScreen from '@/components/comunica/documentos/DocumentDetai
 import DocumentsScreen from '@/components/comunica/documentos/DocumentsScreen';
 import DocumentUploadScreen from '@/components/comunica/documentos/DocumentUploadScreen';
 import FileViewerScreen from '@/components/comunica/documentos/FileViewerScreen';
+import SwipeableMonthCalendar from '@/components/calendar/SwipeableMonthCalendar';
 import CalendarScreen from '@/components/comunica/calendario/CalendarScreen';
+import MemberHome from '@/components/comunica/inicio/MemberHome';
 import SessionScreen from '@/components/comunica/calendario/SessionScreen';
 import {
   clearViewingFile,
@@ -766,8 +769,29 @@ describe('subir un documento', () => {
 });
 
 describe('«Calendario»', () => {
+  // La rejilla se desliza o se cambia con sus flechas; las dos acaban llamando a `onChangeMonth`.
+  // Cada día de la rejilla son varios nodos con la misma frase; el que se toca de verdad es el más hondo.
+  const pressDay = async (tree: ReactTestRenderer, re: RegExp) => {
+    const nodes = tree.root.findAll(
+      (n) =>
+        typeof n.props.onPress === 'function' &&
+        typeof n.props.accessibilityLabel === 'string' &&
+        re.test(n.props.accessibilityLabel),
+    );
+    if (nodes.length === 0) throw new Error(`No hay ningún día con ${re}`);
+    await act(async () => {
+      nodes[nodes.length - 1].props.onPress();
+    });
+  };
+  const changeMonth = async (tree: ReactTestRenderer, delta: number) => {
+    await act(async () => {
+      tree.root.findByType(SwipeableMonthCalendar).props.onChangeMonth(delta);
+    });
+  };
   const calendar = (view?: 'month' | 'agenda') => (
-    <CalendarScreen initialView={view} />
+    <GestureHandlerRootView>
+      <CalendarScreen initialView={view} />
+    </GestureHandlerRootView>
   );
   it('el mes, el día de hoy elegido, la leyenda y los puntitos de cada día', async () => {
     const { tree } = await setup('family', calendar(), {
@@ -786,9 +810,9 @@ describe('«Calendario»', () => {
     ])
       expect(texts(tree)).toContain(l);
     // Hoy hay una sesión del curso.
-    expect(hasLike(tree, /^10 de noviembre, 1 actividad$/)).toBe(true);
+    expect(hasLike(tree, /(?:^| )10 de noviembre, 1 actividad$/)).toBe(true);
     expect(texts(tree)).toContain('Sesión 11');
-    expect(hasLike(tree, /^5 de noviembre, sin actividades$/)).toBe(true);
+    expect(hasLike(tree, /(?:^| )5 de noviembre, sin actividades$/)).toBe(true);
   });
   it('tocar un día pinta debajo su lista con «hora · evento · estado»; uno sin nada, «No hay actividades este día»', async () => {
     const { tree } = await setup('family', calendar(), {
@@ -796,12 +820,12 @@ describe('«Calendario»', () => {
       controls: CLOCK,
     });
     await until(() => texts(tree).includes('Noviembre 2026'));
-    await pressLike(tree, /^3 de noviembre, 1 actividad$/);
+    await pressDay(tree, /(?:^| )3 de noviembre, 1 actividad$/);
     expect(texts(tree)).toContain('Martes, 3 de noviembre');
     expect(texts(tree)).toContain(
       '17:30 – 19:00 · Curso de Catequesis MIC · No asististe',
     );
-    await pressLike(tree, /^5 de noviembre, sin actividades$/);
+    await pressDay(tree, /(?:^| )5 de noviembre, sin actividades$/);
     expect(texts(tree)).toContain('No hay actividades este día');
   });
   it('cambiar de mes elige hoy si cae dentro; si no, el día 1', async () => {
@@ -810,10 +834,10 @@ describe('«Calendario»', () => {
       controls: CLOCK,
     });
     await until(() => texts(tree).includes('Noviembre 2026'));
-    await pressLike(tree, /^Mes siguiente$/);
+    await changeMonth(tree, 1);
     expect(texts(tree)).toContain('Diciembre 2026');
     expect(texts(tree)).toContain('Martes, 1 de diciembre');
-    await pressLike(tree, /^Mes anterior$/);
+    await changeMonth(tree, -1);
     expect(texts(tree)).toContain('Martes, 10 de noviembre');
   });
   it('la agenda: el mes por días; un mes vacío, «No hay actividades en estas fechas»', async () => {
@@ -855,7 +879,7 @@ describe('«Calendario»', () => {
       controls: CLOCK,
     });
     await until(() => texts(tree).includes('Noviembre 2026'));
-    expect(hasLike(tree, /^10 de noviembre, 1 actividad$/)).toBe(false);
+    expect(hasLike(tree, /(?:^| )10 de noviembre, 1 actividad$/)).toBe(false);
     expect(texts(tree)).not.toContain('Sesión 11');
   });
   it('se guarda en el móvil (fechas y marcas) pero sin documentos; sin conexión y sin nada, «Necesitas conexión la primera vez»', async () => {
@@ -980,5 +1004,31 @@ describe('guardarraíles', () => {
     expect(s.indexOf('confirmAction(TXT.deleteTitle')).toBeLessThan(
       s.indexOf('writes.remove('),
     );
+  });
+});
+
+describe('«Próximas actividades» de la portada', () => {
+  it('viendo a un hijo: sus próximas actividades y «Ver calendario»; tocar una abre su destino', async () => {
+    const { tree } = await setup('family', <MemberHome />, {
+      activeId: LUCIA,
+      controls: CLOCK,
+    });
+    await until(() => texts(tree).includes('Próximas actividades'));
+    expect(texts(tree)).toContain('Ver calendario');
+    await pressLike(tree, /^Merienda de bienvenida,/);
+    expect(mockRouter.push).toHaveBeenLastCalledWith({
+      pathname: '/comunica/actividades/[eventId]',
+      params: { eventId: 'pev-sinc' },
+    });
+    await pressLike(tree, /^Ver calendario$/);
+    expect(mockRouter.push).toHaveBeenLastCalledWith('/comunica/calendario');
+  });
+  it('el familiar a secas no tiene Calendario, y la portada no enseña la agenda', async () => {
+    const { tree } = await setup('family', <MemberHome />, {
+      controls: CLOCK,
+    });
+    await until(() => texts(tree).includes('Tus pagos'));
+    await wait(100);
+    expect(texts(tree)).not.toContain('Próximas actividades');
   });
 });
