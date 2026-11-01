@@ -83,6 +83,13 @@ jest.mock('expo-image-picker', () => ({
   UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' },
 }));
 jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
+// Aquí el recorte a 800×800 no se prueba (ver photoResize.test.ts): que falle deja pasar lo elegido tal cual.
+jest.mock('expo-image-manipulator', () => ({
+  manipulateAsync: jest.fn(async () => {
+    throw new Error('sin manipulador en este test');
+  }),
+  SaveFormat: { JPEG: 'jpeg' },
+}));
 
 import ComunicaAreaProvider from '@/components/comunica/comun/ComunicaAreaProvider';
 import ProfileDataScreen from '@/components/comunica/datos/ProfileDataScreen';

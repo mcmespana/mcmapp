@@ -6,8 +6,8 @@
 //   · JPEG o PNG, más de 0 bytes y 4 MB como mucho (lo que cabe en una función de Vercel). El servidor no procesa la imagen: la app la manda ya
 //     recortada en cuadrado.
 //   · El recorte cuadrado lo hace el selector del sistema (`allowsEditing` + `aspect: [1, 1]`). El selector NO deja fijar el tamaño en píxeles
-//     (ni 800×800 ni ningún otro): solo la calidad de compresión. Sin `expo-image-manipulator` (paquete nativo, no se añade) la única palanca
-//     para que pese menos de 4 MB es bajarla, y se baja un escalón cada vez que una foto se pasa: ver `PHOTO_QUALITIES`.
+//     (ni 800×800 ni ningún otro): solo la calidad de compresión. Después `expo-image-manipulator` la reduce a 800×800 y la pasa a JPEG (1/11);
+//     si ese paso fallara, la palanca es bajar la calidad un escalón cada vez que una foto se pasa: ver `PHOTO_QUALITIES`.
 
 export const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 

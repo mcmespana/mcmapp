@@ -202,14 +202,10 @@ fuera de la regla 9, es `validation`. Para el plan del servidor (todo de `Contac
   `CropView`, gestos y zoom quedan descartados: el selector ya recorta y el servidor no lo haría). El texto del
   permiso de cámara de `app.json` (`fotos-documentos`) ya dice «hacer fotos de títulos y documentos»; no se ha
   tocado.
-- **Reducir y comprimir** (lo que NO se puede hacer): el selector no deja fijar el tamaño en píxeles, solo la
-  `quality` (0-1). **No se reduce a 800×800** (haría falta `expo-image-manipulator`, un paquete nativo que NO se
-  añade): la foto sube con la resolución del recorte (un JPEG de una cámara actual, ~1-3 MB). Para que quepa en 4 MB
-  se baja la calidad: el primer intento pide 0,6; si la foto se pasa, se avisa («pesa más de 4 MB… la
-  comprimiremos más»), se borra la copia y **la siguiente vez que se elige** se pide 0,4 y luego 0,2
-  (`PHOTO_QUALITIES`, con test); al subir bien se vuelve a 0,6. Un PNG no se comprime (el selector ignora la
-  calidad en iOS): se pide otra foto. **Si algún día se quiere 800×800 exactos y peso fijo, es
-  `expo-image-manipulator`** (recortar `resize 800` y `compress`) y requiere build nativa: anotado, no hecho.
+- **Reducir y comprimir** (1/11/2026, decisión del propietario: «métele el paquete nativo»): tras el recorte cuadrado del selector, `pickPhoto` pasa la foto por
+  `expo-image-manipulator` (lado máximo 800 px sin agrandar, JPEG con compresión 0,85). Un PNG o un HEIC acaban en JPEG, y la foto pesa unos cientos de KB, así que
+  casi nunca se acerca a los 4 MB. Si el manipulador fallara, se sigue con lo elegido y la escalera de calidad del selector (`PHOTO_QUALITIES`: 0,6, 0,4, 0,2) queda
+  de red de seguridad. En web no se toca (no hay recorte). **Paquete nativo: requiere build** (`[skip-ota]`). Tests: `photoResize.test.ts`.
 - **Se comprueba ANTES de subir** (`photoProblem`): JPEG o PNG («La foto tiene que ser JPG o PNG.», un HEIC no
   vale: se pide `Compatible` y debería llegar JPEG), no vacía y ≤ 4 MB. El servidor vuelve a mirar.
 - **Subir** en cuanto se acepta, sin esperar a «Guardar», **directo y con conexión, nunca por la cola** (como los
