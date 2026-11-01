@@ -360,6 +360,17 @@ Mientras no lleguen, la app calcula el enlace igual con `published` y `slug`
   con conexión: la app no lo pone en la cola** (el archivo no se guarda en el
   móvil); reintentar va con el mismo `clientId`.
 
+### Familias: mis datos (plan 12)
+
+Todo cuelga de `/v1/profiles/:pid/…`; el servidor comprueba en cada petición que `pid` es quien ha entrado o uno de sus hijos con relación vigente (si no, **403**, nunca 404). Son datos personales y de salud: **nada se guarda en el móvil** (`persist: false`), ni hay cola (se escribe directo y con conexión).
+
+- `GET /v1/profiles/:pid/details` → `PersonDetails`: `sections` (las decide el servidor con la audiencia: `member`, las siete; el hijo y el familiar, sin `mcm`), `identity` (solo lectura), `gender`, `documentSupportNumber`, `documentIssueDate` (la app los enseña solo si llegan con valor), `emailNote` (`mcm_email_warning` | `mcm_email_soft` | `null`), `contact`, `address`, `photoUrl`, `mcm` (`null` si no es de su audiencia), `consents` (`true` | `false` | `null` = **sin contestar**, nunca «no») y `options` (`{ value, label }` de género, tipo de documento, etapa, nivel COM, talla, MCM local y comunidad). **La salud no va aquí.**
+- `PATCH /v1/profiles/:pid/details` `{ clientId, changes }` → `WriteResult & { details }` (los datos **releídos**). **Estricto**: una clave de más o de una sección que la audiencia no tiene → `validation` (`bad_body`, `section_not_allowed`); formatos (`bad_email`, `bad_postal_code`, `bad_year`), opciones (`bad_option`) y documento (`bad_document`). `changes` lleva SOLO lo que cambia; lo escondido por la etapa (nivel COM, año de LC) no viaja. Las autorizaciones solo admiten `true`/`false` y solo se escribe la que llega. `identityFill` (nombre, apellidos, tipo y número de documento) solo escribe lo que en el CRM está vacío (`identity_already_set` si no) y el documento con su letra; lo usa quien viene a pagar (`completar=pago`). El mismo `clientId` no escribe dos veces.
+- `GET` y `PUT /v1/profiles/:pid/health` → `{ health }` / `WriteResult`: cinco textos (`foodIntolerances`, `allergies`, `illnesses`, `treatments`, `other`), solo los que cambian. El resultado de escribirla no lleva la salud.
+- `POST /v1/profiles/:pid/photo` y `GET /v1/profiles/:pid/photo`: **pendiente** en el servidor (la app enseña la foto y deja el cambio para después).
+
+La app: `ProfileDataScreen` (`/comunica/datos/[pid]`, o `/comunica/datos` para a quien se ve; `?yo=1` para uno mismo y `?completar=pago`), `usePersonDetails` (lectura 5 min en memoria, salud 1 min) y `utils/comunica/personDetails.ts` (qué se manda y qué formatos no dejan guardar).
+
 ### Varias delegaciones (plan 17)
 
 Quien colabora con otra delegación (coordina Burriana siendo de Castellón)

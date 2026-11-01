@@ -134,6 +134,18 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
           params: { id: d.id },
         }
       : { pathname: '/comunica/coordinacion' },
+  // Mis datos (plan 12). El plugin no lleva a quién: con la persona que se ve ahora; la ficha del laico (retirada) y la del familiar
+  // son de uno mismo (`yo=1`).
+  single_stic_comunica_perfil: () => ({ pathname: '/comunica/datos' }),
+  single_stic_profile: () => ({ pathname: '/comunica/datos' }),
+  single_stic_comunica_laico: () => ({
+    pathname: '/comunica/datos',
+    params: { yo: '1' },
+  }),
+  single_stic_tutor_profile: () => ({
+    pathname: '/comunica/datos',
+    params: { yo: '1' },
+  }),
   single_stic_pasar_lista_evento: (d) =>
     d.id
       ? { pathname: '/comunica/eventos/[eventId]', params: { eventId: d.id } }

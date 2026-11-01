@@ -4,6 +4,15 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 — Comunica familias, plan 12: «Mis datos» y «Datos de Lucía»
+
+- Una sola pantalla (`/comunica/datos/[pid]`; `/comunica/datos` resuelve a quien se ve ahora, `?yo=1` a uno mismo) para las tres audiencias, con los campos, el orden y los textos del plugin (`single_stic_comunica_perfil.php`): datos personales (lo bloqueado, como dato con candado; género, soporte y expedición del DNI si ya los tenemos), contacto (con el aviso del correo `@movimientoconsolacion.com`), dirección, foto, MCM (solo miembros; «Nivel COM» con etapa COM, año de LC con LC Incorporado), información sanitaria y autorizaciones legales.
+- Guardar escribe DIRECTO y con conexión, solo lo que cambia, con un `clientId` por guardado; nada de datos ni de salud al disco (`persist: false`, memoria 5 min y 1 min). Las autorizaciones «sin contestar» siguen sin contestar si no se tocan (el plugin las convertía en «no»). Salir con cambios pregunta.
+- `?completar=pago`: quien paga y no tiene nombre, apellidos o documento los escribe (solo lo vacío; el documento con su letra) y vuelve al pago.
+- Los enlaces del plugin `single_stic_comunica_perfil`, `single_stic_profile`, `single_stic_comunica_laico` y `single_stic_tutor_profile` abren esta pantalla; «Tus datos personales» de monitor y «Mis datos»/«Datos de Lucía» de la portada ya no pasan por la web.
+- Servidor falso (`fake/profileDetails.ts`) como el de verdad: secciones por audiencia, `emailNote`, 403 con `pid` ajeno, estricto, contador de escrituras por campo, `identityFill`, salud aparte.
+- **Falta**: cambiar la foto desde la app (el servidor aún no recibe fotos) y verlo con el servidor real. Pruebas: `personDetails.test.ts` (33), `profileDetailsFake.test.ts` (24), `datosScreen.test.tsx` (20).
+
 ## 2026-11-01 — Comunica familias, plan 11 (base): a quién se ve
 
 - Contrato y servidor falso de `GET /v1/me/profiles` (quien ha entrado y sus hijos; un hijo sin nombre sale igual; el 503 nunca es una lista vacía), con cinco personas de familia y `allowedProfile`, la barrera de las rutas `/profiles/:pid/…` de los planes 12-16.

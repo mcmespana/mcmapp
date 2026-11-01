@@ -562,6 +562,166 @@ export type Scarf = z.infer<typeof Scarf>;
 export const SetScarf = Scarf.exclude(['unknown']);
 export type SetScarf = z.infer<typeof SetScarf>;
 
+// ── Familias: mis datos (plan 12) ───────────────────────────────────────────
+
+export const DETAIL_SECTIONS = [
+  'identity',
+  'contact',
+  'address',
+  'photo',
+  'mcm',
+  'health',
+  'consents',
+] as const;
+export type DetailSection = (typeof DETAIL_SECTIONS)[number];
+const DetailOptions = z.array(
+  z.object({ value: z.string(), label: z.string() }),
+);
+const Text = z.string().nullable();
+
+/**
+ * `GET /v1/profiles/:pid/details`: los datos de quien se ve (uno mismo o un hijo), SIN la salud (va aparte, `/health`). Las secciones las
+ * decide el servidor con la audiencia: `member`, las siete; `child` y `guardian`, sin `mcm`. NUNCA se guarda en el móvil. `null` es «sin
+ * indicar»; en los consentimientos, «sin contestar» (nunca se convierte en «no»).
+ */
+export const PersonDetails = read({
+  sections: z.array(z.enum(DETAIL_SECTIONS)),
+  /** Solo lectura (salvo `identityFill`, para quien paga y no tiene el dato). */
+  identity: z.object({
+    firstName: z.string(),
+    lastName: z.string(),
+    documentType: Text,
+    documentNumber: Text,
+    birthDate: Day.nullable(),
+  }),
+  gender: Text,
+  documentSupportNumber: Text,
+  documentIssueDate: Day.nullable(),
+  emailNote: z.enum(['mcm_email_warning', 'mcm_email_soft']).nullable(),
+  contact: z.object({ email: Text, mobile: Text, emergencyPhone: Text }),
+  address: z.object({
+    street: Text,
+    city: Text,
+    province: Text,
+    postalCode: Text,
+    region: Text,
+  }),
+  photoUrl: PhotoUrl.nullable(),
+  mcm: z
+    .object({
+      stage: Text,
+      comLevel: Text,
+      shirtSize: Text,
+      groupName: Text,
+      localMcm: Text,
+      scarf: Scarf.nullable(),
+      lcIncorporationYear: z.number().int().nullable(),
+      memberSince: z.number().int().nullable(),
+    })
+    .nullable(),
+  consents: z.object({
+    dataProtection: z.boolean().nullable(),
+    healthData: z.boolean().nullable(),
+    photos: z.boolean().nullable(),
+  }),
+  options: z.object({
+    gender: DetailOptions,
+    documentType: DetailOptions,
+    stage: DetailOptions,
+    comLevel: DetailOptions,
+    shirtSize: DetailOptions,
+    localMcm: DetailOptions,
+    region: DetailOptions,
+  }),
+});
+export type PersonDetails = z.infer<typeof PersonDetails>;
+
+/**
+ * `PATCH /v1/profiles/:pid/details`: solo lo que cambia, ESTRICTO. Los consentimientos solo admiten `true` o `false` y solo se escribe el
+ * que llega. `identityFill` solo escribe lo que en el CRM está vacío (quien paga y le falta el dato).
+ */
+export const PersonDetailsChanges = z.strictObject({
+  gender: Text.optional(),
+  documentSupportNumber: Text.optional(),
+  documentIssueDate: Day.nullable().optional(),
+  contact: z
+    .strictObject({
+      email: Text.optional(),
+      mobile: Text.optional(),
+      emergencyPhone: Text.optional(),
+    })
+    .optional(),
+  address: z
+    .strictObject({
+      street: Text.optional(),
+      city: Text.optional(),
+      province: Text.optional(),
+      postalCode: Text.optional(),
+      region: Text.optional(),
+    })
+    .optional(),
+  mcm: z
+    .strictObject({
+      stage: Text.optional(),
+      comLevel: Text.optional(),
+      shirtSize: Text.optional(),
+      groupName: Text.optional(),
+      localMcm: Text.optional(),
+      scarf: SetScarf.nullable().optional(),
+      lcIncorporationYear: z.number().int().nullable().optional(),
+      memberSince: z.number().int().nullable().optional(),
+    })
+    .optional(),
+  consents: z
+    .strictObject({
+      dataProtection: z.boolean().optional(),
+      healthData: z.boolean().optional(),
+      photos: z.boolean().optional(),
+    })
+    .optional(),
+  identityFill: z
+    .strictObject({
+      firstName: z.string().optional(),
+      lastName: z.string().optional(),
+      documentType: z.string().optional(),
+      documentNumber: z.string().optional(),
+    })
+    .optional(),
+});
+export type PersonDetailsChanges = z.infer<typeof PersonDetailsChanges>;
+export const PersonDetailsWrite = z.strictObject({
+  clientId: ClientId,
+  changes: PersonDetailsChanges,
+});
+export type PersonDetailsWrite = z.infer<typeof PersonDetailsWrite>;
+export const DetailsWriteResult = WriteResult.extend({
+  details: PersonDetails,
+});
+export type DetailsWriteResult = z.infer<typeof DetailsWriteResult>;
+
+/** La salud de quien se ve: solo por `/health`, sin caché, NUNCA en el móvil ni en el diario. */
+export const HealthInfo = z.object({
+  foodIntolerances: Text,
+  allergies: Text,
+  illnesses: Text,
+  treatments: Text,
+  other: Text,
+});
+export type HealthInfo = z.infer<typeof HealthInfo>;
+export const ProfileHealth = read({ health: HealthInfo });
+export type ProfileHealth = z.infer<typeof ProfileHealth>;
+export const HealthWrite = z.strictObject({
+  clientId: ClientId,
+  health: z.strictObject({
+    foodIntolerances: Text.optional(),
+    allergies: Text.optional(),
+    illnesses: Text.optional(),
+    treatments: Text.optional(),
+    other: Text.optional(),
+  }),
+});
+export type HealthWrite = z.infer<typeof HealthWrite>;
+
 /** Un evento del curso de la persona (convivencias, salidas…). */
 export const PersonEvent = z.object({
   eventId: Id,
@@ -1630,6 +1790,31 @@ export const ROUTES = {
     path: '/v1/me/profiles',
     response: MyProfiles,
     persist: true,
+  },
+  // Familias (plan 12): los datos de quien se ve. Son datos personales y de salud: NUNCA en el móvil.
+  profileDetails: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/details',
+    response: PersonDetails,
+    persist: false,
+  },
+  updateProfileDetails: {
+    method: 'PATCH',
+    path: '/v1/profiles/:pid/details',
+    response: DetailsWriteResult,
+    persist: false,
+  },
+  profileHealth: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/health',
+    response: ProfileHealth,
+    persist: false,
+  },
+  updateProfileHealth: {
+    method: 'PUT',
+    path: '/v1/profiles/:pid/health',
+    response: WriteResult,
+    persist: false,
   },
   // Mis datos de monitor (plan 09).
   myMonitor: {

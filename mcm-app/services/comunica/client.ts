@@ -59,6 +59,11 @@ import {
   WriteResult,
   MeResponse,
   MyProfiles,
+  DetailsWriteResult,
+  type HealthWrite,
+  PersonDetails,
+  type PersonDetailsWrite,
+  ProfileHealth,
   RollDetail,
   type RollWrite,
   RollWriteResult,
@@ -93,6 +98,16 @@ export interface ComunicaApi {
   getMe(): Promise<MeResponse>;
   /** Familias (plan 11): quien ha entrado y sus hijos. Con `fresh`, se mira otra vez quiénes son los míos. */
   getMyProfiles(opts?: ReadOptions): Promise<MyProfiles>;
+  /** Familias (plan 12): los datos de quien se ve. Nunca se guardan en el móvil. */
+  getProfileDetails(pid: string): Promise<PersonDetails>;
+  /** Directo y con conexión (sin cola: son datos personales). Responde con lo releído. */
+  updateProfileDetails(
+    pid: string,
+    body: PersonDetailsWrite,
+  ): Promise<DetailsWriteResult>;
+  /** La salud de quien se ve. Nunca se guarda en el móvil. */
+  getProfileHealth(pid: string): Promise<ProfileHealth>;
+  updateProfileHealth(pid: string, body: HealthWrite): Promise<WriteResult>;
   getGroups(opts?: ReadOptions): Promise<GroupsResponse>;
   getToday(opts?: ReadOptions): Promise<TodayResponse>;
   getRoll(
@@ -550,6 +565,19 @@ export function createHttpClient({
         undefined,
         READ_RETRIES,
       ),
+    getProfileDetails: (pid) =>
+      request('GET', `/v1/profiles/${enc(pid)}/details`, PersonDetails),
+    updateProfileDetails: (pid, body) =>
+      request(
+        'PATCH',
+        `/v1/profiles/${enc(pid)}/details`,
+        DetailsWriteResult,
+        body,
+      ),
+    getProfileHealth: (pid) =>
+      request('GET', `/v1/profiles/${enc(pid)}/health`, ProfileHealth),
+    updateProfileHealth: (pid, body) =>
+      request('PUT', `/v1/profiles/${enc(pid)}/health`, WriteResult, body),
     getMyMonitorProfile: (opts) =>
       request(
         'GET',
