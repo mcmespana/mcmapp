@@ -110,6 +110,8 @@ export function useCardPayment(opts: { pid: string; source: PaySource }) {
   const returnedRef = useRef<GatewayResult>('closed');
   const startedAt = useRef(0);
   const amountRef = useRef(0);
+  // El importe del intento en curso, para pintarlo en la hoja (un ref no se lee al pintar).
+  const [amountCents, setAmountCents] = useState(0);
 
   const clearTimers = useCallback(() => {
     timers.current.forEach(clearTimeout);
@@ -129,6 +131,7 @@ export function useCardPayment(opts: { pid: string; source: PaySource }) {
     async (amountCents: number) => {
       clearTimers();
       amountRef.current = amountCents;
+      setAmountCents(amountCents);
       dispatch({ type: 'create' });
       try {
         const a = await getComunicaApi().createCardAttempt(pid, {
@@ -210,6 +213,7 @@ export function useCardPayment(opts: { pid: string; source: PaySource }) {
     ) => {
       clearTimers();
       amountRef.current = amountCents;
+      setAmountCents(amountCents);
       dispatch({ type: 'create' });
       try {
         const a = await getComunicaApi().createCardAttempt(pid, {
@@ -300,7 +304,7 @@ export function useCardPayment(opts: { pid: string; source: PaySource }) {
     startBrowser,
     onGateway,
     retry,
-    amountCents: amountRef.current,
+    amountCents,
   };
 }
 

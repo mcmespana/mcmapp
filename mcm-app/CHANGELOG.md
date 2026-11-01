@@ -4,14 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
-## 2026-11-01 — Comunica familias, plan 15 (parcial): pagos y pagar con tarjeta
+## 2026-11-01 — Comunica familias, plan 15: pagos y pagar con tarjeta
 
 - **Pagos** (`/comunica/pagos`): «Pendiente de pagar», «Se cobrará por domiciliación», «Pagado» y «Otros», con el chip solo cuando dice algo nuevo (un devuelto en rojo, «Comprobando el pago»), el importe grande a la derecha y «Pagar con tarjeta» al pie en secundario. El dinero es de quien paga: viéndose a sí mismo, todo (con «Para Lucía»); viendo a un hijo, solo lo suyo.
 - **La ficha de un pago** (`/comunica/pagos/[id]`): importe como dato grande, datos en el orden del plugin (cuenta enmascarada, nº de operación), el motivo de un devuelto y «¿Ya lo has pagado?».
-- **Pagar con tarjeta** (`/comunica/pagos/pagar?pago=|inscripcion=`): resumen, «Pagar otra cantidad» (coma o punto, mínimo 1 €, sin tope; más del doble pide confirmar), la pasarela del banco en una hoja con WebView sin JavaScript inyectado, el resultado en la misma pantalla y el sondeo mientras el banco confirma. El estado lo decide SIEMPRE el servidor.
-- Los botones «Pagar» de las inscripciones (plan 14) y los enlaces `list_stic_payments`, `single_stic_payments`, `single_stic_payment_form` y `single_stic_payment_error` ya son nativos.
-- Nada de Pagos se guarda en el móvil (solo el intento en curso, sin importes, en el cajón `payattempt`). Servidor falso con pasarela simulada (`cardConfirmsAfter` para el banco que tarda).
-- **Falta**: pruebas de pantalla (lista, ficha, pagar, la hoja con la WebView), la reserva por el navegador probada, `msg=pagado` en los enlaces, el aviso de «Comprobando el pago» en la ficha de la inscripción, las notas de tiendas y capturas. **El servidor de verdad aún no tiene el pago con tarjeta encendido** (PR #14 del middleware, apagado por defecto): hoy solo funciona contra el servidor falso. Pruebas: `paymentsLogic` (34), `profilePaymentsFake` (22).
+- **Pagar con tarjeta** (`/comunica/pagos/pagar?pago=|inscripcion=`): resumen, «Pagar otra cantidad» (coma o punto, mínimo 1 €, sin tope; más del doble pide confirmar), la pasarela del banco en una hoja con WebView sin JavaScript inyectado, en incógnito, que corta la vuelta, abre fuera las apps del banco y pide confirmar al cerrar; el resultado en la misma pantalla y el sondeo mientras el banco confirma. La reserva por el navegador del sistema («Abrir en el navegador»). El estado lo decide SIEMPRE el servidor.
+- Arreglado: tras cobrarse, la lectura de «pagable» se invalidaba y la pantalla saltaba a «Este pago no está pendiente» en vez de enseñar el resultado; el resumen visto se conserva.
+- `msg=pagado` de la vuelta de la web llega como nota («Pago hecho. Si aún lo ves pendiente…», y en la inscripción «esperando al banco»); la ficha de la inscripción comprueba un intento que quedó a medias (la app se cerró) y lo dice una vez.
+- Los botones «Pagar» de las inscripciones (plan 14) y los enlaces `list_stic_payments`, `single_stic_payments`, `single_stic_payment_form` y `single_stic_payment_error` son nativos. Nada de Pagos se guarda en el móvil (solo el intento en curso, sin importes, en el cajón `payattempt`). Servidor falso con pasarela simulada (`cardConfirmsAfter` para el banco que tarda).
+- Notas para tiendas en `docs/planes/area-nativa/PAGOS-TIENDAS.md` (releer las normas de Apple y Google antes de enviar).
+- **Falta**: el servidor de verdad (PR #14 del middleware, apagado por defecto: hoy solo funciona contra el falso), capturas y probar el TPV en pruebas. Pruebas: `paymentsLogic` (34), `profilePaymentsFake` (22), `paymentsScreen` (47).
 
 ## 2026-11-01 — Comunica familias, plan 14: inscripciones
 

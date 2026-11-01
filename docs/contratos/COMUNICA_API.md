@@ -398,6 +398,18 @@ Todo cuelga de `/v1/profiles/:pid/…` (403 con un `pid` ajeno). Días `YYYY-MM-
 
 La app: `SignupScreen` (`/comunica/actividades/[eventId]/inscribirme`), `RegistrationsScreen` (`/comunica/inscripciones`), `RegistrationDetailScreen` (`…/[registrationId]`) y `RegistrationEditScreen` (`…/modificar`); `utils/comunica/{iban,signupForm,registrationList,paymentLine,registrationNotes}.ts`.
 
+### Familias: pagos y pagar con tarjeta (plan 15)
+
+Todo cuelga de `/v1/profiles/:pid/…` (403 con un `pid` ajeno, nunca 404). **El dinero es de quien paga**: viéndose a sí mismo, todo lo que paga (con `forName`, «Para Lucía»); viendo a un hijo, solo lo de ese hijo. Importes en **céntimos**. **Nada de esto se guarda en el móvil** (`persist: false`).
+
+- `GET /v1/profiles/:pid/payments` → `{ payments: Payment[] }` (`status`: `pending` | `scheduled` | `paid` | `failed` | `other`; `method`: `card` | `direct_debit` | `bizum` | `transfer` | `cash` | `other`; `statusLabel` y `methodLabel` salen del CRM, nunca la clave cruda; `canPayByCard`; `confirmingSince` si hay un intento con vuelta «ok» que el CRM aún no da por cobrado). Sin intentos sin cobrar, sin lo anulado.
+- `GET /v1/profiles/:pid/payments/:id` → `PaymentDetail` (+ `typeLabel`, `accountMasked`, `bankingConcept`, `inKindDescription`, `transactionCode`, `rejection`, `registrationId`). **El IBAN entero nunca viaja**: `accountMasked`, con cuatro cifras visibles como mucho.
+- `GET /v1/profiles/:pid/card-checkout?payment=<id> | ?registration=<id>` → `CardCheckout`: `payable: true` (concepto, `amountCents`, `payer`, `forName`, `returnTo`) o `payable: false` con `not_payable` | `missing_payer_data` | `nothing_to_pay`. **Solo lee**: no crea ningún intento.
+- `POST /v1/profiles/:pid/card-attempts` `{ clientId, source: { payment } | { registration }, amountCents (≥ 100), channel: 'sheet' | 'browser' }` → `CardAttempt { attemptId, launchUrl, returnUrlPrefix, expiresAt }`. Nunca un donativo: sin origen, `validation`. `launchUrl` es una página del servidor de un solo uso (10 min) que manda al banco; `returnUrlPrefix`, pública y sin datos: la app corta la navegación cuando la URL empieza por él y lee `ok` o `ko`. **`simulated: true` solo lo devuelve el servidor falso**; con el de verdad es un fallo.
+- `POST /v1/profiles/:pid/card-attempts/:id/check` `{ returned?: 'ok' | 'ko' | 'closed' }` → `{ state: 'started' | 'confirming' | 'paid' | 'failed' | 'abandoned', paidCents?, registrationId?, paymentId? }`. **El estado lo decide SIEMPRE el servidor**, con el cobro del CRM («KO pero el CRM dice pagado» es pagado; «OK pero sin cobrar» es `confirming`).
+
+La app: `PaymentsScreen` (`/comunica/pagos`), `PaymentDetailScreen` (`…/[id]`), `PayScreen` (`…/pagar?pago=|inscripcion=`) con `CardGatewaySheet` (la hoja de la pasarela), `utils/comunica/{payments,cardAttempt}.ts` y `usePayments`. Reglas para tiendas: `docs/planes/area-nativa/PAGOS-TIENDAS.md`.
+
 ### Varias delegaciones (plan 17)
 
 Quien colabora con otra delegación (coordina Burriana siendo de Castellón)

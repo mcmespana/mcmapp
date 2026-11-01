@@ -1,7 +1,7 @@
 // La hoja de la pasarela del banco (plan 15, regla 8): una `Modal` a pantalla completa con la WebView del banco, SIN barra de pestañas.
 //
 //   · Cabecera nativa: «Cerrar», «Pago con tarjeta» y el dominio que se ve con su candado.
-//   · SIN JavaScript inyectado ni `onMessage` (la app no lee la página del banco; así puede ir su Apple Pay), `incognito`, sin cookies compartidas, sin ventanas
+//   · SIN JavaScript inyectado ni lectura de mensajes de la página (la app no lee la del banco; así puede ir su Apple Pay), `incognito`, sin cookies compartidas, sin ventanas
 //     nuevas.
 //   · `onShouldStartLoadWithRequest` (marco principal): una URL que empieza por `returnUrlPrefix` se corta y se lee `ok`/`ko`; un esquema que no es `http(s)`
 //     (la app del banco, Bizum, `intent:`) se abre fuera con `Linking`; lo demás se carga. `onNavigationStateChange`, de reserva (redirecciones en Android).

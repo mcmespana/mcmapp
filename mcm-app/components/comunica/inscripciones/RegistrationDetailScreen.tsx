@@ -24,6 +24,7 @@ import {
 } from '@/hooks/comunica/useRegistrations';
 import { useActiveProfile } from '@/hooks/comunica/useActiveProfile';
 import { usePayLink } from '@/hooks/comunica/usePayLink';
+import { useResumedAttempt } from '@/hooks/comunica/usePayments';
 import { isPast } from '@/utils/comunica/activityList';
 import { fullDay } from '@/utils/comunica/dates';
 import { euro, paymentLine, payAction } from '@/utils/comunica/paymentLine';
@@ -165,16 +166,23 @@ function Detail({
   const router = useRouter();
   const { cancel, busy } = useRegistrationWrites(pid, reg.id);
   const { pay, view } = usePayLink();
+  // Si la app se cerró a mitad de un pago, aquí se comprueba y se dice una vez cómo acabó.
+  const resumed = useResumedAttempt(pid);
   const [cancelError, setCancelError] = React.useState<Note | null>(null);
   const today = madridDay(comunicaNow());
   const past = isPast(
     { startDate: reg.eventStart, endDate: reg.eventEnd },
     today,
   );
-  const line = paymentLine(reg.payment, { waiting });
-  const action = payAction(reg, { waiting, past });
+  const isWaiting = waiting || resumed?.state === 'confirming';
+  const line = paymentLine(reg.payment, { waiting: isWaiting });
+  const action = payAction(reg, { waiting: isWaiting, past });
   const status = statusNote(reg.status);
-  const savedFirst = note ? savedNote(note, child) : null;
+  const savedFirst = note
+    ? savedNote(note, child)
+    : resumed?.state === 'paid'
+      ? savedNote('paid', child)
+      : null;
   const when = whenLine(reg, child);
   const seeEvent = () =>
     reg.eventId
