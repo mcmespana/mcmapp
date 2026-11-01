@@ -4,10 +4,11 @@
 //   2. El saludo, con su × (vuelve dentro de un mes). No sale debajo de lo del equipo, que ya empieza con su propio encabezado.
 //   3. «A quién tienes a cargo» (solo el familiar a secas): las mismas tarjetas de «¿A quién ves?» con «Ver su ficha».
 //   4. «Actividades» (o «Tus pagos» para el familiar a secas), con la descripción de cada sección.
+//   4b. «Próximas actividades» (si hay Calendario y algo cerca) y «Ver calendario».
 //   5. «Tu perfil»: «Mis datos» o «Datos de Lucía» y, a un monitor viéndose a sí mismo, «Mis datos de monitor».
 //
 // La portada no conoce las rutas de los otros planes: abre DESTINOS DEL PLUGIN (`SECTION_PAGE`) con `nativeHrefFor` y, si aún no hay pantalla nativa
-// (planes 12-16), la web con la sesión puesta y, viendo a un hijo, con él ya elegido. «Próximas actividades» llega con el calendario (plan 16).
+// (planes 12-16), la web con la sesión puesta y, viendo a un hijo, con él ya elegido. «Próximas actividades» (`UpcomingAgenda`) sale del calendario (plan 16), si se enseña Calendario y hay algo.
 
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -38,6 +39,7 @@ import Section from '../comun/Section';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import ProfileCard from '../perfiles/ProfileCard';
+import UpcomingAgenda from './UpcomingAgenda';
 
 const ICON: Record<FamilySection, NavIcon> = {
   profile: 'person.crop.circle',
@@ -157,6 +159,10 @@ function Content({ embedded }: { embedded: boolean }) {
           />
         ))}
       </Section>
+
+      {sections.rows.some((r) => r.section === 'calendar') ? (
+        <UpcomingAgenda />
+      ) : null}
 
       {audience !== 'guardian' || isSelf ? (
         <Section title="Tu perfil">
