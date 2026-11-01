@@ -24,6 +24,8 @@ export interface Destination {
   action?: 'detail' | 'create' | 'edit';
   id?: string;
   from?: string;
+  /** `pagado`: la vuelta de la pasarela por la web (planes 14-15). Solo se usa para ir a la pantalla nativa; nunca viaja al servidor. */
+  msg?: 'pagado';
 }
 
 /** `sticpa_login_destination_shapes()` de `inc/stic-magic-login.php`. */
@@ -34,6 +36,7 @@ export const DESTINATION_SHAPES: Record<
   action: /^(detail|create|edit)$/,
   id: /^[a-f0-9-]{10,64}$/i,
   from: /^[a-z_]{1,32}$/,
+  msg: /^pagado$/,
 };
 const PAGE_SHAPE = /^[a-z0-9_]{1,64}$/;
 
@@ -162,11 +165,17 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
         }
       : {
           pathname: '/comunica/inscripciones/[registrationId]',
-          params: { registrationId: rid },
+          params: {
+            registrationId: rid,
+            ...(d.msg === 'pagado' ? { msg: 'pagado' } : {}),
+          },
         };
   },
-  // Pagos (plan 15). Lo desactivado (compromisos, crear/editar/borrar un pago) y la vuelta sin nada, a la lista. `msg=pagado` no se conserva en el destino.
-  list_stic_payments: () => ({ pathname: '/comunica/pagos' }),
+  // Pagos (plan 15). Lo desactivado (compromisos, crear/editar/borrar un pago) y la vuelta sin nada, a la lista. `msg=pagado` (la vuelta de la pasarela por la web) llega como la nota «Pago hecho…».
+  list_stic_payments: (d): NativeHref =>
+    d.msg === 'pagado'
+      ? { pathname: '/comunica/pagos', params: { nota: 'pagado' } }
+      : { pathname: '/comunica/pagos' },
   list_stic_payment_commitments: () => ({ pathname: '/comunica/pagos' }),
   single_stic_payment_commitments: () => ({ pathname: '/comunica/pagos' }),
   single_stic_payments: (d): NativeHref =>

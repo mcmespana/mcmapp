@@ -49,6 +49,8 @@ import { useComunicaTheme } from '../comun/useComunicaTheme';
 import CardGatewaySheet from './CardGatewaySheet';
 import PaymentResult from './PaymentResult';
 
+type PayableCheckout = Extract<CardCheckout['checkout'], { payable: true }>;
+
 const OTHER_NOTE =
   'Solo si te han dicho que pagues otra cantidad: un descuento, una beca, un arreglo con tu delegación. Lo que pagues es lo que quedará como pagado.';
 const BROWSER_RETURN = 'mcmapp://comunica/pagos/vuelta';
@@ -69,6 +71,11 @@ export default function PayScreen({
       ? { registration: inscripcion }
       : null;
   const q = useCardCheckout(active?.id, source);
+  // Una vez visto que se puede pagar, ese resumen se queda: al cobrarse, la lectura se invalida y ya no es «pagable», pero el RESULTADO tiene que seguir
+  // en esta pantalla (no volver a «Este pago no está pendiente»).
+  const [kept, setKept] = useState<PayableCheckout | null>(null);
+  const fresh = q.data?.checkout;
+  if (fresh?.payable && !kept) setKept(fresh);
   const toPayments = () => router.replace('/comunica/pagos' as never);
   const colors = {
     accentColor: t.accentText,
@@ -122,7 +129,7 @@ export default function PayScreen({
       </AreaScreen>
     );
   }
-  const c = q.data.checkout;
+  const c = kept ?? q.data.checkout;
   if (!c.payable) {
     if (c.reason === 'nothing_to_pay')
       return rebound(
@@ -166,7 +173,7 @@ function PayFlow({
 }: {
   pid: string;
   source: PaySource;
-  checkout: Extract<CardCheckout['checkout'], { payable: true }>;
+  checkout: PayableCheckout;
   offline: boolean;
 }) {
   const t = useComunicaTheme();
@@ -226,7 +233,8 @@ function PayFlow({
     });
   };
 
-  const toDestination = (note?: string) => {
+  /** A dónde se vuelve: la inscripción de la que venía (con «Pago hecho…» o «esperando al banco») o Pagos. */
+  const toDestination = (kind: 'paid' | 'confirming') => {
     const registrationId =
       (phase.kind === 'result' && phase.registrationId) ||
       (typeof checkout.returnTo === 'object'
@@ -235,9 +243,16 @@ function PayFlow({
     if (fromRegistration && registrationId)
       router.replace({
         pathname: '/comunica/inscripciones/[registrationId]',
-        params: { registrationId, ...(note ? { msg: 'pagado' } : {}) },
+        params: {
+          registrationId,
+          ...(kind === 'paid' ? { note: 'paid' } : { msg: 'pagado' }),
+        },
       } as never);
-    else router.replace('/comunica/pagos' as never);
+    else
+      router.replace({
+        pathname: '/comunica/pagos',
+        params: kind === 'paid' ? {} : { nota: 'pagado' },
+      } as never);
   };
 
   // ── El resultado, en esta misma pantalla ──
@@ -258,9 +273,7 @@ function PayFlow({
           onPrimary={() =>
             isRetry
               ? void card.retry()
-              : toDestination(
-                  phase.result === 'paid' ? undefined : 'confirming',
-                )
+              : toDestination(phase.result === 'paid' ? 'paid' : 'confirming')
           }
           onSecondary={() => router.back()}
         />

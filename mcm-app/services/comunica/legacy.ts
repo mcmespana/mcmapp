@@ -38,7 +38,9 @@ export async function prepareLegacy(
   profileId?: string,
 ): Promise<boolean> {
   try {
-    const pass = await getComunicaApi().webPass({ ...destination, profileId });
+    // `msg` solo sirve para ir a la pantalla nativa: no es parte de lo que el servidor valida.
+    const { msg: _msg, ...sent } = destination;
+    const pass = await getComunicaApi().webPass({ ...sent, profileId });
     setLegacyOpen({ url: pass.url, title });
     return true;
   } catch {
