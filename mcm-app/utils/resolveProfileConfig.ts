@@ -115,10 +115,24 @@ const FALLBACK_PROFILE: ProfileBase = {
 
 const FALLBACK_DELEGATION: Delegation = { label: 'General' };
 
+/** Lo que la config remota no puede saber: en qué aparato está corriendo. */
+export interface DeviceContext {
+  isIpad?: boolean;
+}
+
+/** Normaliza `minAppVersionSkips` remoto: entero >= 0, o `null` = sin límite. */
+export function parseVersionSkips(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    return null;
+  }
+  return Math.floor(value);
+}
+
 export function resolveProfileConfig(
   config: ProfileConfigData,
   profileType: ProfileType,
   delegationId: string | null,
+  device: DeviceContext = {},
 ): ResolvedProfileConfig {
   // Tolerancia a config remota corrupta: si el perfil pedido no existe,
   // intentamos otro perfil válido del documento; si tampoco hay, usamos
@@ -212,15 +226,29 @@ export function resolveProfileConfig(
   }
 
   const global = config.global ?? ({} as ProfileConfigData['global']);
+
+  // 5. Restricciones del dispositivo. Solo `fotosEnIpad === false` en un iPad
+  //    las activa: ausente, `true` o cualquier otro aparato = todo como siempre.
+  const fotosHidden = device.isIpad === true && global.fotosEnIpad === false;
+  if (fotosHidden) {
+    const withoutFotos = (ids: string[]) => ids.filter((id) => id !== 'fotos');
+    merged.tabs = withoutFotos(merged.tabs);
+    merged.homeButtons = withoutFotos(merged.homeButtons);
+    merged.masItems = withoutFotos(merged.masItems);
+  }
+  const defaultTab = global.defaultTab ?? 'index';
+
   return {
     // global
-    defaultTab: global.defaultTab ?? 'index',
+    defaultTab: fotosHidden && defaultTab === 'fotos' ? 'index' : defaultTab,
     showNotificationsIcon: global.showNotificationsIcon ?? true,
     showOnboarding: global.showOnboarding ?? true,
     showChangeNameButton: global.showChangeNameButton ?? false,
     maintenanceMode: global.maintenanceMode ?? false,
     maintenanceMessage: global.maintenanceMessage,
     minAppVersion: global.minAppVersion ?? '0.0.0',
+    minAppVersionSkips: parseVersionSkips(global.minAppVersionSkips),
+    fotosHidden,
     // identidad — refleja el perfil REALMENTE usado (puede diferir del solicitado
     //   si el perfil pedido no existía en la config remota).
     profileType: resolvedProfileType,

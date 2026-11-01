@@ -58,6 +58,14 @@ export interface GlobalConfig {
   maintenanceMessage?: string;
   /** Versión semver mínima soportada. Si la app es inferior, fuerza actualización. `0.0.0` = sin bloqueo. */
   minAppVersion: string;
+  /** «Ahora no» permitidos antes de ser estricto. Ausente = sin límite. (Aún sin uso en esta rama.) */
+  minAppVersionSkips?: number;
+  /**
+   * Fotos EN iPAD (solo iPad, cualquier iOS). Ausente = `true`. Con `false`
+   * desaparecen la pestaña, el botón de Home y la tarjeta de «Más». Pensado
+   * para iPads con MDM de colegios: la app no distingue MDM, se apaga en todos.
+   */
+  fotosEnIpad?: boolean;
 }
 
 /**
@@ -104,6 +112,10 @@ export interface ResolvedProfileConfig {
   maintenanceMode: boolean;
   maintenanceMessage?: string;
   minAppVersion: string;
+  /** `null` = sin límite de «Ahora no». */
+  minAppVersionSkips: number | null;
+  /** Las Fotos no se enseñan en este dispositivo (iPad con `fotosEnIpad: false`). */
+  fotosHidden: boolean;
   // --- identidad resuelta ---
   profileType: ProfileType;
   delegationId: string;
