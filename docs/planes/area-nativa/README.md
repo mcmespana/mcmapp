@@ -27,6 +27,8 @@
 
 ---
 
+> **Qué revisar, lo que hizo David en paralelo y las dudas abiertas: [`PENDIENTE-REVISAR.md`](PENDIENTE-REVISAR.md)** (1/11/2026).
+
 ## Por qué se puede hacer el front sin tenerlo todo decidido
 
 Las decisiones del servidor (`ipfija`, `almacen`, `tecnicas`) la app no las

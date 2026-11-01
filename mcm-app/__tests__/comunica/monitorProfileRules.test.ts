@@ -152,7 +152,7 @@ describe('qué archivo vale', () => {
     // Sin extensión, manda el tipo.
     expect(f('foto', 10, 'image/jpeg')).toBeNull();
   });
-  it('0 bytes, 6 MB justos y 6 MB + 1', () => {
+  it('0 bytes, 4 MB justos y 4 MB + 1', () => {
     expect(f('a.pdf', 0)).toBe('empty');
     expect(f('a.pdf', DOCUMENT_MAX_BYTES)).toBeNull();
     expect(f('a.pdf', DOCUMENT_MAX_BYTES + 1)).toBe('too_big');

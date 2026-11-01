@@ -8,7 +8,7 @@
 //   · Solo con papel `monitor`; si no, `forbidden` (la acompañante de prueba).
 //   · El `PATCH` es estricto (una clave de más, `validation`), solo escribe lo
 //     que cambia y no duplica con el mismo `clientId`.
-//   · Subir: PDF, JPG o PNG de 1 byte a 6 MB; guarda el archivo en memoria
+//   · Subir: PDF, JPG o PNG de 1 byte a 4 MB; guarda el archivo en memoria
 //     (nombre, tamaño y tipo, nunca el contenido) y pone su «archivo subido».
 //   · Personas de prueba: el monitor eligió «Manual» y no ha subido el
 //     certificado (para ver el aviso); coordinación, «Automático» con títulos.
@@ -276,7 +276,7 @@ export function monitorRoutes(
         throw validation('empty_file', 'El archivo está vacío');
       }
       if (problem === 'too_big') {
-        throw validation('file_too_big', 'Ese archivo pesa más de 6 MB');
+        throw validation('file_too_big', 'Ese archivo pesa más de 4 MB');
       }
       if (problem === 'bad_type') {
         throw validation('bad_file_type', 'Tiene que ser PDF, JPG o PNG');

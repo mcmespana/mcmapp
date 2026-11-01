@@ -352,7 +352,7 @@ Mientras no lleguen, la app calcula el enlace igual con `published` y `slug`
   (`me.monitor`).
 - `POST /v1/me/documents` (multipart: `clientId`, `kind`, `file`) →
   `WriteResult`. `kind`: `sex_offence_certificate`, `mat`, `dat`,
-  `other_training`. PDF, JPG o PNG de 1 byte a 6 MB; si no, `validation` con
+  `other_training`. PDF, JPG o PNG de 1 byte a **4 MB** (lo que cabe en una función de Vercel; el plugin deja 6); si no, `validation` con
   `empty_file`, `file_too_big` o `bad_file_type`. Crea un Documento con su
   categoría (`legal_cert_delitos`, `formacion_titulo_mat`, la del DAT —ver las
   preguntas del plan— y `formacion_titulo_otros`), lo ata a la persona, sube la
