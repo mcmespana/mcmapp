@@ -4,7 +4,13 @@
 > **Tamaño:** L · **Índice:** [README.md](README.md)
 >
 > ✅ `fotos-documentos` = sí: la foto se elige con `expo-image-picker` (galería o cámara), que entra
-> con los paquetes de la 2.2 (§Foto). Hasta que esté en el binario, `expo-document-picker`.
+> con los paquetes de la 2.1 (§Foto).
+>
+> ✅ **La foto, hecha el 1/11/2026** (contra el servidor falso; el de verdad ya la recibe,
+> `comunicaMiddleware`, rama `claude/correo-igual-que-la-web`). **Cambia respecto a lo de abajo**: el servidor
+> **no recorta ni reduce**, así que no hay `crop`, ni `datos/foto.tsx`, ni recortador propio. El recorte
+> cuadrado lo hace el selector del sistema (`allowsEditing`, `aspect [1, 1]`) y la app sube JPEG o PNG de
+> **hasta 4 MB** (no 15) con `PUT /v1/profiles/:pid/photo`. Ver «Foto» más abajo y lo que queda sin comprobar.
 
 ## Para qué y para quién
 
@@ -35,11 +41,11 @@ En `/home/user/comunicaAreaPrivada/`; manda el código.
 | Ruta (en `app/(tabs)/comunica/`) | Qué |
 |---|---|
 | `datos/[pid].tsx` | «Mis datos» (`pid` = uno mismo) o «Datos de Lucía». Pantalla **personal** para el selector del plan 11 (cambiar de hijo aquí lleva a la portada). Parámetro `completar=pago` (§Comportamiento, 9) |
-| `datos/foto.tsx` | Encuadrar la foto (modal a pantalla completa). Parámetros `pid` y el archivo elegido |
+| `datos/foto.tsx` | ~~Encuadrar la foto~~ **No se hace** (1/11/2026): el selector del sistema ya recorta en cuadrado; el servidor no recorta |
 
-Código: `components/comunica/datos/` (`PhotoBlock`, `CropView`, `ConsentRow`); `hooks/comunica/`
-(`usePersonDetails`, `useHealth`, `useSaveDetails`, `usePhotoUpload`); `utils/comunica/`
-(`personDetailsSpec.ts`, `personDetails.ts`, `documentId.ts`, `crop.ts`).
+Código: `components/comunica/datos/` (`PhotoBlock`, `ConsentRow`); `hooks/comunica/`
+(`usePersonDetails`, `useHealth`, `useSaveDetails`, `usePhotoUpload`); `services/comunica/photoUploads.ts` (la subida en
+memoria); `utils/comunica/` (`personDetailsSpec.ts`, `personDetails.ts`, `documentId.ts`, `photo.ts`; sin `crop.ts`).
 
 **El motor de formularios (decisión): sí, pequeño y encima de lo del plan 09.** El 09 ya define las
 piezas en `components/comunica/comun/form/` (`FormSection`, `FormField`, `SelectField`,
@@ -67,8 +73,8 @@ PATCH /v1/profiles/:pid/details  { clientId, changes: Partial<PersonDetailsEdita
                                   → WriteResult & { details: PersonDetails }      // releído
 GET   /v1/profiles/:pid/health   → { generatedAt, health: HealthInfo }
 PUT   /v1/profiles/:pid/health   { clientId, health: Partial<HealthInfo> } → WriteResult
-POST  /v1/profiles/:pid/photo    multipart: clientId, file, crop?: { x, y, size }   // fracciones 0-1
-                                  → WriteResult & { photoUrl }
+PUT   /v1/profiles/:pid/photo    multipart: clientId, file (JPEG o PNG, ≤ 4 MB, YA recortada por la app)
+                                  → WriteResult & { photoUrl }                  // `photoUrl` versionada (`?v=`)
 GET   /v1/profiles/:pid/photo?v= → la miniatura (como /people/:id/photo del plan 05)
 
 PersonDetails { generatedAt,
@@ -102,7 +108,7 @@ fuera de la regla 9, es `validation`. Para el plan del servidor (todo de `Contac
 | `mcm.lcIncorporationYear`, `memberSince` | `ajmcm_ano_incorporacion_lc_c` (`int`), `ajmcm_mcm_desde_c` (`date`) | La fecha se escribe `AAAA-01-01` y se lee el año |
 | `consents.*` | `ajmcm_acepta_lopd_c`, `ajmcm_datossalud_c`, `ajmcm_cesionimagenes_interne_c` | `1` / `0` / vacío = `true` / `false` / `null` |
 | `health.*` | `ajmcm_descripcion_intoler_c`, `_allergies__c` (**dos** guiones bajos, de verdad), `_enfermed_c`, `_tratam_c`, `_otros_c` | Solo por `/health` |
-| foto | `photo`, con `set_image` | Recorte y 800×800 en el servidor |
+| foto | `photo`, con `set_image` | **El servidor no procesa la imagen** (decidido al hacerlo): la app manda el cuadrado ya recortado y el servidor solo comprueba tamaño y firma de los primeros bytes |
 
 - **Quién puede**: `pid` permitido (plan 11). Las **secciones las decide el servidor** con la audiencia
   (l. 34-38): `member`, las siete; `child` y `guardian`, sin `mcm`. `emailNote` (l. 139-152): la
@@ -110,11 +116,12 @@ fuera de la regla 9, es `validation`. Para el plan del servidor (todo de `Contac
   `member` sin ser monitor → `mcm_email_soft`; si no, `null`.
 - **Consentimientos**: el `PATCH` solo admite `true` o `false`; si no llega, no se toca. El servidor
   nunca escribe uno que no le han mandado (regla 8).
-- **Foto**: JPG, PNG, HEIC y GIF; **nunca SVG** (`upload_file_to_record` acepta `image/svg`, l. 1746:
-  el servidor no). Hasta **15 MB** el original: el tope de 6 MB del plugin se medía tras recortar a
-  800×800 en el móvil, y aquí recorta el servidor. Con `crop`, corta ese cuadrado; sin él (`Usar sin
-  recortar`), el cuadrado centrado; siempre deja un JPEG de 800×800 al 0,85 (los números del
-  recortador), lo escribe, invalida la miniatura y devuelve `photoUrl` con versión nueva.
+- **Foto** (como quedó, 1/11/2026): **JPEG o PNG, nunca SVG, GIF, WebP ni HEIC** (`upload_file_to_record` del plugin aceptaba
+  `image/svg`, l. 1746: el servidor no), de **4 MB como mucho** (el tope de una función de Vercel; el plugin dejaba 6 tras recortar a
+  800×800). Sin `crop` en el contrato: el servidor no recorta. Errores `validation`: `bad_body`, `empty_file`, `file_too_big`,
+  `bad_file_type`; `forbidden` (`profile_out_of_scope`); 503 `crm_unavailable` con `crm_timeout` (puede haberla guardado:
+  se reintenta con el MISMO `clientId`), `crm_error`, `crm_not_confirmed` o `crm_not_configured`. Devuelve `photoUrl` con versión
+  nueva, la misma que sale en `details`.
 - **En el móvil, nada en disco** (añadido de familias, regla 8: documento, dirección, correo; y la
   salud, siempre): `persist: false` en `['comunica','datos',pid]` (`gcTime` 5 min) y
   `['comunica','salud',pid]` (`gcTime` 1 min). La foto, en la caché de `expo-image`, vaciada al salir.
@@ -125,8 +132,10 @@ fuera de la regla 9, es `validation`. Para el plan del servidor (todo de `Contac
 - **Servidor falso**: miembro y monitor con correo de Gmail (aviso), miembro sin ser monitor (nota
   suave), familia con dos hijos (uno con las tres autorizaciones a `null`, otro con soporte y
   expedición del DNI), familiar a secas, un pagador sin DNI; etapa COM para el condicional; correo mal
-  formado → `validation`; `pid` ajeno → 403; «CRM caído»; la foto recibida (tamaño, tipo y `crop`)
-  cambia `photoUrl`; un contador de escrituras por campo para los tests de «solo lo que cambia».
+  formado → `validation`; `pid` ajeno → 403; «CRM caído»; la foto recibida (tipo y tamaño: JPEG o PNG,
+  ≤ 4 MB) cambia `photoUrl` a otra URL versionada y no se escribe dos veces con el mismo `clientId`
+  (`photoUploads()` enseña lo recibido); un contador de escrituras por campo para los tests de «solo lo
+  que cambia».
 
 ## Comportamiento y reglas que no se pueden perder
 
@@ -183,26 +192,36 @@ fuera de la regla 9, es `validation`. Para el plan del servidor (todo de `Contac
     `validation`, el error en su campo; 403, «No tienes acceso a esto». Salir con cambios: «¿Salir sin
     guardar?» (nuevo: en la web se pierde sin avisar).
 
-**Foto.**
+**Foto** (✅ hecha el 1/11/2026; `PhotoBlock`, `usePhotoUpload`, `photoUploads.ts`, `utils/comunica/photo.ts`).
 
-- Bloque: la foto (o la inicial) y «Cambiar foto de perfil» o, sin foto, «Sube una foto para
-  conocernos mejor ✨»; debajo, «Formatos: jpg, png o heic · Tamaño máximo: 15 MB».
-- **Elegir** (✅ `fotos-documentos`): con `expo-image-picker` en la 2.2, «Elegir de la galería» y
-  «Hacer una foto» (la cámara pide cambiar el texto del permiso de `app.json`, pregunta 1 del 09).
-  **Mientras tanto**, «Elegir foto» con `expo-document-picker` (`type: 'image/*'`), que ya está: en
-  Android abre la galería; en iPhone, Archivos, y bajo el botón: «¿Tu foto está en Fotos? Compártela a
-  Archivos y elígela aquí.».
-- **Encuadrar** (`datos/foto.tsx`, la del plugin): «Encuadra tu foto», «Arrastra para mover · pellizca
-  o usa el zoom», marco cuadrado, «Usar sin recortar» (secundario) y «Usar recorte» (principal). En
-  JS puro (gestos de `react-native-gesture-handler` y Reanimated sobre `expo-image`), con botones − y +
-  de zoom para quien no puede pellizcar. No toca la imagen: manda el cuadrado y recorta el servidor. Así
-  no hace falta ningún paquete nativo, y con `expo-image-picker` la misma pantalla sirve.
-- **Subir** en cuanto se acepta, sin esperar a «Guardar» (como los archivos del plan 09), con
-  `UploadStatus` en el bloque y la vista previa del recorte mientras tanto. La copia del archivo va a
-  `cacheDirectory/comunica/uploads/` y se borra al subir, al salir de la pantalla y al cerrar sesión.
-  Errores, los del plugin: «El formato del archivo no es válido.», «El archivo es demasiado grande.»,
-  «Error al subir la imagen.». En el plugin no salen nunca en «Mis datos»: el handler no mira lo que
-  devuelve `upload_file_to_record` (l. 1849-1851) y dice «guardado» aunque la foto no subiera.
+- Bloque: la foto (o la inicial), «Cambiar foto de perfil» o, sin foto, «Sube una foto para conocernos
+  mejor ✨»; el botón «Cambiar foto» / «Elegir foto» abre una hoja con «Hacer una foto» (no en web) y «Elegir de
+  la galería». Debajo, «Formatos: jpg o png · Tamaño máximo: 4 MB». Sin conexión, el botón se apaga.
+- **Elegir y encuadrar**: `expo-image-picker` con **el recorte cuadrado del propio selector** (`allowsEditing: true`,
+  `aspect: [1, 1]`; en iOS el marco ya es un cuadrado). **No hay pantalla de encuadre propia** (`datos/foto.tsx`,
+  `CropView`, gestos y zoom quedan descartados: el selector ya recorta y el servidor no lo haría). El texto del
+  permiso de cámara de `app.json` (`fotos-documentos`) ya dice «hacer fotos de títulos y documentos»; no se ha
+  tocado.
+- **Reducir y comprimir** (lo que NO se puede hacer): el selector no deja fijar el tamaño en píxeles, solo la
+  `quality` (0-1). **No se reduce a 800×800** (haría falta `expo-image-manipulator`, un paquete nativo que NO se
+  añade): la foto sube con la resolución del recorte (un JPEG de una cámara actual, ~1-3 MB). Para que quepa en 4 MB
+  se baja la calidad: el primer intento pide 0,6; si la foto se pasa, se avisa («pesa más de 4 MB… la
+  comprimiremos más»), se borra la copia y **la siguiente vez que se elige** se pide 0,4 y luego 0,2
+  (`PHOTO_QUALITIES`, con test); al subir bien se vuelve a 0,6. Un PNG no se comprime (el selector ignora la
+  calidad en iOS): se pide otra foto. **Si algún día se quiere 800×800 exactos y peso fijo, es
+  `expo-image-manipulator`** (recortar `resize 800` y `compress`) y requiere build nativa: anotado, no hecho.
+- **Se comprueba ANTES de subir** (`photoProblem`): JPEG o PNG («La foto tiene que ser JPG o PNG.», un HEIC no
+  vale: se pide `Compatible` y debería llegar JPEG), no vacía y ≤ 4 MB. El servidor vuelve a mirar.
+- **Subir** en cuanto se acepta, sin esperar a «Guardar», **directo y con conexión, nunca por la cola** (como los
+  archivos del plan 09): `UploadStatus` en el bloque, la foto elegida a la vista (su copia local, oscurecida)
+  mientras sube, y al terminar **la `photoUrl` nueva sustituye a la de la caché de esa persona al momento** (antes se
+  para una lectura en vuelo que la pisaría); no se vuelve a pedir nada y `expo-image` no tiene que adivinar (la
+  versión va en la URL). La copia de `cacheDirectory` se borra al subir, al descartar, al salir de la pantalla y
+  al cerrar sesión; lo que está en vuelo al cerrar sesión ya no escribe nada.
+- **Errores** (`photoErrorText`): sin conexión; CRM sin contestar (un `crm_timeout` avisa de que «puede que la
+  foto ya esté guardada» y se reintenta con el MISMO `clientId`); `file_too_big`, `bad_file_type`, `empty_file`; sin
+  acceso. «Reintentar» solo sale si tiene sentido (red y CRM); si el servidor la rechaza por lo que es, se elige otra.
+  (En el plugin el error de la foto no salía nunca en «Mis datos»: aquí sí.)
 
 ## Estados
 
@@ -273,7 +292,7 @@ El `msg=…` con que volvía un guardado se ignora. El «Tus datos personales» 
 | 5 | Hooks: `usePersonDetails` y `useHealth` (`persist: false`), `useSaveDetails` (directo, `clientId`) | Tests con el falso; espía del persistidor |
 | 6 | `datos/[pid].tsx`: secciones, condicionales, «Guardar», salir con cambios, `completar=pago` | Test de pantalla de las tres audiencias + capturas |
 | 7 | Salud y autorizaciones | Tests: la salud no llega al disco; una autorización sin tocar no viaja |
-| 8 | Foto: elegir, `datos/foto.tsx`, subir, borrar la copia | Test con el selector simulado; captura del encuadre; nada en `uploads/` al acabar |
+| 8 | ✅ Foto: elegir (selector con recorte cuadrado), subir, borrar la copia (sin `datos/foto.tsx`: ver «Foto») | `photoUpload.test.tsx` (selector simulado y falso de verdad), `photoLogic.test.ts`; **sin capturas ni dispositivo** |
 | 9 | Filas del mapa de enlaces (plan 10) y entradas desde «Tu perfil» (11) y el rebote del pago (15) | Test del mapa |
 | 10 | Este bloque en `docs/contratos/COMUNICA_API.md` y `CHANGELOG.md` | Revisión |
 
@@ -284,12 +303,12 @@ El `msg=…` con que volvía un guardado se ignora. El «Tus datos personales» 
   etapa → no viaja); `validateForm` (correos válidos e inválidos del patrón del plugin; CP de 5 cifras;
   `2019` sí, `19`, `20199` y letras no); `visibleFields` (COM enseña «Nivel COM»; `lc_incorporated`, el
   año; soporte del DNI solo con valor); `isValidDocument` (DNI y NIE con letra buena y mala, CIF,
-  pasaporte libre); `cropRect` (cuadrado dentro de la imagen, zoom mínimo y máximo); archivo de foto
-  (JPG, PNG, HEIC sí; SVG no; 0 bytes; 15 MB justos y 15 MB + 1); título «Datos de María» para «María
+  pasaporte libre); la foto (hecho en `photoLogic.test.ts`: JPG y PNG sí; HEIC, GIF, WebP y SVG no; 0 bytes; 4 MB justos y
+  4 MB + 1; la calidad que baja por escalones); título «Datos de María» para «María
   José».
 - **De pantalla con el falso**: el miembro ve MCM y el hijo no; el familiar ve salud; guardar solo el
   móvil escribe un campo (contador); sin conexión, «Guardar» apagado y los cambios siguen; 403 con
-  otro `pid`; elegir, encuadrar y subir cambia la foto; una foto rechazada enseña su error; el pagador
+  otro `pid`; elegir y subir cambia la foto (hecho en `photoUpload.test.tsx`); una foto rechazada enseña su error; el pagador
   sin DNI lo escribe con `completar=pago` y uno con DNI no puede.
 - **Guardarraíles**: ningún texto de salud ni dato de `PersonDetails` pasa por el persistidor, la cola
   del 01 ni `logger` (espías); ninguna clave `['comunica','datos'|'salud',…]` con `persist: true`;
