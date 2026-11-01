@@ -422,6 +422,9 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     updateProfileDetails: authed((pid, b) => api.updateProfileDetails(pid, b)),
     getProfileHealth: authed((pid) => api.getProfileHealth(pid)),
     updateProfileHealth: authed((pid, b) => api.updateProfileHealth(pid, b)),
+    uploadProfilePhoto: authed((pid, f, file) =>
+      api.uploadProfilePhoto(pid, f, file),
+    ),
     getMyMonitorProfile: authed((o) => api.getMyMonitorProfile(o)),
     updateMyMonitorProfile: authed((b) => api.updateMyMonitorProfile(b)),
     uploadMyDocument: authed((f, file) => api.uploadMyDocument(f, file)),

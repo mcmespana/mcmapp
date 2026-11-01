@@ -56,6 +56,9 @@ import { ComunicaApiError, type ComunicaApi } from '../client';
 import {
   FAKE_CODE,
   FAKE_DNIS,
+  FAKE_MISS_LIMIT,
+  FAKE_MISS_WINDOW_S,
+  FAKE_NO_EMAIL_DNI,
   FAKE_EMAILS,
   FAKE_LINK_TOKENS,
   FAKE_PLUGIN_LINKS,
@@ -287,6 +290,8 @@ export function createFakeServer(
   >();
   const revokedFamilies = new Set<number>();
   const codes = new Map<string, number>();
+  /** Cuándo falló cada correo o DNI que no existe (el freno por red). */
+  let misses: number[] = [];
   const badCodes = new Map<string, number>();
   let tokenSeq = 0;
   /** La persona de la petición en curso (la pone `gate`). */
@@ -694,6 +699,7 @@ export function createFakeServer(
       writeCount = 0;
       seenClientIds.clear();
       codes.clear();
+      misses = [];
       badCodes.clear();
       devices.deviceRegistry.clear();
       notify();
@@ -713,6 +719,18 @@ export function createFakeServer(
         throw validation('bad_body', 'Escribe un correo o un DNI válido');
       }
       const b = parsed.data;
+      // El freno por red (igual que el servidor): pasado el tope, ni se mira si existe, tampoco para un correo que sí existe.
+      const t = now().getTime();
+      misses = misses.filter((at) => t - at < FAKE_MISS_WINDOW_S * 1000);
+      if (misses.length >= FAKE_MISS_LIMIT) {
+        throw new ComunicaApiError(
+          'rate_limited',
+          'Demasiados intentos con correos que no existen',
+          429,
+          'too_many_misses',
+          FAKE_MISS_WINDOW_S,
+        );
+      }
       if ('email' in b && b.email.toLowerCase() === FAKE_RATE_LIMITED_EMAIL) {
         throw new ComunicaApiError(
           'rate_limited',
@@ -722,18 +740,34 @@ export function createFakeServer(
           20 * 60,
         );
       }
-      codes.set(identity(b), now().getTime());
-      // La MISMA respuesta exista o no.
-      if ('email' in b) return { sentTo: mask(b.email.trim().toLowerCase()) };
+      // Se dice si no existe (31/10/2026, como la web): y cuenta como fallo de la red. Los aciertos y `no_email` no cuentan.
+      if ('dni' in b && b.dni.trim().toUpperCase() === FAKE_NO_EMAIL_DNI) {
+        throw validation(
+          'no_email',
+          'Te encontramos, pero no tenemos un correo tuyo: escribe a la oficina técnica.',
+        );
+      }
       const found = personasFor(b)[0];
+      if (!found) {
+        misses.push(t);
+        throw validation(
+          'no_match',
+          'email' in b
+            ? 'Ese correo no está en Comunica.'
+            : 'No encontramos a nadie con ese documento.',
+        );
+      }
+      codes.set(identity(b), t);
+      // Con el DNI también se enseña el correo de la ficha (tapado), como la web.
       return {
-        sentTo: found
-          ? mask(
-              Object.keys(FAKE_EMAILS).find((e) =>
-                FAKE_EMAILS[e].includes(found),
-              )!,
-            )
-          : 'el correo de tu ficha',
+        sentTo:
+          'email' in b
+            ? mask(b.email.trim().toLowerCase())
+            : mask(
+                Object.keys(FAKE_EMAILS).find((e) =>
+                  FAKE_EMAILS[e].includes(found),
+                )!,
+              ),
       };
     },
 

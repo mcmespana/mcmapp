@@ -3,6 +3,11 @@
 > **Estado:** 🟢 listo para ejecutar en `nuevoComunicaChulo` · **Depende de:**
 > 00, 01 · **Tamaño:** M · Índice y reglas comunes: [`README.md`](README.md).
 
+> ✅ **Cambio del 1/11/2026 (decisión del propietario, 31/10): SE DICE si el correo o el DNI no existe**, igual que la
+> web (`comunicaAreaPrivada:docs/ACCESO.md` §2). Sustituye a la regla de abajo «Nunca se dice si un correo existe» y a la
+> decisión `dni` («contestar igual»): los textos de este documento que dicen lo contrario están marcados como
+> superados. Lo que hace la app está en «Si el correo no existe» (más abajo).
+
 ## Para qué y para quién
 
 Para que un monitor entre una vez y no tenga que volver a hacerlo en meses.
@@ -42,7 +47,7 @@ token, que se canjea sin teclear nada.
 
 | Ruta | Envía | Devuelve | Notas |
 |---|---|---|---|
-| `POST /v1/auth/code` | `{ email }` o `{ dni }` | `202 { sentTo }` (correo tapado) | **Misma respuesta exista o no** el correo. Límites del plugin: 5 envíos por correo cada 20 min, 30 por IP y hora → `rate_limited` con `retryAfter` |
+| `POST /v1/auth/code` | `{ email }` o `{ dni }` | `202 { sentTo }` (correo tapado; **también por DNI**) | ~~Misma respuesta exista o no~~ (superado el 31/10): `422 validation` `no_match` (correo o DNI sin ficha), `no_email` (DNI con ficha sin correo), `429 rate_limited` `too_many_misses` (8 fallos en 30 min desde esa red, `retryAfter` 1800; ni se mira el CRM). Límites de envío: 5 por correo cada 20 min, 30 por IP y hora → `rate_limited` con `retryAfter` (sin `reason`). `503 crm_unavailable` NO es «no existe» |
 | `POST /v1/auth/verify` | `{ email \| dni, code }` o `{ linkToken }`, y `personId` si se eligió | `{ accessToken, refreshToken, expiresIn, me }` o `{ choose: [{ personId, name, delegation }] }` | 10 códigos fallidos bloquean esa vía 1 h (`rate_limited`); código caducado (40 min) → `validation` con motivo |
 | `POST /v1/auth/refresh` | `{ refreshToken }` | nuevo par | El de refresco **rota** en cada uso; uno reutilizado revoca la sesión |
 | `POST /v1/auth/logout` | — | `204` | Revoca el de refresco de este móvil |
@@ -54,17 +59,40 @@ token, que se canjea sin teclear nada.
   repite; si el refresco falla, lleva a `acceso`.
 - **Servidor falso:** cualquier correo de los fixtures recibe el código
   `123456`; un correo de dos fichas lleva a `acceso-elegir`; un correo
-  concreto simula `rate_limited`; `linkToken` falso válido y caducado.
+  concreto simula `rate_limited`; `linkToken` falso válido y caducado. **Desde el 1/11:** un correo que no esté
+  en los fixtures (a propósito, `quien@noexiste.test`) da `no_match`; el DNI `00000000T` tiene ficha pero no correo
+  (`no_email`); un DNI desconocido, `no_match`; a los **8 fallos** (correos o DNI que no existen, ventana de 30
+  min con el reloj del falso) todo da `too_many_misses` con `retryAfter` 1800, también un correo que sí existe. Los
+  aciertos y el `no_email` no cuentan. Con un DNI que existe, `sentTo` enseña su correo tapado.
 
 ## Comportamiento y reglas
 
-- **Nunca se dice si un correo existe** (la pantalla es la misma). Con el DNI,
-  el plugin sí dice «no existe» (`docs/ACCESO.md`): ver pregunta abierta.
+- ~~Nunca se dice si un correo existe~~ → **desde el 1/11 sí se dice** (ver «Si el correo no existe»).
 - El correo de la cuenta de la app se propone, no se impone: muchas familias y
   monitores usan otro correo en el CRM. Si no coincide con ninguna ficha, el
-  servidor contesta igual y la persona no recibe nada: el texto de
-  `acceso-codigo` recuerda «Si no te llega, prueba con el correo que diste a tu
-  delegación o con tu DNI».
+  servidor lo dice (`no_match`) y la pantalla ofrece el DNI. `acceso-codigo` ya no necesita decir «prueba con otro
+  correo»: solo «Si no te llega, mira en el correo no deseado o pide otro código.»
+
+### Si el correo no existe (1/11/2026; `AccessScreen`, `AccessNotices`, `codeRequestProblem` en `acceso/copy.ts`)
+
+Igual que la web (`ACCESO.md` §2). Qué se ve según lo que conteste `POST /v1/auth/code`:
+
+| Respuesta | Qué se ve |
+|---|---|
+| 202 | Pasa a `acceso-codigo` («Te lo hemos mandado a m•••@…», también por DNI) |
+| `no_match` por **correo** | Aviso rojo («Ese correo no está en Comunica.») **con el correo tecleado** y «Revisa que esté bien escrito.»; el campo **se queda relleno** (con borde de error) para corregir la errata; debajo, la **tarjeta del DNI abierta**: «¿Te diste de alta con otro correo?» y el botón en contorno «Buscarme por mi DNI», que abre el campo del DNI con el foco puesto. Al volver a «Entrar con el correo», el correo sigue ahí |
+| `no_match` por **DNI** | «No encontramos a nadie con ese documento.» (sin tarjeta del DNI) |
+| `no_email` (solo DNI) | «Te encontramos, pero no tenemos un correo tuyo: escribe a la oficina técnica.» con el enlace `mailto:comunica@movimientoconsolacion.com` |
+| `too_many_misses` | «Hemos recibido demasiados intentos con correos que no están en Comunica desde esta red. Espera unos minutos o escríbenos.» con el mismo enlace; **no** se ofrece el DNI |
+| `rate_limited` sin motivo | «Demasiados intentos. Espera N minutos.» (el tope de envíos de siempre) |
+| `crm_unavailable` | «Comunica no responde ahora mismo…». **Nunca** «no existe» ni la tarjeta del DNI: una caída del CRM mandaría a todo el mundo al DNI |
+| `network` | «Sin conexión. Necesitas conexión para entrar la primera vez.» |
+
+`Entrar como <correo de la cuenta de la app>` no cambia: su `no_match` sigue diciendo «El correo de tu cuenta de la
+app no está en Comunica. Entra con el correo que tiene tu delegación o con el DNI.» (no es el correo tecleado). Sin
+colores ni radios nuevos: el aviso usa `chip('negative')` y `dangerText` del tema, la tarjeta, `card` y `separator`, y
+el botón, el mismo contorno que «Entrar como…». Tests: `accessScreen.test.tsx` (la pantalla con el falso),
+`session.test.ts` (el falso, incluido el freno).
 - **Salir** borra todo lo del área en el móvil (plan 01 §3) y vuelve a
   `acceso`. No toca la cuenta de la app.
 - Si el servidor revoca la sesión (la persona deja de ser monitor, o se
@@ -114,10 +142,9 @@ sigue llegando a la WebView como hoy.
 
 ## Preguntas abiertas
 
-- **DNI que no existe** (✅ decidido, tarjeta `dni`: «contestar igual que con
-  el correo»): el plugin lo dice («esta puerta sí dice no existe»,
-  `docs/ACCESO.md`); aquí no. Con DNI existente o no, la misma pantalla: «Si el
-  DNI es correcto, te llegará un código al correo que diste a tu delegación.»
+- **DNI que no existe** (~~tarjeta `dni`: «contestar igual que con el correo»~~, **superada el 31/10/2026** por la
+  decisión del propietario de decir también si el correo no existe, como la web): ahora la app dice «No encontramos a
+  nadie con ese documento.» Ver «Si el correo no existe».
 - **Rellenar el perfil de la app con el CRM** (papel y delegación, en vez de lo
   que la persona eligió en el onboarding): necesita la tabla de equivalencias
   de delegaciones (`ANALISIS_AREA_PRIVADA_NATIVA.md` §7). Queda fuera de este

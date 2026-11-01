@@ -9,6 +9,9 @@
 //   · El `PATCH` es estricto, solo escribe lo que cambia (cuenta las escrituras POR CAMPO, `detailWrites()`), valida formatos y opciones, y responde
 //     con los datos releídos. Los consentimientos solo cambian los que llegan. `identityFill` solo escribe lo vacío, y el documento con su letra.
 //   · La salud va aparte (`/health`); nunca sale en los datos.
+//   · La foto (`PUT /photo`, multipart): JPEG o PNG de más de 0 bytes y hasta 4 MB, si no `validation` (`empty_file`, `file_too_big`,
+//     `bad_file_type`); cambia `photoUrl` a otra URL versionada (`?v=`) y se ve en los datos. El falso mira el tipo que dice el archivo; el
+//     servidor, los primeros bytes.
 //   · Mismo `clientId` = mismo resultado, sin volver a escribir.
 //
 // El estado vive POR datos (`WeakMap`): `reset()` del falso lo deja como al principio.
@@ -17,6 +20,8 @@ import {
   HealthWrite,
   PersonDetails,
   PersonDetailsWrite,
+  PhotoFields,
+  PhotoWriteResult,
   DetailsWriteResult,
   ProfileHealth,
   WriteResult,
@@ -24,7 +29,7 @@ import {
   type Role,
   type RouteName,
 } from '../contract';
-import { ComunicaApiError, type ComunicaApi } from '../client';
+import { ComunicaApiError, type ComunicaApi, type UploadFile } from '../client';
 import type { FakeData, PersonaId } from './fixtures';
 import { allowedProfile, FAKE_CHILDREN, FAKE_NEW_CHILD } from './profiles';
 import { isValidDocument } from '@/utils/comunica/documentId';
@@ -33,6 +38,11 @@ import {
   YEAR_MAX,
   YEAR_MIN,
 } from '@/utils/comunica/personDetails';
+import {
+  PHOTO_PROBLEM_TEXT,
+  photoProblem,
+  photoTypeOf,
+} from '@/utils/comunica/photo';
 
 export interface DetailsCtx {
   data: () => FakeData;
@@ -50,12 +60,24 @@ export type DetailsKeys =
   | 'updateProfileDetails'
   | 'getProfileHealth'
   | 'updateProfileHealth'
-  | 'detailWrites';
-type DetailsApi = Pick<ComunicaApi, Exclude<DetailsKeys, 'detailWrites'>>;
+  | 'uploadProfilePhoto'
+  | 'detailWrites'
+  | 'photoUploads';
+type DetailsApi = Pick<
+  ComunicaApi,
+  Exclude<DetailsKeys, 'detailWrites' | 'photoUploads'>
+>;
 
 /** Lo que el falso enseña a los tests: cuántas veces se escribió cada campo (`email`, `consents.photos`, `health.allergies`…). */
 export interface DetailsLog {
   detailWrites(): Readonly<Record<string, number>>;
+  /** Las fotos que ha recibido (persona, tipo y tamaño): un `PUT` repetido con el mismo `clientId` no cuenta dos veces. */
+  photoUploads(): readonly {
+    pid: string;
+    clientId: string;
+    mimeType: string;
+    size: number;
+  }[];
 }
 
 type Stored = Omit<PersonDetails, 'generatedAt' | 'sections' | 'emailNote'>;
@@ -237,6 +259,9 @@ interface State {
   stored: Map<string, Stored>;
   health: Map<string, HealthInfo>;
   writes: Record<string, number>;
+  /** La versión (`?v=`) de la foto de cada persona. */
+  photos: Map<string, number>;
+  received: { pid: string; clientId: string; mimeType: string; size: number }[];
 }
 const states = new WeakMap<FakeData, State>();
 
@@ -245,7 +270,13 @@ export function detailsRoutes(ctx: DetailsCtx): DetailsApi & DetailsLog {
     const d = ctx.data();
     let s = states.get(d);
     if (!s) {
-      s = { stored: new Map(), health: new Map(), writes: {} };
+      s = {
+        stored: new Map(),
+        health: new Map(),
+        writes: {},
+        photos: new Map(),
+        received: [],
+      };
       states.set(d, s);
     }
     return s;
@@ -313,6 +344,7 @@ export function detailsRoutes(ctx: DetailsCtx): DetailsApi & DetailsLog {
 
   return {
     detailWrites: () => state().writes,
+    photoUploads: () => state().received,
 
     async getProfileDetails(pid) {
       await ctx.gate('profileDetails');
@@ -546,6 +578,52 @@ export function detailsRoutes(ctx: DetailsCtx): DetailsApi & DetailsLog {
       if (changed > 0) ctx.bumpWrites(1);
       ctx.seen.set(w.clientId, true);
       return WriteResult.parse({ clientId: w.clientId, status: 'applied' });
+    },
+
+    async uploadProfilePhoto(pid, fields, file: UploadFile) {
+      await ctx.gate('uploadProfilePhoto', true);
+      const who = allowedProfile(ctx as never, pid);
+      const parsed = PhotoFields.safeParse(fields);
+      if (!parsed.success || !file)
+        throw validation('bad_body', 'Falta el identificador o la foto');
+      const { clientId } = parsed.data;
+      // Mismo `clientId`: no se escribe otra vez (la misma foto, la misma URL).
+      if (ctx.seen.has(clientId))
+        return PhotoWriteResult.parse(ctx.seen.get(clientId));
+      // Se mira ANTES de escribir nada, como el servidor.
+      const bad = photoProblem({
+        size: file.size,
+        type: photoTypeOf(file.mimeType, file.name),
+      });
+      if (bad)
+        throw validation(
+          bad === 'empty'
+            ? 'empty_file'
+            : bad === 'too_big'
+              ? 'file_too_big'
+              : 'bad_file_type',
+          PHOTO_PROBLEM_TEXT[bad],
+        );
+      const s = state();
+      const v = (s.photos.get(who.id) ?? 0) + 1;
+      s.photos.set(who.id, v);
+      storedOf(who.id, who.self).photoUrl =
+        `https://fotos.ejemplo.org/v1/profiles/${who.id}/photo?v=${v}`;
+      count('photo');
+      s.received.push({
+        pid: who.id,
+        clientId,
+        mimeType: file.mimeType,
+        size: file.size,
+      });
+      ctx.bumpWrites(1);
+      const result = PhotoWriteResult.parse({
+        clientId,
+        status: 'applied',
+        photoUrl: storedOf(who.id, who.self).photoUrl,
+      });
+      ctx.seen.set(clientId, result);
+      return result;
     },
   };
 }

@@ -25,14 +25,19 @@ const idOf = (s: ReturnType<typeof server>, persona: PersonaId) =>
 const patch = (changes: object) => ({ clientId: uuidV4(), changes }) as never;
 
 describe('contrato', () => {
-  it('ninguna de las cuatro rutas se guarda en el móvil', () => {
+  it('ninguna de las cinco rutas se guarda en el móvil', () => {
     for (const r of [
       'profileDetails',
       'updateProfileDetails',
       'profileHealth',
       'updateProfileHealth',
+      'uploadProfilePhoto',
     ] as const)
       expect(ROUTES[r].persist).toBe(false);
+    expect(ROUTES.uploadProfilePhoto).toMatchObject({
+      method: 'PUT',
+      path: '/v1/profiles/:pid/photo',
+    });
     expect(ROUTES.profileDetails.path).toBe('/v1/profiles/:pid/details');
     expect(ROUTES.updateProfileHealth.method).toBe('PUT');
   });

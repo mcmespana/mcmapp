@@ -109,6 +109,16 @@ describe('servidor falso', () => {
         clientId: CLIENT(62),
         health: { other: 'Prueba' },
       }),
+      uploadProfilePhoto: await fam.uploadProfilePhoto(
+        LUCIA,
+        { clientId: CLIENT(69) },
+        {
+          uri: 'file:///tmp/foto.jpg',
+          name: 'foto.jpg',
+          mimeType: 'image/jpeg',
+          size: 1000,
+        },
+      ),
       profileActivities: await fam.getProfileActivities(LUCIA),
       profileEvent: await fam.getProfileEvent(LUCIA, 'pev-convi'),
       profileEventBySlug: await fam.getProfileEventBySlug(

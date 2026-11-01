@@ -1,6 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createFakeServer } from '@/services/comunica/fake';
-import { FAKE_CODE } from '@/services/comunica/fake/fixtures';
+import {
+  FAKE_CODE,
+  FAKE_MISS_LIMIT,
+  FAKE_NO_EMAIL_DNI,
+} from '@/services/comunica/fake/fixtures';
 import {
   __resetComunicaApiForTests,
   getComunicaApi,
@@ -62,9 +66,13 @@ describe('acceso en el servidor falso', () => {
     expect(await fake.requestCode({ email: 'monitor@ejemplo.org' })).toEqual({
       sentTo: 'm•••@ejemplo.org',
     });
-    // Un correo que no existe recibe la MISMA respuesta.
-    expect(await fake.requestCode({ email: 'nadie@ejemplo.org' })).toEqual({
-      sentTo: 'n•••@ejemplo.org',
+    // Un correo que no existe SE DICE (31/10/2026, como la web): ya no hay silencio.
+    await expect(
+      fake.requestCode({ email: 'nadie@noexiste.test' }),
+    ).rejects.toMatchObject({
+      code: 'validation',
+      reason: 'no_match',
+      status: 422,
     });
     await expect(
       fake.verify({ email: 'monitor@ejemplo.org', code: '000000' }),
@@ -91,6 +99,54 @@ describe('acceso en el servidor falso', () => {
       personId: pid,
     });
     expect('me' in chosen && chosen.me.personId).toBe(pid);
+  });
+
+  it('el DNI: sin ficha, sin correo y con correo (se enseña tapado)', async () => {
+    const { fake } = setup();
+    await expect(fake.requestCode({ dni: '99999999R' })).rejects.toMatchObject({
+      reason: 'no_match',
+    });
+    await expect(
+      fake.requestCode({ dni: FAKE_NO_EMAIL_DNI.toLowerCase() }),
+    ).rejects.toMatchObject({ code: 'validation', reason: 'no_email' });
+    expect(await fake.requestCode({ dni: '12345678z' })).toEqual({
+      sentTo: 'm•••@ejemplo.org',
+    });
+  });
+
+  it('el freno por red: a los 8 correos que no existen, 429 `too_many_misses` (también para uno que sí existe); sin sesión de 30 min', async () => {
+    const { fake } = setup();
+    fake.setControls({ clock: '2026-11-01T10:00:00Z' });
+    for (let i = 0; i < FAKE_MISS_LIMIT; i++) {
+      await expect(
+        fake.requestCode({ email: `quien${i}@noexiste.test` }),
+      ).rejects.toMatchObject({ reason: 'no_match' });
+    }
+    await expect(
+      fake.requestCode({ email: 'monitor@ejemplo.org' }),
+    ).rejects.toMatchObject({
+      code: 'rate_limited',
+      reason: 'too_many_misses',
+      retryAfter: 1800,
+    });
+    // Pasada la ventana, vuelve a mirar.
+    fake.setControls({ clock: '2026-11-01T10:31:00Z' });
+    expect(
+      await fake.requestCode({ email: 'monitor@ejemplo.org' }),
+    ).toMatchObject({ sentTo: 'm•••@ejemplo.org' });
+  });
+
+  it('los aciertos y la ficha sin correo no cuentan para el freno', async () => {
+    const { fake } = setup();
+    for (let i = 0; i < FAKE_MISS_LIMIT + 2; i++) {
+      await fake.requestCode({ email: 'monitor@ejemplo.org' }).catch(() => {});
+      await expect(
+        fake.requestCode({ dni: FAKE_NO_EMAIL_DNI }),
+      ).rejects.toMatchObject({ reason: 'no_email' });
+    }
+    expect(
+      await fake.requestCode({ email: 'monitor@ejemplo.org' }),
+    ).toBeTruthy();
   });
 
   it('límites, DNI y enlace', async () => {

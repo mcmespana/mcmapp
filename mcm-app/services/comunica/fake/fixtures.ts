@@ -1166,8 +1166,21 @@ export const FAKE_DNIS: Record<string, PersonaId> = {
   '12345678Z': 'monitor',
 };
 
-/** Este correo siempre da `rate_limited`. */
+/** Este correo siempre da `rate_limited` (el tope de envíos). */
 export const FAKE_RATE_LIMITED_EMAIL = 'limite@ejemplo.org';
+
+/**
+ * Igual que el servidor de verdad (31/10/2026): un correo que no está en Comunica se dice (`no_match`). Cualquiera que no esté en
+ * `FAKE_EMAILS` no existe; este dominio es el que se usa a propósito para probarlo (`quien@noexiste.test`).
+ */
+export const FAKE_NO_MATCH_DOMAIN = '@noexiste.test';
+
+/** Un DNI que tiene ficha pero no tiene correo: `no_email` («escribe a la oficina técnica»). Cualquier otro DNI que no esté en `FAKE_DNIS` no existe. */
+export const FAKE_NO_EMAIL_DNI = '00000000T';
+
+/** El freno por red: 8 correos o DNI que no existen en 30 minutos y lo siguiente es `rate_limited` / `too_many_misses` (con `retryAfter` 1800). */
+export const FAKE_MISS_LIMIT = 8;
+export const FAKE_MISS_WINDOW_S = 30 * 60;
 
 /** Tokens del enlace del correo (`acceso_app`): uno vale, otro ha caducado. */
 export const FAKE_LINK_TOKENS: Record<string, PersonaId | null> = {

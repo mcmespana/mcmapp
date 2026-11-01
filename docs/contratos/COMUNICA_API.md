@@ -70,6 +70,12 @@ El glosario completo está en el plan 00 §1. Lo mínimo:
   alcance (`'delegation'` o `{ stages?, segments? }`) y `canSeeHealth`.
   (El resto del acceso —código, verificación, refresco, salir— lo define el
   plan 02.)
+- `POST /v1/auth/code` `{ email }` o `{ dni }` → `202 { sentTo }` (el correo tapado, **también por DNI**). **Se dice si
+  no existe** (como la web, 31/10/2026): `422 validation` con `no_match` (correo o DNI sin ficha), `no_email` (DNI con
+  ficha sin correo) o `bad_body`; `429 rate_limited` con `too_many_misses` (8 fallos en 30 min desde esa red, `retryAfter`
+  1800: ni se mira el CRM) o sin motivo (tope de envíos: 5 por correo cada 20 min, 30 por IP y hora); `503
+  crm_unavailable` NO es «no existe» (la app no manda al DNI por esto). Pantalla: `02-acceso.md`, «Si el correo no
+  existe».
 
 ### Pasar Lista (plan 04)
 
@@ -367,7 +373,7 @@ Todo cuelga de `/v1/profiles/:pid/…`; el servidor comprueba en cada petición 
 - `GET /v1/profiles/:pid/details` → `PersonDetails`: `sections` (las decide el servidor con la audiencia: `member`, las siete; el hijo y el familiar, sin `mcm`), `identity` (solo lectura), `gender`, `documentSupportNumber`, `documentIssueDate` (la app los enseña solo si llegan con valor), `emailNote` (`mcm_email_warning` | `mcm_email_soft` | `null`), `contact`, `address`, `photoUrl`, `mcm` (`null` si no es de su audiencia), `consents` (`true` | `false` | `null` = **sin contestar**, nunca «no») y `options` (`{ value, label }` de género, tipo de documento, etapa, nivel COM, talla, MCM local y comunidad). **La salud no va aquí.**
 - `PATCH /v1/profiles/:pid/details` `{ clientId, changes }` → `WriteResult & { details }` (los datos **releídos**). **Estricto**: una clave de más o de una sección que la audiencia no tiene → `validation` (`bad_body`, `section_not_allowed`); formatos (`bad_email`, `bad_postal_code`, `bad_year`), opciones (`bad_option`) y documento (`bad_document`). `changes` lleva SOLO lo que cambia; lo escondido por la etapa (nivel COM, año de LC) no viaja. Las autorizaciones solo admiten `true`/`false` y solo se escribe la que llega. `identityFill` (nombre, apellidos, tipo y número de documento) solo escribe lo que en el CRM está vacío (`identity_already_set` si no) y el documento con su letra; lo usa quien viene a pagar (`completar=pago`). El mismo `clientId` no escribe dos veces.
 - `GET` y `PUT /v1/profiles/:pid/health` → `{ health }` / `WriteResult`: cinco textos (`foodIntolerances`, `allergies`, `illnesses`, `treatments`, `other`), solo los que cambian. El resultado de escribirla no lleva la salud.
-- `POST /v1/profiles/:pid/photo` y `GET /v1/profiles/:pid/photo`: **pendiente** en el servidor (la app enseña la foto y deja el cambio para después).
+- `PUT /v1/profiles/:pid/photo` (multipart: `clientId` y `file`) → `WriteResult & { photoUrl }`. JPEG o PNG, **4 MB como mucho**, **ya recortada por la app** (el servidor no procesa la imagen: comprueba tamaño y los primeros bytes). `validation`: `bad_body`, `empty_file`, `file_too_big`, `bad_file_type`; `forbidden` (`profile_out_of_scope`); 503 `crm_unavailable` (`crm_timeout`, `crm_error`, `crm_not_confirmed`, `crm_not_configured`): se reintenta con el MISMO `clientId`. `photoUrl` es la URL versionada (`?v=`) nueva, la misma que sale en `details`. Directa y con conexión, sin cola. La app: `PhotoBlock`, `usePhotoUpload`, `photoUploads.ts`. `GET /v1/profiles/:pid/photo`: la miniatura (como la de las fichas).
 
 La app: `ProfileDataScreen` (`/comunica/datos/[pid]`, o `/comunica/datos` para a quien se ve; `?yo=1` para uno mismo y `?completar=pago`), `usePersonDetails` (lectura 5 min en memoria, salud 1 min) y `utils/comunica/personDetails.ts` (qué se manda y qué formatos no dejan guardar).
 

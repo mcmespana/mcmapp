@@ -102,7 +102,10 @@ export function ComunicaLabPanel() {
       <Text style={styles.hint}>
         O desde «Entra en tu área»: monitor@ejemplo.org, coordinacion@,
         acompanamiento@, com2@, ambas@, otra@ o dos@ (dos fichas), o el DNI
-        12345678Z. El código es siempre {FAKE_CODE}.
+        12345678Z. El código es siempre {FAKE_CODE}. Para ver los avisos: un
+        correo que no sea de la lista (quien@noexiste.test) dice que no existe;
+        el DNI 00000000T tiene ficha sin correo; a los 8 fallos, «demasiados
+        intentos».
       </Text>
 
       <Text style={styles.label}>Reloj del servidor</Text>

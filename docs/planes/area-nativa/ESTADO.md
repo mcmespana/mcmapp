@@ -5,6 +5,25 @@
 > [`decisiones/`](decisiones/README.md) (todas contestadas). Este documento es
 > la revisión del código del 23-24/10 y la lista de lo que falta, en orden.
 
+## ⭐ 1/11/2026 (tarde): «ese correo no existe» y la foto de perfil
+
+Dos cambios del servidor (`comunicaMiddleware`, rama `claude/correo-igual-que-la-web`) ya llevados a la app, contra el
+servidor falso (**falta verlos con el servidor real y en un móvil**):
+
+- **Acceso** (plan 02): se dice si el correo o el DNI no existe, como la web (`ACCESO.md` §2 del plugin). Aviso con el
+  correo tecleado + campo relleno + tarjeta del DNI; por DNI, «sin ficha» y «sin correo» (con enlace a la oficina
+  técnica); `too_many_misses` avisa de esperar; una caída del CRM nunca dice «no existe». Sustituye a la regla «nunca se
+  dice» y a la decisión `dni`. Detalle en [`02-acceso.md`](02-acceso.md) («Si el correo no existe»).
+- **Foto de perfil** (plan 12): elegir de galería o cámara con el recorte cuadrado del selector y subir en el acto con
+  `PUT /v1/profiles/:pid/photo` (JPEG o PNG ≤ 4 MB, directa, sin cola). Detalle y lo que NO se hace en
+  [`12-mis-datos.md`](12-mis-datos.md) («Foto»): **no se reduce a 800×800** (haría falta `expo-image-manipulator`, nativo:
+  decisión pendiente del propietario), ni hay pantalla de encuadre propia.
+- **Sin comprobar en un móvil real**: el recorte cuadrado de iOS y de Android, el peso real de las fotos de móviles de
+  muchos megapíxeles (si en Android el recorte da más de 4 MB incluso con la calidad más baja, habrá que añadir el
+  manipulador), el permiso de la galería (el texto de `app.json` habla de «títulos, certificados y documentos», no de la
+  foto de perfil: cambiarlo es nativo), y todo contra el servidor real. Quita «la foto (subir) del plan 12» de la lista de
+  pulido pendiente de arriba.
+
 ## ⭐ 31/10/2026 (noche): MVP de monitores contra el middleware de verdad
 
 Decisión del propietario: sacar ya **toda la parte de monitores y coordinación** en nativo, contra el
@@ -26,13 +45,25 @@ middleware real (`comunicaMiddleware`), y arreglar lo que falte por OTA.
   `comunicaMiddleware:docs/ACCESO-APP.md`.
 - **Quien no es del equipo** (familias, socios): en vez de un 403, «Tu área, de momento en la web» con
   «Abrir la versión web» (pase con sesión) hasta que lleguen los planes 11-16.
-- **Familias (planes 11-16)**: el servidor está hecho (`comunicaMiddleware`, fase 3, menos 15 pagos). La
-  app empezó el 11 en la rama **`plan11`** (5 commits del 28/10, sin fusionar, 167 por detrás de `main`):
-  **no se ha perdido**, se retoma desde ahí. Su contrato ya coincide con el del middleware.
+- **Familias (planes 11-16)**: **en `main` desde el 1/11/2026** (PRs #358-#364: perfiles, mis datos, eventos y ficha, inscripciones, pagos con la hoja de la pasarela, documentos y
+  calendario). La rama `plan11` quedó obsoleta (se rehízo desde `main`). Servidor al completo en `comunicaMiddleware` (fase 3, incluido el 15b «pagar con tarjeta», apagado). **Todo
+  hecho contra el servidor falso; falta verlo con el servidor real.**
 - **Reuniones como el plugin del 31/10** (plan 06 §«Cambios del plugin»): toda la delegación para quien
   coordina una etapa (`outOfScope`: sin ficha ni aviso) y los sin grupo con «-» también en reuniones.
 - **Rediseño con cariño** (apuntado, sin pensar aún): al propietario le gusta más ahora la web que el nativo.
   Ver `docs/planes/PLAN_DISENO.md` §«Área nativa de Comunica: rediseño».
+
+## ⭐ 1/11/2026: dónde estamos y qué falta
+
+- **Las variables del servidor ya están en Vercel y el acceso funciona** (Izan probó una build del 31/10: entró y le llegaron correos). El correo del acceso es ahora **el mismo que el de la web**
+  (middleware, `src/app/mailer.ts`). El dominio `api.comunica…` **no se cambia por ahora** (la URL sigue `comunica-middleware.vercel.app` en los cuatro sitios).
+- **Para ver 11-16 en un móvil de verdad**: una build/OTA contra el middleware (ya apuntan: `EXPO_PUBLIC_COMUNICA_API` en `eas.json` y los workflows OTA); se ve en el Laboratorio Alpha o con
+  `global.comunicaNativa = all`. Los paquetes que usan estas pantallas (`expo-image-picker`, `expo-document-picker`, `expo-sharing`, `react-native-webview`) ya están en `package.json`, así que
+  si la build instalada los lleva, **basta con la OTA** (si no, build nativa con `[skip-ota]`). Pagar con tarjeta seguirá sin funcionar hasta encender el 15b del servidor.
+- **Qué comprobar con el CRM real** (clave del pasaporte, `email1`, año de incorporación LC, estados de inscripción, céntimos…): [`comunicaMiddleware:docs/PRIORITARIAS-COMPROBAR.md`](https://github.com/mcmespana/comunicaMiddleware/blob/main/docs/PRIORITARIAS-COMPROBAR.md).
+- **Mejoras y lo aparcado, a la par con la web** (foto del perfil con tope de 4 MB, avisos del pago, TPV, ficha pública que NO se hará en la app, pulido): [`comunicaMiddleware:docs/MEJORAS-WEB-Y-APP.md`](https://github.com/mcmespana/comunicaMiddleware/blob/main/docs/MEJORAS-WEB-Y-APP.md).
+- **Pulido de la app pendiente** (no MVP): capturas de cada pantalla; calendario de la portada de familias y deslizar de mes (16); «Abrir con…» para PDF en Android (2.2); visor con zoom y cartel a
+  la izquierda en iPad (13); ficha de registro común `comun/record/`; intercepción de la vuelta del formulario avanzado (14); ~~la foto (subir) del plan 12~~ (hecha el 1/11, ver arriba); rediseño «con cariño» (`PLAN_DISENO.md`).
 
 ## Veredicto de la revisión
 
