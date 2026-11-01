@@ -4,6 +4,15 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 — Comunica familias, plan 13: «Eventos» y su ficha
+
+- «Eventos» (`/comunica/actividades`): «Para apuntarte» y «Te has apuntado» (los títulos solo si hay los dos), lo pasado fuera por la fecha de fin, el chip por su orden (con plaza → plazo → etiqueta del CRM; con fechas mandan las fechas) y, al pie, «Inscribirme» o «Mi inscripción» solo si llevan a otro sitio. Cambiar de hijo se queda en la misma pantalla.
+- La ficha (`/comunica/actividades/[eventId]`): cartel a pantalla completa, datos en el orden del plugin (duración de 2 a 31 días, plazo, lugar con el botón del mapa del sistema, dirección, horario, plazas, precio), «Toda la información» con el cuerpo en bloques nativos (títulos, listas, aviso, botón, imagen, galería, vídeo) o «Sobre esta actividad», adjuntos PDF con sesión y compartir. La acción por su orden: pasado → con plaza → no es para ti → fuera de plazo → abierta, con «Inscribirme en esta actividad» pegada abajo.
+- El enlace público `/actividades/?e=<slug>` ya no abre la web: busca el evento con el perfil que se ve y va a su ficha. Los enlaces `list_stic_events` y `single_stic_events` también son nativos.
+- El cuerpo nunca es HTML: el servidor lo trocea y la app solo pinta bloques conocidos (un enlace que no sea `http(s)`, `tel:` o `mailto:` no se pinta como enlace).
+- Servidor falso (`fake/profileEvents.ts`) con 14 eventos (audiencias, plazos, ocultos, rechazada, cuerpo con todos los bloques).
+- **Falta**: la inscripción nativa (`Inscribirme` y `Mi inscripción` abren el legado hasta el plan 14), la ficha pública sin sesión (el servidor no la sirve aún), el visor con zoom, el cartel a la izquierda en iPad y las capturas. Pruebas: `activityLogic` (27), `profileEventsFake` (18), `activitiesScreen` (23).
+
 ## 2026-11-01 — Comunica familias, plan 12: «Mis datos» y «Datos de Lucía»
 
 - Una sola pantalla (`/comunica/datos/[pid]`; `/comunica/datos` resuelve a quien se ve ahora, `?yo=1` a uno mismo) para las tres audiencias, con los campos, el orden y los textos del plugin (`single_stic_comunica_perfil.php`): datos personales (lo bloqueado, como dato con candado; género, soporte y expedición del DNI si ya los tenemos), contacto (con el aviso del correo `@movimientoconsolacion.com`), dirección, foto, MCM (solo miembros; «Nivel COM» con etapa COM, año de LC con LC Incorporado), información sanitaria y autorizaciones legales.

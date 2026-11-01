@@ -150,10 +150,18 @@ export async function handleComunicaLink(
     });
     return;
   }
+  // La página pública de una actividad (`/actividades/?e=<slug>`): su ficha nativa (plan 13). Con sesión busca el evento y va a su ficha; sin
+  // sesión, la pantalla dice que hay que entrar.
+  if (link.kind === 'event') {
+    deps.push({
+      pathname: '/comunica/actividades/publica/[slug]',
+      params: { slug: link.slug },
+    });
+    return;
+  }
   const publicUrl = publicPageUrl(link);
   if (publicUrl) {
-    // La ficha nativa del evento llega con el plan 13; hasta entonces, su
-    // página pública (como cualquier otra página del dominio).
+    // Otra página del dominio: tal cual, con el legado.
     deps.push({ pathname: '/comunica/web', params: { url: publicUrl } });
     return;
   }

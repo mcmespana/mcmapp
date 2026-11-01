@@ -246,6 +246,155 @@ export const MyProfiles = read({
 });
 export type MyProfiles = z.infer<typeof MyProfiles>;
 
+// ── Familias: eventos y su ficha (plan 13) ──────────────────────────────────
+//
+// Todo cuelga de `/v1/profiles/:pid/…`. Días `YYYY-MM-DD` de Madrid. Ni un nombre del CRM ni una cadena de HTML: el cuerpo viaja troceado en
+// BLOQUES (`BodyBlock`) y la app los pinta con componentes nativos. Las imágenes y los archivos `{ documentId }` se bajan con sesión por
+// `/v1/profiles/:pid/events/:eventId/documents/:documentId` (binario, no es una ruta del catálogo).
+
+export const ACTIVITY_TONES = ['ok', 'warn', 'danger', 'neutral'] as const;
+
+/** Un archivo del evento (`{ documentId }`, se baja con sesión por la ruta de documentos) o una imagen de fuera (`{ url }`). */
+export const ImageRef = z.union([
+  z.strictObject({ documentId: Id }),
+  z.strictObject({ url: z.url({ protocol: /^https?$/ }) }),
+]);
+export type ImageRef = z.infer<typeof ImageRef>;
+export const BodyHref = z.union([
+  z.strictObject({ url: z.string().min(1) }),
+  z.strictObject({ documentId: Id }),
+]);
+export type BodyHref = z.infer<typeof BodyHref>;
+
+export type BodyInline =
+  | { t: 'text'; v: string }
+  | { t: 'bold' | 'italic'; c: BodyInline[] }
+  | { t: 'link'; href: BodyHref; c: BodyInline[] }
+  | { t: 'break' };
+export const BodyInline: z.ZodType<BodyInline> = z.lazy(() =>
+  z.union([
+    z.strictObject({ t: z.literal('text'), v: z.string() }),
+    z.strictObject({ t: z.enum(['bold', 'italic']), c: z.array(BodyInline) }),
+    z.strictObject({
+      t: z.literal('link'),
+      href: BodyHref,
+      c: z.array(BodyInline),
+    }),
+    z.strictObject({ t: z.literal('break') }),
+  ]),
+);
+
+export const BodyBlock = z.union([
+  z.strictObject({
+    type: z.literal('heading'),
+    level: z.union([z.literal(1), z.literal(2)]),
+    text: z.array(BodyInline),
+  }),
+  z.strictObject({
+    type: z.enum(['paragraph', 'notice']),
+    text: z.array(BodyInline),
+  }),
+  z.strictObject({
+    type: z.literal('list'),
+    ordered: z.boolean(),
+    start: z.number().int(),
+    items: z.array(z.array(BodyInline)),
+    children: z.record(
+      z.string(),
+      z.strictObject({
+        ordered: z.boolean(),
+        items: z.array(z.array(BodyInline)),
+      }),
+    ),
+  }),
+  z.strictObject({
+    type: z.literal('button'),
+    label: z.string(),
+    href: BodyHref,
+  }),
+  z.strictObject({
+    type: z.literal('image'),
+    src: ImageRef,
+    caption: z.string().optional(),
+    alt: z.string().optional(),
+  }),
+  z.strictObject({ type: z.literal('gallery'), images: z.array(ImageRef) }),
+  z.strictObject({
+    type: z.literal('video'),
+    provider: z.enum(['youtube', 'vimeo']),
+    id: z.string(),
+    url: z.string(),
+  }),
+  z.strictObject({ type: z.literal('divider') }),
+]);
+export type BodyBlock = z.infer<typeof BodyBlock>;
+
+export const EventCard = z.object({
+  id: Id,
+  name: z.string(),
+  startDate: Day.nullable(),
+  endDate: Day.nullable(),
+  /** El lugar y, si no, la dirección. */
+  place: z.string().nullable(),
+  /** La etiqueta del CRM; la de `registration` ya es «Inscripciones abiertas». */
+  statusLabel: z.string().nullable(),
+  window: z.object({ opensOn: Day.nullable(), closesOn: Day.nullable() }),
+  hasAdvancedForm: z.boolean(),
+  /** La inscripción NO cancelada de este perfil, si la tiene. */
+  myRegistrationId: Id.nullable(),
+  myRegistrationStatus: z
+    .object({ label: z.string(), tone: z.enum(ACTIVITY_TONES) })
+    .nullable(),
+});
+export type EventCard = z.infer<typeof EventCard>;
+
+/** `toSignUp` (sin los ocultos ni los que no son para este perfil) y `signedUp` (con plaza: sin audiencia ni ocultos). */
+export const ActivityList = read({
+  toSignUp: z.array(EventCard),
+  signedUp: z.array(EventCard),
+});
+export type ActivityList = z.infer<typeof ActivityList>;
+
+export const EventAudience = z.union([
+  z.strictObject({ ok: z.literal(true) }),
+  z.strictObject({
+    ok: z.literal(false),
+    reason: z.enum(['delegation', 'profile', 'course']),
+    message: z.string(),
+  }),
+]);
+export type EventAudience = z.infer<typeof EventAudience>;
+
+export const EventDetail = read({
+  ...EventCard.shape,
+  tagline: z.string().nullable(),
+  /** Texto plano, saltos de línea incluidos. Solo si no hay información de la web (nunca las dos). */
+  description: z.string().nullable(),
+  timetable: z.string().nullable(),
+  address: z.string().nullable(),
+  /** `null` si es 0: un 0 no es un dato. */
+  capacity: z.number().int().nullable(),
+  price: z.number().nullable(),
+  map: z
+    .union([
+      z.strictObject({ url: z.string() }),
+      z.strictObject({ query: z.string() }),
+    ])
+    .nullable(),
+  cover: ImageRef.nullable(),
+  body: z.array(BodyBlock),
+  gallery: z.array(ImageRef),
+  attachments: z.array(z.strictObject({ documentId: Id, title: z.string() })),
+  /** Solo si está publicada. */
+  publicUrl: z.string().nullable(),
+  /** El enlace para compartir (plan 08): la página pública si la hay. */
+  share: z
+    .strictObject({ url: z.string(), kind: z.enum(['public', 'area']) })
+    .nullable(),
+  signup: z.strictObject({ audience: EventAudience }).nullable(),
+});
+export type EventDetail = z.infer<typeof EventDetail>;
+
 /** `POST /v1/auth/code` — misma respuesta exista o no el correo. */
 export const CodeRequest = z.union([
   z.object({ email: z.email() }),
@@ -1815,6 +1964,25 @@ export const ROUTES = {
     path: '/v1/profiles/:pid/health',
     response: WriteResult,
     persist: false,
+  },
+  // Familias (plan 13): eventos de un perfil. Sin datos personales (el estado de su inscripción y poco más): se guardan para abrir rápido.
+  profileActivities: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/events',
+    response: ActivityList,
+    persist: true,
+  },
+  profileEvent: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/events/:eventId',
+    response: EventDetail,
+    persist: true,
+  },
+  profileEventBySlug: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/events/by-slug/:slug',
+    response: EventDetail,
+    persist: true,
   },
   // Mis datos de monitor (plan 09).
   myMonitor: {

@@ -59,7 +59,9 @@ import {
   WriteResult,
   MeResponse,
   MyProfiles,
+  ActivityList,
   DetailsWriteResult,
+  EventDetail,
   type HealthWrite,
   PersonDetails,
   type PersonDetailsWrite,
@@ -98,6 +100,26 @@ export interface ComunicaApi {
   getMe(): Promise<MeResponse>;
   /** Familias (plan 11): quien ha entrado y sus hijos. Con `fresh`, se mira otra vez quiénes son los míos. */
   getMyProfiles(opts?: ReadOptions): Promise<MyProfiles>;
+  /** Familias (plan 13): los eventos de un perfil (a qué apuntarse y a qué ya está apuntado). */
+  getProfileActivities(pid: string, opts?: ReadOptions): Promise<ActivityList>;
+  /** La ficha de un evento de ese perfil, por id. Se sirve aunque no sea para él (con el motivo). */
+  getProfileEvent(
+    pid: string,
+    eventId: string,
+    opts?: ReadOptions,
+  ): Promise<EventDetail>;
+  /** Lo mismo por el slug o el id de la página pública (`/actividades/?e=`). */
+  getProfileEventBySlug(
+    pid: string,
+    slug: string,
+    opts?: ReadOptions,
+  ): Promise<EventDetail>;
+  /** Un archivo del evento (cartel, galería, PDF) como lo entiende `expo-image` o una descarga: con la sesión puesta. */
+  eventFileSource(
+    pid: string,
+    eventId: string,
+    documentId: string,
+  ): PhotoSource;
   /** Familias (plan 12): los datos de quien se ve. Nunca se guardan en el móvil. */
   getProfileDetails(pid: string): Promise<PersonDetails>;
   /** Directo y con conexión (sin cola: son datos personales). Responde con lo releído. */
@@ -565,6 +587,41 @@ export function createHttpClient({
         undefined,
         READ_RETRIES,
       ),
+    getProfileActivities: (pid, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events${q(opts)}`,
+        ActivityList,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileEvent: (pid, id, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events/${enc(id)}${q(opts)}`,
+        EventDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileEventBySlug: (pid, slug, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events/by-slug/${enc(slug)}${q(opts)}`,
+        EventDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    eventFileSource: (pid, eventId, documentId) => {
+      const uri = `${root}/v1/profiles/${enc(pid)}/events/${enc(eventId)}/documents/${enc(documentId)}`;
+      const token = getToken?.();
+      return typeof token === 'string'
+        ? {
+            uri,
+            headers: { Authorization: `Bearer ${token}` },
+            cacheKey: documentId,
+          }
+        : { uri, cacheKey: documentId };
+    },
     getProfileDetails: (pid) =>
       request('GET', `/v1/profiles/${enc(pid)}/details`, PersonDetails),
     updateProfileDetails: (pid, body) =>

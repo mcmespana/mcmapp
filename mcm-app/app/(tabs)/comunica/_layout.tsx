@@ -114,6 +114,18 @@ export default function ComunicaLayout() {
           <Stack.Screen name="acceso-elegir" options={{ title: 'Elegir' }} />
           <Stack.Screen name="perfiles" options={{ title: '¿A quién ves?' }} />
           <Stack.Screen name="datos/index" options={{ title: 'Mis datos' }} />
+          <Stack.Screen
+            name="actividades/index"
+            options={{ title: 'Eventos' }}
+          />
+          <Stack.Screen
+            name="actividades/[eventId]/index"
+            options={{ title: 'Evento' }}
+          />
+          <Stack.Screen
+            name="actividades/publica/[slug]"
+            options={{ title: 'Evento' }}
+          />
           <Stack.Screen name="datos/[pid]" options={{ title: 'Mis datos' }} />
           <Stack.Screen name="eventos/index" options={{ title: 'Eventos' }} />
           <Stack.Screen

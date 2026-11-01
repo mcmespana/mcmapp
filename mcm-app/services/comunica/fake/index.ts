@@ -78,6 +78,7 @@ import type { FakeEventData } from './fixturesEvents';
 import * as fakeDevices from './devices';
 import { monitorRoutes, type MineKeys, type UploadsLog } from './myMonitor';
 import { profilesRoutes, type ProfileKeys } from './profiles';
+import { profileEventsRoutes, type ProfileEventKeys } from './profileEvents';
 import {
   detailsRoutes,
   type DetailsKeys,
@@ -608,6 +609,7 @@ export function createFakeServer(
   const mine = monitorRoutes(routesCtx); // Mis datos de monitor (plan 09).
   const profiles = profilesRoutes(routesCtx); // A quién se ve (plan 11, familias).
   const details = detailsRoutes(routesCtx); // Mis datos y Datos de cada hijo (plan 12).
+  const profileEvents = profileEventsRoutes(routesCtx); // Eventos y su ficha (plan 13).
 
   // Avisos en el móvil (plan 08): los móviles registrados, en `devices.ts`.
   const devices = fakeDevices.routes(gate, () => current, seenClientIds);
@@ -638,6 +640,7 @@ export function createFakeServer(
     | MineKeys
     | ProfileKeys
     | DetailsKeys
+    | ProfileEventKeys
   > = {
     get controls() {
       return controls;
@@ -1344,6 +1347,7 @@ export function createFakeServer(
     mine,
     profiles,
     details,
+    profileEvents,
     {
       getEvents: events.getEvents,
       getEventRoll: events.getEventRoll,

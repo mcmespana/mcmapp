@@ -371,6 +371,18 @@ Todo cuelga de `/v1/profiles/:pid/…`; el servidor comprueba en cada petición 
 
 La app: `ProfileDataScreen` (`/comunica/datos/[pid]`, o `/comunica/datos` para a quien se ve; `?yo=1` para uno mismo y `?completar=pago`), `usePersonDetails` (lectura 5 min en memoria, salud 1 min) y `utils/comunica/personDetails.ts` (qué se manda y qué formatos no dejan guardar).
 
+### Familias: eventos y su ficha (plan 13)
+
+Todo cuelga de `/v1/profiles/:pid/…` (403 con un `pid` ajeno, nunca 404). Días `YYYY-MM-DD` de Madrid. Ni un nombre del CRM ni una cadena de HTML.
+
+- `GET /v1/profiles/:pid/events` → `ActivityList { toSignUp, signedUp }` de `EventCard`. `signedUp` = los que el perfil tiene con inscripción no cancelada, **sin audiencia y sin «ocultar en el área privada»**; `toSignUp` = el resto, sin los ocultos y sin los que no son para ese perfil. Los pasados los quita la app con la fecha de hoy. `myRegistrationStatus { label, tone }` lleva el estado de la inscripción (una rechazada sale en rojo, no «Con plaza»).
+- `GET /v1/profiles/:pid/events/:eventId` y `…/by-slug/:slug` (slug o id) → `EventDetail`. Se sirve **aunque no sea para ti**, con el motivo en `signup.audience` (`delegation` | `profile` | `course` y su `message`); lo inexistente, `not_found`. `capacity` y `price` son `null` si son 0 (un 0 no es un dato). Con información de la web hay `body`, `cover`, `gallery`, `attachments` (PDF) y `tagline`, y **no** hay `description`; sin ella, al revés. `map`: `{ url }` propio (http/https) o `{ query }` con la dirección o el lugar. `share`: la página pública si la hay (`kind: 'public'`), si no la ficha del área.
+- **El cuerpo viaja troceado en bloques** (`BodyBlock`): `heading` (1 | 2), `paragraph`, `notice`, `list` (con un segundo nivel en `children`), `button`, `image`, `gallery`, `video` (YouTube o Vimeo) y `divider`; el texto en línea (`BodyInline`): texto, negrita, cursiva, salto y enlace. Esos bloques SON el contrato: la app los pinta con componentes nativos y no interpreta HTML (un bloque con `html` o de un tipo desconocido no pasa el esquema; una imagen solo `https`). Los archivos `{ documentId }` se bajan con sesión por `GET /v1/profiles/:pid/events/:eventId/documents/:documentId` (binario, solo si el documento es del evento y el evento es para el perfil o tiene plaza en él).
+- Se guardan en el móvil (`persist: true`: el estado de su inscripción y poco más); los archivos, nunca.
+- `GET /v1/public/events/:slug` (la ficha pública sin sesión): **pendiente** en el servidor; la app, sin sesión, dice «Entra para apuntarte».
+
+La app: `ActivitiesScreen` (`/comunica/actividades`), `EventDetailScreen` (`/comunica/actividades/[eventId]`) y el puente `…/publica/[slug]` del enlace `/actividades/?e=`; `utils/comunica/{eventWindow,activityList,eventSignup,recordDates,bodyLinks,eventMap}.ts` (el plazo, el listado, el orden de la acción, las fechas, los enlaces del cuerpo y el mapa).
+
 ### Varias delegaciones (plan 17)
 
 Quien colabora con otra delegación (coordina Burriana siendo de Castellón)
