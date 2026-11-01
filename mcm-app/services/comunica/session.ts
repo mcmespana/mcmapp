@@ -375,6 +375,22 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     unregisterDevice: authed((id) => api.unregisterDevice(id)),
     // Mis datos de monitor (plan 09).
     getMyProfiles: authed((o) => api.getMyProfiles(o)),
+    getProfileDocuments: authed((pid) => api.getProfileDocuments(pid)),
+    getProfileDocument: authed((pid, id) => api.getProfileDocument(pid, id)),
+    createProfileDocument: authed((pid, f, file) =>
+      api.createProfileDocument(pid, f, file),
+    ),
+    updateProfileDocument: authed((pid, id, f, file) =>
+      api.updateProfileDocument(pid, id, f, file),
+    ),
+    deleteProfileDocument: authed((pid, id, c) =>
+      api.deleteProfileDocument(pid, id, c),
+    ),
+    documentFileSource: (pid, id) => api.documentFileSource(pid, id),
+    getProfileCalendar: authed((pid, o) => api.getProfileCalendar(pid, o)),
+    getProfileSession: authed((pid, id, o) =>
+      api.getProfileSession(pid, id, o),
+    ),
     getProfilePayments: authed((pid) => api.getProfilePayments(pid)),
     getProfilePayment: authed((pid, id) => api.getProfilePayment(pid, id)),
     getCardCheckout: authed((pid, s) => api.getCardCheckout(pid, s)),

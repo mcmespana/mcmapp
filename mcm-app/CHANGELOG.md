@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 — Comunica familias, plan 16: documentos y calendario
+
+- **Documentos** (`/comunica/documentos`): «Mis documentos» / «Documentos de Lucía»; la tarjeta con el tipo en la cápsula (JPG, PDF, DOC…), el nombre, «Del 3 de octubre de 2026» y el chip («Caducado» en rojo o el estado), sin el nombre del archivo; lo más reciente arriba y lo caducado al final y apagado. Tocar la tarjeta abre la ficha; el botón redondo descarga y abre el archivo (visor para imágenes y PDF en iOS; la hoja del sistema para lo demás y el PDF en Android).
+- **La ficha**: archivo, fecha, caducidad, estado, categoría y enlace compartido; nombre y descripción editables (solo se manda lo que cambia), sustituir el archivo y eliminar solo tras la confirmación nativa. **Subir**: elegir (foto, galería o archivo), validar antes de enviar (más de 0 bytes, **4 MB**, extensión de la lista) y subir directo con `clientId`; con el CRM caído, el mismo botón reintenta sin duplicar.
+- **Calendario** (`/comunica/calendario`): Mes y Agenda; el mes desde el lunes con hasta 4 puntitos por día (sesiones coloreadas por asistencia —parcial y justificada se juntan—, bandas «Con plaza» y «Abierto a inscripción» salvo si el evento ya aporta sesiones), la lista del día, la leyenda y la hoja de una sesión. Cambiar de mes elige hoy o el día 1.
+- **Visor de archivos** (`/comunica/archivo`, compartido con el plan 13). Los archivos se bajan con la sesión a `comunica/open/` y se borran al cerrar el visor, al volver la app, al abrir Documentos y al salir.
+- NADA de Documentos se guarda en el móvil; el calendario sí (actividades, fechas y marcas). Sin cola. Los enlaces `list_stic_documents`, `single_stic_documents`, `single_stic_activities_calendar`, `single_stic_sessions`, `list_stic_sessions` y `list_stic_attendances` son nativos; ninguno borra.
+- Servidor falso (`fake/profileDocs.ts`): documentos en cada estado, un curso de 24 sesiones con las cuatro marcas, eventos con plaza y abiertos con su audiencia.
+- **Falta**: probarlo contra el servidor de verdad, «Abrir con…» para PDF en Android (llega con los paquetes nativos de la 2.2), el calendario de la portada de familias (`upcomingAgendaItems` está hecho y probado, sin pintar), el deslizar de mes y capturas. Pruebas: `docsCalendarLogic` (28), `profileDocsFake` (18), `docsCalendarScreens` (39).
+
 ## 2026-11-01 — Comunica familias, plan 15: pagos y pagar con tarjeta
 
 - **Pagos** (`/comunica/pagos`): «Pendiente de pagar», «Se cobrará por domiciliación», «Pagado» y «Otros», con el chip solo cuando dice algo nuevo (un devuelto en rojo, «Comprobando el pago»), el importe grande a la derecha y «Pagar con tarjeta» al pie en secundario. El dinero es de quien paga: viéndose a sí mismo, todo (con «Para Lucía»); viendo a un hijo, solo lo suyo.

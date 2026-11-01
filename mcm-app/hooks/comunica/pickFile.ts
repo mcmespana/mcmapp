@@ -34,10 +34,17 @@ const IMAGE_OPTIONS: ImagePicker.ImagePickerOptions = {
   exif: false,
 };
 
-export async function pickFile(source: FileSource): Promise<PickedFile | null> {
+/** Los tipos que ofrece «Elegir un archivo» por defecto (certificados, plan 09). Un documento (plan 16) los admite todos y se comprueba después. */
+export const CERTIFICATE_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+export const ANY_FILE = ['*/*'];
+
+export async function pickFile(
+  source: FileSource,
+  types: string[] = CERTIFICATE_TYPES,
+): Promise<PickedFile | null> {
   if (source === 'file') {
     const r = await DocumentPicker.getDocumentAsync({
-      type: ['application/pdf', 'image/jpeg', 'image/png'],
+      type: types,
       copyToCacheDirectory: true,
       multiple: false,
       base64: false,

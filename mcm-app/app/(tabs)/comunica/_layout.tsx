@@ -145,6 +145,27 @@ export default function ComunicaLayout() {
           <Stack.Screen name="pagos/index" options={{ title: 'Pagos' }} />
           <Stack.Screen name="pagos/[id]" options={{ title: 'Pago' }} />
           <Stack.Screen name="pagos/pagar" options={{ title: 'Pagar' }} />
+          <Stack.Screen
+            name="documentos/index"
+            options={{ title: 'Documentos' }}
+          />
+          <Stack.Screen
+            name="documentos/subir"
+            options={{ title: 'Subir un documento', presentation: 'formSheet' }}
+          />
+          <Stack.Screen
+            name="documentos/[id]"
+            options={{ title: 'Documento' }}
+          />
+          <Stack.Screen name="archivo" options={{ title: 'Documento' }} />
+          <Stack.Screen
+            name="calendario/index"
+            options={{ title: 'Calendario' }}
+          />
+          <Stack.Screen
+            name="calendario/sesion/[id]"
+            options={{ title: 'Sesión', presentation: 'formSheet' }}
+          />
           <Stack.Screen name="datos/[pid]" options={{ title: 'Mis datos' }} />
           <Stack.Screen name="eventos/index" options={{ title: 'Eventos' }} />
           <Stack.Screen

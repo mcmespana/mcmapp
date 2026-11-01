@@ -148,6 +148,29 @@ describe('servidor falso', () => {
       cardCheckout: await fam.getCardCheckout(LUCIA, {
         payment: 'pay-transfer-110',
       }),
+      profileDocuments: await fam.getProfileDocuments(LUCIA),
+      profileDocument: await fam.getProfileDocument(LUCIA, 'doc-aut'),
+      createProfileDocument: await fam.createProfileDocument(
+        LUCIA,
+        { clientId: CLIENT(66), name: 'Prueba' },
+        {
+          uri: 'file:///tmp/p.pdf',
+          name: 'p.pdf',
+          mimeType: 'application/pdf',
+          size: 1000,
+        },
+      ),
+      updateProfileDocument: await fam.updateProfileDocument(LUCIA, 'doc-dni', {
+        clientId: CLIENT(67),
+        name: 'DNI',
+      }),
+      deleteProfileDocument: await fam.deleteProfileDocument(
+        LUCIA,
+        'doc-sin',
+        CLIENT(68),
+      ),
+      profileCalendar: await fam.getProfileCalendar(LUCIA),
+      profileSession: await fam.getProfileSession(LUCIA, 'ses-f-hijo-lucia-1'),
       createCardAttempt: attempt,
       checkCardAttempt: await fam.checkCardAttempt(NICO, attempt.attemptId, {
         returned: 'ok',

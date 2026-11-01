@@ -410,6 +410,24 @@ Todo cuelga de `/v1/profiles/:pid/…` (403 con un `pid` ajeno, nunca 404). **El
 
 La app: `PaymentsScreen` (`/comunica/pagos`), `PaymentDetailScreen` (`…/[id]`), `PayScreen` (`…/pagar?pago=|inscripcion=`) con `CardGatewaySheet` (la hoja de la pasarela), `utils/comunica/{payments,cardAttempt}.ts` y `usePayments`. Reglas para tiendas: `docs/planes/area-nativa/PAGOS-TIENDAS.md`.
 
+### Familias: documentos y calendario (plan 16)
+
+Todo cuelga de `/v1/profiles/:pid/…` (403 con un `pid` ajeno). Un familiar que solo es familiar y se ve a sí mismo no tiene ninguna de las dos secciones (la entrada la quita la app, no el servidor).
+
+- `GET /v1/profiles/:pid/documents` → `{ documents: DocumentSummary[] }` (`name`, `fileName`, `status { key, label }`, `activeOn`, `expiresOn`). Lo más reciente arriba y lo caducado al final. **Nunca se guarda en el móvil** (`persist: false`: un nombre como «Informe médico» ya es sensible).
+- `GET /v1/profiles/:pid/documents/:id` → `{ document: DocumentDetail }` (+ `description`, `category`, `sharedLink`). Uno ajeno, borrado o inexistente es **403** (`document_out_of_scope`), nunca «no es tuyo».
+- `GET /v1/profiles/:pid/documents/:id/file` → los bytes de la revisión actual, con la sesión (no es una ruta del catálogo: la app la pide por `documentFileSource`; ninguna pantalla construye URLs).
+- `POST /v1/profiles/:pid/documents` (multipart: `clientId`, `name`, `description?`, `file`) y `PATCH …/:id` (multipart: `clientId` y solo lo que cambia; un archivo nuevo es una revisión nueva) → `WriteResult`. **El archivo se mira antes de escribir**: no vacío, **hasta 4 MB** (lo que cabe en Vercel; el plugin dejaba 6), extensión de `pdf, jpg, jpeg, png, gif, heic, webp, doc, docx, odt, xls, xlsx, ods, txt` (sin SVG ni HTML) y contenido de lo que dice la extensión: `validation` con `empty_file`, `file_too_big` o `bad_file_type`. Subir exige archivo. Mismo `clientId` = el mismo documento.
+- `DELETE /v1/profiles/:pid/documents/:id?clientId=` → `WriteResult`. Borrado lógico; **solo por `DELETE` con el token en la cabecera**, nunca por `GET` ni por un enlace (ningún enlace del plugin que «borraba» llega a borrar: va a la ficha).
+- **Sin cola**: subir, editar y borrar son llamadas directas, con conexión y con un `clientId` por acción (el mismo en los reintentos). La cola dejaría el cuerpo y el archivo en el disco.
+- `GET /v1/profiles/:pid/calendar` → `{ sessions, registeredEvents, openEvents }` (ventana de 14 meses atrás a 12 adelante). `sessions`: las de los eventos con inscripción NO cancelada, con `attendance` (`yes` | `partial` | `no_justified` | `no_unjustified` | `null`); `openEvents`: con la audiencia del perfil, sin ocultos y sin los que ya tienen plaza. **Se guarda en el móvil** (actividades, fechas y marcas).
+- `GET /v1/profiles/:pid/sessions/:id` → `{ session }` (+ `description`). Solo con inscripción activa a su evento; si no, 403.
+- Los archivos de un evento van por la ruta del plan 13 (`…/events/:eventId/documents/:documentId`), nunca por la de documentos.
+
+Color de una sesión (regla C4): si empieza después de ahora, «Próxima»; si no, `yes` «Asististe», `no_unjustified` «No asististe», sin marca «Sin registrar»; **«parcial» y «justificada» se juntan con las otras dos** (constante `JOIN_PARTIAL_AND_JUSTIFIED`, decisión `calendario-marcas`).
+
+La app: `DocumentsScreen` (`/comunica/documentos`), `DocumentDetailScreen` (`…/[id]`), `DocumentUploadScreen` (`…/subir`), `FileViewerScreen` (`/comunica/archivo`, compartido con el plan 13), `CalendarScreen` (`/comunica/calendario`) y `SessionScreen` (`…/sesion/[id]`); `utils/comunica/{files,documents,calendar}.ts`, `useDocuments` y `useCalendar`. Los archivos se bajan a `comunica/open/` con la sesión y se borran al cerrar el visor, al volver la app a primer plano, al abrir Documentos y al salir.
+
 ### Varias delegaciones (plan 17)
 
 Quien colabora con otra delegación (coordina Burriana siendo de Castellón)

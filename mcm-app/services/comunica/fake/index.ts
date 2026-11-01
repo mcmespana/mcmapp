@@ -87,6 +87,7 @@ import {
   profilePaymentsRoutes,
   type ProfilePaymentKeys,
 } from './profilePayments';
+import { profileDocsRoutes, type ProfileDocKeys } from './profileDocs';
 import {
   detailsRoutes,
   type DetailsKeys,
@@ -632,6 +633,7 @@ export function createFakeServer(
   const profileEvents = profileEventsRoutes(routesCtx); // Eventos y su ficha (plan 13).
   const profileRegistrations = profileRegistrationsRoutes(routesCtx); // Inscripciones (plan 14).
   const profilePayments = profilePaymentsRoutes(routesCtx); // Pagos y pagar con tarjeta (plan 15).
+  const profileDocs = profileDocsRoutes(routesCtx); // Documentos y calendario (plan 16).
 
   // Avisos en el móvil (plan 08): los móviles registrados, en `devices.ts`.
   const devices = fakeDevices.routes(gate, () => current, seenClientIds);
@@ -665,6 +667,7 @@ export function createFakeServer(
     | ProfileEventKeys
     | ProfileRegistrationKeys
     | ProfilePaymentKeys
+    | ProfileDocKeys
   > = {
     get controls() {
       return controls;
@@ -1374,6 +1377,7 @@ export function createFakeServer(
     profileEvents,
     profileRegistrations,
     profilePayments,
+    profileDocs,
     {
       getEvents: events.getEvents,
       getEventRoll: events.getEventRoll,

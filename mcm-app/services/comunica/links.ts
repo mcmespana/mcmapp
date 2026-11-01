@@ -190,6 +190,24 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
     pathname: '/comunica/pagos',
     params: { nota: 'error' },
   }),
+  // Documentos y calendario (plan 16). Borrar NUNCA es un enlace: lo del plugin que borraba llega a la ficha. `list_stic_sessions` es la agenda; la asistencia es el color del mes.
+  list_stic_documents: () => ({ pathname: '/comunica/documentos' }),
+  single_stic_documents: (d): NativeHref =>
+    d.action === 'create'
+      ? { pathname: '/comunica/documentos/subir' }
+      : d.id
+        ? { pathname: '/comunica/documentos/[id]', params: { id: d.id } }
+        : { pathname: '/comunica/documentos' },
+  single_stic_activities_calendar: () => ({ pathname: '/comunica/calendario' }),
+  single_stic_sessions: (d): NativeHref =>
+    d.id && (!d.action || d.action === 'detail')
+      ? { pathname: '/comunica/calendario/sesion/[id]', params: { id: d.id } }
+      : { pathname: '/comunica/calendario' },
+  list_stic_sessions: () => ({
+    pathname: '/comunica/calendario',
+    params: { vista: 'agenda' },
+  }),
+  list_stic_attendances: () => ({ pathname: '/comunica/calendario' }),
   // Mis datos (plan 12). El plugin no lleva a quién: con la persona que se ve ahora; la ficha del laico (retirada) y la del familiar
   // son de uno mismo (`yo=1`).
   single_stic_comunica_perfil: () => ({ pathname: '/comunica/datos' }),

@@ -763,6 +763,104 @@ export const SimulatedAttempt = z.object({
 export type SimulatedAttempt = z.infer<typeof SimulatedAttempt>;
 export type CardAttemptResult = CardAttempt | SimulatedAttempt;
 
+// ── Familias: documentos y calendario (plan 16) ─────────────────────────────
+//
+// Todo cuelga de `/v1/profiles/:pid/…`. Los DOCUMENTOS no se guardan en el móvil (un nombre como «Informe médico» ya es sensible) y no van por la cola:
+// subir, editar y borrar son llamadas directas, con conexión y con `clientId`. El archivo: hasta 4 MB (lo que cabe en Vercel). El CALENDARIO sí se guarda
+// (actividades, fechas y marcas; ni documento, ni dirección, ni correo).
+
+const DocText = z.string().nullable();
+const KeyLabel = z.object({ key: z.string(), label: z.string() });
+
+// ── Documentos ──────────────────────────────────────────────────────────────
+
+/** Los documentos de la relación `documents` del perfil. Sin el contenido ni la descripción: eso, en la ficha. */
+export const DocumentSummary = z.object({
+  id: Id,
+  name: z.string(),
+  /** El del archivo de su revisión actual (con su extensión), o `null` si no tiene archivo. */
+  fileName: DocText,
+  status: KeyLabel.nullable(),
+  activeOn: Day.nullable(),
+  expiresOn: Day.nullable(),
+});
+export type DocumentSummary = z.infer<typeof DocumentSummary>;
+
+export const DocumentDetail = DocumentSummary.extend({
+  description: DocText,
+  category: KeyLabel.nullable(),
+  sharedLink: DocText,
+});
+export type DocumentDetail = z.infer<typeof DocumentDetail>;
+
+/** `GET /v1/profiles/:pid/documents`: sin caché; nunca en el móvil. Lo más reciente primero y lo caducado al final. */
+export const DocumentsResponse = read({ documents: z.array(DocumentSummary) });
+export type DocumentsResponse = z.infer<typeof DocumentsResponse>;
+
+/** `GET /v1/profiles/:pid/documents/:id`: uno ajeno, borrado o inexistente es `forbidden` (nunca «no es tuyo»). */
+export const DocumentResponse = read({ document: DocumentDetail });
+export type DocumentResponse = z.infer<typeof DocumentResponse>;
+
+/**
+ * `POST /v1/profiles/:pid/documents` (multipart: estos campos y `file`) y `PATCH /v1/profiles/:pid/documents/:id` (multipart: `clientId`
+ * y lo que cambia, `name`, `description` y/o `file`). El archivo: hasta 4 MB (lo que cabe en Vercel), una extensión de la lista
+ * (`DOCUMENT_EXTENSIONS`) y un contenido que es de lo que dice la extensión. La descripción vacía la deja vacía.
+ */
+export const DocumentFields = z.object({
+  clientId: ClientId,
+  name: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(2000).optional(),
+});
+export const DocumentPatchFields = z.object({
+  clientId: ClientId,
+  name: z.string().trim().min(1).max(200).optional(),
+  description: z.string().trim().max(2000).optional(),
+});
+/** `DELETE /v1/profiles/:pid/documents/:id?clientId=`: nunca por GET, solo con el token en la cabecera. */
+export const DocumentDeleteQuery = z.object({ clientId: ClientId });
+
+// ── Calendario ──────────────────────────────────────────────────────────────
+
+/**
+ * Una sesión de un evento en el que el perfil tiene inscripción NO cancelada. `attendance` es la marca de su asistencia (`null` = sin
+ * registrar); «parcial» y «justificada» las junta la app con las otras dos mientras sus estados estén apagados (regla C4 del plan).
+ */
+export const CalendarSession = z.object({
+  id: Id,
+  name: z.string(),
+  eventId: Id,
+  eventName: z.string(),
+  startsAt: Instant,
+  endsAt: Instant.nullable(),
+  attendance: Mark,
+});
+export type CalendarSession = z.infer<typeof CalendarSession>;
+
+export const CalendarEvent = z.object({
+  id: Id,
+  name: z.string(),
+  startDate: Day,
+  endDate: Day.nullable(),
+});
+export type CalendarEvent = z.infer<typeof CalendarEvent>;
+
+/**
+ * `GET /v1/profiles/:pid/calendar`: ventana de 14 meses atrás a 12 adelante. `openEvents` va filtrado por la audiencia del perfil, sin
+ * los ocultos y sin los que ya tienen plaza; `registeredEvents` no (es su agenda); las inscripciones canceladas no cuentan.
+ */
+export const CalendarData = read({
+  sessions: z.array(CalendarSession),
+  registeredEvents: z.array(CalendarEvent),
+  openEvents: z.array(CalendarEvent),
+});
+export type CalendarData = z.infer<typeof CalendarData>;
+
+export const SessionDetail = CalendarSession.extend({ description: DocText });
+export type SessionDetail = z.infer<typeof SessionDetail>;
+/** `GET /v1/profiles/:pid/sessions/:id`: solo con inscripción activa a su evento; si no, `forbidden`. */
+export const SessionResponse = read({ session: SessionDetail });
+export type SessionResponse = z.infer<typeof SessionResponse>;
+
 /** `POST /v1/auth/code` — misma respuesta exista o no el correo. */
 export const CodeRequest = z.union([
   z.object({ email: z.email() }),
@@ -2426,6 +2524,49 @@ export const ROUTES = {
     path: '/v1/profiles/:pid/card-attempts/:id/check',
     response: CardAttemptStatus,
     persist: false,
+  },
+  // Familias (plan 16): documentos (NADA al móvil) y calendario (sí). Subir, editar y borrar, directo y con conexión.
+  profileDocuments: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/documents',
+    response: DocumentsResponse,
+    persist: false,
+  },
+  profileDocument: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/documents/:id',
+    response: DocumentResponse,
+    persist: false,
+  },
+  createProfileDocument: {
+    method: 'POST',
+    path: '/v1/profiles/:pid/documents',
+    response: WriteResult,
+    persist: false,
+  },
+  updateProfileDocument: {
+    method: 'PATCH',
+    path: '/v1/profiles/:pid/documents/:id',
+    response: WriteResult,
+    persist: false,
+  },
+  deleteProfileDocument: {
+    method: 'DELETE',
+    path: '/v1/profiles/:pid/documents/:id',
+    response: WriteResult,
+    persist: false,
+  },
+  profileCalendar: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/calendar',
+    response: CalendarData,
+    persist: true,
+  },
+  profileSession: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/sessions/:id',
+    response: SessionResponse,
+    persist: true,
   },
   // Mis datos de monitor (plan 09).
   myMonitor: {
