@@ -234,7 +234,7 @@ function Detail({
       value: line.text,
       ...(line.viewPaymentId
         ? {
-            onPress: () => void view(line.viewPaymentId!),
+            onPress: () => view(line.viewPaymentId!),
             actionLabel: `Ver el pago. ${line.text}`,
           }
         : {}),
@@ -282,7 +282,9 @@ function Detail({
             ) : null}
             <AreaPrimaryButton
               label={action.label}
-              onPress={() => void pay(action.paymentId)}
+              onPress={() =>
+                pay({ paymentId: action.paymentId, registrationId: reg.id })
+              }
               disabled={offline}
               haptic
             />

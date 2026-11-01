@@ -365,7 +365,7 @@ describe('el alta corta: rellenar y enviar', () => {
     expect(texts(tree)).toContain('Elige cómo vas a pagar.');
     expect(fake.writeCount).toBe(0);
   });
-  it('con tarjeta: a la ficha con «Listo» y el pago detrás (plan 15: hoy, su formulario)', async () => {
+  it('con tarjeta: a la ficha con «Listo» y el pago nativo detrás (plan 15)', async () => {
     const { tree, fake } = await setup('family', signup('pev-convi'), {
       activeId: LUCIA,
     });
@@ -381,14 +381,13 @@ describe('el alta corta: rellenar y enviar', () => {
     });
     const rid = arg.params.registrationId as string;
     expect(fake.writeCount).toBe(1);
-    await until(() => mockOpenLegacy.mock.calls.length > 0);
-    expect(mockOpenLegacy).toHaveBeenCalledWith(
-      { internalpage: 'single_stic_payment_form', id: `pay-${rid}` },
-      'Pago',
-      LUCIA,
-    );
+    await until(() => mockRouter.push.mock.calls.length > 0);
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/comunica/pagos/pagar',
+      params: { pago: `pay-${rid}` },
+    });
   });
-  it('si el CRM no genera el pago, se paga por la inscripción (lista de pagos hasta el plan 15)', async () => {
+  it('si el CRM no genera el pago, se paga por la inscripción (`pagar?inscripcion=`)', async () => {
     const { tree } = await setup('family', signup('pev-convi'), {
       activeId: LUCIA,
       controls: { noCardPayment: true },
@@ -397,12 +396,12 @@ describe('el alta corta: rellenar y enviar', () => {
     await answerAll(tree);
     await choose(tree, 'Tarjeta');
     await press(tree, 'Apuntar a Lucía');
-    await until(() => mockOpenLegacy.mock.calls.length > 0);
-    expect(mockOpenLegacy).toHaveBeenCalledWith(
-      { internalpage: 'list_stic_payments' },
-      'Pagos',
-      LUCIA,
-    );
+    await until(() => mockRouter.push.mock.calls.length > 0);
+    const rid = mockRouter.replace.mock.calls[0][0].params.registrationId;
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/comunica/pagos/pagar',
+      params: { inscripcion: rid },
+    });
   });
   it('domiciliación: un IBAN malo no envía nada; uno bueno sí, y NUNCA queda fuera del formulario', async () => {
     const { tree, fake, qc, be } = await setup('family', signup('pev-convi'), {
@@ -596,11 +595,10 @@ describe('la ficha de una inscripción', () => {
     expect(t).toContain('Madre · 600111222 · marta@ejemplo.org');
     expect(t).toContain('Personas');
     await press(tree, 'Pagar 20,00 € con tarjeta');
-    expect(mockOpenLegacy).toHaveBeenCalledWith(
-      { internalpage: 'single_stic_payment_form', id: 'pay-pend-1' },
-      'Pago',
-      NICO,
-    );
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/comunica/pagos/pagar',
+      params: { pago: 'pay-pend-1' },
+    });
   });
   it('llamar a un tutor abre el teléfono', async () => {
     const { Linking } = require('react-native');
@@ -622,15 +620,10 @@ describe('la ficha de una inscripción', () => {
     expect(texts(tree)).toContain('Ya celebrado');
     expect(texts(tree)).not.toContain('Pagar 110,00');
     await pressLike(tree, /^Ver el pago\./);
-    expect(mockOpenLegacy).toHaveBeenCalledWith(
-      {
-        internalpage: 'single_stic_payments',
-        action: 'detail',
-        id: 'pay-lucia-110',
-      },
-      'Pago',
-      LUCIA,
-    );
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/comunica/pagos/[id]',
+      params: { id: 'pay-lucia-110' },
+    });
   });
   it('devuelto: «No se pudo cobrar» con su aviso rojo y se puede pagar; con el plazo cerrado, el motivo', async () => {
     const { tree } = await setup('family', reg('reg-nico-devuelto'), {

@@ -615,6 +615,154 @@ export const AdvancedFormResult = z.object({
 });
 export type AdvancedFormResult = z.infer<typeof AdvancedFormResult>;
 
+// ── Familias: pagos y pagar con tarjeta (plan 15) ───────────────────────────
+//
+// Todo cuelga de `/v1/profiles/:pid/…`. El dinero es DE QUIEN PAGA: viéndose a sí mismo, todo lo que paga (con «para Lucía»); viendo a un hijo, solo
+// lo de ese hijo. Importes en CÉNTIMOS. El IBAN entero nunca viaja (`accountMasked`). La app enseña, arranca y pregunta; el servidor prepara, reclama y
+// decide: la app NUNCA concluye «pagado» por su cuenta. Nada de esto se guarda en el móvil (salvo el intento en curso, sin importes).
+
+export const PAYMENT_STATUSES = [
+  'pending',
+  'scheduled',
+  'paid',
+  'failed',
+  'other',
+] as const;
+/** `scheduled` = domiciliación en remesa; `failed` = devuelto o rechazado. */
+export const PayStatus = z.enum(PAYMENT_STATUSES);
+export type PayStatus = z.infer<typeof PayStatus>;
+
+export const PAY_METHODS = [
+  'card',
+  'direct_debit',
+  'bizum',
+  'transfer',
+  'cash',
+  'other',
+] as const;
+/** `transfer_received` → `transfer`; lo que no se conoce (`kind`, «Especie»…) → `other`. */
+export const PayMethod = z.enum(PAY_METHODS);
+export type PayMethod = z.infer<typeof PayMethod>;
+
+export const Payment = z.object({
+  id: Id,
+  title: z.string(),
+  /** Nombre de pila del destinatario, si no es quien se ve. */
+  forName: z.string().optional(),
+  date: Day.nullable(),
+  amountCents: z.number().int(),
+  status: PayStatus,
+  statusLabel: z.string(),
+  method: PayMethod,
+  methodLabel: z.string(),
+  canPayByCard: z.boolean(),
+  /** Hay un intento con vuelta «ok» del banco que el CRM aún no da por cobrado: no se ofrece pagar otra vez. */
+  confirmingSince: Instant.optional(),
+});
+export type Payment = z.infer<typeof Payment>;
+
+/** `GET /v1/profiles/:pid/payments`: sin intentos de tarjeta sin cobrar, sin lo pendiente de un compromiso cerrado y sin lo anulado. */
+export const PaymentsList = read({ payments: z.array(Payment) });
+export type PaymentsList = z.infer<typeof PaymentsList>;
+
+export const PaymentDetail = Payment.extend({
+  generatedAt: Instant,
+  typeLabel: z.string().optional(),
+  accountMasked: z.string().optional(),
+  bankingConcept: z.string().optional(),
+  inKindDescription: z.string().optional(),
+  transactionCode: z.string().optional(),
+  rejection: z
+    .object({ reason: z.string().optional(), date: Day.optional() })
+    .optional(),
+  registrationId: Id.optional(),
+});
+export type PaymentDetail = z.infer<typeof PaymentDetail>;
+
+/**
+ * `GET /v1/profiles/:pid/card-checkout?payment=<id>` o `?registration=<id>`: si se puede pagar con tarjeta y qué se pagaría. SOLO LEE:
+ * no crea ningún intento ni escribe en el CRM. `payer` es quien ha entrado (el familiar, si se ve a un hijo), tal cual está en su ficha.
+ */
+export const CardCheckout = read({
+  checkout: z.union([
+    z.object({
+      payable: z.literal(true),
+      concept: z.string(),
+      amountCents: z.number().int().positive(),
+      payer: z.object({ name: z.string(), email: z.string() }),
+      forName: z.string().optional(),
+      returnTo: z.union([
+        z.object({ registration: Id }),
+        z.literal('payments'),
+      ]),
+    }),
+    z.object({
+      payable: z.literal(false),
+      reason: z.enum(['not_payable', 'missing_payer_data', 'nothing_to_pay']),
+    }),
+  ]),
+});
+export type CardCheckout = z.infer<typeof CardCheckout>;
+
+// ── Pagar con tarjeta de verdad (plan 15b) ──────────────────────────────────
+
+export const CardChannel = z.enum(['sheet', 'browser']);
+/** `POST /v1/profiles/:pid/card-attempts`: de dónde sale el pago (nunca un donativo), el importe en céntimos (mínimo 1 €, sin tope) y cómo se abre la pasarela. */
+export const CardAttemptCreate = z.strictObject({
+  clientId: ClientId,
+  source: z.union([
+    z.strictObject({ payment: Id }),
+    z.strictObject({ registration: Id }),
+  ]),
+  amountCents: z.number().int().min(100).max(100_000_000),
+  channel: CardChannel,
+});
+export type CardAttemptCreate = z.infer<typeof CardAttemptCreate>;
+
+/**
+ * `launchUrl`: una página del servidor de UN SOLO USO (caduca en 10 min) que manda al banco; `returnUrlPrefix`: pública y sin datos, la app corta la
+ * navegación cuando la URL empieza por ella y lee `ok` o `ko`.
+ */
+export const CardAttempt = z.object({
+  attemptId: Id,
+  launchUrl: z.url({ protocol: /^https$/ }),
+  returnUrlPrefix: z.url({ protocol: /^https$/ }),
+  expiresAt: Instant,
+});
+export type CardAttempt = z.infer<typeof CardAttempt>;
+
+export const CardAttemptState = z.enum([
+  'started',
+  'confirming',
+  'paid',
+  'failed',
+  'abandoned',
+]);
+/** `POST …/card-attempts/:id/check`: lo que la app vio al volver (si vio algo). El estado lo decide SIEMPRE el servidor, con el cobro del CRM. */
+export const CardAttemptCheck = z.strictObject({
+  returned: z.enum(['ok', 'ko', 'closed']).optional(),
+});
+export type CardAttemptCheck = z.infer<typeof CardAttemptCheck>;
+export const CardAttemptStatus = z.object({
+  attemptId: Id,
+  state: CardAttemptState,
+  paidCents: z.number().int().optional(),
+  registrationId: Id.optional(),
+  paymentId: Id.optional(),
+});
+export type CardAttemptStatus = z.infer<typeof CardAttemptStatus>;
+
+/**
+ * Lo que devuelve crear un intento: el de verdad (`launchUrl`, la pasarela del banco) o, SOLO con el servidor falso, `simulated: true` (la hoja pinta
+ * una pasarela de mentira). Un `simulated` de un servidor que no es el falso es un error (lo comprueba `client.ts`).
+ */
+export const SimulatedAttempt = z.object({
+  attemptId: Id,
+  simulated: z.literal(true),
+});
+export type SimulatedAttempt = z.infer<typeof SimulatedAttempt>;
+export type CardAttemptResult = CardAttempt | SimulatedAttempt;
+
 /** `POST /v1/auth/code` — misma respuesta exista o no el correo. */
 export const CodeRequest = z.union([
   z.object({ email: z.email() }),
@@ -2245,6 +2393,37 @@ export const ROUTES = {
     method: 'POST',
     path: '/v1/profiles/:pid/events/:eventId/advanced-form',
     response: AdvancedFormResult,
+    persist: false,
+  },
+  // Familias (plan 15): pagos. NADA se guarda en el móvil (importes, conceptos, cuenta enmascarada, correo del pagador).
+  profilePayments: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/payments',
+    response: PaymentsList,
+    persist: false,
+  },
+  profilePayment: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/payments/:id',
+    response: PaymentDetail,
+    persist: false,
+  },
+  cardCheckout: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/card-checkout',
+    response: CardCheckout,
+    persist: false,
+  },
+  createCardAttempt: {
+    method: 'POST',
+    path: '/v1/profiles/:pid/card-attempts',
+    response: CardAttempt,
+    persist: false,
+  },
+  checkCardAttempt: {
+    method: 'POST',
+    path: '/v1/profiles/:pid/card-attempts/:id/check',
+    response: CardAttemptStatus,
     persist: false,
   },
   // Mis datos de monitor (plan 09).

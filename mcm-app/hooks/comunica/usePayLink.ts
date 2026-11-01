@@ -1,41 +1,28 @@
-// A dónde lleva «Pagar … con tarjeta» y «Ver el pago» HASTA que el plan 15 tenga sus pantallas (`pagos/pagar`, `pagos/[id]`): a la web del plugin con la
-// sesión puesta y el perfil que se ve. Con un pago pendiente, su formulario; sin él, la lista de pagos. El 15 sustituye esto por rutas nativas.
+// A dónde lleva «Pagar … con tarjeta» y «Ver el pago» desde una inscripción (planes 14 y 15): a las pantallas nativas de Pagos. Con un pago pendiente, `pagar?pago=`;
+// sin él (una inscripción sin compromiso), `pagar?inscripcion=`: el servidor lo prepara.
 
 import { useCallback } from 'react';
-import { useActiveProfile } from './useActiveProfile';
-import { useOpenLegacy } from './useOpenLegacy';
+import { useRouter } from 'expo-router';
 
 export function usePayLink() {
-  const openLegacy = useOpenLegacy();
-  const { active, isSelf } = useActiveProfile();
-  const profileId = !isSelf && active ? active.id : undefined;
+  const router = useRouter();
   const pay = useCallback(
-    (paymentId: string | null) =>
-      paymentId
-        ? openLegacy(
-            { internalpage: 'single_stic_payment_form', id: paymentId },
-            'Pago',
-            profileId,
-          )
-        : openLegacy(
-            { internalpage: 'list_stic_payments' },
-            'Pagos',
-            profileId,
-          ),
-    [openLegacy, profileId],
+    (to: { paymentId: string | null; registrationId: string }) =>
+      router.push({
+        pathname: '/comunica/pagos/pagar',
+        params: to.paymentId
+          ? { pago: to.paymentId }
+          : { inscripcion: to.registrationId },
+      } as never),
+    [router],
   );
   const view = useCallback(
     (paymentId: string) =>
-      openLegacy(
-        {
-          internalpage: 'single_stic_payments',
-          action: 'detail',
-          id: paymentId,
-        },
-        'Pago',
-        profileId,
-      ),
-    [openLegacy, profileId],
+      router.push({
+        pathname: '/comunica/pagos/[id]',
+        params: { id: paymentId },
+      } as never),
+    [router],
   );
   return { pay, view };
 }

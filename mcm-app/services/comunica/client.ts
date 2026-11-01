@@ -60,6 +60,14 @@ import {
   MeResponse,
   MyProfiles,
   ActivityList,
+  CardAttempt,
+  type CardAttemptCheck,
+  type CardAttemptCreate,
+  type CardAttemptResult,
+  CardAttemptStatus,
+  CardCheckout,
+  PaymentDetail,
+  PaymentsList,
   AdvancedFormResult,
   RegistrationDetail,
   RegistrationsList,
@@ -108,6 +116,25 @@ export interface ComunicaApi {
   getMe(): Promise<MeResponse>;
   /** Familias (plan 11): quien ha entrado y sus hijos. Con `fresh`, se mira otra vez quiénes son los míos. */
   getMyProfiles(opts?: ReadOptions): Promise<MyProfiles>;
+  /** Familias (plan 15): los pagos del perfil. Nunca se guardan en el móvil. */
+  getProfilePayments(pid: string): Promise<PaymentsList>;
+  getProfilePayment(pid: string, id: string): Promise<PaymentDetail>;
+  /** Si se puede pagar con tarjeta y qué se pagaría. SOLO lee: no crea ningún intento. */
+  getCardCheckout(
+    pid: string,
+    source: { payment: string } | { registration: string },
+  ): Promise<CardCheckout>;
+  /** Crea un intento de pago con tarjeta: la URL de la pasarela (de un solo uso) y la de vuelta. Con el servidor falso, `simulated`. */
+  createCardAttempt(
+    pid: string,
+    body: CardAttemptCreate,
+  ): Promise<CardAttemptResult>;
+  /** Pregunta cómo va un intento. El estado lo decide SIEMPRE el servidor, con el cobro del CRM. */
+  checkCardAttempt(
+    pid: string,
+    id: string,
+    body: CardAttemptCheck,
+  ): Promise<CardAttemptStatus>;
   /** Familias (plan 14): las inscripciones del perfil (todas; la app las ordena). */
   getProfileRegistrations(
     pid: string,
@@ -617,6 +644,39 @@ export function createHttpClient({
         MyProfiles,
         undefined,
         READ_RETRIES,
+      ),
+    getProfilePayments: (pid) =>
+      request('GET', `/v1/profiles/${enc(pid)}/payments`, PaymentsList),
+    getProfilePayment: (pid, id) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/payments/${enc(id)}`,
+        PaymentDetail,
+      ),
+    getCardCheckout: (pid, source) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/card-checkout?${
+          'payment' in source
+            ? `payment=${enc(source.payment)}`
+            : `registration=${enc(source.registration)}`
+        }`,
+        CardCheckout,
+      ),
+    // El servidor de verdad NUNCA devuelve `simulated`: si llega, es un fallo (`bad_response`), no una pasarela de mentira.
+    createCardAttempt: (pid, body) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/card-attempts`,
+        CardAttempt,
+        body,
+      ) as Promise<CardAttemptResult>,
+    checkCardAttempt: (pid, id, body) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/card-attempts/${enc(id)}/check`,
+        CardAttemptStatus,
+        body,
       ),
     getProfileRegistrations: (pid, opts) =>
       request(

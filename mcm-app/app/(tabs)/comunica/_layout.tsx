@@ -142,6 +142,9 @@ export default function ComunicaLayout() {
             name="inscripciones/[registrationId]/modificar"
             options={{ title: 'Modificar inscripción' }}
           />
+          <Stack.Screen name="pagos/index" options={{ title: 'Pagos' }} />
+          <Stack.Screen name="pagos/[id]" options={{ title: 'Pago' }} />
+          <Stack.Screen name="pagos/pagar" options={{ title: 'Pagar' }} />
           <Stack.Screen name="datos/[pid]" options={{ title: 'Mis datos' }} />
           <Stack.Screen name="eventos/index" options={{ title: 'Eventos' }} />
           <Stack.Screen

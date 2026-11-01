@@ -4,6 +4,15 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 — Comunica familias, plan 15 (parcial): pagos y pagar con tarjeta
+
+- **Pagos** (`/comunica/pagos`): «Pendiente de pagar», «Se cobrará por domiciliación», «Pagado» y «Otros», con el chip solo cuando dice algo nuevo (un devuelto en rojo, «Comprobando el pago»), el importe grande a la derecha y «Pagar con tarjeta» al pie en secundario. El dinero es de quien paga: viéndose a sí mismo, todo (con «Para Lucía»); viendo a un hijo, solo lo suyo.
+- **La ficha de un pago** (`/comunica/pagos/[id]`): importe como dato grande, datos en el orden del plugin (cuenta enmascarada, nº de operación), el motivo de un devuelto y «¿Ya lo has pagado?».
+- **Pagar con tarjeta** (`/comunica/pagos/pagar?pago=|inscripcion=`): resumen, «Pagar otra cantidad» (coma o punto, mínimo 1 €, sin tope; más del doble pide confirmar), la pasarela del banco en una hoja con WebView sin JavaScript inyectado, el resultado en la misma pantalla y el sondeo mientras el banco confirma. El estado lo decide SIEMPRE el servidor.
+- Los botones «Pagar» de las inscripciones (plan 14) y los enlaces `list_stic_payments`, `single_stic_payments`, `single_stic_payment_form` y `single_stic_payment_error` ya son nativos.
+- Nada de Pagos se guarda en el móvil (solo el intento en curso, sin importes, en el cajón `payattempt`). Servidor falso con pasarela simulada (`cardConfirmsAfter` para el banco que tarda).
+- **Falta**: pruebas de pantalla (lista, ficha, pagar, la hoja con la WebView), la reserva por el navegador probada, `msg=pagado` en los enlaces, el aviso de «Comprobando el pago» en la ficha de la inscripción, las notas de tiendas y capturas. **El servidor de verdad aún no tiene el pago con tarjeta encendido** (PR #14 del middleware, apagado por defecto): hoy solo funciona contra el servidor falso. Pruebas: `paymentsLogic` (34), `profilePaymentsFake` (22).
+
 ## 2026-11-01 — Comunica familias, plan 14: inscripciones
 
 - **Alta corta** (`/comunica/actividades/[eventId]/inscribirme`): resumen («Te inscribes a» / «Inscribes a Lucía en»), bloqueos sin un solo campo (plaza ya cogida, audiencia o plazo, formulario avanzado), preguntas, «¿Cómo pagas?» con los medios que dé el CRM y el IBAN (módulo 97, agrupado de cuatro en cuatro) con domiciliación, y necesidades especiales. Si falta algo no se envía. Con tarjeta, tras apuntarse se abre el pago.

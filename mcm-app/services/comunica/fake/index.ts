@@ -84,6 +84,10 @@ import {
   type ProfileRegistrationKeys,
 } from './profileRegistrations';
 import {
+  profilePaymentsRoutes,
+  type ProfilePaymentKeys,
+} from './profilePayments';
+import {
   detailsRoutes,
   type DetailsKeys,
   type DetailsLog,
@@ -125,6 +129,8 @@ export interface FakeControls {
   paymentFails: boolean;
   /** Inscripciones (plan 14): otro dispositivo ya se apuntó (`conflict` al enviar). */
   alreadyRegisteredElsewhere: boolean;
+  /** Pagos (plan 15): cuántas comprobaciones tarda el banco en dar el pago por cobrado tras la vuelta «ok» (0 = al momento). */
+  cardConfirmsAfter: number;
 }
 
 export const DEFAULT_CONTROLS: FakeControls = {
@@ -142,6 +148,7 @@ export const DEFAULT_CONTROLS: FakeControls = {
   noCardPayment: false,
   paymentFails: false,
   alreadyRegisteredElsewhere: false,
+  cardConfirmsAfter: 0,
 };
 
 const PERSONA_ROLES: Record<PersonaId, { roles: Role[]; scope: Me['scope'] }> =
@@ -624,6 +631,7 @@ export function createFakeServer(
   const details = detailsRoutes(routesCtx); // Mis datos y Datos de cada hijo (plan 12).
   const profileEvents = profileEventsRoutes(routesCtx); // Eventos y su ficha (plan 13).
   const profileRegistrations = profileRegistrationsRoutes(routesCtx); // Inscripciones (plan 14).
+  const profilePayments = profilePaymentsRoutes(routesCtx); // Pagos y pagar con tarjeta (plan 15).
 
   // Avisos en el móvil (plan 08): los móviles registrados, en `devices.ts`.
   const devices = fakeDevices.routes(gate, () => current, seenClientIds);
@@ -656,6 +664,7 @@ export function createFakeServer(
     | DetailsKeys
     | ProfileEventKeys
     | ProfileRegistrationKeys
+    | ProfilePaymentKeys
   > = {
     get controls() {
       return controls;
@@ -1364,6 +1373,7 @@ export function createFakeServer(
     details,
     profileEvents,
     profileRegistrations,
+    profilePayments,
     {
       getEvents: events.getEvents,
       getEventRoll: events.getEventRoll,

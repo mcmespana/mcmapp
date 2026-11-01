@@ -165,6 +165,22 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
           params: { registrationId: rid },
         };
   },
+  // Pagos (plan 15). Lo desactivado (compromisos, crear/editar/borrar un pago) y la vuelta sin nada, a la lista. `msg=pagado` no se conserva en el destino.
+  list_stic_payments: () => ({ pathname: '/comunica/pagos' }),
+  list_stic_payment_commitments: () => ({ pathname: '/comunica/pagos' }),
+  single_stic_payment_commitments: () => ({ pathname: '/comunica/pagos' }),
+  single_stic_payments: (d): NativeHref =>
+    d.id && (!d.action || d.action === 'detail')
+      ? { pathname: '/comunica/pagos/[id]', params: { id: d.id } }
+      : { pathname: '/comunica/pagos' },
+  single_stic_payment_form: (d): NativeHref =>
+    d.id
+      ? { pathname: '/comunica/pagos/pagar', params: { pago: d.id } }
+      : { pathname: '/comunica/pagos' },
+  single_stic_payment_error: () => ({
+    pathname: '/comunica/pagos',
+    params: { nota: 'error' },
+  }),
   // Mis datos (plan 12). El plugin no lleva a quién: con la persona que se ve ahora; la ficha del laico (retirada) y la del familiar
   // son de uno mismo (`yo=1`).
   single_stic_comunica_perfil: () => ({ pathname: '/comunica/datos' }),

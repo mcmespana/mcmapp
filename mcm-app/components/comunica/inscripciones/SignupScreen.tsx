@@ -271,7 +271,7 @@ function Form({
       } as never);
       // Con tarjeta, además el pago (plan 15): al volver atrás se cae en la inscripción.
       if (draft.method === 'card' && r.payment === 'noted')
-        void pay(r.cardPaymentId);
+        pay({ paymentId: r.cardPaymentId, registrationId: r.registrationId });
     } catch (e2) {
       h.error();
       if (isComunicaApiError(e2)) {
