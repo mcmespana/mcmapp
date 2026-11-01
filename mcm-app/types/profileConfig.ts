@@ -77,6 +77,27 @@ export interface GlobalConfig {
    *   · `all`   → la nativa para todos (el lanzamiento).
    */
   comunicaNativa?: 'off' | 'alpha' | 'all';
+  /**
+   * Interruptor de las Fotos EN iPAD (y solo en iPad, cualquier versión de
+   * iOS). Ausente = `true`: se ven, como siempre.
+   *
+   * Existe porque los iPads gestionados por MDM (los de los colegios, por
+   * ejemplo) no deben mostrar fotos y la app no puede saber si un iPad está
+   * en un MDM: se apaga para TODO iPad. Con `false` desaparecen la pestaña, el
+   * botón de Home, la tarjeta de «Más» y la propia pantalla. iPhone, Android y
+   * web no se enteran.
+   */
+  fotosEnIpad?: boolean;
+  /**
+   * Cuántas veces puede alguien pulsar «Ahora no» en la pantalla de
+   * actualización obligatoria (`minAppVersion`) antes de que ya no pueda
+   * entrar sin actualizar. El contador es por dispositivo y se reinicia cuando
+   * cambia `minAppVersion`.
+   *   · ausente → sin límite: se puede saltar en cada sesión (lo de siempre).
+   *   · `0`     → estricto: no hay botón de saltar.
+   *   · `1`..   → ese número de veces y luego estricto.
+   */
+  minAppVersionSkips?: number;
 }
 
 /**
@@ -129,6 +150,14 @@ export interface ResolvedProfileConfig {
   maintenanceMode: boolean;
   maintenanceMessage?: string;
   minAppVersion: string;
+  /** `null` = sin límite de «Ahora no». Ver `GlobalConfig.minAppVersionSkips`. */
+  minAppVersionSkips: number | null;
+  /**
+   * Las Fotos no se enseñan en ESTE dispositivo (iPad con `fotosEnIpad: false`).
+   * Las tabs, botones de Home y tarjetas de «Más» ya vienen sin Fotos; este
+   * flag es para las pantallas a las que aún se llega por enlace o notificación.
+   */
+  fotosHidden: boolean;
   // --- identidad resuelta ---
   profileType: ProfileType;
   delegationId: string;

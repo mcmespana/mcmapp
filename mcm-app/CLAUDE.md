@@ -198,7 +198,9 @@ utils/resolveProfileConfig.ts        ← resolver puro + isAppVersionSupported
 contexts/ProfileConfigContext.tsx    ← descarga /profileConfig con caché offline
 hooks/useResolvedProfileConfig.ts    ← combina config + UserProfile → ResolvedProfileConfig
 app/onboarding.tsx                   ← pantalla inicial (perfil + delegación)
-components/MaintenanceScreen.tsx     ← bloqueo por mantenimiento o versión mínima
+components/MaintenanceScreen.tsx     ← bloqueo por mantenimiento
+components/UpdateRequiredScreen.tsx  ← «hay versión nueva» (versión mínima; estricta o con «Ahora no» según minAppVersionSkips)
+contexts/OTAContext.tsx              ← OTA: descarga en segundo plano y se aplica sola (overlay «un momentín», frases en constants/updatePhrases.ts)
 ```
 
 ### Uso en componentes

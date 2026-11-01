@@ -187,6 +187,97 @@ describe('resolveProfileConfig — global', () => {
   });
 });
 
+describe('resolveProfileConfig — Fotos en iPad (fotosEnIpad)', () => {
+  const withFotos = (global: Partial<ProfileConfigData['global']> = {}) =>
+    config({
+      global: global as ProfileConfigData['global'],
+      profiles: {
+        familia: profile({
+          tabs: ['index', 'fotos', 'cancionero', 'mas'],
+          homeButtons: ['fotos', 'cancionero', 'mas'],
+        }),
+        monitor: profile(),
+        miembro: profile(),
+      },
+    });
+
+  it('apagado en un iPad: sin Fotos en tabs, Home ni «Más», y fotosHidden', () => {
+    const r = resolveProfileConfig(
+      withFotos({ fotosEnIpad: false }),
+      'familia',
+      null,
+      { isIpad: true },
+    );
+    expect(r.fotosHidden).toBe(true);
+    expect(r.tabs).not.toContain('fotos');
+    expect(r.homeButtons).not.toContain('fotos');
+    // Lo demás intacto y en orden.
+    expect(r.tabs).toEqual(['index', 'cancionero', 'mas']);
+    expect(r.homeButtons).toEqual(['cancionero', 'mas']);
+  });
+
+  it('apagado pero en un iPhone/Android/web: todo como siempre', () => {
+    for (const device of [{}, { isIpad: false }]) {
+      const r = resolveProfileConfig(
+        withFotos({ fotosEnIpad: false }),
+        'familia',
+        null,
+        device,
+      );
+      expect(r.fotosHidden).toBe(false);
+      expect(r.tabs).toContain('fotos');
+      expect(r.homeButtons).toContain('fotos');
+    }
+  });
+
+  it('ausente o true en un iPad: Fotos se ve (por defecto, como hasta ahora)', () => {
+    for (const global of [{}, { fotosEnIpad: true }]) {
+      const r = resolveProfileConfig(withFotos(global), 'familia', null, {
+        isIpad: true,
+      });
+      expect(r.fotosHidden).toBe(false);
+      expect(r.tabs).toContain('fotos');
+    }
+  });
+
+  it('si la tab por defecto era fotos, cae a index en vez de a una tab que no existe', () => {
+    const r = resolveProfileConfig(
+      withFotos({ fotosEnIpad: false, defaultTab: 'fotos' }),
+      'familia',
+      null,
+      { isIpad: true },
+    );
+    expect(r.defaultTab).toBe('index');
+  });
+});
+
+describe('resolveProfileConfig — minAppVersionSkips', () => {
+  const skips = (value: unknown) =>
+    resolveProfileConfig(
+      config({
+        global: { minAppVersionSkips: value } as never,
+      }),
+      'familia',
+      null,
+    ).minAppVersionSkips;
+
+  it('ausente → null (sin límite, como siempre)', () => {
+    expect(skips(undefined)).toBeNull();
+  });
+  it('0 → 0 (estricto) y N → N', () => {
+    expect(skips(0)).toBe(0);
+    expect(skips(3)).toBe(3);
+  });
+  it('basura (texto, negativo, NaN) → null: un flag corrupto no encierra a nadie', () => {
+    expect(skips('2')).toBeNull();
+    expect(skips(-1)).toBeNull();
+    expect(skips(Number.NaN)).toBeNull();
+  });
+  it('un decimal se queda en su parte entera', () => {
+    expect(skips(2.9)).toBe(2);
+  });
+});
+
 describe('isAppVersionSupported — comparación numérica', () => {
   it('compara por número y no por texto: 2.10.0 es posterior a 2.9.0', () => {
     expect(isAppVersionSupported('2.10.0', '2.9.0')).toBe(true);

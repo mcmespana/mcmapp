@@ -23,7 +23,7 @@
  *   · Has AÑADIDO un `Animated.spring` de core → no hay token de muelle para
  *     core: usa `Animated.timing` con `durations.*` y `easings.*` (p.ej.
  *     `easings.sheet`), como la apertura de BottomSheet o la entrada de
- *     OTAUpdatePrompt.
+ *     OTAUpdatingOverlay.
  *   · Has AÑADIDO un `duration: <número>` → usa `durations.quick/base/slow/
  *     hero`. Si ninguno encaja (un bucle de respiración de 4 s, por ejemplo),
  *     sácalo a una constante con nombre en tu fichero: `duration: BREATH_MS`

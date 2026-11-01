@@ -1,71 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@/components/ui/icons';
-import { Button } from 'heroui-native';
 import Animated, {
   Easing,
   cancelAnimation,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withRepeat,
   withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 
 import brand, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
-import { springs } from '@/constants/animations';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { h } from '@/utils/haptics';
-import { openAppStore } from '@/utils/storeLinks';
-import typography from '@/constants/typography';
 
 interface Props {
-  mode: 'maintenance' | 'update';
   message?: string;
-  minVersion?: string;
-  currentVersion?: string;
-  /** Solo aplica a `mode="update"`: deja pasar sin actualizar esta vez. */
-  onSkip?: () => void;
 }
 
-const SKIP_REVEAL_DELAY_MS = 500;
-const FLYING_EMOJIS = ['🫣', '🫠', '🙄'];
-
-export default function MaintenanceScreen({
-  mode,
-  message,
-  minVersion,
-  currentVersion,
-  onSkip,
-}: Props) {
+/**
+ * Bloqueo por MANTENIMIENTO (`maintenanceMode` del panel). La pantalla de
+ * «hay que actualizar» (versión mínima) vive en `UpdateRequiredScreen`.
+ */
+export default function MaintenanceScreen({ message }: Props) {
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
 
-  const isUpdate = mode === 'update';
-  const title = isUpdate ? '¡Toca actualizar!' : 'Volvemos enseguida';
+  const title = 'Volvemos enseguida';
   const body =
-    message ||
-    (isUpdate
-      ? `Tu versión (${currentVersion ?? '?'}) se quedó antigua. Actualiza a la ${minVersion ?? 'última'} en un par de toques y sigues a lo tuyo.`
-      : 'Estamos haciendo mantenimiento. Inténtalo en unos minutos.');
-  const iconName = isUpdate ? 'system-update' : 'build';
+    message || 'Estamos haciendo mantenimiento. Inténtalo en unos minutos.';
 
-  const [showSkip, setShowSkip] = useState(false);
-
-  useEffect(() => {
-    if (!isUpdate || !onSkip) return;
-    const timer = setTimeout(() => setShowSkip(true), SKIP_REVEAL_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [isUpdate, onSkip]);
-
-  // Entrada del icono + halo pulsante — mismo lenguaje visual que OTAUpdatePrompt.
+  // Entrada del icono + halo pulsante.
   const scale = useSharedValue(0.9);
   const halo = useSharedValue(0);
   const bounce = useSharedValue(0);
@@ -106,20 +76,6 @@ export default function MaintenanceScreen({
     transform: [{ scale: interpolate(halo.get(), [0, 1], [0.9, 1.15]) }],
   }));
 
-  const handleGoToStore = () => {
-    h.tap();
-    openAppStore();
-  };
-
-  const handleSkip = () => {
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    } catch {
-      // Sin haptics — ignorar.
-    }
-    onSkip?.();
-  };
-
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
@@ -135,147 +91,14 @@ export default function MaintenanceScreen({
               iconWrapStyle,
             ]}
           >
-            <MaterialIcons name={iconName} size={38} color="#fff" />
+            <MaterialIcons name="build" size={38} color="#fff" />
           </Animated.View>
         </View>
 
         <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
         <Text style={[styles.body, { color: theme.icon }]}>{body}</Text>
-
-        {isUpdate && (
-          <>
-            <Button
-              variant="primary"
-              onPress={handleGoToStore}
-              style={styles.button}
-            >
-              <MaterialIcons name="rocket-launch" size={18} color="#FFFFFF" />
-              <Button.Label>Ir a la tienda ya</Button.Label>
-            </Button>
-
-            {onSkip && <SkipEscape visible={showSkip} onSkip={handleSkip} />}
-          </>
-        )}
       </View>
     </SafeAreaView>
-  );
-}
-
-/**
- * Segunda oportunidad, medio en broma: aparece a los 500ms con emojis
- * revoloteando para que el "voy pa'dentro" pese menos que darle a actualizar.
- */
-function SkipEscape({
-  visible,
-  onSkip,
-}: {
-  visible: boolean;
-  onSkip: () => void;
-}) {
-  const scheme = useColorScheme();
-  const theme = Colors[scheme ?? 'light'];
-  const subtleText = scheme === 'dark' ? '#B5B7BD' : '#5B6168';
-
-  const reveal = useSharedValue(0);
-
-  useEffect(() => {
-    if (visible) {
-      reveal.set(withSpring(1, springs.settle));
-    }
-  }, [visible, reveal]);
-
-  const revealStyle = useAnimatedStyle(() => ({
-    opacity: reveal.get(),
-    transform: [
-      { translateY: interpolate(reveal.get(), [0, 1], [10, 0]) },
-      { scale: interpolate(reveal.get(), [0, 1], [0.96, 1]) },
-    ],
-  }));
-
-  if (!visible) return null;
-
-  return (
-    <Animated.View style={[styles.skipWrap, revealStyle]}>
-      <View style={styles.emojiRow}>
-        {FLYING_EMOJIS.map((emoji, i) => (
-          <FlyingEmoji key={emoji} emoji={emoji} index={i} />
-        ))}
-      </View>
-
-      <Text style={[styles.skipTaunt, { color: subtleText }]}>
-        Veeenga va, te dejo pasar sin actualizar esta vez…
-      </Text>
-
-      <Text
-        onPress={onSkip}
-        accessibilityRole="button"
-        accessibilityLabel="Entrar sin actualizar"
-        style={[styles.skipButton, { color: theme.text }]}
-      >
-        Voy pa&apos;dentro 🚪
-      </Text>
-    </Animated.View>
-  );
-}
-
-function FlyingEmoji({ emoji, index }: { emoji: string; index: number }) {
-  const drift = useSharedValue(0);
-  const spin = useSharedValue(0);
-
-  useEffect(() => {
-    drift.set(
-      withDelay(
-        index * 180,
-        withRepeat(
-          withSequence(
-            withTiming(1, {
-              duration: 1100 + index * 150,
-              easing: Easing.inOut(Easing.ease),
-            }),
-            withTiming(0, {
-              duration: 1100 + index * 150,
-              easing: Easing.inOut(Easing.ease),
-            }),
-          ),
-          -1,
-          false,
-        ),
-      ),
-    );
-    spin.set(
-      withDelay(
-        index * 180,
-        withRepeat(
-          withTiming(1, { duration: 2600, easing: Easing.linear }),
-          -1,
-          false,
-        ),
-      ),
-    );
-    return () => {
-      cancelAnimation(drift);
-      cancelAnimation(spin);
-    };
-  }, [drift, spin, index]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(drift.get(), [0, 1], [0, -10]) },
-      {
-        translateX: interpolate(
-          drift.get(),
-          [0, 1],
-          [0, index % 2 === 0 ? 6 : -6],
-        ),
-      },
-      {
-        rotate: `${interpolate(spin.get(), [0, 1], [0, index % 2 === 0 ? 18 : -18])}deg`,
-      },
-    ],
-  }));
-
-  return (
-    <Animated.Text style={[styles.flyingEmoji, style]}>{emoji}</Animated.Text>
   );
 }
 
@@ -320,35 +143,5 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     opacity: 0.85,
     maxWidth: 340,
-  } as TextStyle,
-  button: {
-    marginTop: spacing.lg,
-    minWidth: 240,
-  } as ViewStyle,
-  skipWrap: {
-    marginTop: spacing.lg,
-    alignItems: 'center',
-  } as ViewStyle,
-  emojiRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.xs,
-  } as ViewStyle,
-  flyingEmoji: {
-    fontSize: 26,
-  } as TextStyle,
-  skipTaunt: {
-    ...typography.caption,
-    textAlign: 'center',
-    maxWidth: 280,
-    marginBottom: spacing.xs,
-  } as TextStyle,
-  skipButton: {
-    ...typography.subhead,
-    fontWeight: '700',
-    textDecorationLine: 'underline',
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radii.sm,
   } as TextStyle,
 });
