@@ -16,8 +16,8 @@ servidor falso (**falta verlos con el servidor real y en un móvil**):
   dice» y a la decisión `dni`. Detalle en [`02-acceso.md`](02-acceso.md) («Si el correo no existe»).
 - **Foto de perfil** (plan 12): elegir de galería o cámara con el recorte cuadrado del selector y subir en el acto con
   `PUT /v1/profiles/:pid/photo` (JPEG o PNG ≤ 4 MB, directa, sin cola). Detalle y lo que NO se hace en
-  [`12-mis-datos.md`](12-mis-datos.md) («Foto»): **no se reduce a 800×800** (haría falta `expo-image-manipulator`, nativo:
-  decisión pendiente del propietario), ni hay pantalla de encuadre propia.
+  [`12-mis-datos.md`](12-mis-datos.md) («Foto»): **se reduce a 800×800 y a JPEG en el móvil con `expo-image-manipulator`**
+  (paquete nativo añadido el 1/11 por decisión del propietario: **requiere build nativa**, commit con `[skip-ota]`); no hay pantalla de encuadre propia.
 - **Sin comprobar en un móvil real**: el recorte cuadrado de iOS y de Android, el peso real de las fotos de móviles de
   muchos megapíxeles (si en Android el recorte da más de 4 MB incluso con la calidad más baja, habrá que añadir el
   manipulador), el permiso de la galería (el texto de `app.json` habla de «títulos, certificados y documentos», no de la

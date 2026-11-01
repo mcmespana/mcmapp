@@ -5,7 +5,9 @@
 
 import { Platform } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
+import { localFileSize } from '@/services/comunica/localFiles';
 import type { FileSource } from '@/components/comunica/comun/form/FileField';
 
 export interface PickedFile {
@@ -69,15 +71,33 @@ export async function pickFile(
       ? await ImagePicker.launchCameraAsync(IMAGE_OPTIONS)
       : await ImagePicker.launchImageLibraryAsync(IMAGE_OPTIONS);
   const a = r.canceled ? null : r.assets[0];
-  return a
-    ? {
-        uri: a.uri,
-        name: a.fileName ?? null,
-        mimeType: a.mimeType ?? null,
-        size: a.fileSize ?? a.file?.size ?? null,
-        blob: Platform.OS === 'web' ? a.file : undefined,
-      }
-    : null;
+  if (!a) return null;
+  // En el móvil se reduce a 800×800 como mucho y se recodifica a JPEG (un PNG o un HEIC también acaban así): la foto de perfil pesa unos cientos
+  // de KB y nunca se acerca a los 4 MB del servidor. En web no hay recorte ni se toca.
+  if (Platform.OS !== 'web') {
+    try {
+      const out = await ImageManipulator.manipulateAsync(
+        a.uri,
+        a.width > PHOTO_MAX_SIDE ? [{ resize: { width: PHOTO_MAX_SIDE } }] : [],
+        { compress: PHOTO_COMPRESS, format: ImageManipulator.SaveFormat.JPEG },
+      );
+      return {
+        uri: out.uri,
+        name: 'foto.jpg',
+        mimeType: 'image/jpeg',
+        size: localFileSize(out.uri),
+      };
+    } catch {
+      // Si no se puede reducir, se sigue con lo elegido: el tope de 4 MB lo comprueba quien llama.
+    }
+  }
+  return {
+    uri: a.uri,
+    name: a.fileName ?? null,
+    mimeType: a.mimeType ?? null,
+    size: a.fileSize ?? a.file?.size ?? null,
+    blob: Platform.OS === 'web' ? a.file : undefined,
+  };
 }
 
 /**
@@ -86,6 +106,10 @@ export async function pickFile(
  * compresión: la pone quien llama (`photoQuality`, que baja si la foto se pasa de 4 MB). En web el selector no recorta (el navegador no
  * tiene editor): sube lo elegido tal cual.
  */
+/** El lado máximo (px) de la foto de perfil y la compresión del JPEG final. */
+export const PHOTO_MAX_SIDE = 800;
+const PHOTO_COMPRESS = 0.85;
+
 export async function pickPhoto(
   source: Extract<FileSource, 'camera' | 'library'>,
   quality: number,
@@ -105,13 +129,31 @@ export async function pickPhoto(
       ? await ImagePicker.launchCameraAsync(options)
       : await ImagePicker.launchImageLibraryAsync(options);
   const a = r.canceled ? null : r.assets[0];
-  return a
-    ? {
-        uri: a.uri,
-        name: a.fileName ?? null,
-        mimeType: a.mimeType ?? null,
-        size: a.fileSize ?? a.file?.size ?? null,
-        blob: Platform.OS === 'web' ? a.file : undefined,
-      }
-    : null;
+  if (!a) return null;
+  // En el móvil se reduce a 800×800 como mucho y se recodifica a JPEG (un PNG o un HEIC también acaban así): la foto de perfil pesa unos cientos
+  // de KB y nunca se acerca a los 4 MB del servidor. En web no hay recorte ni se toca.
+  if (Platform.OS !== 'web') {
+    try {
+      const out = await ImageManipulator.manipulateAsync(
+        a.uri,
+        a.width > PHOTO_MAX_SIDE ? [{ resize: { width: PHOTO_MAX_SIDE } }] : [],
+        { compress: PHOTO_COMPRESS, format: ImageManipulator.SaveFormat.JPEG },
+      );
+      return {
+        uri: out.uri,
+        name: 'foto.jpg',
+        mimeType: 'image/jpeg',
+        size: localFileSize(out.uri),
+      };
+    } catch {
+      // Si no se puede reducir, se sigue con lo elegido: el tope de 4 MB lo comprueba quien llama.
+    }
+  }
+  return {
+    uri: a.uri,
+    name: a.fileName ?? null,
+    mimeType: a.mimeType ?? null,
+    size: a.fileSize ?? a.file?.size ?? null,
+    blob: Platform.OS === 'web' ? a.file : undefined,
+  };
 }

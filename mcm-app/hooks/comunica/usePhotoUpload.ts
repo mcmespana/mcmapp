@@ -2,7 +2,7 @@
 // en el acto, directo y con conexión (`services/comunica/photoUploads.ts`: nunca por la cola, la foto no se queda en el móvil).
 //
 //   · Si la foto se pasa de 4 MB, se avisa y la SIGUIENTE vez que se elija se pide al selector menos calidad (`photoQuality`): es lo único que se
-//     puede ajustar sin `expo-image-manipulator`. Al subir bien, se vuelve a la calidad de partida.
+//     puede ajustar si falla `expo-image-manipulator` (que ya la reduce a 800×800 y la pasa a JPEG). Al subir bien, se vuelve a la calidad de partida.
 //   · Al subir, la `photoUrl` nueva (versionada, con `?v=`) sustituye a la de la caché de esa persona al momento; no se vuelve a pedir nada.
 
 import {

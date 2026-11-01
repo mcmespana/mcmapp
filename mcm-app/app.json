@@ -193,7 +193,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "MCM App usa la cámara para escanear los códigos QR de playlists y sesiones de coro, y para hacer fotos de títulos y documentos en tu área privada.",
+          "cameraPermission": "MCM App usa la cámara para escanear los códigos QR de playlists y sesiones de coro, y para hacer tu foto de perfil y fotos de títulos y documentos en tu área privada.",
           "recordAudioAndroid": false
         }
       ],
@@ -225,8 +225,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "MCM App usa tus fotos para subir títulos, certificados y documentos a tu área privada.",
-          "cameraPermission": "MCM App usa la cámara para escanear los códigos QR de playlists y sesiones de coro, y para hacer fotos de títulos y documentos en tu área privada.",
+          "photosPermission": "MCM App usa tus fotos para subir tu foto de perfil, títulos, certificados y documentos a tu área privada.",
+          "cameraPermission": "MCM App usa la cámara para escanear los códigos QR de playlists y sesiones de coro, y para hacer tu foto de perfil y fotos de títulos y documentos en tu área privada.",
           "microphonePermission": false
         }
       ]

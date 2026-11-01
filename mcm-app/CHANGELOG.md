@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 13:05 — Comunica: la foto de perfil se reduce a 800×800 (paquete nativo nuevo)
+
+- **`expo-image-manipulator`** (nativo, **requiere build, no sale por OTA**): tras el recorte cuadrado del selector, la foto de perfil se reduce a 800 px de lado y se recodifica a JPEG (0,85). Un PNG o un HEIC también acaban en JPEG y la foto pesa unos cientos de KB, lejos de los 4 MB del servidor.
+- El texto del permiso de la galería ahora menciona la foto de perfil.
+
 ## 2026-11-01 12:25 — Comunica: «ese correo no existe» al entrar y subir la foto de perfil
 
 - **Acceso** (`Entra en tu área`): como la web desde el 31/10, **se dice si el correo o el DNI no existe** (antes la respuesta era siempre la misma y la gente esperaba un correo que no iba a llegar). Un correo sin ficha enseña el aviso con el correo tecleado, deja el campo relleno para corregir la errata y debajo abre la tarjeta del DNI («¿Te diste de alta con otro correo?» · «Buscarme por mi DNI»). Por DNI: «No encontramos a nadie con ese documento.» y, si la ficha no tiene correo, «escribe a la oficina técnica» con el enlace. Con demasiados fallos desde la misma red (`too_many_misses`) avisa de esperar. Una caída del CRM **nunca** dice «no existe» ni manda al DNI. `POST /v1/auth/code` devuelve ahora el correo tapado también por DNI. Contrato (`contract.ts`, copia del de `comunicaMiddleware`) y servidor falso al día (`@noexiste.test`, DNI `00000000T` sin correo, tope a los 8 fallos); los tests que fijaban el silencio se han cambiado.
