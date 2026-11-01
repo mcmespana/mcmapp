@@ -324,6 +324,26 @@ de fin cuenta entero) y, si se quiere el «aún no abierta», `registrationOpens
 Mientras no lleguen, la app calcula el enlace igual con `published` y `slug`
 (`utils/comunica/eventShare.ts`).
 
+### Mis datos de familias (plan 12)
+
+- `GET /v1/profiles/:pid/details` → `PersonDetails`: los datos de quien se ve (uno mismo o un hijo vigente),
+  **sin la salud**. `pid` ajeno → 403 (exista o no); CRM caído → 503, nunca datos vacíos. `sections` las decide el
+  servidor: `member`, las siete; `child` y `guardian`, sin `mcm` (y `mcm: null`). `emailNote`: monitor sin correo
+  `@movimientoconsolacion.com` → `mcm_email_warning`; miembro sin ser monitor → `mcm_email_soft`. `null` = sin
+  indicar; en `consents`, sin contestar. **Nunca se guarda en el móvil** (`persist: false`, 5 min en memoria).
+- `PATCH /v1/profiles/:pid/details` `{ clientId, changes }` → `WriteResult & { details }` (releído). **Estricto**:
+  una clave de más, identidad fuera de `identityFill` o `mcm` de otra audiencia → `validation` (`bad_body`,
+  `section_not_allowed`); formatos: `bad_email`, `bad_postal_code`, `bad_year`, `bad_option`, `bad_date`;
+  `identityFill` solo escribe lo vacío (`identity_already_set`) y el documento con su letra (`bad_document`).
+  Las autorizaciones solo se escriben si llegan. **Directo, sin la cola** (son datos personales), con el mismo
+  `clientId` en los reintentos de un «Guardar».
+- `GET /v1/profiles/:pid/health` → `{ generatedAt, health }` y `PUT` `{ clientId, health }` → `WriteResult` (sin
+  la salud). Ni en el móvil, ni en la cola, ni en el diario.
+- `GET /v1/profiles/:pid/photo?v=` → la miniatura (la `photoUrl` de los datos). **No hay `POST`** todavía: la app
+  manda a cambiar la foto a la web.
+- ⚠️ Estas rutas no están aún en `ROUTES` del contrato: la app las declara con `personal` y `health` (las dos
+  `persist: false`).
+
 ### Mis datos de monitor (plan 09)
 
 - `GET /v1/me/monitor` → `MonitorProfile` (`generatedAt`, los campos

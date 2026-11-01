@@ -380,6 +380,12 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     // Familias (plan 11).
     getMyProfiles: authed((o) => api.getMyProfiles(o)),
     getProfileCalendar: authed((pid, o) => api.getProfileCalendar(pid, o)),
+    // Familias: plan 12
+    getProfileDetails: authed((pid) => api.getProfileDetails(pid)),
+    updateProfileDetails: authed((pid, b) => api.updateProfileDetails(pid, b)),
+    getProfileHealth: authed((pid) => api.getProfileHealth(pid)),
+    updateProfileHealth: authed((pid, b) => api.updateProfileHealth(pid, b)),
+    // Fin del plan 12.
     photoSource: (url) => api.photoSource(url),
   };
 }

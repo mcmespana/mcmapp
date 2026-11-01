@@ -4,6 +4,18 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 10:30 — Comunica nativa: «Mis datos» de familias (plan 12)
+
+- Nueva pantalla `comunica/datos/[pid]`: «Mis datos» o «Datos de Lucía», con las secciones que decide el servidor
+  (`GET /v1/profiles/:pid/details`) en el orden y con los textos del plugin; identidad con candado, salud por
+  `/health`, autorizaciones con «Sin contestar» que no se mandan si no se tocan, y `completar=pago` para escribir
+  la identidad vacía. Un «Guardar» directo, sin cola, solo con lo que cambia; nada de esto se guarda en el móvil.
+- Motor de formularios declarativo (`utils/comunica/forms.ts` + `comun/form/DeclarativeForm.tsx`), validación del
+  documento (`documentId.ts`), servidor falso `fake/myDetails.ts` y cliente (`getProfileDetails`,
+  `updateProfileDetails`, `getProfileHealth`, `updateProfileHealth`).
+- Los enlaces del plugin a «Mis datos» (`single_stic_comunica_perfil`, `_profile`, `_laico`, `_tutor_profile`) abren
+  la pantalla nativa; «Mis datos» también en «Tu cuenta». La foto aún se cambia en la web (falta `POST /photo`).
+
 ## 2026-10-31 21:00 — Comunica nativa: contra el middleware de verdad y entrar con la cuenta de la app
 
 - Builds (`preview`, `production`) y OTA (preview y producción) apuntan al middleware real

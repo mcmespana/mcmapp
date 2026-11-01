@@ -70,6 +70,12 @@ import {
   type MonitorProfileWrite,
   MyProfiles,
   CalendarData,
+  // Familias: plan 12
+  PersonDetails,
+  type PersonDetailsWrite,
+  DetailsWriteResult,
+  HealthResponse,
+  type HealthWrite,
 } from './contract';
 import { logger } from '@/utils/logger';
 
@@ -171,6 +177,19 @@ export interface ComunicaApi {
   getMyProfiles(opts?: ReadOptions): Promise<MyProfiles>;
   /** El calendario de `pid` (plan 16; la portada saca de aquí su agenda). */
   getProfileCalendar(pid: string, opts?: ReadOptions): Promise<CalendarData>;
+  // Familias: plan 12 («Mis datos»). Nunca se guarda nada de esto en el
+  // móvil y las escrituras van directas (sin la cola), con conexión.
+  /** Los datos de `pid`, sin la salud. */
+  getProfileDetails(pid: string): Promise<PersonDetails>;
+  /** Solo lo que cambia; responde con lo releído. */
+  updateProfileDetails(
+    pid: string,
+    body: PersonDetailsWrite,
+  ): Promise<DetailsWriteResult>;
+  /** La salud de `pid`: ni se reintenta ni se registra. */
+  getProfileHealth(pid: string): Promise<HealthResponse>;
+  updateProfileHealth(pid: string, body: HealthWrite): Promise<WriteResult>;
+  // Fin del plan 12.
   /**
    * Cómo pedir una foto (`photoUrl`): con el servidor de verdad, la URL con el
    * token; con el falso, su imagen inventada. Ninguna pantalla importa el falso.
@@ -579,6 +598,27 @@ export function createHttpClient({
         undefined,
         READ_RETRIES,
       ),
+    // Familias: plan 12. La salud, como la del 05: sin reintento.
+    getProfileDetails: (pid) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/details`,
+        PersonDetails,
+        undefined,
+        READ_RETRIES,
+      ),
+    updateProfileDetails: (pid, body) =>
+      request(
+        'PATCH',
+        `/v1/profiles/${enc(pid)}/details`,
+        DetailsWriteResult,
+        body,
+      ),
+    getProfileHealth: (pid) =>
+      request('GET', `/v1/profiles/${enc(pid)}/health`, HealthResponse),
+    updateProfileHealth: (pid, body) =>
+      request('PUT', `/v1/profiles/${enc(pid)}/health`, WriteResult, body),
+    // Fin del plan 12.
     photoSource: (url) => {
       // `expo-image` pide la foto él solo: el token va en la cabecera, y SOLO
       // si la foto es de nuestro servidor (una `photoUrl` de otro dominio no se
