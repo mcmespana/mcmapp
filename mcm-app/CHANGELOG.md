@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 — Comunica: certificados de monitor a 4 MB y revisión de lo de David
+
+- **Certificados de monitor (plan 09): el tope baja de 6 MB a 4 MB**, que es lo que acepta el servidor (lo que cabe en una función de Vercel). Antes, un certificado de 5 MB pasaba la comprobación de la app y fallaba después con `file_too_big`. Cambia la constante, los textos («Tamaño máximo: 4MB»), el contrato y el falso.
+- Revisada la rama `pantallitasDeDavid` (PR #365, borrador) contra `main`: 40 ficheros en conflicto y 44 que se fusionarían dejando dos versiones; no se fusiona. Lista de piezas que compensa traer, ramas que borrar y dudas en [`PENDIENTE-REVISAR.md`](../docs/planes/area-nativa/PENDIENTE-REVISAR.md).
+
 ## 2026-11-01 — Comunica familias, plan 16: documentos y calendario
 
 - **Documentos** (`/comunica/documentos`): «Mis documentos» / «Documentos de Lucía»; la tarjeta con el tipo en la cápsula (JPG, PDF, DOC…), el nombre, «Del 3 de octubre de 2026» y el chip («Caducado» en rojo o el estado), sin el nombre del archivo; lo más reciente arriba y lo caducado al final y apagado. Tocar la tarjeta abre la ficha; el botón redondo descarga y abre el archivo (visor para imágenes y PDF en iOS; la hoja del sistema para lo demás y el PDF en Android).

@@ -4,7 +4,7 @@
 //     Documentos →»; la pista invita a sustituirlo.
 //   · «Elegir archivo» abre una hoja: hacer una foto, elegir de la galería o
 //     un archivo (`fotos-documentos` = sí). En web, sin cámara.
-//   · Lo elegido se comprueba ANTES de subir (PDF, JPG o PNG, 6 MB) y se sube
+//   · Lo elegido se comprueba ANTES de subir (PDF, JPG o PNG, 4 MB) y se sube
 //     en el acto, sin esperar a «Guardar», con su `UploadStatus`.
 //
 // Este componente solo pinta y avisa: elegir y subir lo hace
@@ -48,7 +48,7 @@ const SOURCES: {
 ];
 
 export const FILE_HINT_EMPTY =
-  'Formatos: pdf, jpg, png · Tamaño máximo: 6MB · Puedes subirlo ahora o más adelante.';
+  'Formatos: pdf, jpg, png · Tamaño máximo: 4MB · Puedes subirlo ahora o más adelante.';
 export const FILE_HINT_REPLACE =
   'Ya tienes un archivo guardado. Sube uno nuevo para sustituirlo.';
 export const PAPER_HINT =
@@ -69,7 +69,7 @@ export default function FileField({
   /** El CRM ya tiene un archivo de este tipo. */
   hasFile: boolean;
   upload?: FileFieldUpload | null;
-  /** Lo elegido no vale («Ese archivo pesa más de 6 MB.»). */
+  /** Lo elegido no vale («Ese archivo pesa más de 4 MB.»). */
   problem?: string | null;
   /**
    * Las pistas del plugin bajo el campo (formatos, o «Sube uno nuevo para
@@ -214,7 +214,7 @@ export default function FileField({
           ))}
         </View>
         <Text style={[styles.sheetHint, { color: t.textSecondary }]}>
-          PDF, JPG o PNG de hasta 6 MB.
+          PDF, JPG o PNG de hasta 4 MB.
         </Text>
       </BottomSheet>
     </View>

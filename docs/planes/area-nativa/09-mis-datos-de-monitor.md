@@ -24,7 +24,7 @@ pantalla enlaza a ellos.
 | Campos, orden, etiquetas, ayudas ⓘ, notas y textos | `pages/single_stic_comunica_monitor.php` (entera) |
 | Cómo pinta el motor cada tipo: desplegable con opción vacía, múltiple, casilla, `yearOnly`, `help`/`hint`/`note` | `inc/stic-formController.php` l. 1-40 y 215-470; `docs/design-system.md` §5 y §7 |
 | Guardar y subir: un Documento por archivo, vinculado a la persona, con su categoría, y el indicador «archivo subido» | `inc/stic-action.php` l. 1824-1930 (`prefix_comunica_save_contact`, `comunica_upload_certificate`) |
-| PDF, JPG o PNG, hasta 6 MB | `inc/stic-security.php` l. 485-495 |
+| PDF, JPG o PNG, hasta 6 MB (**en la app, 4 MB**: el servidor corta ahí, 1/11/2026) | `inc/stic-security.php` l. 485-495 |
 | El aviso del certificado: regla, textos y caché en sesión (`scp_ds_pending`) | `inc/stic-comunica-roles.php` l. 243-314; `pages/single_stic_home.php` l. 147-151; `sinergiacrm-private-area.php` l. 1265 |
 | Campos bloqueados y explicados; el patrón ✱ | `design.md` del plugin §6.5; `single_stic_comunica_perfil.php` l. 94-129 |
 | Campos del CRM y valores de cada desplegable | `docs/comunica/CAMPOS.md` § Monitores (Formación, Varios, Legal) |

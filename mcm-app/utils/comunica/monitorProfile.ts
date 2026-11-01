@@ -10,7 +10,7 @@
 //     solo lo del último «Guardar» (si no, dos guardados sin cobertura
 //     perderían el primero).
 //   · El aviso del certificado (`stic-comunica-roles.php` l. 284-286).
-//   · Qué archivo vale: PDF, JPG o PNG de hasta 6 MB (`stic-security.php`).
+//   · Qué archivo vale: PDF, JPG o PNG de hasta 4 MB (el plugin deja 6, pero el servidor corta en 4: lo que cabe en una función de Vercel).
 
 import type {
   DocumentKind,
@@ -219,7 +219,7 @@ export const CERTIFICATE_ALERT = {
 
 // ── Archivos ────────────────────────────────────────────────────────────────
 
-export const DOCUMENT_MAX_BYTES = 6 * 1024 * 1024;
+export const DOCUMENT_MAX_BYTES = 4 * 1024 * 1024;
 
 const TYPE_OF_EXTENSION: Record<string, string> = {
   pdf: 'application/pdf',
@@ -238,7 +238,7 @@ export type FileProblem = 'empty' | 'too_big' | 'bad_type';
 
 export const FILE_PROBLEM_TEXT: Record<FileProblem, string> = {
   empty: 'Ese archivo está vacío.',
-  too_big: 'Ese archivo pesa más de 6 MB.',
+  too_big: 'Ese archivo pesa más de 4 MB.',
   bad_type: 'Tiene que ser PDF, JPG o PNG.',
 };
 

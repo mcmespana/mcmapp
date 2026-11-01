@@ -176,7 +176,7 @@ describe('servidor falso: Mis datos de monitor', () => {
     ]);
   });
 
-  it('lo vacío, lo de más de 6 MB y lo que no es PDF/JPG/PNG no entra', async () => {
+  it('lo vacío, lo de más de 4 MB y lo que no es PDF/JPG/PNG no entra', async () => {
     const s = server();
     const up = (n: number, f: ReturnType<typeof pdf>) =>
       code(s.uploadMyDocument({ clientId: CLIENT(n), kind: 'mat' }, f));
