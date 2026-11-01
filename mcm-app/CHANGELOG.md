@@ -4,6 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 14:00 — Versión de la app: 2.5.0
+
+- `version` de `app.json` pasa de 2.1.0 a **2.5.0** para las próximas builds (también la de la extensión de notificaciones iOS, que la toma de ahí). La `runtimeVersion` **no cambia** (2.2.0): las builds ya instaladas siguen recibiendo OTA.
+
 ## 2026-11-01 13:30 — Comunica: la portada de familias recupera el aspecto de la de David
 
 - «Viendo a» vuelve a ser una tarjeta con la inicial de quien se ve, su nombre y «Cambiar»; el saludo, una tarjeta. Solo cambia el aspecto: la lógica y la agenda de la portada son las de `main`.

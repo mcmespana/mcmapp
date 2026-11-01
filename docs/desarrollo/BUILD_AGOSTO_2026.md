@@ -340,7 +340,7 @@ npm run eas:build:android -- --profile production
 ```
 
 `autoIncrement` sube solo el número de build. La versión visible sigue siendo
-la de `app.json` (`2.1.0`) — cámbiala ahí si quieres que salga otra.
+la de `app.json` (`2.5.0`) — cámbiala ahí si quieres que salga otra.
 
 ### 4.2-bis Alternativa: lanzarla desde GitHub (o pedírsela a Claude)
 

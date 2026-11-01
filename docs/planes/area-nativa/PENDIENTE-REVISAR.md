@@ -68,3 +68,7 @@
 | 11  | «Abrir con…» para PDF en Android: llega con los paquetes nativos de la 2.2 (`expo-intent-launcher`); hasta entonces, la hoja de compartir                                                                               | —                       | No                            |
 | 12  | Un hijo sin nombre sale como «Participante» en todas partes (decisión del plan 11: perder el acceso es peor que un nombre feo). ¿Vale?                                                                                  | Izan                    | No                            |
 | 13  | Con el CRM real, ¿los estados de inscripción y los medios de pago son los que asumimos? (dudas 8, 9, 10, 17, 33 y 34 de `FASE3.md`)                                                                                     | David (probar)          | Sí, para abrir apuntarse      |
+
+## 7. Firmas dentro de «Documentos» (anotado el 1/11/2026, sin diseñar)
+
+Idea del propietario, para **la web y la app**: que se vean las firmas dentro de «Documentos». **Subidos** y **Por firmar** arriba, como cosas distintas; los **firmados** pasan a ser un documento más, ordenados por fecha y categoría. Lo que hay (módulo Firmas del CRM, `comunicaTools:docs/FIRMAS.md`), las preguntas abiertas (de dónde sale «por firmar», dónde queda el PDF firmado, tutor y menores, ruta nueva o campo `kind` en `/documents`) y dónde se hace, en `comunicaAreaPrivada:plans/044-firmas-en-documentos.md`. Toca la pantalla de Documentos (planes 16) y una lectura del middleware.
