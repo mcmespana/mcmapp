@@ -4,6 +4,18 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 — Comunica familias, plan 14: inscripciones
+
+- **Alta corta** (`/comunica/actividades/[eventId]/inscribirme`): resumen («Te inscribes a» / «Inscribes a Lucía en»), bloqueos sin un solo campo (plaza ya cogida, audiencia o plazo, formulario avanzado), preguntas, «¿Cómo pagas?» con los medios que dé el CRM y el IBAN (módulo 97, agrupado de cuatro en cuatro) con domiciliación, y necesidades especiales. Si falta algo no se envía. Con tarjeta, tras apuntarse se abre el pago.
+- **Formulario avanzado**: «Inscribirme» pide la URL al servidor y abre `web.tsx` con cabecera nativa «Inscripción» (no pasa por `openLegacy`).
+- **«Mis inscripciones»** (`/comunica/inscripciones`): lo abierto por fecha, lo cerrado al revés, «Otros eventos» plegado, vacío con salida a Eventos.
+- **La ficha**: el pago en una línea (pagado, domiciliado, devuelto, pendiente, esperando al banco), «Pagar 35,00 € con tarjeta» pegada abajo cuando toca, tutores con «Llamar a …», «Modificar mis datos» y «Cancelar mi inscripción» con confirmación (con el plazo cerrado entre medias: «no se ha cambiado nada»; un curso no se cancela).
+- **Modificar** (`…/modificar`): lo contestado sale marcado; solo respuestas y necesidades especiales.
+- Sin cola: llamada directa con conexión y `clientId` en memoria. El IBAN solo vive en el formulario (ni caché, ni cola, ni logs); la ficha y el alta no se guardan en el móvil.
+- Los botones del plan 13 ya van a estas pantallas; los enlaces `list_stic_registrations` y `single_stic_registrations` (detalle, editar, alta) son nativos. Piezas comunes `comun/record/` (`FactList`, `RecordNote`).
+- Servidor falso (`fake/profileRegistrations.ts`, una sola fuente de inscripciones con «Eventos») y mandos: el CRM no genera el pago, falla el pago, otro móvil ya se apuntó.
+- **Falta**: las pantallas de pago del plan 15 (hoy «Pagar» y «Ver el pago» abren el formulario/lista de pagos de la web con la sesión), la intercepción de la vuelta del formulario avanzado a la lista refrescada y capturas. Pruebas: `registrationLogic` (26), `profileRegistrationsFake` (22), `registrationsScreen` (40).
+
 ## 2026-11-01 — Comunica familias, plan 13: «Eventos» y su ficha
 
 - «Eventos» (`/comunica/actividades`): «Para apuntarte» y «Te has apuntado» (los títulos solo si hay los dos), lo pasado fuera por la fecha de fin, el chip por su orden (con plaza → plazo → etiqueta del CRM; con fechas mandan las fechas) y, al pie, «Inscribirme» o «Mi inscripción» solo si llevan a otro sitio. Cambiar de hijo se queda en la misma pantalla.

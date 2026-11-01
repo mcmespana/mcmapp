@@ -258,32 +258,21 @@ describe('«Eventos»', () => {
     expect(t).toContain('Con plaza');
   });
 
-  it('tocar la tarjeta abre la ficha; «Inscribirme» y «Mi inscripción» van al legado hasta el plan 14', async () => {
+  it('tocar la tarjeta abre la ficha; «Inscribirme» y «Mi inscripción» van a sus pantallas nativas (plan 14)', async () => {
     const { tree } = await setup('family', <ActivitiesScreen />, {
       activeId: LUCIA,
     });
     await until(() => has(tree, 'Inscribirme: Convivencia COM'));
     await press(tree, 'Inscribirme: Convivencia COM');
-    expect(mockOpenLegacy).toHaveBeenCalledWith(
-      {
-        internalpage: 'single_stic_registrations',
-        action: 'create',
-        from: 'stic_events',
-        id: 'pev-convi',
-      },
-      'Inscripción',
-      LUCIA,
-    );
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/comunica/actividades/[eventId]/inscribirme',
+      params: { eventId: 'pev-convi' },
+    });
     await press(tree, 'Mi inscripción: Sesiones semanales MIC 4.º-6.º EP');
-    expect(mockOpenLegacy).toHaveBeenLastCalledWith(
-      {
-        internalpage: 'single_stic_registrations',
-        action: 'detail',
-        id: 'reg-lucia-sesiones',
-      },
-      'Inscripción',
-      LUCIA,
-    );
+    expect(mockRouter.push).toHaveBeenLastCalledWith({
+      pathname: '/comunica/inscripciones/[registrationId]',
+      params: { registrationId: 'reg-lucia-sesiones' },
+    });
     const open = labelled(tree, 'Abre la actividad');
     expect(open.length).toBe(0);
     const card = tree.root.findAll(
@@ -441,22 +430,16 @@ describe('la ficha', () => {
     expect(texts(tree)).not.toContain('0 €');
   });
 
-  it('abierta: «Inscribirme en esta actividad», la única principal; lleva al legado con el hijo', async () => {
+  it('abierta: «Inscribirme en esta actividad», la única principal; lleva al alta corta', async () => {
     const { tree } = await setup('family', detail('pev-convi'), {
       activeId: LUCIA,
     });
     await until(() => has(tree, 'Inscribirme en esta actividad'));
     await press(tree, 'Inscribirme en esta actividad');
-    expect(mockOpenLegacy).toHaveBeenCalledWith(
-      {
-        internalpage: 'single_stic_registrations',
-        action: 'create',
-        from: 'stic_events',
-        id: 'pev-convi',
-      },
-      'Inscripción',
-      LUCIA,
-    );
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/comunica/actividades/[eventId]/inscribirme',
+      params: { eventId: 'pev-convi' },
+    });
   });
 
   it('con formulario avanzado: la nota de que se abre con sus datos', async () => {
@@ -507,15 +490,10 @@ describe('la ficha', () => {
     );
     expect(has(tree, 'Inscribirme en esta actividad')).toBe(false);
     await press(tree, 'Ver su inscripción');
-    expect(mockOpenLegacy).toHaveBeenCalledWith(
-      {
-        internalpage: 'single_stic_registrations',
-        action: 'detail',
-        id: 'reg-lucia-sesiones',
-      },
-      'Inscripción',
-      LUCIA,
-    );
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/comunica/inscripciones/[registrationId]',
+      params: { registrationId: 'reg-lucia-sesiones' },
+    });
   });
 
   it('ya celebrada: «Esta actividad ya se ha celebrado.»', async () => {

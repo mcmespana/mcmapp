@@ -80,6 +80,10 @@ import { monitorRoutes, type MineKeys, type UploadsLog } from './myMonitor';
 import { profilesRoutes, type ProfileKeys } from './profiles';
 import { profileEventsRoutes, type ProfileEventKeys } from './profileEvents';
 import {
+  profileRegistrationsRoutes,
+  type ProfileRegistrationKeys,
+} from './profileRegistrations';
+import {
   detailsRoutes,
   type DetailsKeys,
   type DetailsLog,
@@ -115,6 +119,12 @@ export interface FakeControls {
   profilesDown: boolean;
   /** Familias (plan 11): la siguiente lectura con `fresh=1` trae un hijo recién vinculado. */
   newChildNext: boolean;
+  /** Inscripciones (plan 14): el CRM no genera el pago pendiente con tarjeta (`cardPaymentId: null`). */
+  noCardPayment: boolean;
+  /** Inscripciones (plan 14): la inscripción se crea y el compromiso de pago falla (`payment: 'error'`). */
+  paymentFails: boolean;
+  /** Inscripciones (plan 14): otro dispositivo ya se apuntó (`conflict` al enviar). */
+  alreadyRegisteredElsewhere: boolean;
 }
 
 export const DEFAULT_CONTROLS: FakeControls = {
@@ -129,6 +139,9 @@ export const DEFAULT_CONTROLS: FakeControls = {
   eventRereadFails: false,
   profilesDown: false,
   newChildNext: false,
+  noCardPayment: false,
+  paymentFails: false,
+  alreadyRegisteredElsewhere: false,
 };
 
 const PERSONA_ROLES: Record<PersonaId, { roles: Role[]; scope: Me['scope'] }> =
@@ -610,6 +623,7 @@ export function createFakeServer(
   const profiles = profilesRoutes(routesCtx); // A quién se ve (plan 11, familias).
   const details = detailsRoutes(routesCtx); // Mis datos y Datos de cada hijo (plan 12).
   const profileEvents = profileEventsRoutes(routesCtx); // Eventos y su ficha (plan 13).
+  const profileRegistrations = profileRegistrationsRoutes(routesCtx); // Inscripciones (plan 14).
 
   // Avisos en el móvil (plan 08): los móviles registrados, en `devices.ts`.
   const devices = fakeDevices.routes(gate, () => current, seenClientIds);
@@ -641,6 +655,7 @@ export function createFakeServer(
     | ProfileKeys
     | DetailsKeys
     | ProfileEventKeys
+    | ProfileRegistrationKeys
   > = {
     get controls() {
       return controls;
@@ -1348,6 +1363,7 @@ export function createFakeServer(
     profiles,
     details,
     profileEvents,
+    profileRegistrations,
     {
       getEvents: events.getEvents,
       getEventRoll: events.getEventRoll,

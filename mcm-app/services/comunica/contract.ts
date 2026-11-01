@@ -395,6 +395,226 @@ export const EventDetail = read({
 });
 export type EventDetail = z.infer<typeof EventDetail>;
 
+// ── Familias: inscripciones (plan 14) ───────────────────────────────────────
+//
+// Todo cuelga de `/v1/profiles/:pid/…`. La persona inscrita es SIEMPRE `pid`: paga quien ha entrado y ninguna de las dos personas viaja en el
+// cuerpo. El IBAN solo con domiciliación y NUNCA a una caché, una cola, un log ni una respuesta: solo vive en el estado del formulario.
+
+export const PAYMENT_METHODS = [
+  'bizum',
+  'transfer',
+  'transfer_received',
+  'cash',
+  'direct_debit',
+  'card',
+] as const;
+export const PaymentMethod = z.enum(PAYMENT_METHODS);
+export type PaymentMethod = z.infer<typeof PaymentMethod>;
+
+export const RegistrationStatus = z.object({
+  /** Vacía = sin chip. La etiqueta sale de una tabla fija (las del CRM no se leen por SQL: duda 25 de docs/FASE3.md). */
+  label: z.string(),
+  tone: z.enum(ACTIVITY_TONES),
+});
+export type RegistrationStatus = z.infer<typeof RegistrationStatus>;
+
+export const RegistrationCard = z.object({
+  id: Id,
+  title: z.string(),
+  eventId: Id.nullable(),
+  eventStart: Day.nullable(),
+  eventEnd: Day.nullable(),
+  signedOn: Day.nullable(),
+  schoolLevel: z.string().nullable(),
+  classLabel: z.string().nullable(),
+  status: RegistrationStatus,
+  eventHidden: z.boolean(),
+});
+export type RegistrationCard = z.infer<typeof RegistrationCard>;
+
+/** `GET /v1/profiles/:pid/registrations`. Todas (también canceladas y rechazadas, con su chip); la app las ordena. */
+export const RegistrationsList = read({ items: z.array(RegistrationCard) });
+export type RegistrationsList = z.infer<typeof RegistrationsList>;
+
+export const Question = z.object({
+  n: z.union([z.literal(1), z.literal(2)]),
+  prompt: z.string().nullable(),
+  options: z.array(z.string()).min(2),
+});
+export type Question = z.infer<typeof Question>;
+
+export const SpecialNeedsDef = z.object({
+  label: z.string(),
+  options: z.array(z.object({ value: z.string(), label: z.string() })),
+  yesValue: z.string(),
+  descriptionLabel: z.string(),
+});
+export type SpecialNeedsDef = z.infer<typeof SpecialNeedsDef>;
+
+export const PaymentState = z.object({
+  state: z.enum([
+    'pending',
+    'returned',
+    'paid',
+    'direct_debit',
+    'no_commitment',
+    'none',
+  ]),
+  amount: z.number().nullable(),
+  method: PaymentMethod.nullable(),
+  methodLabel: z.string().nullable(),
+  date: Day.nullable(),
+  paymentId: Id.nullable(),
+});
+export type PaymentState = z.infer<typeof PaymentState>;
+
+export const RegistrationDetail = RegistrationCard.extend({
+  generatedAt: Instant,
+  amount: z.number().nullable(),
+  participation: z.string().nullable(),
+  attendancePercent: z.number().nullable(),
+  attendees: z.number().int(),
+  answers: z.array(z.string()),
+  specialNeeds: z.string().nullable(),
+  specialNeedsDescription: z.string().nullable(),
+  contacts: z.array(
+    z.object({
+      name: z.string(),
+      relationship: z.string().nullable(),
+      phone: z.string().nullable(),
+      email: z.string().nullable(),
+    }),
+  ),
+  payment: PaymentState,
+  manage: z.object({
+    canEdit: z.boolean(),
+    canCancel: z.boolean(),
+    reason: z.string().nullable(),
+    until: Day.nullable(),
+  }),
+  edit: z
+    .object({
+      questions: z.array(
+        Question.extend({ current: z.number().int().nullable() }),
+      ),
+      specialNeeds: SpecialNeedsDef,
+    })
+    .nullable(),
+});
+export type RegistrationDetail = z.infer<typeof RegistrationDetail>;
+
+/**
+ * `PATCH /v1/profiles/:pid/registrations/:rid`: SOLO las respuestas (número de opción desde 1, de las preguntas de ese evento: todas) y las
+ * necesidades especiales (la descripción solo si es «sí»). Estricto. Sin derechos (cancelada, evento pasado, plazo cerrado), `conflict`
+ * `window_closed` y no se toca nada.
+ */
+export const RegistrationEdit = z.strictObject({
+  clientId: ClientId,
+  answers: z
+    .array(
+      z.strictObject({
+        n: z.union([z.literal(1), z.literal(2)]),
+        option: z.number().int().min(1).max(20),
+      }),
+    )
+    .max(2),
+  specialNeeds: z.string().max(50).nullable().optional(),
+  specialNeedsDescription: z.string().max(255).nullable().optional(),
+});
+export type RegistrationEdit = z.infer<typeof RegistrationEdit>;
+
+/** `POST /v1/profiles/:pid/registrations/:rid/cancel`. */
+export const RegistrationCancel = z.strictObject({ clientId: ClientId });
+export type RegistrationCancel = z.infer<typeof RegistrationCancel>;
+export const RegistrationWriteResult = WriteResult;
+export type RegistrationWriteResult = z.infer<typeof RegistrationWriteResult>;
+
+// ── Apuntarse (plan 14b) ────────────────────────────────────────────────────
+
+/**
+ * `GET /v1/profiles/:pid/events/:eventId/signup`: lo que la app necesita para el alta corta, y por qué no se puede (si no). El servidor
+ * vuelve a comprobarlo todo al enviar: lo que enseña la app es cortesía. Los medios de pago son los que el servidor tiene activados
+ * (`MW_PAYMENT_METHODS`; por defecto domiciliación y tarjeta, las únicas vistas en el CRM): nunca se escribe una clave a ciegas.
+ */
+export const SignupBlocked = z.union([
+  z.object({ reason: z.literal('already_registered'), registrationId: Id }),
+  z.object({
+    reason: z.enum(['audience', 'window']),
+    title: z.string(),
+    message: z.string(),
+  }),
+  z.object({ reason: z.literal('advanced_form') }),
+]);
+export type SignupBlocked = z.infer<typeof SignupBlocked>;
+
+export const SignupForm = read({
+  event: z.object({
+    id: Id,
+    name: z.string(),
+    startDate: Day.nullable(),
+    endDate: Day.nullable(),
+    description: z.string().nullable(),
+  }),
+  blocked: SignupBlocked.nullable(),
+  questions: z.array(Question),
+  price: z.number().nullable(),
+  paymentMethods: z.array(z.object({ key: PaymentMethod, label: z.string() })),
+  specialNeeds: SpecialNeedsDef,
+});
+export type SignupForm = z.infer<typeof SignupForm>;
+
+/**
+ * `POST /v1/profiles/:pid/registrations`: la persona inscrita es SIEMPRE `pid`; paga quien ha entrado (y el hijo, si es el caso, es el
+ * destinatario): ninguna de las dos personas viaja en el cuerpo. El IBAN solo con domiciliación (si no, el esquema lo rechaza) y nunca
+ * llega al diario, a un log ni a una respuesta. Respuestas: número de opción desde 1.
+ */
+export const SignupWrite = z
+  .strictObject({
+    clientId: ClientId,
+    eventId: Id,
+    answers: z
+      .array(
+        z.strictObject({
+          n: z.union([z.literal(1), z.literal(2)]),
+          option: z.number().int().min(1).max(20),
+        }),
+      )
+      .max(2),
+    payment: z
+      .strictObject({
+        method: PaymentMethod,
+        iban: z.string().max(60).optional(),
+      })
+      .nullable(),
+    specialNeeds: z.string().max(50).nullable().optional(),
+    specialNeedsDescription: z.string().max(255).nullable().optional(),
+  })
+  .refine(
+    (w) =>
+      !w.payment ||
+      w.payment.iban === undefined ||
+      w.payment.method === 'direct_debit',
+    {
+      path: ['payment', 'iban'],
+      message: 'El IBAN es solo para la domiciliación.',
+    },
+  );
+export type SignupWrite = z.infer<typeof SignupWrite>;
+
+/** `payment`: `none` (sin precio o sin medio), `noted` (compromiso anotado) o `error` (la inscripción queda y el pago no se pudo anotar). */
+export const SignupResult = WriteResult.extend({
+  registrationId: Id,
+  payment: z.enum(['none', 'noted', 'error']),
+  cardPaymentId: Id.nullable(),
+});
+export type SignupResult = z.infer<typeof SignupResult>;
+
+/** `POST /v1/profiles/:pid/events/:eventId/advanced-form` → la URL del formulario del CRM con los datos de `pid` ya puestos. */
+export const AdvancedFormResult = z.object({
+  url: z.url({ protocol: /^https?$/ }),
+});
+export type AdvancedFormResult = z.infer<typeof AdvancedFormResult>;
+
 /** `POST /v1/auth/code` — misma respuesta exista o no el correo. */
 export const CodeRequest = z.union([
   z.object({ email: z.email() }),
@@ -1983,6 +2203,49 @@ export const ROUTES = {
     path: '/v1/profiles/:pid/events/by-slug/:slug',
     response: EventDetail,
     persist: true,
+  },
+  // Familias (plan 14): inscripciones. La lista se guarda (títulos, fechas y estados); la ficha y el alta, NO (teléfonos de tutores, importes).
+  profileRegistrations: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/registrations',
+    response: RegistrationsList,
+    persist: true,
+  },
+  profileRegistration: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/registrations/:rid',
+    response: RegistrationDetail,
+    persist: false,
+  },
+  profileSignupForm: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/events/:eventId/signup',
+    response: SignupForm,
+    persist: false,
+  },
+  profileSignUp: {
+    method: 'POST',
+    path: '/v1/profiles/:pid/registrations',
+    response: SignupResult,
+    persist: false,
+  },
+  updateRegistration: {
+    method: 'PATCH',
+    path: '/v1/profiles/:pid/registrations/:rid',
+    response: WriteResult,
+    persist: false,
+  },
+  cancelRegistration: {
+    method: 'POST',
+    path: '/v1/profiles/:pid/registrations/:rid/cancel',
+    response: WriteResult,
+    persist: false,
+  },
+  advancedForm: {
+    method: 'POST',
+    path: '/v1/profiles/:pid/events/:eventId/advanced-form',
+    response: AdvancedFormResult,
+    persist: false,
   },
   // Mis datos de monitor (plan 09).
   myMonitor: {

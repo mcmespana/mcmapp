@@ -94,7 +94,7 @@ describe('listado', () => {
   });
   it('las fechas siguen al reloj del falso (relativas a «hoy»)', async () => {
     const s = server('family', { clock: '2026-12-01T10:00:00Z' });
-    const l = await s.getProfileActivities('f-hijo-sin-nombre');
+    const l = await s.getProfileActivities('f-hijo-lucia');
     const c = l.toSignUp.find((x) => x.id === 'pev-convi')!;
     expect(c.startDate).toBe('2026-12-31');
     expect(c.window).toEqual({ opensOn: '2026-11-21', closesOn: '2026-12-21' });

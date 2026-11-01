@@ -23,6 +23,7 @@ import {
 import { ComunicaApiError, type ComunicaApi } from '../client';
 import type { FakeData, PersonaId } from './fixtures';
 import { allowedProfile } from './profiles';
+import { activeRegistration } from './registrations';
 import { addDays } from '@/utils/comunica/madrid';
 
 export interface EventsCtx {
@@ -45,7 +46,7 @@ type EventsApi = Pick<ComunicaApi, ProfileEventKeys>;
 const notFound = () =>
   new ComunicaApiError('not_found', 'No existe', 404, 'event_not_found');
 
-interface FakeEvent {
+export interface FakeEvent {
   id: string;
   name: string;
   /** Días desde «hoy». */
@@ -75,6 +76,10 @@ interface FakeEvent {
   /** Solo para quien NO es Lucía (otro curso). */
   notFor?: string[];
   map?: { url: string } | { query: string };
+  /** Las preguntas del alta corta (2 como mucho). */
+  questions?: { n: 1 | 2; prompt: string | null; options: string[] }[];
+  /** Medios de pago que ofrece el CRM para este evento (con precio). */
+  methods?: ('direct_debit' | 'card')[];
 }
 
 const t = (v: string): { t: 'text'; v: string } => ({ t: 'text', v });
@@ -164,7 +169,7 @@ const FULL_BODY: BodyBlock[] = [
   },
 ];
 
-const EVENTS: FakeEvent[] = [
+export const EVENTS: FakeEvent[] = [
   {
     id: 'pev-convi',
     name: 'Convivencia COM',
@@ -180,6 +185,11 @@ const EVENTS: FakeEvent[] = [
     capacity: 60,
     price: 45,
     published: 'convivencia-com',
+    questions: [
+      { n: 1, prompt: '¿Vas a dormir en el albergue?', options: ['Sí', 'No'] },
+      { n: 2, prompt: null, options: ['Autobús', 'Coche propio', 'Otro'] },
+    ],
+    methods: ['direct_debit', 'card'],
     cover: { documentId: 'doc-cartel' },
     body: FULL_BODY,
     gallery: [{ documentId: 'doc-foto-2' }, { documentId: 'doc-foto-3' }],
@@ -335,6 +345,16 @@ const EVENTS: FakeEvent[] = [
     hidden: true,
   },
   {
+    id: 'pev-curso',
+    name: 'Curso de Catequesis MIC',
+    start: -60,
+    end: 120,
+    place: 'Parroquia',
+    statusLabel: 'Realizándose',
+    opens: -90,
+    closes: 30,
+  },
+  {
     id: 'pev-rechazada',
     name: 'Ruta de senderismo',
     start: 18,
@@ -346,57 +366,33 @@ const EVENTS: FakeEvent[] = [
   },
 ];
 
-/** Las inscripciones de cada perfil: id y estado (tono para el chip). */
-const REGISTRATIONS: Record<
-  string,
-  Record<
-    string,
-    | { id: string; label: string; tone: 'ok' | 'warn' | 'danger' | 'neutral' }
-    | undefined
-  >
-> = {
-  'f-hijo-lucia': {
-    'pev-sesiones': {
-      id: 'reg-lucia-sesiones',
-      label: 'Con plaza',
-      tone: 'ok',
-    },
-    'pev-oculta-con': {
-      id: 'reg-lucia-oculta',
-      label: 'Con plaza',
-      tone: 'ok',
-    },
-    'pev-rechazada': {
-      id: 'reg-lucia-rechazada',
-      label: 'Rechazada',
-      tone: 'danger',
-    },
-  },
-};
-
-export function fakeEventsFor(pid: string) {
-  return REGISTRATIONS[pid] ?? {};
+/** ¿Es el evento para ese perfil? (la audiencia del falso: delegación, papel y curso). */
+export function eventIsFor(
+  roles: readonly string[],
+  pid: string,
+  self: boolean,
+  e: FakeEvent,
+): boolean {
+  if (e.onlyMonitors && !(self && roles.includes('monitor'))) return false;
+  if (e.notFor?.includes(pid)) return false;
+  // Lo que es de otra delegación o de «otro curso» tampoco es para nadie de la familia de prueba.
+  if (e.audience && !e.onlyMonitors && !e.notFor) return false;
+  return true;
 }
 
 export function profileEventsRoutes(ctx: EventsCtx): EventsApi {
   const day = (offset: number | null) =>
     offset == null ? null : addDays(ctx.today(), offset);
 
-  const profileOk = (pid: string, self: boolean, e: FakeEvent) => {
-    if (e.onlyMonitors && !(self && ctx.roles().includes('monitor')))
-      return false;
-    if (e.notFor?.includes(pid)) return false;
-    // Lo que es de otra delegación o de «otro curso» tampoco es para nadie de la familia de prueba.
-    if (e.audience && !e.onlyMonitors && !e.notFor) return false;
-    return true;
-  };
+  const profileOk = (pid: string, self: boolean, e: FakeEvent) =>
+    eventIsFor(ctx.roles(), pid, self, e);
   const audienceOf = (pid: string, self: boolean, e: FakeEvent) =>
     profileOk(pid, self, e)
       ? ({ ok: true } as const)
       : ({ ok: false, ...e.audience! } as const);
 
   const cardOf = (pid: string, e: FakeEvent): EventCard => {
-    const reg = REGISTRATIONS[pid]?.[e.id];
+    const reg = activeRegistration(ctx.data(), pid, e.id);
     return {
       id: e.id,
       name: e.name,
@@ -407,7 +403,7 @@ export function profileEventsRoutes(ctx: EventsCtx): EventsApi {
       window: { opensOn: day(e.opens), closesOn: day(e.closes) },
       hasAdvancedForm: !!e.advancedForm,
       myRegistrationId: reg?.id ?? null,
-      myRegistrationStatus: reg ? { label: reg.label, tone: reg.tone } : null,
+      myRegistrationStatus: reg ? { ...reg.status } : null,
     };
   };
 
@@ -450,10 +446,11 @@ export function profileEventsRoutes(ctx: EventsCtx): EventsApi {
     async getProfileActivities(pid) {
       await ctx.gate('profileActivities');
       const who = allowedProfile(ctx as never, pid);
-      const mine = REGISTRATIONS[who.id] ?? {};
-      const signedUp = EVENTS.filter((e) => mine[e.id]);
+      const has = (e: FakeEvent) =>
+        !!activeRegistration(ctx.data(), who.id, e.id);
+      const signedUp = EVENTS.filter(has);
       const toSignUp = EVENTS.filter(
-        (e) => !mine[e.id] && !e.hidden && profileOk(who.id, who.self, e),
+        (e) => !has(e) && !e.hidden && profileOk(who.id, who.self, e),
       );
       return ActivityList.parse({
         generatedAt: ctx.nowIso(),

@@ -143,6 +143,28 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
           params: { eventId: d.id },
         }
       : { pathname: '/comunica/actividades' },
+  // Inscripciones (plan 14). `create` sin evento o `delete` (desactivadas en el plugin) van al listado de eventos / a la ficha.
+  list_stic_registrations: () => ({ pathname: '/comunica/inscripciones' }),
+  single_stic_registrations: (d): NativeHref => {
+    const rid = d.id;
+    if (d.action === 'create')
+      return d.id && (!d.from || d.from === 'stic_events')
+        ? {
+            pathname: '/comunica/actividades/[eventId]/inscribirme',
+            params: { eventId: d.id },
+          }
+        : { pathname: '/comunica/actividades' };
+    if (!rid) return { pathname: '/comunica/inscripciones' };
+    return d.action === 'edit'
+      ? {
+          pathname: '/comunica/inscripciones/[registrationId]/modificar',
+          params: { registrationId: rid },
+        }
+      : {
+          pathname: '/comunica/inscripciones/[registrationId]',
+          params: { registrationId: rid },
+        };
+  },
   // Mis datos (plan 12). El plugin no lleva a quién: con la persona que se ve ahora; la ficha del laico (retirada) y la del familiar
   // son de uno mismo (`yo=1`).
   single_stic_comunica_perfil: () => ({ pathname: '/comunica/datos' }),

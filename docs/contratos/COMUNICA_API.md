@@ -383,6 +383,21 @@ Todo cuelga de `/v1/profiles/:pid/…` (403 con un `pid` ajeno, nunca 404). Día
 
 La app: `ActivitiesScreen` (`/comunica/actividades`), `EventDetailScreen` (`/comunica/actividades/[eventId]`) y el puente `…/publica/[slug]` del enlace `/actividades/?e=`; `utils/comunica/{eventWindow,activityList,eventSignup,recordDates,bodyLinks,eventMap}.ts` (el plazo, el listado, el orden de la acción, las fechas, los enlaces del cuerpo y el mapa).
 
+### Familias: inscripciones (plan 14)
+
+Todo cuelga de `/v1/profiles/:pid/…` (403 con un `pid` ajeno). Días `YYYY-MM-DD` de Madrid. **La persona inscrita es siempre `pid`**: paga quien ha entrado y ninguna de las dos personas viaja en el cuerpo.
+
+- `GET /v1/profiles/:pid/registrations` → `{ items: RegistrationCard[] }`: todas (también canceladas y rechazadas, con su chip `status { label, tone }`); la app las ordena (lo abierto por fecha, lo cerrado al revés, los eventos ocultos en «Otros eventos»). **Se guarda en el móvil.**
+- `GET /v1/profiles/:pid/registrations/:rid` → `RegistrationDetail`: importe, respuestas (texto), tutores (nombre, parentesco, teléfono, correo), `payment` (`pending` | `returned` | `paid` | `direct_debit` | `no_commitment` | `none`, con `paymentId`), `manage { canEdit, canCancel, reason, until }` y `edit` (las preguntas con `current` y las necesidades especiales). **No se guarda** (teléfonos, importes).
+- `GET /v1/profiles/:pid/events/:eventId/signup` → `SignupForm`: `blocked` (`already_registered` + `registrationId` | `audience` | `window` con título y mensaje | `advanced_form`), `questions` (2 como mucho, número de opción desde 1), `price`, `paymentMethods` (solo los que el servidor tiene activados) y `specialNeeds`. Sin caché: el guard de duplicados se mira al abrir.
+- `POST /v1/profiles/:pid/registrations` `SignupWrite → SignupResult { registrationId, payment: 'none' | 'noted' | 'error', cardPaymentId }`. **El guard es el servidor**: formulario avanzado → `conflict`/`advanced_form`; duplicado sin caché → `conflict`/`already_registered`; audiencia → `forbidden`/`audience`; plazo → `conflict`/`window_closed`; respuestas o pago mal → `validation` con `reason` `answers` o `payment` (con precio y medios: medio obligatorio y de la lista; domiciliación con IBAN válido). El IBAN solo con domiciliación (el esquema lo rechaza en otro caso) y **nunca** llega a un log, una respuesta ni una caché. Mismo `clientId` = misma inscripción. Con `payment: 'error'` la inscripción se queda. `cardPaymentId` es el pago pendiente con tarjeta (`null` si el CRM no lo generó: se paga por la inscripción).
+- `PATCH /v1/profiles/:pid/registrations/:rid` (solo respuestas y necesidades especiales) y `POST …/:rid/cancel` (estado «cancelada», no se borra): solo con derechos (no cancelada ni rechazada, evento sin pasar, plazo abierto; cancelar además no siendo un curso, de más de 31 días); si no, `conflict`/`window_closed` y no se toca nada.
+- `POST /v1/profiles/:pid/events/:eventId/advanced-form` → `{ url }`: la URL del formulario del CRM con los datos de `pid` ya puestos (solo `http(s)`). Lleva datos personales: ni se guarda ni se registra.
+
+**Apuntarse, modificar y cancelar NO van por la cola**: llamada directa con conexión y un `clientId` en memoria que se conserva mientras el fallo sea de red o del CRM. Al aplicarse se invalidan actividades, inscripciones, pagos y calendario del perfil.
+
+La app: `SignupScreen` (`/comunica/actividades/[eventId]/inscribirme`), `RegistrationsScreen` (`/comunica/inscripciones`), `RegistrationDetailScreen` (`…/[registrationId]`) y `RegistrationEditScreen` (`…/modificar`); `utils/comunica/{iban,signupForm,registrationList,paymentLine,registrationNotes}.ts`.
+
 ### Varias delegaciones (plan 17)
 
 Quien colabora con otra delegación (coordina Burriana siendo de Castellón)

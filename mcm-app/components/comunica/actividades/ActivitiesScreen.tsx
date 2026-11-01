@@ -15,7 +15,7 @@ import { useToast } from '@/contexts/AppToastContext';
 import { comunicaNow } from '@/services/comunica';
 import { useActivities } from '@/hooks/comunica/useActivities';
 import { useActiveProfile } from '@/hooks/comunica/useActiveProfile';
-import { useOpenLegacy } from '@/hooks/comunica/useOpenLegacy';
+import { useOpenAdvancedForm } from '@/hooks/comunica/useRegistrations';
 import {
   showSectionTitles,
   visibleActivities,
@@ -33,39 +33,28 @@ import EventCard from './EventCard';
 /** El texto que dice por qué «Inscribirme» no hace nada sin conexión. */
 export const NEEDS_CONNECTION = 'Necesitas conexión para apuntarte';
 
-/** A dónde van «Inscribirme» y «Mi inscripción» hasta que el plan 14 tenga sus pantallas: al legado con la sesión puesta. */
+/**
+ * A dónde van «Inscribirme» y «Mi inscripción» (plan 14): el alta corta nativa; con formulario avanzado, ese formulario del CRM ya relleno (si no se puede
+ * abrir, el alta muestra por qué); y «Mi inscripción» directo a su ficha.
+ */
 export function useRegistrationLinks() {
-  const openLegacy = useOpenLegacy();
-  const { active, isSelf } = useActiveProfile();
-  const profileId = !isSelf && active ? active.id : undefined;
+  const router = useRouter();
+  const { active } = useActiveProfile();
+  const openAdvanced = useOpenAdvancedForm(active?.id);
   return {
-    signup: (eventId: string) =>
-      openLegacy(
-        {
-          internalpage: 'single_stic_registrations',
-          action: 'create',
-          from: 'stic_events',
-          id: eventId,
-        },
-        'Inscripción',
-        profileId,
-      ),
-    list: () =>
-      openLegacy(
-        { internalpage: 'list_stic_registrations' },
-        'Inscripciones',
-        profileId,
-      ),
+    signup: async (eventId: string, advanced = false) => {
+      if (advanced && (await openAdvanced(eventId)) === 'opened') return;
+      router.push({
+        pathname: '/comunica/actividades/[eventId]/inscribirme',
+        params: { eventId },
+      } as never);
+    },
     registration: (registrationId: string) =>
-      openLegacy(
-        {
-          internalpage: 'single_stic_registrations',
-          action: 'detail',
-          id: registrationId,
-        },
-        'Inscripción',
-        profileId,
-      ),
+      router.push({
+        pathname: '/comunica/inscripciones/[registrationId]',
+        params: { registrationId },
+      } as never),
+    list: () => router.push('/comunica/inscripciones' as never),
   };
 }
 
@@ -88,8 +77,8 @@ export default function ActivitiesScreen() {
       toast.show({ variant: 'warning', label: NEEDS_CONNECTION });
       return;
     }
-    if (a.kind === 'registration') void links.registration(e.myRegistrationId!);
-    else void links.signup(e.id);
+    if (a.kind === 'registration') links.registration(e.myRegistrationId!);
+    else void links.signup(e.id, e.hasAdvancedForm);
   };
 
   return (
@@ -105,7 +94,7 @@ export default function ActivitiesScreen() {
                 title="No hay actividades próximas ahora mismo"
                 subtitle="Cuando se abra la inscripción de una actividad, aparecerá aquí. Las que ya pasaron están en “Inscripciones”."
                 actionLabel="Ver mis inscripciones"
-                onAction={() => void links.list()}
+                onAction={() => links.list()}
                 accentColor={t.accentText}
                 titleColor={t.text}
                 subtitleColor={t.textSecondary}

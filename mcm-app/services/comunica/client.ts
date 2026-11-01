@@ -60,6 +60,14 @@ import {
   MeResponse,
   MyProfiles,
   ActivityList,
+  AdvancedFormResult,
+  RegistrationDetail,
+  RegistrationsList,
+  type RegistrationCancel,
+  type RegistrationEdit,
+  SignupForm,
+  type SignupWrite,
+  SignupResult,
   DetailsWriteResult,
   EventDetail,
   type HealthWrite,
@@ -100,6 +108,29 @@ export interface ComunicaApi {
   getMe(): Promise<MeResponse>;
   /** Familias (plan 11): quien ha entrado y sus hijos. Con `fresh`, se mira otra vez quiénes son los míos. */
   getMyProfiles(opts?: ReadOptions): Promise<MyProfiles>;
+  /** Familias (plan 14): las inscripciones del perfil (todas; la app las ordena). */
+  getProfileRegistrations(
+    pid: string,
+    opts?: ReadOptions,
+  ): Promise<RegistrationsList>;
+  /** La ficha de una inscripción (con teléfonos de tutores e importes: nunca se guarda). */
+  getProfileRegistration(pid: string, rid: string): Promise<RegistrationDetail>;
+  /** Lo que hace falta para el alta corta, y por qué no se puede (si no). Sin caché: el guard de duplicados se mira al abrir. */
+  getSignupForm(pid: string, eventId: string): Promise<SignupForm>;
+  /** Apuntarse. DIRECTO y con conexión (nunca por la cola: lleva el IBAN). `clientId` en memoria para reintentar sin duplicar. */
+  signUp(pid: string, body: SignupWrite): Promise<SignupResult>;
+  updateRegistration(
+    pid: string,
+    rid: string,
+    body: RegistrationEdit,
+  ): Promise<WriteResult>;
+  cancelRegistration(
+    pid: string,
+    rid: string,
+    body: RegistrationCancel,
+  ): Promise<WriteResult>;
+  /** La URL del formulario avanzado del CRM con los datos de `pid` ya puestos. Lleva datos personales: ni se guarda ni se registra. */
+  getAdvancedFormUrl(pid: string, eventId: string): Promise<AdvancedFormResult>;
   /** Familias (plan 13): los eventos de un perfil (a qué apuntarse y a qué ya está apuntado). */
   getProfileActivities(pid: string, opts?: ReadOptions): Promise<ActivityList>;
   /** La ficha de un evento de ese perfil, por id. Se sirve aunque no sea para él (con el motivo). */
@@ -586,6 +617,54 @@ export function createHttpClient({
         MyProfiles,
         undefined,
         READ_RETRIES,
+      ),
+    getProfileRegistrations: (pid, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/registrations${q(opts)}`,
+        RegistrationsList,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileRegistration: (pid, rid) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/registrations/${enc(rid)}`,
+        RegistrationDetail,
+      ),
+    getSignupForm: (pid, eventId) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events/${enc(eventId)}/signup`,
+        SignupForm,
+      ),
+    signUp: (pid, body) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/registrations`,
+        SignupResult,
+        body,
+      ),
+    updateRegistration: (pid, rid, body) =>
+      request(
+        'PATCH',
+        `/v1/profiles/${enc(pid)}/registrations/${enc(rid)}`,
+        WriteResult,
+        body,
+      ),
+    cancelRegistration: (pid, rid, body) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/registrations/${enc(rid)}/cancel`,
+        WriteResult,
+        body,
+      ),
+    getAdvancedFormUrl: (pid, eventId) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/events/${enc(eventId)}/advanced-form`,
+        AdvancedFormResult,
+        {},
       ),
     getProfileActivities: (pid, opts) =>
       request(

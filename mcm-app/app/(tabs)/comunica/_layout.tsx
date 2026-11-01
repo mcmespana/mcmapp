@@ -126,6 +126,22 @@ export default function ComunicaLayout() {
             name="actividades/publica/[slug]"
             options={{ title: 'Evento' }}
           />
+          <Stack.Screen
+            name="actividades/[eventId]/inscribirme"
+            options={{ title: 'Inscripción' }}
+          />
+          <Stack.Screen
+            name="inscripciones/index"
+            options={{ title: 'Inscripciones' }}
+          />
+          <Stack.Screen
+            name="inscripciones/[registrationId]/index"
+            options={{ title: 'Inscripción' }}
+          />
+          <Stack.Screen
+            name="inscripciones/[registrationId]/modificar"
+            options={{ title: 'Modificar inscripción' }}
+          />
           <Stack.Screen name="datos/[pid]" options={{ title: 'Mis datos' }} />
           <Stack.Screen name="eventos/index" options={{ title: 'Eventos' }} />
           <Stack.Screen

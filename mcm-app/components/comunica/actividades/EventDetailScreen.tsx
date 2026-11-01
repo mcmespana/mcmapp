@@ -224,7 +224,7 @@ function Detail({
       toast.show({ variant: 'warning', label: NEEDS_CONNECTION });
       return;
     }
-    void links.signup(e.id);
+    void links.signup(e.id, e.hasAdvancedForm);
   };
 
   return (
@@ -379,7 +379,7 @@ function Detail({
           <Notice text={action.text} tone="ok" />
           <Secondary
             label={action.cta}
-            onPress={() => void links.registration(action.registrationId)}
+            onPress={() => links.registration(action.registrationId)}
           />
         </View>
       ) : null}
