@@ -402,7 +402,7 @@ Documentar NO:
 - **Apple Team ID**: `5P53S6QB23`
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
 - **App version**: 2.5.0 (la de `app.json`; para las builds nuevas desde el 1/11/2026)
-- **Runtime version**: 2.2.0 (SDK 58; la 2.1.0 era SDK 57 — los binarios viejos no reciben OTAs nuevas)
+- **Runtime version**: 2.5.0 (SDK 58; subida a la vez que la versión el 1/11/2026: las builds 2.1 y las de prueba con runtime 2.2.0 dejan de recibir OTAs nuevas)
 
 ## HeroUI Native — UI Library
 

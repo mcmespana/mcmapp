@@ -13,7 +13,7 @@
 
 Una OTA (EAS Update) es **el bundle JS entero del commit publicado**, no solo
 tu cambio. Lo recibe **todo binario instalado con la misma `runtimeVersion`**
-(hoy `2.2.0`, en `app.json`) que mire ese canal. Dos consecuencias:
+(hoy `2.5.0`, en `app.json`) que mire ese canal. Dos consecuencias:
 
 - Si el JS del commit necesita un módulo nativo que el binario de las tiendas
   no tiene, la app **crashea** al arrancar con esa OTA.

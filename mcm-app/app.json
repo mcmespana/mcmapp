@@ -3,7 +3,7 @@
     "name": "MCM App",
     "slug": "mcm-app",
     "version": "2.5.0",
-    "runtimeVersion": "2.2.0",
+    "runtimeVersion": "2.5.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mcmapp",

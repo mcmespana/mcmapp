@@ -111,7 +111,7 @@ Prueba de humo, en la app instalada desde la tienda:
 ## Si no llega nada estando en ALPHA
 
 Casi siempre es la **runtime version**. Un bundle solo se entrega a binarios con
-la misma `runtimeVersion` (hoy `2.2.0`, en `app.json`). Si la rama `preview`
+la misma `runtimeVersion` (hoy `2.5.0`, en `app.json`). Si la rama `preview`
 publicó con otra, EAS no sirve nada y la app se queda con su bundle actual — sin
 error, por diseño. Compara el "runtime" del panel con el del update en
 [expo.dev](https://expo.dev) → EAS Update → branch `preview`.

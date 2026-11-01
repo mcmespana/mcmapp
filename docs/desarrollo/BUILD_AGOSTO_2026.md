@@ -1,17 +1,33 @@
-# Build de tienda 2.1 (prevista para agosto de 2026)
+# Build de tienda 2.5 (prevista para agosto de 2026; se retrasó)
 
 > **Para el día que te sientes a sacarla.** Paso a paso, en orden, sin dar nada
 > por sabido. Lo que hay que configurar UNA vez está en §2; el día de la build
 > se hace §3 → §4 → §5 → §6.
 >
-> Rama: **`main`** · **App v2.1.0** · Expo SDK 57
+> Rama: **`main`** · **App v2.5.0** (`runtimeVersion` 2.5.0) · Expo SDK 58
 >
 > (La rama `claude/compact-tabs-bar-uxxaoz`, que traía todo esto, se mergeó en
 > la [#313](https://github.com/mcmespana/mcmapp/pull/313) el 2026-08-04 y ya no
 > existe. Se compila desde `main`. El nombre del fichero dice "agosto" porque
 > era la fecha prevista; se mantiene para no romper los enlaces.)
 
-## 📍 Estado a 2026-10-08
+## 📍 Qué falta a 2026-11-01 (revisado; la tabla de abajo es del 8/10 y está vieja)
+
+La build ya no es la 2.1 con SDK 57: es la **2.5.0 con SDK 58** y lleva el área privada nativa. De lo del 8/10, **sigue sin hacer**:
+
+| Falta                                                                                                                                                             | Bloquea publicar               |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| §6 **Política de privacidad y fichas de las tiendas**: Aptabase (datos de uso) y, ahora, lo del área privada (DNI, salud, fotos y documentos de menores, Face ID) | **Sí**                         |
+| §2.6 Huellas SHA-1 de Android para el inicio de sesión con Google, sin confirmar                                                                                  | Sí en Android                  |
+| §5 Canales de notificación de Android en un Android real                                                                                                          | No, pero hay que mirarlo       |
+| §5 Resto del checklist sobre la build de desarrollo (incluye el área nativa, §5.1)                                                                                | Sí, lo que salga               |
+| §2.5 Credenciales de la extensión de notificaciones (iOS): se resuelven en la primera build de iOS                                                                | Solo la primera vez            |
+| §0 Desplegar la Cloud Function del calendario (`firebase deploy --only functions`)                                                                                | No                             |
+| El middleware: variables de escritura en Vercel (`MW_CRM_*`), revisión humana de seguridad y la evaluación de impacto de protección de datos (con menores)        | Para abrir el área a más gente |
+
+Hecho desde el 8/10: Expo 58, los permisos de iOS del área nativa (`app.json`: Face ID, cámara y fotos), el acceso con la cuenta de la app y las pantallas de monitores y familias en `main`.
+
+## Estado a 2026-10-08 (histórico)
 
 | Paso                                                   | Estado                                                                                                                                                                              |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

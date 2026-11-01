@@ -4,9 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
-## 2026-11-01 14:00 — Versión de la app: 2.5.0
+## 2026-11-01 14:00 — Versión de la app y runtimeVersion: 2.5.0
 
-- `version` de `app.json` pasa de 2.1.0 a **2.5.0** para las próximas builds (también la de la extensión de notificaciones iOS, que la toma de ahí). La `runtimeVersion` **no cambia** (2.2.0): las builds ya instaladas siguen recibiendo OTA.
+- `version` de `app.json` pasa de 2.1.0 a **2.5.0** para las próximas builds (también la de la extensión de notificaciones iOS, que la toma de ahí).
+- `runtimeVersion` pasa de 2.2.0 a **2.5.0** a la vez (decisión del propietario: solo hay builds de prueba y no se mandarán OTA a las anteriores). Las builds ya instaladas con runtime 2.2.0 **dejan de recibir OTA**.
 
 ## 2026-11-01 13:30 — Comunica: la portada de familias recupera el aspecto de la de David
 
