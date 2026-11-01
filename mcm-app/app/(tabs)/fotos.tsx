@@ -16,6 +16,7 @@ import TabScreenWrapper from '@/components/ui/TabScreenWrapper';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
+import EmptyState from '@/components/ui/EmptyState';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { Colors as ThemeColors } from '@/constants/colors';
@@ -59,7 +60,28 @@ interface FotosScreenStyles {
   loadMoreButton: ViewStyle;
 }
 
+/**
+ * Con `fotosEnIpad: false` el iPad no enseña fotos (MDM de colegios). La
+ * pestaña y el botón de Home ya no existen; esto cubre lo que llega por enlace
+ * o notificación, y ni se lee `albums`.
+ */
 export default function FotosScreen() {
+  const resolved = useResolvedProfileConfig();
+  if (resolved.fotosHidden) {
+    return (
+      <TabScreenWrapper>
+        <EmptyState
+          icon="photo-library"
+          title="Las fotos no están disponibles"
+          subtitle="En este iPad no se muestran fotos. Puedes verlas desde tu móvil."
+        />
+      </TabScreenWrapper>
+    );
+  }
+  return <FotosGallery />;
+}
+
+function FotosGallery() {
   const { width } = useWindowDimensions();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);

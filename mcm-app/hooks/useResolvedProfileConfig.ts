@@ -4,6 +4,7 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { resolveProfileConfig } from '@/utils/resolveProfileConfig';
 import type { ResolvedProfileConfig } from '@/types/profileConfig';
 import { DEFAULT_PROFILE_TYPE } from '@/constants/defaultProfileConfig';
+import { isIpad } from '@/utils/device';
 
 /**
  * Hook puro que combina la config remota (`ProfileConfigContext`) con el perfil
@@ -20,6 +21,8 @@ export function useResolvedProfileConfig(): ResolvedProfileConfig {
   return useMemo(() => {
     const profileType = profile.profileType ?? DEFAULT_PROFILE_TYPE;
     const delegationId = profile.delegationId;
-    return resolveProfileConfig(rawConfig, profileType, delegationId);
+    return resolveProfileConfig(rawConfig, profileType, delegationId, {
+      isIpad: isIpad(),
+    });
   }, [rawConfig, profile.profileType, profile.delegationId]);
 }
