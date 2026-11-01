@@ -340,13 +340,15 @@ export default function Home() {
   // Encuestas genéricas con placement "home-banner" para el perfil actual.
   const homeSurveys = useActiveSurveys('home-banner');
 
-  // OTA update badge (show in header after user dismisses the modal)
+  // OTA update badge: la OTA se aplica sola al abrir la app o al volver a ella;
+  // si llegó con la app en uso queda esperando, y esta insignia deja aplicarla
+  // ya con un toque.
   const {
     isReady: otaReady,
-    dismissed: otaDismissed,
+    applying: otaApplying,
     applyUpdate: otaApply,
   } = useOTAContext();
-  const showUpdateBadge = otaReady && otaDismissed;
+  const showUpdateBadge = otaReady && !otaApplying;
 
   // Store update badge (show in header after the user skips the mandatory
   // "actualiza la app" screen — tapping opens the store directly, no dialog)

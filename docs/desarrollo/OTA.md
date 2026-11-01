@@ -49,6 +49,27 @@ Cada publicación pasa primero por `verify.yml` (typecheck, typecheck de tests,
 lint y tests): si está en rojo, **no se publica nada**. Los pushes se encolan
 (`concurrency`), no se pisan.
 
+## Cómo la aplica la app (sin preguntar)
+
+Desde noviembre de 2026 **no hay modal de «¿te actualizas?»**: la app
+comprueba, descarga en segundo plano y aplica sola (`contexts/OTAContext.tsx`,
+reglas puras en `utils/otaAutoApply.ts`), enseñando la pantalla de «un
+momentín» (`OTAUpdatingOverlay`, ~160 frases en `constants/updatePhrases.ts`).
+
+- **Update listo en los primeros 45 s de abrir la app** → se aplica ya.
+- **Update que llega con la app en uso** (la comprobación de cada 15 min) → NO
+  interrumpe; espera a que la persona vuelva a la app desde el fondo. Mientras
+  tanto sale la insignia de Home, que lo aplica con un toque.
+- **Cortafuegos anti-bucle**: tras una aplicación automática, no se hace otra en
+  10 min (marca `otaLastAutoApplyAt` en `AsyncStorage`). Si una OTA no llegara
+  a arrancar, la app no entra en un bucle de recargas.
+- La pantalla se ve como mínimo ~3 s antes de recargar (la OTA ya está bajada y
+  la recarga es casi instantánea, y si no la frase no se lee).
+
+Para quien despliega: una OTA mala llega, por tanto, **sola y deprisa** al
+siguiente arranque de cada dispositivo. Revísala en `preview` y, si sale mal, el
+rollback de abajo es lo primero.
+
 ## Cuándo NO empujar a `production`
 
 - **El commit necesita un binario nuevo** (paquete nativo, cambios en

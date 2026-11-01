@@ -63,7 +63,32 @@ type FotosScreenStyles = {
   loadMoreButton: ViewStyle;
 };
 
+/**
+ * Con `fotosEnIpad: false` el iPad no enseña fotos (MDM de colegios, ver
+ * `GlobalConfig.fotosEnIpad`). La pestaña, el botón de Home y la tarjeta de
+ * «Más» ya no existen; esto cubre lo que aún llega por enlace o notificación.
+ * La galería ni se monta: ni siquiera se lee `albums` de Firebase.
+ */
 export function FotosScreen() {
+  const resolved = useResolvedProfileConfig();
+  if (resolved.fotosHidden) return <FotosNoDisponible />;
+  return <FotosGallery />;
+}
+
+function FotosNoDisponible() {
+  const headerHeight = useHeaderHeight();
+  return (
+    <View style={{ flex: 1, paddingTop: headerHeight }}>
+      <EmptyState
+        icon="photo-library"
+        title="Las fotos no están disponibles"
+        subtitle="En este iPad no se muestran fotos. Puedes verlas desde tu móvil."
+      />
+    </View>
+  );
+}
+
+function FotosGallery() {
   const { listRef, onScroll, contentPaddingBottom } =
     useTabListScroll<FlatList>('fotos');
   // El header es transparente y las portadas pasan POR DEBAJO: la lista

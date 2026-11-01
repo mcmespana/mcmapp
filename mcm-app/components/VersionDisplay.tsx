@@ -14,7 +14,7 @@ export const VersionDisplay: React.FC<{ style?: any }> = ({ style }) => {
 
   // Solo mostramos versión + hash del bundle OTA cuando aplica. La
   // notificación de "hay update disponible" la gestiona el modal
-  // <OTAUpdatePrompt> montado en el root layout — aquí no duplicamos ese
+  // <OTAUpdatingOverlay> montado en OTAProvider — aquí no duplicamos ese
   // mensaje para evitar ruido visual en el pie de la Home.
   //
   // Se CALCULA, no se guarda en estado desde un efecto: son constantes del
