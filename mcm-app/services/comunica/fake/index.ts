@@ -83,6 +83,11 @@ import {
   type ProfileKeys,
   type ProfilesFake,
 } from './profiles';
+import {
+  familyEventRoutes,
+  type FamilyEventKeys,
+  type FamilyEventsFake,
+} from './familyEvents';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 
 export interface FakeControls {
@@ -222,7 +227,11 @@ const CODE_TTL_MS = 40 * 60_000;
 const MAX_BAD_CODES = 10;
 
 export interface FakeServer
-  extends ComunicaApi, fakeDevices.DevicesFake, UploadsLog, ProfilesFake {
+  extends ComunicaApi,
+    fakeDevices.DevicesFake,
+    UploadsLog,
+    ProfilesFake,
+    FamilyEventsFake {
   controls: FakeControls;
   setControls(patch: Partial<FakeControls>): void;
   subscribe(listener: () => void): () => void;
@@ -625,6 +634,16 @@ export function createFakeServer(
     nowIso,
   });
 
+  // Familias: plan 13 (eventos y su ficha), en `familyEvents.ts`.
+  const familyEvents = familyEventRoutes({
+    data: () => data,
+    gate: (route) => gate(route),
+    allowedProfile: (pid) => familyRoutes.allowedProfile(pid),
+    today,
+    nowIso,
+    image: (key) => abstractImage(key),
+  });
+
   // Avisos en el móvil (plan 08): los móviles registrados, en `devices.ts`.
   const devices = fakeDevices.routes(gate, () => current, seenClientIds);
   // Pasar lista en un evento (plan 07): sus rutas viven en `events.ts`.
@@ -654,6 +673,8 @@ export function createFakeServer(
     | MineKeys
     | ProfileKeys
     | keyof ProfilesFake
+    | FamilyEventKeys
+    | keyof FamilyEventsFake
   > = {
     get controls() {
       return controls;
@@ -1363,6 +1384,7 @@ export function createFakeServer(
     devices,
     mine,
     familyRoutes,
+    familyEvents,
     {
       getEvents: events.getEvents,
       getEventRoll: events.getEventRoll,

@@ -198,6 +198,16 @@ describe('servidor falso', () => {
       profileCalendar: await s.getProfileCalendar(
         (await s.getMe()).me.personId,
       ),
+      // Familias (plan 13).
+      profileEvents: await s.getActivities((await s.getMe()).me.personId),
+      profileEvent: await s.getActivity(
+        (await s.getMe()).me.personId,
+        'ac7e0000-0000-4000-8000-000000000002',
+      ),
+      profileEventBySlug: await s.getActivityBySlug(
+        (await s.getMe()).me.personId,
+        'convivencia-otono-com',
+      ),
     };
     for (const [name, value] of Object.entries(results)) {
       expect(

@@ -31,6 +31,12 @@ const code = (p: Promise<unknown>) =>
 /** Cada ruta `/v1/profiles/:pid/…` llamada con un `pid`. */
 const PROFILE_CALLS: Record<string, (s: FakeServer, pid: string) => unknown> = {
   profileCalendar: (s, pid) => s.getProfileCalendar(pid),
+  // Plan 13.
+  profileEvents: (s, pid) => s.getActivities(pid),
+  profileEvent: (s, pid) =>
+    s.getActivity(pid, 'ac7e0000-0000-4000-8000-000000000001'),
+  profileEventBySlug: (s, pid) =>
+    s.getActivityBySlug(pid, 'convivencia-otono-com'),
 };
 
 describe('contrato de familias', () => {

@@ -120,10 +120,18 @@ export async function handleComunicaLink(
     });
     return;
   }
+  if (link.kind === 'event') {
+    // La página pública de una actividad: su ficha nativa (plan 13). La
+    // pantalla busca el evento por el slug y decide (sesión, a quién apuntar).
+    deps.push({
+      pathname: '/comunica/actividades/publica/[slug]',
+      params: { slug: link.slug },
+    });
+    return;
+  }
   const publicUrl = publicPageUrl(link);
   if (publicUrl) {
-    // La ficha nativa del evento llega con el plan 13; hasta entonces, su
-    // página pública (como cualquier otra página del dominio).
+    // Otra página del dominio: tal cual, en el legado.
     deps.push({ pathname: '/comunica/web', params: { url: publicUrl } });
     return;
   }

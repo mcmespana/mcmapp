@@ -215,12 +215,29 @@ describe('sesión revocada a mitad de pila', () => {
     await handleComunicaLink(
       {
         kind: 'page',
-        destination: { internalpage: 'single_stic_events', id: 'ev1' },
+        destination: { internalpage: 'list_stic_payments' },
         auth: null,
       },
       d,
     );
     expect(d.push).not.toHaveBeenCalled();
     expect(d.openLegacy).toHaveBeenCalled();
+  });
+
+  it('la ficha de un evento ya es nativa (plan 13)', async () => {
+    const { d } = deps({ mustChoose: async () => false });
+    await handleComunicaLink(
+      {
+        kind: 'page',
+        destination: { internalpage: 'single_stic_events', id: 'ev1' },
+        auth: null,
+      },
+      d,
+    );
+    expect(d.push).toHaveBeenCalledWith({
+      pathname: '/comunica/actividades/[eventId]',
+      params: { eventId: 'ev1' },
+    });
+    expect(d.openLegacy).not.toHaveBeenCalled();
   });
 });

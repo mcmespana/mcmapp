@@ -128,6 +128,20 @@ export default function ComunicaLayout() {
           <Stack.Screen name="web" options={{ headerShown: false }} />
           <Stack.Screen name="muestra" options={{ title: 'Muestra' }} />
           <Stack.Screen name="perfiles" options={{ title: 'Perfiles' }} />
+          {/* Plan 13: eventos de familias y su ficha (`eventos/` es el 07). */}
+          <Stack.Screen
+            name="actividades/index"
+            options={{ title: 'Eventos' }}
+          />
+          <Stack.Screen
+            name="actividades/[eventId]/index"
+            options={{ title: '' }}
+          />
+          <Stack.Screen
+            name="actividades/publica/[slug]"
+            options={{ title: 'Actividad' }}
+          />
+          {/* Fin del plan 13. */}
         </Stack>
       </ActiveProfileProvider>
     </ComunicaAreaProvider>

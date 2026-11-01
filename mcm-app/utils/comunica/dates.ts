@@ -5,7 +5,7 @@
 
 import { daysBetween, weekday } from './madrid';
 
-const MONTHS = [
+export const MONTHS = [
   'enero',
   'febrero',
   'marzo',

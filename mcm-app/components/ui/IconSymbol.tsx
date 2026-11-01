@@ -77,6 +77,12 @@ type IconMapping = {
   'photo.on.rectangle': 'photo-library';
   paperclip: 'attach-file';
   'checkmark.seal.fill': 'verified';
+  // Eventos de familias (plan 13)
+  'mappin.and.ellipse': 'place';
+  'building.2': 'apartment';
+  eurosign: 'euro';
+  'play.rectangle.fill': 'smart-display';
+  hourglass: 'hourglass-empty';
 };
 
 type IconSymbolName = keyof IconMapping;
@@ -158,6 +164,12 @@ const MAPPING: IconMapping = {
   'photo.on.rectangle': 'photo-library',
   paperclip: 'attach-file',
   'checkmark.seal.fill': 'verified',
+  // Eventos de familias (plan 13)
+  'mappin.and.ellipse': 'place',
+  'building.2': 'apartment',
+  eurosign: 'euro',
+  'play.rectangle.fill': 'smart-display',
+  hourglass: 'hourglass-empty',
 };
 
 /**

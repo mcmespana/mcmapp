@@ -70,6 +70,8 @@ import {
   type MonitorProfileWrite,
   MyProfiles,
   CalendarData,
+  ActivityList,
+  EventDetail,
 } from './contract';
 import { logger } from '@/utils/logger';
 
@@ -171,6 +173,31 @@ export interface ComunicaApi {
   getMyProfiles(opts?: ReadOptions): Promise<MyProfiles>;
   /** El calendario de `pid` (plan 16; la portada saca de aquí su agenda). */
   getProfileCalendar(pid: string, opts?: ReadOptions): Promise<CalendarData>;
+  // Familias: plan 13 (eventos y su ficha). Solo lecturas.
+  /** «Para apuntarte» y «Te has apuntado» de `pid` (lo pasado lo quita la app). */
+  getActivities(pid: string, opts?: ReadOptions): Promise<ActivityList>;
+  /** La ficha, aunque no sea para `pid` (con el motivo); inexistente → `not_found`. */
+  getActivity(
+    pid: string,
+    eventId: string,
+    opts?: ReadOptions,
+  ): Promise<EventDetail>;
+  /** La ficha por el slug de su página pública o, si no, por id. */
+  getActivityBySlug(
+    pid: string,
+    slug: string,
+    opts?: ReadOptions,
+  ): Promise<EventDetail>;
+  /**
+   * Cómo pedir un archivo del evento (cartel, imagen, PDF) con la sesión: para
+   * `expo-image` o para bajarlo. Siempre con su evento, nunca suelto.
+   */
+  eventFileSource(
+    pid: string,
+    eventId: string,
+    documentId: string,
+  ): PhotoSource;
+  // Fin de Familias: plan 13.
   /**
    * Cómo pedir una foto (`photoUrl`): con el servidor de verdad, la URL con el
    * token; con el falso, su imagen inventada. Ninguna pantalla importa el falso.
@@ -579,6 +606,43 @@ export function createHttpClient({
         undefined,
         READ_RETRIES,
       ),
+    // Familias: plan 13.
+    getActivities: (pid, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events${q(opts)}`,
+        ActivityList,
+        undefined,
+        READ_RETRIES,
+      ),
+    getActivity: (pid, eventId, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events/${enc(eventId)}${q(opts)}`,
+        EventDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    getActivityBySlug: (pid, slug, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events/by-slug/${enc(slug)}${q(opts)}`,
+        EventDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    eventFileSource: (pid, eventId, documentId) => {
+      const url = `${root}/v1/profiles/${enc(pid)}/events/${enc(eventId)}/documents/${enc(documentId)}`;
+      // Como `photoSource`: el token en la cabecera; la caché por documento.
+      const token = getToken?.();
+      return typeof token === 'string'
+        ? {
+            uri: url,
+            headers: { Authorization: `Bearer ${token}` },
+            cacheKey: `evdoc:${documentId}`,
+          }
+        : { uri: url, cacheKey: `evdoc:${documentId}` };
+    },
     photoSource: (url) => {
       // `expo-image` pide la foto él solo: el token va en la cabecera, y SOLO
       // si la foto es de nuestro servidor (una `photoUrl` de otro dominio no se

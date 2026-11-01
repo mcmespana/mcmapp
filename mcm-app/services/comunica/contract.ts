@@ -2059,6 +2059,26 @@ export const ROUTES = {
     response: CalendarData,
     persist: true,
   },
+  // Familias: plan 13 (eventos y su ficha). Los archivos del evento
+  // (`…/events/:eventId/documents/:documentId`) no son JSON: no van aquí.
+  profileEvents: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/events',
+    response: ActivityList,
+    persist: true,
+  },
+  profileEvent: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/events/:eventId',
+    response: EventDetail,
+    persist: true,
+  },
+  profileEventBySlug: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/events/by-slug/:slug',
+    response: EventDetail,
+    persist: false,
+  },
   code: {
     method: 'POST',
     path: '/v1/auth/code',

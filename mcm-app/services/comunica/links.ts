@@ -140,6 +140,16 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
       : { pathname: '/comunica/eventos' },
   // Mis datos de monitor (plan 09).
   single_stic_comunica_monitor: () => ({ pathname: '/comunica/yo/monitor' }),
+  // Familias: plan 13 (eventos y su ficha). Una ficha sin `id` (o con forma
+  // rara, que `parseDestination` ya tira), al listado.
+  list_stic_events: () => ({ pathname: '/comunica/actividades' }),
+  single_stic_events: (d) =>
+    d.id
+      ? {
+          pathname: '/comunica/actividades/[eventId]',
+          params: { eventId: d.id },
+        }
+      : { pathname: '/comunica/actividades' },
   single_stic_password_change: () => ({ pathname: '/comunica/yo' }),
   single_stic_unsubscribe: () => ({ pathname: '/comunica/yo' }),
 };

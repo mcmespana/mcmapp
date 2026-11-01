@@ -18,6 +18,7 @@ import { delegationForRequest } from './delegation';
 import { createFakeServer, type FakeServer } from './fake';
 import { secureSecretStore } from './nativeStores';
 import { clearPhotoCache } from './photos';
+import { clearOpenedFiles } from './localFiles';
 import {
   addSignOutCleanup,
   configureSession,
@@ -116,6 +117,8 @@ export function getComunicaApi(): ComunicaApi {
   });
   // Salir vacía también las fotos de las fichas (plan 05).
   addSignOutCleanup(clearPhotoCache);
+  // Y los archivos de eventos abiertos (plan 13).
+  addSignOutCleanup(clearOpenedFiles);
   api = withSession(raw);
   return api;
 }
