@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 15:00 — Fotos en iPad, pantalla de versión mínima con ánimo y OTA que se aplica sola
+
+- **Fotos en iPad** (`global.fotosEnIpad`, panel → Perfiles → Sistema): con `false`, en **cualquier iPad** (MDM o no: la app no distingue) desaparecen la pestaña, el botón de Home y la tarjeta de «Más», y la pantalla (si se llega por enlace o notificación) dice que no está disponible sin leer `albums`. iPhone, Android y web no cambian. Ausente = se ven, como siempre. Es el resolver (`resolveProfileConfig`, ahora con `DeviceContext`) quien las quita; `Platform.isPad` en `utils/device.ts`.
+- **«Hay una versión nueva»** (`UpdateRequiredScreen`, sustituye al modo `update` de `MaintenanceScreen`): escena con el icono de la app, una barra que se llena y una flecha que acaba en check, confeti de los colores del logo que sube y el texto «Actualizar en la tienda lleva unos 30 segundos». Sin mofas. Con «reducir movimiento» queda el fotograma final quieto.
+- **Estricta o con saltos** (`global.minAppVersionSkips`): ausente = «Ahora no» en cada sesión (lo de siempre); `0` = estricto; `1`-`3` = esas veces y luego estricto, con el aviso de las que quedan. El contador es por dispositivo y se reinicia si el panel sube `minAppVersion`. `VersionGateContext` gana `canSkip` y `skipsLeft`.
+- **OTA sin modal**: la app descarga en segundo plano y **se actualiza sola** al abrirla (primeros 45 s) o al volver del fondo, nunca a media pantalla, mostrando «Un momentín…» con una frase de entre 160 (`constants/updatePhrases.ts`). Cortafuegos de 10 min contra bucles de recarga. `OTAUpdatePrompt` eliminado; `OTAContext` pierde `dismissed`/`setDismissed` y gana `applying`; la insignia de Home sale mientras haya una OTA lista esperando. Ver `docs/desarrollo/OTA.md`.
+- Contrato: `docs/contratos/PANEL_PERFILES.md` §1.8 y §1.9.
+
 ## 2026-11-01 13:30 — Comunica: la portada de familias recupera el aspecto de la de David
 
 - «Viendo a» vuelve a ser una tarjeta con la inicial de quien se ve, su nombre y «Cambiar»; el saludo, una tarjeta. Solo cambia el aspecto: la lógica y la agenda de la portada son las de `main`.

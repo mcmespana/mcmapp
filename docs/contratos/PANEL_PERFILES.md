@@ -66,6 +66,8 @@ edita JSON. El cliente combina perfil + delegación + overrides al arrancar.
   "maintenanceMode": false,         // ⚠ true → toda la app muestra MaintenanceScreen
   "maintenanceMessage": "",         // mensaje opcional durante mantenimiento
   "minAppVersion": "0.0.0",         // semver mínima soportada. "0.0.0" = sin bloqueo
+  "minAppVersionSkips": 3,          // «Ahora no» permitidos antes de ser estricto (§1.8). Ausente = sin límite
+  "fotosEnIpad": true,              // false → sin Fotos en iPad, solo iPad (§1.9). Ausente = true
   "appReviewMode": false,           // modo revisión de tiendas — lo gestiona el panel (§1.6)
   "comunicaNativa": "alpha"         // área privada nativa: "off" | "alpha" | "all" (§1.7). Ausente = "alpha"
 }
@@ -77,8 +79,12 @@ edita JSON. El cliente combina perfil + delegación + overrides al arrancar.
 - _Avisar de mantenimiento programado_: `maintenanceMode = true` +
   `maintenanceMessage = "Volvemos en 1 h"`.
 - _Forzar actualización_ tras un release crítico: subir `minAppVersion` a la
-  nueva versión publicada en stores. Las apps inferiores verán pantalla
-  bloqueante con botón "Ir a la tienda".
+  nueva versión publicada en stores. Las apps inferiores verán la pantalla de
+  «Hay una versión nueva» (`UpdateRequiredScreen`) con botón «Actualizar en la
+  tienda». Si deja o no seguir sin actualizar lo decide `minAppVersionSkips`
+  (§1.8).
+- _Apagar las Fotos en los iPads_ (colegios con MDM): `fotosEnIpad = false`
+  (§1.9).
 
 ### 1.2. `data.profiles.{familia | monitor | miembro}` — perfiles base
 
@@ -261,6 +267,47 @@ Interruptor de la pestaña Comunica: ¿área nativa o la WebView de siempre (el
 - Hasta que el panel lo enseñe, se cambia desde la consola de Firebase.
 
 ---
+
+### 1.8. `global.minAppVersionSkips` — cuánto insiste la pantalla de actualización
+
+Opcional, entero. Decide qué pasa en la pantalla de «Hay una versión nueva»
+cuando `minAppVersion` deja fuera a una app:
+
+| Valor           | Comportamiento                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------- |
+| ausente         | Sin límite: hay «Ahora no» en cada sesión (lo de siempre).                                              |
+| `0`             | **Estricto**: no hay «Ahora no». Sin actualizar no se entra.                                            |
+| `1`, `2`, `3`…  | Esas veces en total y luego estricto. La pantalla avisa de las que quedan («Es la última vez…»).        |
+
+- El contador es **por dispositivo** (`AsyncStorage`, clave `versionGateSkips`)
+  y va atado a la `minAppVersion` que se exigía: si el panel la sube, es una
+  exigencia nueva y se empieza de cero.
+- Una vez gastado el último, la pantalla es estricta para siempre (hasta que
+  cambie `minAppVersion`).
+- Un valor corrupto (texto, negativo, NaN) cuenta como ausente: **fail-open**,
+  igual que `minAppVersion`. El panel solo ofrece «Sin límite», 0, 1, 2 y 3.
+- Solo tiene efecto si `minAppVersion` bloquea a esa app.
+
+### 1.9. `global.fotosEnIpad` — Fotos en iPad
+
+Opcional, booleano. **Ausente = `true`** (se ven, como siempre).
+
+Existe para los iPads gestionados por MDM (los de los colegios Consolación, por
+ejemplo), donde no deben verse fotos. La app **no puede saber si un iPad está
+en un MDM**, así que el interruptor apaga las fotos en **todos los iPads**,
+cualquier modelo y versión de iOS (`Platform.isPad`).
+
+Con `false`, solo en iPad:
+
+- desaparecen la pestaña Fotos, el botón de Home y la tarjeta de «Más» (el
+  resolver las quita de `tabs`/`homeButtons`/`masItems` — ver `fotosHidden` en
+  `ResolvedProfileConfig`);
+- si llega a la pantalla por enlace, notificación o pantalla de evento, sale
+  «Las fotos no están disponibles» y ni se lee `albums`;
+- si `defaultTab` era `fotos`, la app abre `index`.
+
+iPhone, Android y web no cambian. Quitar Fotos del **perfil** (§1.2) sigue
+siendo la forma de apagarlas para todo el mundo; esto es solo por dispositivo.
 
 ## 2. Orden de resolución (lo que hace el cliente)
 
@@ -668,6 +715,8 @@ export interface GlobalConfig {
   maintenanceMode: boolean;
   maintenanceMessage?: string;
   minAppVersion: string;
+  minAppVersionSkips?: number; // §1.8
+  fotosEnIpad?: boolean; // §1.9
 }
 
 export type OverrideKey = `${ProfileType}:${string}`;
@@ -850,3 +899,5 @@ await update(ref(db), {
 | **`updatedAt`**       | Timestamp ISO en la raíz del documento. La app refresca caché solo cuando cambia. Hay que tocarlo en cada escritura.        |
 | **`maintenanceMode`** | Kill switch global que muestra `MaintenanceScreen` en toda la app.                                                          |
 | **`minAppVersion`**   | Kill switch que fuerza actualización si la versión instalada es inferior. `0.0.0` = desactivado.                            |
+| **`minAppVersionSkips`** | Cuántas veces se puede pulsar «Ahora no» en la pantalla de actualización antes de ser estricta (§1.8).                   |
+| **`fotosEnIpad`**     | `false` apaga las Fotos en todo iPad (§1.9). Pensado para iPads con MDM de colegios.                                         |

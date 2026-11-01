@@ -8,7 +8,8 @@
     "maintenanceMessage": "",
     "minAppVersion": "0.0.0",
     "appReviewMode": false,
-    "comunicaNativa": "alpha"
+    "comunicaNativa": "alpha",
+    "fotosEnIpad": true
   },
   "profiles": {
     "familia": {

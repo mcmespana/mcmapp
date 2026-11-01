@@ -36,9 +36,8 @@ import AddToHomeBanner from '@/components/AddToHomeBanner';
 import CommandPalette from '@/components/CommandPalette';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import MaintenanceScreen from '@/components/MaintenanceScreen';
+import UpdateRequiredScreen from '@/components/UpdateRequiredScreen';
 import { useToast } from '@/contexts/AppToastContext';
-import OTAUpdatePrompt from '@/components/OTAUpdatePrompt';
-import { useOTAContext } from '@/contexts/OTAContext';
 import { PreviewChannelModal } from '@/components/PreviewChannelModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateUserMCMData } from '@/utils/authHelpers';
@@ -84,8 +83,6 @@ type WelcomePhase = 'checking' | 'show' | 'done';
 function InnerLayout() {
   const [welcome, setWelcome] = useState<WelcomePhase>('checking');
   const showAnimation = welcome !== 'done';
-  const { isReady, isDownloading, applyUpdate, dismissed, setDismissed } =
-    useOTAContext();
   const scheme = useColorScheme();
   const pathname = usePathname();
   const segments = useSegments();
@@ -95,6 +92,8 @@ function InnerLayout() {
   const {
     updateRequired,
     updateSkipped,
+    canSkip,
+    skipsLeft,
     skipUpdate,
     currentVersion: appVersion,
     minAppVersion,
@@ -219,20 +218,15 @@ function InnerLayout() {
 
   // Kill switches remotos: mantenimiento + versión mínima
   if (resolved.maintenanceMode) {
-    return (
-      <MaintenanceScreen
-        mode="maintenance"
-        message={resolved.maintenanceMessage}
-      />
-    );
+    return <MaintenanceScreen message={resolved.maintenanceMessage} />;
   }
   if (updateRequired && !updateSkipped) {
     return (
-      <MaintenanceScreen
-        mode="update"
+      <UpdateRequiredScreen
         minVersion={minAppVersion}
         currentVersion={appVersion}
-        onSkip={skipUpdate}
+        skipsLeft={skipsLeft}
+        onSkip={canSkip ? skipUpdate : undefined}
       />
     );
   }
@@ -276,12 +270,6 @@ function InnerLayout() {
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <AddToHomeBanner />
       <CommandPalette />
-      <OTAUpdatePrompt
-        visible={(isReady || isDownloading) && !dismissed}
-        isDownloading={isDownloading && !isReady}
-        onApply={applyUpdate}
-        onLater={() => setDismissed(true)}
-      />
       <PreviewChannelModal />
       <CarismochitoOverlay />
       {/* Avisos del área de Comunica: registro del móvil y aviso local (plan 08). */}

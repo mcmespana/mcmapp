@@ -7,7 +7,8 @@
  * `openAppStore`.
  */
 import React from 'react';
-import { renderHook, act } from '@testing-library/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { openAppStore } from '@/utils/storeLinks';
 import {
@@ -34,8 +35,9 @@ async function mount() {
   return renderHook(() => useVersionGate(), { wrapper });
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  await AsyncStorage.clear();
   (useResolvedProfileConfig as jest.Mock).mockReturnValue({
     minAppVersion: '0.0.0',
   });
@@ -78,6 +80,82 @@ describe('skipUpdate', () => {
     // "Saltado" no significa "ya no hace falta actualizar": sigue vigente,
     // solo se deja de insistir en esta sesión.
     expect(result.current.updateRequired).toBe(true);
+  });
+});
+
+describe('límite de «Ahora no» (minAppVersionSkips)', () => {
+  const block = (skips?: number) =>
+    (useResolvedProfileConfig as jest.Mock).mockReturnValue({
+      minAppVersion: '3.0.0',
+      minAppVersionSkips: skips,
+    });
+
+  it('sin límite (ausente): siempre se puede saltar, lo de siempre', async () => {
+    block(undefined);
+    const { result } = await mount();
+    expect(result.current.canSkip).toBe(true);
+    expect(result.current.skipsLeft).toBeNull();
+  });
+
+  it('0 = estricto: no se puede saltar y skipUpdate no hace nada', async () => {
+    block(0);
+    const { result } = await mount();
+    await waitFor(() => expect(result.current.skipsLeft).toBe(0));
+    expect(result.current.canSkip).toBe(false);
+    await act(async () => result.current.skipUpdate());
+    expect(result.current.updateSkipped).toBe(false);
+  });
+
+  it('con N saltos: gasta uno cada vez y a la N+1 ya es estricto', async () => {
+    block(2);
+    const first = await mount();
+    await waitFor(() => expect(first.result.current.skipsLeft).toBe(2));
+    await act(async () => first.result.current.skipUpdate());
+    expect(first.result.current.updateSkipped).toBe(true);
+    expect(first.result.current.skipsLeft).toBe(1);
+    await first.unmount();
+
+    // «Reabrir la app»: la sesión se resetea, el contador no.
+    const second = await mount();
+    await waitFor(() => expect(second.result.current.skipsLeft).toBe(1));
+    expect(second.result.current.updateSkipped).toBe(false);
+    await act(async () => second.result.current.skipUpdate());
+    expect(second.result.current.skipsLeft).toBe(0);
+    await second.unmount();
+
+    const third = await mount();
+    await waitFor(() => expect(third.result.current.skipsLeft).toBe(0));
+    expect(third.result.current.canSkip).toBe(false);
+  });
+
+  it('mientras no ha leído el contador no ofrece saltar', async () => {
+    block(3);
+    let finishRead: (v: string | null) => void = () => {};
+    (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(
+      () => new Promise((resolve) => (finishRead = resolve)),
+    );
+    const { result } = await mount();
+    expect(result.current.canSkip).toBe(false);
+    await act(async () => finishRead(null));
+    expect(result.current.canSkip).toBe(true);
+    expect(result.current.skipsLeft).toBe(3);
+  });
+
+  it('si el panel sube la versión mínima, empieza de cero', async () => {
+    await AsyncStorage.setItem(
+      'versionGateSkips',
+      JSON.stringify({ forVersion: '2.9.0', used: 3 }),
+    );
+    block(3);
+    const { result } = await mount();
+    await waitFor(() => expect(result.current.skipsLeft).toBe(3));
+  });
+
+  it('un contador corrupto en disco no bloquea: cuenta como 0 gastados', async () => {
+    await AsyncStorage.setItem('versionGateSkips', '{no es json');
+    block(1);
+    const { result } = await mount();
+    await waitFor(() => expect(result.current.skipsLeft).toBe(1));
   });
 });
 
