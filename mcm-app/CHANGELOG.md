@@ -15,6 +15,16 @@
   `updateProfileDetails`, `getProfileHealth`, `updateProfileHealth`).
 - Los enlaces del plugin a «Mis datos» (`single_stic_comunica_perfil`, `_profile`, `_laico`, `_tutor_profile`) abren
   la pantalla nativa; «Mis datos» también en «Tu cuenta». La foto aún se cambia en la web (falta `POST /photo`).
+## 2026-11-01 10:00 — Comunica nativa: documentos y calendario de familias (plan 16)
+
+- Nuevas pantallas en `comunica/`: `documentos` (lista con abrir a un toque), `documentos/subir` (hoja), `documentos/[id]`
+  (ficha: abrir, compartir, renombrar, sustituir archivo, eliminar con confirmación), `archivo` (visor de imagen/PDF, compartido
+  con el plan 13), `calendario` (Mes con puntitos y leyenda, Agenda) y `calendario/sesion/[id]` (hoja).
+- Cliente y falso: rutas `/v1/profiles/:pid/documents…` y `/sessions/:id` del middleware. Los documentos nunca se guardan en el
+  móvil; subir/editar/borrar van directos con `clientId` (sin cola). Los archivos se bajan a `cache/comunica/open/` y se borran al
+  cerrar el visor, al volver a primer plano, al abrir Documentos y al salir.
+- `SwipeableMonthCalendar` admite `markingType` (`multi-dot`), `hideExtraDays` y `accentColor`; la pestaña Calendario sigue igual.
+- El mapa de enlaces del plugin (plan 10) abre lo nativo para documentos, calendario y sesiones.
 
 ## 2026-10-31 21:00 — Comunica nativa: contra el middleware de verdad y entrar con la cuenta de la app
 

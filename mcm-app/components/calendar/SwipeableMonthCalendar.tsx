@@ -24,6 +24,15 @@ interface SwipeableMonthCalendarProps {
   /** `delta` = +1 (mes siguiente) o -1 (mes anterior). */
   onChangeMonth: (delta: number) => void;
   isDark: boolean;
+  /**
+   * Cómo se marcan los días: barras de periodo (la pestaña Calendario, por
+   * defecto) o puntitos (el calendario de familias del área, plan 16).
+   */
+  markingType?: CalendarProps['markingType'];
+  /** Sin días de otros meses (el área, C6 del plan 16). */
+  hideExtraDays?: boolean;
+  /** Color de lo elegido, hoy y las flechas. Por defecto el celeste de marca. */
+  accentColor?: string;
 }
 
 // Cuánto se desplaza la rejilla al confirmar el cambio de mes (fracción del
@@ -49,6 +58,9 @@ export default function SwipeableMonthCalendar({
   onDayPress,
   onChangeMonth,
   isDark,
+  markingType = 'multi-period',
+  hideExtraDays = false,
+  accentColor = colors.info,
 }: SwipeableMonthCalendarProps) {
   const { width: windowWidth } = useWindowDimensions();
   const [measuredWidth, setMeasuredWidth] = useState(0);
@@ -139,7 +151,8 @@ export default function SwipeableMonthCalendar({
             onPressArrowLeft={() => animateChange(-1)}
             onPressArrowRight={() => animateChange(1)}
             markedDates={markedDates}
-            markingType="multi-period"
+            markingType={markingType}
+            hideExtraDays={hideExtraDays}
             firstDay={1}
             enableSwipeMonths={false}
             style={styles.calendar}
@@ -148,10 +161,10 @@ export default function SwipeableMonthCalendar({
               dayTextColor: themeColors(isDark).text,
               monthTextColor: themeColors(isDark).text,
               textSectionTitleColor: '#8E8E93',
-              selectedDayBackgroundColor: colors.info,
+              selectedDayBackgroundColor: accentColor,
               selectedDayTextColor: colors.white,
-              arrowColor: colors.info,
-              todayTextColor: colors.info,
+              arrowColor: accentColor,
+              todayTextColor: accentColor,
               textDayFontWeight: '500',
               textMonthFontWeight: '700',
               textDayHeaderFontWeight: '600',

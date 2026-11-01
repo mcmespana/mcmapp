@@ -76,6 +76,10 @@ import {
   DetailsWriteResult,
   HealthResponse,
   type HealthWrite,
+  // Familias: plan 16
+  DocumentsResponse,
+  DocumentResponse,
+  SessionResponse,
 } from './contract';
 import { logger } from '@/utils/logger';
 
@@ -190,6 +194,37 @@ export interface ComunicaApi {
   getProfileHealth(pid: string): Promise<HealthResponse>;
   updateProfileHealth(pid: string, body: HealthWrite): Promise<WriteResult>;
   // Fin del plan 12.
+  // Familias: plan 16 (documentos y calendario). Los documentos van DIRECTOS,
+  // con conexión y sin cola: ni el nombre ni el archivo se quedan en el móvil.
+  getProfileDocuments(
+    pid: string,
+    opts?: ReadOptions,
+  ): Promise<DocumentsResponse>;
+  getProfileDocument(pid: string, id: string): Promise<DocumentResponse>;
+  /** Baja el archivo a la caché de la app (se borra al cerrar el visor). */
+  getProfileDocumentFile(
+    pid: string,
+    id: string,
+    onProgress?: (fraction: number) => void,
+  ): Promise<DownloadedFile>;
+  uploadProfileDocument(
+    pid: string,
+    fields: ProfileDocumentFields,
+    file: UploadFile,
+  ): Promise<WriteResult>;
+  /** Solo lo que cambia (y `file` si se sustituye). */
+  updateProfileDocument(
+    pid: string,
+    id: string,
+    fields: ProfileDocumentPatch,
+    file?: UploadFile,
+  ): Promise<WriteResult>;
+  deleteProfileDocument(
+    pid: string,
+    id: string,
+    clientId: string,
+  ): Promise<WriteResult>;
+  getProfileSession(pid: string, id: string): Promise<SessionResponse>;
   /**
    * Cómo pedir una foto (`photoUrl`): con el servidor de verdad, la URL con el
    * token; con el falso, su imagen inventada. Ninguna pantalla importa el falso.
@@ -215,6 +250,52 @@ export interface UploadFile {
   size: number;
   /** En web, el `File` que da el selector. */
   blob?: Blob;
+}
+
+// Familias: plan 16 — los tipos del archivo que se sube y del que se baja.
+export interface ProfileDocumentFields {
+  clientId: string;
+  name: string;
+  description?: string;
+}
+export interface ProfileDocumentPatch {
+  clientId: string;
+  name?: string;
+  description?: string;
+}
+
+/** Un archivo bajado a la caché de la app (o un `blob:` en web). */
+export interface DownloadedFile {
+  localUri: string;
+  fileName: string;
+  mimeType: string;
+}
+
+/**
+ * Cómo se baja un archivo y dónde se deja (`openFiles.ts`, nativo y web). Va
+ * inyectado para que este fichero no cargue nada nativo.
+ */
+export interface FileTransport {
+  /** GET con cabeceras: el estado, las cabeceras y el archivo ya en la caché. */
+  download(
+    url: string,
+    headers: Record<string, string>,
+    fileName: string,
+    onProgress?: (fraction: number) => void,
+  ): Promise<{
+    status: number;
+    headers: Record<string, string>;
+    uri: string;
+  }>;
+  /** El texto de un archivo bajado (el cuerpo de un error). */
+  readText(uri: string): Promise<string>;
+  /** Lo deja en la caché con ese nombre (lo usa el servidor falso). */
+  saveBytes(
+    bytes: Uint8Array,
+    fileName: string,
+    mimeType: string,
+  ): Promise<string>;
+  remove(uri: string): void;
 }
 
 /** Lo que entiende `expo-image` como `source`. */
@@ -283,12 +364,15 @@ export interface HttpClientOptions {
   /** El token de acceso de la sesión (lo pone el plan 02). */
   getToken?: () => string | null | Promise<string | null>;
   fetchImpl?: typeof fetch;
+  /** Dónde se bajan los archivos (plan 16). Sin él, no se puede abrir nada. */
+  files?: FileTransport;
 }
 
 export function createHttpClient({
   baseUrl,
   getToken,
   fetchImpl,
+  files,
 }: HttpClientOptions): ComunicaApi {
   const doFetch =
     fetchImpl ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
@@ -378,6 +462,63 @@ export function createHttpClient({
       );
     }
     return parsed.data;
+  }
+
+  /**
+   * Un archivo (plan 16): se baja con el token a la caché de la app y se
+   * devuelve dónde ha quedado, con su nombre y tipo (de `Content-Disposition`
+   * y `Content-Type`). Un error se lee de su cuerpo, como el de `request`.
+   */
+  async function download(
+    path: string,
+    onProgress?: (fraction: number) => void,
+  ): Promise<DownloadedFile> {
+    if (!files) {
+      throw new ComunicaApiError('bad_response', 'No se pueden bajar archivos');
+    }
+    const token = getToken ? await getToken() : null;
+    const fallbackName = 'documento';
+    let res: Awaited<ReturnType<FileTransport['download']>>;
+    try {
+      res = await files.download(
+        `${root}${path}`,
+        token ? { Authorization: `Bearer ${token}` } : {},
+        fallbackName,
+        onProgress,
+      );
+    } catch {
+      throw new ComunicaApiError('network', 'Sin conexión con el servidor');
+    }
+    const header = (name: string) =>
+      Object.entries(res.headers).find(
+        ([k]) => k.toLowerCase() === name,
+      )?.[1] ?? '';
+    if (res.status < 200 || res.status >= 300) {
+      let body: unknown = null;
+      try {
+        body = JSON.parse(await files.readText(res.uri));
+      } catch {
+        body = null;
+      }
+      files.remove(res.uri);
+      const parsed = ErrorBody.safeParse(body);
+      throw new ComunicaApiError(
+        parsed.success
+          ? parsed.data.error.code
+          : (STATUS_CODE[res.status] ?? 'crm_unavailable'),
+        parsed.success ? parsed.data.error.message : `HTTP ${res.status}`,
+        res.status,
+        parsed.success ? parsed.data.error.reason : undefined,
+      );
+    }
+    return {
+      localUri: res.uri,
+      fileName:
+        fileNameFromDisposition(header('content-disposition')) ?? fallbackName,
+      mimeType:
+        header('content-type').split(';')[0].trim() ||
+        'application/octet-stream',
+    };
   }
 
   const q = (opts?: ReadOptions) => (opts?.fresh ? '?fresh=1' : '');
@@ -619,6 +760,57 @@ export function createHttpClient({
     updateProfileHealth: (pid, body) =>
       request('PUT', `/v1/profiles/${enc(pid)}/health`, WriteResult, body),
     // Fin del plan 12.
+    // Familias: plan 16. Sin reintentos en las escrituras: las repite la
+    // persona («Reintentar») con el mismo `clientId`.
+    getProfileDocuments: (pid, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/documents${q(opts)}`,
+        DocumentsResponse,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileDocument: (pid, id) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/documents/${enc(id)}`,
+        DocumentResponse,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileDocumentFile: (pid, id, onProgress) =>
+      download(
+        `/v1/profiles/${enc(pid)}/documents/${enc(id)}/file`,
+        onProgress,
+      ),
+    uploadProfileDocument: (pid, fields, file) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/documents`,
+        WriteResult,
+        profileDocumentForm(fields, file),
+      ),
+    updateProfileDocument: (pid, id, fields, file) =>
+      request(
+        'PATCH',
+        `/v1/profiles/${enc(pid)}/documents/${enc(id)}`,
+        WriteResult,
+        profileDocumentForm(fields, file),
+      ),
+    deleteProfileDocument: (pid, id, clientId) =>
+      request(
+        'DELETE',
+        `/v1/profiles/${enc(pid)}/documents/${enc(id)}?clientId=${enc(clientId)}`,
+        WriteResult,
+      ),
+    getProfileSession: (pid, id) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/sessions/${enc(id)}`,
+        SessionResponse,
+        undefined,
+        READ_RETRIES,
+      ),
     photoSource: (url) => {
       // `expo-image` pide la foto él solo: el token va en la cabecera, y SOLO
       // si la foto es de nuestro servidor (una `photoUrl` de otro dominio no se
@@ -655,4 +847,46 @@ export function uploadForm(
     } as unknown as Blob);
   }
   return form;
+}
+
+// Familias: plan 16 — el multipart de los documentos de un perfil y el nombre
+// del archivo que se baja.
+
+/** `clientId`, y `name`, `description` y `file` solo si vienen. */
+export function profileDocumentForm(
+  fields: ProfileDocumentFields | ProfileDocumentPatch,
+  file?: UploadFile,
+): FormData {
+  const form = new FormData();
+  form.append('clientId', fields.clientId);
+  if (fields.name !== undefined) form.append('name', fields.name);
+  if (fields.description !== undefined) {
+    form.append('description', fields.description);
+  }
+  if (file) {
+    if (file.blob) {
+      form.append('file', file.blob, file.name);
+    } else {
+      form.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType,
+      } as unknown as Blob);
+    }
+  }
+  return form;
+}
+
+/** El nombre de `Content-Disposition` (`filename*=UTF-8''…` primero). */
+export function fileNameFromDisposition(value: string): string | null {
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(value);
+  if (star) {
+    try {
+      return decodeURIComponent(star[1].trim());
+    } catch {
+      // cae al nombre ASCII
+    }
+  }
+  const plain = /filename="?([^";]+)"?/i.exec(value);
+  return plain ? plain[1].trim() : null;
 }

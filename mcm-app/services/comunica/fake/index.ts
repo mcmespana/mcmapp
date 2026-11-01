@@ -52,7 +52,11 @@ import {
   WebPassRequest,
   type Tokens,
 } from '../contract';
-import { ComunicaApiError, type ComunicaApi } from '../client';
+import {
+  ComunicaApiError,
+  type ComunicaApi,
+  type FileTransport,
+} from '../client';
 import {
   FAKE_CODE,
   FAKE_DNIS,
@@ -90,6 +94,11 @@ import {
   type MyDetailsKeys,
 } from './myDetails';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
+import {
+  familyDocsRoutes,
+  type FamilyDocsFake,
+  type FamilyDocsKeys,
+} from './familyDocs';
 
 export interface FakeControls {
   /** Espera de cada respuesta, en ms. */
@@ -218,6 +227,8 @@ export interface FakeServerOptions {
    * `X-Comunica-Delegation` del de verdad, plan 17). `null`, la de la ficha.
    */
   getDelegation?: (write: boolean) => string | null;
+  /** Dónde deja los archivos que «baja» (plan 16). Sin él, un `data:`. */
+  files?: FileTransport;
 }
 
 /** Lo que dura el token de acceso del falso (como el de verdad, ~15 min). */
@@ -233,7 +244,8 @@ export interface FakeServer
     fakeDevices.DevicesFake,
     UploadsLog,
     ProfilesFake,
-    MyDetailsFake {
+    MyDetailsFake,
+    FamilyDocsFake {
   controls: FakeControls;
   setControls(patch: Partial<FakeControls>): void;
   subscribe(listener: () => void): () => void;
@@ -641,6 +653,20 @@ export function createFakeServer(
     allowedProfile: familyRoutes.allowedProfile,
   });
 
+  // Familias: plan 16 (documentos y sesiones), en `familyDocs.ts`.
+  const familyDocs = familyDocsRoutes({
+    data: () => data,
+    gate: (route, write) => gate(route, write),
+    allowedProfile: (pid) => familyRoutes.allowedProfile(pid),
+    today,
+    nowIso,
+    seen: seenClientIds,
+    bumpWrites: (n = 1) => {
+      writeCount += n;
+    },
+    files: options.files,
+  });
+
   // Avisos en el móvil (plan 08): los móviles registrados, en `devices.ts`.
   const devices = fakeDevices.routes(gate, () => current, seenClientIds);
   // Pasar lista en un evento (plan 07): sus rutas viven en `events.ts`.
@@ -672,6 +698,8 @@ export function createFakeServer(
     | keyof ProfilesFake
     | MyDetailsKeys
     | keyof MyDetailsFake
+    | FamilyDocsKeys
+    | keyof FamilyDocsFake
   > = {
     get controls() {
       return controls;
@@ -701,6 +729,7 @@ export function createFakeServer(
       badCodes.clear();
       devices.deviceRegistry.clear();
       familyRoutes.resetProfiles();
+      familyDocs.resetFamilyDocs();
       notify();
     },
     issueSession(p) {
@@ -1382,6 +1411,7 @@ export function createFakeServer(
     mine,
     familyRoutes,
     myDetails,
+    familyDocs,
     {
       getEvents: events.getEvents,
       getEventRoll: events.getEventRoll,

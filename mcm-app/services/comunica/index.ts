@@ -18,6 +18,7 @@ import { delegationForRequest } from './delegation';
 import { createFakeServer, type FakeServer } from './fake';
 import { secureSecretStore } from './nativeStores';
 import { clearPhotoCache } from './photos';
+import { clearOpenFiles, openFilesTransport } from './openFiles';
 import {
   addSignOutCleanup,
   configureSession,
@@ -97,6 +98,7 @@ export function getComunicaApi(): ComunicaApi {
       {
         getAccessToken: currentAccessToken,
         getDelegation: delegationForRequest,
+        files: openFilesTransport,
       },
     );
     raw = fake;
@@ -107,6 +109,7 @@ export function getComunicaApi(): ComunicaApi {
     raw = createHttpClient({
       baseUrl: t.baseUrl,
       getToken: currentAccessToken,
+      files: openFilesTransport,
     });
   }
   configureSession({
@@ -116,6 +119,8 @@ export function getComunicaApi(): ComunicaApi {
   });
   // Salir vacía también las fotos de las fichas (plan 05).
   addSignOutCleanup(clearPhotoCache);
+  // …y los archivos abiertos (plan 16): nada de `comunica/open/` se queda.
+  addSignOutCleanup(() => clearOpenFiles(true));
   api = withSession(raw);
   return api;
 }

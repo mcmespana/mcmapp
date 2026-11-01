@@ -154,6 +154,29 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
   single_stic_comunica_laico: () => DETAILS_OF('yo'),
   single_stic_tutor_profile: () => DETAILS_OF('yo'),
   // Fin del plan 12.
+  // Documentos y calendario (plan 16). Ninguno lleva a BORRAR: borrar solo
+  // sale del botón de la ficha, con confirmación. `action=create` → subir;
+  // con `id`, su ficha (la descarga del plugin también va a la ficha).
+  list_stic_documents: () => ({ pathname: '/comunica/documentos' }),
+  single_stic_documents: (d) =>
+    d.action === 'create'
+      ? { pathname: '/comunica/documentos/subir' }
+      : d.id
+        ? { pathname: '/comunica/documentos/[id]', params: { id: d.id } }
+        : { pathname: '/comunica/documentos' },
+  single_stic_activities_calendar: () => ({ pathname: '/comunica/calendario' }),
+  // Crear o editar una sesión no existe en el plugin (sin handler): al mes.
+  single_stic_sessions: (d) =>
+    d.action === 'detail' && d.id
+      ? { pathname: '/comunica/calendario/sesion/[id]', params: { id: d.id } }
+      : { pathname: '/comunica/calendario' },
+  // Desactivadas en el plugin: «Mis sesiones» es la Agenda; «Mis
+  // asistencias», el mes (el color es la asistencia).
+  list_stic_sessions: () => ({
+    pathname: '/comunica/calendario',
+    params: { view: 'agenda' },
+  }),
+  list_stic_attendances: () => ({ pathname: '/comunica/calendario' }),
 };
 
 export function registerNativePage(

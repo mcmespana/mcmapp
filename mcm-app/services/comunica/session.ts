@@ -386,6 +386,22 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     getProfileHealth: authed((pid) => api.getProfileHealth(pid)),
     updateProfileHealth: authed((pid, b) => api.updateProfileHealth(pid, b)),
     // Fin del plan 12.
+    // Familias: plan 16
+    getProfileDocuments: authed((pid, o) => api.getProfileDocuments(pid, o)),
+    getProfileDocument: authed((pid, id) => api.getProfileDocument(pid, id)),
+    getProfileDocumentFile: authed((pid, id, p) =>
+      api.getProfileDocumentFile(pid, id, p),
+    ),
+    uploadProfileDocument: authed((pid, f, file) =>
+      api.uploadProfileDocument(pid, f, file),
+    ),
+    updateProfileDocument: authed((pid, id, f, file) =>
+      api.updateProfileDocument(pid, id, f, file),
+    ),
+    deleteProfileDocument: authed((pid, id, c) =>
+      api.deleteProfileDocument(pid, id, c),
+    ),
+    getProfileSession: authed((pid, id) => api.getProfileSession(pid, id)),
     photoSource: (url) => api.photoSource(url),
   };
 }
