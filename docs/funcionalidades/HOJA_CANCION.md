@@ -106,8 +106,10 @@ media palabra.
 en `utils/cantoralOnboarding.ts`): se abre solo la primera vez que se entra
 en el cantoral (`cantoralOnboarding` < `CANTORAL_ONBOARDING_VERSION`; súbela
 para que todos lo vuelvan a ver) y siempre con el «?» del header. Pregunta
-por acordes y notación, completa/compacta, estilo del estribillo, letra y
-etiquetas, y cada respuesta se ve al momento en una canción de verdad
+por acordes y notación, completa/compacta, estilo del estribillo, letra,
+etiquetas y, al final, **si formas parte de un coro** (`ChoirStep`: sumarte a
+uno existente o registrar el tuyo; se guarda como «mi coro», ver
+`docs/funcionalidades/COROS.md`), y cada respuesta se ve al momento en una canción de verdad
 (`pickPreviewSong`: una con estrofas, acordes y estribillo repetido) que baja
 sola a lo que cambia (`SongDisplay` → `scrollTo`). Se cierra en cualquier
 paso; lo tocado se queda, porque son ajustes normales.

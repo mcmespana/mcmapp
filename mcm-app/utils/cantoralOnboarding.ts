@@ -15,15 +15,33 @@
  */
 export const CANTORAL_ONBOARDING_VERSION = 1;
 
-export type OnboardingStepId = 'role' | 'repeats' | 'chorus' | 'text' | 'tags';
+export type OnboardingStepId =
+  'role' | 'repeats' | 'chorus' | 'text' | 'tags' | 'choir';
 
-/** Los pasos, en orden. El de etiquetas solo si hay etiquetas que elegir. */
+/**
+ * Los pasos, en orden. El de etiquetas solo si hay etiquetas que elegir; el
+ * del coro va siempre el último (no cambia la canción: es lo que se hace
+ * después de dejarla a tu gusto).
+ */
 export function onboardingSteps(opts: {
   hasTags: boolean;
 }): OnboardingStepId[] {
   const steps: OnboardingStepId[] = ['role', 'repeats', 'chorus', 'text'];
   if (opts.hasTags) steps.push('tags');
+  steps.push('choir');
   return steps;
+}
+
+/**
+ * Mensaje para quien intenta registrar su coro desde el onboarding. Los
+ * errores que lanza `createChoir` ya vienen en castellano y dicen qué hacer
+ * (nombre corto, «ya existe, elígelo en la lista»); el resto (Firebase sin
+ * conexión, permisos…) llega en inglés y no se le enseña a nadie.
+ */
+export function choirCreateErrorMessage(e: unknown): string {
+  const msg = e instanceof Error ? e.message : '';
+  if (/^(El nombre del coro|Ya existe «)/.test(msg)) return msg;
+  return 'No se ha podido registrar el coro. ¿Tienes internet?';
 }
 
 /** ¿Se abre solo? Una vez por versión, y nunca mientras cargan los ajustes. */

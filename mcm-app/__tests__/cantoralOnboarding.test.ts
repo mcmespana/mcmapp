@@ -1,5 +1,6 @@
 import {
   CANTORAL_ONBOARDING_VERSION,
+  choirCreateErrorMessage,
   FALLBACK_PREVIEW,
   hasRepeatedChorus,
   onboardingSteps,
@@ -36,10 +37,45 @@ describe('onboardingSteps', () => {
       'repeats',
       'chorus',
       'text',
+      'choir',
     ]);
   });
-  it('con etiquetas, las deja para el final', () => {
-    expect(onboardingSteps({ hasTags: true }).at(-1)).toBe('tags');
+  it('con etiquetas, van justo antes del coro', () => {
+    expect(onboardingSteps({ hasTags: true })).toEqual([
+      'role',
+      'repeats',
+      'chorus',
+      'text',
+      'tags',
+      'choir',
+    ]);
+  });
+  it('el coro es siempre el último paso', () => {
+    expect(onboardingSteps({ hasTags: false }).at(-1)).toBe('choir');
+    expect(onboardingSteps({ hasTags: true }).at(-1)).toBe('choir');
+  });
+});
+
+describe('choirCreateErrorMessage', () => {
+  it('deja pasar los avisos de createChoir, que ya dicen qué hacer', () => {
+    expect(
+      choirCreateErrorMessage(
+        new Error('El nombre del coro es demasiado corto'),
+      ),
+    ).toBe('El nombre del coro es demasiado corto');
+    expect(
+      choirCreateErrorMessage(
+        new Error('Ya existe «Coro Castellón». Elígelo en la lista.'),
+      ),
+    ).toBe('Ya existe «Coro Castellón». Elígelo en la lista.');
+  });
+  it('un error de red o de Firebase no se enseña en inglés', () => {
+    const generic = 'No se ha podido registrar el coro. ¿Tienes internet?';
+    expect(choirCreateErrorMessage(new Error('Client is offline'))).toBe(
+      generic,
+    );
+    expect(choirCreateErrorMessage('PERMISSION_DENIED')).toBe(generic);
+    expect(choirCreateErrorMessage(undefined)).toBe(generic);
   });
 });
 

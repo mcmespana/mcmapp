@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 23:06 — Tutorial del cantoral: «Personaliza tu cantoral» y «¿Formas parte de un coro?»
+
+- El onboarding del cantoral lleva ahora un **título fijo en la cabecera** («Personaliza tu cantoral», con «Saltar» a la derecha y los puntos de progreso debajo) y un **último paso nuevo, «¿Formas parte de un coro?»** (`components/song-onboarding/ChoirStep.tsx`): lista los coros que hay (con su nº de playlists) para sumarte con un toque, y «Registrar mi coro» abre un campo para crear el tuyo si no está (`createChoir`, que avisa si ya existe uno igual). Es opcional; la elección se guarda como «mi coro» (`useMyChoir`), así que la hoja del coro de «Tu selección» ya lo tiene elegido.
+- En móvil el paso del coro ocupa toda la pantalla (como el de etiquetas) y el campo de texto sube con el teclado. Sin conexión, la lista y el registro avisan en castellano y dejan reintentar.
+- `useMyChoir` difunde los cambios entre todas sus instancias (antes cada una se quedaba con el coro con que arrancó) y la lectura del guardado ya no pisa un coro elegido mientras tanto.
+- **No** se sube `CANTORAL_ONBOARDING_VERSION`: quien ya vio el tutorial no lo verá solo; lo encuentra con el «?» del cantoral. Súbelo a 2 si se quiere que todo el mundo vea el paso nuevo.
+- `OptionRow` pasa a su propio fichero (sin cambios) para reutilizarlo.
+
 ## 2026-11-01 15:00 — Estado de la build 2.5 al día con las marcas del propietario
 
 - `BUILD_AGOSTO_2026.md` y `PENDIENTE-REVISAR.md`: lo hecho, lo que se hará, lo que sigue pendiente (SHA-1 de Android, pruebas del móvil, Cloud Function del calendario y la PR #372) y lo que queda para el futuro.

@@ -28,6 +28,8 @@ import { MaterialIcons } from '@/components/ui/icons';
 import SongDisplay from '@/components/SongDisplay';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import SegmentedControl from '@/components/ui/SegmentedControl';
+import OptionRow from '@/components/song-onboarding/OptionRow';
+import ChoirStep from '@/components/song-onboarding/ChoirStep';
 import TagChip from '@/components/song-tags/TagChip';
 import { useHiddenTags } from '@/hooks/useHiddenTags';
 import { ChorusPreview } from '@/components/SongFontBottomSheet';
@@ -71,6 +73,7 @@ const STEP_SCROLL: Record<OnboardingStepId, string | null> = {
   chorus: '.sec.chorus',
   text: null,
   tags: null,
+  choir: null,
 };
 
 const STEP_TEXT: Record<OnboardingStepId, { title: string; hint: string }> = {
@@ -93,6 +96,10 @@ const STEP_TEXT: Record<OnboardingStepId, { title: string; hint: string }> = {
   tags: {
     title: 'Tus etiquetas',
     hint: 'Opcional. Se cambia siempre desde Etiquetas → Editar.',
+  },
+  choir: {
+    title: '¿Formas parte de un coro?',
+    hint: 'Opcional. Con tu coro, la playlist del domingo se importa con un toque.',
   },
 };
 
@@ -149,16 +156,19 @@ export default function CantoralOnboarding({
     else setIndex((i) => i + 1);
   };
   const back = () => setIndex((i) => Math.max(0, i - 1));
-  // Las etiquetas no cambian la canción: en el móvil, ese paso se queda con
-  // toda la pantalla (si no, la última opción quedaba fuera). La vista
-  // previa se oculta sin desmontarse, para que al volver no recargue.
-  const soloPanel = step === 'tags' && !layout.isWide;
+  // Las etiquetas y el coro no cambian la canción: en el móvil, esos pasos se
+  // quedan con toda la pantalla (si no, la última opción quedaba fuera). La
+  // vista previa se oculta sin desmontarse, para que al volver no recargue.
+  const soloPanel = (step === 'tags' || step === 'choir') && !layout.isWide;
 
   const panel = (
     <ScrollView
       style={soloPanel ? styles.panelScrollFull : styles.panelScroll}
       contentContainerStyle={styles.panelContent}
       showsVerticalScrollIndicator={false}
+      // El paso del coro tiene un campo de texto: que el teclado no lo tape.
+      keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
     >
       {/* Cada paso entra con un fundido corto: sin él, el cambio de opciones
           era un salto seco. */}
@@ -177,7 +187,12 @@ export default function CantoralOnboarding({
           {STEP_TEXT[step].hint}
         </Text>
         <StepBody step={step} palette={p} tags={tags} isDark={isDark} />
-        {index === 0 || isLast ? (
+        {step === 'choir' ? (
+          <Text style={[styles.footnote, { color: t.textMuted }]}>
+            Tu coro se cambia cuando quieras desde Tu selección, con el icono
+            del coro.
+          </Text>
+        ) : index === 0 || isLast ? (
           <Text style={[styles.footnote, { color: t.textMuted }]}>
             Todo se cambia cuando quieras: en cada canción, en opciones → «Letra
             y vista», o con el ? de arriba del cantoral.
@@ -198,8 +213,29 @@ export default function CantoralOnboarding({
         style={[styles.root, { backgroundColor: t.background }]}
         edges={Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom']}
       >
-        {/* Cabecera: progreso y salida, siempre a mano. */}
+        {/* Cabecera: título, salida y progreso, siempre a mano. */}
         <View style={styles.header}>
+          <View style={styles.headerRow}>
+            <Text
+              style={[styles.headerTitle, { color: t.text }]}
+              accessibilityRole="header"
+              numberOfLines={1}
+            >
+              Personaliza tu cantoral
+            </Text>
+            <PressableFeedback
+              onPress={onClose}
+              style={styles.skip}
+              hitSlop={spacing.sm}
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar y empezar a usar el cantoral"
+            >
+              <PressableFeedback.Highlight />
+              <Text style={[styles.skipText, { color: t.link }]}>
+                {isLast ? 'Cerrar' : 'Saltar'}
+              </Text>
+            </PressableFeedback>
+          </View>
           <View
             style={styles.dots}
             accessibilityLabel={`Paso ${index + 1} de ${steps.length}`}
@@ -217,18 +253,6 @@ export default function CantoralOnboarding({
               />
             ))}
           </View>
-          <PressableFeedback
-            onPress={onClose}
-            style={styles.skip}
-            hitSlop={spacing.sm}
-            accessibilityRole="button"
-            accessibilityLabel="Cerrar y empezar a usar el cantoral"
-          >
-            <PressableFeedback.Highlight />
-            <Text style={[styles.skipText, { color: t.link }]}>
-              {isLast ? 'Cerrar' : 'Saltar'}
-            </Text>
-          </PressableFeedback>
         </View>
 
         <View style={[styles.body, layout.isWide && styles.bodyWide]}>
@@ -443,6 +467,10 @@ function StepBody({
     );
   }
 
+  if (step === 'choir') {
+    return <ChoirStep palette={p} isDark={isDark} />;
+  }
+
   // Etiquetas: destacadas (atajo arriba y discretas en las listas) u
   // ocultas (y, si se quiere, sus canciones fuera de las categorías).
   return <TagsStep palette={p} tags={tags} isDark={isDark} />;
@@ -571,59 +599,6 @@ function TagSection({
   );
 }
 
-/** Una opción grande con icono, título y explicación (elige una de dos). */
-function OptionRow({
-  palette: p,
-  icon,
-  title,
-  desc,
-  active,
-  onPress,
-}: {
-  palette: SheetPalette;
-  icon: keyof typeof MaterialIcons.glyphMap;
-  title: string;
-  desc: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <PressableFeedback
-      onPress={() => {
-        if (active) return;
-        h.select();
-        onPress();
-      }}
-      style={[styles.option, valueBoxStyle(p, active)]}
-      accessibilityRole="radio"
-      accessibilityState={{ selected: active }}
-      accessibilityLabel={`${title}. ${desc}`}
-    >
-      <PressableFeedback.Highlight />
-      <MaterialIcons
-        name={icon}
-        size={26}
-        color={active ? p.active.fg : p.text}
-      />
-      <View style={styles.optionText}>
-        <Text
-          style={[styles.optionTitle, { color: active ? p.active.fg : p.text }]}
-        >
-          {title}
-        </Text>
-        <Text style={[styles.optionDesc, { color: p.textSecondary }]}>
-          {desc}
-        </Text>
-      </View>
-      <MaterialIcons
-        name={active ? 'radio-button-checked' : 'radio-button-unchecked'}
-        size={22}
-        color={active ? p.active.fg : p.disabled}
-      />
-    </PressableFeedback>
-  );
-}
-
 /** Un interruptor en una fila (etiqueta, números, aire). */
 function ToggleRow({
   palette: p,
@@ -719,13 +694,14 @@ function ChoiceChip({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
+    gap: spacing.xs,
   },
-  dots: { flex: 1, flexDirection: 'row', gap: spacing.xs },
+  headerRow: { flexDirection: 'row', alignItems: 'center' },
+  headerTitle: { flex: 1, ...typography.title },
+  dots: { flexDirection: 'row', gap: spacing.xs },
   dot: { flex: 1, maxWidth: 40, height: 4, borderRadius: radii.xs },
   skip: {
     minHeight: 44,
@@ -761,19 +737,6 @@ const styles = StyleSheet.create({
   hint: { ...typography.subhead, marginTop: -spacing.xs },
   footnote: { ...typography.footnote, marginTop: spacing.xs },
   group: { gap: spacing.sm, marginTop: spacing.xs },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    minHeight: 64,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: 1,
-  },
-  optionText: { flex: 1 },
-  optionTitle: { ...typography.title },
-  optionDesc: { ...typography.footnote },
   inline: {
     flexDirection: 'row',
     alignItems: 'center',
