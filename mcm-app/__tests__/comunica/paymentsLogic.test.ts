@@ -514,7 +514,12 @@ describe('enlaces del plugin que llegan a Pagos', () => {
   it('lo desactivado (crear, editar, borrar, compromisos) va al listado', () => {
     for (const action of ['create', 'edit', 'delete'] as const)
       expect(
-        to({ internalpage: 'single_stic_payments', action, id: 'abcdef0123' }),
+        to({
+          internalpage: 'single_stic_payments',
+          // `delete` está desactivado en el plugin y no es una forma válida de `Destination`: llega igual por un enlace viejo.
+          action: action as 'edit',
+          id: 'abcdef0123',
+        }),
       ).toEqual({ pathname: '/comunica/pagos' });
     expect(to({ internalpage: 'list_stic_payment_commitments' })).toEqual({
       pathname: '/comunica/pagos',

@@ -194,7 +194,7 @@ describe('el listado', () => {
           myRegistrationStatus: { label: 'Pendiente', tone: 'warn' },
         }),
         TODAY,
-      ).label,
+      )?.label,
     ).toBe('Con plaza');
   });
   it('el chip del plazo gana a la etiqueta del CRM; con fechas y abierta, mandan las fechas', () => {

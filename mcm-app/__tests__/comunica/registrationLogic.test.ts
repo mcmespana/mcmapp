@@ -384,7 +384,10 @@ describe('el pago en una línea', () => {
     const ok = { label: 'Confirmada', tone: 'ok' as const };
     const reg = (
       payment: PaymentState,
-      status = ok,
+      status: {
+        label: string;
+        tone: 'ok' | 'warn' | 'danger' | 'neutral';
+      } = ok,
       amount: number | null = 35,
     ) => ({ status, payment, amount });
     // Pendiente o devuelto con pago concreto.
@@ -526,7 +529,7 @@ describe('enlaces del plugin que llegan a las inscripciones', () => {
     expect(
       to({
         internalpage: 'single_stic_registrations',
-        action: 'delete',
+        action: 'delete' as 'edit',
         id: 'abcdef0123',
       }),
     ).toEqual({
