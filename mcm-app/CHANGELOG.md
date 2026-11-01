@@ -4,6 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 15:00 — Estado de la build 2.5 al día con las marcas del propietario
+
+- `BUILD_AGOSTO_2026.md` y `PENDIENTE-REVISAR.md`: lo hecho, lo que se hará, lo que sigue pendiente (SHA-1 de Android, pruebas del móvil, Cloud Function del calendario y la PR #372) y lo que queda para el futuro.
+
 ## 2026-11-01 14:00 — Versión de la app y runtimeVersion: 2.5.0
 
 - `version` de `app.json` pasa de 2.1.0 a **2.5.0** para las próximas builds (también la de la extensión de notificaciones iOS, que la toma de ahí).

@@ -11,21 +11,26 @@
 > existe. Se compila desde `main`. El nombre del fichero dice "agosto" porque
 > era la fecha prevista; se mantiene para no romper los enlaces.)
 
-## 📍 Qué falta a 2026-11-01 (revisado; la tabla de abajo es del 8/10 y está vieja)
+## 📍 Qué falta a 2026-11-01 (marcado por el propietario en la checklist)
 
-La build ya no es la 2.1 con SDK 57: es la **2.5.0 con SDK 58** y lleva el área privada nativa. De lo del 8/10, **sigue sin hacer**:
+La build es la **2.5.0 con SDK 58** y lleva el área privada nativa. La lista viva, con las pruebas del móvil punto por punto y comentarios, está en el artefacto «Checklist build 2.5». Resumen de lo marcado el 1/11:
 
-| Falta                                                                                                                                                             | Bloquea publicar               |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| §6 **Política de privacidad y fichas de las tiendas**: Aptabase (datos de uso) y, ahora, lo del área privada (DNI, salud, fotos y documentos de menores, Face ID) | **Sí**                         |
-| §2.6 Huellas SHA-1 de Android para el inicio de sesión con Google, sin confirmar                                                                                  | Sí en Android                  |
-| §5 Canales de notificación de Android en un Android real                                                                                                          | No, pero hay que mirarlo       |
-| §5 Resto del checklist sobre la build de desarrollo (incluye el área nativa, §5.1)                                                                                | Sí, lo que salga               |
-| §2.5 Credenciales de la extensión de notificaciones (iOS): se resuelven en la primera build de iOS                                                                | Solo la primera vez            |
-| §0 Desplegar la Cloud Function del calendario (`firebase deploy --only functions`)                                                                                | No                             |
-| El middleware: variables de escritura en Vercel (`MW_CRM_*`), revisión humana de seguridad y la evaluación de impacto de protección de datos (con menores)        | Para abrir el área a más gente |
+**Hecho:** política de privacidad y fichas de las tiendas · credenciales de la extensión de notificaciones (iOS) · canales de notificación en un Android real · variables `MW_CRM_*` en Vercel · una escritura contra el CRM real · revisión de seguridad del middleware · evaluación de impacto de protección de datos · foto de perfil · portada de familias (#371 fusionada).
 
-Hecho desde el 8/10: Expo 58, los permisos de iOS del área nativa (`app.json`: Face ID, cámara y fotos), el acceso con la cuenta de la app y las pantallas de monitores y familias en `main`.
+**Se hará:** estados de inscripción y medios de pago con el CRM real (dudas 8, 9, 10, 17, 33 y 34 de `FASE3.md`) · encender el pago con tarjeta (dudas 64, 65 y 67).
+
+**Sin marcar, sigue pendiente:**
+
+| Falta                                                                                                                                                   | Bloquea                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| §2.6 Huellas SHA-1 de Android (la del keystore de EAS antes de la build de desarrollo y las dos de Play App Signing después), dadas de alta en Firebase | Sí, el login en Android |
+| §5 Checklist de pruebas sobre la build de desarrollo, ahora desglosado en el artefacto                                                                  | Sí, lo que salga        |
+| §0 Desplegar la Cloud Function del calendario (`firebase deploy --only functions`): hace que el calendario abra más rápido; sin ella funciona igual     | No                      |
+| Fusionar la PR #372 (versión y `runtimeVersion` 2.5.0)                                                                                                  | Sí, para la build 2.5   |
+
+**Para más adelante** (anotado como «Futuro»): sábados de los monitores del MIC, firmas dentro de Documentos y el rediseño del área nativa.
+
+**No se hace** (decisión del 1/11): borrar las ramas viejas de David por ahora.
 
 ## Estado a 2026-10-08 (histórico)
 
