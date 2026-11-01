@@ -107,6 +107,7 @@ import DocumentUploadScreen from '@/components/comunica/documentos/DocumentUploa
 import FileViewerScreen from '@/components/comunica/documentos/FileViewerScreen';
 import SwipeableMonthCalendar from '@/components/calendar/SwipeableMonthCalendar';
 import CalendarScreen from '@/components/comunica/calendario/CalendarScreen';
+import MemberHome from '@/components/comunica/inicio/MemberHome';
 import SessionScreen from '@/components/comunica/calendario/SessionScreen';
 import {
   clearViewingFile,
@@ -1003,5 +1004,31 @@ describe('guardarraíles', () => {
     expect(s.indexOf('confirmAction(TXT.deleteTitle')).toBeLessThan(
       s.indexOf('writes.remove('),
     );
+  });
+});
+
+describe('«Próximas actividades» de la portada', () => {
+  it('viendo a un hijo: sus próximas actividades y «Ver calendario»; tocar una abre su destino', async () => {
+    const { tree } = await setup('family', <MemberHome />, {
+      activeId: LUCIA,
+      controls: CLOCK,
+    });
+    await until(() => texts(tree).includes('Próximas actividades'));
+    expect(texts(tree)).toContain('Ver calendario');
+    await pressLike(tree, /^Merienda de bienvenida,/);
+    expect(mockRouter.push).toHaveBeenLastCalledWith({
+      pathname: '/comunica/actividades/[eventId]',
+      params: { eventId: 'pev-sinc' },
+    });
+    await pressLike(tree, /^Ver calendario$/);
+    expect(mockRouter.push).toHaveBeenLastCalledWith('/comunica/calendario');
+  });
+  it('el familiar a secas no tiene Calendario, y la portada no enseña la agenda', async () => {
+    const { tree } = await setup('family', <MemberHome />, {
+      controls: CLOCK,
+    });
+    await until(() => texts(tree).includes('Tus pagos'));
+    await wait(100);
+    expect(texts(tree)).not.toContain('Próximas actividades');
   });
 });

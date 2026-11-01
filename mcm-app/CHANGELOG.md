@@ -4,6 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-01 — Comunica familias: «Próximas actividades» en la portada
+
+- La portada de familias enseña, entre «Actividades» y «Tu perfil», **«Próximas actividades»**: hasta 5 filas (primero los eventos abiertos a inscripción, luego las próximas sesiones) y «Ver calendario». Solo si se enseña Calendario a quien mira y hay algo cerca; sin datos, sin conexión o vacío, no se pinta. Tocar una fila abre la ficha del evento o de la sesión. (`UpcomingAgenda`; usaba `upcomingAgendaItems`, que estaba hecha y sin pintar.)
+
 ## 2026-11-01 — Comunica familias: calendario que se desliza
 
 - El mes del calendario del área usa ahora `SwipeableMonthCalendar` (el de la pestaña Calendario): se desliza con el dedo y con las flechas, sin días de otros meses, con puntitos por actividad, el color del área y la frase para el lector de pantalla de cada día. En iPad y web anchos, mes y lista del día en dos paneles. La Agenda no cambia.
