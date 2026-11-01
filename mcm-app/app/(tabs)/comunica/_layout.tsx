@@ -15,6 +15,7 @@
 //            actividad (plan 07).
 //   acceso-codigo, acceso-elegir → entrar (plan 02; «Entra en tu área» es la
 //              propia puerta cuando no hay sesión).
+//   datos/[pid] → «Mis datos» o «Datos de Lucía» (plan 12).
 //   yo       → tu cuenta y salir (carpeta: avisos y mis datos de monitor,
 //              planes 08 y 09).
 //   web      → el legado abierto a propósito (comparar, o lo que no es nativo).
@@ -128,6 +129,8 @@ export default function ComunicaLayout() {
           <Stack.Screen name="web" options={{ headerShown: false }} />
           <Stack.Screen name="muestra" options={{ title: 'Muestra' }} />
           <Stack.Screen name="perfiles" options={{ title: 'Perfiles' }} />
+          {/* Plan 12: «Mis datos» / «Datos de Lucía» (el título lo pone la pantalla). */}
+          <Stack.Screen name="datos/[pid]" options={{ title: 'Mis datos' }} />
         </Stack>
       </ActiveProfileProvider>
     </ComunicaAreaProvider>

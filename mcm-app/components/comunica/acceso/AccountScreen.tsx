@@ -106,6 +106,17 @@ export default function AccountScreen() {
       </Section>
 
       <Section>
+        {/* Plan 12: tus datos (la portada del 11 lleva además «Tu perfil»). */}
+        <Row
+          icon="person.crop.circle"
+          label="Mis datos"
+          onPress={() =>
+            router.push({
+              pathname: '/comunica/datos/[pid]',
+              params: { pid: 'yo' },
+            })
+          }
+        />
         {me.roles.includes('monitor') ? (
           <Row
             icon="graduationcap"
@@ -143,7 +154,8 @@ function Row({
   onPress,
   destructive,
 }: {
-  icon: 'lock' | 'list.bullet.clipboard' | 'graduationcap';
+  icon:
+    'lock' | 'list.bullet.clipboard' | 'graduationcap' | 'person.crop.circle';
   label: string;
   onPress: () => void;
   destructive?: boolean;

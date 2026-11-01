@@ -9,6 +9,7 @@ import BottomSheet from '@/components/BottomSheet';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
 import { h } from '@/utils/haptics';
+import { boldParts } from '@/utils/comunica/forms';
 import { useComunicaTheme } from '../useComunicaTheme';
 
 /** El botón ⓘ y su hoja. `label` es el campo («MAT»). */
@@ -59,7 +60,18 @@ export function HelpSheet({
   return (
     <BottomSheet visible={visible} onClose={onClose} title={title}>
       <View style={styles.body}>
-        <Text style={[styles.text, { color: t.text }]}>{text}</Text>
+        {/* Los `<strong>` del plugin llegan como `**negrita**` (plan 12). */}
+        <Text style={[styles.text, { color: t.text }]}>
+          {boldParts(text).map((p, i) =>
+            p.bold ? (
+              <Text key={i} style={styles.bold}>
+                {p.text}
+              </Text>
+            ) : (
+              p.text
+            ),
+          )}
+        </Text>
       </View>
     </BottomSheet>
   );
@@ -78,4 +90,5 @@ const styles = StyleSheet.create({
   },
   body: { paddingBottom: 24 },
   text: { ...typography.body, lineHeight: 24 },
+  bold: { fontWeight: '700' },
 });

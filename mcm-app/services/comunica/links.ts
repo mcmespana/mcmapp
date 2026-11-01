@@ -95,6 +95,11 @@ export interface NativeHref {
  * añade aquí; un test recorre `PLUGIN_PAGES` para que ninguna se quede sin
  * sitio.
  */
+const DETAILS_OF = (pid: 'actual' | 'yo'): NativeHref => ({
+  pathname: '/comunica/datos/[pid]',
+  params: { pid },
+});
+
 const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
   single_stic_pasar_lista: () => ({ pathname: '/comunica' }),
   single_stic_pasar_lista_grupos: () => ({
@@ -142,6 +147,13 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
   single_stic_comunica_monitor: () => ({ pathname: '/comunica/yo/monitor' }),
   single_stic_password_change: () => ({ pathname: '/comunica/yo' }),
   single_stic_unsubscribe: () => ({ pathname: '/comunica/yo' }),
+  // Familias: plan 12. `actual` es el perfil que se ve; `yo`, quien ha
+  // entrado (lo resuelve la pantalla, que sabe a quién se ve).
+  single_stic_comunica_perfil: () => DETAILS_OF('actual'),
+  single_stic_profile: () => DETAILS_OF('actual'),
+  single_stic_comunica_laico: () => DETAILS_OF('yo'),
+  single_stic_tutor_profile: () => DETAILS_OF('yo'),
+  // Fin del plan 12.
 };
 
 export function registerNativePage(
