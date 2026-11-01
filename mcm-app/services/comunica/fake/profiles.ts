@@ -211,20 +211,49 @@ function weekly(
   return out;
 }
 
-function calendarFor(data: FakeData, pid: string, today: string): Calendar {
+/** El calendario inventado de cada perfil (también lo lee la sesión del plan 16). */
+export function calendarFor(
+  data: FakeData,
+  pid: string,
+  today: string,
+): Calendar {
   const ids = data.personas;
-  const course = ev(1, 'Catequesis COM · Curso 2026-2027', today, -60, 220);
+  const course = ev(1, 'Catequesis COM · Curso 2026-2027', today, -160, 220);
   switch (pid) {
     // Lucía (hija de la familia de dos): abiertos, con plaza y sesiones.
     case 'f-fam-lucia': {
       const trip = ev(7, 'Ruta por la sierra', today, -1, -1);
       return {
         sessions: [
+          // Un curso con ~24 sesiones: las cuatro marcas y sin marcar (plan 16).
           ...weekly(
             course,
             today,
-            ['yes', 'yes', 'no_unjustified', 'partial', 'yes', null],
-            3,
+            [
+              'yes',
+              'yes',
+              'no_justified',
+              'yes',
+              'partial',
+              'yes',
+              'no_unjustified',
+              'yes',
+              null,
+              'yes',
+              'yes',
+              'partial',
+              'yes',
+              'no_unjustified',
+              'yes',
+              'yes',
+              'no_justified',
+              'yes',
+              'no_unjustified',
+              'partial',
+              'yes',
+              null,
+            ],
+            4,
           ),
           // Un día de excursión sin hora (00:00): «Todo el día».
           {
@@ -237,7 +266,12 @@ function calendarFor(data: FakeData, pid: string, today: string): Calendar {
             attendance: 'yes',
           },
         ],
-        registeredEvents: [course, trip],
+        // La convivencia, con plaza y sin sesiones: banda de dos días.
+        registeredEvents: [
+          course,
+          trip,
+          ev(16, 'Convivencia de invierno COM', today, 16, 17),
+        ],
         openEvents: [
           ev(2, 'Convivencia de otoño COM', today, 9, 10),
           ev(3, 'Excursión al Moncayo', today, 23),

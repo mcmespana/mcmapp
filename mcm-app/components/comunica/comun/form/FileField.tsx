@@ -64,6 +64,8 @@ export default function FileField({
   onRetry,
   onReview,
   children,
+  selected,
+  sheetHint = 'PDF, JPG o PNG de hasta 6 MB.',
 }: {
   label: string;
   /** El CRM ya tiene un archivo de este tipo. */
@@ -83,11 +85,18 @@ export default function FileField({
   onReview?: () => void;
   /** Lo que va debajo (el enlace al trámite del Ministerio). */
   children?: React.ReactNode;
+  /**
+   * Plan 16: un archivo ELEGIDO que aún no se sube (se sube con «Subir
+   * documento» o «Guardar»). Se pinta como fila y el botón dice «Cambiar».
+   */
+  selected?: { name: string; sizeText: string } | null;
+  /** La pista de la hoja de elegir (formatos y tamaño). */
+  sheetHint?: string;
 }) {
   const t = useComunicaTheme();
   const [choosing, setChoosing] = useState(false);
   const sending = upload?.state === 'sending';
-  const uploaded = hasFile || upload?.state === 'applied';
+  const uploaded = hasFile || upload?.state === 'applied' || !!selected;
   const sources = SOURCES.filter(
     (s) => Platform.OS !== 'web' || s.source !== 'camera',
   );
@@ -96,7 +105,7 @@ export default function FileField({
       <View style={styles.row}>
         <View style={styles.head}>
           <FieldLabel label={label} />
-          {uploaded && upload?.state !== 'applied' ? (
+          {selected ? null : uploaded && upload?.state !== 'applied' ? (
             <LockedRow
               value="Ya subido"
               action={
@@ -142,6 +151,22 @@ export default function FileField({
           <PressableFeedback.Highlight />
         </PressableFeedback>
       </View>
+      {selected && !upload ? (
+        <View
+          style={[styles.upload, { backgroundColor: t.backgroundSunken }]}
+          accessible
+          accessibilityLabel={`${selected.name}, ${selected.sizeText}`}
+        >
+          <IconSymbol name="doc.text" size={18} color={t.textSecondary} />
+          <Text
+            style={[styles.fileName, styles.uploadBody, { color: t.text }]}
+            numberOfLines={1}
+            ellipsizeMode="middle"
+          >
+            {selected.name} · {selected.sizeText}
+          </Text>
+        </View>
+      ) : null}
       {upload ? (
         <View
           style={[styles.upload, { backgroundColor: t.backgroundSunken }]}
@@ -214,7 +239,7 @@ export default function FileField({
           ))}
         </View>
         <Text style={[styles.sheetHint, { color: t.textSecondary }]}>
-          PDF, JPG o PNG de hasta 6 MB.
+          {sheetHint}
         </Text>
       </BottomSheet>
     </View>

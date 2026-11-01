@@ -128,6 +128,38 @@ export default function ComunicaLayout() {
           <Stack.Screen name="web" options={{ headerShown: false }} />
           <Stack.Screen name="muestra" options={{ title: 'Muestra' }} />
           <Stack.Screen name="perfiles" options={{ title: 'Perfiles' }} />
+          {/* Plan 16 */}
+          <Stack.Screen
+            name="documentos/index"
+            options={{ title: 'Documentos' }}
+          />
+          <Stack.Screen
+            name="documentos/subir"
+            options={{
+              title: 'Subir un documento',
+              presentation: 'formSheet',
+              sheetAllowedDetents: [1],
+              sheetGrabberVisible: true,
+            }}
+          />
+          <Stack.Screen
+            name="documentos/[id]"
+            options={{ title: 'Documento' }}
+          />
+          <Stack.Screen name="archivo" options={{ title: 'Archivo' }} />
+          <Stack.Screen
+            name="calendario/index"
+            options={{ title: 'Calendario' }}
+          />
+          <Stack.Screen
+            name="calendario/sesion/[id]"
+            options={{
+              title: 'Sesión',
+              presentation: 'formSheet',
+              sheetAllowedDetents: [0.5, 1],
+              sheetGrabberVisible: true,
+            }}
+          />
         </Stack>
       </ActiveProfileProvider>
     </ComunicaAreaProvider>

@@ -104,7 +104,7 @@ respuestas. Lo que hay que cambiar está en [`ESTADO.md`](ESTADO.md).
 | [`13-eventos-y-ficha.md`](13-eventos-y-ficha.md) | «Para apuntarte», «Te has apuntado» y la ficha del evento | 01, 03, 11 | L |
 | [`14-inscripciones.md`](14-inscripciones.md) | Inscribirse (alta corta), mis inscripciones, modificar y cancelar | 13 | L |
 | [`15-pagos.md`](15-pagos.md) | Pagos y arrancar un pago con tarjeta desde la app | 11, 14 | L |
-| [`16-documentos-y-calendario.md`](16-documentos-y-calendario.md) | Documentos (ver, subir, borrar) y calendario con asistencia | 01, 03, 11 | M |
+| [`16-documentos-y-calendario.md`](16-documentos-y-calendario.md) | Documentos (ver, subir, borrar) y calendario con asistencia — 🟡 **hecho en `claude/familias-plan-16` (01/11/2026)** contra el falso y el contrato del middleware; sin capturas ni prueba con el servidor real. TODO: tests de pantalla, abrir el archivo al llegar por `download=true`, accesibilidad por día en la rejilla | 01, 03, 11 | M |
 | [`17-varias-delegaciones.md`](17-varias-delegaciones.md) | La delegación de trabajo: quien colabora con otra delegación la elige (plugin, 23/10) | 01, 04, 05, 06 | M |
 
 ### Estado (28/10/2026)

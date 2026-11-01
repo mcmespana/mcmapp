@@ -198,6 +198,8 @@ describe('servidor falso', () => {
       profileCalendar: await s.getProfileCalendar(
         (await s.getMe()).me.personId,
       ),
+      // Familias: plan 16 (con Lucía, que tiene documentos y sesiones).
+      ...(await plan16Results()),
     };
     for (const [name, value] of Object.entries(results)) {
       expect(
@@ -708,3 +710,39 @@ describe('Grupos y fichas en el servidor falso (plan 05)', () => {
     expect(src.uri.startsWith('data:image/svg+xml')).toBe(true);
   });
 });
+
+/** Las rutas del plan 16, con una familia de prueba. */
+async function plan16Results() {
+  const f = createFakeServer({ latencyMs: 0, persona: 'guardianTwo' });
+  const pid = 'f-fam-lucia';
+  const { documents } = await f.getProfileDocuments(pid);
+  const id = documents[0].id;
+  const pdf = {
+    uri: 'file:///tmp/a.pdf',
+    name: 'a.pdf',
+    mimeType: 'application/pdf',
+    size: 10,
+  };
+  const session = (await f.getProfileCalendar(pid)).sessions[0].id;
+  return {
+    profileDocuments: await f.getProfileDocuments(pid),
+    profileDocument: await f.getProfileDocument(pid, id),
+    // Bytes, no JSON: se prueba en `familyDocs.test.ts`.
+    profileDocumentFile: undefined,
+    uploadProfileDocument: await f.uploadProfileDocument(
+      pid,
+      { clientId: '11111111-1111-4111-8111-111111111111', name: 'A' },
+      pdf,
+    ),
+    updateProfileDocument: await f.updateProfileDocument(pid, id, {
+      clientId: '22222222-2222-4222-8222-222222222222',
+      name: 'B',
+    }),
+    deleteProfileDocument: await f.deleteProfileDocument(
+      pid,
+      id,
+      '33333333-3333-4333-8333-333333333333',
+    ),
+    profileSession: await f.getProfileSession(pid, session),
+  };
+}

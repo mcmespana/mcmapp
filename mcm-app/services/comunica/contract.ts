@@ -2059,6 +2059,51 @@ export const ROUTES = {
     response: CalendarData,
     persist: true,
   },
+  // Documentos y calendario (plan 16). Los documentos NUNCA se guardan en el
+  // móvil (un nombre como «Informe médico» ya es sensible); la sesión, sí.
+  profileDocuments: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/documents',
+    response: DocumentsResponse,
+    persist: false,
+  },
+  profileDocument: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/documents/:id',
+    response: DocumentResponse,
+    persist: false,
+  },
+  /** Bytes, no JSON: el cliente los deja en la caché de la app y los borra al cerrar. */
+  profileDocumentFile: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/documents/:id/file',
+    response: NoContent,
+    persist: false,
+  },
+  uploadProfileDocument: {
+    method: 'POST',
+    path: '/v1/profiles/:pid/documents',
+    response: WriteResult,
+    persist: false,
+  },
+  updateProfileDocument: {
+    method: 'PATCH',
+    path: '/v1/profiles/:pid/documents/:id',
+    response: WriteResult,
+    persist: false,
+  },
+  deleteProfileDocument: {
+    method: 'DELETE',
+    path: '/v1/profiles/:pid/documents/:id',
+    response: WriteResult,
+    persist: false,
+  },
+  profileSession: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/sessions/:id',
+    response: SessionResponse,
+    persist: true,
+  },
   code: {
     method: 'POST',
     path: '/v1/auth/code',

@@ -265,9 +265,16 @@ describe('guardarraíles de los archivos', () => {
       .flatMap((d) => walk(path.join(ROOT, d)))
       .filter((f) => /from 'expo-file-system/.test(fs.readFileSync(f, 'utf8')))
       .map(rel);
-    expect(users).toEqual(['services/comunica/localFiles.ts']);
+    // …y el que abre los archivos bajados (plan 16), también con su .web.
+    expect(users).toEqual([
+      'services/comunica/localFiles.ts',
+      'services/comunica/openFiles.ts',
+    ]);
     expect(read('services/comunica/localFiles.web.ts')).not.toMatch(
       /expo-file-system'/,
+    );
+    expect(read('services/comunica/openFiles.web.ts')).not.toMatch(
+      /expo-file-system/,
     );
   });
 

@@ -18,6 +18,7 @@ import {
   isRelationActive,
 } from '@/services/comunica/fake/profiles';
 import { isTeamPath } from '@/services/comunica/delegation';
+import { uuidV4 } from '@/utils/comunica/uuid';
 
 const server = (persona: PersonaId, patch = {}) =>
   createFakeServer({ latencyMs: 0, persona, ...patch });
@@ -31,7 +32,42 @@ const code = (p: Promise<unknown>) =>
 /** Cada ruta `/v1/profiles/:pid/…` llamada con un `pid`. */
 const PROFILE_CALLS: Record<string, (s: FakeServer, pid: string) => unknown> = {
   profileCalendar: (s, pid) => s.getProfileCalendar(pid),
+  // Plan 16: los de un documento, con el primero (con archivo) de ese pid.
+  profileDocuments: (s, pid) => s.getProfileDocuments(pid),
+  profileDocument: async (s, pid) =>
+    s.getProfileDocument(pid, (await firstDoc(s, pid)).id),
+  profileDocumentFile: async (s, pid) =>
+    s.getProfileDocumentFile(pid, (await firstDoc(s, pid)).id),
+  uploadProfileDocument: (s, pid) =>
+    s.uploadProfileDocument(
+      pid,
+      { clientId: uuidV4(), name: 'Prueba' },
+      {
+        uri: 'file:///x.pdf',
+        name: 'x.pdf',
+        mimeType: 'application/pdf',
+        size: 10,
+      },
+    ),
+  updateProfileDocument: async (s, pid) =>
+    s.updateProfileDocument(pid, (await firstDoc(s, pid)).id, {
+      clientId: uuidV4(),
+      name: 'Otro nombre',
+    }),
+  deleteProfileDocument: async (s, pid) =>
+    s.deleteProfileDocument(pid, (await firstDoc(s, pid)).id, uuidV4()),
+  // Quien no tiene sesiones (Rosa) prueba el pid con su calendario.
+  profileSession: async (s, pid) => {
+    const cal = await s.getProfileCalendar(pid);
+    return cal.sessions[0] ? s.getProfileSession(pid, cal.sessions[0].id) : cal;
+  },
 };
+
+/** El primer documento con archivo de un pid (403 si el pid no vale). */
+async function firstDoc(s: FakeServer, pid: string) {
+  const { documents } = await s.getProfileDocuments(pid);
+  return documents.find((d) => d.fileName) ?? documents[0];
+}
 
 describe('contrato de familias', () => {
   it('admite un perfil sin nombre (el CRM no lo dio)', () => {
