@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   card: {
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
     marginBottom: spacing.md,
     overflow: 'hidden',
   },

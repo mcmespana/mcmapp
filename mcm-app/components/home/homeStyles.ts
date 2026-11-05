@@ -99,7 +99,7 @@ export const styles = StyleSheet.create({
 
   // ── Notification card ──
   notifCard: {
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
     borderWidth: 1,
     padding: spacing.md + 2,
     ...shadows.raised,

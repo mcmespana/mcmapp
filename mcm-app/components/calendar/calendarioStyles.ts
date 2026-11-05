@@ -91,7 +91,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       marginHorizontal: 16,
       marginTop: 8,
       marginBottom: 12,
-      borderRadius: radii.xl,
+      borderRadius: radii.lg,
       backgroundColor: themeColors(isDark).background,
       overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
       ...Platform.select({

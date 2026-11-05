@@ -233,6 +233,12 @@ destacadas, chips y heroes · `full 28` FABs · `pillFull 999` **solo** badges
 circulares.
 Elige de la lista. Un `borderRadius: 18` es una respuesta incorrecta.
 
+**Una tarjeta de contenido es `lg` en toda la app**, también en Más, Inicio y
+Calendario (auditoría de coherencia, 05/11/2026: había tarjetas a 16 y a 20 una
+junto a otra). `xl` es para lo que destaca de verdad —héroe, tarjeta destacada,
+chip, botón circular—. Contigo conserva sus 20-22 como excepción de territorio
+(§2).
+
 **Con una excepción, que es geometría y no capricho: el radio interior es el
 exterior menos el hueco.** Una pastilla dentro de un carril de `radii.md` (12)
 con `padding: 2` lleva 10, no 8 — si le pones el mismo radio que al padre, las

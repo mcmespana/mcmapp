@@ -186,10 +186,10 @@ export default function SwipeableMonthCalendar({
 const styles = StyleSheet.create({
   // Recorta la rejilla que sale de cuadro mientras se desliza.
   clip: {
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
     overflow: 'hidden',
   },
   calendar: {
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
   },
 });
