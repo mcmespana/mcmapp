@@ -147,6 +147,7 @@ Tokens centralizados para evitar magic numbers en componentes:
 ```
 StateColors             selectedBgLight/Dark, hoverOverlay(Dark), pressedOverlay(Dark)
 SwipeColors             add / remove — verde y rojo de sistema del swipe
+TunerColors             inTuneInk/Fill (Light/Dark), nearInk (Light/Dark) — afinador; resuelto con tunerColors(isDark)
 KeyPillColors           bgLight / bgDark — pill de tono en SongListItem
 HighlightColors         light/dark { bg, fg, border } — canción o playlist destacada
 CarismoColors           light / dark / glow / deep / deepEdge / abyss / inactive* / onDeep* / leaf
@@ -196,6 +197,7 @@ WARM_DARK: paralelo, fondos #1A1712/#100F0C/#26221C, accent #DAA520
 
 | Token      | Tamaño | Peso   | Uso                                                        |
 | ---------- | ------ | ------ | ---------------------------------------------------------- |
+| `display`  | 88px   | 700    | Una nota o cifra sola gigante (afinador) · letterSpacing -3 |
 | `h0`       | 34px   | 800    | Títulos hero (Contigo, ScreenHero) · letterSpacing -1.4    |
 | `h1`       | 28px   | 700    | Títulos de pantalla                                        |
 | `h2`       | 22px   | 700    | Subtítulos, secciones                                      |
