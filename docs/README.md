@@ -13,21 +13,22 @@
 
 Cómo funciona cada sistema de la app, de principio a fin.
 
-| Documento                                                | Qué cubre                                                                                                                                                   |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [LOGIN.md](funcionalidades/LOGIN.md)                     | Inicio de sesión con Google y Apple en iOS, Android y web: arquitectura, variables de entorno, **huellas SHA-1 de Android** y diagnóstico de errores        |
-| [NOTIFICACIONES.md](funcionalidades/NOTIFICACIONES.md)   | Sistema de notificaciones push: cliente implementado, backend, plan de pruebas                                                                              |
-| [EVENTOS.md](funcionalidades/EVENTOS.md)                 | Sistema de eventos (Jubileo, encuentros, retiros…): paths de Firebase y cómo añadir un evento nuevo                                                         |
-| [CALENDARIOS.md](funcionalidades/CALENDARIOS.md)         | Calendarios ICS: por qué son lentos (medido), la Cloud Function que los precachea cada 2 h y el fallback                                                    |
-| [ENCUESTAS.md](funcionalidades/ENCUESTAS.md)             | Sistema de encuestas y evaluaciones (guía funcional)                                                                                                        |
-| [COROS.md](funcionalidades/COROS.md)                     | Coros, playlists compartidas y coro en vivo: `/choirs`, importar «la última», actualizar vs subir nueva, contraseña y caducidad de 24 h                     |
-| [HOJA_CANCION.md](funcionalidades/HOJA_CANCION.md)       | Cómo se pinta una canción: palabras, secciones, estribillos repetidos y `{chorus}`, cortes de línea por frase, vista compacta, columnas en iPad, onboarding |
-| [ARREGLOS.md](funcionalidades/ARREGLOS.md)               | Directiva `{arr:}` del cantoral (anotaciones de arreglos) + prompt del generador ChordPro                                                                   |
-| [ETIQUETAS.md](funcionalidades/ETIQUETAS.md)             | Etiquetas del cantoral: directiva `{tags:}`, catálogo `songs/tags`, botón del header, nube y pantalla `__TAG__:`                                            |
-| [SUBRAYADO.md](funcionalidades/SUBRAYADO.md)             | Subrayado de las lecturas de Contigo: rangos, componente de texto nativo y qué falta (build nativa) para el ítem "Subrayar" del menú del sistema            |
-| [ENLACES_CANCION.md](funcionalidades/ENLACES_CANCION.md) | Enlaces de una canción: `audioLinks` (suenan dentro de la app) frente a enlaces externos (Spotify, partituras, webs)                                        |
-| [CANAL_PREVIEW.md](funcionalidades/CANAL_PREVIEW.md)     | Modo tester ("Laboratorio Alpha"): cómo un dispositivo recibe los OTA de `preview` en vez de los de `production`, y cómo comprobarlo                        |
-| [CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)       | Modo Carismochito (agitar el móvil) y la caza de Carismochitos con su colección, escondida en el Laboratorio Alpha                                          |
+| Documento                                                            | Qué cubre                                                                                                                                                   |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [LOGIN.md](funcionalidades/LOGIN.md)                                 | Inicio de sesión con Google y Apple en iOS, Android y web: arquitectura, variables de entorno, **huellas SHA-1 de Android** y diagnóstico de errores        |
+| [NOTIFICACIONES.md](funcionalidades/NOTIFICACIONES.md)               | Sistema de notificaciones push: cliente implementado, backend, plan de pruebas                                                                              |
+| [EVENTOS.md](funcionalidades/EVENTOS.md)                             | Sistema de eventos (Jubileo, encuentros, retiros…): paths de Firebase y cómo añadir un evento nuevo                                                         |
+| [CALENDARIOS.md](funcionalidades/CALENDARIOS.md)                     | Calendarios ICS: por qué son lentos (medido), la Cloud Function que los precachea cada 2 h y el fallback                                                    |
+| [ENCUESTAS.md](funcionalidades/ENCUESTAS.md)                         | Sistema de encuestas y evaluaciones (guía funcional)                                                                                                        |
+| [COROS.md](funcionalidades/COROS.md)                                 | Coros, playlists compartidas y coro en vivo: `/choirs`, importar «la última», actualizar vs subir nueva, contraseña y caducidad de 24 h                     |
+| [HOJA_CANCION.md](funcionalidades/HOJA_CANCION.md)                   | Cómo se pinta una canción: palabras, secciones, estribillos repetidos y `{chorus}`, cortes de línea por frase, vista compacta, columnas en iPad, onboarding |
+| [ARREGLOS.md](funcionalidades/ARREGLOS.md)                           | Directiva `{arr:}` del cantoral (anotaciones de arreglos) + prompt del generador ChordPro                                                                   |
+| [ETIQUETAS.md](funcionalidades/ETIQUETAS.md)                         | Etiquetas del cantoral: directiva `{tags:}`, catálogo `songs/tags`, botón del header, nube y pantalla `__TAG__:`                                            |
+| [SUBRAYADO.md](funcionalidades/SUBRAYADO.md)                         | Subrayado de las lecturas de Contigo: rangos, componente de texto nativo y qué falta (build nativa) para el ítem "Subrayar" del menú del sistema            |
+| [ENLACES_CANCION.md](funcionalidades/ENLACES_CANCION.md)             | Enlaces de una canción: `audioLinks` (suenan dentro de la app) frente a enlaces externos (Spotify, partituras, webs)                                        |
+| [CANAL_PREVIEW.md](funcionalidades/CANAL_PREVIEW.md)                 | Modo tester ("Laboratorio Alpha"): cómo un dispositivo recibe los OTA de `preview` en vez de los de `production`, y cómo comprobarlo                        |
+| [CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)                   | Modo Carismochito (agitar el móvil) y la caza de Carismochitos con su colección, escondida en el Laboratorio Alpha                                          |
+| [RECORDATORIOS_CONTIGO.md](funcionalidades/RECORDATORIOS_CONTIGO.md) | Recordatorios de Contigo: qué se configura, dónde se editan los textos y cómo se programan los avisos locales                                               |
 
 ## Contratos de datos (App ↔ MCM Panel)
 

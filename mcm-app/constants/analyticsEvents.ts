@@ -63,8 +63,9 @@ export interface AnalyticsEvents {
 
   /** El usuario toca una notificación y entra en la app. */
   notificacion_abierta: {
-    /** `comunica`: un aviso del área privada nativa (plan 08), sin ids. */
-    categoria: NotificationCategory | 'sin_categoria' | 'comunica';
+    /** `comunica`: un aviso del área privada nativa (plan 08), sin ids.
+     *  `contigo`: un recordatorio local de Contigo. */
+    categoria: NotificationCategory | 'sin_categoria' | 'comunica' | 'contigo';
   };
 
   /**

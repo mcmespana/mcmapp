@@ -108,3 +108,4 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Cómo se pinta una canción (hoja, cortes, vista compacta, admin igual)    | `docs/funcionalidades/HOJA_CANCION.md`                                       |
 | Arreglos del cantoral (`{arr:}`)                                         | `docs/funcionalidades/ARREGLOS.md`                                           |
 | Subrayado de lecturas (Contigo)                                          | `docs/funcionalidades/SUBRAYADO.md`                                          |
+| Recordatorios de Contigo (textos editables)                              | `docs/funcionalidades/RECORDATORIOS_CONTIGO.md`                              |

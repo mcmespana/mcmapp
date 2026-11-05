@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-05 22:30 — Recordatorios de Contigo (evangelio, oración y revisión del día)
+
+- **Pantalla nueva** `app/(tabs)/contigo/recordatorios.tsx`, con una campanita en la cabecera de Contigo. Por hábito: interruptor, hasta **3 avisos al día** con su hora, días de la semana, y el texto (uno de los predefinidos, o uno propio de hasta 120 caracteres), con una vista previa de cómo llegará. Vienen apagados; al encender el primero se pide el permiso de notificaciones.
+- **El 2.º y 3.º aviso solo suenan si aún no has hecho el hábito.** Son avisos locales (`expo-notifications`, sin servidor): se programan los próximos 7 días y se recalculan al abrir la app, al tocar un ajuste y al marcar un hábito como hecho (`ContigoHabitsContext` llama a `syncContigoReminders`). Detalle y límites (64 pendientes en iOS, 7 días sin abrir la app) en `docs/funcionalidades/RECORDATORIOS_CONTIGO.md`.
+- **Los textos se editan en un único fichero**, `constants/contigoReminderTexts.ts` (validados por David en el prototipo). Salen por OTA.
+- **Al tocar un recordatorio** se abre directamente la pantalla del hábito. Ni los recordatorios entran en la campanita de notificaciones ni se guardan allí (`usePushNotifications`: excepción para `data.contigoReminder`, destino de una lista cerrada). En primer plano se enseña el banner (`NotificationHandler`).
+- **Canal de Android nuevo** `contigo-recordatorios` (importancia alta, `source: 'local'`), sin categoría del Panel. Guardarraíl en `__tests__/notificationChannels.test.ts`. Analítica: `notificacion_abierta` admite `categoria: 'contigo'`.
+- Configuración solo en el móvil (`@contigo_reminders`, AsyncStorage): no se sincroniza con Firebase. En web se guarda pero no avisa.
+- Sin dependencias nuevas (`expo-notifications` y `@react-native-community/datetimepicker` ya estaban). Tests nuevos: `__tests__/contigoReminders.test.ts` (plan, textos, normalización y servicio).
+
 ## 2026-11-01 23:06 — Tutorial del cantoral: «Personaliza tu cantoral» y «¿Formas parte de un coro?»
 
 - El onboarding del cantoral lleva ahora un **título fijo en la cabecera** («Personaliza tu cantoral», con «Saltar» a la derecha y los puntos de progreso debajo) y un **último paso nuevo, «¿Formas parte de un coro?»** (`components/song-onboarding/ChoirStep.tsx`): lista los coros que hay (con su nº de playlists) para sumarte con un toque, y «Registrar mi coro» abre un campo para crear el tuyo si no está (`createChoir`, que avisa si ya existe uno igual). Es opcional; la elección se guarda como «mi coro» (`useMyChoir`), así que la hoja del coro de «Tu selección» ya lo tiene elegido.
@@ -20,6 +30,7 @@
 
 - `version` de `app.json` pasa de 2.1.0 a **2.5.0** para las próximas builds (también la de la extensión de notificaciones iOS, que la toma de ahí).
 - `runtimeVersion` pasa de 2.2.0 a **2.5.0** a la vez (decisión del propietario: solo hay builds de prueba y no se mandarán OTA a las anteriores). Las builds ya instaladas con runtime 2.2.0 **dejan de recibir OTA**.
+
 ## 2026-11-01 15:00 — Fotos en iPad, pantalla de versión mínima con ánimo y OTA que se aplica sola
 
 - **Fotos en iPad** (`global.fotosEnIpad`, panel → Perfiles → Sistema): con `false`, en **cualquier iPad** (MDM o no: la app no distingue) desaparecen la pestaña, el botón de Home y la tarjeta de «Más», y la pantalla (si se llega por enlace o notificación) dice que no está disponible sin leer `albums`. iPhone, Android y web no cambian. Ausente = se ven, como siempre. Es el resolver (`resolveProfileConfig`, ahora con `DeviceContext`) quien las quita; `Platform.isPad` en `utils/device.ts`.
