@@ -858,16 +858,6 @@ export function buildSongDocument(
           position: relative;
           ${isFullscreen ? 'display: none;' : ''}
         }
-        h1::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 40px;
-          height: 3px;
-          background: linear-gradient(90deg, #f4c11e, #E15C62);
-          border-radius: 2px;
-        }
         .song-meta-author {
           font-size: 0.88em;
           margin: 0 0 10px;

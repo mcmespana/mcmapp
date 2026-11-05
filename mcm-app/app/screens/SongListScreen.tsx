@@ -825,7 +825,9 @@ export default function SongsListScreen() {
               row.count === 1 ? 'canción' : 'canciones'
             }`}
           >
-            <Text style={styles.sectionHeaderEmoji}>{row.emoji}</Text>
+            {row.emoji ? (
+              <Text style={styles.sectionHeaderEmoji}>{row.emoji}</Text>
+            ) : null}
             <Text style={styles.sectionHeaderText} numberOfLines={1}>
               {row.title}
             </Text>

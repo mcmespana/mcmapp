@@ -202,7 +202,6 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       ...typography.subhead,
       fontWeight: '500',
       color: themeColors(isDark).textSecondary,
-      textTransform: 'capitalize',
     },
     eventSectionCount: {
       ...typography.footnote,

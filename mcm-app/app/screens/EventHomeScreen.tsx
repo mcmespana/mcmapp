@@ -379,7 +379,15 @@ function SectionCard({
             { backgroundColor: hexAlpha(section.tintColor, '18') },
           ]}
         >
-          <Text style={styles.emoji}>{section.emoji}</Text>
+          {section.materialIcon ? (
+            <MaterialIcons
+              name={section.materialIcon}
+              size={26}
+              color={section.tintColor}
+            />
+          ) : (
+            <Text style={styles.emoji}>{section.emoji}</Text>
+          )}
         </View>
 
         <Text
