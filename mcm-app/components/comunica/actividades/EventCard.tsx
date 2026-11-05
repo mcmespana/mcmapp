@@ -6,16 +6,18 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import typography from '@/constants/typography';
-import { radii, shadows } from '@/constants/uiStyles';
 import type { EventCard as EventCardData } from '@/services/comunica/contract';
 import {
   cardAction,
   cardChip,
   cardPlazo,
+  isPast,
   type CardAction,
 } from '@/utils/comunica/activityList';
 import { dateRangeText } from '@/utils/comunica/recordDates';
 import { h } from '@/utils/haptics';
+import { radii } from '@/constants/uiStyles';
+import CardSurface from '../comun/CardSurface';
 import DateCapsule from '../comun/DateCapsule';
 import StatusChip from '../comun/StatusChip';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
@@ -47,47 +49,56 @@ export default function EventCard({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint="Abre la actividad"
-      style={[styles.card, shadows.card, { backgroundColor: t.card }]}
     >
-      <View style={styles.top}>
-        <View style={styles.main}>
-          {chip ? <StatusChip label={chip.label} tone={chip.tone} /> : null}
-          <Text style={[styles.title, { color: t.text }]} numberOfLines={3}>
-            {event.name}
-          </Text>
-          {lines.map((l) => (
-            <Text
-              key={l}
-              style={[styles.line, { color: t.textSecondary }]}
-              numberOfLines={2}
+      <CardSurface clip style={styles.card}>
+        <View style={styles.body}>
+          <View style={styles.top}>
+            <View style={styles.main}>
+              {chip ? <StatusChip label={chip.label} tone={chip.tone} /> : null}
+              <Text style={[styles.title, { color: t.text }]} numberOfLines={3}>
+                {event.name}
+              </Text>
+              {lines.map((l) => (
+                <Text
+                  key={l}
+                  style={[styles.line, { color: t.textSecondary }]}
+                  numberOfLines={2}
+                >
+                  {l}
+                </Text>
+              ))}
+            </View>
+            {event.startDate ? (
+              <DateCapsule
+                day={event.startDate}
+                tone={isPast(event, today) ? 'neutral' : 'brand'}
+              />
+            ) : null}
+          </View>
+          {action ? (
+            <PressableFeedback
+              onPress={() => {
+                h.tap();
+                onAction(action);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${action.label}: ${event.name}`}
+              style={[styles.action, { backgroundColor: t.accentFill }]}
             >
-              {l}
-            </Text>
-          ))}
+              <Text style={[styles.actionLabel, { color: t.onAccent }]}>
+                {action.label}
+              </Text>
+            </PressableFeedback>
+          ) : null}
         </View>
-        {event.startDate ? <DateCapsule day={event.startDate} /> : null}
-      </View>
-      {action ? (
-        <PressableFeedback
-          onPress={() => {
-            h.tap();
-            onAction(action);
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={`${action.label}: ${event.name}`}
-          style={[styles.action, { backgroundColor: t.accentFill }]}
-        >
-          <Text style={[styles.actionLabel, { color: t.onAccent }]}>
-            {action.label}
-          </Text>
-        </PressableFeedback>
-      ) : null}
+      </CardSurface>
     </PressableFeedback>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radii.lg, padding: 16, gap: 12 },
+  card: { alignSelf: 'stretch' },
+  body: { padding: 16, gap: 12 },
   top: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   main: { flex: 1, gap: 6 },
   title: { ...typography.title },
