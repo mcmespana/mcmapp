@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Platform, View, StyleSheet } from 'react-native';
+import { Platform } from 'react-native';
 import { Stack, router, useNavigation, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabReselect } from '@/components/tabs/tabBarController';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import EventActionButtons from '@/components/EventActionButtons';
-import { getEvent } from '@/constants/events';
 import { EventBaseContext, EventIdContext } from '@/hooks/useCurrentEvent';
 import { takePendingEventScreen } from '@/utils/eventNavigation';
 import {
@@ -60,7 +59,6 @@ export default function VisitaPapaLayout() {
     }
     return false;
   });
-  const sectionColor = getEvent(EVENT_ID).tintColor;
 
   useEffect(() => {
     const unsubscribeBlur = navigation.addListener('blur' as never, () => {
@@ -149,23 +147,6 @@ export default function VisitaPapaLayout() {
           }
         />
       )}
-      {/* Barra de color superior de la sección (estilo iOS de Calendario/Fotos),
-          por encima de todo el stack. */}
-      <View
-        style={[styles.topColorBar, { backgroundColor: sectionColor }]}
-        pointerEvents="none"
-      />
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  topColorBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 8,
-    zIndex: 1001,
-  },
-});

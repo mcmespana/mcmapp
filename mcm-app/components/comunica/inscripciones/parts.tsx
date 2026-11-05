@@ -5,9 +5,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
-import { radii, shadows } from '@/constants/uiStyles';
 import type { SpecialNeedsDef } from '@/services/comunica/contract';
 import { h } from '@/utils/haptics';
+import CardSurface from '../comun/CardSurface';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import { FieldHint, TextFormField } from '../comun/form/FormField';
 import FormSection from '../comun/form/FormSection';
@@ -61,33 +61,38 @@ export function ChoiceGroup<V extends string | number>({
               accessibilityRole="radio"
               accessibilityState={{ checked: on }}
               accessibilityLabel={o.note ? `${o.label}. ${o.note}` : o.label}
-              style={[
-                styles.option,
-                shadows.card,
-                {
-                  backgroundColor: on ? t.backgroundSunken : t.card,
-                  borderColor: on ? t.accentFill : 'transparent',
-                },
-              ]}
             >
-              {o.icon ? (
-                <IconSymbol name={o.icon} size={20} color={t.textSecondary} />
-              ) : null}
-              <View style={styles.optionText}>
-                <Text style={[styles.optionLabel, { color: t.text }]}>
-                  {o.label}
-                </Text>
-                {o.note ? (
-                  <Text style={[styles.optionNote, { color: t.textSecondary }]}>
-                    {o.note}
-                  </Text>
+              <CardSurface
+                background={on ? t.backgroundSunken : undefined}
+                style={[
+                  styles.option,
+                  {
+                    borderColor: on ? t.accentFill : t.cardBorder,
+                    borderWidth: on ? 1.5 : 1,
+                  },
+                ]}
+              >
+                {o.icon ? (
+                  <IconSymbol name={o.icon} size={20} color={t.textSecondary} />
                 ) : null}
-              </View>
-              <IconSymbol
-                name={on ? 'checkmark.circle.fill' : 'circle'}
-                size={22}
-                color={on ? t.accentFill : t.textSecondary}
-              />
+                <View style={styles.optionText}>
+                  <Text style={[styles.optionLabel, { color: t.text }]}>
+                    {o.label}
+                  </Text>
+                  {o.note ? (
+                    <Text
+                      style={[styles.optionNote, { color: t.textSecondary }]}
+                    >
+                      {o.note}
+                    </Text>
+                  ) : null}
+                </View>
+                <IconSymbol
+                  name={on ? 'checkmark.circle.fill' : 'circle'}
+                  size={22}
+                  color={on ? t.accentFill : t.textSecondary}
+                />
+              </CardSurface>
             </PressableFeedback>
           );
         })}
@@ -146,8 +151,6 @@ const styles = StyleSheet.create({
     minHeight: 56,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
   },
   optionText: { flex: 1 },
   optionLabel: { ...typography.body },

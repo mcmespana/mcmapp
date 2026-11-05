@@ -177,7 +177,13 @@ Con su hallazgo, porque el hallazgo es lo que vale para la próxima vez.
       idéntico —RN recorta el radio a la mitad de la dimensión— y además no se
       rompe cuando el elemento cambia de tamaño. Verificado comparando las 20
       capturas al píxel antes y después.
-      **Quedan 60** (6 en `app/`, 54 en `components/`) y son los de verdad
+      **2026-11-05: otros 20 ficheros decididos** (rama `claudito/area-nativa-estilo-plugin`):
+      3 y 5 → `radii.xs`, 6 → `radii.sm`, 10/11/13 → `radii.md`, 15 → `radii.lg`
+      (`SegmentedControl`, banners, hojas, modales del coro, Contigo, calendario…).
+      Se dejan a propósito los de geometría decorativa: diálogos y overlay de
+      Carismochito (26/30), `ComunicaLoader`, marco del QR, `PreviewChannelModal`,
+      `MaterialPagesScreen` y `WordleScreen` (congelado), y los de 0/1/2.
+      Antes de ese cierre: **Quedan 60** (6 en `app/`, 54 en `components/`) y son los de verdad
       difíciles: valores como 5, 6 o 13 que NO son la mitad de nada y que hay
       que decidir uno a uno entre el escalón de arriba y el de abajo — o dejar,
       si son geometría anidada como el `10` del §E3. Los topes del trinquete ya

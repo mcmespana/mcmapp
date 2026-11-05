@@ -6,8 +6,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
-import { radii, shadows } from '@/constants/uiStyles';
+import { radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
+import CardSurface from '../CardSurface';
 import { useComunicaTheme } from '../useComunicaTheme';
 
 type IconName = React.ComponentProps<typeof IconSymbol>['name'];
@@ -25,7 +26,7 @@ export default function FactList({ facts }: { facts: readonly Fact[] }) {
   const t = useComunicaTheme();
   if (facts.length === 0) return null;
   return (
-    <View style={[styles.card, shadows.card, { backgroundColor: t.card }]}>
+    <CardSurface clip>
       {facts.map((f, i) => {
         const edge =
           i === 0
@@ -36,7 +37,13 @@ export default function FactList({ facts }: { facts: readonly Fact[] }) {
               };
         const body = (
           <>
-            <IconSymbol name={f.icon} size={20} color={t.textSecondary} />
+            <View
+              style={[styles.tile, { backgroundColor: t.iconTile.fill }]}
+              accessible={false}
+              importantForAccessibility="no-hide-descendants"
+            >
+              <IconSymbol name={f.icon} size={18} color={t.iconTile.glyph} />
+            </View>
             <View style={styles.text}>
               <Text style={[styles.label, { color: t.textSecondary }]}>
                 {f.label}
@@ -76,12 +83,19 @@ export default function FactList({ facts }: { facts: readonly Fact[] }) {
           </View>
         );
       })}
-    </View>
+    </CardSurface>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radii.lg, overflow: 'hidden' },
+  // La baldosa de icono del plugin (`stic-rec-fact-ico`): tinta suave.
+  tile: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

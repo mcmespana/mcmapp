@@ -12,7 +12,6 @@ import { PressableFeedback } from 'heroui-native';
 import EmptyState from '@/components/ui/EmptyState';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
-import { radii, shadows } from '@/constants/uiStyles';
 import { comunicaNow } from '@/services/comunica';
 import type { RegistrationCard } from '@/services/comunica/contract';
 import { useActiveProfile } from '@/hooks/comunica/useActiveProfile';
@@ -26,12 +25,15 @@ import {
 } from '@/utils/comunica/registrationList';
 import { REGISTRATION_TEXT as TXT } from '@/utils/comunica/registrationNotes';
 import { firstNameOf } from '@/utils/comunica/profiles';
+import { isPastDay } from '@/utils/comunica/dates';
 import { madridDay } from '@/utils/comunica/madrid';
 import { h } from '@/utils/haptics';
 import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
+import CardSurface from '../comun/CardSurface';
 import DateCapsule from '../comun/DateCapsule';
+import { SectionLabel } from '../comun/Section';
 import StatusChip from '../comun/StatusChip';
 import SyncBadge from '../comun/SyncBadge';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
@@ -146,40 +148,44 @@ function Card({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint="Abre la inscripción"
-      style={[
-        styles.card,
-        shadows.card,
-        { backgroundColor: t.card, opacity: dim ? 0.7 : 1 },
-      ]}
     >
-      <View style={styles.main}>
-        {card.status.label ? (
-          <StatusChip
-            label={card.status.label}
-            tone={
-              card.status.tone === 'ok'
-                ? 'positive'
-                : card.status.tone === 'warn'
-                  ? 'warning'
-                  : card.status.tone === 'danger'
-                    ? 'negative'
-                    : 'neutral'
-            }
+      <CardSurface style={styles.card} opacity={dim ? 0.7 : 1}>
+        <View style={styles.main}>
+          {card.status.label ? (
+            <StatusChip
+              label={card.status.label}
+              tone={
+                card.status.tone === 'ok'
+                  ? 'positive'
+                  : card.status.tone === 'warn'
+                    ? 'warning'
+                    : card.status.tone === 'danger'
+                      ? 'negative'
+                      : 'neutral'
+              }
+            />
+          ) : null}
+          <Text style={[styles.title, { color: t.text }]} numberOfLines={3}>
+            {card.title}
+          </Text>
+          {when ? (
+            <Text style={[styles.line, { color: t.textSecondary }]}>
+              {when}
+            </Text>
+          ) : null}
+          {school ? (
+            <Text style={[styles.line, { color: t.textSecondary }]}>
+              {school}
+            </Text>
+          ) : null}
+        </View>
+        {day ? (
+          <DateCapsule
+            day={day}
+            tone={isPastDay(day, today) ? 'neutral' : 'brand'}
           />
         ) : null}
-        <Text style={[styles.title, { color: t.text }]} numberOfLines={3}>
-          {card.title}
-        </Text>
-        {when ? (
-          <Text style={[styles.line, { color: t.textSecondary }]}>{when}</Text>
-        ) : null}
-        {school ? (
-          <Text style={[styles.line, { color: t.textSecondary }]}>
-            {school}
-          </Text>
-        ) : null}
-      </View>
-      {day ? <DateCapsule day={day} /> : null}
+      </CardSurface>
     </PressableFeedback>
   );
 }
@@ -211,9 +217,9 @@ function Others({
         accessibilityLabel={`${TXT.others}, ${cards.length}`}
         style={styles.othersHead}
       >
-        <Text style={[styles.othersTitle, { color: t.textSecondary }]}>
-          {`${TXT.others} (${cards.length})`}
-        </Text>
+        <View style={styles.othersLabel}>
+          <SectionLabel>{`${TXT.others} (${cards.length})`}</SectionLabel>
+        </View>
         <IconSymbol
           name={open ? 'chevron.up' : 'chevron.down'}
           size={16}
@@ -244,7 +250,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 12,
     padding: 16,
-    borderRadius: radii.lg,
   },
   main: { flex: 1, gap: 6 },
   title: { ...typography.title },
@@ -256,6 +261,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 44,
   },
-  othersTitle: { ...typography.caption, textTransform: 'uppercase' },
+  othersLabel: { flex: 1 },
   sync: { alignItems: 'center' },
 });

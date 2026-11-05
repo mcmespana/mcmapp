@@ -366,9 +366,6 @@ export default function ReflexionesScreen() {
               : styles.cardSurface,
           ]}
         >
-          {!filled && (
-            <View style={[styles.accentBar, { backgroundColor: color }]} />
-          )}
           <MaterialIcons
             name="format-quote"
             size={66}
@@ -661,13 +658,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     cardSurface: {
       backgroundColor: themeColors(scheme === 'dark').background,
-    },
-    accentBar: {
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      bottom: 0,
-      width: 6,
     },
     quoteMark: {
       position: 'absolute',

@@ -7,7 +7,7 @@
 //   3. Nativa con sesión → la portada.
 
 import React from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import ComunicaScreen from '@/app/screens/ComunicaScreen';
@@ -15,7 +15,7 @@ import AccessScreen from '@/components/comunica/acceso/AccessScreen';
 import AreaScreen from '@/components/comunica/comun/AreaScreen';
 import { AreaSkeleton } from '@/components/comunica/comun/AreaState';
 import { useArea } from '@/components/comunica/comun/ComunicaAreaProvider';
-import { useComunicaTheme } from '@/components/comunica/comun/useComunicaTheme';
+import { useHeaderGlyph } from '@/components/comunica/comun/useHeaderGlyph';
 import ComunicaHome from '@/components/comunica/pasar-lista/ComunicaHome';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useComunicaLinks } from '@/hooks/comunica/useComunicaLinks';
@@ -40,7 +40,9 @@ function NativeGate() {
   if (session.status === 'loading') {
     return (
       <>
-        <Stack.Screen options={{ headerShown: true, headerLargeTitle: true }} />
+        <Stack.Screen
+          options={{ headerShown: true, headerLargeTitle: false }}
+        />
         {/* Dentro de `AreaScreen`: si no, el esqueleto queda bajo la
             cabecera grande y transparente de iOS. */}
         <AreaScreen>
@@ -74,7 +76,7 @@ function NativeGate() {
       <Stack.Screen
         options={{
           headerShown: true,
-          headerLargeTitle: true,
+          headerLargeTitle: false,
           headerRight: () => <AccountButton />,
         }}
       />
@@ -85,7 +87,7 @@ function NativeGate() {
 
 function AccountButton() {
   const router = useRouter();
-  const t = useComunicaTheme();
+  const glyph = useHeaderGlyph();
   return (
     <PressableFeedback
       onPress={() => router.push('/comunica/yo')}
@@ -94,11 +96,7 @@ function AccountButton() {
       hitSlop={12}
       style={styles.account}
     >
-      <IconSymbol
-        name="person.crop.circle"
-        size={26}
-        color={Platform.OS === 'ios' ? t.headerTint : '#fff'}
-      />
+      <IconSymbol name="person.crop.circle" size={26} color={glyph} />
     </PressableFeedback>
   );
 }

@@ -167,7 +167,6 @@ export const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
   },
-  teaserBar: { height: 3 },
   teaserBody: { padding: 16 },
   teaserHeaderRow: {
     flexDirection: 'row',
@@ -241,7 +240,7 @@ export const styles = StyleSheet.create({
   weekTile: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: 10,
+    borderRadius: radii.md,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -318,7 +317,7 @@ export const styles = StyleSheet.create({
   },
   heatmapCell: {
     height: 36,
-    borderRadius: 10,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,

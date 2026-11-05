@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   errorBox: {
     flex: 1,
     backgroundColor: '#2a0a0a',
-    borderRadius: 10,
+    borderRadius: radii.md,
     marginBottom: 16,
     maxHeight: 160,
   },
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   },
   fixSection: {
     backgroundColor: '#0f1a0f',
-    borderRadius: 10,
+    borderRadius: radii.md,
     padding: 14,
     marginBottom: 16,
     gap: 6,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: '#c0392b',
-    borderRadius: 10,
+    borderRadius: radii.md,
     paddingVertical: 14,
   },
   copyButtonDone: {

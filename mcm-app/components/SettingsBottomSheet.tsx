@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
   fontBtn: {
     width: 44,
     height: 44,
-    borderRadius: 10,
+    borderRadius: radii.md,
     justifyContent: 'center',
     alignItems: 'center',
   } as ViewStyle,

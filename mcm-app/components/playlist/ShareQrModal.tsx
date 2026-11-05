@@ -296,7 +296,7 @@ const createStyles = (isDark: boolean) =>
       flexDirection: 'row',
       alignSelf: 'stretch',
       backgroundColor: themeColors(isDark).background,
-      borderRadius: 10,
+      borderRadius: radii.md,
       padding: 3,
       marginTop: 12,
       marginBottom: 2,

@@ -77,7 +77,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     subscribeIconBtn: {
       width: 40,
       height: 40,
-      borderRadius: 10,
+      borderRadius: radii.md,
       backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
       justifyContent: 'center',
       alignItems: 'center',
@@ -91,7 +91,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       marginHorizontal: 16,
       marginTop: 8,
       marginBottom: 12,
-      borderRadius: radii.xl,
+      borderRadius: radii.lg,
       backgroundColor: themeColors(isDark).background,
       overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
       ...Platform.select({
@@ -202,7 +202,6 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       ...typography.subhead,
       fontWeight: '500',
       color: themeColors(isDark).textSecondary,
-      textTransform: 'capitalize',
     },
     eventSectionCount: {
       ...typography.footnote,
@@ -234,11 +233,8 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     },
     pastEventCard: {
       opacity: 0.55,
-    },
-    eventColorBar: {
-      width: 4,
-      borderTopLeftRadius: radii.lg,
-      borderBottomLeftRadius: radii.lg,
+      // Android: opacidad + `elevation` deja un marco gris con esquinas duras.
+      ...(Platform.OS === 'android' ? { elevation: 0 } : null),
     },
     eventCardBody: {
       flex: 1,
@@ -368,7 +364,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     },
     sectionBadge: {
       backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
-      borderRadius: 10,
+      borderRadius: radii.md,
       paddingHorizontal: 8,
       paddingVertical: 2,
       minWidth: 24,

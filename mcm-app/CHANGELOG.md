@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-05 22:50 — Cierre de la rama del área nativa: Android, teclado y radios
+
+- **Portada de familia de Comunica vacía tras salir y volver a entrar (Android):** `ActiveProfileProvider` se quedaba sin repintarse y la portada esperaba un perfil ya cargado. Ahora se reinicia por persona (`ProfileScope` en `app/(tabs)/comunica/_layout.tsx`).
+- **Teclado en Android (edge-to-edge):** `behavior: 'padding'` en `AccessScreen` y `BottomActionBar`, y `KeyboardAvoidingView` en `PasswordPromptModal`, `ExportPdfModal` y `CantoralOnboarding` (paso del coro), donde el sistema ya no redimensiona la ventana.
+- Avatar neutro de Comunica con más contraste en oscuro, icono «@» del aviso de inicio de sesión visible en oscuro, y 20 ficheros con `borderRadius` a mano pasan a `radii.*`.
+- `tunerMicrophoneWeb` ya no falla en Node 20 (crea `navigator` si falta). OTA: solo JS.
+
 ## 2026-11-05 22:30 — Recordatorios de Contigo (evangelio, oración y revisión del día)
 
 - **Pantalla nueva** `app/(tabs)/contigo/recordatorios.tsx`, con una campanita en la cabecera de Contigo. Por hábito: interruptor, hasta **3 avisos al día** con su hora, días de la semana, y el texto (uno de los predefinidos, o uno propio de hasta 120 caracteres), con una vista previa de cómo llegará. Vienen apagados; al encender el primero se pide el permiso de notificaciones.
@@ -13,6 +20,25 @@
 - **Canal de Android nuevo** `contigo-recordatorios` (importancia alta, `source: 'local'`), sin categoría del Panel. Guardarraíl en `__tests__/notificationChannels.test.ts`. Analítica: `notificacion_abierta` admite `categoria: 'contigo'`.
 - Configuración solo en el móvil (`@contigo_reminders`, AsyncStorage): no se sincroniza con Firebase. En web se guarda pero no avisa.
 - Sin dependencias nuevas (`expo-notifications` y `@react-native-community/datetimepicker` ya estaban). Tests nuevos: `__tests__/contigoReminders.test.ts` (plan, textos, normalización y servicio).
+
+## 2026-11-05 17:40 — Área nativa de Comunica con el estilo del área privada de antes; limpieza de «tics de IA» en toda la app
+
+- **Comunica (nativa), estilo del plugin adaptado a iOS y Android.** El degradado de marca (azul → violeta → magenta) pasa de «solo el botón principal» a **firma con tope**, siempre a través de `BrandGradient`: *bloques* (cabecera del área, acción principal, hero de la portada, tarjeta destacada; dos como mucho por pantalla, uno de contenido) y *marcas* ≤ 72 pt (cápsula de fecha, avatar de identidad). Piezas nuevas en `components/comunica/comun/`: `BrandGradient`, `CardSurface`, `BrandHeaderBackground`, `AreaHero` (con ×), `SectionLabel`, `useHeaderGlyph`; `ListCell` pasa a `comun/`. Las tarjetas de actividades, pagos, inscripciones, documentos y fichas las usan. La cabecera lleva el degradado en las tres plataformas; el saludo de la portada ya no parpadea. Reglas en `design.md` §2 y `__tests__/comunica/territorio.test.ts` (lista blanca y tope).
+- **Fuera las «rayitas» de color en bordes** en toda la app (franjas superiores de las pestañas, barras laterales de tarjetas, callouts con borde izquierdo, barra dorada de Contigo, barrita bajo el título de la canción). `__tests__/noEdgeStripes.test.ts` lo vigila. Se queda la barra del estribillo (notación).
+- **Auditoría de coherencia** (`docs/planes/AUDITORIA_TICS_Y_SINERGIA.md`), oleadas 1 y 2 aplicadas: emoji como icono fuera (Eventos, Comida, Cantoral), «Jueves 5 de noviembre» en Calendario, «Guardar rato de oración» legible, `AppPrimaryButton` por defecto en azul MCM (no `#007AFF`), Inicio sin la tarjeta de bienvenida de relleno y con «Evalúa la app» como fila tranquila, Contigo sin ceros (racha, tiles y «días activos» solo cuando hay datos).
+- **Oleada 3:** una sola receta de etiqueta de sección (`typography.sectionLabel`, 12 pt en mayúsculas con tracking; antes 10 pt en Inicio, 11 en Contigo y 13 en Comunica) en `SectionHeader`, Comunica y Contigo; «Más» sin el subtítulo repetido y con un chevron en vez del círculo de la flecha; el calendario atenúa los días de otros meses también en oscuro; las tarjetas de contenido de Más, Inicio y el calendario mensual pasan de `radii.xl` a `radii.lg` (la regla queda en `design.md`), y el aviso de notificaciones de Inicio lleva el icono suelto como las otras filas de aviso.
+- **Desarrollo:** `EXPO_PUBLIC_COMUNICA_API=fake` enciende ahora el área nativa en el simulador; `EXPO_PUBLIC_FIREBASE_FIXTURES=1` sirve álbumes y canciones inventados (`utils/devFirebaseFixtures.ts`). Sin las variables (tienda, web publicada) nada cambia.
+- Solo JS: OTA ✅.
+
+## 2026-11-05 17:16 — Afinador de guitarra, cabecera del cantoral nueva y arreglo del botón de la canción
+
+- **Afinador** (`app/screens/TunerScreen.tsx`, ruta `/cancionero/afinador`, en hoja): reconoce la cuerda sola, arco de ±50 cents con una bola que fluye, nota gigante en la notación del cantoral, «Tensa / Afloja la cuerda» con flecha, bloqueo en verde con vibración a ±5 cents, check por cuerda afinada y confeti con las seis. Tocar una cuerda la fija. Solo guitarra y afinación estándar, a propósito. Se abre desde el menú de la canción («Afinar la guitarra») y desde «⋯» del cantoral (también sin conexión). Doc: `docs/funcionalidades/AFINADOR.md`.
+- **Dependencias nuevas**: `react-native-audio-api` (~1.0.0, micrófono en crudo en iOS/Android; **nativa**, va con la próxima build) y `pitchy` (detección de tono, JS puro). En web, `getUserMedia` + `AnalyserNode`.
+- **Permisos**: micrófono (`NSMicrophoneUsageDescription`, `RECORD_AUDIO`) con texto propio; `expo-image-picker` deja de tener `microphonePermission: false`, que bloqueaba `RECORD_AUDIO` en Android. Sin audio en segundo plano ni servicio en primer plano; nada se graba ni se envía.
+- **Cabecera del cantoral rediseñada**: a la izquierda el **coro** (trae la última playlist de tu coro de un toque, sin entrar en «Tu selección»; sin coro, abre «elige tu coro»); a la derecha **⋯** y **buscar** (lo más usado, en el extremo). En «⋯»: Afinador, Etiquetas, Playlists de tu coro, Sugerir una canción y la ayuda. Antes eran cuatro iconos sueltos (+, ?, etiquetas, buscar). «Tu selección» acepta `?hoja=coro|elegir-coro`. El menú funciona también mientras carga el cantoral.
+- **Fix del botón flotante de la canción**: al cerrarse, el menú «caía» por encima del botón. El contenedor (pegado abajo) se encogía al desmontar el menú y la copia de la animación de salida se quedaba desplazada. Ahora el menú se queda montado y solo se desvanece (sin toques ni lector de pantalla cerrado), y el icono hace un morph ajustes ↔ × en vez de cambiar de glifo a mitad del giro.
+- Tokens nuevos: `TunerColors`/`tunerColors()` (verde y naranja de sistema, legibles como texto) y `typography.display` (88, una nota sola gigante).
+- Jest: `react-native-audio-api` mapeado a su mock oficial y `pitchy` pasa por Babel. Tests nuevos: `tunerPitchTracker`, `tunerDetectPitch`, `tunerMicrophoneWeb`, `useTuner`.
 
 ## 2026-11-01 23:06 — Tutorial del cantoral: «Personaliza tu cantoral» y «¿Formas parte de un coro?»
 

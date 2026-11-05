@@ -322,29 +322,32 @@ export default function ContigoScreen() {
           </View>
 
           {/* ── Stats ──────────────────────────────────── */}
-          <View style={[styles.section, styles.statsRow]}>
-            <StatCard
-              icon="local-fire-department"
-              value={prayStreak}
-              label={'racha de\noración'}
-              color={W.fire}
-              isDark={isDark}
-            />
-            <StatCard
-              icon="timer"
-              value={`${totalMins}'`}
-              label={'min\nesta sem.'}
-              color={W.accentText}
-              isDark={isDark}
-            />
-            <StatCard
-              icon="menu-book"
-              value={totalReads}
-              label={'lecturas\neste mes'}
-              color={W.blue}
-              isDark={isDark}
-            />
-          </View>
+          {/* Tres ceros seguidos no informan: la fila sale cuando hay algo que contar. */}
+          {prayStreak > 0 || totalMins > 0 || totalReads > 0 ? (
+            <View style={[styles.section, styles.statsRow]}>
+              <StatCard
+                icon="local-fire-department"
+                value={prayStreak}
+                label={'racha de\noración'}
+                color={W.fire}
+                isDark={isDark}
+              />
+              <StatCard
+                icon="timer"
+                value={`${totalMins}'`}
+                label={'min\nesta sem.'}
+                color={W.accentText}
+                isDark={isDark}
+              />
+              <StatCard
+                icon="menu-book"
+                value={totalReads}
+                label={'lecturas\neste mes'}
+                color={W.blue}
+                isDark={isDark}
+              />
+            </View>
+          ) : null}
 
           {/* ── Calendario completo ────────────────────── */}
           <View style={[styles.section, { paddingTop: 18 }]}>
@@ -398,21 +401,25 @@ export default function ContigoScreen() {
                   </TouchableOpacity>
                 ) : null}
               </View>
-              <View
-                style={[
-                  styles.monthBadge,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(218,165,32,0.12)'
-                      : 'rgba(196,146,42,0.10)',
-                  },
-                ]}
-              >
-                <Text style={[styles.monthBadgeText, { color: W.accentText }]}>
-                  {activeDays}{' '}
-                  {activeDays === 1 ? 'día activo' : 'días activos'}
-                </Text>
-              </View>
+              {activeDays > 0 ? (
+                <View
+                  style={[
+                    styles.monthBadge,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(218,165,32,0.12)'
+                        : 'rgba(196,146,42,0.10)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.monthBadgeText, { color: W.accentText }]}
+                  >
+                    {activeDays}{' '}
+                    {activeDays === 1 ? 'día activo' : 'días activos'}
+                  </Text>
+                </View>
+              ) : null}
             </View>
             <View
               style={[
@@ -518,11 +525,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   smallLabel: {
-    ...typography.micro,
-    fontWeight: '700',
-    letterSpacing: 1,
+    ...typography.sectionLabel,
     marginBottom: 10,
-    textTransform: 'uppercase',
   },
   statsRow: {
     flexDirection: 'row',

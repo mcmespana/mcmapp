@@ -1,8 +1,8 @@
 // La acción principal de una pantalla del área («Recibir código», «Registrar
 // el aviso», «Guardar lista»…), con el degradado de marca de Comunica
-// (territorio «Comunica», plan 03 §2). UNO por pantalla: es la firma del área,
-// como en la web, y la única superficie del área que lleva degradado (lo vigila
-// `__tests__/comunica/territorio.test.ts`).
+// (territorio «Comunica», plan 03 §2). UNO por pantalla. Es un BLOQUE de
+// marca: con el hero de la portada y la tarjeta destacada, dos como mucho por
+// pantalla (lo vigila `__tests__/comunica/territorio.test.ts`).
 //
 // La forma y el comportamiento son los de `AppPrimaryButton` (el CTA aprobado,
 // `design.md` §7): `PressableFeedback` con `Scale`, háptica, spinner al
@@ -19,13 +19,12 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { PressableFeedback } from 'heroui-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
 import { focusRing, radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
-import { BRAND_GRADIENT } from './theme';
+import BrandGradient from './BrandGradient';
 import { useComunicaTheme } from './useComunicaTheme';
 
 type IconName = React.ComponentProps<typeof IconSymbol>['name'];
@@ -74,21 +73,12 @@ export default function AreaPrimaryButton({
       onBlur={() => setFocused(false)}
       style={[
         styles.button,
-        isDisabled && { backgroundColor: t.separator },
+        isDisabled && { backgroundColor: t.disabledFill },
         focused && { borderColor: fg },
         style,
       ]}
     >
-      {isDisabled ? null : (
-        <LinearGradient
-          testID="area-primary-gradient"
-          colors={BRAND_GRADIENT}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-      )}
+      {isDisabled ? null : <BrandGradient variant="block" />}
       <PressableFeedback.Scale />
       {loading ? (
         <ActivityIndicator size="small" color={fg} />

@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
-import { radii, shadows } from '@/constants/uiStyles';
+import { radii } from '@/constants/uiStyles';
 import {
   dayTitle,
   itemLine,
@@ -15,6 +15,7 @@ import {
   type Tone,
 } from '@/utils/comunica/calendar';
 import { h } from '@/utils/haptics';
+import CardSurface from '../comun/CardSurface';
 import { MARK_FILL } from '../comun/theme';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 
@@ -67,27 +68,28 @@ export function DayRow({
       }}
       accessibilityRole="button"
       accessibilityLabel={`${item.name}. ${itemLine(item)}`}
-      style={[styles.row, shadows.card, { backgroundColor: t.card }]}
     >
-      <View
-        style={[
-          styles.dot,
-          styles.rowDot,
-          { backgroundColor: color(itemTone(item)) },
-        ]}
-      />
-      <View style={styles.rowMain}>
-        <Text style={[styles.rowTitle, { color: t.text }]} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <Text
-          style={[styles.rowLine, { color: t.textSecondary }]}
-          numberOfLines={2}
-        >
-          {itemLine(item)}
-        </Text>
-      </View>
-      <IconSymbol name="chevron.right" size={16} color={t.textSecondary} />
+      <CardSurface style={styles.row}>
+        <View
+          style={[
+            styles.dot,
+            styles.rowDot,
+            { backgroundColor: color(itemTone(item)) },
+          ]}
+        />
+        <View style={styles.rowMain}>
+          <Text style={[styles.rowTitle, { color: t.text }]} numberOfLines={2}>
+            {item.name}
+          </Text>
+          <Text
+            style={[styles.rowLine, { color: t.textSecondary }]}
+            numberOfLines={2}
+          >
+            {itemLine(item)}
+          </Text>
+        </View>
+        <IconSymbol name="chevron.right" size={16} color={t.textSecondary} />
+      </CardSurface>
     </PressableFeedback>
   );
 }
@@ -172,7 +174,6 @@ const styles = StyleSheet.create({
     minHeight: 56,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: radii.md,
   },
   rowDot: { width: 10, height: 10, borderRadius: radii.pillFull },
   rowMain: { flex: 1 },

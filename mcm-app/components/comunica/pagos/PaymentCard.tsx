@@ -6,7 +6,8 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import typography from '@/constants/typography';
-import { radii, shadows } from '@/constants/uiStyles';
+import { radii } from '@/constants/uiStyles';
+import { comunicaNow } from '@/services/comunica';
 import type { Payment } from '@/services/comunica/contract';
 import {
   amountSpoken,
@@ -15,7 +16,10 @@ import {
   paymentChip,
   paymentLines,
 } from '@/utils/comunica/payments';
+import { isPastDay } from '@/utils/comunica/dates';
+import { madridDay } from '@/utils/comunica/madrid';
 import { h } from '@/utils/haptics';
+import CardSurface from '../comun/CardSurface';
 import DateCapsule from '../comun/DateCapsule';
 import StatusChip from '../comun/StatusChip';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
@@ -30,6 +34,7 @@ export default function PaymentCard({
   onPay: () => void;
 }) {
   const t = useComunicaTheme();
+  const today = madridDay(comunicaNow());
   const chip = paymentChip(p);
   const lines = paymentLines(p);
   const label = [chip?.label, p.title, ...lines, amountSpoken(p.amountCents)]
@@ -44,50 +49,56 @@ export default function PaymentCard({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint="Abre el pago"
-      style={[styles.card, shadows.card, { backgroundColor: t.card }]}
     >
-      <View style={styles.top}>
-        {p.date ? <DateCapsule day={p.date} /> : null}
-        <View style={styles.main}>
-          {chip ? <StatusChip label={chip.label} tone={chip.tone} /> : null}
-          <Text style={[styles.title, { color: t.text }]} numberOfLines={3}>
-            {p.title}
-          </Text>
-          {lines.map((l) => (
-            <Text key={l} style={[styles.line, { color: t.textSecondary }]}>
-              {l}
+      <CardSurface style={styles.card}>
+        <View style={styles.top}>
+          {p.date ? (
+            <DateCapsule
+              day={p.date}
+              tone={isPastDay(p.date, today) ? 'neutral' : 'brand'}
+            />
+          ) : null}
+          <View style={styles.main}>
+            {chip ? <StatusChip label={chip.label} tone={chip.tone} /> : null}
+            <Text style={[styles.title, { color: t.text }]} numberOfLines={3}>
+              {p.title}
             </Text>
-          ))}
-        </View>
-        <Text
-          accessibilityLabel={amountSpoken(p.amountCents)}
-          style={[styles.amount, { color: t.text }]}
-          maxFontSizeMultiplier={1.3}
-        >
-          {centsToEuro(p.amountCents)}
-        </Text>
-      </View>
-      {canPay(p) ? (
-        <PressableFeedback
-          onPress={() => {
-            h.tap();
-            onPay();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={`Pagar con tarjeta: ${p.title}`}
-          style={[styles.pay, { borderColor: t.accentText }]}
-        >
-          <Text style={[styles.payLabel, { color: t.accentText }]}>
-            Pagar con tarjeta
+            {lines.map((l) => (
+              <Text key={l} style={[styles.line, { color: t.textSecondary }]}>
+                {l}
+              </Text>
+            ))}
+          </View>
+          <Text
+            accessibilityLabel={amountSpoken(p.amountCents)}
+            style={[styles.amount, { color: t.text }]}
+            maxFontSizeMultiplier={1.3}
+          >
+            {centsToEuro(p.amountCents)}
           </Text>
-        </PressableFeedback>
-      ) : null}
+        </View>
+        {canPay(p) ? (
+          <PressableFeedback
+            onPress={() => {
+              h.tap();
+              onPay();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Pagar con tarjeta: ${p.title}`}
+            style={[styles.pay, { borderColor: t.accentText }]}
+          >
+            <Text style={[styles.payLabel, { color: t.accentText }]}>
+              Pagar con tarjeta
+            </Text>
+          </PressableFeedback>
+        ) : null}
+      </CardSurface>
     </PressableFeedback>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radii.lg, padding: 16, gap: 12 },
+  card: { padding: 16, gap: 12 },
   top: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   main: { flex: 1, gap: 6 },
   title: { ...typography.title },

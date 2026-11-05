@@ -20,6 +20,7 @@
 import { radii } from '@/constants/uiStyles';
 import React, { useState, useMemo } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
   View,
   Text,
@@ -188,7 +189,12 @@ const ExportPdfModal: React.FC<Props> = ({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.backdrop}>
+        {/* Android (edge-to-edge): el Modal no se redimensiona con el teclado,
+            así que la tarjeta sube con el relleno del KeyboardAvoidingView. */}
+        <KeyboardAvoidingView
+          style={styles.backdrop}
+          behavior={Platform.OS === 'web' ? undefined : 'padding'}
+        >
           <TouchableWithoutFeedback>
             <View style={styles.card}>
               {/* Con todas las opciones no cabe en un móvil pequeño. */}
@@ -356,7 +362,7 @@ const ExportPdfModal: React.FC<Props> = ({
               </ScrollView>
             </View>
           </TouchableWithoutFeedback>
-        </View>
+        </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </Modal>
   );
@@ -444,7 +450,7 @@ const createStyles = (isDark: boolean) =>
     fontChip: {
       paddingVertical: 8,
       paddingHorizontal: 12,
-      borderRadius: 10,
+      borderRadius: radii.md,
       backgroundColor: themeColors(isDark).background,
       borderWidth: 1,
       borderColor: 'transparent',

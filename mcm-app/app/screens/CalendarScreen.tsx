@@ -63,6 +63,10 @@ const SUBSCRIBE_SLOT = 56;
 const HEADER_SIDE_PADDING = 16;
 
 /** Día 1 del mes al que pertenece la fecha dada. */
+/** Solo la primera letra en mayúscula: «Jueves 5 de noviembre», no «…5 De Noviembre». */
+const upperFirst = (s: string): string =>
+  s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+
 const monthStart = (dateStr: string): string => `${dateStr.slice(0, 7)}-01`;
 
 /** Suma meses al mes de una fecha y devuelve su día 1. */
@@ -407,7 +411,6 @@ export function CalendarScreen({
         accessibilityRole="button"
         accessibilityLabel={`Ver detalles de ${ev.title}`}
       >
-        <View style={[styles.eventColorBar, { backgroundColor: calColor }]} />
         <View style={styles.eventCardBody}>
           <View style={styles.eventCardTop}>
             <Text
@@ -612,9 +615,11 @@ export function CalendarScreen({
                       </Text>
                       <View>
                         <Text style={styles.eventSectionWeekday}>
-                          {selectedDate === todayStr
-                            ? formatDate(todayStr)
-                            : formatDate(selectedDate)}
+                          {upperFirst(
+                            selectedDate === todayStr
+                              ? formatDate(todayStr)
+                              : formatDate(selectedDate),
+                          )}
                         </Text>
                         {eventsForSelected.length > 0 && (
                           <Text style={styles.eventSectionCount}>

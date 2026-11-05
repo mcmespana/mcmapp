@@ -1,12 +1,14 @@
 // La inicial de una persona en las piezas de perfiles (plan 11;
-// `sticpa_name_initial`): en el acento lleno la que se está viendo, en gris
-// las demás. Sin foto: el CRM no la da para familias.
+// `sticpa_name_initial`): la que se está viendo, en el degradado de marca (una
+// MARCA ≤ 72 pt, como el avatar del plugin), las demás en gris. Sin foto: el
+// CRM no la da para familias.
 
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import typography from '@/constants/typography';
 import type { ProfileRef } from '@/services/comunica/contract';
 import { initialOf } from '@/utils/comunica/profiles';
+import BrandGradient from '../comun/BrandGradient';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 
 export default function ProfileInitial({
@@ -31,10 +33,12 @@ export default function ProfileInitial({
         },
       ]}
     >
+      {selected ? <BrandGradient variant="mark" /> : null}
       <Text
         style={[
           size > 40 ? styles.big : styles.small,
-          { color: selected ? t.onAccent : t.textSecondary },
+          selected && styles.selected,
+          { color: selected ? t.onGradient : t.textSecondary },
         ]}
       >
         {initialOf(profile)}
@@ -44,7 +48,12 @@ export default function ProfileInitial({
 }
 
 const styles = StyleSheet.create({
-  circle: { alignItems: 'center', justifyContent: 'center' },
+  circle: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
   small: { ...typography.body, fontWeight: '600' },
   big: { ...typography.title },
+  selected: { fontWeight: '800' },
 });

@@ -7,7 +7,6 @@ import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
-import { radii } from '@/constants/uiStyles';
 import {
   useActiveProfile,
   useProfileScope,
@@ -19,6 +18,7 @@ import {
   type ProfileScope,
 } from '@/utils/comunica/profiles';
 import { h } from '@/utils/haptics';
+import CardSurface from '../comun/CardSurface';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import ProfileInitial from './ProfileInitial';
 import ProfileSwitcherSheet from './ProfileSwitcherSheet';
@@ -41,28 +41,32 @@ export default function ActiveProfileBar({
   const who = isSelf ? selfLabel(profiles.self) : shortName(active);
   return (
     <>
-      <PressableFeedback
-        onPress={() => {
-          h.tap();
-          setOpen(true);
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={`Viendo a ${who}. Cambiar de persona`}
-        style={[styles.bar, { backgroundColor: t.card }]}
-      >
-        <ProfileInitial profile={active} selected />
-        <View style={styles.text}>
-          <Text style={[styles.caption, { color: t.textSecondary }]}>
-            Viendo a
-          </Text>
-          <Text style={[styles.who, { color: t.text }]} numberOfLines={1}>
-            {who}
-          </Text>
-        </View>
-        <Text style={[styles.change, { color: t.accentText }]}>Cambiar</Text>
-        <IconSymbol name="chevron.down" size={16} color={t.accentText} />
-        <PressableFeedback.Highlight />
-      </PressableFeedback>
+      {/* Superficie, no bloque de marca: sale en muchas pantallas, algunas con
+          su acción principal. Solo la inicial lleva el degradado (una marca). */}
+      <CardSurface clip>
+        <PressableFeedback
+          onPress={() => {
+            h.tap();
+            setOpen(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`Viendo a ${who}. Cambiar de persona`}
+          style={styles.bar}
+        >
+          <ProfileInitial profile={active} selected />
+          <View style={styles.text}>
+            <Text style={[styles.caption, { color: t.textSecondary }]}>
+              Viendo a
+            </Text>
+            <Text style={[styles.who, { color: t.text }]} numberOfLines={1}>
+              {who}
+            </Text>
+          </View>
+          <Text style={[styles.change, { color: t.accentText }]}>Cambiar</Text>
+          <IconSymbol name="chevron.down" size={16} color={t.accentText} />
+          <PressableFeedback.Highlight />
+        </PressableFeedback>
+      </CardSurface>
       <ProfileSwitcherSheet
         visible={open}
         profiles={profiles}
@@ -83,8 +87,6 @@ const styles = StyleSheet.create({
     minHeight: 56,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: radii.lg,
-    overflow: 'hidden',
   },
   text: { flex: 1 },
   caption: { ...typography.caption },

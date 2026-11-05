@@ -160,7 +160,7 @@ export default function AppFeedbackModal({
     <BottomSheet
       visible={visible}
       onClose={handleClose}
-      title="Feedback 💬"
+      title="Feedback"
       headerLeft={headerLeft}
       paddingHorizontal={0}
     >

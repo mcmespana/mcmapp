@@ -110,7 +110,6 @@ function Block({
             styles.notice,
             {
               backgroundColor: t.chip('info').background,
-              borderLeftColor: t.chip('info').text,
             },
           ]}
         >
@@ -362,7 +361,7 @@ const styles = StyleSheet.create({
   bold: { fontWeight: '700' },
   italic: { fontStyle: 'italic' },
   link: { textDecorationLine: 'underline' },
-  notice: { borderLeftWidth: 4, borderRadius: radii.md, padding: 14 },
+  notice: { borderRadius: radii.md, padding: 14 },
   list: { gap: 6 },
   row: { flexDirection: 'row', gap: 8 },
   marker: { ...typography.body, width: 22 },

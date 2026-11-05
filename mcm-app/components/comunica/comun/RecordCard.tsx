@@ -5,20 +5,31 @@
 // (`onPress`), o lleva un botón (`action`). Un botón que repite lo que hace
 // tocar la tarjeta es justo lo que no se envía.
 //
-// `featured` es la del atajo de la portada («Hoy · C1 · Los Peques»): relleno
-// del acento del área. El degradado de la web queda fuera hasta que se decida
-// el territorio (`theme.ts`).
+// `featured` es la del atajo de la portada («Hoy · C1 · Los Peques»): un BLOQUE
+// de marca (degradado con brillo, como `.pl-hero` del plugin). Cuenta para el
+// tope de dos bloques por pantalla, y por eso se usa a través de
+// `FeaturedRecordCard`: así el test del territorio puede contarlas. Dentro del
+// bloque, chip y cápsula van `onGradient` (marca sobre marca no) y el botón es
+// blanco con tinta violeta (`--on-brand` / `--brand-blue-fixed` del plugin).
 
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
-import { radii, shadows } from '@/constants/uiStyles';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 import { h } from '@/utils/haptics';
+import BrandGradient from './BrandGradient';
+import CardSurface from './CardSurface';
 import DateCapsule from './DateCapsule';
+import StatusChip from './StatusChip';
 import type { ChipTone } from './theme';
 import { useComunicaTheme } from './useComunicaTheme';
+
+type IconName = React.ComponentProps<typeof IconSymbol>['name'];
+
+/** Una línea de la tarjeta: texto suelto, o con un icono delante («dónde»). */
+export type RecordLine = string | { icon: IconName; text: string };
 
 interface Props {
   /** Pastilla de arriba: «Hoy», «Hace 6 días», «Pasada»… */
@@ -26,8 +37,10 @@ interface Props {
   /** El código en negrita (C1) y el nombre, si aporta (§6.2 de Pasar Lista). */
   code?: string | null;
   title: string;
-  lines?: string[];
+  lines?: RecordLine[];
   day?: string;
+  /** `neutral` para una fecha pasada (el `.is-past` del plugin). */
+  capsuleTone?: 'brand' | 'neutral';
   featured?: boolean;
   onPress?: () => void;
   /**
@@ -40,12 +53,15 @@ interface Props {
   accessibilityLabel?: string;
 }
 
+const lineText = (l: RecordLine) => (typeof l === 'string' ? l : l.text);
+
 export default function RecordCard({
   kicker,
   code,
   title,
   lines = [],
   day,
+  capsuleTone = 'brand',
   featured = false,
   onPress,
   cta,
@@ -53,37 +69,25 @@ export default function RecordCard({
   accessibilityLabel,
 }: Props) {
   const t = useComunicaTheme();
-  const bg = featured ? t.accentFill : t.card;
-  const ink = featured ? t.onAccent : t.text;
-  const inkSoft = featured ? t.onAccent : t.textSecondary;
-  const chip = kicker ? t.chip(kicker.tone ?? 'neutral') : null;
+  const ink = featured ? t.onGradient : t.text;
+  const inkSoft = featured ? t.onGradient : t.textSecondary;
   const a11y =
     accessibilityLabel ??
-    [kicker?.label, code, title, ...lines].filter(Boolean).join(', ');
+    [kicker?.label, code, title, ...lines.map(lineText)]
+      .filter(Boolean)
+      .join(', ');
 
   const body = (
     <>
       <View style={styles.top}>
         <View style={styles.main}>
-          {kicker && chip ? (
-            <View
-              style={[
-                styles.kicker,
-                {
-                  backgroundColor: featured
-                    ? t.backgroundSunken
-                    : chip.background,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.kickerLabel,
-                  { color: featured ? t.text : chip.text },
-                ]}
-              >
-                {kicker.label}
-              </Text>
+          {kicker ? (
+            <View style={styles.kicker}>
+              <StatusChip
+                label={kicker.label}
+                tone={kicker.tone ?? 'neutral'}
+                onGradient={featured}
+              />
             </View>
           ) : null}
           <Text
@@ -95,20 +99,25 @@ export default function RecordCard({
             {title}
           </Text>
           {lines.map((l) => (
-            <Text
-              key={l}
-              style={[styles.line, { color: inkSoft }]}
-              numberOfLines={2}
-            >
-              {l}
-            </Text>
+            <View key={lineText(l)} style={styles.lineRow}>
+              {typeof l === 'string' ? null : (
+                <IconSymbol
+                  name={l.icon}
+                  size={14}
+                  color={featured ? t.onGradient : t.accentText}
+                />
+              )}
+              <Text style={[styles.line, { color: inkSoft }]} numberOfLines={2}>
+                {lineText(l)}
+              </Text>
+            </View>
           ))}
           {cta && onPress && !action ? (
             <View style={styles.cta}>
               <Text
                 style={[
                   styles.ctaLabel,
-                  { color: featured ? t.onAccent : t.accentText },
+                  { color: featured ? t.onGradient : t.accentText },
                 ]}
               >
                 {cta}
@@ -116,12 +125,14 @@ export default function RecordCard({
               <IconSymbol
                 name="chevron.right"
                 size={14}
-                color={featured ? t.onAccent : t.accentText}
+                color={featured ? t.onGradient : t.accentText}
               />
             </View>
           ) : null}
         </View>
-        {day ? <DateCapsule day={day} /> : null}
+        {day ? (
+          <DateCapsule day={day} tone={featured ? 'onGradient' : capsuleTone} />
+        ) : null}
       </View>
       {action ? (
         <PressableFeedback
@@ -133,14 +144,14 @@ export default function RecordCard({
           accessibilityLabel={action.label}
           style={[
             styles.action,
-            { backgroundColor: featured ? t.card : t.accentFill },
+            { backgroundColor: featured ? t.onGradient : t.accentFill },
           ]}
         >
           <PressableFeedback.Scale />
           <Text
             style={[
               styles.actionLabel,
-              { color: featured ? t.accentText : t.onAccent },
+              { color: featured ? t.onGradientInk : t.onAccent },
             ]}
           >
             {action.label}
@@ -150,11 +161,23 @@ export default function RecordCard({
     </>
   );
 
-  const surface = [
-    styles.card,
-    featured ? shadows.raised : shadows.card,
-    { backgroundColor: bg },
-  ];
+  // `clip`: el degradado y las esquinas se recortan al radio; en la destacada
+  // el borde y el fondo son el violeta para que no asome un aro gris (y para
+  // que Android tenga fondo donde pintar la `elevation`).
+  const card = (
+    <CardSurface
+      clip
+      elevated={featured}
+      background={featured ? t.accentFill : undefined}
+      // Sin borde: con el violeta asomaba un aro de 1 px contra el azul del
+      // degradado (Android, claro y oscuro).
+      style={featured ? { borderWidth: 0 } : undefined}
+      accessibilityLabel={onPress || action ? undefined : a11y}
+    >
+      {featured ? <BrandGradient variant="block" sheen /> : null}
+      <View style={styles.pad}>{body}</View>
+    </CardSurface>
+  );
 
   if (onPress && !action) {
     return (
@@ -165,36 +188,34 @@ export default function RecordCard({
         }}
         accessibilityRole="button"
         accessibilityLabel={a11y}
-        style={surface}
       >
         <PressableFeedback.Scale />
-        {body}
+        {card}
       </PressableFeedback>
     );
   }
-  return (
-    <View style={surface} accessibilityLabel={action ? undefined : a11y}>
-      {body}
-    </View>
-  );
+  return card;
+}
+
+/**
+ * La tarjeta destacada de la portada. Es un envoltorio para que el test del
+ * territorio cuente los bloques de marca (`<FeaturedRecordCard`) sin depender
+ * de cómo esté escrito el JSX.
+ */
+export function FeaturedRecordCard(props: Omit<Props, 'featured'>) {
+  return <RecordCard {...props} featured />;
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radii.lg, padding: 16, gap: 16 },
+  pad: { padding: 16, gap: 16 },
   top: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   main: { flex: 1, gap: 4 },
-  kicker: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.sm,
-    marginBottom: 4,
-  },
-  kickerLabel: { ...typography.footnote, fontWeight: '700' },
-  title: { ...typography.title },
+  kicker: { marginBottom: 4 },
+  title: { ...typography.title, fontWeight: '700' },
   titleBig: { ...typography.h2 },
   code: { fontWeight: '800' },
-  line: { ...typography.subhead },
+  lineRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  line: { ...typography.subhead, flexShrink: 1 },
   cta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   ctaLabel: { ...typography.button },
   action: {

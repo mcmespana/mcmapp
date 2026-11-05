@@ -14,6 +14,7 @@
  */
 import React, { useMemo, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
@@ -213,96 +214,101 @@ export default function CantoralOnboarding({
         style={[styles.root, { backgroundColor: t.background }]}
         edges={Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom']}
       >
-        {/* Cabecera: título, salida y progreso, siempre a mano. */}
-        <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <Text
-              style={[styles.headerTitle, { color: t.text }]}
-              accessibilityRole="header"
-              numberOfLines={1}
-            >
-              Personaliza tu cantoral
-            </Text>
-            <PressableFeedback
-              onPress={onClose}
-              style={styles.skip}
-              hitSlop={spacing.sm}
-              accessibilityRole="button"
-              accessibilityLabel="Cerrar y empezar a usar el cantoral"
-            >
-              <PressableFeedback.Highlight />
-              <Text style={[styles.skipText, { color: t.link }]}>
-                {isLast ? 'Cerrar' : 'Saltar'}
+        <KeyboardAvoidingView
+          style={styles.root}
+          behavior={Platform.OS === 'android' ? 'padding' : undefined}
+        >
+          {/* Cabecera: título, salida y progreso, siempre a mano. */}
+          <View style={styles.header}>
+            <View style={styles.headerRow}>
+              <Text
+                style={[styles.headerTitle, { color: t.text }]}
+                accessibilityRole="header"
+                numberOfLines={1}
+              >
+                Personaliza tu cantoral
               </Text>
-            </PressableFeedback>
-          </View>
-          <View
-            style={styles.dots}
-            accessibilityLabel={`Paso ${index + 1} de ${steps.length}`}
-          >
-            {steps.map((s, i) => (
-              <View
-                key={s}
-                style={[
-                  styles.dot,
-                  {
-                    backgroundColor:
-                      i <= index ? UIColors.accentYellow : t.separator,
-                  },
-                ]}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={[styles.body, layout.isWide && styles.bodyWide]}>
-          <View
-            style={[
-              styles.preview,
-              layout.isWide && styles.previewWide,
-              soloPanel && styles.hidden,
-              { borderColor: t.separator },
-            ]}
-            accessibilityLabel="Vista previa de una canción"
-          >
-            <SongDisplay
-              songHtml={songHtml}
-              isLoading={isLoadingSong}
-              styleState={styleState}
-              fullBleed
-              scrollTo={STEP_SCROLL[step]}
-            />
-          </View>
-          <View
-            style={[
-              styles.panel,
-              layout.isWide && styles.panelWide,
-              soloPanel && styles.panelFull,
-            ]}
-          >
-            {panel}
-            <View style={styles.nav}>
-              {index > 0 ? (
-                <PressableFeedback
-                  onPress={back}
-                  style={styles.backBtn}
-                  accessibilityRole="button"
-                  accessibilityLabel="Paso anterior"
-                >
-                  <PressableFeedback.Highlight />
-                  <MaterialIcons name="arrow-back" size={22} color={t.link} />
-                </PressableFeedback>
-              ) : null}
-              <AppPrimaryButton
-                label={isLast ? 'Listo' : 'Siguiente'}
-                icon={isLast ? 'check' : 'arrow-forward'}
-                iconPosition={isLast ? 'left' : 'right'}
-                onPress={next}
-                style={styles.nextBtn}
-              />
+              <PressableFeedback
+                onPress={onClose}
+                style={styles.skip}
+                hitSlop={spacing.sm}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar y empezar a usar el cantoral"
+              >
+                <PressableFeedback.Highlight />
+                <Text style={[styles.skipText, { color: t.link }]}>
+                  {isLast ? 'Cerrar' : 'Saltar'}
+                </Text>
+              </PressableFeedback>
+            </View>
+            <View
+              style={styles.dots}
+              accessibilityLabel={`Paso ${index + 1} de ${steps.length}`}
+            >
+              {steps.map((s, i) => (
+                <View
+                  key={s}
+                  style={[
+                    styles.dot,
+                    {
+                      backgroundColor:
+                        i <= index ? UIColors.accentYellow : t.separator,
+                    },
+                  ]}
+                />
+              ))}
             </View>
           </View>
-        </View>
+
+          <View style={[styles.body, layout.isWide && styles.bodyWide]}>
+            <View
+              style={[
+                styles.preview,
+                layout.isWide && styles.previewWide,
+                soloPanel && styles.hidden,
+                { borderColor: t.separator },
+              ]}
+              accessibilityLabel="Vista previa de una canción"
+            >
+              <SongDisplay
+                songHtml={songHtml}
+                isLoading={isLoadingSong}
+                styleState={styleState}
+                fullBleed
+                scrollTo={STEP_SCROLL[step]}
+              />
+            </View>
+            <View
+              style={[
+                styles.panel,
+                layout.isWide && styles.panelWide,
+                soloPanel && styles.panelFull,
+              ]}
+            >
+              {panel}
+              <View style={styles.nav}>
+                {index > 0 ? (
+                  <PressableFeedback
+                    onPress={back}
+                    style={styles.backBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Paso anterior"
+                  >
+                    <PressableFeedback.Highlight />
+                    <MaterialIcons name="arrow-back" size={22} color={t.link} />
+                  </PressableFeedback>
+                ) : null}
+                <AppPrimaryButton
+                  label={isLast ? 'Listo' : 'Siguiente'}
+                  icon={isLast ? 'check' : 'arrow-forward'}
+                  iconPosition={isLast ? 'left' : 'right'}
+                  onPress={next}
+                  style={styles.nextBtn}
+                />
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );

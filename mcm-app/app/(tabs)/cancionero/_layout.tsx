@@ -1,13 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { Stack, router, useGlobalSearchParams, usePathname } from 'expo-router';
+import { useIsFocused } from 'expo-router/react-navigation';
+import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabReselect } from '@/components/tabs/tabBarController';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { TabHeaderColors, themeColors } from '@/constants/colors';
 import { cantoralHeaderTint } from '@/utils/cantoralHeader';
-import TabTintBar from '@/components/ui/TabTintBar';
+import { radii } from '@/constants/uiStyles';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { extractSongMedia } from '@/types/songMedia';
 import {
@@ -55,10 +57,20 @@ export default function CancioneroLayout() {
 
   useChoirFollower();
 
+  // Android: la cabecera del cantoral es una barra amarilla SÓLIDA en los dos
+  // modos, así que los iconos de la barra de estado van oscuros siempre (el
+  // `StatusBar` de `(tabs)/_layout` los ponía blancos en oscuro: ~1,6:1 sobre
+  // amarillo). La pantalla completa no tiene cabecera y es oscura: ahí no.
+  const pathnameForBar = usePathname();
+  const focused = useIsFocused();
+  const darkStatusIcons =
+    Platform.OS === 'android' &&
+    focused &&
+    lastSegment(pathnameForBar) !== CANTORAL_SLUGS.SongFullscreen;
+
   return (
     <SettingsProvider>
-      {/* Raya amarilla del cantoral pegada arriba, como la roja de Fotos. */}
-      <TabTintBar color={TabHeaderColors.cancionero} />
+      {darkStatusIcons ? <StatusBar style="dark" animated /> : null}
       <Stack
         screenOptions={{
           headerStyle: isIOS
@@ -116,6 +128,20 @@ export default function CancioneroLayout() {
         <Stack.Screen
           name={CANTORAL_SLUGS.SelectedSongs}
           options={{ title: 'Tu selección' }}
+        />
+        {/* El afinador va en hoja: se abre encima de la canción y al
+            cerrarla sigues donde estabas. */}
+        <Stack.Screen
+          name={CANTORAL_SLUGS.Tuner}
+          options={{
+            title: 'Afinador',
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.82, 1],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: radii.xl,
+            headerTransparent: false,
+            contentStyle: { backgroundColor: themeColors(isDark).background },
+          }}
         />
       </Stack>
     </SettingsProvider>

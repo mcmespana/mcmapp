@@ -64,8 +64,10 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
             }
           />
           <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.65)']}
-            locations={[0.3, 1]}
+            // Más opaco y desde antes: sobre portadas claras (Jubileo) el texto
+            // blanco quedaba a ~2,7:1 con el scrim anterior.
+            colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.8)']}
+            locations={[0.2, 0.55, 1]}
             style={activeStyles.gradient}
           />
           <View style={activeStyles.textContainer}>
@@ -137,6 +139,9 @@ const createStyles = (screenWidth: number) =>
       color: '#fff',
       letterSpacing: -0.3,
       lineHeight: 24,
+      textShadowColor: 'rgba(0,0,0,0.35)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 4,
     },
     metaRow: {
       flexDirection: 'row',

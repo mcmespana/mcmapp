@@ -18,9 +18,11 @@ import {
   getViewingFile,
 } from '@/services/comunica/fileViewer';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
+import { useHeaderGlyph } from '../comun/useHeaderGlyph';
 
 export default function FileViewerScreen() {
   const t = useComunicaTheme();
+  const glyph = useHeaderGlyph();
   const router = useRouter();
   const file = getViewingFile();
 
@@ -61,7 +63,7 @@ export default function FileViewerScreen() {
               accessibilityLabel="Compartir"
               style={styles.share}
             >
-              <Text style={[styles.shareLabel, { color: t.accentText }]}>
+              <Text style={[styles.shareLabel, { color: glyph }]}>
                 Compartir
               </Text>
             </PressableFeedback>

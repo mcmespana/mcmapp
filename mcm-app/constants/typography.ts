@@ -29,6 +29,15 @@ import { Platform, TextStyle } from 'react-native';
  * No bajes de `caption` (13) para texto que haya que leer de verdad.
  */
 const typography = {
+  /**
+   * 88 — UNA nota o cifra sola, gigante, que se lee a un metro (la nota del
+   * afinador). No es un título: no lleva texto corrido ni va con `h0` al lado.
+   */
+  display: {
+    fontSize: 88,
+    fontWeight: '700' as const,
+    letterSpacing: -3,
+  },
   /** 34 — hero de pantalla. Uno por pantalla como mucho. */
   h0: {
     fontSize: 34,
@@ -60,6 +69,18 @@ const typography = {
     fontSize: 10,
     fontWeight: '600' as const,
     letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+  },
+  /**
+   * 12 — la etiqueta de sección, UNA para toda la app (auditoría de coherencia,
+   * 05/11/2026): mayúsculas con tracking. Antes eran tres casi iguales (10 pt en
+   * Inicio, 11 en Contigo, 13 en Comunica). Cada zona le pone SU color; la forma
+   * es la misma. Una por bloque, nunca una por tarjeta.
+   */
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    letterSpacing: 0.8,
     textTransform: 'uppercase' as const,
   },
   /** Serif — lecturas litúrgicas y textos contemplativos largos (Contigo). */

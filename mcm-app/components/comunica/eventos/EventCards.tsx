@@ -57,7 +57,7 @@ export function EventListRow({
   muted,
 }: {
   event: EventSummary;
-  /** Los ya pasados: el nombre en gris. */
+  /** Los ya pasados: el nombre en gris y la cápsula apagada. */
   muted?: boolean;
 }) {
   const t = useComunicaTheme();
@@ -73,7 +73,7 @@ export function EventListRow({
       accessibilityLabel={`${event.name}, ${dates}`}
       style={styles.row}
     >
-      <DateCapsule day={event.startDate} />
+      <DateCapsule day={event.startDate} tone={muted ? 'neutral' : 'brand'} />
       <View style={styles.body}>
         <Text
           style={[styles.title, { color: muted ? t.textSecondary : t.text }]}

@@ -20,7 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { hexAlpha } from '@/utils/colorUtils';
+import { hexAlpha, onColor } from '@/utils/colorUtils';
 import { getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { DateNavigator } from '@/components/contigo/DateNavigator';
@@ -320,6 +320,8 @@ export default function OracionScreen() {
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  // Tinta del botón dorado: blanco daba ~1,9:1 y parecía desactivado.
+  const saveInk = onColor(HABITS.oracion.grad[1]);
   const headerInset = useContigoHeaderInset();
   const theme = Colors[scheme ?? 'light'];
   const warm = isDark ? WARM.dark : WARM.light;
@@ -785,8 +787,8 @@ export default function OracionScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.saveBtnGradient}
               >
-                <MaterialIcons name="favorite" size={22} color="#FFFFFF" />
-                <Text style={[styles.saveBtnText, { color: '#FFFFFF' }]}>
+                <MaterialIcons name="favorite" size={22} color={saveInk} />
+                <Text style={[styles.saveBtnText, { color: saveInk }]}>
                   Guardar rato de oración
                 </Text>
               </LinearGradient>

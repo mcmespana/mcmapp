@@ -280,7 +280,7 @@ describe('la portada de familia', () => {
     const { tree } = await setup('family', <MemberHome />);
     await until(() => texts(tree).includes('Tus pagos'));
     const t = texts(tree);
-    expect(t).toContain('Hola, Marta 👋');
+    expect(t).toContain('Hola, Marta');
     expect(t).toContain('Aquí están tus datos y lo que se cobra de tu cuenta.');
     expect(t).toContain('A quién tienes a tu cargo');
     expect(t).toContain('Tus pagos y recibos, con su estado.');

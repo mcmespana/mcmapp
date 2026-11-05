@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     gap: 7,
     paddingVertical: 9,
     paddingHorizontal: 15,
-    borderRadius: 11,
+    borderRadius: radii.md,
     backgroundColor: '#F5F5F7',
   },
   errorBtnText: {

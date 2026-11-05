@@ -28,6 +28,7 @@ Cómo funciona cada sistema de la app, de principio a fin.
 | [ENLACES_CANCION.md](funcionalidades/ENLACES_CANCION.md)             | Enlaces de una canción: `audioLinks` (suenan dentro de la app) frente a enlaces externos (Spotify, partituras, webs)                                        |
 | [CANAL_PREVIEW.md](funcionalidades/CANAL_PREVIEW.md)                 | Modo tester ("Laboratorio Alpha"): cómo un dispositivo recibe los OTA de `preview` en vez de los de `production`, y cómo comprobarlo                        |
 | [CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)                   | Modo Carismochito (agitar el móvil) y la caza de Carismochitos con su colección, escondida en el Laboratorio Alpha                                          |
+| [AFINADOR.md](funcionalidades/AFINADOR.md)                           | Afinador de guitarra del cantoral: dónde está, cómo detecta la nota (pitchy + suavizado), permisos de micrófono y las dos trampas de web                    |
 | [RECORDATORIOS_CONTIGO.md](funcionalidades/RECORDATORIOS_CONTIGO.md) | Recordatorios de Contigo: qué se configura, dónde se editan los textos y cómo se programan los avisos locales                                               |
 
 ## Contratos de datos (App ↔ MCM Panel)

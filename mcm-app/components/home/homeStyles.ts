@@ -60,7 +60,7 @@ export const styles = StyleSheet.create({
   dot: {
     width: 9,
     height: 9,
-    borderRadius: 5,
+    borderRadius: radii.xs,
     backgroundColor: colors.primary,
   } as ViewStyle,
 
@@ -99,7 +99,7 @@ export const styles = StyleSheet.create({
 
   // ── Notification card ──
   notifCard: {
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
     borderWidth: 1,
     padding: spacing.md + 2,
     ...shadows.raised,
@@ -116,7 +116,7 @@ export const styles = StyleSheet.create({
   newBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: radii.sm,
     alignSelf: 'flex-start',
   } as ViewStyle,
   newBadgeText: {
@@ -216,7 +216,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderLeftWidth: 4,
     padding: spacing.sm + 4,
     marginBottom: spacing.sm,
     ...shadows.card,
@@ -393,7 +392,10 @@ export const styles = StyleSheet.create({
   // ── Footer ──
   footer: { alignItems: 'center', paddingTop: spacing.xs } as ViewStyle,
   feedbackLink: { padding: spacing.sm, marginTop: 4 } as ViewStyle,
-  feedbackText: { ...typography.footnote } as TextStyle,
+  feedbackText: {
+    ...typography.footnote,
+    textDecorationLine: 'underline',
+  } as TextStyle,
   tagline: {
     ...typography.micro,
     opacity: 0.3,

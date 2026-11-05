@@ -3,7 +3,7 @@
 // sola, el dato sin control.
 
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, type OpaqueColorValue } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import BottomSheet from '@/components/BottomSheet';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -26,7 +26,7 @@ export default function SessionPicker({
   current: SessionOption | null;
   onPick: (sessionId: string) => void;
   /** Color del texto en la cabecera. */
-  tint: string;
+  tint: string | OpaqueColorValue;
 }) {
   const t = useComunicaTheme();
   const [open, setOpen] = useState(false);

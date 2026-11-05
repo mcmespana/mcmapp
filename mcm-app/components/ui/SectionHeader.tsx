@@ -44,7 +44,7 @@ export default function SectionHeader({
     <View style={[styles.row, style]}>
       <Text
         accessibilityRole="header"
-        style={[typography.overline, { color: labelColor }, textStyle]}
+        style={[typography.sectionLabel, { color: labelColor }, textStyle]}
       >
         {label}
       </Text>

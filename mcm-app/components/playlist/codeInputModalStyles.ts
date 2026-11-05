@@ -128,7 +128,7 @@ export const createStyles = (isDark: boolean) =>
     btn: {
       paddingVertical: 11,
       paddingHorizontal: 18,
-      borderRadius: 10,
+      borderRadius: radii.md,
       minWidth: 110,
       alignItems: 'center',
       justifyContent: 'center',

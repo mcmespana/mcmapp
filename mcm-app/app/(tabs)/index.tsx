@@ -202,11 +202,10 @@ function getUpcomingEventsByWeek(
  * estilo «color + texto blanco» sin pasar a texto oscuro.
  */
 const EVAL_ACCENT_FILL = readableOn(colors.accent, colors.white);
-const EVAL_INFO_FILL = readableOn(colors.info, colors.white);
 
 // Tamaños base de la escala, para multiplicarlos por `fontScale`.
 const FOOTNOTE_SIZE = typography.footnote.fontSize as number;
-const OVERLINE_SIZE = typography.overline.fontSize as number;
+const SECTION_LABEL_SIZE = typography.sectionLabel.fontSize as number;
 
 /** Opacidad de la pastilla de un acceso rápido (el color de su pestaña). */
 const QUICK_FILL_LIGHT = '1F';
@@ -557,12 +556,9 @@ export default function Home() {
   }, [navigation]);
 
   // Notification card content
-  const notifTitle = latestNotification
-    ? latestNotification.title
-    : 'Te damos la bienvenida a MCM App';
-  const notifBody = latestNotification
-    ? latestNotification.body
-    : 'En esta sección te mostraremos las últimas notificaciones';
+  // La tarjeta solo se pinta con una notificación real (ver «Novedades»).
+  const notifTitle = latestNotification?.title ?? '';
+  const notifBody = latestNotification?.body ?? '';
 
   const normalizeRoute = (route: string): string => {
     if (!route) return '';
@@ -1005,41 +1001,52 @@ export default function Home() {
               </TouchableOpacity>
             )}
 
-            {/* ── CTA "Evalúa la app" ── */}
+            {/* ── CTA "Evalúa la app": una fila tranquila, no un bloque de color ── */}
             {showAppEvalBanner && (
               <TouchableOpacity
-                style={[styles.evalCta, { backgroundColor: EVAL_INFO_FILL }]}
+                style={[
+                  styles.onboardingBanner,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor:
+                      scheme === 'dark'
+                        ? 'rgba(255,255,255,0.09)'
+                        : 'rgba(0,0,0,0.07)',
+                  },
+                ]}
                 onPress={() => {
                   h.tap();
                   router.push('/evaluacion-app');
                 }}
-                activeOpacity={0.9}
                 accessibilityRole="button"
                 accessibilityLabel="Evalúa la app"
               >
-                <View style={styles.evalCtaIcon}>
-                  <MaterialIcons name="rate-review" size={26} color="#fff" />
-                </View>
-                <View style={styles.evalCtaTextWrap}>
-                  <Text style={styles.evalCtaTitle} numberOfLines={1}>
+                <MaterialIcons
+                  name="rate-review"
+                  size={20}
+                  color={theme.icon}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.onboardingBannerTitle,
+                      { color: theme.text },
+                    ]}
+                  >
                     {DEFAULT_APP_EVALUATION.title || 'Evalúa la app'}
                   </Text>
-                  <Text style={styles.evalCtaBody} numberOfLines={2}>
+                  <Text
+                    style={[styles.onboardingBannerBody, { color: theme.icon }]}
+                    numberOfLines={2}
+                  >
                     ¿Errores o ideas? Ayúdanos a mejorar la app.
                   </Text>
                 </View>
-                <View style={styles.evalCtaBtn}>
-                  <Text
-                    style={[styles.evalCtaBtnText, { color: EVAL_INFO_FILL }]}
-                  >
-                    Evaluar
-                  </Text>
-                  <MaterialIcons
-                    name="arrow-forward"
-                    size={15}
-                    color={EVAL_INFO_FILL}
-                  />
-                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={theme.icon}
+                />
               </TouchableOpacity>
             )}
 
@@ -1048,108 +1055,111 @@ export default function Home() {
               <SurveyBanner key={s.id} entry={s} />
             ))}
 
-            {/* ── Novedades ── */}
-            <View style={styles.section}>
-              {/* El botón de acción del aviso NO puede vivir dentro de la
+            {/* ── Novedades: solo con una notificación real (antes, sin ninguna,
+                salía una tarjeta de bienvenida con texto de relleno) ── */}
+            {latestNotification ? (
+              <View style={styles.section}>
+                {/* El botón de acción del aviso NO puede vivir dentro de la
                   tarjeta pulsable: en web eso es un <button> dentro de otro
                   (HTML inválido, y el lector de pantalla lo lee como uno
                   solo). Con acción, la fila de abajo va FUERA de la zona
                   pulsable, debajo; sin acción, todo es un solo botón. */}
-              <View
-                style={StyleSheet.flatten([
-                  styles.notifCard,
-                  {
-                    backgroundColor: theme.card,
-                    borderColor:
-                      scheme === 'dark'
-                        ? 'rgba(255,255,255,0.09)'
-                        : 'rgba(0,0,0,0.07)',
-                  },
-                ])}
-              >
-                <TouchableOpacity
-                  onPress={() => {
-                    // Abre directamente el detalle de la última notificación
-                    // (vista en grande), no la lista completa.
-                    setNotifSheetInitial(latestNotification);
-                    setNotifSheetOpen(true);
-                  }}
-                  activeOpacity={0.78}
-                  accessibilityLabel={`${notifTitle}. Toca para leer`}
-                  accessibilityRole="button"
+                <View
+                  style={StyleSheet.flatten([
+                    styles.notifCard,
+                    {
+                      backgroundColor: theme.card,
+                      borderColor:
+                        scheme === 'dark'
+                          ? 'rgba(255,255,255,0.09)'
+                          : 'rgba(0,0,0,0.07)',
+                    },
+                  ])}
                 >
-                  {/* Top row: content + icon */}
-                  <View style={styles.notifRow}>
-                    {/* Content */}
-                    <View style={styles.notifContent}>
-                      {isUnread && (
-                        <View
-                          style={[
-                            styles.newBadge,
-                            { backgroundColor: hexAlpha(accentColor, '15') },
-                          ]}
-                        >
-                          <Text
+                  <TouchableOpacity
+                    onPress={() => {
+                      // Abre directamente el detalle de la última notificación
+                      // (vista en grande), no la lista completa.
+                      setNotifSheetInitial(latestNotification);
+                      setNotifSheetOpen(true);
+                    }}
+                    activeOpacity={0.78}
+                    accessibilityLabel={`${notifTitle}. Toca para leer`}
+                    accessibilityRole="button"
+                  >
+                    {/* Top row: content + icon */}
+                    <View style={styles.notifRow}>
+                      {/* Content */}
+                      <View style={styles.notifContent}>
+                        {isUnread && (
+                          <View
                             style={[
-                              styles.newBadgeText,
-                              { color: accentColor },
+                              styles.newBadge,
+                              { backgroundColor: hexAlpha(accentColor, '15') },
                             ]}
                           >
-                            NUEVO
-                          </Text>
-                        </View>
-                      )}
-                      <Text
+                            <Text
+                              style={[
+                                styles.newBadgeText,
+                                { color: accentColor },
+                              ]}
+                            >
+                              NUEVO
+                            </Text>
+                          </View>
+                        )}
+                        <Text
+                          style={[
+                            styles.notifTitle,
+                            {
+                              color: theme.text,
+                              fontSize: 16 * fontScale,
+                            },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {notifTitle}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.notifDescription,
+                            {
+                              color: theme.icon,
+                              fontSize: 13 * fontScale,
+                            },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {notifBody}
+                        </Text>
+                      </View>
+
+                      {/* Megaphone icon — right */}
+                      <View
                         style={[
-                          styles.notifTitle,
+                          styles.notifIconCircle,
                           {
-                            color: theme.text,
-                            fontSize: 16 * fontScale,
+                            backgroundColor:
+                              scheme === 'dark'
+                                ? hexAlpha(accentColor, '20')
+                                : hexAlpha(accentColor, '12'),
                           },
                         ]}
-                        numberOfLines={2}
                       >
-                        {notifTitle}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.notifDescription,
-                          {
-                            color: theme.icon,
-                            fontSize: 13 * fontScale,
-                          },
-                        ]}
-                        numberOfLines={2}
-                      >
-                        {notifBody}
-                      </Text>
+                        <MaterialIcons
+                          name="campaign"
+                          size={26}
+                          color={accentColor}
+                        />
+                      </View>
                     </View>
 
-                    {/* Megaphone icon — right */}
-                    <View
-                      style={[
-                        styles.notifIconCircle,
-                        {
-                          backgroundColor:
-                            scheme === 'dark'
-                              ? hexAlpha(accentColor, '20')
-                              : hexAlpha(accentColor, '12'),
-                        },
-                      ]}
-                    >
-                      <MaterialIcons
-                        name="campaign"
-                        size={26}
-                        color={accentColor}
-                      />
-                    </View>
-                  </View>
-
-                  {hasNotifAction ? null : notifCtaRow}
-                </TouchableOpacity>
-                {hasNotifAction ? notifCtaRow : null}
+                    {hasNotifAction ? null : notifCtaRow}
+                  </TouchableOpacity>
+                  {hasNotifAction ? notifCtaRow : null}
+                </View>
               </View>
-            </View>
+            ) : null}
 
             {/* ── Accesos rápidos ── */}
             <View style={styles.section}>
@@ -1214,7 +1224,7 @@ export default function Home() {
                 label="Próximos eventos"
                 style={styles.sectionHeader}
                 textStyle={{
-                  fontSize: OVERLINE_SIZE * fontScale,
+                  fontSize: SECTION_LABEL_SIZE * fontScale,
                 }}
               />
 
@@ -1266,7 +1276,6 @@ export default function Home() {
                                 scheme === 'dark'
                                   ? 'rgba(255,255,255,0.09)'
                                   : 'rgba(0,0,0,0.06)',
-                              borderLeftColor: calColor,
                             },
                           ])}
                           onPress={() => navigateToCalendar(evt.startDate)}
