@@ -223,11 +223,21 @@
         }
       ],
       [
+        "react-native-audio-api",
+        {
+          "iosMicrophonePermission": "MCM App usa el micrófono para el afinador del cantoral: escucha tu guitarra para decirte si está afinada. El sonido se analiza en el móvil y no se guarda ni se envía.",
+          "iosBackgroundMode": false,
+          "androidPermissions": ["android.permission.RECORD_AUDIO"],
+          "androidForegroundService": false,
+          "enableFFmpeg": false
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "MCM App usa tus fotos para subir tu foto de perfil, títulos, certificados y documentos a tu área privada.",
           "cameraPermission": "MCM App usa la cámara para escanear los códigos QR de playlists y sesiones de coro, y para hacer tu foto de perfil y fotos de títulos y documentos en tu área privada.",
-          "microphonePermission": false
+          "microphonePermission": "MCM App usa el micrófono para el afinador del cantoral: escucha tu guitarra para decirte si está afinada. El sonido se analiza en el móvil y no se guarda ni se envía."
         }
       ]
     ],

@@ -10,12 +10,13 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router/react-navigation';
 import Animated, {
-  FadeIn,
   FadeOut,
   ZoomIn,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { h } from '@/utils/haptics';
 import { PressableFeedback } from 'heroui-native';
@@ -24,6 +25,7 @@ import { useToast } from '@/contexts/AppToastContext';
 import { MaterialIcons } from '@/components/ui/icons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import { transposeLabel } from '@/utils/transposeKey';
+import { openCantoral } from '@/utils/cantoralNavigation';
 import { buildSongPrintHtml, printHtmlInNewWindow } from '@/utils/printSong';
 import SongFontBottomSheet, {
   type SheetViewOptions,
@@ -44,6 +46,7 @@ import {
 import { onColor } from '@/utils/colorUtils';
 import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
+import spacing from '@/constants/spacing';
 import { durations, motionEasings, springs } from '@/constants/animations';
 
 interface FontOption {
@@ -201,6 +204,13 @@ const SongControls: React.FC<SongControlsProps> = ({
   const tabBarClearance = useTabBarClearance();
   const layout = useResponsiveLayout();
   const rotateAnim = useSharedValue(0);
+  // Visibilidad del menú (0 cerrado → 1 abierto). El menú se queda MONTADO y
+  // solo se desvanece: antes se montaba y desmontaba con `entering`/`exiting`,
+  // y al cerrarse el contenedor (pegado abajo y con la altura del menú) se
+  // encogía de golpe; la copia que Reanimated deja para la animación de salida
+  // se quedaba en su sitio relativo al padre, o sea, desplazada hacia abajo
+  // tanto como medía el menú: se veía «caer» por encima del botón.
+  const menuAnim = useSharedValue(0);
 
   // En iPad / web amplio el contenido del SongDetail está centrado con
   // `contentMaxWidth`. Alineamos el FAB con el borde derecho de ese
@@ -238,8 +248,14 @@ const SongControls: React.FC<SongControlsProps> = ({
       // antes, con los defaults de Reanimated 4 (stiffness 900), oscilaba con
       // ζ≈0,1 — el «+» se pasaba de 45° a casi 80° y tardaba un segundo.
       rotateAnim.set(withSpring(toOpen ? 1 : 0, springs.snap));
+      menuAnim.set(
+        withTiming(toOpen ? 1 : 0, {
+          duration: durations.quick,
+          easing: motionEasings.out,
+        }),
+      );
     },
-    [rotateAnim],
+    [rotateAnim, menuAnim],
   );
   const toggleMenu = () => setMenuOpen(!showActionButtons);
 
@@ -274,9 +290,34 @@ const SongControls: React.FC<SongControlsProps> = ({
     }, [showActionButtons, setMenuOpen]),
   );
 
-  const fabIconStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotateAnim.get() * 45}deg` }],
-  }));
+  // El icono hace un morph: el «ajustes» gira y se va mientras entra el «+»
+  // girando hasta quedarse en «×». Antes era UN icono que cambiaba de glifo
+  // de golpe a mitad del giro, así que al cerrar el de ajustes aparecía ya
+  // torcido 45° y volvía a su sitio dando un latigazo.
+  const fabTuneIconStyle = useAnimatedStyle(() => {
+    const p = rotateAnim.get();
+    return {
+      opacity: interpolate(p, [0, 0.6], [1, 0], 'clamp'),
+      transform: [{ rotate: `${p * -90}deg` }],
+    };
+  });
+  const fabCloseIconStyle = useAnimatedStyle(() => {
+    const p = rotateAnim.get();
+    return {
+      opacity: interpolate(p, [0.4, 1], [0, 1], 'clamp'),
+      transform: [{ rotate: `${p * 45}deg` }],
+    };
+  });
+  // Opacidad y un desplazamiento corto desde el botón. Sin entradas
+  // encadenadas por ítem: el menú no salta de la nada encima del dedo.
+  const menuStyle = useAnimatedStyle(() => {
+    const p = menuAnim.get();
+    return {
+      opacity: p,
+      transform: [{ translateY: (1 - p) * spacing.sm }],
+    };
+  });
+  const scrimStyle = useAnimatedStyle(() => ({ opacity: menuAnim.get() }));
 
   useEffect(() => {
     return () => {
@@ -317,10 +358,18 @@ const SongControls: React.FC<SongControlsProps> = ({
 
   return (
     <>
-      {/* Scrim when menu is open */}
-      {showActionButtons && (
-        <Pressable style={styles.scrim} onPress={toggleMenu} />
-      )}
+      {/* Velo: siempre montado, solo atrapa toques con el menú abierto. */}
+      <Animated.View
+        style={[styles.scrim, scrimStyle]}
+        pointerEvents={showActionButtons ? 'auto' : 'none'}
+      >
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={() => setMenuOpen(false)}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        />
+      </Animated.View>
 
       {/* FAB & Action Menu */}
       <View
@@ -331,140 +380,157 @@ const SongControls: React.FC<SongControlsProps> = ({
             right: fabRightOffset,
           },
         ]}
+        pointerEvents="box-none"
       >
-        {showActionButtons && (
-          // Solo opacidad, sin entradas encadenadas por ítem: el menú no
-          // salta de la nada justo encima del dedo.
-          <Animated.View
-            entering={FadeIn.duration(durations.quick).easing(
-              motionEasings.out,
-            )}
-            exiting={FadeOut.duration(durations.quick)}
-            style={[styles.menuContainer, isDark && styles.menuContainerDark]}
-          >
+        {/* Siempre montado (ver `menuAnim`): cerrado no ocupa toques ni se
+            lee con el lector de pantalla, pero tampoco cambia la altura del
+            contenedor, que es lo que descolocaba la animación de cierre. */}
+        <Animated.View
+          style={[
+            styles.menuContainer,
+            isDark && styles.menuContainerDark,
+            menuStyle,
+          ]}
+          pointerEvents={showActionButtons ? 'auto' : 'none'}
+          accessibilityElementsHidden={!showActionButtons}
+          importantForAccessibility={
+            showActionButtons ? 'auto' : 'no-hide-descendants'
+          }
+          aria-hidden={!showActionButtons}
+        >
+          <ActionButton
+            isDark={isDark}
+            icon={chordsVisible ? 'music-off' : 'music-note'}
+            label={chordsVisible ? 'Ocultar acordes' : 'Mostrar acordes'}
+            onPress={onToggleChords}
+            isActive={!chordsVisible}
+          />
+          {hasRepeats && onToggleCompact && (
             <ActionButton
               isDark={isDark}
-              icon={chordsVisible ? 'music-off' : 'music-note'}
-              label={chordsVisible ? 'Ocultar acordes' : 'Mostrar acordes'}
-              onPress={onToggleChords}
-              isActive={!chordsVisible}
-            />
-            {hasRepeats && onToggleCompact && (
-              <ActionButton
-                isDark={isDark}
-                icon={compactView ? 'unfold-more' : 'unfold-less'}
-                label={
-                  compactView
-                    ? 'Desplegar estribillos'
-                    : 'Plegar estribillos repetidos'
-                }
-                onPress={onToggleCompact}
-                isActive={compactView}
-              />
-            )}
-            {hasArrangements && onToggleArrangements && (
-              <ActionButton
-                isDark={isDark}
-                icon="auto-awesome"
-                label={
-                  arrangementsVisible ? 'Ocultar arreglos' : 'Mostrar arreglos'
-                }
-                onPress={onToggleArrangements}
-                isActive={!arrangementsVisible}
-              />
-            )}
-            <ActionButton
-              isDark={isDark}
-              icon="translate"
+              icon={compactView ? 'unfold-more' : 'unfold-less'}
               label={
-                notation === 'ES' ? 'Acordes en inglés' : 'Acordes en español'
+                compactView
+                  ? 'Desplegar estribillos'
+                  : 'Plegar estribillos repetidos'
               }
-              onPress={onToggleNotation}
-              isActive={notation !== 'ES'}
+              onPress={onToggleCompact}
+              isActive={compactView}
             />
+          )}
+          {hasArrangements && onToggleArrangements && (
             <ActionButton
               isDark={isDark}
-              icon="swap-vert"
+              icon="auto-awesome"
               label={
-                songBadge ? `Tono y cejilla · ${songBadge}` : 'Tono y cejilla'
+                arrangementsVisible ? 'Ocultar arreglos' : 'Mostrar arreglos'
               }
-              onPress={handleOpenTransposeBottomSheet}
-              isActive={!!songBadge}
+              onPress={onToggleArrangements}
+              isActive={!arrangementsVisible}
             />
+          )}
+          <ActionButton
+            isDark={isDark}
+            icon="translate"
+            label={
+              notation === 'ES' ? 'Acordes en inglés' : 'Acordes en español'
+            }
+            onPress={onToggleNotation}
+            isActive={notation !== 'ES'}
+          />
+          <ActionButton
+            isDark={isDark}
+            icon="swap-vert"
+            label={
+              songBadge ? `Tono y cejilla · ${songBadge}` : 'Tono y cejilla'
+            }
+            onPress={handleOpenTransposeBottomSheet}
+            isActive={!!songBadge}
+          />
+          <ActionButton
+            isDark={isDark}
+            icon="text-fields"
+            label="Letra y vista"
+            onPress={handleOpenFontPanel}
+            isActive={
+              currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
+              (availableFonts.length > 0 &&
+                currentFontFamily !== availableFonts[0].cssValue)
+            }
+          />
+
+          {/* El afinador, en hoja encima de la canción. */}
+          <ActionButton
+            isDark={isDark}
+            icon="graphic-eq"
+            label="Afinar la guitarra"
+            onPress={() => {
+              setMenuOpen(false);
+              openCantoral('Tuner');
+            }}
+          />
+
+          <View
+            style={[styles.menuDivider, isDark && styles.menuDividerDark]}
+          />
+
+          <ActionButton
+            isDark={isDark}
+            icon="content-copy"
+            label="Copiar letra"
+            onPress={() => {
+              onCopyLyrics();
+              toast.show({ label: 'Letra copiada al portapapeles' });
+            }}
+          />
+          <ActionButton
+            isDark={isDark}
+            icon="fullscreen"
+            label="Pantalla completa"
+            onPress={onNavigateToFullscreen}
+          />
+          {Platform.OS === 'web' && !!songContent && (
             <ActionButton
               isDark={isDark}
-              icon="text-fields"
-              label="Letra y vista"
-              onPress={handleOpenFontPanel}
-              isActive={
-                currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
-                (availableFonts.length > 0 &&
-                  currentFontFamily !== availableFonts[0].cssValue)
-              }
-            />
-
-            <View
-              style={[styles.menuDivider, isDark && styles.menuDividerDark]}
-            />
-
-            <ActionButton
-              isDark={isDark}
-              icon="content-copy"
-              label="Copiar letra"
+              icon="print"
+              label="Imprimir"
               onPress={() => {
-                onCopyLyrics();
-                toast.show({ label: 'Letra copiada al portapapeles' });
+                // La hoja en papel, como el PDF de la playlist: con el
+                // tono, la cejilla y la vista que se tienen ahora.
+                const html = buildSongPrintHtml(
+                  {
+                    title: songTitle ?? '',
+                    author: songAuthor,
+                    key: songKey,
+                    capo: songCapo,
+                    capoOverride: currentCapoOverride,
+                    content: songContent,
+                    transpose: currentTranspose,
+                  },
+                  {
+                    notation,
+                    showChords: chordsVisible,
+                    compact: compactView,
+                    chorusStyle: view?.chorusStyle,
+                    chorusLabel: view?.chorusLabel,
+                    verseNumbers: view?.verseNumbers,
+                  },
+                );
+                if (!printHtmlInNewWindow(html)) {
+                  toast.show({
+                    label: 'Permite las ventanas emergentes para imprimir',
+                  });
+                }
               }}
             />
-            <ActionButton
-              isDark={isDark}
-              icon="fullscreen"
-              label="Pantalla completa"
-              onPress={onNavigateToFullscreen}
-            />
-            {Platform.OS === 'web' && !!songContent && (
-              <ActionButton
-                isDark={isDark}
-                icon="print"
-                label="Imprimir"
-                onPress={() => {
-                  // La hoja en papel, como el PDF de la playlist: con el
-                  // tono, la cejilla y la vista que se tienen ahora.
-                  const html = buildSongPrintHtml(
-                    {
-                      title: songTitle ?? '',
-                      author: songAuthor,
-                      key: songKey,
-                      capo: songCapo,
-                      capoOverride: currentCapoOverride,
-                      content: songContent,
-                      transpose: currentTranspose,
-                    },
-                    {
-                      notation,
-                      showChords: chordsVisible,
-                      compact: compactView,
-                      chorusStyle: view?.chorusStyle,
-                      chorusLabel: view?.chorusLabel,
-                      verseNumbers: view?.verseNumbers,
-                    },
-                  );
-                  if (!printHtmlInNewWindow(html)) {
-                    toast.show({
-                      label: 'Permite las ventanas emergentes para imprimir',
-                    });
-                  }
-                }}
-              />
-            )}
-            <ActionButton
-              isDark={isDark}
-              icon="bug-report"
-              label="Reportar error"
-              onPress={() => setShowReportBugsModal(true)}
-            />
-          </Animated.View>
-        )}
+          )}
+          <ActionButton
+            isDark={isDark}
+            icon="bug-report"
+            label="Reportar error"
+            onPress={() => setShowReportBugsModal(true)}
+          />
+        </Animated.View>
         <View style={{ position: 'relative' }}>
           {!!songBadge && !showActionButtons && (
             // Es la única señal de que la canción va transportada: entra con
@@ -510,9 +576,16 @@ const SongControls: React.FC<SongControlsProps> = ({
                 tintColor={showActionButtons ? SwipeColors.remove : undefined}
               />
             )}
-            <Animated.View style={fabIconStyle}>
+            <Animated.View style={fabTuneIconStyle}>
               <MaterialIcons
-                name={showActionButtons ? 'add' : 'tune'}
+                name="tune"
+                size={22}
+                color={themeColors(isDark).text}
+              />
+            </Animated.View>
+            <Animated.View style={[styles.fabIconOverlay, fabCloseIconStyle]}>
+              <MaterialIcons
+                name="add"
                 size={22}
                 color={themeColors(isDark).text}
               />
@@ -689,6 +762,11 @@ const styles = StyleSheet.create({
         elevation: 6,
       },
     }),
+  },
+  fabIconOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fabMainDark: {
     backgroundColor: themeColors(true).background,

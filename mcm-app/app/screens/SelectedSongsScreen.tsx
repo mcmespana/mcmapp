@@ -1138,6 +1138,23 @@ const SelectedSongsScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Desde la cabecera del cantoral: «?hoja=coro» abre la hoja del coro (por
+  // su inicio, en cuanto se haya leído el coro guardado) y «?hoja=elegir-coro»
+  // directamente en «elige tu coro», para quien aún no tiene ninguno.
+  const sheetParamHandled = useRef(false);
+  useEffect(() => {
+    if (sheetParamHandled.current) return;
+    const params: any = (route?.params as any) || {};
+    if (params.hoja === 'elegir-coro') {
+      sheetParamHandled.current = true;
+      sharing.openSheet('choose');
+    } else if (params.hoja === 'coro' && sharing.myChoir) {
+      sheetParamHandled.current = true;
+      sharing.openSheet('home');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharing.myChoir]);
+
   // Auto-import de un QR offline (?d=<payload>). Esperamos a que el catálogo
   // esté cargado para poder resolver categoría+número → filename.
   const offlineImportAttempted = useRef(false);

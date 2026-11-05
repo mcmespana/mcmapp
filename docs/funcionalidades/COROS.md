@@ -67,6 +67,13 @@ indistintamente sesiones de coro (clave = id del coro) y sesiones sueltas
 Todo pasa por la hoja del coro (`components/playlist/ChoirSheet.tsx`), a un
 toque desde el icono de coro de la cabecera de «Tu selección».
 
+**Desde la cabecera del cantoral** (noviembre de 2026) el icono de coro de la
+izquierda **trae la última playlist de tu coro** sin pasar por «Tu
+selección»: abre `seleccion?coro=<id>`, que es el mismo camino que el enlace
+`?coro=` (reemplaza con 10 s de «Deshacer»). Sin coro elegido abre la hoja en
+«elige tu coro» (`seleccion?hoja=elegir-coro`). El histórico y todo lo demás,
+en «⋯ → Playlists de <coro>» (`seleccion?hoja=coro`).
+
 > Elegir o registrar el coro también se puede hacer **desde el tutorial del
 > cantoral** (último paso, «¿Formas parte de un coro?»,
 > `components/song-onboarding/ChoirStep.tsx`): usa el mismo `useMyChoir` y
