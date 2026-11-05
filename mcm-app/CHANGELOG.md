@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-05 22:30 — Recordatorios de Contigo (evangelio, oración y revisión del día)
+
+- **Pantalla nueva** `app/(tabs)/contigo/recordatorios.tsx`, con una campanita en la cabecera de Contigo. Por hábito: interruptor, hasta **3 avisos al día** con su hora, días de la semana, y el texto (uno de los predefinidos, o uno propio de hasta 120 caracteres), con una vista previa de cómo llegará. Vienen apagados; al encender el primero se pide el permiso de notificaciones.
+- **El 2.º y 3.º aviso solo suenan si aún no has hecho el hábito.** Son avisos locales (`expo-notifications`, sin servidor): se programan los próximos 7 días y se recalculan al abrir la app, al tocar un ajuste y al marcar un hábito como hecho (`ContigoHabitsContext` llama a `syncContigoReminders`). Detalle y límites (64 pendientes en iOS, 7 días sin abrir la app) en `docs/funcionalidades/RECORDATORIOS_CONTIGO.md`.
+- **Los textos se editan en un único fichero**, `constants/contigoReminderTexts.ts` (validados por David en el prototipo). Salen por OTA.
+- **Al tocar un recordatorio** se abre directamente la pantalla del hábito. Ni los recordatorios entran en la campanita de notificaciones ni se guardan allí (`usePushNotifications`: excepción para `data.contigoReminder`, destino de una lista cerrada). En primer plano se enseña el banner (`NotificationHandler`).
+- **Canal de Android nuevo** `contigo-recordatorios` (importancia alta, `source: 'local'`), sin categoría del Panel. Guardarraíl en `__tests__/notificationChannels.test.ts`. Analítica: `notificacion_abierta` admite `categoria: 'contigo'`.
+- Configuración solo en el móvil (`@contigo_reminders`, AsyncStorage): no se sincroniza con Firebase. En web se guarda pero no avisa.
+- Sin dependencias nuevas (`expo-notifications` y `@react-native-community/datetimepicker` ya estaban). Tests nuevos: `__tests__/contigoReminders.test.ts` (plan, textos, normalización y servicio).
+
 ## 2026-11-05 17:40 — Área nativa de Comunica con el estilo del área privada de antes; limpieza de «tics de IA» en toda la app
 
 - **Comunica (nativa), estilo del plugin adaptado a iOS y Android.** El degradado de marca (azul → violeta → magenta) pasa de «solo el botón principal» a **firma con tope**, siempre a través de `BrandGradient`: *bloques* (cabecera del área, acción principal, hero de la portada, tarjeta destacada; dos como mucho por pantalla, uno de contenido) y *marcas* ≤ 72 pt (cápsula de fecha, avatar de identidad). Piezas nuevas en `components/comunica/comun/`: `BrandGradient`, `CardSurface`, `BrandHeaderBackground`, `AreaHero` (con ×), `SectionLabel`, `useHeaderGlyph`; `ListCell` pasa a `comun/`. Las tarjetas de actividades, pagos, inscripciones, documentos y fichas las usan. La cabecera lleva el degradado en las tres plataformas; el saludo de la portada ya no parpadea. Reglas en `design.md` §2 y `__tests__/comunica/territorio.test.ts` (lista blanca y tope).

@@ -2,6 +2,7 @@
 import { logger } from '@/utils/logger';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { isContigoReminderData } from '@/utils/contigoReminders';
 
 /**
  * Configura cómo se manejan las notificaciones cuando la app está en foreground
@@ -14,6 +15,19 @@ import { Platform } from 'react-native';
  */
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
+    // Recordatorios de Contigo: son LOCALES, así que no hay duplicado que
+    // evitar (eso solo pasa con los push del Panel). Si la app está abierta y
+    // aún no has hecho el hábito, el aviso se ve igual que fuera de la app.
+    if (isContigoReminderData(notification.request.content.data)) {
+      return {
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      };
+    }
+
     // ── Foreground: NO mostrar banner/alert/list del sistema ──
     // La notificación se gestiona internamente por el listener
     // `notificationReceived` de usePushNotifications (la guarda en AsyncStorage

@@ -1,5 +1,6 @@
 import {
   COMUNICA_CHANNELS,
+  CONTIGO_REMINDERS_CHANNEL_ID,
   channelIdForCategory,
   DEFAULT_CHANNEL_ID,
   isKnownChannelId,
@@ -25,7 +26,9 @@ const PANEL_CATEGORIES: NotificationCategory[] = [
 
 describe('catálogo de canales', () => {
   it('tiene un canal por cada categoría del Panel', () => {
-    const covered = NOTIFICATION_CHANNELS.filter((c) => c.source !== 'comunica')
+    const covered = NOTIFICATION_CHANNELS.filter(
+      (c) => c.source !== 'comunica' && c.source !== 'local',
+    )
       .map((c) => c.category)
       .sort();
     expect(covered).toEqual([...PANEL_CATEGORIES].sort());
@@ -130,6 +133,33 @@ describe('canales del área de Comunica', () => {
     ];
     for (const category of tries) {
       expect(area.has(channelIdForCategory(category))).toBe(false);
+    }
+  });
+});
+
+/**
+ * Guardarraíl de los recordatorios de Contigo: los programa el móvil con este
+ * id de canal. Si se quitara del catálogo, la limpieza del arranque lo borraría
+ * y Android dejaría de enseñar los avisos; y la importancia de un canal ya
+ * creado no se puede cambiar.
+ */
+describe('canal de los recordatorios de Contigo', () => {
+  it('sigue en el catálogo, con su importancia y sin categoría del Panel', () => {
+    const spec = NOTIFICATION_CHANNELS.find(
+      (c) => c.id === CONTIGO_REMINDERS_CHANNEL_ID,
+    );
+    expect(CONTIGO_REMINDERS_CHANNEL_ID).toBe('contigo-recordatorios');
+    expect(spec?.importance).toBe('high');
+    expect(spec?.source).toBe('local');
+    expect(spec?.category).toBeUndefined();
+    expect(isKnownChannelId(CONTIGO_REMINDERS_CHANNEL_ID)).toBe(true);
+  });
+
+  it('channelIdForCategory nunca devuelve este canal', () => {
+    for (const category of [...PANEL_CATEGORIES, 'contigo', undefined]) {
+      expect(channelIdForCategory(category)).not.toBe(
+        CONTIGO_REMINDERS_CHANNEL_ID,
+      );
     }
   });
 });

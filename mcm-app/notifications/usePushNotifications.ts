@@ -35,6 +35,7 @@ import {
   extractActionButtons,
 } from '@/utils/notificationRoutes';
 import { routeForEventId } from '@/utils/notificationEventRoute';
+import { isContigoReminderData } from '@/utils/contigoReminders';
 import { syncAndroidNotificationChannels } from '@/notifications/androidChannels';
 import { trackEvent } from '@/utils/analytics';
 import { useNotifications } from '@/contexts/NotificationsContext';
@@ -193,6 +194,9 @@ export default function usePushNotifications() {
         // operativos y su sitio es la portada del área). Se refresca lo que
         // tocan para que la pantalla ya lo enseñe.
         const comunica = notification.request.content.data;
+        // Recordatorios de Contigo (los programa el móvil): tampoco van a la
+        // campana. Se acabaría llenando de un «evangelio de hoy» por día.
+        if (isContigoReminderData(comunica)) return;
         if (isComunicaNotice(comunica)) {
           const parsed = parseComunicaNotice(comunica);
           if (parsed) emitComunicaNotice(parsed);
@@ -249,6 +253,17 @@ export default function usePushNotifications() {
                 nativeOn: comunicaNativeRef.current,
               }) as any,
             );
+          } catch {}
+          return;
+        }
+
+        // Recordatorios de Contigo: van directos a su pantalla, sin pasar por
+        // la campana ni por el centro de notificaciones. El destino sale de una
+        // lista cerrada (`isContigoReminderData`), nunca de texto libre.
+        if (isContigoReminderData(data)) {
+          trackEvent('notificacion_abierta', { categoria: 'contigo' });
+          try {
+            router.navigate(data.internalRoute as any);
           } catch {}
           return;
         }

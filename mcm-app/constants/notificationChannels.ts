@@ -20,6 +20,9 @@
 import type { NotificationCategory } from '@/types/notifications';
 import { ComunicaColors } from './colors';
 
+/** Canal de los recordatorios de Contigo (avisos locales, no del Panel). */
+export const CONTIGO_REMINDERS_CHANNEL_ID = 'contigo-recordatorios';
+
 /** Canal al que van las notificaciones sin `channelId` (o con uno desconocido). */
 export const DEFAULT_CHANNEL_ID = 'default';
 
@@ -42,9 +45,10 @@ export interface NotificationChannelSpec {
    * Quién manda a este canal. `panel` (por defecto): el MCM Panel, por su
    * `category`. `comunica`: el servidor del área privada nativa (plan 08), con
    * el id que el móvil declara al registrarse; NO tiene categoría, para que el
-   * Panel no pueda llegar a él por `category`.
+   * Panel no pueda llegar a él por `category`. `local`: avisos que programa el
+   * propio móvil (recordatorios de Contigo); tampoco tiene categoría.
    */
-  source?: 'panel' | 'comunica';
+  source?: 'panel' | 'comunica' | 'local';
   /** Categoría de negocio del Panel que se mapea a este canal. */
   category?: NotificationCategory;
   /** Nombre visible en los ajustes de Android. */
@@ -138,6 +142,18 @@ export const NOTIFICATION_CHANNELS: NotificationChannelSpec[] = [
     importance: 'default',
     lightColor: ComunicaColors.accent,
   },
+  // ── Recordatorios de Contigo (los programa el propio móvil) ──
+  // Como los del área: una vez publicado no se quita ni cambia de importancia.
+  // Lo vigila `__tests__/notificationChannels.test.ts`.
+  {
+    id: CONTIGO_REMINDERS_CHANNEL_ID,
+    source: 'local',
+    name: 'Contigo · Recordatorios',
+    description:
+      'Tus recordatorios del evangelio, la oración y la revisión del día.',
+    importance: 'high',
+    lightColor: '#C4922A',
+  },
 ];
 
 /** Los canales del área privada (los que declara el móvil al registrarse). */
@@ -148,7 +164,10 @@ export const COMUNICA_CHANNELS = NOTIFICATION_CHANNELS.filter(
 // Solo los del Panel: un canal del área nunca sale de una `category`.
 const BY_CATEGORY = new Map(
   NOTIFICATION_CHANNELS.filter(
-    (channel) => channel.source !== 'comunica' && channel.category,
+    (channel) =>
+      channel.source !== 'comunica' &&
+      channel.source !== 'local' &&
+      channel.category,
   ).map((channel) => [channel.category, channel.id]),
 );
 
