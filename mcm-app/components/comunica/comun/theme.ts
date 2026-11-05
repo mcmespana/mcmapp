@@ -10,9 +10,18 @@
 //   · Acento: el violeta Comunica. Como relleno, el mismo en los dos modos
 //     (texto blanco encima); como texto, icono o borde, `accentText`, que en
 //     oscuro es un violeta más claro con contraste AA sobre la card.
-//   · Degradado de marca (azul → violeta → magenta): SOLO en la acción
-//     principal de cada pantalla, a través de `AreaPrimaryButton`. Un test
-//     (`__tests__/comunica/territorio.test.ts`) impide usarlo en otro sitio.
+//   · Degradado de marca (azul → violeta → magenta): es la firma del área, como
+//     en el plugin, y solo se pinta con `BrandGradient`. Dos clases:
+//       - BLOQUES (`variant="block"`): la acción principal, el hero de la
+//         portada y la tarjeta destacada. Dos como mucho por pantalla, uno solo
+//         de acción principal, y nunca dos seguidos salvo que el primero se
+//         pueda cerrar.
+//       - MARCAS (`variant="mark"`, ≤ 72 pt): cápsula de fecha, avatar de
+//         identidad, barrita del título. No cuentan para el tope, nunca van en
+//         una fila de lista larga y nunca sobre un bloque (marca sobre marca no).
+//     Decisión del propietario (28/10 y 05/11/2026): «conservar el estilo de la
+//     original, adaptado al nativo». La lista blanca de quién puede pintarlo
+//     está en `__tests__/comunica/territorio.test.ts`.
 //   · Marcas de asistencia: los colores de sistema que ya hay (`SwipeColors`
 //     de Apple para el verde y el rojo, `ToastColors.warning` para el ámbar,
 //     `brand.info` para «Parcial»). Siempre como RELLENO con el icono encima en
@@ -36,6 +45,7 @@ import type {
   Stage,
 } from '@/services/comunica/contract';
 import { hexAlpha, onColor, readableOn } from '@/utils/colorUtils';
+import { tintedGlyph } from '@/utils/tintColors';
 
 /** Relleno de los estados de una marca. */
 export const MARK_FILL: Record<SetMark, string> = {
@@ -73,8 +83,37 @@ export const SCARF_FILL: Record<Scarf, string> = ComunicaColors.scarf;
  */
 export const NOTICE_FILL: Record<1 | 2 | 3, string> = ComunicaColors.notice;
 
-/** El degradado de marca, solo para `AreaPrimaryButton`. */
+/** El degradado de marca. Solo lo lee `BrandGradient`. */
 export const BRAND_GRADIENT = ComunicaColors.gradient;
+
+/** Los 135° del plugin: de arriba a la izquierda a abajo a la derecha. */
+export const BRAND_DIAGONAL = {
+  start: { x: 0, y: 0 },
+  end: { x: 1, y: 1 },
+} as const;
+
+/**
+ * Brillo del bloque (el `::after` del hero del plugin, sin radiales: un
+ * degradado lineal sale igual en iOS, Android y web). Al 15 % y no al 22 % del
+ * plugin: con 22 % el blanco sobre el violeta se queda en ~4,0:1 y con 15 %
+ * en ~4,7:1 (lo prueba el test del territorio).
+ */
+export const BRAND_SHEEN_ALPHA = 0.15;
+export const BRAND_SHEEN = [
+  hexAlpha('#fff', '26'),
+  hexAlpha('#fff', '00'),
+] as const;
+/** Sombra suave abajo a la izquierda del bloque (el segundo radial del hero). */
+export const BRAND_SHADE = [
+  hexAlpha('#000', '00'),
+  hexAlpha('#000', '1F'),
+] as const;
+
+/**
+ * Velo oscuro para chips y cápsulas que van SOBRE un bloque de marca. Oscurece
+ * en vez de aclarar, así el blanco de dentro siempre gana contraste.
+ */
+export const GRADIENT_OVERLAY = hexAlpha('#000', '2E');
 
 export type ChipTone =
   'neutral' | 'positive' | 'warning' | 'negative' | 'accent' | 'info';
@@ -92,8 +131,25 @@ export function comunicaTheme(isDark: boolean) {
     accentText: isDark
       ? ComunicaColors.accentText.dark
       : ComunicaColors.accentText.light,
-    /** Texto e icono sobre el degradado de la acción principal. */
+    /** Texto e icono sobre un bloque de degradado. */
     onGradient: '#fff',
+    /** Tinta de un botón blanco sobre un bloque (violeta fijo, 6,7:1 sobre blanco). */
+    onGradientInk: ComunicaColors.accent as string,
+    /** Velo oscuro de chips y cápsulas que van sobre un bloque de marca. */
+    gradientOverlay: GRADIENT_OVERLAY,
+    /**
+     * Borde de las tarjetas. En oscuro `separator` y `card` son el mismo gris,
+     * así que la tarjeta la dibuja este borde, no la sombra.
+     */
+    cardBorder: isDark ? SystemGray.dark.gray3 : SystemGray.light.gray5,
+    /** Relleno de un control apagado: distinto de `card` en los dos modos. */
+    disabledFill: isDark ? SystemGray.dark.gray3 : SystemGray.light.gray5,
+    /** Baldosa de icono en tinta suave (`.stic-dash-icon` del plugin). */
+    iconTile: tintedGlyph(
+      ComunicaColors.accent,
+      base.card,
+      isDark ? '40' : '1F',
+    ),
     /** Fondo suave de los avisos ámbar («Te faltan 2 listas»). */
     warningSoft: hexAlpha(ToastColors.warning, isDark ? '33' : '1F'),
     warningText: isDark ? brand.yellow : base.text,

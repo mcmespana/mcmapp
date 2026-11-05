@@ -79,7 +79,7 @@ paletas distintas, y la divergencia es deliberada — está decidida y cerrada
 | **Institucional** | Todo lo demás                                  | `brand` + `TabHeaderColors`                              | Fondos blancos, azul MCM, radios 8–18, sombras sutiles                 |
 | **Contigo**       | `app/(tabs)/contigo/*`, `components/contigo/*` | `WARM_LIGHT`/`WARM_DARK` (`components/contigo/theme.ts`) | Dorado y beige, radios 20–22, gradientes permitidos, serif en lecturas |
 | **Evento**        | Pantallas de un evento concreto                | `tintColor` del propio evento (`constants/events.ts`)    | Estructura institucional, acento del evento                            |
-| **Comunica**      | `app/(tabs)/comunica/*`, `components/comunica/*` (área privada nativa) | `ComunicaColors` (`constants/colors.ts`), resuelto por modo en `components/comunica/comun/theme.ts` | Estructura institucional, acento violeta `#6c4b9e` (más claro en oscuro, AA); degradado de marca azul → violeta → magenta **solo** en la acción principal (`AreaPrimaryButton`, uno por pantalla); pañuelos, avisos y COM II/III como tokens. Decisión `territorio` = A (21/10/2026) |
+| **Comunica**      | `app/(tabs)/comunica/*`, `components/comunica/*` (área privada nativa) | `ComunicaColors` (`constants/colors.ts`), resuelto por modo en `components/comunica/comun/theme.ts` | Estructura institucional, acento violeta `#6c4b9e` (más claro en oscuro, AA); degradado de marca azul → violeta → magenta como **firma con tope**, solo a través de `BrandGradient`: *bloques* (acción principal, hero de portada, tarjeta destacada; dos como mucho por pantalla, una sola acción principal, nunca dos seguidos salvo que el primero se cierre) y *marcas* ≤ 72 pt (cápsula de fecha, avatar de identidad, barrita del título; no van en filas de listas largas ni sobre un bloque). Chips y etiquetas de sección en mayúsculas pequeñas, como el plugin. Lista blanca y tope vigilados por `__tests__/comunica/territorio.test.ts`; pañuelos, avisos y COM II/III como tokens. Decisión `territorio` = A (21/10/2026); estilo del plugin «adaptado al nativo» por el propietario (28/10 y 05/11/2026): altera la identidad del territorio con decisión ya tomada, no se vuelve a preguntar |
 
 **Regla dura:** lo compartido son la **estructura y los tokens no cromáticos**
 —spacing, radios, sombras, glass, tipografía, animación, componentes de
@@ -356,7 +356,7 @@ número de ancho a mano, y no te hagas un `WIDE_BREAKPOINT` propio: ya pasó.
 
 Esto es lo que un modelo produce por defecto y aquí no se envía:
 
-- **Gradientes decorativos** y glows fuera de Contigo. El azul MCM es plano.
+- **Gradientes decorativos** y glows fuera de Contigo y del territorio Comunica (§2: allí, solo con `BrandGradient` y su tope). El azul MCM es plano.
 - **Emoji como iconografía** de UI. Iconos vía `IconSymbol`.
 - **Cards dentro de cards.** Un nivel de superficie por bloque.
 - **Rejilla de tarjetas genérica** como respuesta a cualquier pantalla, sin
@@ -364,7 +364,7 @@ Esto es lo que un modelo produce por defecto y aquí no se envía:
 - **Filas de métricas** que repiten el mismo tile cuatro veces porque queda
   bonito, no porque haya cuatro datos que importen.
 - **Texto gris pequeño** para prosa importante. Si merece leerse, es `body`.
-- **Uppercase con tracking** fuera de `overline`.
+- **Uppercase con tracking** fuera de `overline` y de las etiquetas de sección y chips del territorio Comunica (§2).
 - **Un color nuevo "que pega mejor"**. Si no está en `constants/colors.ts`, no
   existe.
 - **Sombras ornamentales** y bordes de 2px+ para "separar". Un hairline separa.
