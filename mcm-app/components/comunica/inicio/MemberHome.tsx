@@ -34,6 +34,7 @@ import {
   SECTION_PAGE,
   type FamilySection,
 } from '@/utils/comunica/profiles';
+import { PAYMENT_METHOD_COPY } from '@/utils/comunica/paymentMethod';
 import AreaState from '../comun/AreaState';
 import NavRow, { type NavIcon } from '../comun/NavRow';
 import Section from '../comun/Section';
@@ -181,6 +182,12 @@ function Content({ embedded }: { embedded: boolean }) {
               onPress={() => router.push('/comunica/yo/monitor')}
             />
           ) : null}
+          <NavRow
+            icon="creditcard"
+            title={PAYMENT_METHOD_COPY.row.title}
+            subtitle={PAYMENT_METHOD_COPY.row.description}
+            onPress={() => router.push('/comunica/forma-pago' as never)}
+          />
         </Section>
       ) : null}
     </View>

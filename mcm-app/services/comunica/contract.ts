@@ -763,6 +763,73 @@ export const SimulatedAttempt = z.object({
 export type SimulatedAttempt = z.infer<typeof SimulatedAttempt>;
 export type CardAttemptResult = CardAttempt | SimulatedAttempt;
 
+// ── Forma de pago (05/11/2026; `single_stic_forma_pago` del plugin) ─────────
+//
+// `GET` y `PUT /v1/profiles/:pid/payment-method`. La forma de pago es de QUIEN PAGA, no de la persona que se mira: un menor no tiene una propia. Quien
+// paga es SIEMPRE quien ha entrado (nunca sale de un parámetro); `:pid` solo dice qué perfil se está mirando (uno mismo o un hijo) y se valida como el
+// resto de `/profiles/:pid/…`. Al guardar se escribe en la ficha de quien ha entrado, no en la de `:pid`. El IBAN nunca viaja entero hacia la app
+// (`ibanMasked`) ni a una caché, una cola o un registro: la app tampoco lo guarda. Errores de validación (422): `invalid_kind`, `invalid_iban` e
+// `invalid_holder`; si el CRM no confirma lo escrito, 503 (`crm_not_confirmed`). Detrás de la respuesta hay más reglas (solo se lleva la cuenta nueva
+// a lo que aún no se ha cobrado): `docs/planes/area-nativa/15-pagos.md`.
+//
+// El esquema de lo guardado se llama `PaymentMethodInfo` aquí porque `PaymentMethod` ya es el medio de pago de una inscripción (más arriba); el servidor
+// (`comunicaMiddleware:src/contract-profile-payment-method.ts`) lo llama `PaymentMethod`. La forma es la MISMA. El GET lleva además `generatedAt`
+// (`PaymentMethodRead`), como toda lectura; `PaymentMethodSaved.current` no (es una escritura). `PaymentMethodInfo` es estricto: no se lee el GET con él a secas.
+
+export const PaymentMethodKind = z.enum([
+  'domiciliacion',
+  'transferencia',
+  'bizum',
+]);
+export type PaymentMethodKind = z.infer<typeof PaymentMethodKind>;
+
+export const PaymentMethodInfo = z.strictObject({
+  /** Lo guardado; null si no hay nada o es una clave que ya no se ofrece. */
+  kind: PaymentMethodKind.nullable(),
+  /** Lo que se ofrece, en este orden. Etiquetas fijas en castellano. */
+  options: z.array(
+    z.strictObject({ kind: PaymentMethodKind, label: z.string() }),
+  ),
+  /** «ES93 •••• 8644», nunca entero. null si no hay IBAN guardado. */
+  ibanMasked: z.string().nullable(),
+  /** Titular de la cuenta guardado. */
+  holder: z.string().nullable(),
+  /** Nombre de pila del perfil visto cuando NO es uno mismo (el menor); null si se mira a sí mismo. */
+  forName: z.string().nullable(),
+});
+export type PaymentMethodInfo = z.infer<typeof PaymentMethodInfo>;
+
+/** `GET /v1/profiles/:pid/payment-method`: lo guardado más la hora de la lectura (el «actualizado hace» de toda lectura). */
+export const PaymentMethodRead = PaymentMethodInfo.extend({
+  generatedAt: Instant,
+});
+export type PaymentMethodRead = z.infer<typeof PaymentMethodRead>;
+
+export const PaymentMethodWrite = z.strictObject({
+  clientId: z.string().uuid(),
+  kind: PaymentMethodKind,
+  /** Vacío u omitido = mantener el guardado. Solo cuenta con domiciliación. */
+  iban: z.string().max(60).optional(),
+  holder: z.string().max(255).optional(),
+});
+export type PaymentMethodWrite = z.infer<typeof PaymentMethodWrite>;
+
+export const PaymentMethodSaved = z.strictObject({
+  ok: z.literal(true),
+  /** Guardado, pero algún pago pendiente no se pudo actualizar (hay que avisar a tesorería). */
+  partial: z.boolean(),
+  updated: z.strictObject({
+    commitments: z.number().int().min(0),
+    payments: z.number().int().min(0),
+    /** Compromisos que se dejaron como estaban por tener un recibo ya en remesa/devuelto. */
+    inProgress: z.number().int().min(0),
+  }),
+  /** Compromisos marcados para que tesorería los revise (la persona dejó la domiciliación). */
+  flagged: z.number().int().min(0),
+  current: PaymentMethodInfo,
+});
+export type PaymentMethodSaved = z.infer<typeof PaymentMethodSaved>;
+
 // ── Familias: documentos y calendario (plan 16) ─────────────────────────────
 //
 // Todo cuelga de `/v1/profiles/:pid/…`. Los DOCUMENTOS no se guardan en el móvil (un nombre como «Informe médico» ya es sensible) y no van por la cola:
@@ -2537,6 +2604,19 @@ export const ROUTES = {
     method: 'GET',
     path: '/v1/profiles/:pid/payments/:id',
     response: PaymentDetail,
+    persist: false,
+  },
+  // Forma de pago (05/11/2026): es de quien paga y lleva su IBAN (tapado) y su titular. NADA al móvil.
+  paymentMethod: {
+    method: 'GET',
+    path: '/v1/profiles/:pid/payment-method',
+    response: PaymentMethodRead,
+    persist: false,
+  },
+  updatePaymentMethod: {
+    method: 'PUT',
+    path: '/v1/profiles/:pid/payment-method',
+    response: PaymentMethodSaved,
     persist: false,
   },
   cardCheckout: {

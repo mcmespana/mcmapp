@@ -393,6 +393,8 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     ),
     getProfilePayments: authed((pid) => api.getProfilePayments(pid)),
     getProfilePayment: authed((pid, id) => api.getProfilePayment(pid, id)),
+    getPaymentMethod: authed((pid) => api.getPaymentMethod(pid)),
+    savePaymentMethod: authed((pid, b) => api.savePaymentMethod(pid, b)),
     getCardCheckout: authed((pid, s) => api.getCardCheckout(pid, s)),
     createCardAttempt: authed((pid, b) => api.createCardAttempt(pid, b)),
     checkCardAttempt: authed((pid, id, b) => api.checkCardAttempt(pid, id, b)),

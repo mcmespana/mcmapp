@@ -14,9 +14,11 @@ import { useActiveProfile } from '@/hooks/comunica/useActiveProfile';
 import { usePayments, useResumedAttempt } from '@/hooks/comunica/usePayments';
 import { firstNameOf } from '@/utils/comunica/profiles';
 import { paymentBlocks, PAYMENTS_TEXT as TXT } from '@/utils/comunica/payments';
+import { PAYMENT_METHOD_COPY } from '@/utils/comunica/paymentMethod';
 import type { Payment } from '@/services/comunica/contract';
 import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaScreen from '../comun/AreaScreen';
+import AreaSecondaryButton from '../comun/AreaSecondaryButton';
 import AreaState, { isNetwork } from '../comun/AreaState';
 import RecordNote from '../comun/record/RecordNote';
 import SyncBadge from '../comun/SyncBadge';
@@ -46,6 +48,12 @@ export default function PaymentsScreen({ note }: { note?: string }) {
   return (
     <AreaScreen onRefresh={() => q.refetch()}>
       <ActiveProfileBar scope="shared" section="payments" />
+      {/* La forma de pago es de quien paga: con un menor visto, la de su familiar. Secundaria: la principal de aquí es pagar. */}
+      <AreaSecondaryButton
+        label={PAYMENT_METHOD_COPY.change}
+        icon="creditcard"
+        onPress={() => router.push('/comunica/forma-pago' as never)}
+      />
       {note === 'pagado' ? <RecordNote tone="ok" text={TXT.paidNote} /> : null}
       {note === 'error' ? (
         <RecordNote tone="warn" text={TXT.errorNote} />

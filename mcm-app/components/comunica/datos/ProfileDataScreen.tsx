@@ -25,6 +25,7 @@ import {
 } from '@/hooks/comunica/usePersonDetails';
 import { usePersonDetailsForm } from '@/hooks/comunica/usePersonDetailsForm';
 import { useMyProfiles } from '@/hooks/comunica/useActiveProfile';
+import { usePaymentMethod } from '@/hooks/comunica/usePaymentMethod';
 import { fullDay } from '@/utils/comunica/dates';
 import {
   fillable,
@@ -44,6 +45,7 @@ import { TextFormField } from '../comun/form/FormField';
 import FormSection, { FormNote } from '../comun/form/FormSection';
 import SelectField from '../comun/form/SelectField';
 import { DATOS_COPY as C, HEALTH_FIELDS } from './copy';
+import PaymentMethodRow from '../pagos/PaymentMethodRow';
 import PhotoBlock from './PhotoBlock';
 import {
   ConsentRow,
@@ -171,6 +173,8 @@ function DataForm({
   const vis0 = details.sections.includes('health');
   const healthQ = useProfileHealth(pid, vis0);
   const { save, saving } = useSaveProfile(pid);
+  // Un menor no tiene forma de pago propia: se dice cuál es la de quien paga (la tuya) y se lleva a cambiarla. Solo con la ficha leída.
+  const payment = usePaymentMethod(isSelf ? null : pid);
   const f = usePersonDetailsForm(
     details,
     healthQ.data?.health ?? null,
@@ -270,6 +274,9 @@ function DataForm({
       {vis.sections.has('identity') ? (
         <FormSection title={C.sections.identity}>
           <FormNote>{greeting}</FormNote>
+          {!isSelf && payment.data && !payment.error ? (
+            <PaymentMethodRow info={payment.data} />
+          ) : null}
           {can.firstName ? (
             <TextFormField
               label={C.identity.firstName}

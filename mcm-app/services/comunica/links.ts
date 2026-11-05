@@ -74,6 +74,7 @@ export const PLUGIN_PAGES = {
   single_stic_payment_error: '15',
   list_stic_payment_commitments: '15',
   single_stic_payment_commitments: '15',
+  single_stic_forma_pago: '15',
   list_stic_documents: '16',
   single_stic_documents: '16',
   single_stic_activities_calendar: '16',
@@ -190,6 +191,8 @@ const NATIVE: Record<string, (d: Destination) => NativeHref | null> = {
     pathname: '/comunica/pagos',
     params: { nota: 'error' },
   }),
+  // Forma de pago (05/11/2026): es de quien paga, así que no lleva a quién; la pantalla usa a quien ha entrado.
+  single_stic_forma_pago: () => ({ pathname: '/comunica/forma-pago' }),
   // Documentos y calendario (plan 16). Borrar NUNCA es un enlace: lo del plugin que borraba llega a la ficha. `list_stic_sessions` es la agenda; la asistencia es el color del mes.
   list_stic_documents: () => ({ pathname: '/comunica/documentos' }),
   single_stic_documents: (d): NativeHref =>

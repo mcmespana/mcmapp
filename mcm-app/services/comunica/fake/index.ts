@@ -90,6 +90,10 @@ import {
   profilePaymentsRoutes,
   type ProfilePaymentKeys,
 } from './profilePayments';
+import {
+  paymentMethodRoutes,
+  type PaymentMethodKeys,
+} from './profilePaymentMethod';
 import { profileDocsRoutes, type ProfileDocKeys } from './profileDocs';
 import {
   detailsRoutes,
@@ -638,6 +642,7 @@ export function createFakeServer(
   const profileEvents = profileEventsRoutes(routesCtx); // Eventos y su ficha (plan 13).
   const profileRegistrations = profileRegistrationsRoutes(routesCtx); // Inscripciones (plan 14).
   const profilePayments = profilePaymentsRoutes(routesCtx); // Pagos y pagar con tarjeta (plan 15).
+  const paymentMethod = paymentMethodRoutes(routesCtx); // Forma de pago de quien paga (05/11/2026).
   const profileDocs = profileDocsRoutes(routesCtx); // Documentos y calendario (plan 16).
 
   // Avisos en el móvil (plan 08): los móviles registrados, en `devices.ts`.
@@ -672,6 +677,7 @@ export function createFakeServer(
     | ProfileEventKeys
     | ProfileRegistrationKeys
     | ProfilePaymentKeys
+    | PaymentMethodKeys
     | ProfileDocKeys
   > = {
     get controls() {
@@ -1411,6 +1417,7 @@ export function createFakeServer(
     profileEvents,
     profileRegistrations,
     profilePayments,
+    paymentMethod,
     profileDocs,
     {
       getEvents: events.getEvents,

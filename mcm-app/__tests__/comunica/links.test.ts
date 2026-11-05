@@ -39,6 +39,7 @@ const PLUGIN_PAGE_FILES = [
   'single_stic_coordinacion',
   'single_stic_documents',
   'single_stic_events',
+  'single_stic_forma_pago',
   'single_stic_home',
   'single_stic_mis_grupos',
   'single_stic_pasar_lista',

@@ -71,6 +71,9 @@ import {
   CardAttemptStatus,
   CardCheckout,
   PaymentDetail,
+  PaymentMethodRead,
+  type PaymentMethodWrite,
+  PaymentMethodSaved,
   PaymentsList,
   AdvancedFormResult,
   RegistrationDetail,
@@ -156,6 +159,18 @@ export interface ComunicaApi {
   /** Familias (plan 15): los pagos del perfil. Nunca se guardan en el móvil. */
   getProfilePayments(pid: string): Promise<PaymentsList>;
   getProfilePayment(pid: string, id: string): Promise<PaymentDetail>;
+  /**
+   * La forma de pago de QUIEN PAGA (quien ha entrado; `pid` solo dice qué perfil se mira). Nunca se guarda en el móvil y el IBAN llega tapado.
+   */
+  getPaymentMethod(pid: string): Promise<PaymentMethodRead>;
+  /**
+   * Guarda la forma de pago. DIRECTA y con conexión (sin cola: lleva el IBAN). Con el mismo `clientId` se reintenta sin escribir dos veces.
+   * Responde con lo releído y lo que ha pasado con lo pendiente de cobro.
+   */
+  savePaymentMethod(
+    pid: string,
+    body: PaymentMethodWrite,
+  ): Promise<PaymentMethodSaved>;
   /** Si se puede pagar con tarjeta y qué se pagaría. SOLO lee: no crea ningún intento. */
   getCardCheckout(
     pid: string,
@@ -753,6 +768,19 @@ export function createHttpClient({
         'GET',
         `/v1/profiles/${enc(pid)}/payments/${enc(id)}`,
         PaymentDetail,
+      ),
+    getPaymentMethod: (pid) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/payment-method`,
+        PaymentMethodRead,
+      ),
+    savePaymentMethod: (pid, body) =>
+      request(
+        'PUT',
+        `/v1/profiles/${enc(pid)}/payment-method`,
+        PaymentMethodSaved,
+        body,
       ),
     getCardCheckout: (pid, source) =>
       request(

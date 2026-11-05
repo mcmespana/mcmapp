@@ -22,6 +22,57 @@ export function isValidIban(raw: unknown): boolean {
   return rest === 1;
 }
 
+/**
+ * Países cuyo IBAN admite una domiciliación SEPA (`sticpa_fp_sepa_countries()` del plugin, 05/11/2026): un IBAN de otro sitio (Brasil) pasa el módulo 97 pero el
+ * banco rechaza el recibo. Solo lo pide la forma de pago; la inscripción sigue con `isValidIban`.
+ */
+export const SEPA_COUNTRIES: readonly string[] = [
+  'AT',
+  'BE',
+  'BG',
+  'HR',
+  'CY',
+  'CZ',
+  'DK',
+  'EE',
+  'FI',
+  'FR',
+  'DE',
+  'GR',
+  'HU',
+  'IE',
+  'IT',
+  'LV',
+  'LT',
+  'LU',
+  'MT',
+  'NL',
+  'PL',
+  'PT',
+  'RO',
+  'SK',
+  'SI',
+  'ES',
+  'SE',
+  'IS',
+  'LI',
+  'NO',
+  'CH',
+  'GB',
+  'GI',
+  'GG',
+  'JE',
+  'IM',
+  'MC',
+  'SM',
+  'VA',
+  'AD',
+];
+
+/** ¿Un IBAN válido (módulo 97) y de un país SEPA? */
+export const isSepaIban = (raw: unknown): boolean =>
+  isValidIban(raw) && SEPA_COUNTRIES.includes(normalizeIban(raw).slice(0, 2));
+
 /** Agrupado de cuatro en cuatro al escribir: «ES91 2100 0418 4502 0005 1332». */
 export function formatIban(raw: string): string {
   return (
@@ -30,4 +81,16 @@ export function formatIban(raw: string): string {
       .match(/.{1,4}/g)
       ?.join(' ') ?? ''
   );
+}
+
+/**
+ * El IBAN tapado que se enseña: «ES93 •••• 8644» (los cuatro primeros, un hueco y los cuatro últimos). Con ocho caracteres o menos no hay nada que dejar a la
+ * vista: «••••». Es el MISMO formato que el del servidor (`ibanMasked`); la app solo lo calcula para el servidor falso y para los tests: el IBAN entero nunca
+ * sale de quien lo escribe.
+ */
+export function maskIban(raw: string): string {
+  const iban = normalizeIban(raw);
+  if (iban === '') return '';
+  if (iban.length <= 8) return '••••';
+  return `${iban.slice(0, 4)} •••• ${iban.slice(-4)}`;
 }

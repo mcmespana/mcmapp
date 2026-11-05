@@ -18,6 +18,7 @@
 //   yo       → tu cuenta y salir (carpeta: avisos y mis datos de monitor,
 //              planes 08 y 09).
 //   perfiles → «¿A quién ves?» (familias, plan 11).
+//   forma-pago → cómo paga quien ha entrado, su IBAN y su titular (05/11/2026).
 //   web      → el legado abierto a propósito (comparar, o lo que no es nativo).
 //   muestra  → los componentes del área de un vistazo (solo desarrollo/preview).
 //
@@ -145,6 +146,10 @@ export default function ComunicaLayout() {
           <Stack.Screen name="pagos/index" options={{ title: 'Pagos' }} />
           <Stack.Screen name="pagos/[id]" options={{ title: 'Pago' }} />
           <Stack.Screen name="pagos/pagar" options={{ title: 'Pagar' }} />
+          <Stack.Screen
+            name="forma-pago/index"
+            options={{ title: 'Forma de pago' }}
+          />
           <Stack.Screen
             name="documentos/index"
             options={{ title: 'Documentos' }}
