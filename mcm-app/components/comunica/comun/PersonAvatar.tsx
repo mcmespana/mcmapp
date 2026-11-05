@@ -13,6 +13,7 @@ import { Image } from 'expo-image';
 import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 import { getComunicaApi, isComunicaApiAvailable } from '@/services/comunica';
+import BrandGradient from './BrandGradient';
 import { useComunicaTheme } from './useComunicaTheme';
 
 export const initialsOf = (p: { firstName: string; lastName: string }) =>
@@ -26,6 +27,12 @@ interface Props {
     photoUrl?: string;
   };
   size?: number;
+  /**
+   * `neutral` (por defecto, listas), `accent` (acento lleno) o `brand`: el
+   * degradado de marca de la cabecera de una ficha (≤ 72 pt; nunca en una fila
+   * de lista larga). `background`/`ink` mandan sobre el tono si se pasan.
+   */
+  tone?: 'neutral' | 'accent' | 'brand';
   /** Fondo de las iniciales (sobre el fondo hundido, el de tarjeta). */
   background?: string;
   /** Color de las iniciales (sobre un `background` de color). */
@@ -35,6 +42,7 @@ interface Props {
 export default function PersonAvatar({
   person,
   size = 40,
+  tone = 'neutral',
   background,
   ink,
 }: Props) {
@@ -47,6 +55,12 @@ export default function PersonAvatar({
     [person.photoUrl],
   );
   const big = size >= 64;
+  const brand = tone === 'brand';
+  const fill =
+    background ?? (tone === 'neutral' ? t.backgroundSunken : t.accentFill);
+  const inkColor =
+    ink ??
+    (brand ? t.onGradient : tone === 'accent' ? t.onAccent : t.textSecondary);
   return (
     <View
       style={[
@@ -54,16 +68,18 @@ export default function PersonAvatar({
         {
           width: size,
           height: size,
-          backgroundColor: background ?? t.backgroundSunken,
+          backgroundColor: fill,
         },
       ]}
       accessible={false}
       importantForAccessibility="no-hide-descendants"
     >
+      {brand && !background ? <BrandGradient variant="mark" /> : null}
       <Text
         style={[
           big ? styles.initialsBig : styles.initials,
-          { color: ink ?? t.textSecondary },
+          brand && styles.initialsBrand,
+          { color: inkColor },
         ]}
       >
         {initialsOf(person)}
@@ -92,4 +108,5 @@ const styles = StyleSheet.create({
   },
   initials: { ...typography.subhead, fontWeight: '600' },
   initialsBig: { ...typography.h2 },
+  initialsBrand: { fontWeight: '800' },
 });

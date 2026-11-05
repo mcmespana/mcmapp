@@ -7,11 +7,12 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
-import { radii, shadows } from '@/constants/uiStyles';
 import type { ProfileRef } from '@/services/comunica/contract';
 import { h } from '@/utils/haptics';
-import { initialOf, shortName } from '@/utils/comunica/profiles';
+import { shortName } from '@/utils/comunica/profiles';
+import CardSurface from '../comun/CardSurface';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
+import ProfileInitial from './ProfileInitial';
 
 export interface ProfileCardProps {
   profile: ProfileRef;
@@ -50,68 +51,56 @@ export default function ProfileCard({
   const tag = cardTag(isSelf, isActive);
   const action = actionLabel ?? defaultAction(isSelf, isActive);
   return (
-    <PressableFeedback
-      onPress={() => {
-        h.select();
-        onPress();
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={`${name}${tag ? `, ${tag.toLowerCase()}` : ''}. ${action}`}
-      style={[
-        styles.card,
-        shadows.card,
-        {
-          backgroundColor: t.card,
-          borderColor: isActive ? t.accentFill : 'transparent',
-        },
-      ]}
+    <CardSurface
+      clip
+      style={
+        isActive ? [styles.active, { borderColor: t.accentFill }] : undefined
+      }
     >
-      <View style={[styles.avatar, { backgroundColor: t.backgroundSunken }]}>
-        <Text style={[styles.initial, { color: t.accentText }]}>
-          {initialOf(profile)}
-        </Text>
-      </View>
-      <View style={styles.body}>
-        <Text style={[styles.name, { color: t.text }]} numberOfLines={1}>
-          {name}
-        </Text>
-        {tag ? (
-          <Text
-            style={[
-              styles.tag,
-              { color: isActive ? t.accentText : t.textSecondary },
-            ]}
-          >
-            {tag}
+      <PressableFeedback
+        onPress={() => {
+          h.select();
+          onPress();
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`${name}${tag ? `, ${tag.toLowerCase()}` : ''}. ${action}`}
+        style={styles.row}
+      >
+        <ProfileInitial profile={profile} selected={isActive} size={44} />
+        <View style={styles.body}>
+          <Text style={[styles.name, { color: t.text }]} numberOfLines={1}>
+            {name}
           </Text>
-        ) : null}
-      </View>
-      <Text style={[styles.action, { color: t.accentText }]}>{action}</Text>
-      <IconSymbol name="chevron.right" size={16} color={t.textMuted} />
-      <PressableFeedback.Highlight />
-    </PressableFeedback>
+          {tag ? (
+            <Text
+              style={[
+                styles.tag,
+                { color: isActive ? t.accentText : t.textSecondary },
+              ]}
+            >
+              {tag}
+            </Text>
+          ) : null}
+        </View>
+        <Text style={[styles.action, { color: t.accentText }]}>{action}</Text>
+        <IconSymbol name="chevron.right" size={16} color={t.textMuted} />
+        <PressableFeedback.Highlight />
+      </PressableFeedback>
+    </CardSurface>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     minHeight: 64,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: radii.lg,
-    borderWidth: 1.5,
   },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.pillFull,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initial: { ...typography.title },
+  // La que se está viendo: el borde, algo más grueso, en el acento.
+  active: { borderWidth: 1.5 },
   body: { flex: 1, gap: 2 },
   name: { ...typography.title },
   tag: { ...typography.caption, fontWeight: '600' },

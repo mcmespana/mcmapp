@@ -11,12 +11,8 @@
 // (planes 12-16), la web con la sesión puesta y, viendo a un hijo, con él ya elegido. «Próximas actividades» (`UpcomingAgenda`) sale del calendario (plan 16), si se enseña Calendario y hay algo.
 
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { PressableFeedback } from 'heroui-native';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { radii } from '@/constants/uiStyles';
-import typography from '@/constants/typography';
 import { nativeHrefFor, type Destination } from '@/services/comunica/links';
 import {
   useActiveProfile,
@@ -34,10 +30,10 @@ import {
   SECTION_PAGE,
   type FamilySection,
 } from '@/utils/comunica/profiles';
+import AreaHero from '../comun/AreaHero';
 import AreaState from '../comun/AreaState';
 import NavRow, { type NavIcon } from '../comun/NavRow';
 import Section from '../comun/Section';
-import { useComunicaTheme } from '../comun/useComunicaTheme';
 import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import ProfileCard from '../perfiles/ProfileCard';
 import UpcomingAgenda from './UpcomingAgenda';
@@ -85,7 +81,6 @@ export default function MemberHome({
 }
 
 function Content({ embedded }: { embedded: boolean }) {
-  const t = useComunicaTheme();
   const router = useRouter();
   const { me } = useMe();
   const { ready, profiles, active, isSelf, audience, setActive } =
@@ -96,34 +91,20 @@ function Content({ embedded }: { embedded: boolean }) {
   if (!me || !ready || !profiles || !active) return null;
   const sections = homeSections(audience);
   const activeFirst = firstNameOf(active);
-  const showGreeting = !embedded && !greetingState.hidden;
+  // El hero es un bloque que se puede cerrar: se decide antes de pintarlo.
+  const showGreeting =
+    !embedded && greetingState.ready && !greetingState.hidden;
 
   return (
     <View style={styles.wrap}>
       <ActiveProfileBar scope="personal" />
       {showGreeting ? (
-        <View style={[styles.greeting, { backgroundColor: t.card }]}>
-          <View style={styles.greetingText}>
-            <Text
-              accessibilityRole="header"
-              style={[styles.greetingTitle, { color: t.text }]}
-            >
-              {greeting(me)}
-            </Text>
-            <Text style={[styles.greetingBody, { color: t.textSecondary }]}>
-              {greetingIntro(audience, activeFirst)}
-            </Text>
-          </View>
-          <PressableFeedback
-            onPress={greetingState.hide}
-            accessibilityRole="button"
-            accessibilityLabel="Ocultar el saludo (volverá dentro de un mes)"
-            hitSlop={12}
-            style={styles.close}
-          >
-            <IconSymbol name="xmark" size={16} color={t.textMuted} />
-          </PressableFeedback>
-        </View>
+        <AreaHero
+          title={greeting(me)}
+          body={greetingIntro(audience, activeFirst)}
+          onClose={greetingState.hide}
+          closeLabel="Ocultar el saludo (volverá dentro de un mes)"
+        />
       ) : null}
 
       {audience === 'guardian' && profiles.children.length > 0 ? (
@@ -189,15 +170,4 @@ function Content({ embedded }: { embedded: boolean }) {
 
 const styles = StyleSheet.create({
   wrap: { gap: 24 },
-  greeting: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    padding: 16,
-    borderRadius: radii.lg,
-  },
-  greetingText: { flex: 1, gap: 4 },
-  greetingTitle: { ...typography.h2 },
-  greetingBody: { ...typography.body },
-  close: { padding: 8 },
 });

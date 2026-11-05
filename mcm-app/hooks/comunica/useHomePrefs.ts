@@ -30,7 +30,11 @@ export function useGreetingHidden() {
       cancelled = true;
     };
   }, [personId]);
-  const until = personId && loaded?.personId === personId ? loaded.until : 0;
+  // `ready`: el cajón ya se leyó para ESTA persona. Hasta entonces no se sabe si
+  // el saludo está oculto, y pintarlo «por si acaso» hace que aparezca y se
+  // vaya (el hero de marca lo haría muy visible).
+  const ready = !!personId && loaded?.personId === personId;
+  const until = ready ? loaded.until : 0;
   const hide = useCallback(() => {
     if (!personId) return;
     const next = comunicaNow().getTime() + GREETING_HIDDEN_MS;
@@ -39,5 +43,5 @@ export function useGreetingHidden() {
       greetingHiddenUntil: next,
     } satisfies Prefs);
   }, [personId]);
-  return { hidden: until > comunicaNow().getTime(), hide };
+  return { ready, hidden: until > comunicaNow().getTime(), hide };
 }

@@ -1,11 +1,14 @@
 // Una celda de lista agrupada (la superficie de `Section`, pero fila a fila,
-// para listas largas en `FlatList`): las esquinas y el hairline según su
-// sitio en el bloque.
+// para listas largas en `FlatList`): las esquinas, el borde y el hairline según
+// su sitio en el bloque. El borde (`t.cardBorder`) es el de `CardSurface`: a
+// izquierda y derecha siempre, arriba en la primera y abajo en la última, de
+// modo que el bloque entero se lee como UNA tarjeta. Es fila de lista larga:
+// nunca lleva degradado.
 
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { radii } from '@/constants/uiStyles';
-import { useComunicaTheme } from '../comun/useComunicaTheme';
+import { useComunicaTheme } from './useComunicaTheme';
 
 export type CellPosition = 'first' | 'middle' | 'last' | 'only';
 
@@ -31,6 +34,9 @@ export default function ListCell({
         styles.cell,
         {
           backgroundColor: tint ?? t.card,
+          borderColor: t.cardBorder,
+          borderTopWidth: top ? 1 : 0,
+          borderBottomWidth: bottom ? 1 : 0,
           borderTopLeftRadius: top ? radii.lg : 0,
           borderTopRightRadius: top ? radii.lg : 0,
           borderBottomLeftRadius: bottom ? radii.lg : 0,
@@ -47,6 +53,11 @@ export default function ListCell({
 }
 
 const styles = StyleSheet.create({
-  cell: { marginHorizontal: 16, overflow: 'hidden' },
+  cell: {
+    marginHorizontal: 16,
+    overflow: 'hidden',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+  },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 16 },
 });

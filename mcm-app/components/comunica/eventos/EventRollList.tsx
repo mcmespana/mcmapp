@@ -89,7 +89,7 @@ import StatusChip from '../comun/StatusChip';
 import SyncBadge from '../comun/SyncBadge';
 import UploadStatus from '../comun/UploadStatus';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
-import ListCell, { cellPosition, type CellPosition } from '../grupos/ListCell';
+import ListCell, { cellPosition, type CellPosition } from '../comun/ListCell';
 import MarkSheet from '../pasar-lista/MarkSheet';
 import { Count, Counts, FillButton, Notice } from '../pasar-lista/RollBits';
 import RollRow from '../pasar-lista/RollRow';
