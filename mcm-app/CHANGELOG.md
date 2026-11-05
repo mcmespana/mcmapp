@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-05 17:40 — Área nativa de Comunica con el estilo del área privada de antes; limpieza de «tics de IA» en toda la app
+
+- **Comunica (nativa), estilo del plugin adaptado a iOS y Android.** El degradado de marca (azul → violeta → magenta) pasa de «solo el botón principal» a **firma con tope**, siempre a través de `BrandGradient`: *bloques* (cabecera del área, acción principal, hero de la portada, tarjeta destacada; dos como mucho por pantalla, uno de contenido) y *marcas* ≤ 72 pt (cápsula de fecha, avatar de identidad). Piezas nuevas en `components/comunica/comun/`: `BrandGradient`, `CardSurface`, `BrandHeaderBackground`, `AreaHero` (con ×), `SectionLabel`, `useHeaderGlyph`; `ListCell` pasa a `comun/`. Las tarjetas de actividades, pagos, inscripciones, documentos y fichas las usan. La cabecera lleva el degradado en las tres plataformas; el saludo de la portada ya no parpadea. Reglas en `design.md` §2 y `__tests__/comunica/territorio.test.ts` (lista blanca y tope).
+- **Fuera las «rayitas» de color en bordes** en toda la app (franjas superiores de las pestañas, barras laterales de tarjetas, callouts con borde izquierdo, barra dorada de Contigo, barrita bajo el título de la canción). `__tests__/noEdgeStripes.test.ts` lo vigila. Se queda la barra del estribillo (notación).
+- **Auditoría de coherencia** (`docs/planes/AUDITORIA_TICS_Y_SINERGIA.md`), oleadas 1 y 2 aplicadas: emoji como icono fuera (Eventos, Comida, Cantoral), «Jueves 5 de noviembre» en Calendario, «Guardar rato de oración» legible, `AppPrimaryButton` por defecto en azul MCM (no `#007AFF`), Inicio sin la tarjeta de bienvenida de relleno y con «Evalúa la app» como fila tranquila, Contigo sin ceros (racha, tiles y «días activos» solo cuando hay datos).
+- **Desarrollo:** `EXPO_PUBLIC_COMUNICA_API=fake` enciende ahora el área nativa en el simulador; `EXPO_PUBLIC_FIREBASE_FIXTURES=1` sirve álbumes y canciones inventados (`utils/devFirebaseFixtures.ts`). Sin las variables (tienda, web publicada) nada cambia.
+- Solo JS: OTA ✅.
+
 ## 2026-11-01 23:06 — Tutorial del cantoral: «Personaliza tu cantoral» y «¿Formas parte de un coro?»
 
 - El onboarding del cantoral lleva ahora un **título fijo en la cabecera** («Personaliza tu cantoral», con «Saltar» a la derecha y los puntos de progreso debajo) y un **último paso nuevo, «¿Formas parte de un coro?»** (`components/song-onboarding/ChoirStep.tsx`): lista los coros que hay (con su nº de playlists) para sumarte con un toque, y «Registrar mi coro» abre un campo para crear el tuyo si no está (`createChoir`, que avisa si ya existe uno igual). Es opcional; la elección se guarda como «mi coro» (`useMyChoir`), así que la hoja del coro de «Tu selección» ya lo tiene elegido.

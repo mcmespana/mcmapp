@@ -129,16 +129,21 @@ export function HeroCard({
                   ? `${3 - doneCount} momento${3 - doneCount > 1 ? 's' : ''} que puedes hacer`
                   : '¡Todo completado por hoy!'}
               </Text>
-              <View style={styles.heroChips}>
-                <View style={styles.heroChip}>
-                  <MaterialIcons
-                    name="local-fire-department"
-                    size={13}
-                    color="#FFB25B"
-                  />
-                  <Text style={styles.heroChipText}>{prayStreak} días</Text>
+              {/* La racha solo se enseña cuando existe: «0 días» no dice nada. */}
+              {prayStreak >= 1 ? (
+                <View style={styles.heroChips}>
+                  <View style={styles.heroChip}>
+                    <MaterialIcons
+                      name="local-fire-department"
+                      size={13}
+                      color="#FFB25B"
+                    />
+                    <Text style={styles.heroChipText}>
+                      {prayStreak} {prayStreak === 1 ? 'día' : 'días'}
+                    </Text>
+                  </View>
                 </View>
-              </View>
+              ) : null}
             </View>
           </View>
         </LinearGradient>
@@ -282,12 +287,15 @@ export function EvangelioTeaserCard({
               <Text style={[styles.teaserKicker, { color: W.accentText }]}>
                 EVANGELIO DEL DÍA
               </Text>
-              <Text
-                style={[styles.teaserTitle, { color: W.text }]}
-                numberOfLines={2}
-              >
-                {titulo || 'Palabra de hoy'}
-              </Text>
+              {/* Sin título ni cita no se inventa uno: «Palabra de hoy» repetía el kicker. */}
+              {titulo || cita ? (
+                <Text
+                  style={[styles.teaserTitle, { color: W.text }]}
+                  numberOfLines={2}
+                >
+                  {titulo || cita}
+                </Text>
+              ) : null}
             </View>
             {cita ? (
               <View
