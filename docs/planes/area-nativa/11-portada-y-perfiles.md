@@ -228,7 +228,7 @@ Pendiente de subir: no hay escrituras; la cola del área se ve en la parte del e
 | «Darse de baja» | `menu.php` l. 91, comentada |
 | «Mis sesiones» y «Mis asistencias» como listados | Fuera de `getSticMenuElements` (l. 64-87); solo queda su descripción en `sticpa_section_meta` |
 | «Usuario y contraseña» | Está en el menú (l. 87) pero no se porta: decisión `login` (análisis §4, plan 02); su enlace va a «Tu cuenta» |
-| «Datos del familiar» (forma de pago) | `single_stic_tutor_profile` fuera del menú; FAM-02 bloqueado. Ver plan 12 |
+| «Datos del familiar» (forma de pago) | `single_stic_tutor_profile` fuera del menú. **FAM-02 ya NO está bloqueado (05/11/2026):** se resolvió con una pantalla propia, «Forma de pago» (plan 15), con entrada en «Tu perfil» para todos. Ver planes 12 y 15 |
 | `?rol_debug` y `?familia_demo=1` | `single_stic_home.php` l. 106-111; `single_stic_profile_selection.php` l. 50-59: depuración, la cubre el servidor falso |
 | «¿A quién apuntas?» con el estado de cada hijo en la ficha del evento (FAM-a14) | Propuesta F6, «GO con matices» (`docs/comunica/PROPUESTAS-FUNCIONALIDADES-2026-10.md`); el plugin no la tiene |
 

@@ -264,7 +264,7 @@ Esto es el mapa, por fases.
 | Mis datos de monitor | Formación, trayectoria, certificado de delitos sexuales, títulos | M |
 
 **Fase 2 — familias y miembros:** portada, elegir participante, mis datos,
-datos del familiar (FAM-02 pendiente), eventos y su ficha (el cuerpo sale del
+datos del familiar (FAM-02 **resuelto el 05/11/2026** con una pantalla propia de «Forma de pago»), eventos y su ficha (el cuerpo sale del
 renderizador compartido `inc/eventos-cuerpo.php`, que habría que portar),
 inscribirse (alta corta o formulario web avanzado del CRM), mis inscripciones,
 pagos, documentos y calendario. El **pago con tarjeta** es Redsys a través del

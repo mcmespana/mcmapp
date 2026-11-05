@@ -65,6 +65,27 @@ Componentes en `components/comunica/pagos/` (`PaymentCard`, `PaymentDetailView`,
 `usePayment`, `useCardCheckout`, `useCardAttempt`; lógica pura en `utils/comunica/payments.ts` y
 `cardAttempt.ts`. **Sin motor de formularios**: el único campo es el importe (`AppTextField`).
 
+### Forma de pago (05/11/2026): pantalla propia, FAM-02 ya no está bloqueado
+
+El plugin hizo `single_stic_forma_pago` (`inc/stic-forma-pago.php`, `docs/comunica/FORMA-DE-PAGO.md`) y la app la lleva en nativo:
+
+| Qué | Dónde |
+|---|---|
+| Ruta | `forma-pago/index.tsx` → `components/comunica/pagos/PaymentMethodScreen.tsx` (la fila de «Datos de Lucía», en `PaymentMethodRow.tsx`) |
+| Datos | `GET`/`PUT /v1/profiles/:pid/payment-method` (contrato en `contract.ts`, «Forma de pago»); hooks `usePaymentMethod` y `useSavePaymentMethod`; lógica y textos puros en `utils/comunica/paymentMethod.ts` (IBAN en `iban.ts`) |
+| Falso | `services/comunica/fake/profilePaymentMethod.ts`, con las reglas del plugin y los vectores de `FormaPagoTest.php` (`__tests__/comunica/paymentMethodFake.test.ts`) |
+
+Reglas que la pantalla respeta y no inventa:
+
+- **Es de quien paga.** `:pid` solo dice qué perfil se mira; el servidor lee y escribe la ficha de quien ha entrado. Viendo a un menor se lee «Es **tu** forma de pago, no la de Lucía» (`forName`); un menor sin nombre, el texto de siempre.
+- **El IBAN nunca entero.** Llega como `ibanMasked`, el campo empieza vacío, y no entra en ninguna caché, cola ni registro (`persist: false`). IBAN vacío al guardar = se queda el que había. Con transferencia o Bizum el IBAN y el titular guardados no se pierden.
+- **IBAN de domiciliación = módulo 97 y país SEPA**, comprobado aquí (para no ir y volver) y en el servidor, que manda.
+- **Solo se lleva la cuenta nueva a lo que no se ha cobrado** (decisión del propietario, 05/11/2026) y solo cuando se escribió un IBAN; lo en remesa o devuelto no se cambia y se dice («Hay un recibo que ya está en curso (en remesa o devuelto)…»). Si la ficha se guardó pero no algún pago, «guardado, pero…» y a tesorería.
+- **Sin poder leer la ficha** (503): «No hemos podido leer tu forma de pago ahora mismo…», sin formulario ni «todavía no has indicado cómo pagas», y la fila de «Datos de Lucía» no sale. Sin red: «Necesitas conexión…» (no se guarda en el móvil).
+- **Una sola acción principal**, «Guardar». El «Cambiar forma de pago» de Pagos es secundario (`AreaSecondaryButton`).
+
+Entradas: «Tu perfil» en la portada (todos), «Datos de Lucía» (fila «Forma de pago: la tuya, …» con «Cambiar» o «Indicarla»), Pagos y el enlace `single_stic_forma_pago`. **Pendiente (no se hace):** elegir cuál de dos familiares paga un menor; necesita un campo nuevo en Studio (`CAMPOS.md` → «Quién paga por un menor»). Hoy paga quien ha entrado.
+
 ### Qué va a la web y por qué
 
 | Qué | Cómo | Por qué |
@@ -81,7 +102,7 @@ Componentes en `components/comunica/pagos/` (`PaymentCard`, `PaymentDetailView`,
 | Aportación o donativo suelto («Hacer una aportación») | `single_stic_payment_form.php` 45-57; `inc/stic-payments.php` 969-972 |
 | Crear, editar o borrar un pago | `single_stic_payments.php` 81-226 (sin enlaces); su handler no escribe nada (`inc/stic-action.php` 323-331) |
 | Certificado de donaciones | `list_stic_payments.php` 14-21: solo con `sticpa_donations_template_id`, que en Comunica no existe |
-| Medio de pago del familiar (FAM-02) | `pages/single_stic_tutor_profile.php` 9-15 y 74-104 (campos que no existen); `TODO.md` FAM-02 `[!]` |
+| ~~Medio de pago del familiar (FAM-02)~~ | **Resuelto el 05/11/2026** con una pantalla propia, «Forma de pago» (§siguiente). Los campos provisionales de `single_stic_tutor_profile.php` seguían sin existir en el CRM; el plugin los sustituyó por un enlace a su nueva pantalla |
 | Tarjeta «Te falta pagar» en la portada y chip «Pendiente de pago» en Eventos | `plans/041`, cabecera: «quedan para después»; no está en el código |
 | Instrucciones de transferencia o Bizum en pantalla | `plans/041` D-5, aparcado: van en el correo |
 
@@ -97,6 +118,7 @@ Componentes en `components/comunica/pagos/` (`PaymentCard`, `PaymentDetailView`,
 | `single_stic_payment_form&eventId=&registrationId=` | `pagos/pagar?inscripcion=` |
 | `single_stic_payment_form` sin nada | `pagos/index` |
 | `single_stic_payment_error` | `pagos/index` con la nota «No hemos podido completar el pago. No se ha realizado ningún cargo.» |
+| `single_stic_forma_pago` | `forma-pago/index` (sin parámetros: es de quien ha entrado) |
 | `list_stic_payment_commitments`, `single_stic_payment_commitments` (cualquier `action`) | `pagos/index` (desactivados) |
 | `admin-post.php?action=single_stic_payments` o `…_payment_commitments` (solo redirigen a Pagos, `inc/stic-action.php` 304-331) | `pagos/index`. La vuelta de la pasarela **no** pasa por `admin-post`: es `msg=pagado` o `single_stic_payment_error`, arriba |
 

@@ -17,7 +17,10 @@ import { scrollToTop } from '@/components/tabs/tabBarController';
 import typography from '@/constants/typography';
 import { isComunicaApiError } from '@/services/comunica/client';
 import type { PaymentMethodInfo } from '@/services/comunica/contract';
-import { useActiveProfile } from '@/hooks/comunica/useActiveProfile';
+import {
+  useActiveProfile,
+  useMyProfiles,
+} from '@/hooks/comunica/useActiveProfile';
 import { useMe } from '@/hooks/comunica/useMe';
 import {
   usePaymentMethod,
@@ -43,7 +46,7 @@ import { ChoiceGroup } from '../inscripciones/parts';
 import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
 import AreaSecondaryButton from '../comun/AreaSecondaryButton';
-import { AreaSkeleton, isNetwork } from '../comun/AreaState';
+import { AreaSkeleton } from '../comun/AreaState';
 import BottomActionBar from '../comun/BottomActionBar';
 import { confirmAction } from '../comun/confirm';
 import { TextFormField } from '../comun/form/FormField';
@@ -51,11 +54,17 @@ import FormSection from '../comun/form/FormSection';
 import RecordNote, { type RecordNoteTone } from '../comun/record/RecordNote';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 
+/** Sin conexión de verdad (`network`). Que el CRM no conteste (`crm_unavailable`) NO es esto: es «no se puede leer». */
+const isOffline = (e: unknown) => isComunicaApiError(e) && e.code === 'network';
+
 export default function PaymentMethodScreen() {
   const t = useComunicaTheme();
   const router = useRouter();
   const { active } = useActiveProfile();
+  const profiles = useMyProfiles();
   const q = usePaymentMethod(active?.id);
+  // Mientras no se sabe a quién se ve, lo que falle es lo de «a quién se ve» (sin red, nada de esto carga).
+  const error = q.error ?? (active ? null : profiles.error);
   const colors = {
     accentColor: t.accentText,
     titleColor: t.text,
@@ -79,12 +88,18 @@ export default function PaymentMethodScreen() {
   }
   // La ficha no se puede leer (el CRM no contesta o la respuesta no vale): ni formulario ni «todavía no has indicado cómo pagas», que no sabemos. Con datos
   // viejos delante también: esto es dinero y no se guarda a ciegas.
-  if (q.error && !isNetwork(q.error)) {
+  if (error && !isOffline(error)) {
     return (
       <AreaScreen onRefresh={() => q.refetch()}>
         <Stack.Screen options={{ title: C.title }} />
         <RecordNote tone="warn" text={C.unreadable} />
-        <AreaSecondaryButton label={C.retry} onPress={() => void q.refetch()} />
+        <AreaSecondaryButton
+          label={C.retry}
+          onPress={() => {
+            void q.refetch();
+            void profiles.refetch();
+          }}
+        />
       </AreaScreen>
     );
   }
@@ -93,13 +108,16 @@ export default function PaymentMethodScreen() {
     return (
       <AreaScreen onRefresh={() => q.refetch()}>
         <Stack.Screen options={{ title: C.title }} />
-        {q.error ? (
+        {error ? (
           <EmptyState
             icon="wifi-off"
             title={C.needsConnection}
             subtitle={C.needsConnectionBody}
             actionLabel={C.retry}
-            onAction={() => void q.refetch()}
+            onAction={() => {
+              void q.refetch();
+              void profiles.refetch();
+            }}
             {...colors}
           />
         ) : (
@@ -112,7 +130,7 @@ export default function PaymentMethodScreen() {
     <MethodForm
       pid={active.id}
       info={q.data}
-      offline={isNetwork(q.error)}
+      offline={isOffline(q.error)}
       refetch={() => q.refetch()}
     />
   );

@@ -93,6 +93,7 @@ import {
 import {
   paymentMethodRoutes,
   type PaymentMethodKeys,
+  type PaymentMethodLog,
 } from './profilePaymentMethod';
 import { profileDocsRoutes, type ProfileDocKeys } from './profileDocs';
 import {
@@ -253,7 +254,12 @@ const CODE_TTL_MS = 40 * 60_000;
 const MAX_BAD_CODES = 10;
 
 export interface FakeServer
-  extends ComunicaApi, fakeDevices.DevicesFake, UploadsLog, DetailsLog {
+  extends
+    ComunicaApi,
+    fakeDevices.DevicesFake,
+    UploadsLog,
+    DetailsLog,
+    PaymentMethodLog {
   controls: FakeControls;
   setControls(patch: Partial<FakeControls>): void;
   subscribe(listener: () => void): () => void;

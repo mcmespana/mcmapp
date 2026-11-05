@@ -257,13 +257,13 @@ fuera de la regla 9, es `validation`. Para el plan del servidor (todo de `Contac
 | Autorizaciones de menor (irse solo, WhatsApp, actividades fuera, participar) | `single_stic_comunica_perfil.php` l. 19-20 y 36: «TODO futuro», en ninguna audiencia |
 | Preguntas y foto de la Asamblea de mayo de 2026 | l. 25 y `docs/design-system.md` §7: «no se replica» |
 | «Datos de Laico/a» | `single_stic_comunica_laico.php`: retirada en 2026-07, solo un aviso que manda a «Mis datos»; fuera del menú |
-| «Datos del familiar» con forma de pago | `single_stic_tutor_profile.php` l. 9-15: campos provisionales que el CRM ignora; fuera de `getSticMenuElements`; FAM-02 bloqueado (`plans/README.md` del plugin, plan 015) |
+| «Datos del familiar» con forma de pago | `single_stic_tutor_profile.php` l. 9-15: campos provisionales que el CRM ignora; fuera de `getSticMenuElements`. **FAM-02 ya NO está bloqueado (05/11/2026):** la forma de pago es una pantalla propia, «Forma de pago» (plan 15, `forma-pago`), y desde «Datos de Lucía» se llega con una fila «Forma de pago: la tuya, …» |
 | «Profile» genérico | `single_stic_profile.php`: fuera del menú; solo lo enlazan el rebote del pago y un caso raro de la barra (`menu.php` l. 497-505). Lo que tiene, lo cubre esta pantalla con la regla 9 |
 
 ## Qué va a la web y por qué
 
 Nada: con la regla 9, «Mis datos» cubre también lo que hacían `single_stic_profile` y
-`single_stic_tutor_profile` (menos la forma de pago provisional, que no se hace).
+`single_stic_tutor_profile`. La forma de pago, que el plugin tenía como campos provisionales, es desde el 05/11/2026 su propia pantalla (plan 15): «Mis datos» no lleva campos de pago, y viendo a un hijo («Datos de Lucía») una fila «Forma de pago: la tuya, {resumen}» con «Cambiar» o «Indicarla» lleva a ella (no sale si la ficha de pago no se pudo leer).
 
 ## Enlaces que llegan aquí
 

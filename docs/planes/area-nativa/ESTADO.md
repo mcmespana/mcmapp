@@ -5,6 +5,17 @@
 > [`decisiones/`](decisiones/README.md) (todas contestadas). Este documento es
 > la revisión del código del 23-24/10 y la lista de lo que falta, en orden.
 
+## ⭐ 5/11/2026: «Forma de pago» en nativo (FAM-02 resuelto)
+
+El plugin estrenó `single_stic_forma_pago` (cómo paga quien ha entrado, su IBAN y su titular; solo toca lo que no se ha cobrado) y la app la tiene ya, contra el
+servidor falso y con el contrato del middleware (`comunicaMiddleware:src/contract-profile-payment-method.ts`):
+
+- Pantalla `forma-pago` con una sola acción («Guardar»), IBAN tapado y campo vacío, y las entradas de «Tu perfil», «Datos de Lucía», Pagos y el enlace del plugin.
+  Detalle y lo que NO se hace en [`15-pagos.md`](15-pagos.md) («Forma de pago»). **FAM-02 ya no está bloqueado**: se resolvió con esta pantalla propia.
+- **Sin comprobar** con el servidor real ni en un móvil (el teclado con el IBAN, el scroll arriba tras guardar, la hoja de radio en iOS y Android y en oscuro), y la
+  regla «solo lo no cobrado» contra compromisos reales. Cuando el servidor de verdad esté en producción, mirar un guardado con un compromiso en remesa.
+- Pendiente (no se hace): elegir cuál de dos familiares paga un menor (`CAMPOS.md` → «Quién paga por un menor», necesita un campo nuevo en Studio).
+
 ## ⭐ 1/11/2026 (tarde): «ese correo no existe» y la foto de perfil
 
 Dos cambios del servidor (`comunicaMiddleware`, rama `claude/correo-igual-que-la-web`) ya llevados a la app, contra el

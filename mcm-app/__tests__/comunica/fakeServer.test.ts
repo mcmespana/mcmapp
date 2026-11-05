@@ -155,6 +155,11 @@ describe('servidor falso', () => {
       advancedForm: await fam.getAdvancedFormUrl(LUCIA, 'pev-fwa'),
       profilePayments: await fam.getProfilePayments(famId),
       profilePayment: await fam.getProfilePayment(LUCIA, 'pay-rejected'),
+      paymentMethod: await fam.getPaymentMethod(LUCIA),
+      updatePaymentMethod: await fam.savePaymentMethod(famId, {
+        clientId: CLIENT(70),
+        kind: 'transferencia',
+      }),
       cardCheckout: await fam.getCardCheckout(LUCIA, {
         payment: 'pay-transfer-110',
       }),

@@ -11,6 +11,10 @@ import {
 } from '@/services/comunica/links';
 import { redirectSystemPath } from '@/app/+native-intent';
 import {
+  mustChooseFirst,
+  sectionOfDestination,
+} from '@/utils/comunica/profiles';
+import {
   consumePendingNativeLink,
   subscribeNativeLink,
 } from '@/services/comunica/pendingLink';
@@ -266,6 +270,55 @@ describe('dentro del legado', () => {
       allow: false,
       external: 'https://redsys.es/pago',
     });
+  });
+});
+
+describe('«Forma de pago» (05/11/2026)', () => {
+  it('la página del plugin es del plan 15 y su pantalla es nativa, sin llevar a quién', () => {
+    expect(PLUGIN_PAGES.single_stic_forma_pago).toBe('15');
+    expect(nativeHrefFor({ internalpage: 'single_stic_forma_pago' })).toEqual({
+      pathname: '/comunica/forma-pago',
+    });
+    // Cualquier cosa que cuelen en el destino no cambia a dónde va: es de quien paga.
+    expect(
+      nativeHrefFor({
+        internalpage: 'single_stic_forma_pago',
+        action: 'edit',
+        id: 'abc12345-ff',
+      }),
+    ).toEqual({ pathname: '/comunica/forma-pago' });
+  });
+  it('un enlace del plugin a ella abre la nativa, también desde dentro del legado', () => {
+    expect(
+      decideLegacyNavigation(`${O}/ap/?internalpage=single_stic_forma_pago`),
+    ).toEqual({ allow: false, native: { pathname: '/comunica/forma-pago' } });
+    expect(
+      classifyComunicaLink(`${O}/ap/?internalpage=single_stic_forma_pago`),
+    ).toMatchObject({
+      kind: 'page',
+      destination: { internalpage: 'single_stic_forma_pago' },
+    });
+  });
+  it('«Datos del familiar» ya no tiene forma de pago propia: sigue yendo a «Mis datos» (la suya está en su pantalla)', () => {
+    expect(
+      nativeHrefFor({ internalpage: 'single_stic_tutor_profile' }),
+    ).toEqual({ pathname: '/comunica/datos', params: { yo: '1' } });
+  });
+  it('no es una sección de a quien se ve: un familiar con varios hijos no pasa por «¿A quién quieres ver?»', () => {
+    const me = { personId: 'f-mama', roles: ['guardian' as const] };
+    const kids = [
+      { id: 'h1', firstName: 'A', lastName: 'B', gender: null },
+      { id: 'h2', firstName: 'C', lastName: 'D', gender: null },
+    ];
+    const none = { activeId: 'f-mama', chosen: false };
+    expect(sectionOfDestination('single_stic_forma_pago')).toBeNull();
+    // De control: con «Mis datos» sí pregunta; con la forma de pago (que es suya), no.
+    expect(
+      mustChooseFirst(me, kids, none, 'single_stic_comunica_perfil'),
+    ).not.toBeNull();
+    expect(
+      mustChooseFirst(me, kids, none, 'single_stic_forma_pago'),
+    ).toBeNull();
   });
 });
 
