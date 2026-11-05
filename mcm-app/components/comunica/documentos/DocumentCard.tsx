@@ -53,9 +53,9 @@ export default function DocumentCard({
           .filter(Boolean)
           .join(', ')}
         accessibilityHint="Abre el documento"
-        style={[styles.press, { opacity: dim ? 0.65 : 1 }]}
+        style={styles.press}
       >
-        <CardSurface style={styles.card}>
+        <CardSurface style={styles.card} opacity={dim ? 0.65 : 1}>
           {kind ? (
             <DateCapsule tone="neutral" kind={kind} />
           ) : (

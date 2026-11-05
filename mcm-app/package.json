@@ -146,5 +146,8 @@
     "unrs-resolver@1.11.1": true,
     "@firebase/util@1.15.2": true,
     "fsevents@2.3.3": true
+  },
+  "react-native-audio-api": {
+    "enableFFmpeg": false
   }
 }

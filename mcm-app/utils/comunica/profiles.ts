@@ -268,7 +268,7 @@ export function homeSections(audience: Audience): {
 /** El saludo de la portada (`single_stic_home.php`): con el nombre de pila de quien ha entrado, o la bienvenida sin nombre. */
 export function greeting(me: { name: string }): string {
   const first = firstNameOfFull(me.name);
-  return first ? `Hola, ${first} 👋` : '¡Te damos la bienvenida! 👋';
+  return first ? `Hola, ${first}` : '¡Te damos la bienvenida!';
 }
 
 /** La entradilla del saludo según a quién se ve. */

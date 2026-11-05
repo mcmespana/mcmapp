@@ -4,6 +4,14 @@ Fecha: 2026-11-05 · Rama `claudito/area-nativa-estilo-plugin` · Build de desar
 
 Leyenda: (A) bug real de la app · (B) peculiaridad de plataforma aceptable · (C) ruido de desarrollo/emulador.
 
+## Estado tras los arreglos (2026-11-05, rama `claudito/area-nativa-estilo-plugin`)
+
+**Arreglados y comprobados en el emulador:** #1 pestañas sobre la canción a pantalla completa (la barra no se pinta en esa ruta), #2 y #3 sombra a través de fondos translúcidos (`warningSoft` opaco, tarjeta de fecha de Contigo opaca, tarjetas de oración sin elevación) **y el mismo fallo en tarjetas apagadas** (documento caducado, inscripción cerrada, eventos pasados del calendario: `CardSurface opacity`), #4 iconos de la barra de estado y buscador del Cantoral en Android, #5 «Subir» y «Compartir» de Documentos, #6 scrim de Fotos, #8 aire entre el pie con botón y la barra, #10 barra de pestañas al cambiar de tema, #13 emoji en títulos de hoja y del hero, #14 enlace de pie subrayado en Inicio, #17 aro violeta de la tarjeta destacada, #11 etiquetas de la ficha (`sectionLabel`).
+
+**Sin arreglar:** #7 (portada de familia vacía hasta recargar; ¿servidor falso?), #9 selector Mes/Agenda sin ancho completo, #12 etiquetas truncadas en «Mis datos de monitor», #15 avatares de familia en oscuro, #16 icono «@» de Ajustes en oscuro, #18 etiquetas «Comunica»/«Calendario» casi pegadas, #19 alineación del valor en «Letra y vista», #20 teal de la pestaña activa (decisión del propietario).
+
+**Ojo al reproducir:** tras fusionar `main` (afinador) hay que recompilar la app nativa de desarrollo (`react-native-audio-api` es un módulo nativo): `npx expo prebuild --platform android --no-install` y `npx expo run:android`; con el APK anterior la app se rompe al cargar.
+
 ## Resumen
 
 1. El rediseño del área nativa aguanta bien en Android: el degradado de la cabecera de Comunica llega bajo la barra de estado, iconos y título son legibles, y los bloques con degradado (hero, tarjeta destacada, botón principal, cápsulas, avatares) respetan el radio y no muestran banding.

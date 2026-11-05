@@ -17,6 +17,7 @@
 
 import React from 'react';
 import {
+  Platform,
   StyleSheet,
   View,
   type StyleProp,
@@ -34,6 +35,13 @@ interface Props extends ViewProps {
   elevated?: boolean;
   /** Fondo propio (la «advertencia» ámbar de `Section`). */
   background?: string;
+  /**
+   * Tarjeta apagada (caducada, cerrada). En Android una `opacity` < 1 junto a
+   * la `elevation` deja un marco gris con un rectángulo de esquinas duras
+   * dentro (la sombra se ve a través): aquí, con opacidad, no hay elevación y
+   * la tarjeta se queda con su borde.
+   */
+  opacity?: number;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -42,6 +50,7 @@ export default function CardSurface({
   clip = false,
   elevated = false,
   background,
+  opacity,
   style,
   ...rest
 }: Props) {
@@ -53,6 +62,9 @@ export default function CardSurface({
         styles.card,
         elevated ? shadows.raised : shadows.card,
         { backgroundColor: background ?? t.card, borderColor: t.cardBorder },
+        opacity != null && opacity < 1
+          ? [{ opacity }, Platform.OS === 'android' ? { elevation: 0 } : null]
+          : null,
         style,
       ]}
     >

@@ -241,8 +241,8 @@ describe('la portada', () => {
     );
   });
   it('el saludo es de quien ha entrado, y la entradilla de a quién se ve', () => {
-    expect(greeting({ name: 'Marta Villarroya Pons' })).toBe('Hola, Marta 👋');
-    expect(greeting({ name: '  ' })).toBe('¡Te damos la bienvenida! 👋');
+    expect(greeting({ name: 'Marta Villarroya Pons' })).toBe('Hola, Marta');
+    expect(greeting({ name: '  ' })).toBe('¡Te damos la bienvenida!');
     expect(greetingIntro('child', 'Lucía')).toBe(
       'Aquí ves los datos de Lucía y le inscribes a las actividades.',
     );

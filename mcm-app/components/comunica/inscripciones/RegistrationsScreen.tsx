@@ -149,7 +149,7 @@ function Card({
       accessibilityLabel={label}
       accessibilityHint="Abre la inscripción"
     >
-      <CardSurface style={[styles.card, { opacity: dim ? 0.7 : 1 }]}>
+      <CardSurface style={styles.card} opacity={dim ? 0.7 : 1}>
         <View style={styles.main}>
           {card.status.label ? (
             <StatusChip

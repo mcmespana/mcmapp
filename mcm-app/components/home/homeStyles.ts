@@ -392,7 +392,10 @@ export const styles = StyleSheet.create({
   // ── Footer ──
   footer: { alignItems: 'center', paddingTop: spacing.xs } as ViewStyle,
   feedbackLink: { padding: spacing.sm, marginTop: 4 } as ViewStyle,
-  feedbackText: { ...typography.footnote } as TextStyle,
+  feedbackText: {
+    ...typography.footnote,
+    textDecorationLine: 'underline',
+  } as TextStyle,
   tagline: {
     ...typography.micro,
     opacity: 0.3,

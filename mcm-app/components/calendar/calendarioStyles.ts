@@ -233,6 +233,8 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     },
     pastEventCard: {
       opacity: 0.55,
+      // Android: opacidad + `elevation` deja un marco gris con esquinas duras.
+      ...(Platform.OS === 'android' ? { elevation: 0 } : null),
     },
     eventCardBody: {
       flex: 1,

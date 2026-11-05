@@ -169,7 +169,9 @@ export default function RecordCard({
       clip
       elevated={featured}
       background={featured ? t.accentFill : undefined}
-      style={featured ? { borderColor: t.accentFill } : undefined}
+      // Sin borde: con el violeta asomaba un aro de 1 px contra el azul del
+      // degradado (Android, claro y oscuro).
+      style={featured ? { borderWidth: 0 } : undefined}
       accessibilityLabel={onPress || action ? undefined : a11y}
     >
       {featured ? <BrandGradient variant="block" sheen /> : null}
