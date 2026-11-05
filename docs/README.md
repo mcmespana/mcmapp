@@ -93,16 +93,17 @@ Las tareas accionables derivadas de estos planes están en
 
 Referencia técnica sobre cómo está construida la app por dentro.
 
-| Documento                                                 | Qué cubre                                                                                                                                 |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| [DESIGN.md](desarrollo/DESIGN.md)                         | Inventario del sistema de diseño (tokens, colores, tipografía, glass, componentes). Las **reglas** están en [`design.md`](../design.md)   |
-| [TABS_MAINTENANCE.md](desarrollo/TABS_MAINTENANCE.md)     | Tabs: tres implementaciones (iOS, Android, Web) y cómo mantenerlas                                                                        |
-| [FIREBASE_REGLAS.md](desarrollo/FIREBASE_REGLAS.md)       | Reglas de la base de datos: qué falta, qué debe cambiar el Panel y cómo desplegarlas                                                      |
-| [BUILD_AGOSTO_2026.md](desarrollo/BUILD_AGOSTO_2026.md)   | ★ Paso a paso de la build de tienda: variables de Sentry, credenciales, pruebas                                                           |
-| [COBERTURA.md](desarrollo/COBERTURA.md)                   | ★ Receta para subir la cobertura de tests. **Es LA tarea cuando el usuario dice "me sobran créditos"**                                    |
-| [OTA.md](desarrollo/OTA.md)                               | ★ Flujo `main` → `preview` → `production`, cuándo NO empujar y cómo hacer rollback de una OTA mala                                        |
-| [WARNINGS.md](desarrollo/WARNINGS.md)                     | Los warnings del linter que quedan (38 hoy): clasificados uno a uno y por qué cada grupo se queda. **Léelo antes de "arreglar warnings"** |
-| [AREA_NATIVA_DISENO.md](desarrollo/AREA_NATIVA_DISENO.md) | Diseño del área nativa de Comunica: qué pieza usar y las reglas aprendidas mirando capturas                                               |
+| Documento                                                     | Qué cubre                                                                                                                                                            |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [DESIGN.md](desarrollo/DESIGN.md)                             | Inventario del sistema de diseño (tokens, colores, tipografía, glass, componentes). Las **reglas** están en [`design.md`](../design.md)                              |
+| [TABS_MAINTENANCE.md](desarrollo/TABS_MAINTENANCE.md)         | Tabs: tres implementaciones (iOS, Android, Web) y cómo mantenerlas                                                                                                   |
+| [FIREBASE_REGLAS.md](desarrollo/FIREBASE_REGLAS.md)           | Reglas de la base de datos: qué falta, qué debe cambiar el Panel y cómo desplegarlas                                                                                 |
+| [BUILD_AGOSTO_2026.md](desarrollo/BUILD_AGOSTO_2026.md)       | ★ Paso a paso de la build de tienda: variables de Sentry, credenciales, pruebas                                                                                      |
+| [COBERTURA.md](desarrollo/COBERTURA.md)                       | ★ Receta para subir la cobertura de tests. **Es LA tarea cuando el usuario dice "me sobran créditos"**                                                               |
+| [OTA.md](desarrollo/OTA.md)                                   | ★ Flujo `main` → `preview` → `production`, cuándo NO empujar y cómo hacer rollback de una OTA mala                                                                   |
+| [WARNINGS.md](desarrollo/WARNINGS.md)                         | Los warnings del linter que quedan (38 hoy): clasificados uno a uno y por qué cada grupo se queda. **Léelo antes de "arreglar warnings"**                            |
+| [PRUEBAS_EN_SIMULADOR.md](desarrollo/PRUEBAS_EN_SIMULADOR.md) | Ver la app nativa en el simulador de iPhone y en el emulador de Android desde un Mac (y desde Claude): variables de marcador, builds, `adb`, trampas y limitaciones. |
+| [AREA_NATIVA_DISENO.md](desarrollo/AREA_NATIVA_DISENO.md)     | Diseño del área nativa de Comunica: qué pieza usar y las reglas aprendidas mirando capturas                                                                          |
 
 ## Seguridad
 

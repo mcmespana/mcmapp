@@ -100,6 +100,7 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Qué plan está VIVO y cuál ya está HECHO (★★)                             | `docs/planes/README.md`                                                      |
 | **"Me sobran créditos"** → subir cobertura de tests (receta paso a paso) | `docs/desarrollo/COBERTURA.md`                                               |
 | Warnings del linter: cuáles quedan y por qué                             | `docs/desarrollo/WARNINGS.md`                                                |
+| **Probar en iPhone/Android desde el Mac (y desde Claude)**               | `docs/desarrollo/PRUEBAS_EN_SIMULADOR.md`                                    |
 | Cómo organizar código que solo edita una IA                              | `docs/planes/PLAN_CALIDAD.md` §0                                             |
 | Plan de saneamiento de código                                            | `docs/planes/PLAN_CALIDAD.md`                                                |
 | Etiquetas del cantoral (`{tags:}`)                                       | `docs/funcionalidades/ETIQUETAS.md`                                          |
