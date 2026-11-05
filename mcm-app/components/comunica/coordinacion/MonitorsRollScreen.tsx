@@ -30,7 +30,6 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
-import { themeColors } from '@/constants/colors';
 import { comunicaNow } from '@/services/comunica';
 import type {
   Mark,
@@ -52,6 +51,7 @@ import { useMe } from '@/hooks/comunica/useMe';
 import { useFlushOutboxOnMount, useOutbox } from '@/hooks/comunica/useOutbox';
 import { useRollDraft } from '@/hooks/comunica/useRollDraft';
 import useNetworkStatus from '@/hooks/useNetworkStatus';
+import { comunicaTheme } from '@/components/comunica/comun/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import { longDay } from '@/utils/comunica/dates';
@@ -111,7 +111,7 @@ export default function MonitorsRollScreen({
 }) {
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
-  const tint = Platform.OS === 'ios' ? themeColors(isDark).headerTint : '#fff';
+  const tint = comunicaTheme(isDark).onGradient;
   const q = useMonitorsRoll({ kind, stage, session: sessionId });
   // En el cuerpo, con la delegación explícita (ver `areaKey`).
   const delegation = useWorkingDelegation();

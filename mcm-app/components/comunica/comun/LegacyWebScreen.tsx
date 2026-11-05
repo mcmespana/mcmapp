@@ -23,7 +23,6 @@ import {
   View,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { useHeaderHeight } from 'expo-router/react-navigation';
 import { WebView, type WebViewNavigation } from 'react-native-webview';
 import ComunicaLoader from '@/components/ui/ComunicaLoader';
 import EmptyState from '@/components/ui/EmptyState';
@@ -78,14 +77,14 @@ function LegacyWeb({ url }: { url: string }) {
   const router = useRouter();
   const webRef = useRef<WebView>(null);
   const { width } = useWindowDimensions();
-  const headerHeight = useHeaderHeight();
   const [status, setStatus] = useState<Status>('loading');
   const [progress, setProgress] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const themed = `${url}${url.includes('?') ? '&' : '?'}theme=${scheme}`;
 
-  // Arriba: en iOS la cabecera es transparente y la web pasa por debajo.
-  const top = Platform.OS === 'ios' ? headerHeight : 0;
+  // Arriba: la cabecera del área es opaca (degradado de marca) y la web empieza
+  // debajo de ella, así que no hay nada que compensar.
+  const top = 0;
   // Abajo: la barra de pestañas flota encima; más un respiro.
   const bottom = useTabBarClearance(spacing.md);
   const safeAreaJS = useMemo(

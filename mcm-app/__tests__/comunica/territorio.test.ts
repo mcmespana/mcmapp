@@ -94,6 +94,7 @@ describe('el degradado de marca', () => {
     const ALLOWED = [
       'components/comunica/comun/AreaHero.tsx',
       'components/comunica/comun/AreaPrimaryButton.tsx',
+      'components/comunica/comun/BrandHeaderBackground.tsx',
       'components/comunica/comun/BrandTitle.tsx',
       'components/comunica/comun/DateCapsule.tsx',
       'components/comunica/comun/PersonAvatar.tsx',

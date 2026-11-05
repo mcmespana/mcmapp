@@ -7,7 +7,7 @@
 //   3. Nativa con sesión → la portada.
 
 import React from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import ComunicaScreen from '@/app/screens/ComunicaScreen';
@@ -40,7 +40,9 @@ function NativeGate() {
   if (session.status === 'loading') {
     return (
       <>
-        <Stack.Screen options={{ headerShown: true, headerLargeTitle: true }} />
+        <Stack.Screen
+          options={{ headerShown: true, headerLargeTitle: false }}
+        />
         {/* Dentro de `AreaScreen`: si no, el esqueleto queda bajo la
             cabecera grande y transparente de iOS. */}
         <AreaScreen>
@@ -74,7 +76,7 @@ function NativeGate() {
       <Stack.Screen
         options={{
           headerShown: true,
-          headerLargeTitle: true,
+          headerLargeTitle: false,
           headerRight: () => <AccountButton />,
         }}
       />
@@ -94,11 +96,7 @@ function AccountButton() {
       hitSlop={12}
       style={styles.account}
     >
-      <IconSymbol
-        name="person.crop.circle"
-        size={26}
-        color={Platform.OS === 'ios' ? t.headerTint : '#fff'}
-      />
+      <IconSymbol name="person.crop.circle" size={26} color={t.onGradient} />
     </PressableFeedback>
   );
 }

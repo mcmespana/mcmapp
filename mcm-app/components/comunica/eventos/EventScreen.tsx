@@ -11,17 +11,17 @@
 // —si cae dentro de sus fechas— y el servidor crea la sesión al guardar.
 
 import React, { useMemo } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import EmptyState from '@/components/ui/EmptyState';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import typography from '@/constants/typography';
-import { themeColors } from '@/constants/colors';
 import { comunicaNow } from '@/services/comunica';
 import { isComunicaApiError } from '@/services/comunica/client';
 import type { ActivityTab, EventRoll } from '@/services/comunica/contract';
 import { useEventRoll } from '@/hooks/comunica/events';
 import { useFlushOutboxOnMount } from '@/hooks/comunica/useOutbox';
+import { comunicaTheme } from '@/components/comunica/comun/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { sortTabs, tabLabel } from '@/utils/comunica/activityGroups';
 import { shortDay } from '@/utils/comunica/dates';
@@ -60,7 +60,7 @@ export default function EventScreen({
   const router = useRouter();
   const q = useEventRoll(eventId);
   const isDark = useColorScheme() === 'dark';
-  const tint = Platform.OS === 'ios' ? themeColors(isDark).headerTint : '#fff';
+  const tint = comunicaTheme(isDark).onGradient;
   useFlushOutboxOnMount();
 
   const roll = q.data;

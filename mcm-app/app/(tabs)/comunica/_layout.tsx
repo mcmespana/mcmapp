@@ -25,12 +25,13 @@
 // no en la raíz: no toca al resto de la app y se va con el interruptor.
 
 import React from 'react';
-import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
+import { useIsFocused } from 'expo-router/react-navigation';
+import { StatusBar } from 'expo-status-bar';
+import BrandHeaderBackground from '@/components/comunica/comun/BrandHeaderBackground';
 import ComunicaAreaProvider from '@/components/comunica/comun/ComunicaAreaProvider';
+import { comunicaTheme } from '@/components/comunica/comun/theme';
 import { ActiveProfileProvider } from '@/hooks/comunica/useActiveProfile';
-import { TabHeaderColors, themeColors } from '@/constants/colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTabReselectToRoot } from '@/components/tabs/tabBarController';
 
 // expo-router 58: el arranque del stack se declara así, no con `initialRouteName`.
@@ -40,28 +41,24 @@ export default function ComunicaLayout() {
   // Re-tap del tab: vuelve a la portada del área (lo que no esté guardado
   // lo sigue preguntando `usePreventRemove` en cada pantalla).
   useTabReselectToRoot('comunica');
-  const isDark = useColorScheme() === 'dark';
-  const ios = Platform.OS === 'ios';
-  const tint = ios ? themeColors(isDark).headerTint : '#fff';
+  // La cabecera lleva el degradado de marca en iOS, Android y web: tinta blanca
+  // y barra de estado clara mientras la pestaña está a la vista.
+  const tint = comunicaTheme(false).onGradient;
+  const focused = useIsFocused();
   return (
     <ComunicaAreaProvider>
+      {focused ? <StatusBar style="light" animated /> : null}
       <ActiveProfileProvider>
         <Stack
           screenOptions={{
             headerBackButtonDisplayMode: 'minimal',
             headerTintColor: tint,
             headerShadowVisible: false,
-            // iOS: cabecera del sistema, transparente arriba y cristal al hacer
-            // scroll (como el cantoral). Android y web: la barra del color de la
-            // pestaña con el texto en blanco, como el resto de pestañas.
-            headerTransparent: ios,
-            headerStyle: ios
-              ? { backgroundColor: 'transparent' }
-              : { backgroundColor: TabHeaderColors.comunica },
+            // Barra opaca con el degradado de marca (la del plugin), igual en
+            // las tres plataformas. Título grande no: no casa con el degradado.
+            headerTransparent: false,
+            headerBackground: () => <BrandHeaderBackground />,
             headerTitleStyle: { color: tint },
-            ...(ios && parseInt(String(Platform.Version), 10) < 26
-              ? { headerBlurEffect: 'systemChromeMaterial' as const }
-              : {}),
           }}
         >
           <Stack.Screen name="index" options={{ title: 'Comunica' }} />

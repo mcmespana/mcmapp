@@ -87,7 +87,7 @@ export default function ShareEventButton({
         size={22}
         // El color de la cabecera: el del sistema en iOS, blanco sobre la
         // barra violeta en Android y web (como «Tu cuenta» en la portada).
-        color={Platform.OS === 'ios' ? t.headerTint : '#fff'}
+        color={t.onGradient}
       />
     </PressableFeedback>
   );
