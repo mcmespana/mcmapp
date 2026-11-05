@@ -65,13 +65,14 @@ describe('SectionLabel', () => {
     expect(label.props.accessibilityRole).toBe('header');
   });
 
-  it('con warning la frase va en caja normal y en ámbar', () => {
+  it('con warning va en la misma receta (mayúsculas) y en ámbar', () => {
     const t = comunicaTheme(false);
     const tree = mount(<SectionLabel warning>Te faltan 2 listas</SectionLabel>);
     const label = tree.root.findAllByType(Text)[0];
     const style = flat(label.props.style);
     expect(texts(tree)).toBe('Te faltan 2 listas');
-    expect(style.textTransform).toBeUndefined();
+    // Misma receta que el resto de etiquetas; el texto no se transforma a mano.
+    expect(style.textTransform).toBe('uppercase');
     expect(style.color).toBe(t.warningText);
   });
 });

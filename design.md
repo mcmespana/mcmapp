@@ -207,6 +207,7 @@ Escala en `constants/typography.ts` — úsala en vez de `fontSize` suelto:
 | `caption`  | 13  | —    | Metadato, ayuda                                |
 | `button`   | 15  | 500  | Acción                                         |
 | `overline` | 10  | 600  | Kicker uppercase, tracking 0.5                 |
+| `sectionLabel` | 12 | 700 | **La** etiqueta de sección, una para toda la app: mayúsculas, tracking 0.8. Cada zona le pone su color; una por bloque, nunca una por tarjeta |
 
 Reglas de peso (hoy inconsistentes en el código; esta es la dirección):
 **800 solo en `h0`, kickers y badges. 700 en títulos de card. 600 en secciones.
@@ -365,7 +366,7 @@ Esto es lo que un modelo produce por defecto y aquí no se envía:
 - **Filas de métricas** que repiten el mismo tile cuatro veces porque queda
   bonito, no porque haya cuatro datos que importen.
 - **Texto gris pequeño** para prosa importante. Si merece leerse, es `body`.
-- **Uppercase con tracking** fuera de `overline` y de las etiquetas de sección y chips del territorio Comunica (§2).
+- **Uppercase con tracking** fuera de `overline`, `sectionLabel` y de los chips del territorio Comunica (§2). Etiquetas de sección: solo `typography.sectionLabel`, nada de una receta propia por zona.
 - **Un color nuevo "que pega mejor"**. Si no está en `constants/colors.ts`, no
   existe.
 - **Sombras ornamentales** y bordes de 2px+ para "separar". Un hairline separa.

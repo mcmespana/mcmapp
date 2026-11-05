@@ -205,7 +205,7 @@ const EVAL_ACCENT_FILL = readableOn(colors.accent, colors.white);
 
 // Tamaños base de la escala, para multiplicarlos por `fontScale`.
 const FOOTNOTE_SIZE = typography.footnote.fontSize as number;
-const OVERLINE_SIZE = typography.overline.fontSize as number;
+const SECTION_LABEL_SIZE = typography.sectionLabel.fontSize as number;
 
 /** Opacidad de la pastilla de un acceso rápido (el color de su pestaña). */
 const QUICK_FILL_LIGHT = '1F';
@@ -1224,7 +1224,7 @@ export default function Home() {
                 label="Próximos eventos"
                 style={styles.sectionHeader}
                 textStyle={{
-                  fontSize: OVERLINE_SIZE * fontScale,
+                  fontSize: SECTION_LABEL_SIZE * fontScale,
                 }}
               />
 

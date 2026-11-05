@@ -513,11 +513,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   smallLabel: {
-    ...typography.micro,
-    fontWeight: '700',
-    letterSpacing: 1,
+    ...typography.sectionLabel,
     marginBottom: 10,
-    textTransform: 'uppercase',
   },
   statsRow: {
     flexDirection: 'row',

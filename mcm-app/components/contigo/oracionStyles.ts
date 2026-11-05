@@ -78,9 +78,7 @@ export const styles = StyleSheet.create({
     ...shadows.card,
   },
   sectionLabel: {
-    ...typography.micro,
-    fontWeight: '700',
-    letterSpacing: 1,
+    ...typography.sectionLabel,
     marginBottom: 18,
   },
 

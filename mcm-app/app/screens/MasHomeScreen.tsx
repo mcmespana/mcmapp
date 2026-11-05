@@ -102,7 +102,6 @@ export default function MasHomeScreen() {
   // llega a 3:1 sin oscurecerlo).
   const cardSurface = themeColors(isDark).background;
   const iconPill = (tint: string) => tintedGlyph(tint, cardSurface, '18');
-  const arrowPill = (tint: string) => tintedGlyph(tint, cardSurface, '15');
   // Grid de 2 columnas en tablet/web amplio (iPad portrait y landscape
   // incluidos). En móvil se queda en una sola columna (lista vertical).
   const layout = useResponsiveLayout();
@@ -194,7 +193,7 @@ export default function MasHomeScreen() {
           contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
           showsVerticalScrollIndicator={false}
         >
-          <ScreenHero title="Más" subtitle="Atajos y secciones de la app" />
+          <ScreenHero title="Más" />
           <View
             style={[
               styles.scrollContent,
@@ -274,19 +273,12 @@ export default function MasHomeScreen() {
                     </Text>
                   </View>
 
-                  {/* Flecha */}
-                  <View
-                    style={[
-                      styles.arrowCircle,
-                      { backgroundColor: arrowPill(item.tintColor).fill },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name="arrow-forward"
-                      size={18}
-                      color={arrowPill(item.tintColor).glyph}
-                    />
-                  </View>
+                  {/* Flecha: un chevron, sin círculo (una baldosa por fila) */}
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={22}
+                    color={themeColors(isDark).textMuted}
+                  />
                 </View>
               </PressableFeedback>
             ))}
@@ -357,13 +349,5 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     ...typography.caption,
     lineHeight: 18,
-  },
-  arrowCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.xl,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
   },
 });

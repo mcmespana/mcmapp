@@ -29,7 +29,7 @@ export function SectionLabel({
       <Text
         accessibilityRole="header"
         style={[
-          warning ? styles.labelWarning : styles.label,
+          styles.label,
           { color: warning ? t.warningText : t.textSecondary },
         ]}
       >
@@ -91,14 +91,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 4,
   },
-  label: {
-    ...typography.caption,
-    fontWeight: '700',
-    letterSpacing: typography.overline.letterSpacing,
-    textTransform: 'uppercase',
-  },
-  // La frase de aviso, en caja normal: no es una etiqueta, es una oración.
-  labelWarning: { ...typography.subhead, fontWeight: '600' },
+  label: { ...typography.sectionLabel },
   hairline: { flex: 1, height: StyleSheet.hairlineWidth },
   bare: { gap: 12 },
 });
