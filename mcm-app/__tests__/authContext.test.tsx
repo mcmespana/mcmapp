@@ -221,7 +221,9 @@ describe('signOut', () => {
   it('no revienta si el signOut nativo falla', async () => {
     (doGoogleSignOut as jest.Mock).mockRejectedValue(new Error('boom'));
     const { result } = await mount();
-    await expect(act(async () => result.current.signOut())).resolves.not.toThrow();
+    await expect(
+      act(async () => result.current.signOut()),
+    ).resolves.not.toThrow();
   });
 });
 

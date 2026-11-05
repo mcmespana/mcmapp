@@ -1,6 +1,7 @@
 // Una fila que lleva a otra pantalla del área (la portada «Hoy», Coordinación):
-// icono o punto de color, título, la línea que dice lo que hay y, a la
-// derecha, un dato corto y el chevrón. Toda la fila se toca.
+// icono (en una baldosa de tinta suave) o punto de color, título, la línea que
+// dice lo que hay y, a la derecha, un dato corto y el chevrón. Toda la fila se
+// toca.
 
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -41,7 +42,15 @@ export default function NavRow({
       style={styles.row}
     >
       {dot ? <View style={[styles.dot, { backgroundColor: dot }]} /> : null}
-      {icon ? <IconSymbol name={icon} size={20} color={t.accentText} /> : null}
+      {icon ? (
+        <View
+          style={[styles.tile, { backgroundColor: t.iconTile.fill }]}
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
+        >
+          <IconSymbol name={icon} size={20} color={t.iconTile.glyph} />
+        </View>
+      ) : null}
       <View style={styles.rowBody}>
         <Text style={[styles.rowTitle, { color: t.text }]}>{title}</Text>
         {subtitle ? (
@@ -79,4 +88,13 @@ const styles = StyleSheet.create({
   rowTitle: { ...typography.body, fontWeight: '600' },
   rowSub: { ...typography.caption },
   dot: { width: 10, height: 10, borderRadius: radii.pillFull },
+  // La baldosa de icono del plugin (`.stic-dash-icon`): tinta suave, no
+  // degradado. No se toca por sí sola: el objetivo es la fila entera.
+  tile: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

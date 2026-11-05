@@ -80,7 +80,7 @@ export default function PhotoBlock({
             importantForAccessibility="no-hide-descendants"
           />
         ) : (
-          <PersonAvatar person={person} size={AVATAR} />
+          <PersonAvatar person={person} size={AVATAR} tone="brand" />
         )}
         <View style={styles.text}>
           <Text style={[styles.label, { color: t.text }]}>{label}</Text>

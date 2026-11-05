@@ -79,6 +79,7 @@ export default function CategoriesScreen() {
     [scheme, layout.isWide, layout.contentMaxWidth],
   );
   const isDark = scheme === 'dark';
+  const glyphColor = themeColors(isDark).link;
   const {
     data: songsData,
     loading,
@@ -381,7 +382,7 @@ export default function CategoriesScreen() {
     }) => {
       const isSpecial = item.id === SELECTED_SONGS_CATEGORY_ID;
       const { emoji, cleanText } = isSpecial
-        ? { emoji: '🎵', cleanText: item.name }
+        ? { emoji: '', cleanText: item.name }
         : extractTrailingEmoji(item.name);
       const displayName = isSpecial
         ? cleanText
@@ -402,9 +403,11 @@ export default function CategoriesScreen() {
         return (
           <PressableFeedback onPress={onPress} style={styles.gridCard}>
             <PressableFeedback.Highlight />
-            <View style={styles.gridCardEmojiWrap}>
-              <Text style={styles.gridCardEmoji}>{emoji}</Text>
-            </View>
+            {emoji ? (
+              <View style={styles.gridCardEmojiWrap}>
+                <Text style={styles.gridCardEmoji}>{emoji}</Text>
+              </View>
+            ) : null}
             <Text style={styles.gridCardTitle} numberOfLines={2}>
               {displayName}
             </Text>
@@ -435,7 +438,15 @@ export default function CategoriesScreen() {
           >
             <PressableFeedback.Highlight />
             <View style={[styles.rowIcon, styles.selectionIcon]}>
-              <Text style={styles.emojiText}>{emoji}</Text>
+              {emoji ? (
+                <Text style={styles.emojiText}>{emoji}</Text>
+              ) : (
+                <MaterialIcons
+                  name="queue-music"
+                  size={22}
+                  color={glyphColor}
+                />
+              )}
             </View>
             <View style={styles.selectionContent}>
               <Text style={[styles.rowTitle, styles.selectionTitle]}>
@@ -474,9 +485,11 @@ export default function CategoriesScreen() {
           }`}
         >
           <PressableFeedback.Highlight />
-          <View style={styles.rowIcon}>
-            <Text style={styles.emojiText}>{emoji}</Text>
-          </View>
+          {emoji ? (
+            <View style={styles.rowIcon}>
+              <Text style={styles.emojiText}>{emoji}</Text>
+            </View>
+          ) : null}
           <View style={[styles.rowContent, !isLast && styles.rowDivider]}>
             <Text style={styles.rowTitle} numberOfLines={1}>
               {displayName}
@@ -500,7 +513,7 @@ export default function CategoriesScreen() {
         </View>
       );
     },
-    [isDark, isWideLayout, styles, lastIndex],
+    [isDark, isWideLayout, styles, lastIndex, glyphColor],
   );
 
   // ── Hero "Tu selección" para iPad ────────────────────────────────────
@@ -515,7 +528,7 @@ export default function CategoriesScreen() {
       >
         <PressableFeedback.Highlight />
         <View style={styles.heroEmojiWrap}>
-          <Text style={styles.heroEmoji}>🎵</Text>
+          <MaterialIcons name="queue-music" size={30} color={glyphColor} />
         </View>
         <View style={styles.heroContent}>
           <Text style={styles.heroTitle}>Tu selección</Text>
@@ -534,7 +547,7 @@ export default function CategoriesScreen() {
         />
       </PressableFeedback>
     );
-  }, [isWideLayout, displayCategories, isDark, styles]);
+  }, [isWideLayout, displayCategories, isDark, styles, glyphColor]);
 
   const sectionLabel = useCallback(() => {
     if (!isWideLayout) return null;
@@ -601,7 +614,6 @@ export default function CategoriesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Old topColorBar removed to clean up inline custom header */}
       <Animated.FlatList
         ref={listRef}
         onScroll={onScroll}

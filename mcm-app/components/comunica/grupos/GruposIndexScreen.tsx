@@ -68,7 +68,7 @@ import { STAGE_COLOR } from '../comun/theme';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import AssignSheet from './AssignSheet';
 import HealthSheet from './HealthSheet';
-import ListCell, { cellPosition, type CellPosition } from './ListCell';
+import ListCell, { cellPosition, type CellPosition } from '../comun/ListCell';
 import { useAssignPreference } from './useAssignPreference';
 import {
   ASSIGN_FORBIDDEN,

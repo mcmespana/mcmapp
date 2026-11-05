@@ -30,10 +30,12 @@ import AreaScreen from '../comun/AreaScreen';
 import AreaState, { isNetwork } from '../comun/AreaState';
 import SyncBadge from '../comun/SyncBadge';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
+import { useHeaderGlyph } from '../comun/useHeaderGlyph';
 import DocumentCard from './DocumentCard';
 
 export default function DocumentsScreen() {
   const t = useComunicaTheme();
+  const glyph = useHeaderGlyph();
   const router = useRouter();
   const { toast } = useToast();
   const { active, isSelf } = useActiveProfile();
@@ -62,9 +64,7 @@ export default function DocumentsScreen() {
               accessibilityLabel="Subir un documento"
               style={styles.headerButton}
             >
-              <Text style={[styles.headerLabel, { color: t.accentText }]}>
-                Subir
-              </Text>
+              <Text style={[styles.headerLabel, { color: glyph }]}>Subir</Text>
             </PressableFeedback>
           ),
         }}

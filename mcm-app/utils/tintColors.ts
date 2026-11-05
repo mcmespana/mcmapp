@@ -28,8 +28,15 @@ const channels = (hex: string): [number, number, number] => {
   ];
 };
 
-/** El color que se ve al pintar `tint` con `alphaHex` de opacidad sobre `surface`. */
-const composite = (tint: string, alphaHex: string, surface: string): string => {
+/**
+ * El color que se ve al pintar `tint` con `alphaHex` de opacidad sobre `surface`.
+ * Exportado para los tests de contraste (blanco sobre degradado con brillo).
+ */
+export const compositeOver = (
+  tint: string,
+  alphaHex: string,
+  surface: string,
+): string => {
   const a = parseInt(alphaHex, 16) / 255;
   const [tr, tg, tb] = channels(tint);
   const [sr, sg, sb] = channels(surface);
@@ -60,6 +67,6 @@ export const tintedGlyph = (
   const base = solidTint(tint);
   return {
     fill: hexAlpha(base, alphaHex),
-    glyph: readableOn(base, composite(base, alphaHex, surface), 3),
+    glyph: readableOn(base, compositeOver(base, alphaHex, surface), 3),
   };
 };

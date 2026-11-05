@@ -74,7 +74,7 @@ import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
 import DateCapsule from '../comun/DateCapsule';
 import DelegationSwitcher from '../comun/DelegationSwitcher';
-import RecordCard from '../comun/RecordCard';
+import { FeaturedRecordCard } from '../comun/RecordCard';
 import RoleChip from '../comun/RoleChip';
 import NavRow from '../comun/NavRow';
 import Section from '../comun/Section';
@@ -354,8 +354,7 @@ function HomeContent({
       ))}
 
       {shortcut ? (
-        <RecordCard
-          featured
+        <FeaturedRecordCard
           kicker={kickerFor(shortcut.proposal, !!shortcutRoll, todayDay)}
           code={groupTitle(shortcut.group).code}
           title={groupTitle(shortcut.group).name ?? ''}

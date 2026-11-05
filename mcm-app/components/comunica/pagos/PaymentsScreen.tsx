@@ -6,10 +6,9 @@
 //   · Mientras el banco confirma un pago, ni la lista ni la ficha ofrecen pagarlo: chip «Comprobando el pago».
 
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import EmptyState from '@/components/ui/EmptyState';
-import typography from '@/constants/typography';
 import { useActiveProfile } from '@/hooks/comunica/useActiveProfile';
 import { usePayments, useResumedAttempt } from '@/hooks/comunica/usePayments';
 import { firstNameOf } from '@/utils/comunica/profiles';
@@ -19,6 +18,7 @@ import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState, { isNetwork } from '../comun/AreaState';
 import RecordNote from '../comun/record/RecordNote';
+import { SectionLabel } from '../comun/Section';
 import SyncBadge from '../comun/SyncBadge';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import PaymentCard from './PaymentCard';
@@ -83,12 +83,7 @@ export default function PaymentsScreen({ note }: { note?: string }) {
               <View style={styles.list}>
                 {blocks.map((b) => (
                   <View key={b.key} style={styles.block}>
-                    <Text
-                      accessibilityRole="header"
-                      style={[styles.blockTitle, { color: t.textSecondary }]}
-                    >
-                      {b.title}
-                    </Text>
+                    <SectionLabel>{b.title}</SectionLabel>
                     {b.payments.map((p) => (
                       <PaymentCard
                         key={p.id}
@@ -114,6 +109,5 @@ export default function PaymentsScreen({ note }: { note?: string }) {
 const styles = StyleSheet.create({
   list: { gap: 20 },
   block: { gap: 12 },
-  blockTitle: { ...typography.caption, textTransform: 'uppercase' },
   sync: { alignItems: 'center' },
 });

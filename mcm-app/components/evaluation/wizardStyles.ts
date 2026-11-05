@@ -37,7 +37,7 @@ export const createWizardStyles = (isDark: boolean) =>
       overflow: 'hidden',
       backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
     },
-    progressFill: { height: '100%', borderRadius: 3 },
+    progressFill: { height: '100%', borderRadius: radii.xs },
     // Pregunta
     phaseScroll: {
       flexGrow: 1,

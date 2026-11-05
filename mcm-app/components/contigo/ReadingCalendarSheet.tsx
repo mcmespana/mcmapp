@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   dayBtn: {
     width: 40,
     height: 44,
-    borderRadius: 13,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 3,
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   dot: {
     width: 4.5,
     height: 4.5,
-    borderRadius: 3,
+    borderRadius: radii.xs,
   },
   legendSquare: {
     width: 11,

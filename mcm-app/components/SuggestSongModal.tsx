@@ -115,7 +115,7 @@ export default function SuggestSongModal({
     <BottomSheet
       visible={visible}
       onClose={handleClose}
-      title="Sugerir canción 🎵"
+      title="Sugerir canción"
       paddingHorizontal={0}
     >
       <ScrollView

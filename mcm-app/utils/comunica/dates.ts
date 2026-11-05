@@ -67,6 +67,12 @@ export function capsule(day: string): { day: string; month: string } {
   return { day: String(d), month: MONTHS_SHORT[m - 1] };
 }
 
+/**
+ * ¿Ya pasó este día? (`YYYY-MM-DD`, comparados como texto). Hoy NO es pasado.
+ * La cápsula de fecha pasa a gris cuando lo es (`.is-past` del plugin).
+ */
+export const isPastDay = (day: string, today: string): boolean => day < today;
+
 /** «Hoy», «Ayer», «Hace 6 días», «Mañana», «Dentro de 3 días». */
 export function relativeDay(day: string, today: string): string {
   const n = daysBetween(today, day);

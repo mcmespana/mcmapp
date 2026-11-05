@@ -51,6 +51,13 @@ function installFakeWebAudio(hz: number) {
     cancelAnimationFrame: () => {},
   });
   (globalThis as { window?: unknown }).window = globalThis;
+  // En Node 20 no existe `navigator` global (Node 21+ sí): se crea si falta.
+  if (typeof globalThis.navigator !== 'object' || !globalThis.navigator) {
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {},
+    });
+  }
   Object.defineProperty(globalThis.navigator, 'mediaDevices', {
     configurable: true,
     value: {

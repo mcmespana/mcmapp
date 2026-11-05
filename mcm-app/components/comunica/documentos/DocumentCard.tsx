@@ -7,7 +7,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
-import { radii, shadows } from '@/constants/uiStyles';
+import { radii } from '@/constants/uiStyles';
 import type { DocumentSummary } from '@/services/comunica/contract';
 import {
   dateLine,
@@ -17,6 +17,8 @@ import {
   isExpired,
 } from '@/utils/comunica/documents';
 import { h } from '@/utils/haptics';
+import CardSurface from '../comun/CardSurface';
+import DateCapsule from '../comun/DateCapsule';
 import StatusChip from '../comun/StatusChip';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 
@@ -51,35 +53,26 @@ export default function DocumentCard({
           .filter(Boolean)
           .join(', ')}
         accessibilityHint="Abre el documento"
-        style={[
-          styles.card,
-          shadows.card,
-          { backgroundColor: t.card, opacity: dim ? 0.65 : 1 },
-        ]}
+        style={styles.press}
       >
-        <View style={[styles.kind, { backgroundColor: t.backgroundSunken }]}>
+        <CardSurface style={styles.card} opacity={dim ? 0.65 : 1}>
           {kind ? (
-            <Text
-              style={[styles.kindText, { color: t.text }]}
-              maxFontSizeMultiplier={1.2}
-            >
-              {kind}
-            </Text>
+            <DateCapsule tone="neutral" kind={kind} />
           ) : (
-            <IconSymbol name="doc.text" size={22} color={t.textSecondary} />
+            <DateCapsule tone="neutral" icon="doc.text" />
           )}
-        </View>
-        <View style={styles.main}>
-          {chip ? <StatusChip label={chip.label} tone={chip.tone} /> : null}
-          <Text style={[styles.title, { color: t.text }]} numberOfLines={2}>
-            {title}
-          </Text>
-          {when ? (
-            <Text style={[styles.when, { color: t.textSecondary }]}>
-              {when}
+          <View style={styles.main}>
+            {chip ? <StatusChip label={chip.label} tone={chip.tone} /> : null}
+            <Text style={[styles.title, { color: t.text }]} numberOfLines={2}>
+              {title}
             </Text>
-          ) : null}
-        </View>
+            {when ? (
+              <Text style={[styles.when, { color: t.textSecondary }]}>
+                {when}
+              </Text>
+            ) : null}
+          </View>
+        </CardSurface>
       </PressableFeedback>
       {doc.fileName ? (
         <PressableFeedback
@@ -109,22 +102,13 @@ export default function DocumentCard({
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  press: { flex: 1 },
   card: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    borderRadius: radii.lg,
   },
-  kind: {
-    width: 52,
-    height: 52,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  kindText: { ...typography.button, fontVariant: ['tabular-nums'] },
   main: { flex: 1, gap: 4 },
   title: { ...typography.title },
   when: { ...typography.subhead },

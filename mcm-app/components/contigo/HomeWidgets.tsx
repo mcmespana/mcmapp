@@ -12,7 +12,6 @@ import {
   warm,
   weekdayLetter,
   WARM_DARK,
-  WARM_LIGHT,
 } from './theme';
 import type { DayRecord } from '@/hooks/useContigoHabits';
 import { styles } from '@/components/contigo/homeWidgetsStyles';
@@ -130,16 +129,21 @@ export function HeroCard({
                   ? `${3 - doneCount} momento${3 - doneCount > 1 ? 's' : ''} que puedes hacer`
                   : '¡Todo completado por hoy!'}
               </Text>
-              <View style={styles.heroChips}>
-                <View style={styles.heroChip}>
-                  <MaterialIcons
-                    name="local-fire-department"
-                    size={13}
-                    color="#FFB25B"
-                  />
-                  <Text style={styles.heroChipText}>{prayStreak} días</Text>
+              {/* La racha solo se enseña cuando existe: «0 días» no dice nada. */}
+              {prayStreak >= 1 ? (
+                <View style={styles.heroChips}>
+                  <View style={styles.heroChip}>
+                    <MaterialIcons
+                      name="local-fire-department"
+                      size={13}
+                      color="#FFB25B"
+                    />
+                    <Text style={styles.heroChipText}>
+                      {prayStreak} {prayStreak === 1 ? 'día' : 'días'}
+                    </Text>
+                  </View>
                 </View>
-              </View>
+              ) : null}
             </View>
           </View>
         </LinearGradient>
@@ -245,7 +249,7 @@ export function HabitTile({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EvangelioTeaserCard — top accent bar, title, fade-out preview + CTA + chip
+// EvangelioTeaserCard — título, vista previa que se desvanece + CTA + chip
 // ─────────────────────────────────────────────────────────────────────────────
 export function EvangelioTeaserCard({
   titulo,
@@ -277,24 +281,21 @@ export function EvangelioTeaserCard({
           },
         ]}
       >
-        <LinearGradient
-          colors={['#E8A838', WARM_LIGHT.accent, '#9A6A1A']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.teaserBar}
-        />
         <View style={styles.teaserBody}>
           <View style={styles.teaserHeaderRow}>
             <View style={{ flex: 1, marginRight: 10 }}>
               <Text style={[styles.teaserKicker, { color: W.accentText }]}>
                 EVANGELIO DEL DÍA
               </Text>
-              <Text
-                style={[styles.teaserTitle, { color: W.text }]}
-                numberOfLines={2}
-              >
-                {titulo || 'Palabra de hoy'}
-              </Text>
+              {/* Sin título ni cita no se inventa uno: «Palabra de hoy» repetía el kicker. */}
+              {titulo || cita ? (
+                <Text
+                  style={[styles.teaserTitle, { color: W.text }]}
+                  numberOfLines={2}
+                >
+                  {titulo || cita}
+                </Text>
+              ) : null}
             </View>
             {cita ? (
               <View

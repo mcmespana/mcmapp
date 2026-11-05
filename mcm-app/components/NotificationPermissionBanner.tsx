@@ -194,12 +194,9 @@ export default function NotificationPermissionBanner({
       ]}
       accessibilityRole="alert"
     >
-      <View
-        style={[
-          styles.iconCircle,
-          { backgroundColor: hexAlpha(accentColor, '18') },
-        ]}
-      >
+      {/* Icono suelto, como en las otras filas de aviso de Inicio (antes en un
+          círculo de color solo aquí). */}
+      <View style={styles.iconSlot}>
         <MaterialIcons
           name="notifications-active"
           size={20}
@@ -250,10 +247,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     borderWidth: 1,
   } as ViewStyle,
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.xl,
+  iconSlot: {
+    width: 24,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

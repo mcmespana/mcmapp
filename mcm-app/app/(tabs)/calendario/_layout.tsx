@@ -1,8 +1,7 @@
 import React from 'react';
 import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
-import TabTintBar from '@/components/ui/TabTintBar';
-import { TabHeaderColors, themeColors } from '@/constants/colors';
+import { themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 /**
@@ -15,8 +14,6 @@ export default function CalendarioLayout() {
   const isDark = useColorScheme() === 'dark';
   return (
     <>
-      {/* Raya celeste del calendario pegada arriba, como la roja de Fotos. */}
-      <TabTintBar color={TabHeaderColors.calendario} />
       <Stack
         screenOptions={{
           headerShadowVisible: false,

@@ -83,15 +83,13 @@ export default function FormattedContent({
         lineHeight: 22 * fontScale,
       },
       blockquote: {
-        borderLeftWidth: 4,
-        borderLeftColor: colors.info,
         paddingLeft: 12 * fontScale,
         paddingRight: 12 * fontScale,
         marginVertical: 12 * fontScale,
         backgroundColor:
           scheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
         paddingVertical: 8 * fontScale,
-        borderRadius: 6,
+        borderRadius: radii.sm,
         // Sombra sutil para el blockquote
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
@@ -222,11 +220,9 @@ export default function FormattedContent({
       alert: {
         backgroundColor:
           scheme === 'dark' ? 'rgba(255,193,7,0.2)' : 'rgba(255,193,7,0.1)',
-        borderLeftWidth: 4,
-        borderLeftColor: '#ffc107',
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 16 * fontScale,
-        borderRadius: 6,
+        borderRadius: radii.sm,
         marginVertical: 8 * fontScale,
       },
     }),

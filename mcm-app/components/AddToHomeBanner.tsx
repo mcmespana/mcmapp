@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 6,
+    borderRadius: radii.sm,
     borderWidth: 1,
     borderColor: '#ccc',
   },

@@ -42,7 +42,7 @@ import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import PersonRow from '../comun/PersonRow';
 import SearchField from '../comun/SearchField';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
-import ListCell, { cellPosition, type CellPosition } from '../grupos/ListCell';
+import ListCell, { cellPosition, type CellPosition } from '../comun/ListCell';
 
 type Item =
   | { kind: 'head'; key: string }

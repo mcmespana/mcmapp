@@ -114,7 +114,7 @@ function Ficha({
   return (
     <AreaScreen onRefresh={refetch}>
       <View style={styles.identity}>
-        <PersonAvatar person={m} size={72} />
+        <PersonAvatar person={m} size={72} tone="brand" />
         <View style={styles.identityText}>
           <Text
             style={[styles.name, { color: t.text }]}

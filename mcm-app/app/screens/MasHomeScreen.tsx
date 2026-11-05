@@ -102,7 +102,6 @@ export default function MasHomeScreen() {
   // llega a 3:1 sin oscurecerlo).
   const cardSurface = themeColors(isDark).background;
   const iconPill = (tint: string) => tintedGlyph(tint, cardSurface, '18');
-  const arrowPill = (tint: string) => tintedGlyph(tint, cardSurface, '15');
   // Grid de 2 columnas en tablet/web amplio (iPad portrait y landscape
   // incluidos). En móvil se queda en una sola columna (lista vertical).
   const layout = useResponsiveLayout();
@@ -194,7 +193,7 @@ export default function MasHomeScreen() {
           contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
           showsVerticalScrollIndicator={false}
         >
-          <ScreenHero title="Más" subtitle="Atajos y secciones de la app" />
+          <ScreenHero title="Más" />
           <View
             style={[
               styles.scrollContent,
@@ -237,14 +236,6 @@ export default function MasHomeScreen() {
                 }}
               >
                 <PressableFeedback.Highlight />
-                {/* Accent bar izquierda */}
-                <View
-                  style={[
-                    styles.accentBar,
-                    { backgroundColor: item.tintColor },
-                  ]}
-                />
-
                 <View style={styles.cardBody}>
                   {/* Icono grande */}
                   <View
@@ -282,19 +273,12 @@ export default function MasHomeScreen() {
                     </Text>
                   </View>
 
-                  {/* Flecha */}
-                  <View
-                    style={[
-                      styles.arrowCircle,
-                      { backgroundColor: arrowPill(item.tintColor).fill },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name="arrow-forward"
-                      size={18}
-                      color={arrowPill(item.tintColor).glyph}
-                    />
-                  </View>
+                  {/* Flecha: un chevron, sin círculo (una baldosa por fila) */}
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={22}
+                    color={themeColors(isDark).textMuted}
+                  />
                 </View>
               </PressableFeedback>
             ))}
@@ -328,7 +312,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   card: {
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
     marginBottom: spacing.md,
     overflow: 'hidden',
   },
@@ -337,10 +321,6 @@ const styles = StyleSheet.create({
     // para que funcione igual en nativo (iPad) y en web; el `marginBottom`
     // de `card` da el ritmo vertical.
     width: '48.5%',
-  },
-  accentBar: {
-    height: 4,
-    width: '100%',
   },
   cardBody: {
     flexDirection: 'row',
@@ -369,13 +349,5 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     ...typography.caption,
     lineHeight: 18,
-  },
-  arrowCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.xl,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
   },
 });

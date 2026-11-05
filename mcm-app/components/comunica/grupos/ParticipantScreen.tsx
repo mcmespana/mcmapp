@@ -240,7 +240,7 @@ function Ficha({
     <>
       {/* Identidad */}
       <View style={styles.identity}>
-        <PersonAvatar person={p} size={72} background={t.card} />
+        <PersonAvatar person={p} size={72} tone="brand" />
         <View style={styles.identityBody}>
           <Text
             style={[styles.name, { color: t.text }]}

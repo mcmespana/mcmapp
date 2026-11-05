@@ -7,6 +7,7 @@
 import { radii } from '@/constants/uiStyles';
 import React, { useMemo, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
   View,
   Text,
@@ -78,7 +79,12 @@ const PasswordPromptModal: React.FC<Props> = ({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.backdrop}>
+        {/* Android (edge-to-edge): el Modal no se redimensiona con el teclado,
+            así que la tarjeta sube con el relleno del KeyboardAvoidingView. */}
+        <KeyboardAvoidingView
+          style={styles.backdrop}
+          behavior={Platform.OS === 'web' ? undefined : 'padding'}
+        >
           <TouchableWithoutFeedback>
             <View style={styles.card}>
               <Text style={styles.title}>{title}</Text>
@@ -125,7 +131,7 @@ const PasswordPromptModal: React.FC<Props> = ({
               </View>
             </View>
           </TouchableWithoutFeedback>
-        </View>
+        </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </Modal>
   );

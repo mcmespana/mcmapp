@@ -62,7 +62,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: radii.md,
   },
   segmentActive: {
     borderWidth: 1,

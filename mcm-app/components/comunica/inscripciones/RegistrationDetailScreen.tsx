@@ -14,7 +14,7 @@ import { Stack, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import EmptyState from '@/components/ui/EmptyState';
 import typography from '@/constants/typography';
-import { radii, shadows } from '@/constants/uiStyles';
+import { radii } from '@/constants/uiStyles';
 import { comunicaNow } from '@/services/comunica';
 import { isComunicaApiError } from '@/services/comunica/client';
 import type { RegistrationDetail } from '@/services/comunica/contract';
@@ -42,6 +42,7 @@ import { h } from '@/utils/haptics';
 import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
+import CardSurface from '../comun/CardSurface';
 import { AreaSkeleton, isNetwork } from '../comun/AreaState';
 import BottomActionBar from '../comun/BottomActionBar';
 import { confirmAction } from '../comun/confirm';
@@ -370,14 +371,7 @@ function Detail({
             Personas de contacto
           </Text>
           {reg.contacts.map((c, i) => (
-            <View
-              key={i}
-              style={[
-                styles.contact,
-                shadows.card,
-                { backgroundColor: t.card },
-              ]}
-            >
+            <CardSurface key={i} style={styles.contact}>
               <Text style={[styles.contactName, { color: t.text }]}>
                 {c.name}
               </Text>
@@ -394,7 +388,7 @@ function Detail({
                   }
                 />
               ) : null}
-            </View>
+            </CardSurface>
           ))}
         </View>
       ) : null}
@@ -487,7 +481,7 @@ const styles = StyleSheet.create({
   amountValue: { ...typography.h1, fontVariant: ['tabular-nums'] },
   block: { gap: 12 },
   heading: { ...typography.title },
-  contact: { borderRadius: radii.lg, padding: 16, gap: 6 },
+  contact: { padding: 16, gap: 6 },
   contactName: { ...typography.title },
   contactLine: { ...typography.subhead },
   secondary: {

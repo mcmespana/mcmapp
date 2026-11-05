@@ -63,5 +63,5 @@ export function extractTrailingEmoji(text: string): {
       cleanText: trimmed.slice(0, match.index).trim(),
     };
   }
-  return { emoji: '🎵', cleanText: trimmed };
+  return { emoji: '', cleanText: trimmed };
 }

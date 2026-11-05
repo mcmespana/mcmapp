@@ -71,6 +71,18 @@ const typography = {
     letterSpacing: 0.5,
     textTransform: 'uppercase' as const,
   },
+  /**
+   * 12 — la etiqueta de sección, UNA para toda la app (auditoría de coherencia,
+   * 05/11/2026): mayúsculas con tracking. Antes eran tres casi iguales (10 pt en
+   * Inicio, 11 en Contigo, 13 en Comunica). Cada zona le pone SU color; la forma
+   * es la misma. Una por bloque, nunca una por tarjeta.
+   */
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase' as const,
+  },
   /** Serif — lecturas litúrgicas y textos contemplativos largos (Contigo). */
   serif: {
     fontFamily: Platform.OS === 'ios' ? 'Palatino' : ('serif' as const),

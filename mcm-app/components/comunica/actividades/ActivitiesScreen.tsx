@@ -7,10 +7,9 @@
 //   · Cambiar de hijo aquí se queda en la misma pantalla con el otro perfil: un evento no es de nadie (FAM-a8).
 
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import EmptyState from '@/components/ui/EmptyState';
-import typography from '@/constants/typography';
 import { useToast } from '@/contexts/AppToastContext';
 import { comunicaNow } from '@/services/comunica';
 import { useActivities } from '@/hooks/comunica/useActivities';
@@ -26,6 +25,7 @@ import type { EventCard as EventCardData } from '@/services/comunica/contract';
 import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState, { isNetwork } from '../comun/AreaState';
+import { SectionLabel } from '../comun/Section';
 import SyncBadge from '../comun/SyncBadge';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import EventCard from './EventCard';
@@ -147,17 +147,9 @@ function Block({
   title: string | null;
   children: React.ReactNode;
 }) {
-  const t = useComunicaTheme();
   return (
     <View style={styles.block}>
-      {title ? (
-        <Text
-          accessibilityRole="header"
-          style={[styles.blockTitle, { color: t.textSecondary }]}
-        >
-          {title}
-        </Text>
-      ) : null}
+      {title ? <SectionLabel>{title}</SectionLabel> : null}
       {children}
     </View>
   );
@@ -166,6 +158,5 @@ function Block({
 const styles = StyleSheet.create({
   list: { gap: 20 },
   block: { gap: 12 },
-  blockTitle: { ...typography.caption, textTransform: 'uppercase' },
   sync: { alignItems: 'center' },
 });

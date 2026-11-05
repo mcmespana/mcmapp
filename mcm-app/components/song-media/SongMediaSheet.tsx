@@ -621,8 +621,6 @@ const createStyles = (isDark: boolean) =>
         ? 'rgba(149,210,242,0.10)'
         : 'rgba(149,210,242,0.14)',
       borderRadius: radii.md,
-      borderLeftWidth: 3,
-      borderLeftColor: brand.secondary,
     },
     fichaSource: {
       flexDirection: 'row',

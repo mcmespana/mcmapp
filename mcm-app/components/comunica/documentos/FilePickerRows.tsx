@@ -7,7 +7,6 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
-import { radii, shadows } from '@/constants/uiStyles';
 import type { UploadFile } from '@/services/comunica/client';
 import { localFileSize } from '@/services/comunica/localFiles';
 import {
@@ -18,6 +17,7 @@ import {
 import { fileProblem, mimeOf } from '@/utils/comunica/files';
 import { DOCUMENTS_TEXT as TXT } from '@/utils/comunica/documents';
 import { h } from '@/utils/haptics';
+import CardSurface from '../comun/CardSurface';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import type { FileSource } from '../comun/form/FileField';
 
@@ -89,10 +89,11 @@ export default function FilePickerRows({
           isDisabled={disabled || busy}
           accessibilityRole="button"
           accessibilityLabel={s.label}
-          style={[styles.row, shadows.card, { backgroundColor: t.card }]}
         >
-          <IconSymbol name={s.icon} size={20} color={t.accentText} />
-          <Text style={[styles.label, { color: t.text }]}>{s.label}</Text>
+          <CardSurface style={styles.row}>
+            <IconSymbol name={s.icon} size={20} color={t.accentText} />
+            <Text style={[styles.label, { color: t.text }]}>{s.label}</Text>
+          </CardSurface>
         </PressableFeedback>
       ))}
       {Platform.OS === 'ios' ? (
@@ -112,7 +113,6 @@ const styles = StyleSheet.create({
     gap: 12,
     minHeight: 52,
     paddingHorizontal: 16,
-    borderRadius: radii.md,
   },
   label: { ...typography.body },
   hint: { ...typography.caption },

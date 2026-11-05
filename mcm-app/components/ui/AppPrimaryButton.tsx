@@ -9,7 +9,7 @@ import {
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@/components/ui/icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { UIColors, Colors, themeColors } from '@/constants/colors';
+import brand, { Colors, themeColors } from '@/constants/colors';
 import { focusRing, radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
 import { contrastRatio, onColor } from '@/utils/colorUtils';
@@ -37,12 +37,12 @@ interface AppPrimaryButtonProps {
    * empuja hacia delante); `left` el de "guardar/enviar".
    */
   iconPosition?: 'left' | 'right';
-  /** Color de fondo cuando está activo. Por defecto azul de acción de iOS. */
+  /** Color de fondo cuando está activo. Por defecto el azul MCM (zona institucional); cada zona pasa el suyo. */
   color?: string;
   /**
    * Color del texto/icono cuando está activo. Si no se pasa, **lo decide el
    * contraste**: blanco mientras llegue al 3:1 que pide un texto de este
-   * tamaño y peso sobre el relleno (el azul de acción de iOS da 3,86:1, y el
+   * tamaño y peso sobre el relleno (el azul MCM da más de 10:1, y el
    * blanco es la convención), y si no llega —un acento claro, el dorado, el
    * amarillo de un evento— la tinta que más contraste dé. Antes era `#fff`
    * fijo, y con `color` variable eso es ilegible: es el mismo fallo del §H4 de
@@ -58,7 +58,9 @@ interface AppPrimaryButtonProps {
   accessibilityLabel?: string;
 }
 
-const DEFAULT_COLOR = UIColors.iosBlue;
+// El azul MCM, no el azul de sistema de iOS (#007AFF): era el único botón de la
+// app que no era de la casa (auditoría de coherencia, 05/11/2026).
+const DEFAULT_COLOR = brand.primary;
 
 export default function AppPrimaryButton({
   label,

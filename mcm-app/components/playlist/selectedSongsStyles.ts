@@ -109,7 +109,7 @@ export const createStyles = (
       alignItems: 'center',
       paddingVertical: 7,
       paddingHorizontal: 10,
-      borderRadius: 6,
+      borderRadius: radii.sm,
     },
     viewToggleBtnActive: {
       backgroundColor: isDark ? KeyPillColors.bgDark : '#FFFFFF',
@@ -283,7 +283,7 @@ export const createStyles = (
     modalBtn: {
       paddingVertical: 11,
       paddingHorizontal: 18,
-      borderRadius: 10,
+      borderRadius: radii.md,
       minWidth: 100,
       alignItems: 'center',
       justifyContent: 'center',

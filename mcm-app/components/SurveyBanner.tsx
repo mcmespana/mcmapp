@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   rowIcon: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },

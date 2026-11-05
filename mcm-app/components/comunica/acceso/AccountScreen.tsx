@@ -9,7 +9,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
-import { radii } from '@/constants/uiStyles';
 import { signOut } from '@/services/comunica/session';
 import { useMe } from '@/hooks/comunica/useMe';
 import { useOpenLegacy } from '@/hooks/comunica/useOpenLegacy';
@@ -22,7 +21,7 @@ import Section from '../comun/Section';
 import { useArea } from '../comun/ComunicaAreaProvider';
 import { confirmAction } from '../comun/confirm';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
-import { initials } from '../comun/PersonRow';
+import PersonAvatar from '../comun/PersonAvatar';
 
 const ROLE_LABEL = {
   monitor: 'Monitor/a',
@@ -69,11 +68,15 @@ export default function AccountScreen() {
   return (
     <AreaScreen>
       <View style={styles.head}>
-        <View style={[styles.avatar, { backgroundColor: t.accentFill }]}>
-          <Text style={[styles.initials, { color: t.onAccent }]}>
-            {initials({ firstName: first, lastName: rest.join(' ') || first })}
-          </Text>
-        </View>
+        <PersonAvatar
+          person={{
+            id: 'me',
+            firstName: first,
+            lastName: rest.join(' ') || first,
+          }}
+          size={72}
+          tone="brand"
+        />
         <Text style={[styles.name, { color: t.text }]}>{me.name}</Text>
         <Text style={[styles.sub, { color: t.textSecondary }]}>
           Delegación de {me.delegation.name}
@@ -107,26 +110,24 @@ export default function AccountScreen() {
 
       <Section>
         {me.roles.includes('monitor') ? (
-          <Row
+          <NavRow
             icon="graduationcap"
-            label="Mis datos de monitor"
+            title="Mis datos de monitor"
             // Plan 09: trayectoria, formación, certificado y títulos.
             onPress={() => router.push('/comunica/yo/monitor')}
           />
         ) : null}
-        <Row
+        <NavRow
           icon="list.bullet.clipboard"
-          label="Abrir la versión web"
+          title="Abrir la versión web"
           // La portada del legado con la sesión puesta (plan 10 §2): un pase
           // de 2 minutos, no la web pidiendo entrar otra vez.
           onPress={() =>
             void openLegacy({ internalpage: 'single_stic_home' }, 'Comunica')
           }
         />
-        <Row
-          icon="lock"
+        <LeaveRow
           label={leaving ? 'Saliendo…' : 'Salir'}
-          destructive
           onPress={() => void confirmLeave()}
         />
       </Section>
@@ -137,19 +138,9 @@ export default function AccountScreen() {
   );
 }
 
-function Row({
-  icon,
-  label,
-  onPress,
-  destructive,
-}: {
-  icon: 'lock' | 'list.bullet.clipboard' | 'graduationcap';
-  label: string;
-  onPress: () => void;
-  destructive?: boolean;
-}) {
+/** «Salir»: acción destructiva, sin chevron, alineada con las `NavRow` de al lado. */
+function LeaveRow({ label, onPress }: { label: string; onPress: () => void }) {
   const t = useComunicaTheme();
-  const color = destructive ? t.warningText : t.text;
   return (
     <PressableFeedback
       onPress={onPress}
@@ -157,12 +148,14 @@ function Row({
       accessibilityLabel={label}
       style={styles.action}
     >
-      <IconSymbol
-        name={icon}
-        size={20}
-        color={destructive ? t.warningIcon : t.accentText}
-      />
-      <Text style={[styles.actionLabel, { color }]}>{label}</Text>
+      <View style={styles.glyphBox}>
+        <IconSymbol
+          name="rectangle.portrait.and.arrow.right"
+          size={20}
+          color={t.dangerText}
+        />
+      </View>
+      <Text style={[styles.actionLabel, { color: t.dangerText }]}>{label}</Text>
       <PressableFeedback.Highlight />
     </PressableFeedback>
   );
@@ -170,15 +163,6 @@ function Row({
 
 const styles = StyleSheet.create({
   head: { alignItems: 'center', gap: 6, paddingTop: 8 },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: radii.pillFull,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  initials: { ...typography.h2 },
   name: { ...typography.h2, textAlign: 'center' },
   sub: { ...typography.subhead },
   roles: { flexDirection: 'row', gap: 8, marginTop: 4 },
@@ -190,6 +174,8 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: 16,
   },
+  // Mismo ancho que la baldosa de `NavRow`, para que los títulos alineen.
+  glyphBox: { width: 36, alignItems: 'center' },
   actionLabel: { ...typography.body, fontWeight: '600' },
   foot: { ...typography.caption, textAlign: 'center' },
 });

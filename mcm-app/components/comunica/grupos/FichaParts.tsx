@@ -429,7 +429,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     gap: 8,
   },
-  sectionTitle: { ...typography.subhead, fontWeight: '600' },
+  // La etiqueta de sección de toda la app (antes Title case propio).
+  sectionTitle: { ...typography.sectionLabel },
   card: { borderRadius: radii.lg, padding: 16, gap: 8 },
   fold: { borderRadius: radii.lg, overflow: 'hidden' },
   foldHead: {

@@ -20,7 +20,7 @@ import { PressableFeedback } from 'heroui-native';
 import EmptyState from '@/components/ui/EmptyState';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
-import { radii, shadows } from '@/constants/uiStyles';
+import { radii } from '@/constants/uiStyles';
 import { useToast } from '@/contexts/AppToastContext';
 import { comunicaNow } from '@/services/comunica';
 import { isComunicaApiError } from '@/services/comunica/client';
@@ -50,6 +50,7 @@ import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
 import { AreaSkeleton, isNetwork } from '../comun/AreaState';
 import BottomActionBar from '../comun/BottomActionBar';
+import CardSurface from '../comun/CardSurface';
 import StatusChip from '../comun/StatusChip';
 import SyncBadge from '../comun/SyncBadge';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
@@ -307,7 +308,7 @@ function Detail({
       />
 
       {facts.length > 0 ? (
-        <View style={[styles.card, shadows.card, { backgroundColor: t.card }]}>
+        <CardSurface clip>
           {facts.map((f, i) => (
             <Fact
               key={`${f.label}-${i}`}
@@ -316,7 +317,7 @@ function Detail({
               first={i === 0}
             />
           ))}
-        </View>
+        </CardSurface>
       ) : null}
 
       {hasWeb ? (
@@ -508,7 +509,6 @@ const styles = StyleSheet.create({
   tagline: { ...typography.title },
   dates: { ...typography.body },
   cover: { width: '100%', aspectRatio: 3 / 4, borderRadius: radii.lg },
-  card: { borderRadius: radii.lg, overflow: 'hidden' },
   fact: {
     flexDirection: 'row',
     alignItems: 'center',
