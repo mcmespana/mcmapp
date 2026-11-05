@@ -50,7 +50,7 @@ import type {
   Stage,
 } from '@/services/comunica/contract';
 import { hexAlpha, onColor, readableOn } from '@/utils/colorUtils';
-import { tintedGlyph } from '@/utils/tintColors';
+import { compositeOver, tintedGlyph } from '@/utils/tintColors';
 
 /** Relleno de los estados de una marca. */
 export const MARK_FILL: Record<SetMark, string> = {
@@ -156,7 +156,14 @@ export function comunicaTheme(isDark: boolean) {
       isDark ? '40' : '1F',
     ),
     /** Fondo suave de los avisos ámbar («Te faltan 2 listas»). */
-    warningSoft: hexAlpha(ToastColors.warning, isDark ? '33' : '1F'),
+    // OPACO (compuesto sobre el fondo hundido): con un fondo translúcido y la
+    // `elevation` de `CardSurface`, Android pinta la sombra a través del fondo y
+    // salía un marco tostado con un rectángulo de esquinas duras dentro.
+    warningSoft: compositeOver(
+      ToastColors.warning,
+      isDark ? '33' : '1F',
+      base.backgroundSunken,
+    ),
     warningText: isDark ? brand.yellow : base.text,
     warningIcon: ToastColors.warning,
     /** Rojo legible como texto («3 ausencias seguidas»), en los dos modos. */

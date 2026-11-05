@@ -15,6 +15,7 @@ import typography from '@/constants/typography';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
+import { compositeOver } from '@/utils/tintColors';
 import { h } from '@/utils/haptics';
 
 /**
@@ -126,7 +127,9 @@ export function DateNavigator({
       style={[
         styles.card,
         {
-          backgroundColor: hexAlpha(accent, isDark ? '12' : '09'),
+          // Opaco: con fondo translúcido + `shadows.card` Android pinta la
+          // sombra a través (rectángulo de esquinas duras dentro de la tarjeta).
+          backgroundColor: compositeOver(accent, isDark ? '12' : '09', W.bg),
           borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
         },
         style,

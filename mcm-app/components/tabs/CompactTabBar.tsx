@@ -27,6 +27,7 @@ import { CarismoColors, Colors } from '@/constants/colors';
 import { tabBarController } from '@/components/tabs/tabBarController';
 import { h } from '@/utils/haptics';
 import { hrefForTab, selectedIndexFor } from '@/utils/tabRoutes';
+import { CANTORAL_SLUGS, lastSegment } from '@/utils/eventRoutes';
 import { jumpToTab } from '@/components/tabs/jumpToTab';
 
 /* Verdes del modo carismochito (ver app/(tabs)/_layout.tsx para el detalle). */
@@ -106,6 +107,15 @@ export default function CompactTabBar({ tabs }: CompactTabBarProps) {
     [tabs, selectedIndex, navRef],
   );
 
+  // Canción a pantalla completa: en Android la barra es un overlay del
+  // navegador y el `fullScreenModal` del stack NO la cubre (en iOS el modal
+  // nativo sí), así que tapaba los botones de reproducir y del lector. Sin
+  // barra mientras esa ruta esté a la vista.
+  const inFullscreenSong =
+    Platform.OS === 'android' &&
+    lastSegment(pathname) === CANTORAL_SLUGS.SongFullscreen;
+  if (inFullscreenSong) return null;
+
   const tintColor = carismoActive
     ? isDark
       ? CARISMO_ACTIVE_DARK
@@ -120,7 +130,9 @@ export default function CompactTabBar({ tabs }: CompactTabBarProps) {
 
   return (
     <NativeCompactTabBar
-      key={itemsKey}
+      // El esquema va en la clave: en Android la barra nativa no se repintaba al
+      // cambiar el tema en caliente (salía clara con iconos claros).
+      key={`${itemsKey}|${scheme ?? 'light'}`}
       items={items}
       selectedIndex={selectedIndex}
       compact={compact}

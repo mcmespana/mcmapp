@@ -59,7 +59,12 @@ export default function BottomActionBar({
           {
             backgroundColor: t.background,
             borderTopColor: t.separator,
-            paddingBottom: clearance > 0 ? clearance - 12 : 12,
+            // En Android la barra es una píldora sólida y el botón quedaba pegado a
+            // su borde: 8 px de aire (en iOS el cristal ya deja hueco).
+            paddingBottom:
+              clearance > 0
+                ? clearance - 12 + (Platform.OS === 'android' ? 8 : 0)
+                : 12,
           },
         ]}
       >

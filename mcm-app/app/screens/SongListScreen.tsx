@@ -542,7 +542,17 @@ export default function SongsListScreen() {
             // el foco al entrar.
             hideWhenScrolling: !isSearchAll,
             autoFocus: isSearchAll,
-            textColor: isDark ? '#FFFFFF' : '#000000',
+            // Android: la cabecera es amarilla sólida en los dos modos, así que
+            // texto e icono van oscuros siempre (blancos daban ~1,6:1).
+            textColor:
+              Platform.OS === 'android'
+                ? '#000000'
+                : isDark
+                  ? '#FFFFFF'
+                  : '#000000',
+            ...(Platform.OS === 'android'
+              ? { headerIconColor: '#000000' }
+              : null),
             onChangeText: (e: { nativeEvent: { text: string } }) =>
               setSearch(e.nativeEvent.text),
           }

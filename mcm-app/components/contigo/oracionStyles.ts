@@ -4,7 +4,7 @@
  * Extraídos tal cual, sin tocar ni un valor: eran 297 líneas de las
  * 1189 del fichero. Mismo patrón que `components/grupos/gruposStyles.ts`.
  */
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { radii, shadows } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 
@@ -76,6 +76,10 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 20,
     ...shadows.card,
+    // El fondo de estas tarjetas es translúcido (`surface` al 90 %): en Android
+    // la `elevation` pinta la sombra a través y sale un rectángulo de esquinas
+    // duras dentro. Aquí la tarjeta se queda con su borde, sin elevación.
+    ...(Platform.OS === 'android' ? { elevation: 0 } : null),
   },
   sectionLabel: {
     ...typography.sectionLabel,

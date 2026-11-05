@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { Stack, router, useGlobalSearchParams, usePathname } from 'expo-router';
+import { useIsFocused } from 'expo-router/react-navigation';
+import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabReselect } from '@/components/tabs/tabBarController';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -55,8 +57,20 @@ export default function CancioneroLayout() {
 
   useChoirFollower();
 
+  // Android: la cabecera del cantoral es una barra amarilla SÓLIDA en los dos
+  // modos, así que los iconos de la barra de estado van oscuros siempre (el
+  // `StatusBar` de `(tabs)/_layout` los ponía blancos en oscuro: ~1,6:1 sobre
+  // amarillo). La pantalla completa no tiene cabecera y es oscura: ahí no.
+  const pathnameForBar = usePathname();
+  const focused = useIsFocused();
+  const darkStatusIcons =
+    Platform.OS === 'android' &&
+    focused &&
+    lastSegment(pathnameForBar) !== CANTORAL_SLUGS.SongFullscreen;
+
   return (
     <SettingsProvider>
+      {darkStatusIcons ? <StatusBar style="dark" animated /> : null}
       <Stack
         screenOptions={{
           headerStyle: isIOS
