@@ -15,7 +15,7 @@ import AccessScreen from '@/components/comunica/acceso/AccessScreen';
 import AreaScreen from '@/components/comunica/comun/AreaScreen';
 import { AreaSkeleton } from '@/components/comunica/comun/AreaState';
 import { useArea } from '@/components/comunica/comun/ComunicaAreaProvider';
-import { useComunicaTheme } from '@/components/comunica/comun/useComunicaTheme';
+import { useHeaderGlyph } from '@/components/comunica/comun/useHeaderGlyph';
 import ComunicaHome from '@/components/comunica/pasar-lista/ComunicaHome';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useComunicaLinks } from '@/hooks/comunica/useComunicaLinks';
@@ -87,7 +87,7 @@ function NativeGate() {
 
 function AccountButton() {
   const router = useRouter();
-  const t = useComunicaTheme();
+  const glyph = useHeaderGlyph();
   return (
     <PressableFeedback
       onPress={() => router.push('/comunica/yo')}
@@ -96,7 +96,7 @@ function AccountButton() {
       hitSlop={12}
       style={styles.account}
     >
-      <IconSymbol name="person.crop.circle" size={26} color={t.onGradient} />
+      <IconSymbol name="person.crop.circle" size={26} color={glyph} />
     </PressableFeedback>
   );
 }

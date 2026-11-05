@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pillFull,
   },
   label: {
-    ...typography.micro,
+    ...typography.footnote,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: typography.overline.letterSpacing,

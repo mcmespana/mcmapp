@@ -47,6 +47,7 @@ type IconMapping = {
   'list.bullet.clipboard': 'assignment';
   'chart.bar': 'bar-chart';
   lock: 'lock';
+  'rectangle.portrait.and.arrow.right': 'logout';
   'person.crop.circle': 'account-circle';
   'chevron.down': 'expand-more';
   magnifyingglass: 'search';
@@ -128,6 +129,7 @@ const MAPPING: IconMapping = {
   'list.bullet.clipboard': 'assignment',
   'chart.bar': 'bar-chart',
   lock: 'lock',
+  'rectangle.portrait.and.arrow.right': 'logout',
   'person.crop.circle': 'account-circle',
   'chevron.down': 'expand-more',
   magnifyingglass: 'search',

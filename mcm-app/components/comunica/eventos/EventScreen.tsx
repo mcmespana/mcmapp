@@ -21,8 +21,7 @@ import { isComunicaApiError } from '@/services/comunica/client';
 import type { ActivityTab, EventRoll } from '@/services/comunica/contract';
 import { useEventRoll } from '@/hooks/comunica/events';
 import { useFlushOutboxOnMount } from '@/hooks/comunica/useOutbox';
-import { comunicaTheme } from '@/components/comunica/comun/theme';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useHeaderGlyph } from '@/components/comunica/comun/useHeaderGlyph';
 import { sortTabs, tabLabel } from '@/utils/comunica/activityGroups';
 import { shortDay } from '@/utils/comunica/dates';
 import { eventDates } from '@/utils/comunica/events';
@@ -59,8 +58,7 @@ export default function EventScreen({
   const t = useComunicaTheme();
   const router = useRouter();
   const q = useEventRoll(eventId);
-  const isDark = useColorScheme() === 'dark';
-  const tint = comunicaTheme(isDark).onGradient;
+  const tint = useHeaderGlyph();
   useFlushOutboxOnMount();
 
   const roll = q.data;

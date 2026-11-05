@@ -39,8 +39,7 @@ import { useOutbox } from '@/hooks/comunica/useOutbox';
 import { useRollDraft } from '@/hooks/comunica/useRollDraft';
 import { useRollSave } from '@/hooks/comunica/useRollSave';
 import useNetworkStatus from '@/hooks/useNetworkStatus';
-import { comunicaTheme } from '@/components/comunica/comun/theme';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useHeaderGlyph } from '@/components/comunica/comun/useHeaderGlyph';
 import { h } from '@/utils/haptics';
 import { longDay } from '@/utils/comunica/dates';
 import { madridTime } from '@/utils/comunica/madrid';
@@ -106,8 +105,7 @@ export default function RollScreen({
   const router = useRouter();
   const groups = useGroups();
   const today = useToday();
-  const isDark = useColorScheme() === 'dark';
-  const tint = comunicaTheme(isDark).onGradient;
+  const tint = useHeaderGlyph();
   const now = comunicaNow();
 
   const group = groups.data?.groups.find((g) => g.id === groupId);

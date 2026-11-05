@@ -40,7 +40,7 @@ import UpcomingAgenda from './UpcomingAgenda';
 
 const ICON: Record<FamilySection, NavIcon> = {
   profile: 'person.crop.circle',
-  events: 'calendar',
+  events: 'ticket',
   registrations: 'list.bullet.clipboard',
   calendar: 'calendar',
   payments: 'creditcard',
@@ -156,7 +156,7 @@ function Content({ embedded }: { embedded: boolean }) {
           />
           {isSelf && me.roles.includes('monitor') ? (
             <NavRow
-              icon="person.crop.circle"
+              icon="graduationcap"
               title="Mis datos de monitor"
               subtitle="Tu trayectoria, formación y certificado de delitos sexuales."
               onPress={() => router.push('/comunica/yo/monitor')}

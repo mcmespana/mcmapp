@@ -12,13 +12,18 @@
 //     oscuro es un violeta más claro con contraste AA sobre la card.
 //   · Degradado de marca (azul → violeta → magenta): es la firma del área, como
 //     en el plugin, y solo se pinta con `BrandGradient`. Dos clases:
-//       - BLOQUES (`variant="block"`): la acción principal, el hero de la
-//         portada y la tarjeta destacada. Dos como mucho por pantalla, uno solo
-//         de acción principal, y nunca dos seguidos salvo que el primero se
-//         pueda cerrar.
-//       - MARCAS (`variant="mark"`, ≤ 72 pt): cápsula de fecha, avatar de
-//         identidad, barrita del título. No cuentan para el tope, nunca van en
-//         una fila de lista larga y nunca sobre un bloque (marca sobre marca no).
+//       - BLOQUES (`variant="block"`): la cabecera del área
+//         (`BrandHeaderBackground`, en todas las pantallas), la acción
+//         principal, el hero de la portada y la tarjeta destacada. Dos como
+//         mucho por pantalla: la cabecera ya es uno, así que el contenido solo
+//         lleva UNO más (un fichero no junta dos). Nunca dos seguidos salvo que
+//         el segundo se pueda cerrar (el hero lleva su ×).
+//       - MARCAS (`variant="mark"`, ≤ 72 pt): cápsula de fecha y avatar de
+//         identidad. No cuentan para el tope. Nunca en las filas de una lista
+//         virtualizada (`PersonRow`, `ListCell`) y nunca sobre un bloque (marca
+//         sobre marca no); sí en las tarjetas de las listas cortas (eventos,
+//         inscripciones, pagos), con las fechas pasadas en gris. Sin barritas
+//         ni rayas de color: el propietario no las quiere (`noEdgeStripes`).
 //     Decisión del propietario (28/10 y 05/11/2026): «conservar el estilo de la
 //     original, adaptado al nativo». La lista blanca de quién puede pintarlo
 //     está en `__tests__/comunica/territorio.test.ts`.

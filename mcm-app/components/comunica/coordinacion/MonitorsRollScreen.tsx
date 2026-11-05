@@ -51,8 +51,7 @@ import { useMe } from '@/hooks/comunica/useMe';
 import { useFlushOutboxOnMount, useOutbox } from '@/hooks/comunica/useOutbox';
 import { useRollDraft } from '@/hooks/comunica/useRollDraft';
 import useNetworkStatus from '@/hooks/useNetworkStatus';
-import { comunicaTheme } from '@/components/comunica/comun/theme';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useHeaderGlyph } from '@/components/comunica/comun/useHeaderGlyph';
 import { h } from '@/utils/haptics';
 import { longDay } from '@/utils/comunica/dates';
 import { madridTime } from '@/utils/comunica/madrid';
@@ -110,8 +109,7 @@ export default function MonitorsRollScreen({
   stage?: Stage;
 }) {
   const router = useRouter();
-  const isDark = useColorScheme() === 'dark';
-  const tint = comunicaTheme(isDark).onGradient;
+  const tint = useHeaderGlyph();
   const q = useMonitorsRoll({ kind, stage, session: sessionId });
   // En el cuerpo, con la delegación explícita (ver `areaKey`).
   const delegation = useWorkingDelegation();

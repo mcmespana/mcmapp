@@ -108,7 +108,7 @@ describe('el degradado de marca', () => {
     expect(users.filter((f) => !ALLOWED.includes(f))).toEqual([]);
   });
 
-  it('ningún fichero junta más de dos bloques de marca', () => {
+  it('ningún fichero junta más de un bloque de marca (la cabecera es el otro)', () => {
     const over = AREA.filter((f) => !/ComponentSampler\.tsx$/.test(f))
       .filter((f) => {
         const src = fs.readFileSync(f, 'utf8');
@@ -116,7 +116,7 @@ describe('el degradado de marca', () => {
           (src.match(/<AreaPrimaryButton\b/g) ?? []).length +
           (src.match(/<AreaHero\b/g) ?? []).length +
           (src.match(/<FeaturedRecordCard\b/g) ?? []).length;
-        return blocks > 2;
+        return blocks > 1;
       })
       .map(rel);
     expect(over).toEqual([]);

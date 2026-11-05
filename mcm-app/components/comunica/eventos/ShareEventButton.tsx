@@ -26,7 +26,7 @@ import {
 import { madridDay } from '@/utils/comunica/madrid';
 import { h } from '@/utils/haptics';
 import { logger } from '@/utils/logger';
-import { useComunicaTheme } from '../comun/useComunicaTheme';
+import { useHeaderGlyph } from '../comun/useHeaderGlyph';
 
 type WebNavigator = { share?: (d: { text: string }) => Promise<void> };
 
@@ -71,7 +71,7 @@ export default function ShareEventButton({
 }: {
   event: ShareableEvent | null | undefined;
 }) {
-  const t = useComunicaTheme();
+  const glyph = useHeaderGlyph();
   const { canShare, share } = useShareEvent(event);
   if (!canShare) return null;
   return (
@@ -87,7 +87,7 @@ export default function ShareEventButton({
         size={22}
         // El color de la cabecera: el del sistema en iOS, blanco sobre la
         // barra violeta en Android y web (como «Tu cuenta» en la portada).
-        color={t.onGradient}
+        color={glyph}
       />
     </PressableFeedback>
   );

@@ -43,10 +43,10 @@ export default function AreaHero({
   const t = useComunicaTheme();
   return (
     <View
-      style={[styles.outer, shadows.raised, { backgroundColor: t.accentFill }]}
+      style={[styles.outer, shadows.card, { backgroundColor: t.accentFill }]}
     >
       <View style={styles.clip}>
-        <BrandGradient variant="block" sheen />
+        <BrandGradient variant="block" />
         <View style={[styles.content, onClose ? styles.withClose : null]}>
           <Text
             accessibilityRole="header"
