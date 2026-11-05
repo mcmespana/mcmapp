@@ -13,6 +13,16 @@
 - **Desarrollo:** `EXPO_PUBLIC_COMUNICA_API=fake` enciende ahora el área nativa en el simulador; `EXPO_PUBLIC_FIREBASE_FIXTURES=1` sirve álbumes y canciones inventados (`utils/devFirebaseFixtures.ts`). Sin las variables (tienda, web publicada) nada cambia.
 - Solo JS: OTA ✅.
 
+## 2026-11-05 17:16 — Afinador de guitarra, cabecera del cantoral nueva y arreglo del botón de la canción
+
+- **Afinador** (`app/screens/TunerScreen.tsx`, ruta `/cancionero/afinador`, en hoja): reconoce la cuerda sola, arco de ±50 cents con una bola que fluye, nota gigante en la notación del cantoral, «Tensa / Afloja la cuerda» con flecha, bloqueo en verde con vibración a ±5 cents, check por cuerda afinada y confeti con las seis. Tocar una cuerda la fija. Solo guitarra y afinación estándar, a propósito. Se abre desde el menú de la canción («Afinar la guitarra») y desde «⋯» del cantoral (también sin conexión). Doc: `docs/funcionalidades/AFINADOR.md`.
+- **Dependencias nuevas**: `react-native-audio-api` (~1.0.0, micrófono en crudo en iOS/Android; **nativa**, va con la próxima build) y `pitchy` (detección de tono, JS puro). En web, `getUserMedia` + `AnalyserNode`.
+- **Permisos**: micrófono (`NSMicrophoneUsageDescription`, `RECORD_AUDIO`) con texto propio; `expo-image-picker` deja de tener `microphonePermission: false`, que bloqueaba `RECORD_AUDIO` en Android. Sin audio en segundo plano ni servicio en primer plano; nada se graba ni se envía.
+- **Cabecera del cantoral rediseñada**: a la izquierda el **coro** (trae la última playlist de tu coro de un toque, sin entrar en «Tu selección»; sin coro, abre «elige tu coro»); a la derecha **⋯** y **buscar** (lo más usado, en el extremo). En «⋯»: Afinador, Etiquetas, Playlists de tu coro, Sugerir una canción y la ayuda. Antes eran cuatro iconos sueltos (+, ?, etiquetas, buscar). «Tu selección» acepta `?hoja=coro|elegir-coro`. El menú funciona también mientras carga el cantoral.
+- **Fix del botón flotante de la canción**: al cerrarse, el menú «caía» por encima del botón. El contenedor (pegado abajo) se encogía al desmontar el menú y la copia de la animación de salida se quedaba desplazada. Ahora el menú se queda montado y solo se desvanece (sin toques ni lector de pantalla cerrado), y el icono hace un morph ajustes ↔ × en vez de cambiar de glifo a mitad del giro.
+- Tokens nuevos: `TunerColors`/`tunerColors()` (verde y naranja de sistema, legibles como texto) y `typography.display` (88, una nota sola gigante).
+- Jest: `react-native-audio-api` mapeado a su mock oficial y `pitchy` pasa por Babel. Tests nuevos: `tunerPitchTracker`, `tunerDetectPitch`, `tunerMicrophoneWeb`, `useTuner`.
+
 ## 2026-11-01 23:06 — Tutorial del cantoral: «Personaliza tu cantoral» y «¿Formas parte de un coro?»
 
 - El onboarding del cantoral lleva ahora un **título fijo en la cabecera** («Personaliza tu cantoral», con «Saltar» a la derecha y los puntos de progreso debajo) y un **último paso nuevo, «¿Formas parte de un coro?»** (`components/song-onboarding/ChoirStep.tsx`): lista los coros que hay (con su nº de playlists) para sumarte con un toque, y «Registrar mi coro» abre un campo para crear el tuyo si no está (`createChoir`, que avisa si ya existe uno igual). Es opcional; la elección se guarda como «mi coro» (`useMyChoir`), así que la hoja del coro de «Tu selección» ya lo tiene elegido.
@@ -29,6 +39,7 @@
 
 - `version` de `app.json` pasa de 2.1.0 a **2.5.0** para las próximas builds (también la de la extensión de notificaciones iOS, que la toma de ahí).
 - `runtimeVersion` pasa de 2.2.0 a **2.5.0** a la vez (decisión del propietario: solo hay builds de prueba y no se mandarán OTA a las anteriores). Las builds ya instaladas con runtime 2.2.0 **dejan de recibir OTA**.
+
 ## 2026-11-01 15:00 — Fotos en iPad, pantalla de versión mínima con ánimo y OTA que se aplica sola
 
 - **Fotos en iPad** (`global.fotosEnIpad`, panel → Perfiles → Sistema): con `false`, en **cualquier iPad** (MDM o no: la app no distingue) desaparecen la pestaña, el botón de Home y la tarjeta de «Más», y la pantalla (si se llega por enlace o notificación) dice que no está disponible sin leer `albums`. iPhone, Android y web no cambian. Ausente = se ven, como siempre. Es el resolver (`resolveProfileConfig`, ahora con `DeviceContext`) quien las quita; `Platform.isPad` en `utils/device.ts`.

@@ -7,6 +7,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { TabHeaderColors, themeColors } from '@/constants/colors';
 import { cantoralHeaderTint } from '@/utils/cantoralHeader';
+import { radii } from '@/constants/uiStyles';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { extractSongMedia } from '@/types/songMedia';
 import {
@@ -113,6 +114,20 @@ export default function CancioneroLayout() {
         <Stack.Screen
           name={CANTORAL_SLUGS.SelectedSongs}
           options={{ title: 'Tu selección' }}
+        />
+        {/* El afinador va en hoja: se abre encima de la canción y al
+            cerrarla sigues donde estabas. */}
+        <Stack.Screen
+          name={CANTORAL_SLUGS.Tuner}
+          options={{
+            title: 'Afinador',
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.82, 1],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: radii.xl,
+            headerTransparent: false,
+            contentStyle: { backgroundColor: themeColors(isDark).background },
+          }}
         />
       </Stack>
     </SettingsProvider>

@@ -5,7 +5,6 @@ import {
   View,
   Platform,
   RefreshControl,
-  TouchableOpacity,
 } from 'react-native';
 import { useIsFocused, useNavigation } from 'expo-router/react-navigation';
 import { openCantoral } from '@/utils/cantoralNavigation';
@@ -36,6 +35,10 @@ import { MaterialIcons } from '@/components/ui/icons';
 import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import SuggestSongModal from '@/components/SuggestSongModal';
+import ContextMenuSheet, {
+  type ContextMenuAction,
+} from '@/components/ContextMenuSheet';
+import { useMyChoir } from '@/hooks/useMyChoir';
 import { filterSongsData } from '@/utils/filterSongsData';
 import { extractTrailingEmoji, stripCategoryPrefix } from '@/utils/songUtils';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
@@ -217,63 +220,127 @@ export default function CategoriesScreen() {
     }
   }, []);
 
-  // Header NATIVO: los botones "sugerir" + "buscar" van como bar items del
-  // header nativo (headerRight) para que iOS 26 les aplique el efecto
-  // liquid-glass del sistema (igual que el back/buscar de dentro de una
-  // categoría). Antes vivían en un header inline dentro del scroll, por eso NO
-  // tenían ese efecto. El título "Cantoral" lo pone el screenOptions del stack.
+  // ── Cabecera ─────────────────────────────────────────────────────────────
+  // Fuera, solo lo que se usa de verdad: el CORO a la izquierda (un toque y
+  // te traes la última playlist de tu coro, sin pasar por «Tu selección») y
+  // BUSCAR a la derecha del todo. Lo demás —afinador, etiquetas, sugerir una
+  // canción, la ayuda— va al «⋯»: se usan menos y cuatro iconos sueltos
+  // obligaban a adivinar qué era cada uno. Son bar items del header NATIVO
+  // para que iOS 26 les ponga su cápsula liquid-glass (una por lado).
+  const { choir: myChoir, isHydrated: choirHydrated } = useMyChoir();
+  const [showMenu, setShowMenu] = useState(false);
+  const hasSongs = sortedCategories.length > 0;
   const headerIconColor = cantoralHeaderTint(isDark);
+
+  const onChoirPress = useCallback(() => {
+    h.tap();
+    if (myChoir) {
+      // Mismo camino que el enlace `?coro=<id>`: reemplaza la selección con
+      // la última del coro y deja 10 s de «Deshacer».
+      openCantoral('SelectedSongs', { coro: myChoir.id });
+    } else {
+      openCantoral(
+        'SelectedSongs',
+        choirHydrated ? { hoja: 'elegir-coro' } : undefined,
+      );
+    }
+  }, [myChoir, choirHydrated]);
+
+  const menuActions = useMemo<ContextMenuAction[]>(
+    () => [
+      {
+        key: 'tuner',
+        label: 'Afinador',
+        icon: 'graphic-eq',
+        onPress: () => openCantoral('Tuner'),
+      },
+      ...(hasTags
+        ? [
+            {
+              key: 'tags',
+              label: 'Etiquetas',
+              icon: 'sell' as const,
+              onPress: () => setShowTags(true),
+            },
+          ]
+        : []),
+      ...(myChoir
+        ? [
+            {
+              key: 'choir',
+              label: `Playlists de ${myChoir.name}`,
+              icon: 'groups' as const,
+              onPress: () => openCantoral('SelectedSongs', { hoja: 'coro' }),
+            },
+          ]
+        : []),
+      // Sugerir y la ayuda necesitan el cantoral descargado (sus hojas solo
+      // se montan con la lista). El afinador funciona siempre, también sin
+      // conexión y sin canciones.
+      ...(hasSongs
+        ? [
+            {
+              key: 'suggest',
+              label: 'Sugerir una canción',
+              icon: 'add-circle-outline' as const,
+              onPress: () => setShowForm(true),
+            },
+            {
+              key: 'help',
+              label: 'Cómo ver las canciones',
+              icon: 'help-outline' as const,
+              onPress: openOnboarding,
+            },
+          ]
+        : []),
+    ],
+    [hasTags, hasSongs, myChoir, openOnboarding],
+  );
+  const menuSheet = (
+    <ContextMenuSheet
+      visible={showMenu}
+      onClose={() => setShowMenu(false)}
+      title="Cantoral"
+      actions={menuActions}
+    />
+  );
+
   useLayoutEffect(() => {
-    // Título pequeño nativo (centrado, heredado del stack) + los 2 botones
-    // separados. "Sugerir" a la IZQUIERDA y "Buscar" a la DERECHA → son dos bar
-    // items nativos distintos, así que iOS 26 les da una cápsula liquid-glass a
-    // cada uno (separadas), en vez de agruparlos en una sola.
     navigation.setOptions({
       headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => setShowForm(true)}
+        <PressableFeedback
+          onPress={onChoirPress}
           style={styles.headerNativeButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityLabel="Sugerir canción"
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={
+            myChoir
+              ? `Traer la última playlist de ${myChoir.name}`
+              : 'Elegir tu coro'
+          }
         >
-          <MaterialIcons name="add" size={24} color={headerIconColor} />
-        </TouchableOpacity>
+          <MaterialIcons name="groups" size={24} color={headerIconColor} />
+        </PressableFeedback>
       ),
-      // "Etiquetas" y "Buscar" van juntos a la derecha porque los dos son
-      // "entrar a buscar algo"; el "+" de sugerir se queda solo a la izquierda.
-      // El de etiquetas solo existe si hay etiquetas que enseñar.
       headerRight: () => (
         <View style={styles.headerActions}>
           <PressableFeedback
             onPress={() => {
               h.tap();
-              openOnboarding();
+              setShowMenu(true);
             }}
             style={styles.headerNativeButton}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel="Cómo ver las canciones"
+            accessibilityLabel="Más opciones del cantoral"
           >
             <MaterialIcons
-              name="help-outline"
-              size={22}
+              name="more-horiz"
+              size={24}
               color={headerIconColor}
             />
           </PressableFeedback>
-          {hasTags && (
-            <TouchableOpacity
-              onPress={() => {
-                h.tap();
-                setShowTags(true);
-              }}
-              style={styles.headerNativeButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityLabel="Ver etiquetas"
-            >
-              <MaterialIcons name="sell" size={22} color={headerIconColor} />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
+          <PressableFeedback
             onPress={() =>
               openCantoral('SongsList', {
                 categoryId: ALL_SONGS_CATEGORY_ID,
@@ -281,15 +348,16 @@ export default function CategoriesScreen() {
               })
             }
             style={styles.headerNativeButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={10}
+            accessibilityRole="button"
             accessibilityLabel="Buscar canción"
           >
             <MaterialIcons name="search" size={24} color={headerIconColor} />
-          </TouchableOpacity>
+          </PressableFeedback>
         </View>
       ),
     });
-  }, [navigation, styles, headerIconColor, hasTags, openOnboarding]);
+  }, [navigation, styles, headerIconColor, onChoirPress, myChoir]);
 
   // En iPad/web amplio rendiriamos la "Tu selección" en una card destacada
   // de ancho completo arriba, y las categorías reales en un grid de 2-3 cols
@@ -514,11 +582,14 @@ export default function CategoriesScreen() {
 
   if (loading && sortedCategories.length === 0) {
     return (
-      <ListSkeleton
-        isDark={isDark}
-        label="Cargando el cantoral"
-        maxWidth={isWideLayout ? layout.contentMaxWidth : undefined}
-      />
+      <>
+        <ListSkeleton
+          isDark={isDark}
+          label="Cargando el cantoral"
+          maxWidth={isWideLayout ? layout.contentMaxWidth : undefined}
+        />
+        {menuSheet}
+      </>
     );
   }
 
@@ -536,6 +607,7 @@ export default function CategoriesScreen() {
           actionLabel={offline ? undefined : 'Reintentar'}
           onAction={offline ? undefined : onRefresh}
         />
+        {menuSheet}
       </View>
     );
   }
@@ -591,6 +663,8 @@ export default function CategoriesScreen() {
         songsData={songsData}
         tags={tagIndex.tags}
       />
+
+      {menuSheet}
 
       <SuggestSongModal
         visible={showForm}

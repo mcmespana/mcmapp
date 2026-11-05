@@ -309,6 +309,37 @@ export const ToastColors = {
   info: '#2196F3',
 } as const;
 
+// Afinador del cantoral (`app/screens/TunerScreen.tsx`). Son los verde y
+// naranja de sistema de Apple: «afinada» y «casi», que es lo que significan en
+// cualquier afinador. Cada uno en dos tonos: `ink` es el que se lee como texto
+// o trazo fino sobre el fondo de su modo (≥4,5:1 en claro, el verde/naranja
+// accesible de Apple; en oscuro, el de sistema), `fill` es el tinte suave de
+// detrás. No son colores de marca ni de estado general: un toast sigue usando
+// `ToastColors`.
+export const TunerColors = {
+  inTuneInkLight: '#248A3D',
+  inTuneInkDark: '#30D158',
+  inTuneFillLight: 'rgba(52, 199, 89, 0.14)',
+  inTuneFillDark: 'rgba(48, 209, 88, 0.18)',
+  nearInkLight: '#C93400',
+  nearInkDark: '#FF9F0A',
+} as const;
+
+/** `TunerColors` resueltos por modo. */
+export function tunerColors(isDark: boolean) {
+  return isDark
+    ? {
+        inTune: TunerColors.inTuneInkDark,
+        inTuneFill: TunerColors.inTuneFillDark,
+        near: TunerColors.nearInkDark,
+      }
+    : {
+        inTune: TunerColors.inTuneInkLight,
+        inTuneFill: TunerColors.inTuneFillLight,
+        near: TunerColors.nearInkLight,
+      };
+}
+
 // Estados visuales compartidos (selección, hover, pressed)
 // Usado en SongListItem y futuros componentes con estado seleccionado.
 export const StateColors = {
