@@ -116,6 +116,27 @@ function refreshRemote(
   if (existing?.inflight) return existing.inflight;
 
   const run = async () => {
+    // Datos de prueba de desarrollo (simulador y capturas): solo con
+    // `EXPO_PUBLIC_FIREBASE_FIXTURES=1`. Sin la variable, esta rama no existe.
+    if (process.env.EXPO_PUBLIC_FIREBASE_FIXTURES === '1') {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fixture = require('@/utils/devFirebaseFixtures').devFixtureFor(
+        path,
+      );
+      if (fixture !== undefined) {
+        await AsyncStorage.setItem(
+          `${storageKey}_data`,
+          JSON.stringify(fixture),
+        );
+        await AsyncStorage.setItem(`${storageKey}_updatedAt`, 'fixture');
+        mergeCacheEntry(storageKey, {
+          parsed: fixture,
+          updatedAt: 'fixture',
+          hidden: false,
+        });
+        return;
+      }
+    }
     const db = getDatabase(getFirebaseApp());
 
     // SIEMPRE por hijos (`updatedAt` / `hidden` / `data`), nunca `get(path)`
