@@ -49,6 +49,7 @@ import '@/constants/iconAssets';
 import colors from '@/constants/colors';
 import AppProviders from '@/components/AppProviders';
 import ComunicaBackground from '@/components/comunica/ComunicaBackground';
+import ContigoRemindersBackground from '@/components/contigo/ContigoRemindersBackground';
 import { holdSplash, releaseSplash } from '@/utils/splashGate';
 
 // El splash nativo se queda hasta que el layout sabe qué pintar (ver
@@ -274,6 +275,7 @@ function InnerLayout() {
       <CarismochitoOverlay />
       {/* Avisos del área de Comunica: registro del móvil y aviso local (plan 08). */}
       <ComunicaBackground />
+      <ContigoRemindersBackground />
     </NavThemeProvider>
   );
 }

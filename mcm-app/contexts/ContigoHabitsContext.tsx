@@ -13,6 +13,8 @@ import { syncContigoHabit, fetchContigoHabits } from '@/utils/authHelpers';
 import { mergeContigoHabits } from '@/utils/contigoMerge';
 import { localISO, offsetISODate } from '@/utils/localDate';
 import { computeStreak } from '@/utils/contigoStreak';
+import { CONTIGO_HABITS_KEY } from '@/constants/contigoStorage';
+import { syncContigoReminders } from '@/services/contigoReminders';
 
 export type PrayerDuration =
   'less_than_1' | '2_to_4' | '5_to_10' | '10_to_15' | 'more_than_15';
@@ -31,7 +33,7 @@ export interface DayRecord {
   timestamp: number;
 }
 
-const STORAGE_KEY = '@contigo_habits';
+const STORAGE_KEY = CONTIGO_HABITS_KEY;
 
 export interface ContigoHabitsContextValue {
   isLoading: boolean;
@@ -170,6 +172,9 @@ export function ContigoHabitsProvider({
           if (authUser) {
             syncContigoHabit(authUser.uid, date, next[date]);
           }
+          // Recordatorios: si el hábito de hoy ya está hecho, no le quedan
+          // avisos hoy. Va DESPUÉS del setItem: el servicio lee de ahí.
+          await syncContigoReminders();
         })
         .catch((err) => {
           logger.error('Failed to save contigo habits:', err);

@@ -185,6 +185,18 @@ export default function ContigoScreen() {
                 <LiturgicalBadge dateStr={todayStr} />
               </View>
               <TouchableOpacity
+                onPress={() => router.push('/(tabs)/contigo/recordatorios')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={{ padding: 4 }}
+                accessibilityLabel="Recordatorios"
+              >
+                <MaterialIcons
+                  name="notifications"
+                  size={22}
+                  color={W.accentText}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={() => router.push('/(tabs)/contigo/bookmarks')}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={{ padding: 4 }}

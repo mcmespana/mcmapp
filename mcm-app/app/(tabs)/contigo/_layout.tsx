@@ -48,6 +48,13 @@ export default function ContigoLayout() {
             title: 'Revisión del día',
           }}
         />
+        <Stack.Screen
+          name="recordatorios"
+          options={{
+            headerShown: false,
+            title: 'Recordatorios',
+          }}
+        />
       </Stack>
     </ContigoHabitsProvider>
   );
