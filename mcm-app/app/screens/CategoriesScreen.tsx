@@ -335,17 +335,11 @@ export default function CategoriesScreen() {
         return (
           <PressableFeedback onPress={onPress} style={styles.gridCard}>
             <PressableFeedback.Highlight />
-            <View style={styles.gridCardEmojiWrap}>
-              {emoji ? (
+            {emoji ? (
+              <View style={styles.gridCardEmojiWrap}>
                 <Text style={styles.gridCardEmoji}>{emoji}</Text>
-              ) : (
-                <MaterialIcons
-                  name="queue-music"
-                  size={30}
-                  color={glyphColor}
-                />
-              )}
-            </View>
+              </View>
+            ) : null}
             <Text style={styles.gridCardTitle} numberOfLines={2}>
               {displayName}
             </Text>
@@ -423,13 +417,11 @@ export default function CategoriesScreen() {
           }`}
         >
           <PressableFeedback.Highlight />
-          <View style={styles.rowIcon}>
-            {emoji ? (
+          {emoji ? (
+            <View style={styles.rowIcon}>
               <Text style={styles.emojiText}>{emoji}</Text>
-            ) : (
-              <MaterialIcons name="queue-music" size={22} color={glyphColor} />
-            )}
-          </View>
+            </View>
+          ) : null}
           <View style={[styles.rowContent, !isLast && styles.rowDivider]}>
             <Text style={styles.rowTitle} numberOfLines={1}>
               {displayName}
