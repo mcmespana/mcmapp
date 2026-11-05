@@ -216,7 +216,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderLeftWidth: 4,
     padding: spacing.sm + 4,
     marginBottom: spacing.sm,
     ...shadows.card,

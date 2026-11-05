@@ -12,7 +12,6 @@ import {
   warm,
   weekdayLetter,
   WARM_DARK,
-  WARM_LIGHT,
 } from './theme';
 import type { DayRecord } from '@/hooks/useContigoHabits';
 import { styles } from '@/components/contigo/homeWidgetsStyles';
@@ -245,7 +244,7 @@ export function HabitTile({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EvangelioTeaserCard — top accent bar, title, fade-out preview + CTA + chip
+// EvangelioTeaserCard — título, vista previa que se desvanece + CTA + chip
 // ─────────────────────────────────────────────────────────────────────────────
 export function EvangelioTeaserCard({
   titulo,
@@ -277,12 +276,6 @@ export function EvangelioTeaserCard({
           },
         ]}
       >
-        <LinearGradient
-          colors={['#E8A838', WARM_LIGHT.accent, '#9A6A1A']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.teaserBar}
-        />
         <View style={styles.teaserBody}>
           <View style={styles.teaserHeaderRow}>
             <View style={{ flex: 1, marginRight: 10 }}>

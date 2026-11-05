@@ -83,8 +83,6 @@ export default function FormattedContent({
         lineHeight: 22 * fontScale,
       },
       blockquote: {
-        borderLeftWidth: 4,
-        borderLeftColor: colors.info,
         paddingLeft: 12 * fontScale,
         paddingRight: 12 * fontScale,
         marginVertical: 12 * fontScale,
@@ -222,8 +220,6 @@ export default function FormattedContent({
       alert: {
         backgroundColor:
           scheme === 'dark' ? 'rgba(255,193,7,0.2)' : 'rgba(255,193,7,0.1)',
-        borderLeftWidth: 4,
-        borderLeftColor: '#ffc107',
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 16 * fontScale,
         borderRadius: 6,

@@ -356,6 +356,7 @@ número de ancho a mano, y no te hagas un `WIDE_BREAKPOINT` propio: ya pasó.
 
 Esto es lo que un modelo produce por defecto y aquí no se envía:
 
+- **Rayitas de color en el borde**: franjas arriba de una pantalla o de una tarjeta, barras de acento a la izquierda, callouts con `borderLeft` de color. Añaden color sin decir nada (decisión del propietario, 05/11/2026). Lo que hay que señalar va en un punto, un icono o un chip. Lo vigila `__tests__/noEdgeStripes.test.ts`.
 - **Gradientes decorativos** y glows fuera de Contigo y del territorio Comunica (§2: allí, solo con `BrandGradient` y su tope). El azul MCM es plano.
 - **Emoji como iconografía** de UI. Iconos vía `IconSymbol`.
 - **Cards dentro de cards.** Un nivel de superficie por bloque.

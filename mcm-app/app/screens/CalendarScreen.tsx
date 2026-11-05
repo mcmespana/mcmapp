@@ -407,7 +407,6 @@ export function CalendarScreen({
         accessibilityRole="button"
         accessibilityLabel={`Ver detalles de ${ev.title}`}
       >
-        <View style={[styles.eventColorBar, { backgroundColor: calColor }]} />
         <View style={styles.eventCardBody}>
           <View style={styles.eventCardTop}>
             <Text

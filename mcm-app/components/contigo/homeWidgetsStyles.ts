@@ -167,7 +167,6 @@ export const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
   },
-  teaserBar: { height: 3 },
   teaserBody: { padding: 16 },
   teaserHeaderRow: {
     flexDirection: 'row',

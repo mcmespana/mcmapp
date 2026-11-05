@@ -237,14 +237,6 @@ export default function MasHomeScreen() {
                 }}
               >
                 <PressableFeedback.Highlight />
-                {/* Accent bar izquierda */}
-                <View
-                  style={[
-                    styles.accentBar,
-                    { backgroundColor: item.tintColor },
-                  ]}
-                />
-
                 <View style={styles.cardBody}>
                   {/* Icono grande */}
                   <View
@@ -337,10 +329,6 @@ const styles = StyleSheet.create({
     // para que funcione igual en nativo (iPad) y en web; el `marginBottom`
     // de `card` da el ritmo vertical.
     width: '48.5%',
-  },
-  accentBar: {
-    height: 4,
-    width: '100%',
   },
   cardBody: {
     flexDirection: 'row',

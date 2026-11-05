@@ -7,7 +7,6 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { TabHeaderColors, themeColors } from '@/constants/colors';
 import { cantoralHeaderTint } from '@/utils/cantoralHeader';
-import TabTintBar from '@/components/ui/TabTintBar';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { extractSongMedia } from '@/types/songMedia';
 import {
@@ -57,8 +56,6 @@ export default function CancioneroLayout() {
 
   return (
     <SettingsProvider>
-      {/* Raya amarilla del cantoral pegada arriba, como la roja de Fotos. */}
-      <TabTintBar color={TabHeaderColors.cancionero} />
       <Stack
         screenOptions={{
           headerStyle: isIOS

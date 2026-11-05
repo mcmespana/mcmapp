@@ -372,10 +372,6 @@ function SectionCard({
     >
       <PressableFeedback.Highlight />
 
-      <View
-        style={[styles.accentBar, { backgroundColor: section.tintColor }]}
-      />
-
       <View style={styles.cardBody}>
         <View
           style={[
@@ -449,7 +445,6 @@ type Styles = {
   mottoText: TextStyle;
   gridContainer: ViewStyle;
   card: ViewStyle;
-  accentBar: ViewStyle;
   cardBody: ViewStyle;
   iconCircle: ViewStyle;
   emoji: TextStyle;
@@ -603,10 +598,6 @@ const createStyles = (isDark: boolean) =>
     card: {
       borderRadius: radii.xl,
       overflow: 'hidden',
-    },
-    accentBar: {
-      height: 4,
-      width: '100%',
     },
     cardBody: {
       paddingHorizontal: spacing.md,

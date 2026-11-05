@@ -92,9 +92,6 @@ export default function EventosPasadosScreen() {
               accessibilityLabel={event.title}
             >
               <PressableFeedback.Highlight />
-              <View
-                style={[styles.accentBar, { backgroundColor: event.tintColor }]}
-              />
               <View style={styles.cardBody}>
                 <View
                   style={[
@@ -142,7 +139,6 @@ type Styles = {
   safeArea: ViewStyle;
   container: ViewStyle;
   card: ViewStyle;
-  accentBar: ViewStyle;
   cardBody: ViewStyle;
   iconCircle: ViewStyle;
   cardTitle: TextStyle;
@@ -162,10 +158,6 @@ const createStyles = (isDark: boolean) =>
       borderRadius: radii.xl,
       marginBottom: spacing.md,
       overflow: 'hidden',
-    },
-    accentBar: {
-      height: 4,
-      width: '100%',
     },
     cardBody: {
       flexDirection: 'row',

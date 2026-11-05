@@ -529,7 +529,6 @@ export default function CategoriesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Old topColorBar removed to clean up inline custom header */}
       <Animated.FlatList
         ref={listRef}
         onScroll={onScroll}

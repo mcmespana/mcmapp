@@ -235,11 +235,6 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     pastEventCard: {
       opacity: 0.55,
     },
-    eventColorBar: {
-      width: 4,
-      borderTopLeftRadius: radii.lg,
-      borderBottomLeftRadius: radii.lg,
-    },
     eventCardBody: {
       flex: 1,
       paddingVertical: 12,
