@@ -251,3 +251,14 @@ Cada código es `mcp-Claude_Code_iOS_Simulator-blob-<id>.png` bajo esa carpeta. 
 > botón primario [O1] vs [Q6] vs [T3] vs [I1]; títulos de pantalla [I1] [C1] [T1] [K1] [M1] [F1];
 > etiqueta de sección [I2] [T1] [Q2] [Q6]; baldosas/emoji de icono [C1] [M1] [Q3] [E1]; radios de tarjeta
 > [Q5] [M1] [T1]; ceros y repeticiones [T1] [Q7] [Q6].
+
+
+## Decisiones de cierre (2026-11-05, rama `claudito/area-nativa-estilo-plugin`)
+
+Lo que quedaba de §5 y se **decide dejar así** (no hace falta re-abrirlo):
+
+- **Hoja «Letra y vista»:** el estado en el centro y las celdas dentro del grupo son el patrón de ajustes agrupados de iOS que documenta `components/song-sheet/sheetKit.tsx`; no es «tarjeta dentro de tarjeta» por descuido.
+- **Calendario sin título:** es raíz de pestaña con el selector Mes/Agenda en la cabecera; el título lo hace el propio selector.
+- **«Evento» en la cabecera de Comunica:** se queda genérico; el nombre del evento va grande justo debajo.
+- **Visita Papa (hero con degradado):** el evento está archivado y su pestaña oculta; se revisa si se reactiva.
+- **Radios sueltos (E5):** ver `PLAN_DISENO.md` E5.

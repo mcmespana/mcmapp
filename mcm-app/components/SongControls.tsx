@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: radii.md,
     marginHorizontal: 4,
     marginVertical: 1,
   },

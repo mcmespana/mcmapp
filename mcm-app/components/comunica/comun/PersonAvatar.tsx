@@ -57,10 +57,9 @@ export default function PersonAvatar({
   const big = size >= 64;
   const brand = tone === 'brand';
   const fill =
-    background ?? (tone === 'neutral' ? t.backgroundSunken : t.accentFill);
+    background ?? (tone === 'neutral' ? t.disabledFill : t.accentFill);
   const inkColor =
-    ink ??
-    (brand ? t.onGradient : tone === 'accent' ? t.onAccent : t.textSecondary);
+    ink ?? (brand ? t.onGradient : tone === 'accent' ? t.onAccent : t.text);
   return (
     <View
       style={[

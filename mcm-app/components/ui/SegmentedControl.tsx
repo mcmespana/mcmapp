@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   track: {
     flex: 1,
     flexDirection: 'row',
-    borderRadius: 10,
+    borderRadius: radii.md,
     padding: 2,
   },
   segment: {

@@ -74,7 +74,7 @@ Variables (todas de marcador): `EXPO_PUBLIC_COMUNICA_API=fake`, `EXPO_PUBLIC_FIR
 
 ## 5. Pendiente (en orden de valor)
 
-**A. Bugs reales de Android** — detalle, causa y capturas en [`REVISION_ANDROID.md`](REVISION_ANDROID.md) (23 hallazgos). **Arreglados y comprobados en el emulador:** la alta (pestañas sobre la canción a pantalla completa), todas las medias salvo el #7, y casi todas las bajas (ver «Estado tras los arreglos» en ese informe). **Siguen abiertos:** #7, #9, #12, #15, #16, #18 y #19. La lista de abajo es la ORIGINAL, conservada por la causa de cada uno:
+**A. Bugs reales de Android** — detalle, causa y capturas en [`REVISION_ANDROID.md`](REVISION_ANDROID.md) (23 hallazgos). **Arreglados y comprobados en el emulador:** la alta (pestañas sobre la canción a pantalla completa), todas las medias salvo el #7, y casi todas las bajas (ver «Estado tras los arreglos» en ese informe). **Todos cerrados o decididos** (ver «Cerrados después» y «Decididos que se quedan» en ese informe). La lista de abajo es la ORIGINAL, conservada por la causa de cada uno:
 
 1. **ALTA — canción en pantalla completa:** la barra de pestañas flotante (`CompactTabBar`, overlay de
    `components/tabs/AndroidTabsLayout.tsx`) tapa el botón de reproducir y el del lector. Ocultarla en esa
@@ -104,9 +104,7 @@ Gestión/Eventos pasados, Coordinación, teclado en pantalla, `fontScale` grande
 
 **Aviso al reproducir:** tras fusionar `main` (afinador) hay que **recompilar la app nativa de desarrollo** (`react-native-audio-api` es un módulo nativo): `npx expo prebuild --platform android --no-install` y `npx expo run:android`; con el APK anterior la app se rompe al cargar («native module could not be found»).
 
-**D. Conocido y ajeno:** `__tests__/tunerMicrophoneWeb.test.ts` («cada entrega es la ventana de análisis
-completa…») falla con `TypeError: Object.defineProperty called on non-object` **también en `main` limpio**
-(es del afinador, no de esta rama). El resto de la suite pasa (284/285).
+**D. `tunerMicrophoneWeb`:** el fallo no era del afinador sino de Node 20, que no tiene `navigator` global; el test lo crea si falta y pasa. La suite entera queda en verde.
 
 ## 6. Antes de dar la rama por buena
 

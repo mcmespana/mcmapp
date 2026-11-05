@@ -424,7 +424,11 @@ export default function SocialLoginSection({
     : scheme === 'dark'
       ? 'rgba(255,255,255,0.06)'
       : hexAlpha(brand, '10');
-  const hintIconColor = onDarkBackground ? 'rgba(255,255,255,0.85)' : brand;
+  const hintIconColor = onDarkBackground
+    ? 'rgba(255,255,255,0.85)'
+    : scheme === 'dark'
+      ? brandColors.secondary
+      : brand;
   const hintTextColor = onDarkBackground
     ? 'rgba(255,255,255,0.75)'
     : theme.icon;

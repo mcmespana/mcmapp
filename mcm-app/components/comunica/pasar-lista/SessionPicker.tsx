@@ -3,12 +3,7 @@
 // sola, el dato sin control.
 
 import React, { useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  type OpaqueColorValue,
-} from 'react-native';
+import { StyleSheet, Text, View, type OpaqueColorValue } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import BottomSheet from '@/components/BottomSheet';
 import { IconSymbol } from '@/components/ui/IconSymbol';

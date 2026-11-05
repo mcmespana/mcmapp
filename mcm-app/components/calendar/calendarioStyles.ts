@@ -77,7 +77,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     subscribeIconBtn: {
       width: 40,
       height: 40,
-      borderRadius: 10,
+      borderRadius: radii.md,
       backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
       justifyContent: 'center',
       alignItems: 'center',
@@ -364,7 +364,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     },
     sectionBadge: {
       backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
-      borderRadius: 10,
+      borderRadius: radii.md,
       paddingHorizontal: 8,
       paddingVertical: 2,
       minWidth: 24,

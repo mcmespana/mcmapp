@@ -192,7 +192,9 @@ const RADIUS_BUDGET = {
   // 300 → 122 al colapsar la escala en agosto de 2026.
   app: 4,
   // 40 el 2026-10-17: radios sueltos de SongMediaSheet y PlaylistRow a la escala.
-  components: 40,
+  // 12 el 2026-11-05: 3/5/6/10/11/13/15 de 20 ficheros a `radii.*` (quedan los
+  // decorativos de Carismochito, Wordle, el cargador y el marco del QR).
+  components: 12,
 };
 
 const INLINE_RADIUS = /borderRadius: \d+/g;

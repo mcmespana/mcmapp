@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-05 22:50 — Cierre de la rama del área nativa: Android, teclado y radios
+
+- **Portada de familia de Comunica vacía tras salir y volver a entrar (Android):** `ActiveProfileProvider` se quedaba sin repintarse y la portada esperaba un perfil ya cargado. Ahora se reinicia por persona (`ProfileScope` en `app/(tabs)/comunica/_layout.tsx`).
+- **Teclado en Android (edge-to-edge):** `behavior: 'padding'` en `AccessScreen` y `BottomActionBar`, y `KeyboardAvoidingView` en `PasswordPromptModal`, `ExportPdfModal` y `CantoralOnboarding` (paso del coro), donde el sistema ya no redimensiona la ventana.
+- Avatar neutro de Comunica con más contraste en oscuro, icono «@» del aviso de inicio de sesión visible en oscuro, y 20 ficheros con `borderRadius` a mano pasan a `radii.*`.
+- `tunerMicrophoneWeb` ya no falla en Node 20 (crea `navigator` si falta). OTA: solo JS.
+
 ## 2026-11-05 22:30 — Recordatorios de Contigo (evangelio, oración y revisión del día)
 
 - **Pantalla nueva** `app/(tabs)/contigo/recordatorios.tsx`, con una campanita en la cabecera de Contigo. Por hábito: interruptor, hasta **3 avisos al día** con su hora, días de la semana, y el texto (uno de los predefinidos, o uno propio de hasta 120 caracteres), con una vista previa de cómo llegará. Vienen apagados; al encender el primero se pide el permiso de notificaciones.

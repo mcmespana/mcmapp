@@ -13,6 +13,7 @@ import colors from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import LoginSheet from '@/components/LoginSheet';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 export default function LoginNudgeBanner() {
   const { user } = useAuth();
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 10,
+    borderRadius: radii.md,
     borderWidth: 1,
     alignSelf: 'center',
     opacity: 0.88,

@@ -60,7 +60,7 @@ export const styles = StyleSheet.create({
   dot: {
     width: 9,
     height: 9,
-    borderRadius: 5,
+    borderRadius: radii.xs,
     backgroundColor: colors.primary,
   } as ViewStyle,
 
@@ -116,7 +116,7 @@ export const styles = StyleSheet.create({
   newBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: radii.sm,
     alignSelf: 'flex-start',
   } as ViewStyle,
   newBadgeText: {

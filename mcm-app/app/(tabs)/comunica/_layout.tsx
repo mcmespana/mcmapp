@@ -29,13 +29,29 @@ import { Stack } from 'expo-router';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { StatusBar } from 'expo-status-bar';
 import BrandHeaderBackground from '@/components/comunica/comun/BrandHeaderBackground';
-import ComunicaAreaProvider from '@/components/comunica/comun/ComunicaAreaProvider';
+import ComunicaAreaProvider, {
+  useArea,
+} from '@/components/comunica/comun/ComunicaAreaProvider';
 import { comunicaTheme } from '@/components/comunica/comun/theme';
 import { ActiveProfileProvider } from '@/hooks/comunica/useActiveProfile';
 import { useTabReselectToRoot } from '@/components/tabs/tabBarController';
 
 // expo-router 58: el arranque del stack se declara así, no con `initialRouteName`.
 export const unstable_settings = { anchor: 'index' };
+
+/**
+ * `ActiveProfileProvider` con una clave por persona. Tras salir y volver a
+ * entrar, el proveedor (que vive aquí, por encima de las pantallas) se quedaba
+ * con `me` en «pending» y no volvía a pintarse, así que la portada de familia
+ * esperaba para siempre un perfil que ya estaba cargado (hallazgo #7 de
+ * `REVISION_ANDROID.md`, visto en Android). Una persona nueva, un proveedor nuevo.
+ */
+function ProfileScope({ children }: { children: React.ReactNode }) {
+  const { session } = useArea();
+  const who =
+    session.status === 'signedIn' ? (session.me?.personId ?? 'in') : 'out';
+  return <ActiveProfileProvider key={who}>{children}</ActiveProfileProvider>;
+}
 
 export default function ComunicaLayout() {
   // Re-tap del tab: vuelve a la portada del área (lo que no esté guardado
@@ -48,7 +64,7 @@ export default function ComunicaLayout() {
   return (
     <ComunicaAreaProvider>
       {focused ? <StatusBar style="light" animated /> : null}
-      <ActiveProfileProvider>
+      <ProfileScope>
         <Stack
           screenOptions={{
             headerBackButtonDisplayMode: 'minimal',
@@ -178,7 +194,7 @@ export default function ComunicaLayout() {
           <Stack.Screen name="web" options={{ headerShown: false }} />
           <Stack.Screen name="muestra" options={{ title: 'Muestra' }} />
         </Stack>
-      </ActiveProfileProvider>
+      </ProfileScope>
     </ComunicaAreaProvider>
   );
 }

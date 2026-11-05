@@ -47,7 +47,7 @@ export default function BottomActionBar({
   };
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'position' : undefined}
+      behavior={Platform.OS === 'ios' ? 'position' : 'padding'}
       style={styles.wrap}
       pointerEvents="box-none"
     >

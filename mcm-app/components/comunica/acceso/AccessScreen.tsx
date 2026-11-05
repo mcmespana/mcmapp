@@ -165,7 +165,7 @@ export default function AccessScreen({ notice }: { notice?: string }) {
   return (
     <KeyboardAvoidingView
       style={[styles.root, { backgroundColor: t.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'web' ? undefined : 'padding'}
     >
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
