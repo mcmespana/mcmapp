@@ -29,7 +29,7 @@ import {
 import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
 import PersonAvatar from '../comun/PersonAvatar';
-import PersonMarks, { marksA11y } from '../comun/PersonMarks';
+import PersonMarks, { hasHealth, marksA11y } from '../comun/PersonMarks';
 import PersonRow from '../comun/PersonRow';
 import Section from '../comun/Section';
 import SyncBadge from '../comun/SyncBadge';
@@ -245,7 +245,7 @@ function Body({
               onPress={() => open(p)}
               accessibilityHint="Abre su ficha"
               accessibilityActions={
-                p.badges.healthNote && canSeeHealth
+                hasHealth(p.badges) && canSeeHealth
                   ? [{ name: 'health', label: 'Ver la salud' }]
                   : undefined
               }

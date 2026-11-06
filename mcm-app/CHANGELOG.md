@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-07 00:10 — Comunica: marca menor «Otras patologías» (TEA, TDAH…)
+
+- **Antes**: solo había una marca de salud, «Alergia o tratamiento». Un chaval con solo «otras patologías» (TEA, TDAH…) no llevaba ninguna, y la ficha enseñaba el texto de alergias/intolerancias pero no el de los tratamientos ni el de las patologías.
+- **Contrato**: `badges.healthOther` (opcional) = tiene enfermedades u «otras patologías» (`HEALTH_KINDS_OTHER`). `badges.healthNote` pasa a significar alergias, intolerancias o tratamiento (`HEALTH_KINDS_MAIN`). Pueden ir las dos a la vez. **El servidor real (`mcm-comunica-api`) tiene que mandar `healthOther`**; mientras no lo haga, la app no pinta la marca menor. Detalle en `docs/contratos/COMUNICA_API.md`.
+- **App**: pastilla menor «Otras patologías» (más pequeña, en tono celeste, no de aviso) en listas de grupo, sueltos, índice de grupos y Pasar Lista (icono pequeño), con el mismo gesto que la principal: abre la hoja de salud. Sin decir cuál, tampoco al lector de pantalla.
+- **Ficha del participante («Lo imprescindible»)**: ahora también enseña el **tratamiento** con su texto y las **otras patologías** con su texto (aviso menor).
+- **Servidor falso**: calcula las dos marcas desde la ficha de salud (`utils/comunica/health.ts`) e incluye un caso «TEA y TDAH».
+
 ## 2026-11-06 23:30 — Inicio y Más con cabecera nativa; logo de MCM
 
 - **Inicio con pila propia y cabecera nativa.** Su pantalla se mueve de `app/(tabs)/index.tsx` a `app/(tabs)/(inicio)/index.tsx` con su `_layout.tsx` (un `Stack`), como las demás pestañas. La URL sigue siendo `/`. El id de la pestaña sigue siendo `index` (perfiles, catálogo, enlaces); `routeNameForTab` (`utils/tabRoutes.ts`) lo traduce al nombre de ruta `(inicio)` para `NativeTabs.Trigger`, `Tabs.Screen` y `jumpTo`.

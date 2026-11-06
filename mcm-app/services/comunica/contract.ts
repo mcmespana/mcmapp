@@ -126,8 +126,17 @@ export const Me = z.object({
 export type Me = z.infer<typeof Me>;
 
 export const PersonBadges = z.object({
-  /** Tiene una nota de salud. Solo la marca: el texto nunca viaja aquí. */
+  /**
+   * Tiene alergias, intolerancias o tratamiento (`HEALTH_KINDS_MAIN`). Solo la
+   * marca: el texto nunca viaja aquí.
+   */
   healthNote: z.boolean(),
+  /**
+   * Tiene enfermedades u «otras patologías» (`HEALTH_KINDS_OTHER`: TEA, TDAH…).
+   * Marca MENOR, aparte de `healthNote`: ambas pueden ir a la vez. Opcional
+   * mientras el servidor real no la mande (ausente = no se sabe = sin marca).
+   */
+  healthOther: z.boolean().optional(),
   /** La familia no autoriza fotos. */
   noPhotos: z.boolean(),
   /** No puede irse solo a casa. */
@@ -2104,6 +2113,15 @@ export const HEALTH_KINDS = [
 ] as const;
 export const HealthKind = z.enum(HEALTH_KINDS);
 export type HealthKind = z.infer<typeof HealthKind>;
+
+/** Lo que enciende `badges.healthNote`. */
+export const HEALTH_KINDS_MAIN: readonly HealthKind[] = [
+  'allergies',
+  'intolerances',
+  'treatments',
+];
+/** Lo que enciende `badges.healthOther` (la marca menor). */
+export const HEALTH_KINDS_OTHER: readonly HealthKind[] = ['illnesses', 'other'];
 
 /**
  * `GET /v1/people/:id/health` — solo con `Me.canSeeHealth`, solo con conexión

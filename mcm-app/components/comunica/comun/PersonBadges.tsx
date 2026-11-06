@@ -12,6 +12,7 @@ const ICON_SIZE = 16;
 export function badgesLabel(b: Badges): string {
   return [
     b.healthNote && 'tiene una nota de salud',
+    b.healthOther && 'tiene otras patologías',
     b.noPhotos && 'sin fotos',
     b.notHomeAlone && 'no se va solo',
   ]
@@ -30,6 +31,13 @@ export default function PersonBadges({ badges }: { badges: Badges }) {
           name="cross.case.fill"
           size={ICON_SIZE}
           color={t.warningIcon}
+        />
+      ) : null}
+      {badges.healthOther ? (
+        <IconSymbol
+          name="cross.case.fill"
+          size={ICON_SIZE - 4}
+          color={t.textSecondary}
         />
       ) : null}
       {badges.noPhotos ? (
