@@ -34,6 +34,15 @@
 - **Ids**: los del CRM, como cadena opaca.
 - **Escrituras idempotentes**: llevan `clientId` (UUID v4 del móvil). El mismo
   `clientId` dos veces devuelve el mismo resultado sin escribir otra vez.
+- **Cola del servidor (6/11/2026)**: pasar lista (grupo, evento y monitores),
+  avisos, pañuelo, poner grupo y «mis datos de monitor» van por la cola del
+  middleware (`comunicaMiddleware:docs/COLA.md`). Si la app manda
+  `X-Comunica-Queue: 1` (todas las escrituras de la app nueva lo llevan) y el
+  CRM tarda más de 2,5 s, contesta **`202 { clientId, status: 'queued' }`**:
+  ya la tiene y la sube él. Para saber cómo acabó, se manda **lo mismo otra
+  vez** (mismo `clientId`): `202` mientras sigue, `200` con el resultado de
+  siempre o el error que tuvo. Sin la cabecera (apps viejas) el servidor
+  espera, como antes.
 - Toda lectura lleva **`generatedAt`** (hora del servidor).
 - **Nada de nombres del CRM** en el contrato (`ajmcm_…`, `stic_…`): el servidor
   traduce, con los nombres de `comunicaAreaPrivada/docs/comunica/CAMPOS.md`.

@@ -97,7 +97,10 @@ el interruptor está apagado.
   conserva entre reintentos: el servidor no duplica.
 - Estados: `pending` → `sending` → `applied` | `failed` (reintentable) |
   `stuck` (tras 5 fallos, se avisa y se puede volver a intentar a mano o
-  descartar con confirmación).
+  descartar con confirmación). Desde el 6/11/2026, también `queued`: el
+  servidor contestó 202 y la sube él al CRM («Recibida en Comunica»); no gasta
+  intentos, no cuenta como «solo en el móvil» y se pregunta mandando lo mismo
+  (3 s, 6 s… hasta 1 min, y al abrir una pantalla) hasta el resultado.
 - **Cuándo sube:** al encolar, al reconectar, al volver la app a primer plano y
   al abrir cualquier pantalla del área. (En el plugin solo sube al abrir Pasar
   Lista; subirla desde cualquier pantalla es lo que el propietario quiso en

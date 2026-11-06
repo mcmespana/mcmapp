@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-06 20:25 — Comunica: guardar una lista ya no espera al CRM (cola del servidor)
+
+- **Guardar una lista (grupo, evento o monitores), un aviso, el pañuelo, poner grupo o «mis datos de monitor» contesta en 2,5 s como mucho.** Si el CRM tarda más, el middleware dice «la tengo» (`202 queued`) y la sube él a su ritmo (`comunicaMiddleware:docs/COLA.md`). Antes el móvil se quedaba en «Guardando…» todo lo que tardara el CRM (decenas de llamadas seguidas por lista).
+- **Estado nuevo en la cola del móvil, `queued`** (`services/comunica/outbox.ts`): «Recibida en Comunica · Comunica ya la tiene y la está guardando. Puedes salir: no hace falta esperar.» No gasta intentos ni cuenta como «guardada solo en el móvil» (ni para el aviso de «listas sin subir» ni para el de salir de la cuenta). Se pregunta por ella mandando lo mismo con el mismo `clientId` (3 s, 6 s… hasta 1 min, y al abrir una pantalla o volver la app); cuando el servidor da el resultado, sigue como siempre (`applied`, `onApplied`, la lista releída).
+- **El cliente** (`services/comunica/client.ts`) manda `X-Comunica-Queue: 1` en las escrituras (sin ella, el servidor espera como antes: las apps viejas no notan nada) y convierte el 202 en el código `queued`.
+- Tests: `outbox.test.ts` (queued, sondeo, sobrevive a cerrar la app), `client.test.ts` (cabecera y 202), `outboxReminder.test.ts`.
+
 ## 2026-11-06 18:30 — Comunica (familias): barra «Viendo a» fija, «Ver su ficha» sin cambiar de perfil y dos familias de prueba más
 
 - **«Viendo a · Lucía ▾» va FIJA arriba**, fuera del scroll (`AreaScreen` con la prop `profileBar`, que sustituye al `ActiveProfileBar` suelto de cada pantalla de familia): al bajar, se sigue viendo a quién se está viendo. Solo sale si hay hijos. Debajo de lo del equipo (`MemberHome embedded`) sigue en línea.

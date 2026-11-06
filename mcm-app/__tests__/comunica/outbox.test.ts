@@ -2,6 +2,8 @@ import {
   createOutbox,
   MAX_ATTEMPTS,
   backoffMs,
+  pollMs,
+  unsent,
 } from '@/services/comunica/outbox';
 import { ComunicaApiError } from '@/services/comunica/client';
 import {
@@ -74,6 +76,64 @@ describe('cola de escrituras', () => {
     handler.mockResolvedValueOnce({});
     await box.retry('k');
     expect(box.get('k')?.status).toBe('applied');
+  });
+
+  it('«queued»: la tiene el servidor; no es un fallo, no cuenta como «solo en el móvil» y se pregunta mandando lo mismo hasta el resultado', async () => {
+    const queued = () =>
+      new ComunicaApiError('queued', 'Recibida. Se está guardando.', 202);
+    const handler = jest
+      .fn()
+      .mockRejectedValueOnce(queued())
+      .mockRejectedValueOnce(queued())
+      .mockResolvedValueOnce({ ok: true });
+    const { box, advance, applied } = setup(handler);
+    await box.enqueue({ key: 'k', kind: 'roll', payload: {}, clientId: 'q1' });
+    await box.flush();
+    expect(box.get('k')).toMatchObject({
+      status: 'queued',
+      attempts: 0,
+      polls: 1,
+    });
+    expect(box.get('k')?.error).toBeUndefined();
+    expect(unsent(box.entries())).toEqual([]);
+    // Antes de su turno no pregunta; en su turno, sí (con el MISMO clientId).
+    await box.flush();
+    expect(handler).toHaveBeenCalledTimes(1);
+    advance(pollMs(1));
+    await box.flush();
+    expect(box.get('k')).toMatchObject({ status: 'queued', polls: 2 });
+    // Abrir una pantalla (wake) pregunta ya, sin esperar.
+    await box.wake();
+    expect(box.get('k')?.status).toBe('applied');
+    expect(applied).toEqual(['q1']);
+    expect(new Set(handler.mock.calls.map((c) => c[0].clientId))).toEqual(
+      new Set(['q1']),
+    );
+  });
+
+  it('«queued» sobrevive a cerrar la app y se sigue preguntando', async () => {
+    const be = memoryBackend();
+    setStorageBackend(be);
+    const first = setup(
+      jest
+        .fn()
+        .mockRejectedValue(new ComunicaApiError('queued', 'Recibida.', 202)),
+    );
+    await first.box.enqueue({
+      key: 'k',
+      kind: 'roll',
+      payload: {},
+      clientId: 'q2',
+    });
+    await first.box.flush();
+    first.box.dispose();
+    const handler = jest.fn().mockResolvedValue({ ok: true });
+    const again = setup(handler);
+    await again.box.load();
+    expect(again.box.get('k')?.status).toBe('queued');
+    await again.box.wake();
+    expect(again.box.get('k')?.status).toBe('applied');
+    expect(handler.mock.calls[0][0].clientId).toBe('q2');
   });
 
   it('validation no se reintenta: failed con el motivo', async () => {
