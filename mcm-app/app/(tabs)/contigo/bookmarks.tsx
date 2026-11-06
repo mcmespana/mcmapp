@@ -14,7 +14,7 @@ import { MaterialIcons } from '@/components/ui/icons';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { HABITS, formatDateLong, warm } from '@/components/contigo/theme';
+import { formatDateLong, warm } from '@/components/contigo/theme';
 import {
   contigoHeaderChrome,
   useContigoHeaderInset,
@@ -80,6 +80,16 @@ export default function BookmarksScreen() {
         options={{
           headerShown: true,
           headerTitle: 'Guardados',
+          // El total, como texto sin botón (no es pulsable).
+          headerRight: () =>
+            bookmarks.length > 0 ? (
+              <Text
+                style={[styles.headerCount, { color: W.textSec }]}
+                accessibilityLabel={`${bookmarks.length} evangelios guardados`}
+              >
+                {bookmarks.length}
+              </Text>
+            ) : null,
           headerTransparent: true,
           headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: false,
@@ -120,11 +130,6 @@ export default function BookmarksScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={wideWrapperStyle}>
-            <Text style={[styles.countLabel, { color: W.textSec }]}>
-              {bookmarks.length} evangelio
-              {bookmarks.length !== 1 ? 's' : ''} guardado
-              {bookmarks.length !== 1 ? 's' : ''}
-            </Text>
             {bookmarks.map((b) => {
               const ev = b.readings?.evangelio;
               const titulo =
@@ -143,17 +148,10 @@ export default function BookmarksScreen() {
                     styles.card,
                     {
                       backgroundColor: W.bgCard,
-                      borderColor: W.border,
                       shadowColor: W.shadow,
                     },
                   ]}
                 >
-                  <LinearGradient
-                    colors={HABITS.oracion.grad}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.cardBar}
-                  />
                   <View style={styles.cardBody}>
                     <View style={styles.cardHdrRow}>
                       <View style={{ flex: 1 }}>
@@ -239,7 +237,6 @@ export default function BookmarksScreen() {
                           backgroundColor: isDark
                             ? 'rgba(218,165,32,0.10)'
                             : 'rgba(196,146,42,0.09)',
-                          borderColor: W.border,
                         },
                       ]}
                     >
@@ -277,11 +274,10 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
   subtitle: { fontSize: 12, marginTop: 2 },
-  countLabel: {
-    ...typography.footnote,
+  headerCount: {
+    ...typography.subhead,
     fontWeight: '600',
-    marginBottom: 12,
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
   },
 
   center: {
@@ -299,9 +295,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: radii.xl,
     overflow: 'hidden',
-    borderWidth: 1,
   },
-  cardBar: { height: 3 },
   cardBody: { padding: 14 },
   cardHdrRow: {
     flexDirection: 'row',
@@ -343,7 +337,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.pillFull,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderWidth: 1,
   },
   openText: { fontSize: 11, fontWeight: '700' },
 });

@@ -248,7 +248,7 @@ const createStyles = (isDark: boolean) => {
     subtitle: {
       ...typography.caption,
       color: t.textSecondary,
-      paddingHorizontal: spacing.md + spacing.xs,
+      paddingHorizontal: spacing.md,
       paddingBottom: spacing.md,
     },
     scroll: {
