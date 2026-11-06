@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-06 22:48 — Comunica: las fotos de las fichas salían como iniciales trabajando con otra delegación
+
+- **Bug:** `photoSource` (`services/comunica/client.ts`) pedía la foto sin `X-Comunica-Delegation`. El servidor miraba entonces la delegación de TU ficha, y quien trabaja con otra (coordina Burriana siendo de Castellón) recibía 403 en cada foto (visto en los registros de producción: la ficha daba 200 y su foto 403). Ahora la foto de alguien del equipo (`/v1/people/:id/photo`) lleva la delegación de trabajo, como su ficha; la de un perfil propio (`/v1/profiles/…`) sigue sin ella. Test en `client.test.ts`.
+- En el middleware, el mismo día: pool de conexiones a la base (saltaba `ER_USER_LIMIT_REACHED`, el tope de 5 del usuario de lectura del CRM) y limpieza nocturna (`comunicaMiddleware:docs/APRENDIZAJES-MIDDLEWARE.md`).
+
 ## 2026-11-06 20:25 — Comunica: guardar una lista ya no espera al CRM (cola del servidor)
 
 - **Guardar una lista (grupo, evento o monitores), un aviso, el pañuelo, poner grupo o «mis datos de monitor» contesta en 2,5 s como mucho.** Si el CRM tarda más, el middleware dice «la tengo» (`202 queued`) y la sube él a su ritmo (`comunicaMiddleware:docs/COLA.md`). Antes el móvil se quedaba en «Guardando…» todo lo que tardara el CRM (decenas de llamadas seguidas por lista).
