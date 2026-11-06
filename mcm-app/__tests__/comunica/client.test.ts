@@ -1,4 +1,5 @@
 import { createHttpClient, ComunicaApiError } from '@/services/comunica/client';
+import { setWorkingDelegation } from '@/services/comunica/delegation';
 import { setReporter } from '@/utils/logger';
 
 const me = {
@@ -177,6 +178,28 @@ describe('services/comunica/client', () => {
       'http://api.test/v1/photos/p1',
     ]) {
       expect(c.photoSource(url).headers).toBeUndefined();
+    }
+  });
+
+  it('la foto de alguien del equipo va con la delegación de trabajo (como su ficha); la de un perfil propio, no', () => {
+    const c = client(jest.fn());
+    setWorkingDelegation('d-bur');
+    try {
+      expect(
+        c.photoSource('https://api.test/v1/people/p1/photo?v=abc123').headers,
+      ).toEqual({
+        Authorization: 'Bearer tok',
+        'X-Comunica-Delegation': 'd-bur',
+      });
+      expect(
+        c.photoSource('https://api.test/v1/profiles/p1/photo?v=abc123').headers,
+      ).toEqual({ Authorization: 'Bearer tok' });
+      // A otro dominio, nada: ni sesión ni delegación.
+      expect(
+        c.photoSource('https://otro.example/v1/people/p1/photo').headers,
+      ).toBeUndefined();
+    } finally {
+      setWorkingDelegation(null);
     }
   });
 });
