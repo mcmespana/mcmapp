@@ -21,7 +21,18 @@ export interface OTAUpdateState {
   /** Hubo un fallo al comprobar/descargar (no bloqueante para el usuario). */
   error: Error | null;
   /** Aplica el update: descarga si hace falta y reinicia la app. */
-  applyUpdate: () => Promise<void>;
+  applyUpdate: (options?: ApplyUpdateOptions) => Promise<void>;
+}
+
+export interface ApplyUpdateOptions {
+  /**
+   * Se pregunta justo antes de recargar (ya con el update descargado). Si
+   * devuelve `false` no se recarga: el update se queda listo (`isReady`) para
+   * aplicarse en otro momento. Lo usa «cerrar y hacer más tarde»: la descarga
+   * lenta sigue en segundo plano, pero no recarga la app por debajo de alguien
+   * que ya siguió con lo suyo.
+   */
+  shouldReload?: () => boolean;
 }
 
 const CHECK_DELAY_MS = 2500; // dar tiempo a que arranque la app antes de pedir red
@@ -103,21 +114,26 @@ export default function useOTAUpdate({
     };
   }, [checkAndFetch, ready]);
 
-  const applyUpdate = useCallback(async () => {
-    try {
-      // Si por alguna razón aún no se descargó (p.ej. el usuario abrió el
-      // modal antes de que terminara el `fetchUpdateAsync`), lo forzamos.
-      if (!isReady) {
-        setIsDownloading(true);
-        await Updates.fetchUpdateAsync();
+  const applyUpdate = useCallback(
+    async ({ shouldReload }: ApplyUpdateOptions = {}) => {
+      try {
+        // Si por alguna razón aún no se descargó (p.ej. el usuario abrió el
+        // modal antes de que terminara el `fetchUpdateAsync`), lo forzamos.
+        if (!isReady) {
+          setIsDownloading(true);
+          const fetched = await Updates.fetchUpdateAsync();
+          setIsDownloading(false);
+          if (fetched?.isNew) setIsReady(true);
+        }
+        if (shouldReload && !shouldReload()) return;
+        await Updates.reloadAsync();
+      } catch (err) {
         setIsDownloading(false);
+        setError(err instanceof Error ? err : new Error(String(err)));
       }
-      await Updates.reloadAsync();
-    } catch (err) {
-      setIsDownloading(false);
-      setError(err instanceof Error ? err : new Error(String(err)));
-    }
-  }, [isReady]);
+    },
+    [isReady],
+  );
 
   return { isReady, isDownloading, error, applyUpdate };
 }

@@ -474,6 +474,10 @@ pushTokens.where('topics', 'array-contains', 'general')
    botón a la tienda.
 4. Apps con `appVersion >= 1.0.5` siguen funcionando normalmente.
 
+> Caso real (noviembre de 2026): al añadir un módulo nativo (afinador) la app
+> pasó a **2.5.1**; la mínima del Panel se sube a `2.5.1` cuando esa build
+> está publicada en las tiendas. Ver `docs/desarrollo/BUILD_AGOSTO_2026.md`.
+
 ### 4.5. "Enviar notificación solo a monitores de Castellón"
 
 1. Panel → _Notificaciones_ → _Nueva_.

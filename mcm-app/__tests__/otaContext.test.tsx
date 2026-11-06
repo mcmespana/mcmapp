@@ -31,7 +31,9 @@ const mockOta = {
   isReady: false,
   isDownloading: false,
   error: null as Error | null,
-  applyUpdate: jest.fn(() => Promise.resolve()),
+  applyUpdate: jest.fn((_options?: { shouldReload?: () => boolean }) =>
+    Promise.resolve(),
+  ),
 };
 const mockUseOTAUpdate = jest.fn((opts: { ready: boolean }) => {
   mockLastReadyArg = opts.ready;
@@ -216,6 +218,55 @@ describe('OTAProvider — aplicar la OTA sola', () => {
       void result.current.applyUpdate();
     });
     await advance(MIN_OVERLAY_MS);
+    expect(mockOta.applyUpdate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('OTAProvider — «cerrar y hacer más tarde»', () => {
+  it('quita la pantalla, y la OTA no recarga si la descarga termina después', async () => {
+    mockOta.isReady = true;
+    const { result } = await renderHook(() => useOTAContext(), { wrapper });
+    await advance(0);
+    expect(result.current.applying).toBe(true);
+
+    await advance(MIN_OVERLAY_MS);
+    // El flujo ya está dentro de `applyOta`: se le pasó el guardián de recarga.
+    const { shouldReload } = mockOta.applyUpdate.mock.calls[0][0] ?? {};
+    expect(shouldReload?.()).toBe(true);
+
+    await act(async () => result.current.dismissApplying());
+    expect(result.current.applying).toBe(false);
+    expect(mockOverlayVisible).toBe(false);
+    expect(shouldReload?.()).toBe(false);
+  });
+
+  it('tras cerrar, el flujo termina solo y no se vuelve a recargar', async () => {
+    mockOta.isReady = true;
+    const { result } = await renderHook(() => useOTAContext(), { wrapper });
+    await advance(MIN_OVERLAY_MS);
+    await act(async () => result.current.dismissApplying());
+    await advance(RELOAD_GRACE_MS + 100);
+
+    expect(result.current.applying).toBe(false);
+    expect(mockOta.applyUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('con el flujo aún en marcha, tocar la insignia vuelve a poner la pantalla', async () => {
+    mockOta.isReady = true;
+    // `applyOta` que no termina: la descarga lenta.
+    mockOta.applyUpdate.mockImplementationOnce(() => new Promise(() => {}));
+    const { result } = await renderHook(() => useOTAContext(), { wrapper });
+    await advance(MIN_OVERLAY_MS);
+    await act(async () => result.current.dismissApplying());
+    expect(result.current.applying).toBe(false);
+
+    await act(async () => {
+      await result.current.applyUpdate();
+    });
+    expect(result.current.applying).toBe(true);
+    const { shouldReload } = mockOta.applyUpdate.mock.calls[0][0] ?? {};
+    expect(shouldReload?.()).toBe(true);
+    // Y no se ha lanzado un segundo flujo.
     expect(mockOta.applyUpdate).toHaveBeenCalledTimes(1);
   });
 });

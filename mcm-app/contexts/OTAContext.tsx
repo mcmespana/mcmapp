@@ -26,6 +26,13 @@ interface OTAContextValue {
   applyUpdate: () => Promise<void>;
   /** La app se está actualizando (la pantalla de «un momentín» está puesta). */
   applying: boolean;
+  /**
+   * «Cerrar y hacer más tarde»: quita la pantalla de «un momentín». Si la
+   * descarga sigue en marcha, continúa en segundo plano, pero sin recargar la
+   * app: el update queda listo (`isReady`) y se aplica en la próxima vuelta o
+   * con la insignia de Home.
+   */
+  dismissApplying: () => void;
 }
 
 const OTAContext = createContext<OTAContextValue>({
@@ -34,6 +41,7 @@ const OTAContext = createContext<OTAContextValue>({
   error: null,
   applyUpdate: async () => {},
   applying: false,
+  dismissApplying: () => {},
 });
 
 /**
@@ -72,6 +80,8 @@ export function OTAProvider({ children }: { children: React.ReactNode }) {
   const ota = useOTAUpdate({ ready: hydrated });
   const [applying, setApplying] = useState(false);
   const applyingRef = useRef(false);
+  // La persona cerró la pantalla con «hacer más tarde» mientras el flujo seguía.
+  const dismissedRef = useRef(false);
   // Cuándo la app se hizo activa por última vez (arranque o vuelta del fondo).
   // Se inicia en un efecto y no en el render: `Date.now()` no es puro.
   const activeSinceRef = useRef<number | null>(null);
@@ -82,16 +92,32 @@ export function OTAProvider({ children }: { children: React.ReactNode }) {
   const { isReady, applyUpdate: applyOta } = ota;
 
   const applyUpdate = useCallback(async () => {
-    if (applyingRef.current) return;
+    if (applyingRef.current) {
+      // Sigue en segundo plano tras un «más tarde»: tocar la insignia de Home
+      // vuelve a poner la pantalla y deja que la recarga siga adelante.
+      if (dismissedRef.current) {
+        dismissedRef.current = false;
+        setApplying(true);
+      }
+      return;
+    }
     applyingRef.current = true;
+    dismissedRef.current = false;
     setApplying(true);
     await sleep(MIN_OVERLAY_MS);
-    // `applyOta` recarga la app: si todo va bien, de aquí no se vuelve.
-    await applyOta();
-    await sleep(RELOAD_GRACE_MS);
+    // `applyOta` recarga la app: si todo va bien, de aquí no se vuelve. Si la
+    // persona ha cerrado la pantalla entretanto, la descarga termina pero no
+    // recarga (el update queda listo para la próxima vez).
+    await applyOta({ shouldReload: () => !dismissedRef.current });
+    if (!dismissedRef.current) await sleep(RELOAD_GRACE_MS);
     applyingRef.current = false;
     setApplying(false);
   }, [applyOta]);
+
+  const dismissApplying = useCallback(() => {
+    dismissedRef.current = true;
+    setApplying(false);
+  }, []);
 
   const tryAutoApply = useCallback(
     async (trigger: AutoApplyTrigger) => {
@@ -151,12 +177,13 @@ export function OTAProvider({ children }: { children: React.ReactNode }) {
         error: ota.error,
         applyUpdate,
         applying,
+        dismissApplying,
       }}
     >
       {children}
       {/* Aquí y no en el layout: tiene que verse también si la app está tapada
           por la pantalla de mantenimiento o de actualización obligatoria. */}
-      <OTAUpdatingOverlay visible={applying} />
+      <OTAUpdatingOverlay visible={applying} onDismiss={dismissApplying} />
     </OTAContext.Provider>
   );
 }

@@ -176,6 +176,28 @@ describe('useOTAUpdate', () => {
       expect(Updates.reloadAsync).toHaveBeenCalledTimes(1);
     });
 
+    it('con shouldReload → false, descarga pero NO recarga y deja el update listo', async () => {
+      (Updates.fetchUpdateAsync as jest.Mock).mockResolvedValue({
+        isNew: true,
+      });
+      const { result } = await renderHook(() => useOTAUpdate());
+      await act(async () =>
+        result.current.applyUpdate({ shouldReload: () => false }),
+      );
+      expect(Updates.fetchUpdateAsync).toHaveBeenCalledTimes(1);
+      expect(Updates.reloadAsync).not.toHaveBeenCalled();
+      expect(result.current.isReady).toBe(true);
+    });
+
+    it('con shouldReload → true recarga como siempre', async () => {
+      (Updates.fetchUpdateAsync as jest.Mock).mockResolvedValue({});
+      const { result } = await renderHook(() => useOTAUpdate());
+      await act(async () =>
+        result.current.applyUpdate({ shouldReload: () => true }),
+      );
+      expect(Updates.reloadAsync).toHaveBeenCalledTimes(1);
+    });
+
     it('propaga el error si falla la descarga/recarga', async () => {
       (Updates.fetchUpdateAsync as jest.Mock).mockRejectedValue(
         new Error('fallo al recargar'),
