@@ -279,7 +279,7 @@ export function greetingIntro(
   if (audience === 'child')
     return `Aquí ves los datos de ${activeFirstName || 'tu participante'} y le inscribes a las actividades.`;
   if (audience === 'guardian') {
-    return 'Aquí están tus datos y lo que se cobra de tu cuenta. Las inscripciones y los documentos de quienes tienes a tu cargo están en su ficha.';
+    return 'Aquí están tus datos y lo que se cobra de tu cuenta. Para apuntar a alguien o ver sus documentos, elígelo arriba en «Viendo a».';
   }
   return 'Tu espacio personal. Elige una sección para empezar.';
 }

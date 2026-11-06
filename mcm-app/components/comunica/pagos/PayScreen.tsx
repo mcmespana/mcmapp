@@ -36,7 +36,6 @@ import {
   parseEuroAmount,
 } from '@/utils/comunica/payments';
 import { h } from '@/utils/haptics';
-import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
 import { AreaSkeleton, isNetwork } from '../comun/AreaState';
@@ -293,6 +292,7 @@ function PayFlow({
 
   return (
     <AreaScreen
+      profileBar={{ scope: 'shared', section: 'payments' }}
       footer={
         <BottomActionBar>
           {offline ? (
@@ -314,7 +314,6 @@ function PayFlow({
       }
     >
       <Stack.Screen options={{ title: 'Pagar' }} />
-      <ActiveProfileBar scope="shared" section="payments" />
       <Text
         accessibilityRole="header"
         style={[styles.title, { color: t.text }]}

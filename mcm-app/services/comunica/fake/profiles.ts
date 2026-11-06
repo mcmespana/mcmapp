@@ -48,6 +48,41 @@ export const FAKE_CHILDREN: Partial<Record<PersonaId, ProfileRef[]>> = {
       gender: 'male',
     },
   ],
+  // La pareja de Marta: a Lucía la comparten (mismo id), y Hugo es solo suyo.
+  familyCouple: [
+    {
+      id: 'f-hijo-lucia',
+      firstName: 'Lucía',
+      lastName: 'Messeguer Villarroya',
+      gender: 'female',
+    },
+    {
+      id: 'f-hijo-hugo',
+      firstName: 'Hugo',
+      lastName: 'Messeguer Gil',
+      gender: 'male',
+    },
+  ],
+  familyThree: [
+    {
+      id: 'f-hijo-aina',
+      firstName: 'Aina',
+      lastName: 'Pons Ferrer',
+      gender: 'female',
+    },
+    {
+      id: 'f-hijo-biel',
+      firstName: 'Biel',
+      lastName: 'Pons Ferrer',
+      gender: 'male',
+    },
+    {
+      id: 'f-hijo-carla',
+      firstName: 'Carla',
+      lastName: 'Pons Ferrer',
+      gender: 'female',
+    },
+  ],
   monitorMom: [
     {
       id: 'f-hija-ines',
@@ -72,6 +107,8 @@ const SELF_GENDER: Partial<Record<PersonaId, ProfileRef['gender']>> = {
   familyNone: 'female',
   monitorMom: 'female',
   memberNoKids: 'male',
+  familyCouple: 'male',
+  familyThree: 'female',
 };
 
 interface State {

@@ -44,7 +44,20 @@ export EXPO_PUBLIC_FIREBASE_APP_ID=demo
   la app** en el simulador (`xcrun simctl uninstall booted com.familiaconsolacion.mcmapp`
   y volver a instalar el `.app`), porque lo leído vive en el almacenamiento de la app.
 - Entrar en Comunica con el servidor falso: `familia@ejemplo.org` (familia) o
-  `monitor@ejemplo.org` (equipo), código **`123456`**.
+  `monitor@ejemplo.org` (equipo), código **`123456`**. Más cuentas de familia:
+  `familia-uno@…` (un hijo), `familia-ninguno@…`, `monitora-madre@…`,
+  `familia-pareja@…` (comparte a Lucía con `familia@…` y tiene a Hugo) y
+  `familia-tres@…` (tres hijos).
+- **Escribir en el simulador:** `control → text` no pega en iOS. Copia el texto
+  con `xcrun simctl pbcopy booted`, mantén pulsado el campo (`tap` con
+  `duration: 1`) y toca «Pegar». El código de 6 cifras se teclea con `tap` en
+  el teclado numérico.
+- **Metro en modo CI no ve ficheros NUEVOS** (`CI=1` apaga el watch): si creas un
+  fichero, reinicia Metro. Y no lo arranques con el panel del navegador de
+  Claude abierto en `localhost:8081`: pide la versión web y, con el bundle de
+  iOS, se queda sin memoria (usa `NODE_OPTIONS=--max-old-space-size=8192`).
+- macOS no trae `timeout`: para cortar un comando largo, `perl -e 'alarm 200;
+  exec @ARGV' …`. Y `jest` necesita `--forceExit` en estos tests (no sale solo).
 - Ruido que **no es de la app** y se puede ignorar: el engranaje de Expo
   (se quita abriendo con `&__expo_disable_fab=1`), el toast
   `[push] registerAndSaveToken…` (clave de Firebase de pega), el LogBox,

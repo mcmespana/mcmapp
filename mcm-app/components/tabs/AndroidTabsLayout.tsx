@@ -58,9 +58,9 @@ export default function AndroidTabsLayout({ barTabs }: AndroidTabsLayoutProps) {
             // del CHANGELOG del 2026-10-31 (Expo 58, Cantoral).
           }}
         >
-          {TABS_CONFIG.map((tab) => {
-            if (!visibleTabs.has(tab.name)) return null;
-
+          {/* Sin `null` entre los hijos: expo-router avisa («Layout children must
+              be of type Screen») por cada hijo que no sea una `Screen`. */}
+          {TABS_CONFIG.filter((tab) => visibleTabs.has(tab.name)).map((tab) => {
             return (
               <Tabs.Screen
                 key={tab.name}

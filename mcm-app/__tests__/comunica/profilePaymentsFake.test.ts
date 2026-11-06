@@ -46,6 +46,46 @@ describe('contrato', () => {
   });
 });
 
+describe('dos tutores, varios hijos', () => {
+  it('la pareja comparte a Lucía y tiene un hijo propio; el dinero es de quien paga, no del hijo', async () => {
+    const sergio = server('familyCouple');
+    const kids = (await sergio.getMyProfiles()).children.map((c) => c.id);
+    expect(kids).toEqual([LUCIA, 'f-hijo-hugo']);
+    // Sergio, viéndose a sí mismo: lo suyo, con «Para Lucía» / «Para Hugo».
+    const own = await sergio.getProfilePayments(me(sergio, 'familyCouple'));
+    expect(own.payments.map((p) => p.id).sort()).toEqual([
+      'pay-sergio-hugo',
+      'pay-sergio-lucia',
+    ]);
+    expect(own.payments.map((p) => p.forName).sort()).toEqual([
+      'Hugo',
+      'Lucía',
+    ]);
+    // Viendo a Lucía: solo lo que ÉL paga por ella (no lo de Marta).
+    const lucia = await sergio.getProfilePayments(LUCIA);
+    expect(lucia.payments.map((p) => p.id)).toEqual(['pay-sergio-lucia']);
+    // Marta, que también es madre de Lucía, no ve lo que paga Sergio.
+    const marta = server('family');
+    const m = await marta.getProfilePayments(LUCIA);
+    expect(m.payments.map((p) => p.id)).not.toContain('pay-sergio-lucia');
+    expect(m.payments.length).toBeGreaterThan(0);
+  });
+
+  it('con tres hijos salen los tres, y lo que paga se reparte por hijo', async () => {
+    const s = server('familyThree');
+    const kids = (await s.getMyProfiles()).children.map((c) => c.id);
+    expect(kids).toEqual(['f-hijo-aina', 'f-hijo-biel', 'f-hijo-carla']);
+    expect(
+      (await s.getProfilePayments('f-hijo-aina')).payments.map((p) => p.id),
+    ).toEqual(['pay-elena-aina']);
+    // Carla no tiene nada que pagar: lista vacía, no error.
+    expect((await s.getProfilePayments('f-hijo-carla')).payments).toEqual([]);
+    expect(
+      (await s.getProfilePayments(me(s, 'familyThree'))).payments,
+    ).toHaveLength(2);
+  });
+});
+
 describe('quién ve qué', () => {
   it('viéndose a sí mismo: todo lo que paga, con «Para Lucía»; viendo a un hijo, solo lo suyo y sin «Para»', async () => {
     const s = server();

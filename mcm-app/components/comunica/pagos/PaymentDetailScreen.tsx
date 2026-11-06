@@ -23,7 +23,6 @@ import {
   PAYMENTS_TEXT as TXT,
   rejectionNote,
 } from '@/utils/comunica/payments';
-import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
 import { AreaSkeleton, isNetwork } from '../comun/AreaState';
@@ -78,8 +77,10 @@ export default function PaymentDetailScreen({ id }: { id: string }) {
   }
   if (!q.data) {
     return (
-      <AreaScreen onRefresh={() => q.refetch()}>
-        <ActiveProfileBar scope="shared" section="payments" />
+      <AreaScreen
+        profileBar={{ scope: 'shared', section: 'payments' }}
+        onRefresh={() => q.refetch()}
+      >
         {q.error ? (
           <EmptyState
             icon={isNetwork(q.error) ? 'wifi-off' : 'error-outline'}
@@ -108,6 +109,7 @@ export default function PaymentDetailScreen({ id }: { id: string }) {
   }));
   return (
     <AreaScreen
+      profileBar={{ scope: 'shared', section: 'payments' }}
       onRefresh={() => q.refetch()}
       footer={
         canPay(d) ? (
@@ -133,7 +135,6 @@ export default function PaymentDetailScreen({ id }: { id: string }) {
       }
     >
       <Stack.Screen options={{ title: 'Pago' }} />
-      <ActiveProfileBar scope="shared" section="payments" />
       <View style={styles.hero}>
         {chip ? <StatusChip label={chip.label} tone={chip.tone} /> : null}
         <Text

@@ -13,6 +13,8 @@ import {
   BOTTOM_ACTION_BAR_SPACE,
   BottomActionBarHeightContext,
 } from './BottomActionBar';
+import ActiveProfileBar from '../perfiles/ActiveProfileBar';
+import type { FamilySection, ProfileScope } from '@/utils/comunica/profiles';
 import { useComunicaTheme } from './useComunicaTheme';
 
 interface Props {
@@ -23,6 +25,11 @@ interface Props {
   footer?: React.ReactNode;
   /** Fondo hundido (listas agrupadas) o el normal. */
   sunken?: boolean;
+  /**
+   * «Viendo a · Lucía ▾», FIJO arriba (fuera del scroll) para que, aunque se
+   * baje, se sepa a quién se está viendo. Solo sale si hay hijos.
+   */
+  profileBar?: { scope: ProfileScope; section?: FamilySection | null };
 }
 
 export default function AreaScreen({
@@ -30,6 +37,7 @@ export default function AreaScreen({
   onRefresh,
   footer,
   sunken = true,
+  profileBar,
 }: Props) {
   const t = useComunicaTheme();
   // La `BottomActionBar` mide lo que ocupa (con el hueco de la barra de
@@ -61,6 +69,14 @@ export default function AreaScreen({
         { backgroundColor: sunken ? t.backgroundSunken : t.background },
       ]}
     >
+      {profileBar ? (
+        <View style={styles.pinned}>
+          <ActiveProfileBar
+            scope={profileBar.scope}
+            section={profileBar.section ?? null}
+          />
+        </View>
+      ) : null}
       <Animated.ScrollView
         ref={scrollRef}
         onScroll={onScroll}
@@ -90,5 +106,6 @@ export default function AreaScreen({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  pinned: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
   content: { paddingHorizontal: 16, paddingTop: 16, gap: 24 },
 });
