@@ -77,6 +77,17 @@ export function redirectSystemPath({
         );
       }
     }
+    // El enlace del correo (`acceso_app`) va DIRECTO a la pantalla que lo canjea.
+    // Antes se dejaba en el hueco y la puerta hacía `push` en cuanto lo recogía;
+    // pero ese `push` se hacía a la vez que el enrutador navegaba a
+    // `/(tabs)/comunica` (lo que devuelve esta función), y esa navegación se
+    // lo comía: la pantalla del código ni llegaba a pintarse y la persona se
+    // quedaba en «Entra en tu área» (visto en el TestFlight y reproducido en el
+    // simulador). Con la ruta final devuelta aquí no hay carrera, y la pila
+    // (`anchor: 'index'`) deja la puerta debajo.
+    if (link.kind === 'appAccess') {
+      return `/(tabs)/comunica/acceso-codigo?link=${encodeURIComponent(link.linkToken)}`;
+    }
     setPendingNativeLink(link);
     return '/(tabs)/comunica';
   } catch {

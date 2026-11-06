@@ -76,7 +76,10 @@ const CodeInput = forwardRef<TextInputInstance, Props>(function CodeInput(
         inputMode="numeric"
         textContentType="oneTimeCode"
         autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
-        maxLength={length}
+        // SIN `maxLength`, a propósito: el correo escribe el código como «123 456»
+        // y, al pegarlo, el sistema recorta a `maxLength` ANTES de que
+        // `onChangeText` pueda quitar el espacio («123 45» → 5 cifras, y el
+        // código no se completaba). Aquí se limpia y se corta a `length`.
         autoFocus
         caretHidden
         onFocus={() => setFocused(true)}
