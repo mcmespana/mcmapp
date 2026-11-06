@@ -94,6 +94,39 @@ describe('services/comunica/client', () => {
     expect(f.mock.calls[0][1].method).toBe('PUT');
   });
 
+  it('las escrituras avisan de que entienden la cola del servidor; las lecturas, no', async () => {
+    const f = jest.fn().mockResolvedValue(respond(200, me));
+    await client(f).getMe();
+    expect(f.mock.calls[0][1].headers['X-Comunica-Queue']).toBeUndefined();
+    f.mockResolvedValue(respond(503, {}));
+    await client(f)
+      .setScarf('k1', {
+        clientId: '3b241101-e2bb-4255-8caf-4136c566a962',
+        scarf: 'blue',
+      })
+      .catch(() => {});
+    expect(f.mock.calls[1][1].headers['X-Comunica-Queue']).toBe('1');
+  });
+
+  it('202 «queued»: no es un fallo ni una respuesta rota, es `queued` (la tiene el servidor)', async () => {
+    const clientId = '3b241101-e2bb-4255-8caf-4136c566a962';
+    const f = jest
+      .fn()
+      .mockResolvedValue(respond(202, { clientId, status: 'queued' }));
+    const p = client(f).saveRoll('s', 'g', {
+      clientId,
+      action: 'skip',
+      marks: {},
+      notes: {},
+    });
+    await expect(p).rejects.toMatchObject({
+      code: 'queued',
+      status: 202,
+      retryable: false,
+    });
+    expect(errors).toHaveLength(0);
+  });
+
   it('sin red es `network`', async () => {
     const f = jest
       .fn()

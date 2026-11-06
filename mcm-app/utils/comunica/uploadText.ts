@@ -14,6 +14,8 @@ export function uploadText(
   if (queued.status === 'pending')
     return 'Guardado en el móvil. Se enviará solo al volver la cobertura.';
   if (queued.status === 'sending') return 'Guardando…';
+  if (queued.status === 'queued')
+    return 'Comunica ya la tiene y la está guardando. Puedes salir: no hace falta esperar.';
   if (queued.status === 'stuck')
     return 'Comunica lleva un rato sin responder. Tus marcas siguen en el móvil: pulsa «Reintentar».';
   if (queued.error?.auto)

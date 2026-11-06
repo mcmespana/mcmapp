@@ -56,6 +56,8 @@ describe('unsentLists', () => {
         entry('event-roll', 'failed'),
         entry('monitors-roll', 'stuck'),
         entry('roll', 'applied'),
+        // Ya la tiene la cola del servidor: no está «sin subir».
+        entry('roll', 'queued'),
         entry('notice', 'pending'),
         entry('scarf', 'failed'),
         entry('device', 'pending'),

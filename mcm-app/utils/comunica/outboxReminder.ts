@@ -34,11 +34,14 @@ export interface UnsentLists {
 
 /**
  * Las listas sin subir. «Subiendo» también cuenta: si el sistema duerme la app
- * a mitad, al volver estará pendiente.
+ * a mitad, al volver estará pendiente. Lo `queued` no: ya lo tiene el servidor.
  */
 export function unsentLists(entries: readonly OutboxEntry[]): UnsentLists {
   const lists = entries.filter(
-    (e) => LIST_KINDS.includes(e.kind) && e.status !== 'applied',
+    (e) =>
+      LIST_KINDS.includes(e.kind) &&
+      e.status !== 'applied' &&
+      e.status !== 'queued',
   );
   return {
     count: lists.length,
