@@ -46,7 +46,9 @@ app/_layout.tsx
 ├── services/pushNotificationService.ts              ← Capa de datos: Firebase + AsyncStorage
 ├── contexts/NotificationsContext.tsx                ← Badge: expone `unreadCount` (no hay hook aparte)
 ├── types/notifications.ts                           ← Tipos TypeScript
-└── app/notifications.tsx                            ← Pantalla (real-time, detalle modal, mark all)
+├── app/notifications/{_layout,index,[id]}.tsx       ← Bandeja (lista) y detalle de cada notificación
+├── hooks/useNotificationsInbox.ts                   ← Estado y acciones de la bandeja (único sitio)
+└── utils/notificationsInbox.ts                      ← Lógica pura: fusionar, leídas, agrupar
 ```
 
 ### Firebase paths
@@ -68,7 +70,19 @@ Todo implementado:
 - `services/pushNotificationService.ts` — `markAllNotificationsAsRead()` batch, `initializeNewUserReadStatus()`
 - El contador de no leídas (`unreadCount`) lo expone `NotificationsContext` (`contexts/NotificationsContext.tsx`); no hay un hook aparte
 - `getUnreadNotificationsCount(firebaseHistory, filter?)` (`services/pushNotificationService.ts`) cuenta con el **histórico que el contexto ya tiene en memoria** por su suscripción en tiempo real: no hace otro `get()` de `/notifications`. `filter` descuenta del badge los avisos dirigidos a otra audiencia.
-- `/notifications` y la hoja de la campana de Inicio comparten una sola tarjeta, `components/notifications/NotificationListItem.tsx`: chip de categoría, dot de no leída, swipe para marcar leída, chip de destino y hasta 3 botones de acción.
+
+### Bandeja rehecha (6 de noviembre de 2026)
+
+Antes eran dos implementaciones distintas (una hoja desde la campana y una pantalla desde la push), que no hacían lo mismo. Ahora hay **una sola**:
+
+- La **campana**, la tarjeta de Novedades de Inicio y **tocar una push** abren rutas de la misma bandeja: `/notifications` (lista) y `/notifications/[id]` (detalle, con la lista debajo para volver). Cabecera nativa del sistema.
+- **Nada se borra.** Se quitó «Eliminar» (decisión del propietario: hay avisos genéricos que no tienen por qué desaparecer). Leer una notificación solo la baja de «Nuevas» a «Anteriores». Las que se borraron en versiones anteriores siguen ocultas (`getDismissedNotificationKeys`).
+- Si hay algo **sin leer** se abre en «Sin leer (n)» con «Todas» al lado; si no queda nada sin leer, salen directamente todas. En «Todas», las nuevas van arriba.
+- **Marcar como leída**: abrir el detalle, **deslizar y soltar** la fila (se marca al soltar, sin pulsar nada) o el doble tick de la cabecera («Marcar todas», pide confirmar y solo aparece si hay sin leer).
+- **Marcar como no leída**: arrastrar a la derecha una leída (se marca al soltar) o el botón «No leída» del detalle, que además vuelve a la lista. Las de más de 60 días se dan por leídas por antigüedad y no se pueden devolver (`markNotificationAsUnread`).
+- La fila es plana: punto de no leída, título, dos líneas de texto, hora y chip de categoría. Destinos y botones de acción (hasta 3) viven en el detalle, que además muestra `bodyLong` y el botón «Ir a <evento>» de `eventId`.
+- Lógica en `hooks/useNotificationsInbox.ts` + `utils/notificationsInbox.ts` (con `__tests__/notificationsInbox.test.ts`).
+- **Datos de prueba**: con `EXPO_PUBLIC_FIREBASE_FIXTURES=1` el historial sale de `devNotificationsFixture()` (`utils/devFirebaseFixtures.ts`): 11 avisos que cubren todos los casos (sin leer y leídas, con y sin icono, imagen, texto largo, 1-3 botones, destino interno, evento, cada categoría, título larguísimo, de más de 60 días y dos con audiencia: uno que se ve con el perfil Monitor/a y otro que no). Ver `docs/desarrollo/PRUEBAS_EN_SIMULADOR.md`.
 
 ---
 

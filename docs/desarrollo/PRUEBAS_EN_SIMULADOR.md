@@ -23,7 +23,7 @@ Se pasan delante del comando; no se guardan en ningún fichero del repo.
 ```bash
 export EXPO_NO_CAPABILITY_SYNC=1
 export EXPO_PUBLIC_COMUNICA_API=fake            # área nativa de Comunica con servidor falso
-export EXPO_PUBLIC_FIREBASE_FIXTURES=1          # álbumes y canciones inventados (utils/devFirebaseFixtures.ts)
+export EXPO_PUBLIC_FIREBASE_FIXTURES=1          # álbumes, canciones y notificaciones inventados (utils/devFirebaseFixtures.ts)
 export EXPO_PUBLIC_FIREBASE_API_KEY=demo
 export EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=demo-mcm.firebaseapp.com
 export EXPO_PUBLIC_FIREBASE_DATABASE_URL=https://demo-mcm-default-rtdb.firebaseio.com   # debe tener esta FORMA
@@ -35,6 +35,13 @@ export EXPO_PUBLIC_FIREBASE_APP_ID=demo
 
 - Sin estas variables (tienda, web publicada) **nada cambia**: el modo falso es
   solo de desarrollo.
+- **Notificaciones de prueba** (con `EXPO_PUBLIC_FIREBASE_FIXTURES=1`): 11
+  avisos con todos los casos de la bandeja (ver `devNotificationsFixture`).
+  Con el perfil «Monitor/a» se ve el aviso «solo monitores» y se oculta el de
+  «solo familias» a propósito: es la prueba del filtro de audiencia. En el primer uso la app deja
+  **sin leer las 3 más recientes**; para volver a ese estado hay que **reinstalar
+  la app** en el simulador (`xcrun simctl uninstall booted com.familiaconsolacion.mcmapp`
+  y volver a instalar el `.app`), porque lo leído vive en el almacenamiento de la app.
 - Entrar en Comunica con el servidor falso: `familia@ejemplo.org` (familia) o
   `monitor@ejemplo.org` (equipo), código **`123456`**.
 - Ruido que **no es de la app** y se puede ignorar: el engranaje de Expo

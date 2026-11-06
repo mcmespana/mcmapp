@@ -83,7 +83,7 @@ app/                            # Rutas (expo-router). Una pantalla por fichero
 ├── coro.tsx / playlist.tsx     # Coro compartido y playlists compartidas (enlaces)
 ├── encuesta/[id].tsx           # Encuesta por id
 ├── evaluacion-app.tsx          # Evaluación de la app
-├── notifications.tsx           # Lista de notificaciones
+├── notifications/              # Bandeja: _layout, index (lista) y [id] (detalle)
 └── wordle.tsx                  # Wordle (congelado, ver "Notas importantes")
 
 components/                     # Componentes sueltos (modales, sheets, banners, Song*…)
@@ -139,7 +139,7 @@ RootLayout (Stack)
 │   ├── visitapapa/            ← Stack del evento (oculto mientras esté archivado)
 │   └── mas/                   ← Stack: index (MasHome) → fotos, calendario, evento, horario…
 ├── wordle                     ← Juego
-└── notifications              ← Lista de notificaciones
+└── notifications/             ← Bandeja: lista + detalle [id]
 ```
 
 **Los stacks de una pestaña son CARPETAS de rutas** (`_layout.tsx` con `Stack` de

@@ -95,6 +95,8 @@ jest.mock('expo-router', () => ({
   useSegments: () => [],
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
   Link: ({ children }: { children?: React.ReactNode }) => children ?? null,
+  // La bandeja de notificaciones pone su cabecera con `<Stack.Screen options>`.
+  Stack: { Screen: () => null },
 }));
 
 jest.mock('expo-router/react-navigation', () => {
@@ -138,7 +140,7 @@ import ReflexionesScreen from '@/app/screens/ReflexionesScreen';
 import SelectedSongsScreen from '@/app/screens/SelectedSongsScreen';
 import SongListScreen from '@/app/screens/SongListScreen';
 import VisitasScreen from '@/app/screens/VisitasScreen';
-import NotificationsScreen from '@/app/notifications';
+import NotificationsScreen from '@/app/notifications/index';
 
 const INITIAL_METRICS = {
   frame: { x: 0, y: 0, width: 390, height: 844 },

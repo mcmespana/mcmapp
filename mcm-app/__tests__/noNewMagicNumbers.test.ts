@@ -230,13 +230,13 @@ const BRAND_FOREGROUND =
   /(?:color:\s*|color=\{)(?:colors|brandColors)\.(primary|purple|text)\b/g;
 
 /**
- * Los 3 que quedan están revisados y son correctos:
+ * El que queda está revisado y es correcto:
  *   · `GruposScreen` — es el color de RELLENO de una tarjeta, no texto.
- *   · `notifications.tsx` y `NotificationListItem` — estilos estáticos con los
- *     valores de modo claro, que se sobrescriben en línea desde su llamada.
- * Cualquiera nuevo hay que mirarlo antes de subir este número.
+ * (Los otros dos eran de `notifications.tsx` y `NotificationListItem`, que se
+ * rehicieron con `themeColors`.) Cualquiera nuevo hay que mirarlo antes de
+ * subir este número.
  */
-const BRAND_FOREGROUND_BUDGET = 3;
+const BRAND_FOREGROUND_BUDGET = 1;
 
 describe('los colores de marca no se usan de primer plano', () => {
   it('no crecen los usos de brand como color de texto o icono', () => {

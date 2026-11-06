@@ -123,6 +123,153 @@ const SONGS = {
   },
 };
 
+/**
+ * Historial de notificaciones de prueba (nodo `/notifications` de Firebase).
+ *
+ * Pensado para ver TODOS los casos de la bandeja de una vez: sin leer y leídas,
+ * con y sin icono, imagen grande, texto largo, uno/dos/tres botones, destino
+ * interno, deep link a un evento, cada categoría, un título larguísimo, una de
+ * hace más de 60 días (se da por leída sola) y dos dirigidas a una audiencia
+ * (monitores: se ve con el perfil «Monitor/a»; familias: NO se ve).
+ *
+ * Las fechas son relativas a «ahora» para que los grupos Hoy / Ayer / Esta
+ * semana / Anteriores salgan siempre. En el primer uso la app deja SIN LEER las
+ * 3 más recientes (`initializeNewUserReadStatus`); para volver a ese estado
+ * basta con borrar los datos de la app o reinstalarla en el simulador.
+ */
+export function devNotificationsFixture(now: number = Date.now()) {
+  const ago = (minutes: number) =>
+    new Date(now - minutes * 60 * 1000).toISOString();
+  const HOUR = 60;
+  const DAY = 24 * HOUR;
+  const base = (id: string, minutesAgo: number) => ({
+    id,
+    createdAt: ago(minutesAgo),
+    sentAt: ago(minutesAgo),
+  });
+  const icon = cover('2025-jubileo1.png');
+
+  return [
+    {
+      ...base('fx-urgente', 12),
+      title: 'Cambio de sala para la reunión de hoy',
+      body: 'La reunión de coordinación es en el aula 3, no en la capilla.',
+      category: 'urgente',
+      priority: 'high',
+    },
+    {
+      ...base('fx-rica', 3 * HOUR),
+      title: 'Ya están las fotos del Jubileo',
+      body: 'Hemos subido las primeras fotos del camino a Roma. ¡Mirad qué caras!',
+      bodyLong:
+        'Hemos subido las primeras fotos del camino a Roma.\n\nSon más de 300 y todavía faltan las de la vigilia, que llegarán esta semana. Si salís en alguna y preferís que no esté, escribidnos y la quitamos.\n\n¡Gracias a todos los que habéis compartido las vuestras!',
+      icon,
+      imageUrl: cover('25 Pascua Joven.jpg'),
+      category: 'fotos',
+      internalRoute: '/(tabs)/fotos',
+      actionButtons: [
+        {
+          text: 'Ver el álbum',
+          url: 'https://photos.google.com/',
+          isInternal: false,
+        },
+        { text: 'Ir a Fotos', url: '/(tabs)/fotos', isInternal: true },
+        {
+          text: 'Compartir tus fotos',
+          url: 'https://example.org/fotos',
+          isInternal: false,
+        },
+      ],
+    },
+    {
+      ...base('fx-evento', 5 * HOUR),
+      title: 'Jubileo: cambio en el horario del sábado',
+      body: 'La acogida pasa a las 10:00. El resto del programa no cambia.',
+      category: 'eventos',
+      eventId: 'jubileo',
+    },
+    {
+      ...base('fx-calendario', 26 * HOUR),
+      title: 'Nuevo evento en el calendario',
+      body: 'Encuentro de monitores el 14 de diciembre en Madrid.',
+      category: 'eventos',
+      icon,
+      internalRoute: '/(tabs)/calendario',
+      actionButton: {
+        text: 'Ver calendario',
+        url: '/(tabs)/calendario',
+        isInternal: true,
+      },
+    },
+    {
+      ...base('fx-cantoral', 2 * DAY),
+      title: 'Canciones nuevas en el cantoral',
+      body: 'Hemos añadido 4 canciones de Adviento.',
+      category: 'cancionero',
+      internalRoute: '/(tabs)/cancionero',
+    },
+    {
+      ...base('fx-monitores', 3 * DAY),
+      title: 'Solo monitores: material para la próxima reunión',
+      body: 'Este aviso llega solo al perfil Monitor/a (prueba del filtro de audiencia).',
+      category: 'general',
+      audience: {
+        match: 'all',
+        todos: false,
+        perfiles: ['monitor'],
+        delegaciones: [],
+        eventId: null,
+      },
+    },
+    {
+      ...base('fx-familias', 3 * DAY + HOUR),
+      title: 'Solo familias: reunión de padres',
+      body: 'Este aviso NO debe verse con el perfil Monitor/a (prueba del filtro de audiencia).',
+      category: 'general',
+      audience: {
+        match: 'all',
+        todos: false,
+        perfiles: ['familia'],
+        delegaciones: [],
+        eventId: null,
+      },
+    },
+    {
+      ...base('fx-celebracion', 5 * DAY),
+      title: '¡Feliz cumpleaños, Consolación!',
+      body: 'Hoy celebramos un año más de camino juntos.',
+      category: 'celebraciones',
+      icon,
+    },
+    {
+      ...base('fx-mantenimiento', 9 * DAY),
+      title: 'Mantenimiento programado de la app',
+      body: 'El jueves de 3:00 a 4:00 la app puede ir más lenta.',
+      category: 'mantenimiento',
+    },
+    {
+      ...base('fx-titulo-largo', 12 * DAY),
+      title:
+        'Un título extraordinariamente largo para comprobar que la fila lo recorta en una sola línea sin romper nada',
+      body: 'Y un cuerpo también largo: lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua, ut enim ad minim veniam.',
+      category: 'general',
+      icon,
+    },
+    {
+      ...base('fx-general', 20 * DAY),
+      title: 'Bienvenida a la nueva versión',
+      body: 'Gracias por usar la app. Cuéntanos qué te parece desde Ajustes.',
+      category: 'general',
+    },
+    {
+      ...base('fx-antigua', 75 * DAY),
+      title: 'Aviso antiguo (más de 60 días)',
+      body: 'Se da por leída automáticamente por su antigüedad.',
+      category: 'general',
+    },
+  ];
+}
+
 const FIXTURES: Record<string, unknown> = {
   albums: ALBUMS,
   songs: SONGS,
