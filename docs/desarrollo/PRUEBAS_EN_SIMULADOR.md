@@ -35,6 +35,7 @@ export EXPO_PUBLIC_FIREBASE_APP_ID=demo
 
 - Sin estas variables (tienda, web publicada) **nada cambia**: el modo falso es
   solo de desarrollo.
+- **Calendarios de prueba** (con `EXPO_PUBLIC_FIREBASE_FIXTURES=1`): 3 calendarios públicos de festivos de Google (`CALENDARS` en `utils/devFirebaseFixtures.ts`), para ver el header de Calendario y la hoja «Calendarios activos». Sus eventos dependen de la red del simulador.
 - **Notificaciones de prueba** (con `EXPO_PUBLIC_FIREBASE_FIXTURES=1`): 11
   avisos con todos los casos de la bandeja (ver `devNotificationsFixture`).
   Con el perfil «Monitor/a» se ve el aviso «solo monitores» y se oculta el de

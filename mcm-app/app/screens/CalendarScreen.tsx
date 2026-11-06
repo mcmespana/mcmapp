@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useCallback, useLayoutEffect } from 'react';
 import {
   View,
-  ScrollView,
   SectionList,
   TouchableOpacity,
   Platform,
@@ -23,7 +22,7 @@ import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useNavigation, useHeaderHeight } from 'expo-router/react-navigation';
 import { MaterialIcons } from '@/components/ui/icons';
 import { hexAlpha, readableOn } from '@/utils/colorUtils';
@@ -31,6 +30,7 @@ import { h } from '@/utils/haptics';
 import { localISO } from '@/utils/localDate';
 import SwipeableMonthCalendar from '@/components/calendar/SwipeableMonthCalendar';
 import CalendarSubscribeBottomSheet from '@/components/CalendarSubscribeBottomSheet';
+import ActiveCalendarsSheet from '@/components/calendar/ActiveCalendarsSheet';
 import EventDetailsBottomSheet from '@/components/EventDetailsBottomSheet';
 import EmptyState from '@/components/ui/EmptyState';
 import {
@@ -56,11 +56,6 @@ const dateToStr = (d: Date): string => {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 };
-
-/** Hueco que ocupa el botón de suscribirse (icono + su padding) en el header. */
-const SUBSCRIBE_SLOT = 56;
-/** Margen lateral del header nativo. */
-const HEADER_SIDE_PADDING = 16;
 
 /** Día 1 del mes al que pertenece la fecha dada. */
 /** Solo la primera letra en mayúscula: «Jueves 5 de noviembre», no «…5 De Noviembre». */
@@ -141,78 +136,62 @@ export function CalendarScreen({
   );
   const [viewMode, setViewMode] = useState<'calendar' | 'agenda'>('calendar');
   const [subscribeOpen, setSubscribeOpen] = useState(false);
+  const [activeOpen, setActiveOpen] = useState(false);
   const [detailsEvent, setDetailsEvent] = useState<CalendarEvent | null>(null);
 
-  // Header NATIVO: el botón de calendarios (suscribirse) como bar item y, en el
-  // TAB, el conmutador Mes/Agenda ocupando el sitio del título. El header estaba
-  // casi vacío (la pestaña ya se llama Calendario) y el conmutador se comía una
-  // fila entera justo debajo: metiéndolo dentro se recupera ese alto para la
-  // rejilla del mes. En el stack de "Más" NO se hace: allí es una pantalla
-  // apilada, con su back y su título, y el conmutador se queda en el cuerpo.
+  // Header NATIVO con el título «Calendario» centrado y, a la derecha, dos
+  // botones: suscribirse a los calendarios (guardarlos en el del móvil) y
+  // «Calendarios activos» (cuáles se ven). El conmutador Mes/Agenda ya no vive
+  // en el header: va justo encima del calendario, a todo el ancho. En iOS los
+  // botones son nativos (`Stack.Toolbar`, más abajo); en Android y web, vistas
+  // normales puestas con `navigation.setOptions`.
   const navigation = useNavigation();
-  const switcherInHeader = Platform.OS !== 'web' && variant === 'tab';
-  // Ancho del conmutador dentro del header: TODO lo que hay desde el borde
-  // hasta el botón de suscribirse. Se calcula desde el ancho real de la
-  // ventana (no un número a ojo) para que cuadre igual en un iPhone pequeño,
-  // en uno grande, en iPad y al girar la pantalla; en pantallas anchas se capa
-  // para que no se convierta en una barra de medio metro.
-  const switcherWidth = Math.min(
-    Math.max(layout.width - HEADER_SIDE_PADDING * 2 - SUBSCRIBE_SLOT, 160),
-    420,
-  );
   // Altura REAL del header del anfitrión (incluye la barra de estado y baja a
   // 32pt en horizontal), en vez de los 44 a ojo de antes.
   const headerHeight = useHeaderHeight();
   const showSubscribe = !configsLoading && calendarConfigs.length > 0;
+  // Con un solo calendario no hay nada que elegir.
+  const canChooseActive = !configsLoading && calendarConfigs.length > 1;
+  const tint = themeColors(isDark).link;
   useLayoutEffect(() => {
+    if (Platform.OS === 'ios') return;
     navigation.setOptions({
-      headerRight: showSubscribe
-        ? () => (
-            <TouchableOpacity
-              onPress={() => {
-                h.tap();
-                setSubscribeOpen(true);
-              }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={{ padding: 6 }}
-              accessibilityLabel="Suscribirse a calendarios"
-            >
-              <MaterialIcons
-                name="bookmark-add"
-                size={22}
-                color={isDark ? colors.info : colors.primary}
-              />
-            </TouchableOpacity>
-          )
-        : undefined,
-      ...(switcherInHeader
-        ? {
-            headerTitle: () => (
-              <View style={[styles.headerSwitcher, { width: switcherWidth }]}>
-                <SegmentedControl
-                  value={viewMode}
-                  onChange={setViewMode}
-                  compact
-                  accessibilityLabel="Vista del calendario"
-                  options={[
-                    { value: 'calendar', label: 'Mes', icon: 'calendar-month' },
-                    { value: 'agenda', label: 'Agenda', icon: 'view-agenda' },
-                  ]}
-                />
+      headerTitleAlign: 'center',
+      headerRight:
+        showSubscribe || canChooseActive
+          ? () => (
+              <View style={styles.headerButtons}>
+                {showSubscribe && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      h.tap();
+                      setSubscribeOpen(true);
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={{ padding: 6 }}
+                    accessibilityLabel="Suscribirse a calendarios"
+                  >
+                    <MaterialIcons name="bookmark-add" size={22} color={tint} />
+                  </TouchableOpacity>
+                )}
+                {canChooseActive && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      h.tap();
+                      setActiveOpen(true);
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={{ padding: 6 }}
+                    accessibilityLabel="Calendarios activos"
+                  >
+                    <MaterialIcons name="tune" size={22} color={tint} />
+                  </TouchableOpacity>
+                )}
               </View>
-            ),
-          }
-        : {}),
+            )
+          : undefined,
     });
-  }, [
-    navigation,
-    showSubscribe,
-    isDark,
-    switcherInHeader,
-    switcherWidth,
-    viewMode,
-    styles,
-  ]);
+  }, [navigation, showSubscribe, canChooseActive, tint, styles]);
 
   // Un deep-link con `?date=` salta a ese día. Se ajusta DURANTE el render (el
   // patrón que documenta React para "cambiar estado cuando cambia una prop"),
@@ -474,69 +453,6 @@ export function CalendarScreen({
     );
   };
 
-  const renderFilterChips = () => (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.chipsScrollView}
-      contentContainerStyle={styles.chipsScroll}
-    >
-      {calendarConfigs.map((cal, idx) => {
-        const isActive = visibleCalendars[idx];
-        return (
-          <TouchableOpacity
-            key={idx}
-            style={[
-              styles.filterChip,
-              isActive && {
-                backgroundColor: hexAlpha(cal.color, '15'),
-                borderColor: cal.color,
-              },
-            ]}
-            onPress={() => {
-              h.toggle();
-              toggleCalendarVisibility(idx);
-            }}
-            activeOpacity={0.7}
-            hitSlop={{ top: 5, bottom: 5 }}
-          >
-            <View
-              style={[
-                styles.chipDot,
-                {
-                  backgroundColor: isActive
-                    ? cal.color
-                    : isDark
-                      ? '#555'
-                      : '#C7C7CC',
-                },
-              ]}
-            />
-            <Text
-              style={[
-                styles.chipLabel,
-                isActive && {
-                  color: calendarInk(cal.color),
-                  fontWeight: '600',
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {cal.name}
-            </Text>
-            {isActive && (
-              <MaterialIcons
-                name="check"
-                size={12}
-                color={calendarInk(cal.color)}
-              />
-            )}
-          </TouchableOpacity>
-        );
-      })}
-    </ScrollView>
-  );
-
   if (loading && calendarConfigs.length === 0) {
     return <ProgressWithMessage message="Cargando calendarios..." />;
   }
@@ -558,26 +474,23 @@ export function CalendarScreen({
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
 
       <View style={[styles.bodyWrap, wideContentStyle]}>
-        {/* Conmutador Mes/Agenda: solo aquí cuando NO va en el header (stack de
-            "Más" y web). En el tab vive dentro del header, ver arriba. */}
-        {!switcherInHeader && (
-          <View
-            style={[
-              styles.switcherWrapper,
-              layout.isWide && styles.switcherWrapperWide,
+        {/* Conmutador Mes/Agenda: justo encima del calendario, a todo el ancho. */}
+        <View
+          style={[
+            styles.switcherWrapper,
+            layout.isWide && styles.switcherWrapperWide,
+          ]}
+        >
+          <SegmentedControl
+            value={viewMode}
+            onChange={setViewMode}
+            accessibilityLabel="Vista del calendario"
+            options={[
+              { value: 'calendar', label: 'Mes', icon: 'calendar-month' },
+              { value: 'agenda', label: 'Agenda', icon: 'view-agenda' },
             ]}
-          >
-            <SegmentedControl
-              value={viewMode}
-              onChange={setViewMode}
-              accessibilityLabel="Vista del calendario"
-              options={[
-                { value: 'calendar', label: 'Mes', icon: 'calendar-month' },
-                { value: 'agenda', label: 'Agenda', icon: 'view-agenda' },
-              ]}
-            />
-          </View>
-        )}
+          />
+        </View>
 
         {viewMode === 'calendar' ? (
           <Animated.ScrollView
@@ -599,9 +512,6 @@ export function CalendarScreen({
                     isDark={isDark}
                   />
                 </View>
-
-                {/* Filter chips */}
-                {renderFilterChips()}
               </View>
               <View style={isLandscapeWide ? styles.monthRightPane : undefined}>
                 {/* Events for selected date */}
@@ -683,9 +593,6 @@ export function CalendarScreen({
                 <MaterialIcons name="chevron-right" size={28} color={infoInk} />
               </TouchableOpacity>
             </View>
-
-            {/* Filter chips */}
-            {renderFilterChips()}
 
             {visibleMonth.slice(0, 7) !== todayStr.slice(0, 7) && (
               <View style={styles.agendaBackToTodayRow}>
@@ -786,6 +693,41 @@ export function CalendarScreen({
           </View>
         )}
       </View>
+
+      {Platform.OS === 'ios' && (showSubscribe || canChooseActive) && (
+        <Stack.Toolbar placement="right">
+          {showSubscribe && (
+            <Stack.Toolbar.Button
+              icon="calendar.badge.plus"
+              tintColor={tint}
+              accessibilityLabel="Suscribirse a calendarios"
+              onPress={() => {
+                h.tap();
+                setSubscribeOpen(true);
+              }}
+            />
+          )}
+          {canChooseActive && (
+            <Stack.Toolbar.Button
+              icon="slider.horizontal.3"
+              tintColor={tint}
+              accessibilityLabel="Calendarios activos"
+              onPress={() => {
+                h.tap();
+                setActiveOpen(true);
+              }}
+            />
+          )}
+        </Stack.Toolbar>
+      )}
+
+      <ActiveCalendarsSheet
+        visible={activeOpen}
+        onClose={() => setActiveOpen(false)}
+        calendars={calendarConfigs}
+        active={visibleCalendars}
+        onToggle={toggleCalendarVisibility}
+      />
 
       <CalendarSubscribeBottomSheet
         visible={subscribeOpen}

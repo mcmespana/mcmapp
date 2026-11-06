@@ -270,9 +270,39 @@ export function devNotificationsFixture(now: number = Date.now()) {
   ];
 }
 
+/**
+ * Calendarios de prueba (nodo `/calendars`): tres calendarios PÚBLICOS de
+ * festivos de Google, para que la pantalla de Calendario tenga botones
+ * (suscribirse, calendarios activos) y eventos de verdad. Hace falta red.
+ */
+const CALENDARS = [
+  {
+    id: 'fx-espana',
+    name: 'Festivos de España',
+    url: 'https://calendar.google.com/calendar/ical/es.spain%23holiday%40group.v.calendar.google.com/public/basic.ics',
+    color: '#E15C62',
+    defaultSelected: true,
+  },
+  {
+    id: 'fx-cristianos',
+    name: 'Fiestas cristianas',
+    url: 'https://calendar.google.com/calendar/ical/en.christian%23holiday%40group.v.calendar.google.com/public/basic.ics',
+    color: '#6C4B9E',
+    defaultSelected: true,
+  },
+  {
+    id: 'fx-usa',
+    name: 'Festivos de EE. UU.',
+    url: 'https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics',
+    color: '#31AADF',
+    defaultSelected: false,
+  },
+];
+
 const FIXTURES: Record<string, unknown> = {
   albums: ALBUMS,
   songs: SONGS,
+  calendars: CALENDARS,
 };
 
 /** `undefined` = no hay dato de prueba para ese nodo (se va a Firebase). */
