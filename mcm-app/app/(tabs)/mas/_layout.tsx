@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabReselect } from '@/components/tabs/tabBarController';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { themeColors } from '@/constants/colors';
+import { transparentHeaderOptions } from '@/components/tabs/transparentHeader';
 import { fotosHeaderOptions } from '@/app/screens/FotosScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import EventActionButtons from '@/components/EventActionButtons';
@@ -69,8 +70,25 @@ export default function MasLayout() {
         <Stack.Screen
           name="index"
           options={{
+            // Cabecera NATIVA con el título «Más», como el resto de pestañas.
+            // iOS: transparente (el contenido pasa por debajo). Android y web:
+            // opaca y del color de la pantalla.
             title: 'Más',
-            headerShown: false,
+            headerShown: true,
+            ...transparentHeaderOptions(),
+            ...(Platform.OS === 'ios'
+              ? {}
+              : {
+                  headerStyle: {
+                    backgroundColor: themeColors(isDark).backgroundSunken,
+                  },
+                }),
+            headerTintColor: themeColors(isDark).headerTint,
+            headerTitleStyle: {
+              fontWeight: '700' as const,
+              fontSize: 17,
+              color: themeColors(isDark).headerTint,
+            },
             headerRight: undefined,
           }}
         />

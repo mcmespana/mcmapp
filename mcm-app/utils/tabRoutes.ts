@@ -7,6 +7,17 @@
 
 import type { TabConfig } from '@/constants/tabsCatalog';
 
+/**
+ * Nombre de la RUTA de expo-router que hay detrás de un tab (`Tabs.Screen`,
+ * `NativeTabs.Trigger`, `jumpTo`). Casi siempre es el propio nombre del tab; la
+ * excepción es Inicio: su id sigue siendo `index` (perfiles, catálogo, enlaces)
+ * pero su pantalla vive en el grupo `(inicio)`, que le da pila propia sin
+ * cambiar la URL (`/`).
+ */
+export function routeNameForTab(name: string): string {
+  return name === 'index' ? '(inicio)' : name;
+}
+
 /** Ruta de expo-router de un tab. `index` es la raíz del grupo. */
 export function hrefForTab(name: string): string {
   return name === 'index' ? '/' : `/${name}`;

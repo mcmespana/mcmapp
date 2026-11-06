@@ -73,7 +73,7 @@ app/                            # Rutas (expo-router). Una pantalla por fichero
 ├── _layout.tsx                 # Root layout: AppProviders + Stack navigator
 ├── +native-intent.ts           # Reescribe enlaces entrantes (universal links, custom scheme)
 ├── +html.tsx / +not-found.tsx  # Template HTML web / 404
-├── (tabs)/                     # Tabs: _layout.tsx + index (Home), cancionero/, contigo/,
+├── (tabs)/                     # Tabs: _layout.tsx + (inicio)/ (Home), cancionero/, contigo/,
 │                               #   comunica/ (puerta nativa/legado, docs/planes/area-nativa/),
 │                               #   calendario, fotos, mas, visitapapa (oculta)
 ├── screens/                    # Pantallas "de contenido" que montan las rutas y los
@@ -130,7 +130,7 @@ public/                         # Web: manifest PWA, service worker, iconos
 ```
 RootLayout (Stack)
 ├── (tabs) ← Bottom Tabs
-│   ├── index (Home)           ← Grid de botones
+│   ├── (inicio)/ (Home)       ← Stack propio: cabecera nativa + grid de botones
 │   ├── cancionero/            ← Stack: index (Categorías) → categoria → cancion → pantalla-completa (+ seleccion)
 │   ├── contigo                ← Acompañamiento y oración
 │   ├── comunica/              ← Área nativa (alpha) o WebView del portal; carpeta con _layout
@@ -321,8 +321,13 @@ completo, en `docs/desarrollo/DESIGN.md`.
 
 ### Añadir nuevo tab
 
-1. Crear archivo en `app/(tabs)/nuevoTab.tsx` — **imprescindible**: sin la ruta,
-   meter el ID en `TABS_CONFIG`/`tabs` no muestra nada (le pasaba a `comunica`)
+1. Crear la CARPETA `app/(tabs)/nuevoTab/` con un `_layout.tsx` que monte un
+   `<Stack>` y un `index.tsx` — **imprescindible**: sin la ruta, meter el ID en
+   `TABS_CONFIG`/`tabs` no muestra nada (le pasaba a `comunica`), y sin pila no
+   hay cabecera nativa ni `Stack.Toolbar` (lo comprueba
+   `__tests__/router/tabsHaveOwnStack.test.ts`). Inicio es el caso especial: su id
+   es `index` pero vive en el grupo `(inicio)/`; `routeNameForTab`
+   (`utils/tabRoutes.ts`) traduce el id al nombre de ruta
 2. Añadir objeto a `TABS_CONFIG` en `constants/tabsCatalog.ts`, en la posición
    que deba ocupar en la barra (ese array define el orden), y generar su icono
    PNG (`npm run icons:tabs`) registrándolo en `constants/tabIcons.ts`
@@ -380,7 +385,7 @@ Documentar NO:
 | ------------------------- | --------------------------------------------------------- |
 | Entry point               | `app/_layout.tsx`                                         |
 | Configuración de tabs     | `app/(tabs)/_layout.tsx`                                  |
-| Home screen               | `app/(tabs)/index.tsx`                                    |
+| Home screen               | `app/(tabs)/(inicio)/index.tsx`                           |
 | Fallback de perfiles      | `constants/defaultProfileConfig.ts`                       |
 | Catálogo de IDs conocidos | `constants/profileCatalog.ts`                             |
 | Resolver de perfil        | `utils/resolveProfileConfig.ts`                           |

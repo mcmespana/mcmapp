@@ -41,7 +41,7 @@ export const TABS_CONFIG: TabConfig[] = [
     iosIcon: { default: 'house', selected: 'house.fill' },
     androidIcon: 'home',
     tintColor: '#253883',
-    headerShown: true,
+    headerShown: false, // Inicio tiene su propia pila (`(inicio)/`) y su cabecera nativa
   },
   {
     name: 'cancionero',

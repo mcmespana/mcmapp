@@ -75,6 +75,7 @@ rutas heredadas del Panel.
 | `internalRoute`                 | Destino                  |
 | ------------------------------- | ------------------------ |
 | `/(tabs)/index`                 | Inicio (Home)            |
+<!-- La pantalla de Inicio vive en `(tabs)/(inicio)/`: la app normaliza `/(tabs)/index` a `/` (utils/notificationRoutes.ts). El panel puede seguir mandando `/(tabs)/index`. -->
 | `/(tabs)/cancionero`            | Cantoral                 |
 | `/(tabs)/calendario`            | Calendario               |
 | `/(tabs)/fotos`                 | Fotos / álbumes          |

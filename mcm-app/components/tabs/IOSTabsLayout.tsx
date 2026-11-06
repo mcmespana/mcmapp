@@ -6,6 +6,7 @@
 // `CompactTabBar`. `minimizeBehavior="never"` es importante: sin él iOS 26
 // intentaría minimizar por su cuenta una barra que ni siquiera se muestra.
 
+import { routeNameForTab } from '@/utils/tabRoutes';
 import { View, StyleSheet } from 'react-native';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
@@ -29,7 +30,7 @@ export default function IOSTabsLayout({ barTabs }: IOSTabsLayoutProps) {
           // re-tap (scroll arriba) la replica CompactTabBar desde JS.
           <NativeTabs.Trigger
             key={tab.name}
-            name={tab.name}
+            name={routeNameForTab(tab.name)}
             disablePopToTop
             disableScrollToTop
           >

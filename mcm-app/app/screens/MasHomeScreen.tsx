@@ -20,7 +20,6 @@ import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { takePendingMasScreen } from '@/utils/masNavigation';
 import { MAS_EVENT_HUB_SCREEN, MAS_STACK_MIRROR } from '@/utils/tabNavigation';
 import PageContainer from '@/components/ui/PageContainer';
-import ScreenHero from '@/components/ui/ScreenHero';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
@@ -178,7 +177,7 @@ export default function MasHomeScreen() {
         styles.safeArea,
         { backgroundColor: themeColors(isDark).backgroundSunken },
       ]}
-      edges={['top']}
+      edges={[]}
     >
       <AppFeedbackModal
         visible={feedbackVisible}
@@ -191,9 +190,10 @@ export default function MasHomeScreen() {
           scrollEventThrottle={16}
           style={styles.container}
           contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
+          // iOS: con la cabecera transparente, el sistema reserva su altura solo.
+          contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
         >
-          <ScreenHero title="Más" />
           <View
             style={[
               styles.scrollContent,

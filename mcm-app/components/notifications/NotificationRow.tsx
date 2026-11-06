@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { PressableFeedback } from 'heroui-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
@@ -81,7 +81,9 @@ function NotificationRow({
         { backgroundColor: unread ? SwipeColors.add : colors.primary },
       ]}
       onPress={toggle}
-      accessibilityRole="button"
+      // En web el botón de gesture-handler ya es un `<button>`: declarar también
+      // el rol dentro pintaba otro `<button>` anidado (aviso de React DOM).
+      accessibilityRole={Platform.OS === 'web' ? undefined : 'button'}
       accessibilityLabel={unread ? 'Marcar como leída' : 'Marcar como no leída'}
     >
       <SwipeActionContent
