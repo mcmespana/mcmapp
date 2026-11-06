@@ -38,6 +38,10 @@ const DEVICE_ID_KEY = '@mcm_device_id';
 const PUSH_TOKEN_KEY = '@mcm_push_token';
 const NOTIFICATIONS_HISTORY_KEY = '@mcm_notifications_history';
 const READ_NOTIFICATIONS_KEY = '@mcm_read_notifications'; // IDs de notificaciones leídas (Firebase + locales)
+// IDs que la persona ha devuelto a «sin leer» A MANO. Mandan sobre la regla de
+// «más de 60 días = leída»: sin esto, una notificación vieja no se podía marcar
+// como no leída (la app la daba por leída por antigüedad al instante).
+const FORCED_UNREAD_KEY = '@mcm_notifications_forced_unread';
 const DISMISSED_NOTIFICATIONS_KEY = '@mcm_notifications_dismissed'; // Claves (id + contenido) de notificaciones descartadas/eliminadas
 
 // Token cacheado en memoria para acceso rápido desde updateLastActive
@@ -400,6 +404,20 @@ export const getReadNotificationIds = async (): Promise<Set<string>> => {
   }
 };
 
+/** IDs devueltos a «sin leer» a mano (ver `FORCED_UNREAD_KEY`). */
+export const getForcedUnreadIds = async (): Promise<Set<string>> => {
+  try {
+    const data = await AsyncStorage.getItem(FORCED_UNREAD_KEY);
+    return data ? new Set(JSON.parse(data)) : new Set();
+  } catch (error) {
+    logger.error('Error obteniendo no leídas forzadas:', error);
+    return new Set();
+  }
+};
+
+const saveForcedUnreadIds = (ids: Set<string>) =>
+  AsyncStorage.setItem(FORCED_UNREAD_KEY, JSON.stringify(Array.from(ids)));
+
 /**
  * Marca una notificación como leída (tanto locales como de Firebase)
  */
@@ -438,6 +456,8 @@ export const markNotificationAsRead = async (
         READ_NOTIFICATIONS_KEY,
         JSON.stringify(Array.from(readIds)),
       );
+      const forced = await getForcedUnreadIds();
+      if (forced.delete(notificationId)) await saveForcedUnreadIds(forced);
     } catch (error) {
       logger.error('Error marcando notificación como leída:', error);
     }
@@ -447,8 +467,9 @@ export const markNotificationAsRead = async (
 /**
  * Deshace «leída»: la notificación vuelve a contar como sin leer. Es la inversa
  * de `markNotificationAsRead` (copia local, por id y por contenido idéntico, y
- * su id fuera de la lista de leídas). Las de más de 60 días se dan por leídas
- * por antigüedad y no se pueden devolver a «sin leer».
+ * su id fuera de la lista de leídas). Además queda anotada como «forzada»: las
+ * de más de 60 días se dan por leídas por antigüedad, y sin esa nota
+ * volverían a salir leídas al instante.
  */
 export const markNotificationAsUnread = async (
   notificationId: string,
@@ -481,6 +502,9 @@ export const markNotificationAsUnread = async (
         READ_NOTIFICATIONS_KEY,
         JSON.stringify(Array.from(readIds)),
       );
+      const forced = await getForcedUnreadIds();
+      releasedIds.forEach((id) => forced.add(id));
+      await saveForcedUnreadIds(forced);
     } catch (error) {
       logger.error('Error marcando notificación como no leída:', error);
     }
@@ -530,6 +554,12 @@ export const markAllNotificationsAsRead = async (
         READ_NOTIFICATIONS_KEY,
         JSON.stringify(Array.from(readIds)),
       );
+      const forced = await getForcedUnreadIds();
+      let changed = false;
+      notificationIds.forEach((id) => {
+        if (forced.delete(id)) changed = true;
+      });
+      if (changed) await saveForcedUnreadIds(forced);
     } catch (error) {
       logger.error(
         'Error marcando todas las notificaciones como leídas:',
@@ -574,10 +604,13 @@ export const getUnreadNotificationsCount = async (
 ): Promise<number> => {
   try {
     const readIds = await getReadNotificationIds();
+    const forcedUnread = await getForcedUnreadIds();
     const localNotifications = await getLocalNotificationsHistory();
-    // Las de más de 60 días cuentan como leídas: se descartan ANTES de ordenar
-    // y deduplicar, que es lo caro, en vez de recorrer el histórico entero.
+    // Las de más de 60 días cuentan como leídas (salvo las devueltas a «sin
+    // leer» a mano): se descartan ANTES de ordenar y deduplicar, que es lo
+    // caro, en vez de recorrer el histórico entero.
     const isRecent = (n: NotificationData | ReceivedNotification) =>
+      forcedUnread.has(n.id) ||
       !isNotificationOlderThan60Days(
         'receivedAt' in n ? n.receivedAt : n.createdAt,
       );
@@ -607,6 +640,7 @@ export const getUnreadNotificationsCount = async (
     });
 
     const isNotificationRead = (n: any) => {
+      if (forcedUnread.has(n.id)) return false;
       if (readIds.has(n.id)) return true;
       if ('isRead' in n && n.isRead) return true;
       const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;

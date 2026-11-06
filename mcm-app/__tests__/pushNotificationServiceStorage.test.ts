@@ -14,6 +14,8 @@ import {
   markNotificationAsRead,
   markNotificationAsUnread,
   getReadNotificationIds,
+  getForcedUnreadIds,
+  getUnreadNotificationsCount,
 } from '@/services/pushNotificationService';
 import type { ReceivedNotification } from '@/types/notifications';
 
@@ -96,5 +98,27 @@ describe('markNotificationAsUnread', () => {
     await markNotificationAsRead('solo-remota');
     await markNotificationAsUnread('solo-remota');
     expect((await getReadNotificationIds()).has('solo-remota')).toBe(false);
+  });
+});
+
+describe('no leída a mano en una notificación de más de 60 días', () => {
+  const old = (id: string) => ({
+    id,
+    title: `Vieja ${id}`,
+    body: 'cuerpo',
+    createdAt: new Date(Date.now() - 90 * 86400000).toISOString(),
+  });
+
+  it('cuenta en el badge hasta que se vuelve a marcar como leída', async () => {
+    const history = [old('v1')];
+    expect(await getUnreadNotificationsCount(history)).toBe(0); // por antigüedad
+
+    await markNotificationAsUnread('v1');
+    expect((await getForcedUnreadIds()).has('v1')).toBe(true);
+    expect(await getUnreadNotificationsCount(history)).toBe(1);
+
+    await markNotificationAsRead('v1');
+    expect((await getForcedUnreadIds()).has('v1')).toBe(false);
+    expect(await getUnreadNotificationsCount(history)).toBe(0);
   });
 });

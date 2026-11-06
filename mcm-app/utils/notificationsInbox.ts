@@ -81,12 +81,18 @@ export function isOlderThanAutoRead(n: InboxNotification, now = new Date()) {
   return now.getTime() - date.getTime() > AUTO_READ_AFTER_DAYS * DAY_MS;
 }
 
-/** ¿Está leída? Por id, por su propio `isRead` o por antigua. */
+/**
+ * ¿Está leída? Si la persona la devolvió a «sin leer» a mano (`forcedUnread`),
+ * manda eso, aunque sea vieja. Si no: por id, por su propio `isRead` o por
+ * antigüedad (más de 60 días = leída).
+ */
 export function isInboxRead(
   n: InboxNotification,
   readIds: ReadonlySet<string>,
   now = new Date(),
+  forcedUnread?: ReadonlySet<string>,
 ): boolean {
+  if (forcedUnread?.has(n.id)) return false;
   if (readIds.has(n.id)) return true;
   if ('isRead' in n && n.isRead) return true;
   return isOlderThanAutoRead(n, now);
