@@ -1,5 +1,5 @@
 /**
- * Estilos de `app/(tabs)/index.tsx`.
+ * Estilos de `app/(tabs)/(inicio)/index.tsx`.
  *
  * Extraídos tal cual, sin tocar ni un valor: eran 395 líneas de las
  * 1729 del fichero. Mismo patrón que `components/grupos/gruposStyles.ts`.
@@ -18,11 +18,6 @@ export const styles = StyleSheet.create({
     maxWidth: 900,
     alignSelf: 'center',
     width: '100%',
-  } as ViewStyle,
-  logoBox: {
-    backgroundColor: colors.primary,
-    padding: spacing.sm,
-    borderRadius: radii.sm + 2, // 10
   } as ViewStyle,
   logoText: {
     ...typography.h0,

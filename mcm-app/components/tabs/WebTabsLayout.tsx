@@ -6,6 +6,7 @@
 // headers y todos los tabs visibles del perfil (sin el tope de
 // MAX_TAB_BAR_ITEMS, porque no hay problema de espacio).
 
+import { routeNameForTab } from '@/utils/tabRoutes';
 import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import {
@@ -96,7 +97,7 @@ export default function WebTabsLayout() {
           return (
             <Tabs.Screen
               key={tab.name}
-              name={tab.name}
+              name={routeNameForTab(tab.name)}
               options={{
                 title: tab.label,
                 tabBarIcon: ({ color, size }) => (

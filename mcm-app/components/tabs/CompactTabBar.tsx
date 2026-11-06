@@ -26,7 +26,11 @@ import { useCarismochito } from '@/contexts/CarismochitoContext';
 import { CarismoColors, Colors } from '@/constants/colors';
 import { tabBarController } from '@/components/tabs/tabBarController';
 import { h } from '@/utils/haptics';
-import { hrefForTab, selectedIndexFor } from '@/utils/tabRoutes';
+import {
+  hrefForTab,
+  routeNameForTab,
+  selectedIndexFor,
+} from '@/utils/tabRoutes';
 import { CANTORAL_SLUGS, lastSegment } from '@/utils/eventRoutes';
 import { jumpToTab } from '@/components/tabs/jumpToTab';
 
@@ -102,7 +106,7 @@ export default function CompactTabBar({ tabs }: CompactTabBarProps) {
 
       // Como la barra del sistema: la pestaña vuelve tal y como se dejó (ver
       // `jumpToTab`). `router.navigate(href)` la devolvía a su portada.
-      jumpToTab(navRef, tab.name, href);
+      jumpToTab(navRef, routeNameForTab(tab.name), href);
     },
     [tabs, selectedIndex, navRef],
   );

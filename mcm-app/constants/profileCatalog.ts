@@ -16,7 +16,7 @@ export const KNOWN_TABS = [
   'mas',
 ] as const;
 
-/** Botones del grid del Home (`app/(tabs)/index.tsx` → `quickItems`). */
+/** Botones del grid del Home (`app/(tabs)/(inicio)/index.tsx` → `quickItems`). */
 export const KNOWN_HOME_BUTTONS = [
   'comunica',
   'cancionero',

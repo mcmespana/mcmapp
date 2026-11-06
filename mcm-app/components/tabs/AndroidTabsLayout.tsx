@@ -8,6 +8,7 @@
 // TABS_CONFIG). Con `NativeTabs` habría que reconstruirlos pantalla a pantalla
 // sin ganar nada: la barra visible ya no es la del navegador, sino la nuestra.
 
+import { routeNameForTab } from '@/utils/tabRoutes';
 import { View, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import {
@@ -63,7 +64,7 @@ export default function AndroidTabsLayout({ barTabs }: AndroidTabsLayoutProps) {
             return (
               <Tabs.Screen
                 key={tab.name}
-                name={tab.name}
+                name={routeNameForTab(tab.name)}
                 options={{
                   title: tab.label,
                   headerShown: tab.headerShown ?? true,

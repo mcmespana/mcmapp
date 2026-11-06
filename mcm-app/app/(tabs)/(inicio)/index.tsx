@@ -1,6 +1,5 @@
 import { logger } from '@/utils/logger';
 import React, {
-  useLayoutEffect,
   ComponentProps,
   useCallback,
   useEffect,
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   Pressable,
   Linking,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 import Animated, {
@@ -25,13 +25,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { notificationDetailHref } from '@/utils/notificationsInbox';
-import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@/components/ui/icons';
 import colors, {
-  CarismoColors,
   Colors,
   TabHeaderColors,
   themeColors,
@@ -40,7 +39,7 @@ import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
-import { PressableFeedback, Skeleton } from 'heroui-native';
+import { Skeleton } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
@@ -56,7 +55,7 @@ import { hexAlpha, readableOn } from '@/utils/colorUtils';
 import { tintedGlyph } from '@/utils/tintColors';
 import { motionEasings } from '@/constants/animations';
 import typography from '@/constants/typography';
-import ScreenHero from '@/components/ui/ScreenHero';
+import HomeBrand from '@/components/home/HomeBrand';
 import SectionHeader from '@/components/ui/SectionHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import AppChip from '@/components/ui/AppChip';
@@ -228,7 +227,6 @@ interface QuickItem {
 }
 
 export default function Home() {
-  const navigation = useNavigation();
   // Compacta la barra de pestañas flotante al scrollear y reserva su hueco.
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('index');
   // Navegación a tabs que tiene en cuenta si el tab está en la barra o en el
@@ -533,11 +531,6 @@ export default function Home() {
     activeTabId,
   ]);
 
-  // Hide the tab navigator header — we render our own
-  useLayoutEffect(() => {
-    navigation.setOptions({ headerShown: false });
-  }, [navigation]);
-
   // Notification card content
   // La tarjeta solo se pinta con una notificación real (ver «Novedades»).
   const notifTitle = latestNotification?.title ?? '';
@@ -586,6 +579,7 @@ export default function Home() {
     '/(tabs)/cancionero': { label: 'Cantoral', icon: 'music-note' },
     '/(tabs)/mas': { label: 'Más', icon: 'more-horiz' },
     '/(tabs)/index': { label: 'Inicio', icon: 'home' },
+    '/': { label: 'Inicio', icon: 'home' },
     '/wordle': { label: 'Wordle', icon: 'games' },
     '/(tabs)/contigo': { label: 'Contigo', icon: 'favorite' },
     '/(tabs)/contigo/evangelio': { label: 'Evangelio', icon: 'menu-book' },
@@ -676,10 +670,89 @@ export default function Home() {
     </View>
   );
 
+  const brand = (
+    <HomeBrand
+      carismoActive={carismoActive}
+      isDark={scheme === 'dark'}
+      onCarismoPress={openOnboarding}
+    />
+  );
+
+  // Acciones de la derecha para Android y web (en iOS son `Stack.Toolbar`).
+  const headerActions = [
+    ...(showStoreUpdateBadge
+      ? [
+          {
+            key: 'store-update',
+            onPress: openStore,
+            accessibilityLabel:
+              'Tienes que actualizar la app. Toca para ir a la tienda',
+            children: (
+              <MaterialIcons
+                name="system-update"
+                size={22}
+                color={colors.accent}
+              />
+            ),
+          },
+        ]
+      : []),
+    ...(showUpdateBadge
+      ? [
+          {
+            key: 'ota',
+            onPress: otaApply,
+            accessibilityLabel:
+              'Actualización disponible. Toca y actualiza en menos de 5 segundos',
+            children: (
+              <MaterialIcons
+                name="system-update"
+                size={22}
+                color={colors.green}
+              />
+            ),
+          },
+        ]
+      : []),
+    ...(resolved.showNotificationsIcon
+      ? [
+          {
+            key: 'notif',
+            onPress: () => router.push('/notifications'),
+            accessibilityLabel:
+              unreadCount > 0
+                ? `Notificaciones, ${unreadCount} sin leer`
+                : 'Notificaciones',
+            children: (
+              <View style={styles.bellWrap}>
+                <MaterialIcons name="notifications" size={22} color={glassFg} />
+                {unreadCount > 0 && (
+                  <View style={styles.dotWrap}>
+                    <Animated.View
+                      style={[styles.dotPing, animatedPingStyle]}
+                    />
+                    <View style={styles.dot} />
+                  </View>
+                )}
+              </View>
+            ),
+          },
+        ]
+      : []),
+    {
+      key: 'settings',
+      onPress: () => setSettingsVisible(true),
+      accessibilityLabel: 'Perfil y ajustes',
+      children: (
+        <MaterialIcons name="account-circle" size={22} color={glassFg} />
+      ),
+    },
+  ];
+
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.background }]}
-      edges={['top']}
+      edges={[]}
     >
       <SettingsBottomSheet
         visible={settingsVisible}
@@ -698,121 +771,70 @@ export default function Home() {
         }
       />
 
-      {/* ── App-bar header (ScreenHero in compact mode) ── */}
-      <View
-        style={[
-          { backgroundColor: theme.background },
-          isWide && styles.headerWide,
-        ]}
-      >
-        <ScreenHero
-          compact={false}
-          title="MCM App"
-          titleStyle={styles.logoText}
-          left={
-            carismoActive ? (
-              // Con el modo puesto, el logo verde reabre su explicación y desde
-              // ahí se puede salir sin agitar (el aviso flotante desaparece).
-              <PressableFeedback
-                onPress={openOnboarding}
-                accessibilityRole="button"
-                accessibilityLabel="Modo Carismochito activo. Toca para ver opciones"
-                style={[
-                  styles.logoBox,
-                  { backgroundColor: CarismoColors.light },
-                ]}
+      {/* ── Cabecera NATIVA (pila `(inicio)`) ──
+          iOS: el logo con «MCM App» a la izquierda (sin cápsula) y los botones
+          de cristal a la derecha son `Stack.Toolbar`. Android y web: las mismas
+          piezas como vistas normales. */}
+      <Stack.Screen
+        options={{
+          headerTitle: '',
+          ...(Platform.OS === 'ios'
+            ? {}
+            : {
+                headerLeft: () => brand,
+                headerRight: () => <GlassActionGroup items={headerActions} />,
+              }),
+        }}
+      />
+      {Platform.OS === 'ios' && (
+        <>
+          <Stack.Toolbar placement="left">
+            <Stack.Toolbar.View hidesSharedBackground>
+              {brand}
+            </Stack.Toolbar.View>
+          </Stack.Toolbar>
+          <Stack.Toolbar placement="right">
+            {showStoreUpdateBadge && (
+              <Stack.Toolbar.Button
+                icon="arrow.down.app"
+                tintColor={colors.accent}
+                accessibilityLabel="Tienes que actualizar la app. Toca para ir a la tienda"
+                onPress={openStore}
+              />
+            )}
+            {showUpdateBadge && (
+              <Stack.Toolbar.Button
+                icon="arrow.down.app"
+                tintColor={colors.green}
+                accessibilityLabel="Actualización disponible. Toca y actualiza en menos de 5 segundos"
+                onPress={otaApply}
+              />
+            )}
+            {resolved.showNotificationsIcon && (
+              <Stack.Toolbar.Button
+                icon="bell"
+                accessibilityLabel={
+                  unreadCount > 0
+                    ? `Notificaciones, ${unreadCount} sin leer`
+                    : 'Notificaciones'
+                }
+                onPress={() => router.push('/notifications')}
               >
-                <MaterialIcons name="device-hub" size={20} color="white" />
-              </PressableFeedback>
-            ) : (
-              <View style={styles.logoBox}>
-                <MaterialIcons name="device-hub" size={20} color="white" />
-              </View>
-            )
-          }
-          right={
-            <GlassActionGroup
-              items={[
-                ...(showStoreUpdateBadge
-                  ? [
-                      {
-                        key: 'store-update',
-                        onPress: openStore,
-                        accessibilityLabel:
-                          'Tienes que actualizar la app. Toca para ir a la tienda',
-                        children: (
-                          <MaterialIcons
-                            name="system-update"
-                            size={22}
-                            color={colors.accent}
-                          />
-                        ),
-                      },
-                    ]
-                  : []),
-                ...(showUpdateBadge
-                  ? [
-                      {
-                        key: 'ota',
-                        onPress: otaApply,
-                        accessibilityLabel:
-                          'Actualización disponible. Toca y actualiza en menos de 5 segundos',
-                        children: (
-                          <MaterialIcons
-                            name="system-update"
-                            size={22}
-                            color={colors.green}
-                          />
-                        ),
-                      },
-                    ]
-                  : []),
-                ...(resolved.showNotificationsIcon
-                  ? [
-                      {
-                        key: 'notif',
-                        onPress: () => router.push('/notifications'),
-                        accessibilityLabel:
-                          unreadCount > 0
-                            ? `Notificaciones, ${unreadCount} sin leer`
-                            : 'Notificaciones',
-                        children: (
-                          <View style={styles.bellWrap}>
-                            <MaterialIcons
-                              name="notifications"
-                              size={22}
-                              color={glassFg}
-                            />
-                            {unreadCount > 0 && (
-                              <View style={styles.dotWrap}>
-                                <Animated.View
-                                  style={[styles.dotPing, animatedPingStyle]}
-                                />
-                                <View style={styles.dot} />
-                              </View>
-                            )}
-                          </View>
-                        ),
-                      },
-                    ]
-                  : []),
-                {
-                  key: 'settings',
-                  onPress: () => setSettingsVisible(true),
-                  accessibilityLabel: 'Perfil y ajustes',
-                  children: (
-                    <MaterialIcons
-                      name="account-circle"
-                      size={22}
-                      color={glassFg}
-                    />
-                  ),
-                },
-              ]}
+                {unreadCount > 0 && (
+                  <Stack.Toolbar.Badge>
+                    {unreadCount > 99 ? '99+' : String(unreadCount)}
+                  </Stack.Toolbar.Badge>
+                )}
+              </Stack.Toolbar.Button>
+            )}
+            <Stack.Toolbar.Button
+              icon="person.crop.circle"
+              accessibilityLabel="Perfil y ajustes"
+              onPress={() => setSettingsVisible(true)}
             />
-          }
-        />
-      </View>
+          </Stack.Toolbar>
+        </>
+      )}
 
       <Animated.ScrollView
         ref={scrollRef}
@@ -822,9 +844,13 @@ export default function Home() {
         contentContainerStyle={[
           styles.scrollContent,
           isWide && styles.scrollContentWide,
-          { paddingBottom: contentPaddingBottom },
+          {
+            paddingBottom: contentPaddingBottom,
+          },
         ]}
         showsVerticalScrollIndicator={false}
+        // iOS: con la cabecera transparente, el sistema reserva su altura solo.
+        contentInsetAdjustmentBehavior="automatic"
       >
         {/* ── Two-column wrapper on wide screens ── */}
         <View style={isWide ? styles.wideRow : undefined}>

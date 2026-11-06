@@ -26,6 +26,7 @@ export const ROUTE_LABELS: Record<
   '/(tabs)/cancionero': { label: 'Cantoral', icon: 'music-note' },
   '/(tabs)/mas': { label: 'Más', icon: 'more-horiz' },
   '/(tabs)/index': { label: 'Inicio', icon: 'home' },
+  '/': { label: 'Inicio', icon: 'home' },
   '/wordle': { label: 'Wordle', icon: 'games' },
   '/(tabs)/contigo': { label: 'Contigo', icon: 'favorite' },
   '/(tabs)/contigo/evangelio': { label: 'Evangelio', icon: 'menu-book' },
