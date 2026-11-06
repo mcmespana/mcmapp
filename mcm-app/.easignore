@@ -11,6 +11,11 @@ web-build/
 expo-env.d.ts
 
 # Native
+# Salidas de Gradle/CMake de los módulos locales (no son fuentes; ver .gitignore)
+/modules/*/android/build/
+/modules/*/android/.gradle/
+/modules/*/android/.cxx/
+/modules/*/ios/build/
 .kotlin/
 *.orig.*
 *.jks
