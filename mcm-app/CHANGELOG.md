@@ -4,6 +4,20 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-06 22:30 — Carismochito bloqueado con un interruptor general; navegación de notificaciones
+
+- **Carismochito, cerrado para todo el mundo hasta 2027** (25.º aniversario). Nuevo flag `global.carismochito` en `/profileConfig` (`"off"` | `"alpha"` | `"all"`; ausente = `"alpha"`), con el mismo patrón que `comunicaNativa`: en `"alpha"` solo existe con el Laboratorio Alpha encendido; `"all"` lo abre a todos sin build ni OTA; `"off"` lo cierra también a los probadores. Cerrado = no se activa agitando, no se asoma y la colección redirige a Inicio; y **se apaga en silencio a quien lo tuviera activo** (tema verde fuera, icono del launcher normal). Lógica en `utils/carismochitoGate.ts` + `hooks/useCarismochitoAvailable.ts`; contrato en `docs/contratos/PANEL_PERFILES.md` §1.10 y plan 2027 en `docs/funcionalidades/CARISMOCHITO.md`.
+- **Ya no hay modo escondido**: se retira el interruptor propio de la caza y los 5 toques en el título del Laboratorio Alpha. Con el modo tester encendido, la caza y su panel salen solos. La clave `@carismochito_hunt_enabled` ya no se usa (se borra del móvil).
+- **Notificaciones — tarjeta de Inicio**: al tocar la tarjeta de novedades se abre el detalle con una flecha de «volver» (antes quedaba a pantalla completa sin ella). La flecha y el gesto de borde de iOS hacen lo mismo: volver a donde estabas. En la lista de la bandeja, el gesto de borde ya funcionaba y la fila solo reclama el arrastre hacia la izquierda, así que no choca con el de marcar leída.
+
+## 2026-11-06 21:00 — Calendario: header con título, botones y «Calendarios activos»
+
+- **Header (iOS, botones nativos con `Stack.Toolbar`)**: «Calendario» centrado y, a la derecha, suscribirse a los calendarios y **«Calendarios activos»** (este último solo si hay más de un calendario). En Android y web, vistas normales con el título centrado. Vale para la pestaña y para la pantalla apilada de «Más».
+- **Selector Mes/Agenda** siempre en el cuerpo, a todo el ancho, justo encima del calendario (antes iba apretado en el título del header en la pestaña).
+- **«Calendarios activos»** (`components/calendar/ActiveCalendarsSheet.tsx`): una hoja con un interruptor por calendario que sustituye a la fila de chips que había bajo el mes. Cada toque se guarda en el momento; «Listo» cierra. Se retiran los chips y los estilos de chips y del conmutador del header.
+- **Datos de prueba**: `EXPO_PUBLIC_FIREBASE_FIXTURES=1` también trae 3 calendarios (festivos públicos de Google; hace falta red) para ver los botones y la hoja.
+- Solo JS: OTA ✅.
+
 ## 2026-11-06 19:00 — Bandeja: un gesto que alterna leída/no leída, también en las antiguas, y cabecera en una línea
 
 - **Un solo gesto** (arrastrar a la izquierda y soltar) que ALTERNA: «Leída» en una sin leer, «No leída» en una leída. Se quita el gesto hacia la derecha (en una leída enseñaba «Leída» y al soltar hacía lo contrario) y el botón «No leída» del detalle (ya la estás leyendo).

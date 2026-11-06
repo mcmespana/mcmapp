@@ -3,7 +3,10 @@
 > Documento **vivo**: describe cómo funciona hoy. El plan que lo construyó está
 > archivado en [`../planes/archivo/PLAN_CARISMOCHITO.md`](../planes/archivo/PLAN_CARISMOCHITO.md).
 
-## El modo (para todo el mundo)
+## El modo
+
+> **Hoy está cerrado para todo el mundo** (ver «El interruptor» más abajo): lo
+> que sigue describe cómo funciona cuando está abierto.
 
 - **Se activa agitando el móvil 5 veces** → cuenta atrás de 3 s → la app se
   tiñe de verde, confeti, y el icono del launcher cambia (esto último, desde la
@@ -27,36 +30,72 @@ Código: `contexts/CarismochitoContext.tsx` (la máquina de estados),
 `components/CarismochitoOverlay.tsx` (cuenta atrás, confeti, asomadas),
 `components/CarismochitoDialogs.tsx`, `components/CarismochitoMascot.tsx`.
 
-## La caza y la colección (solo pruebas)
+## El interruptor (cerrado por defecto) — decisión del 2026-11-06
 
-**Escondida a propósito, en dos niveles** (decisión del usuario, 2026-09-26/27):
-que no se note que se está preparando.
+Carismochito **está bloqueado para todo el mundo** hasta el **25.º aniversario
+(2027)**, que es cuando se quiere lanzar. No es un modo escondido: es una
+función completa (modo de agitar, caza y colección) con un interruptor general
+que se abre o se cierra **sin build ni OTA**.
 
-1. Se entra al **Laboratorio Alpha** con 7 toques en la versión de la app
-   (Inicio o Más). Ahí entran también los probadores del canal preview.
-2. Dentro, la sección "Caza de Carismochitos" **no aparece** hasta tocar **5
-   veces el título "LABORATORIO ALPHA"**. Una vez encendida la caza, a quien la
-   encendió le sale siempre.
+El interruptor es `global.carismochito` en `/profileConfig`
+(contrato: `docs/contratos/PANEL_PERFILES.md` §1.10; lógica pura en
+`utils/carismochitoGate.ts`, hook en `hooks/useCarismochitoAvailable.ts`):
 
-No hay enlace desde ningún otro sitio. Sin encenderla, quien active el modo
-agitando el móvil ve exactamente lo de antes: el Carismochito clásico que se
-asoma, sin poder tocarlo, sin variantes y sin colección.
+| Valor | Modo normal | Laboratorio Alpha encendido |
+| --- | --- | --- |
+| `"off"` | Cerrado | Cerrado |
+| `"alpha"` (o ausente) | **Cerrado** | **Abierto** |
+| `"all"` | Abierto | Abierto |
 
-Con la caza encendida y el modo activo:
+- **Para cerrarlo a todo el mundo ahora**: dejarlo en `"alpha"` (o ausente) —
+  que es el estado normal— y no abrir nadie el Laboratorio. `"off"` lo cierra
+  también para los probadores.
+- **Para lanzarlo en 2027**: poner `global.carismochito = "all"` en Firebase
+  (`profileConfig/data/global`). Un solo cambio, sin build. Para volver atrás,
+  `"alpha"` u `"off"`.
+- **Cerrado = no existe**: agitar no hace nada, el logo de Inicio no es un
+  botón, no se asoma, la colección redirige a Inicio. Y **se apaga a quien lo
+  tuviera activo**: al detectar el interruptor cerrado (ya con la configuración
+  y el modo tester leídos; antes no se toca nada) se resetea el modo EN
+  SILENCIO (sin háptica ni diálogos), se quita el tema verde y se devuelve el
+  icono del launcher al normal.
+- **En el canal preview**, con el modo tester encendido, todo está disponible
+  con `"alpha"`: **sin toques escondidos** (se retiró el de 5 toques en el título
+  del laboratorio y el interruptor propio de la caza). Dentro del Laboratorio
+  Alpha, el panel «Caza de Carismochitos» sale solo y ofrece ver la colección,
+  hacerlo aparecer ya y empezar de cero.
 
-- Se asoma más a menudo (20-45 s) y un poco más de rato (3 s).
-- Sale en una de **8 variantes**, sorteadas por peso: común (clásico, de campo),
-  poco común (celeste, MIC, COM), raro (LC, nocturno) y legendario (dorado).
-- **Tocarlo lo atrapa**: vibración, animación de salida y un toast.
-- La colección se ve en `app/carismochito.tsx`: anillo de progreso, contador y
-  una ficha por variante (silueta mientras no la has encontrado). Si se entra
-  por enlace directo sin la caza encendida, redirige a Inicio.
-- Desde el laboratorio: ver la colección, forzar una aparición y empezar de cero.
+### Qué incluye (todo junto, sin partes ocultas)
+
+- Modo de agitar 5 veces, cuenta atrás, tema verde, icono del launcher.
+- La **caza**: se asoma más a menudo (20-45 s) y más rato (3 s), en **8
+  variantes** sorteadas por peso — común (clásico, de campo), poco común
+  (celeste, MIC, COM), raro (LC, nocturno) y legendario (dorado). **Tocarlo lo
+  atrapa**: vibración, animación de salida y un toast.
+- La **colección** (`app/carismochito.tsx`): anillo de progreso, contador y una
+  ficha por variante (silueta mientras no la has encontrado). Redirige a Inicio
+  si el interruptor está cerrado.
+
+## Plan para 2027 (25.º aniversario)
+
+Pendiente de definir con Izan — esto es el esqueleto para no perder el hilo:
+
+1. **Abrir el interruptor** (`"all"`) coincidiendo con la fecha del
+   aniversario. Antes, probarlo en alpha con los probadores.
+2. **Dónde se enlaza la colección** para todo el mundo. Hoy solo se llega desde
+   el panel del Laboratorio o, con el modo activo, desde la explicación del
+   modo. Propuesta anterior: tocar el logo verde de Inicio. Falta decidirlo.
+3. **Dónde vivirá a la larga**: la idea es una vista de perfil con logros,
+   chapas y Carismochitos — ver `docs/planes/PLAN_PANEL_PANUELO.md`.
+4. **Medallas 3D** (hoy un experimento en el Laboratorio): se dejan como están
+   «por ahora», pero **hay que hacerlas** — está anotado en
+   `docs/planes/BACKLOG.md`.
+5. Revisar si hace falta build nativo (iconos del launcher, p. ej.) con
+   antelación a la fecha: el icono alternativo solo existe desde la build 2.1.
 
 ### Datos
 
 ```
-AsyncStorage  @carismochito_hunt_enabled   '1' | '0'
 AsyncStorage  @carismochito_collection     { <variantId>: { count, firstAt } }
 RTDB          users/{uid}/carismochitos/{variantId} = { count, firstAt }
 ```
@@ -77,7 +116,7 @@ Analítica: `carismochito_activado` y `carismochito_atrapado { rareza, nuevo }`.
 
 ## Lo que queda por decidir
 
-- **Cuándo sale la caza del laboratorio** para todo el mundo (y si entonces la
-  colección se enlaza desde algún sitio). Está en `docs/planes/BACKLOG.md` §4.
-- **Dónde vivirá la colección a la larga**: la idea es una vista de perfil con
-  logros, chapas y Carismochitos — ver `docs/planes/PLAN_PANEL_PANUELO.md`.
+- La fecha exacta de apertura en 2027 y dónde se enlaza la colección (ver «Plan
+  para 2027» arriba y `docs/planes/BACKLOG.md`).
+- Si el interruptor se enseña algún día en el Panel (mcmpanel) en vez de
+  cambiarlo a mano en la consola de Firebase.

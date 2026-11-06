@@ -1053,8 +1053,9 @@ export default function Home() {
                 >
                   <TouchableOpacity
                     onPress={() => {
-                      // Abre directamente el detalle de la última notificación,
-                      // no la lista completa.
+                      // Abre la notificación y «volver» (flecha o gesto) regresa
+                      // a Inicio. Un segundo `push`/`navigate` de la lista
+                      // duplicaba pantallas o la colapsaba: no se usa.
                       router.push(
                         notificationDetailHref(latestNotification.id) as any,
                       );

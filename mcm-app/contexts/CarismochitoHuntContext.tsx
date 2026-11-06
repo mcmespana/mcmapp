@@ -1,14 +1,14 @@
-// La "caza" de Carismochitos: la colección, el interruptor de pruebas del
-// Laboratorio Alpha y las pantallas donde no debe asomarse.
+// La "caza" de Carismochitos: la colección y las pantallas donde no debe
+// asomarse.
 //
 // Vive aparte de `CarismochitoContext` a propósito: aquel es la máquina de
 // estados del MODO (agitar → cuenta atrás → activo) y este es lo que pasa
 // DENTRO del modo. Así cada uno se prueba solo.
 //
-// **Está detrás de un interruptor escondido.** La caza (tocar al que se asoma
-// para atraparlo) y la pantalla de la colección solo existen para quien la
-// enciende en el Laboratorio Alpha (7 toques en la versión). Sin encender,
-// Carismochito se sigue asomando como siempre, sin poder tocarlo.
+// **Va con el interruptor de Carismochito** (`global.carismochito` en
+// `/profileConfig`, ver `utils/carismochitoGate.ts`): la caza y la colección
+// existen cuando Carismochito está disponible y no hay nada más que encender.
+// Ya no hay un interruptor escondido propio.
 //
 // Persistencia: AsyncStorage siempre; `users/{uid}/carismochitos` además
 // cuando hay sesión, fusionando por el máximo (ver `mergeCollections`).
@@ -24,6 +24,7 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCarismochitoAvailable } from '@/hooks/useCarismochitoAvailable';
 import {
   clearCarismochitos,
   fetchCarismochitos,
@@ -40,7 +41,11 @@ import {
 import { trackEvent } from '@/utils/analytics';
 import { logger } from '@/utils/logger';
 
-export const HUNT_ENABLED_KEY = '@carismochito_hunt_enabled';
+/**
+ * Clave del antiguo interruptor escondido de la caza. Ya no se lee ni se
+ * escribe; se borra del móvil al arrancar para no dejar basura.
+ */
+const LEGACY_HUNT_ENABLED_KEY = '@carismochito_hunt_enabled';
 export const COLLECTION_KEY = '@carismochito_collection';
 
 export interface CatchResult {
@@ -52,11 +57,10 @@ export interface CatchResult {
 }
 
 interface CarismochitoHuntValue {
-  /** Ya se ha leído lo guardado en el móvil (interruptor y colección). */
+  /** Ya se ha leído lo guardado en el móvil y se sabe si hay Carismochito. */
   ready: boolean;
-  /** Interruptor del Laboratorio Alpha. */
+  /** La caza y la colección están disponibles (= Carismochito disponible). */
   huntEnabled: boolean;
-  setHuntEnabled: (on: boolean) => void;
   collection: CarismochitoCollection;
   /** Suma una captura (local + nube). `null` si la variante no existe. */
   catchCarismochito: (variantId: string) => CatchResult | null;
@@ -81,7 +85,6 @@ const noop = () => {};
 const DEFAULT_VALUE: CarismochitoHuntValue = {
   ready: true,
   huntEnabled: false,
-  setHuntEnabled: noop,
   collection: {},
   catchCarismochito: () => null,
   resetCollection: async () => {},
@@ -104,7 +107,7 @@ export function CarismochitoHuntProvider({
 }) {
   const { user } = useAuth();
   const uid = user?.uid ?? null;
-  const [huntEnabled, setHuntEnabledState] = useState(false);
+  const { available: huntEnabled, settled } = useCarismochitoAvailable();
   const [collection, setCollection] = useState<CarismochitoCollection>({});
   const [summonToken, setSummonToken] = useState(0);
   const [suppressCount, setSuppressCount] = useState(0);
@@ -130,12 +133,9 @@ export function CarismochitoHuntProvider({
     let mounted = true;
     (async () => {
       try {
-        const [flag, stored] = await Promise.all([
-          AsyncStorage.getItem(HUNT_ENABLED_KEY),
-          AsyncStorage.getItem(COLLECTION_KEY),
-        ]);
+        const stored = await AsyncStorage.getItem(COLLECTION_KEY);
+        AsyncStorage.removeItem(LEGACY_HUNT_ENABLED_KEY).catch(noop);
         if (!mounted) return;
-        setHuntEnabledState(flag === '1');
         const local = sanitizeCollection(stored ? JSON.parse(stored) : null);
         // Una captura hecha en el primer milisegundo no se pierde: fusionar.
         const merged = mergeCollections(local, collectionRef.current).merged;
@@ -169,11 +169,6 @@ export function CarismochitoHuntProvider({
       mounted = false;
     };
   }, [uid, localLoaded, commit]);
-
-  const setHuntEnabled = useCallback((on: boolean) => {
-    setHuntEnabledState(on);
-    AsyncStorage.setItem(HUNT_ENABLED_KEY, on ? '1' : '0').catch(noop);
-  }, []);
 
   const catchCarismochito = useCallback(
     (variantId: string): CatchResult | null => {
@@ -213,9 +208,8 @@ export function CarismochitoHuntProvider({
 
   const value = useMemo<CarismochitoHuntValue>(
     () => ({
-      ready: localLoaded,
+      ready: localLoaded && settled,
       huntEnabled,
-      setHuntEnabled,
       collection,
       catchCarismochito,
       resetCollection,
@@ -226,8 +220,8 @@ export function CarismochitoHuntProvider({
     }),
     [
       localLoaded,
+      settled,
       huntEnabled,
-      setHuntEnabled,
       collection,
       catchCarismochito,
       resetCollection,

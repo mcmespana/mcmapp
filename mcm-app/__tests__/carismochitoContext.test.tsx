@@ -21,6 +21,12 @@ jest.mock('@/utils/heroUIRuntimeTheme', () => ({
 }));
 jest.mock('@/utils/appIcon', () => ({ syncAppIcon: jest.fn() }));
 jest.mock('@/utils/analytics', () => ({ trackEvent: jest.fn() }));
+// El interruptor general (global.carismochito + modo tester) se controla desde
+// aquí; su lógica pura está en carismochitoGate.test.ts.
+const mockGate = { available: true, settled: true };
+jest.mock('@/hooks/useCarismochitoAvailable', () => ({
+  useCarismochitoAvailable: () => mockGate,
+}));
 jest.mock('@/utils/haptics', () => ({
   h: {
     shake: jest.fn(),
@@ -40,6 +46,11 @@ const { trackEvent } = require('@/utils/analytics');
 const STORAGE_KEY = '@carismochito_active';
 const ONBOARDING_KEY = '@carismochito_onboarding_seen';
 const SHAKES = 5;
+
+beforeEach(() => {
+  mockGate.available = true;
+  mockGate.settled = true;
+});
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <CarismochitoProvider>{children}</CarismochitoProvider>
@@ -330,5 +341,46 @@ describe('useCarismochito fuera del provider', () => {
       /dentro de CarismochitoProvider/,
     );
     spy.mockRestore();
+  });
+});
+
+describe('interruptor general de Carismochito', () => {
+  it('cerrado: agitar no hace nada', async () => {
+    mockGate.available = false;
+    const hook = await mount();
+    await shake(hook, SHAKES);
+    await act(async () => {
+      jest.advanceTimersByTime(3000);
+    });
+    expect(hook.result.current.state).toBe('idle');
+    expect(hook.result.current.isActive).toBe(false);
+  });
+
+  it('se cierra con el modo activo: se apaga en silencio y se olvida', async () => {
+    await AsyncStorage.setItem(STORAGE_KEY, '1');
+    mockGate.available = false;
+    const hook = await mount();
+    expect(hook.result.current.state).toBe('idle');
+    expect(hook.result.current.isActive).toBe(false);
+    expect(await AsyncStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(syncAppIcon).toHaveBeenCalledWith(false);
+    expect(setCarismochitoTheme).toHaveBeenLastCalledWith(false);
+  });
+
+  it('abierto: el modo guardado se restaura al reabrir', async () => {
+    await AsyncStorage.setItem(STORAGE_KEY, '1');
+    const hook = await mount();
+    expect(hook.result.current.state).toBe('active');
+    expect(hook.result.current.isActive).toBe(true);
+  });
+
+  it('mientras no se sabe (configuración sin leer) no se toca nada', async () => {
+    await AsyncStorage.setItem(STORAGE_KEY, '1');
+    mockGate.available = false;
+    mockGate.settled = false;
+    const hook = await mount();
+    expect(hook.result.current.isActive).toBe(false);
+    expect(await AsyncStorage.getItem(STORAGE_KEY)).toBe('1');
+    expect(syncAppIcon).not.toHaveBeenCalled();
   });
 });

@@ -15,7 +15,6 @@ import {
   type CatchResult,
   COLLECTION_KEY,
   CarismochitoHuntProvider,
-  HUNT_ENABLED_KEY,
   useCarismochitoHunt,
 } from '@/contexts/CarismochitoHuntContext';
 
@@ -29,6 +28,11 @@ jest.mock('@/utils/authHelpers', () => ({
   clearCarismochitos: jest.fn(async () => {}),
 }));
 jest.mock('@/utils/analytics', () => ({ trackEvent: jest.fn() }));
+// El interruptor general se controla desde aquí (ver carismochitoGate.test.ts).
+const mockGate = { available: true, settled: true };
+jest.mock('@/hooks/useCarismochitoAvailable', () => ({
+  useCarismochitoAvailable: () => mockGate,
+}));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const helpers = require('@/utils/authHelpers');
@@ -55,19 +59,35 @@ async function storedCollection() {
 beforeEach(async () => {
   jest.clearAllMocks();
   mockUser.current = null;
+  mockGate.available = true;
+  mockGate.settled = true;
   await AsyncStorage.clear();
 });
 
-describe('interruptor del laboratorio', () => {
-  it('arranca apagado y se recuerda al reabrir la app', async () => {
-    const first = await mount();
-    expect(first.result.current.huntEnabled).toBe(false);
-    await act(async () => first.result.current.setHuntEnabled(true));
-    expect(await AsyncStorage.getItem(HUNT_ENABLED_KEY)).toBe('1');
-    await first.unmount();
+describe('interruptor general', () => {
+  it('la caza y la colección siguen a Carismochito: abierto = disponible', async () => {
+    const open = await mount();
+    expect(open.result.current.ready).toBe(true);
+    expect(open.result.current.huntEnabled).toBe(true);
+    await open.unmount();
 
-    const second = await mount();
-    expect(second.result.current.huntEnabled).toBe(true);
+    mockGate.available = false;
+    const closed = await mount();
+    expect(closed.result.current.ready).toBe(true);
+    expect(closed.result.current.huntEnabled).toBe(false);
+  });
+
+  it('no está listo hasta saber si hay interruptor (evita redirigir antes de tiempo)', async () => {
+    mockGate.available = false;
+    mockGate.settled = false;
+    const hook = await mount();
+    expect(hook.result.current.ready).toBe(false);
+  });
+
+  it('borra del móvil la clave del antiguo interruptor escondido', async () => {
+    await AsyncStorage.setItem('@carismochito_hunt_enabled', '1');
+    await mount();
+    expect(await AsyncStorage.getItem('@carismochito_hunt_enabled')).toBeNull();
   });
 });
 

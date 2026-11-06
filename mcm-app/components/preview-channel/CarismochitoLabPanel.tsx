@@ -15,23 +15,16 @@ import { summarizeCollection } from '@/utils/carismochitoCollection';
 import { h } from '@/utils/haptics';
 
 /**
- * La única puerta a la caza de Carismochitos y a su colección.
- *
- * Decisión del usuario (2026-09-26): mientras sea de pruebas, no se enlaza
- * desde ningún otro sitio de la app. Vive aquí, dentro del Laboratorio Alpha,
- * con el mismo tono exagerado que el resto del laboratorio.
+ * Panel de la caza de Carismochitos en el Laboratorio Alpha: ver la colección,
+ * hacerlo aparecer ya y empezar de cero. Solo se pinta cuando Carismochito está
+ * disponible (`global.carismochito`, ver `utils/carismochitoGate.ts`); ya no
+ * tiene interruptor propio ni se destapa con toques escondidos.
  */
 export function CarismochitoLabPanel() {
   const { isActive } = useCarismochito();
-  const { huntEnabled, setHuntEnabled, collection, resetCollection, summon } =
-    useCarismochitoHunt();
+  const { collection, resetCollection, summon } = useCarismochitoHunt();
   const { closeSecretMenu } = usePreviewChannel();
   const summary = summarizeCollection(collection);
-
-  const toggleHunt = useCallback(() => {
-    h.toggle();
-    setHuntEnabled(!huntEnabled);
-  }, [huntEnabled, setHuntEnabled]);
 
   // Salir del laboratorio primero: el Modal tapa la navegación que hay debajo.
   const leaveAnd = useCallback(
@@ -87,47 +80,27 @@ export function CarismochitoLabPanel() {
         cuenta para tu colección.
       </Text>
 
-      <PressableFeedback
-        onPress={toggleHunt}
-        accessibilityRole="switch"
-        accessibilityState={{ checked: huntEnabled }}
-        accessibilityLabel="Caza de Carismochitos"
-        style={[styles.toggleRow, huntEnabled && styles.toggleRowOn]}
-      >
-        <PressableFeedback.Highlight />
-        <Text style={styles.toggleLabel}>
-          {huntEnabled ? 'Caza encendida' : 'Caza apagada'}
-        </Text>
-        <View style={[styles.track, huntEnabled && styles.trackOn]}>
-          <View style={[styles.thumb, huntEnabled && styles.thumbOn]} />
-        </View>
-      </PressableFeedback>
+      <Text style={styles.stat}>
+        {summary.found} de {summary.of} encontrados · {summary.total}{' '}
+        {summary.total === 1 ? 'captura' : 'capturas'}
+      </Text>
 
-      {huntEnabled ? (
-        <>
-          <Text style={styles.stat}>
-            {summary.found} de {summary.of} encontrados · {summary.total}{' '}
-            {summary.total === 1 ? 'captura' : 'capturas'}
-          </Text>
-
-          <LabButton label="Ver mi colección" onPress={openCollection} />
-          <LabButton
-            label={
-              isActive
-                ? 'Que aparezca ya'
-                : 'Que aparezca ya (activa antes el modo)'
-            }
-            onPress={summonNow}
-            disabled={!isActive}
-          />
-          <LabButton
-            label="Empezar de cero"
-            onPress={confirmReset}
-            subtle
-            disabled={summary.total === 0}
-          />
-        </>
-      ) : null}
+      <LabButton label="Ver mi colección" onPress={openCollection} />
+      <LabButton
+        label={
+          isActive
+            ? 'Que aparezca ya'
+            : 'Que aparezca ya (activa antes el modo)'
+        }
+        onPress={summonNow}
+        disabled={!isActive}
+      />
+      <LabButton
+        label="Empezar de cero"
+        onPress={confirmReset}
+        subtle
+        disabled={summary.total === 0}
+      />
     </View>
   );
 }
@@ -162,8 +135,6 @@ function LabButton({
   );
 }
 
-const THUMB = 22;
-
 const styles = StyleSheet.create({
   card: {
     width: '100%',
@@ -194,43 +165,6 @@ const styles = StyleSheet.create({
   body: {
     ...typography.subhead,
     color: 'rgba(255,255,255,0.9)',
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    overflow: 'hidden',
-  },
-  toggleRowOn: {
-    backgroundColor: 'rgba(90, 224, 138, 0.22)',
-  },
-  toggleLabel: {
-    flex: 1,
-    ...typography.button,
-    color: '#fff',
-  },
-  track: {
-    width: THUMB * 2 + 4,
-    height: THUMB + 4,
-    borderRadius: radii.pillFull,
-    padding: 2,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  trackOn: {
-    backgroundColor: 'rgba(90, 224, 138, 0.95)',
-  },
-  thumb: {
-    width: THUMB,
-    height: THUMB,
-    borderRadius: radii.pillFull,
-    backgroundColor: '#fff',
-  },
-  thumbOn: {
-    transform: [{ translateX: THUMB }],
   },
   stat: {
     ...typography.caption,
