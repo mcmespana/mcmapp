@@ -96,6 +96,15 @@ describe('isInboxRead', () => {
     expect(isInboxRead(remote('c', 'C', at(61)), new Set(), NOW)).toBe(true);
     expect(isInboxRead(remote('d', 'D', at(59)), new Set(), NOW)).toBe(false);
   });
+
+  it('lo devuelto a «sin leer» a mano manda sobre todo, también sobre los 60 días', () => {
+    const forced = new Set(['old']);
+    const vieja = remote('old', 'Vieja', at(90));
+    expect(isInboxRead(vieja, new Set(), NOW)).toBe(true);
+    expect(isInboxRead(vieja, new Set(), NOW, forced)).toBe(false);
+    // y aunque conste en la lista de leídas
+    expect(isInboxRead(vieja, new Set(['old']), NOW, forced)).toBe(false);
+  });
 });
 
 describe('agrupación por día', () => {

@@ -15,7 +15,6 @@ import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
-import { isOlderThanAutoRead } from '@/utils/notificationsInbox';
 import { categoryVisual } from '@/utils/notificationCategory';
 import {
   notificationDate,
@@ -32,11 +31,12 @@ const SWIPE_RANGE: [number, number] = [-SWIPE_ACTION_WIDTH, 0];
 /**
  * Una fila de la bandeja. Plana (sin tarjeta ni marco): lo no leído se dice con
  * un punto y el título en negrita, y lo demás —destino, botones de acción,
- * imagen— vive en el detalle, no aquí. Tocar abre el detalle; deslizar a la
- * izquierda ofrece «Leída»; no se puede eliminar (decisión del
- * propietario): leer una notificación solo la baja de «Nuevas» a «Anteriores», y
- * deslizar a la derecha una leída la devuelve a «Nuevas» («No leída»).
- * Los lectores de pantalla tienen «Marcar como leída» como acción propia.
+ * imagen— vive en el detalle, no aquí. Tocar abre el detalle.
+ *
+ * UN solo gesto, hacia la izquierda, que ALTERNA: en una no leída enseña
+ * «Leída» y al soltar la marca; en una leída enseña «No leída» y al soltar la
+ * devuelve a «Nuevas». Nunca hay un gesto que deshaga lo que acaba de hacer
+ * otro. No se puede eliminar (decisión del propietario).
  */
 function NotificationRow({
   notification,
@@ -56,54 +56,31 @@ function NotificationRow({
   const roles = themeColors(isDark);
   const unread = !isRead;
   const swipeRef = useRef<SwipeableMethods>(null);
-
-  // Deslizar y soltar YA la marca como leída (como en Mail): no hace falta
-  // pulsar el botón. La fila se vuelve a cerrar sola; el botón «Leída» sigue
-  // ahí por si se pulsa mientras se arrastra, y hace lo mismo.
-  const markReadFromSwipe = () => {
-    if (!unread) return;
-    h.success();
-    onMarkRead(notification.id);
-    swipeRef.current?.close();
-  };
-
-  // Deslizar a la derecha una YA leída la devuelve a «sin leer». Las de más de
-  // 60 días se dan por leídas por antigüedad y no se pueden devolver.
-  const canMarkUnread = !unread && !isOlderThanAutoRead(notification);
-  const markUnreadFromSwipe = () => {
-    if (!canMarkUnread) return;
-    h.select();
-    onMarkUnread(notification.id);
-    swipeRef.current?.close();
-  };
-
-  const renderLeftActions = (translation: SharedValue<number>) => (
-    <TouchableOpacity
-      style={[styles.leftAction, { backgroundColor: colors.primary }]}
-      onPress={markUnreadFromSwipe}
-      accessibilityRole="button"
-      accessibilityLabel="Marcar como no leída"
-    >
-      <SwipeActionContent
-        translation={translation}
-        inputRange={[0, SWIPE_ACTION_WIDTH]}
-        outputRange={[0, 1]}
-        property="scale"
-        style={styles.actionContent}
-      >
-        <MaterialIcons name="markunread" size={22} color="#fff" />
-        <Text style={styles.actionText}>No leída</Text>
-      </SwipeActionContent>
-    </TouchableOpacity>
-  );
   const category = categoryVisual(notification.category);
+
+  // Alterna según el estado de AHORA: soltar el arrastre (o pulsar el botón
+  // mientras se arrastra) marca como leída una no leída y devuelve a «sin leer»
+  // una leída. La fila se cierra sola.
+  const toggle = () => {
+    if (unread) {
+      h.success();
+      onMarkRead(notification.id);
+    } else {
+      h.select();
+      onMarkUnread(notification.id);
+    }
+    swipeRef.current?.close();
+  };
 
   const renderActions = (translation: SharedValue<number>) => (
     <TouchableOpacity
-      style={[styles.action, { backgroundColor: SwipeColors.add }]}
-      onPress={markReadFromSwipe}
+      style={[
+        styles.action,
+        { backgroundColor: unread ? SwipeColors.add : colors.primary },
+      ]}
+      onPress={toggle}
       accessibilityRole="button"
-      accessibilityLabel="Marcar como leída"
+      accessibilityLabel={unread ? 'Marcar como leída' : 'Marcar como no leída'}
     >
       <SwipeActionContent
         translation={translation}
@@ -112,8 +89,12 @@ function NotificationRow({
         property="scale"
         style={styles.actionContent}
       >
-        <MaterialIcons name="check" size={22} color="#fff" />
-        <Text style={styles.actionText}>Leída</Text>
+        <MaterialIcons
+          name={unread ? 'check' : 'markunread'}
+          size={22}
+          color="#fff"
+        />
+        <Text style={styles.actionText}>{unread ? 'Leída' : 'No leída'}</Text>
       </SwipeActionContent>
     </TouchableOpacity>
   );
@@ -121,14 +102,7 @@ function NotificationRow({
   return (
     <Swipeable
       ref={swipeRef}
-      // Una no leída solo tiene acciones a la derecha («Leída»); una leída, solo
-      // a la izquierda («No leída»): por eso un único manejador vale para los dos.
-      onSwipeableOpen={unread ? markReadFromSwipe : markUnreadFromSwipe}
-      renderLeftActions={(_progress, translation) =>
-        canMarkUnread ? renderLeftActions(translation) : null
-      }
-      leftThreshold={spacing.xl}
-      overshootLeft={false}
+      onSwipeableOpen={toggle}
       renderRightActions={(_progress, translation) =>
         renderActions(translation)
       }
@@ -139,17 +113,13 @@ function NotificationRow({
         onPress={() => onOpen(notification)}
         accessibilityRole="button"
         accessibilityLabel={`${unread ? 'No leída: ' : ''}${notification.title}`}
-        accessibilityActions={
+        accessibilityActions={[
           unread
-            ? [{ name: 'markRead', label: 'Marcar como leída' }]
-            : canMarkUnread
-              ? [{ name: 'markUnread', label: 'Marcar como no leída' }]
-              : []
-        }
+            ? { name: 'toggleRead', label: 'Marcar como leída' }
+            : { name: 'toggleRead', label: 'Marcar como no leída' },
+        ]}
         onAccessibilityAction={(e) => {
-          if (e.nativeEvent.actionName === 'markRead')
-            onMarkRead(notification.id);
-          if (e.nativeEvent.actionName === 'markUnread') markUnreadFromSwipe();
+          if (e.nativeEvent.actionName === 'toggleRead') toggle();
         }}
         style={[
           styles.row,
@@ -268,12 +238,6 @@ const styles = StyleSheet.create({
   // El 100 % hace que las acciones ocupen el alto de la fila, no el de su icono.
   actions: { flexDirection: 'row', height: '100%' },
   action: {
-    width: SWIPE_ACTION_WIDTH,
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  leftAction: {
     width: SWIPE_ACTION_WIDTH,
     height: '100%',
     alignItems: 'center',

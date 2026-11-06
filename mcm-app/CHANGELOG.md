@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-06 19:00 — Bandeja: un gesto que alterna leída/no leída, también en las antiguas, y cabecera en una línea
+
+- **Un solo gesto** (arrastrar a la izquierda y soltar) que ALTERNA: «Leída» en una sin leer, «No leída» en una leída. Se quita el gesto hacia la derecha (en una leída enseñaba «Leída» y al soltar hacía lo contrario) y el botón «No leída» del detalle (ya la estás leyendo).
+- **Las notificaciones de más de 60 días ya se pueden devolver a «sin leer»**: antes la app las daba por leídas por antigüedad al instante y solo funcionaba con las recientes. Lo marcado a mano se guarda (`@mcm_notifications_forced_unread`, `getForcedUnreadIds`) y manda sobre la regla de los 60 días, también en el badge (`getUnreadNotificationsCount`).
+- **Cabecera de Notificaciones**: título pequeño y centrado en la misma línea que «volver» y el doble tick (sin título grande).
+- Tests: `notificationsInbox`, `pushNotificationServiceStorage`. Solo JS: OTA ✅.
+
 ## 2026-11-06 17:00 — Comunica: el enlace del correo entra solo, el código pegado con espacio vale, y header de Contigo
 
 - **El enlace del correo no iniciaba sesión** (se abría la app y volvía a «Entra en tu área»). Causa: con la app abierta, `+native-intent` dejaba el enlace en el hueco y devolvía `/(tabs)/comunica`; la puerta hacía `push` a «código» a la vez que el enrutador navegaba a esa portada, y la navegación se comía el `push` (la pantalla del código ni se pintaba). Ahora, para `acceso_app`, `redirectSystemPath` devuelve directamente `/(tabs)/comunica/acceso-codigo?link=<token>` (sin pasar por el hueco). Reproducido y arreglado en el simulador con el servidor falso (`mcmapp://comunica?acceso_app=enlace-valido`). Tests en `__tests__/comunica/links.test.ts`. `CodeScreen` ya no falla con `POP_TO_TOP` si es la única pantalla de la pila.

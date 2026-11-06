@@ -25,12 +25,15 @@ export default function NotificationsLayout() {
         headerStyle: { backgroundColor: Colors[scheme].background },
         headerShadowVisible: false,
         contentStyle: { backgroundColor: Colors[scheme].background },
+        headerTitleAlign: 'center',
         headerBackButtonDisplayMode: 'minimal',
       }}
     >
+      {/* Título pequeño y centrado en la misma línea que «volver» y el doble tick:
+          sin título grande, que se comía media pantalla. */}
       <Stack.Screen
         name="index"
-        options={{ title: 'Notificaciones', headerLargeTitle: true }}
+        options={{ title: 'Notificaciones', headerLargeTitle: false }}
       />
       <Stack.Screen name="[id]" options={{ title: '' }} />
     </Stack>

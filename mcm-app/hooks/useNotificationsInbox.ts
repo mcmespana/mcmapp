@@ -3,6 +3,7 @@ import { useFocusEffect } from 'expo-router/react-navigation';
 import { logger } from '@/utils/logger';
 import {
   getDismissedNotificationKeys,
+  getForcedUnreadIds,
   getLocalNotificationsHistory,
   getReadNotificationIds,
   initializeNewUserReadStatus,
@@ -33,19 +34,22 @@ export function useNotificationsInbox() {
   const [local, setLocal] = useState<ReceivedNotification[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [forcedUnread, setForcedUnread] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [localNotifs, ids, gone] = await Promise.all([
+      const [localNotifs, ids, gone, forced] = await Promise.all([
         getLocalNotificationsHistory(),
         getReadNotificationIds(),
         getDismissedNotificationKeys(),
+        getForcedUnreadIds(),
       ]);
       setLocal(localNotifs);
       setReadIds(new Set(ids));
       setDismissed(gone);
+      setForcedUnread(forced);
     } catch (error) {
       logger.error('Error cargando notificaciones:', error);
     } finally {
@@ -79,13 +83,15 @@ export function useNotificationsInbox() {
   );
 
   const isRead = useCallback(
-    (n: InboxNotification) => isInboxRead(n, readIds),
-    [readIds],
+    (n: InboxNotification) => isInboxRead(n, readIds, new Date(), forcedUnread),
+    [readIds, forcedUnread],
   );
 
   const unreadCount = useMemo(
-    () => items.filter((n) => !isInboxRead(n, readIds)).length,
-    [items, readIds],
+    () =>
+      items.filter((n) => !isInboxRead(n, readIds, new Date(), forcedUnread))
+        .length,
+    [items, readIds, forcedUnread],
   );
 
   const markRead = useCallback(
@@ -108,7 +114,9 @@ export function useNotificationsInbox() {
   );
 
   const markAllRead = useCallback(async () => {
-    const unread = items.filter((n) => !isInboxRead(n, readIds));
+    const unread = items.filter(
+      (n) => !isInboxRead(n, readIds, new Date(), forcedUnread),
+    );
     if (unread.length === 0) return;
     setReadIds((prev) => {
       const next = new Set(prev);
@@ -118,7 +126,7 @@ export function useNotificationsInbox() {
     await markAllNotificationsAsRead(unread.map((n) => n.id));
     await load();
     refreshCount();
-  }, [items, readIds, load, refreshCount]);
+  }, [items, readIds, forcedUnread, load, refreshCount]);
 
   const refresh = useCallback(() => {
     setRefreshing(true);
