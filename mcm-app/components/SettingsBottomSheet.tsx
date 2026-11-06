@@ -467,7 +467,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.lg,
+    // El lateral (16) lo pone BottomSheet; sumar otro aquí daba 40 pt.
     paddingBottom: 40,
   } as ViewStyle,
   panelScroll: {
