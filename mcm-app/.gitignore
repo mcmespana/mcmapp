@@ -64,6 +64,16 @@ GoogleService-Info.plist
 *.aab
 /builds/
 /android/app/build/
+
+# Salidas de Gradle/CMake de los módulos locales (`modules/*`). Se colaron 120
+# ficheros de `highlight-menu/android/build/` en un commit (2026-11-05). Reglas
+# ESTRECHAS a propósito: ignorar `android/` o `ios/` enteros se tragaría las
+# fuentes nativas del módulo (ver el aviso de arriba). Lo vigila
+# `__tests__/modulesBuildArtifacts.test.ts`.
+/modules/*/android/build/
+/modules/*/android/.gradle/
+/modules/*/android/.cxx/
+/modules/*/ios/build/
 # heroui-agents-md
 .heroui-docs/
 
