@@ -344,7 +344,14 @@ export interface PhotoSource {
 }
 
 /** Lo que puede fallar: los códigos del contrato, más los de la app. */
-export type ApiErrorCode = ErrorCode | 'network' | 'bad_response';
+/**
+ * `queued` no es un fallo: el servidor ha apuntado la escritura en su cola y la
+ * sube él solo al CRM (202). La cola del móvil pregunta luego mandando lo mismo.
+ */
+export type ApiErrorCode = ErrorCode | 'network' | 'bad_response' | 'queued';
+
+/** Le dice al servidor que esta app entiende el 202 «encolada». */
+export const QUEUE_HEADER = 'X-Comunica-Queue';
 
 export class ComunicaApiError extends Error {
   readonly code: ApiErrorCode;
@@ -438,6 +445,8 @@ export function createHttpClient({
             : {}),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(delegation ? { [DELEGATION_HEADER]: delegation } : {}),
+          // Las escrituras pueden quedarse en la cola del servidor (202).
+          ...(method !== 'GET' ? { [QUEUE_HEADER]: '1' } : {}),
         },
         body:
           body === undefined
@@ -479,6 +488,20 @@ export function createHttpClient({
         logger.warn('[comunica] 403', method, path);
       }
       throw err;
+    }
+
+    // 202 «queued»: el servidor ya la tiene y la sube él. No hay resultado
+    // todavía; la cola del móvil volverá a preguntar con el mismo `clientId`.
+    if (
+      res.status === 202 &&
+      method !== 'GET' &&
+      (json as { status?: unknown } | null)?.status === 'queued'
+    ) {
+      throw new ComunicaApiError(
+        'queued',
+        'Recibida. Se está guardando en Comunica.',
+        202,
+      );
     }
 
     const parsed = schema.safeParse(json);

@@ -8,7 +8,11 @@
 //     cola del plugin (`js/stic-pasar-lista.js`).
 //   · El `clientId` lo pone quien encola y se conserva entre reintentos: el
 //     servidor no duplica.
-//   · Estados: pending → sending → applied | failed | stuck (tras 5 fallos).
+//   · Estados: pending → sending → applied | failed | stuck (tras 5 fallos),
+//     y `queued` (6/11/2026): el servidor ya la tiene en SU cola (202) y la
+//     sube él al CRM. El móvil ya no la puede perder: se pregunta mandando lo
+//     mismo (mismo `clientId`) con espera creciente, al abrir una pantalla o
+//     al volver la app, hasta que contesta el resultado o el error.
 //   · Sin red: NO es un fallo. Sigue `pending` («guardada en el móvil, se
 //     enviará sola»), sin gastar intentos, y sube al volver la red (`wake`).
 //   · CRM caído (503/5xx): `failed` con reintento automático y espera
@@ -38,7 +42,7 @@ import { readDrawer, writeDrawer } from './storage';
 import { logger } from '@/utils/logger';
 
 export type OutboxStatus =
-  'pending' | 'sending' | 'applied' | 'failed' | 'stuck';
+  'pending' | 'sending' | 'queued' | 'applied' | 'failed' | 'stuck';
 
 export interface OutboxEntry<P = unknown> {
   key: string;
@@ -56,6 +60,8 @@ export interface OutboxEntry<P = unknown> {
   nextAttemptAt: number;
   /** Veces que se ha esperado por falta de red (no cuentan como intento). */
   waits?: number;
+  /** Veces que se ha preguntado al servidor por una `queued`. */
+  polls?: number;
   /** Lo que contestó el servidor al subir (solo en memoria). */
   result?: unknown;
 }
@@ -71,6 +77,12 @@ const APPLIED_TTL_MS = 10 * 60_000;
 
 export const backoffMs = (attempts: number) =>
   Math.min(MAX_DELAY_MS, BASE_DELAY_MS * 2 ** Math.max(0, attempts - 1));
+
+/** Cada cuánto se pregunta por una que tiene el servidor: 3 s, 6 s… hasta 1 min. */
+const POLL_BASE_MS = 3_000;
+const POLL_MAX_MS = 60_000;
+export const pollMs = (polls: number) =>
+  Math.min(POLL_MAX_MS, POLL_BASE_MS * 2 ** Math.max(0, polls - 1));
 
 export interface Outbox {
   load(): Promise<void>;
@@ -119,6 +131,7 @@ const NEVER = Number.MAX_SAFE_INTEGER;
 /** ¿Le toca subir sola? Lo rechazado sin `auto` espera a «Reintentar». */
 const isDue = (e: OutboxEntry, t: number) =>
   (e.status === 'pending' ||
+    e.status === 'queued' ||
     (e.status === 'failed' && e.error?.auto !== false)) &&
   (e.nextAttemptAt ?? 0) <= t;
 
@@ -221,7 +234,15 @@ export function createOutbox({
       const code = apiError ? e.code : 'internal';
       const message = e instanceof Error ? e.message : String(e);
       const reason = apiError ? e.reason : undefined;
-      if (code === 'unauthenticated') {
+      if (code === 'queued') {
+        // El servidor la tiene y la sube él: no es un fallo ni gasta intentos.
+        // Se vuelve a preguntar (mandando lo mismo) dentro de un rato.
+        entry.polls = (entry.polls ?? 0) + 1;
+        entry.status = 'queued';
+        entry.error = undefined;
+        entry.nextAttemptAt = now() + pollMs(entry.polls);
+        later(pollMs(entry.polls));
+      } else if (code === 'unauthenticated') {
         // Sin sesión: se queda esperando a que se vuelva a entrar. No cuenta
         // como intento: no es que el servidor la rechace.
         entry.status = 'pending';
@@ -392,6 +413,9 @@ export function createOutbox({
   return outbox;
 }
 
-/** Lo que falta por subir (para «Tienes 2 listas guardadas solo en el móvil»). */
+/**
+ * Lo que falta por subir (para «Tienes 2 listas guardadas solo en el móvil»).
+ * Lo `queued` ya no está solo en el móvil: lo tiene el servidor.
+ */
 export const unsent = (entries: readonly OutboxEntry[]) =>
-  entries.filter((e) => e.status !== 'applied');
+  entries.filter((e) => e.status !== 'applied' && e.status !== 'queued');

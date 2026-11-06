@@ -1,5 +1,6 @@
 // Estado de una escritura de la cola (plan 01 §4): «Guardada en el móvil»,
-// «Subiendo…», «Subida», «No se ha podido subir · Reintentar», «Atascada».
+// «Subiendo…», «Recibida en Comunica» (la tiene la cola del servidor), «Subida»,
+// «No se ha podido subir · Reintentar», «Atascada».
 
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -9,11 +10,12 @@ import typography from '@/constants/typography';
 import { useComunicaTheme } from './useComunicaTheme';
 
 export type UploadState =
-  'pending' | 'sending' | 'applied' | 'failed' | 'stuck';
+  'pending' | 'sending' | 'queued' | 'applied' | 'failed' | 'stuck';
 
 const COPY: Record<UploadState, string> = {
   pending: 'Guardada en el móvil',
   sending: 'Subiendo…',
+  queued: 'Recibida en Comunica',
   applied: 'Subida',
   failed: 'No se ha podido subir',
   stuck: 'Atascada: no se ha podido subir',
@@ -22,6 +24,7 @@ const COPY: Record<UploadState, string> = {
 const ICON = {
   pending: 'iphone',
   sending: 'icloud.and.arrow.up',
+  queued: 'checkmark.icloud',
   applied: 'checkmark.icloud',
   failed: 'xmark.icloud',
   stuck: 'exclamationmark.triangle.fill',
