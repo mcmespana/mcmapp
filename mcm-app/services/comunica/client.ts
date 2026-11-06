@@ -927,14 +927,22 @@ export function createHttpClient({
       // si la foto es de nuestro servidor (una `photoUrl` de otro dominio no se
       // lleva la sesión). Si aún no hay token de acceso, sin cabecera (dará 401
       // y saldrán las iniciales).
-      const token = isOwnUrl(url) ? getToken?.() : null;
-      return typeof token === 'string'
-        ? {
-            uri: url,
-            headers: { Authorization: `Bearer ${token}` },
-            cacheKey: url,
-          }
-        : { uri: url, cacheKey: url };
+      const own = isOwnUrl(url);
+      const token = own ? getToken?.() : null;
+      if (typeof token !== 'string') return { uri: url, cacheKey: url };
+      // La foto de alguien del equipo (`/v1/people/:id/photo`) va con la
+      // delegación de trabajo, como su ficha: sin ella, el servidor mira la de
+      // TU ficha y quien trabaja con otra delegación veía 403 (6/11/2026).
+      const path = url.slice(root.length).split('?')[0]!;
+      const delegation = isTeamPath(path) ? delegationForRequest(false) : null;
+      return {
+        uri: url,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(delegation ? { [DELEGATION_HEADER]: delegation } : {}),
+        },
+        cacheKey: url,
+      };
     },
   };
 }
