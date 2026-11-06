@@ -4,7 +4,7 @@
 > por sabido. Lo que hay que configurar UNA vez está en §2; el día de la build
 > se hace §3 → §4 → §5 → §6.
 >
-> Rama: **`main`** · **App v2.5.0** (`runtimeVersion` 2.5.0) · Expo SDK 58
+> Rama: **`main`** · **App v2.5.1** (`runtimeVersion` 2.5.1) · Expo SDK 58
 >
 > (La rama `claude/compact-tabs-bar-uxxaoz`, que traía todo esto, se mergeó en
 > la [#313](https://github.com/mcmespana/mcmapp/pull/313) el 2026-08-04 y ya no
@@ -13,7 +13,7 @@
 
 ## 📍 Qué falta a 2026-11-01 (marcado por el propietario en la checklist)
 
-La build es la **2.5.0 con SDK 58** y lleva el área privada nativa. La lista viva, con las pruebas del móvil punto por punto y comentarios, está en el artefacto «Checklist build 2.5». Resumen de lo marcado el 1/11:
+La build es la **2.5.1 con SDK 58** (la 2.5.0 salió antes de añadir `react-native-audio-api`; ver «Por qué 2.5.1» más abajo) y lleva el área privada nativa. La lista viva, con las pruebas del móvil punto por punto y comentarios, está en el artefacto «Checklist build 2.5». Resumen de lo marcado el 1/11:
 
 **Hecho:** política de privacidad y fichas de las tiendas · credenciales de la extensión de notificaciones (iOS) · canales de notificación en un Android real · variables `MW_CRM_*` en Vercel · una escritura contra el CRM real · revisión de seguridad del middleware · evaluación de impacto de protección de datos · foto de perfil · portada de familias (#371 fusionada).
 
@@ -26,7 +26,7 @@ La build es la **2.5.0 con SDK 58** y lleva el área privada nativa. La lista vi
 | §2.6 Huellas SHA-1 de Android (la del keystore de EAS antes de la build de desarrollo y las dos de Play App Signing después), dadas de alta en Firebase | Sí, el login en Android |
 | §5 Checklist de pruebas sobre la build de desarrollo, ahora desglosado en el artefacto                                                                  | Sí, lo que salga        |
 | §0 Desplegar la Cloud Function del calendario (`firebase deploy --only functions`): hace que el calendario abra más rápido; sin ella funciona igual     | No                      |
-| Fusionar la PR #372 (versión y `runtimeVersion` 2.5.0)                                                                                                  | Sí, para la build 2.5   |
+| Fusionar la PR #372 (versión y `runtimeVersion` 2.5.0; hoy ya 2.5.1 en `main`)                                                                          | Sí, para la build 2.5   |
 
 **Para más adelante** (anotado como «Futuro»): sábados de los monitores del MIC, firmas dentro de Documentos y el rediseño del área nativa.
 
@@ -90,6 +90,27 @@ de verdad, que es una decisión aparte con sus propios requisitos (sembrar
 
 ---
 
+## 📦 Por qué 2.5.1 (y no 2.5.0)
+
+La 2.5.0 ya estaba compilada y fuera cuando se añadió el afinador,
+que usa `react-native-audio-api` (**módulo nativo**) y el permiso de micrófono
+(`RECORD_AUDIO` en Android, `NSMicrophoneUsageDescription` en iOS). Un binario
+2.5.0 no lo lleva: abrir el afinador falla y, peor, una OTA con ese JS sobre un
+2.5.0 estaría pidiendo un módulo que no existe. Por eso:
+
+- `version` y `runtimeVersion` pasan a **2.5.1** a la vez. Las builds 2.5.0
+  **dejan de recibir OTA** (mismo mecanismo que en la subida a 2.5.0).
+- La 2.5.1 es la **primera build con afinador**. Se da por compilada y
+  publicada; el JS de `main` ya la asume.
+- **Versión mínima del Panel: `2.5.1`.** En MCM Panel → _Sistema_ → _Versión
+  mínima_ (`minAppVersion = "2.5.1"`), cuando la 2.5.1 esté aprobada en las
+  tiendas. Quien siga en la 2.5.0 verá la pantalla de actualización
+  (`UpdateRequiredScreen`). Receta general en
+  [`PANEL_PERFILES.md`](../contratos/PANEL_PERFILES.md) §4.4. **No la subas antes
+  de que esté publicada**: bloquearías a todo el mundo sin tienda a la que ir.
+- Un commit que toca `app.json` / `package.json` va con `[skip-ota]` (lo exige
+  `guard-native`); este lo llevó.
+
 ## 1. Por qué esta build no puede ser una OTA
 
 Una OTA (EAS Update) manda **solo el bundle de JavaScript**. Esta rama cambia
@@ -105,6 +126,7 @@ código **nativo**, que vive en el binario y no se puede actualizar así:
 - `modules/highlight-menu` — módulo nativo propio: "Subrayar" en el menú del sistema
 - iPad landscape (`UISupportedInterfaceOrientations~ipad`)
 - `expo-gl` — sin uso todavía: va en el binario para poder hacer 3D luego por OTA
+- `react-native-audio-api` — micrófono en crudo para el afinador del cantoral (**solo en la 2.5.1**, ver abajo)
 
 Si esto saliera por OTA, la app **crashearía** en los móviles ya instalados: el
 binario que tienen no lleva esos módulos. Por eso los commits van con
@@ -361,7 +383,7 @@ npm run eas:build:android -- --profile production
 ```
 
 `autoIncrement` sube solo el número de build. La versión visible sigue siendo
-la de `app.json` (`2.5.0`) — cámbiala ahí si quieres que salga otra.
+la de `app.json` (`2.5.1`) — cámbiala ahí si quieres que salga otra.
 
 ### 4.2-bis Alternativa: lanzarla desde GitHub (o pedírsela a Claude)
 

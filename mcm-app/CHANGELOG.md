@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-06 12:00 — Versión y runtimeVersion: 2.5.1 (afinador, `react-native-audio-api`)
+
+- `version` y `runtimeVersion` de `app.json` pasan de **2.5.0 a 2.5.1**. Motivo: el afinador añadió `react-native-audio-api` (módulo nativo) y el permiso de micrófono, que la 2.5.0 ya publicada no lleva. Un OTA con ese JS sobre un binario 2.5.0 pediría un módulo inexistente.
+- Las builds **2.5.0 dejan de recibir OTA** (el `runtimeVersion` ya no coincide). La 2.5.1 se da por compilada.
+- Siguiente paso fuera del código: poner **`2.5.1` como versión mínima** en MCM Panel (Sistema → Versión mínima) cuando la build esté publicada en las tiendas. `UpdateRequiredScreen` ya cubre a quien siga en 2.5.0.
+- Docs al día: `BUILD_AGOSTO_2026.md` (sección «Por qué 2.5.1»), `AFINADOR.md`, `OTA.md`, `CANAL_PREVIEW.md`, `PANEL_PERFILES.md` y `mcm-app/CLAUDE.md`. Commit con `[skip-ota]`.
+
 ## 2026-11-05 22:50 — Cierre de la rama del área nativa: Android, teclado y radios
 
 - **Portada de familia de Comunica vacía tras salir y volver a entrar (Android):** `ActiveProfileProvider` se quedaba sin repintarse y la portada esperaba un perfil ya cargado. Ahora se reinicia por persona (`ProfileScope` en `app/(tabs)/comunica/_layout.tsx`).

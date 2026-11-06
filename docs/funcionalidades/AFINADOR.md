@@ -2,7 +2,8 @@
 
 > Noviembre de 2026. Solo guitarra, solo afinación estándar (Mi La Re Sol Si
 > Mi, La 440). A propósito: tiene que afinar y ya. **Requiere build nativa**
-> (`react-native-audio-api`): no sale por OTA.
+> (`react-native-audio-api`): no sale por OTA. Llega con la **build 2.5.1**
+> (`runtimeVersion` 2.5.1); la 2.5.0 no lo lleva y por eso se subió la versión.
 
 ## Dónde está
 
