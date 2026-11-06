@@ -26,6 +26,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { notificationDetailHref } from '@/utils/notificationsInbox';
 import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@/components/ui/icons';
@@ -43,7 +44,6 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
-import NotificationsBottomSheet from '@/components/NotificationsBottomSheet';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
@@ -83,7 +83,6 @@ import {
   getLocalNotificationsHistory,
   isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
-import { NotificationData } from '@/types/notifications';
 import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import { useOTAContext } from '@/contexts/OTAContext';
 import { useCarismochito } from '@/contexts/CarismochitoContext';
@@ -249,23 +248,7 @@ export default function Home() {
   const { isActive: carismoActive, openOnboarding } = useCarismochito();
   const [settingsVisible, setSettingsVisibleRaw] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
-  const [notifSheetOpen, setNotifSheetOpenRaw] = useState(false);
-  // Cuando se abre desde la tarjeta de Novedades queremos mostrar el detalle de
-  // la última notificación "en grande"; desde la campana, la lista completa.
-  const [notifSheetInitial, setNotifSheetInitial] =
-    useState<NotificationData | null>(null);
-
-  // Settings and notifications panels must be mutually exclusive: opening
-  // one auto-closes the other. Otherwise both panels stack visually and
-  // taps leak through to the header buttons underneath.
-  const setSettingsVisible = (next: boolean) => {
-    setSettingsVisibleRaw(next);
-    if (next) setNotifSheetOpenRaw(false);
-  };
-  const setNotifSheetOpen = (next: boolean) => {
-    setNotifSheetOpenRaw(next);
-    if (next) setSettingsVisibleRaw(false);
-  };
+  const setSettingsVisible = setSettingsVisibleRaw;
 
   // Primary color readable on both light and dark backgrounds
   const accentColor = scheme === 'dark' ? colors.info : colors.primary;
@@ -714,11 +697,6 @@ export default function Home() {
           })
         }
       />
-      <NotificationsBottomSheet
-        visible={notifSheetOpen}
-        onClose={() => setNotifSheetOpen(false)}
-        initialNotification={notifSheetInitial}
-      />
 
       {/* ── App-bar header (ScreenHero in compact mode) ── */}
       <View
@@ -793,10 +771,7 @@ export default function Home() {
                   ? [
                       {
                         key: 'notif',
-                        onPress: () => {
-                          setNotifSheetInitial(null);
-                          setNotifSheetOpen(true);
-                        },
+                        onPress: () => router.push('/notifications'),
                         accessibilityLabel:
                           unreadCount > 0
                             ? `Notificaciones, ${unreadCount} sin leer`
@@ -1078,10 +1053,11 @@ export default function Home() {
                 >
                   <TouchableOpacity
                     onPress={() => {
-                      // Abre directamente el detalle de la última notificación
-                      // (vista en grande), no la lista completa.
-                      setNotifSheetInitial(latestNotification);
-                      setNotifSheetOpen(true);
+                      // Abre directamente el detalle de la última notificación,
+                      // no la lista completa.
+                      router.push(
+                        notificationDetailHref(latestNotification.id) as any,
+                      );
                     }}
                     activeOpacity={0.78}
                     accessibilityLabel={`${notifTitle}. Toca para leer`}

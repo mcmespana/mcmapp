@@ -11,6 +11,9 @@ import {
   getLocalNotificationsHistory,
   dismissNotification,
   clearLocalNotifications,
+  markNotificationAsRead,
+  markNotificationAsUnread,
+  getReadNotificationIds,
 } from '@/services/pushNotificationService';
 import type { ReceivedNotification } from '@/types/notifications';
 
@@ -68,5 +71,30 @@ describe('dismissNotification y clearLocalNotifications entran en la cola', () =
     // Lo que NO puede pasar es que quede el viejo.
     const history = await getLocalNotificationsHistory();
     expect(history.map((n) => n.id)).not.toContain('viejo');
+  });
+});
+
+describe('markNotificationAsUnread', () => {
+  it('deshace «leída»: copia local, duplicados por contenido y lista de leídas', async () => {
+    await saveReceivedNotificationLocally(mk('a'));
+    await saveReceivedNotificationLocally({
+      ...mk('b'),
+      title: 'Título a',
+      body: 'Cuerpo a',
+    });
+    await markNotificationAsRead('a');
+    expect((await getReadNotificationIds()).has('a')).toBe(true);
+
+    await markNotificationAsUnread('a');
+
+    expect((await getReadNotificationIds()).has('a')).toBe(false);
+    const history = await getLocalNotificationsHistory();
+    expect(history.every((n) => n.isRead === false)).toBe(true);
+  });
+
+  it('funciona con una notificación solo de Firebase (sin copia local)', async () => {
+    await markNotificationAsRead('solo-remota');
+    await markNotificationAsUnread('solo-remota');
+    expect((await getReadNotificationIds()).has('solo-remota')).toBe(false);
   });
 });

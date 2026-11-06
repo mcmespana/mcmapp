@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-06 15:00 — Bandeja de notificaciones rehecha y datos de prueba de notificaciones
+
+- **Una sola bandeja.** Antes la campana abría una hoja (`NotificationsBottomSheet`) y tocar una push abría la pantalla `/notifications`: dos implementaciones que no hacían lo mismo (la hoja no tenía eliminar ni filtraba las descartadas, el detalle de la hoja no mostraba `bodyLong`…). Ahora `app/notifications/` es una carpeta con `index` (lista) y `[id]` (detalle), con cabecera nativa, y la campana, la tarjeta de Novedades y la push entran por ahí. Borrados `NotificationsBottomSheet`, `NotificationListItem` y `notificationsStyles`.
+- **Nada se borra**: se quita «Eliminar». Leer solo baja la notificación de «Nuevas» a «Anteriores». Si hay sin leer se abre en «Sin leer (n)» / «Todas»; si no, directamente todas. Marcar: abrir el detalle, **deslizar y soltar** (se marca al soltar) o el doble tick de la cabecera («Marcar todas», con confirmación). **Marcar como no leída**: arrastrar a la derecha una leída o el botón «No leída» del detalle (`markNotificationAsUnread`; las de más de 60 días no se pueden devolver).
+- Lógica en `hooks/useNotificationsInbox.ts` y `utils/notificationsInbox.ts` (tests nuevos). La push abre `/notifications/<id>`.
+- **Modo de datos de prueba**: con `EXPO_PUBLIC_FIREBASE_FIXTURES=1`, `subscribeToNotifications` devuelve `devNotificationsFixture()` (11 avisos con todos los casos). Documentado en `docs/desarrollo/PRUEBAS_EN_SIMULADOR.md`.
+- Trinquete de `noNewMagicNumbers`: el tope de colores de marca baja de 3 a 1. Solo JS: OTA ✅.
+
 ## 2026-11-06 13:00 — «Un momentín» más cuidado y con salida a los 5 s
 
 - **`OTAUpdatingOverlay`** (la pantalla de «un momentín… + frase» mientras se aplica la OTA): ahora el protagonista es el **icono de la app** (respira con un halo suave) con **tres puntos de los colores del logo** que le dan vueltas, en vez del círculo azul con la flecha girando. Título `h1`, barra más ancha. Sin degradados ni colores nuevos (`design.md` §8).

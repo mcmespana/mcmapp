@@ -34,6 +34,7 @@ import {
   extractActionButton,
   extractActionButtons,
 } from '@/utils/notificationRoutes';
+import { notificationDetailHref } from '@/utils/notificationsInbox';
 import { routeForEventId } from '@/utils/notificationEventRoute';
 import { isContigoReminderData } from '@/utils/contigoReminders';
 import { syncAndroidNotificationChannels } from '@/notifications/androidChannels';
@@ -316,10 +317,7 @@ export default function usePushNotifications() {
           // Si vamos al centro de notificaciones, hacemos deep-link a ESTA
           // notificación concreta para abrir su detalle (vista "en grande").
           if (normalized === '/notifications') {
-            router.navigate({
-              pathname: '/notifications',
-              params: { openId: notificationId },
-            } as any);
+            router.navigate(notificationDetailHref(notificationId) as any);
           } else {
             // Los tabs (puede estar en "Más" en iOS) los resuelve `goToPath`;
             // el resto de rutas sigue con `navigate`, que no apila duplicados.

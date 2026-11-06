@@ -279,6 +279,18 @@ export const getNotificationsHistory = async (): Promise<
 export const subscribeToNotifications = (
   callback: (notifications: NotificationData[]) => void,
 ): (() => void) => {
+  // Datos de prueba de desarrollo: solo con `EXPO_PUBLIC_FIREBASE_FIXTURES=1`.
+  // Sin la variable, esta rama no existe y todo va a Firebase.
+  if (process.env.EXPO_PUBLIC_FIREBASE_FIXTURES === '1') {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { devNotificationsFixture } = require('@/utils/devFirebaseFixtures');
+    callback(
+      (devNotificationsFixture() as Array<Record<string, unknown>>).map((v) =>
+        normalizeNotificationRecord(String(v.id), v),
+      ),
+    );
+    return () => {};
+  }
   try {
     const db = getDatabase(getFirebaseApp());
     const notificationsRef = ref(db, 'notifications');
@@ -428,6 +440,49 @@ export const markNotificationAsRead = async (
       );
     } catch (error) {
       logger.error('Error marcando notificación como leída:', error);
+    }
+  });
+};
+
+/**
+ * Deshace «leída»: la notificación vuelve a contar como sin leer. Es la inversa
+ * de `markNotificationAsRead` (copia local, por id y por contenido idéntico, y
+ * su id fuera de la lista de leídas). Las de más de 60 días se dan por leídas
+ * por antigüedad y no se pueden devolver a «sin leer».
+ */
+export const markNotificationAsUnread = async (
+  notificationId: string,
+): Promise<void> => {
+  await withStorageLock(NOTIFICATIONS_HISTORY_KEY, async () => {
+    try {
+      const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
+      const releasedIds = new Set<string>([notificationId]);
+      if (data) {
+        const notifications: ReceivedNotification[] = JSON.parse(data);
+        const target = notifications.find((n) => n.id === notificationId);
+        const updated = notifications.map((n) => {
+          const sameContent =
+            !!target && n.title === target.title && n.body === target.body;
+          if (n.id === notificationId || sameContent) {
+            releasedIds.add(n.id);
+            return { ...n, isRead: false };
+          }
+          return n;
+        });
+        await AsyncStorage.setItem(
+          NOTIFICATIONS_HISTORY_KEY,
+          JSON.stringify(updated),
+        );
+      }
+
+      const readIds = await getReadNotificationIds();
+      releasedIds.forEach((id) => readIds.delete(id));
+      await AsyncStorage.setItem(
+        READ_NOTIFICATIONS_KEY,
+        JSON.stringify(Array.from(readIds)),
+      );
+    } catch (error) {
+      logger.error('Error marcando notificación como no leída:', error);
     }
   });
 };
