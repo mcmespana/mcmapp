@@ -65,6 +65,13 @@ momentín» (`OTAUpdatingOverlay`, ~160 frases en `constants/updatePhrases.ts`).
   a arrancar, la app no entra en un bucle de recargas.
 - La pantalla se ve como mínimo ~3 s antes de recargar (la OTA ya está bajada y
   la recarga es casi instantánea, y si no la frase no se lee).
+- **Salida a los 5 s.** Si pasados 5 s la pantalla sigue (mala conexión, recarga
+  lenta), aparece «Cerrar y hacer más tarde» (`LATER_AFTER_MS` en
+  `OTAUpdatingOverlay`; «atrás» de Android hace lo mismo). Cierra la pantalla,
+  la descarga **sigue en segundo plano** pero **no recarga la app** por debajo
+  de quien ya siguió con lo suyo: el update queda listo (`isReady`) y se aplica
+  en la próxima vuelta del fondo o con la insignia de Home (que, si el flujo
+  aún corre, vuelve a poner la pantalla). Antes de los 5 s no hay salida.
 
 Para quien despliega: una OTA mala llega, por tanto, **sola y deprisa** al
 siguiente arranque de cada dispositivo. Revísala en `preview` y, si sale mal, el

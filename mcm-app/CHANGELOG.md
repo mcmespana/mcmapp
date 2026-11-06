@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-06 13:00 — «Un momentín» más cuidado y con salida a los 5 s
+
+- **`OTAUpdatingOverlay`** (la pantalla de «un momentín… + frase» mientras se aplica la OTA): ahora el protagonista es el **icono de la app** (respira con un halo suave) con **tres puntos de los colores del logo** que le dan vueltas, en vez del círculo azul con la flecha girando. Título `h1`, barra más ancha. Sin degradados ni colores nuevos (`design.md` §8).
+- **«Cerrar y hacer más tarde» a los 5 s** (`LATER_AFTER_MS`): si la actualización tarda (conexión mala), aparece el botón (hueco reservado, no mueve nada) y «atrás» de Android también cierra. La descarga **sigue en segundo plano pero no recarga** la app por debajo de la persona: el update queda listo y se aplica en la próxima vuelta del fondo o con la insignia de Home. Antes de los 5 s no hay salida.
+- `OTAContext` gana `dismissApplying`; `useOTAUpdate.applyUpdate` acepta `{ shouldReload }` (si devuelve `false`, descarga pero no recarga y deja `isReady`). Cierre del hueco de que `applyUpdate` no marcaba `isReady` tras descargar por su cuenta.
+- Tests: `otaUpdatingOverlay.test.tsx` (nuevo), `otaContext` y `useOTAUpdate`. Detalle en `docs/desarrollo/OTA.md`. Solo JS: OTA ✅.
+
 ## 2026-11-06 12:00 — Versión y runtimeVersion: 2.5.1 (afinador, `react-native-audio-api`)
 
 - `version` y `runtimeVersion` de `app.json` pasan de **2.5.0 a 2.5.1**. Motivo: el afinador añadió `react-native-audio-api` (módulo nativo) y el permiso de micrófono, que la 2.5.0 ya publicada no lleva. Un OTA con ese JS sobre un binario 2.5.0 pediría un módulo inexistente.
