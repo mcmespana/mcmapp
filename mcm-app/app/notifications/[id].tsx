@@ -1,8 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useNavigation } from 'expo-router/react-navigation';
+import { PressableFeedback } from 'heroui-native';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/colors';
+import spacing from '@/constants/spacing';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useNotificationsInbox } from '@/hooks/useNotificationsInbox';
 import EmptyState from '@/components/ui/EmptyState';
@@ -23,6 +27,12 @@ export default function NotificationDetailScreen() {
   const inbox = useNotificationsInbox();
   const notification = inbox.findById(id);
   const markedRef = useRef<string | null>(null);
+  const navigation = useNavigation();
+  // ¿Es la ÚNICA pantalla de su pila? Pasa cuando se llega directo, p. ej. al
+  // tocar una push o la tarjeta de Inicio: el sistema no pone «volver» porque
+  // no hay nada debajo EN ESTA PILA. Se pone una flecha propia que hace lo mismo
+  // que el gesto de borde: volver a donde estabas (o a Inicio si no hay nada).
+  const alone = (navigation.getState()?.routes.length ?? 0) <= 1;
 
   const { markRead, refresh, isRead } = inbox;
 
@@ -49,6 +59,30 @@ export default function NotificationDetailScreen() {
     <View
       style={[styles.container, { backgroundColor: Colors[scheme].background }]}
     >
+      {alone && (
+        <Stack.Screen
+          options={{
+            headerLeft: () => (
+              <PressableFeedback
+                onPress={() =>
+                  router.canGoBack()
+                    ? router.back()
+                    : router.replace('/(tabs)' as never)
+                }
+                accessibilityRole="button"
+                accessibilityLabel="Volver"
+                hitSlop={spacing.sm}
+              >
+                <MaterialIcons
+                  name="chevron-left"
+                  size={30}
+                  color={Colors[scheme].text}
+                />
+              </PressableFeedback>
+            ),
+          }}
+        />
+      )}
       {notification ? (
         <NotificationDetail
           notification={notification}

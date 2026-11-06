@@ -25,6 +25,8 @@ import { formatDate } from './notificationDisplay';
 const ICON_SIZE = 44;
 const DOT_SIZE = 8;
 const SWIPE_ACTION_WIDTH = 84;
+// Distancia a la derecha que nunca se alcanza: desactiva ese sentido del arrastre.
+const NO_RIGHT_DRAG = 10000;
 // Área táctil de la acción de deslizar: ocupa todo el alto de la fila.
 const SWIPE_RANGE: [number, number] = [-SWIPE_ACTION_WIDTH, 0];
 
@@ -103,6 +105,10 @@ function NotificationRow({
     <Swipeable
       ref={swipeRef}
       onSwipeableOpen={toggle}
+      // Solo se arrastra hacia la IZQUIERDA. Un offset enorme hacia la derecha
+      // hace que la fila no reclame ese gesto, y así el de «volver» del sistema
+      // (deslizar desde el borde izquierdo, en iOS) no choca con la lista.
+      dragOffsetFromLeft={NO_RIGHT_DRAG}
       renderRightActions={(_progress, translation) =>
         renderActions(translation)
       }

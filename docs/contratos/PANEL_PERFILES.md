@@ -69,7 +69,8 @@ edita JSON. El cliente combina perfil + delegación + overrides al arrancar.
   "minAppVersionSkips": 3,          // «Ahora no» permitidos antes de ser estricto (§1.8). Ausente = sin límite
   "fotosEnIpad": true,              // false → sin Fotos en iPad, solo iPad (§1.9). Ausente = true
   "appReviewMode": false,           // modo revisión de tiendas — lo gestiona el panel (§1.6)
-  "comunicaNativa": "alpha"         // área privada nativa: "off" | "alpha" | "all" (§1.7). Ausente = "alpha"
+  "comunicaNativa": "alpha",        // área privada nativa: "off" | "alpha" | "all" (§1.7). Ausente = "alpha"
+  "carismochito": "alpha"           // modo/caza/colección Carismochito: "off" | "alpha" | "all" (§1.10). Ausente = "alpha"
 }
 ```
 
@@ -308,6 +309,27 @@ Con `false`, solo en iPad:
 
 iPhone, Android y web no cambian. Quitar Fotos del **perfil** (§1.2) sigue
 siendo la forma de apagarlas para todo el mundo; esto es solo por dispositivo.
+
+### 1.10. `data.global.carismochito` — el modo Carismochito
+
+Interruptor de **todo** Carismochito (modo de agitar, caza y colección). Lo lee
+la app (`utils/carismochitoGate.ts`, `hooks/useCarismochitoAvailable.ts`);
+documentación completa y plan 2027 en `docs/funcionalidades/CARISMOCHITO.md`.
+Mismo patrón que `comunicaNativa` (§1.7):
+
+| Valor | Modo normal | Laboratorio Alpha encendido |
+| --- | --- | --- |
+| `"off"` | Cerrado | Cerrado |
+| `"alpha"` (o ausente, o un valor raro) | **Cerrado** | **Abierto** |
+| `"all"` | Abierto | Abierto |
+
+- Cerrado = no existe y **se apaga a quien lo tuviera activo** (en silencio, al
+  detectar el valor; nunca antes de haber leído la configuración).
+- Es el interruptor del lanzamiento de 2027 (25.º aniversario): pasarlo a
+  `"all"` lo abre a todo el mundo sin build ni OTA.
+- Hasta que el panel lo enseñe, se cambia desde la consola de Firebase.
+
+---
 
 ## 2. Orden de resolución (lo que hace el cliente)
 

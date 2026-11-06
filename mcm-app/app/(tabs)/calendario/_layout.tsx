@@ -5,8 +5,8 @@ import { themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 /**
- * Pestaña del calendario: stack para tener header nativo (SIN título — solo el
- * botón de calendarios, que `CalendarScreen` añade como bar item). Es la misma
+ * Pestaña del calendario: stack para tener header nativo con el título
+ * «Calendario» centrado y los botones que `CalendarScreen` añade a la derecha. Es la misma
  * pantalla que el stack de «Más», donde sí lleva título porque allí es una
  * pantalla apilada.
  */
@@ -17,6 +17,7 @@ export default function CalendarioLayout() {
       <Stack
         screenOptions={{
           headerShadowVisible: false,
+          headerTitleAlign: 'center',
           headerTintColor: themeColors(isDark).headerTint,
           headerTitleStyle: {
             fontWeight: '700',
@@ -31,10 +32,9 @@ export default function CalendarioLayout() {
             : {}),
         }}
       >
-        {/* Sin título: la pestaña ya se llama Calendario. `headerTitle: ''`
-            deja la barra vacía (transparente en iOS) para que el botón de
-            suscribirse conviva con el conmutador Mes/Agenda de debajo. */}
-        <Stack.Screen name="index" options={{ headerTitle: '' }} />
+        {/* «Calendario» centrado; los botones de la derecha (suscribirse y
+            calendarios activos) los pone `CalendarScreen`. */}
+        <Stack.Screen name="index" options={{ headerTitle: 'Calendario' }} />
       </Stack>
     </>
   );

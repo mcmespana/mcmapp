@@ -78,6 +78,14 @@ export interface GlobalConfig {
    */
   comunicaNativa?: 'off' | 'alpha' | 'all';
   /**
+   * Interruptor de TODO Carismochito: el modo (agitar el móvil), la caza y la
+   * colección. Ausente = `alpha`. Ver `utils/carismochitoGate.ts`.
+   *   · `off`   → nadie (vuelta atrás de emergencia; apaga también a los probadores).
+   *   · `alpha` → solo quien enciende el Laboratorio Alpha. Es el estado actual.
+   *   · `all`   → para todos (el lanzamiento previsto: 25 aniversario, 2027).
+   */
+  carismochito?: 'off' | 'alpha' | 'all';
+  /**
    * Interruptor de las Fotos EN iPAD (y solo en iPad, cualquier versión de
    * iOS). Ausente = `true`: se ven, como siempre.
    *

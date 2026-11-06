@@ -44,17 +44,13 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 8,
       marginHorizontal: 16,
       marginTop: 12,
-      marginBottom: 8,
+      marginBottom: 12,
     },
-    // El mismo conmutador, pero metido en el título del header nativo. El hueco
-    // del título va centrado, así que el ancho útil es el que dejan los bar
-    // items a los dos lados (aunque a la izquierda no haya ninguno): de ahí los
-    // 290, que es casi todo el ancho sin llegar a pisar el botón de la derecha.
-    // El alto lo marca el header, por eso el conmutador va en versión `compact`.
-    headerSwitcher: {
+    // Botones de la derecha del header en Android y web (en iOS son nativos).
+    headerButtons: {
       flexDirection: 'row',
-      width: 290,
-      height: 34,
+      alignItems: 'center',
+      gap: 8,
     },
     // En ancho, el switcher Mes/Agenda no debe estirarse a todo lo ancho.
     switcherWrapperWide: {
@@ -110,43 +106,6 @@ export const createStyles = (scheme: 'light' | 'dark') => {
             : '0 4px 12px rgba(0,0,0,0.06)',
         },
       }),
-    },
-
-    // Filter chips
-    chipsScrollView: {
-      flexShrink: 0,
-      flexGrow: 0,
-    },
-    chipsScroll: {
-      flexDirection: 'row', // Necesario en web — RN Web no lo aplica auto con horizontal={true}
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      gap: 8,
-    },
-    filterChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: themeColors(isDark).background,
-      borderRadius: radii.pillFull,
-      paddingHorizontal: 12,
-      paddingVertical: 7,
-      gap: 6,
-      borderWidth: 1,
-      borderColor: isDark ? Colors.dark.card : '#E5E5EA',
-      // No elevation/shadow — the border is enough. Elevation on Android
-      // adds a Material Design drop-shadow that makes chips look dark & raised.
-      elevation: 0,
-    },
-    chipDot: {
-      width: 8,
-      height: 8,
-      borderRadius: radii.xs,
-    },
-    chipLabel: {
-      ...typography.caption,
-      fontWeight: '500',
-      color: themeColors(isDark).textSecondary,
     },
 
     // Event section (calendar view)

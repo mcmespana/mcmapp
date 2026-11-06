@@ -12,6 +12,7 @@ import { syncAppIcon } from '@/utils/appIcon';
 import { trackEvent } from '@/utils/analytics';
 import { h } from '@/utils/haptics';
 import { DEFAULT_SHAKE_COOLDOWN_MS } from '@/hooks/useShakeDetector';
+import { useCarismochitoAvailable } from '@/hooks/useCarismochitoAvailable';
 
 export type CarismochitoState = 'idle' | 'countingDown' | 'active';
 
@@ -101,6 +102,12 @@ export function CarismochitoProvider({
 }: {
   children: React.ReactNode;
 }) {
+  // Interruptor general (`global.carismochito` + modo tester): si no está
+  // disponible, el modo NO existe: no se activa agitando, no se ve y se apaga
+  // lo que alguien tuviera puesto. Ver `utils/carismochitoGate.ts`.
+  const { available, settled } = useCarismochitoAvailable();
+  const availableRef = useRef(available);
+  availableRef.current = available;
   const [state, setState] = useState<CarismochitoState>('idle');
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
   const [freshlyActivated, setFreshlyActivated] = useState(false);
@@ -228,6 +235,8 @@ export function CarismochitoProvider({
   }, []);
 
   const toggleByShake = useCallback(() => {
+    // Bloqueado: sin interruptor, agitar el móvil no hace NADA.
+    if (!availableRef.current) return;
     const prev = stateRef.current;
 
     // Si hay un diálogo (onboarding o confirmación de salida) abierto, las
@@ -271,9 +280,38 @@ export function CarismochitoProvider({
     }
   }, [startCountdown, cancelCountdown, resetCharge]);
 
-  // Al arrancar: si el modo quedó activo en una sesión anterior, restaurarlo
-  // directamente (sin cuenta atrás ni háptica) para que persista al reabrir.
+  // Apaga el modo EN SILENCIO (sin háptica ni diálogos): lo que se hace cuando
+  // el interruptor lo cierra. A diferencia de `deactivate`, no es una decisión
+  // de la persona; por eso no vibra ni pregunta.
+  const purge = useCallback(() => {
+    stopTimer();
+    resetCharge();
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    if (exitOpenTimerRef.current) clearTimeout(exitOpenTimerRef.current);
+    exitShakeRef.current = 0;
+    setExitConfirmVisible(false);
+    setOnboardingVisible(false);
+    setCountdown(COUNTDOWN_SECONDS);
+    setState('idle');
+    setFreshlyActivated(false);
+    setCarismochitoTheme(false);
+    AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+    // El icono del launcher vive fuera de la app: se devuelve al normal aunque
+    // la app crea que ya lo estaba (no hace nada si ya coincide).
+    syncAppIcon(false);
+  }, [stopTimer, resetCharge]);
+
+  // Cuando ya se sabe si hay interruptor (configuración leída y modo tester
+  // resuelto): si está CERRADO, se apaga lo que hubiera; si está abierto y el
+  // modo quedó activo en una sesión anterior, se restaura (sin cuenta atrás ni
+  // háptica) para que persista al reabrir. Hasta que se sepa no se toca nada:
+  // apagar el icono por un "todavía no sé" sería una alerta de iOS de más.
   useEffect(() => {
+    if (!settled) return;
+    if (!available) {
+      purge();
+      return;
+    }
     AsyncStorage.getItem(STORAGE_KEY)
       .then((v) => {
         const active = v === '1';
@@ -288,6 +326,10 @@ export function CarismochitoProvider({
         syncAppIcon(active);
       })
       .catch(() => {});
+  }, [settled, available, purge]);
+
+  // La explicación del modo ya se mostró alguna vez.
+  useEffect(() => {
     AsyncStorage.getItem(ONBOARDING_KEY)
       .then((v) => {
         onboardingSeenRef.current = v === '1';
@@ -313,7 +355,7 @@ export function CarismochitoProvider({
         state,
         countdown,
         countdownSeconds: COUNTDOWN_SECONDS,
-        isActive: state === 'active',
+        isActive: available && state === 'active',
         freshlyActivated,
         chargeCount,
         shakesNeeded: SHAKES_NEEDED,
