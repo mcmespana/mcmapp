@@ -12,6 +12,7 @@
 - **«Tu cuenta» deja de salir al final de la portada de familia**: es el mismo botón de la cabecera.
 - **Textos**: «Sus datos personales…» viendo a un hijo (antes «Tus…»); «Avisos en este móvil» ya no habla de «pasar lista» a una cuenta sin papel de equipo; «Necesidades especiales» no repite su título en el formulario de inscripción.
 - **Servidor falso**: `familia-pareja@ejemplo.org` (comparte a Lucía con `familia@…` y tiene a Hugo; paga lo suyo) y `familia-tres@ejemplo.org` (tres hijos). El dinero sigue siendo de quien paga: Marta no ve lo que paga Sergio por Lucía (`fake/fixturesFamilies.ts`, tests en `profilePaymentsFake.test.ts`).
+- **Android/web**: las pestañas ocultas ya no se pintan como `null` dentro de `Tabs` (expo-router avisaba «Layout children must be of type Screen» en cada arranque).
 - Probado en iPhone 17 Pro (simulador) y en el emulador Android (Pixel API 35).
 
 ## 2026-11-06 23:30 — Inicio y Más con cabecera nativa; logo de MCM
