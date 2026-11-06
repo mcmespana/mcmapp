@@ -14,7 +14,6 @@ import { usePayments, useResumedAttempt } from '@/hooks/comunica/usePayments';
 import { firstNameOf } from '@/utils/comunica/profiles';
 import { paymentBlocks, PAYMENTS_TEXT as TXT } from '@/utils/comunica/payments';
 import type { Payment } from '@/services/comunica/contract';
-import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState, { isNetwork } from '../comun/AreaState';
 import RecordNote from '../comun/record/RecordNote';
@@ -44,8 +43,10 @@ export default function PaymentsScreen({ note }: { note?: string }) {
     } as never);
 
   return (
-    <AreaScreen onRefresh={() => q.refetch()}>
-      <ActiveProfileBar scope="shared" section="payments" />
+    <AreaScreen
+      profileBar={{ scope: 'shared', section: 'payments' }}
+      onRefresh={() => q.refetch()}
+    >
       {note === 'pagado' ? <RecordNote tone="ok" text={TXT.paidNote} /> : null}
       {note === 'error' ? (
         <RecordNote tone="warn" text={TXT.errorNote} />

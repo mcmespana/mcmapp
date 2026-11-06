@@ -70,6 +70,7 @@ jest.mock('expo-image', () => ({
 }));
 
 import ComunicaAreaProvider from '@/components/comunica/comun/ComunicaAreaProvider';
+import AreaScreen from '@/components/comunica/comun/AreaScreen';
 import MemberHome from '@/components/comunica/inicio/MemberHome';
 import ActiveProfileBar from '@/components/comunica/perfiles/ActiveProfileBar';
 import ProfilesScreen from '@/components/comunica/perfiles/ProfilesScreen';
@@ -288,8 +289,42 @@ describe('la portada de familia', () => {
     expect(t).not.toContain('Mis inscripciones');
     expect(has(tree, 'Lucía Messeguer. Ver su ficha')).toBe(true);
     expect(t).toContain('Mis datos');
-    // Con dos hijos y sin haber elegido, la barra «Viendo a» sale (con ella misma).
-    expect(has(tree, 'Viendo a Yo misma. Cambiar de persona')).toBe(true);
+    // La barra «Viendo a» ya no va dentro de la portada: está FIJA arriba (`AreaScreen profileBar`).
+    expect(has(tree, 'Viendo a Yo misma. Cambiar de persona')).toBe(false);
+  });
+
+  it('«Ver su ficha» abre sus datos SIN cambiar a quién se ve', async () => {
+    mockRouter.push.mockClear();
+    const { tree } = await setup('family', <MemberHome />);
+    await until(() => has(tree, 'Lucía Messeguer. Ver su ficha'));
+    await press(tree, 'Lucía Messeguer. Ver su ficha');
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/comunica/datos/[pid]',
+      params: { pid: 'f-hijo-lucia' },
+    });
+    // Sigue viéndose a sí misma: el saludo y «Tus pagos» no cambian.
+    expect(texts(tree)).toContain('Tus pagos');
+    expect(texts(tree)).not.toContain('Inscripciones');
+  });
+
+  it('la barra «Viendo a» va fija arriba, fuera del scroll, con hijos', async () => {
+    const { tree } = await setup(
+      'family',
+      <AreaScreen profileBar={{ scope: 'personal' }}>
+        <MemberHome />
+      </AreaScreen>,
+    );
+    await until(() => has(tree, 'Viendo a Yo misma. Cambiar de persona'));
+    const bar = touchable(tree, 'Viendo a Yo misma. Cambiar de persona');
+    let up = bar.parent;
+    let insideScroll = false;
+    while (up) {
+      const ty = up.type as unknown as { displayName?: string; name?: string };
+      const name = typeof ty === 'string' ? ty : (ty.displayName ?? ty.name);
+      if (name && /ScrollView/.test(name)) insideScroll = true;
+      up = up.parent;
+    }
+    expect(insideScroll).toBe(false);
   });
 
   it('un miembro sin hijos: las cinco secciones, sin barra y con «Mis datos»', async () => {
@@ -319,7 +354,6 @@ describe('la portada de familia', () => {
     );
     expect(t).toContain('Inscripciones');
     expect(t).not.toContain('Mis inscripciones');
-    expect(has(tree, 'Viendo a Nicolás Soler. Cambiar de persona')).toBe(true);
   });
 
   it('la monitora con una hija: «Mis datos de monitor» viéndose a sí misma, y debajo de lo del equipo no sale el saludo', async () => {
@@ -330,21 +364,12 @@ describe('la portada de familia', () => {
     expect(texts(emb.tree)).not.toContain('Hola, Laura');
   });
 
-  it('el saludo se oculta con su × y se recuerda por persona', async () => {
-    const be = memoryBackend();
-    const first = await setup('memberNoKids', <MemberHome />, be);
-    await until(() => texts(first.tree).includes('Hola, Jaime'));
-    await press(first.tree, 'Ocultar el saludo (volverá dentro de un mes)');
-    expect(texts(first.tree)).not.toContain('Hola, Jaime');
-    await wait(50);
-    const saved = be.dump()[`@comunica/${first.me.personId}/home`];
-    expect(JSON.parse(saved!).greetingHiddenUntil).toBeGreaterThan(Date.now());
-    await act(async () => {
-      first.tree.unmount();
-    });
-    const again = await mount(<MemberHome />);
-    await until(() => texts(again.tree).includes('Actividades'));
-    expect(texts(again.tree)).not.toContain('Hola, Jaime');
+  it('el saludo no se puede cerrar: siempre dice a quién se ve', async () => {
+    const { tree } = await setup('memberNoKids', <MemberHome />);
+    await until(() => texts(tree).includes('Hola, Jaime'));
+    expect(has(tree, 'Ocultar el saludo (volverá dentro de un mes)')).toBe(
+      false,
+    );
   });
 
   it('si el CRM no contesta a los hijos, debajo de lo del equipo no sale nada (y no rompe la portada)', async () => {

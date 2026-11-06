@@ -101,17 +101,14 @@ export default function ComunicaHome() {
 
 /** La portada de quien no es del equipo: solo la parte de familia, con su «¿A quién ves?» si tiene hijos (plan 11). */
 function FamilyHome() {
-  const router = useRouter();
   const profiles = useMyProfiles();
+  // «Tu cuenta» ya es el botón de la cabecera: no se repite abajo.
   return (
-    <AreaScreen onRefresh={() => profiles.refetch()}>
+    <AreaScreen
+      onRefresh={() => profiles.refetch()}
+      profileBar={{ scope: 'personal' }}
+    >
       <MemberHome />
-      <NavRow
-        icon="person.crop.circle"
-        title="Tu cuenta"
-        subtitle="Salir o entrar con otra persona"
-        onPress={() => router.push('/comunica/yo')}
-      />
     </AreaScreen>
   );
 }

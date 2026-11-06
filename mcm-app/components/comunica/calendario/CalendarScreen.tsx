@@ -33,7 +33,6 @@ import {
 } from '@/utils/comunica/calendar';
 import { madridDay } from '@/utils/comunica/madrid';
 import { h } from '@/utils/haptics';
-import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState, { isNetwork } from '../comun/AreaState';
 import SyncBadge from '../comun/SyncBadge';
@@ -135,9 +134,11 @@ export default function CalendarScreen({
   };
 
   return (
-    <AreaScreen onRefresh={() => q.refetch()}>
+    <AreaScreen
+      profileBar={{ scope: 'shared', section: 'calendar' }}
+      onRefresh={() => q.refetch()}
+    >
       <Stack.Screen options={{ title: TXT.title }} />
-      <ActiveProfileBar scope="shared" section="calendar" />
       <View
         accessibilityRole="tablist"
         style={[styles.segment, { backgroundColor: t.backgroundSunken }]}

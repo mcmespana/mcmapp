@@ -39,7 +39,6 @@ import {
 import { firstNameOf } from '@/utils/comunica/profiles';
 import { madridDay } from '@/utils/comunica/madrid';
 import { h } from '@/utils/haptics';
-import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
 import CardSurface from '../comun/CardSurface';
@@ -102,8 +101,10 @@ export default function RegistrationDetailScreen({
   }
   if (!q.data) {
     return (
-      <AreaScreen onRefresh={() => q.refetch()}>
-        <ActiveProfileBar scope="personal" section="registrations" />
+      <AreaScreen
+        profileBar={{ scope: 'personal', section: 'registrations' }}
+        onRefresh={() => q.refetch()}
+      >
         {isNetwork(q.error) ? (
           <EmptyState
             icon="wifi-off"
@@ -280,6 +281,7 @@ function Detail({
   const m = reg.manage;
   return (
     <AreaScreen
+      profileBar={{ scope: 'personal', section: 'registrations' }}
       onRefresh={refetch}
       footer={
         action ? (
@@ -302,7 +304,6 @@ function Detail({
       }
     >
       <Stack.Screen options={{ title: 'Inscripción' }} />
-      <ActiveProfileBar scope="personal" section="registrations" />
 
       {savedFirst ? (
         <RecordNote tone={savedFirst.tone} text={savedFirst.text} />

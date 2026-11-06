@@ -28,7 +28,6 @@ import { firstNameOf } from '@/utils/comunica/profiles';
 import { isPastDay } from '@/utils/comunica/dates';
 import { madridDay } from '@/utils/comunica/madrid';
 import { h } from '@/utils/haptics';
-import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
 import CardSurface from '../comun/CardSurface';
@@ -54,8 +53,10 @@ export default function RegistrationsScreen() {
     } as never);
 
   return (
-    <AreaScreen onRefresh={() => q.refetch()}>
-      <ActiveProfileBar scope="personal" section="registrations" />
+    <AreaScreen
+      profileBar={{ scope: 'personal', section: 'registrations' }}
+      onRefresh={() => q.refetch()}
+    >
       <AreaState query={q} skeleton="cards">
         {(data) => {
           const o = orderRegistrations(data.items, today);

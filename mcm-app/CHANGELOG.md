@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-06 18:30 — Comunica (familias): barra «Viendo a» fija, «Ver su ficha» sin cambiar de perfil y dos familias de prueba más
+
+- **«Viendo a · Lucía ▾» va FIJA arriba**, fuera del scroll (`AreaScreen` con la prop `profileBar`, que sustituye al `ActiveProfileBar` suelto de cada pantalla de familia): al bajar, se sigue viendo a quién se está viendo. Solo sale si hay hijos. Debajo de lo del equipo (`MemberHome embedded`) sigue en línea.
+- **«Ver su ficha» ya no cambia a quién se ve**: abre `/comunica/datos/<pid>` directamente. Antes hacía `setActive(hijo)` y al volver la portada pasaba a ser la del hijo. Para apuntarle o ver sus documentos se elige en «Viendo a» (el texto del saludo lo dice).
+- **El saludo («Hola, …») ya no se puede cerrar** (sin ×); ya no se guarda nada en el cajón `home` para esto (`useGreetingHidden` queda en el código, sin uso en la portada).
+- **«Tu cuenta» deja de salir al final de la portada de familia**: es el mismo botón de la cabecera.
+- **Textos**: «Sus datos personales…» viendo a un hijo (antes «Tus…»); «Avisos en este móvil» ya no habla de «pasar lista» a una cuenta sin papel de equipo; «Necesidades especiales» no repite su título en el formulario de inscripción.
+- **Servidor falso**: `familia-pareja@ejemplo.org` (comparte a Lucía con `familia@…` y tiene a Hugo; paga lo suyo) y `familia-tres@ejemplo.org` (tres hijos). El dinero sigue siendo de quien paga: Marta no ve lo que paga Sergio por Lucía (`fake/fixturesFamilies.ts`, tests en `profilePaymentsFake.test.ts`).
+- Probado en iPhone 17 Pro (simulador) y en el emulador Android (Pixel API 35).
+
 ## 2026-11-06 23:30 — Inicio y Más con cabecera nativa; logo de MCM
 
 - **Inicio con pila propia y cabecera nativa.** Su pantalla se mueve de `app/(tabs)/index.tsx` a `app/(tabs)/(inicio)/index.tsx` con su `_layout.tsx` (un `Stack`), como las demás pestañas. La URL sigue siendo `/`. El id de la pestaña sigue siendo `index` (perfiles, catálogo, enlaces); `routeNameForTab` (`utils/tabRoutes.ts`) lo traduce al nombre de ruta `(inicio)` para `NativeTabs.Trigger`, `Tabs.Screen` y `jumpTo`.
