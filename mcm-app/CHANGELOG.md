@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-06 17:00 — Comunica: el enlace del correo entra solo, el código pegado con espacio vale, y header de Contigo
+
+- **El enlace del correo no iniciaba sesión** (se abría la app y volvía a «Entra en tu área»). Causa: con la app abierta, `+native-intent` dejaba el enlace en el hueco y devolvía `/(tabs)/comunica`; la puerta hacía `push` a «código» a la vez que el enrutador navegaba a esa portada, y la navegación se comía el `push` (la pantalla del código ni se pintaba). Ahora, para `acceso_app`, `redirectSystemPath` devuelve directamente `/(tabs)/comunica/acceso-codigo?link=<token>` (sin pasar por el hueco). Reproducido y arreglado en el simulador con el servidor falso (`mcmapp://comunica?acceso_app=enlace-valido`). Tests en `__tests__/comunica/links.test.ts`. `CodeScreen` ya no falla con `POP_TO_TOP` si es la única pantalla de la pila.
+- **Código pegado con espacio** («123 456», como lo escribe el correo del middleware): el `TextInput` del código tenía `maxLength={6}` y el sistema recortaba a «123 45» antes de limpiar el espacio. Quitado `maxLength` (la limpieza y el corte a 6 cifras ya los hace `onChangeText`). Test nuevo `__tests__/comunica/codeInput.test.tsx`.
+- **Contigo, header (iOS)**: «Tiempo ordinario» a la izquierda, «Contigo» centrado y recordatorios + guardados a la derecha, como botones nativos (`Stack.Toolbar`). Los dos de la derecha comparten una cápsula de cristal (iOS 26 junta los botones contiguos; ni `Spacer` ni `hidesSharedBackground` los separan). En Android y web, vistas normales con el título centrado.
+- Solo JS: OTA ✅.
+
 ## 2026-11-06 15:00 — Bandeja de notificaciones rehecha y datos de prueba de notificaciones
 
 - **Una sola bandeja.** Antes la campana abría una hoja (`NotificationsBottomSheet`) y tocar una push abría la pantalla `/notifications`: dos implementaciones que no hacían lo mismo (la hoja no tenía eliminar ni filtraba las descartadas, el detalle de la hoja no mostraba `bodyLong`…). Ahora `app/notifications/` es una carpeta con `index` (lista) y `[id]` (detalle), con cabecera nativa, y la campana, la tarjeta de Novedades y la push entran por ahí. Borrados `NotificationsBottomSheet`, `NotificationListItem` y `notificationsStyles`.

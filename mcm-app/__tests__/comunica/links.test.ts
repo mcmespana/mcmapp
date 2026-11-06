@@ -192,16 +192,37 @@ describe('enlaces que llegan (+native-intent)', () => {
       `${O}/ap/?acceso_magico=XYZ&app=1`,
     );
   });
-  it('acceso_app solo al área nativa', () => {
-    redirectSystemPath({
+  it('acceso_app va DIRECTO a la pantalla que lo canjea, sin pasar por el hueco', () => {
+    // Antes devolvía `/(tabs)/comunica` y dejaba el enlace pendiente: la puerta
+    // hacía `push` a la vez que el enrutador navegaba a la portada y esa
+    // navegación se comía el `push` (el enlace del correo no entraba nunca).
+    const to = redirectSystemPath({
       path: `${O}/app/acceso?acceso_app=tok`,
       initial: true,
     });
-    expect(consumePendingNativeLink()).toEqual({
-      kind: 'appAccess',
-      linkToken: 'tok',
-    });
+    expect(to).toBe('/(tabs)/comunica/acceso-codigo?link=tok');
+    expect(consumePendingNativeLink()).toBeNull();
     expect(consumePendingComunicaAuthUrl()).toBeNull();
+  });
+  it('acceso_app con la app ya abierta y por el esquema propio, igual', () => {
+    const seen: string[] = [];
+    const off = subscribeNativeLink((l) => seen.push(l.kind));
+    expect(
+      redirectSystemPath({
+        path: 'mcmapp://comunica?acceso_app=abc_-123',
+        initial: false,
+      }),
+    ).toBe('/(tabs)/comunica/acceso-codigo?link=abc_-123');
+    off();
+    expect(seen).toEqual([]);
+  });
+  it('el token se codifica en la ruta', () => {
+    expect(
+      redirectSystemPath({
+        path: `${O}/app/acceso?acceso_app=a.b~c=`,
+        initial: true,
+      }),
+    ).toBe('/(tabs)/comunica/acceso-codigo?link=a.b~c%3D');
   });
 });
 

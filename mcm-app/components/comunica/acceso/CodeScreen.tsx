@@ -48,7 +48,11 @@ export default function CodeScreen({
   const done = () => {
     clearAccessHandoffs();
     h.formSuccess();
-    router.dismissAll();
+    // Con el enlace del correo la pantalla puede ser la ÚNICA de la pila (se
+    // abre directa desde fuera): entonces no hay a qué volver y `dismissAll`
+    // falla con «POP_TO_TOP not handled». Sin nada debajo, a la puerta.
+    if (router.canDismiss?.()) router.dismissAll();
+    else router.replace('/comunica');
   };
 
   const verify = async (body: VerifyRequest) => {

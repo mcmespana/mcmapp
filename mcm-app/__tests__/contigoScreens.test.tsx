@@ -59,7 +59,16 @@ jest.mock('expo-router', () => {
     useSegments: () => [],
     useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
     useFocusEffect: (cb: () => void) => Local.useEffect(cb, [cb]),
-    Stack: { Screen: () => null },
+    // `Stack.Toolbar` (los botones nativos del header en iOS): en el test no
+    // pinta nada, pero la pantalla de Contigo lo monta.
+    Stack: {
+      Screen: () => null,
+      Toolbar: Object.assign(() => null, {
+        View: () => null,
+        Button: () => null,
+        Spacer: () => null,
+      }),
+    },
     Link: ({ children }: { children?: React.ReactNode }) => children ?? null,
   };
 });

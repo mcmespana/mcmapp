@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -179,40 +180,80 @@ export default function ContigoScreen() {
             fontWeight: '700',
             fontSize: 17,
           },
-          headerRight: () => (
-            <View style={styles.nativeHeaderRight}>
-              <View style={styles.headerBadgeWrap}>
-                <LiturgicalBadge dateStr={todayStr} />
-              </View>
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/contigo/recordatorios')}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={{ padding: 4 }}
-                accessibilityLabel="Recordatorios"
-              >
-                <MaterialIcons
-                  name="notifications"
-                  size={22}
-                  color={W.accentText}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/contigo/bookmarks')}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={{ padding: 4 }}
-                accessibilityLabel="Ver evangelios guardados"
-              >
-                <MaterialIcons
-                  name="bookmarks"
-                  size={22}
-                  color={W.accentText}
-                />
-              </TouchableOpacity>
-            </View>
-          ),
+          // El título va centrado. En iOS la insignia y los dos iconos son
+          // botones NATIVOS (`Stack.Toolbar`, más abajo). Los dos de la derecha
+          // comparten UNA cápsula de cristal (iOS 26 junta los botones
+          // contiguos; ni un `Spacer` ni `hidesSharedBackground` los separa: el
+          // segundo no cambia nada y el primero quita el cristal). En Android
+          // y web, vistas normales.
+          headerTitleAlign: 'center',
+          ...(Platform.OS === 'ios'
+            ? {}
+            : {
+                headerLeft: () => (
+                  <View style={styles.headerBadgeWrap}>
+                    <LiturgicalBadge dateStr={todayStr} />
+                  </View>
+                ),
+                headerRight: () => (
+                  <View style={styles.nativeHeaderRight}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push('/(tabs)/contigo/recordatorios')
+                      }
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={{ padding: 4 }}
+                      accessibilityLabel="Recordatorios"
+                    >
+                      <MaterialIcons
+                        name="notifications"
+                        size={22}
+                        color={W.accentText}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => router.push('/(tabs)/contigo/bookmarks')}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={{ padding: 4 }}
+                      accessibilityLabel="Ver evangelios guardados"
+                    >
+                      <MaterialIcons
+                        name="bookmarks"
+                        size={22}
+                        color={W.accentText}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ),
+              }),
           ...contigoHeaderChrome(isDark),
         }}
       />
+      {Platform.OS === 'ios' && (
+        <>
+          <Stack.Toolbar placement="left">
+            <Stack.Toolbar.View>
+              <View style={styles.headerBadgeWrap}>
+                <LiturgicalBadge dateStr={todayStr} />
+              </View>
+            </Stack.Toolbar.View>
+          </Stack.Toolbar>
+          <Stack.Toolbar placement="right">
+            <Stack.Toolbar.Button
+              icon="bell"
+              tintColor={W.accentText}
+              accessibilityLabel="Recordatorios"
+              onPress={() => router.push('/(tabs)/contigo/recordatorios')}
+            />
+            <Stack.Toolbar.Button
+              icon="bookmark"
+              tintColor={W.accentText}
+              accessibilityLabel="Ver evangelios guardados"
+              onPress={() => router.push('/(tabs)/contigo/bookmarks')}
+            />
+          </Stack.Toolbar>
+        </>
+      )}
       <LinearGradient
         colors={W.bgGradient}
         style={StyleSheet.absoluteFill}
