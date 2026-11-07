@@ -41,7 +41,7 @@ describe('openAppStore en nativo', () => {
     await openAppStore();
     expect(openURL).toHaveBeenCalledTimes(1);
     expect(openURL).toHaveBeenCalledWith(
-      'itms-apps://apps.apple.com/app/id6745557177',
+      'itms-apps://apps.apple.com/app/id6753905393',
     );
   });
 
@@ -52,7 +52,7 @@ describe('openAppStore en nativo', () => {
       .mockResolvedValueOnce(true);
     await openAppStore();
     expect(openURL).toHaveBeenLastCalledWith(
-      'https://apps.apple.com/app/id6745557177',
+      'https://apps.apple.com/app/id6753905393',
     );
   });
 
@@ -121,7 +121,7 @@ describe('openAppStore en web (PWA)', () => {
     setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)');
     await openAppStore();
     expect(openURL).toHaveBeenCalledWith(
-      'https://apps.apple.com/app/id6745557177',
+      'https://apps.apple.com/app/id6753905393',
     );
   });
 
@@ -139,7 +139,7 @@ describe('openAppStore en web (PWA)', () => {
     setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)');
     await openAppStore();
     expect(openURL).toHaveBeenCalledWith(
-      'https://apps.apple.com/app/id6745557177',
+      'https://apps.apple.com/app/id6753905393',
     );
   });
 });

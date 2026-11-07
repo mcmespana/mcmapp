@@ -1,7 +1,7 @@
 import { Linking, Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 
-const IOS_APP_ID = '6745557177';
+const IOS_APP_ID = '6753905393';
 const ANDROID_PACKAGE = 'com.mcmespana.mcmapp';
 
 const STORE_URLS = {
