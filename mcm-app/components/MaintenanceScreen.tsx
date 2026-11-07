@@ -24,7 +24,7 @@ interface Props {
 }
 
 const STORE_URLS = {
-  ios: 'https://apps.apple.com/app/id6745557177',
+  ios: 'https://apps.apple.com/app/id6753905393',
   android: 'https://play.google.com/store/apps/details?id=com.mcmespana.mcmapp',
 };
 
