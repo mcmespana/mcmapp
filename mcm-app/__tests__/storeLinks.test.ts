@@ -6,6 +6,9 @@
  * Store. También se cubre el fallback a https cuando el esquema nativo
  * (`itms-apps://` / `market://`) no está disponible.
  */
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 import { Linking, Platform } from 'react-native';
 import { openAppStore } from '@/utils/storeLinks';
 
@@ -41,7 +44,7 @@ describe('openAppStore en nativo', () => {
     await openAppStore();
     expect(openURL).toHaveBeenCalledTimes(1);
     expect(openURL).toHaveBeenCalledWith(
-      'itms-apps://apps.apple.com/app/id6745557177',
+      'itms-apps://apps.apple.com/app/id6753905393',
     );
   });
 
@@ -52,7 +55,7 @@ describe('openAppStore en nativo', () => {
       .mockResolvedValueOnce(true);
     await openAppStore();
     expect(openURL).toHaveBeenLastCalledWith(
-      'https://apps.apple.com/app/id6745557177',
+      'https://apps.apple.com/app/id6753905393',
     );
   });
 
@@ -121,7 +124,7 @@ describe('openAppStore en web (PWA)', () => {
     setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)');
     await openAppStore();
     expect(openURL).toHaveBeenCalledWith(
-      'https://apps.apple.com/app/id6745557177',
+      'https://apps.apple.com/app/id6753905393',
     );
   });
 
@@ -139,7 +142,31 @@ describe('openAppStore en web (PWA)', () => {
     setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)');
     await openAppStore();
     expect(openURL).toHaveBeenCalledWith(
-      'https://apps.apple.com/app/id6745557177',
+      'https://apps.apple.com/app/id6753905393',
     );
+  });
+});
+
+describe('id de la App Store', () => {
+  // 2026-11-07: el enlace llevaba un id que no existía (6745557177) y
+  // «Actualizar en la tienda» decía «no disponible en tu país» justo al subir
+  // la versión mínima. El id bueno es el `ascAppId` con el que se sube la app.
+  const root = path.join(__dirname, '..');
+
+  it('es el mismo con el que se publica (ascAppId de eas.json)', () => {
+    const eas = JSON.parse(
+      fs.readFileSync(path.join(root, 'eas.json'), 'utf8'),
+    );
+    const ascAppId: string = eas.submit.production.ios.ascAppId;
+    const src = fs.readFileSync(path.join(root, 'utils/storeLinks.ts'), 'utf8');
+    expect(src).toContain(`const IOS_APP_ID = '${ascAppId}';`);
+  });
+
+  it('el id viejo y roto no vuelve a ningún fichero de la app', () => {
+    const hits = execSync(
+      'git grep -l "id6745557177" -- . ":!__tests__" || true',
+      { cwd: root, encoding: 'utf8' },
+    );
+    expect(hits.trim()).toBe('');
   });
 });
