@@ -30,6 +30,9 @@ import type { Me, Tokens } from './contract';
 import { clearAll } from './storage';
 import { logger } from '@/utils/logger';
 
+/** Espera antes de repetir UNA vez un refresco que falló por red o plazo. */
+export const REFRESH_RETRY_MS = 2_000;
+
 export interface SecretStore {
   get(key: string): Promise<string | null>;
   set(key: string, value: string): Promise<void>;
@@ -222,7 +225,25 @@ export async function getAccessToken(force = false): Promise<string | null> {
         if (force) await endSession('revoked');
         return null;
       }
-      const tokens = await deps.refresh(refresh);
+      let tokens: Tokens;
+      try {
+        tokens = await deps.refresh(refresh);
+      } catch (e) {
+        // Un corte o un plazo agotado: puede que el servidor YA haya cambiado
+        // el token y se haya perdido la respuesta. Repetirlo enseguida cae
+        // dentro del margen del servidor (2 min) y no cierra la sesión; si se
+        // repitiera horas después, la cerraría (revisión del 7/11/2026).
+        if (
+          !isComunicaApiError(e) ||
+          e.code === 'unauthenticated' ||
+          !e.retryable
+        ) {
+          throw e;
+        }
+        await new Promise((r) => setTimeout(r, REFRESH_RETRY_MS));
+        if (epoch !== started) return null;
+        tokens = await deps.refresh(refresh);
+      }
       // Se ha salido (o ha entrado otra persona) mientras tanto: ni se usa ni
       // se guarda.
       if (epoch !== started) return null;
@@ -235,6 +256,8 @@ export async function getAccessToken(force = false): Promise<string | null> {
         isComunicaApiError(e) &&
         e.code === 'unauthenticated'
       ) {
+        // Que se sepa cuándo el servidor saca a alguien (sin datos de nadie).
+        logger.warn('[comunica] sesión cerrada al renovar', e.status);
         await endSession('revoked');
       }
       // Sin red: se sigue «dentro» con lo guardado; la petición fallará por

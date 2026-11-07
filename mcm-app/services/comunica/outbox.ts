@@ -70,6 +70,15 @@ export type OutboxHandler = (entry: OutboxEntry) => Promise<unknown>;
 
 /** Fallos seguidos antes de darla por atascada. */
 export const MAX_ATTEMPTS = 5;
+/**
+ * Una atascada porque el servidor no contesta se sigue intentando SOLA, cada
+ * tanto y cada vez que la app despierta (vuelve al primer plano, vuelve la red,
+ * se abre una pantalla), con el mismo `clientId`: el servidor no la duplica.
+ * Antes esperaba a que alguien tocara «Reintentar» y una lista podía quedarse
+ * días en el móvil (revisión del 7/11/2026). Sigue saliendo como atascada para
+ * que se vea; «Reintentar» y «Descartar» siguen ahí.
+ */
+export const STUCK_RETRY_MS = 5 * 60_000;
 const BASE_DELAY_MS = 2_000;
 const MAX_DELAY_MS = 5 * 60_000;
 /** Lo subido se enseña como «Subida» un rato y luego se quita. */
@@ -132,7 +141,8 @@ const NEVER = Number.MAX_SAFE_INTEGER;
 const isDue = (e: OutboxEntry, t: number) =>
   (e.status === 'pending' ||
     e.status === 'queued' ||
-    (e.status === 'failed' && e.error?.auto !== false)) &&
+    (e.status === 'failed' && e.error?.auto !== false) ||
+    (e.status === 'stuck' && e.error?.auto === true)) &&
   (e.nextAttemptAt ?? 0) <= t;
 
 export function createOutbox({
@@ -200,6 +210,8 @@ export function createOutbox({
       await changed();
       return;
     }
+    // Para avisar de una atascada solo la primera vez (luego se reintenta sola).
+    const wasStuck = entry.status === 'stuck';
     entry.status = 'sending';
     entry.updatedAt = now();
     await changed();
@@ -260,11 +272,19 @@ export function createOutbox({
       } else if (code === 'crm_unavailable') {
         entry.attempts += 1;
         if (entry.attempts >= MAX_ATTEMPTS) {
-          entry.status = 'stuck';
-          entry.error = { code, message, reason, auto: false };
-          entry.nextAttemptAt = NEVER;
+          // Solo al atascarse (no en cada reintento lento): un aviso por lista.
           // Ids, nunca nombres.
-          logger.error('[comunica] escritura atascada', entry.kind, entry.key);
+          if (!wasStuck) {
+            logger.error(
+              '[comunica] escritura atascada',
+              entry.kind,
+              entry.key,
+            );
+          }
+          entry.status = 'stuck';
+          entry.error = { code, message, reason, auto: true };
+          entry.nextAttemptAt = now() + STUCK_RETRY_MS;
+          later(STUCK_RETRY_MS);
         } else {
           entry.status = 'failed';
           entry.error = { code, message, reason, auto: true };

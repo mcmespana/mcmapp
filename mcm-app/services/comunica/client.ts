@@ -421,6 +421,39 @@ export const WRITE_TIMEOUT_MS = 30_000;
 /** Subir una foto o un documento por datos móviles puede tardar. */
 export const UPLOAD_TIMEOUT_MS = 90_000;
 
+/**
+ * Avisos a Sentry de que el SERVIDOR falla (5xx) o no contesta a tiempo: sin
+ * esto, una caída era invisible desde la app (6/11/2026). Uno por tipo cada
+ * `REPORT_EVERY_MS` en cada móvil, con la ruta sin ids: ni nombres ni personas.
+ */
+export const REPORT_EVERY_MS = 10 * 60_000;
+const lastReport = new Map<string, number>();
+const CRM_ID =
+  /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+/** `/v1/people/<id>/photo?v=1` → `/v1/people/:id/photo`. */
+export const routeOf = (path: string) =>
+  path.split('?')[0]!.replace(CRM_ID, '/:id');
+function reportTrouble(
+  kind: 'server' | 'timeout',
+  method: string,
+  path: string,
+  status: number,
+  reason?: string,
+) {
+  const t = Date.now();
+  if ((lastReport.get(kind) ?? -Infinity) > t - REPORT_EVERY_MS) return;
+  lastReport.set(kind, t);
+  logger.warn(
+    `[comunica] ${kind === 'server' ? 'el servidor falla' : 'el servidor no contesta a tiempo'}`,
+    method,
+    routeOf(path),
+    status,
+    reason ?? '',
+  );
+}
+/** Para los tests: olvida los avisos ya dados. */
+export const resetTroubleReports = () => lastReport.clear();
+
 export interface HttpClientOptions {
   baseUrl: string;
   /** El token de acceso de la sesión (lo pone el plan 02). */
@@ -498,7 +531,10 @@ export function createHttpClient({
       if (timer) clearTimeout(timer);
       // Tras esperar el plazo entero no se repite al momento: otro plazo
       // entero de espera no ayuda a nadie (ya reintentará la caché, con pausa).
-      if (abort?.signal.aborted) throw tooSlow();
+      if (abort?.signal.aborted) {
+        reportTrouble('timeout', method, path, 0);
+        throw tooSlow();
+      }
       if (retries > 0) return request(method, path, schema, body, retries - 1);
       throw new ComunicaApiError('network', 'Sin conexión con el servidor');
     }
@@ -511,7 +547,10 @@ export function createHttpClient({
     } finally {
       if (timer) clearTimeout(timer);
     }
-    if (abort?.signal.aborted) throw tooSlow();
+    if (abort?.signal.aborted) {
+      reportTrouble('timeout', method, path, res.status);
+      throw tooSlow();
+    }
 
     if (!res.ok) {
       const parsed = ErrorBody.safeParse(json);
@@ -525,6 +564,9 @@ export function createHttpClient({
         parsed.success ? parsed.data.error.reason : undefined,
         parsed.success ? parsed.data.error.retryAfter : undefined,
       );
+      if (res.status >= 500) {
+        reportTrouble('server', method, path, res.status, err.reason);
+      }
       if (code === 'forbidden') {
         // Un 403 que la app no esperaba suele ser un fallo de alcance: ids,
         // nunca nombres (`01-cimientos.md` §6).
