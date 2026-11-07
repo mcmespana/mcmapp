@@ -4,6 +4,7 @@ import { themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import HomeLogo from '@/components/home/HomeLogo';
+import { CHROME_MAX_FONT_SCALE } from '@/hooks/useLargeText';
 
 /**
  * Lo que va a la izquierda de la cabecera de Inicio: la «M» de MCM y el nombre
@@ -27,7 +28,13 @@ export default function HomeBrand({
         isDark={isDark}
         onCarismoPress={onCarismoPress}
       />
-      <Text style={[styles.title, { color: roles.text }]} numberOfLines={1}>
+      {/* Va en la barra nativa, de altura fija: sin techo, con la letra del
+          sistema al ×2 el título (28 pt) se iba a 56 pt y no cabía. */}
+      <Text
+        style={[styles.title, { color: roles.text }]}
+        numberOfLines={1}
+        maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+      >
         MCM App
       </Text>
     </View>
