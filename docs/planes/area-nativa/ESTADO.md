@@ -46,12 +46,19 @@ middleware real (`comunicaMiddleware`), y arreglar lo que falte por OTA.
 - **Quien no es del equipo** (familias, socios): en vez de un 403, «Tu área, de momento en la web» con
   «Abrir la versión web» (pase con sesión) hasta que lleguen los planes 11-16.
 - **Familias (planes 11-16)**: **en `main` desde el 1/11/2026** (PRs #358-#364: perfiles, mis datos, eventos y ficha, inscripciones, pagos con la hoja de la pasarela, documentos y
-  calendario). La rama `plan11` quedó obsoleta (se rehízo desde `main`). Servidor al completo en `comunicaMiddleware` (fase 3, incluido el 15b «pagar con tarjeta», apagado). **Todo
+  calendario). La rama `plan11` quedó obsoleta (se rehízo desde `main`). Servidor al completo en `comunicaMiddleware` (fase 3, incluido el 15b «pagar con tarjeta», **encendido desde el 6/11/2026**). **Todo
   hecho contra el servidor falso; falta verlo con el servidor real.**
 - **Reuniones como el plugin del 31/10** (plan 06 §«Cambios del plugin»): toda la delegación para quien
   coordina una etapa (`outOfScope`: sin ficha ni aviso) y los sin grupo con «-» también en reuniones.
 - **Rediseño con cariño** (apuntado, sin pensar aún): al propietario le gusta más ahora la web que el nativo.
   Ver `docs/planes/PLAN_DISENO.md` §«Área nativa de Comunica: rediseño».
+
+## ⭐ 6/11/2026: lo nuevo
+
+- **Guardar una lista ya no espera al CRM**: cola en el servidor (`comunicaMiddleware:docs/COLA.md`) y estado `queued` en la cola del móvil («Recibida en Comunica»). En el canal `preview`; falta llevarlo a `production`.
+- **Fotos de las fichas** con la delegación de trabajo (antes, 403 a quien trabaja con otra delegación). En `preview`.
+- **Middleware**: pool de conexiones (saltaba `ER_USER_LIMIT_REACHED`), pago con tarjeta (15b) encendido y revisión de seguridad hecha.
+- **Prioritario para mirar** (servidor): escribir al CRM de 4 en 4 (`comunicaMiddleware:docs/SIGUIENTE.md`).
 
 ## ⭐ 1/11/2026: dónde estamos y qué falta
 
@@ -59,7 +66,7 @@ middleware real (`comunicaMiddleware`), y arreglar lo que falte por OTA.
   (middleware, `src/app/mailer.ts`). El dominio `api.comunica…` **no se cambia por ahora** (la URL sigue `comunica-middleware.vercel.app` en los cuatro sitios).
 - **Para ver 11-16 en un móvil de verdad**: una build/OTA contra el middleware (ya apuntan: `EXPO_PUBLIC_COMUNICA_API` en `eas.json` y los workflows OTA); se ve en el Laboratorio Alpha o con
   `global.comunicaNativa = all`. Los paquetes que usan estas pantallas (`expo-image-picker`, `expo-document-picker`, `expo-sharing`, `react-native-webview`) ya están en `package.json`, así que
-  si la build instalada los lleva, **basta con la OTA** (si no, build nativa con `[skip-ota]`). Pagar con tarjeta seguirá sin funcionar hasta encender el 15b del servidor.
+  si la build instalada los lleva, **basta con la OTA** (si no, build nativa con `[skip-ota]`). ~~Pagar con tarjeta seguirá sin funcionar hasta encender el 15b del servidor.~~ **El 15b está encendido (6/11/2026)** y la revisión de seguridad del middleware, hecha.
 - **Qué comprobar con el CRM real** (clave del pasaporte, `email1`, año de incorporación LC, estados de inscripción, céntimos…): [`comunicaMiddleware:docs/PRIORITARIAS-COMPROBAR.md`](https://github.com/mcmespana/comunicaMiddleware/blob/main/docs/PRIORITARIAS-COMPROBAR.md).
 - **Mejoras y lo aparcado, a la par con la web** (foto del perfil con tope de 4 MB, avisos del pago, TPV, ficha pública que NO se hará en la app, pulido): [`comunicaMiddleware:docs/MEJORAS-WEB-Y-APP.md`](https://github.com/mcmespana/comunicaMiddleware/blob/main/docs/MEJORAS-WEB-Y-APP.md).
 - **Pulido de la app pendiente** (no MVP): capturas de cada pantalla; calendario de la portada de familias y deslizar de mes (16); «Abrir con…» para PDF en Android (2.2); visor con zoom y cartel a

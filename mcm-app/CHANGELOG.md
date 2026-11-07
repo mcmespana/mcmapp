@@ -4,6 +4,15 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-07 10:55 — Comunica: plazo a cada petición, menos reintentos y «Comunica no responde» en vez de «Sin conexión»
+
+Tras la caída del middleware de la noche del 6/11 (`comunicaMiddleware:docs/APRENDIZAJES-MIDDLEWARE.md`), revisión del cliente:
+
+- **Cada petición tiene plazo** (`services/comunica/client.ts`): 20 s las lecturas, 30 s las escrituras y 90 s las subidas de foto o documento. Antes no había ninguno: una petición colgada dejaba la pantalla en el esqueleto para siempre y, si era una escritura, paraba la cola de guardado hasta reiniciar la app. Lo cortado sale como `network` con `reason: 'timeout'` y se reintenta como un corte de red (las escrituras, con el mismo `clientId`: el servidor no las duplica).
+- **Un 503/5xx del servidor ya no se repite al momento**: lo reintenta la caché de consultas con espera (1 s, 2 s). Con el servidor caído, cada pantalla hacía 6 peticiones por consulta (2 del cliente × 3 de la caché); ahora 3. El reintento inmediato se queda solo para los cortes de red del móvil.
+- **Si falla el servidor, se dice así** (`AreaState`): «Comunica no responde ahora mismo. No es tu conexión…» (sin datos guardados) y «Comunica no responde ahora mismo: estás viendo lo guardado en el móvil» (con datos). Antes decía «Sin conexión» y la gente miraba su wifi y le daba a «Reintentar» sin parar. La falta de cobertura sigue diciendo lo de siempre.
+- Tests: `client.test.ts` (plazo de lectura, de escritura y de un cuerpo que no acaba; 503 sin repetir; corte de red repetido una vez).
+
 ## 2026-11-06 22:48 — Comunica: las fotos de las fichas salían como iniciales trabajando con otra delegación
 
 - **Bug:** `photoSource` (`services/comunica/client.ts`) pedía la foto sin `X-Comunica-Delegation`. El servidor miraba entonces la delegación de TU ficha, y quien trabaja con otra (coordina Burriana siendo de Castellón) recibía 403 en cada foto (visto en los registros de producción: la ficha daba 200 y su foto 403). Ahora la foto de alguien del equipo (`/v1/people/:id/photo`) lleva la delegación de trabajo, como su ficha; la de un perfil propio (`/v1/profiles/…`) sigue sin ella. Test en `client.test.ts`.
