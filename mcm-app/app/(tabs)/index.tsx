@@ -45,6 +45,7 @@ import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import NotificationsBottomSheet from '@/components/NotificationsBottomSheet';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
+import StoreUpdateBanner from '@/components/StoreUpdateBanner';
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -900,6 +901,9 @@ export default function Home() {
             )}
 
             {/* ── Banner de permisos de notificaciones (denied / undetermined) ── */}
+            {/* Parche de versión vieja: hay versión nueva en la tienda */}
+            <StoreUpdateBanner />
+
             <NotificationPermissionBanner placement="home" />
 
             {/* ── Banner del evento activo (modo evento) ── */}
