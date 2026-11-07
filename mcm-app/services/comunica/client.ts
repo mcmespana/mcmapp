@@ -400,8 +400,26 @@ const STATUS_CODE: Record<number, ErrorCode> = {
   503: 'crm_unavailable',
 };
 
-/** Cuántas veces se reintenta una LECTURA que falla por red o CRM caído. */
+/**
+ * Cuántas veces se reintenta AL MOMENTO una lectura que falla por un corte de
+ * red (un parpadeo del móvil). Un 503 o un 5xx del servidor NO se reintenta
+ * aquí: lo hace la caché de consultas con espera (1 s, 2 s; `useAreaQuery`).
+ * Reintentarlo aquí también multiplicaba por dos las peticiones de cada
+ * pantalla mientras el servidor estaba caído (caída del 6/11/2026).
+ */
 const READ_RETRIES = 1;
+
+/**
+ * Lo que se espera a una respuesta antes de darla por perdida. Sin plazo, una
+ * petición colgada (cobertura que va y viene, servidor atascado) dejaba la
+ * pantalla en el esqueleto para siempre y, si era una escritura, paraba la
+ * cola entera hasta reiniciar la app. Una escritura cortada así se repite con
+ * el mismo `clientId`: el servidor la reconoce y no la duplica.
+ */
+export const READ_TIMEOUT_MS = 20_000;
+export const WRITE_TIMEOUT_MS = 30_000;
+/** Subir una foto o un documento por datos móviles puede tardar. */
+export const UPLOAD_TIMEOUT_MS = 90_000;
 
 export interface HttpClientOptions {
   baseUrl: string;
@@ -434,10 +452,31 @@ export function createHttpClient({
     // Un archivo va en multipart: el `Content-Type` (con su frontera) lo pone
     // `fetch`, y el cuerpo no se pasa a JSON.
     const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+    const timeoutMs = isForm
+      ? UPLOAD_TIMEOUT_MS
+      : method === 'GET'
+        ? READ_TIMEOUT_MS
+        : WRITE_TIMEOUT_MS;
+    // El plazo cubre la respuesta Y el cuerpo (un cuerpo que no acaba también
+    // cuelga la pantalla).
+    const abort =
+      typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = abort ? setTimeout(() => abort.abort(), timeoutMs) : null;
+    // En Node (los tests) que el plazo no retenga el proceso; en el móvil no
+    // existe y no hace falta.
+    (timer as { unref?: () => void } | null)?.unref?.();
+    const tooSlow = () =>
+      new ComunicaApiError(
+        'network',
+        'Comunica tarda demasiado en contestar',
+        0,
+        'timeout',
+      );
     let res: Response;
     try {
       res = await doFetch(`${root}${path}`, {
         method,
+        ...(abort ? { signal: abort.signal } : {}),
         headers: {
           Accept: 'application/json',
           ...(body !== undefined && !isForm
@@ -456,6 +495,10 @@ export function createHttpClient({
               : JSON.stringify(body),
       });
     } catch {
+      if (timer) clearTimeout(timer);
+      // Tras esperar el plazo entero no se repite al momento: otro plazo
+      // entero de espera no ayuda a nadie (ya reintentará la caché, con pausa).
+      if (abort?.signal.aborted) throw tooSlow();
       if (retries > 0) return request(method, path, schema, body, retries - 1);
       throw new ComunicaApiError('network', 'Sin conexión con el servidor');
     }
@@ -465,7 +508,10 @@ export function createHttpClient({
       json = await res.json();
     } catch {
       json = null;
+    } finally {
+      if (timer) clearTimeout(timer);
     }
+    if (abort?.signal.aborted) throw tooSlow();
 
     if (!res.ok) {
       const parsed = ErrorBody.safeParse(json);
@@ -479,9 +525,6 @@ export function createHttpClient({
         parsed.success ? parsed.data.error.reason : undefined,
         parsed.success ? parsed.data.error.retryAfter : undefined,
       );
-      if (err.retryable && retries > 0) {
-        return request(method, path, schema, body, retries - 1);
-      }
       if (code === 'forbidden') {
         // Un 403 que la app no esperaba suele ser un fallo de alcance: ids,
         // nunca nombres (`01-cimientos.md` §6).

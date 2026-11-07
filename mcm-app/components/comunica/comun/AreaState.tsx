@@ -36,6 +36,16 @@ export const isNetwork = (e: unknown) =>
   isComunicaApiError(e) &&
   (e.code === 'network' || e.code === 'crm_unavailable');
 
+/**
+ * ¿El que falla es el servidor (no contesta o tarda demasiado), no la
+ * cobertura? Entonces no se dice «sin conexión»: la persona miraría su wifi y
+ * le daría a «Reintentar» sin parar (caída del 6/11/2026).
+ */
+export const isServerTrouble = (e: unknown) =>
+  isComunicaApiError(e) &&
+  (e.code === 'crm_unavailable' ||
+    (e.code === 'network' && e.reason === 'timeout'));
+
 export default function AreaState<T>({
   query,
   children,
@@ -49,7 +59,7 @@ export default function AreaState<T>({
   if (data !== undefined) {
     return (
       <>
-        {error && isNetwork(error) ? <OfflineNotice /> : null}
+        {error && isNetwork(error) ? <OfflineNotice error={error} /> : null}
         {empty?.isEmpty(data) ? (
           <EmptyState
             icon="inbox"
@@ -73,6 +83,21 @@ export default function AreaState<T>({
         icon="lock"
         title={forbidden?.title ?? 'No tienes acceso a esto'}
         subtitle={forbidden?.subtitle}
+        titleColor={t.text}
+        subtitleColor={t.textSecondary}
+      />
+    );
+  }
+
+  if (isServerTrouble(error)) {
+    return (
+      <EmptyState
+        icon="cloud-off"
+        title="Comunica no responde ahora mismo"
+        subtitle="No es tu conexión. Suele arreglarse solo en unos minutos: vuelve a probar en un rato."
+        actionLabel="Reintentar"
+        onAction={() => refetch()}
+        accentColor={t.accentText}
         titleColor={t.text}
         subtitleColor={t.textSecondary}
       />
@@ -108,17 +133,27 @@ export default function AreaState<T>({
   );
 }
 
-/** «Sin conexión: estás viendo lo guardado en el móvil». */
-export function OfflineNotice() {
+/**
+ * «Sin conexión: estás viendo lo guardado en el móvil». Con el `error`, si el
+ * que falla es el servidor, lo dice así y no culpa a la cobertura.
+ */
+export function OfflineNotice({ error }: { error?: unknown } = {}) {
   const t = useComunicaTheme();
+  const server = isServerTrouble(error);
   return (
     <View
       style={[styles.notice, { backgroundColor: t.card }]}
       accessibilityRole="alert"
     >
-      <IconSymbol name="wifi.slash" size={16} color={t.textSecondary} />
+      <IconSymbol
+        name={server ? 'xmark.icloud' : 'wifi.slash'}
+        size={16}
+        color={t.textSecondary}
+      />
       <Text style={[styles.noticeText, { color: t.text }]}>
-        Sin conexión: estás viendo lo guardado en el móvil.
+        {server
+          ? 'Comunica no responde ahora mismo: estás viendo lo guardado en el móvil.'
+          : 'Sin conexión: estás viendo lo guardado en el móvil.'}
       </Text>
     </View>
   );
