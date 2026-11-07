@@ -3,6 +3,7 @@ import {
   generateFakeData,
   FIXTURE_TODAY,
 } from '@/services/comunica/fake/fixtures';
+import { healthBadgesOf } from '@/utils/comunica/health';
 import { ComunicaApiError } from '@/services/comunica/client';
 import { ROUTES } from '@/services/comunica/contract';
 
@@ -651,10 +652,43 @@ describe('Grupos y fichas en el servidor falso (plan 05)', () => {
       const p = d.people.find((x) => x.id === id)!;
       expect(p.badges.notHomeAlone).toBe(prof.consents.goHomeAlone === false);
       expect(p.badges.noPhotos).toBe(prof.consents.photos === false);
-      expect(p.badges.healthNote).toBe(
-        !!d.health[id] && prof.consents.healthData !== false,
-      );
+      const marks = healthBadgesOf(d.health[id], prof.consents.healthData);
+      expect(p.badges.healthNote).toBe(marks.healthNote);
+      expect(p.badges.healthOther).toBe(marks.healthOther);
     }
+  });
+
+  it('la marca de salud principal y la menor salen de lo que hay en la ficha', () => {
+    expect(
+      healthBadgesOf([{ kind: 'intolerances', text: 'Lactosa.' }]),
+    ).toEqual({ healthNote: true, healthOther: false });
+    expect(healthBadgesOf([{ kind: 'treatments', text: 'Inhalador' }])).toEqual(
+      { healthNote: true, healthOther: false },
+    );
+    // TEA y TDAH: solo la menor, y las dos a la vez si hay de ambas.
+    expect(healthBadgesOf([{ kind: 'other', text: 'TEA y TDAH.' }])).toEqual({
+      healthNote: false,
+      healthOther: true,
+    });
+    expect(
+      healthBadgesOf([
+        { kind: 'illnesses', text: 'Asma leve.' },
+        { kind: 'allergies', text: 'Frutos secos' },
+      ]),
+    ).toEqual({ healthNote: true, healthOther: true });
+    // Un campo vacío no cuenta.
+    expect(healthBadgesOf([{ kind: 'other', text: '  ' }])).toEqual({
+      healthNote: false,
+      healthOther: false,
+    });
+    expect(healthBadgesOf(undefined)).toEqual({
+      healthNote: false,
+      healthOther: false,
+    });
+    // Y el servidor falso tiene de los dos tipos.
+    const people = generateFakeData().people;
+    expect(people.some((p) => p.badges.healthOther)).toBe(true);
+    expect(people.some((p) => p.badges.healthNote)).toBe(true);
   });
 
   it('lo de otra delegación es 403: ficha, salud, datos, grupo y escrituras', async () => {

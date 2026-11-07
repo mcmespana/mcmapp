@@ -45,6 +45,19 @@ PR → main ──merge→ preview ──(se prueba en el iPhone del usuario)─
 git merge preview && git push`. La reciben todos en el siguiente arranque
    (`checkAutomatically: ON_LOAD`) o cada ~15 min con la app abierta.
 
+### Norma de ritmo (decisión del usuario, 2026-11-07)
+
+- **Se trabaja en `main`.** Lo terminado se sube a `main` directamente.
+- **Si hay que probarlo, va a `preview`** y se deja ahí reposando. `preview`
+  puede acumular varias cosas.
+- **`production` se mueve por tandas**, cuando hay un buen número de cosas,
+  no por cada arreglo: cada OTA de `production` hace que a todo el mundo le
+  salga la pantalla de actualizar.
+- **Al cerrar una tarea, el agente dice cuántas cosas hay en `preview` sin
+  sacar a `production`** (`git log --oneline --no-merges origin/production..origin/preview`)
+  y recomienda «ya las puedes pasar» o «aguanta». No promueve a `production`
+  sin que el usuario lo pida.
+
 Cada publicación pasa primero por `verify.yml` (typecheck, typecheck de tests,
 lint y tests): si está en rojo, **no se publica nada**. Los pushes se encolan
 (`concurrency`), no se pisan.

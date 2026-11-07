@@ -4,6 +4,42 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-07 17:05 — Comunica: marca menor «Otras patologías» (TEA, TDAH…)
+
+- **Antes**: solo había una marca de salud, «Alergia o tratamiento». Un chaval con solo «otras patologías» (TEA, TDAH…) no llevaba ninguna, y la ficha enseñaba el texto de alergias/intolerancias pero no el de los tratamientos ni el de las patologías.
+- **Contrato**: `badges.healthOther` (opcional) = tiene enfermedades u «otras patologías» (`HEALTH_KINDS_OTHER`). `badges.healthNote` pasa a significar alergias, intolerancias o tratamiento (`HEALTH_KINDS_MAIN`). Pueden ir las dos a la vez. **El servidor real (`mcm-comunica-api`) tiene que mandar `healthOther`**; mientras no lo haga, la app no pinta la marca menor. Detalle en `docs/contratos/COMUNICA_API.md`.
+- **App**: pastilla menor «Otras patologías» (más pequeña, en tono celeste, no de aviso) en listas de grupo, sueltos, índice de grupos y Pasar Lista (icono pequeño), con el mismo gesto que la principal: abre la hoja de salud. Sin decir cuál, tampoco al lector de pantalla.
+- **Ficha del participante («Lo imprescindible»)**: ahora también enseña el **tratamiento** con su texto y las **otras patologías** con su texto (aviso menor).
+- **Servidor falso**: calcula las dos marcas desde la ficha de salud (`utils/comunica/health.ts`) e incluye un caso «TEA y TDAH».
+
+## 2026-11-07 16:55 — Letra grande del sistema en toda la app (segunda tanda) y hoja de canción igual en iOS y Android
+
+Sigue a la entrada de las 14:33. **Con la letra del sistema normal no cambia nada** (salvo la hoja de canción en iOS para quien ya tiene la letra agrandada, ver abajo).
+
+- **Nuevo `components/ui/ScrollWhenLarge.tsx`**: una columna fija y centrada pasa a hacer scroll solo con letra grande (sale del onboarding, que ahora la importa). Se usa en:
+  - **«Hay una versión nueva»** (`UpdateRequiredScreen`): sin la escena de 240 px y con scroll. Antes los botones (lo único que se puede tocar ahí) se salían de la pantalla.
+  - **Mantenimiento** (`MaintenanceScreen`): el texto del Panel se puede leer entero.
+- **Menú de opciones de la canción** (`SongControls`): con letra grande hace scroll dentro de la altura que queda; las opciones de arriba se salían por arriba.
+- **Tamaño de letra de la app × escala del sistema**: `appScaledTextCap()` (`hooks/useLargeText.ts`) pone techo al sistema para que el total ronde ×2 y no llegue a ×4. Se aplica en Inicio. Además, `lineHeight` de la notificación de Inicio ya escala con el tamaño de la app; las líneas se montaban desde ×1.4.
+- **Inicio**, con letra grande:
+  - Accesos rápidos en filas de 3 (antes «Canto/ral» partido).
+  - Recuadro de fecha del evento con techo ×1.3.
+  - El título del evento, el del evento activo, la notificación y el aviso «Evalúa la actividad» pasan a varias líneas (este último con el botón debajo y sin icono).
+- **Más títulos sin cortar con letra grande**: canciones del cantoral (`SongListItem`), categorías, tarjetas de Más, notificaciones (con la hora debajo del título), eventos del calendario (con la etiqueta del calendario debajo).
+- **`SegmentedControl`**: con letra grande, etiqueta en dos líneas y sin icono («Sin leer (N)» perdía el número).
+- **`AppPrimaryButton`**: la etiqueta encoge y se centra si parte en dos líneas; antes se salía por la derecha.
+- **Calendario**: con letra grande, «Volver a hoy» baja de fila y el mes deja de exigir 180 px. El número del día lleva techo ×1.3.
+- **Contigo**: las emociones de Oración envuelven si no caben. Las casillas de hábitos admiten dos líneas. La fecha de la cabecera de Revisión lleva techo de cromo.
+- **Techo ×1.3 o ×1.5** en controles de tamaño fijo: velocidades y nivel de la pantalla completa de la canción, emoji de las categorías y título de `ScreenHero` (×1.5).
+- **Hoja de canción** (`utils/songDocument.ts`, `useSongProcessor`): la escala de letra del sistema la aplica la hoja en su CSS (`html { font-size: N% }`, acotada a 80–200 %) en iOS y Android, y los dos WebViews de la canción van con `textZoom={100}`.
+  - Antes solo Android la respetaba, vía el `textZoom` por defecto del WebView.
+  - Ahora iOS también la sigue: quien tenga la letra de iOS agrandada verá la hoja más grande.
+  - En web no se aplica, y al 100 % la hoja queda igual que antes.
+  - Cierra la decisión pendiente `android-webview-textzoom` de `TODO.md`.
+- **Pasarela de pago de Comunica** (`CardGatewaySheet`): `textZoom={100}`. El formulario del banco se descolocaba al 200 % en Android.
+- Las lecturas de Contigo se quedan como están: son texto de lectura, hacen scroll y no se rompen.
+- Tests: `__tests__/largeText.test.tsx` amplía con el techo combinado y con la escala en el CSS de la hoja.
+
 ## 2026-11-07 14:33 — Letra grande del sistema: cabecera de Inicio y onboarding
 
 Para quien tiene el zoom de letra alto (gente mayor, sobre todo en Android). **Con la letra normal no cambia nada.**

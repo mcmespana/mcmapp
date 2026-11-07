@@ -49,6 +49,7 @@ import type {
   SetMark,
   Stage,
 } from '../contract';
+import { healthBadgesOf } from '@/utils/comunica/health';
 import { addDays, madridInstant } from '@/utils/comunica/madrid';
 import { generateCoordination } from './fixturesCoordination';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
@@ -490,7 +491,6 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
       );
       const r = rand();
       if (r < 0.12) {
-        p.badges.healthNote = true;
         health[p.id] = pick<FakeHealthItem[]>([
           [
             {
@@ -503,6 +503,8 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
             { kind: 'treatments', text: 'Inhalador si hace mucho esfuerzo.' },
           ],
           [{ kind: 'intolerances', text: 'Lactosa.' }],
+          // Solo «otras patologías»: tiene que llevar la marca menor.
+          [{ kind: 'other', text: 'TEA y TDAH.' }],
         ]);
       }
       if (rand() < 0.1) p.badges.noPhotos = true;
@@ -1039,7 +1041,7 @@ function generateProfiles({
     };
     // Las marcas las decide el servidor con el «0» explícito: la de salud,
     // solo si hay texto y la familia no dijo «no» al uso de los datos.
-    p.badges.healthNote = !!health[pid] && consents.healthData !== false;
+    Object.assign(p.badges, healthBadgesOf(health[pid], consents.healthData));
   }
 
   // Avisos: uno de C1 con dos, uno de C2 con tres (el límite) y uno de M2 con uno.

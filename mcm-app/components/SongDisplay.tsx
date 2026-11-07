@@ -318,6 +318,9 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
         originWhitelist={['about:blank']}
         onShouldStartLoadWithRequest={(req) => req.url === 'about:blank'}
         source={{ html: view.loaded }}
+        // La escala de letra del sistema la pone la hoja en su CSS (igual en iOS
+        // y Android); sin esto Android la aplicaba OTRA vez por su cuenta.
+        textZoom={100}
         style={[
           styles.webView,
           fullBleed && { backgroundColor: themeColors(isDark).background },

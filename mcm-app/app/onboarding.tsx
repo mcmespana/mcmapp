@@ -10,7 +10,6 @@ import {
   TextStyle,
   Platform,
   BackHandler,
-  StyleProp,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -47,6 +46,7 @@ import { setAnalyticsProfile, trackEvent } from '@/utils/analytics';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import useLargeText, { CHROME_MAX_FONT_SCALE } from '@/hooks/useLargeText';
+import ScrollWhenLarge from '@/components/ui/ScrollWhenLarge';
 
 type Step = 'welcome' | 'profile' | 'delegation' | 'login' | 'success';
 
@@ -372,38 +372,6 @@ const skipBtnStyles = StyleSheet.create({
 /* ─────────────────────────────────────
    Welcome screen
 ─────────────────────────────────────── */
-
-/**
- * Con la letra del sistema grande (`useLargeText`), una columna que era fija y
- * centrada pasa a hacer scroll (y sigue centrada si cabe), para que nada quede
- * cortado ni tapado por el botón de abajo. Con la letra normal es la misma
- * `View` de siempre: no cambia nada.
- */
-function ScrollWhenLarge({
-  large,
-  style,
-  largeStyle,
-  children,
-}: {
-  large: boolean;
-  style: StyleProp<ViewStyle>;
-  largeStyle?: StyleProp<ViewStyle>;
-  children: React.ReactNode;
-}) {
-  if (!large) return <View style={style}>{children}</View>;
-  // `flex: 1` en el contenido de un ScrollView le impide crecer y hacer
-  // scroll: se cambia por `flexGrow: 1` (centra si cabe, crece si no).
-  const content = { ...StyleSheet.flatten(style), flex: undefined };
-  return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={[content, { flexGrow: 1 }, largeStyle]}
-      showsVerticalScrollIndicator={false}
-    >
-      {children}
-    </ScrollView>
-  );
-}
 
 function WelcomeScreen({
   onStart,

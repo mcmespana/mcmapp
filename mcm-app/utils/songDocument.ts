@@ -493,6 +493,19 @@ export interface SongDocumentOptions {
   isFullscreen?: boolean;
   /** Números de línea del ChordPro (`data-line`) y toque largo → `{arr:}`. */
   adminMode?: boolean;
+  /**
+   * Escala de letra del SISTEMA (`useWindowDimensions().fontScale`). La hoja
+   * la aplica ella misma en el CSS (en las dos plataformas) y el WebView va
+   * con `textZoom={100}`: antes solo Android la respetaba, vía el `textZoom`
+   * por defecto del WebView, e iOS no. Se acota a [0.8, 2].
+   */
+  systemFontScale?: number;
+}
+
+/** `html { font-size }` en % para la escala de letra del sistema. */
+export function systemFontScalePercent(scale: number | undefined): number {
+  if (typeof scale !== 'number' || !Number.isFinite(scale)) return 100;
+  return Math.round(Math.min(2, Math.max(0.8, scale)) * 100);
 }
 
 /**
@@ -535,6 +548,7 @@ export function buildSongDocument(
     capo,
     isFullscreen = false,
     adminMode = false,
+    systemFontScale,
   } = opts;
   const s = opts.style;
   const c = themeVarsFor(s.isDark);
@@ -765,6 +779,9 @@ export function buildSongDocument(
       --song-pad-bottom: ${s.bottomPadding}px;
     }
   `;
+  // Solo si cambia algo: al 100 % la hoja queda byte a byte como siempre.
+  const sysPct = systemFontScalePercent(systemFontScale);
+  const sysFontCss = sysPct === 100 ? '' : `html { font-size: ${sysPct}%; }`;
 
   const finalHtml = `
     <html>
@@ -772,6 +789,7 @@ export function buildSongDocument(
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
       <style>
         ${cssVars}
+        ${sysFontCss}
         * { box-sizing: border-box; }
         body {
           font-family: var(--song-font-family);

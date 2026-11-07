@@ -7,6 +7,8 @@ import {
   Pressable,
   TouchableOpacity,
   BackHandler,
+  ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router/react-navigation';
 import Animated, {
@@ -36,6 +38,8 @@ import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import useLargeText from '@/hooks/useLargeText';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import {
   KeyPillColors,
@@ -202,6 +206,14 @@ const SongControls: React.FC<SongControlsProps> = ({
   const isDark = scheme === 'dark';
   // El FAB va por encima de la barra de pestañas flotante.
   const tabBarClearance = useTabBarClearance();
+  const largeText = useLargeText();
+  const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  // Lo que queda entre la cabecera (~56) y el FAB (56 + 12 de margen).
+  const menuMaxHeight = Math.max(
+    200,
+    windowHeight - insets.top - 56 - (tabBarClearance + 8) - 56 - 12 - 16,
+  );
   const layout = useResponsiveLayout();
   const rotateAnim = useSharedValue(0);
   // Visibilidad del menú (0 cerrado → 1 abierto). El menú se queda MONTADO y
@@ -398,138 +410,147 @@ const SongControls: React.FC<SongControlsProps> = ({
           }
           aria-hidden={!showActionButtons}
         >
-          <ActionButton
-            isDark={isDark}
-            icon={chordsVisible ? 'music-off' : 'music-note'}
-            label={chordsVisible ? 'Ocultar acordes' : 'Mostrar acordes'}
-            onPress={onToggleChords}
-            isActive={!chordsVisible}
-          />
-          {hasRepeats && onToggleCompact && (
+          {/* Con la letra del sistema grande las 8-10 opciones no caben
+              encima del botón y las de arriba se salían de la pantalla: el
+              menú pasa a hacer scroll dentro de la altura que queda. */}
+          <ScrollView
+            scrollEnabled={largeText}
+            style={largeText ? { maxHeight: menuMaxHeight } : undefined}
+            showsVerticalScrollIndicator={largeText}
+          >
             <ActionButton
               isDark={isDark}
-              icon={compactView ? 'unfold-more' : 'unfold-less'}
-              label={
-                compactView
-                  ? 'Desplegar estribillos'
-                  : 'Plegar estribillos repetidos'
-              }
-              onPress={onToggleCompact}
-              isActive={compactView}
+              icon={chordsVisible ? 'music-off' : 'music-note'}
+              label={chordsVisible ? 'Ocultar acordes' : 'Mostrar acordes'}
+              onPress={onToggleChords}
+              isActive={!chordsVisible}
             />
-          )}
-          {hasArrangements && onToggleArrangements && (
-            <ActionButton
-              isDark={isDark}
-              icon="auto-awesome"
-              label={
-                arrangementsVisible ? 'Ocultar arreglos' : 'Mostrar arreglos'
-              }
-              onPress={onToggleArrangements}
-              isActive={!arrangementsVisible}
-            />
-          )}
-          <ActionButton
-            isDark={isDark}
-            icon="translate"
-            label={
-              notation === 'ES' ? 'Acordes en inglés' : 'Acordes en español'
-            }
-            onPress={onToggleNotation}
-            isActive={notation !== 'ES'}
-          />
-          <ActionButton
-            isDark={isDark}
-            icon="swap-vert"
-            label={
-              songBadge ? `Tono y cejilla · ${songBadge}` : 'Tono y cejilla'
-            }
-            onPress={handleOpenTransposeBottomSheet}
-            isActive={!!songBadge}
-          />
-          <ActionButton
-            isDark={isDark}
-            icon="text-fields"
-            label="Letra y vista"
-            onPress={handleOpenFontPanel}
-            isActive={
-              currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
-              (availableFonts.length > 0 &&
-                currentFontFamily !== availableFonts[0].cssValue)
-            }
-          />
-
-          {/* El afinador, en hoja encima de la canción. */}
-          <ActionButton
-            isDark={isDark}
-            icon="graphic-eq"
-            label="Afinar la guitarra"
-            onPress={() => {
-              setMenuOpen(false);
-              openCantoral('Tuner');
-            }}
-          />
-
-          <View
-            style={[styles.menuDivider, isDark && styles.menuDividerDark]}
-          />
-
-          <ActionButton
-            isDark={isDark}
-            icon="content-copy"
-            label="Copiar letra"
-            onPress={() => {
-              onCopyLyrics();
-              toast.show({ label: 'Letra copiada al portapapeles' });
-            }}
-          />
-          <ActionButton
-            isDark={isDark}
-            icon="fullscreen"
-            label="Pantalla completa"
-            onPress={onNavigateToFullscreen}
-          />
-          {Platform.OS === 'web' && !!songContent && (
-            <ActionButton
-              isDark={isDark}
-              icon="print"
-              label="Imprimir"
-              onPress={() => {
-                // La hoja en papel, como el PDF de la playlist: con el
-                // tono, la cejilla y la vista que se tienen ahora.
-                const html = buildSongPrintHtml(
-                  {
-                    title: songTitle ?? '',
-                    author: songAuthor,
-                    key: songKey,
-                    capo: songCapo,
-                    capoOverride: currentCapoOverride,
-                    content: songContent,
-                    transpose: currentTranspose,
-                  },
-                  {
-                    notation,
-                    showChords: chordsVisible,
-                    compact: compactView,
-                    chorusStyle: view?.chorusStyle,
-                    chorusLabel: view?.chorusLabel,
-                    verseNumbers: view?.verseNumbers,
-                  },
-                );
-                if (!printHtmlInNewWindow(html)) {
-                  toast.show({
-                    label: 'Permite las ventanas emergentes para imprimir',
-                  });
+            {hasRepeats && onToggleCompact && (
+              <ActionButton
+                isDark={isDark}
+                icon={compactView ? 'unfold-more' : 'unfold-less'}
+                label={
+                  compactView
+                    ? 'Desplegar estribillos'
+                    : 'Plegar estribillos repetidos'
                 }
+                onPress={onToggleCompact}
+                isActive={compactView}
+              />
+            )}
+            {hasArrangements && onToggleArrangements && (
+              <ActionButton
+                isDark={isDark}
+                icon="auto-awesome"
+                label={
+                  arrangementsVisible ? 'Ocultar arreglos' : 'Mostrar arreglos'
+                }
+                onPress={onToggleArrangements}
+                isActive={!arrangementsVisible}
+              />
+            )}
+            <ActionButton
+              isDark={isDark}
+              icon="translate"
+              label={
+                notation === 'ES' ? 'Acordes en inglés' : 'Acordes en español'
+              }
+              onPress={onToggleNotation}
+              isActive={notation !== 'ES'}
+            />
+            <ActionButton
+              isDark={isDark}
+              icon="swap-vert"
+              label={
+                songBadge ? `Tono y cejilla · ${songBadge}` : 'Tono y cejilla'
+              }
+              onPress={handleOpenTransposeBottomSheet}
+              isActive={!!songBadge}
+            />
+            <ActionButton
+              isDark={isDark}
+              icon="text-fields"
+              label="Letra y vista"
+              onPress={handleOpenFontPanel}
+              isActive={
+                currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
+                (availableFonts.length > 0 &&
+                  currentFontFamily !== availableFonts[0].cssValue)
+              }
+            />
+
+            {/* El afinador, en hoja encima de la canción. */}
+            <ActionButton
+              isDark={isDark}
+              icon="graphic-eq"
+              label="Afinar la guitarra"
+              onPress={() => {
+                setMenuOpen(false);
+                openCantoral('Tuner');
               }}
             />
-          )}
-          <ActionButton
-            isDark={isDark}
-            icon="bug-report"
-            label="Reportar error"
-            onPress={() => setShowReportBugsModal(true)}
-          />
+
+            <View
+              style={[styles.menuDivider, isDark && styles.menuDividerDark]}
+            />
+
+            <ActionButton
+              isDark={isDark}
+              icon="content-copy"
+              label="Copiar letra"
+              onPress={() => {
+                onCopyLyrics();
+                toast.show({ label: 'Letra copiada al portapapeles' });
+              }}
+            />
+            <ActionButton
+              isDark={isDark}
+              icon="fullscreen"
+              label="Pantalla completa"
+              onPress={onNavigateToFullscreen}
+            />
+            {Platform.OS === 'web' && !!songContent && (
+              <ActionButton
+                isDark={isDark}
+                icon="print"
+                label="Imprimir"
+                onPress={() => {
+                  // La hoja en papel, como el PDF de la playlist: con el
+                  // tono, la cejilla y la vista que se tienen ahora.
+                  const html = buildSongPrintHtml(
+                    {
+                      title: songTitle ?? '',
+                      author: songAuthor,
+                      key: songKey,
+                      capo: songCapo,
+                      capoOverride: currentCapoOverride,
+                      content: songContent,
+                      transpose: currentTranspose,
+                    },
+                    {
+                      notation,
+                      showChords: chordsVisible,
+                      compact: compactView,
+                      chorusStyle: view?.chorusStyle,
+                      chorusLabel: view?.chorusLabel,
+                      verseNumbers: view?.verseNumbers,
+                    },
+                  );
+                  if (!printHtmlInNewWindow(html)) {
+                    toast.show({
+                      label: 'Permite las ventanas emergentes para imprimir',
+                    });
+                  }
+                }}
+              />
+            )}
+            <ActionButton
+              isDark={isDark}
+              icon="bug-report"
+              label="Reportar error"
+              onPress={() => setShowReportBugsModal(true)}
+            />
+          </ScrollView>
         </Animated.View>
         <View style={{ position: 'relative' }}>
           {!!songBadge && !showActionButtons && (

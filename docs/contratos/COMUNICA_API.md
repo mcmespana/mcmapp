@@ -47,8 +47,12 @@
 - **Nada de nombres del CRM** en el contrato (`ajmcm_…`, `stic_…`): el servidor
   traduce, con los nombres de `comunicaAreaPrivada/docs/comunica/CAMPOS.md`.
 - **La salud nunca viaja en una lectura que el móvil guarda**: solo la marca
-  (`badges.healthNote`). El texto, solo en `GET /v1/people/:id/health`, que la
-  app pide con conexión y no guarda.
+  (`badges.healthNote`, `badges.healthOther`). El texto, solo en
+  `GET /v1/people/:id/health`, que la app pide con conexión y no guarda.
+  - `healthNote` = hay texto en alergias, intolerancias o tratamientos.
+  - `healthOther` = hay texto en enfermedades u otras patologías (TEA, TDAH…).
+    Marca menor y aparte; pueden ir las dos. Con «No» al uso de los datos de
+    salud, ninguna de las dos.
 - Todo acotado por **delegación** (`assigned_user_id`, como en el plugin) y
   por los grupos de la persona. Sin paginación: más de 1.000 elementos en una
   respuesta es un fallo de alcance.

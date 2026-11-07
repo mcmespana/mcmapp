@@ -35,6 +35,8 @@ import {
 } from '@/utils/comunica/attendance';
 import {
   HEALTH_MARK_A11Y,
+  HEALTH_OTHER_A11Y,
+  hasMarks,
   marksA11y,
 } from '@/components/comunica/comun/PersonMarks';
 import {
@@ -462,5 +464,33 @@ describe('marcas', () => {
     expect(
       marksA11y({ healthNote: false, noPhotos: false, notHomeAlone: false }),
     ).toBe('');
+  });
+
+  it('otras patologías: marca menor aparte, también sin decir cuál', () => {
+    expect(HEALTH_OTHER_A11Y).toBe('Otras patologías: ver el detalle');
+    expect(
+      marksA11y({
+        healthNote: false,
+        healthOther: true,
+        noPhotos: false,
+        notHomeAlone: false,
+      }),
+    ).toBe(HEALTH_OTHER_A11Y);
+    expect(
+      marksA11y({
+        healthNote: true,
+        healthOther: true,
+        noPhotos: false,
+        notHomeAlone: false,
+      }),
+    ).toBe(`${HEALTH_MARK_A11Y}, ${HEALTH_OTHER_A11Y}`);
+    expect(
+      hasMarks({
+        healthNote: false,
+        healthOther: true,
+        noPhotos: false,
+        notHomeAlone: false,
+      }),
+    ).toBe(true);
   });
 });
