@@ -212,7 +212,7 @@ function MonitorForm({
       }
     >
       <Stack.Screen options={{ title: C.title }} />
-      {isNetwork(error) ? <OfflineNotice /> : null}
+      {isNetwork(error) ? <OfflineNotice error={error} /> : null}
       {certificatePending ? <CertificatePendingAlert /> : null}
       <Text style={[styles.intro, { color: t.textSecondary }]}>{C.intro}</Text>
 

@@ -1,4 +1,9 @@
-import { createHttpClient, ComunicaApiError } from '@/services/comunica/client';
+import {
+  createHttpClient,
+  ComunicaApiError,
+  READ_TIMEOUT_MS,
+  WRITE_TIMEOUT_MS,
+} from '@/services/comunica/client';
 import { setWorkingDelegation } from '@/services/comunica/delegation';
 import { setReporter } from '@/utils/logger';
 
@@ -68,15 +73,101 @@ describe('services/comunica/client', () => {
     expect(f).toHaveBeenCalledTimes(1);
   });
 
-  it('503 se reintenta una vez en lecturas', async () => {
+  it('503: NO se repite al momento (lo reintenta la caché con espera); sigue siendo reintentable', async () => {
+    // Repetirlo aquí duplicaba las peticiones de cada pantalla con el servidor
+    // caído (6/11/2026): 2 aquí × 3 de la caché = 6 por consulta.
     const f = jest
       .fn()
       .mockResolvedValueOnce(
         respond(503, { error: { code: 'crm_unavailable', message: 'caído' } }),
       )
       .mockResolvedValueOnce(respond(200, me));
+    await expect(client(f).getMe()).rejects.toMatchObject({
+      code: 'crm_unavailable',
+      retryable: true,
+    });
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+
+  it('un corte de red en una lectura sí se repite al momento, una vez', async () => {
+    const f = jest
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Network request failed'))
+      .mockResolvedValueOnce(respond(200, me));
     await expect(client(f).getMe()).resolves.toEqual(me);
     expect(f).toHaveBeenCalledTimes(2);
+  });
+
+  describe('tiempo límite', () => {
+    /** Un `fetch` que no contesta nunca, salvo que lo corten. */
+    const hanging = () =>
+      jest.fn(
+        (_url: string, init: { signal?: AbortSignal }) =>
+          new Promise<Response>((_res, rej) => {
+            init.signal?.addEventListener('abort', () =>
+              rej(Object.assign(new Error('Aborted'), { name: 'AbortError' })),
+            );
+          }),
+      );
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it('una lectura colgada se corta a los READ_TIMEOUT_MS: `network`/`timeout`, reintentable, sin repetir al momento', async () => {
+      const f = hanging();
+      const p = client(f as unknown as jest.Mock)
+        .getMe()
+        .catch((e) => e);
+      await jest.advanceTimersByTimeAsync(READ_TIMEOUT_MS - 1);
+      expect(f).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(2);
+      const err = await p;
+      expect(err).toBeInstanceOf(ComunicaApiError);
+      expect(err).toMatchObject({
+        code: 'network',
+        reason: 'timeout',
+        retryable: true,
+      });
+      expect(f).toHaveBeenCalledTimes(1);
+    });
+
+    it('una escritura colgada se corta a los WRITE_TIMEOUT_MS (la cola la repetirá con el mismo clientId)', async () => {
+      const f = hanging();
+      const p = client(f as unknown as jest.Mock)
+        .setScarf('k1', {
+          clientId: '3b241101-e2bb-4255-8caf-4136c566a962',
+          scarf: 'blue',
+        })
+        .catch((e) => e);
+      await jest.advanceTimersByTimeAsync(READ_TIMEOUT_MS + 1);
+      await jest.advanceTimersByTimeAsync(WRITE_TIMEOUT_MS - READ_TIMEOUT_MS);
+      expect(await p).toMatchObject({ code: 'network', reason: 'timeout' });
+    });
+
+    it('un cuerpo que no acaba también se corta', async () => {
+      const f = jest.fn((_url: string, init: { signal?: AbortSignal }) =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            new Promise((_res, rej) =>
+              init.signal?.addEventListener('abort', () =>
+                rej(new Error('Aborted')),
+              ),
+            ),
+        } as unknown as Response),
+      );
+      const p = client(f as unknown as jest.Mock)
+        .getMe()
+        .catch((e) => e);
+      await jest.advanceTimersByTimeAsync(READ_TIMEOUT_MS + 1);
+      expect(await p).toMatchObject({ code: 'network', reason: 'timeout' });
+    });
+
+    it('una respuesta a tiempo no deja el reloj corriendo', async () => {
+      const f = jest.fn().mockResolvedValue(respond(200, me));
+      await expect(client(f).getMe()).resolves.toEqual(me);
+      expect(jest.getTimerCount()).toBe(0);
+    });
   });
 
   it('las escrituras no se reintentan (lo hace la cola)', async () => {
@@ -150,7 +241,7 @@ describe('services/comunica/client', () => {
     expect(f.mock.calls[0][1].headers.Authorization).toBeUndefined();
   });
 
-  it('400 sin cuerpo es `validation` (no se reintenta); 500 sigue siendo reintentable', async () => {
+  it('400 sin cuerpo es `validation` (no se reintenta); 500 sigue siendo reintentable (por la caché, no al momento)', async () => {
     const f400 = jest.fn().mockResolvedValue(respond(400, {}));
     await expect(client(f400).getMe()).rejects.toMatchObject({
       code: 'validation',
@@ -161,8 +252,11 @@ describe('services/comunica/client', () => {
       .fn()
       .mockResolvedValueOnce(respond(500, {}))
       .mockResolvedValueOnce(respond(200, me));
-    await expect(client(f500).getMe()).resolves.toEqual(me);
-    expect(f500).toHaveBeenCalledTimes(2);
+    await expect(client(f500).getMe()).rejects.toMatchObject({
+      code: 'crm_unavailable',
+      retryable: true,
+    });
+    expect(f500).toHaveBeenCalledTimes(1);
   });
 
   it('la foto lleva el token SOLO si es de nuestro servidor', () => {
