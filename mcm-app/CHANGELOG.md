@@ -4,6 +4,19 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-07 14:33 — Letra grande del sistema: cabecera de Inicio y onboarding
+
+Para quien tiene el zoom de letra alto (gente mayor, sobre todo en Android). **Con la letra normal no cambia nada.**
+
+- **Nuevo `hooks/useLargeText.ts`**: `useLargeText()` es `true` desde ×1.2 de escala de letra del sistema (`LARGE_TEXT_FONT_SCALE`). La normal y la «grande» de Android (1.15) quedan igual; cambia desde «muy grande» (Android 1.3, iOS XXL). También exporta `CHROME_MAX_FONT_SCALE` = 1.3, el techo para texto que vive en una barra de altura fija (el mínimo que permite `design.md` §4).
+- **Cabecera de Inicio** (`components/home/HomeBrand.tsx`): «MCM App» (28 pt) lleva `maxFontSizeMultiplier` 1.3. Con la letra al ×2 se iba a 56 pt y no cabía en la barra nativa.
+- **Onboarding** (`app/onboarding.tsx`), solo con letra grande:
+  - En perfil y localidad, el título y el subtítulo pasan a estar DENTRO de la lista y se van con el scroll (`StepHero`), y se quita el icono de 56 px. Antes ese bloque fijo se comía la pantalla y no se veían las opciones.
+  - Las descripciones de perfil y localidad ya no se cortan a 3/2 líneas.
+  - Bienvenida y login pasan a hacer scroll (`ScrollWhenLarge`) y quitan el logo; el final quita el icono.
+  - Los textos de los botones fijos («Continuar», «Saltar», «Atrás», «Entrar sin iniciar sesión») llevan el techo ×1.3.
+- Tests: `__tests__/largeText.test.tsx` (corte y techo de la cabecera) y `__tests__/onboardingLargeText.test.tsx` (título fijo con letra normal, dentro de la lista con letra grande).
+
 ## 2026-11-07 11:34 — Comunica: lo atascado se reintenta solo, el refresco de sesión se repite y las caídas llegan a Sentry
 
 Segunda parte de la revisión del 7/11/2026, pensando en el área nativa abierta a todos:
