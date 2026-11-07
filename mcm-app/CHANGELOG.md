@@ -4,7 +4,7 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
-## 2026-11-07 16:00 — Comunica: marca menor «Otras patologías» (TEA, TDAH…)
+## 2026-11-07 17:05 — Comunica: marca menor «Otras patologías» (TEA, TDAH…)
 
 - **Antes**: solo había una marca de salud, «Alergia o tratamiento». Un chaval con solo «otras patologías» (TEA, TDAH…) no llevaba ninguna, y la ficha enseñaba el texto de alergias/intolerancias pero no el de los tratamientos ni el de las patologías.
 - **Contrato**: `badges.healthOther` (opcional) = tiene enfermedades u «otras patologías» (`HEALTH_KINDS_OTHER`). `badges.healthNote` pasa a significar alergias, intolerancias o tratamiento (`HEALTH_KINDS_MAIN`). Pueden ir las dos a la vez. **El servidor real (`mcm-comunica-api`) tiene que mandar `healthOther`**; mientras no lo haga, la app no pinta la marca menor. Detalle en `docs/contratos/COMUNICA_API.md`.
