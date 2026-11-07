@@ -205,10 +205,12 @@ da la imagen del falso o `{ uri, headers }`: ninguna pantalla importa el falso.
 17. **Teléfonos** (`_phone`): para llamar, cifras y «+»; para WhatsApp, sin «+»
     y con 34 delante si son 9 cifras. `Linking.openURL` con `tel:`,
     `https://wa.me/…` y `mailto:`, como `app/screens/ContactosScreen.tsx`.
-18. **Lo imprescindible**: alergias e intolerancias **con su texto**, «N faltas
+18. **Lo imprescindible**: alergias e intolerancias **con su texto**, el
+    tratamiento y las otras patologías (aviso menor), «N faltas
     seguidas» (≥ 3) y «N avisos»; si no hay nada, no se pinta. El texto sale de
     la salud (regla 22): sin conexión o sin permiso, en su lugar va la marca
-    «Alergia o tratamiento» si `badges.healthNote`.
+    «Alergia o tratamiento» si `badges.healthNote` y «Otras patologías» si
+    `badges.healthOther`.
 19. **Asistencia** (`_att_track`): el denominador son las sesiones **marcadas**;
     sin ninguna, «Sin datos» (nunca 0 %); «X h de Y h» de las marcadas; barra;
     «N de M sesiones marcadas» y «N sábados sin lista». Cuadraditos por mes con
