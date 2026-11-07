@@ -8,6 +8,7 @@
 
 - `utils/storeLinks.ts` abría `apps.apple.com/app/id6745557177`, un id que no existe en la App Store. Al subir la versión mínima a 2.5.1, el botón de la pantalla de actualizar decía «no disponible en tu país». El id bueno es **6753905393** (el `ascAppId` de `eas.json`, comprobado contra la API de búsqueda de Apple: «MCM App», `com.familiaconsolacion.mcmapp`, 2.5.1).
 - El id roto venía de abril de 2026. Las versiones viejas también lo llevan: la 2.0.0 en `MaintenanceScreen` y la 2.5.0 en `storeLinks`. Para ellas hay ramas de parche con una OTA en su propio `runtimeVersion` (ver `docs/desarrollo/OTA.md`, «OTA a una versión vieja»).
+- Las dos ramas de parche llevan además un cartel «Hay una versión nueva» en Inicio (`components/StoreUpdateBanner.tsx`, solo en esas ramas). Lleva a la tienda, se puede cerrar y vuelve a salir a los 3 días. Publicadas el 2026-11-07 con Actions → OTA Production sobre cada rama. Plan: versión mínima en 2.0.0 (nadie bloqueado) y subirla a 2.5.1 en una semana y pico para los rezagados.
 - Guardarraíl en `__tests__/storeLinks.test.ts`: el id del enlace tiene que ser el `ascAppId` de `eas.json`, y el id viejo no puede volver a aparecer.
 
 ## 2026-11-07 17:05 — Comunica: marca menor «Otras patologías» (TEA, TDAH…)
