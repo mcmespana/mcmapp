@@ -81,10 +81,21 @@ export default function MemberHome({
 
 function Content({ embedded }: { embedded: boolean }) {
   const router = useRouter();
-  const { me } = useMe();
+  const meQuery = useMe();
+  const { me } = meQuery;
   const { ready, profiles, active, isSelf, audience } = useActiveProfile();
   const openSection = useOpenSection();
-  if (!me || !ready || !profiles || !active) return null;
+  // Sin `me` (falló y no había nada guardado) la portada se quedaba en blanco:
+  // ahora sale el esqueleto o el error con «Reintentar». Debajo de lo del
+  // equipo, simplemente no sale.
+  if (!me) {
+    return embedded ? null : (
+      <AreaState query={meQuery} skeleton="list">
+        {() => null}
+      </AreaState>
+    );
+  }
+  if (!ready || !profiles || !active) return null;
   const sections = homeSections(audience);
   const activeFirst = firstNameOf(active);
   // El saludo no se cierra: así siempre queda claro a quién se está viendo.

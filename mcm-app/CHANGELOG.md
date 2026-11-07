@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-07 11:34 — Comunica: lo atascado se reintenta solo, el refresco de sesión se repite y las caídas llegan a Sentry
+
+Segunda parte de la revisión del 7/11/2026, pensando en el área nativa abierta a todos:
+
+- **Una escritura atascada se sigue intentando SOLA** (`services/comunica/outbox.ts`): tras los 5 fallos seguidos con el servidor caído sigue saliendo como atascada (con «Reintentar» y «Descartar»), pero se vuelve a intentar cada 5 min (`STUCK_RETRY_MS`) y cada vez que la app despierta (primer plano, vuelve la red, se abre una pantalla), con el mismo `clientId`. Antes esperaba a que alguien tocara «Reintentar» y una lista podía quedarse días en el móvil. Sentry recibe UN aviso por lista atascada, no uno por reintento. Lo atascado guardado por versiones anteriores sigue esperando a «Reintentar».
+- **Renovar la sesión se repite UNA vez** si falla por red o plazo (`services/comunica/session.ts`, `REFRESH_RETRY_MS` = 2 s). El servidor puede haber cambiado ya el token con la respuesta perdida; repetirlo enseguida cae dentro de su margen (2 min) y no saca a nadie. Un 401 sigue cerrando la sesión al momento, y ahora avisa a Sentry.
+- **Las caídas del servidor llegan a Sentry** (`client.ts`): un 5xx o un plazo agotado avisan, uno por tipo cada 10 min y móvil, con la ruta sin ids (`/v1/people/:id/photo`). Antes la caída del 6/11 era invisible desde la app.
+- **La portada de familia ya no se queda en blanco** si `/v1/me` falla sin nada guardado: sale «Comunica no responde ahora mismo» con «Reintentar» (`MemberHome`).
+- Tests: `outbox.test.ts` (reintento lento, al despertar, un solo aviso, lo viejo sigue manual), `session.test.ts` (refresco repetido una vez, no insiste más, el 401 no se repite), `client.test.ts` (avisos a Sentry con freno y sin ids), `familyScreens.test.tsx` (portada sin `/v1/me`).
+
 ## 2026-11-07 10:55 — Comunica: plazo a cada petición, menos reintentos y «Comunica no responde» en vez de «Sin conexión»
 
 Tras la caída del middleware de la noche del 6/11 (`comunicaMiddleware:docs/APRENDIZAJES-MIDDLEWARE.md`), revisión del cliente:

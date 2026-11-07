@@ -2,7 +2,10 @@ import {
   createHttpClient,
   ComunicaApiError,
   READ_TIMEOUT_MS,
+  REPORT_EVERY_MS,
   WRITE_TIMEOUT_MS,
+  resetTroubleReports,
+  routeOf,
 } from '@/services/comunica/client';
 import { setWorkingDelegation } from '@/services/comunica/delegation';
 import { setReporter } from '@/utils/logger';
@@ -96,6 +99,61 @@ describe('services/comunica/client', () => {
       .mockResolvedValueOnce(respond(200, me));
     await expect(client(f).getMe()).resolves.toEqual(me);
     expect(f).toHaveBeenCalledTimes(2);
+  });
+
+  describe('avisos a Sentry de que el servidor falla (7/11/2026)', () => {
+    const warns: unknown[][] = [];
+    beforeEach(() => {
+      warns.length = 0;
+      resetTroubleReports();
+      setReporter({ error: () => {}, warn: (...a) => warns.push(a) });
+    });
+    afterEach(() =>
+      setReporter({ error: (...a) => errors.push(a), warn: () => {} }),
+    );
+
+    it('un 5xx avisa UNA vez cada REPORT_EVERY_MS, con la ruta sin ids', async () => {
+      const f = jest.fn().mockResolvedValue(
+        respond(503, {
+          error: { code: 'crm_unavailable', message: 'x', reason: 'db_error' },
+        }),
+      );
+      const id = '00000c2f-102d-2c5b-04b9-68cec329dfe6';
+      for (let i = 0; i < 5; i++) {
+        await client(f)
+          .getRoll(id, id)
+          .catch(() => {});
+      }
+      expect(warns).toHaveLength(1);
+      const text = warns[0]!.map(String).join(' ');
+      expect(text).toContain('/v1/sessions/:id/groups/:id/roll');
+      expect(text).toContain('db_error');
+      expect(text).not.toContain(id);
+      const now = Date.now();
+      jest.spyOn(Date, 'now').mockReturnValue(now + REPORT_EVERY_MS + 1);
+      await client(f)
+        .getMe()
+        .catch(() => {});
+      expect(warns).toHaveLength(2);
+    });
+
+    it('un 4xx no avisa (no es el servidor)', async () => {
+      const f = jest
+        .fn()
+        .mockResolvedValue(
+          respond(422, { error: { code: 'validation', message: 'x' } }),
+        );
+      await client(f)
+        .getMe()
+        .catch(() => {});
+      expect(warns).toHaveLength(0);
+    });
+
+    it('routeOf quita ids y parámetros', () => {
+      expect(
+        routeOf('/v1/people/00000c2f-102d-2c5b-04b9-68cec329dfe6/photo?v=ab12'),
+      ).toBe('/v1/people/:id/photo');
+    });
   });
 
   describe('tiempo límite', () => {

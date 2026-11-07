@@ -9,7 +9,12 @@
  */
 /* eslint-disable react/display-name, @typescript-eslint/no-require-imports, import/first */
 import React from 'react';
-import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import {
+  act,
+  create,
+  type ReactTestInstance,
+  type ReactTestRenderer,
+} from 'react-test-renderer';
 import { Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { HeroUINativeProvider } from 'heroui-native';
@@ -291,6 +296,31 @@ describe('la portada de familia', () => {
     expect(t).toContain('Mis datos');
     // La barra «Viendo a» ya no va dentro de la portada: está FIJA arriba (`AreaScreen profileBar`).
     expect(has(tree, 'Viendo a Yo misma. Cambiar de persona')).toBe(false);
+  });
+
+  it('si /v1/me falla y no hay nada guardado, sale el error con «Reintentar», no una pantalla en blanco (7/11/2026)', async () => {
+    __resetSessionForTests();
+    __resetComunicaApiForTests();
+    setStorageBackend(memoryBackend());
+    getComunicaApi();
+    const fake = getFakeServer() as FakeServer;
+    fake.setControls({ latencyMs: 0, failRoute: 'me' });
+    const s = fake.issueSession('family');
+    await signIn(s, s.me);
+    const { tree } = await mount(<MemberHome />);
+    await until(() => texts(tree).includes('Comunica no responde ahora mismo'));
+    expect(texts(tree)).not.toContain('Hola, Marta');
+    // Vuelve el servidor y «Reintentar» trae la portada.
+    fake.setControls({ failRoute: null });
+    // El botón del vacío no lleva etiqueta: se sube desde su texto.
+    let node: ReactTestInstance | null = tree.root
+      .findAllByType(Text)
+      .find((t) => [t.props.children].flat().join('') === 'Reintentar')!;
+    while (node && typeof node.props.onPress !== 'function') node = node.parent;
+    await act(async () => {
+      node!.props.onPress();
+    });
+    await until(() => texts(tree).includes('Hola, Marta'));
   });
 
   it('«Ver su ficha» abre sus datos SIN cambiar a quién se ve', async () => {
