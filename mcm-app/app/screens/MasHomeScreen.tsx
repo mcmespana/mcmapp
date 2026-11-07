@@ -8,6 +8,7 @@ import { MaterialIcons } from '@/components/ui/icons';
 import type { ComponentProps } from 'react';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useLargeText from '@/hooks/useLargeText';
 import { solidTint, tintedGlyph } from '@/utils/tintColors';
 import MasFooter from '@/components/mas/MasFooter';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
@@ -95,6 +96,8 @@ export default function MasHomeScreen() {
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('mas');
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  // Letra del sistema grande: títulos en dos líneas («Calenda…» si no).
+  const large = useLargeText();
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   // Pastilla del icono y de la flecha de cada tarjeta: el color de la tarjeta
   // y un glifo que se lea sobre ella (el amarillo del cantoral sobre blanco no
@@ -258,7 +261,7 @@ export default function MasHomeScreen() {
                         styles.cardTitle,
                         { color: themeColors(isDark).text },
                       ]}
-                      numberOfLines={1}
+                      numberOfLines={large ? 2 : 1}
                     >
                       {item.label}
                     </Text>

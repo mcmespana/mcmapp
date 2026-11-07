@@ -98,6 +98,11 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 2,
+    // Con la letra del sistema grande las cinco no caben en una fila y
+    // «Disgusto» se salía de la tarjeta: bajan a otra. Con letra normal caben
+    // y no envuelve nada.
+    flexWrap: 'wrap',
+    rowGap: 12,
   },
   emotionItem: {
     alignItems: 'center',

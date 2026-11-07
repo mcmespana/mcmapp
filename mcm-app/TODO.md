@@ -155,10 +155,6 @@ esto es lo que quedó fuera a propósito. El `id` es el del hallazgo en
       estilos (el Dialog de la paleta ⌘K, por ejemplo). Importarlo en
       `app/_layout.tsx` mete el reset de Tailwind en toda la web: hay que
       decidir y repasar la web entera con él.
-- [ ] **Escala de letra del sistema en la hoja** (`android-webview-textzoom`):
-      hoy solo Android la respeta, vía `textZoom` del WebView. Lo coherente es
-      aplicar `fontScale` a la hoja en las dos plataformas, pero cambia cómo se
-      ve en iOS.
 - [ ] **Hoja de canción**, tres detalles que se hicieron en la versión más
       sobria: el mapa no sale en el PDF de la playlist; el pre-estribillo sale
       como «P»; la pantalla completa del navegador no entra sola (F o botón).

@@ -19,6 +19,17 @@ export const LARGE_TEXT_FONT_SCALE = 1.2;
  */
 export const CHROME_MAX_FONT_SCALE = 1.3;
 
+/**
+ * Techo de la escala del SISTEMA para un texto que ya va multiplicado por el
+ * tamaño de letra de la propia app (`useFontScale`, 1–2). Sin él las dos
+ * escalas se multiplicaban (app ×2 · sistema ×2 = ×4). Con él el total se
+ * queda en torno a ×2, y nunca se capa el sistema por debajo de ×1.3
+ * (`design.md` §4). Con la letra del sistema normal no tiene ningún efecto.
+ */
+export function appScaledTextCap(appScale: number): number {
+  return Math.max(CHROME_MAX_FONT_SCALE, 2 / Math.max(appScale, 1));
+}
+
 /** Puro, para poder probarlo sin montar nada. */
 export function isLargeText(fontScale: number): boolean {
   return fontScale >= LARGE_TEXT_FONT_SCALE;

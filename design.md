@@ -219,7 +219,10 @@ capes por debajo de ×1.3.
 
 **Letra grande del sistema** (zoom alto, gente mayor): para cambiar la MAQUETA
 (que un bloque fijo pase a hacer scroll, quitar adornos grandes) usa
-`useLargeText()` (`hooks/useLargeText.ts`, se activa desde ×1.2). Con la letra
+`useLargeText()` (`hooks/useLargeText.ts`, se activa desde ×1.2) y, para una
+columna fija centrada, `ScrollWhenLarge` (`components/ui/`). Un texto que ya
+multiplica por el tamaño de letra de la app lleva
+`maxFontSizeMultiplier={appScaledTextCap(fontScale)}`. Con la letra
 normal la pantalla tiene que quedar idéntica. El texto que vive en una barra
 de altura fija (cabecera nativa, pie de botones) lleva
 `maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}` (×1.3); el texto de lectura,

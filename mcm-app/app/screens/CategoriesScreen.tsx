@@ -22,6 +22,7 @@ import ListSkeleton from '@/components/ListSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useLargeText, { CHROME_MAX_FONT_SCALE } from '@/hooks/useLargeText';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import colors, {
   Colors,
@@ -79,6 +80,8 @@ export default function CategoriesScreen() {
     [scheme, layout.isWide, layout.contentMaxWidth],
   );
   const isDark = scheme === 'dark';
+  // Letra del sistema grande: nombres de categoría en más de una línea.
+  const large = useLargeText();
   const glyphColor = themeColors(isDark).link;
   const {
     data: songsData,
@@ -487,11 +490,17 @@ export default function CategoriesScreen() {
           <PressableFeedback.Highlight />
           {emoji ? (
             <View style={styles.rowIcon}>
-              <Text style={styles.emojiText}>{emoji}</Text>
+              {/* Emoji en un recuadro de 36 px: techo de cromo. */}
+              <Text
+                style={styles.emojiText}
+                maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+              >
+                {emoji}
+              </Text>
             </View>
           ) : null}
           <View style={[styles.rowContent, !isLast && styles.rowDivider]}>
-            <Text style={styles.rowTitle} numberOfLines={1}>
+            <Text style={styles.rowTitle} numberOfLines={large ? 3 : 1}>
               {displayName}
             </Text>
             <Text style={styles.rowCount}>{item.songCount}</Text>
@@ -513,7 +522,7 @@ export default function CategoriesScreen() {
         </View>
       );
     },
-    [isDark, isWideLayout, styles, lastIndex, glyphColor],
+    [isDark, isWideLayout, styles, lastIndex, glyphColor, large],
   );
 
   // ── Hero "Tu selección" para iPad ────────────────────────────────────

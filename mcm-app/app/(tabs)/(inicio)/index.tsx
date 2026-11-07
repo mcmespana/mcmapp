@@ -39,6 +39,10 @@ import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
+import useLargeText, {
+  CHROME_MAX_FONT_SCALE,
+  appScaledTextCap,
+} from '@/hooks/useLargeText';
 import { Skeleton } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
@@ -239,6 +243,11 @@ export default function Home() {
   const resolved = useResolvedProfileConfig();
   const { profile } = useUserProfile();
   const fontScale = useFontScale();
+  // Letra del sistema grande: la maqueta cambia (cuadrícula de accesos en
+  // varias filas, títulos en más líneas). Y los textos que ya multiplican por
+  // el tamaño de letra de la app llevan techo para no ir a ×4.
+  const large = useLargeText();
+  const textCap = appScaledTextCap(fontScale);
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 700;
   const { toast } = useToast();
@@ -940,7 +949,7 @@ export default function Home() {
                 <View style={{ flex: 1 }}>
                   <Text
                     style={[styles.eventBannerTitle, { color: theme.text }]}
-                    numberOfLines={1}
+                    numberOfLines={large ? 3 : 1}
                   >
                     {activeEvent.title}
                   </Text>
@@ -964,7 +973,13 @@ export default function Home() {
             {/* ── CTA "Evalúa la actividad" — destacado y directo ── */}
             {showEvalBanner && (
               <TouchableOpacity
-                style={[styles.evalCta, { backgroundColor: EVAL_ACCENT_FILL }]}
+                style={[
+                  styles.evalCta,
+                  { backgroundColor: EVAL_ACCENT_FILL },
+                  // Letra grande: el botón va debajo del texto (en fila no
+                  // dejaba sitio al título) y el icono se quita.
+                  large && styles.evalCtaLarge,
+                ]}
                 onPress={() => {
                   h.tap();
                   // Entra por el tab del evento si tiene ruta propia y por
@@ -976,14 +991,22 @@ export default function Home() {
                 accessibilityRole="button"
                 accessibilityLabel="Evalúa la actividad ahora"
               >
-                <View style={styles.evalCtaIcon}>
-                  <MaterialIcons name="star-rate" size={26} color="#fff" />
-                </View>
-                <View style={styles.evalCtaTextWrap}>
-                  <Text style={styles.evalCtaTitle} numberOfLines={1}>
+                {!large && (
+                  <View style={styles.evalCtaIcon}>
+                    <MaterialIcons name="star-rate" size={26} color="#fff" />
+                  </View>
+                )}
+                <View style={large ? undefined : styles.evalCtaTextWrap}>
+                  <Text
+                    style={styles.evalCtaTitle}
+                    numberOfLines={large ? undefined : 1}
+                  >
                     {DEFAULT_EVENT_EVALUATION.title || 'Evalúa la actividad'}
                   </Text>
-                  <Text style={styles.evalCtaBody} numberOfLines={2}>
+                  <Text
+                    style={styles.evalCtaBody}
+                    numberOfLines={large ? undefined : 2}
+                  >
                     ¿Qué tal ha ido? Tu opinión nos ayuda — solo 2 minutos.
                   </Text>
                 </View>
@@ -1117,9 +1140,11 @@ export default function Home() {
                             {
                               color: theme.text,
                               fontSize: 16 * fontScale,
+                              lineHeight: 22 * fontScale,
                             },
                           ]}
-                          numberOfLines={2}
+                          numberOfLines={large ? 4 : 2}
+                          maxFontSizeMultiplier={textCap}
                         >
                           {notifTitle}
                         </Text>
@@ -1129,9 +1154,11 @@ export default function Home() {
                             {
                               color: theme.icon,
                               fontSize: 13 * fontScale,
+                              lineHeight: 19 * fontScale,
                             },
                           ]}
-                          numberOfLines={2}
+                          numberOfLines={large ? 4 : 2}
+                          maxFontSizeMultiplier={textCap}
                         >
                           {notifBody}
                         </Text>
@@ -1166,11 +1193,20 @@ export default function Home() {
 
             {/* ── Accesos rápidos ── */}
             <View style={styles.section}>
-              <View style={[styles.quickGrid, isWide && styles.quickGridWide]}>
+              <View
+                style={[
+                  styles.quickGrid,
+                  isWide && styles.quickGridWide,
+                  large && !isWide && styles.quickGridLarge,
+                ]}
+              >
                 {quickItems.map((item) => (
                   <PressableScale
                     key={item.key}
-                    style={styles.quickItem}
+                    style={[
+                      styles.quickItem,
+                      large && !isWide && styles.quickItemLarge,
+                    ]}
                     accessibilityLabel={item.label}
                     accessibilityRole="button"
                     onPress={() => {
@@ -1209,6 +1245,7 @@ export default function Home() {
                         },
                       ]}
                       numberOfLines={2}
+                      maxFontSizeMultiplier={textCap}
                     >
                       {item.label}
                     </Text>
@@ -1229,6 +1266,7 @@ export default function Home() {
                 textStyle={{
                   fontSize: SECTION_LABEL_SIZE * fontScale,
                 }}
+                maxFontSizeMultiplier={textCap}
               />
 
               {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (
@@ -1291,13 +1329,17 @@ export default function Home() {
                               { backgroundColor: hexAlpha(calColor, '18') },
                             ]}
                           >
+                            {/* Recuadro de 44 px de un vistazo: techo de
+                                cromo, o los números se salían del recuadro. */}
                             <Text
                               style={[styles.eventMonth, { color: calColor }]}
+                              maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
                             >
                               {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
                             </Text>
                             <Text
                               style={[styles.eventDay, { color: calColor }]}
+                              maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
                             >
                               {evtDate.getDate()}
                             </Text>
@@ -1312,7 +1354,8 @@ export default function Home() {
                                   fontSize: 13 * fontScale,
                                 },
                               ]}
-                              numberOfLines={1}
+                              numberOfLines={large ? 3 : 1}
+                              maxFontSizeMultiplier={textCap}
                             >
                               {evt.title}
                             </Text>
@@ -1349,7 +1392,8 @@ export default function Home() {
                                       fontSize: 11 * fontScale,
                                     },
                                   ]}
-                                  numberOfLines={1}
+                                  numberOfLines={large ? 2 : 1}
+                                  maxFontSizeMultiplier={textCap}
                                 >
                                   {evt.location}
                                 </Text>
@@ -1390,6 +1434,7 @@ export default function Home() {
                     styles.calendarButtonText,
                     { color: accentColor, fontSize: 14 * fontScale },
                   ]}
+                  maxFontSizeMultiplier={textCap}
                 >
                   Ver calendario
                 </Text>
