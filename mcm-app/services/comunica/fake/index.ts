@@ -177,6 +177,8 @@ const PERSONA_ROLES: Record<PersonaId, { roles: Role[]; scope: Me['scope'] }> =
     family: { roles: ['guardian'], scope: 'delegation' },
     familyOne: { roles: ['guardian'], scope: 'delegation' },
     familyNone: { roles: [], scope: 'delegation' },
+    familyCouple: { roles: ['guardian'], scope: 'delegation' },
+    familyThree: { roles: ['guardian'], scope: 'delegation' },
     monitorMom: {
       roles: ['monitor', 'member', 'guardian'],
       scope: 'delegation',
@@ -223,6 +225,8 @@ const TEAM_RELATIONS: Record<PersonaId, CoordRelation[]> = {
   family: [],
   familyOne: [],
   familyNone: [],
+  familyCouple: [],
+  familyThree: [],
   monitorMom: [],
   memberNoKids: [],
 };

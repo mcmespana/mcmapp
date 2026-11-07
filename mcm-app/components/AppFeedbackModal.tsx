@@ -286,7 +286,7 @@ export default function AppFeedbackModal({
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 48,
   },

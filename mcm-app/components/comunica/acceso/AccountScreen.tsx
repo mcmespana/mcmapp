@@ -9,6 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
+import { TEAM_ROLES } from '@/services/comunica/contract';
 import { signOut } from '@/services/comunica/session';
 import { useMe } from '@/hooks/comunica/useMe';
 import { useOpenLegacy } from '@/hooks/comunica/useOpenLegacy';
@@ -103,7 +104,13 @@ export default function AccountScreen() {
         <NavRow
           icon="bell.fill"
           title="Avisos en este móvil"
-          subtitle="Pasar lista, listas sin subir y novedades"
+          // «Pasar lista» solo es de quien trabaja en un grupo: a una familia
+          // no le dice nada.
+          subtitle={
+            me.roles.some((r) => TEAM_ROLES.includes(r))
+              ? 'Pasar lista, listas sin subir y novedades'
+              : 'Novedades de Comunica en este móvil'
+          }
           onPress={() => router.push('/comunica/yo/avisos')}
         />
       </Section>

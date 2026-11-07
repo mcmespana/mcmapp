@@ -45,7 +45,6 @@ import { dateRangeText, durationText } from '@/utils/comunica/recordDates';
 import { firstNameOf } from '@/utils/comunica/profiles';
 import { h } from '@/utils/haptics';
 import ShareEventButton from '../eventos/ShareEventButton';
-import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
 import { AreaSkeleton, isNetwork } from '../comun/AreaState';
@@ -85,8 +84,10 @@ export default function EventDetailScreen({ eventId }: { eventId: string }) {
   }
   if (!q.data) {
     return (
-      <AreaScreen onRefresh={() => q.refetch()}>
-        <ActiveProfileBar scope="shared" section="events" />
+      <AreaScreen
+        profileBar={{ scope: 'shared', section: 'events' }}
+        onRefresh={() => q.refetch()}
+      >
         {isNetwork(q.error) ? (
           <EmptyState
             icon="wifi-off"
@@ -230,6 +231,7 @@ function Detail({
 
   return (
     <AreaScreen
+      profileBar={{ scope: 'shared', section: 'events' }}
       onRefresh={refetch}
       footer={
         action.kind === 'open' ? (
@@ -262,7 +264,6 @@ function Detail({
             : undefined,
         }}
       />
-      <ActiveProfileBar scope="shared" section="events" />
 
       <View style={styles.hero}>
         {chip ? <StatusChip label={chip.label} tone={chip.tone} /> : null}

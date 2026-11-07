@@ -344,7 +344,14 @@ export interface PhotoSource {
 }
 
 /** Lo que puede fallar: los códigos del contrato, más los de la app. */
-export type ApiErrorCode = ErrorCode | 'network' | 'bad_response';
+/**
+ * `queued` no es un fallo: el servidor ha apuntado la escritura en su cola y la
+ * sube él solo al CRM (202). La cola del móvil pregunta luego mandando lo mismo.
+ */
+export type ApiErrorCode = ErrorCode | 'network' | 'bad_response' | 'queued';
+
+/** Le dice al servidor que esta app entiende el 202 «encolada». */
+export const QUEUE_HEADER = 'X-Comunica-Queue';
 
 export class ComunicaApiError extends Error {
   readonly code: ApiErrorCode;
@@ -393,8 +400,59 @@ const STATUS_CODE: Record<number, ErrorCode> = {
   503: 'crm_unavailable',
 };
 
-/** Cuántas veces se reintenta una LECTURA que falla por red o CRM caído. */
+/**
+ * Cuántas veces se reintenta AL MOMENTO una lectura que falla por un corte de
+ * red (un parpadeo del móvil). Un 503 o un 5xx del servidor NO se reintenta
+ * aquí: lo hace la caché de consultas con espera (1 s, 2 s; `useAreaQuery`).
+ * Reintentarlo aquí también multiplicaba por dos las peticiones de cada
+ * pantalla mientras el servidor estaba caído (caída del 6/11/2026).
+ */
 const READ_RETRIES = 1;
+
+/**
+ * Lo que se espera a una respuesta antes de darla por perdida. Sin plazo, una
+ * petición colgada (cobertura que va y viene, servidor atascado) dejaba la
+ * pantalla en el esqueleto para siempre y, si era una escritura, paraba la
+ * cola entera hasta reiniciar la app. Una escritura cortada así se repite con
+ * el mismo `clientId`: el servidor la reconoce y no la duplica.
+ */
+export const READ_TIMEOUT_MS = 20_000;
+export const WRITE_TIMEOUT_MS = 30_000;
+/** Subir una foto o un documento por datos móviles puede tardar. */
+export const UPLOAD_TIMEOUT_MS = 90_000;
+
+/**
+ * Avisos a Sentry de que el SERVIDOR falla (5xx) o no contesta a tiempo: sin
+ * esto, una caída era invisible desde la app (6/11/2026). Uno por tipo cada
+ * `REPORT_EVERY_MS` en cada móvil, con la ruta sin ids: ni nombres ni personas.
+ */
+export const REPORT_EVERY_MS = 10 * 60_000;
+const lastReport = new Map<string, number>();
+const CRM_ID =
+  /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+/** `/v1/people/<id>/photo?v=1` → `/v1/people/:id/photo`. */
+export const routeOf = (path: string) =>
+  path.split('?')[0]!.replace(CRM_ID, '/:id');
+function reportTrouble(
+  kind: 'server' | 'timeout',
+  method: string,
+  path: string,
+  status: number,
+  reason?: string,
+) {
+  const t = Date.now();
+  if ((lastReport.get(kind) ?? -Infinity) > t - REPORT_EVERY_MS) return;
+  lastReport.set(kind, t);
+  logger.warn(
+    `[comunica] ${kind === 'server' ? 'el servidor falla' : 'el servidor no contesta a tiempo'}`,
+    method,
+    routeOf(path),
+    status,
+    reason ?? '',
+  );
+}
+/** Para los tests: olvida los avisos ya dados. */
+export const resetTroubleReports = () => lastReport.clear();
 
 export interface HttpClientOptions {
   baseUrl: string;
@@ -427,10 +485,31 @@ export function createHttpClient({
     // Un archivo va en multipart: el `Content-Type` (con su frontera) lo pone
     // `fetch`, y el cuerpo no se pasa a JSON.
     const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+    const timeoutMs = isForm
+      ? UPLOAD_TIMEOUT_MS
+      : method === 'GET'
+        ? READ_TIMEOUT_MS
+        : WRITE_TIMEOUT_MS;
+    // El plazo cubre la respuesta Y el cuerpo (un cuerpo que no acaba también
+    // cuelga la pantalla).
+    const abort =
+      typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = abort ? setTimeout(() => abort.abort(), timeoutMs) : null;
+    // En Node (los tests) que el plazo no retenga el proceso; en el móvil no
+    // existe y no hace falta.
+    (timer as { unref?: () => void } | null)?.unref?.();
+    const tooSlow = () =>
+      new ComunicaApiError(
+        'network',
+        'Comunica tarda demasiado en contestar',
+        0,
+        'timeout',
+      );
     let res: Response;
     try {
       res = await doFetch(`${root}${path}`, {
         method,
+        ...(abort ? { signal: abort.signal } : {}),
         headers: {
           Accept: 'application/json',
           ...(body !== undefined && !isForm
@@ -438,6 +517,8 @@ export function createHttpClient({
             : {}),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(delegation ? { [DELEGATION_HEADER]: delegation } : {}),
+          // Las escrituras pueden quedarse en la cola del servidor (202).
+          ...(method !== 'GET' ? { [QUEUE_HEADER]: '1' } : {}),
         },
         body:
           body === undefined
@@ -447,6 +528,13 @@ export function createHttpClient({
               : JSON.stringify(body),
       });
     } catch {
+      if (timer) clearTimeout(timer);
+      // Tras esperar el plazo entero no se repite al momento: otro plazo
+      // entero de espera no ayuda a nadie (ya reintentará la caché, con pausa).
+      if (abort?.signal.aborted) {
+        reportTrouble('timeout', method, path, 0);
+        throw tooSlow();
+      }
       if (retries > 0) return request(method, path, schema, body, retries - 1);
       throw new ComunicaApiError('network', 'Sin conexión con el servidor');
     }
@@ -456,6 +544,12 @@ export function createHttpClient({
       json = await res.json();
     } catch {
       json = null;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+    if (abort?.signal.aborted) {
+      reportTrouble('timeout', method, path, res.status);
+      throw tooSlow();
     }
 
     if (!res.ok) {
@@ -470,8 +564,8 @@ export function createHttpClient({
         parsed.success ? parsed.data.error.reason : undefined,
         parsed.success ? parsed.data.error.retryAfter : undefined,
       );
-      if (err.retryable && retries > 0) {
-        return request(method, path, schema, body, retries - 1);
+      if (res.status >= 500) {
+        reportTrouble('server', method, path, res.status, err.reason);
       }
       if (code === 'forbidden') {
         // Un 403 que la app no esperaba suele ser un fallo de alcance: ids,
@@ -479,6 +573,20 @@ export function createHttpClient({
         logger.warn('[comunica] 403', method, path);
       }
       throw err;
+    }
+
+    // 202 «queued»: el servidor ya la tiene y la sube él. No hay resultado
+    // todavía; la cola del móvil volverá a preguntar con el mismo `clientId`.
+    if (
+      res.status === 202 &&
+      method !== 'GET' &&
+      (json as { status?: unknown } | null)?.status === 'queued'
+    ) {
+      throw new ComunicaApiError(
+        'queued',
+        'Recibida. Se está guardando en Comunica.',
+        202,
+      );
     }
 
     const parsed = schema.safeParse(json);
@@ -904,14 +1012,22 @@ export function createHttpClient({
       // si la foto es de nuestro servidor (una `photoUrl` de otro dominio no se
       // lleva la sesión). Si aún no hay token de acceso, sin cabecera (dará 401
       // y saldrán las iniciales).
-      const token = isOwnUrl(url) ? getToken?.() : null;
-      return typeof token === 'string'
-        ? {
-            uri: url,
-            headers: { Authorization: `Bearer ${token}` },
-            cacheKey: url,
-          }
-        : { uri: url, cacheKey: url };
+      const own = isOwnUrl(url);
+      const token = own ? getToken?.() : null;
+      if (typeof token !== 'string') return { uri: url, cacheKey: url };
+      // La foto de alguien del equipo (`/v1/people/:id/photo`) va con la
+      // delegación de trabajo, como su ficha: sin ella, el servidor mira la de
+      // TU ficha y quien trabaja con otra delegación veía 403 (6/11/2026).
+      const path = url.slice(root.length).split('?')[0]!;
+      const delegation = isTeamPath(path) ? delegationForRequest(false) : null;
+      return {
+        uri: url,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(delegation ? { [DELEGATION_HEADER]: delegation } : {}),
+        },
+        cacheKey: url,
+      };
     },
   };
 }

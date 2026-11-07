@@ -22,7 +22,6 @@ import {
 } from '@/utils/comunica/activityList';
 import { madridDay } from '@/utils/comunica/madrid';
 import type { EventCard as EventCardData } from '@/services/comunica/contract';
-import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState, { isNetwork } from '../comun/AreaState';
 import { SectionLabel } from '../comun/Section';
@@ -82,8 +81,10 @@ export default function ActivitiesScreen() {
   };
 
   return (
-    <AreaScreen onRefresh={() => q.refetch()}>
-      <ActiveProfileBar scope="shared" section="events" />
+    <AreaScreen
+      profileBar={{ scope: 'shared', section: 'events' }}
+      onRefresh={() => q.refetch()}
+    >
       <AreaState query={q} skeleton="cards">
         {(data) => {
           const v = visibleActivities(data, today);

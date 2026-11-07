@@ -24,7 +24,6 @@ import {
 } from '@/utils/comunica/documents';
 import { madridDay } from '@/utils/comunica/madrid';
 import { firstNameOf } from '@/utils/comunica/profiles';
-import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState, { isNetwork } from '../comun/AreaState';
@@ -53,7 +52,10 @@ export default function DocumentsScreen() {
     } as never);
 
   return (
-    <AreaScreen onRefresh={() => q.refetch()}>
+    <AreaScreen
+      profileBar={{ scope: 'shared', section: 'documents' }}
+      onRefresh={() => q.refetch()}
+    >
       <Stack.Screen
         options={{
           title: child ? TXT.titleOf(child) : TXT.titleOwn,
@@ -69,7 +71,6 @@ export default function DocumentsScreen() {
           ),
         }}
       />
-      <ActiveProfileBar scope="shared" section="documents" />
       {q.error && !q.data && isNetwork(q.error) ? (
         <EmptyState
           icon="wifi-off"

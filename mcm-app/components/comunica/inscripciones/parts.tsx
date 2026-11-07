@@ -28,8 +28,11 @@ export function ChoiceGroup<V extends string | number>({
   value,
   onChange,
   error,
+  showTitle = true,
 }: {
   title: string;
+  /** `false` cuando una sección ya lleva el mismo título encima (no se repite; el lector de pantalla sigue leyéndolo). */
+  showTitle?: boolean;
   options: readonly Choice<V>[];
   value: V | null | undefined;
   onChange: (v: V) => void;
@@ -38,12 +41,14 @@ export function ChoiceGroup<V extends string | number>({
   const t = useComunicaTheme();
   return (
     <View style={styles.group}>
-      <Text
-        accessibilityRole="header"
-        style={[styles.groupTitle, { color: t.text }]}
-      >
-        {title}
-      </Text>
+      {showTitle ? (
+        <Text
+          accessibilityRole="header"
+          style={[styles.groupTitle, { color: t.text }]}
+        >
+          {title}
+        </Text>
+      ) : null}
       <View
         accessibilityRole="radiogroup"
         accessibilityLabel={title}
@@ -122,6 +127,7 @@ export function SpecialNeedsField({
       <View style={styles.inner}>
         <ChoiceGroup
           title={def.label}
+          showTitle={false}
           options={def.options.map((o) => ({ value: o.value, label: o.label }))}
           value={value}
           onChange={onValue}

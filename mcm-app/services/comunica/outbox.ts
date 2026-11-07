@@ -8,7 +8,11 @@
 //     cola del plugin (`js/stic-pasar-lista.js`).
 //   · El `clientId` lo pone quien encola y se conserva entre reintentos: el
 //     servidor no duplica.
-//   · Estados: pending → sending → applied | failed | stuck (tras 5 fallos).
+//   · Estados: pending → sending → applied | failed | stuck (tras 5 fallos),
+//     y `queued` (6/11/2026): el servidor ya la tiene en SU cola (202) y la
+//     sube él al CRM. El móvil ya no la puede perder: se pregunta mandando lo
+//     mismo (mismo `clientId`) con espera creciente, al abrir una pantalla o
+//     al volver la app, hasta que contesta el resultado o el error.
 //   · Sin red: NO es un fallo. Sigue `pending` («guardada en el móvil, se
 //     enviará sola»), sin gastar intentos, y sube al volver la red (`wake`).
 //   · CRM caído (503/5xx): `failed` con reintento automático y espera
@@ -38,7 +42,7 @@ import { readDrawer, writeDrawer } from './storage';
 import { logger } from '@/utils/logger';
 
 export type OutboxStatus =
-  'pending' | 'sending' | 'applied' | 'failed' | 'stuck';
+  'pending' | 'sending' | 'queued' | 'applied' | 'failed' | 'stuck';
 
 export interface OutboxEntry<P = unknown> {
   key: string;
@@ -56,6 +60,8 @@ export interface OutboxEntry<P = unknown> {
   nextAttemptAt: number;
   /** Veces que se ha esperado por falta de red (no cuentan como intento). */
   waits?: number;
+  /** Veces que se ha preguntado al servidor por una `queued`. */
+  polls?: number;
   /** Lo que contestó el servidor al subir (solo en memoria). */
   result?: unknown;
 }
@@ -64,6 +70,15 @@ export type OutboxHandler = (entry: OutboxEntry) => Promise<unknown>;
 
 /** Fallos seguidos antes de darla por atascada. */
 export const MAX_ATTEMPTS = 5;
+/**
+ * Una atascada porque el servidor no contesta se sigue intentando SOLA, cada
+ * tanto y cada vez que la app despierta (vuelve al primer plano, vuelve la red,
+ * se abre una pantalla), con el mismo `clientId`: el servidor no la duplica.
+ * Antes esperaba a que alguien tocara «Reintentar» y una lista podía quedarse
+ * días en el móvil (revisión del 7/11/2026). Sigue saliendo como atascada para
+ * que se vea; «Reintentar» y «Descartar» siguen ahí.
+ */
+export const STUCK_RETRY_MS = 5 * 60_000;
 const BASE_DELAY_MS = 2_000;
 const MAX_DELAY_MS = 5 * 60_000;
 /** Lo subido se enseña como «Subida» un rato y luego se quita. */
@@ -71,6 +86,12 @@ const APPLIED_TTL_MS = 10 * 60_000;
 
 export const backoffMs = (attempts: number) =>
   Math.min(MAX_DELAY_MS, BASE_DELAY_MS * 2 ** Math.max(0, attempts - 1));
+
+/** Cada cuánto se pregunta por una que tiene el servidor: 3 s, 6 s… hasta 1 min. */
+const POLL_BASE_MS = 3_000;
+const POLL_MAX_MS = 60_000;
+export const pollMs = (polls: number) =>
+  Math.min(POLL_MAX_MS, POLL_BASE_MS * 2 ** Math.max(0, polls - 1));
 
 export interface Outbox {
   load(): Promise<void>;
@@ -119,7 +140,9 @@ const NEVER = Number.MAX_SAFE_INTEGER;
 /** ¿Le toca subir sola? Lo rechazado sin `auto` espera a «Reintentar». */
 const isDue = (e: OutboxEntry, t: number) =>
   (e.status === 'pending' ||
-    (e.status === 'failed' && e.error?.auto !== false)) &&
+    e.status === 'queued' ||
+    (e.status === 'failed' && e.error?.auto !== false) ||
+    (e.status === 'stuck' && e.error?.auto === true)) &&
   (e.nextAttemptAt ?? 0) <= t;
 
 export function createOutbox({
@@ -187,6 +210,8 @@ export function createOutbox({
       await changed();
       return;
     }
+    // Para avisar de una atascada solo la primera vez (luego se reintenta sola).
+    const wasStuck = entry.status === 'stuck';
     entry.status = 'sending';
     entry.updatedAt = now();
     await changed();
@@ -221,7 +246,15 @@ export function createOutbox({
       const code = apiError ? e.code : 'internal';
       const message = e instanceof Error ? e.message : String(e);
       const reason = apiError ? e.reason : undefined;
-      if (code === 'unauthenticated') {
+      if (code === 'queued') {
+        // El servidor la tiene y la sube él: no es un fallo ni gasta intentos.
+        // Se vuelve a preguntar (mandando lo mismo) dentro de un rato.
+        entry.polls = (entry.polls ?? 0) + 1;
+        entry.status = 'queued';
+        entry.error = undefined;
+        entry.nextAttemptAt = now() + pollMs(entry.polls);
+        later(pollMs(entry.polls));
+      } else if (code === 'unauthenticated') {
         // Sin sesión: se queda esperando a que se vuelva a entrar. No cuenta
         // como intento: no es que el servidor la rechace.
         entry.status = 'pending';
@@ -239,11 +272,19 @@ export function createOutbox({
       } else if (code === 'crm_unavailable') {
         entry.attempts += 1;
         if (entry.attempts >= MAX_ATTEMPTS) {
-          entry.status = 'stuck';
-          entry.error = { code, message, reason, auto: false };
-          entry.nextAttemptAt = NEVER;
+          // Solo al atascarse (no en cada reintento lento): un aviso por lista.
           // Ids, nunca nombres.
-          logger.error('[comunica] escritura atascada', entry.kind, entry.key);
+          if (!wasStuck) {
+            logger.error(
+              '[comunica] escritura atascada',
+              entry.kind,
+              entry.key,
+            );
+          }
+          entry.status = 'stuck';
+          entry.error = { code, message, reason, auto: true };
+          entry.nextAttemptAt = now() + STUCK_RETRY_MS;
+          later(STUCK_RETRY_MS);
         } else {
           entry.status = 'failed';
           entry.error = { code, message, reason, auto: true };
@@ -392,6 +433,9 @@ export function createOutbox({
   return outbox;
 }
 
-/** Lo que falta por subir (para «Tienes 2 listas guardadas solo en el móvil»). */
+/**
+ * Lo que falta por subir (para «Tienes 2 listas guardadas solo en el móvil»).
+ * Lo `queued` ya no está solo en el móvil: lo tiene el servidor.
+ */
 export const unsent = (entries: readonly OutboxEntry[]) =>
-  entries.filter((e) => e.status !== 'applied');
+  entries.filter((e) => e.status !== 'applied' && e.status !== 'queued');

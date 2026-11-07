@@ -86,6 +86,8 @@ interface FakePayment {
 }
 
 const MARTA = 'f-per-familia';
+const SERGIO = 'f-per-familia-pareja';
+const ELENA = 'f-per-familia-tres';
 const LUCIA = 'f-hijo-lucia';
 const NICO = 'f-hijo-sin-nombre';
 const MASK = '••••  ••••  ••••  ••••  1332';
@@ -104,6 +106,40 @@ const pending = (
 
 /** Lo que cada persona de prueba tiene en el CRM. */
 const SEED: FakePayment[] = [
+  // La pareja de Marta: el dinero es de quien paga. Sergio paga lo de Lucía (que también es hija de Marta) y lo de Hugo; Marta no ve esto.
+  pending({
+    id: 'pay-sergio-lucia',
+    title: 'Cuota del curso de catequesis',
+    amountCents: 4500,
+    recipient: LUCIA,
+    payer: SERGIO,
+    date: -6,
+  }),
+  pending({
+    id: 'pay-sergio-hugo',
+    title: 'Camiseta del campamento',
+    amountCents: 1200,
+    recipient: 'f-hijo-hugo',
+    payer: SERGIO,
+    date: -2,
+  }),
+  // Familia de Elena (tres hijos): paga un pago por cada uno de dos de ellos.
+  pending({
+    id: 'pay-elena-aina',
+    title: 'Convivencia de Navidad',
+    amountCents: 3000,
+    recipient: 'f-hijo-aina',
+    payer: ELENA,
+    date: -3,
+  }),
+  pending({
+    id: 'pay-elena-biel',
+    title: 'Convivencia de Navidad',
+    amountCents: 3000,
+    recipient: 'f-hijo-biel',
+    payer: ELENA,
+    date: -3,
+  }),
   // Familia de Marta (dos hijos): todos los bloques.
   pending({
     id: 'pay-transfer-110',

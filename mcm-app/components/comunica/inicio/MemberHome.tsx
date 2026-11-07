@@ -1,7 +1,7 @@
 // La parte de familia de la portada (plan 11, `single_stic_home.php`): quien ha entrado y, si tiene hijos, a quién está viendo.
 //
 //   1. «Viendo a · Lucía ▾» (solo con hijos).
-//   2. El saludo, con su × (vuelve dentro de un mes). No sale debajo de lo del equipo, que ya empieza con su propio encabezado.
+//   2. El saludo (sin ×: siempre dice a quién se ve). No sale debajo de lo del equipo, que ya empieza con su propio encabezado.
 //   3. «A quién tienes a cargo» (solo el familiar a secas): las mismas tarjetas de «¿A quién ves?» con «Ver su ficha».
 //   4. «Actividades» (o «Tus pagos» para el familiar a secas), con la descripción de cada sección.
 //   4b. «Próximas actividades» (si hay Calendario y algo cerca) y «Ver calendario».
@@ -18,7 +18,6 @@ import {
   useActiveProfile,
   useMyProfiles,
 } from '@/hooks/comunica/useActiveProfile';
-import { useGreetingHidden } from '@/hooks/comunica/useHomePrefs';
 import { useMe } from '@/hooks/comunica/useMe';
 import { useOpenLegacy } from '@/hooks/comunica/useOpenLegacy';
 import {
@@ -82,28 +81,35 @@ export default function MemberHome({
 
 function Content({ embedded }: { embedded: boolean }) {
   const router = useRouter();
-  const { me } = useMe();
-  const { ready, profiles, active, isSelf, audience, setActive } =
-    useActiveProfile();
-  const greetingState = useGreetingHidden();
+  const meQuery = useMe();
+  const { me } = meQuery;
+  const { ready, profiles, active, isSelf, audience } = useActiveProfile();
   const openSection = useOpenSection();
-  const openLegacy = useOpenLegacy();
-  if (!me || !ready || !profiles || !active) return null;
+  // Sin `me` (falló y no había nada guardado) la portada se quedaba en blanco:
+  // ahora sale el esqueleto o el error con «Reintentar». Debajo de lo del
+  // equipo, simplemente no sale.
+  if (!me) {
+    return embedded ? null : (
+      <AreaState query={meQuery} skeleton="list">
+        {() => null}
+      </AreaState>
+    );
+  }
+  if (!ready || !profiles || !active) return null;
   const sections = homeSections(audience);
   const activeFirst = firstNameOf(active);
-  // El hero es un bloque que se puede cerrar: se decide antes de pintarlo.
-  const showGreeting =
-    !embedded && greetingState.ready && !greetingState.hidden;
+  // El saludo no se cierra: así siempre queda claro a quién se está viendo.
+  const showGreeting = !embedded;
 
   return (
     <View style={styles.wrap}>
-      <ActiveProfileBar scope="personal" />
+      {/* Solo debajo de lo del equipo: en la portada de familia la barra va
+          FIJA arriba (`AreaScreen profileBar`). */}
+      {embedded ? <ActiveProfileBar scope="personal" /> : null}
       {showGreeting ? (
         <AreaHero
           title={greeting(me)}
           body={greetingIntro(audience, activeFirst)}
-          onClose={greetingState.hide}
-          closeLabel="Ocultar el saludo (volverá dentro de un mes)"
         />
       ) : null}
 
@@ -116,15 +122,14 @@ function Content({ embedded }: { embedded: boolean }) {
               isSelf={false}
               isActive={false}
               actionLabel="Ver su ficha"
-              onPress={() => {
-                setActive(c.id);
-                const destination: Destination = {
-                  internalpage: SECTION_PAGE.profile,
-                };
-                const native = nativeHrefFor(destination);
-                if (native) router.push(native as never);
-                else void openLegacy(destination, 'Datos', c.id);
-              }}
+              // Sus datos, sin cambiar a quién se ve: ver una ficha no es
+              // pasar a ser esa persona. Para apuntarla, se elige en «Viendo a».
+              onPress={() =>
+                router.push({
+                  pathname: '/comunica/datos/[pid]',
+                  params: { pid: c.id },
+                } as never)
+              }
             />
           ))}
         </Section>
@@ -151,7 +156,11 @@ function Content({ embedded }: { embedded: boolean }) {
           <NavRow
             icon="person.crop.circle"
             title={dataTitle(active, isSelf)}
-            subtitle="Tus datos personales, de contacto, MCM, salud y RGPD."
+            subtitle={
+              isSelf
+                ? 'Tus datos personales, de contacto, MCM, salud y RGPD.'
+                : 'Sus datos personales, de contacto, MCM, salud y RGPD.'
+            }
             onPress={() => openSection('profile', dataTitle(active, isSelf))}
           />
           {isSelf && me.roles.includes('monitor') ? (

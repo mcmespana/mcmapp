@@ -33,6 +33,7 @@
 //     desconocido y sobre una persona de coordinación). Personas nuevas:
 //     coordinación COM · COM 2 y quien coordina y acompaña a la vez.
 
+import * as FX from './fixturesFamilies';
 import type {
   Consents,
   Delegation,
@@ -223,7 +224,9 @@ export type PersonaId =
   | 'familyOne'
   | 'familyNone'
   | 'monitorMom'
-  | 'memberNoKids';
+  | 'memberNoKids'
+  // Dos tutores con un hijo en común y una madre con tres hijos (`fixturesFamilies.ts`).
+  | FX.FamilyExtraPersona;
 
 export interface FakeMonitorRoll {
   sessionId: string;
@@ -724,20 +727,7 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
   groups.find((g) => g.code === 'P1')?.monitorIds.push(dual.id);
 
   // Familias (plan 11): sin azar y al final. Sus hijos viven en `fake/profiles.ts`.
-  const familyPeople: FakePerson[] = [
-    ['f-per-familia', 'Marta', 'Villarroya Pons'],
-    ['f-per-familia-uno', 'Pablo', 'Soler Gil'],
-    ['f-per-familia-ninguno', 'Carmen', 'Ibáñez Roca'],
-    ['f-per-monitora-madre', 'Laura', 'Gil Mas'],
-    ['f-per-miembro', 'Jaime', 'Roca Ferrer'],
-  ].map(([id, firstName, lastName]) => ({
-    id: id!,
-    firstName: firstName!,
-    lastName: lastName!,
-    badges: { healthNote: false, noPhotos: false, notHomeAlone: false },
-    delegationId: D1,
-  }));
-  people.push(...familyPeople);
+  people.push(...FX.familyPeople(D1));
 
   const persona = (id: string) => ({ personId: id, name: name(id) });
   return {
@@ -768,6 +758,7 @@ export function generateFakeData(seed = FIXTURE_SEED): FakeData {
       familyNone: persona('f-per-familia-ninguno'),
       monitorMom: persona('f-per-monitora-madre'),
       memberNoKids: persona('f-per-miembro'),
+      ...FX.familyExtraPersonas(persona),
     },
     ...coord.data,
   };
@@ -1162,6 +1153,7 @@ export const FAKE_EMAILS: Record<string, PersonaId[]> = {
   'familia-ninguno@ejemplo.org': ['familyNone'],
   'monitora-madre@ejemplo.org': ['monitorMom'],
   'miembro@ejemplo.org': ['memberNoKids'],
+  ...FX.FAMILY_EXTRA_EMAILS,
 };
 
 export const FAKE_DNIS: Record<string, PersonaId> = {

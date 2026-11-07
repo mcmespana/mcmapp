@@ -37,7 +37,6 @@ import {
 import { euro } from '@/utils/comunica/paymentLine';
 import { SIGNUP_ERROR } from '@/utils/comunica/registrationNotes';
 import { h } from '@/utils/haptics';
-import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
 import { AreaSkeleton, isNetwork } from '../comun/AreaState';
@@ -79,8 +78,10 @@ export default function SignupScreen({ eventId }: { eventId: string }) {
   }
   if (!q.data) {
     return (
-      <AreaScreen onRefresh={() => q.refetch()}>
-        <ActiveProfileBar scope="shared" section="events" />
+      <AreaScreen
+        profileBar={{ scope: 'shared', section: 'events' }}
+        onRefresh={() => q.refetch()}
+      >
         {q.error ? (
           <EmptyState
             icon={isNetwork(q.error) ? 'wifi-off' : 'error-outline'}
@@ -299,6 +300,7 @@ function Form({
   const label = childName ? `Apuntar a ${childName}` : 'Apuntarme';
   return (
     <AreaScreen
+      profileBar={{ scope: 'shared', section: 'events' }}
       onRefresh={refetch}
       footer={
         <PrimaryFooter
@@ -311,7 +313,6 @@ function Form({
       }
     >
       <Stack.Screen options={{ title: 'Inscripción' }} />
-      <ActiveProfileBar scope="shared" section="events" />
       <Summary form={form} childName={childName} onSee={seeEvent} />
 
       {form.questions.map((q, i) => (

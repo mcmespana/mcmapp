@@ -10,6 +10,7 @@ import {
   TextStyle,
   Platform,
   BackHandler,
+  StyleProp,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -45,6 +46,7 @@ import type { ProfileType } from '@/types/profileConfig';
 import { setAnalyticsProfile, trackEvent } from '@/utils/analytics';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
+import useLargeText, { CHROME_MAX_FONT_SCALE } from '@/hooks/useLargeText';
 
 type Step = 'welcome' | 'profile' | 'delegation' | 'login' | 'success';
 
@@ -270,7 +272,12 @@ function PrimaryButton({
             <Animated.View style={[btnStyles.shimmer, shimmerStyle]} />
           </View>
         )}
-        <Text style={[btnStyles.label, { color: fg }]}>{label}</Text>
+        <Text
+          style={[btnStyles.label, { color: fg }]}
+          maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+        >
+          {label}
+        </Text>
       </Pressable>
     </Animated.View>
   );
@@ -331,7 +338,12 @@ function SkipButton({ onPress }: { onPress: () => void }) {
         pressed && { opacity: 0.65 },
       ]}
     >
-      <Text style={[skipBtnStyles.text, { color: TT.tint }]}>Saltar</Text>
+      <Text
+        style={[skipBtnStyles.text, { color: TT.tint }]}
+        maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+      >
+        Saltar
+      </Text>
       <MaterialIcons name="arrow-forward" size={13} color={TT.tint} />
     </Pressable>
   );
@@ -361,6 +373,38 @@ const skipBtnStyles = StyleSheet.create({
    Welcome screen
 ─────────────────────────────────────── */
 
+/**
+ * Con la letra del sistema grande (`useLargeText`), una columna que era fija y
+ * centrada pasa a hacer scroll (y sigue centrada si cabe), para que nada quede
+ * cortado ni tapado por el botón de abajo. Con la letra normal es la misma
+ * `View` de siempre: no cambia nada.
+ */
+function ScrollWhenLarge({
+  large,
+  style,
+  largeStyle,
+  children,
+}: {
+  large: boolean;
+  style: StyleProp<ViewStyle>;
+  largeStyle?: StyleProp<ViewStyle>;
+  children: React.ReactNode;
+}) {
+  if (!large) return <View style={style}>{children}</View>;
+  // `flex: 1` en el contenido de un ScrollView le impide crecer y hacer
+  // scroll: se cambia por `flexGrow: 1` (centra si cabe, crece si no).
+  const content = { ...StyleSheet.flatten(style), flex: undefined };
+  return (
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={[content, { flexGrow: 1 }, largeStyle]}
+      showsVerticalScrollIndicator={false}
+    >
+      {children}
+    </ScrollView>
+  );
+}
+
 function WelcomeScreen({
   onStart,
   applySafeArea,
@@ -369,6 +413,7 @@ function WelcomeScreen({
   applySafeArea: boolean;
 }) {
   const insets = useSafeAreaInsets();
+  const large = useLargeText();
   const ripple1 = useSharedValue(0);
   const ripple2 = useSharedValue(0);
   const float = useSharedValue(0);
@@ -489,7 +534,11 @@ function WelcomeScreen({
           { paddingTop: padTop, paddingBottom: padBottom },
         ]}
       >
-        <View style={welcomeStyles.center}>
+        <ScrollWhenLarge
+          large={large}
+          style={welcomeStyles.center}
+          largeStyle={{ paddingVertical: 24 }}
+        >
           <Animated.View
             entering={FadeInDown.delay(60)
               .duration(420)
@@ -500,28 +549,32 @@ function WelcomeScreen({
             <Text style={welcomeStyles.badgeText}>Te damos la bienvenida</Text>
           </Animated.View>
 
-          <Animated.View
-            entering={FadeIn.duration(550).easing(
-              Easing.bezier(0.34, 1.56, 0.64, 1),
-            )}
-            style={[welcomeStyles.logoWrap, floatStyle]}
-          >
-            <Animated.View style={[welcomeStyles.ripple, ripple1Style]} />
+          {/* Con letra grande el logo (130 px) se quita: el espacio es
+              para el texto. */}
+          {!large && (
             <Animated.View
-              style={[
-                welcomeStyles.ripple,
-                ripple2Style,
-                { top: 10, left: 10, right: 10, bottom: 10 },
-              ]}
-            />
-            <View style={welcomeStyles.logoCircle}>
-              <Image
-                source={require('@/assets/images/icon.png')}
-                style={welcomeStyles.logoImg}
-                resizeMode="contain"
+              entering={FadeIn.duration(550).easing(
+                Easing.bezier(0.34, 1.56, 0.64, 1),
+              )}
+              style={[welcomeStyles.logoWrap, floatStyle]}
+            >
+              <Animated.View style={[welcomeStyles.ripple, ripple1Style]} />
+              <Animated.View
+                style={[
+                  welcomeStyles.ripple,
+                  ripple2Style,
+                  { top: 10, left: 10, right: 10, bottom: 10 },
+                ]}
               />
-            </View>
-          </Animated.View>
+              <View style={welcomeStyles.logoCircle}>
+                <Image
+                  source={require('@/assets/images/icon.png')}
+                  style={welcomeStyles.logoImg}
+                  resizeMode="contain"
+                />
+              </View>
+            </Animated.View>
+          )}
 
           <Animated.Text
             entering={FadeInUp.delay(120).duration(420)}
@@ -544,7 +597,7 @@ function WelcomeScreen({
             Una sencilla app para cuidar la Vida del MCM: calendario, cantoral,
             un espacio para tus momentos de oración...
           </Animated.Text>
-        </View>
+        </ScrollWhenLarge>
 
         <Animated.View
           entering={FadeInUp.delay(360).duration(420)}
@@ -660,6 +713,54 @@ const welcomeStyles = StyleSheet.create({
    Profile screen
 ─────────────────────────────────────── */
 
+/**
+ * Icono, título y subtítulo de un paso con lista (perfil, localidad).
+ *
+ * Con letra normal va FIJO encima de la lista, como siempre. Con letra grande
+ * (`useLargeText`) ese bloque fijo se comía la pantalla y la lista quedaba en
+ * una rendija con las opciones fuera de vista: entonces va DENTRO de la lista,
+ * sin el icono, y se va con el scroll. Cada pantalla lo pinta en los dos
+ * sitios y `inList` decide cuál se ve.
+ */
+function StepHero({
+  large,
+  icon,
+  title,
+  sub,
+  inList,
+}: {
+  large: boolean;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  title: string;
+  sub: string;
+  inList: boolean;
+}) {
+  const TT = useThemeT();
+  if (large !== inList) return null;
+  return (
+    <Animated.View
+      entering={FadeInUp.duration(420)}
+      style={[stepStyles.hero, inList && stepStyles.heroInList]}
+    >
+      {!large && (
+        <View style={[stepStyles.heroIcon, { backgroundColor: TT.iconBg }]}>
+          <MaterialIcons name={icon} size={28} color={TT.tint} />
+        </View>
+      )}
+      <Text style={[stepStyles.heroTitle, { color: TT.text }]}>{title}</Text>
+      <Text
+        style={[
+          stepStyles.heroSub,
+          { color: TT.muted },
+          inList && stepStyles.heroSubInList,
+        ]}
+      >
+        {sub}
+      </Text>
+    </Animated.View>
+  );
+}
+
 function ProfileScreen({
   profiles,
   selected,
@@ -682,6 +783,7 @@ function ProfileScreen({
   const TT = useThemeT();
   const insets = useSafeAreaInsets();
   const Entering = animDir === 'back' ? SlideInLeft : SlideInRight;
+  const large = useLargeText();
   const topPad = (applySafeArea ? insets.top : 0) + 8;
   const bottomPad =
     (applySafeArea ? insets.bottom : 0) + (Platform.OS === 'ios' ? 12 : 24);
@@ -701,24 +803,26 @@ function ProfileScreen({
         <ProgressDots current={0} total={totalSteps} />
       </View>
 
-      <Animated.View entering={FadeInUp.duration(420)} style={stepStyles.hero}>
-        <View style={[stepStyles.heroIcon, { backgroundColor: TT.iconBg }]}>
-          <MaterialIcons name="person-search" size={28} color={TT.tint} />
-        </View>
-        <Text style={[stepStyles.heroTitle, { color: TT.text }]}>
-          ¿Quién eres? (1 minuto)
-        </Text>
-        <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
-          Según tu perfil te mostraremos lo más adecuado. Puedes cambiarlo
-          después.
-        </Text>
-      </Animated.View>
+      <StepHero
+        large={large}
+        icon="person-search"
+        title="¿Quién eres? (1 minuto)"
+        sub="Según tu perfil te mostraremos lo más adecuado. Puedes cambiarlo después."
+        inList={false}
+      />
 
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={stepStyles.list}
         showsVerticalScrollIndicator={false}
       >
+        <StepHero
+          large={large}
+          icon="person-search"
+          title="¿Quién eres? (1 minuto)"
+          sub="Según tu perfil te mostraremos lo más adecuado. Puedes cambiarlo después."
+          inList
+        />
         {profiles.map((p, i) => {
           const sel = selected === p.id;
           return (
@@ -766,7 +870,7 @@ function ProfileScreen({
                   </Text>
                   <Text
                     style={[cardStyles.cardDesc, { color: TT.muted }]}
-                    numberOfLines={3}
+                    numberOfLines={large ? undefined : 3}
                   >
                     {p.description}
                   </Text>
@@ -829,6 +933,7 @@ function DelegationScreen({
 }) {
   const TT = useThemeT();
   const insets = useSafeAreaInsets();
+  const large = useLargeText();
   const topPad = (applySafeArea ? insets.top : 0) + 8;
   const bottomPad =
     (applySafeArea ? insets.bottom : 0) + (Platform.OS === 'ios' ? 12 : 24);
@@ -844,7 +949,12 @@ function DelegationScreen({
       <View style={[stepStyles.topBar, { paddingTop: topPad }]}>
         <Pressable onPress={onBack} hitSlop={12} style={stepStyles.backBtn}>
           <MaterialIcons name="arrow-back-ios" size={16} color={TT.tint} />
-          <Text style={[stepStyles.backLabel, { color: TT.tint }]}>Atrás</Text>
+          <Text
+            style={[stepStyles.backLabel, { color: TT.tint }]}
+            maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+          >
+            Atrás
+          </Text>
         </Pressable>
         <SkipButton onPress={onSkip} />
       </View>
@@ -853,23 +963,26 @@ function DelegationScreen({
         <ProgressDots current={stepIndex} total={totalSteps} />
       </View>
 
-      <Animated.View entering={FadeInUp.duration(420)} style={stepStyles.hero}>
-        <View style={[stepStyles.heroIcon, { backgroundColor: TT.iconBg }]}>
-          <MaterialIcons name="location-on" size={28} color={TT.tint} />
-        </View>
-        <Text style={[stepStyles.heroTitle, { color: TT.text }]}>
-          ¿De qué localidad?
-        </Text>
-        <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
-          En el futuro, recibirás notificaciones y calendario de tu MCM Local.
-        </Text>
-      </Animated.View>
+      <StepHero
+        large={large}
+        icon="location-on"
+        title="¿De qué localidad?"
+        sub="En el futuro, recibirás notificaciones y calendario de tu MCM Local."
+        inList={false}
+      />
 
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[stepStyles.list, { gap: 7 }]}
         showsVerticalScrollIndicator={false}
       >
+        <StepHero
+          large={large}
+          icon="location-on"
+          title="¿De qué localidad?"
+          sub="En el futuro, recibirás notificaciones y calendario de tu MCM Local."
+          inList
+        />
         {delegations.map((d, i) => {
           const sel = selected === d.id;
           return (
@@ -907,7 +1020,7 @@ function DelegationScreen({
                   {d.description ? (
                     <Text
                       style={[delegStyles.desc, { color: TT.muted }]}
-                      numberOfLines={2}
+                      numberOfLines={large ? undefined : 2}
                     >
                       {d.description}
                     </Text>
@@ -960,6 +1073,7 @@ function SuccessScreen({
 }) {
   const TT = useThemeT();
   const insets = useSafeAreaInsets();
+  const large = useLargeText();
   const ripple = useSharedValue(0);
   const wiggle = useSharedValue(0);
   useEffect(() => {
@@ -1007,17 +1121,20 @@ function SuccessScreen({
       ]}
     >
       <StatusBar style={TT.isDark ? 'light' : 'dark'} animated />
-      <Animated.View
-        entering={FadeIn.duration(550).easing(
-          Easing.bezier(0.34, 1.56, 0.64, 1),
-        )}
-        style={[successStyles.iconWrap, wiggleStyle]}
-      >
-        <Animated.View style={[successStyles.iconRipple, rippleStyle]} />
-        <View style={successStyles.iconCircle}>
-          <MaterialIcons name="celebration" size={48} color={TT.success} />
-        </View>
-      </Animated.View>
+      {/* Con letra grande el icono se quita: el espacio es para el texto. */}
+      {!large && (
+        <Animated.View
+          entering={FadeIn.duration(550).easing(
+            Easing.bezier(0.34, 1.56, 0.64, 1),
+          )}
+          style={[successStyles.iconWrap, wiggleStyle]}
+        >
+          <Animated.View style={[successStyles.iconRipple, rippleStyle]} />
+          <View style={successStyles.iconCircle}>
+            <MaterialIcons name="celebration" size={48} color={TT.success} />
+          </View>
+        </Animated.View>
+      )}
 
       <Animated.Text
         entering={FadeInDown.delay(120).duration(380)}
@@ -1181,6 +1298,9 @@ const stepStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   } as ViewStyle,
+  // Dentro de la lista (letra grande): la lista ya pone el margen lateral.
+  heroInList: { paddingHorizontal: 0, paddingTop: 0, paddingBottom: 8 },
+  heroSubInList: { maxWidth: undefined },
   heroIcon: {
     width: 56,
     height: 56,
@@ -1333,6 +1453,7 @@ function LoginOnboardingScreen({
   const { isWide } = useResponsiveLayout();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const large = useLargeText();
 
   return (
     <Animated.View
@@ -1398,22 +1519,28 @@ function LoginOnboardingScreen({
 
       {/* Content — al iniciar sesión esta pantalla pasa a ser el resumen
           final del onboarding, con el CTA centrado verticalmente. */}
-      <View
+      <ScrollWhenLarge
+        large={large}
         style={[loginOnbStyles.center, isWide && { paddingHorizontal: 48 }]}
+        // El botón de volver y los puntos van encima, en absoluto: con scroll
+        // el contenido arranca por debajo de ellos.
+        largeStyle={{ paddingTop: insets.top + 56, paddingBottom: 24 }}
       >
-        {/* Logo */}
-        <Animated.View
-          entering={FadeIn.delay(80).duration(500)}
-          style={loginOnbStyles.logoWrap}
-        >
-          <View style={loginOnbStyles.logoCircle}>
-            <Image
-              source={require('@/assets/images/icon.png')}
-              style={loginOnbStyles.logoImg}
-              resizeMode="contain"
-            />
-          </View>
-        </Animated.View>
+        {/* Logo (fuera con letra grande: el espacio es para el texto) */}
+        {!large && (
+          <Animated.View
+            entering={FadeIn.delay(80).duration(500)}
+            style={loginOnbStyles.logoWrap}
+          >
+            <View style={loginOnbStyles.logoCircle}>
+              <Image
+                source={require('@/assets/images/icon.png')}
+                style={loginOnbStyles.logoImg}
+                resizeMode="contain"
+              />
+            </View>
+          </Animated.View>
+        )}
 
         <Animated.Text
           entering={FadeInUp.delay(120).duration(400)}
@@ -1478,7 +1605,7 @@ function LoginOnboardingScreen({
             />
           </Animated.View>
         )}
-      </View>
+      </ScrollWhenLarge>
 
       {/* Cuando NO hay sesión, botón inferior para continuar sin cuenta
           (lleva al resumen final). Respetamos el safe-area inferior para que
@@ -1502,7 +1629,10 @@ function LoginOnboardingScreen({
               pressed && { opacity: 0.6 },
             ]}
           >
-            <Text style={loginOnbStyles.skipText}>
+            <Text
+              style={loginOnbStyles.skipText}
+              maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+            >
               Entrar sin iniciar sesión
             </Text>
             <MaterialIcons

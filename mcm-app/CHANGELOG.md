@@ -4,13 +4,68 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
-## 2026-11-07 00:10 — Comunica: marca menor «Otras patologías» (TEA, TDAH…)
+## 2026-11-07 16:00 — Comunica: marca menor «Otras patologías» (TEA, TDAH…)
 
 - **Antes**: solo había una marca de salud, «Alergia o tratamiento». Un chaval con solo «otras patologías» (TEA, TDAH…) no llevaba ninguna, y la ficha enseñaba el texto de alergias/intolerancias pero no el de los tratamientos ni el de las patologías.
 - **Contrato**: `badges.healthOther` (opcional) = tiene enfermedades u «otras patologías» (`HEALTH_KINDS_OTHER`). `badges.healthNote` pasa a significar alergias, intolerancias o tratamiento (`HEALTH_KINDS_MAIN`). Pueden ir las dos a la vez. **El servidor real (`mcm-comunica-api`) tiene que mandar `healthOther`**; mientras no lo haga, la app no pinta la marca menor. Detalle en `docs/contratos/COMUNICA_API.md`.
 - **App**: pastilla menor «Otras patologías» (más pequeña, en tono celeste, no de aviso) en listas de grupo, sueltos, índice de grupos y Pasar Lista (icono pequeño), con el mismo gesto que la principal: abre la hoja de salud. Sin decir cuál, tampoco al lector de pantalla.
 - **Ficha del participante («Lo imprescindible»)**: ahora también enseña el **tratamiento** con su texto y las **otras patologías** con su texto (aviso menor).
 - **Servidor falso**: calcula las dos marcas desde la ficha de salud (`utils/comunica/health.ts`) e incluye un caso «TEA y TDAH».
+
+## 2026-11-07 14:33 — Letra grande del sistema: cabecera de Inicio y onboarding
+
+Para quien tiene el zoom de letra alto (gente mayor, sobre todo en Android). **Con la letra normal no cambia nada.**
+
+- **Nuevo `hooks/useLargeText.ts`**: `useLargeText()` es `true` desde ×1.2 de escala de letra del sistema (`LARGE_TEXT_FONT_SCALE`). La normal y la «grande» de Android (1.15) quedan igual; cambia desde «muy grande» (Android 1.3, iOS XXL). También exporta `CHROME_MAX_FONT_SCALE` = 1.3, el techo para texto que vive en una barra de altura fija (el mínimo que permite `design.md` §4).
+- **Cabecera de Inicio** (`components/home/HomeBrand.tsx`): «MCM App» (28 pt) lleva `maxFontSizeMultiplier` 1.3. Con la letra al ×2 se iba a 56 pt y no cabía en la barra nativa.
+- **Onboarding** (`app/onboarding.tsx`), solo con letra grande:
+  - En perfil y localidad, el título y el subtítulo pasan a estar DENTRO de la lista y se van con el scroll (`StepHero`), y se quita el icono de 56 px. Antes ese bloque fijo se comía la pantalla y no se veían las opciones.
+  - Las descripciones de perfil y localidad ya no se cortan a 3/2 líneas.
+  - Bienvenida y login pasan a hacer scroll (`ScrollWhenLarge`) y quitan el logo; el final quita el icono.
+  - Los textos de los botones fijos («Continuar», «Saltar», «Atrás», «Entrar sin iniciar sesión») llevan el techo ×1.3.
+- Tests: `__tests__/largeText.test.tsx` (corte y techo de la cabecera) y `__tests__/onboardingLargeText.test.tsx` (título fijo con letra normal, dentro de la lista con letra grande).
+
+## 2026-11-07 11:34 — Comunica: lo atascado se reintenta solo, el refresco de sesión se repite y las caídas llegan a Sentry
+
+Segunda parte de la revisión del 7/11/2026, pensando en el área nativa abierta a todos:
+
+- **Una escritura atascada se sigue intentando SOLA** (`services/comunica/outbox.ts`): tras los 5 fallos seguidos con el servidor caído sigue saliendo como atascada (con «Reintentar» y «Descartar»), pero se vuelve a intentar cada 5 min (`STUCK_RETRY_MS`) y cada vez que la app despierta (primer plano, vuelve la red, se abre una pantalla), con el mismo `clientId`. Antes esperaba a que alguien tocara «Reintentar» y una lista podía quedarse días en el móvil. Sentry recibe UN aviso por lista atascada, no uno por reintento. Lo atascado guardado por versiones anteriores sigue esperando a «Reintentar».
+- **Renovar la sesión se repite UNA vez** si falla por red o plazo (`services/comunica/session.ts`, `REFRESH_RETRY_MS` = 2 s). El servidor puede haber cambiado ya el token con la respuesta perdida; repetirlo enseguida cae dentro de su margen (2 min) y no saca a nadie. Un 401 sigue cerrando la sesión al momento, y ahora avisa a Sentry.
+- **Las caídas del servidor llegan a Sentry** (`client.ts`): un 5xx o un plazo agotado avisan, uno por tipo cada 10 min y móvil, con la ruta sin ids (`/v1/people/:id/photo`). Antes la caída del 6/11 era invisible desde la app.
+- **La portada de familia ya no se queda en blanco** si `/v1/me` falla sin nada guardado: sale «Comunica no responde ahora mismo» con «Reintentar» (`MemberHome`).
+- Tests: `outbox.test.ts` (reintento lento, al despertar, un solo aviso, lo viejo sigue manual), `session.test.ts` (refresco repetido una vez, no insiste más, el 401 no se repite), `client.test.ts` (avisos a Sentry con freno y sin ids), `familyScreens.test.tsx` (portada sin `/v1/me`).
+
+## 2026-11-07 10:55 — Comunica: plazo a cada petición, menos reintentos y «Comunica no responde» en vez de «Sin conexión»
+
+Tras la caída del middleware de la noche del 6/11 (`comunicaMiddleware:docs/APRENDIZAJES-MIDDLEWARE.md`), revisión del cliente:
+
+- **Cada petición tiene plazo** (`services/comunica/client.ts`): 20 s las lecturas, 30 s las escrituras y 90 s las subidas de foto o documento. Antes no había ninguno: una petición colgada dejaba la pantalla en el esqueleto para siempre y, si era una escritura, paraba la cola de guardado hasta reiniciar la app. Lo cortado sale como `network` con `reason: 'timeout'` y se reintenta como un corte de red (las escrituras, con el mismo `clientId`: el servidor no las duplica).
+- **Un 503/5xx del servidor ya no se repite al momento**: lo reintenta la caché de consultas con espera (1 s, 2 s). Con el servidor caído, cada pantalla hacía 6 peticiones por consulta (2 del cliente × 3 de la caché); ahora 3. El reintento inmediato se queda solo para los cortes de red del móvil.
+- **Si falla el servidor, se dice así** (`AreaState`): «Comunica no responde ahora mismo. No es tu conexión…» (sin datos guardados) y «Comunica no responde ahora mismo: estás viendo lo guardado en el móvil» (con datos). Antes decía «Sin conexión» y la gente miraba su wifi y le daba a «Reintentar» sin parar. La falta de cobertura sigue diciendo lo de siempre.
+- Tests: `client.test.ts` (plazo de lectura, de escritura y de un cuerpo que no acaba; 503 sin repetir; corte de red repetido una vez).
+
+## 2026-11-06 22:48 — Comunica: las fotos de las fichas salían como iniciales trabajando con otra delegación
+
+- **Bug:** `photoSource` (`services/comunica/client.ts`) pedía la foto sin `X-Comunica-Delegation`. El servidor miraba entonces la delegación de TU ficha, y quien trabaja con otra (coordina Burriana siendo de Castellón) recibía 403 en cada foto (visto en los registros de producción: la ficha daba 200 y su foto 403). Ahora la foto de alguien del equipo (`/v1/people/:id/photo`) lleva la delegación de trabajo, como su ficha; la de un perfil propio (`/v1/profiles/…`) sigue sin ella. Test en `client.test.ts`.
+- En el middleware, el mismo día: pool de conexiones a la base (saltaba `ER_USER_LIMIT_REACHED`, el tope de 5 del usuario de lectura del CRM) y limpieza nocturna (`comunicaMiddleware:docs/APRENDIZAJES-MIDDLEWARE.md`).
+
+## 2026-11-06 20:25 — Comunica: guardar una lista ya no espera al CRM (cola del servidor)
+
+- **Guardar una lista (grupo, evento o monitores), un aviso, el pañuelo, poner grupo o «mis datos de monitor» contesta en 2,5 s como mucho.** Si el CRM tarda más, el middleware dice «la tengo» (`202 queued`) y la sube él a su ritmo (`comunicaMiddleware:docs/COLA.md`). Antes el móvil se quedaba en «Guardando…» todo lo que tardara el CRM (decenas de llamadas seguidas por lista).
+- **Estado nuevo en la cola del móvil, `queued`** (`services/comunica/outbox.ts`): «Recibida en Comunica · Comunica ya la tiene y la está guardando. Puedes salir: no hace falta esperar.» No gasta intentos ni cuenta como «guardada solo en el móvil» (ni para el aviso de «listas sin subir» ni para el de salir de la cuenta). Se pregunta por ella mandando lo mismo con el mismo `clientId` (3 s, 6 s… hasta 1 min, y al abrir una pantalla o volver la app); cuando el servidor da el resultado, sigue como siempre (`applied`, `onApplied`, la lista releída).
+- **El cliente** (`services/comunica/client.ts`) manda `X-Comunica-Queue: 1` en las escrituras (sin ella, el servidor espera como antes: las apps viejas no notan nada) y convierte el 202 en el código `queued`.
+- Tests: `outbox.test.ts` (queued, sondeo, sobrevive a cerrar la app), `client.test.ts` (cabecera y 202), `outboxReminder.test.ts`.
+
+## 2026-11-06 18:30 — Comunica (familias): barra «Viendo a» fija, «Ver su ficha» sin cambiar de perfil y dos familias de prueba más
+
+- **«Viendo a · Lucía ▾» va FIJA arriba**, fuera del scroll (`AreaScreen` con la prop `profileBar`, que sustituye al `ActiveProfileBar` suelto de cada pantalla de familia): al bajar, se sigue viendo a quién se está viendo. Solo sale si hay hijos. Debajo de lo del equipo (`MemberHome embedded`) sigue en línea.
+- **«Ver su ficha» ya no cambia a quién se ve**: abre `/comunica/datos/<pid>` directamente. Antes hacía `setActive(hijo)` y al volver la portada pasaba a ser la del hijo. Para apuntarle o ver sus documentos se elige en «Viendo a» (el texto del saludo lo dice).
+- **El saludo («Hola, …») ya no se puede cerrar** (sin ×); ya no se guarda nada en el cajón `home` para esto (`useGreetingHidden` queda en el código, sin uso en la portada).
+- **«Tu cuenta» deja de salir al final de la portada de familia**: es el mismo botón de la cabecera.
+- **Textos**: «Sus datos personales…» viendo a un hijo (antes «Tus…»); «Avisos en este móvil» ya no habla de «pasar lista» a una cuenta sin papel de equipo; «Necesidades especiales» no repite su título en el formulario de inscripción.
+- **Servidor falso**: `familia-pareja@ejemplo.org` (comparte a Lucía con `familia@…` y tiene a Hugo; paga lo suyo) y `familia-tres@ejemplo.org` (tres hijos). El dinero sigue siendo de quien paga: Marta no ve lo que paga Sergio por Lucía (`fake/fixturesFamilies.ts`, tests en `profilePaymentsFake.test.ts`).
+- **Android/web**: las pestañas ocultas ya no se pintan como `null` dentro de `Tabs` (expo-router avisaba «Layout children must be of type Screen» en cada arranque).
+- Probado en iPhone 17 Pro (simulador) y en el emulador Android (Pixel API 35).
 
 ## 2026-11-06 23:30 — Inicio y Más con cabecera nativa; logo de MCM
 

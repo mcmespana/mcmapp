@@ -217,6 +217,14 @@ haya que leer de verdad.
 `fontScale` se respeta multiplicando los tamaños base — no lo ignores ni lo
 capes por debajo de ×1.3.
 
+**Letra grande del sistema** (zoom alto, gente mayor): para cambiar la MAQUETA
+(que un bloque fijo pase a hacer scroll, quitar adornos grandes) usa
+`useLargeText()` (`hooks/useLargeText.ts`, se activa desde ×1.2). Con la letra
+normal la pantalla tiene que quedar idéntica. El texto que vive en una barra
+de altura fija (cabecera nativa, pie de botones) lleva
+`maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}` (×1.3); el texto de lectura,
+nunca.
+
 ---
 
 ## 5. Medida, forma y profundidad

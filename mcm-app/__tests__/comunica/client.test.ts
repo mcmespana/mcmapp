@@ -1,4 +1,13 @@
-import { createHttpClient, ComunicaApiError } from '@/services/comunica/client';
+import {
+  createHttpClient,
+  ComunicaApiError,
+  READ_TIMEOUT_MS,
+  REPORT_EVERY_MS,
+  WRITE_TIMEOUT_MS,
+  resetTroubleReports,
+  routeOf,
+} from '@/services/comunica/client';
+import { setWorkingDelegation } from '@/services/comunica/delegation';
 import { setReporter } from '@/utils/logger';
 
 const me = {
@@ -67,15 +76,156 @@ describe('services/comunica/client', () => {
     expect(f).toHaveBeenCalledTimes(1);
   });
 
-  it('503 se reintenta una vez en lecturas', async () => {
+  it('503: NO se repite al momento (lo reintenta la caché con espera); sigue siendo reintentable', async () => {
+    // Repetirlo aquí duplicaba las peticiones de cada pantalla con el servidor
+    // caído (6/11/2026): 2 aquí × 3 de la caché = 6 por consulta.
     const f = jest
       .fn()
       .mockResolvedValueOnce(
         respond(503, { error: { code: 'crm_unavailable', message: 'caído' } }),
       )
       .mockResolvedValueOnce(respond(200, me));
+    await expect(client(f).getMe()).rejects.toMatchObject({
+      code: 'crm_unavailable',
+      retryable: true,
+    });
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+
+  it('un corte de red en una lectura sí se repite al momento, una vez', async () => {
+    const f = jest
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Network request failed'))
+      .mockResolvedValueOnce(respond(200, me));
     await expect(client(f).getMe()).resolves.toEqual(me);
     expect(f).toHaveBeenCalledTimes(2);
+  });
+
+  describe('avisos a Sentry de que el servidor falla (7/11/2026)', () => {
+    const warns: unknown[][] = [];
+    beforeEach(() => {
+      warns.length = 0;
+      resetTroubleReports();
+      setReporter({ error: () => {}, warn: (...a) => warns.push(a) });
+    });
+    afterEach(() =>
+      setReporter({ error: (...a) => errors.push(a), warn: () => {} }),
+    );
+
+    it('un 5xx avisa UNA vez cada REPORT_EVERY_MS, con la ruta sin ids', async () => {
+      const f = jest.fn().mockResolvedValue(
+        respond(503, {
+          error: { code: 'crm_unavailable', message: 'x', reason: 'db_error' },
+        }),
+      );
+      const id = '00000c2f-102d-2c5b-04b9-68cec329dfe6';
+      for (let i = 0; i < 5; i++) {
+        await client(f)
+          .getRoll(id, id)
+          .catch(() => {});
+      }
+      expect(warns).toHaveLength(1);
+      const text = warns[0]!.map(String).join(' ');
+      expect(text).toContain('/v1/sessions/:id/groups/:id/roll');
+      expect(text).toContain('db_error');
+      expect(text).not.toContain(id);
+      const now = Date.now();
+      jest.spyOn(Date, 'now').mockReturnValue(now + REPORT_EVERY_MS + 1);
+      await client(f)
+        .getMe()
+        .catch(() => {});
+      expect(warns).toHaveLength(2);
+    });
+
+    it('un 4xx no avisa (no es el servidor)', async () => {
+      const f = jest
+        .fn()
+        .mockResolvedValue(
+          respond(422, { error: { code: 'validation', message: 'x' } }),
+        );
+      await client(f)
+        .getMe()
+        .catch(() => {});
+      expect(warns).toHaveLength(0);
+    });
+
+    it('routeOf quita ids y parámetros', () => {
+      expect(
+        routeOf('/v1/people/00000c2f-102d-2c5b-04b9-68cec329dfe6/photo?v=ab12'),
+      ).toBe('/v1/people/:id/photo');
+    });
+  });
+
+  describe('tiempo límite', () => {
+    /** Un `fetch` que no contesta nunca, salvo que lo corten. */
+    const hanging = () =>
+      jest.fn(
+        (_url: string, init: { signal?: AbortSignal }) =>
+          new Promise<Response>((_res, rej) => {
+            init.signal?.addEventListener('abort', () =>
+              rej(Object.assign(new Error('Aborted'), { name: 'AbortError' })),
+            );
+          }),
+      );
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it('una lectura colgada se corta a los READ_TIMEOUT_MS: `network`/`timeout`, reintentable, sin repetir al momento', async () => {
+      const f = hanging();
+      const p = client(f as unknown as jest.Mock)
+        .getMe()
+        .catch((e) => e);
+      await jest.advanceTimersByTimeAsync(READ_TIMEOUT_MS - 1);
+      expect(f).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(2);
+      const err = await p;
+      expect(err).toBeInstanceOf(ComunicaApiError);
+      expect(err).toMatchObject({
+        code: 'network',
+        reason: 'timeout',
+        retryable: true,
+      });
+      expect(f).toHaveBeenCalledTimes(1);
+    });
+
+    it('una escritura colgada se corta a los WRITE_TIMEOUT_MS (la cola la repetirá con el mismo clientId)', async () => {
+      const f = hanging();
+      const p = client(f as unknown as jest.Mock)
+        .setScarf('k1', {
+          clientId: '3b241101-e2bb-4255-8caf-4136c566a962',
+          scarf: 'blue',
+        })
+        .catch((e) => e);
+      await jest.advanceTimersByTimeAsync(READ_TIMEOUT_MS + 1);
+      await jest.advanceTimersByTimeAsync(WRITE_TIMEOUT_MS - READ_TIMEOUT_MS);
+      expect(await p).toMatchObject({ code: 'network', reason: 'timeout' });
+    });
+
+    it('un cuerpo que no acaba también se corta', async () => {
+      const f = jest.fn((_url: string, init: { signal?: AbortSignal }) =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            new Promise((_res, rej) =>
+              init.signal?.addEventListener('abort', () =>
+                rej(new Error('Aborted')),
+              ),
+            ),
+        } as unknown as Response),
+      );
+      const p = client(f as unknown as jest.Mock)
+        .getMe()
+        .catch((e) => e);
+      await jest.advanceTimersByTimeAsync(READ_TIMEOUT_MS + 1);
+      expect(await p).toMatchObject({ code: 'network', reason: 'timeout' });
+    });
+
+    it('una respuesta a tiempo no deja el reloj corriendo', async () => {
+      const f = jest.fn().mockResolvedValue(respond(200, me));
+      await expect(client(f).getMe()).resolves.toEqual(me);
+      expect(jest.getTimerCount()).toBe(0);
+    });
   });
 
   it('las escrituras no se reintentan (lo hace la cola)', async () => {
@@ -92,6 +242,39 @@ describe('services/comunica/client', () => {
     });
     expect(f).toHaveBeenCalledTimes(1);
     expect(f.mock.calls[0][1].method).toBe('PUT');
+  });
+
+  it('las escrituras avisan de que entienden la cola del servidor; las lecturas, no', async () => {
+    const f = jest.fn().mockResolvedValue(respond(200, me));
+    await client(f).getMe();
+    expect(f.mock.calls[0][1].headers['X-Comunica-Queue']).toBeUndefined();
+    f.mockResolvedValue(respond(503, {}));
+    await client(f)
+      .setScarf('k1', {
+        clientId: '3b241101-e2bb-4255-8caf-4136c566a962',
+        scarf: 'blue',
+      })
+      .catch(() => {});
+    expect(f.mock.calls[1][1].headers['X-Comunica-Queue']).toBe('1');
+  });
+
+  it('202 «queued»: no es un fallo ni una respuesta rota, es `queued` (la tiene el servidor)', async () => {
+    const clientId = '3b241101-e2bb-4255-8caf-4136c566a962';
+    const f = jest
+      .fn()
+      .mockResolvedValue(respond(202, { clientId, status: 'queued' }));
+    const p = client(f).saveRoll('s', 'g', {
+      clientId,
+      action: 'skip',
+      marks: {},
+      notes: {},
+    });
+    await expect(p).rejects.toMatchObject({
+      code: 'queued',
+      status: 202,
+      retryable: false,
+    });
+    expect(errors).toHaveLength(0);
   });
 
   it('sin red es `network`', async () => {
@@ -116,7 +299,7 @@ describe('services/comunica/client', () => {
     expect(f.mock.calls[0][1].headers.Authorization).toBeUndefined();
   });
 
-  it('400 sin cuerpo es `validation` (no se reintenta); 500 sigue siendo reintentable', async () => {
+  it('400 sin cuerpo es `validation` (no se reintenta); 500 sigue siendo reintentable (por la caché, no al momento)', async () => {
     const f400 = jest.fn().mockResolvedValue(respond(400, {}));
     await expect(client(f400).getMe()).rejects.toMatchObject({
       code: 'validation',
@@ -127,8 +310,11 @@ describe('services/comunica/client', () => {
       .fn()
       .mockResolvedValueOnce(respond(500, {}))
       .mockResolvedValueOnce(respond(200, me));
-    await expect(client(f500).getMe()).resolves.toEqual(me);
-    expect(f500).toHaveBeenCalledTimes(2);
+    await expect(client(f500).getMe()).rejects.toMatchObject({
+      code: 'crm_unavailable',
+      retryable: true,
+    });
+    expect(f500).toHaveBeenCalledTimes(1);
   });
 
   it('la foto lleva el token SOLO si es de nuestro servidor', () => {
@@ -144,6 +330,28 @@ describe('services/comunica/client', () => {
       'http://api.test/v1/photos/p1',
     ]) {
       expect(c.photoSource(url).headers).toBeUndefined();
+    }
+  });
+
+  it('la foto de alguien del equipo va con la delegación de trabajo (como su ficha); la de un perfil propio, no', () => {
+    const c = client(jest.fn());
+    setWorkingDelegation('d-bur');
+    try {
+      expect(
+        c.photoSource('https://api.test/v1/people/p1/photo?v=abc123').headers,
+      ).toEqual({
+        Authorization: 'Bearer tok',
+        'X-Comunica-Delegation': 'd-bur',
+      });
+      expect(
+        c.photoSource('https://api.test/v1/profiles/p1/photo?v=abc123').headers,
+      ).toEqual({ Authorization: 'Bearer tok' });
+      // A otro dominio, nada: ni sesión ni delegación.
+      expect(
+        c.photoSource('https://otro.example/v1/people/p1/photo').headers,
+      ).toBeUndefined();
+    } finally {
+      setWorkingDelegation(null);
     }
   });
 });
