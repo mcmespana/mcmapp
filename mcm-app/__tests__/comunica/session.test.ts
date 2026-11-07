@@ -200,6 +200,56 @@ describe('sesión', () => {
     });
   });
 
+  describe('un refresco que falla por la red (7/11/2026)', () => {
+    const corte = () => new ComunicaApiError('network', 'corte');
+
+    it('se repite UNA vez enseguida y sigue dentro con el token nuevo', async () => {
+      const { fake, secrets } = setup();
+      const t = fake.issueSession('monitor');
+      await signIn(t, t.me);
+      const refresh = jest
+        .fn()
+        .mockRejectedValueOnce(corte())
+        .mockImplementation((r: string) => fake.refresh(r));
+      configureSession({ refresh, logout: (r) => fake.logout(r), secrets });
+      expect(await getAccessToken(true)).toBeTruthy();
+      expect(refresh).toHaveBeenCalledTimes(2);
+      expect(getSessionState().status).toBe('signedIn');
+      const stored = await secrets.get('@comunica/refresh');
+      expect(stored).toBeTruthy();
+      expect(stored).not.toBe(t.refreshToken);
+    });
+
+    it('si vuelve a fallar, sigue dentro (sin red no se echa a nadie) y no insiste más', async () => {
+      const { fake, secrets } = setup();
+      const t = fake.issueSession('monitor');
+      await signIn(t, t.me);
+      const refresh = jest.fn().mockRejectedValue(corte());
+      configureSession({ refresh, logout: (r) => fake.logout(r), secrets });
+      expect(await getAccessToken(true)).toBeNull();
+      expect(refresh).toHaveBeenCalledTimes(2);
+      expect(getSessionState().status).toBe('signedIn');
+    });
+
+    it('un 401 no se repite: la sesión se acaba al momento', async () => {
+      const { fake, secrets } = setup();
+      const t = fake.issueSession('monitor');
+      await signIn(t, t.me);
+      const refresh = jest
+        .fn()
+        .mockRejectedValue(
+          new ComunicaApiError('unauthenticated', 'caducada', 401),
+        );
+      configureSession({ refresh, logout: (r) => fake.logout(r), secrets });
+      expect(await getAccessToken(true)).toBeNull();
+      expect(refresh).toHaveBeenCalledTimes(1);
+      expect(getSessionState()).toMatchObject({
+        status: 'signedOut',
+        reason: 'revoked',
+      });
+    });
+  });
+
   it('si el servidor revoca, se acaba la sesión sin borrar la cola', async () => {
     const { fake } = setup();
     const t = fake.issueSession('monitor');

@@ -3,6 +3,7 @@ import {
   MAX_ATTEMPTS,
   backoffMs,
   pollMs,
+  STUCK_RETRY_MS,
   unsent,
 } from '@/services/comunica/outbox';
 import { ComunicaApiError } from '@/services/comunica/client';
@@ -11,6 +12,7 @@ import {
   memoryBackend,
   readDrawer,
   setStorageBackend,
+  writeDrawer,
 } from '@/services/comunica/storage';
 import { setReporter } from '@/utils/logger';
 
@@ -68,14 +70,84 @@ describe('cola de escrituras', () => {
     expect(new Set(handler.mock.calls.map((c) => c[0].clientId))).toEqual(
       new Set(['c1']),
     );
-    // Atascada no sube sola…
-    advance(60 * 60_000);
+    // Atascada (se ve como tal) pero NO abandonada: antes de su turno no
+    // insiste…
+    advance(STUCK_RETRY_MS - 1);
     await box.flush();
     expect(handler).toHaveBeenCalledTimes(MAX_ATTEMPTS);
-    // …pero «Reintentar» a mano sí.
+    // …y en su turno lo intenta sola, con el mismo clientId (7/11/2026).
+    advance(1);
+    await box.flush();
+    expect(handler).toHaveBeenCalledTimes(MAX_ATTEMPTS + 1);
+    expect(box.get('k')?.status).toBe('stuck');
+    // «Reintentar» a mano sigue funcionando.
     handler.mockResolvedValueOnce({});
     await box.retry('k');
     expect(box.get('k')?.status).toBe('applied');
+    expect(new Set(handler.mock.calls.map((c) => c[0].clientId))).toEqual(
+      new Set(['c1']),
+    );
+  });
+
+  it('atascada: al despertar la app (primer plano, red, pantalla) se intenta YA, y avisa a Sentry UNA sola vez', async () => {
+    const errors: unknown[][] = [];
+    setReporter({ error: (...a) => errors.push(a), warn: () => {} });
+    try {
+      const handler = jest.fn().mockRejectedValue(crmDown());
+      const { box, advance } = setup(handler);
+      await box.enqueue({
+        key: 'k',
+        kind: 'roll',
+        payload: {},
+        clientId: 'c1',
+      });
+      await box.flush();
+      for (let i = 1; i < MAX_ATTEMPTS; i++) {
+        advance(backoffMs(i));
+        await box.flush();
+      }
+      expect(box.get('k')?.status).toBe('stuck');
+      // Varios reintentos lentos que siguen fallando: un solo aviso.
+      for (let i = 0; i < 3; i++) {
+        advance(STUCK_RETRY_MS);
+        await box.flush();
+      }
+      expect(handler).toHaveBeenCalledTimes(MAX_ATTEMPTS + 3);
+      expect(
+        errors.filter((e) => String(e[0]).includes('atascada')),
+      ).toHaveLength(1);
+      // Vuelve el servidor y la app despierta: sube sin esperar su turno.
+      handler.mockResolvedValueOnce({ ok: true });
+      await box.wake();
+      expect(box.get('k')?.status).toBe('applied');
+    } finally {
+      setReporter(null);
+    }
+  });
+
+  it('una atascada guardada por una versión anterior (sin reintento solo) sigue esperando a «Reintentar»', async () => {
+    const handler = jest.fn().mockResolvedValue({ ok: true });
+    await writeDrawer('p1', 'outbox', [
+      {
+        key: 'vieja',
+        kind: 'roll',
+        payload: {},
+        clientId: 'v1',
+        meta: {},
+        status: 'stuck',
+        attempts: MAX_ATTEMPTS,
+        error: { code: 'crm_unavailable', message: 'x', auto: false },
+        createdAt: 1,
+        updatedAt: 1,
+        nextAttemptAt: Number.MAX_SAFE_INTEGER,
+      },
+    ]);
+    const { box } = setup(handler);
+    await box.load();
+    await box.wake();
+    expect(handler).not.toHaveBeenCalled();
+    await box.retry('vieja');
+    expect(box.get('vieja')?.status).toBe('applied');
   });
 
   it('«queued»: la tiene el servidor; no es un fallo, no cuenta como «solo en el móvil» y se pregunta mandando lo mismo hasta el resultado', async () => {
