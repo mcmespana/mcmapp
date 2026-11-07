@@ -134,6 +134,9 @@ function ScreenHeroInner({
             titleStyle,
           ]}
           numberOfLines={2}
+          // Título de 34 pt: sin techo, con la letra del sistema al ×2 se iba
+          // a 68 pt y partía las palabras. ×1.5 sigue creciendo de sobra.
+          maxFontSizeMultiplier={1.5}
         >
           {title}
         </Text>

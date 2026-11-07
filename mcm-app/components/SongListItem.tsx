@@ -23,6 +23,7 @@ import { PressableFeedback } from 'heroui-native';
 import { h } from '@/utils/haptics';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useLargeText from '@/hooks/useLargeText';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
@@ -95,6 +96,9 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     const { notation } = settings;
     const scheme = useColorScheme();
     const isDark = scheme === 'dark';
+    // Letra del sistema grande: el título cabía en ~10 caracteres a una
+    // línea; pasa a poder ocupar varias.
+    const large = useLargeText();
     // Estilos de módulo, uno por tema: antes cada fila hacía su propio
     // `StyleSheet.create` de ~45 estilos al montarse.
     const styles = isDark ? stylesDark : stylesLight;
@@ -258,7 +262,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
               <View style={styles.songInfoContainer}>
                 <Text
                   style={styles.songTitle}
-                  numberOfLines={1}
+                  numberOfLines={large ? 3 : 1}
                   ellipsizeMode="tail"
                 >
                   {cleanTitle}

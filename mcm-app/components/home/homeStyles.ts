@@ -192,6 +192,14 @@ export const styles = StyleSheet.create({
     gap: 7,
     width: 70,
   } as ViewStyle,
+  // Letra del sistema grande: en 70 px las etiquetas se partían a media
+  // palabra («Canto/ral»). Pasan a 3 por fila, en varias filas.
+  quickGridLarge: {
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    rowGap: spacing.md,
+  } as ViewStyle,
+  quickItemLarge: { width: '33.33%', paddingHorizontal: 2 } as ViewStyle,
   quickIconCircle: {
     width: 56,
     height: 56,
@@ -329,6 +337,10 @@ export const styles = StyleSheet.create({
     flexShrink: 0,
   } as ViewStyle,
   evalCtaTextWrap: { flex: 1 } as ViewStyle,
+  evalCtaLarge: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  } as ViewStyle,
   evalCtaTitle: {
     fontSize: 15,
     fontWeight: '800',

@@ -198,7 +198,9 @@ export function HabitTile({
           styles.tileLabel,
           { color: done ? 'rgba(255,255,255,0.94)' : W.textSec },
         ]}
-        numberOfLines={1}
+        // Dos líneas: con la letra del sistema grande a una sola salía
+        // «Evangel…». Con letra normal cabe en una y no cambia nada.
+        numberOfLines={2}
       >
         {habit.label}
       </Text>

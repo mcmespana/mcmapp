@@ -165,6 +165,10 @@ export default function CardGatewaySheet({
         ) : real ? (
           <WebView
             source={{ uri: real.launchUrl }}
+            // Pasarela del banco: formulario de maqueta fija que, con la letra
+            // del sistema al 200 % en Android, se descolocaba. iOS ya la
+            // pintaba al 100 %.
+            textZoom={100}
             incognito
             sharedCookiesEnabled={false}
             setSupportMultipleWindows={false}
