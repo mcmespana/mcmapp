@@ -4,9 +4,10 @@ Funciones programadas que mantienen Firebase Realtime Database limpio.
 
 ## Funciones
 
-| Nombre               | Trigger                       | Qué hace                                                                             |
-| -------------------- | ----------------------------- | ------------------------------------------------------------------------------------ |
-| `purgeExpiredShares` | Schedule (24h, Europe/Madrid) | Borra entradas de `/playlistShares` y `/choirSessions` con `expiresAt` en el pasado. |
+| Nombre               | Trigger                       | Qué hace                                                                                                              |
+| -------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `purgeExpiredShares` | Schedule (24h, Europe/Madrid) | Borra entradas de `/playlistShares` y `/choirSessions` con `expiresAt` en el pasado.                                  |
+| `cacheCalendarIcs`   | Schedule (2h, Europe/Madrid)  | Descarga y parsea los ICS de `/calendars` y los deja en `/calendarEvents`. Ver `docs/funcionalidades/CALENDARIOS.md`. |
 
 ## Requisitos
 

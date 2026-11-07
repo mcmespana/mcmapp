@@ -18,21 +18,25 @@
  * (pista clara sobre tarjeta blanca / estilos Tailwind sin resolver).
  */
 import { radii } from '@/constants/uiStyles';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   Platform,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
+import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
+import { KeyPillColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 export interface PdfExportConfig {
   playlistName: string;
@@ -41,12 +45,18 @@ export interface PdfExportConfig {
   pageBreakPerSong: boolean;
   showChords: boolean;
   lyricsFontPt: number;
+  /** Estribillos repetidos plegados en una línea. */
+  compact: boolean;
+  /** Dos columnas por canción. */
+  twoColumns: boolean;
 }
 
 interface Props {
   visible: boolean;
   initialName: string;
   songCount: number;
+  /** Valor inicial de «estribillos repetidos en una línea» (la vista de la app). */
+  defaultCompact?: boolean;
   onClose: () => void;
   onSubmit: (cfg: PdfExportConfig) => Promise<void> | void;
 }
@@ -96,7 +106,7 @@ const toggleStyles = StyleSheet.create({
   track: {
     width: 48,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     padding: 2,
     justifyContent: 'center',
   },
@@ -122,6 +132,7 @@ const ExportPdfModal: React.FC<Props> = ({
   visible,
   initialName,
   songCount,
+  defaultCompact = false,
   onClose,
   onSubmit,
 }) => {
@@ -134,15 +145,23 @@ const ExportPdfModal: React.FC<Props> = ({
   const [pageBreakPerSong, setPageBreakPerSong] = useState(false);
   const [showChords, setShowChords] = useState(true);
   const [lyricsFontPt, setLyricsFontPt] = useState(13);
+  const [compact, setCompact] = useState(defaultCompact);
+  const [twoColumns, setTwoColumns] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
+  // Al ABRIR se recupera el nombre de la playlist y se refresca la fecha de
+  // impresión. Se ajusta durante el render (el patrón que documenta React para
+  // "cambiar estado cuando cambia una prop"), no con un efecto: así el diálogo
+  // no llega a pintarse con el nombre de la exportación anterior.
+  const [lastOpen, setLastOpen] = useState({ visible, initialName });
+  if (lastOpen.visible !== visible || lastOpen.initialName !== initialName) {
+    setLastOpen({ visible, initialName });
     if (visible) {
       setName(initialName);
       setPrintedDate(todayPrintedDate());
       setSubmitting(false);
     }
-  }, [visible, initialName]);
+  }
 
   const handleSubmit = async () => {
     if (!name.trim() || submitting) return;
@@ -154,6 +173,8 @@ const ExportPdfModal: React.FC<Props> = ({
         pageBreakPerSong,
         showChords,
         lyricsFontPt,
+        compact,
+        twoColumns,
       });
     } finally {
       setSubmitting(false);
@@ -168,129 +189,180 @@ const ExportPdfModal: React.FC<Props> = ({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.backdrop}>
+        {/* Android (edge-to-edge): el Modal no se redimensiona con el teclado,
+            así que la tarjeta sube con el relleno del KeyboardAvoidingView. */}
+        <KeyboardAvoidingView
+          style={styles.backdrop}
+          behavior={Platform.OS === 'web' ? undefined : 'padding'}
+        >
           <TouchableWithoutFeedback>
             <View style={styles.card}>
-              <View style={styles.titleRow}>
-                <MaterialIcons
-                  name="picture-as-pdf"
-                  size={22}
-                  color={isDark ? '#FF8A80' : '#C62828'}
-                />
-                <Text style={styles.title}>Exportar a PDF</Text>
-              </View>
-              <Text style={styles.subtitle}>
-                {songCount} {songCount === 1 ? 'canción' : 'canciones'}
-                {'  ·  '}Letra y acordes con un formato fantástico
-              </Text>
-
-              <Text style={styles.label}>Título del PDF</Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="Mi playlist"
-                placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
-                style={styles.input}
-                selectTextOnFocus
-                returnKeyType="done"
-              />
-
-              <Text style={styles.label}>Fecha en la portada</Text>
-              <TextInput
-                value={printedDate}
-                onChangeText={setPrintedDate}
-                placeholder="Déjalo vacío para no imprimir fecha"
-                placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
-                style={styles.input}
-                selectTextOnFocus
-                returnKeyType="done"
-              />
-
-              <View style={styles.row}>
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>Una canción por página</Text>
-                  <Text style={styles.rowDesc}>
-                    Si lo desactivas, el PDF ocupará menos páginas pero quizá se
-                    parte alguna canción
-                  </Text>
+              {/* Con todas las opciones no cabe en un móvil pequeño. */}
+              <ScrollView
+                bounces={false}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.titleRow}>
+                  <MaterialIcons
+                    name="picture-as-pdf"
+                    size={22}
+                    color={isDark ? '#FF8A80' : '#C62828'}
+                  />
+                  <Text style={styles.title}>Exportar a PDF</Text>
                 </View>
-                <ToggleSwitch
-                  value={pageBreakPerSong}
-                  onToggle={setPageBreakPerSong}
-                  isDark={isDark}
-                  accessibilityLabel="Una canción por página"
-                />
-              </View>
+                <Text style={styles.subtitle}>
+                  {songCount} {songCount === 1 ? 'canción' : 'canciones'}
+                  {'  ·  '}Letra y acordes, listo para imprimir
+                </Text>
 
-              <View style={styles.row}>
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>Mostrar acordes</Text>
-                  <Text style={styles.rowDesc}>
-                    Desactívalo para ver sólo la letra, sin acordes
-                  </Text>
+                <Text style={styles.label}>Título del PDF</Text>
+                <AppTextField
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Mi playlist"
+                  style={styles.input}
+                  selectTextOnFocus
+                  returnKeyType="done"
+                  accentColor={isDark ? '#FF8A80' : '#C62828'}
+                  accentWhenFilled
+                />
+
+                <Text style={styles.label}>Fecha en la portada</Text>
+                <AppTextField
+                  value={printedDate}
+                  onChangeText={setPrintedDate}
+                  placeholder="Déjalo vacío para no imprimir fecha"
+                  style={styles.input}
+                  selectTextOnFocus
+                  returnKeyType="done"
+                  accentColor={isDark ? '#FF8A80' : '#C62828'}
+                  accentWhenFilled
+                />
+
+                <View style={styles.row}>
+                  <View style={styles.rowText}>
+                    <Text style={styles.rowTitle}>Una canción por página</Text>
+                    <Text style={styles.rowDesc}>
+                      Si lo desactivas, van seguidas y ocupan menos (nunca se
+                      parte una estrofa ni un estribillo)
+                    </Text>
+                  </View>
+                  <ToggleSwitch
+                    value={pageBreakPerSong}
+                    onToggle={setPageBreakPerSong}
+                    isDark={isDark}
+                    accessibilityLabel="Una canción por página"
+                  />
                 </View>
-                <ToggleSwitch
-                  value={showChords}
-                  onToggle={setShowChords}
-                  isDark={isDark}
-                  accessibilityLabel="Mostrar acordes"
-                />
-              </View>
 
-              <Text style={[styles.label, { marginTop: 6 }]}>
-                Tamaño de letra
-              </Text>
-              <View style={styles.fontRow}>
-                {FONT_SIZES.map((s) => {
-                  const active = s === lyricsFontPt;
-                  return (
-                    <TouchableOpacity
-                      key={s}
-                      onPress={() => setLyricsFontPt(s)}
-                      style={[styles.fontChip, active && styles.fontChipActive]}
-                    >
-                      <Text
+                <View style={styles.row}>
+                  <View style={styles.rowText}>
+                    <Text style={styles.rowTitle}>Mostrar acordes</Text>
+                    <Text style={styles.rowDesc}>
+                      Desactívalo para ver sólo la letra, sin acordes
+                    </Text>
+                  </View>
+                  <ToggleSwitch
+                    value={showChords}
+                    onToggle={setShowChords}
+                    isDark={isDark}
+                    accessibilityLabel="Mostrar acordes"
+                  />
+                </View>
+
+                <View style={styles.row}>
+                  <View style={styles.rowText}>
+                    <Text style={styles.rowTitle}>
+                      Estribillos repetidos en una línea
+                    </Text>
+                    <Text style={styles.rowDesc}>
+                      Como la vista compacta: el estribillo entero la primera
+                      vez y luego solo «Estribillo» con su comienzo
+                    </Text>
+                  </View>
+                  <ToggleSwitch
+                    value={compact}
+                    onToggle={setCompact}
+                    isDark={isDark}
+                    accessibilityLabel="Estribillos repetidos en una línea"
+                  />
+                </View>
+
+                <View style={styles.row}>
+                  <View style={styles.rowText}>
+                    <Text style={styles.rowTitle}>A dos columnas</Text>
+                    <Text style={styles.rowDesc}>
+                      Casi todas caben en una página; las líneas largas se
+                      parten
+                    </Text>
+                  </View>
+                  <ToggleSwitch
+                    value={twoColumns}
+                    onToggle={setTwoColumns}
+                    isDark={isDark}
+                    accessibilityLabel="A dos columnas"
+                  />
+                </View>
+
+                <Text style={[styles.label, { marginTop: 6 }]}>
+                  Tamaño de letra
+                </Text>
+                <View style={styles.fontRow}>
+                  {FONT_SIZES.map((s) => {
+                    const active = s === lyricsFontPt;
+                    return (
+                      <TouchableOpacity
+                        key={s}
+                        onPress={() => setLyricsFontPt(s)}
                         style={[
-                          styles.fontChipText,
-                          active && styles.fontChipTextActive,
+                          styles.fontChip,
+                          active && styles.fontChipActive,
                         ]}
                       >
-                        {s}pt
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                        <Text
+                          style={[
+                            styles.fontChipText,
+                            active && styles.fontChipTextActive,
+                          ]}
+                        >
+                          {s}pt
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
 
-              <View style={styles.buttons}>
-                <TouchableOpacity
-                  onPress={onClose}
-                  disabled={submitting}
-                  style={[styles.btn, styles.btnSecondary]}
-                >
-                  <Text style={styles.btnSecondaryText}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleSubmit}
-                  disabled={!name.trim() || submitting}
-                  style={[
-                    styles.btn,
-                    styles.btnPrimary,
-                    (!name.trim() || submitting) && styles.btnDisabled,
-                  ]}
-                >
-                  {submitting ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.btnPrimaryText}>
-                      {Platform.OS === 'web' ? 'Abrir PDF' : 'Generar PDF'}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
+                <View style={styles.buttons}>
+                  <TouchableOpacity
+                    onPress={onClose}
+                    disabled={submitting}
+                    style={[styles.btn, styles.btnSecondary]}
+                  >
+                    <Text style={styles.btnSecondaryText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleSubmit}
+                    disabled={!name.trim() || submitting}
+                    style={[
+                      styles.btn,
+                      styles.btnPrimary,
+                      (!name.trim() || submitting) && styles.btnDisabled,
+                    ]}
+                  >
+                    {submitting ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.btnPrimaryText}>
+                        {Platform.OS === 'web' ? 'Abrir PDF' : 'Generar PDF'}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
             </View>
           </TouchableWithoutFeedback>
-        </View>
+        </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </Modal>
   );
@@ -308,8 +380,9 @@ const createStyles = (isDark: boolean) =>
     card: {
       width: '100%',
       maxWidth: 440,
+      maxHeight: '92%',
       backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-      borderRadius: 18,
+      borderRadius: radii.xl,
       padding: 20,
       ...Platform.select({
         web: { boxShadow: '0 10px 30px rgba(0,0,0,0.2)' },
@@ -328,18 +401,18 @@ const createStyles = (isDark: boolean) =>
       gap: 8,
     },
     title: {
-      fontSize: 18,
+      ...typography.h3,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).text,
     },
     subtitle: {
-      fontSize: 12,
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      ...typography.footnote,
+      color: themeColors(isDark).textSecondary,
       marginTop: 4,
       marginBottom: 14,
     },
     label: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
@@ -348,14 +421,6 @@ const createStyles = (isDark: boolean) =>
       marginTop: 4,
     },
     input: {
-      borderWidth: 1,
-      borderColor: isDark ? '#3A3A3C' : '#D1D1D6',
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-      fontSize: 15,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
       marginBottom: 14,
     },
     row: {
@@ -364,17 +429,17 @@ const createStyles = (isDark: boolean) =>
       gap: 12,
       paddingVertical: 10,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderTopColor: themeColors(isDark).separator,
     },
     rowText: { flex: 1 },
     rowTitle: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '600',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).text,
     },
     rowDesc: {
       fontSize: 11.5,
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
     fontRow: {
@@ -385,19 +450,19 @@ const createStyles = (isDark: boolean) =>
     fontChip: {
       paddingVertical: 8,
       paddingHorizontal: 12,
-      borderRadius: 10,
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      borderRadius: radii.md,
+      backgroundColor: themeColors(isDark).background,
       borderWidth: 1,
       borderColor: 'transparent',
     },
     fontChipActive: {
-      backgroundColor: isDark ? '#1A2744' : '#E8EEFF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : '#E8EEFF',
       borderColor: '#0055A4',
     },
     fontChipText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
     },
     fontChipTextActive: {
       color: isDark ? '#7AB3FF' : '#0055A4',
@@ -421,11 +486,11 @@ const createStyles = (isDark: boolean) =>
       fontWeight: '700',
     },
     btnSecondary: {
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
     },
     btnSecondaryText: {
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
-      fontSize: 15,
+      color: themeColors(isDark).text,
+      ...typography.button,
       fontWeight: '600',
     },
     btnDisabled: { opacity: 0.5 },

@@ -1,4 +1,5 @@
 import React from 'react';
+import { radii } from '@/constants/uiStyles';
 import {
   Dimensions,
   Linking,
@@ -10,15 +11,21 @@ import {
   View,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useToast } from '@/contexts/AppToastContext';
 import { h } from '@/utils/haptics';
 import BottomSheet from '@/components/BottomSheet';
-import brand from '@/constants/colors';
+import brand, { themeColors } from '@/constants/colors';
 import { extractDriveFileId, toDrivePreviewUrl } from '@/utils/googleDrive';
 import type { MediaLink, SongMedia } from '@/types/songMedia';
+import { songExtraLinks } from '@/types/songMedia';
+import TagChip from '@/components/song-tags/TagChip';
+import { useHiddenTags } from '@/hooks/useHiddenTags';
+import type { ResolvedTag } from '@/utils/songTags';
 import type { FloatingMediaSource } from '@/components/song-media/FloatingMediaPlayer';
+import typography from '@/constants/typography';
+import type { SongLinkSource } from '@/components/song-media/SongLinkViewer';
 
 interface SongMediaSheetProps {
   visible: boolean;
@@ -28,9 +35,31 @@ interface SongMediaSheetProps {
   songTitle?: string;
   /** Abre el reproductor flotante con la fuente indicada (vídeo o audio). */
   onPlayMedia: (source: FloatingMediaSource) => void;
+  /**
+   * Abre un enlace a pantalla completa dentro de la app (partitura de Drive u
+   * otra web). Como con `onPlayMedia`, solo se apunta: el visor nace cuando la
+   * hoja ya está desmontada, porque en iOS esta hoja es un Modal de verdad y
+   * cualquier cosa presentada debajo nace tapada.
+   */
+  onOpenLink?: (source: SongLinkSource) => void;
+  /**
+   * Se llama cuando la hoja ya está DESMONTADA del todo (no solo cerrándose).
+   * Es el gancho para mostrar el reproductor: en iOS la hoja es un `Modal` de
+   * verdad, presentado en su propia ventana, así que cualquier cosa que aparezca
+   * mientras sigue montado nace tapada.
+   */
+  onCloseComplete?: () => void;
+  /** Etiquetas de la canción, ya resueltas contra el catálogo. */
+  tags?: ResolvedTag[];
+  /**
+   * Navegar a la pantalla de una etiqueta. Como en iOS la hoja es un Modal de
+   * verdad, la navegación se difiere a `onCloseComplete`: aquí solo se apunta.
+   */
+  onTagPress?: (tag: ResolvedTag) => void;
 }
 
 const YT_RED = '#FF3B30';
+const SPOTIFY_GREEN = '#1DB954';
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 /** ¿El texto parece una URL / dominio que tenga sentido abrir en el navegador? */
@@ -46,17 +75,51 @@ function toHref(value: string): string {
   return /^https?:\/\//i.test(v) ? v : `https://${v}`;
 }
 
+/** ¿Es un enlace de Spotify (web o URI de la app)? */
+function isSpotifyUrl(value: string): boolean {
+  return /^spotify:|(?:^|\/\/|\.)(?:open\.)?spotify\.com\//i.test(value.trim());
+}
+
+/** Icono, color y texto de cada tipo de enlace de la sección «Enlaces». */
+const LINK_KIND_META: Record<
+  'spotify' | 'drive' | 'otro',
+  { icon: keyof typeof MaterialIcons.glyphMap; meta: string; tint: string }
+> = {
+  spotify: {
+    icon: 'library-music',
+    meta: 'Spotify · abre la app',
+    tint: SPOTIFY_GREEN,
+  },
+  drive: {
+    icon: 'description',
+    meta: 'Partitura · pantalla completa',
+    tint: '',
+  },
+  otro: { icon: 'link', meta: 'Enlace · pantalla completa', tint: '' },
+};
+
 export default function SongMediaSheet({
   visible,
   onClose,
   media,
   songTitle,
   onPlayMedia,
+  onOpenLink,
+  onCloseComplete,
+  tags: allTags = [],
+  onTagPress,
 }: SongMediaSheetProps) {
+  // Las etiquetas ocultas por la persona tampoco salen en la ficha.
+  const { hiddenSlugs } = useHiddenTags();
+  const tags = allTags.filter((t) => !hiddenSlugs.has(t.slug));
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const { toast } = useToast();
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
+  const handleTagPress = React.useCallback(
+    (tag: ResolvedTag) => onTagPress?.(tag),
+    [onTagPress],
+  );
 
   if (!media) return null;
 
@@ -64,6 +127,7 @@ export default function SongMediaSheet({
     media.videoEmbed || (media.youtubeLinks && media.youtubeLinks.length > 0),
   );
   const hasAudios = Boolean(media.audioLinks && media.audioLinks.length > 0);
+  const extraLinks = songExtraLinks(media);
   const fichaChips: { label: string; value: string }[] = [
     media.rhythm ? { label: 'Ritmo', value: media.rhythm } : null,
     media.album ? { label: 'Álbum', value: media.album } : null,
@@ -71,16 +135,22 @@ export default function SongMediaSheet({
       ? { label: 'T. litúrgico', value: media.liturgicalTime }
       : null,
   ].filter((x): x is { label: string; value: string } => x !== null);
-  const hasFicha = Boolean(fichaChips.length > 0 || media.info || media.source);
+  const hasFicha = Boolean(
+    fichaChips.length > 0 || media.info || media.source || tags.length > 0,
+  );
 
   const openExternal = async (url: string) => {
     h.tap();
-    // Los enlaces de Drive van por Linking (no por el navegador in-app):
-    // así el universal/app link lo captura la app de Google Drive si está
-    // instalada. WebBrowser abriría un Safari/Chrome embebido y se la
-    // saltaría siempre.
-    if (extractDriveFileId(url)) {
-      toast.show({ label: 'Abriendo en Google Drive…' });
+    // Los enlaces de Drive y de Spotify van por Linking (no por el navegador
+    // in-app): así el universal/app link lo captura su app si está instalada.
+    // WebBrowser abriría un Safari/Chrome embebido y se la saltaría siempre.
+    const ownApp = extractDriveFileId(url)
+      ? 'Google Drive'
+      : isSpotifyUrl(url)
+        ? 'Spotify'
+        : null;
+    if (ownApp) {
+      toast.show({ label: `Abriendo en ${ownApp}…` });
       try {
         await Linking.openURL(url);
       } catch {
@@ -194,8 +264,66 @@ export default function SongMediaSheet({
     );
   };
 
+  // Spotify se abre FUERA (no hay embed); Drive y «otros» se ven a pantalla
+  // completa dentro de la app. Ver `songExtraLinks` en types/songMedia.ts.
+  const renderLinkRow = (
+    entry: {
+      kind: 'spotify' | 'drive' | 'otro';
+      link: MediaLink;
+      external: boolean;
+    },
+    index: number,
+  ) => {
+    const meta = LINK_KIND_META[entry.kind];
+    return (
+      <TouchableOpacity
+        key={`link-${entry.kind}-${index}`}
+        style={styles.mRow}
+        activeOpacity={0.7}
+        onPress={() => {
+          if (entry.external || !onOpenLink) {
+            void openExternal(entry.link.url);
+            return;
+          }
+          h.tap();
+          onOpenLink({
+            kind: entry.kind === 'drive' ? 'drive' : 'otro',
+            url: entry.link.url,
+            label: entry.link.label || defaultLinkLabel(entry.kind),
+          });
+        }}
+      >
+        <View style={[styles.mIco, styles.mIcoDrive]}>
+          <MaterialIcons
+            name={meta.icon}
+            size={20}
+            color={meta.tint || driveTint(isDark)}
+          />
+        </View>
+        <View style={styles.mMain}>
+          <Text style={styles.mTitle} numberOfLines={1}>
+            {entry.link.label || defaultLinkLabel(entry.kind)}
+          </Text>
+          <Text style={styles.mMeta}>{meta.meta}</Text>
+        </View>
+        <View style={styles.mGo}>
+          <MaterialIcons
+            name={entry.external ? 'open-in-new' : 'fullscreen'}
+            size={entry.external ? 17 : 20}
+            color={entry.external ? '#8E8E93' : brand.primary}
+          />
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
-    <BottomSheet visible={visible} onClose={onClose} title="Multimedia y ficha">
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      onCloseComplete={onCloseComplete}
+      title="Multimedia y ficha"
+    >
       <ScrollView
         style={{ maxHeight: SCREEN_HEIGHT * 0.62 }}
         showsVerticalScrollIndicator={false}
@@ -208,7 +336,7 @@ export default function SongMediaSheet({
               <MaterialIcons
                 name="smart-display"
                 size={15}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.secHeadText}>Vídeos</Text>
             </View>
@@ -232,12 +360,28 @@ export default function SongMediaSheet({
               <MaterialIcons
                 name="headphones"
                 size={15}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.secHeadText}>Audios</Text>
               <Text style={styles.secHint}>reproductor flotante</Text>
             </View>
             {media.audioLinks?.map(renderAudioRow)}
+          </View>
+        )}
+
+        {/* ── ENLACES (Spotify · partituras · otras webs) ── */}
+        {extraLinks.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.secHead}>
+              <MaterialIcons name="link" size={15} color="#8E8E93" />
+              <Text style={styles.secHeadText}>Enlaces</Text>
+              <Text style={styles.secHint}>
+                {extraLinks.every((e) => e.external)
+                  ? 'salen de la app'
+                  : 'pantalla completa'}
+              </Text>
+            </View>
+            {extraLinks.map(renderLinkRow)}
           </View>
         )}
 
@@ -248,7 +392,7 @@ export default function SongMediaSheet({
               <MaterialIcons
                 name="info-outline"
                 size={15}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.secHeadText}>Ficha</Text>
             </View>
@@ -260,6 +404,25 @@ export default function SongMediaSheet({
                     <Text style={styles.fk}>{chip.label.toUpperCase()}</Text>
                     <Text style={styles.fv}>{chip.value}</Text>
                   </View>
+                ))}
+              </View>
+            )}
+
+            {/* Etiquetas de la canción: se abre una canción, se ve que es
+                "viejuna", pica la curiosidad y se ven las otras 33. Este es el
+                bucle que sostiene todo el sistema de etiquetas. */}
+            {tags.length > 0 && (
+              <View style={styles.tagRow}>
+                {tags.map((tag) => (
+                  <TagChip
+                    key={tag.slug}
+                    tag={tag}
+                    variant="outline"
+                    isDark={isDark}
+                    hideCount
+                    onPress={onTagPress ? handleTagPress : undefined}
+                    accessibilityHint="Ver las canciones de esta etiqueta"
+                  />
                 ))}
               </View>
             )}
@@ -282,7 +445,7 @@ export default function SongMediaSheet({
                   <MaterialIcons
                     name="open-in-new"
                     size={15}
-                    color={isDark ? '#8E8E93' : '#8E8E93'}
+                    color={themeColors(isDark).textMuted}
                   />
                 </TouchableOpacity>
               ) : (
@@ -304,6 +467,13 @@ function driveTint(isDark: boolean): string {
   return isDark ? brand.secondary : brand.primary;
 }
 
+/** Texto del botón cuando quien puso el enlace no le dio etiqueta. */
+function defaultLinkLabel(kind: 'spotify' | 'drive' | 'otro'): string {
+  if (kind === 'spotify') return 'Escuchar en Spotify';
+  if (kind === 'drive') return 'Partitura';
+  return 'Ver enlace';
+}
+
 const createStyles = (isDark: boolean) =>
   StyleSheet.create({
     scrollContent: {
@@ -321,18 +491,18 @@ const createStyles = (isDark: boolean) =>
       paddingHorizontal: 4,
     },
     secHeadText: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '800',
       letterSpacing: 0.9,
       textTransform: 'uppercase',
-      color: '#8E8E93',
+      color: themeColors(isDark).textSecondary,
     },
     secHint: {
       marginLeft: 'auto',
-      fontSize: 10,
+      ...typography.overline,
       fontWeight: '600',
       fontStyle: 'italic',
-      color: isDark ? '#7C7C80' : '#A8A8AD',
+      color: themeColors(isDark).textMuted,
     },
     // ── media rows ──
     mRow: {
@@ -342,13 +512,13 @@ const createStyles = (isDark: boolean) =>
       paddingVertical: 11,
       paddingHorizontal: 12,
       backgroundColor: isDark ? '#2C2C2E' : '#F7F7F9',
-      borderRadius: 13,
+      borderRadius: radii.md,
       marginBottom: 8,
     },
     mIco: {
       width: 34,
       height: 34,
-      borderRadius: 9,
+      borderRadius: radii.sm,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -372,21 +542,21 @@ const createStyles = (isDark: boolean) =>
       minWidth: 0,
     },
     mTitle: {
-      fontSize: 14.5,
+      ...typography.subhead,
       fontWeight: '600',
       letterSpacing: -0.2,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).text,
     },
     mMeta: {
-      fontSize: 11.5,
-      color: '#8E8E93',
+      ...typography.micro,
+      color: themeColors(isDark).textSecondary,
       marginTop: 1,
     },
     floatTag: {
       backgroundColor: 'rgba(244,193,30,0.28)',
       paddingVertical: 3,
       paddingHorizontal: 7,
-      borderRadius: 7,
+      borderRadius: radii.sm,
     },
     floatTagText: {
       fontSize: 9.5,
@@ -397,12 +567,19 @@ const createStyles = (isDark: boolean) =>
     mGo: {
       width: 26,
       height: 26,
-      borderRadius: 13,
+      borderRadius: radii.pillFull,
       alignItems: 'center',
       justifyContent: 'center',
     },
     mGoExt: {},
     // ── ficha ──
+    tagRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginHorizontal: 4,
+      marginBottom: 12,
+    },
     fichaGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -412,26 +589,28 @@ const createStyles = (isDark: boolean) =>
     },
     fichaChip: {
       backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
-      borderRadius: 11,
+      borderRadius: radii.md,
       paddingVertical: 7,
       paddingHorizontal: 12,
       minWidth: 96,
     },
     fk: {
-      fontSize: 9.5,
+      ...typography.micro,
       fontWeight: '800',
       letterSpacing: 0.5,
-      color: '#8E8E93',
+      // Sobre la ficha gris: `textSecondary` llega a 4,5:1 en los dos modos
+      // (`#8E8E93` daba 3,3:1 en claro y 3,5:1 sobre la ficha oscura).
+      color: themeColors(isDark).textSecondary,
     },
     fv: {
-      fontSize: 13.5,
+      ...typography.caption,
       fontWeight: '600',
       letterSpacing: -0.2,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).text,
       marginTop: 2,
     },
     fichaComment: {
-      fontSize: 13.5,
+      ...typography.caption,
       lineHeight: 20,
       color: isDark ? '#D0D0D2' : '#48484A',
       marginHorizontal: 4,
@@ -441,9 +620,7 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: isDark
         ? 'rgba(149,210,242,0.10)'
         : 'rgba(149,210,242,0.14)',
-      borderRadius: 13,
-      borderLeftWidth: 3,
-      borderLeftColor: brand.secondary,
+      borderRadius: radii.md,
     },
     fichaSource: {
       flexDirection: 'row',
@@ -452,14 +629,14 @@ const createStyles = (isDark: boolean) =>
       marginHorizontal: 4,
       paddingVertical: 9,
       paddingHorizontal: 12,
-      borderRadius: 11,
+      borderRadius: radii.md,
       backgroundColor: isDark
         ? 'rgba(149,210,242,0.10)'
         : 'rgba(37,56,131,0.06)',
     },
     fichaSourceText: {
       flex: 1,
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
       color: isDark ? '#9FD3F5' : brand.primary,
     },

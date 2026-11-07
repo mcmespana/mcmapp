@@ -3,6 +3,10 @@ import { useState, useEffect } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  DAILY_READINGS_PREFIX,
+  pruneDailyReadingsCache,
+} from '@/utils/dailyReadingsCache';
 
 export interface DailyReadings {
   evangelio?: {
@@ -30,7 +34,14 @@ export interface DailyReadings {
   };
 }
 
-const CACHE_PREFIX = '@daily_readings_';
+const CACHE_PREFIX = DAILY_READINGS_PREFIX;
+
+// Poda la caché de lecturas UNA vez por proceso (no una vez por montaje del
+// hook — hay varias pantallas de Contigo que lo usan a la vez). Antes nada
+// la podaba nunca: cada día navegado sumaba una clave para siempre. Va sin
+// `await` (fire-and-forget, con catch dentro de `pruneDailyReadingsCache`)
+// para no retrasar el primer render de las lecturas del día.
+let prunedThisSession = false;
 
 export function useDailyReadings(dateStr: string) {
   const [readings, setReadings] = useState<DailyReadings | null>(null);
@@ -39,6 +50,11 @@ export function useDailyReadings(dateStr: string) {
 
   useEffect(() => {
     let isMounted = true;
+
+    if (!prunedThisSession) {
+      prunedThisSession = true;
+      pruneDailyReadingsCache().catch(() => {});
+    }
 
     async function load() {
       if (!dateStr) return;
@@ -69,8 +85,10 @@ export function useDailyReadings(dateStr: string) {
         }
 
         if (cached) {
-          if (isMounted) setReadings(foundInBookmarks || JSON.parse(cached));
-          setIsLoading(false); // We can show cached data while we might re-fetch
+          if (isMounted) {
+            setReadings(foundInBookmarks || JSON.parse(cached));
+            setIsLoading(false); // We can show cached data while we might re-fetch
+          }
         }
 
         // 2. Fetch from Firebase

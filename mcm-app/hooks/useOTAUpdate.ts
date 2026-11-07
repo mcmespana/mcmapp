@@ -21,18 +21,43 @@ export interface OTAUpdateState {
   /** Hubo un fallo al comprobar/descargar (no bloqueante para el usuario). */
   error: Error | null;
   /** Aplica el update: descarga si hace falta y reinicia la app. */
-  applyUpdate: () => Promise<void>;
+  applyUpdate: (options?: ApplyUpdateOptions) => Promise<void>;
+}
+
+export interface ApplyUpdateOptions {
+  /**
+   * Se pregunta justo antes de recargar (ya con el update descargado). Si
+   * devuelve `false` no se recarga: el update se queda listo (`isReady`) para
+   * aplicarse en otro momento. Lo usa «cerrar y hacer más tarde»: la descarga
+   * lenta sigue en segundo plano, pero no recarga la app por debajo de alguien
+   * que ya siguió con lo suyo.
+   */
+  shouldReload?: () => boolean;
 }
 
 const CHECK_DELAY_MS = 2500; // dar tiempo a que arranque la app antes de pedir red
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 min periodic check
 
-export default function useOTAUpdate(): OTAUpdateState {
+export interface OTAUpdateOptions {
+  /**
+   * Si es `false`, no se comprueba nada todavía. Lo usa `OTAProvider` para
+   * esperar a que `PreviewChannelProvider` haya reconciliado el canal: un
+   * tester en modo alpha debe pedir su update a `preview`, y si la
+   * comprobación se adelantara al override iría a `production`.
+   */
+  ready?: boolean;
+}
+
+export default function useOTAUpdate({
+  ready = true,
+}: OTAUpdateOptions = {}): OTAUpdateState {
   const [isReady, setIsReady] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const checkedRef = useRef(false);
-  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const appStateRef = useRef<AppStateStatus>(
+    (AppState.currentState ?? 'active') as AppStateStatus,
+  );
 
   const checkAndFetch = useCallback(async () => {
     // Updates.isEnabled es `false` en Expo Go y en dev clients sin canal OTA.
@@ -58,6 +83,8 @@ export default function useOTAUpdate(): OTAUpdateState {
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
+
     const timer = setTimeout(() => {
       checkAndFetch();
     }, CHECK_DELAY_MS);
@@ -85,23 +112,28 @@ export default function useOTAUpdate(): OTAUpdateState {
       clearInterval(poll);
       sub.remove();
     };
-  }, [checkAndFetch]);
+  }, [checkAndFetch, ready]);
 
-  const applyUpdate = useCallback(async () => {
-    try {
-      // Si por alguna razón aún no se descargó (p.ej. el usuario abrió el
-      // modal antes de que terminara el `fetchUpdateAsync`), lo forzamos.
-      if (!isReady) {
-        setIsDownloading(true);
-        await Updates.fetchUpdateAsync();
+  const applyUpdate = useCallback(
+    async ({ shouldReload }: ApplyUpdateOptions = {}) => {
+      try {
+        // Si por alguna razón aún no se descargó (p.ej. el usuario abrió el
+        // modal antes de que terminara el `fetchUpdateAsync`), lo forzamos.
+        if (!isReady) {
+          setIsDownloading(true);
+          const fetched = await Updates.fetchUpdateAsync();
+          setIsDownloading(false);
+          if (fetched?.isNew) setIsReady(true);
+        }
+        if (shouldReload && !shouldReload()) return;
+        await Updates.reloadAsync();
+      } catch (err) {
         setIsDownloading(false);
+        setError(err instanceof Error ? err : new Error(String(err)));
       }
-      await Updates.reloadAsync();
-    } catch (err) {
-      setIsDownloading(false);
-      setError(err instanceof Error ? err : new Error(String(err)));
-    }
-  }, [isReady]);
+    },
+    [isReady],
+  );
 
   return { isReady, isDownloading, error, applyUpdate };
 }

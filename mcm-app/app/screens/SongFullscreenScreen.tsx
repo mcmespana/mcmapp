@@ -5,27 +5,34 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Platform,
-  Animated,
-  Pressable,
-} from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  RouteProp,
-  useNavigation,
-  NavigationProp,
-} from '@react-navigation/native';
+import { useNavigation } from 'expo-router/react-navigation';
+import { router, useLocalSearchParams } from 'expo-router';
 import { WebView } from 'react-native-webview';
 import { BlurView } from 'expo-blur';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import * as Haptics from 'expo-haptics';
 import { PressableFeedback } from 'heroui-native';
-import { RootStackParamList } from '../(tabs)/cancionero';
+import { useRouteSong } from '@/hooks/useRouteSong';
+import { cantoralHref } from '@/utils/eventRoutes';
+import {
+  songRouteParams,
+  type SongFullscreenRouteParams,
+  type SongNavItem,
+  type SongSource,
+} from '@/utils/songNavList';
+import { useChoirSession } from '@/contexts/ChoirSessionContext';
+import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
+import { h } from '@/utils/haptics';
+import { resolveFullscreenSong } from '@/utils/fullscreenSong';
 import { useSettings } from '../../contexts/SettingsContext';
+import { trackEvent } from '@/utils/analytics';
 import { hasArrangements } from '../../utils/arrangements';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import { useColorScheme } from '../../hooks/useColorScheme';
@@ -36,11 +43,40 @@ import {
   AUTO_SCROLL_CONTROLLER_JS,
   useAutoScroller,
 } from '@/hooks/useAutoScroller';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
+import { useImmersiveChrome } from '@/hooks/useImmersiveChrome';
+import { useKeepAwakeWhileFocused } from '@/hooks/useKeepAwakeWhileFocused';
+import { useBrowserFullscreen } from '@/hooks/useBrowserFullscreen';
+import { makeKeydownForwarder } from '@/utils/songDisplayBridge';
+import spacing from '@/constants/spacing';
 
-type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
+/** La canción con la que se abre, ya resuelta (ver `hooks/useRouteSong.ts`). */
+interface FullscreenParams extends SongNavItem {
+  /** Tono y cejilla con los que se estaba viendo la canción. */
+  transpose?: number;
+  capoOverride?: number | null;
+  /** La lista por la que se navega (categoría, etiqueta o playlist). */
+  navigationList?: SongNavItem[];
+  currentIndex?: number;
+  source?: SongSource;
+  firebaseCategory?: string;
+}
 
 const isIOS = Platform.OS === 'ios';
 const isWeb = Platform.OS === 'web';
+/** Lado de los botones redondos de arriba (cerrar, pantalla completa). */
+const CLOSE_SIZE = 40;
+
+// Teclas del modo atril (lo que mandan los pedales Bluetooth): las mismas que
+// entiende la hoja (`songSheetLayout.ts`) cuando el foco está dentro.
+const PAGE_NEXT_KEYS = ['arrowright', 'arrowdown', 'pagedown', ' ', 'enter'];
+const PAGE_PREV_KEYS = ['arrowleft', 'arrowup', 'pageup'];
+
+type SheetWindow = Window & {
+  __SONG_LAYOUT__?: { page: (dir: number) => boolean };
+};
 
 const triggerHaptic = (style: Haptics.ImpactFeedbackStyle) => {
   if (Platform.OS === 'web') return;
@@ -67,7 +103,7 @@ function AutoScrollControls({
   bottom,
 }: AutoScrollControlsProps) {
   const [expanded, setExpanded] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useSharedValue(0);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelHideTimer = useCallback(() => {
@@ -88,13 +124,15 @@ function AutoScrollControls({
   }, [scheduleHide]);
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: expanded ? 1 : 0,
-      duration: expanded ? 180 : 240,
-      useNativeDriver: true,
-    }).start();
+    fadeAnim.set(
+      withTiming(expanded ? 1 : 0, {
+        duration: expanded ? 180 : 240,
+      }),
+    );
     if (!expanded) cancelHideTimer();
   }, [expanded, fadeAnim, cancelHideTimer]);
+
+  const panelStyle = useAnimatedStyle(() => ({ opacity: fadeAnim.get() }));
 
   useEffect(() => () => cancelHideTimer(), [cancelHideTimer]);
 
@@ -120,7 +158,7 @@ function AutoScrollControls({
     <View style={[styles.controlsCluster, { bottom }]} pointerEvents="box-none">
       {/* Selector de velocidad — pill horizontal, sólo visible al interactuar */}
       <Animated.View
-        style={[styles.speedPanel, { opacity: fadeAnim }]}
+        style={[styles.speedPanel, panelStyle]}
         pointerEvents={expanded ? 'auto' : 'none'}
       >
         <TranslucentBg isDark={isDark} style={styles.speedPanelBg} />
@@ -240,26 +278,190 @@ function TranslucentBg({ isDark, style }: { isDark: boolean; style?: object }) {
 
 // ─── Pantalla ────────────────────────────────────────────────────────────────
 
-export default function SongFullscreenScreen({
+/**
+ * Ruta `/cancionero/pantalla-completa`. Params de texto como los del detalle
+ * más `transpose` y `capoOverride`; la canción (con la letra viva) y la lista
+ * llegan por `utils/songNavList`. Si no se encuentra (una recarga en web con
+ * una canción que ya no está), se vuelve.
+ */
+export default function SongFullscreenScreen() {
+  const params = useLocalSearchParams<SongFullscreenRouteParams>();
+  const navigation = useNavigation();
+  const { song, list, index, firebaseCategory, loading } = useRouteSong(params);
+  const missing = !song && !loading;
+  useEffect(() => {
+    if (!missing) return;
+    if (navigation.canGoBack()) navigation.goBack();
+    else router.replace(cantoralHref('Categories') as never);
+  }, [missing, navigation]);
+  if (!song) return <View style={{ flex: 1, backgroundColor: '#000' }} />;
+  const capoOverride = Number(params.capoOverride);
+  return (
+    <SongFullscreenBody
+      route={{
+        params: {
+          ...song,
+          transpose: Number(params.transpose) || 0,
+          capoOverride:
+            params.capoOverride !== undefined && Number.isFinite(capoOverride)
+              ? capoOverride
+              : null,
+          navigationList: list ?? undefined,
+          currentIndex: index,
+          source: params.source,
+          firebaseCategory,
+        },
+      }}
+    />
+  );
+}
+
+function SongFullscreenBody({
   route,
 }: {
-  route: SongFullscreenRouteProp;
+  route: { params: FullscreenParams };
 }) {
-  const { author, key, capo, content, title } = route.params;
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  useSuppressCarismochito();
+  // Modo presentación: la pantalla no se apaga mientras se toca.
+  useKeepAwakeWhileFocused('song-fullscreen');
+  const params = route.params;
+  const navigation = useNavigation();
+  const choir = useChoirSession();
+  const { getSelectedSong } = useSelectedSongs();
+
+  // ── Qué canción se ve ─────────────────────────────────────────────────────
+  // Con lista (categoría, etiqueta o playlist) se pasa de una a otra sin
+  // salir; en el coro, quien escucha ve la que tiene el líder.
+  const list = params.navigationList;
+  const [index, setIndex] = useState<number | null>(
+    list && typeof params.currentIndex === 'number'
+      ? params.currentIndex
+      : null,
+  );
+  const remote = choir.mode === 'slave' ? choir.session?.current : null;
+  const selectedNow = getSelectedSong(
+    remote?.filename ??
+      (list && index !== null ? list[index].filename : params.filename),
+  );
+  const view = useMemo(
+    () =>
+      resolveFullscreenSong({
+        initial: params,
+        list,
+        index,
+        choirSong: remote,
+        choirOverrideTranspose: choir.overrideTranspose,
+        selected: selectedNow,
+      }),
+    [params, list, index, remote, choir.overrideTranspose, selectedNow],
+  );
+  const { song, following, transpose, capoOverride, capo } = view;
+  const { author, key, content } = song;
+  // En las listas el título lleva el número delante («18. Alegre…»).
+  const title = song.title?.replace(/^\d+\.\s*/, '');
+  const canNavigate = !following && !!list && index !== null && list.length > 1;
+
+  const go = useCallback(
+    (dir: number) => {
+      if (following || !list || index === null) return;
+      const next = index + dir;
+      if (next < 0 || next >= list.length) {
+        h.limit();
+        return;
+      }
+      h.navigate();
+      setIndex(next);
+    },
+    [following, list, index],
+  );
+
+  // Coro - LÍDER: la canción que pasa aquí la ven todos.
+  useEffect(() => {
+    if (choir.mode !== 'master' || index === null || !list) return;
+    if (index === params.currentIndex) return;
+    void choir.publishCurrent({
+      filename: song.filename,
+      transpose,
+      capoOverride,
+      screen: 'fullscreen',
+      title: song.title,
+      author: song.author,
+      songKey: song.key,
+      capo: song.capo,
+      content: song.content,
+    });
+    // Solo al cambiar de canción.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
+
+  // Al salir, el detalle queda en la canción a la que se haya llegado.
+  // Una sola vez: en web, salir de la pantalla completa del navegador y la
+  // tecla Esc pueden llegar juntos, y un segundo goBack sacaría del detalle.
+  const closedRef = useRef(false);
+  const close = useCallback(() => {
+    if (closedRef.current) return;
+    closedRef.current = true;
+    const moved = following
+      ? song.filename !== params.filename
+      : index !== null && index !== params.currentIndex;
+    if (moved) {
+      router.dismissTo(
+        cantoralHref(
+          'SongDetail',
+          songRouteParams({
+            filename: song.filename,
+            list: following || !list ? [song] : list,
+            currentIndex: following || !list ? 0 : (index ?? undefined),
+            source: params.source,
+            firebaseCategory: following
+              ? remote?.firebaseCategory
+              : params.firebaseCategory,
+          }),
+        ) as never,
+      );
+      return;
+    }
+    navigation.goBack();
+  }, [following, song, params, index, list, navigation, remote]);
   const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
 
-  // Web: F y Esc salen del modo presentación.
-  useKeyboardShortcut('f', () => navigation.goBack());
-  useKeyboardShortcut('escape', () => navigation.goBack(), {
+  // Web: Esc sale del modo presentación. F pone o quita la pantalla
+  // completa del navegador (en el detalle, F abre esta pantalla); con ella
+  // puesta, el Esc se lo queda el navegador y al salir se cierra igual.
+  const browserFs = useBrowserFullscreen(close);
+  useKeyboardShortcut('f', (e) => {
+    if ((e as { repeat?: boolean }).repeat) return;
+    if (browserFs.supported) browserFs.toggle();
+    else close();
+  });
+  useKeyboardShortcut('escape', close, {
     preventDefault: false,
   });
 
-  const { settings } = useSettings();
-  const { chordsVisible, fontSize, fontFamily, notation } = settings;
+  useEffect(() => {
+    trackEvent('modo_presentacion');
+  }, []);
+
+  const { settings, setSettings } = useSettings();
+  const {
+    chordsVisible,
+    fontSize,
+    fontFamily,
+    notation,
+    compactView,
+    verseNumbers,
+    chorusStyle,
+    chorusLabel,
+    airy,
+    pagedFullscreen,
+    songMap,
+  } = settings;
+  // Modo atril: páginas en vez de scroll (también en web: un portátil con
+  // pedal es un atril).
+  const paged = pagedFullscreen;
 
   // En presentación mostramos los arreglos siempre que la canción los tenga.
   const songHasArrangements = useMemo(
@@ -269,9 +471,16 @@ export default function SongFullscreenScreen({
 
   const { songHtml, styleState } = useSongProcessor({
     originalChordPro: content || null,
-    currentTranspose: 0,
+    currentTranspose: transpose,
     chordsVisible,
     arrangementsVisible: songHasArrangements,
+    compact: compactView,
+    verseNumbers,
+    chorusStyle,
+    chorusLabel,
+    airy,
+    paged,
+    songMap,
     currentFontSizeEm: fontSize * 1.6,
     currentFontFamily: fontFamily,
     title,
@@ -286,7 +495,12 @@ export default function SongFullscreenScreen({
   });
 
   const webViewRef = useRef<WebView | null>(null);
-  const webContainerRef = useRef<HTMLDivElement | null>(null);
+  // Web: la canción va en un iframe (como en el detalle) para que corra el
+  // script de la hoja (cortes, columnas, páginas). El auto-scroll mueve su
+  // documento.
+  const webContainerRef = useRef<HTMLElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [webDocKey, setWebDocKey] = useState(0);
 
   // Push live style updates (font size, theme, etc.) into the WebView/iframe
   // without rebuilding the HTML. Mirrors SongDisplay's bridge.
@@ -294,18 +508,8 @@ export default function SongFullscreenScreen({
     if (!styleState) return;
     const payload = JSON.stringify(styleState);
     if (isWeb) {
-      const container = webContainerRef.current;
-      // Direct DOM: apply the style on the rendered div since there's no iframe
-      // sandbox here. The bootstrap script inside songHtml already exposes the
-      // helper on window, but the contentful div lives in the parent document,
-      // so we apply CSS variables / classes directly.
-      if (!container) return;
       try {
-        const r = container.style as CSSStyleDeclaration;
-        r.setProperty('--song-font-size', `${styleState.fontSize}em`);
-        r.setProperty('--song-font-family', styleState.fontFamily);
-        r.setProperty('--song-pad-top', `${styleState.topPadding}px`);
-        r.setProperty('--song-pad-bottom', `${styleState.bottomPadding}px`);
+        iframeRef.current?.contentWindow?.postMessage(payload, '*');
       } catch {
         /* noop */
       }
@@ -316,29 +520,137 @@ export default function SongFullscreenScreen({
     webViewRef.current.injectJavaScript(js);
   }, [styleState]);
 
+  // Los controles se apagan solos y vuelven con cualquier toque o tecla.
+  const chrome = useImmersiveChrome();
+  const { poke } = chrome;
+  useEffect(() => {
+    if (!isWeb) return;
+    window.addEventListener('mousemove', poke);
+    window.addEventListener('mousedown', poke);
+    window.addEventListener('keydown', poke);
+    return () => {
+      window.removeEventListener('mousemove', poke);
+      window.removeEventListener('mousedown', poke);
+      window.removeEventListener('keydown', poke);
+    };
+  }, [poke]);
+
   const autoScroll = useAutoScroller({
     webViewRef,
-    webContainerRef,
+    webContainerRef:
+      webContainerRef as React.MutableRefObject<HTMLDivElement | null>,
+    webKey: webDocKey,
   });
 
-  // Atajos de teclado: espacio = play/pause, ↑/↓ = subir/bajar velocidad.
-  useKeyboardShortcut(' ', () => autoScroll.toggle());
-  useKeyboardShortcut('arrowup', () =>
-    autoScroll.setSpeedIndex(autoScroll.speedIndex + 1),
+  // Mensajes de la hoja: pasar de canción (fin de página, deslizar, flechas)
+  // y los del auto-scroll.
+  const handleMessage = useCallback(
+    (event: { nativeEvent: { data: string } }) => {
+      try {
+        const msg = JSON.parse(event.nativeEvent.data);
+        if (msg && msg.type === 'sheet-touch') {
+          poke();
+          return;
+        }
+        if (msg && msg.type === 'sheet-nav') {
+          poke();
+          go(msg.dir > 0 ? 1 : -1);
+          return;
+        }
+      } catch {
+        /* no es nuestro */
+      }
+      autoScroll.handleWebViewMessage(event);
+    },
+    [go, autoScroll, poke],
   );
-  useKeyboardShortcut('arrowdown', () =>
-    autoScroll.setSpeedIndex(autoScroll.speedIndex - 1),
+  useEffect(() => {
+    if (!isWeb) return;
+    const onWindowMessage = (ev: MessageEvent) => {
+      if (ev.source !== iframeRef.current?.contentWindow) return;
+      if (typeof ev.data === 'string')
+        handleMessage({ nativeEvent: { data: ev.data } });
+    };
+    window.addEventListener('message', onWindowMessage);
+    return () => window.removeEventListener('message', onWindowMessage);
+  }, [handleMessage]);
+  const handleIframeLoad = () => {
+    const frame = iframeRef.current;
+    const doc = frame?.contentDocument;
+    if (!frame || !doc) return;
+    webContainerRef.current = (doc.scrollingElement as HTMLElement) ?? null;
+    setWebDocKey((k) => k + 1);
+    try {
+      frame.contentWindow?.postMessage(JSON.stringify(styleState), '*');
+    } catch {
+      /* noop */
+    }
+    // Las teclas pulsadas con el foco en la hoja no suben a la ventana: se
+    // reenvían a los atajos de aquí (Esc, F, auto-scroll), con sus
+    // modificadores (⌘F es buscar, no salir). Lo que la hoja ya ha usado
+    // (pasar página en el atril) y las flechas laterales (con scroll, la
+    // hoja ya pide la canción con «sheet-nav») no, o se haría dos veces.
+    const forward = makeKeydownForwarder(window);
+    doc.addEventListener('keydown', (e) => {
+      if (e.defaultPrevented) return;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') return;
+      forward(e);
+    });
+    // Foco en la hoja al entrar: el pedal pasa página sin hacer clic antes.
+    frame.contentWindow?.focus();
+  };
+
+  // Al pasar a páginas, el scroll automático no pinta nada.
+  const { pause: pauseAutoScroll } = autoScroll;
+  useEffect(() => {
+    if (paged) pauseAutoScroll();
+  }, [paged, pauseAutoScroll]);
+  const togglePaged = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    setSettings({ pagedFullscreen: !pagedFullscreen });
+    // El foco vuelve a la hoja: el pedal sigue funcionando tras el botón.
+    if (isWeb) iframeRef.current?.contentWindow?.focus();
+  };
+
+  // Atajos de teclado (con el foco fuera de la hoja, o reenviados desde ella).
+  // Con scroll: espacio = play/pause, ↑/↓ = velocidad, ←/→ = canción.
+  const scrollKeys = { disabled: paged };
+  useKeyboardShortcut(' ', () => autoScroll.toggle(), scrollKeys);
+  useKeyboardShortcut(
+    'arrowup',
+    () => autoScroll.setSpeedIndex(autoScroll.speedIndex + 1),
+    scrollKeys,
   );
+  useKeyboardShortcut(
+    'arrowdown',
+    () => autoScroll.setSpeedIndex(autoScroll.speedIndex - 1),
+    scrollKeys,
+  );
+  useKeyboardShortcut('arrowright', () => go(1), scrollKeys);
+  useKeyboardShortcut('arrowleft', () => go(-1), scrollKeys);
+  // En el atril, el pedal pasa página; al acabar, de canción (como dentro).
+  const pageOrGo = (dir: number) => {
+    const sheet = iframeRef.current?.contentWindow as SheetWindow | null;
+    if (!sheet?.__SONG_LAYOUT__?.page(dir)) go(dir);
+  };
+  const pagedKeys = { disabled: !paged };
+  useKeyboardShortcut(PAGE_NEXT_KEYS, () => pageOrGo(1), pagedKeys);
+  useKeyboardShortcut(PAGE_PREV_KEYS, () => pageOrGo(-1), pagedKeys);
+
+  // Web: con los controles escondidos, también el cursor (sobre la hoja, que
+  // es otro documento, y sobre lo demás); vuelve al mover el ratón.
+  const hideCursor = isWeb && !chrome.shown;
+  useEffect(() => {
+    if (isWeb) setSheetCursor(iframeRef.current, hideCursor);
+  }, [hideCursor, webDocKey]);
 
   // Fade-in de entrada
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useSharedValue(0);
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
+    fadeAnim.set(withTiming(1, { duration: 400 }));
   }, [fadeAnim]);
+
+  const screenStyle = useAnimatedStyle(() => ({ opacity: fadeAnim.get() }));
 
   const closeTop = Math.max(insets.top, 12) + 8;
   const controlsBottom = Math.max(insets.bottom, 12) + 16;
@@ -347,21 +659,28 @@ export default function SongFullscreenScreen({
     <Animated.View
       style={[
         styles.container,
-        { backgroundColor: theme.background, opacity: fadeAnim },
+        { backgroundColor: theme.background },
+        hideCursor && webHiddenCursor,
+        screenStyle,
       ]}
     >
       {/* Contenido de la canción */}
       <View style={styles.contentWrapper}>
         {isWeb ? (
-          <div
-            ref={webContainerRef}
-            style={webContainerStyle as any}
-            dangerouslySetInnerHTML={{ __html: songHtml }}
+          <iframe
+            ref={iframeRef}
+            srcDoc={songHtml}
+            onLoad={handleIframeLoad}
+            title={title ? `Canción: ${title}` : 'Canción'}
+            style={webFrameStyle}
           />
         ) : (
           <WebView
             ref={webViewRef}
-            originWhitelist={['*']}
+            // Como en el detalle: el HTML va inline y no se navega a ningún
+            // sitio (el contenido viene de Firebase, ver docs/SEGURIDAD.md).
+            originWhitelist={['about:blank']}
+            onShouldStartLoadWithRequest={(req) => req.url === 'about:blank'}
             source={{ html: songHtml }}
             style={{ flex: 1, backgroundColor: 'transparent' }}
             showsVerticalScrollIndicator={false}
@@ -369,41 +688,173 @@ export default function SongFullscreenScreen({
             automaticallyAdjustContentInsets={false}
             injectedJavaScript={AUTO_SCROLL_CONTROLLER_JS}
             onLoadEnd={autoScroll.handleWebViewLoad}
-            onMessage={autoScroll.handleWebViewMessage}
+            onMessage={handleMessage}
           />
         )}
       </View>
 
-      {/* Cerrar — esquina superior derecha */}
-      <PressableFeedback
-        style={[styles.closeButton, { top: closeTop }]}
-        onPress={() => navigation.goBack()}
-        accessibilityLabel="Cerrar pantalla completa"
+      {/* Cerrar — esquina superior derecha. Con los controles escondidos
+          solo se atenúa: la salida siempre está a la vista. */}
+      <Animated.View
+        style={[styles.closeWrap, { top: closeTop }, chrome.dimStyle]}
       >
-        <PressableFeedback.Scale />
-        <TranslucentBg isDark={isDark} style={{ borderRadius: 20 }} />
-        <MaterialIcons name="close" color="#FFFFFF" size={22} />
-      </PressableFeedback>
+        <PressableFeedback
+          style={styles.closeButton}
+          onPress={close}
+          accessibilityLabel="Cerrar pantalla completa"
+        >
+          <PressableFeedback.Scale />
+          <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
+          <MaterialIcons name="close" color="#FFFFFF" size={22} />
+        </PressableFeedback>
+      </Animated.View>
 
-      {/* Controles de auto-scroll — esquina inferior derecha */}
-      <AutoScrollControls
-        isPlaying={autoScroll.isPlaying}
-        speedIndex={autoScroll.speedIndex}
-        onToggle={autoScroll.toggle}
-        onSelectSpeed={autoScroll.setSpeedIndex}
-        isDark={isDark}
-        bottom={controlsBottom}
-      />
+      {/* Los controles de abajo se apagan solos mientras se lee. */}
+      <Animated.View
+        style={[StyleSheet.absoluteFill, chrome.style]}
+        pointerEvents={chrome.shown ? 'box-none' : 'none'}
+        onTouchStart={poke}
+      >
+        {/* Pasar de canción (lista) o aviso de que se sigue al líder del coro. */}
+        {canNavigate && (
+          <View
+            style={[styles.navCluster, { bottom: controlsBottom }]}
+            accessibilityRole="toolbar"
+          >
+            <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
+            <PressableFeedback
+              style={styles.navButton}
+              onPress={() => go(-1)}
+              accessibilityRole="button"
+              isDisabled={index === 0}
+              accessibilityLabel="Canción anterior"
+            >
+              <MaterialIcons
+                name="chevron-left"
+                size={28}
+                color={index === 0 ? 'rgba(255,255,255,0.35)' : '#FFFFFF'}
+              />
+            </PressableFeedback>
+            <Text style={styles.navCount}>
+              {index! + 1} / {list!.length}
+            </Text>
+            <PressableFeedback
+              style={styles.navButton}
+              onPress={() => go(1)}
+              accessibilityRole="button"
+              isDisabled={index === list!.length - 1}
+              accessibilityLabel="Canción siguiente"
+            >
+              <MaterialIcons
+                name="chevron-right"
+                size={28}
+                color={
+                  index === list!.length - 1
+                    ? 'rgba(255,255,255,0.35)'
+                    : '#FFFFFF'
+                }
+              />
+            </PressableFeedback>
+          </View>
+        )}
+        {following && (
+          <View
+            style={[
+              styles.navCluster,
+              styles.followPill,
+              { bottom: controlsBottom },
+            ]}
+            accessibilityLabel="Siguiendo la canción del coro"
+          >
+            <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
+            <MaterialIcons name="groups" size={18} color="#FFFFFF" />
+            <Text style={styles.navCount}>Siguiendo al coro</Text>
+          </View>
+        )}
+
+        {/* Pantalla completa del navegador (web) — junto a cerrar. */}
+        {browserFs.supported && (
+          <PressableFeedback
+            style={[
+              styles.closeButton,
+              styles.browserFsButton,
+              { top: closeTop },
+            ]}
+            onPress={() => {
+              browserFs.toggle();
+              // El foco vuelve a la hoja (espacio o Intro no repiten el botón).
+              iframeRef.current?.contentWindow?.focus();
+            }}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: browserFs.active }}
+            accessibilityLabel="Pantalla completa del navegador (F)"
+          >
+            <PressableFeedback.Scale />
+            <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
+            <MaterialIcons
+              name={browserFs.active ? 'fullscreen-exit' : 'fullscreen'}
+              color="#FFFFFF"
+              size={22}
+            />
+          </PressableFeedback>
+        )}
+
+        {/* Modo atril (páginas) — encima del play. */}
+        <PressableFeedback
+          style={[
+            styles.pagedButton,
+            { bottom: controlsBottom + (paged ? 0 : 56 + 12) },
+          ]}
+          onPress={togglePaged}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: paged }}
+          accessibilityLabel={
+            paged
+              ? 'Volver al scroll'
+              : 'Modo atril: pasar página con un toque o un pedal'
+          }
+        >
+          <PressableFeedback.Scale />
+          <TranslucentBg isDark={isDark} style={{ borderRadius: radii.xl }} />
+          <MaterialIcons
+            name={paged ? 'swap-vert' : 'auto-stories'}
+            color="#FFFFFF"
+            size={22}
+          />
+        </PressableFeedback>
+
+        {/* Controles de auto-scroll — esquina inferior derecha. En páginas no
+          hay scroll que automatizar. */}
+        {!paged && (
+          <AutoScrollControls
+            isPlaying={autoScroll.isPlaying}
+            speedIndex={autoScroll.speedIndex}
+            onToggle={autoScroll.toggle}
+            onSelectSpeed={autoScroll.setSpeedIndex}
+            isDark={isDark}
+            bottom={controlsBottom}
+          />
+        )}
+      </Animated.View>
     </Animated.View>
   );
 }
 
-const webContainerStyle = {
+/** El cursor dentro de la hoja (otro documento: no hereda el de fuera). */
+function setSheetCursor(frame: HTMLIFrameElement | null, hide: boolean) {
+  const root = frame?.contentDocument?.documentElement;
+  if (root) root.style.cursor = hide ? 'none' : '';
+}
+
+/** Cursor escondido (web) con los controles: `cursor` no está en ViewStyle. */
+const webHiddenCursor = { cursor: 'none' } as object;
+
+const webFrameStyle = {
   width: '100%',
   height: '100%',
-  overflowY: 'auto',
-  boxSizing: 'border-box',
-} as unknown as React.CSSProperties;
+  border: 'none',
+  display: 'block',
+} as React.CSSProperties;
 
 const styles = StyleSheet.create({
   container: {
@@ -413,12 +864,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   /* Cerrar — superior derecha */
-  closeButton: {
+  closeWrap: {
     position: 'absolute',
     right: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    zIndex: 4,
+  },
+  closeButton: {
+    width: CLOSE_SIZE,
+    height: CLOSE_SIZE,
+    borderRadius: radii.xl,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -436,6 +890,55 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  /* Pantalla completa del navegador — a la izquierda de cerrar */
+  browserFsButton: {
+    position: 'absolute',
+    right: spacing.md + CLOSE_SIZE + spacing.sm,
+  },
+  /* Anterior / siguiente — abajo a la izquierda */
+  navCluster: {
+    position: 'absolute',
+    left: 16,
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+    zIndex: 3,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.22)',
+  },
+  followPill: {
+    gap: 8,
+    paddingHorizontal: 14,
+  },
+  navButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navCount: {
+    color: '#FFFFFF',
+    ...typography.footnote,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  /* Modo atril — mismo aspecto que el botón de cerrar */
+  pagedButton: {
+    position: 'absolute',
+    right: 24,
+    width: 40,
+    height: 40,
+    borderRadius: radii.xl,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    zIndex: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.22)',
+  },
   /* Cluster inferior derecha */
   controlsCluster: {
     position: 'absolute',
@@ -451,7 +954,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.22)',
@@ -468,11 +971,11 @@ const styles = StyleSheet.create({
     }),
   },
   speedPanelBg: {
-    borderRadius: 22,
+    borderRadius: radii.xl,
   },
   speedHeading: {
     color: 'rgba(255,255,255,0.92)',
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
@@ -487,7 +990,7 @@ const styles = StyleSheet.create({
   segment: {
     width: 26,
     height: 26,
-    borderRadius: 13,
+    borderRadius: radii.pillFull,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.10)',
@@ -500,7 +1003,7 @@ const styles = StyleSheet.create({
   },
   segmentText: {
     color: 'rgba(255,255,255,0.78)',
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
   },
   segmentTextSelected: {
@@ -510,7 +1013,7 @@ const styles = StyleSheet.create({
   playButton: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radii.full,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -528,7 +1031,7 @@ const styles = StyleSheet.create({
     }),
   },
   playButtonBg: {
-    borderRadius: 28,
+    borderRadius: radii.full,
   },
   /* Pequeño badge con el nivel actual sobre el botón de play */
   levelBadge: {
@@ -537,7 +1040,7 @@ const styles = StyleSheet.create({
     right: 4,
     minWidth: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     paddingHorizontal: 4,
     backgroundColor: 'rgba(255,255,255,0.92)',
     justifyContent: 'center',

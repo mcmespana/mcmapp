@@ -3,11 +3,11 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Image,
   Linking,
   Platform,
   Text,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Chip,
@@ -16,7 +16,7 @@ import {
   PressableFeedback,
   Skeleton,
 } from 'heroui-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
@@ -28,6 +28,7 @@ import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
 import { hexAlpha } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
 
 interface AppInfo {
   orden: number;
@@ -57,7 +58,20 @@ export default function AppsScreen() {
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
         const schemeUrl =
           Platform.OS === 'ios' ? app.iosScheme : app.androidScheme;
-        if (schemeUrl) {
+        if (schemeUrl && Platform.OS === 'android') {
+          // En Android 11+ `canOpenURL` dice que NO a cualquier esquema que no
+          // esté declarado en <queries> del manifest, y estos vienen de
+          // Firebase (no se pueden declarar de antemano): siempre acababa en
+          // Play Store aunque la app estuviera instalada. Se intenta abrir
+          // sin preguntar; si no hay quien la abra, `openURL` rechaza y se
+          // cae a la tienda.
+          try {
+            await Linking.openURL(schemeUrl);
+            return;
+          } catch {
+            // Sin la app instalada → tienda, abajo.
+          }
+        } else if (schemeUrl) {
           const canOpen = await Linking.canOpenURL(schemeUrl);
           if (canOpen) {
             await Linking.openURL(schemeUrl);
@@ -160,7 +174,12 @@ export default function AppsScreen() {
               <PressableFeedback.Highlight />
               <View style={styles.listItemContainer}>
                 <View style={styles.iconContainer}>
-                  <Image source={{ uri: app.icono }} style={styles.icon} />
+                  <Image
+                    source={{ uri: app.icono }}
+                    style={styles.icon}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
                 </View>
                 <View style={styles.contentContainer}>
                   <Text style={styles.title}>{app.nombre}</Text>
@@ -296,7 +315,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginBottom: spacing.md,
     },
     introText: {
-      fontSize: 16,
+      ...typography.body,
       color: theme.text,
       textAlign: 'center',
       lineHeight: 22,
@@ -304,7 +323,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '500',
     },
     introSubtext: {
-      fontSize: 14,
+      ...typography.subhead,
       color: theme.text,
       textAlign: 'center',
       opacity: 0.7,
@@ -318,7 +337,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: theme.card,
       borderRadius: radii.lg,
       marginBottom: spacing.sm,
-      ...shadows.sm,
+      ...shadows.card,
     } as any,
     iconContainer: {
       justifyContent: 'center',
@@ -347,7 +366,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     description: {
       color: theme.text,
       opacity: 0.7,
-      fontSize: 13,
+      ...typography.caption,
       lineHeight: 18,
     },
     rightContainer: {

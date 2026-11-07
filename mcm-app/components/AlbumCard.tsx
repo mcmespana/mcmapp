@@ -1,17 +1,14 @@
 import { logger } from '@/utils/logger';
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  useWindowDimensions,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import typography from '@/constants/typography';
+import spacing from '@/constants/spacing';
+import { radii, shadows } from '@/constants/uiStyles';
 interface AlbumCardProps {
   album: {
     id: string;
@@ -57,7 +54,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
         <View style={activeStyles.imageBackground}>
           <Image
             source={{ uri: album.imageUrl }}
-            style={StyleSheet.absoluteFillObject}
+            style={StyleSheet.absoluteFill}
             contentFit="cover"
             transition={300}
             onError={(event) =>
@@ -67,8 +64,10 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
             }
           />
           <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.65)']}
-            locations={[0.3, 1]}
+            // Más opaco y desde antes: sobre portadas claras (Jubileo) el texto
+            // blanco quedaba a ~2,7:1 con el scrim anterior.
+            colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.8)']}
+            locations={[0.2, 0.55, 1]}
             style={activeStyles.gradient}
           />
           <View style={activeStyles.textContainer}>
@@ -113,32 +112,22 @@ const createStyles = (screenWidth: number) =>
     card: {
       width: '100%',
       aspectRatio: screenWidth > 600 ? 1.6 : 1.8,
-      borderRadius: 18,
-      marginBottom: 14,
+      borderRadius: radii.xl,
+      marginBottom: spacing.md,
       backgroundColor: '#2C2C2E',
-      ...(Platform.OS === 'web'
-        ? {
-            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-          }
-        : {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
-            elevation: 5,
-          }),
+      ...shadows.raised,
     },
     cardContent: {
       flex: 1,
       overflow: 'hidden',
-      borderRadius: 18,
+      borderRadius: radii.xl,
     },
     imageBackground: {
       flex: 1,
       justifyContent: 'flex-end',
     },
     gradient: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
     },
     textContainer: {
       padding: 16,
@@ -150,6 +139,9 @@ const createStyles = (screenWidth: number) =>
       color: '#fff',
       letterSpacing: -0.3,
       lineHeight: 24,
+      textShadowColor: 'rgba(0,0,0,0.35)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 4,
     },
     metaRow: {
       flexDirection: 'row',
@@ -163,7 +155,7 @@ const createStyles = (screenWidth: number) =>
       alignItems: 'center',
     },
     metaText: {
-      fontSize: 13,
+      ...typography.caption,
       color: 'rgba(255,255,255,0.85)',
       fontWeight: '500',
     },

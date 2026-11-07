@@ -16,6 +16,7 @@ import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Dimensions, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { HeroUINativeProvider } from 'heroui-native';
 
 import ReaderSettingsSheet from '@/components/contigo/ReaderSettingsSheet';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
@@ -51,15 +52,21 @@ async function renderSheet() {
   // fuera de `act` en mitad de las aserciones.
   await act(async () => {
     tree = create(
+      // `HeroUINativeProvider` hace falta desde que la hoja usa el
+      // `SegmentedControl` compartido, que por dentro es un
+      // `PressableFeedback` de heroui: sin el provider, su hook de animación
+      // lee un global que no existe y revienta el render.
       <SafeAreaProvider initialMetrics={INITIAL_METRICS}>
-        <AppSettingsProvider>
-          <ReaderSettingsSheet
-            visible
-            onClose={() => {}}
-            sectionKey="contigo"
-            previewText={LONG_PREVIEW}
-          />
-        </AppSettingsProvider>
+        <HeroUINativeProvider>
+          <AppSettingsProvider>
+            <ReaderSettingsSheet
+              visible
+              onClose={() => {}}
+              sectionKey="contigo"
+              previewText={LONG_PREVIEW}
+            />
+          </AppSettingsProvider>
+        </HeroUINativeProvider>
       </SafeAreaProvider>,
     );
   });

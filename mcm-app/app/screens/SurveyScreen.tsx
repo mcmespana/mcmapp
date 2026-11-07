@@ -1,18 +1,12 @@
 import React, { useCallback } from 'react';
-import {
-  ActivityIndicator,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { getDatabase, get, ref, set } from 'firebase/database';
-import { MaterialIcons } from '@expo/vector-icons';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import { getDatabase, get, ref } from 'firebase/database';
 
+import EmptyState from '@/components/ui/EmptyState';
 import EvaluationWizard, {
   EvaluationAnswers,
 } from '@/components/EvaluationWizard';
-import colors, { Colors } from '@/constants/colors';
+import colors, { themeColors, Colors } from '@/constants/colors';
 import {
   isEvaluationOpen,
   mergeEvaluationConfig,
@@ -27,6 +21,7 @@ import {
 } from '@/constants/surveys';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { getFirebaseApp } from '@/utils/firebaseApp';
+import { setWithRetry } from '@/services/firebaseWrites';
 import { getDeviceId } from '@/services/pushNotificationService';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -66,12 +61,17 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
     remoteConfig,
   ) as SurveyConfig;
 
+  // El uid se saca a una variable ANTES de los callbacks a propósito: si se
+  // usa `user?.uid` dentro, el React Compiler infiere `user` entero como
+  // dependencia, no coincide con la lista declarada y se salta el componente
+  // entero (regla `preserve-manual-memoization`).
+  const uid = user?.uid;
+
   const handleSubmit = useCallback(
     async (answers: EvaluationAnswers) => {
       const deviceId = await getDeviceId();
-      const db = getDatabase(getFirebaseApp());
       // Anónima → sin datos de perfil ni userId. Si no, se ata el userId.
-      await set(ref(db, surveyAnswerPath(surveyId, deviceId)), {
+      await setWithRetry(surveyAnswerPath(surveyId, deviceId), {
         answers,
         deviceId,
         surveyId,
@@ -80,22 +80,22 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
         platform: Platform.OS,
         ...buildIdentityFields({
           anonymous: config.anonymous,
-          authUid: user?.uid,
+          authUid: uid,
           name: profile.name,
           profileType: profile.profileType,
           delegationLabel: resolved.delegationLabel,
         }),
       });
-      await set(ref(db, `${surveyPath(surveyId)}/updatedAt`), Date.now());
+      await setWithRetry(`${surveyPath(surveyId)}/updatedAt`, Date.now());
       // Dedup entre dispositivos solo si hay sesión y no es anónima.
-      if (user?.uid && !config.anonymous)
-        await markUserAnswered(user.uid, scope, surveyId);
+      if (uid && !config.anonymous)
+        await markUserAnswered(uid, scope, surveyId);
     },
     [
       surveyId,
       scope,
       config.anonymous,
-      user?.uid,
+      uid,
       profile.name,
       profile.profileType,
       resolved.delegationLabel,
@@ -104,11 +104,7 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
 
   const checkSubmitted = useCallback(async () => {
     try {
-      if (
-        user?.uid &&
-        !config.anonymous &&
-        (await hasUserAnswered(user.uid, scope))
-      )
+      if (uid && !config.anonymous && (await hasUserAnswered(uid, scope)))
         return true;
       const deviceId = await getDeviceId();
       const db = getDatabase(getFirebaseApp());
@@ -117,13 +113,16 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
     } catch {
       return false;
     }
-  }, [surveyId, scope, config.anonymous, user?.uid]);
+  }, [surveyId, scope, config.anonymous, uid]);
 
   // ── Estados que no muestran el formulario ──
   if (loading && !remoteConfig) {
     return (
       <View style={[styles.center, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator
+          size="large"
+          color={themeColors(scheme === 'dark').link}
+        />
       </View>
     );
   }
@@ -152,13 +151,11 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
         : 'Esta encuesta está dirigida a otro grupo de personas.';
     return (
       <View style={[styles.center, { backgroundColor: theme.background }]}>
-        <MaterialIcons
-          name={closed ? 'lock-clock' : 'inbox'}
-          size={48}
-          color={theme.icon}
+        <EmptyState
+          icon={closed ? 'lock-clock' : 'inbox'}
+          title={title}
+          subtitle={body}
         />
-        <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
-        <Text style={[styles.body, { color: theme.icon }]}>{body}</Text>
       </View>
     );
   }
@@ -181,17 +178,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 32,
     gap: 12,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  body: {
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-    maxWidth: 320,
   },
 });

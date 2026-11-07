@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Text, Platform } from 'react-native';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
@@ -10,12 +11,11 @@ import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import DateSelector from '@/components/DateSelector';
-import { MasStackParamList } from '../(tabs)/mas';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useLocalSearchParams } from 'expo-router';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
 interface Actividad {
   nombre: string;
@@ -23,9 +23,6 @@ interface Actividad {
   emoji?: string;
   paginas: any[];
 }
-
-type Nav = NativeStackNavigationProp<MasStackParamList, 'MaterialPages'>;
-type MaterialesScreenRoute = RouteProp<MasStackParamList, 'Materiales'>;
 
 function parseDateString(dateStr: string): Date | null {
   if (!dateStr) return null;
@@ -98,10 +95,19 @@ function getClosestDateIndex(data: any[]): number {
 }
 
 export default function MaterialesScreen() {
-  const navigation = useNavigation<Nav>();
-  const route = useRoute<MaterialesScreenRoute>();
+  useSuppressCarismochito();
+  const { open } = useEventNavigation();
+  // Los params de ruta son texto: `initialDayIndex` llega como «2».
+  const { initialDayIndex } = useLocalSearchParams<{
+    initialDayIndex?: string;
+  }>();
+  const initialDay =
+    initialDayIndex !== undefined && !Number.isNaN(Number(initialDayIndex))
+      ? Number(initialDayIndex)
+      : undefined;
   const scheme = useColorScheme();
   const fontScale = useFontScale(1.2);
+  const bottomPadding = useTabBarPaddingBottom(spacing.xl);
   const styles = React.useMemo(
     () => createStyles(scheme, fontScale),
     [scheme, fontScale],
@@ -112,26 +118,22 @@ export default function MaterialesScreen() {
     getEventCacheKey(event, 'materiales'),
   );
 
-  // Get initial day index from navigation params, or calculate closest date
-  const getInitialIndex = () => {
-    if (route.params?.initialDayIndex !== undefined) {
-      return route.params.initialDayIndex;
-    }
-    return materialesData ? getClosestDateIndex(materialesData) : 0;
-  };
+  // Día por defecto: el que pida la navegación y, si no viene ninguno, el más
+  // cercano a hoy. En cuanto el usuario elige otro, manda su elección. Se deriva
+  // en vez de sincronizarse con un efecto, así un refresco de Firebase ya no le
+  // devuelve al día de hoy estando en otro.
+  const defaultIndex = React.useMemo(() => {
+    if (initialDay !== undefined) return initialDay;
+    return materialesData?.length ? getClosestDateIndex(materialesData) : 0;
+  }, [materialesData, initialDay]);
 
-  const [index, setIndex] = useState(getInitialIndex);
+  const [pickedIndex, setIndex] = useState<number | null>(null);
+  // Acotado por si los datos encogen y el día elegido ya no existe.
+  const index = Math.min(
+    pickedIndex ?? defaultIndex,
+    Math.max(0, (materialesData?.length ?? 0) - 1),
+  );
 
-  // Update index when materialesData loads (only if no specific day was requested)
-  useEffect(() => {
-    if (
-      materialesData &&
-      materialesData.length > 0 &&
-      route.params?.initialDayIndex === undefined
-    ) {
-      setIndex(getClosestDateIndex(materialesData));
-    }
-  }, [materialesData, route.params?.initialDayIndex]);
   const fechas = materialesData
     ? materialesData.map((d) => ({ fecha: d.fecha }))
     : [];
@@ -180,7 +182,12 @@ export default function MaterialesScreen() {
         />
       </View>
       <PageContainer>
-        <ScrollView contentContainerStyle={styles.list}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.list,
+            { paddingBottom: bottomPadding },
+          ]}
+        >
           {dia.actividades.map((act: Actividad, idx: number) => (
             <PressableFeedback
               key={idx}
@@ -192,9 +199,11 @@ export default function MaterialesScreen() {
                 { backgroundColor: act.color || colors.primary },
               ]}
               onPress={() =>
-                navigation.navigate('MaterialPages', {
-                  actividad: act,
-                  fecha: dia.fecha,
+                // La actividad NO viaja por la ruta (es un objeto): van el día
+                // y su posición, y `MaterialPages` la lee de la misma caché.
+                open('MaterialPages', {
+                  dia: index,
+                  act: idx,
                   eventId: event.id,
                 })
               }
@@ -225,10 +234,9 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
     list: {
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.md,
-      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.xl,
     },
     card: {
-      borderRadius: 16,
+      borderRadius: radii.lg,
       paddingVertical: spacing.xl,
       paddingHorizontal: spacing.md,
       justifyContent: 'center',

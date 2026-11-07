@@ -10,6 +10,8 @@ let pendingPlaylist: string | null = null;
 let pendingChoir: string | null = null;
 /** Payload compacto de una playlist offline (mcmapp://playlist?d=...). */
 let pendingOffline: string | null = null;
+/** Id de coro del que hay que importar la ÚLTIMA playlist (`/playlist?coro=…`). */
+let pendingChoirImport: string | null = null;
 
 export function setPendingCloudPlaylistCode(code: string | null) {
   pendingPlaylist = code;
@@ -47,4 +49,14 @@ export function consumePendingOfflinePlaylist(): string | null {
   const payload = pendingOffline;
   pendingOffline = null;
   return payload;
+}
+
+export function setPendingChoirImport(choirId: string | null) {
+  pendingChoirImport = choirId;
+}
+
+export function consumePendingChoirImport(): string | null {
+  const id = pendingChoirImport;
+  pendingChoirImport = null;
+  return id;
 }

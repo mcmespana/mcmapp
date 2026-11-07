@@ -8,17 +8,21 @@
  *   - Numerador opcional (posición 1, 2, 3...).
  *   - Indicador opcional de "sonando ahora" (modo coro).
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated,
   Platform,
 } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import Swipeable, {
+  type SwipeableMethods,
+} from 'react-native-gesture-handler/ReanimatedSwipeable';
+import type { SharedValue } from 'react-native-reanimated';
+import { openedActionsSide } from '@/utils/swipeSide';
+import SwipeActionContent from '@/components/ui/SwipeActionContent';
+import { MaterialIcons } from '@/components/ui/icons';
 import { h } from '@/utils/haptics';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -26,6 +30,15 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import { convertChord } from '@/utils/chordNotation';
 import { transposeKey, transposeLabel } from '@/utils/transposeKey';
+import {
+  HighlightColors,
+  KeyPillColors,
+  SwipeColors,
+  UIColors,
+  themeColors,
+} from '@/constants/colors';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface Song {
   title: string;
@@ -85,6 +98,7 @@ const PlaylistRow: React.FC<Props> = ({
   const styles = useMemo(() => createStyles(isDark), [isDark]);
   const { settings } = useSettings();
   const { notation } = settings;
+  const swipeableRef = useRef<SwipeableMethods>(null);
 
   // Menú contextual: en nativo el long-press inicia el arrastre, así que solo
   // activamos el clic derecho en web (donde no hay drag & drop).
@@ -101,33 +115,33 @@ const PlaylistRow: React.FC<Props> = ({
   const transposeBadge = transposeLabel(transpose);
 
   const renderLeftActions = (
-    _progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>,
-  ) => {
-    const trans = dragX.interpolate({
-      inputRange: [0, 100],
-      outputRange: [-100, 0],
-      extrapolate: 'clamp',
-    });
-    return (
-      <TouchableOpacity style={styles.leftAction} onPress={onRemove}>
-        <Animated.View
-          style={[styles.actionContent, { transform: [{ translateX: trans }] }]}
-        >
-          <IconSymbol name="minus.circle" size={22} color="#fff" />
-          <Text style={styles.actionText}>Quitar</Text>
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  };
+    _progress: SharedValue<number>,
+    translation: SharedValue<number>,
+  ) => (
+    <TouchableOpacity style={styles.leftAction} onPress={onRemove}>
+      <SwipeActionContent
+        translation={translation}
+        inputRange={[0, 100]}
+        outputRange={[-100, 0]}
+        property="translateX"
+        style={styles.actionContent}
+      >
+        <IconSymbol name="minus.circle" size={22} color="#fff" />
+        <Text style={styles.actionText}>Quitar</Text>
+      </SwipeActionContent>
+    </TouchableOpacity>
+  );
 
   return (
     <Swipeable
+      ref={swipeableRef}
       renderLeftActions={renderLeftActions}
-      onSwipeableOpen={(direction, swipeable) => {
-        if (direction === 'left') {
+      onSwipeableOpen={(direction) => {
+        // El lado ABIERTO, no la dirección del dedo (ver `utils/swipeSide`):
+        // «Quitar» está a la izquierda.
+        if (openedActionsSide(direction) === 'left') {
           h.remove();
-          swipeable.close();
+          swipeableRef.current?.close();
           onRemove();
         }
       }}
@@ -251,9 +265,7 @@ const PlaylistRow: React.FC<Props> = ({
                 size={22}
                 color={
                   canMoveUp
-                    ? isDark
-                      ? '#7AB3FF'
-                      : '#253883'
+                    ? themeColors(isDark).link
                     : isDark
                       ? '#48484A'
                       : '#C7C7CC'
@@ -277,9 +289,7 @@ const PlaylistRow: React.FC<Props> = ({
                 size={22}
                 color={
                   canMoveDown
-                    ? isDark
-                      ? '#7AB3FF'
-                      : '#253883'
+                    ? themeColors(isDark).link
                     : isDark
                       ? '#48484A'
                       : '#C7C7CC'
@@ -296,7 +306,7 @@ const PlaylistRow: React.FC<Props> = ({
 const createStyles = (isDark: boolean) =>
   StyleSheet.create({
     outer: {
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
       flexDirection: 'row',
       alignItems: 'stretch',
     },
@@ -323,8 +333,8 @@ const createStyles = (isDark: boolean) =>
     numberWrap: {
       width: 28,
       height: 28,
-      borderRadius: 14,
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      borderRadius: radii.lg,
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -332,29 +342,29 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: isDark ? '#1A3320' : '#D7F1DA',
     },
     numberText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
       fontVariant: ['tabular-nums'],
     },
     dotPlaceholder: {
       width: 6,
       height: 6,
-      borderRadius: 3,
-      backgroundColor: '#34C759',
+      borderRadius: radii.pillFull,
+      backgroundColor: SwipeColors.add,
       marginHorizontal: 11,
     },
     songInfoContainer: {
       flex: 1,
     },
     songTitle: {
-      fontSize: 16,
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      ...typography.body,
+      color: themeColors(isDark).text,
       fontWeight: '500',
       letterSpacing: -0.2,
     },
     authorText: {
-      fontSize: 13,
+      ...typography.caption,
       color: isDark ? '#AEAEB2' : '#8E8E93',
       fontStyle: 'italic',
       marginTop: 3,
@@ -367,33 +377,35 @@ const createStyles = (isDark: boolean) =>
     capoPill: {
       paddingHorizontal: 6,
       paddingVertical: 3,
-      borderRadius: 5,
+      borderRadius: radii.xs,
       backgroundColor: isDark ? '#3A3A3C' : '#EBEBEB',
     },
     capoPillOverridden: {
-      backgroundColor: isDark ? '#3A2D0A' : '#FFF4DA',
+      backgroundColor: isDark
+        ? HighlightColors.dark.bg
+        : HighlightColors.light.bg,
       borderWidth: 1,
-      borderColor: isDark ? '#7A5A00' : '#F4C11E',
+      borderColor: isDark ? HighlightColors.light.fg : UIColors.accentYellow,
     },
     capoText: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '600',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
       fontVariant: ['tabular-nums'],
     },
     capoTextOverridden: {
-      color: isDark ? '#F4C11E' : '#7A5A00',
+      color: isDark ? UIColors.accentYellow : HighlightColors.light.fg,
     },
     keyPill: {
       paddingHorizontal: 8,
       paddingVertical: 3,
-      borderRadius: 6,
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      borderRadius: radii.xs,
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     keyText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
     },
     toneTransposedWrap: {
       flexDirection: 'row',
@@ -401,9 +413,9 @@ const createStyles = (isDark: boolean) =>
       gap: 4,
     },
     toneOriginalStriked: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '500',
-      color: isDark ? '#636366' : '#A0A0A8',
+      color: themeColors(isDark).textMuted,
       textDecorationLine: 'line-through',
     },
     keyPillTransposed: {
@@ -411,20 +423,20 @@ const createStyles = (isDark: boolean) =>
       alignItems: 'center',
       paddingHorizontal: 8,
       paddingVertical: 3,
-      borderRadius: 6,
-      backgroundColor: '#FFF4DA',
+      borderRadius: radii.xs,
+      backgroundColor: HighlightColors.light.bg,
       borderWidth: 1,
-      borderColor: '#F4C11E',
+      borderColor: UIColors.accentYellow,
     },
     keyTextTransposed: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
-      color: '#7A5A00',
+      color: HighlightColors.light.fg,
     },
     transposeParenLabel: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
     },
     reorderRow: {
@@ -447,7 +459,7 @@ const createStyles = (isDark: boolean) =>
       opacity: 0.4,
     },
     leftAction: {
-      backgroundColor: '#FF453A',
+      backgroundColor: SwipeColors.remove,
       justifyContent: 'center',
       alignItems: 'center',
       width: 100,
@@ -458,7 +470,7 @@ const createStyles = (isDark: boolean) =>
     },
     actionText: {
       color: '#fff',
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
       marginTop: 4,
     },

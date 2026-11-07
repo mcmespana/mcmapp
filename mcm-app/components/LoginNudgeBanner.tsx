@@ -6,12 +6,14 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import LoginSheet from '@/components/LoginSheet';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 export default function LoginNudgeBanner() {
   const { user } = useAuth();
@@ -77,13 +79,13 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 10,
+    borderRadius: radii.md,
     borderWidth: 1,
     alignSelf: 'center',
     opacity: 0.88,
   } as ViewStyle,
   text: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '500',
     flex: 1,
   } as TextStyle,

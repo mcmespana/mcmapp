@@ -1,26 +1,53 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Platform,
-  Animated,
   Pressable,
   TouchableOpacity,
+  BackHandler,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router/react-navigation';
+import Animated, {
+  FadeOut,
+  ZoomIn,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { h } from '@/utils/haptics';
 import { PressableFeedback } from 'heroui-native';
 import GlassSurface from '@/components/ui/GlassSurface';
 import { useToast } from '@/contexts/AppToastContext';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
-import SongFontBottomSheet from './SongFontBottomSheet';
+import { transposeLabel } from '@/utils/transposeKey';
+import { openCantoral } from '@/utils/cantoralNavigation';
+import { buildSongPrintHtml, printHtmlInNewWindow } from '@/utils/printSong';
+import SongFontBottomSheet, {
+  type SheetViewOptions,
+} from './SongFontBottomSheet';
 import TransposeBottomSheet from './TransposeBottomSheet';
 import ReportBugsModal from './ReportBugsModal';
 import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
+import {
+  KeyPillColors,
+  SwipeColors,
+  SystemGray,
+  themeColors,
+} from '@/constants/colors';
+import { onColor } from '@/utils/colorUtils';
+import { radii } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
+import spacing from '@/constants/spacing';
+import { durations, motionEasings, springs } from '@/constants/animations';
 
 interface FontOption {
   name: string;
@@ -34,6 +61,13 @@ interface SongControlsProps {
   /** Arreglos visibles (efímero por canción). */
   arrangementsVisible?: boolean;
   onToggleArrangements?: () => void;
+  /** Algún estribillo se repite: tiene sentido plegarlos. */
+  hasRepeats?: boolean;
+  /** Vista compacta (estribillos repetidos plegados). Preferencia global. */
+  compactView?: boolean;
+  onToggleCompact?: () => void;
+  /** Opciones de vista de la hoja (en «Letra y vista»). */
+  view?: SheetViewOptions;
   currentTranspose: number;
   currentFontSizeEm: number;
   currentFontFamily: string;
@@ -57,6 +91,71 @@ interface SongControlsProps {
   /** Override de cejilla para esta sesión/playlist. undefined = no disponible. */
   currentCapoOverride?: number | null;
   onSetCapoOverride?: (capo: number | null) => void;
+  /**
+   * Avisa cuando se abre o se cierra algo de lo suyo (el menú, una hoja o un
+   * modal), para que la pantalla no reaccione a sus propios atajos de teclado
+   * mientras tanto.
+   */
+  onOverlayChange?: (open: boolean) => void;
+}
+
+/**
+ * Botón del menú de acciones.
+ *
+ * Vive FUERA de `SongControls` a propósito: definido dentro, React lo trataba
+ * como un tipo de componente nuevo en cada render y desmontaba y volvía a
+ * montar todo el menú (perdiendo estado y animaciones por el camino). Es lo que
+ * señala la regla `react-hooks/static-components` del React Compiler.
+ */
+function ActionButton({
+  icon,
+  label,
+  onPress,
+  isActive = false,
+  isDark,
+}: {
+  icon: keyof typeof MaterialIcons.glyphMap;
+  label: string;
+  onPress: () => void;
+  isActive?: boolean;
+  isDark: boolean;
+}) {
+  return (
+    <PressableFeedback
+      style={[
+        styles.actionButton,
+        isActive &&
+          (isDark ? styles.actionButtonActiveDark : styles.actionButtonActive),
+      ]}
+      onPress={() => {
+        h.tap();
+        onPress();
+      }}
+    >
+      <PressableFeedback.Highlight />
+      <MaterialIcons
+        name={icon}
+        size={18}
+        color={
+          isActive
+            ? themeColors(isDark).link
+            : themeColors(isDark).textSecondary
+        }
+      />
+      <Text
+        style={[
+          styles.actionButtonText,
+          isDark && styles.actionButtonTextDark,
+          isActive &&
+            (isDark
+              ? styles.actionButtonTextActiveDark
+              : styles.actionButtonTextActive),
+        ]}
+      >
+        {label}
+      </Text>
+    </PressableFeedback>
+  );
 }
 
 const SongControls: React.FC<SongControlsProps> = ({
@@ -64,6 +163,10 @@ const SongControls: React.FC<SongControlsProps> = ({
   hasArrangements = false,
   arrangementsVisible = true,
   onToggleArrangements,
+  hasRepeats = false,
+  compactView = false,
+  onToggleCompact,
+  view,
   currentTranspose,
   currentFontSizeEm,
   currentFontFamily,
@@ -86,6 +189,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   firebaseCategory,
   currentCapoOverride,
   onSetCapoOverride,
+  onOverlayChange,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
   const [showTransposeBottomSheet, setShowTransposeBottomSheet] =
@@ -96,9 +200,17 @@ const SongControls: React.FC<SongControlsProps> = ({
   const scheme = useColorScheme();
   const { toast } = useToast();
   const isDark = scheme === 'dark';
-  const insets = useSafeAreaInsets();
+  // El FAB va por encima de la barra de pestañas flotante.
+  const tabBarClearance = useTabBarClearance();
   const layout = useResponsiveLayout();
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useSharedValue(0);
+  // Visibilidad del menú (0 cerrado → 1 abierto). El menú se queda MONTADO y
+  // solo se desvanece: antes se montaba y desmontaba con `entering`/`exiting`,
+  // y al cerrarse el contenedor (pegado abajo y con la altura del menú) se
+  // encogía de golpe; la copia que Reanimated deja para la animación de salida
+  // se quedaba en su sitio relativo al padre, o sea, desplazada hacia abajo
+  // tanto como medía el menú: se veía «caer» por encima del botón.
+  const menuAnim = useSharedValue(0);
 
   // En iPad / web amplio el contenido del SongDetail está centrado con
   // `contentMaxWidth`. Alineamos el FAB con el borde derecho de ese
@@ -109,34 +221,103 @@ const SongControls: React.FC<SongControlsProps> = ({
       ? (layout.width - layout.contentMaxWidth) / 2 + 16
       : 16;
 
-  const hasModifications =
-    currentTranspose !== 0 ||
-    (currentCapoOverride !== null && currentCapoOverride !== undefined) ||
-    !chordsVisible ||
-    currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
-    (availableFonts.length > 0 &&
-      currentFontFamily !== availableFonts[0].cssValue) ||
-    notation !== 'ES';
+  // Lo que dice el botón cerrado. Antes eran dos puntitos sin explicar: uno
+  // rojo de «hay algo cambiado» que se encendía también con la notación
+  // inglesa o la letra grande —preferencias GLOBALES, así que salía en todas
+  // las canciones para siempre— y otro de «tiene arreglos», que ya se ven en
+  // la propia letra. Ahora solo se avisa de lo que es de ESTA canción y no se
+  // ve al bajar por ella: el tono y la cejilla cambiados, con su valor.
+  const hasCapoOverride =
+    currentCapoOverride !== null && currentCapoOverride !== undefined;
+  const songBadge = [
+    currentTranspose !== 0 ? transposeLabel(currentTranspose) : null,
+    hasCapoOverride ? `C${currentCapoOverride}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
-  const toggleMenu = () => {
-    const toOpen = !showActionButtons;
-    if (toOpen) {
-      h.menuOpen();
-    } else {
-      h.menuClose();
-    }
-    setShowActionButtons(toOpen);
-    Animated.spring(rotateAnim, {
-      toValue: toOpen ? 1 : 0,
-      useNativeDriver: Platform.OS !== 'web',
-      friction: 6,
-    }).start();
-  };
+  const setMenuOpen = useCallback(
+    (toOpen: boolean) => {
+      if (toOpen) {
+        h.menuOpen();
+      } else {
+        h.menuClose();
+      }
+      setShowActionButtons(toOpen);
+      // Muelle con `dampingRatio` explícito: el `{ damping: 6, mass: 1 }` de
+      // antes, con los defaults de Reanimated 4 (stiffness 900), oscilaba con
+      // ζ≈0,1 — el «+» se pasaba de 45° a casi 80° y tardaba un segundo.
+      rotateAnim.set(withSpring(toOpen ? 1 : 0, springs.snap));
+      menuAnim.set(
+        withTiming(toOpen ? 1 : 0, {
+          duration: durations.quick,
+          easing: motionEasings.out,
+        }),
+      );
+    },
+    [rotateAnim, menuAnim],
+  );
+  const toggleMenu = () => setMenuOpen(!showActionButtons);
 
-  const rotateInterpolation = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '45deg'],
+  // Web: Esc cierra el menú, como tocar el velo. Si hay una hoja o un modal
+  // encima, ese Esc es suyo (lo cierra la pila de overlays): uno cada vez.
+  const sheetOpen =
+    showTransposeBottomSheet ||
+    showFontPanel ||
+    showReportBugsModal ||
+    showSecretPanel;
+  useKeyboardShortcut('escape', () => setMenuOpen(false), {
+    disabled: !showActionButtons || sheetOpen,
+    preventDefault: false,
   });
+
+  const overlayOpen = showActionButtons || sheetOpen;
+  useEffect(() => {
+    onOverlayChange?.(overlayOpen);
+  }, [overlayOpen, onOverlayChange]);
+
+  // Android: con el menú abierto, el atrás lo cierra (como tocar el velo) en
+  // vez de salir de la canción. Por foco: con la pantalla completa encima, el
+  // atrás es de ella.
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android' || !showActionButtons) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        setMenuOpen(false);
+        return true;
+      });
+      return () => sub.remove();
+    }, [showActionButtons, setMenuOpen]),
+  );
+
+  // El icono hace un morph: el «ajustes» gira y se va mientras entra el «+»
+  // girando hasta quedarse en «×». Antes era UN icono que cambiaba de glifo
+  // de golpe a mitad del giro, así que al cerrar el de ajustes aparecía ya
+  // torcido 45° y volvía a su sitio dando un latigazo.
+  const fabTuneIconStyle = useAnimatedStyle(() => {
+    const p = rotateAnim.get();
+    return {
+      opacity: interpolate(p, [0, 0.6], [1, 0], 'clamp'),
+      transform: [{ rotate: `${p * -90}deg` }],
+    };
+  });
+  const fabCloseIconStyle = useAnimatedStyle(() => {
+    const p = rotateAnim.get();
+    return {
+      opacity: interpolate(p, [0.4, 1], [0, 1], 'clamp'),
+      transform: [{ rotate: `${p * 45}deg` }],
+    };
+  });
+  // Opacidad y un desplazamiento corto desde el botón. Sin entradas
+  // encadenadas por ítem: el menú no salta de la nada encima del dedo.
+  const menuStyle = useAnimatedStyle(() => {
+    const p = menuAnim.get();
+    return {
+      opacity: p,
+      transform: [{ translateY: (1 - p) * spacing.sm }],
+    };
+  });
+  const scrimStyle = useAnimatedStyle(() => ({ opacity: menuAnim.get() }));
 
   useEffect(() => {
     return () => {
@@ -175,160 +356,203 @@ const SongControls: React.FC<SongControlsProps> = ({
     onSetTranspose(semitones);
   };
 
-  const ActionButton = ({
-    icon,
-    label,
-    onPress,
-    isActive = false,
-  }: {
-    icon: keyof typeof MaterialIcons.glyphMap;
-    label: string;
-    onPress: () => void;
-    isActive?: boolean;
-  }) => (
-    <PressableFeedback
-      style={[
-        styles.actionButton,
-        isActive &&
-          (isDark ? styles.actionButtonActiveDark : styles.actionButtonActive),
-      ]}
-      onPress={() => {
-        h.tap();
-        onPress();
-      }}
-    >
-      <PressableFeedback.Highlight />
-      <MaterialIcons
-        name={icon}
-        size={18}
-        color={
-          isActive
-            ? isDark
-              ? '#7AB3FF'
-              : '#253883'
-            : isDark
-              ? '#AEAEB2'
-              : '#636366'
-        }
-      />
-      <Text
-        style={[
-          styles.actionButtonText,
-          isDark && styles.actionButtonTextDark,
-          isActive &&
-            (isDark
-              ? styles.actionButtonTextActiveDark
-              : styles.actionButtonTextActive),
-        ]}
-      >
-        {label}
-      </Text>
-    </PressableFeedback>
-  );
-
   return (
     <>
-      {/* Scrim when menu is open */}
-      {showActionButtons && (
-        <Pressable style={styles.scrim} onPress={toggleMenu} />
-      )}
+      {/* Velo: siempre montado, solo atrapa toques con el menú abierto. */}
+      <Animated.View
+        style={[styles.scrim, scrimStyle]}
+        pointerEvents={showActionButtons ? 'auto' : 'none'}
+      >
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={() => setMenuOpen(false)}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        />
+      </Animated.View>
 
       {/* FAB & Action Menu */}
       <View
         style={[
           styles.fabContainer,
           {
-            bottom: insets.bottom + (isIOS ? 52 : 24),
+            bottom: tabBarClearance + 8,
             right: fabRightOffset,
           },
         ]}
+        pointerEvents="box-none"
       >
-        {showActionButtons && (
-          <View
-            style={[styles.menuContainer, isDark && styles.menuContainerDark]}
-          >
+        {/* Siempre montado (ver `menuAnim`): cerrado no ocupa toques ni se
+            lee con el lector de pantalla, pero tampoco cambia la altura del
+            contenedor, que es lo que descolocaba la animación de cierre. */}
+        <Animated.View
+          style={[
+            styles.menuContainer,
+            isDark && styles.menuContainerDark,
+            menuStyle,
+          ]}
+          pointerEvents={showActionButtons ? 'auto' : 'none'}
+          accessibilityElementsHidden={!showActionButtons}
+          importantForAccessibility={
+            showActionButtons ? 'auto' : 'no-hide-descendants'
+          }
+          aria-hidden={!showActionButtons}
+        >
+          <ActionButton
+            isDark={isDark}
+            icon={chordsVisible ? 'music-off' : 'music-note'}
+            label={chordsVisible ? 'Ocultar acordes' : 'Mostrar acordes'}
+            onPress={onToggleChords}
+            isActive={!chordsVisible}
+          />
+          {hasRepeats && onToggleCompact && (
             <ActionButton
-              icon={chordsVisible ? 'music-note' : 'music-off'}
-              label={`Acordes ${chordsVisible ? 'ON' : 'OFF'}`}
-              onPress={onToggleChords}
-              isActive={!chordsVisible}
-            />
-            {hasArrangements && onToggleArrangements && (
-              <ActionButton
-                icon="auto-awesome"
-                label={`Arreglos ${arrangementsVisible ? 'ON' : 'OFF'}`}
-                onPress={onToggleArrangements}
-                isActive={arrangementsVisible}
-              />
-            )}
-            <ActionButton
-              icon="translate"
-              label={`Notación: ${notation}`}
-              onPress={onToggleNotation}
-              isActive={notation !== 'ES'}
-            />
-            <ActionButton
-              icon="swap-vert"
+              isDark={isDark}
+              icon={compactView ? 'unfold-more' : 'unfold-less'}
               label={
-                currentTranspose !== 0 &&
-                currentCapoOverride !== null &&
-                currentCapoOverride !== undefined
-                  ? `Tono ${currentTranspose > 0 ? '+' : ''}${currentTranspose} · C${currentCapoOverride}`
-                  : currentTranspose !== 0
-                    ? `Tono ${currentTranspose > 0 ? '+' : ''}${currentTranspose}`
-                    : currentCapoOverride !== null &&
-                        currentCapoOverride !== undefined
-                      ? `Cejilla ${currentCapoOverride}`
-                      : 'Cambiar tono / cejilla'
+                compactView
+                  ? 'Desplegar estribillos'
+                  : 'Plegar estribillos repetidos'
               }
-              onPress={handleOpenTransposeBottomSheet}
-              isActive={
-                currentTranspose !== 0 ||
-                (currentCapoOverride !== null &&
-                  currentCapoOverride !== undefined)
-              }
+              onPress={onToggleCompact}
+              isActive={compactView}
             />
+          )}
+          {hasArrangements && onToggleArrangements && (
             <ActionButton
-              icon="text-fields"
-              label="Tipo de letra"
-              onPress={handleOpenFontPanel}
-              isActive={
-                currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
-                (availableFonts.length > 0 &&
-                  currentFontFamily !== availableFonts[0].cssValue)
+              isDark={isDark}
+              icon="auto-awesome"
+              label={
+                arrangementsVisible ? 'Ocultar arreglos' : 'Mostrar arreglos'
               }
+              onPress={onToggleArrangements}
+              isActive={!arrangementsVisible}
             />
+          )}
+          <ActionButton
+            isDark={isDark}
+            icon="translate"
+            label={
+              notation === 'ES' ? 'Acordes en inglés' : 'Acordes en español'
+            }
+            onPress={onToggleNotation}
+            isActive={notation !== 'ES'}
+          />
+          <ActionButton
+            isDark={isDark}
+            icon="swap-vert"
+            label={
+              songBadge ? `Tono y cejilla · ${songBadge}` : 'Tono y cejilla'
+            }
+            onPress={handleOpenTransposeBottomSheet}
+            isActive={!!songBadge}
+          />
+          <ActionButton
+            isDark={isDark}
+            icon="text-fields"
+            label="Letra y vista"
+            onPress={handleOpenFontPanel}
+            isActive={
+              currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
+              (availableFonts.length > 0 &&
+                currentFontFamily !== availableFonts[0].cssValue)
+            }
+          />
 
-            <View
-              style={[styles.menuDivider, isDark && styles.menuDividerDark]}
-            />
+          {/* El afinador, en hoja encima de la canción. */}
+          <ActionButton
+            isDark={isDark}
+            icon="graphic-eq"
+            label="Afinar la guitarra"
+            onPress={() => {
+              setMenuOpen(false);
+              openCantoral('Tuner');
+            }}
+          />
 
+          <View
+            style={[styles.menuDivider, isDark && styles.menuDividerDark]}
+          />
+
+          <ActionButton
+            isDark={isDark}
+            icon="content-copy"
+            label="Copiar letra"
+            onPress={() => {
+              onCopyLyrics();
+              toast.show({ label: 'Letra copiada al portapapeles' });
+            }}
+          />
+          <ActionButton
+            isDark={isDark}
+            icon="fullscreen"
+            label="Pantalla completa"
+            onPress={onNavigateToFullscreen}
+          />
+          {Platform.OS === 'web' && !!songContent && (
             <ActionButton
-              icon="content-copy"
-              label="Copiar letra"
+              isDark={isDark}
+              icon="print"
+              label="Imprimir"
               onPress={() => {
-                onCopyLyrics();
-                toast.show({ label: 'Letra copiada al portapapeles' });
+                // La hoja en papel, como el PDF de la playlist: con el
+                // tono, la cejilla y la vista que se tienen ahora.
+                const html = buildSongPrintHtml(
+                  {
+                    title: songTitle ?? '',
+                    author: songAuthor,
+                    key: songKey,
+                    capo: songCapo,
+                    capoOverride: currentCapoOverride,
+                    content: songContent,
+                    transpose: currentTranspose,
+                  },
+                  {
+                    notation,
+                    showChords: chordsVisible,
+                    compact: compactView,
+                    chorusStyle: view?.chorusStyle,
+                    chorusLabel: view?.chorusLabel,
+                    verseNumbers: view?.verseNumbers,
+                  },
+                );
+                if (!printHtmlInNewWindow(html)) {
+                  toast.show({
+                    label: 'Permite las ventanas emergentes para imprimir',
+                  });
+                }
               }}
             />
-            <ActionButton
-              icon="fullscreen"
-              label="Pantalla completa"
-              onPress={onNavigateToFullscreen}
-            />
-            <ActionButton
-              icon="bug-report"
-              label="Reportar error"
-              onPress={() => setShowReportBugsModal(true)}
-            />
-          </View>
-        )}
-        <View style={{ position: 'relative' }}>
-          {hasModifications && !showActionButtons && (
-            <View style={[styles.badge, isDark && styles.badgeDark]} />
           )}
-          {hasArrangements && !showActionButtons && (
-            <View style={[styles.arrBadge, isDark && styles.arrBadgeDark]} />
+          <ActionButton
+            isDark={isDark}
+            icon="bug-report"
+            label="Reportar error"
+            onPress={() => setShowReportBugsModal(true)}
+          />
+        </Animated.View>
+        <View style={{ position: 'relative' }}>
+          {!!songBadge && !showActionButtons && (
+            // Es la única señal de que la canción va transportada: entra con
+            // un zoom corto (sin rebote) para que se vea al cerrar la hoja.
+            <Animated.View
+              entering={ZoomIn.duration(durations.base).easing(
+                motionEasings.out,
+              )}
+              exiting={FadeOut.duration(durations.quick)}
+              style={[styles.badge, isDark && styles.badgeDark]}
+              pointerEvents="none"
+            >
+              <Text
+                style={[
+                  styles.badgeText,
+                  { color: onColor(themeColors(isDark).link) },
+                ]}
+                numberOfLines={1}
+              >
+                {songBadge}
+              </Text>
+            </Animated.View>
           )}
           <TouchableOpacity
             style={[
@@ -338,21 +562,32 @@ const SongControls: React.FC<SongControlsProps> = ({
             ]}
             onPress={toggleMenu}
             activeOpacity={0.75}
-            accessibilityLabel="Configuración"
+            accessibilityLabel={
+              showActionButtons
+                ? 'Cerrar opciones de la canción'
+                : songBadge
+                  ? `Opciones de la canción. Tono cambiado: ${songBadge}`
+                  : 'Opciones de la canción'
+            }
           >
             {Platform.OS === 'ios' && (
               <GlassSurface
                 variant="regular"
-                tintColor={showActionButtons ? '#FF453A' : undefined}
+                tintColor={showActionButtons ? SwipeColors.remove : undefined}
               />
             )}
-            <Animated.View
-              style={{ transform: [{ rotate: rotateInterpolation }] }}
-            >
+            <Animated.View style={fabTuneIconStyle}>
               <MaterialIcons
-                name={showActionButtons ? 'add' : 'tune'}
+                name="tune"
                 size={22}
-                color={isDark ? '#fff' : '#1C1C1E'}
+                color={themeColors(isDark).text}
+              />
+            </Animated.View>
+            <Animated.View style={[styles.fabIconOverlay, fabCloseIconStyle]}>
+              <MaterialIcons
+                name="add"
+                size={22}
+                color={themeColors(isDark).text}
               />
             </Animated.View>
           </TouchableOpacity>
@@ -367,6 +602,7 @@ const SongControls: React.FC<SongControlsProps> = ({
         currentFontFamily={currentFontFamily}
         onSetFontSize={onSetFontSize}
         onSetFontFamily={onSetFontFamily}
+        view={view}
       />
 
       <TransposeBottomSheet
@@ -374,6 +610,8 @@ const SongControls: React.FC<SongControlsProps> = ({
         onClose={() => setShowTransposeBottomSheet(false)}
         currentTranspose={currentTranspose}
         onSetTranspose={handleSetTranspose}
+        songKey={songKey}
+        notation={notation}
         originalCapo={songCapo}
         currentCapoOverride={currentCapoOverride}
         onSetCapoOverride={onSetCapoOverride}
@@ -411,11 +649,9 @@ const SongControls: React.FC<SongControlsProps> = ({
   );
 };
 
-const isIOS = Platform.OS === 'ios';
-
 const styles = StyleSheet.create({
   scrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.3)',
     zIndex: 999,
   },
@@ -428,7 +664,7 @@ const styles = StyleSheet.create({
   menuContainer: {
     marginBottom: 12,
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: radii.lg,
     paddingVertical: 8,
     paddingHorizontal: 4,
     minWidth: 200,
@@ -445,8 +681,13 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  // En oscuro el menú y el FAB tienen el mismo relleno que la pantalla
+  // (`background`): sin sombra visible en Android oscuro, solo los separa un
+  // contorno fino.
   menuContainerDark: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: themeColors(true).background,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: SystemGray.dark.gray3,
     ...Platform.select({
       web: {
         boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
@@ -470,7 +711,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: radii.md,
     marginHorizontal: 4,
     marginVertical: 1,
   },
@@ -478,7 +719,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F0FE',
   },
   actionButtonActiveDark: {
-    backgroundColor: '#1A2744',
+    backgroundColor: KeyPillColors.bgDark,
   },
   actionButtonText: {
     marginLeft: 10,
@@ -490,11 +731,11 @@ const styles = StyleSheet.create({
     color: '#EBEBF0',
   },
   actionButtonTextActive: {
-    color: '#253883',
+    color: themeColors(false).link,
     fontWeight: '600',
   },
   actionButtonTextActiveDark: {
-    color: '#7AB3FF',
+    color: themeColors(true).link,
     fontWeight: '600',
   },
   fabMain: {
@@ -506,14 +747,14 @@ const styles = StyleSheet.create({
       web: {
         width: 54,
         height: 54,
-        borderRadius: 27,
+        borderRadius: radii.pillFull,
         boxShadow: '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
         cursor: 'pointer',
       },
       default: {
         width: 48,
         height: 48,
-        borderRadius: 24,
+        borderRadius: radii.pillFull,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,
@@ -522,43 +763,41 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  fabIconOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   fabMainDark: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: themeColors(true).background,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: SystemGray.dark.gray3,
   },
   fabMainOpen: {
-    backgroundColor: '#FF453A',
+    backgroundColor: SwipeColors.remove,
   },
+  // Píldora con el tono/cejilla de esta canción, montada sobre el borde del
+  // botón. Mismo azul que el tono transpuesto en la ficha y en la lista.
   badge: {
     position: 'absolute',
-    right: -1,
-    top: -1,
-    backgroundColor: '#FF453A',
-    borderRadius: 6,
-    width: 12,
-    height: 12,
+    right: -6,
+    top: -8,
+    backgroundColor: themeColors(false).link,
+    borderRadius: radii.pillFull,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
     zIndex: 10,
     borderWidth: 2,
     borderColor: '#F2F2F7',
   },
   badgeDark: {
+    backgroundColor: themeColors(true).link,
     borderColor: '#1C1C1E',
   },
-  // Indicador de "arreglos disponibles" — acento MCM, esquina superior izquierda
-  // para no chocar con el badge de modificaciones (rojo, derecha).
-  arrBadge: {
-    position: 'absolute',
-    left: -1,
-    top: -1,
-    backgroundColor: '#E15C62',
-    borderRadius: 6,
-    width: 12,
-    height: 12,
-    zIndex: 10,
-    borderWidth: 2,
-    borderColor: '#F2F2F7',
-  },
-  arrBadgeDark: {
-    borderColor: '#1C1C1E',
+  badgeText: {
+    ...typography.micro,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
 });
 

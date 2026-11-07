@@ -15,7 +15,7 @@ import {
   Skeleton,
   useToast,
 } from 'heroui-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import PageContainer from '@/components/ui/PageContainer';
 import ContextMenuSheet from '@/components/ContextMenuSheet';
 import { useContextMenu } from '@/hooks/useContextMenu';
@@ -25,10 +25,12 @@ import EmptyState from '@/components/ui/EmptyState';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
+import typography from '@/constants/typography';
 
 interface Contacto {
   nombre: string;
@@ -133,7 +135,7 @@ const ContactRow = React.memo(function ContactRow({
             <MaterialIcons
               name="chat"
               size={20}
-              color={isDark ? '#A8E0AB' : colors.success}
+              color={isDark ? '#A8E0AB' : colors.green}
             />
           </PressableFeedback>
         </View>
@@ -147,6 +149,7 @@ export default function ContactosScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const bottomPadding = useTabBarPaddingBottom(24);
   const event = useCurrentEvent();
   const { data: contacts, loading } = useFirebaseData<Contacto[]>(
     getEventFirebasePath(event, 'contactos'),
@@ -294,12 +297,12 @@ export default function ContactosScreen() {
             query.trim().length >= 2 ? (
               <EmptyState
                 icon="search-off"
-                title="Sin coincidencias"
+                title="Sin resultados"
                 subtitle={`No hay contactos que coincidan con "${query}".`}
               />
-            ) : null
+            ) : undefined
           }
-          contentContainerStyle={styles.content}
+          contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}
           initialNumToRender={12}
           windowSize={9}
@@ -347,9 +350,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
       backgroundColor: theme.background,
     },
-    content: {
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
-    },
     searchContainer: {
       marginHorizontal: 16,
       marginVertical: 12,
@@ -357,15 +357,15 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     resultsMeta: {
       paddingHorizontal: 4,
-      fontSize: 12,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      ...typography.footnote,
+      color: themeColors(isDark).textSecondary,
       fontWeight: '500',
     },
     cardWrapper: {
       paddingHorizontal: 16,
     },
     card: {
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      backgroundColor: themeColors(isDark).background,
       overflow: 'hidden',
     },
     cardFirst: {
@@ -401,7 +401,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     avatar: {
       width: 44,
       height: 44,
-      borderRadius: 22,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -415,14 +415,14 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       minWidth: 0,
     },
     name: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).text,
       letterSpacing: -0.2,
     },
     role: {
-      fontSize: 13,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      ...typography.caption,
+      color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
     actions: {
@@ -432,7 +432,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     iconBtn: {
       width: 38,
       height: 38,
-      borderRadius: 19,
+      borderRadius: radii.pillFull,
       alignItems: 'center',
       justifyContent: 'center',
     },

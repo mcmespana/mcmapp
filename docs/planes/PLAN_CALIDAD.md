@@ -1,11 +1,96 @@
 # PLAN_CALIDAD.md — Plan de saneamiento de código de la MCM App
 
-> Plan de trabajo para mejorar la calidad del código, reducir la deuda técnica y frenar su crecimiento.
-> Complementa a `MEJORAS.md` (análisis transversal de 2026-05-21): aquel documento diagnostica; éste planifica la ejecución con fases, orden y criterios de salida.
+> ⚠️ **Parcialmente vigente.** La **Fase 0** (guardarraíles) está hecha y es la
+> parte que sigue mandando. La **Fase 1 (trocear los gigantes) está DESCARTADA**
+> por decisión del usuario del 2026-08-15 — el porqué está en §0, escrito abajo,
+> y es lo primero que hay que leer de este documento. El diagnóstico de junio se
+> conserva como foto histórica: **sus cifras ya no son ciertas** y su conclusión
+> sobre el tamaño de los archivos ya no es la política del repo.
 >
-> **Fecha:** 2026-06-10 · Datos medidos sobre el código actual de `main`, no heredados del análisis de mayo.
+> **Fecha original:** 2026-06-10.
 >
-> **Cómo usarlo:** las fases van en orden de impacto. La Fase 0 es barata y frena el deterioro; hacedla aunque no se haga nada más. Marcad cada ítem al completarlo y anotad el PR. Convenciones del repo: documentar cambios relevantes en `mcm-app/CHANGELOG.md` y mantener `mcm-app/TODO.md`.
+> **Cómo usarlo:** lee §0, luego la Fase 0. El resto es contexto.
+
+---
+
+## §0 — Cómo se organiza el código cuando quien lo edita es una IA
+
+_Escrito el 2026-08-15, a petición del usuario. Sustituye a la premisa de la
+Fase 1._
+
+La Fase 1 de este plan daba por sentado algo que en este repo ya no se cumple:
+que el código lo lee y lo edita una persona, con memoria de trabajo limitada,
+que se pierde en un archivo de 1.800 líneas y agradece que se lo partan en
+seis. **En este repo quien edita es siempre un agente**, y eso invierte varias
+de las conclusiones.
+
+### Qué cambia
+
+**El tamaño de un archivo casi da igual; lo que cuesta es la dispersión.** Un
+agente lee 1.800 líneas de una tacada y tiene el fichero entero en contexto. Lo
+que sí le cuesta caro es reconstruir una función repartida entre seis ficheros:
+son seis búsquedas, seis lecturas parciales y una reconstrucción mental que
+puede salir mal. Trocear un gigante coherente en nombre de la limpieza cambia
+un coste que la IA no paga por otro que sí. Por eso los umbrales de `max-lines`
+se subieron de 400/600 a 1.000/1.500 el 2026-08-08, y por eso los tres gigantes
+que quedan se quedan.
+
+El matiz: **coherente**. Un archivo grande está bien si es *una* cosa (una
+pantalla con sus piezas). Está mal si son tres cosas sin relación que
+comparten fichero por accidente histórico. El criterio deja de ser "cuántas
+líneas" y pasa a ser "¿esto se lee como un tema o como un cajón de sastre?".
+
+**El comentario que explica el PORQUÉ vale más que nunca.** Es la única forma
+de transmitir contexto que no se deduce del código: por qué estas animaciones
+van con `Animated` de RN y no con Reanimated (`BottomSheet.tsx`), por qué el
+Wordle no se toca, por qué las escrituras van por `firebaseWrites`. Un agente
+que no lo lee tiene muchas papeletas de "arreglar" justo eso. Los comentarios
+de este repo ya lo hacen y hay que mantenerlo: **no describas lo que hace la
+línea, describe la decisión y el accidente que la provocó**.
+
+**Lo que de verdad protege es lo ejecutable.** Un agente puede ignorar un
+documento; no puede ignorar un test en rojo. Por orden de eficacia real:
+
+1. **Tests** — 860 hoy. Son el único mecanismo que atrapa una regresión que
+   nadie previó.
+2. **Tipos** — `tsc --noEmit` en verde, y `: any` solo donde no queda otra.
+3. **Lint** — con el techo de warnings documentado (`WARNINGS.md`).
+4. **Tests-guardarraíl**, que valen doble: `tabsLayoutWebSafety.test.ts` no
+   comprueba una función, comprueba que **nadie vuelva a importar** el módulo
+   nativo de tabs en el grafo de web. Codifica una decisión de arquitectura en
+   algo que falla solo. Cada vez que un agente rompa algo por no saber una
+   regla, el arreglo correcto no es un párrafo en `CLAUDE.md`: es un test así.
+
+**La documentación tiene que decir el estado, no solo el contenido.** El fallo
+más caro de este repo en agosto de 2026 no fue de código: fue un índice de
+planes que seguía diciendo TODO cuando todo estaba hecho, y dos sesiones
+ejecutaron los mismos 15 planes en paralelo. Un humano habría sospechado; el
+agente se fía. De ahí `docs/planes/README.md` y la regla de mover a `archivo/`
+en el mismo commit que cierra el trabajo.
+
+**Un sitio para cada cosa, y que se diga cuál es.** Un agente encuentra por
+búsqueda, no por costumbre. Las convenciones que más rinden aquí son las que
+hacen la búsqueda determinista: `@/` siempre, `logger` y nunca `console.*`,
+estilos en `<pantalla>Styles.ts`, escrituras de UI por `services/firebaseWrites.ts`.
+Valen porque son **absolutas**: "casi siempre" obliga a comprobar, y comprobar
+es el coste que se quería evitar.
+
+### Qué NO cambia
+
+- Duplicar lógica sigue siendo malo, aquí por un motivo distinto: dos copias es
+  que el agente arregle una y deje la otra viva.
+- Las funciones puras extraídas a `utils/` siguen ganando, no por tamaño sino
+  porque **se pueden testear** (`songTags.ts`, `resolveProfileConfig.ts`,
+  `calendarDates`…). Esa extracción sí vale la pena siempre.
+- Los efectos y las dependencias siguen importando: son bugs de verdad, no
+  estética. De hecho es lo único que se arregló del repaso de warnings.
+
+### La regla práctica
+
+> **No trocees por tamaño. Trocea por testabilidad.** Si el trozo que sacas
+> puede tener un test propio, sácalo. Si solo va a ser "las líneas 800-1200 en
+> otro fichero", déjalo donde está y escribe un comentario que explique qué
+> hace ese bloque y por qué.
 
 ---
 
@@ -52,19 +137,42 @@ Objetivo: que el problema deje de crecer mientras se arregla el resto.
 - [x] **0.1 — ESLint como muro** (`mcm-app/eslint.config.js`): _hecho 2026-06-28._
   - [x] `'prettier/prettier': 'error'`.
   - [x] `'no-console': 'error'` — con override solo para `utils/logger.ts` (la migración de `console.*` está completa, 0 en el código).
-  - [x] `'max-lines': ['warn', { max: 400, skipBlankLines: true, skipComments: true }]` — `warn` a propósito (señala 13 gigantes + archivos nuevos sin bloquear los legacy en CI). Cuando la Fase 1 termine, subir a `error` con `max: 800`.
+  - [x] `'max-lines': ['warn', { max: 1000, skipBlankLines: true, skipComments: true }]` — **umbral subido de 400 a 1000 el 2026-08-08** por decisión del usuario: con agentes de IA leyendo el código, un archivo largo pero coherente cuesta menos que la misma lógica repartida en seis ficheros que hay que reconstruir mentalmente. Sigue en `warn`. **Los gigantes que ya hay SE QUEDAN**: la Fase 1 deja de ser trabajo pendiente por tamaño (sí sigue valiendo trocear cuando el motivo sea otro — acoplamiento, reutilización, un módulo que se toca a la vez desde varios sitios).
   - [ ] `'@typescript-eslint/no-explicit-any': 'warn'` → pendiente: hay 66 `: any` en archivos grandes; con `lint-staged --max-warnings=0` activar el `warn` bloquearía cualquier commit que toque esos archivos. Activar al limpiarlos (Fase 4.1) o, si se quiere ya, hacerlo a la vez que se eliminan.
 - [x] **0.2 — Logger central** (`mcm-app/utils/logger.ts`): _hecho._ Niveles `debug/info/log/warn/error`; `debug`/`info`/`log` silenciados en producción (gate por `__DEV__`); enganche `setReporter` listo para Sentry (Fase 6). **Migración completada: 0 `console.*` en el código** (test en `__tests__/logger.test.ts`).
 - [x] **0.3 — `lint-staged` con ESLint** (raíz `package.json`): _hecho._ Corre `prettier --write` + `eslint --max-warnings=0 --fix` para `mcm-app/**/*.{js,jsx,ts,tsx}`. `.husky/pre-commit` (`npx lint-staged`) restaurado.
-- [ ] **0.4 — Regla escrita en `mcm-app/CLAUDE.md`**: _hecho 2026-06-28_ (sección «Convenciones de código»): «Ningún archivo nuevo > 400 líneas; si una pantalla supera 600, extraer componentes/hooks ANTES de añadir la feature.»
+- [ ] **0.4 — Regla escrita en `mcm-app/CLAUDE.md`**: _hecho 2026-06-28, actualizado 2026-08-08_ (sección «Convenciones de código»): techo de 1.000 líneas; a partir de 1.500 trocear de verdad antes de añadir la feature.
 
 **Criterio de salida:** ✅ lint en CI bloquea formato y `console.*`; CI corre `typecheck` + `typecheck:tests` + `lint` + `test` en PRs; regla anti-gigantes documentada. Pendiente solo el `no-explicit-any: warn` (atado a Fase 4.1).
 
 ---
 
-## Fase 1 — Descuartizar los 9 gigantes (~2-3 semanas · 1-2 archivos por PR)
+## Fase 1 — Descuartizar los 9 gigantes ⏸️ CERRADA POR DECISIÓN (2026-08-08)
 
-Objetivo: ninguna pantalla > 800 líneas; cada pantalla = composición de componentes + un hook de lógica.
+> **Los gigantes se quedan.** Decisión del usuario: con agentes de IA leyendo y
+> editando el código, un archivo largo pero coherente cuesta menos que la misma
+> lógica repartida en seis ficheros que hay que reconstruir mentalmente. El
+> umbral de `max-lines` pasó a 1.000 (avisar) / 1.500 (trocear de verdad).
+>
+> Lo que sigue valiendo de esta fase: trocear cuando el motivo **no** sea el
+> tamaño — acoplamiento, código que se reutiliza desde varios sitios, o lógica
+> pura que gana un test propio al salir del componente. Lo ya hecho (estilos y
+> subcomponentes extraídos) se queda como está.
+>
+> **Reconfirmado y cerrado del todo el 2026-08-15.** El usuario descartó
+> también la reserva que quedaba en la bolsa oportunista del backlog: esto ya
+> no se propone ni cuando "sobran tokens". Nominalmente:
+>
+> - `app/onboarding.tsx` — se queda **literal**, no se trocea ni se ofrece.
+> - `app/(tabs)/index.tsx` — se queda.
+> - `app/screens/SelectedSongsScreen.tsx` — único con permiso para tocarse, y
+>   solo con una mejora real de por medio. El 2026-08-15 se le movieron los dos
+>   efectos de auto-import detrás de sus dependencias (leían en zona muerta):
+>   ese es el tipo de cambio que sí procede.
+>
+> El razonamiento completo, actualizado a "quien edita es una IA", está en §0.
+
+Objetivo original: ninguna pantalla > 800 líneas; cada pantalla = composición de componentes + un hook de lógica.
 
 **Patrón por archivo** (igual en todos, sin cambiar comportamiento):
 
@@ -81,9 +189,10 @@ Objetivo: ninguna pantalla > 800 líneas; cada pantalla = composición de compon
 - [ ] **1.4 — `contigo/evangelio.tsx` (1.295) + `contigo/oracion.tsx` (1.170)** — mismo dominio; sospecha fuerte de duplicación entre ambas. **Antes de trocear, comparar**: lo común va a `components/contigo/` y a un hook compartido; después trocear lo que quede.
 - [ ] **1.5 — `calendario.tsx` (1.123)**.
 - [ ] **1.6 — `SecretPanelModal.tsx` (1.121)** — panel admin; trocear por sección del panel.
-- [ ] **1.7 — `GruposScreen.tsx` (1.100)** — tiene 4 variantes de render con `.map()` anidados (ver MEJORAS §1.4); al trocear, migrar a `SectionList` con `GrupoItem`/`MiembroRow` memoizados (mata dos pájaros).
-- [ ] **1.8 — `HomeWidgets.tsx` (1.075)** — un archivo con N widgets dentro; partirlo en un archivo por widget.
-- [ ] **1.9 — Segunda ronda** (si hay energía): `notifications.tsx` (994), `EvaluationWizard.tsx` (974), `NotificationsBottomSheet.tsx` (937), `PreviewChannelModal.tsx` (847).
+- [~] **1.7 — `GruposScreen.tsx` (1.100)** — **parcial, 2026-06-28** → 561 líneas (fuera de la lista de gigantes). Extraídos a `components/grupos/`: los subcomponentes (`SearchBar`, `MemberRow`, `GrupoCard`, `SearchHitRow`), los estilos (`gruposStyles.ts`) y los helpers puros (`gruposHelpers.ts`: `normalize`/`isMe`/tipos, con test). **Pendiente** (no tocado a propósito, requiere verificación en dispositivo): trocear las 4 ramas de render del cuerpo principal (~511 líneas, sigue >400) y valorar la migración a `SectionList` con items memoizados (MEJORAS §1.4) — eso sí cambia comportamiento.
+- [ ] **1.8 — `HomeWidgets.tsx` (1.075)** — un archivo con N widgets dentro; partirlo en un archivo por widget. ⚠️ Ojo: hubo una extracción previa **huérfana** a `components/ui/` (`StatCard.tsx`, `TeaserCard.tsx`, que no importaba nadie): **borradas el 2026-10-17** por decisión del usuario; Contigo sigue usando las de `HomeWidgets.tsx`, que son las únicas. (`ui/ProgressRing.tsx` sí se usa, en `app/carismochito.tsx`.)
+- [ ] **1.9 — Segunda ronda** (si hay energía): `notifications.tsx` (994), ~~`EvaluationWizard.tsx` (974)~~ **hecho 2026-06-28** → 360 líneas; extraídas a `components/evaluation/` las fases (`WelcomePhase`, `QuestionInput`, `SuccessPhase`), los controles (`WizardButton`, `ScaleInput`) y los estilos del armazón (`wizardStyles.ts`). ~~`NotificationsBottomSheet.tsx` (937)~~ **hecho 2026-06-28** → 365 líneas; extraídos a `components/notifications/` el detalle (`NotificationDetail`), el item de lista (`NotificationListItem`) y los helpers puros (`notificationDisplay.ts`, con test). ~~`PreviewChannelModal.tsx` (847)~~ **hecho 2026-06-28** → 349 líneas; piezas decorativas extraídas a `components/preview-channel/` (`AnimatedGradients`, `FloatingParticle`, `ConfettiBurst`, `GiantLever`, `LabDecorations`).
+  - Nota: `hooks/useSongProcessor.ts` pasó a >800 (1014) con el trabajo del cantoral (pantalla de error de sintaxis), que compensa parte de estos troceados en el recuento de gigantes (hoy 11).
 
 **Verificación de cada PR:** la app corriendo (web como mínimo, `npm run web`), no solo typecheck — extraer componentes rompe sutilmente estilos, gestos y memoización.
 
@@ -97,7 +206,7 @@ Objetivo: ninguna pantalla > 800 líneas; cada pantalla = composición de compon
 
 ### 2.1 Hallazgos
 
-- [ ] **`app/screens/` dentro de `app/` es una anomalía de Expo Router.** Todo lo que vive bajo `app/` es una ruta para expo-router, pero `app/screens/*` son pantallas de **react-navigation** registradas a mano dentro de stacks (`cancionero.tsx`, `mas.tsx` vía `eventStackScreens.tsx`). Funciona porque algo las excluye o nunca se navega a ellas por URL, pero es el patrón híbrido que más confunde a quien llega de nuevas (y a los agentes IA). **Propuesta:** mover `app/screens/` → `mcm-app/screens/` (fuera de `app/`), que `app/` contenga SOLO rutas expo-router. Cambio mecánico de imports, un PR.
+- [ ] **`app/screens/` dentro de `app/` es una anomalía de Expo Router.** Todo lo que vive bajo `app/` es una ruta para expo-router, pero `app/screens/*` son pantallas de **react-navigation** registradas a mano dentro de stacks (hasta Expo 58: `cancionero.tsx`, `mas.tsx` vía `eventStackScreens.tsx`; hoy son rutas que las re-exportan). Funciona porque algo las excluye o nunca se navega a ellas por URL, pero es el patrón híbrido que más confunde a quien llega de nuevas (y a los agentes IA). **Propuesta:** mover `app/screens/` → `mcm-app/screens/` (fuera de `app/`), que `app/` contenga SOLO rutas expo-router. Cambio mecánico de imports, un PR.
 - [ ] **Duplicidad ruta-fina vs pantalla:** `app/wordle.tsx` + `app/screens/WordleScreen.tsx`, `app/evaluacion-app.tsx` + `app/screens/EvaluacionAppScreen.tsx`… El wrapper de ruta es razonable, pero el criterio de cuándo existe wrapper y cuándo la ruta ES la pantalla (p. ej. `onboarding.tsx`, `calendario.tsx`) no está escrito. **Propuesta:** documentar el criterio en `mcm-app/CLAUDE.md` (ruta = wrapper fino que monta la pantalla; pantalla = en `screens/`).
 - [ ] **`components/` raíz con ~49 archivos planos** y solo 4 subcarpetas (`contigo/`, `playlist/`, `song-media/`, `ui/`). Conviven sin orden: cantoral (`SongControls`, `SongDisplay`, `SongSearch`, `SongListItem`, `TransposeBottomSheet`, `SongFontBottomSheet`, `SuggestSongModal`, `ArrangementInputModal`, `AlbumCard`), notificaciones (`NotificationsBottomSheet`, `NotificationPermissionBanner`), eventos (`EventItem`, `EventActionButtons`, `EventDetailsBottomSheet`), admin/secret (`SecretPanelModal`, `SecretMenuTrigger`, `PreviewChannelModal`), carismochito (3 archivos), feedback (`AppFeedbackModal`, `ReportBugsModal`, `EvaluationWizard`, `StarRating`, `SurveyBanner`), auth (`LoginSheet`, `LoginNudgeBanner`, `SocialLoginSection`), banners/sistema (`OfflineBanner`, `OTAUpdatePrompt`, `AddToHomeBanner`, `MaintenanceScreen`, `ErrorBoundary`…). **Propuesta de estructura:**
 
@@ -143,7 +252,7 @@ Objetivo: ninguna pantalla > 800 líneas; cada pantalla = composición de compon
 
 - [ ] **3.1 — Auditar la pareja `SettingsContext` vs `AppSettingsContext`**: dos contexts con nombre casi idéntico. Averiguar si es duplicación histórica o separación real (cantoral vs app); si se solapan, fusionar; si no, renombrar para que el nombre cuente la diferencia (p. ej. `SongDisplaySettingsContext`).
 - [ ] **3.2 — Fusionar contexts afines**: `UserProfileContext` + `ProfileConfigContext` se consumen casi siempre juntos (ya sugerido en MEJORAS §2.2).
-- [ ] **3.3 — `AppProviders.tsx`**: componente que encapsule la pirámide de providers; `_layout.tsx` queda legible.
+- [x] **3.3 — `AppProviders.tsx`**: _hecho_ (`components/AppProviders.tsx`; `_layout.tsx` solo lo monta).
 - [ ] **3.4 — Re-renders**: donde se sospeche cascada, **medir primero** con React DevTools Profiler; solo entonces separar `state`/`actions` en contexts gemelos o usar `use-context-selector`. No optimizar a ciegas.
 
 **Criterio de salida:** ≤ 12 contexts, pirámide encapsulada, decisión Settings/AppSettings documentada.
@@ -153,7 +262,7 @@ Objetivo: ninguna pantalla > 800 líneas; cada pantalla = composición de compon
 ## Fase 4 — Tipos y duplicación (~1 semana · solapable con Fase 1)
 
 - [ ] **4.1 — Eliminar los 63 `: any`** módulo a módulo. Al terminar: `'@typescript-eslint/no-explicit-any': 'error'`.
-- [x] **4.2 — Incluir `__tests__` en typecheck**: _hecho 2026-06-28._ Creado `tsconfig.test.json` (extiende el base + incluye `__tests__`), script `npm run typecheck:tests`, y añadido como paso del CI (`.github/workflows/ci.yml`). Los tests tipan limpios.
+- [x] **4.2 — Incluir `__tests__` en typecheck**: _hecho 2026-06-28._ Creado `tsconfig.test.json` (extiende el base + incluye `__tests__`), script `npm run typecheck:tests`, y añadido como paso del CI (`.github/workflows/verify.yml`; `ci.yml` ya no existe). Los tests tipan limpios.
 - [ ] **4.3 — Pasada de duplicación con `jscpd`** (informe, no gate de CI). Candidatos ya sospechados: `evangelio.tsx` ↔ `oracion.tsx`, las 4 variantes de render de `GruposScreen`, modales de export.
 
 ---

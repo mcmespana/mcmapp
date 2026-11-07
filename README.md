@@ -8,7 +8,7 @@ App de MCM España. Expo / React Native para iOS, Android y Web.
 
 ```bash
 # Requisitos: Node.js LTS
-npm install -g expo-cli eas-cli
+npm install -g eas-cli   # (el viejo expo-cli global está deprecado; usa `npx expo`)
 
 # Clonar e instalar
 git clone https://github.com/mcmespana/mcmapp.git
@@ -35,13 +35,15 @@ npm run format                     Prettier
 ```
 
 ### Builds
-```
-eas build -p android --profile preview              APK de prueba
-eas build -p android --profile production            AAB para Play Store
-eas build -p android --profile development --local   Build local dev
 
-eas build -p ios --profile production                Build para App Store
-eas build -p ios --profile production --auto-submit  Build + subir a TestFlight
+> ⚠️ Usa SIEMPRE los scripts `npm run eas:build*` (limpian los symlinks
+> `.agent/.agents` de skills antes de comprimir; `eas build` directo falla
+> en Windows con `EPERM ... symlink`). Detalle en `mcm-app/CLAUDE.md`.
+
+```
+npm run eas:build:android -- --profile preview       APK de prueba
+npm run eas:build:android -- --profile production    AAB para Play Store
+npm run eas:build:ios -- --profile production        Build para App Store
 
 eas submit -p android                                Subir a Play Store
 eas submit -p ios --latest                           Subir a TestFlight
@@ -82,8 +84,8 @@ Pasos concretos:
 
 1. Tu PR se mergea a `main`.
 2. Cuando esté listo para probadores: `git checkout preview && git merge main && git push`. El workflow publica el OTA al canal `preview` en ~2 min. Los dispositivos suscritos (ver toggle escondido "Laboratorio Alpha") lo reciben en el siguiente check.
-3. Cuando esté validado: `git checkout production && git merge main && git push`. El workflow publica al canal `production`. Todos los usuarios lo reciben en el siguiente arranque o cada 15 min con la app abierta.
-4. Rollback rápido si algo va mal: `eas update:republish --branch production --group <id-anterior>` (lo puedes ejecutar con `workflow_dispatch` desde la pestaña Actions).
+3. Cuando esté validado: `git checkout production && git merge preview && git push` (mergear `preview` y no `main` asegura que sale exactamente lo probado). El workflow publica al canal `production`. Todos los usuarios lo reciben en el siguiente arranque o cada 15 min con la app abierta.
+4. Rollback rápido si algo va mal: `eas update:rollback <group-id-malo>` o `eas update:republish --branch production --group <id-anterior>` (se ejecutan a mano, no desde Actions). Detalle, alternativas y cuándo NO empujar a `production` en [`docs/desarrollo/OTA.md`](docs/desarrollo/OTA.md).
 
 ### 2) Release de binario (sube a App Store / Play Store)
 
@@ -131,13 +133,17 @@ mcmapp/
 │   ├── contexts/             Estado global (React Context)
 │   ├── constants/            Colores, catálogo de perfiles, Firebase config
 │   ├── utils/                Utilidades (acordes, filtros, BBCode)
-│   ├── assets/               Imágenes, fuentes, JSONs locales (álbumes, wordle)
+│   ├── assets/               Imágenes, iconos y JSONs locales (calendario litúrgico, wordle)
 │   ├── notifications/        Sistema de notificaciones push
 │   ├── services/             Servicio de push notifications
 │   └── firebase-seed/        JSONs de seed/plantilla para Firebase (perfiles, encuestas, eventos)
 ├── docs/                     Documentación (funcionalidades, contratos, planes) — ver docs/README.md
 ├── scraper-lecturas/         Scraper de lecturas litúrgicas (GitHub Action)
-├── portadas-albumes/         Imágenes de portadas
+├── portadas-albumes/         Imágenes de portadas (las URLs de Firebase apuntan aquí: NO borrar)
+├── medallas-3d/              Modelos .glb de las medallas; la app los descarga de aquí vía jsDelivr (NO borrar)
+├── .agents/                  Skills de UI para agentes IA
+├── design.md                 Guía de diseño prescriptiva para agentes
+├── _para-borrar/             Cuarentena de ficheros dudosos pendientes de que el usuario decida (ver su README)
 └── CLAUDE.md                 Guía para agentes IA (raíz)
 ```
 

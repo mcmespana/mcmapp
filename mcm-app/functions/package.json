@@ -3,13 +3,14 @@
   "private": true,
   "main": "lib/index.js",
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc -w",
+    "build": "npm run sync:parser && tsc",
+    "build:watch": "npm run sync:parser && tsc -w",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "sync:parser": "node scripts/sync-ics-parser.mjs"
   },
   "engines": {
     "node": "20"

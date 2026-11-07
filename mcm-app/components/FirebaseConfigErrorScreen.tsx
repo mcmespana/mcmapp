@@ -1,4 +1,5 @@
 import React from 'react';
+import { radii } from '@/constants/uiStyles';
 import {
   View,
   Text,
@@ -8,7 +9,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
+import typography from '@/constants/typography';
 
 interface Props {
   error: string;
@@ -107,7 +109,7 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: radii.pillFull,
     backgroundColor: '#c0392b',
     alignItems: 'center',
     justifyContent: 'center',
@@ -121,7 +123,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 13,
+    ...typography.caption,
     color: '#aaa',
     textAlign: 'center',
     lineHeight: 19,
@@ -129,7 +131,7 @@ const styles = StyleSheet.create({
   errorBox: {
     flex: 1,
     backgroundColor: '#2a0a0a',
-    borderRadius: 10,
+    borderRadius: radii.md,
     marginBottom: 16,
     maxHeight: 160,
   },
@@ -137,26 +139,26 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   errorText: {
-    fontSize: 12,
+    ...typography.footnote,
     fontFamily: 'monospace',
     color: '#ff6b6b',
     lineHeight: 18,
   },
   fixSection: {
     backgroundColor: '#0f1a0f',
-    borderRadius: 10,
+    borderRadius: radii.md,
     padding: 14,
     marginBottom: 16,
     gap: 6,
   },
   fixTitle: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '700',
     color: '#7ed321',
     marginBottom: 4,
   },
   fixStep: {
-    fontSize: 12,
+    ...typography.footnote,
     color: '#ccc',
     lineHeight: 18,
   },
@@ -170,7 +172,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: '#c0392b',
-    borderRadius: 10,
+    borderRadius: radii.md,
     paddingVertical: 14,
   },
   copyButtonDone: {

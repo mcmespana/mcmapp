@@ -1,9 +1,8 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import {
-  Animated,
+  ActivityIndicator,
   LayoutAnimation,
   Linking,
-  PanResponder,
   Platform,
   StyleSheet,
   Text,
@@ -11,11 +10,24 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import { HeaderHeightContext } from 'expo-router/react-navigation';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { h } from '@/utils/haptics';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { extractYouTubeId } from '@/utils/youtube';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
+import { durations, springs } from '@/constants/animations';
 
 export interface FloatingMediaSource {
   /** 'youtube' → URL de embed de YouTube · 'drive' → URL de preview de Drive. */
@@ -33,11 +45,20 @@ const YT_RED = '#FF3B30';
 const PLAYER_WIDTH = 208;
 // 16:9 → 208 * 9 / 16 ≈ 117 (igual que `.ytf-screen` del diseño).
 const VIDEO_HEIGHT = Math.round((PLAYER_WIDTH * 9) / 16);
-// Audio de Drive: barra de reproducción compacta, no necesita tanto alto
-// como el vídeo pero sí casi todo el ancho disponible (el player de Drive
-// se ve apretado en un ancho tan estrecho como el del PiP de vídeo).
-const AUDIO_HEIGHT = 64;
+// Audio de Drive: no necesita tanto alto como el vídeo, pero sí casi todo el
+// ancho disponible (el player de Drive se ve apretado en un ancho tan estrecho
+// como el del PiP de vídeo) y bastante más de 64pt: el iframe de `/preview` de
+// Drive pinta su propia cabecera encima de los controles, así que con 64 se veía
+// una franja negra SIN el botón de play — o sea, indistinguible de "no pasa
+// nada".
+const AUDIO_HEIGHT = 116;
 const SIDE_MARGIN = 14;
+/**
+ * Alto de la barra de navegación del sistema, sin contar la barra de estado.
+ * Solo es el respaldo para cuando el reproductor se monta fuera de una
+ * pantalla con header (tests): dentro de una, manda `HeaderHeightContext`.
+ */
+const HEADER_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 56;
 
 /**
  * Referer que mandamos al cargar la página de embed de YouTube.
@@ -65,6 +86,15 @@ function isYouTubeWatchUrl(url: string): boolean {
 }
 
 /**
+ * URL para abrir un audio FUERA de la app. El embed de Drive es `/preview`, que
+ * fuera del iframe no siempre resuelve; `/view` es la página normal del fichero
+ * y la captura la app de Drive por universal link.
+ */
+function toDriveViewUrl(previewUrl: string): string {
+  return previewUrl.replace(/\/preview(\?.*)?$/, '/view');
+}
+
+/**
  * Reproductor flotante multimedia (estilo PiP de iOS) que se superpone a la
  * letra sin taparla del todo y se puede arrastrar por la pantalla. Reproduce
  * vídeos de YouTube (embed con Referer real) y audios de Google Drive
@@ -79,48 +109,87 @@ export default function FloatingMediaPlayer({
   source,
   onClose,
 }: FloatingMediaPlayerProps) {
-  const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
+  // Se apoya sobre la barra de pestañas flotante, que ya incluye el inset.
+  const tabBarClearance = useTabBarClearance();
+  const insets = useSafeAreaInsets();
+  // Alto REAL del header de la pantalla (barra de estado incluida). Se lee el
+  // contexto en vez de `useHeaderHeight()` porque este no revienta fuera de
+  // un navegador: devuelve `undefined` y se cae al cálculo a mano.
+  const headerHeight = useContext(HeaderHeightContext);
+  const headerReserve =
+    headerHeight !== undefined
+      ? Math.max(headerHeight, insets.top)
+      : insets.top + HEADER_BAR_HEIGHT;
+  const reducedMotion = useReducedMotion();
   const [fullscreen, setFullscreen] = useState(false);
+  // Estado de carga del embed. Sin esto, un embed que tarda o que falla se ve
+  // como un rectángulo negro y no hay forma de distinguir "cargando" de "roto"
+  // ni salida posible: ahora se avisa y se ofrece abrirlo fuera.
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>(
+    'loading',
+  );
 
   // Drag (arrastre) + animación de entrada.
-  const pan = useRef(new Animated.ValueXY()).current;
-  const enter = useRef(new Animated.Value(0)).current;
+  const panX = useSharedValue(0);
+  const panY = useSharedValue(0);
+  const enter = useSharedValue(0);
+  // Posición al empezar el gesto: hace que cada arrastre CONTINÚE desde donde
+  // se dejó el anterior. Es lo que hacían `extractOffset`/`flattenOffset`.
+  const startX = useSharedValue(0);
+  const startY = useSharedValue(0);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, { dx, dy }) =>
-        Math.abs(dx) > 4 || Math.abs(dy) > 4,
-      onPanResponderGrant: () => {
-        pan.extractOffset();
-      },
-      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
-        useNativeDriver: false,
-      }),
-      onPanResponderRelease: () => {
-        pan.flattenOffset();
-      },
-      onPanResponderTerminate: () => {
-        pan.flattenOffset();
-      },
-    }),
-  ).current;
+  // El arrastre va por gesture-handler, así que corre entero en el hilo de UI:
+  // el reproductor sigue al dedo aunque JS esté ocupado (que es lo normal, con
+  // un WebView reproduciendo al lado).
+  const drag = Gesture.Pan()
+    .minDistance(4)
+    .onStart(() => {
+      startX.set(panX.get());
+      startY.set(panY.get());
+    })
+    .onUpdate((e) => {
+      panX.set(startX.get() + e.translationX);
+      panY.set(startY.get() + e.translationY);
+    });
+
+  // Fuente nueva → vuelta a "cargando". Se ajusta DURANTE el render (el patrón
+  // que documenta React para "cambiar estado cuando cambia una prop") en vez de
+  // en el efecto de abajo: así no hay un render intermedio mostrando el estado
+  // de la fuente anterior.
+  const [lastUrl, setLastUrl] = useState(source?.url);
+  if (source?.url !== lastUrl) {
+    setLastUrl(source?.url);
+    setLoadState('loading');
+  }
 
   // Al abrir una nueva fuente: reset de posición + animación de entrada.
   useEffect(() => {
     if (!source) return;
-    pan.setValue({ x: 0, y: 0 });
-    pan.setOffset({ x: 0, y: 0 });
-    enter.setValue(0);
-    Animated.spring(enter, {
-      toValue: 1,
-      useNativeDriver: false,
-      tension: 90,
-      friction: 11,
-    }).start();
+    panX.set(0);
+    panY.set(0);
+    enter.set(0);
+    // Sin rebote: el muelle de antes (stiffness 90, damping 11) botaba.
+    enter.set(withSpring(1, springs.settle));
     // Solo cuando cambia la URL.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.url]);
+
+  // OJO: la opacidad NO va aquí. El reproductor nace justo cuando se está
+  // desmontando el `Modal` de la hoja de multimedia, y en ese momento el estilo
+  // animado de Reanimated puede no llegar a aplicarse nunca: con `opacity:
+  // enter.get()` (que empieza en 0) el vídeo se quedaba sonando con el
+  // reproductor INVISIBLE, sin forma de pararlo ni de verlo. La entrada se
+  // queda en el desplazamiento y la escala, que si no se animan dejan el
+  // reproductor visible igualmente.
+  const pipStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: panX.get() },
+      // La entrada sube 14pt y el arrastre se suma encima.
+      { translateY: panY.get() + interpolate(enter.get(), [0, 1], [14, 0]) },
+      { scale: interpolate(enter.get(), [0, 1], [0.96, 1]) },
+    ],
+  }));
 
   /**
    * Abre el vídeo preferentemente en la APP de YouTube (scheme nativo). Si
@@ -148,10 +217,32 @@ export default function FloatingMediaPlayer({
   const toggleFullscreen = useCallback(() => {
     h.tap();
     // Anima el cambio de tamaño/posición del contenedor — el WebView es el
-    // mismo, así que la reproducción continúa sin recargar.
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    // mismo, así que la reproducción continúa sin recargar. Solo en iOS: en
+    // Android re-maquetar el WebView (Chromium) en cada fotograma da tirones
+    // y fotogramas en negro, así que ahí el cambio es instantáneo, igual que
+    // con "reducir movimiento" (LayoutAnimation no lo respeta sola). Curva de
+    // salida, no `easeInEaseOut`: es algo que entra.
+    if (Platform.OS === 'ios' && !reducedMotion) {
+      LayoutAnimation.configureNext({
+        duration: durations.slow,
+        update: { type: LayoutAnimation.Types.easeOut },
+      });
+    }
     setFullscreen((f) => !f);
-  }, []);
+  }, [reducedMotion]);
+
+  /** Abre la fuente fuera de la app: YouTube o Drive, según el tipo. */
+  const openOutside = useCallback(() => {
+    if (!source) return;
+    h.tap();
+    if (source.kind === 'youtube') {
+      void openInYouTube(extractYouTubeId(source.url));
+      return;
+    }
+    Linking.openURL(toDriveViewUrl(source.url)).catch(() => {
+      /* sin Drive ni navegador no hay nada que hacer */
+    });
+  }, [source, openInYouTube]);
 
   if (!source) return null;
 
@@ -190,6 +281,8 @@ export default function FloatingMediaPlayer({
         allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
         allowFullScreen
         title={source.label}
+        onLoad={() => setLoadState('ready')}
+        onError={() => setLoadState('error')}
       />
     ) : (
       <WebView
@@ -207,6 +300,12 @@ export default function FloatingMediaPlayer({
         javaScriptEnabled
         domStorageEnabled
         setSupportMultipleWindows={false}
+        // Una vez que el embed ha cargado ya no se degrada a error: algunos
+        // subrecursos del player de YouTube/Drive devuelven 4xx sin que la
+        // reproducción se vea afectada.
+        onLoadEnd={() => setLoadState((s) => (s === 'error' ? s : 'ready'))}
+        onError={() => setLoadState((s) => (s === 'ready' ? s : 'error'))}
+        onHttpError={() => setLoadState((s) => (s === 'ready' ? s : 'error'))}
         onShouldStartLoadWithRequest={(req) => {
           // Cualquier intento de salir del embed hacia la página de vídeo
           // (p.ej. tocar el logo o el "Ver en YouTube" del propio player) se
@@ -220,14 +319,64 @@ export default function FloatingMediaPlayer({
       />
     );
 
-  const enterTranslateY = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [14, 0],
-  });
-  const enterScale = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.96, 1],
-  });
+  const bar = (
+    <View
+      style={[
+        styles.bar,
+        // En pantalla completa el reproductor tapa toda la pantalla, pero el
+        // header del stack es NATIVO y se pinta ENCIMA: sin reservar su alto,
+        // los botones de la barra (YouTube, salir de pantalla completa,
+        // cerrar) caían debajo del back y no se podían tocar. El alto sale
+        // de `headerReserve` (ver arriba por qué no `useHeaderHeight()`).
+        fullscreen && { paddingTop: headerReserve + 8 },
+      ]}
+    >
+      <Text style={styles.barLabel} numberOfLines={1}>
+        {source.label}
+      </Text>
+      {/* Salida a la app externa: YouTube para vídeo, Drive para audio. El
+          audio no la tenía, así que si el embed de Drive no arrancaba no había
+          ninguna forma de llegar a la pista. */}
+      <TouchableOpacity
+        onPress={openOutside}
+        style={styles.barBtn}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityLabel={
+          isVideo ? 'Abrir en la app de YouTube' : 'Abrir en Google Drive'
+        }
+      >
+        <MaterialIcons
+          name={isVideo ? 'smart-display' : 'open-in-new'}
+          size={isVideo ? 13 : 14}
+          color={isVideo ? YT_RED : '#fff'}
+        />
+      </TouchableOpacity>
+      {isVideo && (
+        <TouchableOpacity
+          onPress={toggleFullscreen}
+          style={styles.barBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={
+            fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'
+          }
+        >
+          <MaterialIcons
+            name={fullscreen ? 'fullscreen-exit' : 'fullscreen'}
+            size={15}
+            color="#fff"
+          />
+        </TouchableOpacity>
+      )}
+      <TouchableOpacity
+        onPress={handleClose}
+        style={styles.barBtn}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityLabel="Cerrar reproductor"
+      >
+        <MaterialIcons name="close" size={15} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <Animated.View
@@ -235,65 +384,24 @@ export default function FloatingMediaPlayer({
         styles.floatWrap,
         fullscreen
           ? styles.fsWrap
-          : {
-              width: pipWidth,
-              right: SIDE_MARGIN,
-              bottom: insets.bottom + 96,
-              opacity: enter,
-              transform: [
-                { translateX: pan.x },
-                { translateY: Animated.add(pan.y, enterTranslateY) },
-                { scale: enterScale },
-              ],
-            },
+          : [
+              {
+                width: pipWidth,
+                right: SIDE_MARGIN,
+                // La barra de pestañas FLOTA sobre el contenido, así que el
+                // reproductor tiene que apoyarse encima de ella.
+                bottom: tabBarClearance + 18,
+              },
+              pipStyle,
+            ],
       ]}
     >
       {/* Barra superior — arrastre (solo PiP) + título + acciones */}
-      <View
-        style={[styles.bar, fullscreen && { paddingTop: insets.top + 8 }]}
-        {...(fullscreen ? {} : panResponder.panHandlers)}
-      >
-        <Text style={styles.barLabel} numberOfLines={1}>
-          {source.label}
-        </Text>
-        {isVideo && (
-          <TouchableOpacity
-            onPress={() => {
-              h.tap();
-              void openInYouTube(videoId);
-            }}
-            style={styles.barBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Abrir en la app de YouTube"
-          >
-            <MaterialIcons name="smart-display" size={13} color={YT_RED} />
-          </TouchableOpacity>
-        )}
-        {isVideo && (
-          <TouchableOpacity
-            onPress={toggleFullscreen}
-            style={styles.barBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel={
-              fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'
-            }
-          >
-            <MaterialIcons
-              name={fullscreen ? 'fullscreen-exit' : 'fullscreen'}
-              size={15}
-              color="#fff"
-            />
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          onPress={handleClose}
-          style={styles.barBtn}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Cerrar reproductor"
-        >
-          <MaterialIcons name="close" size={15} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      {fullscreen ? (
+        bar
+      ) : (
+        <GestureDetector gesture={drag}>{bar}</GestureDetector>
+      )}
       {/* Pantalla del vídeo / reproductor de audio. En fullscreen el área
           crece y el vídeo se centra a 16:9; el WebView interior es siempre
           la misma instancia. */}
@@ -306,6 +414,31 @@ export default function FloatingMediaPlayer({
       >
         <View style={fullscreen ? styles.fsVideoInner : styles.videoFill}>
           {videoSurface}
+          {/* Cargando / no se pudo cargar. Va ENCIMA del embed (no en su lugar)
+              para no desmontarlo: si termina de cargar, el overlay se va y la
+              reproducción sigue. */}
+          {loadState !== 'ready' && (
+            <View style={styles.stateOverlay} pointerEvents="box-none">
+              {loadState === 'loading' ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <TouchableOpacity
+                  onPress={openOutside}
+                  style={styles.errorBtn}
+                  accessibilityLabel={
+                    isVideo
+                      ? 'No se pudo cargar aquí: abrir en YouTube'
+                      : 'No se pudo cargar aquí: abrir en Drive'
+                  }
+                >
+                  <MaterialIcons name="open-in-new" size={16} color="#fff" />
+                  <Text style={styles.errorText} numberOfLines={2}>
+                    No se pudo cargar aquí.{'\n'}Toca para abrirlo fuera.
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
       </View>
     </Animated.View>
@@ -315,7 +448,7 @@ export default function FloatingMediaPlayer({
 const styles = StyleSheet.create({
   floatWrap: {
     position: 'absolute',
-    borderRadius: 14,
+    borderRadius: radii.lg,
     overflow: 'hidden',
     backgroundColor: '#111',
     zIndex: 70,
@@ -350,14 +483,14 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     flex: 1,
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '600',
     color: '#fff',
   },
   barBtn: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(255,255,255,0.14)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -365,6 +498,25 @@ const styles = StyleSheet.create({
   },
   videoFill: {
     flex: 1,
+  },
+  stateOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  errorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  errorText: {
+    ...typography.micro,
+    fontWeight: '600',
+    lineHeight: 15,
+    color: '#fff',
   },
   fsVideoArea: {
     flex: 1,

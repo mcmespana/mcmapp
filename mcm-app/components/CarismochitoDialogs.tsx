@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import {
   Animated,
   Modal,
@@ -8,38 +8,57 @@ import {
   Text,
   View,
 } from 'react-native';
+import useAnimatedValue from '@/hooks/useAnimatedValue';
+import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import CarismochitoMascot from '@/components/CarismochitoMascot';
 import { h } from '@/utils/haptics';
+import { CarismoColors } from '@/constants/colors';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /* Verdes del modo (en línea con CarismochitoOverlay). */
-const G = '#1B9E4B';
-const G_LIGHT = '#9DE86B';
-const G_GLOW = '#5AE08A';
-const G_DARK = '#06210F';
+const G = CarismoColors.light;
+const G_LIGHT = CarismoColors.dark;
+const G_GLOW = CarismoColors.glow;
+const G_DARK = CarismoColors.deep;
 
-/** Tarjeta central con animación de entrada (escala + fade). */
+/**
+ * Tarjeta central con animación de entrada (escala + fade).
+ *
+ * Con el `Animated` de React Native, NO con Reanimated: esto vive dentro de un
+ * `Modal` y ahí las animaciones de Reanimated no corren (ver el aviso de
+ * `components/BottomSheet.tsx`). Como la tarjeta nace a opacidad 0, quedarse
+ * sin animación no era "sale de golpe": era una tarjeta invisible.
+ */
 function PopCard({ children }: { children: React.ReactNode }) {
-  const enter = useRef(new Animated.Value(0)).current;
+  const enter = useAnimatedValue(0);
   useEffect(() => {
     Animated.spring(enter, {
       toValue: 1,
+      useNativeDriver: Platform.OS !== 'web',
       tension: 90,
       friction: 9,
-      useNativeDriver: true,
     }).start();
   }, [enter]);
-  const scale = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.85, 1],
-  });
+
+  const cardStyle = {
+    opacity: enter,
+    transform: [
+      {
+        scale: enter.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.85, 1],
+        }),
+      },
+    ],
+  };
+
   return (
     <View style={styles.backdrop}>
-      <Animated.View
-        style={[styles.card, { opacity: enter, transform: [{ scale }] }]}
-      >
+      <Animated.View style={[styles.card, cardStyle]}>
         <LinearGradient
-          colors={['#0C3D1C', G_DARK]}
+          colors={[CarismoColors.deepEdge, G_DARK]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -57,9 +76,18 @@ function PopCard({ children }: { children: React.ReactNode }) {
 export function CarismochitoOnboarding({
   visible,
   onDismiss,
+  onExit,
+  huntEnabled = false,
 }: {
   visible: boolean;
   onDismiss: () => void;
+  /**
+   * Botón "Salir del modo" para quien no puede (o no quiere) agitar el móvil,
+   * p. ej. con el iPad sobre el atril. Sin esta prop no se muestra.
+   */
+  onExit?: () => void;
+  /** Con la caza del Laboratorio Alpha encendida ya se pueden atrapar. */
+  huntEnabled?: boolean;
 }) {
   return (
     <Modal
@@ -81,13 +109,21 @@ export function CarismochitoOnboarding({
           app. Échale un ojo: aparece y desaparece cuando menos lo esperas. 👀
         </Text>
 
-        {/* Teaser de futuro, sin destripar. */}
+        {/* Teaser de futuro, sin destripar — salvo con la caza encendida. */}
         <View style={styles.teaser}>
-          <Text style={styles.teaserText}>
-            ✨ Muy pronto podrás{' '}
-            <Text style={styles.teaserStrong}>coleccionarlos</Text>… y se
-            desvelará algo más. Mantente atento.
-          </Text>
+          {huntEnabled ? (
+            <Text style={styles.teaserText}>
+              ✨ Tócalo cuando se asome para{' '}
+              <Text style={styles.teaserStrong}>atraparlo</Text>. Hay más de
+              uno, y algunos cuesta verlos.
+            </Text>
+          ) : (
+            <Text style={styles.teaserText}>
+              ✨ Muy pronto podrás{' '}
+              <Text style={styles.teaserStrong}>coleccionarlos</Text>… y se
+              desvelará algo más. Mantente atento.
+            </Text>
+          )}
         </View>
 
         <Text style={styles.hint}>
@@ -108,6 +144,20 @@ export function CarismochitoOnboarding({
         >
           <Text style={styles.primaryBtnText}>¡Entendido!</Text>
         </Pressable>
+
+        {onExit ? (
+          <PressableFeedback
+            onPress={() => {
+              h.tap();
+              onExit();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Salir del modo Carismochito"
+            style={styles.exitLink}
+          >
+            <Text style={styles.exitLinkText}>Salir del modo</Text>
+          </PressableFeedback>
+        ) : null}
       </PopCard>
     </Modal>
   );
@@ -185,7 +235,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 380,
-    borderRadius: 28,
+    borderRadius: radii.full,
     paddingHorizontal: 24,
     paddingTop: 28,
     paddingBottom: 24,
@@ -211,7 +261,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
-    color: '#E8FFB8',
+    color: CarismoColors.onDeep,
     fontSize: 21,
     fontWeight: '900',
     textAlign: 'center',
@@ -222,7 +272,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 14,
   },
   body: {
-    color: '#D4F5A0',
+    color: CarismoColors.onDeepSoft,
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
@@ -230,7 +280,7 @@ const styles = StyleSheet.create({
   teaser: {
     marginTop: 16,
     backgroundColor: 'rgba(90, 224, 138, 0.12)',
-    borderRadius: 16,
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: 'rgba(90, 224, 138, 0.3)',
     paddingHorizontal: 16,
@@ -238,17 +288,17 @@ const styles = StyleSheet.create({
   },
   teaserText: {
     color: G_LIGHT,
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 21,
     textAlign: 'center',
   },
   teaserStrong: {
     fontWeight: '900',
-    color: '#E8FFB8',
+    color: CarismoColors.onDeep,
   },
   hint: {
-    color: '#A3D86E',
-    fontSize: 12,
+    color: CarismoColors.onDeepMuted,
+    ...typography.footnote,
     textAlign: 'center',
     marginTop: 16,
     opacity: 0.85,
@@ -263,8 +313,20 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: G_DARK,
     fontWeight: '900',
-    fontSize: 16,
+    ...typography.body,
     letterSpacing: 0.5,
+  },
+  exitLink: {
+    marginTop: 8,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exitLinkText: {
+    color: CarismoColors.onDeepMuted,
+    ...typography.subhead,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
   row: {
     flexDirection: 'row',

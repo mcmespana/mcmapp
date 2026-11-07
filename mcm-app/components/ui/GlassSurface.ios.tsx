@@ -39,7 +39,7 @@ export interface GlassSurfaceProps {
  * Unified iOS glass surface — picks LiquidGlass (iOS 18+) when available
  * and falls back to BlurView with adaptive tint otherwise.
  *
- * Used by GlassHeader, GlassFAB, GlassTabBarBackground and any iOS-only
+ * Used by GlassHeader, GlassFAB y cualquier superficie glass iOS-only
  * glass surface in the app. Avoids duplicating brightness/tint logic.
  */
 export default function GlassSurface({

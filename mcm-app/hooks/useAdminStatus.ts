@@ -11,34 +11,36 @@ import { useAuth } from '@/contexts/AuthContext';
  */
 export function useAdminStatus(): { isAdmin: boolean; loading: boolean } {
   const { user, loading: authLoading } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const uid = user?.uid ?? null;
+
+  // El resultado se guarda JUNTO al uid al que pertenece. Así no hace falta
+  // ningún reset a mano al cambiar de usuario o cerrar sesión: una lectura de
+  // otro uid simplemente deja de contar, y de paso se cierra la rendija por la
+  // que un `isAdmin: true` del usuario anterior seguía en pie hasta que llegaba
+  // la primera respuesta del nuevo.
+  const [result, setResult] = useState<{
+    uid: string;
+    isAdmin: boolean;
+  } | null>(null);
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || !uid) return;
 
-    if (!user) {
-      setIsAdmin(false);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
     const db = getDatabase(getFirebaseApp());
-    const adminRef = ref(db, `users/${user.uid}/isAdmin`);
+    const adminRef = ref(db, `users/${uid}/isAdmin`);
     const unsub = onValue(
       adminRef,
-      (snap) => {
-        setIsAdmin(snap.val() === true);
-        setLoading(false);
-      },
-      () => {
-        setIsAdmin(false);
-        setLoading(false);
-      },
+      (snap) => setResult({ uid, isAdmin: snap.val() === true }),
+      () => setResult({ uid, isAdmin: false }),
     );
     return () => unsub();
-  }, [user, authLoading]);
+  }, [uid, authLoading]);
 
-  return { isAdmin, loading };
+  const current = result?.uid === uid ? result : null;
+
+  return {
+    isAdmin: current?.isAdmin ?? false,
+    // Sin sesión no hay nada que esperar: no es admin y ya está.
+    loading: authLoading || (uid !== null && current === null),
+  };
 }

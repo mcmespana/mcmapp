@@ -7,7 +7,10 @@
     "maintenanceMode": false,
     "maintenanceMessage": "",
     "minAppVersion": "0.0.0",
-    "appReviewMode": false
+    "appReviewMode": false,
+    "comunicaNativa": "alpha",
+    "carismochito": "alpha",
+    "fotosEnIpad": true
   },
   "profiles": {
     "familia": {

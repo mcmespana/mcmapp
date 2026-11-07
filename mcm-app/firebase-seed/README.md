@@ -30,6 +30,12 @@ Ver `docs/contratos/PANEL_PERFILES.md` (raíz del monorepo) para el diseño comp
 - **`data.global.minAppVersion`** y **`maintenanceMode`**: kill switches
   remotos. `0.0.0` = sin bloqueo. `maintenanceMode: true` muestra
   `MaintenanceScreen` en toda la app.
+- **`data.global.minAppVersionSkips`** (opcional): cuántos «Ahora no» deja la
+  pantalla de actualización obligatoria antes de ser estricta (`0` = estricto,
+  `1`-`3` = esas veces, ausente = sin límite). No va en el seed: ausente es lo
+  de siempre.
+- **`data.global.fotosEnIpad`**: `false` apaga las Fotos en todo iPad (iPads con
+  MDM de colegios). Ausente o `true` = se ven.
 
 ### Topics de notificación
 

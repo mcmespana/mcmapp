@@ -65,7 +65,12 @@ edita JSON. El cliente combina perfil + delegación + overrides al arrancar.
   "showChangeNameButton": false,    // legacy, dejar en false
   "maintenanceMode": false,         // ⚠ true → toda la app muestra MaintenanceScreen
   "maintenanceMessage": "",         // mensaje opcional durante mantenimiento
-  "minAppVersion": "0.0.0"          // semver mínima soportada. "0.0.0" = sin bloqueo
+  "minAppVersion": "0.0.0",         // semver mínima soportada. "0.0.0" = sin bloqueo
+  "minAppVersionSkips": 3,          // «Ahora no» permitidos antes de ser estricto (§1.8). Ausente = sin límite
+  "fotosEnIpad": true,              // false → sin Fotos en iPad, solo iPad (§1.9). Ausente = true
+  "appReviewMode": false,           // modo revisión de tiendas — lo gestiona el panel (§1.6)
+  "comunicaNativa": "alpha",        // área privada nativa: "off" | "alpha" | "all" (§1.7). Ausente = "alpha"
+  "carismochito": "alpha"           // modo/caza/colección Carismochito: "off" | "alpha" | "all" (§1.10). Ausente = "alpha"
 }
 ```
 
@@ -75,8 +80,12 @@ edita JSON. El cliente combina perfil + delegación + overrides al arrancar.
 - _Avisar de mantenimiento programado_: `maintenanceMode = true` +
   `maintenanceMessage = "Volvemos en 1 h"`.
 - _Forzar actualización_ tras un release crítico: subir `minAppVersion` a la
-  nueva versión publicada en stores. Las apps inferiores verán pantalla
-  bloqueante con botón "Ir a la tienda".
+  nueva versión publicada en stores. Las apps inferiores verán la pantalla de
+  «Hay una versión nueva» (`UpdateRequiredScreen`) con botón «Actualizar en la
+  tienda». Si deja o no seguir sin actualizar lo decide `minAppVersionSkips`
+  (§1.8).
+- _Apagar las Fotos en los iPads_ (colegios con MDM): `fotosEnIpad = false`
+  (§1.9).
 
 ### 1.2. `data.profiles.{familia | monitor | miembro}` — perfiles base
 
@@ -208,6 +217,117 @@ de `ProfileBase` que **reemplaza** los campos que defina:
 **UX recomendada**: tabla con columnas `Perfil`, `Delegación`, `Campos
 sobreescritos`. El admin elige perfil + delegación de selectores poblados con
 los valores reales y luego marca qué campos quiere reemplazar.
+
+### 1.6. `data.global.appReviewMode` + `data.appReviewBackup` — modo revisión
+
+Mecanismo **del panel**, no de la app. Sirve para las revisiones de App Store y
+Play Store: mientras dura la revisión conviene que el Cantoral y Comunica no
+estén a la vista.
+
+Al encender el interruptor, el panel:
+
+1. Pone `global.appReviewMode = true`.
+2. **Reescribe las `tabs`** (y botones/items equivalentes) de todos los
+   perfiles, delegaciones y overrides quitando Cantoral y Comunica.
+3. Guarda lo que había en `data.appReviewBackup` (con `enabledAt` y las listas
+   originales por perfil/delegación/override).
+
+Al apagarlo, restaura desde ese backup y borra el flag.
+
+> **La app no lee ninguno de los dos campos.** El efecto le llega ya aplicado
+> dentro de `tabs`, que es lo único que resuelve. Están tipados como opcionales
+> en `mcm-app/types/profileConfig.ts` para que el contrato esté completo y para
+> que nadie los borre al serializar el nodo.
+
+Implicaciones prácticas:
+
+- **No edites perfiles con el modo revisión encendido**: lo que guardes se verá
+  como "lo original" cuando se apague, o se perderá al restaurar el backup.
+- Si el backup se pierde (borrado manual del nodo), apagar el modo deja las
+  tabs recortadas: hay que volver a añadir Cantoral y Comunica a mano.
+- Implementación: `mcmpanel/src/lib/appReviewMode.ts`.
+
+### 1.7. `data.global.comunicaNativa` — el área privada nativa
+
+Interruptor de la pestaña Comunica: ¿área nativa o la WebView de siempre (el
+**legado**)? Lo lee la app (`utils/comunica/router.ts`); plan:
+`docs/planes/area-nativa/10-enrutador-enlaces-y-legado.md` §1.
+
+| Valor | Modo normal | Laboratorio Alpha encendido |
+| --- | --- | --- |
+| `"off"` | Legado | Legado |
+| `"alpha"` (o ausente) | Legado | **Nativa** |
+| `"all"` | Nativa | Nativa |
+
+- `"alpha"` es el estado de construcción: solo los probadores la ven.
+- `"all"` es el lanzamiento; `"off"`, la vuelta atrás de emergencia sin build
+  ni OTA (también apaga lo nuevo a quien está en alpha).
+- Sin servidor configurado en el bundle (`EXPO_PUBLIC_COMUNICA_API`), la app
+  enseña el legado diga lo que diga este campo. Hoy solo el canal preview lo
+  lleva, apuntando al servidor falso con datos inventados.
+- Hasta que el panel lo enseñe, se cambia desde la consola de Firebase.
+
+---
+
+### 1.8. `global.minAppVersionSkips` — cuánto insiste la pantalla de actualización
+
+Opcional, entero. Decide qué pasa en la pantalla de «Hay una versión nueva»
+cuando `minAppVersion` deja fuera a una app:
+
+| Valor           | Comportamiento                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------- |
+| ausente         | Sin límite: hay «Ahora no» en cada sesión (lo de siempre).                                              |
+| `0`             | **Estricto**: no hay «Ahora no». Sin actualizar no se entra.                                            |
+| `1`, `2`, `3`…  | Esas veces en total y luego estricto. La pantalla avisa de las que quedan («Es la última vez…»).        |
+
+- El contador es **por dispositivo** (`AsyncStorage`, clave `versionGateSkips`)
+  y va atado a la `minAppVersion` que se exigía: si el panel la sube, es una
+  exigencia nueva y se empieza de cero.
+- Una vez gastado el último, la pantalla es estricta para siempre (hasta que
+  cambie `minAppVersion`).
+- Un valor corrupto (texto, negativo, NaN) cuenta como ausente: **fail-open**,
+  igual que `minAppVersion`. El panel solo ofrece «Sin límite», 0, 1, 2 y 3.
+- Solo tiene efecto si `minAppVersion` bloquea a esa app.
+
+### 1.9. `global.fotosEnIpad` — Fotos en iPad
+
+Opcional, booleano. **Ausente = `true`** (se ven, como siempre).
+
+Existe para los iPads gestionados por MDM (los de los colegios Consolación, por
+ejemplo), donde no deben verse fotos. La app **no puede saber si un iPad está
+en un MDM**, así que el interruptor apaga las fotos en **todos los iPads**,
+cualquier modelo y versión de iOS (`Platform.isPad`).
+
+Con `false`, solo en iPad:
+
+- desaparecen la pestaña Fotos, el botón de Home y la tarjeta de «Más» (el
+  resolver las quita de `tabs`/`homeButtons`/`masItems` — ver `fotosHidden` en
+  `ResolvedProfileConfig`);
+- si llega a la pantalla por enlace, notificación o pantalla de evento, sale
+  «Las fotos no están disponibles» y ni se lee `albums`;
+- si `defaultTab` era `fotos`, la app abre `index`.
+
+iPhone, Android y web no cambian. Quitar Fotos del **perfil** (§1.2) sigue
+siendo la forma de apagarlas para todo el mundo; esto es solo por dispositivo.
+
+### 1.10. `data.global.carismochito` — el modo Carismochito
+
+Interruptor de **todo** Carismochito (modo de agitar, caza y colección). Lo lee
+la app (`utils/carismochitoGate.ts`, `hooks/useCarismochitoAvailable.ts`);
+documentación completa y plan 2027 en `docs/funcionalidades/CARISMOCHITO.md`.
+Mismo patrón que `comunicaNativa` (§1.7):
+
+| Valor | Modo normal | Laboratorio Alpha encendido |
+| --- | --- | --- |
+| `"off"` | Cerrado | Cerrado |
+| `"alpha"` (o ausente, o un valor raro) | **Cerrado** | **Abierto** |
+| `"all"` | Abierto | Abierto |
+
+- Cerrado = no existe y **se apaga a quien lo tuviera activo** (en silencio, al
+  detectar el valor; nunca antes de haber leído la configuración).
+- Es el interruptor del lanzamiento de 2027 (25.º aniversario): pasarlo a
+  `"all"` lo abre a todo el mundo sin build ni OTA.
+- Hasta que el panel lo enseñe, se cambia desde la consola de Firebase.
 
 ---
 
@@ -376,6 +496,10 @@ pushTokens.where('topics', 'array-contains', 'general')
    botón a la tienda.
 4. Apps con `appVersion >= 1.0.5` siguen funcionando normalmente.
 
+> Caso real (noviembre de 2026): al añadir un módulo nativo (afinador) la app
+> pasó a **2.5.1**; la mínima del Panel se sube a `2.5.1` cuando esa build
+> está publicada en las tiendas. Ver `docs/desarrollo/BUILD_AGOSTO_2026.md`.
+
 ### 4.5. "Enviar notificación solo a monitores de Castellón"
 
 1. Panel → _Notificaciones_ → _Nueva_.
@@ -424,13 +548,33 @@ sin querer.
 
 | Check                                                                                                            | Severidad | Acción                                                                                            |
 | ---------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------- |
-| `tabs` no contiene `index`                                                                                       | warning   | Aviso: "El usuario no podrá volver a Inicio". Permitir guardar.                                   |
-| `tabs` está vacío                                                                                                | error     | Bloquear. La app caería al fallback.                                                              |
-| `defaultCalendars` referencia un ID que ya no está en `/calendars`                                                | warning   | Avisar y ofrecer limpiar.                                                                         |
-| `notificationTopic` con caracteres raros (espacios, mayúsculas)                                                   | warning   | Auto-slugify (`"MCM Castellón"` → `"mcm-castellon"`).                                             |
-| `overrides[k]` con clave malformada (no `perfil:delegacion`)                                                      | error     | Bloquear.                                                                                         |
-| `minAppVersion` no es semver válido                                                                                | error     | Bloquear. La app interpretaría `0.0.0` y no bloquearía nada.                                      |
-| Cambios en `/profileConfig` sin actualizar `updatedAt`                                                            | error     | El panel debe forzar `updatedAt = new Date().toISOString()` en cada guardado.                     |
+| `tabs` no contiene `index`                                                                                       | warning   | ✅ Avisa. Permite guardar.                                                                        |
+| `tabs` está vacío                                                                                                | warning   | ✅ Avisa. Permite guardar.                                                                        |
+| `defaultCalendars` referencia un ID que ya no está en `/calendars`                                                | warning   | ✅ Avisa.                                                                                         |
+| `notificationTopic` con caracteres raros (espacios, mayúsculas)                                                   | error     | ✅ **Bloquea.** El editor auto-slugifica al guardar; si llega sucio por JSON importado, para el guardado. |
+| `overrides[k]` con clave malformada (no `perfil:delegacion`, perfil o delegación inexistentes)                     | error     | ✅ **Bloquea.**                                                                                   |
+| `minAppVersion` no es semver válido                                                                                | error     | ✅ **Bloquea.**                                                                                   |
+| Cambios en `/profileConfig` sin actualizar `updatedAt`                                                            | error     | ✅ El panel fuerza `updatedAt` en cada guardado.                                                  |
+
+> **Cómo bloquea** (C4, 2026-08-12). La sección de Perfiles no tiene botón de
+> guardar: cada edición se encola y se escribe sola. El bloqueo se hace en
+> `handleChange` — si `validateProfileConfig()` devuelve errores, el cambio se
+> queda en el borrador local y **no llega a Firebase**. Los editores siguen
+> funcionando (escriben sobre el borrador), así que el admin puede arreglar el
+> problema; en cuanto la validación queda limpia, esa edición persiste el
+> borrador entero, incluido lo que se bloqueó por el camino. Mientras esté en
+> pausa, el aviso rojo dice explícitamente que no se está guardando, y el
+> refresco en tiempo real deja de pisar el borrador para no llevarse los
+> cambios a medio arreglar.
+>
+> La validación vive en `mcmpanel/src/lib/profileConfigValidation.ts`, aparte de
+> la UI y sin React, porque la usan dos sitios que no pueden discrepar: lo que
+> se pinta y lo que se bloquea.
+>
+> **Matiz de `minAppVersion`**: `isAppVersionSupported()` es deliberadamente
+> *fail-open* — un semver corrupto se parsea como `0.0.0` y NO deja a nadie
+> fuera. Un kill-switch mal escrito no bloquea a la gente; simplemente no
+> funciona, que es el riesgo real a vigilar.
 
 ---
 
@@ -597,6 +741,8 @@ export interface GlobalConfig {
   maintenanceMode: boolean;
   maintenanceMessage?: string;
   minAppVersion: string;
+  minAppVersionSkips?: number; // §1.8
+  fotosEnIpad?: boolean; // §1.9
 }
 
 export type OverrideKey = `${ProfileType}:${string}`;
@@ -779,3 +925,5 @@ await update(ref(db), {
 | **`updatedAt`**       | Timestamp ISO en la raíz del documento. La app refresca caché solo cuando cambia. Hay que tocarlo en cada escritura.        |
 | **`maintenanceMode`** | Kill switch global que muestra `MaintenanceScreen` en toda la app.                                                          |
 | **`minAppVersion`**   | Kill switch que fuerza actualización si la versión instalada es inferior. `0.0.0` = desactivado.                            |
+| **`minAppVersionSkips`** | Cuántas veces se puede pulsar «Ahora no» en la pantalla de actualización antes de ser estricta (§1.8).                   |
+| **`fotosEnIpad`**     | `false` apaga las Fotos en todo iPad (§1.9). Pensado para iPads con MDM de colegios.                                         |

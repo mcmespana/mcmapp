@@ -1,25 +1,34 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Platform,
-  Animated,
-  Pressable,
-} from 'react-native';
-import { PressableFeedback } from 'heroui-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+import { MaterialIcons } from '@/components/ui/icons';
 import { h } from '@/utils/haptics';
-import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
-import { Colors } from '@/constants/colors';
+import {
+  HoldStepButton,
+  SheetCard,
+  sheetPalette,
+  useValueFeedback,
+  valueBoxStyle,
+} from '@/components/song-sheet/sheetKit';
 import { radii } from '@/constants/uiStyles';
+import spacing from '@/constants/spacing';
+import typography from '@/constants/typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { convertChord, type Notation } from '@/utils/chordNotation';
+import { transposeKey } from '@/utils/transposeKey';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
   currentTranspose: number;
   onSetTranspose: (value: number) => void;
+  /**
+   * Tonalidad original de la canción (`{key:}` del cantoral). Con ella la hoja
+   * habla en tonos —«Re → Mi»— y no solo en semitonos, que es como piensa
+   * quien toca. Sin ella, cae a «+2 semitonos» como antes.
+   */
+  songKey?: string;
+  notation?: Notation;
   /** Cejilla original de la canción (del cantoral). */
   originalCapo?: number;
   /** Override de cejilla para esta sesión/playlist. null = sin override. */
@@ -27,73 +36,37 @@ interface Props {
   onSetCapoOverride?: (capo: number | null) => void;
 }
 
-const HOLD_DELAY_MS = 380; // espera antes de empezar a repetir
-const HOLD_INTERVAL_MS = 130; // cadencia de repetición manteniendo pulsado
-
-/** Botón ±1 grande: un toque = un semitono; mantener pulsado repite. */
-function HoldStepButton({
-  onStep,
-  style,
-  children,
-  accessibilityLabel,
-}: {
-  onStep: () => void;
-  style: object | object[];
-  children: React.ReactNode;
-  accessibilityLabel: string;
-}) {
-  const delayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const repeatTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stop = () => {
-    if (delayTimer.current) clearTimeout(delayTimer.current);
-    if (repeatTimer.current) clearInterval(repeatTimer.current);
-    delayTimer.current = null;
-    repeatTimer.current = null;
-  };
-
-  useEffect(() => stop, []);
-
-  return (
-    <Pressable
-      onPressIn={() => {
-        onStep();
-        delayTimer.current = setTimeout(() => {
-          repeatTimer.current = setInterval(onStep, HOLD_INTERVAL_MS);
-        }, HOLD_DELAY_MS);
-      }}
-      onPressOut={stop}
-      style={({ pressed }) => [
-        ...(Array.isArray(style) ? style : [style]),
-        pressed && { transform: [{ scale: 0.94 }], opacity: 0.85 },
-      ]}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-    >
-      {children}
-    </Pressable>
-  );
-}
+const semitonesLabel = (n: number) =>
+  `${n > 0 ? '+' : ''}${n} ${Math.abs(n) === 1 ? 'semitono' : 'semitonos'}`;
 
 export default function TransposeBottomSheet({
   visible,
   onClose,
   currentTranspose,
   onSetTranspose,
+  songKey,
+  notation = 'ES',
   originalCapo,
   currentCapoOverride,
   onSetCapoOverride,
 }: Props) {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = useColorScheme() === 'dark';
+  const p = sheetPalette(isDark);
 
   const showCapoSection = onSetCapoOverride !== undefined;
   const isCapoOverridden =
     currentCapoOverride !== null && currentCapoOverride !== undefined;
+  const baseCapo = originalCapo ?? 0;
   const effectiveCapo = isCapoOverridden
     ? (currentCapoOverride as number)
-    : (originalCapo ?? 0);
+    : baseCapo;
   const isTransposed = currentTranspose !== 0;
+
+  /** Nombre del tono a `n` semitonos del original, en la notación elegida. */
+  const keyAt = (n: number) =>
+    songKey
+      ? convertChord(transposeKey(songKey.toUpperCase(), n), notation)
+      : '';
 
   // El prop puede llegar con un frame de retraso al repetir rápido; el ref
   // acumula los pasos para que cada pulsación cuente siempre.
@@ -108,287 +81,204 @@ export default function TransposeBottomSheet({
     onSetTranspose(transposeRef.current);
   };
 
-  // Pop del valor central en cada cambio de tono.
-  const valuePop = useRef(new Animated.Value(1)).current;
-  const firstRender = useRef(true);
-  useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
-    valuePop.setValue(1.18);
-    Animated.spring(valuePop, {
-      toValue: 1,
-      useNativeDriver: Platform.OS !== 'web',
-      tension: 260,
-      friction: 9,
-    }).start();
-  }, [currentTranspose, valuePop]);
+  const tone = useValueFeedback(currentTranspose);
+  const capo = useValueFeedback(effectiveCapo);
 
-  const handleCapoMinus = () => {
-    if (!onSetCapoOverride) return;
-    const next = effectiveCapo - 1;
-    if (next < 0) return;
-    onSetCapoOverride(next === (originalCapo ?? 0) ? null : next);
+  const setCapo = (next: number) => {
+    if (!onSetCapoOverride || next < 0) return;
+    h.select();
+    onSetCapoOverride(next === baseCapo ? null : next);
   };
-  const handleCapoPlus = () => {
-    if (!onSetCapoOverride) return;
-    const next = effectiveCapo + 1;
-    onSetCapoOverride(next === (originalCapo ?? 0) ? null : next);
+  /** Cejilla al mínimo: no se puede bajar más, pero se avisa. */
+  const capoBlocked = () => {
+    h.limit();
+    capo.nudge();
   };
+
+  const currentKey = keyAt(currentTranspose);
+  const originalKey = keyAt(0);
 
   return (
     <BottomSheet visible={visible} onClose={onClose} title="Ajustes de canción">
-      <View
-        style={[
-          styles.container,
-          {
-            paddingBottom: Platform.OS === 'web' ? 16 : 0,
-          },
-        ]}
-      >
+      <View style={styles.container}>
         {/* ━━━━━━━━━━━━━━ TONO ━━━━━━━━━━━━━━ */}
-        <View style={[styles.card, isDark && styles.cardDark]}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardLabel}>TONO</Text>
-            <View style={styles.cardValueWrap}>
-              <Text style={styles.cardHint}>Mantén pulsado para ir rápido</Text>
-            </View>
-            <PressableFeedback
-              style={[
-                styles.resetIconBtn,
-                !isTransposed && styles.resetIconBtnHidden,
-              ]}
-              onPress={() => onSetTranspose(0)}
-              isDisabled={!isTransposed}
-              accessibilityLabel="Restablecer tono"
-            >
-              <PressableFeedback.Highlight />
-              <MaterialIcons
-                name="refresh"
-                size={18}
-                color={isDark ? '#AEAEB2' : '#636366'}
-              />
-            </PressableFeedback>
-          </View>
-
-          {/* −1 y +1 grandes y FIJOS a los lados (taps rápidos sin mirar),
-              valor central con pop de confirmación. */}
-          <View style={styles.toneRow}>
+        <SheetCard
+          palette={p}
+          label="Tono"
+          status={isTransposed ? semitonesLabel(currentTranspose) : 'Original'}
+          statusActive={isTransposed}
+          onReset={() => {
+            h.tap();
+            onSetTranspose(0);
+          }}
+          resetLabel="Volver al tono original"
+        >
+          <View style={styles.row}>
             <HoldStepButton
+              palette={p}
               onStep={() => stepTone(-1)}
-              style={[
-                styles.toneStepBtn,
-                isDark ? styles.toneBtnDownDark : styles.toneBtnDown,
-              ]}
-              accessibilityLabel="Bajar un semitono"
+              accessibilityLabel={
+                songKey
+                  ? `Bajar un semitono, a ${keyAt(currentTranspose - 1)}`
+                  : 'Bajar un semitono'
+              }
             >
-              <Text
-                style={[
-                  styles.toneStepText,
-                  { color: isDark ? '#E57373' : '#C62828' },
-                ]}
-              >
-                −1
-              </Text>
+              <Text style={[styles.stepGlyph, { color: p.text }]}>−</Text>
+              {songKey ? (
+                <Text
+                  style={[styles.stepKey, { color: p.textSecondary }]}
+                  numberOfLines={1}
+                >
+                  {keyAt(currentTranspose - 1)}
+                </Text>
+              ) : null}
             </HoldStepButton>
 
-            <View
+            <Animated.View
               style={[
-                styles.toneDisplay,
-                isTransposed
-                  ? isDark
-                    ? styles.toneDisplayActiveDark
-                    : styles.toneDisplayActive
-                  : isDark
-                    ? styles.toneDisplayDark
-                    : null,
+                styles.valueBox,
+                valueBoxStyle(p, isTransposed),
+                tone.style,
               ]}
+              accessibilityLiveRegion="polite"
+              accessibilityLabel={
+                songKey
+                  ? isTransposed
+                    ? `Tono ${currentKey}, original ${originalKey}`
+                    : `Tono original, ${originalKey}`
+                  : isTransposed
+                    ? semitonesLabel(currentTranspose)
+                    : 'Tono original'
+              }
             >
               <Animated.Text
                 style={[
-                  styles.toneDisplayValue,
-                  {
-                    transform: [{ scale: valuePop }],
-                    color: isTransposed
-                      ? isDark
-                        ? '#F4C11E'
-                        : '#7A5A00'
-                      : isDark
-                        ? '#EBEBF0'
-                        : '#1C1C1E',
-                  },
+                  styles.valueMain,
+                  tone.popStyle,
+                  { color: isTransposed ? p.active.fg : p.text },
                 ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
-                {isTransposed
-                  ? `${currentTranspose > 0 ? '+' : ''}${currentTranspose}`
-                  : 'Original'}
+                {songKey
+                  ? currentKey
+                  : isTransposed
+                    ? `${currentTranspose > 0 ? '+' : ''}${currentTranspose}`
+                    : 'Original'}
               </Animated.Text>
               <Text
                 style={[
-                  styles.toneDisplayCaption,
-                  !isTransposed && styles.toneDisplayCaptionHidden,
+                  styles.valueCaption,
+                  { color: isTransposed ? p.active.fg : p.label },
                 ]}
+                numberOfLines={1}
               >
-                {Math.abs(currentTranspose) === 1 ? 'semitono' : 'semitonos'}
+                {songKey
+                  ? isTransposed
+                    ? `Original: ${originalKey}`
+                    : 'Tono original'
+                  : isTransposed
+                    ? Math.abs(currentTranspose) === 1
+                      ? 'semitono'
+                      : 'semitonos'
+                    : ' '}
               </Text>
-            </View>
+            </Animated.View>
 
             <HoldStepButton
+              palette={p}
               onStep={() => stepTone(1)}
-              style={[
-                styles.toneStepBtn,
-                isDark ? styles.toneBtnUpDark : styles.toneBtnUp,
-              ]}
-              accessibilityLabel="Subir un semitono"
+              accessibilityLabel={
+                songKey
+                  ? `Subir un semitono, a ${keyAt(currentTranspose + 1)}`
+                  : 'Subir un semitono'
+              }
             >
-              <Text
-                style={[
-                  styles.toneStepText,
-                  { color: isDark ? '#81C784' : '#2E7D32' },
-                ]}
-              >
-                +1
-              </Text>
+              <Text style={[styles.stepGlyph, { color: p.text }]}>+</Text>
+              {songKey ? (
+                <Text
+                  style={[styles.stepKey, { color: p.textSecondary }]}
+                  numberOfLines={1}
+                >
+                  {keyAt(currentTranspose + 1)}
+                </Text>
+              ) : null}
             </HoldStepButton>
           </View>
-        </View>
+          <Text style={[styles.hint, { color: p.label }]}>
+            Mantén pulsado para ir rápido
+          </Text>
+        </SheetCard>
 
         {/* ━━━━━━━━━━━━━━ CEJILLA ━━━━━━━━━━━━━━ */}
         {showCapoSection && (
-          <View style={[styles.card, isDark && styles.cardDark]}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardLabel}>CEJILLA</Text>
-              <View style={styles.cardValueWrap}>
-                <Text
-                  style={[
-                    styles.cardValue,
-                    {
-                      color: isCapoOverridden
-                        ? isDark
-                          ? '#FFB74D'
-                          : '#C77700'
-                        : isDark
-                          ? '#8E8E93'
-                          : '#8E8E93',
-                    },
-                  ]}
-                >
-                  {isCapoOverridden
-                    ? originalCapo && originalCapo > 0
-                      ? `Original: ${originalCapo}`
-                      : 'Original: sin cejilla'
-                    : originalCapo && originalCapo > 0
-                      ? `Original: ${originalCapo}`
-                      : 'Sin cejilla'}
-                </Text>
-              </View>
-              <PressableFeedback
-                style={[
-                  styles.resetIconBtn,
-                  !isCapoOverridden && styles.resetIconBtnHidden,
-                ]}
-                onPress={() => onSetCapoOverride!(null)}
-                isDisabled={!isCapoOverridden}
-                accessibilityLabel="Restablecer cejilla"
+          <SheetCard
+            palette={p}
+            label="Cejilla"
+            status={
+              baseCapo > 0
+                ? `Original: ${baseCapo}`
+                : isCapoOverridden
+                  ? 'Original: sin cejilla'
+                  : 'Sin cejilla'
+            }
+            statusActive={isCapoOverridden}
+            onReset={() => {
+              h.tap();
+              onSetCapoOverride!(null);
+            }}
+            resetLabel="Volver a la cejilla original"
+          >
+            <View style={styles.row}>
+              <HoldStepButton
+                palette={p}
+                onStep={() => setCapo(effectiveCapo - 1)}
+                onBlocked={capoBlocked}
+                disabled={effectiveCapo <= 0}
+                accessibilityLabel="Bajar la cejilla un traste"
               >
-                <PressableFeedback.Highlight />
-                <MaterialIcons
-                  name="refresh"
-                  size={18}
-                  color={isDark ? '#AEAEB2' : '#636366'}
-                />
-              </PressableFeedback>
-            </View>
-
-            <View style={styles.capoRow}>
-              <PressableFeedback
-                style={[
-                  styles.capoStepBtn,
-                  isDark ? styles.toneBtnDownDark : styles.toneBtnDown,
-                  effectiveCapo <= 0 && styles.capoStepBtnDisabled,
-                ]}
-                onPress={() => {
-                  h.select();
-                  handleCapoMinus();
-                }}
-                isDisabled={effectiveCapo <= 0}
-              >
-                <PressableFeedback.Highlight />
                 <MaterialIcons
                   name="remove"
                   size={26}
-                  color={
-                    effectiveCapo <= 0
-                      ? isDark
-                        ? '#48484A'
-                        : '#C7C7CC'
-                      : isDark
-                        ? '#E57373'
-                        : '#C62828'
-                  }
+                  color={effectiveCapo <= 0 ? p.disabled : p.text}
                 />
-              </PressableFeedback>
+              </HoldStepButton>
 
-              <View
+              <Animated.View
                 style={[
-                  styles.capoDisplay,
-                  isCapoOverridden
-                    ? isDark
-                      ? styles.capoDisplayOverriddenDark
-                      : styles.capoDisplayOverridden
-                    : isDark
-                      ? styles.capoDisplayDark
-                      : null,
+                  styles.valueBox,
+                  valueBoxStyle(p, isCapoOverridden),
+                  capo.style,
                 ]}
+                accessibilityLiveRegion="polite"
               >
-                <Text
+                <Animated.Text
                   style={[
-                    styles.capoDisplayValue,
-                    {
-                      color: isCapoOverridden
-                        ? isDark
-                          ? '#F4C11E'
-                          : '#7A5A00'
-                        : isDark
-                          ? '#EBEBF0'
-                          : '#1C1C1E',
-                    },
+                    styles.valueMainSmall,
+                    capo.popStyle,
+                    { color: isCapoOverridden ? p.active.fg : p.text },
                   ]}
                 >
                   {effectiveCapo === 0
                     ? 'Sin cejilla'
-                    : `Cejilla ${effectiveCapo}`}
-                </Text>
-                <Text
-                  style={[
-                    styles.capoDisplayBadge,
-                    !isCapoOverridden && styles.capoDisplayBadgeHidden,
-                  ]}
-                >
-                  modificada
-                </Text>
-              </View>
+                    : `Traste ${effectiveCapo}`}
+                </Animated.Text>
+                {isCapoOverridden ? (
+                  <Text style={[styles.valueCaption, { color: p.active.fg }]}>
+                    Cambiada
+                  </Text>
+                ) : null}
+              </Animated.View>
 
-              <PressableFeedback
-                style={[
-                  styles.capoStepBtn,
-                  isDark ? styles.toneBtnUpDark : styles.toneBtnUp,
-                ]}
-                onPress={() => {
-                  h.select();
-                  handleCapoPlus();
-                }}
+              <HoldStepButton
+                palette={p}
+                onStep={() => setCapo(effectiveCapo + 1)}
+                accessibilityLabel="Subir la cejilla un traste"
               >
-                <PressableFeedback.Highlight />
-                <MaterialIcons
-                  name="add"
-                  size={26}
-                  color={isDark ? '#81C784' : '#2E7D32'}
-                />
-              </PressableFeedback>
+                <MaterialIcons name="add" size={26} color={p.text} />
+              </HoldStepButton>
             </View>
-          </View>
+          </SheetCard>
         )}
       </View>
     </BottomSheet>
@@ -397,175 +287,52 @@ export default function TransposeBottomSheet({
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 4,
+    paddingTop: spacing.xs,
+    // El safe-area inferior lo reserva ya el `BottomSheet`; esto es el aire
+    // visual entre la última fila y ese borde.
+    paddingBottom: spacing.md,
     gap: 12,
   },
-  card: {
-    backgroundColor: '#F7F7FB',
-    borderRadius: radii.lg,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    gap: 12,
-  },
-  cardDark: {
-    backgroundColor: Colors.dark.card,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 28,
-  },
-  cardLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-    color: '#8E8E93',
-  },
-  cardValueWrap: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  cardValue: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  resetIconBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  resetIconBtnHidden: {
-    opacity: 0,
-  },
-  cardHint: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#8E8E93',
-  },
-  toneRow: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  toneStepBtn: {
-    width: 72,
-    height: 60,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+  stepGlyph: {
+    ...typography.h2,
+    lineHeight: 26,
   },
-  toneStepText: {
-    fontSize: 22,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
+  stepKey: {
+    ...typography.micro,
+    fontWeight: '600',
+    marginTop: 1,
   },
-  toneBtnUp: {
-    backgroundColor: '#E8F5E9',
-  },
-  toneBtnUpDark: {
-    backgroundColor: '#1B3A1B',
-  },
-  toneBtnDown: {
-    backgroundColor: '#FFEBEE',
-  },
-  toneBtnDownDark: {
-    backgroundColor: '#3A1B1B',
-  },
-  toneDisplay: {
+  valueBox: {
     flex: 1,
-    height: 60,
+    height: 64,
     borderRadius: radii.md,
-    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: spacing.sm,
   },
-  toneDisplayDark: {
-    backgroundColor: '#1C1C1E',
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  toneDisplayActive: {
-    backgroundColor: '#FFF4DA',
-    borderColor: '#F4C11E',
-  },
-  toneDisplayActiveDark: {
-    backgroundColor: '#3A2D0A',
-    borderColor: '#7A5A00',
-  },
-  toneDisplayValue: {
-    fontSize: 22,
+  valueMain: {
+    ...typography.h2,
     fontWeight: '800',
     letterSpacing: -0.3,
     fontVariant: ['tabular-nums'],
   },
-  toneDisplayCaption: {
-    fontSize: 10,
+  valueMainSmall: {
+    ...typography.title,
     fontWeight: '700',
-    color: '#9D5C00',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginTop: 1,
   },
-  toneDisplayCaptionHidden: {
-    opacity: 0,
-  },
-  capoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  capoStepBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  capoStepBtnDisabled: {
-    opacity: 0.35,
-  },
-  capoDisplay: {
-    flex: 1,
-    height: 56,
-    borderRadius: radii.md,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-  },
-  capoDisplayDark: {
-    backgroundColor: '#1C1C1E',
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  capoDisplayOverridden: {
-    backgroundColor: '#FFF4DA',
-    borderColor: '#F4C11E',
-  },
-  capoDisplayOverriddenDark: {
-    backgroundColor: '#3A2D0A',
-    borderColor: '#7A5A00',
-  },
-  capoDisplayValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  capoDisplayBadge: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#9D5C00',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
+  valueCaption: {
+    ...typography.overline,
     marginTop: 2,
   },
-  capoDisplayBadgeHidden: {
-    opacity: 0,
+  hint: {
+    ...typography.micro,
+    textAlign: 'center',
+    marginTop: -4,
   },
 });

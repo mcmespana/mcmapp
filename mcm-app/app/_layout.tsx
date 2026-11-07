@@ -1,5 +1,10 @@
 // app/_layout.tsx
 
+// Sentry el PRIMERO de todos los imports: se arranca como efecto de cargar el
+// módulo, así que cuanto antes se importe, más crashes de arranque captura.
+// Sin `EXPO_PUBLIC_SENTRY_DSN` no hace absolutamente nada.
+import { wrapRoot } from '@/utils/sentry';
+
 import '../notifications/NotificationHandler'; // Inicializa el handler de notificaciones
 import usePushNotifications from '../notifications/usePushNotifications'; // Hook para notificaciones push
 
@@ -7,114 +12,93 @@ import React, { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet, Platform } from 'react-native';
-import Constants from 'expo-constants';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   ThemeProvider as NavThemeProvider,
   DarkTheme,
   DefaultTheme,
-} from '@react-navigation/native';
+} from 'expo-router/react-navigation';
 import { usePathname, useSegments, router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useStatusBarTheme } from '@/hooks/useStatusBarTheme';
-import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
-import { ProfileConfigProvider } from '@/contexts/ProfileConfigContext';
-import {
-  UserProfileProvider,
-  useUserProfile,
-} from '@/contexts/UserProfileContext';
-import {
-  SelectedSongsProvider,
-  useSelectedSongs,
-} from '@/contexts/SelectedSongsContext';
-import { ChoirSessionProvider } from '@/contexts/ChoirSessionContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useIncomingPlaylist } from '@/hooks/useIncomingPlaylist';
 import { useRegisterServiceWorker } from '@/hooks/useRegisterServiceWorker';
+import { useScreenTracking } from '@/hooks/useScreenTracking';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { trackEvent } from '@/utils/analytics';
+import { tramoTamano } from '@/constants/analyticsEvents';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import { isAppVersionSupported } from '@/utils/resolveProfileConfig';
 import { HelloWave } from '@/components/HelloWave';
 import AddToHomeBanner from '@/components/AddToHomeBanner';
 import CommandPalette from '@/components/CommandPalette';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import MaintenanceScreen from '@/components/MaintenanceScreen';
-import { NotificationsProvider } from '@/contexts/NotificationsContext';
-import { EventSubscriptionsProvider } from '@/contexts/EventSubscriptionsContext';
-import { CalendarConfigProvider } from '@/contexts/CalendarConfigContext';
-import { OverlayStackProvider } from '@/contexts/OverlayStackContext';
-import UniwindThemeBridge from '@/components/UniwindThemeBridge';
-import { HeroUINativeProvider } from 'heroui-native';
-import { AppToastProvider, useToast } from '@/contexts/AppToastContext';
-import OTAUpdatePrompt from '@/components/OTAUpdatePrompt';
-import { OTAProvider, useOTAContext } from '@/contexts/OTAContext';
-import { PreviewChannelProvider } from '@/contexts/PreviewChannelContext';
+import UpdateRequiredScreen from '@/components/UpdateRequiredScreen';
+import { useToast } from '@/contexts/AppToastContext';
 import { PreviewChannelModal } from '@/components/PreviewChannelModal';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { updateUserMCMData } from '@/utils/authHelpers';
 import FirebaseConfigErrorScreen from '@/components/FirebaseConfigErrorScreen';
-import { CarismochitoProvider } from '@/contexts/CarismochitoContext';
 import CarismochitoOverlay from '@/components/CarismochitoOverlay';
-import { ActiveEventProvider } from '@/contexts/ActiveEventContext';
+import { useVersionGate } from '@/contexts/VersionGateContext';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
+import colors from '@/constants/colors';
+import AppProviders from '@/components/AppProviders';
+import ComunicaBackground from '@/components/comunica/ComunicaBackground';
+import ContigoRemindersBackground from '@/components/contigo/ContigoRemindersBackground';
+import { holdSplash, releaseSplash } from '@/utils/splashGate';
 
-export default function RootLayout() {
+// El splash nativo se queda hasta que el layout sabe qué pintar (ver
+// `utils/splashGate.ts`, que además lo suelta solo si algo se cuelga).
+holdSplash();
+
+function RootLayout() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <HeroUINativeProvider
-            config={{ devInfo: { stylingPrinciples: false } }}
-          >
-            <AppToastProvider>
-              <OverlayStackProvider>
-                <ProfileConfigProvider>
-                  <AppSettingsProvider>
-                    <UniwindThemeBridge />
-                    <UserProfileProvider>
-                      <EventSubscriptionsProvider>
-                        <AuthProvider>
-                          <SelectedSongsProvider>
-                            <ChoirSessionProvider>
-                              <NotificationsProvider>
-                                <CalendarConfigProvider>
-                                  <PreviewChannelProvider>
-                                    <OTAProvider>
-                                      <CarismochitoProvider>
-                                        <ActiveEventProvider>
-                                          <InnerLayout />
-                                        </ActiveEventProvider>
-                                      </CarismochitoProvider>
-                                    </OTAProvider>
-                                  </PreviewChannelProvider>
-                                </CalendarConfigProvider>
-                              </NotificationsProvider>
-                            </ChoirSessionProvider>
-                          </SelectedSongsProvider>
-                        </AuthProvider>
-                      </EventSubscriptionsProvider>
-                    </UserProfileProvider>
-                  </AppSettingsProvider>
-                </ProfileConfigProvider>
-              </OverlayStackProvider>
-            </AppToastProvider>
-          </HeroUINativeProvider>
+          {/* La torre de providers vive en `components/AppProviders.tsx`:
+              el orden importa y hace falta montarla igual en los tests de
+              humo de pantallas. Ver el docblock de ese fichero. */}
+          <AppProviders>
+            <InnerLayout />
+          </AppProviders>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
   );
 }
 
+/**
+ * - `checking`: aún no se sabe si toca la bienvenida; se pinta `null` y el
+ *   splash nativo sigue encima.
+ * - `show`: primer arranque de la vida de la app → HelloWave 600 ms.
+ * - `done`: la app.
+ */
+type WelcomePhase = 'checking' | 'show' | 'done';
+
 function InnerLayout() {
-  const [showAnimation, setShowAnimation] = useState(true);
-  const { isReady, isDownloading, applyUpdate, dismissed, setDismissed } =
-    useOTAContext();
+  const [welcome, setWelcome] = useState<WelcomePhase>('checking');
+  const showAnimation = welcome !== 'done';
   const scheme = useColorScheme();
   const pathname = usePathname();
   const segments = useSegments();
   const { profile, loading: profileLoading } = useUserProfile();
   const { user: authUser, configError: firebaseConfigError } = useAuth();
   const resolved = useResolvedProfileConfig();
+  const {
+    updateRequired,
+    updateSkipped,
+    canSkip,
+    skipsLeft,
+    skipUpdate,
+    currentVersion: appVersion,
+    minAppVersion,
+  } = useVersionGate();
 
   // Sync MCM profile data to RTDB whenever user is logged in and profile changes
   useEffect(() => {
@@ -137,6 +121,10 @@ function InnerLayout() {
   const handleIncomingPlaylist = useCallback(
     (songs: string[]) => {
       songs.forEach((fn) => addSong(fn));
+      trackEvent('playlist_usada', {
+        accion: 'importada',
+        tamano: tramoTamano(songs.length),
+      });
       toast.show({
         label: `Playlist importada (${songs.length} ${songs.length === 1 ? 'canción' : 'canciones'})`,
         actionLabel: 'OK',
@@ -148,25 +136,37 @@ function InnerLayout() {
   useIncomingPlaylist(handleIncomingPlaylist);
 
   useStatusBarTheme(pathname);
+  // Analítica: arranca Aptabase y registra cada cambio de pantalla. Sin
+  // EXPO_PUBLIC_APTABASE_KEY no hace nada.
+  useScreenTracking();
+  // Web: título de la pestaña del navegador según la pantalla.
+  useDocumentTitle();
 
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
+    const showWelcome = () => {
+      setWelcome('show');
+      timer = setTimeout(() => setWelcome('done'), 600);
+    };
     AsyncStorage.getItem('seenWelcomeOnce')
       .then((seen) => {
         if (seen) {
-          setShowAnimation(false);
+          setWelcome('done');
           return;
         }
         AsyncStorage.setItem('seenWelcomeOnce', '1').catch(() => {});
-        timer = setTimeout(() => setShowAnimation(false), 600);
+        showWelcome();
       })
-      .catch(() => {
-        timer = setTimeout(() => setShowAnimation(false), 600);
-      });
+      .catch(showWelcome);
     return () => clearTimeout(timer);
   }, []);
+
+  // En cuanto hay algo que pintar (la bienvenida o la app), fuera el splash.
+  useEffect(() => {
+    if (welcome !== 'checking') releaseSplash();
+  }, [welcome]);
 
   // Redirigir al onboarding si:
   //   - la config global pide onboarding (`showOnboarding`)
@@ -197,7 +197,9 @@ function InnerLayout() {
   // Registra el service worker en web (PWA)
   useRegisterServiceWorker();
 
-  if (showAnimation) {
+  if (welcome === 'checking') return null;
+
+  if (welcome === 'show') {
     return (
       <View
         style={[
@@ -217,20 +219,15 @@ function InnerLayout() {
 
   // Kill switches remotos: mantenimiento + versión mínima
   if (resolved.maintenanceMode) {
-    return (
-      <MaintenanceScreen
-        mode="maintenance"
-        message={resolved.maintenanceMessage}
-      />
-    );
+    return <MaintenanceScreen message={resolved.maintenanceMessage} />;
   }
-  const currentVersion = String(Constants.expoConfig?.version ?? '0.0.0');
-  if (!isAppVersionSupported(currentVersion, resolved.minAppVersion)) {
+  if (updateRequired && !updateSkipped) {
     return (
-      <MaintenanceScreen
-        mode="update"
-        minVersion={resolved.minAppVersion}
-        currentVersion={currentVersion}
+      <UpdateRequiredScreen
+        minVersion={minAppVersion}
+        currentVersion={appVersion}
+        skipsLeft={skipsLeft}
+        onSkip={canSkip ? skipUpdate : undefined}
       />
     );
   }
@@ -245,7 +242,7 @@ function InnerLayout() {
           options={{
             headerShown: false,
             presentation: 'fullScreenModal',
-            contentStyle: { backgroundColor: '#253883' },
+            contentStyle: { backgroundColor: colors.primary },
           }}
         />
         <Stack.Screen
@@ -257,24 +254,28 @@ function InnerLayout() {
         />
         <Stack.Screen name="evaluacion-app" options={{ headerShown: false }} />
         <Stack.Screen name="encuesta/[id]" options={{ headerShown: false }} />
+        {/* Solo se llega desde el Laboratorio Alpha (ver app/carismochito.tsx). */}
+        <Stack.Screen
+          name="carismochito"
+          options={{ headerShown: true, title: 'Colección' }}
+        />
         <Stack.Screen
           name="playlist"
           options={{
             headerShown: false,
           }}
         />
+        {/* Enlace a una canción (`/cancion?f=…`): puente al cantoral. */}
+        <Stack.Screen name="cancion" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <AddToHomeBanner />
       <CommandPalette />
-      <OTAUpdatePrompt
-        visible={(isReady || isDownloading) && !dismissed}
-        isDownloading={isDownloading && !isReady}
-        onApply={applyUpdate}
-        onLater={() => setDismissed(true)}
-      />
       <PreviewChannelModal />
       <CarismochitoOverlay />
+      {/* Avisos del área de Comunica: registro del móvil y aviso local (plan 08). */}
+      <ComunicaBackground />
+      <ContigoRemindersBackground />
     </NavThemeProvider>
   );
 }
@@ -290,3 +291,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2C2C2E',
   },
 });
+
+// `wrapRoot` es la identidad cuando Sentry está apagado (sin DSN), así que el
+// árbol de componentes no cambia en absoluto en ese caso.
+export default wrapRoot(RootLayout);

@@ -2,63 +2,17 @@
  * Tests para la lógica de arreglos `{arr:}` del cantoral.
  *
  * ¿Qué testea?
- * - `renderableRowLineIndices`: qué líneas del ChordPro producen una fila
- *   renderizada (letra/acordes y comentarios sí; directivas estructurales no).
- * - `injectRowLineIndices`: que se etiquete cada `<div class="row">` con el
- *   índice de su línea original, y que NO toque el HTML si los conteos no
- *   coinciden (guarda de seguridad).
+ * - El número de línea de cada fila (modo admin) ya no se deduce contando
+ *   filas: lo pone la hoja (`utils/songSheet.ts`) con el número que da el
+ *   parser. Su test está en `songSheet.test.ts`.
  * - `insertArrangementAtLine`: inserción de `{arr:}` encima de una línea.
  * - `postProcessArrangementsHtml`: prefijo "| " sin duplicar.
  */
 import {
-  renderableRowLineIndices,
-  injectRowLineIndices,
   insertArrangementAtLine,
   postProcessArrangementsHtml,
   hasArrangements,
 } from '@/utils/arrangements';
-
-describe('renderableRowLineIndices', () => {
-  it('cuenta letra/acordes y comentarios, ignora estructura y vacíos', () => {
-    const cho = [
-      '{title: T}', // 0 - no
-      '{key: G}', // 1 - no
-      '', // 2 - no
-      '{soc}', // 3 - no
-      '[G]linea uno', // 4 - sí
-      '[D]linea dos', // 5 - sí
-      '{eoc}', // 6 - no
-      '', // 7 - no
-      '{comment: nota}', // 8 - sí
-      '{arr: arreglo}', // 9 - sí
-      '[C]estrofa', // 10 - sí
-    ].join('\n');
-    expect(renderableRowLineIndices(cho)).toEqual([4, 5, 8, 9, 10]);
-  });
-
-  it('trata {c:} como fila pero {ci:} no', () => {
-    const cho = '{c: seccion}\n{ci: italica}\n[G]letra';
-    expect(renderableRowLineIndices(cho)).toEqual([0, 2]);
-  });
-});
-
-describe('injectRowLineIndices', () => {
-  it('etiqueta cada fila con el índice de su línea original', () => {
-    const cho = '{soc}\n[G]uno\n[D]dos\n{eoc}';
-    const html =
-      '<div class="row"><div class="lyrics">uno</div></div>' +
-      '<div class="row"><div class="lyrics">dos</div></div>';
-    const out = injectRowLineIndices(html, cho);
-    expect(out).toContain('<div class="row" data-line="1">');
-    expect(out).toContain('<div class="row" data-line="2">');
-  });
-
-  it('no toca el HTML si los conteos no coinciden', () => {
-    const cho = '[G]uno\n[D]dos';
-    const html = '<div class="row">solo una</div>'; // 1 fila vs 2 líneas
-    expect(injectRowLineIndices(html, cho)).toBe(html);
-  });
-});
 
 describe('insertArrangementAtLine', () => {
   it('inserta {arr:} encima de la línea indicada', () => {

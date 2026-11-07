@@ -4,13 +4,697 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
-## 2026-10-10 21:00 — OTA producción: los `{chorus}` del cantoral se ven
+## 2026-11-07 11:34 — Comunica: lo atascado se reintenta solo, el refresco de sesión se repite y las caídas llegan a Sentry
 
-- El cantoral repasado (octubre de 2026) marca «aquí va el estribillo» con
-  `{chorus}` en vez de escribir «ESTRIBILLO» como letra. Esta versión lo
-  perdía (ChordSheetJS lo descarta): ahora sale como comentario
-  «Estribillo» o con su etiqueta (`utils/chorusRef.ts`), en la canción y en
-  el PDF de la playlist.
+Segunda parte de la revisión del 7/11/2026, pensando en el área nativa abierta a todos:
+
+- **Una escritura atascada se sigue intentando SOLA** (`services/comunica/outbox.ts`): tras los 5 fallos seguidos con el servidor caído sigue saliendo como atascada (con «Reintentar» y «Descartar»), pero se vuelve a intentar cada 5 min (`STUCK_RETRY_MS`) y cada vez que la app despierta (primer plano, vuelve la red, se abre una pantalla), con el mismo `clientId`. Antes esperaba a que alguien tocara «Reintentar» y una lista podía quedarse días en el móvil. Sentry recibe UN aviso por lista atascada, no uno por reintento. Lo atascado guardado por versiones anteriores sigue esperando a «Reintentar».
+- **Renovar la sesión se repite UNA vez** si falla por red o plazo (`services/comunica/session.ts`, `REFRESH_RETRY_MS` = 2 s). El servidor puede haber cambiado ya el token con la respuesta perdida; repetirlo enseguida cae dentro de su margen (2 min) y no saca a nadie. Un 401 sigue cerrando la sesión al momento, y ahora avisa a Sentry.
+- **Las caídas del servidor llegan a Sentry** (`client.ts`): un 5xx o un plazo agotado avisan, uno por tipo cada 10 min y móvil, con la ruta sin ids (`/v1/people/:id/photo`). Antes la caída del 6/11 era invisible desde la app.
+- **La portada de familia ya no se queda en blanco** si `/v1/me` falla sin nada guardado: sale «Comunica no responde ahora mismo» con «Reintentar» (`MemberHome`).
+- Tests: `outbox.test.ts` (reintento lento, al despertar, un solo aviso, lo viejo sigue manual), `session.test.ts` (refresco repetido una vez, no insiste más, el 401 no se repite), `client.test.ts` (avisos a Sentry con freno y sin ids), `familyScreens.test.tsx` (portada sin `/v1/me`).
+
+## 2026-11-07 10:55 — Comunica: plazo a cada petición, menos reintentos y «Comunica no responde» en vez de «Sin conexión»
+
+Tras la caída del middleware de la noche del 6/11 (`comunicaMiddleware:docs/APRENDIZAJES-MIDDLEWARE.md`), revisión del cliente:
+
+- **Cada petición tiene plazo** (`services/comunica/client.ts`): 20 s las lecturas, 30 s las escrituras y 90 s las subidas de foto o documento. Antes no había ninguno: una petición colgada dejaba la pantalla en el esqueleto para siempre y, si era una escritura, paraba la cola de guardado hasta reiniciar la app. Lo cortado sale como `network` con `reason: 'timeout'` y se reintenta como un corte de red (las escrituras, con el mismo `clientId`: el servidor no las duplica).
+- **Un 503/5xx del servidor ya no se repite al momento**: lo reintenta la caché de consultas con espera (1 s, 2 s). Con el servidor caído, cada pantalla hacía 6 peticiones por consulta (2 del cliente × 3 de la caché); ahora 3. El reintento inmediato se queda solo para los cortes de red del móvil.
+- **Si falla el servidor, se dice así** (`AreaState`): «Comunica no responde ahora mismo. No es tu conexión…» (sin datos guardados) y «Comunica no responde ahora mismo: estás viendo lo guardado en el móvil» (con datos). Antes decía «Sin conexión» y la gente miraba su wifi y le daba a «Reintentar» sin parar. La falta de cobertura sigue diciendo lo de siempre.
+- Tests: `client.test.ts` (plazo de lectura, de escritura y de un cuerpo que no acaba; 503 sin repetir; corte de red repetido una vez).
+
+## 2026-11-06 22:48 — Comunica: las fotos de las fichas salían como iniciales trabajando con otra delegación
+
+- **Bug:** `photoSource` (`services/comunica/client.ts`) pedía la foto sin `X-Comunica-Delegation`. El servidor miraba entonces la delegación de TU ficha, y quien trabaja con otra (coordina Burriana siendo de Castellón) recibía 403 en cada foto (visto en los registros de producción: la ficha daba 200 y su foto 403). Ahora la foto de alguien del equipo (`/v1/people/:id/photo`) lleva la delegación de trabajo, como su ficha; la de un perfil propio (`/v1/profiles/…`) sigue sin ella. Test en `client.test.ts`.
+- En el middleware, el mismo día: pool de conexiones a la base (saltaba `ER_USER_LIMIT_REACHED`, el tope de 5 del usuario de lectura del CRM) y limpieza nocturna (`comunicaMiddleware:docs/APRENDIZAJES-MIDDLEWARE.md`).
+
+## 2026-11-06 20:25 — Comunica: guardar una lista ya no espera al CRM (cola del servidor)
+
+- **Guardar una lista (grupo, evento o monitores), un aviso, el pañuelo, poner grupo o «mis datos de monitor» contesta en 2,5 s como mucho.** Si el CRM tarda más, el middleware dice «la tengo» (`202 queued`) y la sube él a su ritmo (`comunicaMiddleware:docs/COLA.md`). Antes el móvil se quedaba en «Guardando…» todo lo que tardara el CRM (decenas de llamadas seguidas por lista).
+- **Estado nuevo en la cola del móvil, `queued`** (`services/comunica/outbox.ts`): «Recibida en Comunica · Comunica ya la tiene y la está guardando. Puedes salir: no hace falta esperar.» No gasta intentos ni cuenta como «guardada solo en el móvil» (ni para el aviso de «listas sin subir» ni para el de salir de la cuenta). Se pregunta por ella mandando lo mismo con el mismo `clientId` (3 s, 6 s… hasta 1 min, y al abrir una pantalla o volver la app); cuando el servidor da el resultado, sigue como siempre (`applied`, `onApplied`, la lista releída).
+- **El cliente** (`services/comunica/client.ts`) manda `X-Comunica-Queue: 1` en las escrituras (sin ella, el servidor espera como antes: las apps viejas no notan nada) y convierte el 202 en el código `queued`.
+- Tests: `outbox.test.ts` (queued, sondeo, sobrevive a cerrar la app), `client.test.ts` (cabecera y 202), `outboxReminder.test.ts`.
+
+## 2026-11-06 18:30 — Comunica (familias): barra «Viendo a» fija, «Ver su ficha» sin cambiar de perfil y dos familias de prueba más
+
+- **«Viendo a · Lucía ▾» va FIJA arriba**, fuera del scroll (`AreaScreen` con la prop `profileBar`, que sustituye al `ActiveProfileBar` suelto de cada pantalla de familia): al bajar, se sigue viendo a quién se está viendo. Solo sale si hay hijos. Debajo de lo del equipo (`MemberHome embedded`) sigue en línea.
+- **«Ver su ficha» ya no cambia a quién se ve**: abre `/comunica/datos/<pid>` directamente. Antes hacía `setActive(hijo)` y al volver la portada pasaba a ser la del hijo. Para apuntarle o ver sus documentos se elige en «Viendo a» (el texto del saludo lo dice).
+- **El saludo («Hola, …») ya no se puede cerrar** (sin ×); ya no se guarda nada en el cajón `home` para esto (`useGreetingHidden` queda en el código, sin uso en la portada).
+- **«Tu cuenta» deja de salir al final de la portada de familia**: es el mismo botón de la cabecera.
+- **Textos**: «Sus datos personales…» viendo a un hijo (antes «Tus…»); «Avisos en este móvil» ya no habla de «pasar lista» a una cuenta sin papel de equipo; «Necesidades especiales» no repite su título en el formulario de inscripción.
+- **Servidor falso**: `familia-pareja@ejemplo.org` (comparte a Lucía con `familia@…` y tiene a Hugo; paga lo suyo) y `familia-tres@ejemplo.org` (tres hijos). El dinero sigue siendo de quien paga: Marta no ve lo que paga Sergio por Lucía (`fake/fixturesFamilies.ts`, tests en `profilePaymentsFake.test.ts`).
+- **Android/web**: las pestañas ocultas ya no se pintan como `null` dentro de `Tabs` (expo-router avisaba «Layout children must be of type Screen» en cada arranque).
+- Probado en iPhone 17 Pro (simulador) y en el emulador Android (Pixel API 35).
+
+## 2026-11-06 23:30 — Inicio y Más con cabecera nativa; logo de MCM
+
+- **Inicio con pila propia y cabecera nativa.** Su pantalla se mueve de `app/(tabs)/index.tsx` a `app/(tabs)/(inicio)/index.tsx` con su `_layout.tsx` (un `Stack`), como las demás pestañas. La URL sigue siendo `/`. El id de la pestaña sigue siendo `index` (perfiles, catálogo, enlaces); `routeNameForTab` (`utils/tabRoutes.ts`) lo traduce al nombre de ruta `(inicio)` para `NativeTabs.Trigger`, `Tabs.Screen` y `jumpTo`.
+- **Cabecera de Inicio (iOS, `Stack.Toolbar`)**: la «M» y «MCM App» a la izquierda sin cápsula; a la derecha, campana (con el número de sin leer como insignia nativa) y perfil, más los avisos de actualizar (tienda/OTA) cuando toquen. En Android y web, las mismas piezas como vistas (`GlassActionGroup`). Se pierde el pulso animado del punto de la campana.
+- **Más**: su portada usa la cabecera nativa del stack («Más» centrado) en lugar de pintar el título a mano.
+- **Cabecera transparente en iOS (Inicio y Más)**, como el Cantoral y Contigo: el contenido pasa por debajo y el sistema pone el cristal difuminado al hacer scroll (`components/tabs/transparentHeader.ts`; el scroll lleva `contentInsetAdjustmentBehavior="automatic"`). En Android y web sigue opaca.
+- **Logo**: la «M» de MCM (`assets/images/logo-m.png`, recortada de `monochrome-icon.png`) sustituye al icono genérico `device-hub`. Es una silueta que se tiñe: celeste de marca y verde con el modo Carismochito (donde sigue siendo un botón que reabre su explicación). `components/home/HomeLogo.tsx` y `HomeBrand.tsx`.
+- **Rutas de notificación**: `/(tabs)/index` (lo que manda el panel para «Inicio») ya no existe como ruta; `normalizeNotificationRoute` lo convierte en `/` (también `index`, `/index` y `/(tabs)`). Contrato sin cambios para el panel.
+- **Web (bandeja)**: el botón de deslizar de cada fila ya no declara el rol `button` en web (pintaba un `<button>` dentro de otro y React DOM avisaba).
+- Probado en iPhone (simulador), Android (emulador) y web en formato móvil, claro y oscuro: cabecera, campana, perfil, Más y cambio de pestañas.
+- Guardarraíl nuevo `__tests__/router/tabsHaveOwnStack.test.ts`: toda pestaña de `TABS_CONFIG` tiene carpeta con `_layout.tsx` que monta un `Stack`. `__tests__/router/inicioGroupRoute.test.tsx` comprueba con el router real que `/`, `/(tabs)` y la ruta normalizada llegan a Inicio.
+
+## 2026-11-06 22:30 — Carismochito bloqueado con un interruptor general; navegación de notificaciones
+
+- **Carismochito, cerrado para todo el mundo hasta 2027** (25.º aniversario). Nuevo flag `global.carismochito` en `/profileConfig` (`"off"` | `"alpha"` | `"all"`; ausente = `"alpha"`), con el mismo patrón que `comunicaNativa`: en `"alpha"` solo existe con el Laboratorio Alpha encendido; `"all"` lo abre a todos sin build ni OTA; `"off"` lo cierra también a los probadores. Cerrado = no se activa agitando, no se asoma y la colección redirige a Inicio; y **se apaga en silencio a quien lo tuviera activo** (tema verde fuera, icono del launcher normal). Lógica en `utils/carismochitoGate.ts` + `hooks/useCarismochitoAvailable.ts`; contrato en `docs/contratos/PANEL_PERFILES.md` §1.10 y plan 2027 en `docs/funcionalidades/CARISMOCHITO.md`.
+- **Ya no hay modo escondido**: se retira el interruptor propio de la caza y los 5 toques en el título del Laboratorio Alpha. Con el modo tester encendido, la caza y su panel salen solos. La clave `@carismochito_hunt_enabled` ya no se usa (se borra del móvil).
+- **Notificaciones — tarjeta de Inicio**: al tocar la tarjeta de novedades se abre el detalle con una flecha de «volver» (antes quedaba a pantalla completa sin ella). La flecha y el gesto de borde de iOS hacen lo mismo: volver a donde estabas. En la lista de la bandeja, el gesto de borde ya funcionaba y la fila solo reclama el arrastre hacia la izquierda, así que no choca con el de marcar leída.
+
+## 2026-11-06 21:00 — Calendario: header con título, botones y «Calendarios activos»
+
+- **Header (iOS, botones nativos con `Stack.Toolbar`)**: «Calendario» centrado y, a la derecha, suscribirse a los calendarios y **«Calendarios activos»** (este último solo si hay más de un calendario). En Android y web, vistas normales con el título centrado. Vale para la pestaña y para la pantalla apilada de «Más».
+- **Selector Mes/Agenda** siempre en el cuerpo, a todo el ancho, justo encima del calendario (antes iba apretado en el título del header en la pestaña).
+- **«Calendarios activos»** (`components/calendar/ActiveCalendarsSheet.tsx`): una hoja con un interruptor por calendario que sustituye a la fila de chips que había bajo el mes. Cada toque se guarda en el momento; «Listo» cierra. Se retiran los chips y los estilos de chips y del conmutador del header.
+- **Datos de prueba**: `EXPO_PUBLIC_FIREBASE_FIXTURES=1` también trae 3 calendarios (festivos públicos de Google; hace falta red) para ver los botones y la hoja.
+- Solo JS: OTA ✅.
+
+## 2026-11-06 19:00 — Bandeja: un gesto que alterna leída/no leída, también en las antiguas, y cabecera en una línea
+
+- **Un solo gesto** (arrastrar a la izquierda y soltar) que ALTERNA: «Leída» en una sin leer, «No leída» en una leída. Se quita el gesto hacia la derecha (en una leída enseñaba «Leída» y al soltar hacía lo contrario) y el botón «No leída» del detalle (ya la estás leyendo).
+- **Las notificaciones de más de 60 días ya se pueden devolver a «sin leer»**: antes la app las daba por leídas por antigüedad al instante y solo funcionaba con las recientes. Lo marcado a mano se guarda (`@mcm_notifications_forced_unread`, `getForcedUnreadIds`) y manda sobre la regla de los 60 días, también en el badge (`getUnreadNotificationsCount`).
+- **Cabecera de Notificaciones**: título pequeño y centrado en la misma línea que «volver» y el doble tick (sin título grande).
+- Tests: `notificationsInbox`, `pushNotificationServiceStorage`. Solo JS: OTA ✅.
+
+## 2026-11-06 17:00 — Comunica: el enlace del correo entra solo, el código pegado con espacio vale, y header de Contigo
+
+- **El enlace del correo no iniciaba sesión** (se abría la app y volvía a «Entra en tu área»). Causa: con la app abierta, `+native-intent` dejaba el enlace en el hueco y devolvía `/(tabs)/comunica`; la puerta hacía `push` a «código» a la vez que el enrutador navegaba a esa portada, y la navegación se comía el `push` (la pantalla del código ni se pintaba). Ahora, para `acceso_app`, `redirectSystemPath` devuelve directamente `/(tabs)/comunica/acceso-codigo?link=<token>` (sin pasar por el hueco). Reproducido y arreglado en el simulador con el servidor falso (`mcmapp://comunica?acceso_app=enlace-valido`). Tests en `__tests__/comunica/links.test.ts`. `CodeScreen` ya no falla con `POP_TO_TOP` si es la única pantalla de la pila.
+- **Código pegado con espacio** («123 456», como lo escribe el correo del middleware): el `TextInput` del código tenía `maxLength={6}` y el sistema recortaba a «123 45» antes de limpiar el espacio. Quitado `maxLength` (la limpieza y el corte a 6 cifras ya los hace `onChangeText`). Test nuevo `__tests__/comunica/codeInput.test.tsx`.
+- **Contigo, header (iOS)**: «Tiempo ordinario» a la izquierda, «Contigo» centrado y recordatorios + guardados a la derecha, como botones nativos (`Stack.Toolbar`). Los dos de la derecha comparten una cápsula de cristal (iOS 26 junta los botones contiguos; ni `Spacer` ni `hidesSharedBackground` los separan). En Android y web, vistas normales con el título centrado.
+- Solo JS: OTA ✅.
+
+## 2026-11-06 15:00 — Bandeja de notificaciones rehecha y datos de prueba de notificaciones
+
+- **Una sola bandeja.** Antes la campana abría una hoja (`NotificationsBottomSheet`) y tocar una push abría la pantalla `/notifications`: dos implementaciones que no hacían lo mismo (la hoja no tenía eliminar ni filtraba las descartadas, el detalle de la hoja no mostraba `bodyLong`…). Ahora `app/notifications/` es una carpeta con `index` (lista) y `[id]` (detalle), con cabecera nativa, y la campana, la tarjeta de Novedades y la push entran por ahí. Borrados `NotificationsBottomSheet`, `NotificationListItem` y `notificationsStyles`.
+- **Nada se borra**: se quita «Eliminar». Leer solo baja la notificación de «Nuevas» a «Anteriores». Si hay sin leer se abre en «Sin leer (n)» / «Todas»; si no, directamente todas. Marcar: abrir el detalle, **deslizar y soltar** (se marca al soltar) o el doble tick de la cabecera («Marcar todas», con confirmación). **Marcar como no leída**: arrastrar a la derecha una leída o el botón «No leída» del detalle (`markNotificationAsUnread`; las de más de 60 días no se pueden devolver).
+- Lógica en `hooks/useNotificationsInbox.ts` y `utils/notificationsInbox.ts` (tests nuevos). La push abre `/notifications/<id>`.
+- **Modo de datos de prueba**: con `EXPO_PUBLIC_FIREBASE_FIXTURES=1`, `subscribeToNotifications` devuelve `devNotificationsFixture()` (11 avisos con todos los casos). Documentado en `docs/desarrollo/PRUEBAS_EN_SIMULADOR.md`.
+- Trinquete de `noNewMagicNumbers`: el tope de colores de marca baja de 3 a 1. Solo JS: OTA ✅.
+
+## 2026-11-06 13:00 — «Un momentín» más cuidado y con salida a los 5 s
+
+- **`OTAUpdatingOverlay`** (la pantalla de «un momentín… + frase» mientras se aplica la OTA): ahora el protagonista es el **icono de la app** (respira con un halo suave) con **tres puntos de los colores del logo** que le dan vueltas, en vez del círculo azul con la flecha girando. Título `h1`, barra más ancha. Sin degradados ni colores nuevos (`design.md` §8).
+- **«Cerrar y hacer más tarde» a los 5 s** (`LATER_AFTER_MS`): si la actualización tarda (conexión mala), aparece el botón (hueco reservado, no mueve nada) y «atrás» de Android también cierra. La descarga **sigue en segundo plano pero no recarga** la app por debajo de la persona: el update queda listo y se aplica en la próxima vuelta del fondo o con la insignia de Home. Antes de los 5 s no hay salida.
+- `OTAContext` gana `dismissApplying`; `useOTAUpdate.applyUpdate` acepta `{ shouldReload }` (si devuelve `false`, descarga pero no recarga y deja `isReady`). Cierre del hueco de que `applyUpdate` no marcaba `isReady` tras descargar por su cuenta.
+- Tests: `otaUpdatingOverlay.test.tsx` (nuevo), `otaContext` y `useOTAUpdate`. Detalle en `docs/desarrollo/OTA.md`. Solo JS: OTA ✅.
+
+## 2026-11-06 12:00 — Versión y runtimeVersion: 2.5.1 (afinador, `react-native-audio-api`)
+
+- `version` y `runtimeVersion` de `app.json` pasan de **2.5.0 a 2.5.1**. Motivo: el afinador añadió `react-native-audio-api` (módulo nativo) y el permiso de micrófono, que la 2.5.0 ya publicada no lleva. Un OTA con ese JS sobre un binario 2.5.0 pediría un módulo inexistente.
+- Las builds **2.5.0 dejan de recibir OTA** (el `runtimeVersion` ya no coincide). La 2.5.1 se da por compilada.
+- Siguiente paso fuera del código: poner **`2.5.1` como versión mínima** en MCM Panel (Sistema → Versión mínima) cuando la build esté publicada en las tiendas. `UpdateRequiredScreen` ya cubre a quien siga en 2.5.0.
+- Docs al día: `BUILD_AGOSTO_2026.md` (sección «Por qué 2.5.1»), `AFINADOR.md`, `OTA.md`, `CANAL_PREVIEW.md`, `PANEL_PERFILES.md` y `mcm-app/CLAUDE.md`. Commit con `[skip-ota]`.
+
+## 2026-11-05 22:50 — Cierre de la rama del área nativa: Android, teclado y radios
+
+- **Portada de familia de Comunica vacía tras salir y volver a entrar (Android):** `ActiveProfileProvider` se quedaba sin repintarse y la portada esperaba un perfil ya cargado. Ahora se reinicia por persona (`ProfileScope` en `app/(tabs)/comunica/_layout.tsx`).
+- **Teclado en Android (edge-to-edge):** `behavior: 'padding'` en `AccessScreen` y `BottomActionBar`, y `KeyboardAvoidingView` en `PasswordPromptModal`, `ExportPdfModal` y `CantoralOnboarding` (paso del coro), donde el sistema ya no redimensiona la ventana.
+- Avatar neutro de Comunica con más contraste en oscuro, icono «@» del aviso de inicio de sesión visible en oscuro, y 20 ficheros con `borderRadius` a mano pasan a `radii.*`.
+- `tunerMicrophoneWeb` ya no falla en Node 20 (crea `navigator` si falta). OTA: solo JS.
+
+## 2026-11-05 22:30 — Recordatorios de Contigo (evangelio, oración y revisión del día)
+
+- **Pantalla nueva** `app/(tabs)/contigo/recordatorios.tsx`, con una campanita en la cabecera de Contigo. Por hábito: interruptor, hasta **3 avisos al día** con su hora, días de la semana, y el texto (uno de los predefinidos, o uno propio de hasta 120 caracteres), con una vista previa de cómo llegará. Vienen apagados; al encender el primero se pide el permiso de notificaciones.
+- **El 2.º y 3.º aviso solo suenan si aún no has hecho el hábito.** Son avisos locales (`expo-notifications`, sin servidor): se programan los próximos 7 días y se recalculan al abrir la app, al tocar un ajuste y al marcar un hábito como hecho (`ContigoHabitsContext` llama a `syncContigoReminders`). Detalle y límites (64 pendientes en iOS, 7 días sin abrir la app) en `docs/funcionalidades/RECORDATORIOS_CONTIGO.md`.
+- **Los textos se editan en un único fichero**, `constants/contigoReminderTexts.ts` (validados por David en el prototipo). Salen por OTA.
+- **Al tocar un recordatorio** se abre directamente la pantalla del hábito. Ni los recordatorios entran en la campanita de notificaciones ni se guardan allí (`usePushNotifications`: excepción para `data.contigoReminder`, destino de una lista cerrada). En primer plano se enseña el banner (`NotificationHandler`).
+- **Canal de Android nuevo** `contigo-recordatorios` (importancia alta, `source: 'local'`), sin categoría del Panel. Guardarraíl en `__tests__/notificationChannels.test.ts`. Analítica: `notificacion_abierta` admite `categoria: 'contigo'`.
+- Configuración solo en el móvil (`@contigo_reminders`, AsyncStorage): no se sincroniza con Firebase. En web se guarda pero no avisa.
+- Sin dependencias nuevas (`expo-notifications` y `@react-native-community/datetimepicker` ya estaban). Tests nuevos: `__tests__/contigoReminders.test.ts` (plan, textos, normalización y servicio).
+
+## 2026-11-05 17:40 — Área nativa de Comunica con el estilo del área privada de antes; limpieza de «tics de IA» en toda la app
+
+- **Comunica (nativa), estilo del plugin adaptado a iOS y Android.** El degradado de marca (azul → violeta → magenta) pasa de «solo el botón principal» a **firma con tope**, siempre a través de `BrandGradient`: _bloques_ (cabecera del área, acción principal, hero de la portada, tarjeta destacada; dos como mucho por pantalla, uno de contenido) y _marcas_ ≤ 72 pt (cápsula de fecha, avatar de identidad). Piezas nuevas en `components/comunica/comun/`: `BrandGradient`, `CardSurface`, `BrandHeaderBackground`, `AreaHero` (con ×), `SectionLabel`, `useHeaderGlyph`; `ListCell` pasa a `comun/`. Las tarjetas de actividades, pagos, inscripciones, documentos y fichas las usan. La cabecera lleva el degradado en las tres plataformas; el saludo de la portada ya no parpadea. Reglas en `design.md` §2 y `__tests__/comunica/territorio.test.ts` (lista blanca y tope).
+- **Fuera las «rayitas» de color en bordes** en toda la app (franjas superiores de las pestañas, barras laterales de tarjetas, callouts con borde izquierdo, barra dorada de Contigo, barrita bajo el título de la canción). `__tests__/noEdgeStripes.test.ts` lo vigila. Se queda la barra del estribillo (notación).
+- **Auditoría de coherencia** (`docs/planes/AUDITORIA_TICS_Y_SINERGIA.md`), oleadas 1 y 2 aplicadas: emoji como icono fuera (Eventos, Comida, Cantoral), «Jueves 5 de noviembre» en Calendario, «Guardar rato de oración» legible, `AppPrimaryButton` por defecto en azul MCM (no `#007AFF`), Inicio sin la tarjeta de bienvenida de relleno y con «Evalúa la app» como fila tranquila, Contigo sin ceros (racha, tiles y «días activos» solo cuando hay datos).
+- **Oleada 3:** una sola receta de etiqueta de sección (`typography.sectionLabel`, 12 pt en mayúsculas con tracking; antes 10 pt en Inicio, 11 en Contigo y 13 en Comunica) en `SectionHeader`, Comunica y Contigo; «Más» sin el subtítulo repetido y con un chevron en vez del círculo de la flecha; el calendario atenúa los días de otros meses también en oscuro; las tarjetas de contenido de Más, Inicio y el calendario mensual pasan de `radii.xl` a `radii.lg` (la regla queda en `design.md`), y el aviso de notificaciones de Inicio lleva el icono suelto como las otras filas de aviso.
+- **Desarrollo:** `EXPO_PUBLIC_COMUNICA_API=fake` enciende ahora el área nativa en el simulador; `EXPO_PUBLIC_FIREBASE_FIXTURES=1` sirve álbumes y canciones inventados (`utils/devFirebaseFixtures.ts`). Sin las variables (tienda, web publicada) nada cambia.
+- Solo JS: OTA ✅.
+
+## 2026-11-05 17:16 — Afinador de guitarra, cabecera del cantoral nueva y arreglo del botón de la canción
+
+- **Afinador** (`app/screens/TunerScreen.tsx`, ruta `/cancionero/afinador`, en hoja): reconoce la cuerda sola, arco de ±50 cents con una bola que fluye, nota gigante en la notación del cantoral, «Tensa / Afloja la cuerda» con flecha, bloqueo en verde con vibración a ±5 cents, check por cuerda afinada y confeti con las seis. Tocar una cuerda la fija. Solo guitarra y afinación estándar, a propósito. Se abre desde el menú de la canción («Afinar la guitarra») y desde «⋯» del cantoral (también sin conexión). Doc: `docs/funcionalidades/AFINADOR.md`.
+- **Dependencias nuevas**: `react-native-audio-api` (~1.0.0, micrófono en crudo en iOS/Android; **nativa**, va con la próxima build) y `pitchy` (detección de tono, JS puro). En web, `getUserMedia` + `AnalyserNode`.
+- **Permisos**: micrófono (`NSMicrophoneUsageDescription`, `RECORD_AUDIO`) con texto propio; `expo-image-picker` deja de tener `microphonePermission: false`, que bloqueaba `RECORD_AUDIO` en Android. Sin audio en segundo plano ni servicio en primer plano; nada se graba ni se envía.
+- **Cabecera del cantoral rediseñada**: a la izquierda el **coro** (trae la última playlist de tu coro de un toque, sin entrar en «Tu selección»; sin coro, abre «elige tu coro»); a la derecha **⋯** y **buscar** (lo más usado, en el extremo). En «⋯»: Afinador, Etiquetas, Playlists de tu coro, Sugerir una canción y la ayuda. Antes eran cuatro iconos sueltos (+, ?, etiquetas, buscar). «Tu selección» acepta `?hoja=coro|elegir-coro`. El menú funciona también mientras carga el cantoral.
+- **Fix del botón flotante de la canción**: al cerrarse, el menú «caía» por encima del botón. El contenedor (pegado abajo) se encogía al desmontar el menú y la copia de la animación de salida se quedaba desplazada. Ahora el menú se queda montado y solo se desvanece (sin toques ni lector de pantalla cerrado), y el icono hace un morph ajustes ↔ × en vez de cambiar de glifo a mitad del giro.
+- Tokens nuevos: `TunerColors`/`tunerColors()` (verde y naranja de sistema, legibles como texto) y `typography.display` (88, una nota sola gigante).
+- Jest: `react-native-audio-api` mapeado a su mock oficial y `pitchy` pasa por Babel. Tests nuevos: `tunerPitchTracker`, `tunerDetectPitch`, `tunerMicrophoneWeb`, `useTuner`.
+
+## 2026-11-01 23:06 — Tutorial del cantoral: «Personaliza tu cantoral» y «¿Formas parte de un coro?»
+
+- El onboarding del cantoral lleva ahora un **título fijo en la cabecera** («Personaliza tu cantoral», con «Saltar» a la derecha y los puntos de progreso debajo) y un **último paso nuevo, «¿Formas parte de un coro?»** (`components/song-onboarding/ChoirStep.tsx`): lista los coros que hay (con su nº de playlists) para sumarte con un toque, y «Registrar mi coro» abre un campo para crear el tuyo si no está (`createChoir`, que avisa si ya existe uno igual). Es opcional; la elección se guarda como «mi coro» (`useMyChoir`), así que la hoja del coro de «Tu selección» ya lo tiene elegido.
+- En móvil el paso del coro ocupa toda la pantalla (como el de etiquetas) y el campo de texto sube con el teclado. Sin conexión, la lista y el registro avisan en castellano y dejan reintentar.
+- `useMyChoir` difunde los cambios entre todas sus instancias (antes cada una se quedaba con el coro con que arrancó) y la lectura del guardado ya no pisa un coro elegido mientras tanto.
+- **No** se sube `CANTORAL_ONBOARDING_VERSION`: quien ya vio el tutorial no lo verá solo; lo encuentra con el «?» del cantoral. Súbelo a 2 si se quiere que todo el mundo vea el paso nuevo.
+- `OptionRow` pasa a su propio fichero (sin cambios) para reutilizarlo.
+
+## 2026-11-01 15:00 — Estado de la build 2.5 al día con las marcas del propietario
+
+- `BUILD_AGOSTO_2026.md` y `PENDIENTE-REVISAR.md`: lo hecho, lo que se hará, lo que sigue pendiente (SHA-1 de Android, pruebas del móvil, Cloud Function del calendario y la PR #372) y lo que queda para el futuro.
+
+## 2026-11-01 14:00 — Versión de la app y runtimeVersion: 2.5.0
+
+- `version` de `app.json` pasa de 2.1.0 a **2.5.0** para las próximas builds (también la de la extensión de notificaciones iOS, que la toma de ahí).
+- `runtimeVersion` pasa de 2.2.0 a **2.5.0** a la vez (decisión del propietario: solo hay builds de prueba y no se mandarán OTA a las anteriores). Las builds ya instaladas con runtime 2.2.0 **dejan de recibir OTA**.
+
+## 2026-11-01 15:00 — Fotos en iPad, pantalla de versión mínima con ánimo y OTA que se aplica sola
+
+- **Fotos en iPad** (`global.fotosEnIpad`, panel → Perfiles → Sistema): con `false`, en **cualquier iPad** (MDM o no: la app no distingue) desaparecen la pestaña, el botón de Home y la tarjeta de «Más», y la pantalla (si se llega por enlace o notificación) dice que no está disponible sin leer `albums`. iPhone, Android y web no cambian. Ausente = se ven, como siempre. Es el resolver (`resolveProfileConfig`, ahora con `DeviceContext`) quien las quita; `Platform.isPad` en `utils/device.ts`.
+- **«Hay una versión nueva»** (`UpdateRequiredScreen`, sustituye al modo `update` de `MaintenanceScreen`): escena con el icono de la app, una barra que se llena y una flecha que acaba en check, confeti de los colores del logo que sube y el texto «Actualizar en la tienda lleva unos 30 segundos». Sin mofas. Con «reducir movimiento» queda el fotograma final quieto.
+- **Estricta o con saltos** (`global.minAppVersionSkips`): ausente = «Ahora no» en cada sesión (lo de siempre); `0` = estricto; `1`-`3` = esas veces y luego estricto, con el aviso de las que quedan. El contador es por dispositivo y se reinicia si el panel sube `minAppVersion`. `VersionGateContext` gana `canSkip` y `skipsLeft`.
+- **OTA sin modal**: la app descarga en segundo plano y **se actualiza sola** al abrirla (primeros 45 s) o al volver del fondo, nunca a media pantalla, mostrando «Un momentín…» con una frase de entre 160 (`constants/updatePhrases.ts`). Cortafuegos de 10 min contra bucles de recarga. `OTAUpdatePrompt` eliminado; `OTAContext` pierde `dismissed`/`setDismissed` y gana `applying`; la insignia de Home sale mientras haya una OTA lista esperando. Ver `docs/desarrollo/OTA.md`.
+- Contrato: `docs/contratos/PANEL_PERFILES.md` §1.8 y §1.9.
+
+## 2026-11-01 13:30 — Comunica: la portada de familias recupera el aspecto de la de David
+
+- «Viendo a» vuelve a ser una tarjeta con la inicial de quien se ve, su nombre y «Cambiar»; el saludo, una tarjeta. Solo cambia el aspecto: la lógica y la agenda de la portada son las de `main`.
+
+## 2026-11-01 13:05 — Comunica: la foto de perfil se reduce a 800×800 (paquete nativo nuevo)
+
+- **`expo-image-manipulator`** (nativo, **requiere build, no sale por OTA**): tras el recorte cuadrado del selector, la foto de perfil se reduce a 800 px de lado y se recodifica a JPEG (0,85). Un PNG o un HEIC también acaban en JPEG y la foto pesa unos cientos de KB, lejos de los 4 MB del servidor.
+- El texto del permiso de la galería ahora menciona la foto de perfil.
+
+## 2026-11-01 12:25 — Comunica: «ese correo no existe» al entrar y subir la foto de perfil
+
+- **Acceso** (`Entra en tu área`): como la web desde el 31/10, **se dice si el correo o el DNI no existe** (antes la respuesta era siempre la misma y la gente esperaba un correo que no iba a llegar). Un correo sin ficha enseña el aviso con el correo tecleado, deja el campo relleno para corregir la errata y debajo abre la tarjeta del DNI («¿Te diste de alta con otro correo?» · «Buscarme por mi DNI»). Por DNI: «No encontramos a nadie con ese documento.» y, si la ficha no tiene correo, «escribe a la oficina técnica» con el enlace. Con demasiados fallos desde la misma red (`too_many_misses`) avisa de esperar. Una caída del CRM **nunca** dice «no existe» ni manda al DNI. `POST /v1/auth/code` devuelve ahora el correo tapado también por DNI. Contrato (`contract.ts`, copia del de `comunicaMiddleware`) y servidor falso al día (`@noexiste.test`, DNI `00000000T` sin correo, tope a los 8 fallos); los tests que fijaban el silencio se han cambiado.
+- **Foto de perfil** («Mis datos» y «Datos de Lucía», plan 12): «Cambiar foto» abre una hoja con «Hacer una foto» y «Elegir de la galería» (`expo-image-picker`, que ya estaba) con el recorte cuadrado del propio selector, y sube en el acto con `PUT /v1/profiles/:pid/photo` (multipart, JPEG o PNG de hasta 4 MB), **directa y con conexión, sin cola**. Se ve la foto elegida mientras sube, el estado («Subiendo…», «Subida», «No se ha podido subir · Reintentar» con el mismo `clientId`) y, al terminar, la foto nueva sustituye a la de la caché de esa persona al momento. Si pesa más de 4 MB se avisa y la próxima vez se pide más compresión; la copia del selector se borra al subir, al descartar, al salir y al cerrar sesión. Nada de la foto va a disco.
+- **No se reduce a 800×800**: el selector solo deja fijar la calidad, no los píxeles, y `expo-image-manipulator` es un paquete nativo que no se ha añadido (anotado en `docs/planes/area-nativa/12-mis-datos.md`). Sin paquetes nativos nuevos.
+- **Falta**: verlo en un móvil de verdad con el servidor real (recorte en iOS y Android, peso real de las fotos, texto del permiso de la galería, que menciona «títulos, certificados y documentos»).
+
+## 2026-11-01 — Comunica familias: «Próximas actividades» en la portada
+
+- La portada de familias enseña, entre «Actividades» y «Tu perfil», **«Próximas actividades»**: hasta 5 filas (primero los eventos abiertos a inscripción, luego las próximas sesiones) y «Ver calendario». Solo si se enseña Calendario a quien mira y hay algo cerca; sin datos, sin conexión o vacío, no se pinta. Tocar una fila abre la ficha del evento o de la sesión. (`UpcomingAgenda`; usaba `upcomingAgendaItems`, que estaba hecha y sin pintar.)
+
+## 2026-11-01 — Comunica familias: calendario que se desliza
+
+- El mes del calendario del área usa ahora `SwipeableMonthCalendar` (el de la pestaña Calendario): se desliza con el dedo y con las flechas, sin días de otros meses, con puntitos por actividad, el color del área y la frase para el lector de pantalla de cada día. En iPad y web anchos, mes y lista del día en dos paneles. La Agenda no cambia.
+- `SwipeableMonthCalendar` gana `markingType`, `hideExtraDays` y `accentColor` (por defecto, como antes); los meses y días en español salen a `components/calendar/calendarLocale.ts` para no depender de que se haya abierto la otra pantalla.
+- Idea tomada de la rama de David (`pantallitasDeDavid`); el resto de la pantalla sigue siendo la de `main`. Quitada la rejilla propia (`MonthGrid`).
+
+## 2026-11-01 — Comunica: certificados de monitor a 4 MB y revisión de lo de David
+
+- **Certificados de monitor (plan 09): el tope baja de 6 MB a 4 MB**, que es lo que acepta el servidor (lo que cabe en una función de Vercel). Antes, un certificado de 5 MB pasaba la comprobación de la app y fallaba después con `file_too_big`. Cambia la constante, los textos («Tamaño máximo: 4MB»), el contrato y el falso.
+- Revisada la rama `pantallitasDeDavid` (PR #365, borrador) contra `main`: 40 ficheros en conflicto y 44 que se fusionarían dejando dos versiones; no se fusiona. Lista de piezas que compensa traer, ramas que borrar y dudas en [`PENDIENTE-REVISAR.md`](../docs/planes/area-nativa/PENDIENTE-REVISAR.md).
+
+## 2026-11-01 — Comunica familias, plan 16: documentos y calendario
+
+- **Documentos** (`/comunica/documentos`): «Mis documentos» / «Documentos de Lucía»; la tarjeta con el tipo en la cápsula (JPG, PDF, DOC…), el nombre, «Del 3 de octubre de 2026» y el chip («Caducado» en rojo o el estado), sin el nombre del archivo; lo más reciente arriba y lo caducado al final y apagado. Tocar la tarjeta abre la ficha; el botón redondo descarga y abre el archivo (visor para imágenes y PDF en iOS; la hoja del sistema para lo demás y el PDF en Android).
+- **La ficha**: archivo, fecha, caducidad, estado, categoría y enlace compartido; nombre y descripción editables (solo se manda lo que cambia), sustituir el archivo y eliminar solo tras la confirmación nativa. **Subir**: elegir (foto, galería o archivo), validar antes de enviar (más de 0 bytes, **4 MB**, extensión de la lista) y subir directo con `clientId`; con el CRM caído, el mismo botón reintenta sin duplicar.
+- **Calendario** (`/comunica/calendario`): Mes y Agenda; el mes desde el lunes con hasta 4 puntitos por día (sesiones coloreadas por asistencia —parcial y justificada se juntan—, bandas «Con plaza» y «Abierto a inscripción» salvo si el evento ya aporta sesiones), la lista del día, la leyenda y la hoja de una sesión. Cambiar de mes elige hoy o el día 1.
+- **Visor de archivos** (`/comunica/archivo`, compartido con el plan 13). Los archivos se bajan con la sesión a `comunica/open/` y se borran al cerrar el visor, al volver la app, al abrir Documentos y al salir.
+- NADA de Documentos se guarda en el móvil; el calendario sí (actividades, fechas y marcas). Sin cola. Los enlaces `list_stic_documents`, `single_stic_documents`, `single_stic_activities_calendar`, `single_stic_sessions`, `list_stic_sessions` y `list_stic_attendances` son nativos; ninguno borra.
+- Servidor falso (`fake/profileDocs.ts`): documentos en cada estado, un curso de 24 sesiones con las cuatro marcas, eventos con plaza y abiertos con su audiencia.
+- **Falta**: probarlo contra el servidor de verdad, «Abrir con…» para PDF en Android (llega con los paquetes nativos de la 2.2), el calendario de la portada de familias (`upcomingAgendaItems` está hecho y probado, sin pintar), el deslizar de mes y capturas. Pruebas: `docsCalendarLogic` (28), `profileDocsFake` (18), `docsCalendarScreens` (39).
+
+## 2026-11-01 — Comunica familias, plan 15: pagos y pagar con tarjeta
+
+- **Pagos** (`/comunica/pagos`): «Pendiente de pagar», «Se cobrará por domiciliación», «Pagado» y «Otros», con el chip solo cuando dice algo nuevo (un devuelto en rojo, «Comprobando el pago»), el importe grande a la derecha y «Pagar con tarjeta» al pie en secundario. El dinero es de quien paga: viéndose a sí mismo, todo (con «Para Lucía»); viendo a un hijo, solo lo suyo.
+- **La ficha de un pago** (`/comunica/pagos/[id]`): importe como dato grande, datos en el orden del plugin (cuenta enmascarada, nº de operación), el motivo de un devuelto y «¿Ya lo has pagado?».
+- **Pagar con tarjeta** (`/comunica/pagos/pagar?pago=|inscripcion=`): resumen, «Pagar otra cantidad» (coma o punto, mínimo 1 €, sin tope; más del doble pide confirmar), la pasarela del banco en una hoja con WebView sin JavaScript inyectado, en incógnito, que corta la vuelta, abre fuera las apps del banco y pide confirmar al cerrar; el resultado en la misma pantalla y el sondeo mientras el banco confirma. La reserva por el navegador del sistema («Abrir en el navegador»). El estado lo decide SIEMPRE el servidor.
+- Arreglado: tras cobrarse, la lectura de «pagable» se invalidaba y la pantalla saltaba a «Este pago no está pendiente» en vez de enseñar el resultado; el resumen visto se conserva.
+- `msg=pagado` de la vuelta de la web llega como nota («Pago hecho. Si aún lo ves pendiente…», y en la inscripción «esperando al banco»); la ficha de la inscripción comprueba un intento que quedó a medias (la app se cerró) y lo dice una vez.
+- Los botones «Pagar» de las inscripciones (plan 14) y los enlaces `list_stic_payments`, `single_stic_payments`, `single_stic_payment_form` y `single_stic_payment_error` son nativos. Nada de Pagos se guarda en el móvil (solo el intento en curso, sin importes, en el cajón `payattempt`). Servidor falso con pasarela simulada (`cardConfirmsAfter` para el banco que tarda).
+- Notas para tiendas en `docs/planes/area-nativa/PAGOS-TIENDAS.md` (releer las normas de Apple y Google antes de enviar).
+- **Falta**: el servidor de verdad (PR #14 del middleware, apagado por defecto: hoy solo funciona contra el falso), capturas y probar el TPV en pruebas. Pruebas: `paymentsLogic` (34), `profilePaymentsFake` (22), `paymentsScreen` (47).
+
+## 2026-11-01 — Comunica familias, plan 14: inscripciones
+
+- **Alta corta** (`/comunica/actividades/[eventId]/inscribirme`): resumen («Te inscribes a» / «Inscribes a Lucía en»), bloqueos sin un solo campo (plaza ya cogida, audiencia o plazo, formulario avanzado), preguntas, «¿Cómo pagas?» con los medios que dé el CRM y el IBAN (módulo 97, agrupado de cuatro en cuatro) con domiciliación, y necesidades especiales. Si falta algo no se envía. Con tarjeta, tras apuntarse se abre el pago.
+- **Formulario avanzado**: «Inscribirme» pide la URL al servidor y abre `web.tsx` con cabecera nativa «Inscripción» (no pasa por `openLegacy`).
+- **«Mis inscripciones»** (`/comunica/inscripciones`): lo abierto por fecha, lo cerrado al revés, «Otros eventos» plegado, vacío con salida a Eventos.
+- **La ficha**: el pago en una línea (pagado, domiciliado, devuelto, pendiente, esperando al banco), «Pagar 35,00 € con tarjeta» pegada abajo cuando toca, tutores con «Llamar a …», «Modificar mis datos» y «Cancelar mi inscripción» con confirmación (con el plazo cerrado entre medias: «no se ha cambiado nada»; un curso no se cancela).
+- **Modificar** (`…/modificar`): lo contestado sale marcado; solo respuestas y necesidades especiales.
+- Sin cola: llamada directa con conexión y `clientId` en memoria. El IBAN solo vive en el formulario (ni caché, ni cola, ni logs); la ficha y el alta no se guardan en el móvil.
+- Los botones del plan 13 ya van a estas pantallas; los enlaces `list_stic_registrations` y `single_stic_registrations` (detalle, editar, alta) son nativos. Piezas comunes `comun/record/` (`FactList`, `RecordNote`).
+- Servidor falso (`fake/profileRegistrations.ts`, una sola fuente de inscripciones con «Eventos») y mandos: el CRM no genera el pago, falla el pago, otro móvil ya se apuntó.
+- **Falta**: las pantallas de pago del plan 15 (hoy «Pagar» y «Ver el pago» abren el formulario/lista de pagos de la web con la sesión), la intercepción de la vuelta del formulario avanzado a la lista refrescada y capturas. Pruebas: `registrationLogic` (26), `profileRegistrationsFake` (22), `registrationsScreen` (40).
+
+## 2026-11-01 — Comunica familias, plan 13: «Eventos» y su ficha
+
+- «Eventos» (`/comunica/actividades`): «Para apuntarte» y «Te has apuntado» (los títulos solo si hay los dos), lo pasado fuera por la fecha de fin, el chip por su orden (con plaza → plazo → etiqueta del CRM; con fechas mandan las fechas) y, al pie, «Inscribirme» o «Mi inscripción» solo si llevan a otro sitio. Cambiar de hijo se queda en la misma pantalla.
+- La ficha (`/comunica/actividades/[eventId]`): cartel a pantalla completa, datos en el orden del plugin (duración de 2 a 31 días, plazo, lugar con el botón del mapa del sistema, dirección, horario, plazas, precio), «Toda la información» con el cuerpo en bloques nativos (títulos, listas, aviso, botón, imagen, galería, vídeo) o «Sobre esta actividad», adjuntos PDF con sesión y compartir. La acción por su orden: pasado → con plaza → no es para ti → fuera de plazo → abierta, con «Inscribirme en esta actividad» pegada abajo.
+- El enlace público `/actividades/?e=<slug>` ya no abre la web: busca el evento con el perfil que se ve y va a su ficha. Los enlaces `list_stic_events` y `single_stic_events` también son nativos.
+- El cuerpo nunca es HTML: el servidor lo trocea y la app solo pinta bloques conocidos (un enlace que no sea `http(s)`, `tel:` o `mailto:` no se pinta como enlace).
+- Servidor falso (`fake/profileEvents.ts`) con 14 eventos (audiencias, plazos, ocultos, rechazada, cuerpo con todos los bloques).
+- **Falta**: la inscripción nativa (`Inscribirme` y `Mi inscripción` abren el legado hasta el plan 14), la ficha pública sin sesión (el servidor no la sirve aún), el visor con zoom, el cartel a la izquierda en iPad y las capturas. Pruebas: `activityLogic` (27), `profileEventsFake` (18), `activitiesScreen` (23).
+
+## 2026-11-01 — Comunica familias, plan 12: «Mis datos» y «Datos de Lucía»
+
+- Una sola pantalla (`/comunica/datos/[pid]`; `/comunica/datos` resuelve a quien se ve ahora, `?yo=1` a uno mismo) para las tres audiencias, con los campos, el orden y los textos del plugin (`single_stic_comunica_perfil.php`): datos personales (lo bloqueado, como dato con candado; género, soporte y expedición del DNI si ya los tenemos), contacto (con el aviso del correo `@movimientoconsolacion.com`), dirección, foto, MCM (solo miembros; «Nivel COM» con etapa COM, año de LC con LC Incorporado), información sanitaria y autorizaciones legales.
+- Guardar escribe DIRECTO y con conexión, solo lo que cambia, con un `clientId` por guardado; nada de datos ni de salud al disco (`persist: false`, memoria 5 min y 1 min). Las autorizaciones «sin contestar» siguen sin contestar si no se tocan (el plugin las convertía en «no»). Salir con cambios pregunta.
+- `?completar=pago`: quien paga y no tiene nombre, apellidos o documento los escribe (solo lo vacío; el documento con su letra) y vuelve al pago.
+- Los enlaces del plugin `single_stic_comunica_perfil`, `single_stic_profile`, `single_stic_comunica_laico` y `single_stic_tutor_profile` abren esta pantalla; «Tus datos personales» de monitor y «Mis datos»/«Datos de Lucía» de la portada ya no pasan por la web.
+- Servidor falso (`fake/profileDetails.ts`) como el de verdad: secciones por audiencia, `emailNote`, 403 con `pid` ajeno, estricto, contador de escrituras por campo, `identityFill`, salud aparte.
+- **Falta**: cambiar la foto desde la app (el servidor aún no recibe fotos) y verlo con el servidor real. Pruebas: `personDetails.test.ts` (33), `profileDetailsFake.test.ts` (24), `datosScreen.test.tsx` (20).
+
+## 2026-11-01 — Comunica familias, plan 11 (base): a quién se ve
+
+- Contrato y servidor falso de `GET /v1/me/profiles` (quien ha entrado y sus hijos; un hijo sin nombre sale igual; el 503 nunca es una lista vacía), con cinco personas de familia y `allowedProfile`, la barrera de las rutas `/profiles/:pid/…` de los planes 12-16.
+- `utils/comunica/profiles.ts` (lógica pura), `useMyProfiles`, `useActiveProfile` y `useProfileScope`; lo recordado vive por persona en el cajón `profile` (un id y un booleano) y se borra al salir.
+- Pantallas: «¿A quién ves?» (`/comunica/perfiles`, una tarjeta por hijo y la propia; con un evento o inscripción de destino pregunta «¿A quién quieres apuntar?»), la barra «Viendo a · X ▾» con su hoja «Ver como…» (solo con hijos) y `MemberHome` (saludo con × que vuelve al mes, «A quién tienes a tu cargo», actividades según a quién se ve, «Tu perfil»). `ComunicaHome` usa `FamilyHome` para quien no es del equipo y añade `MemberHome` bajo lo del equipo.
+- «Hay que elegir» en los enlaces: quien es solo familiar con varios hijos y no ha elegido nunca pasa antes por «¿A quién ves?» cuando abre un evento, una inscripción o un pago. Sin conexión no pregunta.
+- Pruebas de pantalla en `__tests__/comunica/familyScreens.test.tsx` (14).
+
+## 2026-10-31 21:00 — Comunica nativa: contra el middleware de verdad y entrar con la cuenta de la app
+
+- Builds (`preview`, `production`) y OTA (preview y producción) apuntan al middleware real
+  (`EXPO_PUBLIC_COMUNICA_API`); el área sigue saliendo solo con el Laboratorio Alpha o `comunicaNativa = all`.
+- «Entra en tu área»: «Entrar como <correo>» con la cuenta de Google o Apple de la app (sin código). La primera vez
+  entra solo; tras «Salir», espera al botón. Los fallos enseñan su código técnico debajo.
+- Quien no es del equipo ve «Tu área, de momento en la web» en vez de un error.
+
+## 2026-10-31 20:19 — Expo 58: deslizar para añadir y cierre de las hojas
+
+- **Deslizar una canción del todo ya la añade (o la quita)**, sin tener que tocar el botón que destapa. En gesture-handler 3, `onSwipeableOpen` recibe la dirección hacia la que se movió la fila (`'left'` = se abren las acciones de la DERECHA) y el código seguía con la semántica del `Swipeable` viejo: la fila se quedaba abierta. Igual en la fila de la playlist (deslizar a la derecha para quitar no hacía nada). Una sola traducción, `utils/swipeSide.ts`; test `__tests__/swipeToAdd.test.tsx`, que además vigila que gesture-handler siga con esa semántica.
+- **`BottomSheet`: el cierre se completa aunque la animación de salida no avise.** Todo lo que viene después de cerrar una hoja (`onCloseComplete`: abrir el panel secreto tras «Reportar fallitos», las opciones del menú «⋯» de la selección…) colgaba del callback de fin de la animación; si no llega, la hoja se ve cerrada pero el `Modal` sigue presentado, invisible, y lo siguiente no ocurre. Ahora también se cierra por tiempo (lo primero que llegue). Test nuevo en `bottomSheetLifecycle`. Es la explicación más probable del panel secreto que «se cierra sin más» en la build de Expo 58, sin poder verlo en el móvil.
+
+## 2026-10-31 20:05 — Expo 58: arreglos tras la primera build de TestFlight (iconos, pestañas, panel secreto)
+
+Fallos vistos en el móvil con la build de la rama (`docs/planes/PLAN_EXPO_58.md`, paso 10):
+
+- **Iconos en blanco en iOS** (casi todos los `MaterialIcons`). `@expo/vector-icons` carga la fuente al arrancar y, sin ella, pinta un `<Text />` vacío; en Expo 58 esa carga no llegaba (la causa exacta no se pudo ver sin el móvil). Ahora las fuentes van **dentro del binario** (plugin `expo-font` en `app.json`: `MaterialIcons.ttf` e `Ionicons.ttf`) y los iconos se pintan con ellas sin cargar nada: `components/ui/icons.ts` (`MaterialIcons-Regular`/`Ionicons` en iOS, nombre de fichero en Android; en web sigue `@expo/vector-icons`). Los 98 ficheros importan de ahí. Guardarraíl `__tests__/iconFonts.test.ts`: nadie importa `@expo/vector-icons` directamente, `app.json` embebe las dos fuentes y el nombre PostScript de cada .ttf es el que usa iOS. Comprobado con `expo prebuild`: `UIAppFonts` y el proyecto de Xcode las llevan.
+- **Volver a una pestaña la devolvía a su portada** (cantoral, Contigo…). Nuestra barra cambiaba de pestaña con `router.navigate('/cancionero')`, que en expo-router 58 va a la ruta de la portada. Ahora despacha `JUMP_TO` al navegador de pestañas, como la barra del sistema (`components/tabs/jumpToTab.ts`). Test con el router real: `__tests__/router/tabSwitchKeepsStack.test.tsx` (falla con el código viejo).
+- **Re-tocar Contigo (y Comunica) no volvía a la portada**: no se suscribían al re-tap. Nuevo `useTabReselectToRoot` (`tabBarController.ts`) y guardarraíl `__tests__/router/tabReselect.test.ts`: toda pestaña con pila tiene que hacerlo.
+- **Panel secreto**: al acertar la contraseña se desmontaba una hoja y se montaba otra a la vez (dos `Modal` de iOS relevándose, que iOS rechaza en silencio). Ahora es una sola hoja que cambia de contenido.
+- Subidas menores: `react-native-nfc-manager` 4.2 (sigue respetando `includeNdefEntitlement: false`), `react-native-qrcode-svg` 6.3.49, `react-native-reorderable-list` 0.18.2, `uniwind` 1.13.1. `react-native-render-html` sin mantenimiento: se queda (solo JS, último release, un componente), anotado en `TODO.md`.
+- Requiere build nativo: no llega por OTA.
+
+## 2026-10-31 19:00 — Expo 58: repaso de los pasos 1-4, entrar en subrutas desde otra pestaña y `npm audit fix`
+
+- **Entrar en una subruta desde otra pestaña deja la portada debajo** (`withAnchor`). Con las pestañas convertidas en carpetas, un `router.push('/cancionero/cancion')` o `'/contigo/oracion'` desde fuera de esa pila la dejaba con esa pantalla sola, y «atrás» no tenía adónde volver. Ahora entran con `withAnchor`: la paleta ⌘K y el enlace `/cancion?f=` (cantoral), las rutas sueltas de los avisos (`goToPath`) y el botón de acción del aviso en Inicio, que además pasa por `goToPath` (llega a pestañas que en iOS no están en la barra). Dentro de la propia pila NO se usa: `withAnchor` la reinicia a portada + destino. Test en `cantoralJourney`.
+- **`npm audit fix`** (sin `--force`): solo parches de dependencias transitivas (`shell-quote`, `node-forge`, `js-yaml`, `joi`, `qs`, `compression`, `body-parser`, `@xmldom/xmldom`, `launch-editor`, `moment`, `typescript-eslint` 8.72…). De 73 avisos a 63, sin el crítico y de 12 altos a 5. Lo que queda es de herramientas de desarrollo (eslint, jest, CLI de RN) o `@grpc/grpc-js` dentro de Firestore, que la app no usa y que Firebase 13.1 (la última) sigue fijando en `~1.9`. Nada de eso entra en la app.
+- Repaso de los pasos 1-4 sin más fallos: `expo install --check` al día, `expo-doctor` 19/20 (solo avisa de que `react-native-render-html` no se mantiene), parches de `patch-package` aplicados, sin llamadas `navigation.navigate('Nombre')` sueltas, Materiales → actividad y `?date=` del calendario coherentes, `usePreventRemove` de Comunica bien usado.
+
+## 2026-10-31 18:00 — Expo 58: el Cantoral pasa a rutas de fichero (ya no queda ningún navegador a mano)
+
+Pasos 5-9 de `docs/planes/PLAN_EXPO_58.md`. Era lo que hacía que la build 60 se cerrara al abrir el Cantoral. **Falta la build de TestFlight y probar en el móvil (paso 10).**
+
+- **`app/(tabs)/cancionero/`**: `_layout.tsx` (el mismo `Stack` con sus cabeceras, la raya amarilla y `SettingsProvider`) + `index` (categorías), `categoria`, `cancion`, `pantalla-completa` y `seleccion`, que re-exportan las pantallas de `app/screens/`. `unstable_settings.anchor = 'index'`: una canción abierta en frío tiene las categorías debajo.
+- **Una canción ya no viaja entera por la ruta.** Los params son texto: `filename`, `list`, `currentIndex`, `source`, `firebaseCategory` (y `transpose`/`capoOverride` en pantalla completa). La lista de anterior/siguiente, la canción del líder del coro y la letra viva con un arreglo recién añadido van en un almacén en memoria (`utils/songNavList.ts`, 40 listas); la pantalla las lee con `hooks/useRouteSong.ts`, que si no hay lista (app reiniciada, recarga en web) lee la canción del catálogo `songs`. Si la canción no existe, el detalle lo dice («No encontramos esta canción»).
+- **Nombres → rutas** en `utils/eventRoutes.ts` (`cantoralHref`); `openCantoral(screen, params)` (`utils/cantoralNavigation.ts`) sustituye a los `navigation.navigate('SongDetail' | 'SongsList' | 'SelectedSongs' | 'SongFullscreen')` de Categorías, la lista, el detalle (etiqueta → lista, «Ver» la selección), la pantalla completa y «Tu selección». Cerrar la pantalla completa tras pasar de canción usa `router.dismissTo` (el detalle se queda en la canción a la que se llegó).
+- **Fuera `utils/pendingSongOpen.ts`**: la paleta ⌘K y el enlace `/cancion?f=` abren la canción en su ruta directamente.
+- **Lo que colgaba del stack a mano**, en el `_layout`: re-tap del tab (`router.dismissAll()`, como Más) y el **modo coro esclavo** (`useChoirFollower`). Cambio de comportamiento: antes, con el cantoral en segundo plano, la canción del líder se apilaba sin cambiar de pestaña; ahora navegar al cantoral cambia de pestaña, así que la canción del líder queda pendiente y se abre al volver al cantoral.
+- **`freezeOnBlur` fuera** (paso 7) de `AndroidTabsLayout`, `eventStackScreens` y el cantoral: en expo-router 58 «no tiene efecto» (los navegadores lo fijan a `false`). Las pestañas visitadas vuelven a re-renderizar en segundo plano; a vigilar en el móvil.
+- **`defaultTab`** (paso 8): sin cambios. Es global, vale `index` y ya no lo leía nadie; si el Panel lo cambia algún día, que Inicio redirija al arrancar.
+- **Web en blanco (fallo de la rama, no del cantoral):** en Expo 58 el export estático ya no mete el JS en el HTML; `app/+html.tsx` tiene que pintar `headNodes` y `bodyNodes` de `useServerDocumentContext()`. Sin eso `expo export -p web` daba una página sin un solo `<script>`. Guardarraíl: `__tests__/htmlTemplateAssets.test.tsx`.
+- **Tests:** `__tests__/router/cantoralJourney.test.tsx` recorre con el router real categorías → lista → canción → pantalla completa → siguiente → cerrar → atrás → atrás, y abre una canción en frío por su ruta; `routeFoldersWalk` abre cada ruta de `cancionero/`; las listas de pendientes de `tabsMountWithRouter` y `noHandMadeNavigators` desaparecen (la regla queda pelada). 238 suites / 2.707 tests, lint 36 avisos.
+- Web verificada con `expo export -p web` + Playwright: las seis pestañas y el recorrido entero del cantoral (incluidas las flechas, la recarga en una canción y `/cancion?f=`).
+- Requiere build nativo: no llega por OTA.
+
+## 2026-10-31 12:00 — Expo 58: Fotos, Calendario, Visita del Papa y Más pasan a rutas de fichero
+
+Primer tramo de la migración a navegación por ficheros (`docs/planes/PLAN_EXPO_58.md`). En expo-router 58 el estado de navegación se crea de forma global a partir de las rutas de fichero, y la build 60 se cerraba al abrir por montar navegadores a mano (`createNativeStackNavigator`) dentro de las pestañas. **Quedan Cantoral (paso 5) y lo que se apoya en su stack (paso 6).**
+
+- **Fotos** y **Calendario**: de `fotos.tsx` / `calendario.tsx` a carpetas con `_layout.tsx` + `index.tsx`. Las pantallas viven ahora en `app/screens/FotosScreen.tsx` y `CalendarScreen.tsx` (las reutiliza Más). `CalendarScreen` decide dónde pone el conmutador Mes/Agenda por una prop `variant: 'tab' | 'stacked'` en vez de por el nombre de la ruta, y lee el `?date=` de la URL (ya no de React Navigation).
+- **Visita del Papa** (`app/(tabs)/visitapapa/`) y **Más** (`app/(tabs)/mas/`): un fichero de ruta por pantalla (22 en Más, 12 en Visita) que re-exporta la pantalla de `app/screens/`. Los layouts llevan lo que tenían los ficheros viejos: ajustes, botones de acción de evento, barra de color, re-tap del tab (`router.canDismiss()` + `dismissAll()`), vuelta a la raíz al volver de otro tab y el destino pendiente del banner «Evalúa».
+- **`utils/eventRoutes.ts`**: único sitio que traduce los nombres de pantalla de siempre (`'Horario'`, `'Fotos'`, `'JubileoHome'`…) a rutas (`/mas/horario`, `/visitapapa`, `/mas/evento`). `masNavigation`, `eventNavigation` y `tabNavigation` siguen hablando en nombres. Las pantallas de evento navegan con `useEventNavigation()`; la raíz (`/mas` o `/visitapapa`) la da `EventBaseContext`.
+- **Los params de ruta son texto.** `initialDayIndex` se lee como número desde la URL, y `MaterialPages` ya no recibe el objeto `actividad`: recibe `dia` y `act` (posiciones) y lo lee de la caché de `materiales`.
+- **`renderEventScreens()` devuelve un array, no un fragmento**: el `Stack` de expo-router 58 recorre los hijos con `Children.toArray`, que no aplana fragmentos, y habría reventado en el móvil.
+- **Comunica** (de `main`) sobre Expo 58: su layout usa `unstable_settings.anchor`, y «salir con cambios sin guardar» pasa de `beforeRemove` (ya no existe en el mapa de eventos) a `usePreventRemove` en las cuatro pantallas.
+- **Guardarraíles** (`__tests__/router/`): `tabsMountWithRouter` y `routeFoldersWalk` montan las pestañas y abren **cada ruta** de `mas/` y `visitapapa/` con `renderRouter` (router real), y fallan ante avisos de rutas; `noHandMadeNavigators` prohíbe `createNativeStackNavigator` en `app/` con una lista de pendientes que solo puede encogerse (hoy: Cantoral). `tabNavigationInvariants` pasa a comprobar los ficheros de `mas/`.
+- Jest: `standard-navigation` en `transformIgnorePatterns`. Lint: 36 avisos (bajan los de `mas.tsx` y `visitapapa.tsx`).
+- **Pendiente de probar en dispositivo:** re-tap de pestaña en Más y Visita, volver al tab del evento, el banner «Evalúa», abrir un día del calendario desde Home en iOS (entra por `/mas/calendario?date=…`), Materiales → actividad, `freezeOnBlur` (sin tocar, ver paso 7).
+- Requiere build nativo: no llega por OTA.
+
+## 2026-10-29 23:30 — Área nativa de Comunica: repaso antes de pasar a `main`
+
+Recorrido automático con el servidor falso (monitor, coordinación y varias
+delegaciones: 56 pantallas y 350 botones). Ninguna pantalla rota. Arreglado:
+
+- **Pantallas en el esqueleto para siempre al abrirlas en frío** (enlace,
+  aviso o recargar la web): resumen de grupos, árbol de «Pasar lista» e
+  historial. La pantalla pedía sus datos antes de que la sesión acabara de
+  restaurarse y el `clear()` del cambio de persona la dejaba huérfana. Ahora
+  lo que no se ve se borra y lo que se ve se reinicia y se vuelve a pedir
+  (`forgetPreviousPerson` en `ComunicaAreaProvider`). Test:
+  `areaProviderColdLink.test.tsx`.
+- Servidor falso: al recargar, `twoDelegations` y `coordinationCom2` volvían a
+  la pantalla de entrar (el token se reconocía con `[a-z]+`).
+- «1 grupos» → «1 grupo» en la portada y el árbol.
+- La fila de pasar lista ya no pinta un `<button>` vacío alrededor del suyo en
+  web (en el móvil sigue siendo un botón para VoiceOver, con sus acciones).
+- Al traer `main`: vuelve `components/ui/StatCard.tsx`, que `main` había
+  borrado por estar sin uso y que usa el resumen de Coordinación.
+
+## 2026-10-29 18:00 — Expo 58 (React Native 0.88, React 19.3) y dependencias mayores
+
+- **Expo SDK 57 → 58** (`expo install`): React Native 0.88, React 19.3, Reanimated 4.7, worklets 0.13, **gesture-handler 3**, `@sentry/react-native` 8, expo-router 58, `jest-expo` 58 + Jest 30. Además `firebase` 13, `chordsheetjs` 18 y `@aptabase/react-native` 0.6. `async-storage` se queda en 2.2 (Expo 58 lo sigue fijando ahí).
+- **`runtimeVersion` 2.1.0 → 2.2.0.** Por el cambio de SDK: los binarios de la 2.1 (SDK 57) dejan de recibir las OTA que se publiquen desde esta rama. La `version` de la app sigue en 2.1.0.
+- **Node 24 en los workflows** (verify, OTA, build de tienda y deploy web): `@expo/cli` 58 pide Node ≥ 22.13 y firebase 13 ≥ 24.12. El de reglas de Firebase sigue en 20.
+- **Navegación (expo-router 58):** `createNativeStackNavigator` se importa de `expo-router/native-stack`; `initialRouteName` ya no es prop de los layouts (`contigo` usa `unstable_settings.anchor`); `Tabs` de Android y web ya no reciben `initialRouteName={defaultTab}` (en iOS no se usaba, así que `defaultTab` ≠ `index` no se respeta en ninguna plataforma); `initialParams` desaparece: el `eventId` de la pestaña de la Visita del Papa viaja por `EventIdContext` (`hooks/useCurrentEvent.ts`).
+- **Filas deslizables:** `Swipeable` ya no existe en gesture-handler 3. `SongListItem`, `PlaylistRow` y `NotificationListItem` pasan a `ReanimatedSwipeable` con un componente nuevo, `components/ui/SwipeActionContent.tsx` (acciones animadas con Reanimated).
+- **RN 0.88:** refs con `ScrollViewInstance` / `TextInputInstance` / `ViewInstance`; fuera `backgroundColor` y `translucent` de `StatusBar`; `ListEmptyComponent` sin `null`; `StyleSheet.create<T>` con `type` en vez de `interface`.
+- **Parches** (`patch-package`): `react-native-webview` 14.0.1 (`WebView<P = undefined>` volvía `never` las props en TypeScript) y `expo-native-compact-tabs` (tipo de `ScrollView`).
+- **Tests:** el test de DOM pasa a `*.dom.test.ts` y corre en un proyecto Jest propio (`jsdom`, sin React Native), porque el setup de RN 0.88 redefine `window`; resolver de tests de Reanimated en lugar del de worklets; `jestSetup` de gesture-handler y mock oficial de worklets; `react-test-renderer` 19.3 declarado a mano (ya no lo trae `jest-expo`) y fuera de `overrides`; registro de assets mockeado en `jest.setup.js`.
+- Sin cambios de comportamiento a propósito. **Pendiente de probar en dispositivo:** navegación y tabs (iOS/Android), deslizar filas (cantoral, selección, notificaciones), animaciones, login con Firebase y que `freezeOnBlur` (la guía de expo-router 58 dice que se quite, pero los tipos lo siguen aceptando) siga congelando las pestañas.
+- Requiere build nativo: no llega por OTA.
+
+## 2026-10-29 13:00 — Dependencias al día dentro de Expo 57
+
+- `npx expo install --fix`: `expo` 57.0.31, `expo-router` 57.0.29, `expo-notifications` 57.0.24, `expo-updates` 57.0.26, `expo-dev-client`, `expo-linking`, `expo-network`, `expo-observe`, `expo-sharing`, `expo-splash-screen`, `jest-expo`. Más parches: `google-signin` 16.2.0, `heroui-native` 1.0.11, `prettier`, `eslint-plugin-prettier`, `@types/node`.
+- Sin cambios de código: tipos, lint (38 warnings, los mismos) y los 2209 tests siguen igual.
+- **Sin tocar a propósito** (saltos mayores que piden decisión y prueba en dispositivo): Expo 58, `@sentry/react-native` 8, `firebase` 13, `eslint` 10, `jest` 30, `react` 19.3, `chordsheetjs` 18, `@react-native-async-storage` 3.
+- Requiere build nativo: no llega por OTA.
+
+## 2026-10-29 12:00 — NFC: sin entitlement NDEF (Apple rechazó el build 58 con ITMS-90778)
+
+- App Store Connect rechazó la 2.1.0 (build 58): con SDK 26.5 y mínimo iOS 16.4 el entitlement `com.apple.developer.nfc.readersession.formats` ya no admite `NDEF`. En el plugin de `react-native-nfc-manager` (`app.json`), `includeNdefEntitlement` pasa a `false`, así que el entitlement queda solo con `TAG`.
+- Consecuencia: la lectura de etiquetas se hará con sesiones de tipo TAG (`NfcManager.requestTechnology`), no con la sesión NDEF del sistema. Todavía no hay código que use NFC.
+- Requiere build nativo nuevo (build > 58): no llega por OTA.
+
+## 2026-10-29 00:30 — Área nativa de Comunica: varias delegaciones (plan 17, rama `claude/area-nativa-17-delegaciones`)
+
+- Quien colabora con otra delegación además de la suya (coordina o lleva un
+  grupo allí) elige con cuál trabaja en un selector arriba de «Hoy», Grupos y
+  fichas y Coordinación. Solo sale con más de una; se recuerda por persona y
+  se borra al salir.
+- Todo lo de equipo va con esa delegación (cabecera
+  `X-Comunica-Delegation`); lo personal, con la de la ficha. Cada delegación
+  tiene su caché, y una lista guardada en el móvil sube con la delegación con
+  la que se marcó aunque luego se cambie el selector.
+- Un enlace o un aviso a un grupo de otra de tus delegaciones cambia el
+  selector solo.
+- Servidor falso: `delegaciones@ejemplo.org` (Villaclara y Puerto Alto).
+
+## 2026-10-28 23:30 — Área nativa de Comunica: avisos en el móvil y compartir un evento (plan 08, rama `nuevoComunicaChulo`)
+
+- **Avisos del área** («¿Has pasado lista?», «Novedades en tu grupo» y
+  «Tienes N listas sin subir»): el móvil se registra en el servidor del área
+  (`POST /v1/devices`, por la cola) cuando hay sesión, permiso y token, y se
+  da de baja al salir. Lo hace `components/comunica/ComunicaBackground.tsx`,
+  montado en la raíz (`app/_layout.tsx`); solo con el área nativa encendida y
+  nunca en web.
+- **Dos canales de Android nuevos**, `comunica-listas` (HIGH) y
+  `comunica-grupos` (DEFAULT), sin categoría del Panel. No se pueden quitar
+  nunca: lo vigila un test.
+- `usePushNotifications` atiende primero los avisos con `source: 'comunica'`:
+  no van a la campana, refrescan la portada del área y al tocarlos la app
+  decide el destino (marcar ese grupo, la ficha del grupo o la portada).
+- **Aviso local** «Tienes N listas sin subir» al dejar la app con listas en la
+  cola (a la hora; de noche, a las 8:30).
+- **«Avisos en este móvil»** en «Tu cuenta»: el permiso, tres interruptores y
+  los ajustes del sistema. La portada del área invita a activar los avisos.
+- **Compartir un evento**: el texto ya escrito («Convivencia COM · sáb 14 y
+  dom 15 de noviembre · Benicàssim · Apúntate hasta el 5 de noviembre:
+  enlace») con el botón «Compartir» en la cabecera de la pantalla del evento
+  (plan 07).
+- Laboratorio Alpha: «Simular aviso» para probar los destinos sin servidor.
+- `session.ts` gana `addBeforeSignOut` (lo que se hace con la sesión viva al
+  salir, con 3 s de tope).
+
+## 2026-10-28 21:00 — Área nativa de Comunica: pasar lista en un evento (plan 07, rama `nuevoComunicaChulo`)
+
+- **Eventos**: nueva pantalla para elegir en qué evento pasar lista (los de
+  hoy en tarjeta, próximos y ya pasados del curso; buscador con más de 8). La
+  tarjeta del evento de hoy y la fila «Pasar lista en un evento» de la portada
+  de Pasar Lista dejan de abrir la web y van a lo nativo.
+- **La lista del autobús**: los inscritos por etapa y curso, las otras
+  delegaciones detrás con su pastilla, los monitores plegados y «No van» al
+  final. Chips por curso pegados arriba, buscador sin acentos, el mismo gesto
+  de marcar que los grupos y «Están todos» solo sobre lo que se ve.
+- **Sin cobertura**: se marca y se guarda igual; la cola lo sube al volver la
+  red. Si el evento no tiene días en el CRM, el servidor crea la lista de hoy
+  al guardar (una sola, aunque llegue dos veces).
+- **Grupos de actividad** (patrullas, habitaciones… de Comunica Tools):
+  pestañas de solo lectura («7/8 plazas», «Sin patrulla», monitores arriba) y
+  «Pasar lista por patrullas» / «de este grupo», que es la misma lista del
+  día partida por grupos.
+- Contrato `GET /v1/events`, `GET/PUT /v1/events/:id/roll` y su servidor
+  falso (eventos generados contra «hoy»; mando «la relectura falla» en el
+  Laboratorio). Componentes comunes nuevos: `FilterChips`, `SearchField`.
+  Sin paquetes nuevos.
+
+## 2026-10-28 20:30 — Área nativa de Comunica: «Mis datos de monitor» (plan 09, rama `nuevoComunicaChulo`)
+
+- **Pantalla nueva** `comunica/yo/monitor`: trayectoria, formación,
+  voluntariado, el certificado de delitos sexuales (Automático / Manual) y los
+  títulos, con los campos, el orden y los textos del plugin. Se llega desde
+  «Tu cuenta» (solo monitores), desde el aviso de «Hoy» y por cualquier enlace
+  del plugin a «Mis datos de monitor».
+- **Guardar** va por la cola de escrituras (`me.monitor`): sin cobertura se
+  queda en el móvil y sube sola; cada entrada lleva todo lo pendiente. Salir con
+  cambios sin guardar pregunta.
+- **Subir títulos y certificados** con foto, galería o archivo (PDF, JPG o PNG
+  hasta 6 MB, comprobado antes de subir): **directo, con conexión, sin pasar
+  por la cola** — el archivo no se queda en el móvil y la copia del selector se
+  borra al subir y al salir. Usa `expo-image-picker`, `expo-document-picker` y
+  `expo-file-system`, ya en la build 2.1 (nada nativo nuevo).
+- **Aviso del certificado** («Te falta subir tu Certificado de Delitos
+  Sexuales») arriba de la pantalla y en la portada «Hoy», solo a monitores que
+  eligieron «Manual» y no lo han subido.
+- Contrato nuevo: `GET`/`PATCH /v1/me/monitor` y `POST /v1/me/documents`
+  (`docs/contratos/COMUNICA_API.md`), con el servidor falso. Piezas de
+  formulario reutilizables en `components/comunica/comun/form/`.
+
+## 2026-10-28 18:00 — Área nativa de Comunica: Coordinación entera (plan 06, rama `nuevoComunicaChulo`)
+
+- **Coordinación** nativa: lo que falta (la reunión sin pasar), «Lista de
+  monitores», «Reuniones de programación», «Resumen de grupos» y **Tu
+  equipo** con buscador en la cabecera: «Sin grupo» (con «Vincular»), Apoyo,
+  por etapa y, plegados, los monitores de grupos que no pasan lista.
+- **Lista de monitores**: la misma fila y la misma hoja que pasar lista, una
+  por etapa; arranca en verde y se marca a quien no vino. Los de Apoyo y otros
+  grupos salen con «-» y solo se apuntan si se tocan (como el plugin desde el
+  25/10). Se guarda por la cola y se relee del servidor.
+- **Reuniones de programación**: la lista del curso y «Nueva reunión»
+  (nombre, día, hora y duración).
+- **Resumen de grupos**: tarjeta por etapa, la última sesión con qué listas
+  faltan (cada una abre esa lista), la tira de cada grupo y los datos por
+  revisar.
+- **Ficha del monitor**: contacto, sábados, reuniones y las listas de sus
+  grupos, sus grupos, por dónde ha pasado, el papeleo y los seguimientos (que
+  nunca se guardan en el móvil; sobre uno mismo no existen).
+- «Hoy» lleva el bloque de Coordinación también a acompañamiento, y en
+  Grupos y fichas el nombre de un monitor abre su ficha.
+- El botón «Guardar» de las listas es ya la acción principal con el degradado
+  de Comunica. Plan nuevo, el 17: varias delegaciones.
+
+## 2026-10-28 13:30 — Área nativa de Comunica: arreglos de la revisión y almacén cifrado (rama `nuevoComunicaChulo`)
+
+- **Salir o cambiar de persona** apaga la cola de escrituras antes de borrar
+  nada: ya no puede subir lo de una persona con la sesión de otra. Un enlace
+  de otra persona intenta subir lo pendiente y avisa de lo que se perdería
+  (también en web).
+- **Sin cobertura** la lista queda «Guardada en el móvil» y sube sola al
+  volver la red, sin gastar intentos; los textos distinguen CRM caído y
+  atascada. Un rechazo definitivo ya no se reenvía en cada arranque.
+- **Datos en el móvil**: la caché, la cola y los borradores del área van a una
+  base de datos **SQLite cifrada** (SQLCipher, clave en el llavero) y el token
+  de refresco al **llavero**. Lo que hubiera en AsyncStorage se pasa solo. En
+  web, como antes.
+- La salud y los datos personales no se guardan nunca aunque una consulta
+  venga mal marcada; el token solo va a fotos de nuestro servidor; el enlace
+  de un token caduca a los 2 minutos; la sesión revocada vuelve a la puerta.
+- Guardarraíles nuevos: ningún token ni pase en los logs; nada nativo del área
+  en el bundle de web.
+
+## 2026-10-28 13:30 — Notificaciones y botones del panel: los tabs de «Más» en iOS ya se abren
+
+- Una notificación (al tocarla o desde el centro de notificaciones) o un botón de acción del panel que apunta a un tab (`/calendario`, `/fotos`, `/comunica`…) usaba `router.push` directo. En iOS, si ese tab no está en la barra (perfil con 6+ tabs o evento en curso), no hacía nada. Ahora pasa por `goToPath` (`hooks/useTabNavigation.ts`), que entra por «Más» y arrastra la fecha del calendario. Las rutas que no son la raíz de un tab siguen como antes.
+- `utils/tabNavigation.ts`: nueva `parseTabPath`. Tests en `tabNavigation.test.ts` y `useTabNavigation.test.tsx`.
+
+## 2026-10-28 10:30 — Paquetes nativos del área privada en la 2.1 (aún sin usar)
+
+- Añadidos `expo-secure-store`, `expo-sqlite` (con SQLCipher), `expo-local-authentication`, `expo-intent-launcher` y `expo-image-picker` con sus plugins en `app.json`, para que el área privada nativa pueda llegar luego por OTA sobre la 2.1. Todavía no hay código que los use.
+- Textos de permisos en castellano: Face ID, fotos y cámara. El de la cámara ahora cubre el escáner QR y las fotos de documentos (los dos plugins escriben la misma clave). Micrófono del selector de fotos desactivado.
+- Requiere build nativo: no llega por OTA.
+
+## 2026-10-26 07:38 — Área nativa de Comunica: lo que faltaba en este registro (rama `nuevoComunicaChulo`)
+
+Apunte de reconciliación: cambios del 24/10 que no se anotaron aquí.
+
+- **Pasar Lista completo** (plan 04): portada con la cola del móvil, el evento
+  de hoy y el bloque de coordinación; árbol de grupos con buscador; historial;
+  marcar con selector de fecha, hoja de estados y motivo, «Sin registro» y
+  rachas; guardar con borrador, cola y comprobación de lo releído.
+- **Decisiones aplicadas** tras la revisión del 24/10: quitar una marca la
+  borra en el CRM (`desmarcar`); la próxima sesión se puede pasar si no ha
+  empezado ninguna (`futuras`); la ficha enseña la salud aunque la marca de las
+  listas no (`salud-no`); territorio «Comunica» con acento violeta y el
+  degradado solo en la acción principal (`ComunicaColors`).
+- **Arreglos**: marcas que se perdían al salir con «Guardar»; estados de carga
+  dentro de la pantalla; táctiles de 44 pt; la web del plugin ya no queda
+  tapada; confirmaciones también en web; los datos del acceso ya no viajan en
+  la URL.
+- **Coordinación** (plan 06), empezado: contrato, servidor falso y reglas puras.
+  Las pantallas, sin hacer (ver `docs/planes/area-nativa/ESTADO.md`).
+
+## 2026-10-24 11:30 — Comunica: el servidor falso sale del perfil `production` de EAS
+
+- `EXPO_PUBLIC_COMUNICA_API=fake` ya no va en el perfil `production` de
+  `eas.json`: una build de tienda desde `main` habría encendido el área nativa
+  con datos inventados. Para las builds de prueba con el área nativa y el
+  servidor falso hay un perfil propio, `production-comunica-falso` (extiende
+  `production`). Un test (`__tests__/comunica/easProfiles.test.ts`) impide
+  volver a meterlo en `production`.
+
+## 2026-10-24 09:20 — Área nativa de Comunica: Grupos y fichas y la ficha del participante (rama `nuevoComunicaChulo`)
+
+- **Grupos y fichas** (plan 05, `/comunica/grupos`): la gente de la
+  delegación sin pasar lista, en Grupos, Cursos y A-Z, con buscador, chips
+  por curso, fotos, marcas («No se va solo/a», «Sin fotos», «Alergia o
+  tratamiento», que abre la salud), la tarjeta de quien no tiene grupo y, a
+  coordinación, **«Vincular»** a un grupo (por la cola, con confirmación).
+  Pantallas nuevas: un grupo, «Sin grupo» y **la ficha del participante**
+  (contacto con botones al tutor 1, asistencia con cuadraditos y eventos,
+  avisos de comportamiento con alta por la cola, pañuelo, autorizaciones y
+  datos personales). Se llega desde la portada, el pie del árbol y la hoja
+  de marcar (con la sesión).
+- **Datos**: rutas nuevas del contrato (`/v1/people`, `/v1/groups/:id`,
+  `/v1/people/:id`, `/personal`, avisos, pañuelo y vincular); la salud pasa
+  a ir por campos. Ni la salud ni los datos personales se guardan en el
+  móvil; las fichas y fotos de tus grupos se precargan con conexión.
+- **Salir vacía la caché de fotos de `expo-image`** (también las demás
+  imágenes de la app, que se vuelven a bajar).
+- Laboratorio Alpha: mando «Curso cerrado».
+
+## 2026-10-24 05:30 — Área nativa de Comunica: enlaces y salto a la web (rama `nuevoComunicaChulo`)
+
+- **Cualquier enlace de Comunica abre la app** donde toca (plan 10): con un
+  destino (`internalpage`), la pantalla nativa si existe o el área privada en
+  la WebView en esa página con la sesión puesta (pase de 2 minutos); con el
+  token del plugin, en la nativa se canjea por una sesión y pregunta si el
+  enlace es de otra persona; en el legado, como siempre. Mapa de todas las
+  páginas del plugin en `services/comunica/links.ts`.
+- **Android**: `intentFilters` con `/ap`, `/app`, `/area-privada`,
+  `/actividades` y `/` del dominio de Comunica (nativo: entra en la 2.2).
+  En iOS lo decide el fichero que sirve el plugin, cambiado en su rama
+  `nuevoComunicaChulo` (sin desplegar).
+- `global.comunicaNativa` en el seed de `/profileConfig` (`"alpha"`).
+
+## 2026-10-24 04:30 — Área nativa de Comunica: entrar con código y cola de escrituras (rama `nuevoComunicaChulo`)
+
+- **Acceso nativo** (plan 02): «Entra en tu área» con el correo de la cuenta
+  de la app ya puesto (o el DNI), código de 6 cifras, «¿Quién eres?» si el
+  correo es de varias fichas y «Tu cuenta» con «Salir». Sesión con token de
+  acceso en memoria y de refresco que rota (`services/comunica/session.ts`).
+  Con el servidor falso el código es `123456`.
+- **Cola de escrituras y caché en el móvil** (plan 01): guardar una lista va
+  al móvil al instante y sube sola (al reconectar, al volver la app, al abrir
+  el área), con su estado en pantalla. Lo marcado se guarda a cada toque. La
+  caché se guarda por persona (nunca la salud) y salir lo borra todo. Sobre
+  AsyncStorage hasta que llegue `expo-sqlite` con la 2.2.
+- La build de TestFlight lanzada desde esta rama lleva el servidor falso
+  (`eas.json`, perfil `production`). _Corregido a las 11:30: ahora va en un
+  perfil propio, `production-comunica-falso`._
+
+## 2026-10-24 02:00 — Área privada nativa de Comunica: cimientos con datos inventados (rama `nuevoComunicaChulo`)
+
+Primeros planes de `docs/planes/area-nativa/` (00, parte del 01 y del 03, y un
+primer corte del 04), **solo visibles con el Laboratorio Alpha** y sin tocar
+nada del CRM:
+
+- **Contrato y servidor falso** (`services/comunica/`): esquemas zod de lo que
+  la app y el futuro `mcm-comunica-api` se piden (`docs/contratos/COMUNICA_API.md`),
+  cliente HTTP con errores tipados y un servidor falso en memoria con datos
+  inventados (dos delegaciones ficticias, grupos, chavales, sesiones de los
+  sábados, listas, rachas), autorización por delegación y rechazos de Pasar
+  Lista. Se elige con `EXPO_PUBLIC_COMUNICA_API` (`fake` en desarrollo y en la
+  OTA del canal preview; en producción, sin variable, el área nativa no se
+  enciende).
+- **Navegación**: `app/(tabs)/comunica.tsx` pasa a ser la carpeta
+  `app/(tabs)/comunica/` con su `Stack`. La puerta (`index`) enseña la WebView
+  de siempre salvo con el modo alpha (o `global.comunicaNativa: "all"` en
+  `/profileConfig`; `"off"` la apaga para todos). Rutas nuevas: `lista`,
+  `web` (el legado) y `muestra`.
+- **Pantallas**: portada «Pasar lista» (atajo a tu grupo, «Te faltan N
+  listas», tus otros grupos, por etapa) y pantalla de marcar (tocar = vino/no
+  vino, mantener = las cuatro marcas y el motivo, «Han venido todos», «Sin
+  registro»), con los componentes del área en `components/comunica/comun/` y
+  su tema provisional en un solo fichero (`theme.ts`, pendiente de la decisión
+  `territorio`).
+- **Laboratorio Alpha**: panel «Comunica nueva» con los mandos del servidor
+  falso (entrar como monitor/coordinación/acompañamiento/otra delegación,
+  reloj, sin conexión, CRM caído, lento) y acceso a la WebView para comparar.
+- **Dependencias**: `zod` y `@tanstack/react-query` (JS puro).
+
+## 2026-10-19 12:00 — Módulo NFC instalado (aún sin usar)
+
+- Añadido `react-native-nfc-manager` y su plugin en `app.json` (permiso NFC + entitlement NDEF en iOS) para que el próximo build nativo ya lo incluya. Todavía no hay código que lo use.
+- Requiere build nativo: no llega por OTA.
+
+## 2026-10-17 13:30 — Pulido de octubre: rendimiento, Android, web, Contigo y limpieza
+
+Ejecutados los 12 paquetes de `PLAN_PULIDO_2026_10` (archivado). Lo que queda
+está en `mcm-app/TODO.md` («Restos del pulido de octubre»).
+
+- **Datos**: `useFirebaseData` sirve la caché en memoria en el primer render
+  (adiós al «Cargando canciones…» al abrir cada categoría) y expone
+  `refresh()`. El contador de notificaciones no leídas ya no descarga
+  `/notifications` una segunda vez (`getUnreadNotificationsCount` recibe el
+  histórico del contexto).
+- **Cantoral**: esqueleto de carga (`ListSkeleton`), pull-to-refresh en la
+  portada, vacíos «Sin conexión»/«Sin resultados» unificados, la pantalla de
+  seleccionadas pasa a llamarse **«Tu selección»**, toast «Añadida» con «Ver».
+- **Canción**: la pantalla no se apaga en el detalle ni en pantalla completa
+  (`useKeepAwakeWhileFocused`); transponer o cambiar la notación **no recarga
+  la hoja ni vuelve arriba** (`utils/songDisplayBridge.ts`); **mapa de la
+  canción** («1 · E · 2 · E×2», ajuste «Mapa», apagado de serie); iconos de la
+  cabecera legibles en Android.
+- **Android**: la barra flotante ya no tapa el final de las pantallas
+  (`useTabBarPaddingBottom`); las hojas inferiores esquivan el teclado; atrás
+  del sistema paso a paso en onboarding y encuestas, y en el menú de la canción
+  y los WebViews de Panel/Gestión; háptica del sistema en vez del Vibrator;
+  headers de Contigo y de eventos legibles; pestañas en segundo plano
+  congeladas (`freezeOnBlur`); un `file://`/`content://` aterriza en el
+  cantoral. **Fotos desde «Más» monta la misma `FotosScreen` del tab
+  (`AlbumListScreen` borrada).**
+- **Pantalla ancha**: las hojas inferiores van centradas a 560 px en web y
+  iPad (`sheetMaxWidth`).
+- **Web**: paleta ⌘K/Ctrl+K que busca y abre canciones; ruta nueva
+  **`/cancion?f=<fichero>`** (F5 conserva la canción, enlace compartible);
+  título de pestaña por pantalla; atajos de teclado en el detalle; pantalla
+  completa del navegador (F), pedal sin clic previo; «Imprimir» una canción;
+  **Sentry fuera de la web** (`utils/sentry.web.ts`, bundle inicial de 8,2 a
+  6,7 MB); `react-native-render-html` a demanda; el service worker (v4) poda
+  bundles viejos y no cachea errores; zoom con pellizco permitido.
+- **Contigo**: el dorado como texto pasa a `accentText` (contraste);
+  examen del día que dice si ya está guardado y no guarda en blanco; tiempo de
+  oración de 5 en 5 con pulsación mantenida y arranque en la última duración;
+  celebración sobria al cerrar los tres hábitos del día; confirmación al quitar
+  un guardado con subrayados.
+- **Home y Más**: accesos rápidos con el color de su pestaña; `/notifications`
+  y la hoja de la campana comparten tarjeta (categoría y hasta 3 botones); la
+  hoja navega con los alias del panel.
+- **Eventos**: el lema sale de `EventConfig.motto` (solo la Visita del Papa lo
+  tiene); tinta sobre el tinte del evento por contraste real.
+- **Carismochito** (dentro del laboratorio): no se asoma en la Revisión ni en
+  la hoja de canción, se puede salir sin agitar, el acelerómetro se pausa en
+  pantallas de lectura y el icono de Android revierte al salir.
+- **Arranque y animación**: el splash nativo se queda hasta saber si toca la
+  bienvenida (`utils/splashGate.ts`, tope 3 s); el scroll de pestañas ya no
+  salta al hilo de JS en cada fotograma; muelles con token; trinquete nuevo
+  `__tests__/noLooseMotion.test.ts`.
+- **Nativo** (`[skip-ota]`): icono de notificación monocromo y
+  `monochromeImage` de Android; los enlaces `mcmapp://` abren la app con el
+  icono de Carismochito; fuera `web.meta`/`web.manifest` de `app.json`.
+- **Limpieza**: borrados `StatCard`, `TeaserCard`, `GlassFAB`, `TopColorBar`,
+  `.jules/`, `.gemini/`, tokens y scripts muertos; cuarentena en
+  `/_para-borrar/`; docs al día y `docs/desarrollo/OTA.md` nuevo.
+- **Repo del cantoral** (rama homónima): fuera los 481 backups versionados y
+  duplicados; los `songs-vX.json` pasan a ser **solo Firebase** (el workflow ya
+  no los commitea); botones de exportar y guardar versión en el admin;
+  Benedictus renombrado a `.cho`; `mcm-sheet.js` regenerado.
+
+## 2026-10-16 23:40 — Buscador del cantoral sin tildes y auditoría de pulido
+
+- **Buscador del cantoral**: ya no distingue tildes — «senor» encuentra
+  «Señor» y «jesus», «Jesús» (`foldForSearch` en `utils/songTags.ts`).
+- **Rendimiento de la lista de canciones**: las etiquetas destacadas de cada
+  fila salen del mismo array entre renders, así que el `React.memo` de
+  `SongListItem` vuelve a servir y teclear en el buscador ya no repinta todas
+  las filas.
+- **Auditoría de pulido** (rendimiento, Android, web/iPad, diseño, animación,
+  limpieza de los dos repos y Carismochito): 184 hallazgos verificados y
+  repartidos en 12 paquetes, en `docs/planes/PLAN_PULIDO_2026_10.md`.
+
+## 2026-10-11 12:00 — Comunica: la cápsula atrás/adelante se oculta si la web trae barra fija abajo
+
+`ComunicaScreen` escucha `{type:'sticpa:barra', abajo}` desde la web: con `abajo: true` oculta la cápsula (iOS y Android) e inyecta la clase `sticpa-app-sin-flechas` y `--stic-app-tabbar`; con `false` o al empezar otra navegación lo deshace. Contrato en `docs/contratos/COMUNICA_WEBVIEW.md` §4.b.
 
 ## Formato
 
@@ -26,12 +710,1167 @@
 
 ---
 
-## 2026-09-26 11:56 — OTA producción: Comunica pasa de `/aptest/` a `/ap/` (cherry-pick)
+## 2026-10-10 19:02 — Cantoral: repaso de diseño (onboarding, etiquetas, pantalla completa)
 
-- `COMUNICA_URL` (`hooks/useComunicaWebView.ts`) apuntaba a la ruta de
-  pruebas del portal (`/aptest/`); pasa a `/ap/`, la ruta de producción.
+- **Pantalla completa**: los controles (‹ ›, atril, play) se apagan solos a
+  los 3,5 s y vuelven con cualquier toque o tecla; la ✕ solo se atenúa
+  (`hooks/useImmersiveChrome.ts`, `FS_TOUCH_JS` en `utils/songDocument.ts`).
+  Con lector de pantalla no se esconden.
+- **Arreglo**: los `{arr:}` multiplicaban dos veces el tamaño de la letra y,
+  con la letra grande o en pantalla completa, salían más grandes que ella.
+- **Onboarding**: estribillo en una fila (antes 3 + 2), paso de etiquetas con
+  «Destacadas» (★) y «Ocultas» (tachadas) explicados, y en el móvil ese paso
+  ocupa toda la pantalla; fundido entre pasos; textos corregidos (no hay
+  ningún botón «Aa»).
+- **«Letra y vista»**: las cinco variantes del estribillo en una fila.
+- **Listas**: la etiqueta ★ va en una pastilla pequeña (en texto suelto
+  parecía un segundo autor). `TagChip` gana icono delante, tachado y área de
+  toque de 44.
+- **Etiquetas del cantoral** (otro repo): nombres con tildes en el catálogo.
 
-## 2026-08-30 14:20 — OTA producción: los ajustes de lectura del evangelio se quedaban sin scroll (cherry-pick)
+---
+
+## 2026-10-10 18:20 — PDF de la playlist con la hoja nueva
+
+- `utils/playlistPdfHtml.ts` pinta cada canción con la hoja de la app
+  (`buildSheet` + `SHEET_CSS`) en vez de `HtmlDivFormatter`: estribillo con
+  su estilo, números de estrofa, intros, avisos de «revisar acordes» fuera de
+  la letra y el texto escapado.
+- Ni estrofas ni estribillos partidos entre páginas; una canción más larga
+  que una página ya no salta entera a la siguiente
+  (`estimateSongHeightPt`).
+- `ExportPdfModal`: «Estribillos repetidos en una línea» y «A dos columnas».
+- Admin del cantoral (otro repo): el editor Visual se parece a la app y
+  lleva el móvil al lado; arreglado que las intros salieran como un «1».
+
+---
+
+## 2026-10-10 18:00 — Etiquetas: esconder canciones de otro carisma y ★ destacadas
+
+- **Esconder sus canciones**: en «Etiquetas → Editar → Ocultar», una casilla
+  nueva (`settings.hideHiddenTagSongs`) quita de las categorías las canciones
+  con alguna etiqueta oculta (siguen en el buscador y en la
+  pantalla de la etiqueta). La lista avisa con «N escondidas · Ver».
+- **★ Destacar** (`settings.featuredTags`): segundo modo de «Editar». Las
+  marcadas salen, discretas, bajo el autor en las filas de las listas.
+- El paso «Tus etiquetas» del onboarding del cantoral explica las dos cosas.
+- `utils/songTags.ts` (`withoutHiddenTagSongs`, `featuredTagsOf`, con tests),
+  `hooks/useSongListTags.ts`, `components/song-tags/HiddenSongsNote.tsx`.
+  Detalle en `docs/funcionalidades/ETIQUETAS.md` §3.2.
+
+---
+
+## 2026-10-10 17:48 — Pantalla completa: mismo tono, pasar de canción y coro
+
+- **Bug**: la pantalla completa pintaba siempre la canción en su tono
+  original aunque la estuvieras viendo transportada (y sin la cejilla
+  cambiada). Ahora entra con el tono y la cejilla de la playlist o del
+  detalle (`utils/fullscreenSong.ts`, con tests).
+- **Pasar de canción sin salir**: ‹ › con «3 / 8», deslizar, flechas, y en
+  modo atril el pedal pasa de la última página a la siguiente canción. Al
+  cerrar, el detalle se queda en la canción a la que se ha llegado.
+- **Coro**: quien escucha ya no sale de la pantalla completa cuando el líder
+  cambia de canción: la sigue dentro. El líder publica las que pasa.
+- **Entrada**: botón ⛶ en la cabecera de la canción (antes solo en «⋯»).
+- **Web**: la letra en un iframe, con la maquetación nueva y modo atril.
+- La WebView de la pantalla completa ya no acepta navegar a otros orígenes
+  (igual que la del detalle).
+
+---
+
+## 2026-10-10 16:31 — El admin del cantoral pinta las canciones con el código de la app
+
+- `utils/songDocument.ts`: el documento HTML de una canción, puro (sin React
+  ni React Native), sacado de `useSongProcessor`, que ahora solo guarda el
+  estado. Letras de la canción a `constants/songFonts.ts`.
+- `utils/songDocumentBundle.ts` + `npm run build:sheet-bundle` (esbuild, nueva
+  dependencia de desarrollo): empaqueta la hoja en
+  `mcmapp-cantoral/scripts/admin/static/mcm-sheet.js` para la vista previa del
+  admin (móvil / iPad, al lado del editor Raw). Hay que regenerarlo al
+  cambiar la hoja.
+- Test `songDocumentBundle.test.ts`: el paquete pinta byte a byte lo mismo que
+  la app, con sus mismos valores por defecto, y se puede empaquetar.
+
+---
+
+## 2026-10-10 01:30 — Cantoral: onboarding y estribillo en negrita de serie
+
+- **Onboarding del cantoral** (`components/song-onboarding/CantoralOnboarding.tsx`):
+  la primera vez que se entra en el cantoral, y siempre con el «?» nuevo del
+  header, pregunta si tocas o cantas (y DO RE MI / C D E), vista completa o
+  compacta, estilo del estribillo, letra, números y aire, y qué etiquetas
+  quieres a mano. Cada opción se ve al momento sobre una canción de verdad;
+  se cierra en cualquier paso. Ajustes nuevos: `cantoralOnboarding`
+  (versión vista) y `featuredTags` (atajos de etiqueta arriba del cantoral).
+- **Estribillo raya + negrita de serie** (`chorusStyle: 'negrita'`).
+- `SongDisplay` acepta `scrollTo` (selector CSS) para llevar la hoja a una
+  sección.
+- Las 258 canciones del cantoral, repasadas a mano en `mcmapp-cantoral`
+  (misma rama): ver `PLAN_HOJA_CANCION.md` §9.
+
+---
+
+## 2026-10-09 23:30 — Canción: interlineado con sentido, estribillo a elegir, iPad y modo atril
+
+- **Interlineado que dice algo**: un renglón partido va pegado; otra línea
+  del `.cho`, un poco separada; una línea en blanco, más; dos líneas en
+  blanco o entrar/salir de un estribillo, bastante más. `breakBefore` en
+  `utils/songSheet.ts`, huecos en `utils/songSheetLayout.ts`.
+- **Líneas partidas de un PDF** («El amor»): una línea larga sin punto final
+  seguida de otra en minúscula se une; la estrofa se vuelve a partir por
+  frases con la misma sangría (33 canciones).
+- **Números de estrofa siempre igual**: la que no trae número sigue la cuenta
+  de la anterior.
+- **Cortes**: se gasta un renglón más antes que dejar un «de» o un «la»
+  colgando al final.
+- **«Letra y vista»** (antes «Tipo de letra»): variantes del estribillo
+  (raya, negrita, MAYÚS, clásico, sangrado), etiqueta sí/no, números y «más
+  aire». Ajustes nuevos: `chorusStyle`, `chorusLabel`, `airy`.
+- **iPad**: con columnas los estribillos repetidos se pliegan solos; si en la
+  otra orientación la canción cabría entera, aviso «Gira la pantalla».
+- **Modo atril** en pantalla completa (`pagedFullscreen`, solo nativo):
+  páginas en vez de scroll; se pasa con un toque, deslizando o con un pedal
+  (flechas, AvPág, espacio). Ninguna línea se parte entre páginas.
+
+---
+
+## 2026-10-09 19:55 — Canción: hoja nueva para músicos y cantantes
+
+- **La canción ya no la pinta `HtmlDivFormatter`.** ChordSheetJS sigue
+  parseando y transportando, pero el HTML lo hace `utils/songSheet.ts`: cada
+  línea en **palabras enteras**, en secciones (estrofa, estribillo, puente,
+  intro de acordes). Detalle en `docs/funcionalidades/HOJA_CANCION.md`.
+- **Cortes de línea por frase** (`utils/songSheetLayout.ts`, script dentro del
+  WebView): el menor número de renglones, y dentro de eso tras punto o coma,
+  antes de «y/que», nunca detrás de un artículo. Los acordes **vuelan** sobre
+  la letra: solo se separan si chocarían (y a media palabra los une una raya).
+  Fuera los renglones vacíos de acordes encima de las líneas sin acordes.
+- **El estribillo se separa siempre**, aunque el `{soc}` no lleve línea en
+  blanco delante (le pasaba a «Fieles»). Raya amarilla, fondo suave y
+  etiqueta; ya no se fuerzan mayúsculas ni negrita.
+- **`{chorus}` y las líneas «ESTRIBILLO»** (29 canciones) pintan el
+  estribillo entero donde se canta. **Vista compacta** nueva (menú de la
+  canción, «Plegar estribillos repetidos», solo si alguno se repite): las
+  repeticiones idénticas o casi se pliegan en una línea que se abre al tocarla.
+  Avisa «con cambios» / «otros acordes». Ajuste persistente `compactView`.
+- **Números de estrofa** consistentes: automáticos desde 2 estrofas; los «1.»
+  escritos a mano se quitan de la letra y se respetan. Se quitan en «Tipo de
+  letra → Estrofas» (`verseNumbers`).
+- **«♩ REVISAR ACORDES»** (97 canciones) sale de la letra: aviso «Acordes sin
+  revisar» en la cabecera.
+- **iPad**: si la canción cabe entera en pantalla a 2–3 columnas (achicando la
+  letra hasta un 20 %), se reparte en columnas. Si no, una columna como antes.
+- **Letra del sistema por defecto** (antes monoespaciada, un 30 % más ancha).
+  `migrateSongSettings` la cambia una vez a quien tuviera la monoespaciada o la
+  «Sans-Serif» vieja. La vista previa de la letra sans salía como serif
+  (`getNativeFontFamily` confundía `sans-serif` con `serif`).
+- `{arr:}` sale a la derecha, como decía `ARREGLOS.md` (salía a la izquierda
+  por un fallo del CSS).
+- Borrados: `utils/chordSheetWords.ts` y `injectRowLineIndices` /
+  `renderableRowLineIndices` (el número de línea del modo admin lo pone ahora
+  la hoja con el del parser). El PDF de la playlist sigue con el render viejo.
+- `utils/songSheet.ts`, `utils/songSheetLayout.ts`, `hooks/useSongProcessor.ts`,
+  `contexts/SettingsContext.tsx`, `components/SongControls.tsx`,
+  `components/SongFontBottomSheet.tsx`, `constants/colors.ts`
+  (`SongSheetColors`), tests nuevos en `__tests__/songSheet*.test.ts`. Plan y
+  decisiones pendientes: `docs/planes/PLAN_HOJA_CANCION.md`.
+
+---
+
+## 2026-10-09 10:00 — `expo-native-compact-tabs` 0.2.1 con nuestro parche portado
+
+La 0.2.1 pasa a iOS la escala del asset de React Native (arregla el tamaño de
+los iconos tras una OTA). Nuestro parche se rehace encima
+(`patches/expo-native-compact-tabs+0.2.1.patch`): se conserva la normalización
+a caja de 24 pt como red de seguridad y el relayout de safe area al volver del
+onboarding, que la 0.2.1 no trae. Nativo → `[skip-ota]`.
+
+## 2026-10-09 03:15 — Android y web: el cristal ya no es blanco en modo oscuro
+
+**Bug visible en Android** (y web): `GlassSurface` sin tinte caía siempre a
+blanco al 95 %, también en oscuro. En iOS no se veía porque manda el cristal
+nativo, así que pasó desapercibido. Lo sufrían la cápsula de campana y perfil
+de la Home, el botón de volver de cristal, los botones de un evento y el FAB
+de la canción: pastillas blancas con los iconos claros encima, invisibles.
+Ahora, en oscuro, el respaldo es la superficie elevada (`Colors.dark.card`).
+Test: `__tests__/glassSurfaceDark.test.tsx`.
+
+**Home: un botón dentro de otro.** El botón de acción de un aviso
+(«Descúbrelo TODO») vivía dentro de la tarjeta pulsable. En web es un
+`<button>` dentro de otro (HTML inválido, aviso rojo en desarrollo) y el lector
+de pantalla los leía como uno. Con acción, esa fila va ahora debajo, fuera de
+la zona pulsable; sin acción, la tarjeta sigue siendo un solo botón.
+
+## 2026-10-09 02:45 — Cantoral: la lista de canciones, a juego con la portada
+
+- **La cabecera decía «A. Canciones Entrada 🎉»**: el prefijo de ordenación y
+  el emoji llegaban crudos de Firebase. Ahora se limpia igual que en la
+  portada: «Canciones Entrada».
+- **Lista agrupada siempre**: la de una categoría era un bloque de esquinas
+  rectas; ahora es una tarjeta redondeada como la del modo etiqueta y la de la
+  portada. Filas algo más densas (cabe una canción más por pantalla).
+- **Bug de contraste**: el tono transpuesto usaba el ámbar de claro también en
+  oscuro (`#7A5A00` sobre `#3A2D0A`, ilegible). Y el autor iba en `#8E8E93`
+  sobre blanco (3,3:1); pasa a `textSecondary`.
+- «#01 - Alborada» → «#01 · Alborada». 9 colores y 3 radios a mano, a tokens.
+
+## 2026-10-09 02:15 — Cantoral: la portada pasa a lista agrupada
+
+En móvil, las 16 categorías eran 16 tarjetas sueltas con su sombra cada una.
+Ahora son **una lista agrupada** con separadores finos que empiezan después del
+icono, como agrupa iOS sus ajustes, bajo la etiqueta «Categorías». Cabe más
+en pantalla y se distingue de un vistazo lo tuyo del catálogo.
+
+**«Tu selección»** sigue suelta y destacada, y ahora dice algo: «Vacía · añade
+canciones desde el cantoral» o «3 canciones», en vez de un «0» suelto. Las
+filas llevan `accessibilityLabel` con el número de canciones.
+
+De paso: estilos muertos fuera (un header inline que ya no existía), 29
+valores a mano → 3, y el azul de «Tu selección» pasa a `KeyPillColors`.
+iPad conserva su hero + rejilla.
+
+## 2026-10-09 01:30 — Cantoral: las hojas de tono y de letra, rediseñadas
+
+- **El tono habla en tonos.** Con la tonalidad de la canción, el valor central
+  es el tono resultante («LA», con «Original: DO» debajo) y cada botón enseña
+  a qué tono lleva (SOL# / LA#). Antes solo decía «+9 semitonos» y había que
+  hacer la cuenta de cabeza. Sin tonalidad, cae a semitonos como antes.
+- **Las dos hojas hablan igual** (`components/song-sheet/sheetKit.tsx`): mismos
+  bloques, mismo «restablecer», mismo resaltado de lo cambiado. El tamaño de
+  letra gana lo que solo tenía el tono: **repetir al mantener pulsado**, aviso
+  háptico y meneo al llegar al tope, y `accessibilityLabel` en los botones (no
+  tenían). Los ± del tamaño son una «A» pequeña y otra grande.
+- **Fuera el rojo y el verde** de bajar/subir tono: bajar no es un error.
+- **49 colores a mano → 0**, todo por rol. De paso, un ámbar (`#9D5C00`) que
+  en oscuro se pintaba sobre fondo casi negro.
+- La fuente se elige como `radio` (lectores de pantalla) y la suma de 0,1 en
+  coma flotante ya no deja tamaños como 1,2000000000000002.
+
+Test nuevo: `__tests__/transposeSheet.test.tsx`.
+
+## 2026-10-09 00:30 — Dependencias al día antes de la build 2.1
+
+- **SDK 57 al último parche**: los 32 paquetes que gestiona Expo estaban por
+  detrás (`expo` 57.0.11 → 57.0.27, `expo-updates`, `expo-router`,
+  `expo-notifications`… y `react-native` 0.86.2 → 0.86.3). `npx expo install
+--check` queda limpio. `@react-native/jest-preset` se fija a `0.86.3`: con
+  `^0.86.0` el lock lo dejaba en 0.86.2 y `react-native` 0.86.3 lo exige exacto.
+- **El resto, dentro de su rango**: Firebase 12.19, heroui-native 1.0.10,
+  uniwind 1.12.2, Aptabase 0.5.1, Google Sign-In 16.1.5, react-native-web
+  0.21.4 y herramientas de desarrollo.
+- **Lo que NO se sube, a propósito**:
+  - `expo-native-compact-tabs` se **fija en 0.2.0** (antes `^0.2.0`). La 0.2.1
+    toca el mismo código que nuestro parche (escala de los iconos) y el parche
+    ya no aplica; rehacerlo pide un iPhone delante. Ver `TODO.md`.
+  - Las majors que fija el SDK (react-native 0.87, reanimated 4.7, screens,
+    gesture-handler 3, webview 14, TypeScript 7, jest 30, eslint 10): entran con
+    el SDK 58, no a mano.
+  - Majors propias con cambios incompatibles (Sentry 8, Firebase 13,
+    chordsheetjs 18, Aptabase 0.6): cada una es una tarea con sus pruebas, no
+    un bump antes de una build de tienda.
+
+Verificado: tipos, lint, 1.859 tests, `expo prebuild -p ios` (extensión,
+Sentry e icono alternativo presentes) y `expo export --platform web`.
+
+## 2026-10-08 23:50 — `expo-gl` en el binario, por si acaso
+
+Se instala `expo-gl` (`~57.0.2`) sin usarlo todavía, para que vaya dentro de
+la build 2.1. Es lo que permitiría, más adelante y **por OTA**, hacer 3D de
+verdad con `three`/`expo-three` (pañuelo, medallas) si el visor actual
+(`<model-viewer>` en WebView) se queda corto: sin conexión no carga y no se
+puede integrar con el resto de la pantalla. Nativo → commit con `[skip-ota]`.
+
+## 2026-10-08 23:30 — Contigo: un solo navegador de días
+
+Evangelio, oración y revisión tenían cada uno su navegador ‹ fecha › y no se
+parecían. Ahora comparten `components/contigo/DateNavigator.tsx`:
+
+- **Misma fecha** («Jueves, 8 de octubre»), mismos botones y misma háptica.
+- **«Volver a hoy» en los tres** (antes solo en el evangelio). En la revisión,
+  que lleva el navegador en la barra nativa, se toca la fecha.
+- **El tope de «siguiente»** lo decide cada pantalla (`maxDate`): el evangelio
+  deja mirar días futuros; oración y revisión se paran en hoy, como antes.
+- El evangelio pasa de franja a sangre a tarjeta, igual que la oración.
+
+Fuera tres `formatDateDisplay`/`addDays` duplicados y los estilos muertos.
+Topes del trinquete de números mágicos bajados a lo que hay.
+
+## 2026-10-04 11:30 — Contigo y lista de canciones: pulido
+
+- **Navegador de días único** (`components/contigo/DayNavigator.tsx`) en
+  evangelio y oración: mismos botones, misma fecha, «Volver a hoy» en los dos
+  y tocar la fecha abre el calendario en el evangelio. La oración no deja ir
+  al futuro. La revisión mantiene su selector compacto en la barra (es un
+  asistente por pasos).
+- **Home de Contigo**: las tarjetas de hábito pendientes ya no tienen borde
+  discontinuo (parecían huecos sin terminar); las estadísticas y la racha usan
+  iconos de Material en vez de emojis.
+- **Lista de canciones**: el número va delante del título en su propia columna
+  («98», sin «#» ni ceros a la izquierda); en «Buscar general» sigue la
+  pastilla de categoría.
+
+---
+
+## 2026-10-04 10:00 — Hoja de etiquetas rehecha y etiquetas ocultables
+
+- La hoja de etiquetas: chips en línea refinados (relleno suave, emoji si lo
+  hay, número en su propia pastilla). La activa va en amarillo. Una rejilla de
+  dos columnas se probó y se descartó: desperdiciaba el ancho.
+- **«Editar»**: ocultar etiquetas en este dispositivo. Desaparecen de la hoja,
+  de «Combinar con» y de la ficha de la canción; las canciones no se ocultan.
+  `hooks/useHiddenTags.ts` (AsyncStorage `@mcm_hidden_tags_v1`).
+- Menú de la canción: «Acordes en inglés/español» sin los ejemplos, que
+  ocupaban sitio.
+- `components/song-tags/TagCloudSheet.tsx`, `app/screens/SongListScreen.tsx`,
+  `components/song-media/SongMediaSheet.tsx`, `components/SongControls.tsx`.
+
+---
+
+## 2026-10-04 01:20 — Barra de pestañas cortada en el primer arranque + laboratorio de maquetación
+
+- **Bug (iOS, solo primer arranque)**: etiquetas cortadas y desplazadas
+  («Con», «Co», «Cal»). Sin configuración de perfiles en caché, la barra se
+  montaba con las pestañas por defecto y al llegar las de Firebase el módulo
+  nativo cambiaba los items en caliente; UIKit no volvía a repartirlos. Ahora
+  `CompactTabBar` recrea la vista nativa cuando cambia el juego de pestañas
+  (`key`). Solo JS.
+- **Laboratorio (canal preview)**: en el menú del botón flotante de una
+  canción, «Lab: ver la maquetación antigua» conmuta en vivo entre la
+  maquetación nueva de la letra y la de antes, para compararlas en el móvil.
+  Fuera de preview no aparece y siempre se ve la nueva. Clase
+  `layout-legacy` en `useSongProcessor` + `hooks/useLabSongLayout.ts`; se
+  borran cuando se decida.
+
+---
+
+## 2026-10-03 23:00 — Contigo: navegación por días y calendarios
+
+- **Oración**: «día siguiente» se para en hoy y los días futuros del
+  calendario ya no se pueden tocar (se podía apuntar oración en el futuro). Un
+  enlace con fecha futura abre hoy. El calendario «Tu mes» tiene flechas para
+  cambiar de mes sin mover el día elegido, y al tocar un día la pantalla sube
+  al formulario de ese día (antes cambiaba arriba sin que se viera).
+- **Home de Contigo**: tocar un día pasado ofrece siempre evangelio, oración y
+  revisión, en orden fijo y con check en lo hecho. Antes un día vacío solo
+  abría el evangelio, así que no había forma de apuntar la oración o la
+  revisión de un día que se olvidó. Un día futuro solo abre el evangelio.
+- La navegación desde ese submenú espera a que la hoja se cierre del todo (el
+  mismo patrón que la hoja de etiquetas y el menú de la playlist).
+- `app/(tabs)/contigo/{oracion,index}.tsx`, `components/contigo/DayActionSheet.tsx`,
+  `hooks/useContigoDayMenu.ts`, tests en `__tests__/contigoDayOptions.test.ts`
+  y `__tests__/useContigoDayMenu.test.ts`.
+
+---
+
+## 2026-10-03 22:15 — Canción: las palabras ya no se parten al saltar de línea
+
+- **Bug de lectura en móvil**: ChordSheetJS parte cada línea en columnas
+  acorde+letra cortando donde cae el acorde («a|quí»). Cuando la línea no
+  cabía, el salto podía caer entre esas columnas y la palabra quedaba partida
+  («ilu» / «mina»). `utils/chordSheetWords.ts` agrupa las columnas de una
+  misma palabra en un `<div class="word">`, que salta entera.
+- **Acordes pegados**: si un acorde era más ancho que su sílaba, el siguiente
+  se le pegaba («SOL#m7REmimDO»). Ahora el acorde lleva un hueco detrás.
+- **Sangría francesa**: lo que salta de línea queda metido hacia dentro, así
+  se distingue una línea que continúa de una línea nueva.
+- **Botón flotante**: fuera los dos puntitos sin explicación (el rojo salía en
+  todas las canciones si tenías la notación inglesa o la letra grande, que son
+  preferencias globales). En su lugar, una píldora con el tono/cejilla
+  cambiados de ESA canción («+2 · C3»). Etiquetas como acciones
+  («Ocultar acordes», «Acordes en inglés») en vez de «ON/OFF».
+- `hooks/useSongProcessor.ts`, `utils/chordSheetWords.ts` (+ test),
+  `components/SongControls.tsx`.
+
+---
+
+## 2026-10-03 21:30 — Playlist: menú «⋯» reordenado y cabecera en tres filas
+
+- **Menú «⋯»**: de 16 opciones a 6 visibles + «Más opciones». Arriba lo de cada
+  semana (Mi coro: guardar —primero si hay cambios—, abrir el coro, enlace del
+  coro; Compartir: WhatsApp, PDF, QR). Lo de códigos sueltos, la gestión de la
+  copia en la nube y los `.mcm` quedan plegados (`secondary`) cuando el menú
+  pasa de 8 acciones. Fuera los duplicados: «Dirigir o seguir a mi coro» abría
+  la misma hoja que «Coro: X», y «Vaciar» ya está en la cabecera. La sección
+  «Coro en vivo» solo aparece con una sesión abierta, y entonces va arriba.
+- **Cabecera**: el contador se partía en dos líneas y el estado se quedaba en
+  «Cambios s…». Ahora contador + Vaciar, estado a todo el ancho (con
+  «Guardar») y conmutador a todo el ancho. Iconos en vez de ☁️/✏️.
+- **Hoja del coro**: un coro sin playlists destaca «Subir la primera playlist»
+  en vez de un «Importar la última» desactivado.
+- `app/screens/SelectedSongsScreen.tsx`,
+  `components/playlist/{PlaylistActionsBottomSheet,PlaylistHeaderBar,ChoirSheet,selectedSongsStyles}.ts(x)`,
+  `docs/funcionalidades/COROS.md`.
+
+---
+
+## 2026-10-03 21:00 — Cantoral: la pantalla de una etiqueta, rehecha
+
+- **Bug**: la barra de etiquetas era una `View` encima de la lista y, con el
+  header transparente de iOS, se pintaba debajo de la barra de estado (el chip
+  encima del reloj). Ahora va dentro de la lista como cabecera.
+- **Diseño**: lista agrupada estilo Ajustes de iOS. Cada categoría es una
+  tarjeta con esquinas y su cabecera encima («🤲 Ofertorio» y no
+  «E. OFERTORIO 🤲»). La fila de refinamiento dice «Combinar con» y las
+  candidatas llevan «+»; las activas solo salen cuando hay más de una.
+- De paso: `SongListItem` pintaba un `''` suelto dentro de una `View` cuando
+  una canción tenía el autor vacío (error «Unexpected text node» en web).
+- `extractTrailingEmoji` pasa de `CategoriesScreen` a `utils/songUtils.ts`.
+- `app/screens/SongListScreen.tsx`, `components/song-tags/{TagContextBar,TagChip}.tsx`,
+  `components/SongListItem.tsx`, `docs/funcionalidades/ETIQUETAS.md`.
+
+---
+
+## 2026-09-29 23:40 — OTA: la opción `force` del workflow no publicaba nunca
+
+- Con `force`, `guard-native` se salta, y GitHub salta también todo job que lo
+  tenga en `needs` salvo que su `if` lleve una función de estado. El run
+  salía en verde con `publish-*` en "skipped" y no llegaba nada a los móviles.
+- `publish-preview` y `publish-prod` ahora llevan `!cancelled()` y publican si
+  el guard se saltó a propósito o pasó sin pedir skip; nunca si falló.
+- `.github/workflows/ota-preview.yml`, `.github/workflows/ota-production.yml`.
+
+---
+
+## 2026-09-29 23:25 — Laboratorio: medallas en 3D
+
+- Nueva tarjeta **"Medallas en 3D"** en el Laboratorio Alpha, debajo de la
+  caza de Carismochitos. Es el primer paso del sistema de recompensas por ir a
+  eventos (medallas por usuario, colocadas en el pañuelo). Rejilla con
+  miniaturas; al tocar una se abre un pop-up a pantalla completa con la medalla
+  en 3D, que entra girando y se gira con el dedo (estilo premios de Fitness).
+- Medallas de prueba: Jubileo de los Jóvenes 2025 y visita del Papa 2026
+  ("Alza la mirada").
+- Visor: `<model-viewer>` (Google, v4.3.1 fijada) dentro de
+  `react-native-webview`, que ya estaba en el binario → **sin build nativo**.
+  En web va en un iframe. Necesita red.
+- Los `.glb` (~2 MB, comprimidos desde ~70 MB) viven en `medallas-3d/` de la
+  raíz y se sirven por jsDelivr desde `main`. Las miniaturas WebP van
+  empaquetadas en `assets/images/medallas/`.
+- Archivos: `components/medallas/` (`medalViewerHtml.ts`, `Medalla3DViewer`,
+  `Medalla3DModal`, `labMedals.ts`),
+  `components/preview-channel/MedallasLabPanel.tsx`,
+  `components/PreviewChannelModal.tsx`, `__tests__/medalViewerHtml.test.ts`.
+
+---
+
+## 2026-09-26 18:53 — Calendario: títulos con "\," y descripciones de alarma
+
+- **Bug 1.** Google escapa las comas y los punto y coma del `SUMMARY`
+  (`Retiro\, oración`) y el parser solo desescapaba `DESCRIPTION` y
+  `LOCATION`: el título salía con la barra invertida.
+- **Bug 2.** Las propiedades de un `VALARM` anidado se trataban como del
+  evento: la `DESCRIPTION:This is an event reminder` de la alarma pisaba la
+  descripción real (y un `SUMMARY` de alarma de correo, el título). Ahora se
+  ignora todo lo que va dentro de un subcomponente del `VEVENT`.
+- `utils/icsParser.ts` (compartido con la Cloud Function `cacheCalendarIcs`:
+  el nodo precacheado se corrige en el siguiente despliegue de functions).
+  Tests en `__tests__/icsParserFeed.test.ts`.
+
+## 2026-09-26 18:49 — El PDF de la playlist no transponía los acordes
+
+- **Bug.** Al exportar una playlist a PDF con una canción transpuesta, la
+  cabecera y el índice decían el tono nuevo (p. ej. "RE (orig. DO)") pero los
+  acordes del cuerpo salían en el tono original. `renderSongBody` anteponía una
+  directiva `{transpose: N}` al ChordPro, y `HtmlDivFormatter` de ChordSheetJS
+  no la aplica.
+- **Arreglo.** Se transpone con `Song.transpose()`, lo mismo que hace
+  `useSongProcessor` en pantalla. Las transposiciones negativas ahora bajan de
+  verdad (−2 desde DO da SIb, no LA#).
+- `utils/playlistPdfHtml.ts`, test nuevo en `__tests__/playlistPdfSongs.test.ts`.
+
+## 2026-09-26 18:42 — Caza de Carismochitos y su colección (escondida en el Laboratorio Alpha)
+
+- **Qué hay nuevo.** Con el modo Carismochito activo, el que se asoma por los
+  bordes se puede **atrapar tocándolo**: sale en 8 variantes (común → legendario,
+  con pieles de los colores de marca), suma a una **colección** y avisa con un
+  toast ("¡Nuevo! Carismochito dorado · Legendario" / "… llevas 5").
+- **Solo para pruebas, decisión del usuario.** Todo va detrás de un interruptor
+  nuevo en el **Laboratorio Alpha** (7 toques en la versión). Sin encenderlo, la
+  app se comporta igual que antes. La pantalla de la colección
+  (`app/carismochito.tsx`) no tiene enlace desde ningún otro sitio, y si se
+  entra por enlace directo sin el interruptor, redirige a Inicio. Desde el
+  laboratorio también se puede forzar una aparición y borrar la colección.
+- **Datos.** AsyncStorage siempre; con sesión, además
+  `users/{uid}/carismochitos/{variantId} = { count, firstAt }` (lo cubre la
+  regla de `users/$uid` que ya existía). Se fusiona por el **máximo**, no la
+  suma, para que abrir la app no duplique capturas.
+- **Para todos, no solo con la caza:** Carismochito ya no se asoma en pantallas
+  de lectura y presentación (evangelio, oración, canción a pantalla completa,
+  materiales y profundiza) — `hooks/useSuppressCarismochito.ts`, por foco.
+- En web el brillo de la asomada sigue la silueta (`drop-shadow`) en vez de
+  pintar un rectángulo.
+- Analítica: evento nuevo `carismochito_atrapado { rareza, nuevo }`.
+- Archivos: `utils/carismochitoCollection.ts` (puro), `contexts/CarismochitoHuntContext.tsx`,
+  `components/preview-channel/CarismochitoLabPanel.tsx`, `components/CarismochitoOverlay.tsx`,
+  `components/CarismochitoMascot.tsx` (prop `palette`), `constants/colors.ts`
+  (`CarismochitoPalettes`), `utils/authHelpers.ts`. Tests: 39 nuevos.
+
+## 2026-09-26 11:56 — Comunica pasa de `/aptest/` a `/ap/` (producción)
+
+- `COMUNICA_BASE_URL` (`utils/pendingComunicaLink.ts`) apuntaba todavía a la
+  ruta de pruebas del portal (`/aptest/`); pasa a `/ap/`, la ruta de
+  producción.
+- Actualizado el test que fija esa URL (`__tests__/comunicaDeepLink.test.ts`)
+  y el ejemplo de `docs/contratos/COMUNICA_WEBVIEW.md`.
+
+## 2026-09-19 01:10 — Un solo botón de CTA, y cae el umbral de brillo de la encuesta
+
+Cierra el `AppPrimaryButton` de `PLAN_UI_NATIVA` §5, con otra corrección del
+diagnóstico del plan.
+
+- **La evaluación no tenía "CTAs a mano": tenía su propio botón.**
+  `components/evaluation/WizardButton.tsx` era un duplicado de
+  `AppPrimaryButton` con `Pressable` + reanimated (la primitiva que §4 prohíbe
+  para código nuevo), texto `#fff` fijo y la flecha a la derecha. Sus cuatro
+  usos pasan al botón compartido —que gana `iconPosition` para la flecha de
+  "siguiente"— y el duplicado se borra.
+- **El texto del CTA ya no es `#fff` fijo**: lo decide el contraste. Se queda
+  en blanco mientras llegue al 3:1 que pide un texto de ese tamaño y peso sobre
+  el relleno (el azul de acción de iOS da 3,86:1, y el blanco es la convención),
+  y si no llega, lo elige `onColor`. Con `color` variable el blanco fijo era el
+  bug del §H4: sobre el amarillo del Vaticano da **1,25:1**.
+- **Cae un umbral de brillo a ojo.** La encuesta elegía su acento con
+  `getBrightness(tint) > 170` y, cuando saltaba, **cambiaba el color del evento
+  por el azul de marca**: el evento perdía su identidad en su propia encuesta.
+  Ahora es `readableOn`, que conserva el tono — el amarillo sigue siendo
+  amarillo, más oscuro. Quedan dos de esa familia (`SurveyBanner`,
+  `EventHomeScreen`) y NO se tocan de paso: ahí se elige un relleno, no una
+  tinta, y eso es una decisión de diseño. Anotados en `PLAN_DISENO`.
+- **`contrastRatio()` en `utils/colorUtils.ts`**: la razón de contraste WCAG,
+  que estaba calculada por dentro de `onColor`, de `readableOn` y a mano en
+  varios tests. Se saca para que quien tenga que decidir pueda preguntar el
+  número en vez de estimarlo con un umbral de brillo.
+- **SecretPanel y ExportPdfModal no tenían CTA que migrar**: su acción vive en
+  otra forma. Estaban en la lista del plan por inercia.
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (38 warnings),
+1.663 tests en verde, y el botón visto en pantalla en el modal de feedback.
+
+---
+
+## 2026-09-18 23:40 — Un chip canónico, y cinco de seis categorías que no se leían
+
+Cierra los chips de `PLAN_UI_NATIVA` §5 y el §H5 de `PLAN_DISENO`.
+
+- **`components/ui/AppChip.tsx` (nuevo)** — el chip informativo teñido, que
+  estaba escrito **cinco veces**: la categoría y el destino de una notificación
+  en la lista, en el detalle y en la campana de Inicio, siempre con la misma
+  receta (relleno al 12-14 % del color, borde al 60 %, texto en el color).
+- **El bug que escondía, que es el de verdad**: los seis colores de categoría
+  son UN valor usado como texto en los dos modos, y medidos daban `#9D1E74` a
+  **1,91:1** sobre el fondo oscuro, `#C62828` a 2,48, `#0E7490` a 2,60 y
+  `#8A6D00` a 2,83 — **cinco de seis ilegibles en oscuro**, y dos también en
+  claro. Es la familia del §H4 otra vez.
+- **`readableOn()` en `utils/colorUtils.ts` (nuevo)** — el mismo color, movido
+  hasta que se lee: conserva tono y saturación y solo toca la luminosidad. Es
+  la versión automática de lo que se hizo a mano con `accentText` para el
+  dorado de Contigo, y hacía falta porque el Panel puede mandar colores de
+  categoría nuevos que nadie ha medido: una tabla de pares a mano se queda
+  corta el día que añadan una. Con 8 tests propios y un trinquete en
+  `designTokens.test.ts` que recorre las seis categorías en los dos modos.
+- **Lo que NO se migra, y no es deuda** (el censo del plan contaba de más): el
+  chip de FILTRO del calendario es pulsable, tiene estado seleccionado y vive
+  en un solo sitio; el `TagChip` del cantoral ya es canónico para su función
+  (relleno sólido con emoji, contador y botón de quitar); y las insignias de
+  contador no son chips.
+
+Verificado en pantalla: la lista y el detalle de notificaciones con las seis
+categorías, en claro y en oscuro. tsc limpio (app y tests), 0 errores de lint
+(38 warnings), **1.662 tests** en verde.
+
+---
+
+## 2026-09-18 21:15 — Red de humo: 14 pantallas montadas de verdad, en 3 escenarios
+
+Lo que faltaba después de la semana pasada. El 2026-09-09 la app tenía dos
+pantallas que **petaban al montar en cualquier plataforma** con `tsc` limpio,
+el lint limpio y 1.600 tests en verde, y se encontraron abriendo la app a mano.
+Esto convierte ese paseo en un test.
+
+- **`__tests__/screenSmoke.test.tsx`** — monta 14 pantallas en tres escenarios
+  (**vacía**, **con datos**, **offline**) y exige que monten y pinten algo. No
+  comprueba que estén bien: comprueba que existen y arrancan, que es el suelo
+  por debajo del cual no se publica. 42 tests nuevos que tardan ~1 s.
+- **Comprobado que caza lo que dice cazar**: retirando `@gorhom/bottom-sheet`
+  de `node_modules`, Reflexiones se pone roja en los tres escenarios. El bug que
+  llegó a `main` habría sido un test en rojo.
+- **`components/AppProviders.tsx` (nuevo)** — la torre de providers sale de
+  `app/_layout.tsx` a su propio componente. No es cosmético: el test monta las
+  pantallas DENTRO de los providers de verdad (varios de estos fallos solo
+  aparecen con el árbol real puesto), y teniéndolo en un sitio, añadir un
+  provider lo mete en la app y en el test a la vez. Si se copia otra vez en el
+  layout, el test empieza a mentir el día que cambie el orden.
+- **`jest.setup.js` (nuevo)** — mocks de los módulos NATIVOS para toda la
+  suite: `expo-alternate-app-icons`, `expo-haptics`, `expo-notifications`,
+  `expo-web-browser`, `expo-apple-authentication`, `expo-sensors`, el módulo
+  local de subrayado, Aptabase y Sentry. Un módulo de Expo con parte nativa
+  llama a `requireNativeModule()` al cargarse y mata la suite en el `import`,
+  aunque el test no lo use. Estaban descubriéndose uno a uno en cada intento:
+  ese era el muro que hacía que "añadir un test de pantalla" pareciera caro.
+- **`__mocks__/firebase-auth.ts` (nuevo)**, mapeado en `jest.config.js` como
+  ya lo estaban `firebase/app` y `firebase/database`: el paquete real es ESM y
+  cualquier test que monte `AuthProvider` moría con «Unexpected token
+  'export'». Estaba resuelto a mano y suelto en `authContext.test.tsx`.
+
+Con esto, el "no hay ni un test que renderice una pantalla" del §Mantenimiento
+de `TODO.md` deja de ser verdad, y el siguiente test de render no tiene que
+volver a pelearse con la infraestructura.
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (38 warnings),
+**1.653 tests** en verde.
+
+---
+
+## 2026-09-10 22:30 — Un solo conmutador para toda la app (UI Nativa, Fase 2)
+
+Cierra el `SegmentedControl` de `PLAN_UI_NATIVA` §5, y de paso saca el mismo bug
+de contraste de dos sitios más.
+
+- **Cuatro conmutadores, un componente.** `SegmentedControl` (que solo usaba el
+  calendario) se adopta en **Lectura/Comentario** del Evangelio —eran 114 líneas
+  a mano, con el estado activo, el color del icono y el del texto repetidos en
+  cuatro sitios—, en **Tema** de los ajustes de la app y en **Tema** del lector
+  de Contigo. Los tres pasan a compartir forma, háptica y accesibilidad
+  (`accessibilityRole="tab"`), cada uno con su acento: celeste de marca, azul y
+  el dorado de Contigo.
+- **El componente compartido traía dentro el bug del §H4.** Pintaba la etiqueta
+  activa de `#FFFFFF` fijo, fuera cual fuese `accentColor`: con el celeste de
+  marca —que es el DEFECTO, el del Mes/Agenda del calendario— daba **2,64:1**, y
+  con el dorado de Contigo 2,80:1. La inactiva era un `#8E8E93` a mano: 2,60:1
+  sobre la pista clara. Arreglado ANTES de extenderlo, que era la parte
+  importante: la tinta la decide `onColor()` (contraste real) y la inactiva sale
+  de `textSecondary`. Con test que lo fija para todos los acentos de la casa.
+- **Y el mismo fallo en el botón "Listo"** de la barra de subrayado de Contigo:
+  blanco sobre el dorado, 2,24:1. Ahora también por `onColor()`.
+- **Lo que NO se migra, y no es deuda**: `SongFullscreen`. El censo del plan lo
+  contaba como conmutador, pero son botones redondos numerados (velocidad de
+  auto-scroll) en el panel translúcido del modo inmersivo. Otros dos de la lista
+  (`EventDetailsBottomSheet`, `SelectedSongsScreen`) eran falsos positivos del
+  grep: ahí `segment` es parseo de texto.
+- **`jest.config.js`: `heroui-native` y `uniwind` pasan por Babel.** Se
+  publican como ESM sin transpilar, así que cualquier suite que renderice un
+  componente que use heroui —aunque sea de rebote, como este
+  `SegmentedControl`— moría con «Unexpected token 'export'». Es el mismo muro
+  que se encontraría cualquier test de render de los que pide
+  `docs/desarrollo/COBERTURA.md`, así que queda desbloqueado para todos.
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (**38** warnings, uno
+menos que antes), 1.611 tests en verde, y los cuatro conmutadores fotografiados
+en claro y oscuro.
+
+---
+
+## 2026-09-10 03:40 — Radios que no eran radios, el corte del onboarding y las fechas en español
+
+Sigue el cierre de `PLAN_DISENO`: §E5 (a medias), §F5 (hecho) y un fallo de
+copia que se vio en pantalla.
+
+- **53 radios a `radii.pillFull`** (§E5). No eran radios: en todos ellos el
+  número era exactamente **la mitad del lado** del elemento (`width: 38,
+borderRadius: 19`; `height: 4, borderRadius: 2`), o sea "hazlo redondo"
+  escrito a mano. `pillFull` (999) pinta idéntico —React Native recorta el
+  radio a la mitad de la dimensión— y además no se rompe si el elemento cambia
+  de tamaño, que es lo que sí pasaba con el número fijo. Verificado comparando
+  las 20 capturas **al píxel** antes y después: idénticas.
+  Los topes del trinquete bajan de 17 a 6 (`app/`) y de 95 a 54
+  (`components/`). Quedan 60, que son los difíciles: valores que no son la
+  mitad de nada y hay que decidirlos uno a uno.
+- **El onboarding cambiaba de layout antes que el resto de la app** (§F5).
+  Tenía dos `screenW >= 640` escritos a mano, y el corte del hook que usan las
+  demás pantallas (`useResponsiveLayout`, `breakpoints.md`) es **720**: el
+  onboarding se creía "ancho" 80 px antes. Ahora usa el hook.
+- **Las fechas en español no llevan mayúscula en cada palabra.**
+  `textTransform: 'capitalize'` de RN capitaliza TODAS las palabras, así que el
+  detalle de una notificación decía «Jueves, 10 De Septiembre De 2026 A Las
+  14:32», y el Evangelio del día «Jueves, 10 De Septiembre». Pasaba en cuatro
+  sitios (notificaciones, `NotificationDetail`, Evangelio, Oración y Visitas).
+  Nuevo `utils/textCase.ts` con `capitalizeFirst` y sus tests; el
+  `textTransform` se queda solo donde el texto es UNA palabra (el mes del
+  selector de fechas, el día de la semana de una cabecera), que es el único
+  caso en que acierta.
+
+Archivos: `utils/textCase.ts` (nuevo), `__tests__/textCase.test.ts` (nuevo),
+`app/onboarding.tsx`, `app/notifications.tsx`,
+`components/notifications/NotificationDetail.tsx`,
+`app/screens/VisitasScreen.tsx`, `components/contigo/evangelioStyles.ts`,
+`components/contigo/oracionStyles.ts`, más 20 ficheros de estilos por los
+radios y `__tests__/noNewMagicNumbers.test.ts` (topes).
+
+Verificado: tsc limpio (app y tests), 0 errores de lint (39 warnings, los
+mismos), 1.610 tests en verde.
+
+---
+
+## 2026-09-10 02:05 — Cierre de la cola de diseño, y tres bugs que solo salen ejecutando la app
+
+Al verificar el §H9 de `PLAN_DISENO` (las cinco pantallas que cambiaron de
+aspecto, en claro y oscuro) **renderizando la app de verdad** —Chromium sobre
+`expo start --web`, con datos de cantoral inyectados en la caché local— salieron
+tres fallos que ninguna revisión de código había visto. El diseño está bien; lo
+que estaba roto era otra cosa.
+
+**Diseño (cierra `PLAN_DISENO` §H10/H12 y §A3):**
+
+- **Borrado el token `textStrong`.** Era "el texto que destaca" y contrastaba
+  MENOS que el cuerpo en los dos modos: en claro `#1C1C1E` contra el `#11181C`
+  de `text`, en oscuro `#F5F5F7` contra `#FFFFFF`. Un 1% de luminancia en la
+  dirección contraria a su nombre. Sus 43 usos pasan a `text`, que contrasta un
+  pelín más; los títulos se distinguen por tamaño y peso, como en iOS. Un token
+  menos, ningún caso nuevo.
+- **Un solo dorado para Contigo, y uno que se lee.** Había tres (`#B8860B` en la
+  raya de la pestaña, `#C4922A` en la paleta de la sección, `#B8860B` otra vez a
+  mano en `ReadingCard` y en cuatro sitios de `evangelio.tsx`). Pero el problema
+  gordo no era la incoherencia: el acento **pintaba texto** —el kicker
+  "EVANGELIO DEL DÍA", la cita, el CTA, el día de hoy del calendario— a
+  **2,60:1** sobre su propio fondo, por debajo del 4,5:1 mínimo y hasta del 3:1
+  de los elementos no textuales. Es el mismo fallo que el azul de marca en
+  oscuro (§H4): un color de marca vale como relleno, no como primer plano. Nace
+  `accentText` (`#876208`: mismo tono y saturación, menos luminosidad → 5,16:1
+  sobre `bg`, 5,55 sobre `bgCard`, 4,64 sobre `bgDeep`) y los rellenos se quedan
+  con `accent`. La raya de la pestaña ya es el dorado de la sección.
+- Dos trinquetes nuevos en `__tests__/designTokens.test.ts`: el contraste de
+  `accentText` sobre las tres superficies cálidas, y que la raya de la pestaña
+  siga siendo el mismo dorado que la sección.
+- Corregido un typo visible en Contigo: "¿Cuándo empeazmos?" → "empezamos".
+
+**Bugs encontrados al ejecutar (los tres, de verdad):**
+
+- **`useAnimatedValue` no existe en `react-native-web`.** RN lo exporta desde la
+  0.71 y la app lo adoptó en agosto para quitar los `useRef(new
+Animated.Value())` que marca el compilador de React — pero
+  `react-native-web@0.21.2` no lo trae, así que en web el import valía
+  `undefined` y **petaba todo `BottomSheet`**, y con él cualquier hoja de la app
+  en web, más `TransposeBottomSheet`, `ReaderSettingsSheet`,
+  `CarismochitoDialogs` y `OTAUpdatePrompt`. Sustituido por
+  `hooks/useAnimatedValue.ts` (inicializador perezoso de `useState`, mismo
+  contrato, funciona en las dos plataformas) + candado en
+  `__tests__/animatedValueWebSafety.test.ts`. Ni los tests ni `tsc` lo veían:
+  `jest-expo` resuelve el preset nativo y los tipos de RN sí declaran el hook.
+- **Faltaba la peer dependency `@gorhom/bottom-sheet`.** `heroui-native` la
+  declara "opcional", pero su `BottomSheet.Content` hace
+  `withUniwind(paquete?.default)` sin comprobar nada: sin el paquete es
+  `undefined` y **la pantalla entera revienta al montar** (ErrorBoundary), en
+  cualquier plataforma, no solo en web. Afectaba a **Notificaciones** y a
+  **Reflexiones**, las dos únicas que usan ese sheet. Se ve que la dependencia
+  se perdió en algún `npm install` (los comentarios del código dicen que ese
+  sheet funcionó y se afinó a mano). Instalada `@gorhom/bottom-sheet@^5.2.14`,
+  que es **solo JS** (usa reanimated + gesture-handler, ya presentes).
+- **Una canción sin `filename` tumbaba su categoría completa.** `filename` es
+  opcional en `SongEntry`, y de los tres sitios de `SongListScreen` que lo leen
+  para ordenar, uno usaba `?.` y los otros dos no: la lista entera se caía con
+  "Error al cargar las canciones, lo sentimos :(". Guardados los tres.
+- **`stripCategoryPrefix`** (`utils/songUtils.ts`, con tests): el regex que
+  quitaba el prefijo de ordenación de las categorías (`"C. Entrada"` →
+  `"Entrada"`) hacía el punto OPCIONAL, así que una categoría **sin** prefijo
+  perdía su primera letra ("Adoración" → "doración"). Hoy no salta porque todas
+  las reales traen su "X. ", pero basta con crear una desde el panel sin él.
+
+Verificado: `tsc` limpio (app y tests), 0 errores de lint (39 warnings, los
+mismos), **1.604 tests** en verde (9 nuevos), y las 8 pantallas renderizadas en
+claro y oscuro sin un solo ErrorBoundary.
+
+Lo que la web NO puede verificar y sigue pendiente de dispositivo: el glass de
+iOS 26, la barra nativa de pestañas y el tinte de las cabeceras nativas (§A6-quater).
+
+---
+
+## 2026-09-10 00:20 — El CI estaba desactivado a mano: resucitado, y el scraper a la mitad de runs
+
+**La causa del "el CI no ejecuta nada desde abril" (§0 de `TODO.md`) era mucho
+más tonta de lo que buscábamos:** el workflow `ci.yml` estaba en estado
+`disabled_manually` desde el 2026-05-25 — alguien le dio a "Disable workflow"
+en la pestaña Actions. Con ese estado GitHub **no crea el run**: no sale en
+rojo, no sale en gris, no sale. Por eso cada PR parecía "clean" al mergear y
+por eso los 4 errores de tipos de la #334 llegaron a `main` sin que saltara
+nada. No era la cuenta sin minutos ni un ajuste de organización: el repo es
+**público**, así que los runners estándar son gratis y no tocan la cuota de la
+cuenta.
+
+- **`.github/workflows/pr.yml` (nuevo)** — el mismo guardarraíl (llama a
+  `verify.yml`, que sigue siendo la única fuente de verdad de los 4 pasos) en
+  una **ruta nueva**. Es la parte importante: el estado "desactivado" va pegado
+  a la ruta del workflow, no a su contenido, así que en una ruta nueva nace
+  activo y no depende de que nadie entre en la web a reactivarlo. Afinado para
+  no gastar de más: solo en `pull_request`, `paths-ignore` de documentación y
+  portadas (muchas PRs de este repo son solo `.md`), y `concurrency` con
+  `cancel-in-progress` para que al empujar un commit nuevo a una PR se cancele
+  el run anterior.
+- **`.github/workflows/ci.yml` borrado** (era el desactivado) y
+  **`.github/workflows/disabled/` borrada** — tres archivos con `on: {}` que no
+  ejecutaban nada y que confundían a cualquiera que buscara "el CI".
+- **`verify.yml`: `timeout-minutes: 20`** — los 4 pasos tardan ~4 min; sin
+  timeout un job colgado ocupa un runner las **6 horas** que GitHub da por
+  defecto.
+- **Scraper de lecturas: de dos disparos diarios a uno.** Tenía dos crons (uno
+  para CET y otro para CEST, porque GitHub no entiende el cambio de hora) y un
+  job previo `check-time` que descartaba el sobrante. Resultado: dos runs al
+  día, uno siempre tirado a la basura, más un runner extra en el bueno. Con un
+  solo cron a las 00:10 UTC —01:10 en invierno, 02:10 en verano, las dos
+  después de la 1:00, que era lo único que se pedía— sobra el job entero. El
+  scraper ya resuelve por su cuenta qué día es en Europe/Madrid.
+
+Neto de Actions: **se gasta menos que antes** aun con el CI encendido.
+
+Archivos: `.github/workflows/pr.yml` (nuevo), `.github/workflows/ci.yml` y
+`.github/workflows/disabled/` (borrados), `.github/workflows/verify.yml`,
+`.github/workflows/scraper-lecturas.yml`, `mcm-app/TODO.md`,
+`docs/planes/BACKLOG.md`.
+
+---
+
+## 2026-09-03 19:30 — Un solo criterio para "qué texto va sobre este fondo", y el resto de la cola de diseño
+
+Cierre de PLAN_DISENO: §A6-bis, §E4, §G1.4, §H2-bis.
+
+**`onColor()`** (`utils/colorUtils.ts`). La pregunta "¿qué color de texto va
+sobre este fondo?" estaba resuelta **cinco veces con cinco umbrales de brillo
+puestos a ojo** —150, 160, 170, 175 y 200— y tres parejas distintas de
+blanco/negro. Ahora se decide por **razón de contraste real**: se calcula
+contra los dos candidatos y gana el que más contrasta. Sin umbral que afinar.
+
+De paso sale un dato que ningún umbral acertaba: **sobre el rojo MIC gana el
+texto oscuro** (4,79:1); el blanco se queda en 3,55:1. Con tests que comprueban
+que sobre todos los colores de marca y litúrgicos el resultado llega a 4,5:1.
+
+**`EmptyState` compacto** (§H2-bis). Los vacíos de `ChoirSheet` se habían
+escrito a mano porque el padding de 48 px del componente desbordaba la hoja.
+Ahora hay una prop `compact` y los dos usan el componente. `ShareQrModal` no se
+migra: no es un vacío, es un aviso con su botón al lado.
+
+**`borderRadius: 100` → `radii.pillFull`** (§E4, 12 usos). Siempre significaba
+"hazlo redondo" y funcionaba de chiripa: RN recorta el radio a la mitad de la
+dimensión. `pillFull` pinta igual y deja de depender de que el elemento siga
+siendo pequeño.
+
+**Panel** (§G1.4): la "Vista previa móvil" del compositor de notificaciones
+pintaba el icono de la app y los chips de acción con el cian del panel — el
+admin veía una notificación que no se parecía a la que iba a recibir la gente.
+Ahora salen del espejo de tokens de marca.
+
+Topes de los trinquetes bajados: hex 231→218 y 409→406, radios 107→95.
+
+---
+
+## 2026-09-03 01:55 — Arreglado: en modo oscuro, Notificaciones tenía los controles invisibles
+
+PLAN_DISENO §H4. Esto empezó como una mejora anotada ("los colores de marca no
+tienen variante oscura") y al medirlo resultó ser un **bug de verdad**.
+
+Sobre el fondo oscuro (`#2C2C2E`), el azul de marca `#253883` da **1,31:1**. No
+es "poco contraste": es invisible. Y ese azul se usaba como color de iconos,
+bordes y etiquetas de botón en **toda la pantalla de Notificaciones**, que sí
+cambia de fondo con el tema. En modo oscuro, el botón de "marcar como leída",
+los chips de destino, los botones de acción y los de "Ir a…" estaban ahí sin
+verse.
+
+- Arreglado en `notifications.tsx`, `NotificationListItem`, `NotificationDetail`
+  y `notificationsStyles` usando `themeColors(isDark).link`: el mismo azul de
+  marca en claro, y `#7AB3FF` en oscuro.
+- **No hizo falta ninguna paleta nueva.** El rol ya existía; solo que se
+  llamaba `link` y nadie lo asociaba con iconos y botones. Ahora está
+  documentado como lo que es: el `tintColor` de iOS, que en el sistema cubre
+  enlaces, iconos de acción y etiquetas de botón con un único color.
+- Los rellenos (`backgroundColor: colors.primary` con texto blanco encima) se
+  quedan: ahí el azul de marca está bien en los dos modos.
+
+La regla queda escrita en `design.md` §3, con la tabla de qué color de marca
+sirve de primer plano en cada fondo: en oscuro valen `secondary` (8,5),
+`yellow` (9,5), `green` (6,6) e `info` (5,3), y NO valen `text` (1,1),
+`primary` (1,3) ni `purple` (1,9).
+
+**El barrido del resto encontró tres sitios más con el mismo bug** (§H4-bis):
+el título de `ErrorBoundary` —la pantalla de error, ilegible justo cuando más
+falta hace leerla—, el spinner de `SurveyScreen`, y el icono y el texto de
+"Marcar todo" de `NotificationsBottomSheet`. Más `FormattedContent`, donde la
+clase `color-primary` del contenido en BBCode la elige **quien escribe desde el
+panel**, así que no podía quedarse fija.
+
+`SongControls` no era un bug: ya tenía el par a mano (`#253883`/`#7AB3FF`), que
+es exactamente `link`; tokenizado. Y `GruposScreen` tampoco: ahí el azul es un
+relleno de tarjeta con texto blanco encima, y como relleno está bien.
+
+---
+
+## 2026-09-03 01:25 — EmptyState cumple por fin su contrato, y el foco de los botones
+
+PLAN_DISENO §H2, §H1-bis y §A2-bis.
+
+**`EmptyState` no era agnóstico de paleta**, que es justo lo que `design.md` §2
+exige a todo lo que vive en `components/ui/`. Lo era a medias: `accentColor`
+tocaba el icono y el CTA, pero el título y el subtítulo se cogían del tema
+institucional — o sea que en Contigo salían grises fríos sobre fondo crema. Por
+eso los dos vacíos de Contigo llevaban meses "pendientes de verificar" en el
+plan: no era que hubiera que verlos, es que el componente no servía ahí.
+
+- Añadidos `titleColor` y `subtitleColor`. Por defecto hacen lo de antes, así
+  que los 11 sitios que ya usaban el componente no cambian.
+- Migrados los dos que lo esperaban: **Contigo → marcadores** ("Sin guardados
+  aún") y **Contigo → evangelio** ("No se encontraron lecturas para este día",
+  con su botón de "Volver a hoy"). Los dos con la paleta cálida.
+
+**Foco de teclado** (web y teclado externo):
+
+- `AppPrimaryButton` no tenía ningún indicador. Ahora lleva un borde permanente
+  en transparente que solo cambia de color al enfocar, así el botón no se
+  mueve. Usa el color de su texto, que siempre contrasta con su propio fondo.
+- **Revertido en `AppTextField`**: el engorde a 2 px que había puesto
+  desplazaba el campo 1 px justo al empezar a escribir, y el salto se nota más
+  que la mejora. Su foco sigue siendo el cambio de color de todo el borde.
+
+**Los dos amarillos, documentados**: `brand.yellow` (#FCD200) es el de MARCA
+—estrellas de valoración, categorías, tab de la Visita del Papa— y
+`UIColors.accentYellow` (#f4c11e) el del CANTORAL —su tab, su FAB y el
+destacado ámbar—. Están a cuatro puntos y hacen cosas distintas.
+
+---
+
+## 2026-09-03 01:00 — Los pesos tipográficos, ajustados a lo que la app hace
+
+PLAN_DISENO §C4. Segunda vez que el token resulta ser el raro y no el código.
+
+La escala de pesos que había escrito —500 para acciones, 600 para secciones— me
+la había inventado yo. Contando: a 15 px la app usa 600 o 700 en **53 sitios**
+y 500 en **3**. Lo mismo con 17 y 18 px, que van a 700. Y había una
+incoherencia de escalera: `h2` (22 px) a 800 pesaba más que `h1` (28 px) a 700,
+o sea peso subiendo al bajar de tamaño.
+
+- Pesos del token ajustados: `h2` y `h3` a 700, `button` a 600. La escalera
+  queda `h0 800 · h1/h2/h3 700 · title/button/overline 600 · resto normal`,
+  bajando con el tamaño y sin superar nunca al nivel de arriba.
+- Con eso, 45 sitios más pasan a token **sin cambiar de aspecto**: de 321
+  `fontSize` a mano a **276**.
+- `design.md` §4 y el inventario corregidos.
+
+**Cambian de peso 5 sitios**, los que heredaban del token sin declarar el suyo:
+`ComidaScreen` (label de acción), `ScreenHero` en modo compacto, el `subtitle`
+de `ThemedText` y la cabecera de notificaciones. De 600 a 700 y de 500 a 600 —
+en la dirección de lo que ya hace el resto de la app.
+
+Los 276 que quedan son tamaños fuera de escala (26, 20, 30, 9, 48…) o
+combinaciones con un peso que no es el del token: ahí ya no hay regla general
+que aplicar (§C6).
+
+---
+
+## 2026-09-03 00:35 — El texto tenue del cantoral ahora se lee, y tres decisiones cerradas
+
+**Corrijo un diagnóstico mío de la entrada anterior**: dije que tres pares
+claro/oscuro estaban "del revés" porque el hex de modo oscuro era más oscuro
+que el de modo claro. Eso no significa nada — cada color se mide contra SU
+fondo. Medidos bien estaban deliberadamente igualados (placeholder 2,92 en
+claro y 2,84 en oscuro; leyenda 2,16 y 2,67). No había ningún ternario
+intercambiado.
+
+Lo que sí era verdad, aunque no por el motivo que yo daba: **esos valores están
+por debajo del mínimo legible** (4,5:1), y es el buscador y la leyenda del
+cantoral, la pantalla más usada de la app.
+
+- `Colors.light.textMuted` sube de `#8E8E93` a `#6E6E73`, el primer gris de la
+  escala que pasa: 4,54:1 sobre el gris de los campos y 5,07 sobre blanco. En
+  oscuro `#8E8E93` ya pasaba y se queda. 10 sitios migrados al token.
+- `designTokens.test.ts` gana **tests de contraste** de todos los roles de
+  texto contra las superficies donde se pintan de verdad, y `design.md` §5 un
+  aviso para que nadie repita mi error de comparar los dos hex entre sí.
+- `UIColors`: `activePrimary`/`secondaryText` no eran "el azul activo" y "el
+  gris secundario" de la UI — están en el HTML que genera `useSongProcessor`,
+  pintando los acordes. Renombrados a `chordBlue` y `chordSecondaryText`.
+  Cuatro claves más no las usaba nadie: borradas.
+- `design.md` §5 recoge la **regla del radio anidado** (el interior es el
+  exterior menos el hueco), que es por qué `SegmentedControl` lleva un 10 con
+  `padding: 2` y por qué eso no es deuda.
+
+**Tres decisiones cerradas, para que no se vuelvan a proponer:**
+
+- **Anchuras máximas / layout de iPad: no se tocan.** Decisión del usuario.
+- **Capas de superficie en modo oscuro: no.** Dar color propio a las cards
+  (`#3A3A3C`) dejaría el texto terciario encima en 3,48:1. Lo de ahora —plano
+  con hairline— se lee. Queda un test que avisa si alguien lo intenta.
+- **`borderRadius: 10`: no es deuda, es geometría.** Es la regla del radio
+  anidado; ahora está escrita.
+
+---
+
+## 2026-09-03 00:05 — Segunda tanda de colores, y un posible bug de contraste anotado
+
+PLAN_DISENO §A5.4 y §A5.5.
+
+- El **destacado ámbar** (la canción o playlist marcada) pasa a `HighlightColors`:
+  27 literales en `PlaylistRow`, `SongListItem`, `TransposeBottomSheet`,
+  `SongFontBottomSheet` y `TagChip`. Unificada de paso la deriva que tenían
+  entre ellos (`#3A2800` en uno, `#3A2D0A` en otro, para el mismo papel).
+- **Aquí se acaba el barrido mecánico** (§A5.5). Lo que queda son hex cuyo VALOR
+  coincide con un token pero cuyo PAPEL no: el mismo `#1C1C1E` es un gris de
+  superficie en un sitio y "texto casi negro" en otro. Cambiarlo por un token
+  mal nombrado es peor que dejarlo, porque el nombre pasa a mentir — que es lo
+  que este plan vino a arreglar. A partir de aquí hay que abrir el fichero.
+
+**Hallazgo pendiente de mirar en dispositivo (§H11)**: tres pares claro/oscuro
+parecen estar del revés — el color de modo oscuro es más oscuro que el de modo
+claro. Afecta al placeholder de búsqueda del cantoral y a texto tenue de
+`PlaylistRow`, `SongListItem` y `CommandPalette`, con contraste por debajo de
+3:1 en ambos modos. Puede ser un tenue deliberado o un ternario intercambiado al
+copiar; no se ha tocado nada.
+
+---
+
+## 2026-09-02 23:45 — Los radios a mano bajan de 300 a 122
+
+PLAN_DISENO §E2. Complementa el colapso de la escala de radios del commit
+anterior.
+
+- 114 sustituciones **byte-idénticas** (4, 8, 12, 16, 20, 28 y 999 ya coincidían
+  con la escala).
+- 64 de los valores que la escala colapsó (14, 18, 22), migrados **a propósito**:
+  dejarlos a mano creaba el peor de los mundos, la misma card con 14 px si el
+  fichero hardcodeaba y 16 si usaba el token. Son 2 px.
+- `__tests__/noNewMagicNumbers.test.ts` suma el tercer trinquete: colores,
+  tamaños de letra y ahora radios.
+
+Los 122 que quedan son valores que no están en la escala (10 con 23 usos, y
+luego 3, 6, 100, 5, 2, 13, 26…): unos son decorativos de un sitio concreto y
+otros son un escalón inventado. Hay que mirarlos uno a uno (§E3).
+
+---
+
+## 2026-09-02 23:25 — La escala tipográfica ahora cubre los tamaños que la app usa
+
+PLAN_DISENO §C. `constants/typography.ts` existía desde siempre y **solo lo
+importaban 6 ficheros**, con 666 `fontSize` escritos a mano por toda la app.
+
+La causa no era desidia: la escala declaraba siete tamaños (10/13/15/16/22/28/34)
+y los cinco más usados del repo —12 con 100 usos, 14 con 71, 11 con 71, 17 con
+22 y 18 con 25— **no estaban**. Un token que no cubre tu caso no se usa, se
+rodea.
+
+- Escala ampliada con los nombres de iOS, que es de donde vienen los tamaños:
+  `h3` 18, `title` 17, `subhead` 14, `footnote` 12, `micro` 11.
+- Un token solo trae `fontWeight` cuando el rol lo implica, para poder
+  sobrescribirlo sin sorpresas.
+- Migrados 345 `fontSize`: **de 666 a 321**, y de 6 ficheros importando el token
+  a 96. Solo se tocaron los tokens sin peso propio (byte-equivalentes); los que
+  llevan peso, únicamente donde el peso declarado ya coincidía.
+- La escala de pesos queda escrita en `design.md` §4: 800 en `h0`, kickers y
+  badges · 700 en títulos de card · 600 en secciones · 500 en acciones · normal
+  en cuerpo.
+- `__tests__/noNewMagicNumbers.test.ts` (antes `noNewHardcodedColors`) suma un
+  trinquete de `fontSize` al que ya tenía de colores.
+
+Los 321 que quedan llevan un `fontWeight` al lado que no coincide con el del
+token: hay que mirarlos uno a uno y decidir si el sitio se equivoca de peso o si
+el token no le vale. Es revisión, no trabajo mecánico (§C4).
+
+- **Archivos**: `constants/typography.ts`, `__tests__/noNewMagicNumbers.test.ts`
+  y 85 ficheros de `app/` y `components/`.
+
+---
+
+## 2026-09-02 22:55 — Unificación de tokens de diseño: los nombres ya no mienten
+
+Primera pasada de [`docs/planes/PLAN_DISENO.md`](../docs/planes/PLAN_DISENO.md).
+Sin cambios de comportamiento; los cambios visuales son tres, pequeños y
+deliberados, y están listados abajo para verificarlos en dispositivo.
+
+- **Colores de marca**: `brand` pasa a ser una paleta **cromática**
+  (`success`→`green`, `warning`→`yellow`, `danger`→`purple`). El código dictó el
+  alcance: el verde pintaba la pantalla de Reflexiones y el amarillo las
+  estrellas de valoración — no eran estados. `accent` se queda, porque sí se usa
+  como acento. El estado sigue en `ToastColors` y `SwipeColors`.
+- **Roles de color que faltaban**: `textStrong`, `textSecondary`, `textMuted`,
+  `link`, `backgroundSunken` y `separator` en `Colors.light`/`Colors.dark`, con
+  `themeColors(isDark)` para resolverlos (mismo patrón que `warm(isDark)` de
+  Contigo). Más `SystemGray`, `HighlightColors`, `CarismoColors` y
+  `LiturgicalColors` (los colores del tiempo litúrgico, que estaban escritos a
+  mano dentro de `LiturgicalBadge`).
+- **De 1.363 hex literales a 793**: 202 ternarios `isDark ? '#X' : '#Y'` a
+  roles, 126 literales a su token de siempre, 50 de la paleta cálida de Contigo.
+- **Sombras** renombradas por función (`card`/`raised`/`hero`/`overlay`): con
+  nombres de talla el orden mentía, `lg` (0.3) era más marcada que `xl` (0.18).
+- **Radios** colapsados de nueve escalones a siete, en la rejilla de 4 px.
+- **Responsive**: había **dos** hooks con umbrales distintos y el que
+  documentaba `DESIGN.md` tenía cero usos; borrado. `useResponsiveLayout` es el
+  único, y sus cortes salen ya de `constants/breakpoints.ts`.
+- **Foco**: nuevo `focusRing` y aplicado en `AppTextField` — el foco no puede
+  distinguirse solo por color.
+- **Panel** (repo `mcmpanel`): `src/lib/brandTokens.ts`, espejo de
+  `constants/colors.ts`, para que lo que representa datos de la app se pinte con
+  los colores de la app. Y el panel queda declarado oscuro-only.
+- **Guardarraíl**: `__tests__/designTokens.test.ts` comprueba que `global.css` no
+  se desincroniza de `constants/colors.ts`, que ningún token de marca se llame
+  como un estado, y que las escalas siguen siendo monótonas.
+
+**Pendiente de ver en un dispositivo** (`PLAN_DISENO` §H9): la sombra de toasts
+y FABs (0.30 → 0.22), los radios (`lg` 14→16, destacadas 18→20, hero 22→20) y el
+gris de texto secundario, unificado en el par con más contraste de los dos que
+había.
+
+- **Archivos**: `constants/colors.ts`, `constants/uiStyles.ts`,
+  `constants/breakpoints.ts`, `global.css`, `hooks/useResponsiveLayout.ts`
+  (borrado `hooks/useResponsive.ts`), `__tests__/designTokens.test.ts` y ~95
+  ficheros de `app/` y `components/`.
+
+---
+
+## 2026-09-02 22:20 — `design.md`: guía de diseño prescriptiva para agentes (+ plan de unificación)
+
+- **Qué es**: nuevo [`design.md`](../design.md) en la raíz del monorepo,
+  inspirado en el `design.md` público de Vercel. No es un catálogo: es el
+  **criterio** con el que un agente construye interfaz — qué se prioriza cuando
+  dos requisitos chocan, los tres territorios visuales (institucional, Contigo,
+  evento) y qué se comparte entre ellos, la API de componentes que ya existen,
+  los antipatrones que no se envían y la checklist previa a dar una pantalla
+  por buena.
+- **Reparto de papeles**: `design.md` = reglas (prescriptivo) ·
+  `docs/desarrollo/DESIGN.md` = inventario de valores (descriptivo) ·
+  `mcm-app/constants/*.ts` = fuente de verdad. Anotado en la cabecera de ambos
+  documentos para que no vuelvan a divergir sin que se note.
+- **`mcmpanel/design.md`** (repo `mcmpanel`): el panel mantiene su estética
+  oscura tipo consola, pero queda por escrito lo que sí comparte con la app —
+  pintar con los colores reales de MCM lo que representa datos de la app,
+  espejar catálogos en vez de reinventarlos, vocabulario común y la forma de los
+  datos por encima de la estética.
+- **`docs/planes/PLAN_DISENO.md`** (nuevo): las incoherencias reales detectadas
+  con evidencia (entre otras: `accent`/`danger` significan cosas distintas en la
+  capa RN y en la capa CSS; 1.363 hex hardcodeados, casi todos grises de sistema
+  que no existen como token; los nombres de `shadows` no siguen el orden de
+  intensidad) más las mejoras propuestas, cada una con destino decidido y
+  ejecutable en un commit. Registrado en `BACKLOG.md` §2.G y en
+  `docs/planes/README.md`.
+- **Archivos**: `design.md`, `docs/planes/PLAN_DISENO.md`,
+  `docs/desarrollo/DESIGN.md`, `docs/README.md`, `docs/planes/README.md`,
+  `docs/planes/BACKLOG.md`, `CLAUDE.md`, `mcm-app/AGENTS.md`. Sin cambios de
+  código.
+
+---
+
+---
+
+## 2026-09-01 20:30 — Enlaces de canción: Spotify, partituras de Drive y otras webs
+
+- **Qué**: soporte de los tres campos nuevos del cantoral (`spotifyLinks`,
+  `driveLinks`, `otherLinks`), que se pintan en una sección **Enlaces** de la
+  hoja de multimedia. Antes solo existían vídeos y audios, así que un enlace de
+  Spotify o una partitura no tenían dónde ir.
+- **La distinción que importa**: `spotifyLinks` es el único que SALE de la app
+  (con Spotify no hay embed posible: abre su app y el usuario vuelve a mano).
+  `driveLinks` y `otherLinks` se abren a **pantalla completa dentro** de la app,
+  en un visor nuevo. Un enlace de Drive en `audioLinks` sigue sonando en el
+  reproductor flotante: el tipo lo decide el campo, no la URL — no hay
+  auto-detección por dominio.
+- **Visor** (`SongLinkViewer`): `Modal` a pantalla completa con WebView (iframe
+  en web). Drive se carga por `/preview` (el `/view` de compartir no se deja
+  embeber) y al abrirlo fuera va la URL original, que es la que captura la app
+  de Drive. Si el embed falla, ofrece abrirlo fuera en vez de dejar la pantalla
+  en blanco. No usa el reproductor flotante a propósito: una partitura se lee
+  mientras se toca, y el PiP está pensado para lo contrario.
+- **Archivos**: `types/songMedia.ts`, `components/song-media/SongLinkViewer.tsx`
+  (nuevo), `components/song-media/SongMediaSheet.tsx`,
+  `app/screens/SongDetailScreen.tsx`, `components/SongListItem.tsx` (indicador
+  🔗 en la fila), `app/screens/SongListScreen.tsx`,
+  `__tests__/songLinks.test.tsx` (nuevo).
+- **Docs**: `docs/funcionalidades/ENLACES_CANCION.md`. Contrato de los campos:
+  `docs/CAMPOS_CANCIONES.md` §3.1 del repo `mcmapp-cantoral`.
+
+## 2026-08-30 13:49 — Los ajustes de lectura del evangelio se quedaban sin scroll (y sin control de tamaño)
 
 - **El problema**: en "Ajustes de lectura" (Contigo → evangelio) el contenido
   iba en un `View` a pelo. El `BottomSheet` compartido tiene tope de altura y
@@ -43,10 +1882,2133 @@
   (66% de la ventana) y la vista previa scrollea dentro de su propia caja
   (máximo 26% de la ventana, entre 110 y 240 px), de modo que los controles
   quedan siempre a la vista sea cual sea el tamaño de letra.
-- Cherry-pick adaptado desde `main` (2bcf66f): allí el fichero ya tiene la
-  animación del agarre y la háptica de tope, que en esta rama todavía no están.
-- Archivos: `mcm-app/components/contigo/ReaderSettingsSheet.tsx`,
-  `mcm-app/__tests__/readerSettingsSheetScroll.test.tsx`.
+- La barra de tamaño lleva ahora `onPanResponderTerminationRequest: () => false`
+  para que el `ScrollView` no le robe el gesto a mitad de arrastre.
+- Guardarraíl en `__tests__/readerSettingsSheetScroll.test.tsx`: si alguien
+  vuelve a poner un `View` sin acotar, el test falla.
+- Archivos: `components/contigo/ReaderSettingsSheet.tsx`,
+  `__tests__/readerSettingsSheetScroll.test.tsx`.
+
+## 2026-08-27 13:32 — Los calendarios ICS se precachean en Firebase (20× más rápidos)
+
+- **El problema, medido**: el `.ics` de Google Calendar se genera en caliente en
+  cada petición. Contra el feed real de MCM Europa, TTFB de 0,87–1,33 s y
+  transferencia de ~2 ms (81 KB en crudo, 21 KB con gzip, 149 eventos). El
+  99,8 % de la espera es Google generando el fichero, y manda
+  `Cache-Control: no-store` **sin ETag**: no hay caché HTTP ni revalidación
+  posible. Ninguna optimización de red en el cliente puede arreglarlo (se
+  evaluó `react-native-nitro-fetch` para esto y no aplica por este motivo).
+- **Nueva Cloud Function `cacheCalendarIcs`** (schedule cada 2 h): descarga y
+  parsea los ICS de `/calendars` y los deja en `/calendarEvents`. La app pasa de
+  ~1,2 s por calendario a una lectura de tres campos sobre la conexión que ya
+  tenía abierta con Firebase.
+- **Parser extraído a `utils/icsParser.ts`** (puro, sin RN) y partido en dos
+  fases: `parseICSPortable` (sin localizar → cacheable, la función corre en
+  `us-central1`) + `localizeEvents` (convierte a la hora del dispositivo). Sin
+  esa separación, cachear habría mostrado todos los eventos en hora de Chicago.
+  La igualdad `parseICS === localizeEvents ∘ parseICSPortable` está blindada con
+  un test.
+- **`updatedAt` solo cambia si el contenido cambió** (se compara un sha256): una
+  apertura normal de la app no descarga el nodo. `checkedAt`, que sí se escribe
+  en cada ejecución, es lo que indica si el cron sigue vivo.
+- **Fallback intacto**: si el nodo no cubre un calendario (delegación con
+  `extraCalendars` recién añadidos), o si `checkedAt` tiene más de 24 h, se baja
+  el ICS directamente como antes.
+- **Fix: el proxy CORS se usaba también en nativo**, donde no hay CORS que
+  sortear. Era un round-trip entero de más contra un feed que ya tarda 1 s, y si
+  el proxy fallaba se pagaban dos esperas. Ahora es exclusivo de web.
+- **Fix: la caché local se pinta antes de comprobar el estado de la red**
+  (`getNetworkStateAsync` es un salto nativo y no hace falta para leer disco).
+- Firebase: nodo nuevo `/calendarEvents` (lectura pública, escritura cerrada —
+  solo lo escribe el Admin SDK). **Para activarlo basta con desplegar la función**
+  (`cd mcm-app && firebase deploy --only functions`): las reglas vivas hoy son las
+  antiguas y ya permiten la lectura. El bloque añadido a `database.rules.json` es
+  para el día que se despliegue el fichero (que deniega por defecto en la raíz);
+  desplegarlo NO es parte de este cambio y tiene sus propios requisitos, ver
+  `docs/SEGURIDAD.md`. Ojo: el workflow `deploy-firebase-rules.yml` se dispara al
+  mergear a `production` si cambia `database.rules.json` — hoy se salta por falta
+  del secret, pero conviene saberlo.
+- Documentación completa en `docs/funcionalidades/CALENDARIOS.md`.
+- Archivos: `utils/icsParser.ts` (nuevo), `hooks/useCalendarEvents.ts`,
+  `functions/src/index.ts`, `functions/scripts/sync-ics-parser.mjs` (nuevo),
+  `functions/package.json`, `database.rules.json`,
+  `__tests__/icsParser.test.ts` y `__tests__/useCalendarEventsCache.test.ts`
+  (nuevos, +20 tests).
+
+## 2026-08-26 09:21 — Añadida dependencia expo-observe (EAS Observe)
+
+- Instalado `expo-observe` (~57.0.16) vía `npx expo install expo-observe`
+  para poder enviar métricas de la app a EAS Observe.
+- Es un módulo nativo (trae código iOS/Android) sin config plugin: no
+  requiere cambios en `app.config.ts`, solo autolinking en el build nativo.
+- **Requiere build de tienda antes de mergear a `production`** — no se puede
+  entregar por OTA. Commit con `[skip-ota]`.
+- Archivos: `mcm-app/package.json`, `mcm-app/package-lock.json`.
+
+## 2026-08-23 19:35 — Mensaje de WhatsApp del coro: numeración correlativa, título dinámico y enlace a la nube
+
+- **Numeración de canciones**: cada línea del mensaje formateado empieza ahora
+  por `1. `, `2. `, `3. `… correlativos a lo largo de todo el mensaje (antes
+  usaba la inicial de la categoría o un `•`), para que WhatsApp lo reconozca
+  como lista numerada. El título de la canción va en negrita y el número de
+  canción (`#123`) se mueve al final de la línea con formato código+negrita
+  (``*`#123`*``).
+- **Enlace a la nube**: si la playlist está subida (`sharing.link`), el
+  mensaje cierra con el enlace (`☁️ https://mcm.expo.app/playlist?p=1234`) y
+  el código de 4 dígitos.
+- **Título del mensaje**: usa el nombre real de la playlist (`link.name`) en
+  mayúsculas si existe; si no, el nombre por defecto (ver debajo).
+- **Nombre por defecto de playlist**: `defaultPlaylistName()` (usada al
+  subir al coro, exportar `.mcm` y exportar PDF) ya no propone «Playlist
+  \<fecha\>» sino «Canciones \<fecha\>», y esa fecha ya no es la de hoy sino
+  la del **próximo fin de semana**: si hoy es sábado o domingo se queda esa
+  fecha, y de lunes a viernes salta al sábado que viene. Nueva función
+  `nextChoirDate()` en `utils/playlistCodes.ts`.
+- **Archivos**: `utils/playlistCodes.ts`, `app/screens/SelectedSongsScreen.tsx`,
+  `__tests__/playlistCodes.test.ts`.
+
+## 2026-08-22 19:00 — `useShakeDetector`: `expo-sensors` ahora se carga con `require` perezoso, no `import()` dinámico
+
+- **Motivo**: al subir la cobertura de tests, se detectó que bajo Jest el
+  `import('expo-sensors')` dinámico no se transforma a CommonJS y nunca
+  resuelve — ni siquiera con un mock. La lógica de detección de sacudidas
+  (picos de aceleración, ventana, cooldown) llevaba así desde siempre sin
+  ningún test que la ejerciera de verdad.
+- **Cambio**: mismo patrón perezoso que `getGoogleSignin` en
+  `utils/platformAuth.native.ts` — `require('expo-sensors')` dentro del
+  `useEffect`, envuelto en `try/catch` en vez de `.then()/.catch()`. Para
+  Metro (sin code splitting) el comportamiento es equivalente: lo único que
+  importaba era CUÁNDO se evaluaba el módulo, no si era `import()` o
+  `require`. Sin cambios de comportamiento para el usuario.
+- Ahora sí cubierto por tests: `__tests__/useShakeDetector.test.ts` (picos,
+  ventana, cooldown, ref del callback, re-suscripción por cambio de opciones,
+  degradación silenciosa si el módulo nativo no está).
+- Archivo: `hooks/useShakeDetector.ts`.
+
+---
+
+## 2026-08-20 12:30 — Modo Coro: caducidad a 12h (antes 24h) con alargue por actividad, y arreglo de la restauración de sesión
+
+- **Caducidad más corta y con alargue**: una sesión de "modo Coro" ahora dura
+  **12h** desde que arranca (antes 24h). Si el líder publica canción o
+  playlist dentro de las **2h previas** a esa caducidad, la sesión se alarga
+  **12h más** desde ese momento — así una celebración larga no se corta a
+  media canción, pero una sesión olvidada sin uso caduca igual. Nuevo:
+  `shouldRenewChoirSession`/`extendChoirSession` en
+  `services/choirSessionService.ts`, conectados en
+  `contexts/ChoirSessionContext.tsx` (`publishCurrent`/`publishPlaylist`).
+- **Fix**: una sesión de coro guardada (para retomarla al reabrir la app)
+  nunca se restauraba. El efecto que limpia `AsyncStorage` cuando
+  `mode === 'off'` corría ya en el primer render, con el estado inicial, y
+  borraba la sesión persistida antes de que el efecto de restauración
+  (que espera a `deviceId`) llegara a leerla. Arreglado con un flag
+  `restored` que hace esperar la limpieza hasta que la restauración ha
+  tenido su oportunidad.
+- Tests: `__tests__/choirSessionService.test.ts`,
+  `__tests__/choirSessionContext.test.tsx`.
+
+## 2026-08-20 10:15 — "Reducir movimiento" completo, cierre de la auditoría de animaciones
+
+Últimos dos huecos de la auditoría de `animate-expo` (ver
+`docs/planes/archivo/ANIMACIONES.md`):
+
+- **`SuccessPhase`** (pantalla de agradecimiento del wizard de evaluación): con
+  "reducir movimiento" el icono aparece directamente escalado a 1 (sin el
+  muelle con rebote) y el ripple —un bucle infinito de escala— no arranca. La
+  celebración se confirma con el icono y el texto, no con algo que se repite
+  solo de fondo.
+- **`BreathingPhase`** ("Para un momento..." al entrar en Revisión): se queda
+  con el ciclo de textos "Respira... / Inspira..." al mismo ritmo —es
+  contemplativa y puntual, decisión del usuario de no tocarle el sentido— pero
+  los tres anillos dejan de latir en escala.
+
+Con esto, "reducir movimiento" queda cubierto en toda la app **menos
+Carismochito**, que se deja tal cual a propósito: es un huevo de pascua que el
+usuario activa agitando el móvil, y quien entra ahí con esa opción activada es
+porque quiere.
+
+Archivos: `components/evaluation/SuccessPhase.tsx`,
+`components/contigo/BreathingPhase.tsx`. Sin cambios de comportamiento fuera de
+"reducir movimiento": typecheck limpio, 1042 tests en verde, mismos 39 warnings.
+
+## 2026-08-19 22:30 — `.value` → `.get()`/`.set()` en todos los shared values
+
+Migración mecánica de los 229 accesos directos a `.value` de Reanimated en 32
+ficheros. Misma API, pero **el React Compiler no puede seguir `.value`** y le
+generaba un aviso a cada uno: **los warnings del linter bajan de 49 a 39**.
+
+También comprobado que **no hace falta tocar nada para los 120 fps**:
+`CADisableMinimumFrameDurationOnPhone: true` ya lo inyecta `@expo/config-plugins`
+en el `Info.plist` por defecto, así que en iPhones ProMotion el presupuesto de
+frame ya es de 8 ms. (Estaba anotado como pendiente en
+`docs/planes/archivo/ANIMACIONES.md`; queda cerrado.)
+
+Sin cambios de comportamiento: 1042 tests en verde y typecheck limpio.
+
+## 2026-08-19 21:45 — Slider de lectura, `scheduleOnRN` y toasts
+
+- **`ReaderSettingsSheet`** (tamaño de letra de Contigo): el agarre de la barra
+  crece mientras el dedo está encima, háptica de tope al pasarse de los extremos
+  (una sola vez por llegada, no una por frame) y arrastrar después de tocar los
+  botones A/A vuelve a responder — el último valor no se resincronizaba, así que
+  volver con el dedo al mismo sitio no hacía nada.
+- **`runOnJS` → `scheduleOnRN`** (`react-native-worklets`) en los 9 ficheros que
+  lo usaban: `runOnJS` está deprecado en Reanimated 4.
+- **`AppToastContext`** respeta "reducir movimiento": el toast solo funde, sin
+  traslación ni escala.
+
+Archivos: `components/contigo/ReaderSettingsSheet.tsx`, `contexts/AppToastContext.tsx`,
+`components/tabs/tabBarController.ts`, `components/CarismochitoOverlay.tsx`,
+`components/calendar/SwipeableMonthCalendar.tsx`, `components/contigo/BreathingPhase.tsx`,
+`app/screens/{ComunicaScreen,SongDetailScreen,HorarioScreen}.tsx`, `app/(tabs)/calendario.tsx`.
+
+## 2026-08-19 21:05 — Cantoral: tono y cejilla se sienten (y ya no rozan el borde)
+
+- **Todas las hojas** (`BottomSheet`) reservan ya el safe-area inferior. Antes
+  solo ponían 8 px fijos, así que en móviles con barra de gestos el último
+  control quedaba pegado al indicador. Nueva prop `safeAreaBottom` (por defecto
+  `true`); `NotificationsBottomSheet` la pone a `false` porque ya se come el
+  inset en su propia lista.
+- Los ±1 de TONO y los ± de CEJILLA animan la pulsación (90 ms de bajada,
+  140 ms de vuelta) en vez de saltar de golpe, y la CEJILLA gana el mismo "pop"
+  del valor que ya tenía el tono, además de mantener-pulsado para repetir.
+- Al tope de cejilla (0) el botón ya no es mudo: háptica de aviso (`h.limit`,
+  nueva en `utils/haptics.ts`) y un meneo corto del valor. Un botón que no hace
+  NADA se lee como app colgada, no como "hasta aquí".
+- Háptica también en los dos botones de restablecer, que no tenían.
+- Las animaciones de la hoja pasan de Reanimated al `Animated` de RN: viven
+  dentro del `Modal` transparente, donde los estilos de Reanimated 4 no se
+  aplican — o sea que el pop del tono probablemente no se veía nunca.
+
+Archivos: `components/TransposeBottomSheet.tsx`, `components/BottomSheet.tsx`,
+`components/NotificationsBottomSheet.tsx`, `utils/haptics.ts`.
+
+## 2026-08-19 20:25 — BottomSheet: el arrastre se siente como debe
+
+El arrastre para descartar la hoja compartida (la usan una veintena de pantallas)
+tenía tres cosas mal, todas de "feel":
+
+- El umbral de velocidad estaba en `400` contra el `vy` de `PanResponder`, que va
+  en **px/ms**: eran 400.000 px/s, inalcanzable. La rama de velocidad no se
+  ejecutaba NUNCA, así que el flick corto y rápido hacia abajo —el gesto natural
+  para descartar— no cerraba la hoja. Ahora `0.5` px/ms.
+- Tirar hacia arriba no movía nada: la hoja se quedaba clavada bajo el dedo.
+  Ahora hay resistencia elástica (cede un 20%).
+- El muelle de vuelta arrancaba de velocidad cero, como si la hoja se hubiera
+  soltado sola. Ahora se le pasa la velocidad del gesto.
+
+Además: háptica ligera en el instante en que el gesto se compromete a cerrar, y
+`useWindowDimensions` en lugar de `Dimensions.get(...)` leído en el render (no se
+recalculaba al girar el móvil, y el tope de altura se quedaba en el de portrait).
+
+NO se migra a Reanimated pese a lo que pide la skill `animate-expo`: dentro de un
+`Modal` transparente los estilos de Reanimated 4 no se aplican (ver la cabecera
+de `components/BottomSheet.tsx`, incidente del 2026-08-09). Razonado en
+`docs/planes/archivo/ANIMACIONES.md`.
+
+Archivos: `components/BottomSheet.tsx`, `__tests__/bottomSheetLifecycle.test.tsx`
+(6 tests nuevos sobre `shouldCloseOnRelease` / `dragOffsetFor`).
+
+## 2026-08-19 19:40 — Auditoría de animaciones con la skill `animate-expo`
+
+- Instalada la skill `animate-expo` de `emilkowalski/skills` (entrada nueva en
+  `skills-lock.json`).
+- Auditoría completa de las animaciones de la app contra ella en
+  `docs/planes/archivo/ANIMACIONES.md`: qué ya está bien, qué eran falsos positivos
+  y qué queda pendiente por orden de valor (el gordo: `BottomSheet.tsx` sigue
+  con `PanResponder` + core `Animated`).
+- `constants/animations.ts`: nuevas curvas canónicas (`motionEasings`) y muelles
+  en la forma `duration` + `dampingRatio` (`springs`), añadidos AL LADO de
+  `reaEasings` para no cambiar el feel de lo ya afinado.
+- `components/ui/PressableScale.tsx` y `components/ui/CelebrationBurst.tsx`
+  respetan ya "reducir movimiento" del sistema — antes no lo hacía ningún
+  componente de la app. El emoji del burst deja de arrancar en `scale(0)`.
+
+## 2026-08-15 21:30 — Aviso: el CI lleva parado desde abril
+
+Al arreglar los 4 errores de `typecheck:tests` de la #334 salió a la luz que
+**GitHub Actions no ejecuta nada en este repo desde el 2026-04-10**: por eso
+llevaban meses en `main` sin que saltara nadie. Ningún PR se está verificando de
+verdad, aunque el workflow siga en el repo.
+
+Anotado como tarea de prioridad máxima en `TODO.md` §0 y en el puntero rápido de
+`docs/planes/BACKLOG.md`. Mientras siga roto, los cuatro pasos de `verify.yml`
+(`typecheck`, `typecheck:tests`, `lint`, `test -- --ci`) hay que pasarlos en
+local antes de mergear.
+
+También en `CLAUDE.md`: una regla que se puede romper sin enterarse va en un
+test-guardarraíl, no en un documento (el modelo es `tabsLayoutWebSafety.test.ts`).
+
+## 2026-08-15 20:15 — Repaso de warnings (111 → 51) y reordenación de los planes
+
+**Warnings del compilador de React, sin silenciar ninguno:**
+
+- `useRef(new Animated.Value(x)).current` → `useAnimatedValue(x)` en
+  `BottomSheet`, `OTAUpdatePrompt` y `CarismochitoDialogs` (9 sitios). El patrón
+  viejo construía un `Animated.Value` nuevo en cada render solo para tirarlo.
+- Los dos `PanResponder` de `BottomSheet` pasan a un único `useMemo`, con la
+  lógica de soltar/cancelar compartida en vez de duplicada (misma historia: se
+  creaban y se descartaban en cada render).
+- `ReadingCalendarSheet` re-centraba el mes leyendo y escribiendo un ref durante
+  el render; ahora usa el patrón oficial de ajuste de estado.
+- Los dos efectos de auto-import por enlace de `SelectedSongsScreen` (`?p=`,
+  `?coro=`, `?c=`, `?d=`) estaban ~900 líneas ANTES de `handleJoinChoir` y
+  `offlineFilenameResolver`, que es justo lo que leen: se mueven detrás de sus
+  dependencias.
+- `exhaustive-deps` reales: `onChoir` en `QrScannerModal`; `evangelio` y
+  `SelectedSongsScreen` capturaban un objeto entero donde bastaba un método o un
+  escalar. Y fuera imports muertos en `calendario`, `cancionero` y `mas`.
+
+Los **51 restantes son irreducibles** y están clasificados uno a uno en
+`docs/desarrollo/WARNINGS.md` (falsos positivos de Reanimated, patrón de "ref al
+último callback", código congelado y los tres gigantes exentos). 860 tests en
+verde, `tsc` limpio.
+
+**Documentación** — que se vea de un tirón qué plan está hecho:
+
+- `plans/` (los 15 planes de la auditoría, todos ejecutados) sale de la raíz del
+  repo y pasa a `docs/planes/archivo/auditoria-2026-08/`; `PLAN_TAGS.md` también
+  se archiva. Nuevo `docs/planes/README.md` con el estado de cada plan y la
+  regla: **lo que está en `archivo/` está hecho, no se re-ejecuta**.
+- Etiquetas del cantoral ✅ cerradas del todo (la fase del generador de
+  `mcmapp-cantoral` ya está). Widget y Panel Pañuelo salen de la cola a "futuro
+  lejano". La Fase 1 de calidad (trocear gigantes) queda descartada, con el
+  razonamiento de cómo organizar código que solo edita una IA en
+  `PLAN_CALIDAD.md` §0.
+- Corregidas las referencias a la rama `claude/compact-tabs-bar-uxxaoz`, que se
+  mergeó en la #313 y ya no existe.
+
+## 2026-08-13 21:40 — Etiquetas del cantoral (`{tags:}`): botón del header, nube y pantalla de etiqueta
+
+Sistema de **etiquetas libres y transversales** para las canciones ("viejunas",
+"domingo de ramos", "infantiles"…), sobre el diseño 1d de Claude Design. Una
+etiqueta no es un filtro: es una puerta de entrada al cantoral. Documentación
+completa en `docs/funcionalidades/ETIQUETAS.md`.
+
+Qué se ve:
+
+- **Botón 🏷️ en el header del cantoral**, junto a la lupa, como bar item nativo
+  (`CategoriesScreen`). **Solo aparece si hay canciones etiquetadas**: mientras
+  no las haya, el cantoral está exactamente igual que hoy.
+- **Hoja con la nube de etiquetas**, ordenadas por uso, con emoji opcional y el
+  recuento dentro del chip; el tamaño del chip cuenta el uso.
+- **Pantalla de una etiqueta** = `SongListScreen` con la categoría virtual
+  `__TAG__:<slug>` (hermana de `__ALL__`), **agrupada por categoría** con
+  cabeceras de sección, y una **barra de contexto** con la etiqueta activa (✕)
+  y las etiquetas que coexisten en el resultado, para cruzar en AND sin modal
+  de filtros. Nunca se ofrece una etiqueta que daría cero resultados.
+- **El buscador entiende etiquetas**: los labels y slugs entran en el
+  `searchableText`, así buscar "ramos" saca las canciones etiquetadas aunque no
+  lleven la palabra en el título.
+- **Chips de etiqueta en la ficha de la canción** (`SongMediaSheet`); tocarlos
+  abre la pantalla de esa etiqueta.
+
+Datos: las etiquetas nacen en `mcmapp-cantoral` como directiva `{tags:}` en el
+`.cho` y llegan como `tags: string[]` en `songs/data`; el catálogo de metadatos
+(label, emoji, alias) es **opcional** y vive en `songs/tags`. **No hay nodo
+nuevo que proteger** ni cambios en `database.rules.json` (`songs` ya es
+`.read: true`), ni caché nueva: el índice inverso se construye con un memo
+sobre los datos ya descargados. Una etiqueta que no está en el catálogo
+funciona igual, con el slug capitalizado.
+
+⏳ Falta la parte de `mcmapp-cantoral` (parsear `{tags:}` en el generador y
+publicar `songs/tags`); hasta entonces no se ve nada, por diseño.
+
+Archivos: `utils/songTags.ts` (nuevo), `hooks/useSongTags.ts` (nuevo),
+`components/song-tags/{TagChip,TagCloudSheet,TagContextBar}.tsx` (nuevos),
+`app/screens/CategoriesScreen.tsx`, `app/screens/SongListScreen.tsx`,
+`app/screens/SongDetailScreen.tsx`, `components/song-media/SongMediaSheet.tsx`,
+`types/songMedia.ts`, `utils/filterSongsData.ts`, `__tests__/songTags.test.ts`
+(nuevo). OTA-safe: sin dependencias nativas nuevas.
+
+## 2026-08-13 18:20 — Reglas de Firebase listas para desplegar, con diagnóstico en ambos lados
+
+**Reglas** (`database.rules.json`, reescrito). Los permisos que el panel
+necesita cuelgan ahora de dos banderas en `/_config` (`legacyPanelWrites`,
+`legacyNotificationsOpen`): con ellas en `true` todo funciona igual que hoy y
+se apagan desde la consola sin desplegar. **Hay que sembrar `/_config` ANTES de
+desplegar** (`firebase-seed/config.json`) o el panel se queda sin permisos.
+Guía completa en `docs/desarrollo/FIREBASE_REGLAS.md`.
+
+Bugs de las reglas que habrían roto la app:
+
+- `activities/<ev>/evaluacion/updatedAt` lo escribe la app al enviar una
+  evaluación y estaba denegado — sin él, ningún dispositivo se entera de que
+  hay respuestas nuevas. Igual para `jubileo/evaluacion/**`, que no existía.
+- **Escalada de privilegios en `users/$uid/isAdmin`**: el `.write` del nodo
+  cascadeaba hasta el flag, así que cualquiera con sesión podía nombrarse admin
+  y abrirse el panel secreto del cantoral. Cortado con un `.validate` (un
+  `".write": false` debajo NO lo arregla: la cascada no se revoca).
+- Los `.validate` de `playlistShares`/`choirSessions` estaban en el padre, donde
+  los `update()` parciales no los reevalúan. Movidos a la hoja.
+
+Fugas cerradas: `surveys/<id>/respuestas` y `<evento>/evaluacion/respuestas`
+dejan de ser legibles en bloque (llevan `userName`, `userDelegation`, `userId`);
+cada dispositivo lee la suya.
+
+**App**:
+
+- `useFirebaseData` ya no hace `get()` del nodo entero en la primera carga. Se
+  traía las respuestas de todo el mundo para pintar un formulario. Ahora pide
+  siempre `updatedAt`/`hidden`/`data` por separado.
+- Acepta `path: null` para "sin nodo que mirar". `EventHomeScreen` consultaba un
+  path inventado (`__noop__/<slug>`) por cada tarjeta de sección; con reglas
+  cerradas eso es un `PERMISSION_DENIED` por render.
+- Nuevo `utils/firebaseErrors.ts`: un `PERMISSION_DENIED` ya no se reintenta
+  (nunca se arregla esperando) y **se reporta a Sentry** con la operación y el
+  path, deduplicado por sesión para no reventar la cuota. Buscar
+  `[firebase-rules]`.
+- Test de contrato de las reglas (`__tests__/databaseRules.test.ts`, 170 casos)
+  que las evalúa contra el inventario real de paths de la app y del panel, con
+  las banderas puestas, apagadas y sin sembrar.
+
+**Panel** (repo mcmpanel): deja de leer la raíz de la base de datos —
+imprescindible, porque conceder `.read` en `/` es conceder `/users`— y modal
+_ERROR DE REGLAS DE FIREBASE_ con el path denegado y qué mirar.
+
+**Pendiente**: la sección Usuarios del panel y el contador de destinatarios del
+composer dejan de funcionar al desplegar. No tienen bandera a propósito
+(`/users` es el diario de Contigo; `/pushTokens` enumerable es poder mandar push
+a todos). Se arreglan con auth real en el panel — decisión D2.
+
+## 2026-08-12 21:40 — Archivar un evento desde el panel ya funciona de verdad
+
+- **B1 completo.** La app solo aplicaba el `_meta` que edita el MCM Panel
+  (`title`/`tintColor`/`bannerText`/`status`) al **evento activo**. Todo lo
+  demás salía del registry hardcodeado, así que archivar o desarchivar
+  cualquier otro evento desde el panel no tenía ningún efecto, y la lista de
+  "Eventos pasados" ignoraba también el título y el color que dijera el panel.
+- Ahora se leen los `_meta` de **todos** los eventos del registry y se mergean;
+  "Eventos pasados" se construye de esa lista ya mergeada, así que el estado
+  archivado sale siempre de lo que diga el panel, sin publicar versión.
+- **C3**: tipados `global.appReviewMode` y `data.appReviewBackup` como
+  opcionales (el modo revisión de las tiendas que gestiona el panel) y
+  documentado el mecanismo en `docs/contratos/PANEL_PERFILES.md` §1.6. La app
+  no los lee: el efecto le llega ya aplicado en las `tabs`.
+- Archivos: `hooks/useEventMeta.ts` (nuevo `useEventsMeta`),
+  `contexts/ActiveEventContext.tsx` (expone `events` mergeados),
+  `app/screens/EventosPasadosScreen.tsx`, `types/profileConfig.ts`.
+- Docs: `PANEL_PERFILES.md`, `PLAN_INTEGRACIONES.md`, `BACKLOG.md`, `COROS.md`.
+
+## 2026-08-12 20:35 — Menú de la playlist: opciones vivas, orden por uso y arreglos
+
+- **Solo se ofrece lo que se puede hacer**: con la lista vacía siguen visibles
+  las de importar, el hub del coro y el enlace del coro (que no depende de tu
+  selección) — antes ese enlace desaparecía sin motivo. Vaciar, exportar, subir
+  y compartir siguen ocultándose.
+- **Orden por frecuencia real**: Mi coro → Exportar y compartir → Coro en vivo →
+  Códigos y QR → Archivo → Vaciar (Archivo baja, que es lo más raro de usar).
+- **Arreglo**: en una sesión en vivo que cuelga de un coro ya no se ofrece
+  «cambiar el código» — la clave _es_ el coro, así que cambiarla la desataba de
+  él y el resto del coro no la encontraba. Su QR usa ahora `?coro=<id>`.
+- **Un toque menos**: si abres «guardar» sin tener coro elegido, después de
+  elegirlo la hoja vuelve a guardar en vez de dejarte en el inicio.
+- Archivos: `app/screens/SelectedSongsScreen.tsx`,
+  `components/playlist/ChoirSheet.tsx`.
+
+## 2026-08-12 20:35 — Menú de la playlist: opciones vivas, orden por uso y arreglos
+
+- **Solo se ofrece lo que se puede hacer**: con la lista vacía siguen visibles
+  las de importar, el hub del coro y el enlace del coro (que no depende de tu
+  selección) — antes ese enlace desaparecía sin motivo. Vaciar, exportar, subir
+  y compartir siguen ocultándose.
+- **Orden por frecuencia real**: Mi coro → Exportar y compartir → Coro en vivo →
+  Códigos y QR → Archivo → Vaciar (Archivo baja, que es lo más raro de usar).
+- **Arreglo**: en una sesión en vivo que cuelga de un coro ya no se ofrece
+  «cambiar el código» — la clave _es_ el coro, así que cambiarla la desataba de
+  él y el resto del coro no la encontraba. Su QR usa ahora `?coro=<id>`.
+- **Un toque menos**: si abres «guardar» sin tener coro elegido, después de
+  elegirlo la hoja vuelve a guardar en vez de dejarte en el inicio.
+- Archivos: `app/screens/SelectedSongsScreen.tsx`,
+  `components/playlist/ChoirSheet.tsx`.
+
+## 2026-08-12 19:40 — Rediseño de «Tu selección»: las playlists cuelgan de un coro
+
+- **Concepto nuevo: el coro es la entidad**. Se crea un coro («Coro Consolación
+  Castellón»), se elige una vez en el dispositivo y a partir de ahí las
+  playlists cuelgan de él. Importar la del domingo es **un toque** («Importar la
+  última»); el histórico enseña nombre, fecha y el código en pequeñito. Los
+  códigos y QR pasan a ser una opción secundaria, y todos los antiguos siguen
+  funcionando (el contenido sigue en `/playlistShares/<code>`).
+- **Nuevo nodo `/choirs/<choirId>`** con el índice de playlists del coro y
+  `createdBy`, para que el panel pueda borrar coros y retocar nombres/fechas.
+  Reglas de RTDB añadidas (lectura pública enumerable, escritura por coro).
+- **Actualizar una playlist ya subida** deja de ser imposible: la app recuerda
+  el enlace con la nube (código + coro + firma de la lista) y ofrece
+  «Actualizar «X»» o «Subir como nueva». La cabecera dice si hay **cambios sin
+  guardar**. Cualquiera puede machacar la de otra persona con la contraseña
+  `coco`; si la subiste tú desde ese dispositivo, sin contraseña.
+- **Importar ya no interroga**: venir de un enlace, un QR o el coro reemplaza la
+  selección y deja **10 s de «Deshacer»** (canciones y enlace). El diálogo de
+  «reemplazar / añadir» se queda solo para los archivos `.mcm`. **Vaciar** pasa
+  a la cabecera, sin confirmación y con deshacer.
+- **Coro en vivo por coro, no por código**: se entra por el nombre del coro,
+  la sesión **caduca sola a las 24 h** desde que empezó (antes 2 semanas, y se
+  estiraba sola) y se puede tomar el mando — sin contraseña si eres el mismo
+  usuario desde otro dispositivo, con `coco` si es de otra persona.
+- **Enlaces nuevos**: `/playlist?coro=<id>` (importa siempre la última) y
+  `/coro?coro=<id>` (sesión en vivo). Reconocidos también por el escáner de QR.
+- Archivos: `utils/choirIds.ts`, `utils/playlistSync.ts`,
+  `services/choirDirectoryService.ts`, `services/choirSessionService.ts`,
+  `services/cloudPlaylistService.ts`, `hooks/usePlaylistSharing.ts`,
+  `hooks/useMyChoir.ts`, `hooks/usePlaylistLink.ts`,
+  `components/playlist/ChoirSheet.tsx`, `components/playlist/PlaylistHeaderBar.tsx`,
+  `app/screens/SelectedSongsScreen.tsx`, `app/playlist.tsx`, `app/coro.tsx`,
+  `database.rules.json`. Documentación: `docs/funcionalidades/COROS.md`.
+
+## 2026-08-12 19:40 — Rediseño de «Tu selección»: las playlists cuelgan de un coro
+
+- **Concepto nuevo: el coro es la entidad**. Se crea un coro («Coro Consolación
+  Castellón»), se elige una vez en el dispositivo y a partir de ahí las
+  playlists cuelgan de él. Importar la del domingo es **un toque** («Importar la
+  última»); el histórico enseña nombre, fecha y el código en pequeñito. Los
+  códigos y QR pasan a ser una opción secundaria, y todos los antiguos siguen
+  funcionando (el contenido sigue en `/playlistShares/<code>`).
+- **Nuevo nodo `/choirs/<choirId>`** con el índice de playlists del coro y
+  `createdBy`, para que el panel pueda borrar coros y retocar nombres/fechas.
+  Reglas de RTDB añadidas (lectura pública enumerable, escritura por coro).
+- **Actualizar una playlist ya subida** deja de ser imposible: la app recuerda
+  el enlace con la nube (código + coro + firma de la lista) y ofrece
+  «Actualizar «X»» o «Subir como nueva». La cabecera dice si hay **cambios sin
+  guardar**. Cualquiera puede machacar la de otra persona con la contraseña
+  `coco`; si la subiste tú desde ese dispositivo, sin contraseña.
+- **Importar ya no interroga**: venir de un enlace, un QR o el coro reemplaza la
+  selección y deja **10 s de «Deshacer»** (canciones y enlace). El diálogo de
+  «reemplazar / añadir» se queda solo para los archivos `.mcm`. **Vaciar** pasa
+  a la cabecera, sin confirmación y con deshacer.
+- **Coro en vivo por coro, no por código**: se entra por el nombre del coro,
+  la sesión **caduca sola a las 24 h** desde que empezó (antes 2 semanas, y se
+  estiraba sola) y se puede tomar el mando — sin contraseña si eres el mismo
+  usuario desde otro dispositivo, con `coco` si es de otra persona.
+- **Enlaces nuevos**: `/playlist?coro=<id>` (importa siempre la última) y
+  `/coro?coro=<id>` (sesión en vivo). Reconocidos también por el escáner de QR.
+- Archivos: `utils/choirIds.ts`, `utils/playlistSync.ts`,
+  `services/choirDirectoryService.ts`, `services/choirSessionService.ts`,
+  `services/cloudPlaylistService.ts`, `hooks/usePlaylistSharing.ts`,
+  `hooks/useMyChoir.ts`, `hooks/usePlaylistLink.ts`,
+  `components/playlist/ChoirSheet.tsx`, `components/playlist/PlaylistHeaderBar.tsx`,
+  `app/screens/SelectedSongsScreen.tsx`, `app/playlist.tsx`, `app/coro.tsx`,
+  `database.rules.json`. Documentación: `docs/funcionalidades/COROS.md`.
+
+## 2026-08-09 16:40 — Menú "..." del cantoral, eventos pasados y raya de sección
+
+- **El menú "..." del cantoral ya no se traga las opciones.** Cada opción es
+  "cierra la hoja y abre otra cosa" (código, coro, selector de archivos),
+  porque iOS no presenta dos modales a la vez: la acción viaja diferida hasta
+  que la hoja está cerrada del todo. Ese eslabón dependía en exclusiva del
+  `onDismiss` del `Modal`, y si no llegaba, la acción se perdía **en silencio**
+  — el menú entero parecía muerto (desde el estado vacío, sin hoja de por
+  medio, funcionaba: por eso el contraste). Ahora `BottomSheet` garantiza
+  `onCloseComplete` exactamente una vez por cierre, con red de seguridad si
+  `onDismiss` no aparece.
+- **Sin canciones seleccionadas, el menú deja de ofrecer lo imposible**:
+  desaparecen compartir mensaje, exportar PDF, subir playlist, exportar
+  archivo y vaciar. Se quedan las de IMPORTAR (código y archivo) y el modo
+  coro, que son las que tienen sentido con la playlist vacía.
+- **Entrar en un evento ARCHIVADO ya no te suscribe a sus avisos.** La
+  auto-suscripción es para eventos vivos; mirar un encuentro que ya pasó desde
+  "Más > Eventos pasados" no es pedir que te avisen. La campana sigue ahí para
+  activarlo a mano.
+- **Cantoral y Calendario estrenan su raya de color arriba** (amarilla y
+  celeste), como la roja de Fotos: identifica la sección aunque el header sea
+  transparente y no lleve título. `components/ui/TabTintBar.tsx`, iOS.
+- **+10 tests** sobre lo que se rompió sin que nadie se enterara: ciclo de vida
+  del `BottomSheet` (monta el Modal en el mismo render en que se abre, sigue
+  montado mientras se cierra, `onCloseComplete` una sola vez) y el menú de
+  acciones (ejecuta después de cerrar, respeta `disabled`, no pinta secciones
+  vacías). Suite en **593**.
+
+## 2026-08-09 04:10 — La hoja de multimedia se abre y el reproductor se VE
+
+Dos secuelas del arreglo de los bottom sheets, las dos reproducidas y
+verificadas en el simulador iOS:
+
+- **La ficha de multimedia del cantoral no se abría** (y era la única que
+  seguía sin hacerlo). No era la animación: el `Modal` no llegaba a montarse.
+  `BottomSheet` encendía `modalVisible` con un **setState en fase de render**, y
+  en pantallas que a su vez hacen su propio setState en fase de render —como el
+  detalle de canción, que resetea estado al cambiar de canción— ese update se
+  perdía: la hoja se quedaba con `visible` a true, sin `Modal`, y no aparecía
+  hasta que algo ajeno forzaba otro render. Ahora `modalVisible` es **derivado**
+  (`visible || closing`), que no se puede perder.
+- **En pantalla completa, los botones del reproductor quedaban debajo del
+  header.** El reproductor tapa toda la pantalla, pero el header del stack es
+  NATIVO y se pinta ENCIMA: la barra con YouTube / salir de pantalla completa /
+  cerrar caía justo debajo del botón de atrás y no había forma de tocarla. Ahora
+  reserva el alto de la barra de navegación además del inset. (No se usa
+  `useHeaderHeight()`: revienta si el reproductor se monta fuera de una pantalla
+  con header.)
+- **El reproductor flotante sonaba pero no se veía.** Nace justo cuando se está
+  desmontando el `Modal` de la hoja, y su estilo animado (que empieza en
+  `opacity: 0`) puede no llegar a aplicarse nunca: vídeo sonando, reproductor
+  invisible y sin forma de pararlo. La opacidad sale del estilo animado; la
+  entrada se queda en desplazamiento y escala, que si no se animan dejan el
+  reproductor perfectamente visible.
+
+**Sobre la duda que dejaba anotada la entrada de las 02:33** ("no es que en un
+`Modal` no corra Reanimated a secas"): confirmado con una vista de prueba que
+anima su opacidad de 0 a 1 dentro del propio `BottomSheet` —se queda invisible
+tras un reinicio limpio de la app—. La regla que encaja con todo lo visto es
+**`Modal` TRANSPARENTE**: ahí los estilos animados de Reanimated no se aplican;
+en un `Modal` opaco (el escáner de QR) sí. Está escrito en la cabecera de
+`BottomSheet.tsx`.
+
+**Y de la ronda de ajustes de UI**: el chip de "Hoy" del evangelio ahora dice
+**"Volver a hoy"** (parecía una etiqueta que anunciaba el día, no un botón), el
+mes y sus flechas en el calendario de Contigo van alineados (el `smallLabel`
+traía un `marginBottom` que descuadraba la fila) y el conmutador **Mes/Agenda
+ocupa todo el ancho** hasta el botón de suscribirse, calculado desde el ancho
+real de la ventana en vez de un número a ojo — así cuadra en cualquier pantalla
+y al girar.
+
+**Archivos**: `components/BottomSheet.tsx`,
+`components/song-media/FloatingMediaPlayer.tsx`,
+`app/(tabs)/contigo/{index,evangelio}.tsx`, `app/(tabs)/calendario.tsx`,
+`components/ui/SegmentedControl.tsx`.
+
+## 2026-08-09 02:33 — El marco del escáner de QR vuelve al centro de la pantalla
+
+La "ventana" por la que se apunta al QR estaba pegada al **borde inferior** de
+la pantalla, con las esquinas de abajo cortadas: en el JSX los paneles de
+penumbra iban en el orden `arriba` → `abajo` → `fila del hueco`, así que la fila
+con el hueco caía la última de la columna. Ahora van `arriba` → `hueco` →
+`abajo` y el marco queda centrado. Verificado en el simulador iOS.
+
+De paso, **revisados los dos ficheros que quedaban con Reanimated dentro de un
+`Modal`** tras el arreglo de los bottom sheets, y **los dos están bien**:
+`QrScannerModal` (el láser barre, las esquinas entran, los `entering={FadeIn}`
+de cabecera y pie acaban visibles) y `PreviewChannelModal` (el bucle de `phase`
+mueve gradientes y partículas). No hace falta migrarlos a `Animated`; queda
+anotado en la cabecera de cada uno. Es decir, el fallo del 02:14 **no** es "en
+un `Modal` no corre Reanimated" a secas — algo más específico le pasaba a
+`BottomSheet`, y conviene volver sobre ello antes de generalizar la regla.
+
+**Archivos**: `components/playlist/QrScannerModal.tsx`,
+`components/PreviewChannelModal.tsx`.
+
+## 2026-08-09 02:14 — Los bottom sheets vuelven a abrirse (y dejan de matar la pestaña)
+
+El fallo gordo: **cualquier hoja inferior de la app abría un `Modal` invisible
+que se comía todos los toques y dejaba la sección muerta hasta reiniciar** —
+suscribirse a calendarios, sugerir canción, la ficha multimedia del cantoral, el
+calendario de evangelios… Se reprodujo en simulador con binario nuevo, así que
+no era cuestión de una build vieja.
+
+**Causa**: la migración de `BottomSheet` a Reanimated (2026-08-03). Dentro de un
+`Modal` de React Native, las animaciones de Reanimated 4 **no llegan a correr**:
+la hoja se quedaba donde nacía (fuera de pantalla, fondo a opacidad 0) y el
+callback de la animación de cierre —que es quien desmonta el `Modal`— no se
+disparaba nunca. Las animaciones vuelven al `Animated` de React Native, con un
+aviso en el fichero para que no se vuelva a migrar sin comprobarlo.
+
+**Además:**
+
+- **"Subrayar" ya sale en el menú nativo de iOS.** Nunca había salido, y no era
+  (solo) el `.easignore`: `RCTUITextView` **ignora en silencio** cualquier
+  `setDelegate:` de fuera ("it cannot be changed from outside"), así que el
+  proxy del módulo `highlight-menu` no llegaba a instalarse. Ahora se pone
+  llamando a la implementación de `UITextView`, y se reintenta también en
+  `didAddSubview`. **Requiere binario nuevo** (no sale por OTA).
+- **Subrayar desde el menú nativo pinta ya**, con un color al azar que se
+  mantiene ~8 min (`utils/stickyHighlightColor.ts`): la barra de colores sale
+  con ese color marcado, así que elegir otro es opcional en vez de un toque de
+  peaje. 4 tests nuevos; suite en 583.
+- **Entrar en modo subrayar ya no despliega todas las lecturas**: las tarjetas
+  que tuvieras cerradas se quedan cerradas.
+- **Las lecturas ya no crecen solas.** El `TextInput` del texto llevaba una
+  altura puesta a mano desde `onContentSizeChange`, que se retroalimentaba (el
+  evangelio se hacía grande poco a poco) y al cambiar de día conservaba la
+  altura anterior (el salmo, corto, con medio folio en blanco). Ahora la mide
+  React Native con `scrollEnabled={false}`.
+- **Calendario de Contigo con meses.** El calendario de la home de Contigo
+  estaba clavado en el mes en curso y con los días futuros bloqueados: ahora
+  navega por meses (con atajo para volver al mes de hoy) y deja abrir días de
+  más adelante, que las lecturas se publican con antelación. Y en el evangelio,
+  un "Hoy" diminuto que solo aparece cuando estás mirando otro día.
+- **Mes/Agenda pasa al header** del tab Calendario (con el botón de
+  suscribirse), en vez de comerse una fila entera debajo. En el stack de "Más"
+  se queda como estaba (allí hay título y back).
+- **Cambiar de pestaña ya no reinicia el cantoral ni "Más"**: salías un momento
+  a Contigo y volvías a la lista de categorías con la canción perdida. Volver a
+  la raíz sigue siendo re-pulsar la pestaña activa. De paso desaparecen los
+  `POP_TO_TOP was not handled by any navigator` de la consola.
+
+**Archivos**: `components/BottomSheet.tsx`,
+`modules/highlight-menu/ios/HighlightMenuView.swift`,
+`utils/stickyHighlightColor.ts`, `hooks/useReadingHighlights.ts`,
+`components/contigo/{ReadingCard,HighlightableReading,HomeWidgets}.tsx`,
+`app/(tabs)/contigo/{index,evangelio}.tsx`, `app/(tabs)/calendario.tsx`,
+`app/(tabs)/{cancionero,mas}.tsx`, `components/ui/SegmentedControl.tsx`.
+
+## 2026-08-09 00:00 — Pantalla de "actualiza la app" rediseñada, con escape de gracia
+
+La pantalla de bloqueo por versión mínima (`MaintenanceScreen`, `mode="update"`)
+abría la Play Store en iOS cuando la app corría en web/PWA (`Platform.OS` daba
+`'web'`, no `'ios'`) y siempre enlazaba a la ficha web de la tienda en vez de
+abrir la app de la tienda directamente.
+
+**Lo que se ha hecho:**
+
+- **`utils/storeLinks.ts` (nuevo)**: `openAppStore()` detecta la plataforma
+  correcta también en web (mira el user-agent) y abre primero el esquema
+  nativo (`itms-apps://` / `market://`) para ir directo a la app de la tienda;
+  si no está disponible, cae al enlace https.
+- **`components/MaintenanceScreen.tsx`**: rediseño con animaciones
+  (Reanimated: halo pulsante, icono con rebote) y botón "Ir a la tienda ya"
+  más vistoso. Para `mode="update"` aparece a los 500ms un segundo botón
+  ("Voy pa'dentro") con emojis revoloteando que deja pasar sin actualizar
+  **por esta sesión** (`onSkip`).
+- **`contexts/VersionGateContext.tsx` (nuevo)**: centraliza `updateRequired` /
+  `updateSkipped` / `skipUpdate` / `openStore` para que tanto `_layout.tsx`
+  (decide si bloquea) como el header de Home puedan compartir el estado.
+- **`app/(tabs)/index.tsx`**: si el usuario salta la actualización obligatoria,
+  aparece un icono de "tienes que actualizar" en el header (mismo patrón que
+  el aviso de update OTA saltado) que abre la tienda directamente al tocarlo,
+  sin diálogo de por medio.
+
+**Archivos**: `utils/storeLinks.ts`, `contexts/VersionGateContext.tsx`,
+`components/MaintenanceScreen.tsx`, `app/_layout.tsx`, `app/(tabs)/index.tsx`
+
+---
+
+## 2026-08-08 23:15 — Inicio de sesión en Android: Google nativo, ya de verdad
+
+Android llevaba desde el 5 de junio con el cartel de **"Inicio de sesión
+próximamente"**: los botones estaban ocultos y el onboarding se saltaba el paso
+de login entero. Se acabó — **entrar con Google funciona en Android** igual que
+en iOS, y de paso la capa de auth queda mejor en las tres plataformas.
+
+**Lo que se ha hecho:**
+
+- **Fuera el aviso de "próximamente"**: `SocialLoginSection` pinta el botón de
+  Google en Android, y el onboarding vuelve a incluir el paso de login para los
+  perfiles monitor y miembro (el indicador de pasos vuelve a marcar 3).
+- **Apple no se pinta en Android** (no existe como proveedor nativo allí). La
+  disponibilidad se pregunta de verdad con `isAppleSignInAvailable()` en lugar
+  de deducirla de la plataforma, así que un iOS antiguo sin Apple Sign-In
+  tampoco vería un botón que no funciona.
+- **`utils/authErrors.ts` (nuevo)**: una sola tabla que traduce los códigos de
+  las tres capas —`12501`/`10`/`7` del módulo nativo de Google,
+  `ERR_REQUEST_CANCELED` de Apple, `auth/...` de Firebase— a códigos propios
+  con mensaje de usuario. Antes cualquier fallo era un genérico "No se pudo
+  iniciar sesión"; ahora el toast dice si falta conexión, si falta Google Play
+  Services, o si ese correo ya tiene cuenta con otro proveedor. Y una
+  cancelación sigue sin mostrar nada, que no es un error.
+- **La configuración de Google se garantiza antes del `signIn()`**
+  (`ensureGoogleSignInConfigured`), en vez de depender de que el efecto de
+  arranque de `AuthContext` hubiera terminado. En Android eso importa: sin
+  `webClientId` aplicado no llega `idToken` y Firebase no puede crear la
+  sesión. Si la variable falta directamente en el build, ahora falla con un
+  error explícito en lugar de en silencio.
+- **Carga perezosa del módulo nativo con `require`** en vez de `import()`
+  dinámico: mismo comportamiento en la app (Metro no hace code splitting) y
+  además testeable. Si el binario no trae el módulo, el mensaje es "actualiza
+  la app" en lugar de un fallo mudo.
+- **Logo real de Google** (SVG en sus cuatro colores) sustituyendo la "G" de
+  texto azul, y feedback háptico al entrar/fallar.
+- **28 tests nuevos** (`authErrors.test.ts`, `platformAuthNative.test.ts`):
+  suite en 579.
+
+**Configuración pendiente fuera del código:** hay que registrar en Firebase las
+huellas **SHA-1** del keystore de EAS y de Play App Signing, o Android falla con
+`DEVELOPER_ERROR`. Paso a paso en
+`docs/funcionalidades/LOGIN.md` (nuevo) y resumen en el §2.6 del documento de
+build de agosto.
+
+- Archivos: `utils/authErrors.ts` (nuevo), `utils/platformAuth.native.ts`,
+  `utils/platformAuth.ts`, `contexts/AuthContext.tsx`,
+  `components/SocialLoginSection.tsx`, `app/onboarding.tsx`,
+  `__tests__/authErrors.test.ts`, `__tests__/platformAuthNative.test.ts`,
+  `docs/funcionalidades/LOGIN.md`, `docs/desarrollo/BUILD_AGOSTO_2026.md`.
+- **Sin paquetes nativos nuevos**: todo lo que usa ya estaba en el binario.
+
+---
+
+## 2026-08-08 20:25 — Navegación a tabs: un hueco más y 50 tests nuevos
+
+Repaso del arreglo anterior. **Un hueco real que quedaba**: si el camino
+resuelto era "entra por Más" pero **"Más" tampoco tenía ruta** —el perfil no lo
+trae, o en iOS no cabe en la barra—, `router.push('/mas')` era otro no-op y el
+botón volvía a no hacer nada. Ahora `resolveTabRoute` comprueba que "Más" sea
+alcanzable antes de mandar por ahí y, si no lo es, devuelve el intento directo:
+en Android/web funciona y en iOS no había camino de todas formas.
+
+De paso, la condición "¿tiene ruta este tab?" se unificó en un solo predicado
+(`hasRoute`) en vez de repartirse entre tres ramas: en iOS los tabs de la barra,
+en Android/web los visibles del perfil.
+
+**Cobertura: +50 tests en 4 ficheros nuevos**, con barridos exhaustivos en vez de
+casos sueltos —el bug original vivía justo en una combinación que nadie había
+recorrido—:
+
+- `__tests__/tabNavigationInvariants.test.ts` (16): los **2^8 = 256 perfiles
+  posibles × 3 plataformas**, comprobando que ningún tab visible se queda sin
+  camino. Y dos invariantes atadas al código real: que cada espejo de
+  `MAS_STACK_MIRROR` esté **registrado de verdad** en `mas.tsx` (se lee el
+  fuente, incluido lo que entra por `renderEventScreens`), y que **todo tab que
+  pueda caer en overflow tenga espejo** — sin él, en iOS es inalcanzable.
+- `__tests__/useTabNavigation.test.tsx` (14): el cableado del hook con `router`
+  mockeado — qué `push` sale y qué destino pendiente queda apuntado, incluido que
+  no se ensucien los buzones.
+- `__tests__/pendingNavigation.test.ts` (9): el contrato de los dos buzones de
+  navegación pendiente (un solo uso, el nuevo pisa al viejo, independientes).
+- `__tests__/splitTabsForBar.test.ts` (11): la premisa de todo, que no tenía
+  tests propios — barra + overflow = los visibles sin perder ni duplicar, "mas"
+  nunca en overflow, el orden lo manda `TABS_CONFIG` y no el perfil.
+
+Suite: 60 ficheros, **551 tests** en verde (antes 56 / 501).
+
+---
+
+## 2026-08-08 19:40 — La Home ya no se equivoca de camino al ir a un tab
+
+**Bug:** desde la Home, la tarjeta de un evento próximo y el botón "Ver
+calendario" no llevaban al calendario. La causa: `navigateToCalendar` decidía el
+camino con `Platform.OS === 'ios'` y entraba **siempre** por el stack de "Más".
+
+Y eso solo acierta a veces. En iOS `IOSTabsLayout` crea un `NativeTabs.Trigger`
+**solo por cada tab que cabe en la barra**, así que para un tab de overflow
+`router.push('/calendario')` no falla: no hace nada. En Android y web están
+registrados TODOS los tabs visibles del perfil, y allí el push directo siempre
+vale. Y **qué tabs caben depende del perfil y de si hay evento en curso**: con
+evento el calendario cae en overflow (y pasar por "Más" es lo correcto), sin
+evento está en la barra (y pasar por "Más" aterriza en el tab equivocado, o en
+ningún sitio si el perfil no tiene "Más").
+
+Ahora eso lo resuelve un sitio, no cada botón a su manera:
+
+- **`utils/tabNavigation.ts`** (puro, con tests): `resolveTabRoute` responde
+  "¿ruta propia o entro por Más?" mirando el reparto REAL de la barra
+  (`splitTabsForBar`), y `MAS_STACK_MIRROR` es la **fuente única** de qué tab
+  tiene pantalla espejo en "Más".
+- **`hooks/useTabNavigation.ts`**: `goToTab(tab, params?)` y
+  `goToEventScreen(pantalla, params?)`.
+- **Home**: el botón de calendario, las tarjetas de eventos próximos, el banner
+  del evento activo y el CTA "Evalúa la actividad" pasan por ahí. De paso, dos
+  cosas que estaban a fuego: el banner del evento hacía `router.push('/visitapapa')`
+  ignorando el `tabId` del perfil, y el acceso de Fotos entraba por "Más" incluso
+  siendo Fotos un tab de la barra.
+- **`MasHomeScreen`**: sus tarjetas de overflow usaban su propia lista de espejos
+  (`OVERFLOW_STACK_TARGETS`, sin `comunica`) — ahora usan la compartida, y el tab
+  del evento resuelve al hub con su `eventId` en vez de a una ruta que en iOS no
+  existe.
+
+**Umbral de `max-lines`: 400 → 1.000** (y la guía de "trocear de verdad" 600 →
+1.500), en `eslint.config.js` y `CLAUDE.md`. Con agentes de IA leyendo el código,
+un archivo largo pero coherente cuesta menos que la misma lógica repartida en
+seis ficheros. **Los gigantes se quedan**: la Fase 1 de `PLAN_CALIDAD.md` se
+cierra por decisión, no por completada. Avisos de lint: 88 → 60.
+
+**Nuevos**: `utils/tabNavigation.ts`, `hooks/useTabNavigation.ts`,
+`__tests__/tabNavigation.test.ts` (10 tests). **Modificados**:
+`app/(tabs)/index.tsx`, `app/screens/MasHomeScreen.tsx`, `eslint.config.js`,
+`CLAUDE.md`, `docs/desarrollo/TABS_MAINTENANCE.md`, `docs/planes/PLAN_CALIDAD.md`.
+Suite: 56 ficheros, 501 tests en verde.
+
+---
+
+## 2026-08-08 18:15 — Cuatro cosas pedidas que seguían sin estar `[skip-ota]`
+
+### El ítem "Subrayar" del menú nativo NUNCA llegó a un binario (causa raíz)
+
+El código estaba desde el 3 de agosto, pero **`.easignore` se comía las fuentes
+nativas del módulo**. Es el mismo agujero que se arregló en `.gitignore` el 3 de
+agosto (`a280e9d`) y que allí se quedó: reglas `ios/` y `android/` **sin barra
+inicial**, que casan con cualquier carpeta con ese nombre a cualquier
+profundidad. Y `.easignore`, cuando existe, **sustituye** a `.gitignore` para
+decidir qué sube a EAS, así que arreglarlo allí no arreglaba esto.
+
+Resultado: `modules/highlight-menu/` subía con su `expo-module.config.json` y su
+JS pero **sin Swift, sin Kotlin, sin podspec ni `build.gradle`**. Autolinking lo
+saltaba en silencio y todas las builds salieron sin el ítem del menú.
+Comprobación de que no vuelve (no debe imprimir nada), añadida a
+`docs/desarrollo/BUILD_AGOSTO_2026.md` §3:
+
+```bash
+git -c core.excludesFile=.easignore check-ignore -v --no-index \
+  modules/highlight-menu/ios/HighlightMenuView.swift \
+  modules/highlight-menu/android/build.gradle
+```
+
+Encima, tres cosas más del módulo:
+
+- **Degradación limpia si el módulo no está en el binario.**
+  `requireNativeView` NO lanza cuando falta: devuelve un componente cuyo nombre
+  de vista nativa no existe y React Native lo sustituye por su placeholder de
+  "componente sin implementar" — y como esta vista **envuelve** el texto de la
+  lectura, eso se llevaba por delante el render del texto. Ahora se pregunta con
+  `requireOptionalNativeModule` y sin módulo se renderiza un `View` pelado.
+- **Reenganche en iOS y Android.** React Native se reasigna el delegate (iOS) y
+  el `customSelectionActionModeCallback` (Android) al recrear el texto, así que
+  con el enganche de una sola vez el ítem desaparecía en cuanto el texto se
+  volvía a montar (cambio de día, de tamaño de letra, de modo) y no volvía hasta
+  reiniciar la app. `attachIfNeeded` compara ahora con lo que hay puesto y nunca
+  encadena dos proxies nuestros.
+
+### Subrayar: seleccionas, tocas el lápiz y salen los colores
+
+`HighlightableReading` solo reportaba la selección **dentro** del modo lápiz, así
+que al entrar en el modo la barra decía "selecciona un texto" aunque hubiera
+texto seleccionado, y no reaccionaba hasta mover las asas un pelo. Ahora la
+reporta siempre que el texto sea un `TextInput` (en iOS, los dos modos). En
+Android leyendo sigue siendo un `Text selectable`, que no da offsets: allí el
+atajo es el ítem del menú nativo.
+
+De paso, un bug que sacó el test nuevo: una selección hecha **de derecha a
+izquierda** se descartaba como vacía (`end > start` en vez de `end !== start`; el
+`Math.min`/`Math.max` de al lado era código muerto).
+
+### Calendario: fuera el título del header
+
+Volvió en la pasada del 7 de agosto y se comía el sitio del conmutador
+Mes/Agenda, chocando con el botón de suscribirse. El **título lo pone ahora cada
+anfitrión**, no la pantalla: en el tab no hay (`headerTitle: ''`), en el stack de
+"Más" sí, porque allí es una pantalla apilada con su back. Y el cuerpo reserva la
+altura real del header (`useHeaderHeight()`) en iOS, donde es transparente: antes
+solo dejaba el hueco de la barra de estado y el contenido se metía debajo.
+
+### Reproductor de audio/vídeo del cantoral
+
+Cadena revisada de punta a punta y cubierta con tests (`songMediaFlow.test.tsx`):
+la hoja avisa bien y el reproductor monta el embed correcto. Encima, tres cosas
+que sí podían dejarlo en "no hace nada":
+
+- **El reproductor nace cuando la hoja ya está DESMONTADA** (`onCloseComplete`,
+  el gancho que el propio `BottomSheet` documenta para esto). En iOS la hoja es
+  un `Modal` en su propia ventana: aparecer por debajo dejaba el reproductor
+  tapado y el WebView arrancando en una ventana que no se ve.
+- **El PiP de audio pasa de 64 a 116pt de alto.** El iframe de `/preview` de
+  Drive pinta su propia cabecera encima de los controles: con 64 se veía una
+  franja negra **sin el botón de play**.
+- **Nunca es un callejón sin salida.** Se muestra "cargando", y si el embed falla
+  (`onError`/`onHttpError`) sale un "toca para abrirlo fuera". El audio gana
+  además su botón de abrir en Drive en la barra, que solo tenía el vídeo.
+
+**Modificados**: `.easignore`, `modules/highlight-menu/` (JS + Swift + Kotlin),
+`components/contigo/HighlightableReading.tsx`, `hooks/useReadingHighlights.ts`,
+`app/(tabs)/calendario.tsx`, `app/screens/SongDetailScreen.tsx`,
+`components/song-media/{SongMediaSheet,FloatingMediaPlayer}.tsx`,
+`__tests__/{highlightSelection,songMediaFlow}.test.tsx`,
+`docs/funcionalidades/SUBRAYADO.md`, `docs/desarrollo/BUILD_AGOSTO_2026.md`.
+Suite: 55 ficheros, 491 tests en verde.
+
+> ⚠️ **El ítem "Subrayar" del menú nativo necesita BUILD DE TIENDA.** Es código
+> nativo: por OTA no va. El commit lleva `[skip-ota]`. Lo demás (lápiz,
+> calendario, reproductor) sí sale por OTA.
+
+---
+
+## 2026-08-08 02:20 — Escáner de QR para importar playlists y unirse al coro `[skip-ota]`
+
+Hasta ahora los QR que genera la app (`ShareQrModal`) solo se podían leer con la
+cámara del sistema. Ahora se escanean **desde dentro**, en los dos diálogos en
+los que se teclea un código: "Importar playlist con código" y "Unirse al coro".
+
+- **Botón "Escanear QR"** en `CodeInputModal`, solo en las variantes
+  `cloud-download` y `choir-join` (en las que uno GENERA el código no hay nada
+  que escanear). Al leerlo se rellena y se envía solo: cero toques extra.
+- **Lee los tres formatos** que produce la app: playlist en la nube
+  (`/playlist?p=`), sesión de coro (`/coro?c=`) y playlist **sin conexión**
+  (`mcmapp://playlist?d=`, con las canciones embebidas — se resuelve contra el
+  catálogo cacheado, igual que el deep link). También acepta un QR con solo los
+  4 dígitos.
+- **Si el QR es del otro flujo** (enseñas el del coro en "importar playlist") no
+  se cierra la cámara: sale un aviso y se sigue escaneando.
+- **Animaciones**: el marco se dibuja esquina a esquina al abrir, un láser
+  barre el hueco mientras busca, y al encontrarlo hay fogonazo verde, check,
+  confeti (`CelebrationBurst`) y háptica de éxito antes de continuar.
+- **Nueva dependencia NATIVA: `expo-camera`** → este cambio **NO puede ir por
+  OTA**, necesita build de tienda. El commit lleva `[skip-ota]`. Aun así el
+  módulo se carga con `require` dentro de un try/catch: si una OTA llegase a un
+  binario antiguo, el botón simplemente no aparece en lugar de crashear.
+- **Sin escáner en web**: ahí `expo-camera` depende del navegador y el enlace
+  del QR se puede pinchar directamente.
+- Archivos: `components/playlist/QrScannerModal.tsx`,
+  `components/playlist/QrScanFrame.tsx`,
+  `components/playlist/qrScannerStyles.ts`, `utils/qrScan.ts` (+ tests),
+  `components/playlist/CodeInputModal.tsx` (estilos extraídos a
+  `codeInputModalStyles.ts` para no pasar de 400 líneas),
+  `app/screens/SelectedSongsScreen.tsx`, `app.json`.
+
+## 2026-08-08 01:55 — El modo tester (Laboratorio Alpha) por fin recibe OTAs de `preview`
+
+El modo alpha nunca llegó a funcionar. El intento anterior (2026-07-22) lo dejó
+dependiendo de una build de tienda que no salió, y aun con ella habría seguido
+sin funcionar bien. **Esta vez el arreglo va entero por OTA**: no hace falta
+build nativa.
+
+- **Causa raíz — API equivocada.** Se usaba
+  `Updates.setUpdateURLAndRequestHeadersOverride()`, que (1) exige
+  `updates.disableAntiBrickingMeasures: true` **en el binario** —config nativa,
+  imposible de activar por OTA— y (2) aun con el flag, el override no surte
+  efecto hasta cerrar y reabrir la app del todo, así que el
+  `checkForUpdateAsync()` de esa sesión seguía yendo a `production`.
+- **Fix — `Updates.setUpdateRequestHeadersOverride()`** (expo-updates ≥ 29;
+  aquí 57.x). Sobreescribe solo la cabecera `expo-channel-name`, que es todo lo
+  que hace falta. No necesita `disableAntiBrickingMeasures`, **muta la
+  configuración viva** (el check inmediato ya va al canal nuevo) y se persiste
+  en nativo, así que el chequeo del arranque también sale por `preview`.
+  Funciona en cualquier build de EAS, incluida la que ya está en las tiendas.
+- **`updates.disableAntiBrickingMeasures` se queda en `app.json` de momento, a
+  propósito.** Ya no hace falta y conviene quitarlo (quita la protección que
+  garantiza poder publicar un update que arregle un update roto; Expo
+  desaconseja activarlo en tienda), pero **tocar `app.json` dispara el
+  `guard-native` de `ota-production.yml`**, que obliga a `[skip-ota]` y con eso
+  se saltaría la OTA entera — es decir, este arreglo no llegaría a los móviles
+  ya instalados, que es justo el fallo que venimos a corregir. Quitarlo no tiene
+  ningún efecto hasta la próxima build nativa, así que va a la bolsa nativa de
+  `TODO.md` en vez de viajar con este cambio. El código funciona igual con el
+  flag puesto o quitado.
+- **Se acabó el fallo silencioso.** Antes todos los errores morían en un
+  `logger.warn`: la palanca se movía, el pie ponía "· alpha" y el dispositivo
+  seguía en `production`, sin ninguna señal. Ahora el modal cuenta qué ha pasado
+  (cambiando / descargado / sin conexión / no soportado y por qué) y enseña un
+  bloque de diagnóstico con el **canal realmente en uso** (`Updates.channel`),
+  el canal tras reiniciar, la runtime version y el bundle. Si no se puede
+  aplicar el canal, el flag **se revierte** en vez de mentir.
+- **Se busca y descarga el update al momento**, con botón de "reiniciar y
+  estrenarlo" en el propio modal, en vez de esperar al siguiente arranque.
+- **Reconciliación en cada arranque, en las dos direcciones**: con el flag
+  apagado se limpia el override explícitamente, para que nadie se quede
+  atrapado en `preview` por un override heredado. También se limpia, si el
+  binario lo permite, el override de URL que dejaba la versión antigua.
+- **`OTAProvider` espera a que el canal esté reconciliado** antes de su primera
+  comprobación (`useOTAUpdate({ ready })`): si no, la búsqueda de updates podía
+  ganarle la carrera al override y pedirle el bundle a `production`.
+- **La palanca.** No se ha podido reproducir el fallo sin dispositivo, así que
+  la causa exacta no está confirmada. Lo que había: un `useSharedValue` escrito
+  desde un `useEffect` colgado de la prop `active`, o sea que la palanca solo se
+  movía cuando el estado del contexto daba la vuelta completa. Pasa a un
+  `useDerivedValue` declarativo de `active` —la forma canónica de animar desde
+  una prop en Reanimated, sin efecto de por medio—, el estado cambia de forma
+  optimista antes de tocar la red, y el press da respuesta táctil inmediata.
+  Además el knob deja de depender de cómo resuelve Yoga un hijo absoluto sin
+  `left`. Si el cambio de canal se revierte, la palanca vuelve sola: esa vuelta
+  ES la señal de que no ha cuajado.
+- **Nuevos**: `services/previewChannel.ts` (mecánica aislada y testeable),
+  `components/preview-channel/LabStatusPanel.tsx`,
+  `__tests__/previewChannel.test.ts` (15 tests), y
+  `docs/funcionalidades/CANAL_PREVIEW.md` con la prueba de humo y el porqué del
+  fallo anterior. Suite completa: 42 ficheros, 405 tests verdes.
+- **Modificados**: `contexts/PreviewChannelContext.tsx`, `contexts/OTAContext.tsx`,
+  `hooks/useOTAUpdate.ts`, `components/PreviewChannelModal.tsx`,
+  `components/preview-channel/GiantLever.tsx`, `TODO.md`, `docs/README.md`.
+  **Ni un solo fichero de ruta nativa**: el arreglo sale entero por OTA.
+
+## 2026-08-08 01:55 — El modo tester (Laboratorio Alpha) por fin recibe OTAs de `preview`
+
+El modo alpha nunca llegó a funcionar. El intento anterior (2026-07-22) lo dejó
+dependiendo de una build de tienda que no salió, y aun con ella habría seguido
+sin funcionar bien. **Esta vez el arreglo va entero por OTA**: no hace falta
+build nativa.
+
+- **Causa raíz — API equivocada.** Se usaba
+  `Updates.setUpdateURLAndRequestHeadersOverride()`, que (1) exige
+  `updates.disableAntiBrickingMeasures: true` **en el binario** —config nativa,
+  imposible de activar por OTA— y (2) aun con el flag, el override no surte
+  efecto hasta cerrar y reabrir la app del todo, así que el
+  `checkForUpdateAsync()` de esa sesión seguía yendo a `production`.
+- **Fix — `Updates.setUpdateRequestHeadersOverride()`** (expo-updates ≥ 29;
+  aquí 57.x). Sobreescribe solo la cabecera `expo-channel-name`, que es todo lo
+  que hace falta. No necesita `disableAntiBrickingMeasures`, **muta la
+  configuración viva** (el check inmediato ya va al canal nuevo) y se persiste
+  en nativo, así que el chequeo del arranque también sale por `preview`.
+  Funciona en cualquier build de EAS, incluida la que ya está en las tiendas.
+- **`updates.disableAntiBrickingMeasures` se queda en `app.json` de momento, a
+  propósito.** Ya no hace falta y conviene quitarlo (quita la protección que
+  garantiza poder publicar un update que arregle un update roto; Expo
+  desaconseja activarlo en tienda), pero **tocar `app.json` dispara el
+  `guard-native` de `ota-production.yml`**, que obliga a `[skip-ota]` y con eso
+  se saltaría la OTA entera — es decir, este arreglo no llegaría a los móviles
+  ya instalados, que es justo el fallo que venimos a corregir. Quitarlo no tiene
+  ningún efecto hasta la próxima build nativa, así que va a la bolsa nativa de
+  `TODO.md` en vez de viajar con este cambio. El código funciona igual con el
+  flag puesto o quitado.
+- **Se acabó el fallo silencioso.** Antes todos los errores morían en un
+  `logger.warn`: la palanca se movía, el pie ponía "· alpha" y el dispositivo
+  seguía en `production`, sin ninguna señal. Ahora el modal cuenta qué ha pasado
+  (cambiando / descargado / sin conexión / no soportado y por qué) y enseña un
+  bloque de diagnóstico con el **canal realmente en uso** (`Updates.channel`),
+  el canal tras reiniciar, la runtime version y el bundle. Si no se puede
+  aplicar el canal, el flag **se revierte** en vez de mentir.
+- **Se busca y descarga el update al momento**, con botón de "reiniciar y
+  estrenarlo" en el propio modal, en vez de esperar al siguiente arranque.
+- **Reconciliación en cada arranque, en las dos direcciones**: con el flag
+  apagado se limpia el override explícitamente, para que nadie se quede
+  atrapado en `preview` por un override heredado. También se limpia, si el
+  binario lo permite, el override de URL que dejaba la versión antigua.
+- **`OTAProvider` espera a que el canal esté reconciliado** antes de su primera
+  comprobación (`useOTAUpdate({ ready })`): si no, la búsqueda de updates podía
+  ganarle la carrera al override y pedirle el bundle a `production`.
+- **La palanca.** No se ha podido reproducir el fallo sin dispositivo, así que
+  la causa exacta no está confirmada. Lo que había: un `useSharedValue` escrito
+  desde un `useEffect` colgado de la prop `active`, o sea que la palanca solo se
+  movía cuando el estado del contexto daba la vuelta completa. Pasa a un
+  `useDerivedValue` declarativo de `active` —la forma canónica de animar desde
+  una prop en Reanimated, sin efecto de por medio—, el estado cambia de forma
+  optimista antes de tocar la red, y el press da respuesta táctil inmediata.
+  Además el knob deja de depender de cómo resuelve Yoga un hijo absoluto sin
+  `left`. Si el cambio de canal se revierte, la palanca vuelve sola: esa vuelta
+  ES la señal de que no ha cuajado.
+- **Nuevos**: `services/previewChannel.ts` (mecánica aislada y testeable),
+  `components/preview-channel/LabStatusPanel.tsx`,
+  `__tests__/previewChannel.test.ts` (15 tests), y
+  `docs/funcionalidades/CANAL_PREVIEW.md` con la prueba de humo y el porqué del
+  fallo anterior. Suite completa: 42 ficheros, 405 tests verdes.
+- **Modificados**: `contexts/PreviewChannelContext.tsx`, `contexts/OTAContext.tsx`,
+  `hooks/useOTAUpdate.ts`, `components/PreviewChannelModal.tsx`,
+  `components/preview-channel/GiantLever.tsx`, `TODO.md`, `docs/README.md`.
+  **Ni un solo fichero de ruta nativa**: el arreglo sale entero por OTA.
+
+## 2026-08-07 12:40 — Calendario deslizable, racha de 7 días interactiva y header de Fotos
+
+- **Calendario (tab):** el mes ahora se desliza de verdad. El mes visible pasa a
+  ser estado propio (`visibleMonth`), separado del día seleccionado; el swipe
+  sigue al dedo y, al soltar, la rejilla sale por un lado mientras la nueva
+  entra por el otro (`components/calendar/SwipeableMonthCalendar.tsx`, con
+  `react-native-gesture-handler` + reanimated). Antes el gesto movía la lista de
+  eventos pero la rejilla se quedaba clavada: `react-native-calendars` trata
+  `current` como valor inicial, no reactivo. Las flechas del header usan la
+  misma animación. La vista Agenda gana también swipe de mes.
+- **Orden de calendarios:** el calendario de la delegación del perfil sale
+  SIEMPRE el primero (los IDs de delegación y de calendario coinciden), después
+  los `defaultCalendars` del perfil y luego el resto en el orden de Firebase.
+  `CalendarConfig` incorpora `id` (`hooks/useCalendarConfigs.ts`).
+- **Contigo — racha semanal:** la tira pasa de "lunes a domingo" a los
+  **últimos 7 días** terminando en hoy (`getRollingDays`), así el lunes por la
+  mañana ya no aparece vacía. Cada día es pulsable.
+- **Contigo — días interactivos:** pulsar un día (en la racha o en el
+  calendario del mes) abre lo que haya guardado; si hay varias cosas, sale un
+  submenú (`components/contigo/DayActionSheet.tsx` + `hooks/useContigoDayMenu.ts`)
+  para elegir entre revisión, oración y evangelio. Si no hay nada guardado va
+  directo al evangelio de ese día, y ahora cualquier día pasado del calendario
+  es pulsable (antes solo los que tenían algo marcado).
+- **Fotos:** header nativo transparente (blur en iOS, barra semitransparente en
+  Android/Web) SIN texto de título; las portadas pasan por debajo y se funden
+  con él al deslizar, como en el cantoral.
+
+---
+
+## 2026-08-06 20:10 — Limpieza: 6 módulos sin importador y deps sin uso (Plan 015)
+
+- Borrados `components/SongSearch.tsx`, `components/ExternalLink.tsx`,
+  `components/ui/AppIconButton.tsx`, `components/ui/CloseIconButton.tsx`,
+  `components/ui/GlassCard.tsx`, `hooks/useUnreadNotificationsCount.ts` —
+  cero imports verificados. `TODO.md` tenía trabajo pendiente asignado a
+  `AppIconButton` (inejecutable, nadie lo montaba); quitada la referencia.
+  `CLAUDE.md` ya no los lista como vivos.
+- Manifest: fuera `ts-jest`, `copy-webpack-plugin`, `tailwind-merge`,
+  `tailwind-variants` (sin uso); `@expo/config` movido a devDependencies
+  (solo build-time, `app.config.ts`).
+- **⚠️ Cambio nativo**: `expo-system-ui` se quitó (sin uso, confirmado
+  contra `expo-doctor` y `expo config`) — este paso requiere **build de
+  producción** antes del próximo merge a `production` (el commit lleva
+  `[skip-ota]`).
+- `expo-insights` (EAS Insights) se quitó primero por el mismo motivo
+  (sin uso), pero se decidió reincorporarlo: no necesita ningún código —
+  con el paquete instalado, EAS manda automáticamente eventos de
+  cold-start del app al dashboard "Insights" en el próximo build. También
+  es cambio nativo, mismo aviso de build de producción.
+
+## 2026-08-06 19:45 — Refactor: las escrituras de UI a Firebase ganan retry (Plan 014)
+
+Las escrituras estaban repartidas por ~10 archivos, cada uno repitiendo el
+ritual `getDatabase(getFirebaseApp())` → `ref` → `push`/`set` a mano, sin
+ningún reintento — a diferencia de las lecturas (`useFirebaseData`), que ya
+tenían `withRetry` con backoff. Una evaluación o un reporte de bug enviados
+con wifi flojo se perdían con un toast de error, sin más.
+
+- Nueva costura `services/firebaseWrites.ts`: `pushWithRetry`/`setWithRetry`.
+  La key de `push()` se genera UNA vez y solo se reintenta el `set`
+  (idempotente).
+- Migrados: `AppFeedbackModal`, `ReportBugsModal`, `SuggestSongModal`,
+  `EvaluacionScreen`, `EvaluacionAppScreen`, `SurveyScreen`, `SongDetailScreen`
+  (fallitos + ediciones de arreglos), `ReflexionesScreen` (su `update()`
+  multi-path se conserva tal cual, solo gana retry). Rutas y payloads
+  idénticos a los previos.
+- `WordleScreen` (congelado) y `SecretPanelModal` (lógica de escritura
+  demasiado grande para la primitiva sin reordenar el archivo — gigante ya
+  planificado en `PLAN_CALIDAD.md`) quedan fuera, a propósito.
+- Corregida la frase falsa de `CLAUDE.md` ("Único punto de escritura:
+  ReflexionesScreen").
+
+## 2026-08-06 19:20 — Fix: poda la caché de lecturas diarias (crecía sin tope) (Plan 012)
+
+`useDailyReadings` cacheaba cada día bajo su propia clave AsyncStorage y
+nada la podaba nunca: un usuario diario acumulaba una clave por día para
+siempre (varios MB al año), degradando el SQLite de AsyncStorage en Android.
+El nodo remoto además se purga a 30 días, así que la copia local vieja podía
+servir lecturas que el scraper ya había corregido.
+
+- Nuevo `utils/dailyReadingsCache.ts`: `selectKeysToPrune` (pura) +
+  `pruneDailyReadingsCache` (IO, se traga errores — la poda nunca rompe la
+  carga de lecturas). Retención de 60 días.
+- `useDailyReadings` dispara la poda UNA vez por sesión (fire-and-forget,
+  sin bloquear el primer render) y gana el guard `isMounted` que le faltaba
+  en el camino de caché.
+- Los guardados del usuario no dependen de esta caché (los bookmarks llevan
+  su propia copia del texto) — la poda no puede perder datos.
+- Archivos: `hooks/useDailyReadings.ts`, `utils/dailyReadingsCache.ts`.
+
+## 2026-08-06 19:05 — Perf: calendario litúrgico recortado a ventana rodante (−280 KB de bundle) (Plan 011)
+
+`components/contigo/LiturgicalBadge.tsx` importaba estáticamente
+`assets/calendario-liturgico.json`: 318 KB cubriendo 2025→2100, de los que
+más del 95% no se usará en años. Metro inlinea ese JSON en el bundle JS, así
+que cada OTA lo descargaba entero y cada arranque lo evaluaba.
+
+- La tabla completa se preserva en `assets/calendario-liturgico-completo.json`
+  (sin ningún import — no pesa en el bundle).
+- `assets/calendario-liturgico.json` (el que sí importa el badge, mismo
+  nombre) ahora es una ventana rodante de 5 años (actual −1 … actual +3):
+  20,9 KB.
+- Nuevo `npm run liturgical:window` (`scripts/generate-liturgical-window.js`)
+  regenera la ventana; idempotente.
+- Test de vigencia (`__tests__/liturgicalWindow.test.ts`): falla en CI con
+  instrucciones si la ventana está a punto de caducar.
+- `LiturgicalBadge.tsx` no cambia — mismo import, mismo nombre de archivo.
+
+## 2026-08-06 18:45 — Perf: ICS del calendario en paralelo + ventana de frescura de 5 min (Plan 008)
+
+Los calendarios ICS se descargaban en SERIE (`await fetch` dentro de un
+`for`), así que el tiempo hasta calendario fresco era la suma de los
+round-trips en vez del máximo — con el proxy caído, el doble. Además el
+hook revalidaba TODO en cada montaje sin ninguna ventana de frescura: un
+paseo Home→Calendario→Home re-descargaba y re-parseaba todos los ICS.
+
+- Descarga con `Promise.allSettled` en paralelo, preservando el índice
+  posicional de `calendarIndex` (el merge recorre `results` en orden).
+- Ventana de frescura de 5 min por lista de URLs: un resultado completo
+  reciente evita relanzar la descarga; un resultado parcial NO cuenta como
+  fresco (el siguiente montaje sí revalida).
+- La semántica de persistencia (completo→disco, parcial→según caché) no
+  cambia.
+- Tests nuevos en `__tests__/useCalendarEvents.test.ts`.
+- Archivo: `hooks/useCalendarEvents.ts`.
+
+## 2026-08-06 18:25 — Perf: `useFirebaseData` deja de re-transformar y re-renderizar sin cambios (Plan 007)
+
+Tras la fase remota, el hook releía la caché y aplicaba `transform`
+incondicionalmente, aunque el refresh hubiera salido por la vía rápida (el
+`updatedAt` remoto coincide con el local, `parsed` es el MISMO objeto). Como
+el transform crea un objeto nuevo, cada ciclo de navegación disparaba un
+re-render y recomputaba todo `useMemo` aguas abajo para cero cambio visible
+— en el cantoral, con 3 consumidores vivos del nodo `songs` y dos pasando
+`filterSongsData` (copia + filtra el corpus entero), el coste es real.
+
+- Memo por instancia (`useRef`, no en la caché de módulo compartida): si el
+  `parsed` crudo no cambió de identidad entre la fase caché y la
+  post-refresh, se reutiliza el resultado del transform en vez de
+  re-ejecutarlo.
+- Test de regresión: `__tests__/useFirebaseData.test.ts` (verificado que
+  falla contra el código anterior).
+- Archivo: `hooks/useFirebaseData.ts`.
+
+## 2026-08-06 18:10 — Fix: serializa las escrituras concurrentes de historial de notificaciones y subrayados (Plan 006)
+
+Varios módulos hacían el ciclo `getItem → mutar → setItem` sobre la misma
+clave de AsyncStorage sin ninguna serialización: dos pushes casi
+simultáneos, o el merge remoto de bookmarks al iniciar sesión corriendo
+mientras el usuario subraya, podían intercalar sus escrituras — el segundo
+`setItem` pisaba con una copia obsoleta y el cambio del primero
+desaparecía en silencio (notificaciones que se esfuman del historial,
+subrayados perdidos).
+
+- Nuevo `utils/storageMutex.ts` (`withStorageLock`): mutex por clave, una
+  cadena de promesas por detrás de los helpers de escritura.
+- Envuelve `saveReceivedNotificationLocally`, `markNotificationAsRead` y
+  `markAllNotificationsAsRead` (clave `@mcm_notifications_history`) y
+  `upsertLocalBookmark`, `removeLocalBookmark`, `mergeRemoteBookmarks`
+  (clave `@contigo_bookmarks`). Las firmas públicas no cambian.
+- Tests de concurrencia real: dos escrituras sin `await` entre ellas ya no
+  se pierden ninguna (`__tests__/storageMutex.test.ts`,
+  `__tests__/contigoBookmarks.test.ts`,
+  `__tests__/pushNotificationServiceStorage.test.ts`).
+
+## 2026-08-06 17:50 — Tests de `cloudPlaylistService` + movimiento de playlist atómico (Plan 005)
+
+`cloudPlaylistService` es el único sitio de la app donde se borran datos de
+usuario en la nube (playlists compartidas por código de 4 dígitos) y no
+tenía ningún test, a diferencia de su gemelo `choirSessionService`. Además
+`changeCloudPlaylistCode` movía la playlist en dos pasos no atómicos
+(subir al nuevo código, luego borrar el viejo): si el borrado fallaba
+quedaban dos copias vivas.
+
+- 13 tests nuevos (`__tests__/cloudPlaylistService.test.ts`): validación de
+  código, borrado perezoso de caducadas (incluido el caso "vigente → NO se
+  borra", centinela de la regresión destructiva), limpieza de `undefined` y
+  el cambio de código con sus errores.
+- `changeCloudPlaylistCode` ahora mueve con un solo `update()` multi-path
+  (destino=payload, origen=`null`) en vez de `set` + `remove` separados —
+  un fallo a medias ya no puede dejar dos copias vivas.
+- Archivos: `services/cloudPlaylistService.ts`.
+
+## 2026-08-06 17:30 — Fix: un solo dueño del mapa de hábitos de Contigo (Plan 004)
+
+`useContigoHabits` guardaba TODO el mapa de hábitos desde el estado propio
+de CADA instancia del hook, y hay 4 pantallas de Contigo montadas a la vez
+(index, evangelio, oración, revisión). Si dos pantallas escribían sin
+remontarse entre medias, la segunda pisaba el mapa entero con su copia
+desactualizada — el usuario veía des-completarse en silencio un hábito que
+acababa de marcar (racha y contadores incluidos).
+
+- Nuevo `ContigoHabitsContext`/`ContigoHabitsProvider`: único dueño del
+  estado, montado en `app/(tabs)/contigo/_layout.tsx`. Las mutaciones parten
+  siempre de `recordsRef.current` (nunca de un closure de render viejo) y la
+  persistencia a AsyncStorage se serializa con una cola de promesas.
+  `useContigoHabits` pasa a ser una fachada de una línea — las 4 pantallas
+  no cambian ni un import.
+- El formato de `@contigo_habits` en AsyncStorage no cambia.
+- Test de regresión: `__tests__/contigoHabitsContext.test.ts`.
+- Archivos: `contexts/ContigoHabitsContext.tsx` (nuevo),
+  `hooks/useContigoHabits.ts`, `app/(tabs)/contigo/_layout.tsx`.
+
+## 2026-08-06 17:05 — Fix: expansión multi-día del calendario ante DST + horas UTC normalizadas (Plan 003)
+
+**Parte A:** el bucle que expande eventos multi-día mezclaba `Date` en UTC
+(parseo), `setDate()` en hora local (incremento) y `toISOString()` en UTC
+(formato). Al cruzar el cambio de hora de Europa/Madrid, el instante se
+desplazaba 1h y el día formateado saltaba o se duplicaba — un evento del
+28-mar al 2-abr podía pintar `28, 29, 29 (dup), 31…`. Justo la ventana de
+Semana Santa/retiros. Sustituido por aritmética de calendario pura
+(`addDaysISO`, en UTC de punta a punta, sin pasar por hora local en ningún
+punto). El mismo fix se aplicó al ajuste del `DTEND` exclusivo de eventos de
+día completo (usaba `setDate` igual).
+
+**Parte B:** verificado contra el feed real (`basic.ics`) — emite las horas
+en UTC con sufijo `Z`, sin `TZID`. Los eventos con hora se mostraban 1-2h
+antes de lo real. Ahora `DTSTART`/`DTEND` con `Z` se convierten a fecha/hora
+local; los valores flotantes (sin `Z`) se dejan exactamente como estaban.
+
+- Tests nuevos: `__tests__/useCalendarEvents.test.ts` (rango DST
+  primavera/otoño, `addDaysISO`, parseo de horas UTC vs flotantes).
+- Archivo: `hooks/useCalendarEvents.ts`.
+
+## 2026-08-06 16:45 — CI: guard de cambios nativos en todo el push + gate de tests antes de publicar (Plan 002)
+
+Los workflows de OTA solo miraban el último commit del push para detectar
+`[skip-ota]`, y ni la OTA ni el deploy web corrían tests/typecheck/lint —
+solo `ci.yml` en pull requests. Un push directo con cambios nativos sin
+`[skip-ota]` en el último commit (o un `workflow_dispatch`, que se lo saltaba
+siempre) podía crashear la base instalada entera.
+
+- Nuevo job `guard-native` en `ota-production.yml` y `ota-preview.yml`:
+  compara TODO el rango del push (`github.event.before`..`github.sha`)
+  contra las rutas nativas del repo. Si hay diff nativo sin `[skip-ota]` en
+  ningún commit del rango, el guard falla en rojo y no publica.
+  `workflow_dispatch` ahora acepta un input `force` explícito para saltárselo
+  a propósito (ya no es un bypass silencioso).
+- Nuevo workflow reutilizable `verify.yml` (typecheck + typecheck:tests +
+  lint + test) que ahora usan `ci.yml`, `ota-production.yml`,
+  `ota-preview.yml` y `deploy-web.yml` — una sola fuente de verdad para los
+  pasos de verificación.
+- Archivos: `.github/workflows/{ci,ota-production,ota-preview,deploy-web,verify}.yml`.
+
+## 2026-08-06 16:30 — Fix: los `off()` de coro y notificaciones no quitaban el listener (Plan 001)
+
+`subscribeChoirSession` y `subscribeToNotifications` devolvían una función de
+limpieza que llamaba a `off(ref, 'value', <valor devuelto por onValue>)` — pero
+ese valor es el `Unsubscribe`, no el callback, así que `off` no encontraba
+coincidencia y la suscripción quedaba viva para siempre (listeners acumulados
+en "modo Coro" al cambiar de código, e igual en el historial de
+notificaciones).
+
+- Ambos servicios ahora devuelven directamente el `Unsubscribe` que da
+  `onValue` — el patrón correcto del SDK modular de Firebase.
+- Nuevo test de regresión en `choirSessionService.test.ts` que fija el
+  contrato.
+- Archivos: `services/choirSessionService.ts`, `services/pushNotificationService.ts`,
+  `__tests__/choirSessionService.test.ts`.
+
+## 2026-08-04 03:00 — Red: reintentos y resincronización al volver online
+
+`useFirebaseData` se tragaba los fallos de red con un `logger.error` y ya: sin
+reintento, y la pantalla se quedaba con lo que hubiera en caché **hasta el
+siguiente montaje**. En un encuentro con el wifi saturado eso es exactamente "la
+app no carga".
+
+- **Reintentos con espera creciente** (0,4 s → 1,2 s, tres intentos) en la fase
+  remota. Reintentar la operación entera es seguro porque sus escrituras en
+  AsyncStorage son idempotentes. Se rinde a propósito tras el tercero: insistir
+  sin red solo gasta batería, y dejar promesas colgadas impediría limpiar el
+  `inflight` que coalesce las peticiones. Tests en
+  `__tests__/firebaseRetry.test.ts`.
+- **Resincronización al recuperar la red**: si la app arranca sin cobertura, en
+  cuanto vuelve se revalida sola. Solo dispara en la transición sin red → con
+  red, porque el listener también emite al pasar de wifi a datos estando ya
+  conectado y ahí no hay nada que recuperar.
+
+**Reglas de Firebase revisadas** (escritas, NO desplegadas):
+`/scheduledNotifications` no estaba declarado. Ya estaba denegado —lo no listado
+se bloquea— pero por omisión y no por decisión. Ahora es explícito y comentado.
+Documento nuevo `docs/desarrollo/FIREBASE_REGLAS.md` con qué tiene que cambiar
+el Panel, la decisión de auth pendiente y los comandos de despliegue (a mano y
+por el workflow que ya existe y solo espera un secret).
+
+## 2026-08-04 02:10 — `EmptyState` en el cantoral y en Grupos
+
+Los dos "no he encontrado nada" que quedaban a mano —la lista de canciones y la
+búsqueda de Grupos— pasan a `EmptyState`. Tenían la misma forma (icono/emoji +
+titular + pista) reimplementada dos veces con tamaños y colores distintos.
+Fuera sus siete estilos propios.
+
+Con esto **el inventario de `TextInput` sueltos queda cerrado como decisión, no
+como pendiente**: los buscadores son otro patrón, el de `CodeInputModal` es un
+input invisible detrás de las celdas del código, y los de Revisión quedaron tras
+el refactor del examen del día como campos sin borde dentro de una fila que sí
+lo tiene — meterles `AppTextField` sería un borde dentro de otro.
+
+## 2026-08-04 01:20 — UI Nativa Fase 2 cerrada
+
+**`SegmentedControl` (nuevo)** — era el último componente que faltaba del plan.
+La forma sale del conmutador Mes/Agenda del calendario, que era el que mejor
+estaba resuelto; ahora el calendario lo usa a él y se han borrado sus cinco
+estilos propios. Acepta `accentColor` para que Contigo y los eventos conserven
+su paleta. No usa el `Tabs` de heroui a propósito: aquí no se navega, se cambia
+una vista dentro de la misma pantalla, y `Tabs` arrastra gestión de foco y
+accesibilidad de navegación que aquí confunde a los lectores de pantalla.
+
+**`AppTextField` en Revisión: retirado.** Esa pantalla se refactorizó en
+paralelo en la misma rama (el examen del día) y la migración chocaba de frente
+con el cambio. Manda el refactor; el `AppTextField` de Revisión se replantea
+cuando esa pantalla esté quieta.
+
+**`AppPrimaryButton`** — el CTA de `ArrangementInputModal`.
+
+**Los dos `TextInput` que quedan NO se migran, y es a propósito**: los buscadores
+(`SongListScreen`, `grupos/SearchBar`) son otro patrón —icono dentro, botón de
+limpiar— y meterlos en `AppTextField` los empeoraría; y el de `CodeInputModal`
+es un input INVISIBLE detrás de las celdas del código, no un campo de
+formulario.
+
+**Pie de "Más" extraído** a `components/mas/MasFooter.tsx`: al añadirle los
+enlaces legales, la pantalla se pasó del límite de 400 líneas del propio ESLint
+del repo. Ahora son 388 y el pie no vive mezclado con la rejilla de tarjetas.
+
+## 2026-08-04 01:20 — Examen del día: celebra siempre y ya no queda tapado por las pestañas
+
+- **La celebración se lanza SIEMPRE al guardar**, no solo si la revisión es de
+  hoy: el hábito se marca igual en retroactivas, así que la recompensa debe ser
+  la misma. Además ahora se sale de la pantalla cuando el burst termina (2,1 s)
+  en vez de a mitad (1,4 s), que era por lo que "no celebraba".
+- **Los botones de Continuar / Guardar ya no quedan debajo de la barra flotante
+  de pestañas**: el footer va en el flujo, así que es él quien reserva el hueco
+  (`useTabBarClearance`) en lugar del contenido del scroll.
+- **Una sola tipografía para todo lo que se escribe** en los dos pasos: la lista
+  de gratitud usaba la fuente del sistema a 14 y los textos largos serif a 15,
+  de modo que cada paso se veía distinto.
+- **Los campos de la lista centran bien el texto**: la fila pasa a ser la caja
+  (flex row) con la estrella y el input como hermanos centrados, en vez de una
+  estrella absoluta con `lineHeight: 50` a mano y el padding vertical fantasma
+  de Android sin desactivar.
+- Repaso de UX: etiqueta "Paso N de 2 · Agradecer/Revisar", transición cruzada
+  entre pasos, háptica al cambiar de paso, de modo y de fecha, y añadir/quitar
+  agradecimientos en una sola fila con iconos.
+- Archivo: `app/(tabs)/contigo/revision.tsx`
+
+## 2026-08-04 00:30 — Versión 2.1.0 · fuera las barras opacas fijas
+
+**Versión 2.1.0** (`app.json`: `version` y `runtimeVersion`). El bump de
+`runtimeVersion` separa el canal de OTAs del de la 2.0, que es lo que toca al
+cambiar el binario.
+
+**Fotos y Calendario dejan de tener cabecera fija.** Eran las dos últimas
+pantallas con una barra clavada arriba, y en Android además era opaca y de
+color:
+
+- **Fotos**: fuera el hero "Fotos · Galería de fotos MCM". La pestaña ya se
+  llama Fotos y las portadas se explican solas; ese bloque de dos líneas se
+  comía una pantalla entera de álbumes cada vez que entrabas.
+- **Calendario**: `headerShown: false`. El conmutador Calendario/Agenda hace de
+  ancla visual. En iOS se quitan también los 44pt que se reservaban para un
+  header que ya era transparente.
+
+**Hallazgo**: los headers de los eventos (hub y sub-pantallas) **ya eran
+transparentes con glass del sistema en iOS** desde la pasada de junio
+(`eventScreenOptions` + el `screenOptions` del stack). Lo que sigue opaco es
+Android/web, donde no hay glass de sistema que usar — o sea que el item del
+TODO estaba desfasado, no pendiente. Corregido allí.
+
+**Widget de Contigo y Firebase App Check → build 2.2 (nov-dic).** Los dos son
+nativos y no entran en la 2.1. Anotados en `docs/planes/BACKLOG.md` §C-bis con
+el motivo.
+
+## 2026-08-03 23:45 — Render tests de la barra de pestañas compacta
+
+Primeros render tests del repo (`react-test-renderer`, ya presente en
+`package.json` pero sin usar): `__tests__/CompactTabBar.test.tsx` cubre
+`components/tabs/CompactTabBar.tsx` (ver `docs/desarrollo/TABS_MAINTENANCE.md`).
+Mockea la vista nativa de `expo-native-compact-tabs` (no existe bajo Jest y
+resolver los PNG de iconos vía `Image.resolveAssetSource` tampoco funciona ahí)
+y comprueba lo que sí es responsabilidad nuestra: qué `items` recibe la barra,
+qué tab marca `selectedIndex` según el pathname, y que `onTabSelected` navega
+al tab pulsado o delega el re-tap en `tabBarController.handleReselect` sin
+navegar.
+
+## 2026-08-03 23:15 — Enlaces legales en "Más" y limpieza de documentación
+
+**Enlaces legales.** Política de privacidad, términos y condiciones y aviso
+legal en el pie de "Más", con las URLs centralizadas en
+`constants/legalLinks.ts`. No era solo la tarea pendiente del backlog: Apple y
+Google **exigen** que la política de privacidad se pueda abrir desde dentro de
+la app, no solo desde la ficha de la tienda.
+
+**Limpieza de documentación.** La carpeta `plans/` de la raíz (1.700 líneas, 8
+planes tácticos, todos DONE o REJECTED) ocupaba un sitio de entrada del repo
+como si fuera trabajo pendiente. Archivada en
+`docs/planes/archivo/tacticos/`. El puntero de `BACKLOG.md` estaba desfasado
+(decía "ahora mismo: UI Nativa" cuando todo gira alrededor de la build) y se ha
+reescrito. En `TODO.md` se ha quitado la sección que duplicaba la Fase 1 de
+`PLAN_CALIDAD.md` —con cifras que además se contradecían entre los dos
+documentos— y las tareas ya terminadas, que es lo que el propio TODO pide en su
+cabecera y llevaba tiempo sin cumplirse.
+
+## 2026-08-03 21:30 — Analítica con Aptabase y "Subrayar" en el menú nativo
+
+**Aptabase** (`@aptabase/react-native`). Se eligió por lo que NO guarda: ningún
+identificador persistente de dispositivo ni de usuario. Lo único que agrupa los
+eventos es un `sessionId` aleatorio que caduca a la hora de inactividad, así que
+no hay forma de seguir a nadie entre sesiones. Con menores en el público, eso
+era el criterio, no un extra. Servidores en la UE (la región va dentro de la
+propia App Key: `A-EU-…`).
+
+Lo que hace que sirva de algo es el **catálogo cerrado y tipado** de eventos
+(`constants/analyticsEvents.ts`): `trackEvent` solo acepta nombres declarados
+ahí y con sus propiedades exactas, así que inventarse un evento no compila.
+Nueve eventos: `app_abierta`, `pantalla_vista`, `cancion_abierta`,
+`modo_presentacion`, `playlist_usada`, `notificacion_abierta`,
+`onboarding_completado`, `evento_abierto` y `carismochito_activado`.
+
+`pantalla_vista` se dispara **solo**, desde `hooks/useScreenTracking.ts`, a
+partir de la ruta de expo-router: cubre toda la app —incluidas las pantallas que
+aún no existen— sin llamadas repartidas que alguien se olvide de poner. Las
+rutas se normalizan (`/cancionero/alabare-a-mi-senor…` → `/cancionero/:id`) para
+que los gráficos se puedan leer y para no mandar títulos.
+
+Nada sale hasta que el perfil está cargado, así que los eventos llevan `perfil`
+y `delegacion` de verdad y no `sin_perfil`. **Sin `EXPO_PUBLIC_APTABASE_KEY` no
+se manda ningún evento**, igual que con Sentry.
+
+**"Subrayar" en el menú nativo de selección** (`modules/highlight-menu/`, módulo
+local de Expo). Al seleccionar texto en cualquier lectura de Contigo, el menú
+del sistema trae un ítem "Subrayar" junto a Copiar/Traducir/Buscar; tocarlo abre
+la barra de colores que ya existía. Ya no hace falta entrar antes en el modo
+lápiz — **que se mantiene**: es el único camino en web y el respaldo si el menú
+nativo fallara.
+
+En iOS el menú se construye en `textView(_:editMenuForTextIn:suggestedActions:)`
+y ese delegate **ya lo ocupa React Native**, así que el módulo interpone un
+proxy que implementa solo ese método y reenvía todo lo demás con
+`forwardingTarget(for:)`. En Android es un `ActionMode.Callback` que también
+reenvía al anterior. La vista envuelve el texto en vez de buscarlo por su tag
+(con la nueva arquitectura eso ya no es fiable) y sin
+`onNativeHighlightRequest` el árbol de `HighlightableReading` queda idéntico.
+
+Archivos: `utils/analytics.ts`, `constants/analyticsEvents.ts`,
+`hooks/useScreenTracking.ts`, `modules/highlight-menu/*`,
+`components/contigo/HighlightableReading.tsx`, `components/contigo/ReadingCard.tsx`,
+`app/(tabs)/contigo/evangelio.tsx`, más los puntos de evento en onboarding,
+cantoral, playlist, notificaciones, eventos y Carismochito.
+
+## 2026-08-03 19:05 — Los enlaces de acceso de Comunica abren la app
+
+Los correos del área privada («Acceder a mi área privada») llevarán un enlace
+mágico. Hasta ahora ese enlace sólo podía acabar en el navegador, aunque la
+persona tuviera la app instalada y aunque Comunica sea un tab de la propia app.
+Ahora abre la app y entra ahí directamente — también pulsándolo desde Mail,
+Gmail o el cliente de correo de Android.
+
+**Cómo.** El correo enlaza a una ruta puente del dominio de Comunica
+(`/app/acceso?acceso_magico=…`) declarada como universal link (iOS) y app link
+(Android). Con la app instalada la intercepta el sistema operativo antes de que
+haya petición web; sin app, WordPress la redirige al área privada de siempre con
+el token intacto. Se reclama **sólo esa ruta**, no el portal entero: un enlace
+cualquiera de Comunica compartido por WhatsApp sigue abriendo el navegador.
+
+- `app.json` — `associatedDomains` de iOS + `intentFilters` con `autoVerify` para
+  `comunica.movimientoconsolacion.com/app/acceso`
+- `app/+native-intent.ts` (nuevo) — reescribe el deep link entrante a
+  `/(tabs)/comunica` y deja el token en la cola
+- `utils/pendingComunicaLink.ts` (nuevo) — la cola, y el montaje de la URL del
+  área (sólo se reenvían `acceso_magico` y `token`)
+- `hooks/useComunicaWebView.ts` — el WebView carga esa URL en vez de la de
+  arranque, así WordPress valida el token y crea la sesión dentro de la app
+- `__tests__/comunicaDeepLink.test.ts` (nuevo)
+- Contrato actualizado: `docs/contratos/COMUNICA_WEBVIEW.md` §6
+
+⚠️ **Requiere build de tienda**: `associatedDomains` e `intentFilters` son
+configuración nativa y no viajan en una OTA. Y en Android no funcionará hasta
+que se rellene la huella SHA-256 de firma en los ajustes del plugin de
+WordPress (ver el contrato).
+
+## 2026-08-03 18:10 — NSE de iOS, Sentry e icono de Carismochito
+
+Las tres piezas nativas que faltaban para la build de tienda de agosto. Todo
+requiere **build de producción**, nada sale por OTA.
+
+**Notification Service Extension (iOS).** Hasta ahora las notificaciones con
+imagen se veían en Android pero nunca en iOS, y no había forma de arreglarlo sin
+una extensión. Como el proyecto es "managed" (no hay `ios/` en el repo), el
+target de Xcode se crea en cada prebuild con un config plugin propio:
+`plugins/withNotificationServiceExtension.js` + el Swift en
+`targets/notification-service/`. La extensión busca la URL en `data.imageUrl`,
+`richContent.image` y `attachment-url`, y si algo falla entrega la notificación
+sin imagen — nunca se traga el aviso.
+**Requiere del Panel**: `mutableContent: true` en los pushes con imagen; sin ese
+flag iOS ni arranca la extensión. Contrato actualizado (§4 y TL;DR).
+**Requiere de Apple**: la extensión es un bundle id nuevo
+(`com.familiaconsolacion.mcmapp.MCMNotificationService`) y EAS pide credenciales
+la primera vez que se compila.
+
+**Sentry** (`@sentry/react-native` 7.11). `utils/logger.ts` ya tenía el enganche
+`setReporter` desde hace meses; ahora se usa: todo `logger.warn`/`logger.error`
+de la app —incluido el `ErrorBoundary`— llega a Sentry, más los crashes nativos
+y las excepciones no capturadas. **Sin `EXPO_PUBLIC_SENTRY_DSN` no reporta
+absolutamente nada** y el árbol de componentes queda idéntico: el SDK nativo va
+en el binario precisamente para poder encenderlo después por OTA. El plugin de
+subida de source maps se configura con `SENTRY_ORG`/`SENTRY_PROJECT`/
+`SENTRY_AUTH_TOKEN` en el build. Los workflows de OTA ahora propagan el DSN: sin
+eso, la primera OTA habría apagado el crash reporting sin avisar.
+
+**Icono alternativo de Carismochito** (`expo-alternate-app-icons`). Al activar el
+modo, el icono del launcher pasa a la mascota sobre verde COM; al desactivarlo,
+vuelve el normal. Los iconos se generan con `npm run icons:alt`. `utils/appIcon.ts`
+sólo llama al nativo cuando el icono no coincide ya con el estado: en iOS cada
+cambio real dispara una alerta del sistema que no se puede suprimir, así que
+hacerlo a ciegas en cada arranque sería insufrible. Al arrancar se repara el
+icono si quedó descolgado del estado guardado.
+
+**Documento nuevo**: `docs/desarrollo/BUILD_AGOSTO_2026.md` — paso a paso de la
+build, qué variables configurar y dónde, y el checklist de pruebas.
+
+Archivos: `plugins/withNotificationServiceExtension.js`,
+`targets/notification-service/*`, `utils/sentry.ts`, `utils/appIcon.ts`,
+`scripts/generate-alt-icons.js`, `assets/app-icons/*`, `app.json`,
+`app.config.ts`, `app/_layout.tsx`, `contexts/CarismochitoContext.tsx`,
+`.env.example`, `.github/workflows/ota-{production,preview}.yml`.
+
+## 2026-08-03 15:40 — Canales de notificación de Android por categoría
+
+Android tenía un único canal (`default`, importancia `MAX`): todo salía igual de
+agresivo y silenciar el cantoral significaba silenciarlo todo. Ahora hay siete,
+uno por cada categoría de negocio que ya manda el Panel en `data.category`:
+
+| Canal                           | Importancia | Efecto                   |
+| ------------------------------- | ----------- | ------------------------ |
+| `default` (general) · `urgente` | `MAX`       | Heads-up + sonido        |
+| `eventos` · `celebraciones`     | `HIGH`      | Heads-up + sonido        |
+| `cancionero` · `fotos`          | `DEFAULT`   | Sonido, sin heads-up     |
+| `mantenimiento`                 | `LOW`       | Silencioso, solo bandeja |
+
+Los ids son literalmente los valores de `category`, con `general` → `default`
+(el id de un canal es inmutable en Android: renombrarlo habría perdido los
+ajustes del usuario en las instalaciones actuales). Los canales se dan de alta
+antes de pedir permisos —crearlos no lo requiere— y al sincronizar se borran los
+que la app ya no declara.
+
+**Requiere cambio en MCM Panel**: hay que mandar `channelId` top-level con el
+mismo valor que `data.category`. Sin él todo sigue llegando a `default`, igual
+que antes; con un `channelId` que la app no declare, Android **no entrega** la
+notificación. Contrato actualizado en `docs/contratos/NOTIFICACIONES_CONTRATO.md`
+§8 con la tabla cerrada y un ejemplo de payload.
+
+Archivos: `constants/notificationChannels.ts` (nuevo, catálogo puro),
+`notifications/androidChannels.ts` (nuevo, alta en el sistema),
+`notifications/usePushNotifications.ts`,
+`__tests__/notificationChannels.test.ts` (nuevo).
+
+## 2026-08-03 15:05 — La barra de pestañas ya no se expande sola
+
+Reescrita la regla de compactar/expandir de la barra flotante. Se ha sacado de
+`tabBarController.ts` a `components/tabs/collapseRule.ts` como función pura con
+directiva `'worklet'`, para que la usen los dos caminos que había duplicados (el
+worklet de Reanimated y el `onScroll` por JS del WebView de Comunica) y para
+poder probarla: `__tests__/collapseRule.test.ts`, 16 casos.
+
+Tres bugs arreglados:
+
+- **Al llegar al final del scroll la barra se ponía grande.** El rebote elástico
+  llevaba el offset por encima del máximo y al volver se leía como "el usuario
+  está subiendo". Ahora el offset se recorta contra los límites reales
+  (`-contentInset.top` y `contentSize - viewport + contentInset.bottom`).
+- **Costaba compactar.** Los umbrales eran simétricos (6 px en ambos sentidos).
+  Ahora compactar cuesta 5 px hacia abajo y expandir 40 px hacia arriba, y el
+  ancla persigue el extremo alcanzado en cada sentido, así que el recorrido se
+  mide desde donde el usuario dio la vuelta.
+- **Entrar en una pantalla anidada expandía la barra.** El scroller recién
+  montado emitía su primer evento en el offset inicial y eso disparaba la regla
+  de "arriba del todo siempre expandida". Ahora esa regla solo aplica después de
+  que el usuario arrastre de verdad (`onBeginDrag`), así que el estado compacto
+  se hereda al navegar dentro de un tab.
+
+Además, los worklets de scroll ya no llaman a `setCompact` en cada fotograma:
+llevan un espejo del estado en un shared value (`compactMirrors`), que se
+actualiza desde JS sin suscribir la pantalla entera a re-render.
+
+Archivos: `components/tabs/collapseRule.ts` (nuevo),
+`components/tabs/tabBarController.ts`, `app/screens/ComunicaScreen.tsx`,
+`__tests__/collapseRule.test.ts` (nuevo),
+`docs/desarrollo/TABS_MAINTENANCE.md`.
+
+## 2026-08-03 06:20 — Recupera de `production` los arreglos del reproductor multimedia
+
+Auditoría de `production` frente a esta rama. `main` y `production` divergieron
+el 28-jun y se han mantenido a mano en paralelo, así que se comparó por
+CONTENIDO (equivalencia de parches), no por historia: de todos los commits de
+`production` que tocan código de app, **solo 11 no estaban aquí, y de esos solo
+4 faltaban de verdad** — el resto ya estaba reimplementado (URL `/aptest` de
+Comunica, `disableAntiBrickingMeasures`, `AppPrimaryButton`, hidratación de
+hábitos, el oscuro de Comunica y el plan de integraciones).
+
+Los 4 que faltaban son la saga del reproductor del cantoral (`a3395fc`,
+`ede0478`, `78e0866`, `bba0dd6`), y explican por qué **los vídeos de YouTube no
+funcionaban en esta rama y sí en producción**:
+
+- **La causa**: YouTube exige una cabecera HTTP `Referer` real en la petición
+  del embed. Todo lo que se carga con `loadHTMLString` —HTML inyectado, con o
+  sin `baseUrl`, con o sin la IFrame API— sale SIN Referer, y YouTube lo rechaza
+  con "vídeo no disponible" (152/153). Esta rama tenía justamente esa versión
+  con shell de iframe, que fue el intento fallido. La solución es cargar la URL
+  de embed real con `source.headers.Referer`.
+- **Audio de Drive**: el PiP de audio pasa a casi todo el ancho de pantalla y
+  menos alto (64 en vez de 100) — con el ancho estrecho del PiP de vídeo los
+  controles de Drive se veían apretados.
+- **Pantalla completa sin recargar**: ya no monta un segundo WebView en un
+  Modal; el propio contenedor se expande con `LayoutAnimation` y el WebView es
+  siempre la misma instancia, así que el vídeo no se corta al entrar o salir.
+- **Enlaces nativos**: los saltos a `watch?v=` se interceptan y abren la APP de
+  YouTube; los de Drive pasan de `WebBrowser` a `Linking` para que los capture
+  la app de Google Drive (`SongMediaSheet`).
+
+Se conservan sobre esa base las dos cosas propias de esta rama: el hueco de la
+barra de pestañas flotante (`useTabBarClearance`) y el arrastre en Reanimated +
+gesture-handler.
+
+## 2026-08-03 05:40 — Migración a Reanimated TERMINADA (`refs` 277 → 34)
+
+Último bloque. Ya no queda ni un `useRef(new Animated.Value())` en la app, salvo
+el Wordle (código congelado). Los 34 avisos que quedan **no son animaciones**:
+son refs legítimas (`.panHandlers`, timers, callbacks estables, el ref del
+WebView…).
+
+En esta tanda: `CarismochitoOverlay` (31), `BottomSheet` (23),
+`CarismochitoMascot` (11), `HorarioScreen` (11), `SongFullscreenScreen` (10),
+`AppToastContext` (8), `ReadingCalendarSheet` (8), `CarismochitoDialogs` (7),
+`TransposeBottomSheet` (7), `HighlightActionBar` (7), `ComunicaScreen` (6),
+`SongDetailScreen` (5) y `SongControls` (2).
+
+**Lo que se gana** es que las animaciones corren en el hilo de UI y dejan de
+entrecortarse cuando JS está ocupado. Se nota sobre todo en la portada de
+Comunica (se ve MIENTRAS arranca el WebView), el burst de celebración (se lanza a
+la vez que se guarda el hábito) y el arrastre del reproductor flotante.
+
+**Decisión consciente**: el GESTO de `BottomSheet` se queda en `PanResponder`.
+Ese sheet lo comparten una decena de modales y muchos llevan un ScrollView
+dentro; pasarlo a gesture-handler cambiaría cómo compiten los dos por el toque,
+que es lo delicado. Sus animaciones sí están migradas.
+
+De paso, dos arreglos que salieron por el camino:
+
+- `ComunicaScreen` cierra el último `set-state-in-effect` de la migración
+  (quedan 6, todos justificados en `TODO.md`).
+- Los `PanResponder` de `BottomSheet` se crean UNA vez y se quedaban con el
+  `onClose` del primer render. Ahora va por ref.
+
+**`jest.config.js`**: Reanimated arranca su módulo nativo al importarse y bajo
+Jest revienta (`loadUnpackers`). Se añade el resolver que trae
+`react-native-worklets` para tests. Sin esto, cualquier fichero que acabe
+importando Reanimated —aunque sea de rebote a través de un contexto— tumbaba su
+suite entera; de hecho pasó al migrar `AppToastContext`.
+
+⚠️ **NADA de esto está validado en dispositivo**: son animaciones, y sólo se
+comprueban mirándolas. Es lo primero a repasar en la build de tienda.
+
+## 2026-08-03 04:45 — Migración a Reanimated (segundo bloque): OTA prompt y reproductor flotante
+
+Sigue la migración. `react-hooks/refs` baja de 196 a **160** (117 de los 277
+originales).
+
+- `OTAUpdatePrompt` (19): entrada del modal, rotación del icono y pulso del halo.
+- `FloatingMediaPlayer` (17): entrada del reproductor y, sobre todo, **el
+  arrastre**, que pasa de `PanResponder` a `Gesture.Pan()` de gesture-handler.
+  Ahora el reproductor sigue al dedo en el hilo de UI aunque JS esté ocupado —
+  que es lo habitual, con un WebView reproduciendo vídeo al lado.
+
+Dos cosas aprendidas que quedan apuntadas en `TODO.md` para el resto:
+
+- **Los bucles infinitos hay que pararlos a mano** con `cancelAnimation`. En
+  Reanimated siguen corriendo en el hilo de UI aunque el componente esté oculto;
+  con `Animated.loop` bastaba el `.stop()` del cleanup.
+- Los `PanResponder` se replican guardando la posición inicial en `onStart`, que
+  es lo que hacían `extractOffset`/`flattenOffset`.
+
+⚠️ **Sin validar en dispositivo**: son animaciones y un gesto.
+
+## 2026-08-03 04:10 — La barra de pestañas ya no sale cortada al salir del onboarding
+
+Al terminar el onboarding, la barra flotante aparecía con las etiquetas ~34pt
+más abajo de la cuenta, cortadas contra el borde de la cápsula. Con el
+onboarding ya hecho de antes no pasaba, y se arreglaba solo al reiniciar.
+
+**Causa (nativa, de la librería).** En iOS 26 el hueco del home indicator lo
+reserva UIKit DENTRO de la `UITabBar`, a partir del `safeAreaInsets` de la
+vista. El onboarding se presenta como `fullScreenModal` y mientras está encima
+iOS **saca de la ventana** la vista que queda debajo, así que ese inset pasa a
+valer cero: la barra reparte sus items por los 78pt enteros en vez de por los 44
+de arriba. Al cerrarse el modal no cambia ningún tamaño, no llega otro
+`layoutSubviews` y la posición mala se queda pegada.
+
+**Arreglo (nativo).** `patches/expo-native-compact-tabs+0.2.0.patch` añade
+`didMoveToWindow()` y `safeAreaInsetsDidChange()`, que invalidan el layout de la
+vista **y el de la `UITabBar`** (lo que hay que recalcular es su reparto interno
+de items, no solo el frame). Cubre también el camino pre-iOS 26, donde
+`resolvedTabFrame` lee `window?.safeAreaInsets.bottom` y caía a 0.
+
+⚠️ **Es código nativo: necesita build de tienda.** Se retiró el apaño en JS que
+remontaba la barra (commit anterior), que ya no hace falta.
+
+## 2026-08-03 03:20 — Migración a Reanimated (primer bloque): 6 componentes
+
+Primer tramo de la migración de animaciones de `Animated` de React Native a
+Reanimated. **Beneficio real**: Reanimated corre las animaciones en el hilo de
+UI, así que dejan de entrecortarse cuando JS está ocupado — que es justo lo que
+pasa en dos de los casos migrados (la portada de Comunica se ve MIENTRAS arranca
+el WebView, y el burst de celebración se lanza a la vez que se guarda el hábito).
+
+Migrados (81 avisos de `react-hooks/refs` menos, de 277 a 196):
+
+- `ComunicaLoader` (24) — onda del logo, anillo, barra de progreso y shimmer.
+- `CarismochitoChargeDots` (14)
+- `ComunicaTopProgress` (13)
+- `BreathingPhase` (10) — los tres anillos de la respiración de Revisión.
+- `CelebrationBurst` (10)
+- `CelebrationAnimation` (10) — **resultó ser una copia literal de
+  `CelebrationBurst`** (mismas 12 partículas, mismos colores, mismas duraciones
+  900/800 ms y la misma curva bezier). Ahora delega en él, así que la animación
+  vive en un solo sitio.
+
+Los arrays de `Animated.Value` (partículas del burst, barras de la onda) pasan a
+ser un subcomponente por elemento con su propio shared value, porque los hooks no
+se pueden llamar en un bucle de longitud variable.
+
+`constants/animations.ts` gana `reaEasings`: las mismas curvas que `easings` pero
+en la versión de Reanimated. Son dos módulos `Easing` distintos y **no son
+intercambiables** — el de react-native no puede ejecutarse dentro de un worklet.
+
+Queda pendiente el resto (`CarismochitoOverlay`, `BottomSheet`, `OTAUpdatePrompt`,
+`FloatingMediaPlayer`…), listado por tamaño en `TODO.md`.
+
+⚠️ **Sin validar en dispositivo**: son animaciones, y solo se comprueban mirándolas.
+
+## 2026-08-03 01:55 — Comunica se desliza bajo el notch en Android y 28 efectos de sincronización menos
+
+### Comunica (Android): zona segura dentro de la página
+
+En iOS la web ya quedaba en zona segura y se deslizaba bajo la barra glass del
+notch gracias al `contentInset` del WKWebView. **El WebView de Android no tiene
+`contentInset`**, así que allí la franja del notch era una barra en el layout y
+la web arrancaba debajo, sin deslizarse. Y abajo pasaba algo peor: nadie
+reservaba el hueco de la barra de pestañas flotante, que **tapaba el final de
+cada página de forma permanente**.
+
+Ahora el hueco lo reserva la propia página: la app le inyecta un `<style>` con
+`padding-top` / `padding-bottom` (`safeAreaBridgeJS` en
+`hooks/useComunicaWebView.ts`) y la franja del notch pasa a ser un overlay
+opaco del color de la página. El resultado es el mismo que en iOS.
+
+- Los insets se publican SIEMPRE como variables CSS (`--mcm-app-inset-top` /
+  `--mcm-app-inset-bottom`) en las dos plataformas, para que la web pueda
+  usarlas en sus elementos `position: fixed` — que ningún inset del contenedor
+  mueve.
+- La conversión dp → px CSS se hace con el ancho real del viewport, así que
+  aguanta un `<meta viewport>` que no sea `width=device-width`.
+- Es idempotente (reutiliza el mismo `<style>` por id) y se reinyecta en cada
+  carga y al rotar.
+- **Opt-out para la web**: con `<html data-mcm-insets="self">` la app no toca el
+  layout y solo publica las variables.
+- Contrato actualizado: `docs/contratos/COMUNICA_WEBVIEW.md` §3. Tests nuevos en
+  `__tests__/comunicaThemeBridge.test.ts`.
+
+⚠️ **Sin validar en un Android real todavía.**
+
+### React Compiler: `set-state-in-effect` de 35 a 7
+
+Efectos que solo copiaban a estado algo que ya se podía calcular. Además del
+aviso, varios escondían comportamientos molestos que se van con el arreglo:
+
+- **`hooks/useAlbumPagination.ts` (nuevo)** — la paginación de álbumes, que
+  estaba duplicada en `app/(tabs)/fotos.tsx` y `app/screens/AlbumListScreen.tsx`.
+  La lista visible pasa a ser un `slice` derivado: **un refresco de Firebase ya
+  no devuelve al usuario a la primera página** perdiendo todo lo cargado. Con
+  tests (`__tests__/useAlbumPagination.test.ts`).
+- **`SongListScreen`** — la construcción de la lista era un `useEffect` declarado
+  `async` que no esperaba a nada. Ahora es una función pura (`buildSongList`) +
+  `useMemo`; se van tres estados.
+- **`useAdminStatus`, `useEventMeta`, `ChoirSessionContext`** — el resultado se
+  guarda junto a la clave a la que pertenece (uid / eventId / código de sesión),
+  así lo viejo deja de contar solo al cambiar. De paso se cierra la rendija por
+  la que un `isAdmin: true` del usuario anterior seguía en pie hasta la primera
+  respuesta del nuevo.
+- **`HorarioScreen` y `MaterialesScreen`** — el día abierto se deriva; **un
+  refresco de Firebase ya no te devuelve al día de hoy** si estabas en otro.
+- **`ReflexionesScreen`** — la lista se deriva de Firebase y las recién
+  publicadas se pintan al instante hasta que llegan confirmadas (casadas por id).
+- **`AuthContext`** — si falta la config de Firebase, el fallo es un valor desde
+  el primer render en vez de un setState en el efecto.
+- **`useColorScheme.web.ts`** — el flag de hidratación pasa a
+  `useSyncExternalStore`.
+- Modales que se resetean al abrir (`ArrangementInputModal`,
+  `PasswordPromptModal`, `CodeInputModal`, `ShareQrModal`, `ExportPdfModal`,
+  `SecretPanelModal`, `NotificationsBottomSheet`) y pantallas que reaccionan a un
+  parámetro de navegación (`calendario`, `oracion`, `SongDetailScreen`): pasan al
+  patrón documentado de **ajuste durante el render**. Mismo comportamiento, sin
+  el render intermedio con los datos de la vez anterior. **No** se ha usado
+  `key={visible}`: habría matado la animación de salida del `BottomSheet`.
+
+Los **7 restantes son decisiones, no deuda**, y quedan justificados uno a uno en
+`TODO.md`: Wordle (código congelado), el auto-abrir por deep-link de
+`notifications.tsx` (una acción, no estado), `AddToHomeBanner` (lee `window`, no
+puede subir al render sin romper la hidratación en web), `useSongProcessor`
+(pasarlo a `useMemo` metería el formateo ChordPro→HTML dentro del render en la
+pantalla más usada — decisión de rendimiento a medir) y el loader de
+`ComunicaScreen` (va atado al `Animated.Value`, entra en la migración a
+Reanimated).
+
+Sin cambios nativos: el commit **no** necesita `[skip-ota]` por este motivo.
+
+## 2026-08-02 03:10 — Fotos sin header fijo y dos antipatrones de estado menos
+
+- **Fotos: el título ya no es una barra clavada arriba.** Pasa a un `ScreenHero`
+  dentro de la propia lista, así que se va con el scroll igual que en el hub de
+  eventos o en Más. Antes en Android era un header opaco fijo y en iOS no había
+  título ninguno. `headerShown: false` para ese tab en `TABS_CONFIG`.
+- **`LiturgicalBadge` y `VersionDisplay`**: guardaban en estado algo que se
+  puede calcular y lo sincronizaban con un efecto. Pasan a `useMemo`: un render
+  menos cada vez, y el pie de la Home ya no parpadea vacío en el primer render.
+  Eran dos de los avisos de `react-hooks/set-state-in-effect`.
+
+Los 35 avisos restantes de esa regla quedan **clasificados uno a uno** en
+`TODO.md`: cuáles son legítimos (suscripciones de Firebase, cargas async),
+cuáles son resets de formulario al abrir un modal (se arreglan con
+`key={visible}`, pero hay que probarlos en dispositivo) y cuáles son paginación
+derivable.
+
+**Comunica**: en iOS ya hace lo que se pedía (barra glass en el notch con el
+contenido deslizándose por debajo, vía `contentInset`). En Android no se puede
+igual porque su WebView no admite `contentInset`: el principio de la página
+quedaría tapado para siempre. Queda anotado en `TODO.md`.
+
+---
+
+## 2026-08-02 02:20 — Arreglos de la barra de pestañas tras la primera dev build
+
+Se sustituye `createCompactTabBarController()` de la librería por un
+controlador propio (`components/tabs/tabBarController.ts`), porque hacían falta
+tres cosas que aquel no daba:
+
+- **El doble tap ya no volvía a la pantalla anterior** en Más y Cantoral.
+  Regresión de la barra nueva: `cancionero`, `mas` y `visitapapa` hacían
+  `popToTop()` desde un listener de `tabPress` del navegador, y con la barra del
+  sistema oculta ese evento no se dispara. Ahora la barra emite el re-tap y los
+  tres se suscriben con `useTabReselect`; si hay pantallas que cerrar cierra, y
+  si no, sube el scroll.
+- **El scroll-arriba se quedaba detrás del header.** Subía a 0, que con
+  `contentInsetAdjustmentBehavior="automatic"` cae POR DEBAJO de la cabecera.
+  Ahora sube a `-contentInset.top`, aprendido de los propios eventos de scroll.
+- **La barra tardaba en compactarse en el cantoral.** El controlador de la
+  librería recorta el offset a >= 0, así que durante todo el recorrido del
+  header grande el valor se quedaba pegado a 0.
+
+Además:
+
+- La lista de canciones no subía al re-tapear: las pantallas anidadas pasaban
+  `null` como clave y no se registraban. Ahora usan la clave de su tab y gana la
+  última montada. Igual en las subrutas de Contigo y en el modo calendario.
+- **Dentro de una canción la barra se queda compacta** (`useForceCompact`).
+- **Comunica**: el WebView también compacta la barra ahora (no es un scroller de
+  RN pero emite `onScroll`), y las flechas de navegación bajan a
+  `TAB_BAR_HEIGHT + safe area + 8`.
+
+---
+
+## 2026-08-02 01:30 — React Compiler: 7 avisos menos y el diagnóstico bien hecho
+
+Los avisos de `preserve-manual-memoization` NO eran por llamadas impuras como
+decía la entrada anterior — el mensaje completo del compilador lo aclara:
+
+> The inferred dependency was `user`, but the source dependencies were
+> [scope, `user?.uid`, …]. Inferred less specific property than source.
+
+O sea: el compilador infiere `user` entero como dependencia, el código declara
+`user?.uid`, no coinciden y **se salta el componente entero**. El arreglo es
+mecánico: sacar `const uid = user?.uid` fuera del `useCallback`. Aplicado en
+`EvaluacionAppScreen`, `EvaluacionScreen`, `SurveyScreen` y
+`EventDetailsBottomSheet` (mismo patrón con `event?.description`).
+
+**7 de 12 arreglados**; quedan 5 de otra clase ("memoized in source but not in
+compilation output": `useMemo` que mutan un Map, callbacks async con setState)
+que sí piden reestructurar caso a caso.
+
+`TODO.md` queda reescrito y **priorizado** con el coste y el beneficio REAL de
+cada familia, incluida la migración de animaciones a Reanimated (los 276 avisos
+de `react-hooks/refs` salen de ~41 `useRef(new Animated.Value(0)).current`; la
+migración no es cosmética: Reanimated corre en el hilo de UI y las animaciones
+dejan de entrecortarse cuando JS está ocupado).
+
+---
+
+## 2026-08-02 00:40 — iPad landscape, subrayado que reconoce lo ya subrayado y limpieza
+
+- **iPad rota de verdad.** `UISupportedInterfaceOrientations~ipad` con las 4
+  orientaciones en `app.json`; el iPhone se queda en portrait. Los layouts de
+  iPad estaban listos desde junio, sólo faltaba activarlo a nivel nativo.
+  Verificado en el `Info.plist` que genera `expo prebuild`. ⚠️ Cambio NATIVO.
+- **Subrayado: al seleccionar texto ya subrayado, la barra lo reconoce.** Marca
+  con un aro el color que ya tiene y la goma se anuncia como "quitar el
+  subrayado", en vez de comportarse como si fuera texto nuevo. Nueva función
+  pura `selectionHighlight()` en `utils/highlightRanges.ts` (si la selección
+  pisa varios colores gana el que cubra más caracteres), expuesta por
+  `useReadingHighlights` como `selection`. 7 tests nuevos.
+- **Dos avisos del React Compiler que eran bugs de verdad, arreglados**:
+  `useSectionFontScale` construía `settings.sectionFontScales ?? {}` suelto en
+  el cuerpo, así que sin overrides creaba un objeto nuevo en cada render y sus
+  dos `useCallback` cambiaban de identidad siempre — la memoización no servía
+  de nada. (El otro, `ActionButton` en `SongControls`, iba en la entrada
+  anterior.) El resto de familias están medidas y explicadas en `TODO.md`.
+
+Sigue **pendiente** el ítem "Subrayar" dentro del menú nativo del sistema: eso
+pide un módulo nativo (UIMenu en iOS, ActionMode en Android) y es una iteración
+propia — ver `docs/funcionalidades/SUBRAYADO.md`.
+
+---
+
+## 2026-08-01 23:05 — Actualización de dependencias de terceros y limpieza
+
+Segunda mitad de la puesta al día: el salto de SDK sólo movió lo que
+gestiona Expo, esto es todo lo demás. **Regla seguida: no se toca nada que
+fije el SDK** (react, react-native, reanimated, screens, svg,
+safe-area-context, webview, gesture-handler, async-storage, worklets,
+TypeScript, babel) — `expo install --fix` confirma que están donde deben.
+
+- **Subidas**: firebase 12.10 → 12.17, heroui-native 1.0 → 1.0.8,
+  **chordsheetjs 14 → 15.6.1**, react-native-calendars, tailwindcss +
+  tailwind-merge + tailwind-variants, uniwind 1.6 → 1.10, prettier 3.2 → 3.9,
+  eslint-plugin-prettier, @expo/vector-icons, @react-native-community/cli,
+  google-signin, ts-jest. Majors: **@testing-library/react-native 13 → 14**,
+  eslint-config-prettier 9 → 10, cross-env 7 → 10, @types/node 22 → 26.
+- **chordsheetjs 15** sólo rompe una cosa (hace opcional su soporte PDF) y no
+  nos afecta: el PDF de playlists va por `HtmlDivFormatter` → HTML →
+  expo-print, no usamos su `PdfFormatter`.
+- **RNTL 14** hizo `renderHook` asíncrono (envuelve el render en `act`): los
+  tres tests de hooks pasan a `await`. En `useFirebaseData` se cae la aserción
+  del `loading === true` inicial, que con la API nueva ya no es observable.
+- **Descartadas por incompatibilidad real, comprobada**: `eslint 10` (rompe el
+  eslint-plugin-react que trae eslint-config-expo) y `jest 30` (jest-expo 57
+  está construido contra jest 29 y mezclarlos rompe el runtime entero).
+
+### Bug real arreglado de camino
+
+`ActionButton` se definía **dentro** de `SongControls`, así que React lo
+trataba como un tipo de componente nuevo en cada render y desmontaba y volvía
+a montar todo el menú de acciones del cantoral. Sacado a nivel de módulo con
+`isDark` por prop. Lo señalaba `react-hooks/static-components`, una de las
+reglas del React Compiler que activa el SDK 56.
+
+El resto de esas reglas se han **medido** y el veredicto está en `TODO.md`:
+el 78% son el idiom de RN `useRef(new Animated.Value(0)).current` y los
+`sharedValue.value = …` de Reanimated, que no tienen arreglo razonable.
+
+---
+
+## 2026-08-01 21:10 — Arreglo del tamaño de los iconos de la barra de pestañas
+
+Los iconos salían enormes, montados unos sobre otros y encima de las
+etiquetas. Eran **dos** bugs a la vez:
+
+- **El generador de iconos normalizaba cada glifo a su propio bounding box.**
+  Los glifos de MaterialIcons comparten una caja em de 512 unidades y están
+  diseñados dentro de ella, así que ajustar cada uno a su caja los descuadra
+  entre sí: `more-horiz` (86 unidades de alto) acababa dibujado tan grande como
+  `home` (363), 4x de más. Ahora se dibuja sobre la caja em, que es exactamente
+  lo que pinta `<MaterialIcons />` en el resto de la app. De paso la caja baja
+  de 28 a 24pt, que es lo que espera la barra nativa.
+- **Bug de escala en iOS de `expo-native-compact-tabs`.** `UITabBarItem` dibuja
+  la imagen a su tamaño natural en puntos (píxeles ÷ escala) y no la
+  redimensiona, pero la librería carga los ficheros con
+  `UIImage(contentsOfFile:)`, que siempre reporta escala 1.0 → un asset @3x se
+  pinta 3x más grande. En dev con Metro no se veía porque el fichero llega por
+  http y ahí sí se decodifica con la escala correcta.
+
+Se añade **`patch-package`** (con `postinstall`) y el parche
+`patches/expo-native-compact-tabs+0.2.0.patch`, que normaliza la escala a
+partir del ancho real en píxeles: el icono mide 24pt venga del fichero que
+venga. No vale mirar el nombre del fichero, porque los bundlers que hashean
+los assets embebidos se comen el sufijo `@3x`. Android no estaba afectado (su
+icono va en una caja fija de 28dp con `CENTER_INSIDE`).
+
+Archivos: `scripts/generate-tab-icons.js`, `assets/tab-icons/*`, `patches/`,
+`package.json`
+
+---
+
+## 2026-08-01 19:30 — Expo SDK 57 + barra de pestañas flotante compacta
+
+> ⚠️ **Incluye código nativo (Swift + Kotlin) y un salto de SDK: NO entra por
+> OTA.** Todos los commits llevan `[skip-ota]`. Esta rama queda **pendiente de
+> validar en una dev build** antes de mergear.
+
+### Expo SDK 55 → 56 → 57
+
+- **SDK 56** (RN 0.85, TypeScript 6). Cambios obligados:
+  - `StyleSheet.absoluteFillObject` desaparece de RN (también en runtime) →
+    `StyleSheet.absoluteFill`, que ahora es un objeto plano y spreadable.
+  - **expo-router 56 ya no admite `@react-navigation/*` como dependencia
+    directa**: trae su copia vendorizada. Se eliminan los 4 paquetes y los ~40
+    imports pasan a `expo-router/react-navigation` y
+    `expo-router/build/react-navigation/*`.
+  - `eslint-config-expo` 56 activa las reglas del React Compiler como error
+    (~330 avisos sobre patrones preexistentes). Quedan como `warn`; sanearlas
+    está apuntado en TODO.md.
+  - `jest-expo` 56 requiere `@react-native/jest-preset` aparte.
+- **SDK 57** (RN 0.86): sin cambios de código, solo alineación de versiones. Es
+  lo que exige `expo-native-compact-tabs` (peers `expo>=57`, `rn>=0.86`).
+
+### Barra de pestañas
+
+- Nueva dependencia **`expo-native-compact-tabs` 0.2.0**: barra flotante nativa
+  que al compactarse con el scroll **mantiene todos los iconos visibles**, en vez
+  de colapsar a la píldora del sistema que los esconde. Liquid Glass real en
+  iOS 26+, píldora sólida con cápsula animada en iOS 16.4–18.x y Android.
+- El layout pasa de **dos ramas a tres**: iOS y Android comparten la barra
+  flotante; **web se queda exactamente como estaba**.
+  - iOS: `NativeTabs` sigue de navegador pero con la barra del sistema oculta.
+  - Android: se mantiene el navegador `Tabs` con `tabBar={() => null}`, para no
+    perder los headers que salen de las options de cada `Tabs.Screen`.
+- **Tope de items 5 → 6** (`MAX_TAB_BAR_ITEMS`), aplicado ahora también en
+  Android: ya no lo impone `UITabBarController`. `splitTabsForIOS` →
+  `splitTabsForBar`, y MasHomeScreen muestra las tarjetas de overflow en las dos
+  plataformas.
+- **Iconos**: la librería pinta desde PNG, no admite SF Symbols ni MaterialIcons.
+  `scripts/generate-tab-icons.js` (`npm run icons:tabs`) rasteriza el mismo glifo
+  que ya declaraba `androidIcon`, más 5 fotogramas de animación de selección.
+- **La barra flota**: no ocupa layout. `components/tabs/useTabScroll.ts` da a cada
+  pantalla el `onScroll` del colapso y el `paddingBottom` a reservar; sustituye a
+  los paddings 100/120/140 que estaban a mano y casi siempre detrás de un
+  `Platform.OS === 'ios' &&` (en Android no había reserva ninguna). Se recolocan
+  también FAB, mini reproductor, barra de subrayado y puntos de Carismochito.
+- Comunica (WebView) no colapsa la barra: no hay scroller de RN al que
+  engancharse. El hueco se da por `contentInset`.
+- Se eliminan `TabBarBackground.tsx` / `.ios.tsx` y `GlassTabBarBackground.ios.tsx`:
+  no los usaba nadie y reexportaban `useBottomTabBarHeight()`, que con la barra
+  del navegador oculta ya no significa nada.
+
+### Archivos principales
+
+`app/(tabs)/_layout.tsx`, `components/tabs/*` (nuevo), `constants/tabsCatalog.ts`,
+`constants/tabIcons.ts`, `constants/spacing.ts`, `hooks/useTabBarClearance.ts`,
+`utils/tabRoutes.ts`, `scripts/generate-tab-icons.js`, `assets/tab-icons/*`
+
+---
 
 ## 2026-07-30 01:15 — Comunica: modo oscuro completo + pantalla de carga de marca
 
@@ -208,6 +4170,28 @@
 
 ---
 
+## 2026-07-24 18:42 — UI Nativa Fase 2: `AppTextField` en más formularios + `EmptyState` en Calendario
+
+- Migrados a `AppTextField`: pregunta de texto libre del wizard de encuestas
+  (`QuestionInput`), nombre de fichero al exportar playlist
+  (`SelectedSongsScreen`), formulario de "Compartiendo" en Reflexiones
+  (título/contenido/autor), nombre de sesión al subir/cambiar código
+  (`CodeInputModal`) y título/fecha del modal de exportar PDF
+  (`ExportPdfModal`). Cada campo respeta su acento existente (verde de
+  Reflexiones, azul de playlists, rojo de PDF) vía `accentColor`.
+- Descartados a propósito en esta pasada: el input oculto de dígitos de
+  `CodeInputModal` (hack de opacidad casi nula para el UI de celdas — no es
+  un campo visible), el `TextInput` de solo-selección de
+  `HighlightableReading` (no es un formulario, es un truco de
+  selección/resaltado de texto de lectura) y los formularios de Contigo
+  (`revision.tsx`) que usan la paleta cálida propia — se dejan para cuando
+  se pueda verificar en dispositivo, igual que `evangelio.tsx` en el lote
+  anterior. `SecretPanelModal` (panel de depuración, 16 campos) se deja
+  fuera por ser una superficie grande sin verificar en dispositivo.
+- `EmptyState` adoptado en el tab Calendario: "Sin eventos" del día
+  seleccionado y "Sin eventos este mes" / "Todos los calendarios ocultos"
+  de la vista agenda.
+
 ## 2026-07-24 04:10 — UI Nativa Fase 2: más `EmptyState` (Eventos pasados, Contactos)
 
 - `EventosPasadosScreen` (texto pelado "todavía no hay eventos pasados") y el
@@ -285,6 +4269,30 @@
   nativos en pantallas "lista+detalle" y floating glass solo en heros de evento;
   pulsación estándar `PressableFeedback`; Contigo/Eventos conservan su paleta.
 
+## 2026-07-22 22:30 — Plan 008: caché de datos compartida (dedupe) + calendario stale-while-revalidate
+
+- **`useFirebaseData`**: nueva caché a nivel de módulo compartida entre las
+  instancias del mismo `storageKey`. Antes cada consumidor del mismo path
+  repetía el `JSON.parse` de la caché de AsyncStorage y su propio round-trip a
+  Firebase — el nodo `songs` tiene 3 consumidores vivos a la vez (Categories,
+  SongList, SelectedSongs por `freezeOnBlur`). Ahora el fetch remoto se
+  **coalesce** (una sola descarga aunque monten varios a la vez) y el parseo se
+  reutiliza. La API del hook no cambia (`{ data, loading, offline, hidden }`).
+- **Datos crudos en caché**: la caché de módulo y AsyncStorage guardan ahora el
+  dato **sin transformar**; el `transform` se aplica por instancia al leer (dos
+  consumidores del mismo path pueden filtrar distinto). Antes AsyncStorage
+  guardaba lo que transformara el último en escribir —dependiente de una
+  carrera—; la vista de cada pantalla es idéntica porque el transform se aplica
+  siempre al leer.
+- **Calendario (`useCalendarEvents`)**: stale-while-revalidate — la caché se
+  muestra al instante también **online** (antes solo offline; online se
+  esperaba a bajar todos los ICS aunque hubiera datos válidos). El fetch+parseo
+  se coalesce entre Home y Calendario. El `catch {}` vacío por calendario ahora
+  loguea con `logger.error`, y un fallo parcial **no pisa** la caché buena en
+  disco ni degrada la vista si ya había caché.
+- Tests: +3 casos de dedupe en `__tests__/useFirebaseData.test.ts` (los 6
+  existentes intactos). Suite: 32 ficheros, 305 tests.
+
 ## 2026-07-22 21:13 — Comunica (familias): nueva URL de la web embebida
 
 - El WebView de "Comunica" (portal para familias) apunta ahora a
@@ -295,6 +4303,8 @@
   de Firebase ni de un JSON de config) — mismo patrón que
   `ComunicaGestionScreen.tsx` (administradores).
 - Archivo: `app/screens/ComunicaScreen.tsx`
+
+---
 
 ## 2026-07-22 21:00 — Fix: el modo alpha (7 taps) no conectaba al canal OTA preview
 
@@ -312,6 +4322,11 @@
   Las OTAs no pueden activar el flag — este commit en sí es OTA-safe (no añade
   módulos nativos nuevos), simplemente el toggle no surtirá efecto hasta la
   próxima build de tienda.
+- El resto de la cadena ya estaba bien: 7 taps (`SecretMenuTrigger` →
+  `useSecretTap`) → modal Laboratorio Alpha → flag en AsyncStorage → override al
+  arrancar → `useOTAUpdate` hace `checkForUpdateAsync` contra el canal `preview`.
+  El workflow `.github/workflows/ota-preview.yml` publica en la branch EAS
+  `preview` con cada push a la rama git `preview`.
 
 ## 2026-07-22 20:15 — Plan 004: hábitos y revisiones de Contigo se restauran al iniciar sesión
 
@@ -335,7 +4350,83 @@
   desde RTDB y lo persiste en local para no repetir la descarga.
 - **Tests nuevos**: `__tests__/authHelpers.test.ts` (14, cubre también
   `writeUserOnLogin`/`deleteUserData` que no tenían ninguno) y
-  `__tests__/contigoMerge.test.ts` (5, semántica de fusión).
+  `__tests__/contigoMerge.test.ts` (5, semántica de fusión). Suite completa:
+  32 ficheros, 302 tests verdes.
+- Plan `plans/004-contigo-sync-bidireccional.md` → DONE. Ver
+  `docs/planes/BACKLOG.md` — siguiente en la cola: Plan 005 (scraper).
+
+## 2026-07-22 19:10 — Backlog único de planes (`docs/planes/BACKLOG.md`); anulado el plan 007; archivado MEJORAS.md
+
+- **Nuevo `docs/planes/BACKLOG.md`**: fuente única de verdad del orden de
+  ejecución de todos los planes (tácticos de `plans/` + estratégicos de
+  `docs/planes/`), con protocolo de trabajo explícito — qué hacer cuando se
+  dice "seguimos" (avanza la cola principal) o "me sobran tokens" (muestra
+  el backlog y deja repriorizar sin avanzar la cola), y qué ítems están
+  bloqueados por una decisión del usuario (con dónde consultar el contexto y
+  qué preguntar antes de ejecutar). Referenciado desde `CLAUDE.md` (raíz,
+  regla 9) y `docs/README.md` como punto de entrada.
+- **Cola principal fijada**: Plan 004 → Plan 005 → Plan 008 (Opus, con foco
+  extra en medir rendimiento real) → UI Nativa → Integración D (repriorizada,
+  ver abajo) → Widget de Contigo (al final) → Carismochito + Panel Pañuelo
+  (cierre). Fuera de la cola: Calidad Fase 1 (solo si piden hueco),
+  Integraciones resto, y una "bolsa nativa" para la próxima build de tienda
+  (el fix del modo alpha de arriba ya está mergeado, solo pendiente de build).
+- **Plan 007 anulado** (privacidad de respuestas de encuestas): decisión de
+  producto — el panel debe poder ver nombres/respuestas, no es un bug.
+  Banner de anulación en `plans/007-privacidad-respuestas-encuestas.md`,
+  estado `REJECTED` en `plans/README.md`.
+- **Integración D repriorizada**: ya no es urgencia de incidente (la app está
+  en beta privada, no en gran producción); sigue siendo importante hacerla
+  pero sin prisa. Nota añadida en `docs/planes/PLAN_INTEGRACIONES.md`.
+- **`docs/planes/MEJORAS.md` archivado** a `docs/planes/archivo/MEJORAS.md`
+  (superseded por `BACKLOG.md` + `TODO.md` + `PLAN_CALIDAD.md`). Multilenguaje
+  queda anotado como "deuda futura" (no ahora); enlaces legales en "Más"
+  queda como tarea pequeña pendiente de que el usuario pase las 3 URLs.
+- **Nuevo concepto anotado** (sin plan funcional, solo idea):
+  `docs/planes/PLAN_PANEL_PANUELO.md` — espacio con modelo 3D del pañuelo del
+  MCM donde colocar chapas ganadas por participar en actividades. Cierre
+  final de la cola junto con Carismochito.
+- Archivos: `docs/planes/BACKLOG.md`, `docs/planes/PLAN_PANEL_PANUELO.md`,
+  `docs/planes/PLAN_CARISMOCHITO.md`, `docs/planes/PLAN_INTEGRACIONES.md`,
+  `docs/README.md`, `CLAUDE.md` (raíz), `plans/README.md`,
+  `plans/007-privacidad-respuestas-encuestas.md`, `mcm-app/TODO.md`; retirado
+  `docs/planes/RESUMEN_EJECUTIVO.md` (fusionado en BACKLOG.md).
+
+## 2026-07-19 18:30 — Seguridad cantoral (XSS), bug de fecha UTC, reflexiones atómicas, limpieza de deps
+
+- **Seguridad (cantoral)**: `author`/`title`/el badge de tono se escapan
+  antes de inyectarse en el WebView de la canción. Además, se descubrió que
+  `HtmlDivFormatter` de ChordSheetJS no escapa NADA de lo que extrae del
+  ChordPro (título, comentarios, letra) — como `/songs/data` es escribible
+  públicamente, cualquier canción podía ejecutar HTML/JS arbitrario en el
+  WebView de todos los dispositivos que la abrieran. Ahora el ChordPro se
+  escapa completo antes de parsear. También se endurece `SongDisplay`
+  (`originWhitelist` + bloqueo de navegación) para que el WebView del
+  cantoral no siga marcado como superficie de confianza total.
+- **Fix de fecha (bug UTC)**: "hoy" en Home y Calendario, y la fecha de una
+  reflexión, se calculaban con `toISOString()` (convierte a UTC) — en España
+  eso desplazaba "hoy" al día anterior entre medianoche y la 1-2 de la
+  madrugada, colando eventos de ayer como "próximos". Nuevo helper
+  `utils/localDate.ts` (`localISO`) usado en los tres sitios y en
+  `useContigoHabits` (que ya lo tenía, ahora compartido).
+- **Reflexiones**: la publicación ahora es una única escritura atómica
+  (`update()` multi-path para `data`+`updatedAt`, antes eran dos `set()`
+  separados que podían dejar una reflexión invisible para otros
+  dispositivos si el segundo fallaba). Si falla el guardado, el texto ya NO
+  se borra del formulario y se muestra un toast de error.
+- **Dependencias**: eliminadas 4 sin ningún uso en el código
+  (`@gorhom/bottom-sheet`, `react-native-modal` —iba en versión _release
+  candidate_—, `@react-native-picker/picker`, `@react-native-community/slider`)
+  y `jest` deduplicado (estaba a la vez en `dependencies` y
+  `devDependencies`). Pineadas las versiones de `eas-cli`/`firebase-tools`
+  en los workflows de release (antes `@latest`, con riesgo de que una major
+  nueva rompiera un deploy sin cambios en el repo).
+- Archivos: `hooks/useSongProcessor.ts`, `components/SongDisplay.tsx`,
+  `utils/localDate.ts` (nuevo), `utils/reflexiones.ts` (nuevo),
+  `app/(tabs)/index.tsx`, `app/(tabs)/calendario.tsx`,
+  `app/screens/ReflexionesScreen.tsx`, `hooks/useContigoHabits.ts`,
+  `package.json`, `.github/workflows/{deploy-web,deploy-firebase-rules,
+ota-preview,ota-production}.yml`, `plans/README.md`.
 
 ---
 
@@ -546,70 +4637,6 @@
   desplegar las reglas hasta darle auth), `NOTIFICACIONES.md` (título máx. 50).
 - Sin cambios de código en la app.
 
-## 2026-07-03 01:15 — Player flotante: fullscreen sin recargar + audios abren la app de Drive
-
-- **Pantalla completa fluida:** el modo grande ya no monta un segundo WebView
-  en un Modal (que recargaba el vídeo desde el principio). Ahora el propio
-  contenedor flotante se expande a pantalla completa con una
-  `LayoutAnimation` — el WebView es siempre la misma instancia y la
-  reproducción continúa sin cortes al entrar y salir. El botón alterna
-  fullscreen/fullscreen-exit y el arrastre se desactiva mientras está en
-  grande.
-- **Audios → app de Google Drive:** el botón "abrir fuera" de los audios (y
-  cualquier enlace de Drive de la ficha) pasa de `WebBrowser` (navegador
-  in-app, que se salta los universal links) a `Linking.openURL` — si la app
-  de Google Drive está instalada, el enlace la abre directamente.
-- `components/song-media/FloatingMediaPlayer.tsx` (sin Modal, −60 líneas),
-  `components/song-media/SongMediaSheet.tsx` (`openExternal` con rama Drive).
-
-## 2026-07-02 19:00 — Fix (v3, definitivo): Referer HTTP real en el embed + abrir la app de YouTube
-
-La v2 (IFrame API en HTML inyectado) seguía cayendo al fallback en
-dispositivo. Diagnóstico definitivo: **todo lo que se carga en el WebView vía
-`loadHTMLString` sale sin cabecera HTTP `Referer`** — da igual el baseUrl, el
-iframe o la IFrame API — y el embed de YouTube rechaza peticiones sin Referer
-(códigos 152/153). Doceacordes funciona porque su navegador manda
-`Referer: https://doceacordes.es/` de verdad.
-
-- **El fix:** cargar la URL de embed real (`youtube.com/embed/<id>`) como
-  `source={{ uri, headers: { Referer: 'https://mcmespana.github.io/' } }}` —
-  el WebView de RN sí permite cabeceras en la petición inicial. YouTube nos
-  ve exactamente igual que a una web que embebe el vídeo.
-- **Abrir la app de YouTube (no la web):** el botón de la barra y cualquier
-  navegación que el propio player intente hacia `watch?v=`/`youtu.be` (p.ej.
-  tocar el logo o el "Ver en YouTube" del error) se interceptan con
-  `onShouldStartLoadWithRequest` y abren la app nativa vía
-  `Linking.openURL('youtube://…' / 'vnd.youtube://…')`, con fallback a la URL
-  https (que también abre la app por universal link si está instalada).
-- Se elimina el shell HTML con la IFrame API y el puente `onMessage` (ya no
-  hacen falta) y `WebBrowser` deja de usarse para YouTube.
-- `components/song-media/FloatingMediaPlayer.tsx`.
-
-## 2026-07-02 18:20 — Fix (v2): API oficial de YouTube IFrame + ajuste tamaño audio
-
-El fix anterior (iframe crudo dentro de un shell HTML) resolvía el caso
-general pero seguía fallando en vídeos concretos (p.ej. "Yo celebraré",
-Entrada #11: "vídeo no disponible"), aunque el endpoint oembed de YouTube
-confirma que esos vídeos SÍ admiten embed en cualquier web. Causa: un
-`<iframe src="…/embed/ID">` suelto cargado vía `loadHTMLString` no manda un
-`Referer` real y YouTube lo puede rechazar de forma inconsistente.
-
-- Se sustituye el iframe suelto por la **API oficial de IFrame de YouTube**
-  (`https://www.youtube.com/iframe_api` + `new YT.Player(...)`), que hace el
-  handshake por `postMessage` y con `playerVars.origin` fijo es mucho más
-  fiable dentro de un WebView.
-- Si aun así el vídeo da error (`onError` de la API: embed deshabilitado por
-  el autor, restricción regional…), se muestra un fallback dentro de la
-  propia página con botón "Ver en YouTube" que abre el navegador. Además hay
-  un botón fijo (icono ↗ rojo) en la barra del reproductor para abrir
-  YouTube manualmente en cualquier momento, igual que hace doceacordes.
-- Audio (Drive): el reproductor pasa de 208×100 a **ancho casi completo de
-  pantalla × 64 de alto** — el player de Drive se veía apretado en un ancho
-  tan estrecho como el del PiP de vídeo.
-- `components/song-media/FloatingMediaPlayer.tsx`: nuevo `embedShellHtml`
-  basado en la API oficial + `onMessage` del WebView para el fallback +
-  `useWindowDimensions` para el ancho del audio.
-
 ## 2026-07-02 12:30 — Fix reproductor flotante de YouTube + audios de Drive en la app
 
 **Vídeos (fix):** el player flotante cargaba `youtube.com/embed/<id>` como
@@ -635,6 +4662,81 @@ al navegador.
 - `components/song-media/SongMediaSheet.tsx`: prop `onPlayVideo` →
   `onPlayMedia`; filas de audio reproducen in-app
 - `app/screens/SongDetailScreen.tsx`: estado `floatingVideo` → `floatingMedia`
+
+## 2026-06-28 15:45 — Refactor: trocear GruposScreen (parcial, Fase 1.7)
+
+`app/screens/GruposScreen.tsx` pasa de **1100 → 561 líneas** (sale de la lista
+de archivos >800). Extraído a una carpeta nueva `components/grupos/`:
+
+- `SearchBar`, `MemberRow`, `GrupoCard`, `SearchHitRow` — los subcomponentes
+  (ya recibían `styles` por prop, así que la extracción es directa).
+- `gruposStyles.ts` — el `createStyles` + el tipo `GruposStyles`.
+- `gruposHelpers.ts` — tipos (`Grupo`/`Data`/`SearchHit`) y helpers puros
+  `normalize`/`isMe`, **con test** (`__tests__/gruposHelpers.test.ts`, 7 tests).
+  `highlightText` se movió dentro de `SearchHitRow` (su único uso).
+
+Cero cambios de comportamiento. **Parcial a propósito**: el cuerpo del
+componente (4 ramas de render, ~511 líneas) NO se ha troceado — requiere
+verificación en dispositivo y la posible migración a `SectionList` cambiaría
+comportamiento (queda como follow-up en PLAN_CALIDAD §1.7). Gigantes >800:
+11 → 10. typecheck/typecheck:tests/lint(0 err)/test(204) ok.
+
+## 2026-06-28 15:10 — Refactor: trocear EvaluationWizard (Fase 1.9)
+
+`components/EvaluationWizard.tsx` pasa de **976 → 360 líneas**, quedando como
+pura orquestación (máquina de estados, barra de progreso, top bar y footer).
+Piezas extraídas a una carpeta nueva `components/evaluation/`:
+
+- `WelcomePhase.tsx` — pantalla de bienvenida.
+- `QuestionInput.tsx` — el control de entrada por tipo de pregunta
+  (stars/text/yesno/scale/single/multi).
+- `SuccessPhase.tsx` — pantalla de agradecimiento.
+- `WizardButton.tsx` — botón principal con micro-animación (usado por el
+  wizard y por SuccessPhase).
+- `ScaleInput.tsx` — escala numérica (NPS 0..10).
+- `wizardStyles.ts` — estilos del armazón (`createWizardStyles(isDark)`).
+
+Cero cambios de comportamiento (mismo JSX/estilos repartidos, callbacks pasados
+por props). Se mantiene el export nombrado `EvaluationAnswers` en el mismo path
+(lo importan EvaluacionScreen/EvaluacionAppScreen/SurveyScreen). Gigantes >800:
+12 → 11. typecheck/typecheck:tests/lint(0 err)/test(197) ok.
+
+## 2026-06-28 14:40 — Refactor: trocear NotificationsBottomSheet (Fase 1.9)
+
+`components/NotificationsBottomSheet.tsx` pasa de **938 → 365 líneas**. Piezas
+extraídas a una carpeta nueva `components/notifications/`:
+
+- `NotificationDetail.tsx` — vista "en grande" de una notificación.
+- `NotificationListItem.tsx` — tarjeta de la lista (swipe-para-leída, dot, chips
+  de destino/acción). La lógica de marcado/navegación sigue en el padre y se le
+  pasa por props.
+- `notificationDisplay.ts` — helpers puros (`normalizeRoute`, `getRouteLabel`,
+  `formatDate`, `ROUTE_LABELS`), **con test** (`__tests__/notificationDisplay.test.ts`,
+  14 tests).
+
+El sheet queda como datos + composición. Cero cambios de comportamiento (la
+acción del chip de botón se movió a un handler `handleActionButtonPress` con la
+misma lógica; se eliminaron dos estilos que ya no se usaban). Solo
+`app/(tabs)/index.tsx` consume el sheet y su import no cambia. Tests: 19
+ficheros / 197.
+
+## 2026-06-28 14:05 — Refactor: trocear PreviewChannelModal (Fase 1.9)
+
+Descuartizado el más pequeño de los gigantes (PLAN_CALIDAD §1.9):
+`components/PreviewChannelModal.tsx` pasa de **847 → 349 líneas**. Las piezas
+decorativas animadas del "Laboratorio Alpha" se extraen a una carpeta nueva
+`components/preview-channel/`, cada una con sus propios estilos y constantes:
+
+- `AnimatedGradients.tsx` — fondo de gradientes morphing.
+- `FloatingParticle.tsx` — emojis flotantes.
+- `ConfettiBurst.tsx` — explosión de confeti (variantes explode/puff).
+- `GiantLever.tsx` — palanca MUNDANO ↔ ALPHA.
+- `LabDecorations.tsx` — título wobble, sparkles y ticker de frases.
+
+El modal queda como composición + contenido + estilos de layout. Cero cambios
+de comportamiento (mismo código, estilos repartidos sin solapamiento); solo
+`app/_layout.tsx` consumía el modal y su import no cambia. Gigantes >800
+líneas: 13 → 12. typecheck/typecheck:tests/lint(0 err)/test(183) en verde.
 
 ## 2026-06-28 14:00 — Cantoral: pantalla amable para canciones con error de sintaxis
 
@@ -687,8 +4789,8 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   base + incluye `__tests__`), script `npm run typecheck:tests`, y añadido como
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
-  > 600.  y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  >       Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
+  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`
@@ -911,27 +5013,6 @@ Pasada de diseño para iPad (portrait y landscape). **Todo es JS puro
   `contexts/SelectedSongsContext.tsx`).
 - **OTA-safe** (solo JS).
 
-## 2026-06-08 — Notificaciones: descripción extendida (`bodyLong`)
-
-- Nuevo campo opcional **`bodyLong`** en las notificaciones: descripción larga que se
-  muestra en el **modal de detalle** (scrollable, respeta saltos de línea). La
-  **tarjeta** sigue usando el `body` corto. El detalle muestra `bodyLong` si existe;
-  si no, cae a `body` (fallback).
-- La deduplicación de la lista ahora **fusiona** `bodyLong` entre la copia local (push)
-  y la de Firebase, de modo que el texto largo aparece aunque solo venga por uno de los
-  dos orígenes (p. ej. si el panel lo manda solo a Firebase para no inflar el payload).
-- Tipos: campo `bodyLong?` en `NotificationData` y `ReceivedNotification`.
-- Archivos: `types/notifications.ts`, `app/notifications.tsx`,
-  `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
-  debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
-
-## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
-
-- **Nuevo**: opción "Ver QR offline" en el menú de la playlist (Seleccionadas). Genera un QR con la playlist **entera embebida** en un deep link `mcmapp://playlist?d=<payload>`. Un dispositivo con la app instalada y el cantoral cacheado puede escanearlo con la cámara normal y abrir la playlist **sin conexión a internet** (no descarga nada de Firebase, a diferencia del QR "en la nube" con código de 4 dígitos).
-- **Codificación compacta**: cada canción se codifica como categoría (1 letra, alineada con `songUtils`) + número de canción + tono (`t±n` semitonos) y cejilla (`cN`) opcionales; el orden se deduce de la posición. Respaldo "crudo" por `filename` para canciones sin categoría/número conocidos. Así el QR es pequeño aunque haya muchas canciones. El receptor resuelve categoría+número → `filename` contra su catálogo cacheado; las canciones que no tenga se omiten avisando al usuario.
-- **Toggle online/offline** dentro del `ShareQrModal`: si hay también código en la nube, se puede alternar entre los dos QR.
-- Archivos: `utils/offlinePlaylist.ts` (nuevo, + test), `utils/pendingCloudPlaylist.ts`, `app/playlist.tsx`, `app/screens/CategoriesScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`, `components/playlist/ShareQrModal.tsx`. Sin dependencias nuevas ni código nativo (OTA normal).
-
 ## 2026-06-13 — Fix: la selección de calendarios se perdía al reabrir la app
 
 - **Bug**: la visibilidad de calendarios se guardaba como array **por índice** (`boolean[]`) y se reconciliaba contra el `fallbackConfigs` (1 solo calendario) durante el instante en que Firebase aún cargaba. Eso truncaba el array guardado a longitud 1, lo persistía, y al llegar los datos reales rellenaba con los defaults — perdiendo la selección del usuario.
@@ -1141,6 +5222,20 @@ Pasada de diseño para iPad (portrait y landscape). **Todo es JS puro
   `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
   debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
 
+## 2026-06-08 — Notificaciones: descripción extendida (`bodyLong`)
+
+- Nuevo campo opcional **`bodyLong`** en las notificaciones: descripción larga que se
+  muestra en el **modal de detalle** (scrollable, respeta saltos de línea). La
+  **tarjeta** sigue usando el `body` corto. El detalle muestra `bodyLong` si existe;
+  si no, cae a `body` (fallback).
+- La deduplicación de la lista ahora **fusiona** `bodyLong` entre la copia local (push)
+  y la de Firebase, de modo que el texto largo aparece aunque solo venga por uno de los
+  dos orígenes (p. ej. si el panel lo manda solo a Firebase para no inflar el payload).
+- Tipos: campo `bodyLong?` en `NotificationData` y `ReceivedNotification`.
+- Archivos: `types/notifications.ts`, `app/notifications.tsx`,
+  `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
+  debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
+
 ---
 
 ## 2026-06-07 — Evaluación: wizard tipo onboarding + ajustes de ubicación
@@ -1188,6 +5283,13 @@ Pasada de diseño para iPad (portrait y landscape). **Todo es JS puro
   `app/(tabs)/index.tsx`.
 
 ---
+
+## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
+
+- **Nuevo**: opción "Ver QR offline" en el menú de la playlist (Seleccionadas). Genera un QR con la playlist **entera embebida** en un deep link `mcmapp://playlist?d=<payload>`. Un dispositivo con la app instalada y el cantoral cacheado puede escanearlo con la cámara normal y abrir la playlist **sin conexión a internet** (no descarga nada de Firebase, a diferencia del QR "en la nube" con código de 4 dígitos).
+- **Codificación compacta**: cada canción se codifica como categoría (1 letra, alineada con `songUtils`) + número de canción + tono (`t±n` semitonos) y cejilla (`cN`) opcionales; el orden se deduce de la posición. Respaldo "crudo" por `filename` para canciones sin categoría/número conocidos. Así el QR es pequeño aunque haya muchas canciones. El receptor resuelve categoría+número → `filename` contra su catálogo cacheado; las canciones que no tenga se omiten avisando al usuario.
+- **Toggle online/offline** dentro del `ShareQrModal`: si hay también código en la nube, se puede alternar entre los dos QR.
+- Archivos: `utils/offlinePlaylist.ts` (nuevo, + test), `utils/pendingCloudPlaylist.ts`, `app/playlist.tsx`, `app/screens/CategoriesScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`, `components/playlist/ShareQrModal.tsx`. Sin dependencias nuevas ni código nativo (OTA normal).
 
 ## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
 

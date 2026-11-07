@@ -1,6 +1,8 @@
 import React from 'react';
 import { Platform, StyleSheet, View, ViewStyle } from 'react-native';
 import { pickGlassTint } from './glass';
+import { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 export interface GlassSurfaceProps {
   /** Tint color used for the solid background fallback. */
@@ -35,7 +37,14 @@ export default function GlassSurface({
   children,
   style,
 }: GlassSurfaceProps) {
-  const { backgroundColor } = pickGlassTint(tintColor);
+  // Sin tinte, el respaldo era SIEMPRE blanco al 95 %, también en modo oscuro.
+  // En iOS no se notaba (allí manda el cristal nativo de `GlassSurface.ios`),
+  // pero en Android y web la cápsula de la Home, el botón de volver, los de un
+  // evento y el FAB de la canción salían como pastillas blancas con iconos
+  // claros encima: invisibles. En oscuro, el respaldo es la superficie elevada.
+  const isDark = useColorScheme() === 'dark';
+  const effectiveTint = tintColor ?? (isDark ? Colors.dark.card : undefined);
+  const { backgroundColor } = pickGlassTint(effectiveTint);
 
   // Web supports backdrop-filter natively — we can keep the glass feel.
   const webBlur =
@@ -51,8 +60,8 @@ export default function GlassSurface({
 
   // Slightly lower opacity on web so the backdrop-filter is visible.
   const webBackground =
-    Platform.OS === 'web' && tintColor
-      ? tintColor + (variant === 'clear' ? '99' : 'CC')
+    Platform.OS === 'web' && effectiveTint
+      ? effectiveTint + (variant === 'clear' ? '99' : 'CC')
       : backgroundColor;
 
   return (

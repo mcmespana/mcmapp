@@ -6,53 +6,51 @@ import {
   StyleSheet,
   useWindowDimensions,
   ScrollView,
-  Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { MaterialIcons } from '@/components/ui/icons';
 import { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useCurrentEvent } from '@/hooks/useCurrentEvent';
-import { MasStackParamList } from '../(tabs)/mas';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
+import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
+import { radii } from '@/constants/uiStyles';
 
 interface Option {
   label: string;
-  icon: string;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
   url: string;
 }
 
 const OPTIONS: Option[] = [
   {
     label: 'Web comidas',
-    icon: '🍽️',
+    icon: 'restaurant',
     url: 'https://app.amicidelpellegrino.it/es',
   },
   {
     label: 'Busca sitios',
-    icon: '🔍',
+    icon: 'search',
     url: 'https://storelocator.amicidelpellegrino.it/?locale=it',
   },
   {
     label: 'Google Maps',
-    icon: '🗺️',
+    icon: 'map',
     url: 'https://www.google.com/maps/d/edit?mid=11qLeGeI5-oD-OS1rh1kMsBSbGKwyP0g&usp=sharing',
   },
   {
     label: 'Food Hub',
-    icon: '🍔',
+    icon: 'fastfood',
     url: 'https://www.iubilaeum2025.va/es/pellegrinaggio/calendario-giubileo/GrandiEventi/Giubileo-dei-Giovani/hub-food.html',
   },
 ];
 
-type Nav = NativeStackNavigationProp<MasStackParamList, 'ComidaWeb'>;
-
 export default function ComidaScreen() {
-  const navigation = useNavigation<Nav>();
+  const { open } = useEventNavigation();
   const scheme = useColorScheme();
   const event = useCurrentEvent();
   const styles = React.useMemo(() => createStyles(scheme ?? 'light'), [scheme]);
+  const bottomPadding = useTabBarPaddingBottom(spacing.md);
   const { width, height } = useWindowDimensions();
   const containerPadding = spacing.md;
   const gap = spacing.md;
@@ -65,7 +63,10 @@ export default function ComidaScreen() {
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: bottomPadding },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.gridContainer}>
@@ -74,7 +75,7 @@ export default function ComidaScreen() {
               <TouchableOpacity
                 style={[styles.item, { width: itemWidth, height: itemHeight }]}
                 onPress={() =>
-                  navigation.navigate('ComidaWeb', {
+                  open('ComidaWeb', {
                     url: opt.url,
                     title: opt.label,
                     eventId: event.id,
@@ -84,7 +85,12 @@ export default function ComidaScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={opt.label}
               >
-                <Text style={styles.icon}>{opt.icon}</Text>
+                <MaterialIcons
+                  name={opt.icon}
+                  size={34}
+                  color="#fff"
+                  style={styles.icon}
+                />
                 <Text style={styles.label}>{opt.label}</Text>
               </TouchableOpacity>
             </View>
@@ -102,7 +108,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
     scrollContent: {
       flexGrow: 1,
       padding: spacing.md,
-      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.md,
     },
     gridContainer: {
       flexDirection: 'row',
@@ -113,13 +118,11 @@ const createStyles = (scheme: 'light' | 'dark') => {
     item: {
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: 16,
+      borderRadius: radii.lg,
       backgroundColor: '#FF8A65',
     },
     icon: {
-      fontSize: 40,
       marginBottom: spacing.sm,
-      color: '#fff',
     },
     label: {
       ...(typography.button as any),

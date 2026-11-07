@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,14 @@ import {
 import BottomSheet from './BottomSheet';
 import AppTextField from '@/components/ui/AppTextField';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Colors } from '@/constants/colors';
+import { MaterialIcons } from '@/components/ui/icons';
+import { Colors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { getDatabase, ref, push, set } from 'firebase/database';
-import { getFirebaseApp } from '@/utils/firebaseApp';
+import { pushWithRetry, setWithRetry } from '@/services/firebaseWrites';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface SuggestSongModalProps {
   visible: boolean;
@@ -43,15 +44,14 @@ export default function SuggestSongModal({
   const [titulo, setTitulo] = useState('');
   const [artista, setArtista] = useState('');
   const [letra, setLetra] = useState('');
-  const [categoria, setCategoria] = useState('');
+  const [pickedCategoria, setCategoria] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  useEffect(() => {
-    if (!categoria && availableCategories.length > 0) {
-      setCategoria(availableCategories[0]);
-    }
-  }, [availableCategories, categoria]);
+  // Mientras el usuario no elija, vale la primera categoría disponible. Es un
+  // valor por defecto DERIVADO: antes lo sembraba un efecto, que además volvía
+  // a dispararse cada vez que cambiaba la lista de categorías.
+  const categoria = pickedCategoria || (availableCategories[0] ?? '');
 
   const handleSubmit = async () => {
     if (!titulo.trim() || !artista.trim()) {
@@ -62,11 +62,9 @@ export default function SuggestSongModal({
     setIsSubmitting(true);
 
     try {
-      const db = getDatabase(getFirebaseApp());
-      const newRef = push(ref(db, 'songs/solicitudes'));
       const contenido = `{title: ${titulo}}\n{author: ${artista}}\n\n${letra}`;
 
-      await set(newRef, {
+      await pushWithRetry('songs/solicitudes', {
         title: titulo,
         author: artista,
         category: categoria,
@@ -80,7 +78,7 @@ export default function SuggestSongModal({
         userDelegation: resolved.delegationLabel || 'Sin delegación',
       });
 
-      await set(ref(db, 'songs/updatedAt'), Date.now().toString());
+      await setWithRetry('songs/updatedAt', Date.now().toString());
 
       setTitulo('');
       setArtista('');
@@ -117,7 +115,7 @@ export default function SuggestSongModal({
     <BottomSheet
       visible={visible}
       onClose={handleClose}
-      title="Sugerir canción 🎵"
+      title="Sugerir canción"
       paddingHorizontal={0}
     >
       <ScrollView
@@ -202,14 +200,10 @@ export default function SuggestSongModal({
                       ? isDark
                         ? '#1A3A6E'
                         : '#E8F0FE'
-                      : isDark
-                        ? '#2C2C2E'
-                        : '#F2F2F7',
+                      : themeColors(isDark).background,
                     borderColor: isSelected
                       ? '#4A90D9'
-                      : isDark
-                        ? '#3A3A3C'
-                        : '#E5E5EA',
+                      : themeColors(isDark).separator,
                   },
                 ]}
                 onPress={() => setCategoria(cat)}
@@ -261,23 +255,23 @@ export default function SuggestSongModal({
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 48,
   },
   fieldLabel: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     marginBottom: 6,
     marginTop: 16,
   },
   fieldSublabel: {
-    fontSize: 12,
+    ...typography.footnote,
     marginBottom: 8,
     marginTop: -4,
   },
   charCount: {
-    fontSize: 11,
+    ...typography.micro,
     textAlign: 'right',
     marginTop: 6,
   },
@@ -296,11 +290,11 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
     borderWidth: 1.5,
   },
   categoryPillText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
   },
   errorRow: {
@@ -312,7 +306,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FF3B30',
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
   },
   submitBtn: {
@@ -320,7 +314,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   disclaimer: {
-    fontSize: 12,
+    ...typography.footnote,
     lineHeight: 18,
     textAlign: 'center',
   },

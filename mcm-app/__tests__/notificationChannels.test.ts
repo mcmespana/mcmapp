@@ -1,0 +1,165 @@
+import {
+  COMUNICA_CHANNELS,
+  CONTIGO_REMINDERS_CHANNEL_ID,
+  channelIdForCategory,
+  DEFAULT_CHANNEL_ID,
+  isKnownChannelId,
+  NOTIFICATION_CHANNELS,
+} from '@/constants/notificationChannels';
+import type { NotificationCategory } from '@/types/notifications';
+import { COMUNICA_CHANNEL_IDS } from '@/services/comunica/contract';
+
+/**
+ * Las categorías que el Panel puede mandar en `data.category`. Copiadas a mano
+ * a propósito: si alguien añade una a `NotificationCategory` y no le da canal,
+ * este test lo canta.
+ */
+const PANEL_CATEGORIES: NotificationCategory[] = [
+  'general',
+  'eventos',
+  'cancionero',
+  'fotos',
+  'urgente',
+  'mantenimiento',
+  'celebraciones',
+];
+
+describe('catálogo de canales', () => {
+  it('tiene un canal por cada categoría del Panel', () => {
+    const covered = NOTIFICATION_CHANNELS.filter(
+      (c) => c.source !== 'comunica' && c.source !== 'local',
+    )
+      .map((c) => c.category)
+      .sort();
+    expect(covered).toEqual([...PANEL_CATEGORIES].sort());
+  });
+
+  it('no repite ids', () => {
+    const ids = NOTIFICATION_CHANNELS.map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('conserva `default` como id del canal general', () => {
+    // Es el canal que ya existe en las instalaciones actuales: renombrar el id
+    // crearía uno nuevo y perdería los ajustes del usuario.
+    const general = NOTIFICATION_CHANNELS.find((c) => c.category === 'general');
+    expect(general?.id).toBe(DEFAULT_CHANNEL_ID);
+  });
+
+  it('da nombre y descripción a todos los canales', () => {
+    for (const channel of NOTIFICATION_CHANNELS) {
+      expect(channel.name.length).toBeGreaterThan(0);
+      expect(channel.description.length).toBeGreaterThan(0);
+      expect(channel.lightColor).toMatch(/^#[0-9A-F]{6}$/i);
+    }
+  });
+
+  it('reserva heads-up (max) solo para lo que de verdad urge', () => {
+    const max = NOTIFICATION_CHANNELS.filter((c) => c.importance === 'max');
+    expect(max.map((c) => c.id).sort()).toEqual(['default', 'urgente']);
+  });
+});
+
+describe('channelIdForCategory', () => {
+  it('mapea cada categoría a su canal', () => {
+    expect(channelIdForCategory('urgente')).toBe('urgente');
+    expect(channelIdForCategory('eventos')).toBe('eventos');
+    expect(channelIdForCategory('cancionero')).toBe('cancionero');
+  });
+
+  it('manda `general` al canal por defecto', () => {
+    expect(channelIdForCategory('general')).toBe(DEFAULT_CHANNEL_ID);
+  });
+
+  it('cae en el canal por defecto con categorías desconocidas o ausentes', () => {
+    // Una categoría nueva en el Panel no puede hacer desaparecer un aviso.
+    expect(channelIdForCategory('inventada')).toBe(DEFAULT_CHANNEL_ID);
+    expect(channelIdForCategory(undefined)).toBe(DEFAULT_CHANNEL_ID);
+    expect(channelIdForCategory(null)).toBe(DEFAULT_CHANNEL_ID);
+    expect(channelIdForCategory('')).toBe(DEFAULT_CHANNEL_ID);
+  });
+});
+
+describe('isKnownChannelId', () => {
+  it('reconoce los canales del catálogo', () => {
+    for (const channel of NOTIFICATION_CHANNELS) {
+      expect(isKnownChannelId(channel.id)).toBe(true);
+    }
+  });
+
+  it('rechaza los que no están (se borran del sistema al sincronizar)', () => {
+    expect(isKnownChannelId('canal-viejo')).toBe(false);
+  });
+});
+
+/**
+ * Guardarraíl del plan 08 (área privada de Comunica): los dos canales del área
+ * NO se quitan nunca ni cambian de importancia. Si un bundle los quitara, la
+ * limpieza del arranque (`notifications/androidChannels.ts`) los borraría y el
+ * servidor seguiría mandando a un canal que Android tira sin decir nada. Y la
+ * importancia de un canal ya creado no se puede cambiar: se acierta a la
+ * primera.
+ */
+describe('canales del área de Comunica', () => {
+  it('siguen en el catálogo con su importancia', () => {
+    const spec = Object.fromEntries(
+      COMUNICA_CHANNELS.map((c) => [c.id, c.importance]),
+    );
+    expect(spec).toEqual({
+      'comunica-listas': 'high',
+      'comunica-grupos': 'default',
+    });
+    for (const id of Object.keys(spec)) expect(isKnownChannelId(id)).toBe(true);
+  });
+
+  it('son los que el móvil declara al registrarse (contrato)', () => {
+    expect(COMUNICA_CHANNELS.map((c) => c.id).sort()).toEqual(
+      Object.values(COMUNICA_CHANNEL_IDS).sort(),
+    );
+  });
+
+  it('no tienen categoría del Panel', () => {
+    for (const c of COMUNICA_CHANNELS) expect(c.category).toBeUndefined();
+  });
+
+  it('channelIdForCategory nunca devuelve un canal del área', () => {
+    const area = new Set(COMUNICA_CHANNELS.map((c) => c.id));
+    const tries = [
+      ...PANEL_CATEGORIES,
+      'comunica',
+      'comunica-listas',
+      'comunica-grupos',
+      undefined,
+    ];
+    for (const category of tries) {
+      expect(area.has(channelIdForCategory(category))).toBe(false);
+    }
+  });
+});
+
+/**
+ * Guardarraíl de los recordatorios de Contigo: los programa el móvil con este
+ * id de canal. Si se quitara del catálogo, la limpieza del arranque lo borraría
+ * y Android dejaría de enseñar los avisos; y la importancia de un canal ya
+ * creado no se puede cambiar.
+ */
+describe('canal de los recordatorios de Contigo', () => {
+  it('sigue en el catálogo, con su importancia y sin categoría del Panel', () => {
+    const spec = NOTIFICATION_CHANNELS.find(
+      (c) => c.id === CONTIGO_REMINDERS_CHANNEL_ID,
+    );
+    expect(CONTIGO_REMINDERS_CHANNEL_ID).toBe('contigo-recordatorios');
+    expect(spec?.importance).toBe('high');
+    expect(spec?.source).toBe('local');
+    expect(spec?.category).toBeUndefined();
+    expect(isKnownChannelId(CONTIGO_REMINDERS_CHANNEL_ID)).toBe(true);
+  });
+
+  it('channelIdForCategory nunca devuelve este canal', () => {
+    for (const category of [...PANEL_CATEGORIES, 'contigo', undefined]) {
+      expect(channelIdForCategory(category)).not.toBe(
+        CONTIGO_REMINDERS_CHANNEL_ID,
+      );
+    }
+  });
+});

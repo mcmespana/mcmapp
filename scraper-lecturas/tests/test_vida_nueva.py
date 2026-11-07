@@ -12,7 +12,7 @@ import responses as responses_lib
 from scrapers.vida_nueva import VidaNuevaScraper, URL
 
 # Path to the real HTML snapshot committed to the repo
-HTML_FIXTURE = Path(__file__).parent.parent / "ejemplo_vida_nueva.html"
+HTML_FIXTURE = Path(__file__).parent / "fixtures" / "vida_nueva.html"
 
 
 @pytest.fixture
@@ -110,7 +110,8 @@ def test_evangelio_payload_keys(scraper, html_content):
     data = scraper.fetch()[0]
     payload = scraper.to_evangelio_payload(data)
 
-    assert payload["activo"] == "vidaNueva"
+    assert payload["activoTexto"] == "vidaNueva"
+    assert payload["activoComentario"] == "vidaNueva"
     assert "vidaNuevaCita" in payload
     assert "vidaNuevaComentario" in payload
     assert "vidaNuevaComentarista" in payload

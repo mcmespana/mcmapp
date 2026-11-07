@@ -1,5 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
+  Animated,
   View,
   Text,
   ScrollView,
@@ -9,14 +10,18 @@ import {
   TouchableOpacity,
   useWindowDimensions,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import useAnimatedValue from '@/hooks/useAnimatedValue';
 import BottomSheet from '@/components/BottomSheet';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
+import SegmentedControl, {
+  type SegmentedOption,
+} from '@/components/ui/SegmentedControl';
 import useSectionFontScale from '@/hooks/useSectionFontScale';
 import { warm } from '@/components/contigo/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -27,10 +32,10 @@ interface Props {
   previewText?: string;
 }
 
-const THEME_OPTIONS: { key: ThemeScheme; icon: string; label: string }[] = [
-  { key: 'light', icon: 'light-mode', label: 'Claro' },
-  { key: 'dark', icon: 'dark-mode', label: 'Oscuro' },
-  { key: 'system', icon: 'brightness-auto', label: 'Auto' },
+const THEME_OPTIONS: SegmentedOption<ThemeScheme>[] = [
+  { value: 'light', icon: 'light-mode', label: 'Claro' },
+  { value: 'dark', icon: 'dark-mode', label: 'Oscuro' },
+  { value: 'system', icon: 'brightness-auto', label: 'Auto' },
 ];
 
 const DEFAULT_PREVIEW =
@@ -85,18 +90,50 @@ export default function ReaderSettingsSheet({
   const boundsRef = useRef({ min, max });
   boundsRef.current = { min, max };
   const lastSnapped = useRef(scale);
+  // Si el valor cambia por los botones A/A, el arrastre tiene que partir de ahí:
+  // si no, volver con el dedo al mismo valor no disparaba ni háptica ni cambio.
+  useEffect(() => {
+    lastSnapped.current = scale;
+  }, [scale]);
+
+  // El tope solo suena UNA vez por llegada: arrastrando fuera de la barra
+  // seguiría entrando en `scrubTo` cada frame y sería una traca.
+  const atLimit = useRef(false);
+
+  // El agarre crece mientras el dedo está encima. Es la única forma en móvil de
+  // decir "esto lo estás tocando tú" sin un hover que no existe.
+  const knobScale = useAnimatedValue(1);
+  const grabKnob = (grabbed: boolean) => {
+    Animated.timing(knobScale, {
+      toValue: grabbed ? 1.35 : 1,
+      duration: grabbed ? 110 : 160,
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  };
 
   const scrubTo = (x: number) => {
     const w = trackWidth.current;
     if (w <= 0) return;
     const { min: lo, max: hi } = boundsRef.current;
-    const progress = Math.max(0, Math.min(1, x / w));
+    const raw = x / w;
+    const progress = Math.max(0, Math.min(1, raw));
     // Paso fino de 5% al arrastrar
     const snapped = Math.round((lo + progress * (hi - lo)) * 20) / 20;
+
     if (snapped !== lastSnapped.current) {
       lastSnapped.current = snapped;
+      atLimit.current = false;
       h.select();
       setScaleRef.current(snapped);
+      return;
+    }
+
+    // Mismo valor y el dedo fuera de la barra: se ha llegado al tope. Un aviso
+    // seco, distinto del `select` de un paso que sí ha ocurrido.
+    const beyond = raw < 0 || raw > 1;
+    if (beyond && !atLimit.current) {
+      atLimit.current = true;
+      h.limit();
     }
   };
 
@@ -108,8 +145,19 @@ export default function ReaderSettingsSheet({
       // desvía un poco en vertical el scroll reclama el gesto y el arrastre se
       // corta a mitad.
       onPanResponderTerminationRequest: () => false,
-      onPanResponderGrant: (e) => scrubTo(e.nativeEvent.locationX),
+      onPanResponderGrant: (e) => {
+        grabKnob(true);
+        scrubTo(e.nativeEvent.locationX);
+      },
       onPanResponderMove: (e) => scrubTo(e.nativeEvent.locationX),
+      onPanResponderRelease: () => {
+        atLimit.current = false;
+        grabKnob(false);
+      },
+      onPanResponderTerminate: () => {
+        atLimit.current = false;
+        grabKnob(false);
+      },
     }),
   ).current;
 
@@ -192,13 +240,15 @@ export default function ReaderSettingsSheet({
                     },
                   ]}
                 />
-                <View
+                <Animated.View
                   style={[
                     styles.knob,
                     {
                       backgroundColor: W.accent,
                       left: `${progress * 100}%`,
                       borderColor: W.bgCard,
+                      // El centrado ya lo hace `marginLeft: -10` del estilo.
+                      transform: [{ scale: knobScale }],
                     },
                   ]}
                 />
@@ -232,48 +282,13 @@ export default function ReaderSettingsSheet({
         >
           APARIENCIA
         </Text>
-        <View style={[styles.themeSegment, { backgroundColor: segmentBg }]}>
-          {THEME_OPTIONS.map((opt) => {
-            const selected = settings.theme === opt.key;
-            return (
-              <TouchableOpacity
-                key={opt.key}
-                onPress={() => {
-                  h.select();
-                  setSettings({ theme: opt.key });
-                }}
-                style={[
-                  styles.themeOption,
-                  selected && {
-                    backgroundColor: W.accent,
-                    shadowColor: W.accent,
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 5,
-                    elevation: 3,
-                  },
-                ]}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                accessibilityLabel={`Tema ${opt.label}`}
-              >
-                <MaterialIcons
-                  name={opt.icon as never}
-                  size={17}
-                  color={selected ? '#fff' : W.textSec}
-                />
-                <Text
-                  style={[
-                    styles.themeOptionText,
-                    { color: selected ? '#fff' : W.textSec },
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <SegmentedControl
+          options={THEME_OPTIONS}
+          value={settings.theme}
+          onChange={(theme) => setSettings({ theme })}
+          accentColor={W.accent}
+          accessibilityLabel="Tema del lector"
+        />
       </ScrollView>
     </BottomSheet>
   );
@@ -298,7 +313,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sectionLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
@@ -310,7 +325,7 @@ const styles = StyleSheet.create({
   sizeBtn: {
     width: 46,
     height: 46,
-    borderRadius: 12,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -331,18 +346,18 @@ const styles = StyleSheet.create({
   track: {
     width: '100%',
     height: 6,
-    borderRadius: 3,
+    borderRadius: radii.pillFull,
     justifyContent: 'center',
   },
   trackFill: {
     height: 6,
-    borderRadius: 3,
+    borderRadius: radii.pillFull,
   },
   knob: {
     position: 'absolute',
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radii.pillFull,
     borderWidth: 2,
     marginLeft: -10,
     shadowColor: '#000',
@@ -352,26 +367,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   percentLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  themeSegment: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    padding: 4,
-    gap: 4,
-  },
-  themeOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 11,
-    borderRadius: 9,
-  },
-  themeOptionText: {
-    fontSize: 13,
+    ...typography.footnote,
     fontWeight: '700',
   },
 });

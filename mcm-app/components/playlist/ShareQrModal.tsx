@@ -11,7 +11,7 @@
  * Si se pasan ambos, muestra un toggle para alternar entre los dos QR.
  */
 import { radii } from '@/constants/uiStyles';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Modal,
   View,
@@ -23,9 +23,11 @@ import {
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import * as Clipboard from 'expo-clipboard';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
+import colors, { themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -70,13 +72,18 @@ const ShareQrModal: React.FC<Props> = ({
     defaultMode === 'offline' && hasOffline ? 'offline' : 'online',
   );
 
-  useEffect(() => {
+  // Al ABRIR se vuelve a la pestaña por defecto y se olvida el "¡copiado!" de
+  // la vez anterior. Se ajusta durante el render (el patrón que documenta React
+  // para "cambiar estado cuando cambia una prop") en vez de con un efecto, así
+  // el modal no llega a pintarse un instante con la pestaña anterior.
+  const [lastVisible, setLastVisible] = useState(visible);
+  if (visible !== lastVisible) {
+    setLastVisible(visible);
     if (visible) {
       setCopied(null);
       setMode(defaultMode === 'offline' && hasOffline ? 'offline' : 'online');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
+  }
 
   // Modo efectivo: si solo hay uno disponible, ignoramos el toggle.
   const effectiveMode: 'online' | 'offline' = !onlineSelectable
@@ -164,7 +171,7 @@ const ShareQrModal: React.FC<Props> = ({
                   <MaterialIcons
                     name="cloud-upload"
                     size={48}
-                    color={isDark ? '#7AB3FF' : '#253883'}
+                    color={themeColors(isDark).link}
                   />
                   <Text style={styles.uploadPromptText}>
                     Esta playlist aún no está en la nube
@@ -258,7 +265,7 @@ const createStyles = (isDark: boolean) =>
       width: '100%',
       maxWidth: 360,
       backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-      borderRadius: 18,
+      borderRadius: radii.xl,
       padding: 20,
       alignItems: 'center',
       ...Platform.select({
@@ -275,12 +282,12 @@ const createStyles = (isDark: boolean) =>
     title: {
       fontSize: 17,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).text,
       textAlign: 'center',
     },
     subtitle: {
       fontSize: 12.5,
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       textAlign: 'center',
       marginTop: 4,
       marginBottom: 14,
@@ -288,8 +295,8 @@ const createStyles = (isDark: boolean) =>
     toggle: {
       flexDirection: 'row',
       alignSelf: 'stretch',
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
-      borderRadius: 10,
+      backgroundColor: themeColors(isDark).background,
+      borderRadius: radii.md,
       padding: 3,
       marginTop: 12,
       marginBottom: 2,
@@ -314,17 +321,17 @@ const createStyles = (isDark: boolean) =>
       }),
     },
     toggleText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
     },
     toggleTextActive: {
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
     },
     qrWrap: {
       backgroundColor: '#FFFFFF',
       padding: 14,
-      borderRadius: 14,
+      borderRadius: radii.lg,
     },
     uploadPrompt: {
       height: 228,
@@ -334,7 +341,7 @@ const createStyles = (isDark: boolean) =>
       paddingHorizontal: 16,
     },
     uploadPromptText: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '600',
       color: isDark ? '#AEAEB2' : '#6B6B70',
       textAlign: 'center',
@@ -346,7 +353,7 @@ const createStyles = (isDark: boolean) =>
       fontSize: 30,
       fontWeight: '800',
       letterSpacing: 8,
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
       marginTop: 12,
       marginBottom: 14,
       fontVariant: ['tabular-nums'],
@@ -363,18 +370,18 @@ const createStyles = (isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    btnPrimary: { backgroundColor: '#253883' },
+    btnPrimary: { backgroundColor: colors.primary },
     btnPrimaryText: {
       color: '#fff',
       fontSize: 15,
       fontWeight: '700',
     },
     btnSecondary: {
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
     },
     btnSecondaryText: {
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
-      fontSize: 15,
+      color: themeColors(isDark).text,
+      ...typography.button,
       fontWeight: '600',
     },
   });

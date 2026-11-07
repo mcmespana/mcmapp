@@ -6,6 +6,7 @@ import {
   loadLocalBookmarks,
   upsertLocalBookmark,
   removeLocalBookmark,
+  removeBookmarkWarning,
   mergeRemoteBookmarks,
   type StoredBookmark,
 } from '@/utils/contigoBookmarks';
@@ -71,7 +72,15 @@ describe('mergeRemoteBookmarks', () => {
     await upsertLocalBookmark(mk('2026-01-01', 100)); // local sin texto
     const remote = [
       mk('2026-01-01', 200, {
-        readings: { evangelio: { texto: 'T', cita: 'Jn 1', comentario: '', comentarista: '', url: '' } },
+        readings: {
+          evangelio: {
+            texto: 'T',
+            cita: 'Jn 1',
+            comentario: '',
+            comentarista: '',
+            url: '',
+          },
+        },
       }),
       mk('2026-02-02', 50),
     ];
@@ -84,10 +93,91 @@ describe('mergeRemoteBookmarks', () => {
   it('conserva las readings locales si el remoto no las trae', async () => {
     await upsertLocalBookmark(
       mk('2026-01-01', 100, {
-        readings: { evangelio: { texto: 'local', cita: '', comentario: '', comentarista: '', url: '' } },
+        readings: {
+          evangelio: {
+            texto: 'local',
+            cita: '',
+            comentario: '',
+            comentarista: '',
+            url: '',
+          },
+        },
       }),
     );
     const merged = await mergeRemoteBookmarks([mk('2026-01-01', 300)]);
     expect(merged[0].readings?.evangelio?.texto).toBe('local');
+  });
+});
+
+describe('escrituras concurrentes (Plan 006 — withStorageLock)', () => {
+  it('dos upsertLocalBookmark sin await entre ellos NO se pisan: ambos quedan guardados', async () => {
+    const a = upsertLocalBookmark(mk('2026-01-01', 100));
+    const b = upsertLocalBookmark(mk('2026-01-02', 200));
+
+    await Promise.all([a, b]);
+
+    const stored = await loadLocalBookmarks();
+    expect(stored.map((x) => x.date).sort()).toEqual([
+      '2026-01-01',
+      '2026-01-02',
+    ]);
+  });
+});
+
+describe('mergeRemoteBookmarks — conflictos', () => {
+  it('un guardado local más reciente que el remoto NO se pisa (subrayados recién hechos)', async () => {
+    await upsertLocalBookmark(
+      mk('2026-01-01', 500, { highlights: { evangelio: ['nuevo'] } }),
+    );
+    const merged = await mergeRemoteBookmarks([
+      mk('2026-01-01', 100, { highlights: { evangelio: ['viejo'] } }),
+    ]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].highlights?.evangelio).toEqual(['nuevo']);
+  });
+
+  it('el resultado queda persistido: al recargar se ve lo fundido, no lo local de antes', async () => {
+    await upsertLocalBookmark(mk('2026-01-01', 100));
+    await mergeRemoteBookmarks([mk('2026-03-03', 300)]);
+    const reloaded = await loadLocalBookmarks();
+    expect(reloaded.map((b) => b.date)).toEqual(['2026-03-03', '2026-01-01']);
+  });
+
+  it('merge sin remotos no borra los locales', async () => {
+    await upsertLocalBookmark(mk('2026-01-01', 100));
+    await expect(mergeRemoteBookmarks([])).resolves.toHaveLength(1);
+  });
+});
+
+describe('loadLocalBookmarks — almacenamiento dañado', () => {
+  it('JSON corrupto devuelve lista vacía en vez de romper la pantalla de Guardados', async () => {
+    await AsyncStorage.setItem(BOOKMARKS_KEY, '[{"date":');
+    await expect(loadLocalBookmarks()).resolves.toEqual([]);
+  });
+
+  it('un objeto suelto (no array) se trata como vacío', async () => {
+    await AsyncStorage.setItem(BOOKMARKS_KEY, '{"date":"2026-01-01"}');
+    await expect(loadLocalBookmarks()).resolves.toEqual([]);
+  });
+
+  it('descarta entradas sin fecha y conserva las buenas', async () => {
+    await AsyncStorage.setItem(
+      BOOKMARKS_KEY,
+      JSON.stringify([null, { bookmarkedAt: 1 }, mk('2026-01-01', 5)]),
+    );
+    const list = await loadLocalBookmarks();
+    expect(list.map((b) => b.date)).toEqual(['2026-01-01']);
+  });
+});
+
+describe('removeBookmarkWarning', () => {
+  it('avisa en singular con un solo subrayado', () => {
+    expect(removeBookmarkWarning(1)).toBe('Se borrará también tu subrayado.');
+  });
+
+  it('cuenta los subrayados en plural', () => {
+    expect(removeBookmarkWarning(4)).toBe(
+      'Se borrarán también tus 4 subrayados.',
+    );
   });
 });

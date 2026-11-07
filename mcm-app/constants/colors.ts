@@ -1,21 +1,83 @@
 /**
- * Design tokens de color para la app MCM.
- * Fuente única de verdad — no definir colores en otros archivos.
+ * Design tokens de color para la app MCM. **Fuente única de verdad.**
+ *
+ * Reglas (las largas están en `design.md`, raíz del monorepo):
+ *
+ * 1. No se escriben hex en componentes. Si falta un color, se añade aquí con
+ *    nombre semántico y comentario.
+ * 2. Un token se llama por lo que ES, no por dónde se usó primero. Si el
+ *    nombre semántico no es verdad en toda la app, se usa el nombre del color
+ *    (por eso `green`/`yellow`/`purple` y no `success`/`warning`/`danger`:
+ *    el verde pinta Reflexiones y el amarillo las estrellas de valoración —
+ *    no son estados).
+ * 3. Excepciones sancionadas — hay exactamente dos sitios más con color, y
+ *    ambos son identidad deliberada de un territorio (`design.md` §2):
+ *      · `components/contigo/theme.ts` — paleta cálida de Contigo.
+ *      · `constants/events.ts` — `tintColor` propio de cada evento.
+ *    Cualquier otro color fuera de este archivo es un bug.
+ * 4. `mcm-app/global.css` NO es una tercera paleta: son las variables del tema
+ *    de HeroUI, cuyos nombres pertenecen a HeroUI (su `--accent` es nuestro
+ *    `primary`). Se alimentan de los valores de aquí; no las renombres.
  */
 
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
+/**
+ * Roles de superficie y texto por modo. Es la ÚNICA capa de roles: no hay un
+ * `Surfaces` aparte ni un `TextColors` aparte, porque tener dos familias para
+ * lo mismo es justo lo que se está quitando.
+ *
+ * Los cinco roles de abajo del todo (`textSecondary` … `separator`) se
+ * añadieron en 2026-08 porque no existían y por eso se escribían a mano: había
+ * ~110 ternarios `isDark ? '#F5F5F7' : '#1C1C1E'` repartidos por la app, con
+ * la deriva típica de copiar y pegar (dos grises distintos para el mismo
+ * papel: `#A0A0A8`/`#6B6B70` y `#AEAEB2`/`#636366`). Se unificaron en el par
+ * con más contraste de los dos.
+ *
+ * **No hay un nivel por encima de `text`, y es a propósito** (2026-09-09).
+ * Existió `textStrong` para "títulos y texto que destaca", pero no destacaba:
+ * en claro era `#1C1C1E` contra el `#11181C` del cuerpo —el "fuerte" era más
+ * CLARO que el texto normal— y en oscuro `#F5F5F7` contra `#FFFFFF`, otra vez
+ * al revés. Un 1% de luminancia que nadie puede ver, en la dirección
+ * contraria a la que prometía el nombre. Es el modelo de iOS: hay un label
+ * primario y los títulos se distinguen por TAMAÑO y PESO, no por color. Sus 43
+ * usos pasaron a `text`, que además contrasta un pelín más.
+ */
 export const Colors = {
   light: {
     text: '#11181C',
-    background: '#fff',
+    background: '#ffffff',
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
     shadow: '#000000',
     card: '#FFFFFF',
+
+    /** Subtítulos, metadatos, texto de apoyo. */
+    textSecondary: '#636366',
+    /**
+     * Terciario: placeholders, leyendas, sellos de tiempo. Lo más tenue que
+     * puede ser un TEXTO sin dejar de leerse: 4,5:1 sobre blanco y sobre el
+     * gris de los campos (#F2F2F7). Era `#8E8E93`, que se quedaba en 2,9:1.
+     */
+    textMuted: '#6E6E73',
+    /** Enlaces y acciones en texto. En claro es el azul de marca. */
+    link: '#253883',
+    /** Fondo hundido: lo que va DEBAJO de las cards (listas, agrupaciones). */
+    backgroundSunken: '#F2F2F7',
+    /** Hairline entre filas. Más sutil que `border`, que es para cajas. */
+    separator: '#E5E5EA',
+
+    /**
+     * Botones y título de las cabeceras NATIVAS transparentes (glass en iOS,
+     * barra del sistema en web): `headerTintColor` y los iconos de los bar
+     * items. Casi negro en claro, blanco en oscuro. No es `text` (`#11181C`):
+     * se escribió a mano en ~8 sitios con este valor y se le da nombre tal
+     * cual, sin cambiar un píxel (PLAN_DISENO §A6-quater).
+     */
+    headerTint: '#1a1a1a',
   },
   dark: {
     text: '#FFFFFF',
@@ -26,19 +88,72 @@ export const Colors = {
     tabIconSelected: tintColorDark,
     shadow: '#000000',
     card: '#3A3A3C',
+
+    textSecondary: '#AEAEB2',
+    /** Terciario. En oscuro `#8E8E93` ya pasa (5,2:1 sobre el gris de campo). */
+    textMuted: '#8E8E93',
+    link: '#7AB3FF',
+    backgroundSunken: '#1C1C1E',
+    separator: '#3A3A3C',
+    headerTint: '#FFFFFF',
   },
 };
 
-// Colores de marca MCM
+/**
+ * Resuelve los roles del modo activo.
+ *
+ * Mismo patrón que `warm(isDark)` de Contigo, para que las dos paletas se usen
+ * igual:  `themeColors(isDark).textSecondary`.
+ */
+export const themeColors = (isDark: boolean) =>
+  isDark ? Colors.dark : Colors.light;
+
+/**
+ * Grises del sistema de Apple, tal cual. La app ya los usaba —eran los hex más
+ * repetidos del repo—, solo que escritos a mano uno por uno.
+ *
+ * Para roles de texto y superficie usa `Colors`/`themeColors`: esto es la
+ * paleta cruda, para cuando de verdad necesitas un gris concreto.
+ */
+export const SystemGray = {
+  light: {
+    gray: '#8E8E93',
+    gray2: '#AEAEB2',
+    gray3: '#C7C7CC',
+    gray4: '#D1D1D6',
+    gray5: '#E5E5EA',
+    gray6: '#F2F2F7',
+  },
+  dark: {
+    gray: '#8E8E93',
+    gray2: '#636366',
+    gray3: '#48484A',
+    gray4: '#3A3A3C',
+    gray5: '#2C2C2E',
+    gray6: '#1C1C1E',
+  },
+} as const;
+
+// Colores de marca MCM.
+//
+// Es una paleta CROMÁTICA (los colores del logo), no semántica: el estado
+// («esto ha ido bien», «esto es un error») se expresa con `ToastColors` o
+// `SwipeColors`, que son los que sí significan eso en su contexto.
 const brand = {
-  primary: '#253883', // Azul fondo
+  primary: '#253883', // Azul fondo — identidad MCM
   secondary: '#95d2f2', // Azul letras
-  accent: '#E15C62', // Rojo MIC
-  info: '#31AADF', // Celeste
-  success: '#A3BD31', // Verde COM
-  warning: '#FCD200', // Amarillo COM
-  danger: '#9D1E74', // Morado LC
-  text: '#002B81', // Azul COM
+  accent: '#E15C62', // Rojo MIC — acento institucional (CTAs, badges)
+  info: '#31AADF', // Celeste — enlaces e informativos
+  green: '#A3BD31', // Verde COM — Reflexiones, Conso+, duraciones
+  // Hay DOS amarillos a cuatro puntos de diferencia y hacen cosas distintas:
+  //   · `brand.yellow` (#FCD200) — el de MARCA (amarillo COM). Estrellas de
+  //     valoración, categorías, el tab de la Visita del Papa.
+  //   · `UIColors.accentYellow` (#f4c11e) — el del CANTORAL. Su tab, su FAB y
+  //     el destacado ámbar salen de ahí.
+  // Si estás pintando algo del cantoral, el segundo. Si no, este.
+  yellow: '#FCD200', // Amarillo COM — estrellas de valoración, Autobuses
+  purple: '#9D1E74', // Morado LC — Comunica
+  text: '#002B81', // Azul COM — texto de marca
   background: '#ffffff', // Fondo blanco
   white: '#ffffff', // Blanco
   black: '#000000', // Negro
@@ -47,16 +162,69 @@ const brand = {
 
 export default brand;
 
-// Colores de UI para componentes interactivos (FABs, botones, etc.)
+// Colores de UI para componentes interactivos.
+//
+// Tenía nueve claves y CUATRO no las usaba nadie (`activePrimaryDark`,
+// `textLight`, `textDark`, `backgroundLight`). Borradas en agosto de 2026: un
+// token muerto no es inofensivo, es una respuesta plausible a la pregunta
+// equivocada.
 export const UIColors = {
-  activePrimary: '#007bff', // Azul — elementos activos, bordes de FABs
-  activePrimaryDark: '#0056b3', // Azul oscuro — bordes FABs activos
-  accentYellow: '#f4c11e', // Amarillo — FAB principal
-  textLight: '#ffffff', // Texto blanco
-  textDark: '#212529', // Texto oscuro
-  backgroundLight: '#ffffff', // Fondo blanco para FABs inactivos
+  /** Azul de acción del sistema (iOS): botones y enlaces nativos. */
+  iosBlue: '#007AFF',
+  /**
+   * Azul de los ACORDES del cantoral. Es un azul web (#007bff), 1 punto de
+   * tono por debajo del `iosBlue` del sistema — no son el mismo color ni el
+   * mismo papel, y el nombre lo escondía. Vive en el HTML que genera
+   * `useSongProcessor`, no en la UI nativa.
+   */
+  chordBlue: '#007bff',
+  /** Gris del texto secundario DENTRO del HTML de una canción. */
+  chordSecondaryText: '#6c757d',
+  /** Amarillo del cantoral — FAB principal y color de su tab. */
+  accentYellow: '#f4c11e',
+  /**
+   * Botones de la cabecera del cantoral en iOS claro (header transparente
+   * sobre fondo blanco/gris, 4,5:1). Estaba escrito a mano en tres sitios con
+   * este mismo valor; se le da nombre sin cambiar un píxel. Quién lo usa y en
+   * qué plataforma lo decide `utils/cantoralHeader.ts`.
+   */
+  cantoralHeaderTintLight: '#3d79b9',
   modalOverlay: 'rgba(0, 0, 0, 0.5)',
-  secondaryText: '#6c757d', // Gris secundario
+} as const;
+
+/**
+ * Hoja de una canción (el HTML del WebView del cantoral, ver
+ * `utils/songSheetLayout.ts`). Vive en un documento aparte, así que no puede
+ * leer `themeColors`: va su propio par claro/oscuro, con los mismos valores
+ * que ya pintaba `useSongProcessor`.
+ *
+ * - `chorusBar`/`chorusBg`: la raya y el fondo del estribillo. El amarillo es
+ *   el del cantoral (`UIColors.accentYellow`); el fondo apenas se nota a
+ *   propósito: separa sin gritar.
+ * - `label`: las etiquetas de sección («ESTRIBILLO», «INTRO») y el número de
+ *   estrofa. Más tenue que la letra, más firme que un comentario.
+ */
+export const SongSheetColors = {
+  light: {
+    text: '#212529',
+    title: '#1C1C1E',
+    chord: UIColors.chordBlue,
+    muted: UIColors.chordSecondaryText,
+    label: '#5B6270',
+    chorusBar: UIColors.accentYellow,
+    chorusBg: 'rgba(244, 193, 30, 0.07)',
+    filler: 'rgba(33, 37, 41, 0.25)',
+  },
+  dark: {
+    text: '#E5E5EA',
+    title: '#F5F5F7',
+    chord: '#64B5F6',
+    muted: '#98989D',
+    label: '#AEAEB2',
+    chorusBar: UIColors.accentYellow,
+    chorusBg: 'rgba(244, 193, 30, 0.08)',
+    filler: 'rgba(229, 229, 234, 0.28)',
+  },
 } as const;
 
 // Colores de tabs (cabecera)
@@ -66,8 +234,72 @@ export const TabHeaderColors = {
   calendario: '#31AADF', // Celeste
   fotos: '#E15C62', // Rojo MIC
   comunica: 'rgba(157, 30, 116, 0.87)', // Morado LC con transparencia
-  contigo: '#B8860B', // Dorado cálido - Contigo
+  // Dorado cálido - Contigo. DEBE seguir siendo el mismo valor que
+  // `WARM_LIGHT.accent` de `components/contigo/theme.ts`: es la raya de 8 px
+  // que identifica la sección y se ve pegada al acento de la pantalla que
+  // abre. Eran dos dorados distintos (#B8860B aquí, #C4922A allí) y se
+  // notaba en el borde (§A3 de PLAN_DISENO). No se importa de `theme.ts`
+  // porque este archivo es la capa de abajo y no debe depender de un
+  // componente; en su lugar hay un test que compara los dos.
+  contigo: '#C4922A',
 };
+
+/**
+ * Territorio «Comunica»: el área privada nativa de la pestaña Comunica
+ * (`components/comunica/`, `app/(tabs)/comunica/`). Decisión `territorio` = A
+ * del propietario (21/10/2026, `docs/planes/area-nativa/03` §2): estructura y
+ * tokens no cromáticos de la app, con el color del área privada web.
+ *
+ * Solo se leen a través de `components/comunica/comun/theme.ts`, que decide qué
+ * va como relleno y qué como texto en cada modo. Los valores son los del
+ * plugin (`comunicaAreaPrivada`), para que la gente reconozca lo que ya usa.
+ */
+const comunicaBlue = '#1c6fb3'; // Azul Comunica — primer tramo del degradado
+const comunicaViolet = '#6c4b9e'; // Violeta Comunica — «azul morado, más morado»
+const comunicaRed = '#dc2626';
+const comunicaAmber = '#f59e0b';
+
+export const ComunicaColors = {
+  /**
+   * Acento del área: chips de acento, interruptores, avatar, la barra de
+   * identidad. Como RELLENO vale en los dos modos (blanco encima, 6,7:1).
+   */
+  accent: comunicaViolet,
+  /**
+   * El acento como TEXTO, icono o borde, por modo. En claro es el mismo
+   * violeta (6,7:1 sobre blanco, 6,0:1 sobre el hundido); en oscuro el violeta
+   * se queda en 1,7:1 sobre la card, así que va uno más claro del mismo tono
+   * (5,1:1 sobre la card oscura). Lo prueba `__tests__/comunica/territorio`.
+   */
+  accentText: { light: comunicaViolet, dark: '#B9A3E0' },
+  /**
+   * El degradado de marca, de izquierda a derecha. SOLO en la acción principal
+   * de cada pantalla (`AreaPrimaryButton`), uno por pantalla: es la firma del
+   * área, no decoración. El texto encima, blanco (≥ 5,2:1 en los tres tramos).
+   */
+  gradient: [comunicaBlue, comunicaViolet, brand.purple] as const,
+  /**
+   * Segmentos del COM en las listas de grupos: el COM recorre verde → violeta
+   * → magenta según se crece (COM I lleva el verde COM de marca).
+   */
+  segment: { com2: '#7c3aed', com3: '#be185d' },
+  /** Colores de los pañuelos (`sticpa_pl_panuelos()`). Siempre de RELLENO. */
+  scarf: {
+    none: '#9ca3af',
+    red: comunicaRed,
+    green: '#2f9e44',
+    blue: comunicaBlue,
+    yellow: comunicaAmber,
+    cross: comunicaViolet,
+    unknown: '#d1d5db',
+  },
+  /**
+   * Escala de los avisos de comportamiento (`sticpa_pl_aviso_color()`): ámbar
+   * → naranja → rojo, iguales en los dos modos. El naranja es `#c2410c` y no
+   * otro más vivo porque con él el número blanco de dentro llega a 5,2:1.
+   */
+  notice: { 1: comunicaAmber, 2: '#c2410c', 3: comunicaRed },
+} as const;
 
 // Colores de toast — Material Design estándar
 export const ToastColors = {
@@ -76,6 +308,37 @@ export const ToastColors = {
   warning: '#FF9800',
   info: '#2196F3',
 } as const;
+
+// Afinador del cantoral (`app/screens/TunerScreen.tsx`). Son los verde y
+// naranja de sistema de Apple: «afinada» y «casi», que es lo que significan en
+// cualquier afinador. Cada uno en dos tonos: `ink` es el que se lee como texto
+// o trazo fino sobre el fondo de su modo (≥4,5:1 en claro, el verde/naranja
+// accesible de Apple; en oscuro, el de sistema), `fill` es el tinte suave de
+// detrás. No son colores de marca ni de estado general: un toast sigue usando
+// `ToastColors`.
+export const TunerColors = {
+  inTuneInkLight: '#248A3D',
+  inTuneInkDark: '#30D158',
+  inTuneFillLight: 'rgba(52, 199, 89, 0.14)',
+  inTuneFillDark: 'rgba(48, 209, 88, 0.18)',
+  nearInkLight: '#C93400',
+  nearInkDark: '#FF9F0A',
+} as const;
+
+/** `TunerColors` resueltos por modo. */
+export function tunerColors(isDark: boolean) {
+  return isDark
+    ? {
+        inTune: TunerColors.inTuneInkDark,
+        inTuneFill: TunerColors.inTuneFillDark,
+        near: TunerColors.nearInkDark,
+      }
+    : {
+        inTune: TunerColors.inTuneInkLight,
+        inTuneFill: TunerColors.inTuneFillLight,
+        near: TunerColors.nearInkLight,
+      };
+}
 
 // Estados visuales compartidos (selección, hover, pressed)
 // Usado en SongListItem y futuros componentes con estado seleccionado.
@@ -98,24 +361,12 @@ export const SwipeColors = {
 export const KeyPillColors = {
   bgLight: '#EEF4FF',
   bgDark: '#1A2744',
-} as const;
-
-// Colores de emociones — usado en Contigo (oración) y disponible para futuros trackers.
-export const EmotionColors = {
-  joy: '#FCD200', // Alegría — amarillo COM
-  sadness: '#31AADF', // Tristeza — celeste
-  anger: '#E15C62', // Enfado — rojo MIC
-  fear: '#6B3FA0', // Miedo — púrpura
-  disgust: '#3A7D44', // Asco — verde bosque
-} as const;
-
-// Versiones suaves (light) de cada emoción para fondos de chips/cards.
-export const EmotionColorsSoft = {
-  joy: '#FDE68A',
-  sadness: '#BFDBFE',
-  anger: '#FECACA',
-  fear: '#DDD6FE',
-  disgust: '#BBF7D0',
+  /**
+   * Borde y relleno del icono de «Tu selección» en el cantoral, la misma
+   * familia azul que el fondo. Estaban a mano en sus cuatro usos.
+   */
+  borderLight: '#D4E2FF',
+  borderDark: '#2A3D66',
 } as const;
 
 // Colores de las categorías del modal de feedback (sustituye magic numbers en AppFeedbackModal).
@@ -123,4 +374,173 @@ export const FeedbackCategoryColors = {
   bug: '#FF6B6B', // Error / bug
   idea: '#4ECDC4', // Sugerencia / idea
   praise: '#FFD93D', // Felicitación
+} as const;
+
+/**
+ * Destacado ámbar: la canción o playlist marcada. Vivía como cuatro hex
+ * sueltos repetidos en `PlaylistRow`, `SongListItem` y `TransposeBottomSheet`,
+ * con deriva entre ellos (`#3A2D0A` en uno, `#3A2800` en otro).
+ */
+export const HighlightColors = {
+  light: { bg: '#FFF4DA', fg: '#7A5A00', border: '#F4C11E' },
+  dark: { bg: '#3A2D0A', fg: '#F4C11E', border: '#7A5A00' },
+} as const;
+
+/**
+ * Verdes del modo Carismochito. `light`/`dark` son el acento por tema; el resto
+ * son los tonos del HUD (cuenta atrás, avisos, diálogos), que viven sobre fondo
+ * verde oscuro en ambos temas.
+ */
+export const CarismoColors = {
+  light: '#1B9E4B',
+  dark: '#9DE86B',
+  /** Brillo: halos, sombras, anillo de la cuenta atrás. */
+  glow: '#5AE08A',
+  /** Verde casi negro: fondo de tarjetas, texto sobre botones lima. */
+  deep: '#06210F',
+  /** Extremos del degradado de fondo del HUD. */
+  deepEdge: '#0C3D1C',
+  abyss: '#011A0A',
+  /** Pestañas inactivas del modo (barra compacta y web). */
+  inactiveLight: '#6FA77E',
+  inactiveDark: '#4E8C5F',
+  /** Texto claro sobre `deep`: títulos, cuerpo y pistas. */
+  onDeep: '#E8FFB8',
+  onDeepSoft: '#D4F5A0',
+  onDeepMuted: '#A3D86E',
+  /** Verde hoja: solo para el confeti. */
+  leaf: '#7AC943',
+} as const;
+
+/** Las piezas de color del dibujo vectorial de Carismochito. */
+export interface CarismochitoPalette {
+  skin: string;
+  skinDark: string;
+  outline: string;
+  cap: string;
+  capDark: string;
+  mohawkA: string;
+  mohawkB: string;
+  iris: string;
+  mouth: string;
+}
+
+/**
+ * Pieles de las variantes coleccionables de Carismochito
+ * (`utils/carismochitoCollection.ts`). Es ilustración, no UI: por eso tiene
+ * sus propios tonos y no pasa por los roles de `themeColors`. Las pieles de
+ * las variantes de marca salen de `brand` para que se reconozcan como MCM.
+ *
+ * `silueta` es la de "todavía no lo has encontrado" en la colección: una sola
+ * tinta, sin detalle, para que no destripe cómo es.
+ */
+export const CarismochitoPalettes = {
+  verde: {
+    skin: '#4FA37A',
+    skinDark: '#2E6B4F',
+    outline: '#173A2A',
+    cap: '#7C7C82',
+    capDark: '#5C5C62',
+    mohawkA: '#E2342B',
+    mohawkB: '#F2D43B',
+    iris: '#5B86B5',
+    mouth: '#E2342B',
+  },
+  celeste: {
+    skin: brand.info,
+    skinDark: '#1E7FAE',
+    outline: '#0E3A55',
+    cap: '#7C7C82',
+    capDark: '#5C5C62',
+    mohawkA: brand.yellow,
+    mohawkB: '#FFFFFF',
+    iris: brand.primary,
+    mouth: brand.accent,
+  },
+  rojo: {
+    skin: brand.accent,
+    skinDark: '#A8383E',
+    outline: '#4A1417',
+    cap: '#7C7C82',
+    capDark: '#5C5C62',
+    mohawkA: brand.yellow,
+    mohawkB: '#FFFFFF',
+    iris: brand.primary,
+    mouth: '#7A1E22',
+  },
+  lima: {
+    skin: brand.green,
+    skinDark: '#6F8420',
+    outline: '#2E3A0C',
+    cap: '#7C7C82',
+    capDark: '#5C5C62',
+    mohawkA: brand.purple,
+    mohawkB: brand.yellow,
+    iris: brand.primary,
+    mouth: brand.accent,
+  },
+  morado: {
+    skin: brand.purple,
+    skinDark: '#6A124E',
+    outline: '#2E0822',
+    cap: '#7C7C82',
+    capDark: '#5C5C62',
+    mohawkA: brand.yellow,
+    mohawkB: brand.secondary,
+    iris: brand.secondary,
+    mouth: brand.yellow,
+  },
+  nocturno: {
+    skin: '#2C2C3E',
+    skinDark: '#16161F',
+    outline: '#0A0A10',
+    cap: '#44445A',
+    capDark: '#30303F',
+    mohawkA: '#5AE08A',
+    mohawkB: '#9DE86B',
+    iris: '#9DE86B',
+    mouth: '#5AE08A',
+  },
+  dorado: {
+    skin: '#E3B341',
+    skinDark: '#B08423',
+    outline: '#4A3508',
+    cap: '#8A6A1E',
+    capDark: '#6B5217',
+    mohawkA: '#FFF3B0',
+    mohawkB: '#FFFFFF',
+    iris: '#6B5217',
+    mouth: '#B08423',
+  },
+  silueta: {
+    skin: '#8E8E93',
+    skinDark: '#8E8E93',
+    outline: '#636366',
+    cap: '#8E8E93',
+    capDark: '#8E8E93',
+    mohawkA: '#8E8E93',
+    mohawkB: '#8E8E93',
+    iris: '#8E8E93',
+    mouth: '#8E8E93',
+  },
+} as const satisfies Record<string, CarismochitoPalette>;
+
+export type CarismochitoPaletteId = keyof typeof CarismochitoPalettes;
+
+/**
+ * Colores litúrgicos. No son decoración: son los del tiempo litúrgico, y los
+ * fija la Iglesia, no nosotros. Estaban escritos a mano dentro de
+ * `LiturgicalBadge`, que es el único sitio donde se sabía cuál era cuál.
+ */
+export const LiturgicalColors = {
+  /** Tiempo Ordinario. */
+  green: '#3A7D44',
+  /** Adviento y Cuaresma. */
+  purple: '#6B3FA0',
+  /** Navidad y Pascua. */
+  gold: '#D4A070',
+  /** Semana Santa (Domingo de Ramos y Viernes Santo). */
+  red: '#C41E3A',
+  /** Gaudete y Laetare — el rosa de los dos domingos de alegría. */
+  rose: '#D4A0A7',
 } as const;

@@ -156,10 +156,7 @@ export interface SurveyIndexEntry {
  */
 export function normalizeSurveyIndex(
   data:
-    | SurveyIndexEntry[]
-    | Record<string, SurveyIndexEntry>
-    | null
-    | undefined,
+    SurveyIndexEntry[] | Record<string, SurveyIndexEntry> | null | undefined,
 ): SurveyIndexEntry[] {
   if (!data) return [];
   if (Array.isArray(data)) return data.filter(Boolean);

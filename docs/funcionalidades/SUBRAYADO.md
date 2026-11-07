@@ -1,8 +1,8 @@
 # Subrayado de lecturas (Contigo → Evangelio)
 
 > Cómo funciona el subrayado de las lecturas del día, por qué el texto se
-> renderiza como se renderiza, y qué falta (build nativa) para meter "Subrayar"
-> dentro del menú nativo de iOS/Android.
+> renderiza como se renderiza, y cómo está montado el ítem "Subrayar" dentro
+> del menú nativo de iOS/Android.
 
 ## Piezas
 
@@ -13,6 +13,7 @@ utils/contigoBookmarks.ts                  HighlightSource + HIGHLIGHT_SOURCES +
 hooks/useReaderBookmarks.ts                Persistencia local + RTDB por usuario
 hooks/useReadingHighlights.ts              Estado de subrayado de TODAS las fuentes del día
 components/contigo/HighlightableReading.tsx  El componente de texto (selección nativa)
+modules/highlight-menu/                    Módulo nativo: ítem "Subrayar" en el menú del sistema
 components/contigo/HighlightActionBar.tsx  Barra flotante: colores pastel + goma + Listo
 components/contigo/ReadingCard.tsx         Tarjeta plegable de cada lectura
 app/(tabs)/contigo/evangelio.tsx           Pantalla que lo une todo
@@ -68,49 +69,151 @@ Los tramos de color se pasan como **hijos `<Text>`** del `TextInput` (React
 Native los convierte en la cadena atribuida nativa), no como un `value` plano.
 Por eso los subrayados siguen visibles dentro del modo subrayar.
 
-## Pendiente: "Subrayar" en el menú nativo (requiere build de tienda)
+## Seleccionar texto que YA está subrayado
 
-Hoy el flujo es: botón del rotulador en el header → modo subrayar → seleccionar
-→ elegir color en la barra flotante. Lo ideal sería seleccionar texto en
-cualquier momento y que el **menú nativo del sistema** tuviera un ítem
-"Subrayar" con sus colores, sin modo aparte.
+Si la selección cae sobre un tramo ya subrayado, la barra de acciones deja de
+tratarlo como texto nuevo: **marca con un aro el color que ya tiene** y la goma
+se anuncia como "quitar el subrayado". Así el mismo gesto sirve para poner,
+cambiar de color y quitar.
 
-Eso **no se puede hacer desde JS**: hay que tocar código nativo, con lo que
-implica un **build de tienda** (no vale una OTA) y commit con `[skip-ota]`.
+La lógica es pura y está en `selectionHighlight()` (`utils/highlightRanges.ts`):
+dada la selección y los rangos, devuelve `{ color, full }`, o `null` si no toca
+ningún subrayado. Si la selección pisa varios colores gana el que cubra más
+caracteres; `full` dice si TODA la selección está subrayada o sólo una parte.
+El hook `useReadingHighlights` lo expone como `selection` y la pantalla se lo
+pasa a `HighlightActionBar`.
 
-### iOS
+Está cubierto por tests en `__tests__/highlightRanges.test.ts`.
 
-- Módulo nativo (Expo Module o view manager) que envuelva un `UITextView`.
-- Implementar `textView(_:editMenuForTextIn:suggestedActions:)` (iOS 16+) y
-  devolver un `UIMenu` con un submenú "Subrayar" y una `UIAction` por color de
-  `HIGHLIGHT_COLORS`.
-- La acción emite un evento a JS con `{start, end, color}` (los offsets ya
-  vienen del `selectedRange` del `UITextView`, que es lo mismo que consumimos
-  hoy vía `onSelectionChange`).
-- Mantener el resto de acciones sugeridas para no perder Copiar / Herramientas
-  de escritura / Traducir.
+## Seleccionar primero, tocar el lápiz después
 
-### Android
+El botón de subrayar de la cabecera **usa la selección que ya hubiera hecha**.
+Para eso `HighlightableReading` reporta `onSelectionChange` SIEMPRE que el texto
+sea un `TextInput` (en iOS, leyendo y subrayando), no solo dentro del modo lápiz:
+si solo escuchara dentro del modo, la selección que había era invisible para JS y
+la barra salía pidiendo "selecciona un texto" hasta que movías las asas un pelo.
 
-- Custom `ActionMode.Callback2` sobre el `TextView`/`EditText`
-  (`setCustomSelectionActionModeCallback`) añadiendo un ítem "Subrayar".
-- Mismo contrato hacia JS: `{start, end, color}`.
+La selección es "pegajosa" (`useReadingHighlights`): se conserva la última no
+vacía. Hace falta por dos motivos —iOS colapsa la selección nativa antes de que
+llegue el `onPress` del chip de color, y el propio toque en el botón del lápiz
+puede deshacerla—. Quien la limpia de verdad es `exitHighlightMode` (al salir del
+modo, al cambiar de día o al elegir otra fecha).
 
-### Cuando se haga
+**En Android este camino no existe**: leyendo, el texto es un `Text selectable`
+y un `Text` no reporta offsets. El atajo bueno en Android es el ítem "Subrayar"
+del propio menú de selección.
 
-1. `HighlightableReading` pasa a envolver la vista nativa; el resto (rangos,
-   paleta, persistencia) no cambia — el contrato ya es `{start, end, color}`.
-2. La barra flotante y el modo subrayar se pueden mantener como camino
-   alternativo (accesible, y el único disponible en web).
-3. Commit con `[skip-ota]` + avisar de que hace falta build de tienda:
-   `npm run eas:build:ios -- --profile production`.
+## "Subrayar" en el menú nativo del sistema
+
+> Implementado el 2026-08-03 (build de tienda de agosto). **Requiere binario
+> nuevo**: no sale por OTA.
+>
+> ⚠️ **Nunca ha llegado a un binario todavía.** El código estaba, pero
+> `.easignore` —que cuando existe SUSTITUYE a `.gitignore` para decidir qué sube
+> a EAS— conservaba las reglas `ios/` y `android/` sin barra inicial, que casan a
+> cualquier profundidad y se llevaban por delante
+> `modules/highlight-menu/{ios,android}`. El módulo subía con su
+> `expo-module.config.json` y su JS pero sin Swift, sin Kotlin, sin podspec ni
+> `build.gradle`: autolinking lo saltaba en silencio y la app se construía sin el
+> ítem. Arreglado el 2026-08-08; la comprobación de que no vuelve está en
+> `docs/desarrollo/BUILD_AGOSTO_2026.md` §3.
+>
+> Mientras el binario no lo lleve, `HighlightMenuView` detecta que el módulo no
+> está (`requireOptionalNativeModule`) y renderiza un `View` pelado. Antes
+> montaba la vista nativa inexistente, que React Native sustituye por su
+> placeholder de "componente sin implementar" — y como esta vista ENVUELVE el
+> texto de la lectura, eso se llevaba por delante el render del texto.
+
+Al seleccionar texto en cualquier lectura, el menú del sistema trae un ítem
+**"Subrayar"** junto a Copiar / Traducir / Buscar / Herramientas de escritura.
+**No hay que entrar antes en el modo lápiz.**
+
+Tocarlo **subraya en el acto**, sin preguntar color: usa el "color de turno"
+(`utils/stickyHighlightColor.ts`), uno al azar que se mantiene unos 8 minutos —
+así varias frases seguidas salen del mismo color y de un día para otro cambia
+solo. La barra de colores aparece igualmente, con el color puesto marcado, así
+que cambiarlo o quitarlo sigue siendo un toque; simplemente ya no es obligatorio.
+Por dentro es `applyColor(color, { source, sel })`: el segundo argumento existe
+para poder pintar en el mismo gesto en que llega la selección, sin esperar a que
+el estado se actualice.
+
+### Cómo está montado
+
+`modules/highlight-menu/` — módulo local de Expo (se autolinka solo: Expo mira
+en `./modules`). Exporta una única vista, `HighlightMenuView`, que **envuelve**
+el texto y le añade la acción al menú.
+
+```
+modules/highlight-menu/
+  ios/HighlightMenuView.swift      proxy del delegate + UIAction
+  ios/HighlightMenuModule.swift    definición de la vista y sus props
+  android/.../HighlightMenuView.kt ActionMode.Callback
+  src/HighlightMenuView.tsx        vista JS (+ .web.tsx, que es un View pelado)
+```
+
+**Por qué envuelve el texto en vez de buscar la vista por su tag**: la búsqueda
+por tag va contra el UIManager y con la nueva arquitectura ya no es de fiar.
+Teniendo el texto dentro, basta recorrer las subvistas hasta el primer
+`UITextView` (iOS) o `TextView` (Android). El coste es un nodo de layout extra,
+y sólo cuando se pasa `onNativeHighlightRequest`: sin ese prop,
+`HighlightableReading` renderiza exactamente el mismo árbol que antes.
+
+**iOS — el proxy del delegate.** Desde iOS 16 el menú se construye en
+`textView(_:editMenuForTextIn:suggestedActions:)`, y ese delegate **ya lo ocupa
+React Native**. Quitárselo rompería cosas que sí usamos (`onSelectionChange`).
+El proxy implementa SOLO ese método y reenvía todo lo demás al delegate original
+con `forwardingTarget(for:)`, así que para React Native no cambia nada. El menú
+base sigue siendo el que devuelva RN —o el sugerido por el sistema— y la acción
+propia se antepone con `replacingChildren`.
+
+> ⚠️ **Poner ese delegate hay que hacerlo a la brava** (arreglado el
+> 2026-08-09). `RCTUITextView` sobreescribe `setDelegate:` con un
+> `if (super.delegate) { return; }` y el comentario "it cannot be changed from
+> outside": como el adaptador de RN se pone en el `init`, la asignación normal
+> **se ignora en silencio** y el proxy no llegaba a instalarse nunca — por eso
+> el ítem no salía ni con el módulo dentro del binario. `forceSetDelegate` llama
+> a la implementación de `UITextView` (lo que haría un `super.delegate = …`).
+> El enganche se reintenta además en `didAddSubview`, porque el texto se monta
+> como hijo después de que la vista contenedora tenga su frame.
+
+**Offsets**: el `NSRange` de iOS y el `selectionStart/End` de Android van en
+unidades UTF-16, que es exactamente cómo indexa JavaScript las cadenas. Los
+offsets casan con el texto canónico sin convertir nada.
+
+**Reenganche**: las dos plataformas reintentan el enganche en cada layout, y no
+solo la primera vez. React Native se reasigna el delegate (iOS) / el
+`customSelectionActionModeCallback` (Android) al recrear o reconfigurar el
+texto, así que con un enganche único el ítem desaparecía en cuanto el texto se
+volvía a montar —cambio de día, de tamaño de letra, de modo— y no volvía hasta
+reiniciar. `attachIfNeeded` compara con lo que hay puesto y nunca encadena dos
+proxies nuestros.
+
+### Lo que NO cambió
+
+- **El modo lápiz sigue ahí, intacto.** Es el único camino en web (no hay menú
+  nativo que personalizar) y el respaldo si el menú no llegara a montarse.
+- Rangos, paleta, persistencia y el contrato `{start, end, color}`: igual.
+- El render de `HighlightableReading` sin `onNativeHighlightRequest`: igual.
+
+### Qué falta por probar en dispositivo
+
+- Que el menú de iOS conserve **todas** las acciones del sistema (Copiar,
+  Traducir, Buscar, Herramientas de escritura) con el proxy puesto.
+- Que `onSelectionChange` siga llegando en modo lápiz (es lo que el proxy
+  podría romper si el reenvío fallara).
+- Android: que el ítem salga tanto leyendo (`Text selectable`) como en modo
+  lápiz (`TextInput`).
 
 ## Notas de comportamiento
 
 - Al aplicar un color NO se sale del modo subrayar: como el subrayado ya se ve
   dentro del modo, se pueden marcar varias frases seguidas.
+- El texto se renderiza SIN altura impuesta a mano: con `scrollEnabled={false}`
+  la mide React Native. Antes se fijaba con `onContentSizeChange` y eso se
+  retroalimentaba (la lectura crecía sola) y dejaba la altura del día anterior
+  al cambiar de fecha.
 - La selección es "pegajosa": se conserva la última selección no vacía porque
   iOS puede colapsar la selección nativa antes de que llegue el `onPress` del
   chip de color.
-- Al entrar en modo subrayar, las tarjetas de lecturas se abren una vez; a
-  partir de ahí manda el usuario (el toggle de la tarjeta funciona normal).
+- Entrar en modo subrayar NO abre las tarjetas de lecturas: las que estuvieran
+  cerradas se quedan cerradas (antes se desplegaban todas de golpe).

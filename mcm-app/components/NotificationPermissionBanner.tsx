@@ -24,7 +24,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors, { Colors } from '@/constants/colors';
@@ -33,8 +33,30 @@ import { radii } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { tryRegisterPushToken } from '@/notifications/usePushNotifications';
+import typography from '@/constants/typography';
 
 const DISMISSED_KEY = '@mcm_notif_permission_banner_dismissed_at';
+/**
+ * La portada del área de Comunica (plan 08) lleva su propio descarte:
+ * descartarlo en Inicio no lo esconde allí, ni al revés.
+ */
+const COMUNICA_DISMISSED_KEY = '@mcm_notif_permission_banner_comunica_at';
+
+type Placement = 'home' | 'notifications' | 'comunica';
+const dismissKey = (placement: Placement) =>
+  placement === 'comunica' ? COMUNICA_DISMISSED_KEY : DISMISSED_KEY;
+
+/** Lo que dice el banner en cada sitio. */
+const COPY: Record<'default' | 'comunica', { title: string; body: string }> = {
+  default: {
+    title: 'Activa las notificaciones',
+    body: 'No te pierdas nada. La app funciona mejor con avisos en tiempo real.',
+  },
+  comunica: {
+    title: 'Activa los avisos',
+    body: 'Te recordamos pasar lista y te avisamos si una lista no se ha subido.',
+  },
+};
 const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 
 type Status = 'loading' | 'granted' | 'denied' | 'undetermined' | 'hidden';
@@ -52,9 +74,9 @@ async function readPermissionStatus(): Promise<Exclude<Status, 'loading'>> {
   }
 }
 
-async function isWithinCooldown(): Promise<boolean> {
+async function isWithinCooldown(placement: Placement): Promise<boolean> {
   try {
-    const raw = await AsyncStorage.getItem(DISMISSED_KEY);
+    const raw = await AsyncStorage.getItem(dismissKey(placement));
     if (!raw) return false;
     const ts = Number(raw);
     if (!Number.isFinite(ts)) return false;
@@ -64,44 +86,56 @@ async function isWithinCooldown(): Promise<boolean> {
   }
 }
 
+/**
+ * Qué variante del banner toca mostrar. Solo CALCULA: no toca estado de React,
+ * así que sirve tanto para la consulta inicial como para refrescar a mano.
+ */
+async function resolveStatus(placement: Placement): Promise<Status> {
+  if (Platform.OS === 'web') return 'hidden';
+  const perm = await readPermissionStatus();
+  if (perm === 'granted' || perm === 'hidden') return perm;
+  if (await isWithinCooldown(placement)) return 'hidden';
+  return perm;
+}
+
 export default function NotificationPermissionBanner({
   placement = 'home',
+  accentColor: accentOverride,
 }: {
-  placement?: 'home' | 'notifications';
+  placement?: Placement;
+  /** El acento del territorio en el que se pinta (Comunica: su violeta). */
+  accentColor?: string;
 }) {
   const scheme = useColorScheme() || 'light';
   const theme = Colors[scheme];
-  const [status, setStatus] = useState<Status>('loading');
+  // En web no hay permisos de push que pedir, así que el banner no se muestra
+  // nunca: se sabe desde el primer render y no hace falta consultar nada.
+  const [status, setStatus] = useState<Status>(
+    Platform.OS === 'web' ? 'hidden' : 'loading',
+  );
 
   const refresh = useCallback(async () => {
-    if (Platform.OS === 'web') {
-      setStatus('hidden');
-      return;
-    }
-    const perm = await readPermissionStatus();
-    if (perm === 'granted' || perm === 'hidden') {
-      setStatus(perm);
-      return;
-    }
-    if (await isWithinCooldown()) {
-      setStatus('hidden');
-      return;
-    }
-    setStatus(perm);
-  }, []);
+    setStatus(await resolveStatus(placement));
+  }, [placement]);
 
+  // Consulta inicial, y otra al volver al foreground: cubre el caso de "vuelvo
+  // de Ajustes tras conceder permisos" sin tener que reiniciar la app.
   useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  // Reconsultar al volver al foreground: cubre el caso de "vuelvo de Ajustes
-  // tras conceder permisos" sin tener que reiniciar la app.
-  useEffect(() => {
+    let alive = true;
+    const apply = () => {
+      resolveStatus(placement).then((next) => {
+        if (alive) setStatus(next);
+      });
+    };
+    apply();
     const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
-      if (next === 'active') refresh();
+      if (next === 'active') apply();
     });
-    return () => sub.remove();
-  }, [refresh]);
+    return () => {
+      alive = false;
+      sub.remove();
+    };
+  }, [placement]);
 
   const handleActivate = useCallback(async () => {
     if (status === 'undetermined') {
@@ -128,16 +162,18 @@ export default function NotificationPermissionBanner({
 
   const handleDismiss = useCallback(async () => {
     try {
-      await AsyncStorage.setItem(DISMISSED_KEY, String(Date.now()));
+      await AsyncStorage.setItem(dismissKey(placement), String(Date.now()));
     } catch {}
     setStatus('hidden');
-  }, []);
+  }, [placement]);
 
   if (status === 'loading' || status === 'hidden' || status === 'granted') {
     return null;
   }
 
-  const accentColor = scheme === 'dark' ? colors.info : colors.primary;
+  const accentColor =
+    accentOverride ?? (scheme === 'dark' ? colors.info : colors.primary);
+  const copy = COPY[placement === 'comunica' ? 'comunica' : 'default'];
   const ctaLabel = status === 'denied' ? 'Abrir Ajustes' : 'Activar';
 
   const isNotifications = placement === 'notifications';
@@ -151,17 +187,16 @@ export default function NotificationPermissionBanner({
           borderColor: hexAlpha(accentColor, '30'),
           marginHorizontal: isNotifications ? spacing.md : 0,
           marginTop: isNotifications ? spacing.sm : 0,
-          marginBottom: isNotifications ? 0 : spacing.md,
+          // En el área va dentro de `AreaScreen`, que ya separa los bloques.
+          marginBottom:
+            isNotifications || placement === 'comunica' ? 0 : spacing.md,
         },
       ]}
       accessibilityRole="alert"
     >
-      <View
-        style={[
-          styles.iconCircle,
-          { backgroundColor: hexAlpha(accentColor, '18') },
-        ]}
-      >
+      {/* Icono suelto, como en las otras filas de aviso de Inicio (antes en un
+          círculo de color solo aquí). */}
+      <View style={styles.iconSlot}>
         <MaterialIcons
           name="notifications-active"
           size={20}
@@ -169,11 +204,9 @@ export default function NotificationPermissionBanner({
         />
       </View>
       <View style={styles.textBlock}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          Activa las notificaciones
-        </Text>
+        <Text style={[styles.title, { color: theme.text }]}>{copy.title}</Text>
         <Text style={[styles.body, { color: theme.icon }]} numberOfLines={3}>
-          No te pierdas nada. La app funciona mejor con avisos en tiempo real.
+          {copy.body}
         </Text>
         <TouchableOpacity
           onPress={handleActivate}
@@ -214,10 +247,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     borderWidth: 1,
   } as ViewStyle,
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  iconSlot: {
+    width: 24,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -228,11 +259,11 @@ const styles = StyleSheet.create({
     gap: 4,
   } as ViewStyle,
   title: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '700',
   } as TextStyle,
   body: {
-    fontSize: 11,
+    ...typography.micro,
     lineHeight: 15,
     opacity: 0.85,
   } as TextStyle,
@@ -244,10 +275,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
   } as ViewStyle,
   ctaText: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
   } as TextStyle,
   close: {

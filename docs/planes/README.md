@@ -1,0 +1,89 @@
+# Planes — qué está vivo y qué está hecho
+
+> **Lee esto antes de abrir ningún `PLAN_*.md`.** Su único trabajo es que no
+> vuelvas a ejecutar algo que ya está hecho.
+>
+> Última actualización: 2026-10-21.
+
+## La regla, en una línea
+
+**Lo que está en `archivo/` está HECHO o ANULADO. No se re-ejecuta. Nunca.**
+Lo que está suelto en `docs/planes/` es lo único que puede seguir vivo — y de
+esos, el estado real lo manda [`BACKLOG.md`](BACKLOG.md), no la cabecera de
+cada plan.
+
+Esto no es celo burocrático: **ya pasó**. En agosto de 2026 dos sesiones
+ejecutaron en paralelo los mismos 15 planes de auditoría porque el índice
+seguía diciendo TODO mucho después de que todo estuviera en `main`; hubo que
+tirar una rama entera ([#319](https://github.com/mcmespana/mcmapp/pull/319)).
+El coste de mantener esta tabla al día es mucho menor que el de repetirlo.
+
+---
+
+## 🟢 Vivos — pueden ejecutarse
+
+| Plan                                             | Estado real                                                                                                                                                                                                                       | Dónde manda el orden                                  |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [`PLAN_EXPO_58.md`](PLAN_EXPO_58.md)             | 🔴 **Siguiente.** Migrar a Expo 58. Código hecho (pasos 1-9); falta la build de TestFlight y probar en el móvil. Rama `claude/deps-expo-58` (#353). **Se borra al terminar**                                                      | —                                                     |
+| [`PLAN_UI_NATIVA.md`](PLAN_UI_NATIVA.md)         | ⏸️ **En pausa** por decisión del usuario (2026-09-24) — Fase 1 ✅, Fase 2 ~80%. No se retoma hasta que lo diga                                                                                                                    | `BACKLOG.md` §1 fila 4                                |
+| [`PLAN_INTEGRACIONES.md`](PLAN_INTEGRACIONES.md) | 🟡 Solo queda **Integración D** (reglas Firebase). A, B, C, E cerrados el 2026-08-12                                                                                                                                              | `BACKLOG.md` §1 fila 5 — 🔒 bloqueado por decisión D2 |
+| [`TRASPASO_REDISENO_AREA_NATIVA.md`](TRASPASO_REDISENO_AREA_NATIVA.md) | 🟡 **Rediseño del área nativa de Comunica + auditoría de «tics de IA».** Hecho y verificado en iPhone y Android (rama `claudito/area-nativa-estilo-plugin`, sin PR); pendiente: bugs de Android (`REVISION_ANDROID.md`) y resto de la auditoría (`AUDITORIA_TICS_Y_SINERGIA.md`) |
+| [`PLAN_CALIDAD.md`](PLAN_CALIDAD.md)             | 🟡 Parcial — Fase 0 (guardarraíles) ✅. **Fase 1 (trocear gigantes) descartada por decisión del usuario** el 2026-08-15, ver abajo                                                                                                | `BACKLOG.md` §2.A                                     |
+| [`PLAN_DISENO.md`](PLAN_DISENO.md)               | 🟡 En curso — dos pasadas hechas (tokens, tipografía, radios, sombras, responsive, panel) + 3 bugs de contraste arreglados. Lo que queda necesita **dispositivo** o revisión fichero a fichero                                    | `BACKLOG.md` §2.G                                     |
+| [`PLAN_HOJA_CANCION.md`](PLAN_HOJA_CANCION.md)   | 🟡 Hecho y en `main`: hoja, modo atril, onboarding, 258 canciones repasadas, admin fiel a la app, PDF y pantalla completa web. Queda: aplicar las etiquetas aprobadas, mapa de la canción (opcional) y probar el pedal en un iPad | `BACKLOG.md` §2.H                                     |
+
+## 🔵 Futuro lejano — no se tocan hasta que el usuario lo pida
+
+Decidido el 2026-08-15: **no hay prisa, ya se hará**. No entran en "seguimos",
+no entran en la bolsa oportunista, y no hace falta preguntar por ellos.
+
+| Plan                                               | Por qué espera                                                                                                                                      |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`PLAN_WIDGET_CONTIGO.md`](PLAN_WIDGET_CONTIGO.md) | Feature entera + build de tienda dedicada (WidgetKit + App Group). Ampliado el 2026-09-19: son **tres** widgets (hábitos, racha, evangelio del día) |
+| [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md)   | ⚠️ **Por definir**: el usuario explicará la idea. Lo que hay escrito es solo una propuesta de Claude (2026-09-26), no un plan decidido              |
+
+## 🔬 En análisis — todavía no hay plan
+
+El análisis no se ejecuta. Los planes de `area-nativa/` sí, pero solo cuando el
+usuario lo pida y en su rama.
+
+| Documento                                                            | Estado                                                                                                                                                                |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`ANALISIS_AREA_PRIVADA_NATIVA.md`](ANALISIS_AREA_PRIVADA_NATIVA.md) | 🔬 Análisis del 2026-10-21: el área privada de Comunica en nativo, con backend propio. Decisiones tomadas casi todas (`BACKLOG.md` §2.I)                              |
+| [`area-nativa/`](area-nativa/README.md)                              | 🟢 Planes de la app (front), escritos el 2026-10-21. Se ejecutan en la rama `nuevoComunicaChulo` cuando el usuario lo diga; no necesitan el servidor (servidor falso) |
+
+## 🗄️ Archivados — HECHOS o ANULADOS, no re-ejecutar
+
+| Qué                                                                        | Cuántos              | Estado                                                                                                                                                                                                 |
+| -------------------------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`archivo/auditoria-2026-08/`](archivo/auditoria-2026-08/README.md)        | 15 planes            | ✅ Todos hechos, en `main` vía [#317](https://github.com/mcmespana/mcmapp/pull/317) y [#320](https://github.com/mcmespana/mcmapp/pull/320)                                                             |
+| [`archivo/tacticos/`](archivo/tacticos/README.md)                          | 8 planes (001–008)   | ✅ Hechos, salvo el **007** ❌ **ANULADO** (decisión de producto: el panel SÍ debe ver las respuestas)                                                                                                 |
+| [`archivo/PLAN_TAGS.md`](archivo/PLAN_TAGS.md)                             | 1 plan               | ✅ Completo — app (2026-08-13) + generador de `mcmapp-cantoral` (2026-08-15). Doc viva: [`ETIQUETAS.md`](../funcionalidades/ETIQUETAS.md)                                                              |
+| [`archivo/PLAN_CARISMOCHITO.md`](archivo/PLAN_CARISMOCHITO.md)             | 1 plan               | ✅ Hecho el 2026-09-26 — la caza y la colección, **detrás de un interruptor del Laboratorio Alpha**. Doc viva: [`CARISMOCHITO.md`](../funcionalidades/CARISMOCHITO.md)                                 |
+| [`archivo/MEJORAS.md`](archivo/MEJORAS.md)                                 | —                    | 🗄️ Foto de un análisis de mayo 2026, ya repartido en otros documentos                                                                                                                                  |
+| [`archivo/ANIMACIONES.md`](archivo/ANIMACIONES.md)                         | —                    | ✅ Auditoría de animaciones contra la skill `animate-expo` (2026-08-19), aplicada. Se queda como el **por qué** el `BottomSheet` sigue con `PanResponder`; los 3 pendientes están en `mcm-app/TODO.md` |
+| [`archivo/pulido-2026-10/`](archivo/pulido-2026-10/PLAN_PULIDO_2026_10.md) | 1 plan (12 paquetes) | ✅ Hecho el 2026-10-17 — rendimiento, Android, web, Contigo, diseño, animación y limpieza de los dos repos. Los restos están en `mcm-app/TODO.md` («Restos del pulido de octubre»)                     |
+| [`archivo/pulido-2026-10/`](archivo/pulido-2026-10/PLAN_PULIDO_2026_10.md) | 1 plan (12 paquetes) | ✅ Hecho el 2026-10-17 — rendimiento, Android, web, Contigo, diseño, animación y limpieza de los dos repos. Los restos están en `mcm-app/TODO.md` («Restos del pulido de octubre»)                     |
+
+---
+
+## Plan ejecutado ≠ plan archivado
+
+Cuando termines un plan, **muévelo a `archivo/`** en el mismo commit que cierra
+el trabajo. Dejarlo en su sitio con una cabecera que diga "✅ hecho" no basta:
+nadie lee la cabecera antes de abrir el archivo, y el siguiente agente lo ve en
+la lista de planes vivos y lo ejecuta otra vez.
+
+Al archivar, actualiza en el mismo commit:
+
+1. Este README (mueve la fila de 🟢 a 🗄️).
+2. La fila correspondiente de [`BACKLOG.md`](BACKLOG.md).
+3. El índice de [`docs/README.md`](../README.md).
+4. `mcm-app/CHANGELOG.md`, si hubo cambio de código real.
+
+## Dónde vive la documentación _viva_ de una funcionalidad
+
+Un plan describe **lo que se iba a hacer**; se archiva al terminar. Lo que la
+funcionalidad **es hoy** se documenta en
+[`docs/funcionalidades/`](../funcionalidades/), y eso sí se mantiene al día.
+Si buscas cómo funciona algo, empieza siempre por ahí — no por un plan.

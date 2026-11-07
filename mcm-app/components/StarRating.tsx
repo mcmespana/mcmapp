@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, View, ViewStyle } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { h } from '@/utils/haptics';
 import colors from '@/constants/colors';
 
@@ -29,7 +29,7 @@ export default function StarRating({
   onChange,
   max = 5,
   size = 36,
-  color = colors.warning,
+  color = colors.yellow,
   inactiveColor = 'rgba(140,140,140,0.35)',
   style,
 }: StarRatingProps) {

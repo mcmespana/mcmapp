@@ -1,0 +1,69 @@
+import { StyleSheet, ViewStyle } from 'react-native';
+import { radii } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
+
+/**
+ * Estilos del armazón del wizard de evaluación (topBar, barra de progreso,
+ * cabecera de pregunta y footer). Dependen de `isDark` para el track de
+ * progreso. Extraído de EvaluationWizard. Los estilos de cada fase/control
+ * viven en su propio componente de `components/evaluation/`.
+ */
+export const createWizardStyles = (isDark: boolean) =>
+  StyleSheet.create({
+    root: { flex: 1 } as ViewStyle,
+    loadingWrap: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    } as ViewStyle,
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingHorizontal: 16,
+      paddingBottom: 6,
+    },
+    backBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+      width: 60,
+    },
+    backLabel: { fontSize: 14, fontWeight: '600' },
+    closeBtn: { width: 32, alignItems: 'flex-end' },
+    progressArea: { flex: 1, justifyContent: 'center' },
+    progressTrack: {
+      height: 6,
+      borderRadius: radii.pillFull,
+      overflow: 'hidden',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+    },
+    progressFill: { height: '100%', borderRadius: radii.xs },
+    // Pregunta
+    phaseScroll: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 28,
+      paddingVertical: 24,
+    },
+    stepCount: {
+      ...typography.caption,
+      fontWeight: '800',
+      letterSpacing: 1,
+      marginBottom: 10,
+    },
+    question: {
+      fontSize: 24,
+      fontWeight: '800',
+      letterSpacing: -0.4,
+      lineHeight: 30,
+      marginBottom: 24,
+    },
+    // Footer
+    // El CTA del pie ocupa todo el ancho, como el botón propio que tenía antes
+    // esta pantalla (ahora es `AppPrimaryButton`).
+    footerButton: { width: '100%' as const },
+    footer: {
+      paddingHorizontal: 24,
+      paddingTop: 10,
+    },
+  });

@@ -1,10 +1,26 @@
-import React from 'react';
-import { useWindowDimensions, TouchableOpacity, Text } from 'react-native';
-import RenderHTML from 'react-native-render-html';
-import colors, { Colors } from '@/constants/colors';
+import React, { Suspense } from 'react';
+import {
+  ActivityIndicator,
+  useWindowDimensions,
+  TouchableOpacity,
+  Text,
+} from 'react-native';
+import colors, { themeColors, Colors } from '@/constants/colors';
 import { formatBBCodeToHtml } from '@/utils/formatText';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
+import { radii } from '@/constants/uiStyles';
+
+/**
+ * `react-native-render-html` se carga A DEMANDA. Con sus dependencias (ramda,
+ * entities, htmlparser2, urijs, el motor de CSS…) son unos 450 KB del bundle
+ * web, y solo lo usan Profundiza y Materiales: con un import estático entraba
+ * en el bundle inicial aunque nadie abriera nunca esas pantallas. Con
+ * `React.lazy`, en web Metro lo saca a un trozo aparte que se descarga la
+ * primera vez que se pinta un `FormattedContent`; en nativo el módulo va en
+ * el binario igual, pero no se evalúa al arrancar.
+ */
+const RenderHTML = React.lazy(() => import('react-native-render-html'));
 
 interface FormattedContentProps {
   text: string;
@@ -67,15 +83,13 @@ export default function FormattedContent({
         lineHeight: 22 * fontScale,
       },
       blockquote: {
-        borderLeftWidth: 4,
-        borderLeftColor: colors.info,
         paddingLeft: 12 * fontScale,
         paddingRight: 12 * fontScale,
         marginVertical: 12 * fontScale,
         backgroundColor:
           scheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
         paddingVertical: 8 * fontScale,
-        borderRadius: 6,
+        borderRadius: radii.sm,
         // Sombra sutil para el blockquote
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
@@ -106,7 +120,7 @@ export default function FormattedContent({
         color: colors.white,
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 20 * fontScale,
-        borderRadius: 8,
+        borderRadius: radii.sm,
         textAlign: 'center' as const,
         marginVertical: 8 * fontScale,
         marginHorizontal: 4 * fontScale,
@@ -131,7 +145,7 @@ export default function FormattedContent({
         color: colors.white,
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 20 * fontScale,
-        borderRadius: 8,
+        borderRadius: radii.sm,
         textAlign: 'center' as const,
         marginVertical: 8 * fontScale,
         marginHorizontal: 4 * fontScale,
@@ -151,17 +165,19 @@ export default function FormattedContent({
         // Mejor espaciado interno
         lineHeight: 20 * fontScale,
       },
-      'color-primary': { color: colors.primary },
+      // El azul de marca sobre fondo oscuro es 1,3:1, y este color lo elige
+      // quien escribe el contenido desde el panel: se adapta por modo.
+      'color-primary': { color: themeColors(scheme === 'dark').link },
       'color-accent': { color: colors.accent },
       'color-info': { color: colors.info },
-      'color-success': { color: colors.success },
+      'color-success': { color: colors.green },
       // Estilos adicionales para mejor presentación
       'btn-outline-primary': {
         backgroundColor: 'transparent',
-        color: colors.primary,
+        color: themeColors(scheme === 'dark').link,
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 20 * fontScale,
-        borderRadius: 8,
+        borderRadius: radii.sm,
         textAlign: 'center' as const,
         marginVertical: 8 * fontScale,
         marginHorizontal: 4 * fontScale,
@@ -178,7 +194,7 @@ export default function FormattedContent({
         color: colors.accent,
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 20 * fontScale,
-        borderRadius: 8,
+        borderRadius: radii.sm,
         textAlign: 'center' as const,
         marginVertical: 8 * fontScale,
         marginHorizontal: 4 * fontScale,
@@ -195,7 +211,7 @@ export default function FormattedContent({
         color: colors.white,
         paddingVertical: 4 * fontScale,
         paddingHorizontal: 8 * fontScale,
-        borderRadius: 12,
+        borderRadius: radii.md,
         fontSize: 12 * fontScale,
         fontWeight: '600' as const,
         display: 'inline-block' as const,
@@ -204,11 +220,9 @@ export default function FormattedContent({
       alert: {
         backgroundColor:
           scheme === 'dark' ? 'rgba(255,193,7,0.2)' : 'rgba(255,193,7,0.1)',
-        borderLeftWidth: 4,
-        borderLeftColor: '#ffc107',
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 16 * fontScale,
-        borderRadius: 6,
+        borderRadius: radii.sm,
         marginVertical: 8 * fontScale,
       },
     }),
@@ -223,7 +237,7 @@ export default function FormattedContent({
         borderWidth: 1,
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 20 * fontScale,
-        borderRadius: 8,
+        borderRadius: radii.sm,
         marginVertical: 8 * fontScale,
         marginHorizontal: 4 * fontScale,
         minWidth: 120 * fontScale,
@@ -252,22 +266,33 @@ export default function FormattedContent({
   );
 
   return (
-    <RenderHTML
-      contentWidth={width}
-      source={{ html }}
-      defaultTextProps={{ selectable: true }}
-      tagsStyles={dynamicTagsStyles as any}
-      classesStyles={dynamicClassesStyles as any}
-      renderers={{
-        span: ({ tnode }: { tnode: any }) => {
-          const className = tnode.attributes?.class;
-          if (className === 'btn-primary')
-            return renderButton(colors.primary, tnode);
-          if (className === 'btn-secondary')
-            return renderButton(colors.accent, tnode);
-          return undefined;
-        },
-      }}
-    />
+    <Suspense
+      fallback={
+        <ActivityIndicator
+          size="small"
+          color={themeColors(scheme === 'dark').textMuted}
+          style={{ alignSelf: 'flex-start', marginVertical: 8 * fontScale }}
+          accessibilityLabel="Cargando contenido"
+        />
+      }
+    >
+      <RenderHTML
+        contentWidth={width}
+        source={{ html }}
+        defaultTextProps={{ selectable: true }}
+        tagsStyles={dynamicTagsStyles as any}
+        classesStyles={dynamicClassesStyles as any}
+        renderers={{
+          span: ({ tnode }: { tnode: any }) => {
+            const className = tnode.attributes?.class;
+            if (className === 'btn-primary')
+              return renderButton(colors.primary, tnode);
+            if (className === 'btn-secondary')
+              return renderButton(colors.accent, tnode);
+            return undefined;
+          },
+        }}
+      />
+    </Suspense>
   );
 }

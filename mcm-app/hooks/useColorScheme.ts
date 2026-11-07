@@ -1,4 +1,4 @@
-import { Appearance, ColorSchemeName } from 'react-native';
+import { Appearance } from 'react-native';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { useEffect, useState } from 'react';
 
@@ -9,10 +9,9 @@ export function useColorScheme(): 'light' | 'dark' {
   );
 
   useEffect(() => {
-    const listener = ({ colorScheme }: { colorScheme: ColorSchemeName }) => {
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
       setDeviceScheme(colorScheme === 'dark' ? 'dark' : 'light');
-    };
-    const subscription = Appearance.addChangeListener(listener);
+    });
     return () => subscription.remove();
   }, []);
 

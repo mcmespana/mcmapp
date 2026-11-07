@@ -13,6 +13,7 @@ export interface CalendarConfigFirebase {
 }
 
 export interface CalendarConfig {
+  id: string;
   name: string;
   url: string;
   color: string;
@@ -51,11 +52,32 @@ export function useCalendarConfigs() {
     [],
   );
 
-  const calendarsToUse = useMemo(
-    () =>
-      calendarData && calendarData.length > 0 ? calendarData : fallbackConfigs,
-    [calendarData, fallbackConfigs],
-  );
+  // El calendario de MI delegación va SIEMPRE el primero (los IDs de
+  // delegación y de calendario coinciden: `mcm-castellon`, `mcm-madrid`…).
+  // Detrás van los `extraCalendars` que la delegación añade, y luego el resto
+  // conserva el orden que trae Firebase.
+  const calendarsToUse = useMemo(() => {
+    const list =
+      calendarData && calendarData.length > 0 ? calendarData : fallbackConfigs;
+    const delegationId = resolved.delegationId;
+    const extras = resolved.defaultCalendars ?? [];
+    const rank = (cal: CalendarConfigFirebase) => {
+      if (delegationId && cal.id === delegationId) return 0;
+      if (extras.includes(cal.id)) return 1;
+      return 2;
+    };
+    // `map` + índice para que el orden dentro de cada grupo sea estable
+    // (Array.prototype.sort no garantiza estabilidad en todos los motores).
+    return list
+      .map((cal, index) => ({ cal, index, rank: rank(cal) }))
+      .sort((a, b) => a.rank - b.rank || a.index - b.index)
+      .map((entry) => entry.cal);
+  }, [
+    calendarData,
+    fallbackConfigs,
+    resolved.delegationId,
+    resolved.defaultCalendars,
+  ]);
 
   // `null` mientras no se ha leído AsyncStorage; mapa explícito del usuario una
   // vez cargado. Las claves ausentes caen al default del perfil/calendario.
@@ -126,6 +148,7 @@ export function useCalendarConfigs() {
   const calendarConfigs: CalendarConfig[] = useMemo(
     () =>
       calendarsToUse.map((cal) => ({
+        id: cal.id,
         name: cal.name,
         url: cal.url,
         color: cal.color,

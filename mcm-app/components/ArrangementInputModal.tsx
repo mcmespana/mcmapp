@@ -2,16 +2,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
+  type TextInputInstance,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import BottomSheet from './BottomSheet';
 import AppTextField from '@/components/ui/AppTextField';
-import { Colors } from '@/constants/colors';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
+import { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import typography from '@/constants/typography';
+import { getNativeFontFamily } from '@/utils/fontUtils';
 
 interface ArrangementInputModalProps {
   visible: boolean;
@@ -40,15 +42,23 @@ export default function ArrangementInputModal({
   const theme = Colors[scheme ?? 'light'];
   const isDark = scheme === 'dark';
   const [text, setText] = useState('');
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
 
+  // El campo se vacía al ABRIR, ajustando el estado durante el render (el
+  // patrón que documenta React para "cambiar estado cuando cambia una prop").
+  // Antes lo hacía un efecto, que pintaba un render con el texto anterior.
+  const [lastVisible, setLastVisible] = useState(visible);
+  if (visible !== lastVisible) {
+    setLastVisible(visible);
+    if (visible) setText('');
+  }
+
+  // El foco sí es un efecto de verdad: toca el input nativo, y con un pequeño
+  // retardo para que el sheet termine de montar antes.
   useEffect(() => {
-    if (visible) {
-      setText('');
-      // Pequeño retardo para que el sheet termine de montar antes del focus.
-      const t = setTimeout(() => inputRef.current?.focus(), 250);
-      return () => clearTimeout(t);
-    }
+    if (!visible) return;
+    const t = setTimeout(() => inputRef.current?.focus(), 250);
+    return () => clearTimeout(t);
   }, [visible]);
 
   const canSave = text.trim().length > 0 && !saving;
@@ -64,7 +74,7 @@ export default function ArrangementInputModal({
           <View
             style={[
               styles.previewBox,
-              { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' },
+              { backgroundColor: themeColors(isDark).background },
             ]}
           >
             <Text
@@ -110,28 +120,15 @@ export default function ArrangementInputModal({
               Cancelar
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.btn,
-              styles.saveBtn,
-              {
-                backgroundColor: canSave ? '#E15C62' : theme.icon,
-                opacity: canSave ? 1 : 0.6,
-              },
-            ]}
+          <AppPrimaryButton
+            label={saving ? 'Guardando…' : 'Añadir'}
+            icon="check"
+            color="#E15C62"
             onPress={() => onSave(text)}
             disabled={!canSave}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons
-              name={saving ? 'hourglass-empty' : 'check'}
-              size={18}
-              color="#fff"
-            />
-            <Text style={styles.saveText}>
-              {saving ? 'Guardando…' : 'Añadir'}
-            </Text>
-          </TouchableOpacity>
+            loading={saving}
+            style={styles.btn}
+          />
         </View>
       </View>
     </BottomSheet>
@@ -145,12 +142,14 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   hint: {
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 20,
     marginBottom: 8,
   },
   mono: {
-    fontFamily: 'Courier',
+    // 'Courier' solo existe en iOS: en Android caía a Roboto proporcional y la
+    // vista previa no se parecía a la hoja.
+    fontFamily: getNativeFontFamily('monospace'),
     fontWeight: '600',
   },
   previewBox: {
@@ -160,19 +159,19 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   previewText: {
-    fontSize: 14,
+    ...typography.subhead,
     fontStyle: 'italic',
   },
   input: {
     minHeight: 52,
   },
   note: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 8,
     lineHeight: 16,
   },
   error: {
-    fontSize: 13,
+    ...typography.caption,
     marginTop: 8,
     color: '#C62828',
   },
@@ -194,16 +193,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cancelText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
-  },
-  saveBtn: {
-    minWidth: 110,
-  },
-  saveText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginLeft: 6,
   },
 });

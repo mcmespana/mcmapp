@@ -11,10 +11,13 @@ import {
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { router } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
-import colors, { Colors } from '@/constants/colors';
+import SegmentedControl, {
+  type SegmentedOption,
+} from '@/components/ui/SegmentedControl';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useActiveSurveys } from '@/hooks/useActiveSurveys';
@@ -27,26 +30,27 @@ import SocialLoginSection from '@/components/SocialLoginSection';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
+import SectionHeader from '@/components/ui/SectionHeader';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
 }
 
-const THEME_OPTIONS: {
-  key: ThemeScheme;
-  icon: string;
-  label: string;
-}[] = [
-  { key: 'light', icon: 'light-mode', label: 'Claro' },
-  { key: 'dark', icon: 'dark-mode', label: 'Oscuro' },
-  { key: 'system', icon: 'brightness-auto', label: 'Auto' },
+const THEME_OPTIONS: SegmentedOption<ThemeScheme>[] = [
+  { value: 'light', icon: 'light-mode', label: 'Claro' },
+  { value: 'dark', icon: 'dark-mode', label: 'Oscuro' },
+  { value: 'system', icon: 'brightness-auto', label: 'Auto' },
 ];
 
 export default function SettingsBottomSheet({ visible, onClose }: Props) {
   const { settings, setSettings } = useAppSettings();
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
+  // Pistas y descripciones: `textSecondary` llega a 4,5:1 sobre la superficie;
+  // `icon` con opacity encima se quedaba en ~3:1.
+  const hintColor = themeColors(scheme === 'dark').textSecondary;
   const fontScale = useFontScale();
   const resolved = useResolvedProfileConfig();
   const { rawConfig } = useProfileConfigContext();
@@ -113,7 +117,8 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
         onPress={() => setPanelView('settings')}
         accessibilityRole="button"
         accessibilityLabel="Volver a ajustes"
-        style={{ padding: 4 }}
+        style={styles.backButton}
+        hitSlop={spacing.xs}
       >
         <MaterialIcons name="arrow-back" size={22} color={theme.text} />
       </TouchableOpacity>
@@ -162,7 +167,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                         {p.label}
                       </Text>
                       <Text
-                        style={[styles.optionDesc, { color: theme.icon }]}
+                        style={[styles.optionDesc, { color: hintColor }]}
                         numberOfLines={2}
                       >
                         {p.description}
@@ -229,9 +234,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
           {panelView === 'settings' && (
             <>
               {/* ── Sección: Cuenta ── */}
-              <Text style={[styles.sectionLabel, { color: theme.icon }]}>
-                CUENTA
-              </Text>
+              <SectionHeader label="Cuenta" style={styles.sectionHeader} />
               <View
                 style={[
                   styles.surface,
@@ -246,14 +249,10 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
               </View>
 
               {/* ── Sección: Tu perfil MCM ── */}
-              <Text
-                style={[
-                  styles.sectionLabel,
-                  { color: theme.icon, marginTop: spacing.md },
-                ]}
-              >
-                TU PERFIL EN MCM
-              </Text>
+              <SectionHeader
+                label="Tu perfil en MCM"
+                style={styles.sectionHeaderSpaced}
+              />
 
               <PressableFeedback
                 style={[
@@ -272,7 +271,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                     <Text style={[styles.surfaceLabel, { color: theme.text }]}>
                       Perfil
                     </Text>
-                    <Text style={[styles.surfaceHint, { color: theme.icon }]}>
+                    <Text style={[styles.surfaceHint, { color: hintColor }]}>
                       {profileLabel}
                     </Text>
                   </View>
@@ -302,7 +301,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                     <Text style={[styles.surfaceLabel, { color: theme.text }]}>
                       Delegación
                     </Text>
-                    <Text style={[styles.surfaceHint, { color: theme.icon }]}>
+                    <Text style={[styles.surfaceHint, { color: hintColor }]}>
                       {delegationLabel}
                     </Text>
                   </View>
@@ -316,14 +315,10 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
               </PressableFeedback>
 
               {/* ── Sección: Apariencia ── */}
-              <Text
-                style={[
-                  styles.sectionLabel,
-                  { color: theme.icon, marginTop: spacing.md },
-                ]}
-              >
-                APARIENCIA
-              </Text>
+              <SectionHeader
+                label="Apariencia"
+                style={styles.sectionHeaderSpaced}
+              />
 
               {/* Theme segmented control */}
               <View style={[styles.surface, { backgroundColor: surfaceBg }]}>
@@ -333,48 +328,13 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                     Tema
                   </Text>
                 </View>
-                <View
-                  style={[styles.themeSegment, { backgroundColor: segmentBg }]}
-                >
-                  {THEME_OPTIONS.map((opt) => {
-                    const isSelected = settings.theme === opt.key;
-                    return (
-                      <PressableFeedback
-                        key={opt.key}
-                        style={[
-                          styles.themeOption,
-                          isSelected && {
-                            backgroundColor: colors.primary,
-                            shadowColor: colors.primary,
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.35,
-                            shadowRadius: 4,
-                            elevation: 3,
-                          },
-                        ]}
-                        onPress={() => setSettings({ theme: opt.key })}
-                        accessibilityLabel={`Tema ${opt.label}`}
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected: isSelected }}
-                      >
-                        <PressableFeedback.Highlight />
-                        <MaterialIcons
-                          name={opt.icon as any}
-                          size={17}
-                          color={isSelected ? '#fff' : theme.icon}
-                        />
-                        <Text
-                          style={[
-                            styles.themeOptionText,
-                            { color: isSelected ? '#fff' : theme.icon },
-                          ]}
-                        >
-                          {opt.label}
-                        </Text>
-                      </PressableFeedback>
-                    );
-                  })}
-                </View>
+                <SegmentedControl
+                  options={THEME_OPTIONS}
+                  value={settings.theme}
+                  onChange={(theme) => setSettings({ theme })}
+                  accentColor={accentColor}
+                  accessibilityLabel="Tema de la app"
+                />
               </View>
 
               {/* Font size */}
@@ -439,14 +399,10 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
               </View>
 
               {/* ── Sección: Sobre la app ── */}
-              <Text
-                style={[
-                  styles.sectionLabel,
-                  { color: theme.icon, marginTop: spacing.md },
-                ]}
-              >
-                SOBRE LA APP
-              </Text>
+              <SectionHeader
+                label="Sobre la app"
+                style={styles.sectionHeaderSpaced}
+              />
 
               <PressableFeedback
                 style={[
@@ -472,7 +428,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                     <Text style={[styles.surfaceLabel, { color: theme.text }]}>
                       Evalúa la app
                     </Text>
-                    <Text style={[styles.surfaceHint, { color: theme.icon }]}>
+                    <Text style={[styles.surfaceHint, { color: hintColor }]}>
                       Errores, utilidad e ideas
                     </Text>
                   </View>
@@ -511,7 +467,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.lg,
+    // El lateral (16) lo pone BottomSheet; sumar otro aquí daba 40 pt.
     paddingBottom: 40,
   } as ViewStyle,
   panelScroll: {
@@ -524,17 +480,23 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   } as ViewStyle,
   backLabel: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '500',
   } as TextStyle,
 
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    marginBottom: spacing.sm,
-    marginLeft: 2,
-  } as TextStyle,
+  // `SectionHeader` trae padding lateral y margen propios: aquí el contenedor
+  // ya tiene su padding y la primera sección va pegada arriba.
+  sectionHeader: {
+    paddingHorizontal: 0,
+    marginTop: 0,
+  } as ViewStyle,
+  sectionHeaderSpaced: {
+    paddingHorizontal: 0,
+    marginTop: spacing.md,
+  } as ViewStyle,
+  // Zona táctil de «volver» en las subvistas: 22 de icono + 2×8 = 38, y el
+  // hitSlop la lleva a 46 (mínimo 44).
+  backButton: { padding: spacing.sm } as ViewStyle,
 
   surface: {
     borderRadius: radii.lg,
@@ -553,53 +515,33 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   } as ViewStyle,
   surfaceLabel: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   } as TextStyle,
   surfaceHint: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 2,
-    opacity: 0.75,
   } as TextStyle,
 
-  themeSegment: {
-    flexDirection: 'row',
-    borderRadius: 10,
-    padding: 3,
-    gap: 3,
-  } as ViewStyle,
-  themeOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+  fontBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
     justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 8,
-    borderRadius: radii.sm,
+    alignItems: 'center',
   } as ViewStyle,
-  themeOptionText: {
-    fontSize: 12,
-    fontWeight: '700',
-  } as TextStyle,
-
   fontRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
   } as ViewStyle,
-  fontBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  } as ViewStyle,
+
   fontValue: {
     flex: 1,
     textAlign: 'center',
     fontWeight: '700',
-    fontSize: 16,
+    ...typography.body,
   } as TextStyle,
 
   optionRow: {
@@ -627,9 +569,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   } as TextStyle,
   optionDesc: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 2,
-    opacity: 0.8,
     lineHeight: 16,
   } as TextStyle,
 });

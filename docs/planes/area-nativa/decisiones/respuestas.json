@@ -1,0 +1,141 @@
+{
+  "alcance-coord": {
+    "actualizado": "2026-10-21T22:29:25.433Z",
+    "opcion": "suma"
+  },
+  "alcance": {
+    "actualizado": "2026-10-21T15:37:15.452Z",
+    "opcion": "monitores"
+  },
+  "almacen": {
+    "actualizado": "2026-10-24T08:41:48.093Z",
+    "comentario": "Antes de pagar supabase crearía otra cuenta de supabase para la ocasión jeje \n\nNeón y vercel podría seguir siendo gratuito de alguna manera? Es mucho mejor supabase? Puedes calcular precios reales?\n\nLO VAMOS A IR PENSANDO ESTO, PORQUE IGUAL MONTAMOS SUPABASE EN UN VPS O PENSAMOS ALGUNA COSA BRODER, LO QUE ME VEAS MEJOR",
+    "opcion": "neon"
+  },
+  "aviso-pagos": {
+    "actualizado": "2026-10-24T08:42:52.507Z",
+    "opcion": "ambos"
+  },
+  "avisos-nombres": {
+    "actualizado": "2026-10-21T22:30:17.060Z",
+    "comentario": "Solo nombre y una letra o Luc. H. ",
+    "opcion": "pila"
+  },
+  "calendario-marcas": {
+    "actualizado": "2026-10-24T08:43:44.806Z",
+    "opcion": "plugin"
+  },
+  "campos-crm": {
+    "actualizado": "2026-10-24T08:44:13.040Z",
+    "comentario": "pero metelo bien en el repo y lo añades y actualizas ese documento. importante que luego se tiene que repartir en 3 repos distintos",
+    "opcion": "yo"
+  },
+  "congelar": {
+    "actualizado": "2026-10-21T19:03:48.955Z",
+    "opcion": "arreglos"
+  },
+  "desmarcar": {
+    "actualizado": "2026-10-21T22:29:04.137Z",
+    "opcion": "borrar"
+  },
+  "diseno": {
+    "actualizado": "2026-10-21T19:19:21.230Z",
+    "comentario": "Pero todo full nativo bien hecho eh, osea partir de la idea existente porque las pantallas ya están pensadas y funcionan y se va cambvianxk ",
+    "opcion": "traducir"
+  },
+  "dni": {
+    "actualizado": "2026-10-21T22:28:40.035Z",
+    "opcion": "igual"
+  },
+  "docs-con-plaza": {
+    "actualizado": "2026-10-24T08:42:27.174Z",
+    "opcion": "si"
+  },
+  "equipo-hijo": {
+    "actualizado": "2026-10-24T08:42:19.274Z",
+    "opcion": "si"
+  },
+  "extras": {
+    "actualizado": "2026-10-21T19:03:20.519Z",
+    "opciones": [
+      "push",
+      "compartir"
+    ]
+  },
+  "fotos-documentos": {
+    "actualizado": "2026-10-21T22:30:18.780Z",
+    "opcion": "si"
+  },
+  "futuras": {
+    "actualizado": "2026-10-21T22:28:52.618Z",
+    "opcion": "plugin"
+  },
+  "ipfija": {
+    "actualizado": "2026-10-24T08:41:28.441Z",
+    "comentario": "Estoy reflexionando en conseguir un VPS de hostinger. pero por loq ue he visto sinergia no pide una IP, parece, parece....",
+    "opcion": "servidor"
+  },
+  "login": {
+    "actualizado": "2026-10-21T19:02:44.376Z",
+    "comentario": "Pero además, para acceder c si tienes el login de la app hecho ya, te pre relleno el correo y “solo recibir un código para acceder” recibido el código y estoy dentro ",
+    "opcion": "codigo"
+  },
+  "marcas-autobus": {
+    "actualizado": "2026-10-21T22:29:45.038Z",
+    "comentario": "Las de no se va solo da igual que salgan las otras ok",
+    "opcion": "si"
+  },
+  "offline": {
+    "actualizado": "2026-10-21T19:02:50.469Z",
+    "opcion": "lista"
+  },
+  "paquetes": {
+    "actualizado": "2026-10-21T19:03:54.805Z",
+    "opcion": "si"
+  },
+  "piloto": {
+    "actualizado": "2026-10-21T19:03:58.987Z",
+    "opcion": "todos"
+  },
+  "plugin": {
+    "actualizado": "2026-10-21T19:03:29.919Z",
+    "opcion": "web"
+  },
+  "repo": {
+    "actualizado": "2026-10-21T19:01:42.978Z",
+    "opcion": "nuevo"
+  },
+  "salud-no": {
+    "actualizado": "2026-10-21T22:29:12.189Z",
+    "opcion": "si"
+  },
+  "salud": {
+    "actualizado": "2026-10-21T19:03:09.318Z",
+    "comentario": "No te ralles mucho con esto, simple ",
+    "opcion": "marca"
+  },
+  "sinergiatic": {
+    "actualizado": "2026-10-21T18:59:59.497Z",
+    "opcion": "ambas"
+  },
+  "tecnicas": {
+    "actualizado": "2026-10-21T19:06:46.918Z",
+    "comentario": "El diseño sería un temazo… porque el diseño del área privada ha quedado guapo. Sería reflexionar cómo partir de literalmente todas las pantallas del wordpress y decir vale lo construyo en Expo y aquí tomo alguna decisión de diseño para ser coherentes en la app, pero el concepto de base el existente .\n\nEn un primer momento podría ser un mix antes de hacer el espejo acceder a la info del CRM en modo lectura por la base de datos directa y más adelante se hace el espejo? Al final sería una pieza en vercel que podríamos ir mejorando ",
+    "opcion": "hablar"
+  },
+  "territorio": {
+    "actualizado": "2026-10-21T22:28:24.354Z",
+    "comentario": "Para mí comunica es un azul morado pero me parece más morado que otra cosa en el plugin actual ",
+    "opcion": "territorio"
+  },
+  "tope-importe": {
+    "actualizado": "2026-10-24T08:43:41.699Z",
+    "comentario": "pero resuelve el drama de las comas y las cosas asi",
+    "opcion": "plugin"
+  },
+  "velocidad": {
+    "actualizado": "2026-10-21T18:59:48.255Z",
+    "comentario": "Pero en la decisión BBDD espejo se dijo que bueeeno quizá no era necesario no sé que. Desarrolla más esta idea para ver qué tal. No nos gusta NEÓN? No se podría hacer el camino nativo conectado a sinergia directamente vía API con ese servidor o así y que luego sea muy fácil cambiar la conexión nativa al espejo?? Será chungo hacer el espejo pero no el cambio de conexión nativa no se puede?",
+    "opcion": "pasarela"
+  }
+}

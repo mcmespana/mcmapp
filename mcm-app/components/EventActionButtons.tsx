@@ -1,7 +1,7 @@
 import React from 'react';
 import { Platform, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors from '@/constants/colors';
 import { shadows } from '@/constants/uiStyles';
@@ -36,7 +36,7 @@ const H = 38;
  * mismo estilo neutro — coherente con los controles agrupados del cantoral.
  *
  * Se renderiza por encima del Stack.Navigator del evento (ver
- * `app/(tabs)/visitapapa.tsx` y `app/(tabs)/mas.tsx`).
+ * `app/(tabs)/visitapapa/_layout.tsx` y `app/(tabs)/mas/_layout.tsx`).
  */
 export default function EventActionButtons({
   onSettings,
@@ -84,7 +84,7 @@ export default function EventActionButtons({
                   accessibilityLabel="Compartir reflexión"
                   hitSlop={6}
                 >
-                  <MaterialIcons name="add" size={24} color={colors.success} />
+                  <MaterialIcons name="add" size={24} color={colors.green} />
                 </Pressable>
                 <View style={[styles.divider, { backgroundColor: divider }]} />
               </>
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   anchor: { position: 'absolute', right: 14, zIndex: 1000 },
   shadow: {
     borderRadius: H / 2,
-    ...(shadows.sm as ViewStyle),
+    ...(shadows.card as ViewStyle),
   },
   group: {
     flexDirection: 'row',

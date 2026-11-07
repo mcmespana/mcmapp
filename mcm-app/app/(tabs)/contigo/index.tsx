@@ -1,21 +1,31 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ScrollView,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  useWindowDimensions,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, Stack } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
+import Animated from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useContigoHabits, type DayRecord } from '@/hooks/useContigoHabits';
+import { useContigoHabits } from '@/hooks/useContigoHabits';
 import { useDailyReadings } from '@/hooks/useDailyReadings';
-import { warm, formatDateLong, MONTHS_CAP } from '@/components/contigo/theme';
+import {
+  MONTHS_CAP,
+  WARM_DARK,
+  formatDateLong,
+  habitColor,
+  warm,
+} from '@/components/contigo/theme';
+import {
+  contigoHeaderChrome,
+  useContigoHeaderInset,
+} from '@/components/contigo/headerChrome';
 import {
   HabitTile,
   HeroCard,
@@ -24,16 +34,30 @@ import {
   StatCard,
   MonthHeatmap,
 } from '@/components/contigo/HomeWidgets';
+import DayActionSheet from '@/components/contigo/DayActionSheet';
 import { LiturgicalBadge } from '@/components/contigo/LiturgicalBadge';
+import { useContigoDayMenu } from '@/hooks/useContigoDayMenu';
 import LoginNudgeBanner from '@/components/LoginNudgeBanner';
 import { useAuth } from '@/contexts/AuthContext';
+import { h } from '@/utils/haptics';
+import CelebrationBurst from '@/components/ui/CelebrationBurst';
+import {
+  DAY_COMPLETE_MS,
+  dayCompleteParticles,
+  hasCelebratedDay,
+  markDayCelebrated,
+} from '@/utils/contigoDayComplete';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 export default function ContigoScreen() {
-  const insets = useSafeAreaInsets();
+  // Pantalla raíz del tab Contigo.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const router = useRouter();
   const scheme = useColorScheme();
   const { user: authUser } = useAuth();
   const isDark = scheme === 'dark';
+  const headerInset = useContigoHeaderInset();
   const W = warm(isDark);
   const { width: windowWidth } = useWindowDimensions();
   // iPad / large tablet / desktop web — cap content width so the layout
@@ -69,43 +93,76 @@ export default function ContigoScreen() {
     Boolean,
   ).length;
 
+  // Los tres hábitos hechos: UNA celebración al día, sobria, la primera vez que
+  // se vuelve a la home con 3/3 (no mientras está tapada por la pantalla del
+  // hábito, que ya tiene la suya). Se re-evalúa al cambiar `doneCount` estando
+  // enfocada. Ver `utils/contigoDayComplete`.
+  const [dayBurst, setDayBurst] = useState(false);
+  const dayBurstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (dayBurstTimer.current) clearTimeout(dayBurstTimer.current);
+    },
+    [],
+  );
+  useFocusEffect(
+    useCallback(() => {
+      if (doneCount < 3 || !todayStr) return;
+      let cancelled = false;
+      (async () => {
+        if (await hasCelebratedDay(todayStr)) return;
+        if (cancelled) return;
+        await markDayCelebrated(todayStr);
+        h.formSuccess();
+        setDayBurst(true);
+        if (dayBurstTimer.current) clearTimeout(dayBurstTimer.current);
+        dayBurstTimer.current = setTimeout(() => {
+          dayBurstTimer.current = null;
+          setDayBurst(false);
+        }, DAY_COMPLETE_MS);
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [doneCount, todayStr]),
+  );
+
   const prayStreak = getStreak('prayer');
   const totalMins = getTotalMinutesWeek(todayStr);
   const totalReads = getReadingsMonth(todayStr);
-  const activeDays = getActiveDaysMonth(todayStr);
 
-  const [, mNum] = todayStr.split('-').map(Number);
-  const year = todayStr.split('-')[0];
-  const monthLabel = `${MONTHS_CAP[mNum - 1]} ${year}`;
+  // Mes que se ve en el calendario de abajo. Arranca en el de hoy y se mueve
+  // con las flechas: el calendario ya no está clavado al mes en curso, así se
+  // puede volver a un evangelio de hace dos meses (o ir al de la semana que
+  // viene) sin entrar antes en la pantalla del evangelio.
+  const [monthKey, setMonthKey] = React.useState(() => todayStr.slice(0, 7));
+  const [mYear, mMonth] = monthKey.split('-').map(Number);
+  const monthLabel = `${MONTHS_CAP[mMonth - 1]} ${mYear}`;
+  const isCurrentMonth = monthKey === todayStr.slice(0, 7);
+  const daysInMonth = new Date(mYear, mMonth, 0).getDate();
+  // `getActiveDaysMonth` corta en el día que se le pasa: hoy si es el mes en
+  // curso (no cuenta días que aún no han pasado) y el mes entero si es otro.
+  const monthAnchor = isCurrentMonth
+    ? todayStr
+    : `${monthKey}-${String(daysInMonth).padStart(2, '0')}`;
+  const shiftMonth = (delta: number) => {
+    h.select();
+    const d = new Date(mYear, mMonth - 1 + delta, 1);
+    setMonthKey(
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+    );
+  };
+  const activeDays = getActiveDaysMonth(monthAnchor);
 
-  // Tapping a calendar day opens the matching record screen.
-  // Priority: revision → oración → evangelio (most reflective first).
-  const handleDayPress = useCallback(
-    (date: string, rec: DayRecord | null) => {
-      if (!rec) return;
-      if (rec.revisionDone) {
-        router.push({
-          pathname: '/(tabs)/contigo/revision' as never,
-          params: { date },
-        });
-      } else if (rec.prayerDone) {
-        router.push({
-          pathname: '/(tabs)/contigo/oracion' as never,
-          params: { date },
-        });
-      } else if (rec.readingDone) {
-        router.push({
-          pathname: '/(tabs)/contigo/evangelio' as never,
-          params: { date },
-        });
-      }
-    },
-    [router],
-  );
-
-  const bgGradient = isDark
-    ? (['#1A1712', '#100F0C'] as const)
-    : (['#FAF6F0', '#F0E8D8'] as const);
+  // Pulsar un día (racha o calendario) abre lo que haya guardado; si hay
+  // varias cosas, pregunta. Ver `useContigoDayMenu`.
+  const {
+    dayMenu,
+    handleDayPress,
+    chooseFromMenu,
+    onMenuClosed,
+    closeDayMenu,
+  } = useContigoDayMenu();
 
   return (
     <View style={styles.container}>
@@ -117,44 +174,100 @@ export default function ContigoScreen() {
           headerTitle: 'Contigo',
           headerTransparent: true,
           headerShadowVisible: false,
-          headerTintColor: isDark ? '#F5EFE3' : '#2A1E0E',
+          headerTintColor: isDark ? WARM_DARK.text : '#2A1E0E',
           headerTitleStyle: {
-            color: isDark ? '#F5EFE3' : '#2A1E0E',
+            color: isDark ? WARM_DARK.text : '#2A1E0E',
             fontWeight: '700',
             fontSize: 17,
           },
-          headerRight: () => (
-            <View style={styles.nativeHeaderRight}>
+          // El título va centrado. En iOS la insignia y los dos iconos son
+          // botones NATIVOS (`Stack.Toolbar`, más abajo). Los dos de la derecha
+          // comparten UNA cápsula de cristal (iOS 26 junta los botones
+          // contiguos; ni un `Spacer` ni `hidesSharedBackground` los separa: el
+          // segundo no cambia nada y el primero quita el cristal). En Android
+          // y web, vistas normales.
+          headerTitleAlign: 'center',
+          ...(Platform.OS === 'ios'
+            ? {}
+            : {
+                headerLeft: () => (
+                  <View style={styles.headerBadgeWrap}>
+                    <LiturgicalBadge dateStr={todayStr} />
+                  </View>
+                ),
+                headerRight: () => (
+                  <View style={styles.nativeHeaderRight}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push('/(tabs)/contigo/recordatorios')
+                      }
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={{ padding: 4 }}
+                      accessibilityLabel="Recordatorios"
+                    >
+                      <MaterialIcons
+                        name="notifications"
+                        size={22}
+                        color={W.accentText}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => router.push('/(tabs)/contigo/bookmarks')}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={{ padding: 4 }}
+                      accessibilityLabel="Ver evangelios guardados"
+                    >
+                      <MaterialIcons
+                        name="bookmarks"
+                        size={22}
+                        color={W.accentText}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ),
+              }),
+          ...contigoHeaderChrome(isDark),
+        }}
+      />
+      {Platform.OS === 'ios' && (
+        <>
+          <Stack.Toolbar placement="left">
+            <Stack.Toolbar.View>
               <View style={styles.headerBadgeWrap}>
                 <LiturgicalBadge dateStr={todayStr} />
               </View>
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/contigo/bookmarks')}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={{ padding: 4 }}
-                accessibilityLabel="Ver evangelios guardados"
-              >
-                <MaterialIcons name="bookmarks" size={22} color={W.accent} />
-              </TouchableOpacity>
-            </View>
-          ),
-          ...(Platform.OS === 'ios' &&
-          parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
-        }}
-      />
+            </Stack.Toolbar.View>
+          </Stack.Toolbar>
+          <Stack.Toolbar placement="right">
+            <Stack.Toolbar.Button
+              icon="bell"
+              tintColor={W.accentText}
+              accessibilityLabel="Recordatorios"
+              onPress={() => router.push('/(tabs)/contigo/recordatorios')}
+            />
+            <Stack.Toolbar.Button
+              icon="bookmark"
+              tintColor={W.accentText}
+              accessibilityLabel="Ver evangelios guardados"
+              onPress={() => router.push('/(tabs)/contigo/bookmarks')}
+            />
+          </Stack.Toolbar>
+        </>
+      )}
       <LinearGradient
-        colors={bgGradient}
+        colors={W.bgGradient}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
       />
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingTop: insets.top + 52,
-          paddingBottom: insets.bottom + 60,
+          paddingTop: headerInset,
+          paddingBottom: contentPaddingBottom,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -227,8 +340,8 @@ export default function ContigoScreen() {
 
           {/* ── Esta semana ────────────────────────────── */}
           <View style={[styles.section, { paddingTop: 18 }]}>
-            <Text style={[styles.smallLabel, { color: W.textMuted }]}>
-              ESTA SEMANA
+            <Text style={[styles.smallLabel, { color: W.textSec }]}>
+              ÚLTIMOS 7 DÍAS
             </Text>
             <View
               style={[
@@ -244,56 +357,110 @@ export default function ContigoScreen() {
                 records={records}
                 todayStr={todayStr}
                 isDark={isDark}
+                onDayPress={handleDayPress}
               />
             </View>
           </View>
 
           {/* ── Stats ──────────────────────────────────── */}
-          <View style={[styles.section, styles.statsRow]}>
-            <StatCard
-              icon="🔥"
-              value={prayStreak}
-              label={'racha de\noración'}
-              color={W.fire}
-              isDark={isDark}
-            />
-            <StatCard
-              icon="⏱"
-              value={`${totalMins}'`}
-              label={'min\nesta sem.'}
-              color={W.accent}
-              isDark={isDark}
-            />
-            <StatCard
-              icon="📖"
-              value={totalReads}
-              label={'lecturas\neste mes'}
-              color={W.blue}
-              isDark={isDark}
-            />
-          </View>
+          {/* Tres ceros seguidos no informan: la fila sale cuando hay algo que contar. */}
+          {prayStreak > 0 || totalMins > 0 || totalReads > 0 ? (
+            <View style={[styles.section, styles.statsRow]}>
+              <StatCard
+                icon="local-fire-department"
+                value={prayStreak}
+                label={'racha de\noración'}
+                color={W.fire}
+                isDark={isDark}
+              />
+              <StatCard
+                icon="timer"
+                value={`${totalMins}'`}
+                label={'min\nesta sem.'}
+                color={W.accentText}
+                isDark={isDark}
+              />
+              <StatCard
+                icon="menu-book"
+                value={totalReads}
+                label={'lecturas\neste mes'}
+                color={W.blue}
+                isDark={isDark}
+              />
+            </View>
+          ) : null}
 
           {/* ── Calendario completo ────────────────────── */}
           <View style={[styles.section, { paddingTop: 18 }]}>
             <View style={styles.monthHdr}>
-              <Text style={[styles.smallLabel, { color: W.textMuted }]}>
-                {monthLabel.toUpperCase()}
-              </Text>
-              <View
-                style={[
-                  styles.monthBadge,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(218,165,32,0.12)'
-                      : 'rgba(196,146,42,0.10)',
-                  },
-                ]}
-              >
-                <Text style={[styles.monthBadgeText, { color: W.accent }]}>
-                  {activeDays}{' '}
-                  {activeDays === 1 ? 'día activo' : 'días activos'}
+              <View style={styles.monthNavGroup}>
+                <TouchableOpacity
+                  onPress={() => shiftMonth(-1)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 6 }}
+                  accessibilityLabel="Mes anterior"
+                >
+                  <MaterialIcons
+                    name="chevron-left"
+                    size={20}
+                    color={W.textSec}
+                  />
+                </TouchableOpacity>
+                <Text
+                  style={[
+                    styles.smallLabel,
+                    styles.monthNavLabel,
+                    { color: W.textSec },
+                  ]}
+                >
+                  {monthLabel.toUpperCase()}
                 </Text>
+                <TouchableOpacity
+                  onPress={() => shiftMonth(1)}
+                  hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
+                  accessibilityLabel="Mes siguiente"
+                >
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={20}
+                    color={W.textSec}
+                  />
+                </TouchableOpacity>
+                {!isCurrentMonth ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      h.select();
+                      setMonthKey(todayStr.slice(0, 7));
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                    accessibilityLabel="Volver al mes de hoy"
+                  >
+                    <MaterialIcons
+                      name="today"
+                      size={16}
+                      color={W.accentText}
+                    />
+                  </TouchableOpacity>
+                ) : null}
               </View>
+              {activeDays > 0 ? (
+                <View
+                  style={[
+                    styles.monthBadge,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(218,165,32,0.12)'
+                        : 'rgba(196,146,42,0.10)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.monthBadgeText, { color: W.accentText }]}
+                  >
+                    {activeDays}{' '}
+                    {activeDays === 1 ? 'día activo' : 'días activos'}
+                  </Text>
+                </View>
+              ) : null}
             </View>
             <View
               style={[
@@ -308,13 +475,33 @@ export default function ContigoScreen() {
               <MonthHeatmap
                 records={records}
                 todayStr={todayStr}
+                monthDate={`${monthKey}-01`}
                 isDark={isDark}
                 onDayPress={handleDayPress}
               />
             </View>
           </View>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      <CelebrationBurst
+        visible={dayBurst}
+        particles={dayCompleteParticles([
+          habitColor('evangelio', isDark),
+          habitColor('oracion', isDark),
+          habitColor('revision', isDark),
+        ])}
+        emoji="✨"
+      />
+
+      <DayActionSheet
+        visible={!!dayMenu}
+        onClose={closeDayMenu}
+        date={dayMenu?.date ?? null}
+        record={dayMenu?.rec ?? null}
+        onSelect={chooseFromMenu}
+        onCloseComplete={onMenuClosed}
+      />
     </View>
   );
 }
@@ -329,13 +516,13 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   title: {
-    fontSize: 34,
+    ...typography.h0,
     fontWeight: '800',
     letterSpacing: -1.4,
     lineHeight: 38,
   },
   subtitle: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
     marginTop: 4,
   },
@@ -351,7 +538,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   dateLine: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
     paddingHorizontal: 20,
     marginBottom: 4,
@@ -360,7 +547,7 @@ const styles = StyleSheet.create({
   headerBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -375,15 +562,12 @@ const styles = StyleSheet.create({
   },
   cardSurface: {
     borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     padding: 16,
   },
   smallLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
+    ...typography.sectionLabel,
     marginBottom: 10,
-    textTransform: 'uppercase',
   },
   statsRow: {
     flexDirection: 'row',
@@ -395,8 +579,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
+  monthNavGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  // `smallLabel` lleva un `marginBottom` pensado para cuando va suelto encima
+  // de una tarjeta; dentro de la fila de flechas ese hueco descuadraba el mes
+  // respecto a los chevrones.
+  monthNavLabel: {
+    marginBottom: 0,
+  },
   monthBadge: {
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },

@@ -5,8 +5,9 @@
  * coincide, se llama a `onSuccess`.
  */
 import { radii } from '@/constants/uiStyles';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
   View,
   Text,
@@ -18,6 +19,8 @@ import {
 import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
+import colors, { SwipeColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -46,12 +49,17 @@ const PasswordPromptModal: React.FC<Props> = ({
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
-  useEffect(() => {
+  // Se limpia al ABRIR, ajustando el estado durante el render (el patrón que
+  // documenta React para "cambiar estado cuando cambia una prop"): así el
+  // modal nunca llega a pintar un render con la contraseña del intento anterior.
+  const [lastVisible, setLastVisible] = useState(visible);
+  if (visible !== lastVisible) {
+    setLastVisible(visible);
     if (visible) {
       setPassword('');
       setError(false);
     }
-  }, [visible]);
+  }
 
   const handleConfirm = () => {
     if (password.trim().toLowerCase() === expectedPassword.toLowerCase()) {
@@ -71,7 +79,12 @@ const PasswordPromptModal: React.FC<Props> = ({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.backdrop}>
+        {/* Android (edge-to-edge): el Modal no se redimensiona con el teclado,
+            así que la tarjeta sube con el relleno del KeyboardAvoidingView. */}
+        <KeyboardAvoidingView
+          style={styles.backdrop}
+          behavior={Platform.OS === 'web' ? undefined : 'padding'}
+        >
           <TouchableWithoutFeedback>
             <View style={styles.card}>
               <Text style={styles.title}>{title}</Text>
@@ -118,7 +131,7 @@ const PasswordPromptModal: React.FC<Props> = ({
               </View>
             </View>
           </TouchableWithoutFeedback>
-        </View>
+        </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </Modal>
   );
@@ -137,7 +150,7 @@ const createStyles = (isDark: boolean) =>
       width: '100%',
       maxWidth: 380,
       backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-      borderRadius: 18,
+      borderRadius: radii.xl,
       padding: 20,
       ...Platform.select({
         web: { boxShadow: '0 10px 30px rgba(0,0,0,0.2)' },
@@ -153,7 +166,7 @@ const createStyles = (isDark: boolean) =>
     title: {
       fontSize: 17,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).text,
     },
     description: {
       fontSize: 13.5,
@@ -165,7 +178,7 @@ const createStyles = (isDark: boolean) =>
       marginTop: 14,
     },
     errorText: {
-      color: '#FF453A',
+      color: SwipeColors.remove,
       fontSize: 12.5,
       marginTop: 6,
     },
@@ -181,18 +194,18 @@ const createStyles = (isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    btnPrimary: { backgroundColor: '#253883' },
+    btnPrimary: { backgroundColor: colors.primary },
     btnPrimaryText: {
       color: '#fff',
       fontSize: 15,
       fontWeight: '700',
     },
     btnSecondary: {
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
     },
     btnSecondaryText: {
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
-      fontSize: 15,
+      color: themeColors(isDark).text,
+      ...typography.button,
       fontWeight: '600',
     },
     btnDisabled: { opacity: 0.5 },

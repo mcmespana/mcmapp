@@ -6,7 +6,6 @@ import {
   ViewStyle,
   TextStyle,
   useWindowDimensions,
-  ScrollView,
   Platform,
   Linking,
   Image,
@@ -14,24 +13,25 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import { trackEvent } from '@/utils/analytics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MaterialIcons } from '@expo/vector-icons';
+import Animated from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
+import { useNavigation } from 'expo-router/react-navigation';
+import { MaterialIcons } from '@/components/ui/icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { hexAlpha, darkenHex } from '@/utils/colorUtils';
-import { getBrightness } from '@/components/ui/glass';
+import { hexAlpha, darkenHex, readableOn } from '@/utils/colorUtils';
+import { eventHeroColors } from '@/utils/tintInk';
 import { radii, shadows } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
-import { EventStackParamList } from './eventStackScreens';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import useNetworkStatus from '@/hooks/useNetworkStatus';
 import OfflineBanner from '@/components/OfflineBanner';
 import SurveyBanner from '@/components/SurveyBanner';
 import { useActiveSurveys } from '@/hooks/useActiveSurveys';
-import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
 import { useEventSubscriptions } from '@/contexts/EventSubscriptionsContext';
 import { useToast } from '@/contexts/AppToastContext';
 import { h } from '@/utils/haptics';
@@ -40,9 +40,11 @@ import {
   EventSection,
   getEventCacheKey,
   getEventFirebasePath,
+  isEventArchived,
 } from '@/constants/events';
-
-const WIDE_BREAKPOINT = 700;
+import { themeColors } from '@/constants/colors';
+import { breakpoints } from '@/constants/breakpoints';
+import typography from '@/constants/typography';
 
 /**
  * Hub genérico de un evento (Jubileo, encuentros, retiros, etc.).
@@ -54,11 +56,15 @@ const WIDE_BREAKPOINT = 700;
  * Firebase a partir del mismo registry.
  */
 export default function EventHomeScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<EventStackParamList>>();
+  const navigation = useNavigation();
+  const { open: openEventScreen } = useEventNavigation();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const event = useCurrentEvent();
+
+  React.useEffect(() => {
+    trackEvent('evento_abierto', { evento: event.id });
+  }, [event.id]);
   const eventSurveys = useActiveSurveys('event-banner', event.id);
 
   // ── Suscripción opt-in a avisos del evento ──
@@ -77,8 +83,14 @@ export default function EventHomeScreen() {
   // automáticamente. `wasPrompted` marca que ya se hizo una vez por evento, así
   // que si el usuario se desuscribe luego con la campana, NO le volvemos a
   // suscribir al reentrar.
+  //
+  // Los eventos ARCHIVADOS quedan fuera: entrar a mirar un encuentro que ya
+  // pasó (desde "Más > Eventos pasados") no es pedir que te avisen de él. La
+  // campana sigue ahí por si alguien la quiere activar a mano.
+  const archived = isEventArchived(event);
   React.useEffect(() => {
     if (subsLoading) return;
+    if (archived) return;
     if (wasPrompted(event.id)) return;
     subscribe(event.id);
     markPrompted(event.id);
@@ -88,6 +100,7 @@ export default function EventHomeScreen() {
     });
   }, [
     subsLoading,
+    archived,
     event.id,
     event.title,
     wasPrompted,
@@ -117,7 +130,7 @@ export default function EventHomeScreen() {
   ]);
 
   const { width } = useWindowDimensions();
-  const isWide = width >= WIDE_BREAKPOINT;
+  const isWide = width >= breakpoints.md;
   const columns = isWide ? 3 : 2;
   const containerPadding = spacing.md;
   const gap = spacing.md;
@@ -145,16 +158,17 @@ export default function EventHomeScreen() {
   const stackIndex =
     (navigation.getState?.() as { index?: number } | undefined)?.index ?? 0;
   const isPushed = stackIndex > 0;
+  // Esta pantalla es el tab "Visita Papa" cuando se abre como tab, pero
+  // también se apila desde Más (Jubileo). Apilada NO se registra como scroller
+  // del tab: el del tab es el de MasHomeScreen.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll(
+    isPushed ? null : 'visitapapa',
+  );
 
   const tint = event.tintColor;
-  const tintIsLight = getBrightness(tint) > 175;
-  const heroFg = tintIsLight ? '#1A1A1A' : '#FFFFFF';
-  const heroMuted = tintIsLight
-    ? 'rgba(26,26,26,0.72)'
-    : 'rgba(255,255,255,0.9)';
-  const emblemBg = tintIsLight
-    ? 'rgba(255,255,255,0.5)'
-    : 'rgba(255,255,255,0.16)';
+  // Tinta del hero por contraste real con el tinte (onColor), no por un
+  // umbral de brillo: con el verde del Jubileo, el umbral elegía blanco (2,1:1).
+  const { fg: heroFg, muted: heroMuted, emblemBg } = eventHeroColors(tint);
 
   // La campana de suscripción va SIEMPRE en el hero, para que todos los eventos
   // se vean igual tanto si se abren como tab propio (Visita Papa) como apilados
@@ -162,10 +176,17 @@ export default function EventHomeScreen() {
   // apilado, lo que hacía que la campana se viera distinta entre eventos.)
   return (
     <SafeAreaView style={styles.container} edges={isPushed ? [] : ['top']}>
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={[
           styles.scrollContent,
-          { padding: containerPadding, rowGap: gap },
+          {
+            padding: containerPadding,
+            rowGap: gap,
+            paddingBottom: contentPaddingBottom,
+          },
         ]}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -244,7 +265,7 @@ export default function EventHomeScreen() {
                   return;
                 }
                 if (section.target) {
-                  (navigation as any).navigate(section.target, {
+                  openEventScreen(section.target as never, {
                     eventId: event.id,
                   });
                 }
@@ -253,31 +274,37 @@ export default function EventHomeScreen() {
           ))}
         </View>
 
-        {/* ── Lema del encuentro ── */}
-        <View style={styles.motto}>
-          <View
-            style={[
-              styles.mottoLine,
-              { backgroundColor: hexAlpha(tint, '55') },
-            ]}
-          />
-          <MaterialIcons name="arrow-upward" size={15} color={tint} />
-          <Text
-            style={[
-              styles.mottoText,
-              { color: isDark ? '#C7C7CC' : '#6B7280' },
-            ]}
-          >
-            Alzad la mirada
-          </Text>
-          <View
-            style={[
-              styles.mottoLine,
-              { backgroundColor: hexAlpha(tint, '55') },
-            ]}
-          />
-        </View>
-      </ScrollView>
+        {/* ── Lema del encuentro (solo si el evento tiene) ── */}
+        {event.motto ? (
+          <View style={styles.motto}>
+            <View
+              style={[
+                styles.mottoLine,
+                { backgroundColor: hexAlpha(tint, '55') },
+              ]}
+            />
+            <MaterialIcons
+              name="arrow-upward"
+              size={15}
+              color={readableOn(tint, themeColors(isDark).background, 3)}
+            />
+            <Text
+              style={[
+                styles.mottoText,
+                { color: themeColors(isDark).textSecondary },
+              ]}
+            >
+              {event.motto}
+            </Text>
+            <View
+              style={[
+                styles.mottoLine,
+                { backgroundColor: hexAlpha(tint, '55') },
+              ]}
+            />
+          </View>
+        ) : null}
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
@@ -302,13 +329,15 @@ function SectionCard({
 }) {
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
   const sectionSlug = section.firebaseKey ?? section.target ?? section.label;
+  // Sin `firebaseKey` esta sección no vive en Firebase: no hay nada que mirar
+  // y `hidden` es siempre false. Se pasa `null` en vez de un path inventado.
   const { hidden: firebaseHidden } = useFirebaseData(
     section.firebaseKey
       ? getEventFirebasePath(event, section.firebaseKey)
-      : `__noop__/${sectionSlug}`,
+      : null,
     section.firebaseKey
       ? getEventCacheKey(event, section.firebaseKey)
-      : `__noop__${event.id}_${sectionSlug}`,
+      : `noop_${event.id}_${sectionSlug}`,
   );
 
   if (firebaseHidden) return null;
@@ -319,7 +348,7 @@ function SectionCard({
         styles.card,
         {
           width,
-          backgroundColor: isDark ? '#2C2C2E' : '#fff',
+          backgroundColor: themeColors(isDark).background,
         },
         Platform.OS !== 'web'
           ? {
@@ -343,10 +372,6 @@ function SectionCard({
     >
       <PressableFeedback.Highlight />
 
-      <View
-        style={[styles.accentBar, { backgroundColor: section.tintColor }]}
-      />
-
       <View style={styles.cardBody}>
         <View
           style={[
@@ -354,11 +379,19 @@ function SectionCard({
             { backgroundColor: hexAlpha(section.tintColor, '18') },
           ]}
         >
-          <Text style={styles.emoji}>{section.emoji}</Text>
+          {section.materialIcon ? (
+            <MaterialIcons
+              name={section.materialIcon}
+              size={26}
+              color={section.tintColor}
+            />
+          ) : (
+            <Text style={styles.emoji}>{section.emoji}</Text>
+          )}
         </View>
 
         <Text
-          style={[styles.cardTitle, { color: isDark ? '#fff' : '#1C1C1E' }]}
+          style={[styles.cardTitle, { color: themeColors(isDark).text }]}
           numberOfLines={1}
         >
           {section.label}
@@ -395,7 +428,7 @@ function SectionCard({
   );
 }
 
-interface Styles {
+type Styles = {
   container: ViewStyle;
   scrollView: ViewStyle;
   scrollContent: ViewStyle;
@@ -420,20 +453,19 @@ interface Styles {
   mottoText: TextStyle;
   gridContainer: ViewStyle;
   card: ViewStyle;
-  accentBar: ViewStyle;
   cardBody: ViewStyle;
   iconCircle: ViewStyle;
   emoji: TextStyle;
   cardTitle: TextStyle;
   cardSubtitle: TextStyle;
   arrowPill: ViewStyle;
-}
+};
 
 const createStyles = (isDark: boolean) =>
   StyleSheet.create<Styles>({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     scrollView: {
       flex: 1,
@@ -441,24 +473,23 @@ const createStyles = (isDark: boolean) =>
     scrollContent: {
       flexGrow: 1,
       alignItems: 'center',
-      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.xl,
     },
     hero: {
       width: '100%',
       maxWidth: 1100,
-      borderRadius: radii.xxl,
+      borderRadius: radii.xl,
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.lg,
       marginBottom: spacing.xs,
       overflow: 'hidden',
       ...(Platform.OS === 'web'
         ? ({ boxShadow: '0 10px 30px rgba(0,0,0,0.16)' } as ViewStyle)
-        : (shadows.xl as ViewStyle)),
+        : (shadows.hero as ViewStyle)),
     },
     heroEmblem: {
       width: 52,
       height: 52,
-      borderRadius: 16,
+      borderRadius: radii.lg,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.md,
@@ -476,7 +507,7 @@ const createStyles = (isDark: boolean) =>
       lineHeight: 30,
     },
     heroSubtitle: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '500',
       lineHeight: 19,
       marginTop: 6,
@@ -488,7 +519,7 @@ const createStyles = (isDark: boolean) =>
       right: spacing.md,
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -502,12 +533,12 @@ const createStyles = (isDark: boolean) =>
       paddingHorizontal: spacing.md,
       borderRadius: radii.lg,
       borderWidth: StyleSheet.hairlineWidth * 2,
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
     },
     suggestIcon: {
       width: 40,
       height: 40,
-      borderRadius: 12,
+      borderRadius: radii.md,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -516,12 +547,12 @@ const createStyles = (isDark: boolean) =>
       gap: 2,
     },
     suggestTitle: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '700',
       letterSpacing: -0.2,
     },
     suggestSubtitle: {
-      fontSize: 12,
+      ...typography.footnote,
       lineHeight: 16,
     },
     suggestActions: {
@@ -534,7 +565,7 @@ const createStyles = (isDark: boolean) =>
       borderRadius: radii.md,
     },
     suggestBtnText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
     },
     suggestDismiss: {
@@ -542,7 +573,7 @@ const createStyles = (isDark: boolean) =>
       paddingVertical: 2,
     },
     suggestDismissText: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
     },
     motto: {
@@ -559,7 +590,7 @@ const createStyles = (isDark: boolean) =>
       borderRadius: 1,
     },
     mottoText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       fontStyle: 'italic',
       letterSpacing: 0.3,
@@ -576,10 +607,6 @@ const createStyles = (isDark: boolean) =>
       borderRadius: radii.xl,
       overflow: 'hidden',
     },
-    accentBar: {
-      height: 4,
-      width: '100%',
-    },
     cardBody: {
       paddingHorizontal: spacing.md,
       paddingTop: spacing.md,
@@ -591,7 +618,7 @@ const createStyles = (isDark: boolean) =>
     iconCircle: {
       width: 52,
       height: 52,
-      borderRadius: 16,
+      borderRadius: radii.lg,
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 4,
@@ -605,7 +632,7 @@ const createStyles = (isDark: boolean) =>
       letterSpacing: -0.3,
     },
     cardSubtitle: {
-      fontSize: 12,
+      ...typography.footnote,
       lineHeight: 16,
     },
     arrowPill: {
@@ -614,7 +641,7 @@ const createStyles = (isDark: boolean) =>
       right: spacing.sm,
       width: 28,
       height: 28,
-      borderRadius: 14,
+      borderRadius: radii.lg,
       justifyContent: 'center',
       alignItems: 'center',
     },

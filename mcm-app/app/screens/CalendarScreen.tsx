@@ -1,0 +1,775 @@
+// Pantalla del calendario. La montan `app/(tabs)/calendario/` (la pestaña) y el
+// stack de «Más» (`variant="stacked"`).
+import React, { useState, useMemo, useCallback, useLayoutEffect } from 'react';
+import {
+  View,
+  SectionList,
+  TouchableOpacity,
+  Platform,
+  Text,
+} from 'react-native';
+import type { CalendarProps } from 'react-native-calendars';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import colors, { themeColors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import Animated from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
+import type { SectionListProps } from 'react-native';
+import { useTabScroll, useTabListScroll } from '@/components/tabs/useTabScroll';
+import SegmentedControl from '@/components/ui/SegmentedControl';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
+import ProgressWithMessage from '@/components/ProgressWithMessage';
+import OfflineBanner from '@/components/OfflineBanner';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { useNavigation, useHeaderHeight } from 'expo-router/react-navigation';
+import { MaterialIcons } from '@/components/ui/icons';
+import { hexAlpha, readableOn } from '@/utils/colorUtils';
+import { h } from '@/utils/haptics';
+import { localISO } from '@/utils/localDate';
+import SwipeableMonthCalendar from '@/components/calendar/SwipeableMonthCalendar';
+import CalendarSubscribeBottomSheet from '@/components/CalendarSubscribeBottomSheet';
+import ActiveCalendarsSheet from '@/components/calendar/ActiveCalendarsSheet';
+import EventDetailsBottomSheet from '@/components/EventDetailsBottomSheet';
+import EmptyState from '@/components/ui/EmptyState';
+import {
+  calendarInfoInk,
+  createStyles,
+} from '@/components/calendar/calendarioStyles';
+
+import '@/components/calendar/calendarLocale';
+
+// Reanimated 4 no trae `Animated.SectionList` hecho, hay que crearlo. Se hace
+// a nivel de módulo para que no se remonte la lista en cada render.
+const AnimatedSectionList = Animated.createAnimatedComponent(
+  SectionList as React.ComponentType<
+    SectionListProps<CalendarEvent, { title: string; data: CalendarEvent[] }>
+  >,
+);
+
+/** 'YYYY-MM-DD' de un Date, en hora LOCAL (nada de toISOString, que en
+ *  España desplaza el día 1 al último del mes anterior). */
+const dateToStr = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+/** Día 1 del mes al que pertenece la fecha dada. */
+/** Solo la primera letra en mayúscula: «Jueves 5 de noviembre», no «…5 De Noviembre». */
+const upperFirst = (s: string): string =>
+  s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+
+const monthStart = (dateStr: string): string => `${dateStr.slice(0, 7)}-01`;
+
+/** Suma meses al mes de una fecha y devuelve su día 1. */
+const addMonths = (dateStr: string, delta: number): string => {
+  const [y, m] = dateStr.split('-').map(Number);
+  return dateToStr(new Date(y, m - 1 + delta, 1));
+};
+
+/**
+ * `variant`: `'tab'` es la pestaña (header sin título, con el conmutador
+ * Mes/Agenda dentro); `'stacked'` es la pantalla apilada del stack de «Más»,
+ * con su back y su título, donde el conmutador se queda en el cuerpo.
+ */
+export function CalendarScreen({
+  variant = 'tab',
+}: {
+  variant?: 'tab' | 'stacked';
+}) {
+  const scheme = useColorScheme();
+  // Modo agenda: es el scroller que representa al tab (re-tap → arriba).
+  const {
+    listRef: agendaRef,
+    onScroll: onAgendaScroll,
+    contentPaddingBottom,
+  } = useTabListScroll<
+    SectionList<CalendarEvent, { title: string; data: CalendarEvent[] }>
+  >('calendario');
+  // Modo calendario: mismo tab; se registra igual y gana el que esté montado.
+  const { scrollRef: calendarScrollRef, onScroll: onCalendarScroll } =
+    useTabScroll('calendario');
+  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const isDark = scheme === 'dark';
+  const infoInk = calendarInfoInk(isDark);
+  // El color de cada calendario lo decide el Panel (hay pasteles): como
+  // relleno, punto o borde va tal cual; como texto, en su variante legible.
+  const calendarInk = (color: string) =>
+    readableOn(color, themeColors(isDark).background);
+  const layout = useResponsiveLayout();
+  // En iPad landscape mostramos el calendario en dos paneles (mes a la
+  // izquierda, eventos del día a la derecha). En portrait/estrecho es una sola
+  // columna centrada. En móvil, ancho completo (sin cambios).
+  const isLandscapeWide = layout.isWide && layout.isLandscape;
+  const wideContentStyle = layout.isWide
+    ? {
+        width: '100%' as const,
+        maxWidth: isLandscapeWide ? 1000 : 760,
+        alignSelf: 'center' as const,
+      }
+    : null;
+  const params = useLocalSearchParams<{ date?: string }>();
+  // El salto a una fecha (`?date=`, desde Home o una notificación) llega por la
+  // URL, también cuando se abre apilada desde «Más».
+  const dateParam = params.date;
+
+  const {
+    calendarConfigs,
+    visibleCalendars,
+    toggleCalendarVisibility,
+    loading: configsLoading,
+    offline,
+  } = useCalendarConfig();
+
+  // `localISO()` (hora local) — `toISOString()` desplazaba "hoy" al día
+  // anterior entre las 00:00 y ~01-02h locales (conversión a UTC).
+  const todayStr = localISO();
+
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  // El MES visible es estado propio, independiente del día seleccionado: es lo
+  // que comparten la rejilla del mes y la agenda, y lo que mueve el swipe.
+  const [visibleMonth, setVisibleMonth] = useState<string>(() =>
+    monthStart(todayStr),
+  );
+  const [viewMode, setViewMode] = useState<'calendar' | 'agenda'>('calendar');
+  const [subscribeOpen, setSubscribeOpen] = useState(false);
+  const [activeOpen, setActiveOpen] = useState(false);
+  const [detailsEvent, setDetailsEvent] = useState<CalendarEvent | null>(null);
+
+  // Header NATIVO con el título «Calendario» centrado y, a la derecha, dos
+  // botones: suscribirse a los calendarios (guardarlos en el del móvil) y
+  // «Calendarios activos» (cuáles se ven). El conmutador Mes/Agenda ya no vive
+  // en el header: va justo encima del calendario, a todo el ancho. En iOS los
+  // botones son nativos (`Stack.Toolbar`, más abajo); en Android y web, vistas
+  // normales puestas con `navigation.setOptions`.
+  const navigation = useNavigation();
+  // Altura REAL del header del anfitrión (incluye la barra de estado y baja a
+  // 32pt en horizontal), en vez de los 44 a ojo de antes.
+  const headerHeight = useHeaderHeight();
+  const showSubscribe = !configsLoading && calendarConfigs.length > 0;
+  // Con un solo calendario no hay nada que elegir.
+  const canChooseActive = !configsLoading && calendarConfigs.length > 1;
+  const tint = themeColors(isDark).link;
+  useLayoutEffect(() => {
+    if (Platform.OS === 'ios') return;
+    navigation.setOptions({
+      headerTitleAlign: 'center',
+      headerRight:
+        showSubscribe || canChooseActive
+          ? () => (
+              <View style={styles.headerButtons}>
+                {showSubscribe && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      h.tap();
+                      setSubscribeOpen(true);
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={{ padding: 6 }}
+                    accessibilityLabel="Suscribirse a calendarios"
+                  >
+                    <MaterialIcons name="bookmark-add" size={22} color={tint} />
+                  </TouchableOpacity>
+                )}
+                {canChooseActive && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      h.tap();
+                      setActiveOpen(true);
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={{ padding: 6 }}
+                    accessibilityLabel="Calendarios activos"
+                  >
+                    <MaterialIcons name="tune" size={22} color={tint} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )
+          : undefined,
+    });
+  }, [navigation, showSubscribe, canChooseActive, tint, styles]);
+
+  // Un deep-link con `?date=` salta a ese día. Se ajusta DURANTE el render (el
+  // patrón que documenta React para "cambiar estado cuando cambia una prop"),
+  // no en un efecto: así no hay un render intermedio pintando el día anterior.
+  const [lastDateParam, setLastDateParam] = useState(dateParam);
+  if (dateParam !== lastDateParam) {
+    setLastDateParam(dateParam);
+    if (dateParam && typeof dateParam === 'string') {
+      setSelectedDate(dateParam);
+      setVisibleMonth(monthStart(dateParam));
+    }
+  }
+
+  const { eventsByDate, loading: eventsLoading } =
+    useCalendarEvents(calendarConfigs);
+
+  const loading = configsLoading || eventsLoading;
+
+  const formatDate = (date: string) =>
+    new Date(date + 'T00:00:00')
+      .toLocaleDateString('es-ES', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      })
+      .replace(',', '');
+
+  const formatDateShort = (date: string) => {
+    const d = new Date(date + 'T00:00:00');
+    const day = d.getDate();
+    const weekday = d
+      .toLocaleDateString('es-ES', { weekday: 'short' })
+      .replace('.', '');
+    return { day, weekday: weekday.charAt(0).toUpperCase() + weekday.slice(1) };
+  };
+
+  const monthLabel = useMemo(() => {
+    const d = new Date(visibleMonth + 'T00:00:00');
+    const label = d.toLocaleDateString('es-ES', {
+      month: 'long',
+      year: 'numeric',
+    });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }, [visibleMonth]);
+
+  // Al cambiar de mes, el día seleccionado se mueve con él: hoy si el mes es
+  // el actual, y si no el día 1. Así la ficha de "eventos del día" nunca se
+  // queda hablando de un mes que ya no está en pantalla.
+  const goToMonth = useCallback(
+    (monthISO: string) => {
+      setVisibleMonth(monthISO);
+      setSelectedDate(
+        monthISO.slice(0, 7) === todayStr.slice(0, 7) ? todayStr : monthISO,
+      );
+    },
+    [todayStr],
+  );
+
+  const changeMonth = useCallback(
+    (delta: number) => {
+      goToMonth(addMonths(visibleMonth, delta));
+    },
+    [visibleMonth, goToMonth],
+  );
+
+  const goToToday = useCallback(() => {
+    setSelectedDate(todayStr);
+    setVisibleMonth(monthStart(todayStr));
+  }, [todayStr]);
+
+  const selectDay = useCallback(
+    (dateString: string) => {
+      if (dateString === selectedDate) return;
+      h.select();
+      setSelectedDate(dateString);
+      setVisibleMonth(monthStart(dateString));
+    },
+    [selectedDate],
+  );
+
+  // Swipe horizontal para la agenda (la rejilla del mes trae el suyo, con
+  // animación, dentro de SwipeableMonthCalendar). `failOffsetY` deja pasar el
+  // scroll vertical de la lista sin pelearse con el gesto.
+  const agendaSwipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-18, 18])
+        .failOffsetY([-16, 16])
+        .onEnd((e) => {
+          if (Math.abs(e.translationX) > 60 || Math.abs(e.velocityX) > 700) {
+            scheduleOnRN(changeMonth, e.translationX < 0 ? 1 : -1);
+          }
+        }),
+    [changeMonth],
+  );
+
+  const filteredByDate = useMemo(() => {
+    const map: Record<string, CalendarEvent[]> = {};
+    Object.keys(eventsByDate).forEach((date) => {
+      const events = eventsByDate[date].filter(
+        (ev) => visibleCalendars[ev.calendarIndex],
+      );
+      if (events.length) map[date] = events;
+    });
+    return map;
+  }, [eventsByDate, visibleCalendars]);
+
+  const agendaSections = useMemo(() => {
+    const d0 = new Date(visibleMonth + 'T12:00:00');
+    const firstDay = new Date(d0.getFullYear(), d0.getMonth(), 1);
+    const lastDay = new Date(d0.getFullYear(), d0.getMonth() + 1, 0);
+    const sections: { title: string; data: CalendarEvent[] }[] = [];
+    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+      const dateStr = dateToStr(d);
+      sections.push({ title: dateStr, data: filteredByDate[dateStr] || [] });
+    }
+    return sections;
+  }, [filteredByDate, visibleMonth]);
+
+  // Solo secciones CON eventos — así ListEmptyComponent se activa cuando no hay nada
+  const agendaSectionsFiltered = useMemo(
+    () => agendaSections.filter((s) => s.data.length > 0),
+    [agendaSections],
+  );
+
+  // true solo si todos los calendarios están explícitamente desactivados
+  const allCalendarsHidden =
+    visibleCalendars.length > 0 && !visibleCalendars.some(Boolean);
+
+  const markedDates = useMemo<CalendarProps['markedDates']>(() => {
+    const marks: { [date: string]: any } = {};
+
+    Object.keys(filteredByDate).forEach((date) => {
+      const eventsForDate = filteredByDate[date];
+
+      if (eventsForDate.length > 0) {
+        const periods = eventsForDate.map((ev) => {
+          const isEffectivelySingleDay =
+            ev.isSingleDay === true ||
+            !ev.endDate ||
+            ev.startDate === ev.endDate;
+
+          if (isEffectivelySingleDay) {
+            return {
+              startingDay: true,
+              endingDay: true,
+              color: calendarConfigs[ev.calendarIndex].color,
+            };
+          } else {
+            return {
+              startingDay: date === ev.startDate,
+              endingDay: date === (ev.endDate || ev.startDate),
+              color: calendarConfigs[ev.calendarIndex].color,
+            };
+          }
+        });
+
+        marks[date] = { periods };
+      }
+    });
+
+    marks[selectedDate] = {
+      ...(marks[selectedDate] || {}),
+      selected: true,
+      selectedColor: colors.info,
+      selectedTextColor: colors.white,
+    };
+
+    return marks;
+  }, [filteredByDate, selectedDate, calendarConfigs]);
+
+  const eventsForSelected = filteredByDate[selectedDate] || [];
+
+  const renderEventCard = (
+    ev: CalendarEvent,
+    index: number,
+    isPast: boolean,
+  ) => {
+    const calColor = calendarConfigs[ev.calendarIndex]?.color || colors.info;
+
+    const timeLabel = ev.startTime
+      ? ev.endTime
+        ? `${ev.startTime} – ${ev.endTime}`
+        : ev.startTime
+      : null;
+
+    return (
+      <TouchableOpacity
+        key={index}
+        activeOpacity={0.7}
+        style={[styles.eventCard, isPast && styles.pastEventCard]}
+        onPress={() => {
+          h.tap();
+          setDetailsEvent(ev);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`Ver detalles de ${ev.title}`}
+      >
+        <View style={styles.eventCardBody}>
+          <View style={styles.eventCardTop}>
+            <Text
+              style={[styles.eventTitle, isPast && styles.pastText]}
+              numberOfLines={2}
+            >
+              {ev.title}
+            </Text>
+            <View
+              style={[
+                styles.calendarBadge,
+                { backgroundColor: hexAlpha(calColor, '18') },
+              ]}
+            >
+              <View
+                style={[styles.calendarDot, { backgroundColor: calColor }]}
+              />
+              <Text
+                style={[
+                  styles.calendarBadgeText,
+                  { color: calendarInk(calColor) },
+                ]}
+                numberOfLines={1}
+              >
+                {calendarConfigs[ev.calendarIndex]?.name || ''}
+              </Text>
+            </View>
+          </View>
+          {timeLabel ? (
+            <View style={styles.eventMeta}>
+              <MaterialIcons name="schedule" size={14} color="#8E8E93" />
+              <Text
+                style={[styles.eventLocation, isPast && styles.pastText]}
+                numberOfLines={1}
+              >
+                {timeLabel}
+              </Text>
+            </View>
+          ) : null}
+          {ev.location ? (
+            <View style={styles.eventMeta}>
+              <MaterialIcons name="place" size={14} color="#8E8E93" />
+              <Text
+                style={[styles.eventLocation, isPast && styles.pastText]}
+                numberOfLines={1}
+              >
+                {ev.location}
+              </Text>
+            </View>
+          ) : null}
+          {ev.endDate && ev.startDate !== ev.endDate ? (
+            <View style={styles.eventMeta}>
+              <MaterialIcons name="date-range" size={14} color="#8E8E93" />
+              <Text style={[styles.eventDuration, isPast && styles.pastText]}>
+                Hasta {formatDate(ev.endDate)}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  if (loading && calendarConfigs.length === 0) {
+    return <ProgressWithMessage message="Cargando calendarios..." />;
+  }
+
+  return (
+    <View
+      style={[
+        styles.container,
+        { flex: 1 },
+        // El header del stack es TRANSPARENTE en iOS (glass del sistema) en los
+        // dos anfitriones —el tab y el stack de "Más"—: el contenido pasa por
+        // debajo, así que hay que reservar su altura. Sin ella el conmutador
+        // Mes/Agenda se metía DEBAJO del header y chocaba con el botón de
+        // suscribirse. En Android y web el header es opaco y ya ocupa su sitio
+        // en el layout, así que aquí no se reserva nada.
+        { paddingTop: Platform.OS === 'ios' ? headerHeight : 0 },
+      ]}
+    >
+      {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
+
+      <View style={[styles.bodyWrap, wideContentStyle]}>
+        {/* Conmutador Mes/Agenda: justo encima del calendario, a todo el ancho. */}
+        <View
+          style={[
+            styles.switcherWrapper,
+            layout.isWide && styles.switcherWrapperWide,
+          ]}
+        >
+          <SegmentedControl
+            value={viewMode}
+            onChange={setViewMode}
+            accessibilityLabel="Vista del calendario"
+            options={[
+              { value: 'calendar', label: 'Mes', icon: 'calendar-month' },
+              { value: 'agenda', label: 'Agenda', icon: 'view-agenda' },
+            ]}
+          />
+        </View>
+
+        {viewMode === 'calendar' ? (
+          <Animated.ScrollView
+            ref={calendarScrollRef}
+            onScroll={onCalendarScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={isLandscapeWide ? styles.monthRowTwoPane : undefined}>
+              <View style={isLandscapeWide ? styles.monthLeftPane : undefined}>
+                <View style={styles.calendarCardContainer}>
+                  <SwipeableMonthCalendar
+                    key={scheme ?? 'light'}
+                    visibleMonth={visibleMonth}
+                    markedDates={markedDates}
+                    onDayPress={selectDay}
+                    onChangeMonth={changeMonth}
+                    isDark={isDark}
+                  />
+                </View>
+              </View>
+              <View style={isLandscapeWide ? styles.monthRightPane : undefined}>
+                {/* Events for selected date */}
+                <View style={styles.eventSection}>
+                  <View style={styles.eventSectionHeader}>
+                    <View style={styles.eventSectionLeft}>
+                      <Text style={styles.eventSectionDay}>
+                        {selectedDate === todayStr
+                          ? 'Hoy'
+                          : formatDateShort(selectedDate).day.toString()}
+                      </Text>
+                      <View>
+                        <Text style={styles.eventSectionWeekday}>
+                          {upperFirst(
+                            selectedDate === todayStr
+                              ? formatDate(todayStr)
+                              : formatDate(selectedDate),
+                          )}
+                        </Text>
+                        {eventsForSelected.length > 0 && (
+                          <Text style={styles.eventSectionCount}>
+                            {eventsForSelected.length} evento
+                            {eventsForSelected.length !== 1 ? 's' : ''}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                    {selectedDate !== todayStr && (
+                      <BackToTodayPill
+                        onPress={goToToday}
+                        styles={styles}
+                        isDark={isDark}
+                      />
+                    )}
+                  </View>
+
+                  {eventsForSelected.length > 0 ? (
+                    eventsForSelected.map((ev, i) =>
+                      renderEventCard(ev, i, selectedDate < todayStr),
+                    )
+                  ) : (
+                    <EmptyState
+                      icon="event-available"
+                      title="Sin eventos"
+                      subtitle="No hay eventos programados para este día"
+                    />
+                  )}
+                </View>
+              </View>
+            </View>
+          </Animated.ScrollView>
+        ) : (
+          <View style={styles.agendaContainer}>
+            {/* Agenda view header */}
+            <View style={styles.agendaHeader}>
+              <TouchableOpacity
+                onPress={() => {
+                  h.select();
+                  changeMonth(-1);
+                }}
+                style={styles.agendaNavBtn}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Mes anterior"
+              >
+                <MaterialIcons name="chevron-left" size={28} color={infoInk} />
+              </TouchableOpacity>
+              <Text style={styles.monthLabel}>{monthLabel}</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  h.select();
+                  changeMonth(1);
+                }}
+                style={styles.agendaNavBtn}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Mes siguiente"
+              >
+                <MaterialIcons name="chevron-right" size={28} color={infoInk} />
+              </TouchableOpacity>
+            </View>
+
+            {visibleMonth.slice(0, 7) !== todayStr.slice(0, 7) && (
+              <View style={styles.agendaBackToTodayRow}>
+                <BackToTodayPill
+                  onPress={goToToday}
+                  styles={styles}
+                  isDark={isDark}
+                />
+              </View>
+            )}
+
+            <GestureDetector gesture={agendaSwipe}>
+              <AnimatedSectionList
+                ref={agendaRef}
+                onScroll={onAgendaScroll}
+                scrollEventThrottle={16}
+                sections={agendaSectionsFiltered}
+                keyExtractor={(item, index) => `${item.title}-${index}`}
+                style={styles.agendaList}
+                contentContainerStyle={[
+                  styles.agendaContent,
+                  { paddingBottom: contentPaddingBottom },
+                ]}
+                stickySectionHeadersEnabled={false}
+                renderSectionHeader={({ section: { title, data } }) => {
+                  const isPast = title < todayStr;
+                  const isToday = title === todayStr;
+                  const isTomorrow =
+                    new Date(title + 'T00:00:00').getTime() ===
+                    new Date(todayStr + 'T00:00:00').getTime() +
+                      24 * 60 * 60 * 1000;
+
+                  const { day, weekday } = formatDateShort(title);
+
+                  return (
+                    <View
+                      style={[
+                        styles.sectionHeader,
+                        isToday && styles.todaySectionHeader,
+                        isPast && styles.pastSectionHeader,
+                      ]}
+                    >
+                      <View style={styles.sectionDateColumn}>
+                        <Text
+                          style={[
+                            styles.sectionDay,
+                            isToday && styles.todayAccent,
+                            isPast && styles.pastText,
+                          ]}
+                        >
+                          {day}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.sectionWeekday,
+                            isToday && styles.todayAccent,
+                            isPast && styles.pastText,
+                          ]}
+                        >
+                          {isToday ? 'HOY' : isTomorrow ? 'MAÑANA' : weekday}
+                        </Text>
+                      </View>
+                      <View style={styles.sectionDivider} />
+                      <View style={styles.sectionBadge}>
+                        <Text
+                          style={[
+                            styles.sectionBadgeText,
+                            isPast && styles.pastText,
+                          ]}
+                        >
+                          {data.length}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                }}
+                renderItem={({ item, section }) => {
+                  const isPast = section.title < todayStr;
+                  return renderEventCard(item, 0, isPast);
+                }}
+                ListEmptyComponent={
+                  <EmptyState
+                    icon={allCalendarsHidden ? 'visibility-off' : 'event-busy'}
+                    title={
+                      allCalendarsHidden
+                        ? 'Todos los calendarios ocultos'
+                        : 'Sin eventos este mes'
+                    }
+                    subtitle={
+                      allCalendarsHidden
+                        ? 'Activa algún calendario desde los filtros de arriba'
+                        : 'No hay eventos programados para ' + monthLabel
+                    }
+                  />
+                }
+              />
+            </GestureDetector>
+          </View>
+        )}
+      </View>
+
+      {Platform.OS === 'ios' && (showSubscribe || canChooseActive) && (
+        <Stack.Toolbar placement="right">
+          {showSubscribe && (
+            <Stack.Toolbar.Button
+              icon="calendar.badge.plus"
+              tintColor={tint}
+              accessibilityLabel="Suscribirse a calendarios"
+              onPress={() => {
+                h.tap();
+                setSubscribeOpen(true);
+              }}
+            />
+          )}
+          {canChooseActive && (
+            <Stack.Toolbar.Button
+              icon="slider.horizontal.3"
+              tintColor={tint}
+              accessibilityLabel="Calendarios activos"
+              onPress={() => {
+                h.tap();
+                setActiveOpen(true);
+              }}
+            />
+          )}
+        </Stack.Toolbar>
+      )}
+
+      <ActiveCalendarsSheet
+        visible={activeOpen}
+        onClose={() => setActiveOpen(false)}
+        calendars={calendarConfigs}
+        active={visibleCalendars}
+        onToggle={toggleCalendarVisibility}
+      />
+
+      <CalendarSubscribeBottomSheet
+        visible={subscribeOpen}
+        onClose={() => setSubscribeOpen(false)}
+        calendars={calendarConfigs}
+      />
+
+      <EventDetailsBottomSheet
+        visible={!!detailsEvent}
+        onClose={() => setDetailsEvent(null)}
+        event={detailsEvent}
+        calendarConfig={
+          detailsEvent ? calendarConfigs[detailsEvent.calendarIndex] : undefined
+        }
+      />
+    </View>
+  );
+}
+
+export default CalendarScreen;
+
+interface BackToTodayPillProps {
+  onPress: () => void;
+  styles: ReturnType<typeof createStyles>;
+  isDark: boolean;
+}
+
+function BackToTodayPill({ onPress, styles, isDark }: BackToTodayPillProps) {
+  return (
+    <TouchableOpacity
+      style={styles.backToTodayPill}
+      onPress={() => {
+        h.tap();
+        onPress();
+      }}
+      activeOpacity={0.75}
+      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+      accessibilityRole="button"
+      accessibilityLabel="Volver a hoy"
+    >
+      <MaterialIcons name="today" size={14} color={calendarInfoInk(isDark)} />
+      <Text style={styles.backToTodayLabel}>Volver a hoy</Text>
+    </TouchableOpacity>
+  );
+}

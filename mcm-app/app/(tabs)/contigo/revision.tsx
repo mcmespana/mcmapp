@@ -9,7 +9,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   Platform,
@@ -19,36 +18,84 @@ import {
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { MaterialIcons } from '@/components/ui/icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useReducedMotion,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import { h } from '@/utils/haptics';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import {
-  warm,
-  offsetDate,
-  formatDateLong,
+  HABITS,
   WARM_DARK,
   WARM_LIGHT,
+  warm,
 } from '@/components/contigo/theme';
+import {
+  contigoHeaderChrome,
+  useContigoHeaderInset,
+} from '@/components/contigo/headerChrome';
 import { BreathingPhase } from '@/components/contigo/BreathingPhase';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
+import { DateNavigator } from '@/components/contigo/DateNavigator';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   syncContigoRevision,
   fetchContigoRevisions,
 } from '@/utils/authHelpers';
+import { styles } from '@/components/contigo/revisionStyles';
+import colors from '@/constants/colors';
+import { durations, springs } from '@/constants/animations';
+import {
+  carryGratefulText,
+  gratefulItemsToSave,
+  padListItems,
+  revisionHasContent,
+  stepDotWidth,
+  type RevisionMode,
+} from '@/utils/contigoRevision';
 
 const REVISION_STORAGE = '@contigo_revision_';
 
-type Mode = 'list' | 'free';
+type Mode = RevisionMode;
+
+const STEP_NAMES = ['Agradecer', 'Revisar'] as const;
+
+/** Las dos formas de agradecer. Fuera del componente: no cambian. */
+const GRATEFUL_MODES = [
+  {
+    value: 'list' as const,
+    label: 'Lista',
+    icon: 'format-list-bulleted' as const,
+  },
+  { value: 'free' as const, label: 'Texto libre', icon: 'notes' as const },
+];
 
 export default function RevisionScreen() {
+  useSuppressCarismochito();
+  // Subruta de Contigo: se registra con la clave del tab (gana el último
+  // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
+  const { scrollRef, onScroll } = useTabScroll('contigo');
+  // El footer va en el flujo (no flota), así que el hueco de la barra flotante
+  // lo reserva ÉL — no el contenido del scroll. Sin esto los botones quedaban
+  // justo debajo de las pestañas.
+  const tabClearance = useTabBarClearance();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const scheme = useColorScheme();
   const { user: authUser } = useAuth();
   const isDark = scheme === 'dark';
+  const headerInset = useContigoHeaderInset();
   const W = warm(isDark);
   const purple = isDark ? WARM_DARK.purple : WARM_LIGHT.purple;
   const { width: windowWidth } = useWindowDimensions();
@@ -63,7 +110,7 @@ export default function RevisionScreen() {
     : undefined;
 
   const params = useLocalSearchParams<{ date?: string }>();
-  const { todayStr, setRevisionDone } = useContigoHabits();
+  const { todayStr, setRevisionDone, isRevisionDone } = useContigoHabits();
 
   // If we arrive with a `date` param (from the calendar tap), skip the
   // breathing intro and open that day's review directly.
@@ -81,6 +128,9 @@ export default function RevisionScreen() {
     cameFromCalendar ? 'review' : 'breathing',
   );
   const [selDate, setSelDate] = useState(initialDate);
+  // Como en oración: el día ya tiene examen guardado (el registro de hábitos es
+  // síncrono, así que el aviso sale a la vez que se rellenan los campos).
+  const hasEntry = isRevisionDone(selDate);
   const [step, setStep] = useState(0);
   const [saved, setSaved] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -107,7 +157,7 @@ export default function RevisionScreen() {
         setSingleGrat(g[0] || '');
         setItems(['', '', '']);
       } else {
-        setItems(g.length >= 3 ? g : [...g, ...Array(3 - g.length).fill('')]);
+        setItems(padListItems(g));
         setSingleGrat('');
       }
       setRevText(data?.grateful?.revision || '');
@@ -151,31 +201,41 @@ export default function RevisionScreen() {
   // Cleanup any pending "go back after celebration" timer on unmount or
   // when the user navigates away manually before it fires.
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideCelebrationTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   useEffect(() => {
     return () => {
       if (closeTimer.current) {
         clearTimeout(closeTimer.current);
         closeTimer.current = null;
       }
+      if (hideCelebrationTimer.current) {
+        clearTimeout(hideCelebrationTimer.current);
+        hideCelebrationTimer.current = null;
+      }
     };
   }, []);
 
-  const navigateDate = (delta: number) => {
-    const next = offsetDate(selDate, delta);
-    if (next > todayStr) return;
+  // La háptica y el tope de «siguiente» los pone `DateNavigator`.
+  const changeDate = (next: string) => {
     setSelDate(next);
     setStep(0);
     setSaved(false);
     setPhase('review'); // skip breathing on date nav
   };
 
+  // Un día en blanco no cuenta como examen hecho (ni racha, ni celebración).
+  const canSave = revisionHasContent({ mode, items, singleGrat, revText });
+
   const handleSave = async () => {
+    if (!canSave) return;
     const revisionData = {
       date: selDate,
       type: 'grateful' as const,
       grateful: {
         mode,
-        items: mode === 'list' ? items.filter((g) => g.trim()) : [singleGrat],
+        items: gratefulItemsToSave(mode, items, singleGrat),
         revision: revText,
       },
     };
@@ -191,39 +251,46 @@ export default function RevisionScreen() {
     // Always mark the habit done — the streak / heatmap / week strip should
     // reflect any saved reflection, even retroactive ones.
     await setRevisionDone(selDate, true);
-    if (selDate === todayStr) {
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 2200);
-      if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
+    // Se celebra SIEMPRE que se guarda una revisión, sea de hoy o retroactiva:
+    // el hábito se marca igual, así que la recompensa debe ser la misma.
+    setShowCelebration(true);
+    h.formSuccess();
+    if (hideCelebrationTimer.current) {
+      clearTimeout(hideCelebrationTimer.current);
     }
+    hideCelebrationTimer.current = setTimeout(() => {
+      hideCelebrationTimer.current = null;
+      setShowCelebration(false);
+    }, 2200);
     setSaved(true);
     if (closeTimer.current) clearTimeout(closeTimer.current);
+    // Se sale DESPUÉS de que la celebración termine, no a mitad de burst.
     closeTimer.current = setTimeout(() => {
       closeTimer.current = null;
       router.back();
-    }, 1400);
+    }, 2100);
   };
 
   const handleNext = () => {
-    if (step < totalSteps - 1) setStep(step + 1);
-    else handleSave();
+    if (step < totalSteps - 1) {
+      h.tap();
+      setStep(step + 1);
+    } else {
+      handleSave();
+    }
   };
 
-  const isToday = selDate === todayStr;
-  const isFutureDisabled = selDate >= todayStr;
-
-  const bgColors = useMemo(
-    () =>
-      isDark
-        ? (['#1A1712', '#100F0C'] as const)
-        : (['#FBF7F1', '#F0E8D8'] as const),
-    [isDark],
-  );
+  const isLastStep = step === totalSteps - 1;
+  // En el último paso no se puede guardar un día en blanco.
+  const blocked = isLastStep && !canSave;
+  const nextLabel = !isLastStep
+    ? 'Continuar'
+    : hasEntry
+      ? 'Actualizar revisión'
+      : 'Guardar revisión';
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 52 }]}>
+    <View style={[styles.container, { paddingTop: headerInset }]}>
       {/* Header NATIVO: cerrar (izq) + navegador de fechas como título custom
           (‹ fecha ›) dentro de la barra nativa. */}
       <Stack.Screen
@@ -243,51 +310,19 @@ export default function RevisionScreen() {
             </TouchableOpacity>
           ),
           headerTitle: () => (
-            <View style={styles.navTitle}>
-              <TouchableOpacity
-                onPress={() => navigateDate(-1)}
-                style={styles.dateStepperBtn}
-                hitSlop={10}
-                accessibilityLabel="Día anterior"
-              >
-                <MaterialIcons
-                  name="chevron-left"
-                  size={20}
-                  color={W.textSec}
-                />
-              </TouchableOpacity>
-              <Text
-                style={[styles.navTitleText, { color: W.text }]}
-                numberOfLines={1}
-              >
-                {isToday ? 'Hoy' : formatDateLong(selDate)}
-              </Text>
-              <TouchableOpacity
-                onPress={() => navigateDate(1)}
-                disabled={isFutureDisabled}
-                style={[
-                  styles.dateStepperBtn,
-                  { opacity: isFutureDisabled ? 0.25 : 1 },
-                ]}
-                hitSlop={10}
-                accessibilityLabel="Día siguiente"
-              >
-                <MaterialIcons
-                  name="chevron-right"
-                  size={20}
-                  color={W.textSec}
-                />
-              </TouchableOpacity>
-            </View>
+            <DateNavigator
+              variant="header"
+              date={selDate}
+              todayStr={todayStr}
+              onChange={changeDate}
+              maxDate={todayStr}
+            />
           ),
-          ...(Platform.OS === 'ios' &&
-          parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
+          ...contigoHeaderChrome(isDark),
         }}
       />
       <LinearGradient
-        colors={bgColors}
+        colors={W.bgGradient}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
@@ -299,32 +334,31 @@ export default function RevisionScreen() {
           style={[styles.pillText, { color: purple }]}
           accessibilityLabel="Revisión: agradecer y revisar"
         >
-          ✦ EXAMEN ESTILO &apos;AGRADECER Y REVISAR&apos;
+          Agradecer y revisar
         </Text>
       </View>
 
       {/* ── Step indicator ── */}
       <View style={styles.stepRow}>
         {Array.from({ length: totalSteps }).map((_, i) => (
-          <View
+          <StepDot
             key={i}
-            style={[
-              styles.stepDot,
-              {
-                width: i === step ? 26 : i < step ? 12 : 7,
-                backgroundColor:
-                  i < step
-                    ? W.accent
-                    : i === step
-                      ? purple
-                      : isDark
-                        ? 'rgba(255,255,255,0.12)'
-                        : 'rgba(0,0,0,0.10)',
-              },
-            ]}
+            width={stepDotWidth(i, step)}
+            color={
+              i < step
+                ? W.accent
+                : i === step
+                  ? purple
+                  : isDark
+                    ? 'rgba(255,255,255,0.12)'
+                    : 'rgba(0,0,0,0.10)'
+            }
           />
         ))}
       </View>
+      <Text style={[styles.stepLabel, { color: W.textSec }]}>
+        Paso {step + 1} de {totalSteps} · {STEP_NAMES[step]}
+      </Text>
 
       {/* ── Body ── */}
       <KeyboardAvoidingView
@@ -332,31 +366,50 @@ export default function RevisionScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={80}
       >
-        <ScrollView
-          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        <Animated.ScrollView
+          ref={scrollRef}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={{ padding: 20, paddingBottom: 28 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           <View style={wideWrapperStyle}>
-            {step === 0 ? (
-              <GratefulStep
-                isDark={isDark}
-                mode={mode}
-                setMode={setMode}
-                items={items}
-                setItems={setItems}
-                singleGrat={singleGrat}
-                setSingleGrat={setSingleGrat}
-              />
-            ) : (
-              <RevisarStep
-                isDark={isDark}
-                text={revText}
-                setText={setRevText}
-              />
-            )}
+            {hasEntry && !saved ? (
+              <View
+                style={[styles.entryBanner, { backgroundColor: W.greenLight }]}
+              >
+                <MaterialIcons name="check-circle" size={16} color={W.green} />
+                <Text style={[styles.entryBannerText, { color: W.green }]}>
+                  Ya hiciste el examen de este día — puedes modificarlo
+                </Text>
+              </View>
+            ) : null}
+            <Animated.View
+              key={step}
+              entering={FadeIn.duration(durations.base)}
+              exiting={FadeOut.duration(120)}
+            >
+              {step === 0 ? (
+                <GratefulStep
+                  isDark={isDark}
+                  mode={mode}
+                  setMode={setMode}
+                  items={items}
+                  setItems={setItems}
+                  singleGrat={singleGrat}
+                  setSingleGrat={setSingleGrat}
+                />
+              ) : (
+                <RevisarStep
+                  isDark={isDark}
+                  text={revText}
+                  setText={setRevText}
+                />
+              )}
+            </Animated.View>
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       </KeyboardAvoidingView>
 
       {/* ── Footer ── */}
@@ -368,56 +421,85 @@ export default function RevisionScreen() {
               ? 'rgba(26,23,18,0.92)'
               : 'rgba(251,247,241,0.92)',
             borderTopColor: W.border,
-            paddingBottom: insets.bottom + 12,
+            paddingBottom: Math.max(tabClearance, insets.bottom + 12),
           },
         ]}
       >
         <View style={wideWrapperStyle}>
           {saved ? (
-            <View style={styles.savedRow}>
+            <Animated.View
+              entering={FadeIn.duration(220)}
+              style={styles.savedRow}
+            >
               <MaterialIcons name="check-circle" size={22} color={W.green} />
               <Text style={[styles.savedText, { color: W.green }]}>
                 Revisión guardada
               </Text>
-            </View>
+            </Animated.View>
           ) : (
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              {step > 0 && (
+            <View>
+              {blocked ? (
+                <Text style={[styles.blockedHint, { color: W.textSec }]}>
+                  Escribe al menos una cosa para guardar
+                </Text>
+              ) : null}
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {step > 0 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      h.tap();
+                      setStep(step - 1);
+                    }}
+                    style={[
+                      styles.backBtn,
+                      {
+                        borderColor: W.border,
+                      },
+                    ]}
+                    accessibilityLabel="Paso anterior"
+                  >
+                    <MaterialIcons
+                      name="arrow-back"
+                      size={20}
+                      color={W.textSec}
+                    />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
-                  onPress={() => setStep(step - 1)}
-                  style={[
-                    styles.backBtn,
-                    {
-                      borderColor: W.border,
-                    },
-                  ]}
-                  accessibilityLabel="Paso anterior"
+                  onPress={handleNext}
+                  activeOpacity={0.85}
+                  disabled={blocked}
+                  accessibilityRole="button"
+                  accessibilityLabel={nextLabel}
+                  accessibilityState={{ disabled: blocked }}
+                  style={[{ flex: 1 }, blocked && styles.nextBtnBlocked]}
                 >
-                  <MaterialIcons
-                    name="arrow-back"
-                    size={20}
-                    color={W.textSec}
-                  />
+                  <LinearGradient
+                    colors={HABITS.revision.grad}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.nextBtn}
+                  >
+                    <View style={styles.nextBtnInner}>
+                      {isLastStep ? (
+                        <MaterialIcons
+                          name="check"
+                          size={18}
+                          color={colors.white}
+                        />
+                      ) : null}
+                      <Text style={styles.nextBtnText}>{nextLabel}</Text>
+                      {isLastStep ? null : (
+                        <MaterialIcons
+                          name="arrow-forward"
+                          size={18}
+                          color={colors.white}
+                        />
+                      )}
+                    </View>
+                  </LinearGradient>
                 </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                onPress={handleNext}
-                activeOpacity={0.85}
-                style={{ flex: 1 }}
-              >
-                <LinearGradient
-                  colors={['#8B5CF6', '#6D28D9']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.nextBtn}
-                >
-                  <Text style={styles.nextBtnText}>
-                    {step < totalSteps - 1
-                      ? 'Continuar →'
-                      : '✓ Guardar revisión'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
@@ -430,6 +512,24 @@ export default function RevisionScreen() {
       <CelebrationAnimation visible={showCelebration} isDark={isDark} />
     </View>
   );
+}
+
+/**
+ * Un punto del indicador de pasos. El ancho se alarga con un muelle sin rebote
+ * y el color se funde: antes saltaba de golpe mientras el cuerpo hacía un
+ * fundido. Con «reducir movimiento» asigna el valor directamente.
+ */
+function StepDot({ width, color }: { width: number; color: string }) {
+  const reducedMotion = useReducedMotion();
+  const animatedStyle = useAnimatedStyle(() =>
+    reducedMotion
+      ? { width, backgroundColor: color }
+      : {
+          width: withSpring(width, springs.settle),
+          backgroundColor: withTiming(color, { duration: durations.quick }),
+        },
+  );
+  return <Animated.View style={[styles.stepDot, animatedStyle]} />;
 }
 
 // ── Step 1: Agradecer ─────────────────────────────────────────────────
@@ -459,89 +559,90 @@ function GratefulStep({
         Y mientras lo haces, recuerda aquello por lo que estás agradecido/a
       </Text>
 
-      <View style={styles.modeRow}>
-        {(
-          [
-            { id: 'list' as Mode, label: 'Lista' },
-            { id: 'free' as Mode, label: 'Texto libre' },
-          ] as const
-        ).map(({ id, label }) => {
-          const active = mode === id;
-          return (
-            <TouchableOpacity
-              key={id}
-              onPress={() => setMode(id)}
-              style={[
-                styles.modeChip,
-                {
-                  borderColor: active ? purple : W.border,
-                  backgroundColor: active
-                    ? isDark
-                      ? 'rgba(167,139,250,0.14)'
-                      : 'rgba(124,58,237,0.08)'
-                    : 'transparent',
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: '700',
-                  color: active ? purple : W.textMuted,
-                }}
-              >
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {/* Al cambiar de forma el texto viaja con quien escribe: solo se guarda
+          el modo activo y antes lo escrito en el otro se perdía en silencio. */}
+      <SegmentedControl
+        options={GRATEFUL_MODES}
+        value={mode}
+        onChange={(next) => {
+          const carried = carryGratefulText(next, items, singleGrat);
+          setItems(carried.items);
+          setSingleGrat(carried.singleGrat);
+          setMode(next);
+        }}
+        accentColor={purple}
+        accessibilityLabel="Forma de agradecer"
+        style={styles.modeSwitch}
+      />
 
       {mode === 'list' ? (
         <View style={{ gap: 10 }}>
-          {items.map((g, i) => (
-            <View key={i} style={styles.gratRow}>
-              <Text style={[styles.gratStar, { color: W.accent }]}>✦</Text>
-              <TextInput
-                value={g}
-                onChangeText={(v) => {
-                  const next = [...items];
-                  next[i] = v;
-                  setItems(next);
-                }}
-                placeholder="Gracias, Jesús por..."
-                placeholderTextColor={W.textMuted}
+          {items.map((g, i) => {
+            const filled = !!g.trim();
+            return (
+              <View
+                key={i}
                 style={[
-                  styles.input,
+                  styles.gratRow,
                   {
-                    color: W.text,
-                    borderColor: g.trim() ? purple + '55' : W.border,
+                    borderColor: filled ? purple + '55' : W.border,
                     backgroundColor: isDark
                       ? 'rgba(255,255,255,0.04)'
                       : 'rgba(0,0,0,0.02)',
                   },
                 ]}
-              />
-            </View>
-          ))}
-          {items.length > 3 && (
+              >
+                <Text
+                  style={[
+                    styles.gratStar,
+                    { color: filled ? purple : W.textMuted },
+                  ]}
+                >
+                  ✦
+                </Text>
+                <TextInput
+                  value={g}
+                  onChangeText={(v) => {
+                    const next = [...items];
+                    next[i] = v;
+                    setItems(next);
+                  }}
+                  placeholder="Gracias, Jesús por..."
+                  placeholderTextColor={W.textMuted}
+                  accessibilityLabel={`Agradecimiento ${i + 1}`}
+                  style={[styles.gratInput, { color: W.text }]}
+                />
+              </View>
+            );
+          })}
+          <View style={styles.listActions}>
             <TouchableOpacity
-              onPress={() => setItems(items.slice(0, -1))}
-              style={[styles.removeBtn, { borderColor: W.border }]}
+              onPress={() => {
+                h.add();
+                setItems([...items, '']);
+              }}
+              style={[styles.addBtn, { borderColor: W.border }]}
+              accessibilityRole="button"
             >
-              <Text style={{ color: W.textMuted, fontWeight: '600' }}>
-                − Quitar última
+              <MaterialIcons name="add" size={18} color={W.textSec} />
+              <Text style={[styles.listActionText, { color: W.textSec }]}>
+                Añadir otro
               </Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            onPress={() => setItems([...items, ''])}
-            style={[styles.addBtn, { borderColor: W.border }]}
-          >
-            <Text style={{ color: W.textMuted, fontWeight: '600' }}>
-              + Añadir otro
-            </Text>
-          </TouchableOpacity>
+            {items.length > 3 && (
+              <TouchableOpacity
+                onPress={() => {
+                  h.remove();
+                  setItems(items.slice(0, -1));
+                }}
+                style={[styles.removeBtn, { borderColor: W.border }]}
+                accessibilityRole="button"
+                accessibilityLabel="Quitar el último agradecimiento"
+              >
+                <MaterialIcons name="remove" size={18} color={W.textSec} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       ) : (
         <TextInput
@@ -609,180 +710,3 @@ function RevisarStep({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    paddingHorizontal: 14,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 40,
-    position: 'relative',
-  },
-  headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Close X is pulled out of the flow and pinned to the left edge so the
-  // date-stepper can sit centered as a single, breathable unit.
-  headerBtnAbs: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-  },
-  dateStepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    maxWidth: '70%',
-  },
-  dateStepperBtn: {
-    width: 28,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  navTitleText: {
-    fontSize: 16,
-    fontWeight: '700',
-    maxWidth: 200,
-  },
-  dateCenter: {
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    minWidth: 160,
-  },
-  dateTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  dateSub: { fontSize: 10, marginTop: 1 },
-  pillRow: { alignItems: 'center', paddingTop: 10 },
-  pillText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-  },
-
-  stepRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    paddingTop: 14,
-    paddingBottom: 6,
-  },
-  stepDot: { height: 4, borderRadius: 2 },
-
-  h2: {
-    fontSize: 21,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-    marginBottom: 6,
-    lineHeight: 26,
-  },
-  helpText: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 18,
-  },
-  modeRow: { flexDirection: 'row', gap: 6, marginBottom: 18 },
-  modeChip: {
-    height: 30,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  gratRow: { position: 'relative' },
-  gratStar: {
-    position: 'absolute',
-    left: 14,
-    top: 0,
-    bottom: 0,
-    fontSize: 13,
-    fontWeight: '800',
-    textAlignVertical: 'center',
-    lineHeight: 50,
-  },
-  input: {
-    height: 50,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingLeft: 36,
-    fontSize: 14,
-  },
-  removeBtn: {
-    height: 36,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtn: {
-    height: 46,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textarea: {
-    minHeight: 200,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    padding: 14,
-    fontSize: 15,
-    fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
-    lineHeight: 24,
-  },
-
-  footer: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    borderTopWidth: 1,
-  },
-  savedRow: {
-    height: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  savedText: { fontSize: 16, fontWeight: '700' },
-  backBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nextBtn: {
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nextBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: 'white',
-    letterSpacing: -0.2,
-  },
-});

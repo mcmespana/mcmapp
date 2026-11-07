@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { Spinner } from 'heroui-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 
 export default function ProgressWithMessage({ message }: { message?: string }) {
   const scheme = useColorScheme();
@@ -24,7 +24,7 @@ export default function ProgressWithMessage({ message }: { message?: string }) {
         <Text
           style={{
             fontSize: 15,
-            color: scheme === 'dark' ? '#AEAEB2' : '#636366',
+            color: themeColors(scheme === 'dark').textSecondary,
             textAlign: 'center',
           }}
         >

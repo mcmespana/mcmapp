@@ -21,7 +21,7 @@ describe('useNetworkStatus', () => {
       isInternetReachable: true,
     });
 
-    const { result } = renderHook(() => useNetworkStatus());
+    const { result } = await renderHook(() => useNetworkStatus());
 
     await waitFor(() => {
       expect(result.current).toBe(true);
@@ -34,7 +34,7 @@ describe('useNetworkStatus', () => {
       isInternetReachable: false,
     });
 
-    const { result } = renderHook(() => useNetworkStatus());
+    const { result } = await renderHook(() => useNetworkStatus());
 
     await waitFor(() => {
       expect(result.current).toBe(false);
@@ -47,7 +47,7 @@ describe('useNetworkStatus', () => {
       isInternetReachable: true,
     });
 
-    renderHook(() => useNetworkStatus());
+    await renderHook(() => useNetworkStatus());
 
     await waitFor(() => {
       expect(addNetworkStateListener).toHaveBeenCalled();

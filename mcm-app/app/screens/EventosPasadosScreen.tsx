@@ -10,47 +10,43 @@ import {
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { MaterialIcons } from '@/components/ui/icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
-import { getArchivedEvents, isEventArchived } from '@/constants/events';
+import { isEventArchived } from '@/constants/events';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
-import { MasStackParamList } from '../(tabs)/mas';
+import { masHref } from '@/utils/eventRoutes';
+import { themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 /**
  * "Eventos pasados": lista los eventos archivados como tarjetas que abren su
- * hub. Son archivados los que tienen `status: 'archived'` en
- * `constants/events.ts` y también el evento en curso cuando el panel MCM lo
- * archiva en caliente (`activities/<id>/_meta.status`), sin publicar la app.
+ * hub. Son archivados los que tienen `status: 'archived'` una vez aplicado el
+ * `_meta` del panel (`activities/<id>/_meta.status`) sobre el registry.
+ *
+ * B1: antes esta lista salía de `getArchivedEvents()`, que lee SOLO
+ * `constants/events.ts`. Resultado: archivar o desarchivar desde el panel
+ * cualquier evento que no fuera el activo no hacía absolutamente nada, y el
+ * título/color de los pasados ignoraba lo que dijera el panel. Ahora la lista
+ * se construye de los eventos ya mergeados que publica `ActiveEventContext`.
  */
 export default function EventosPasadosScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
 
-  const { activeEvent } = useActiveMeta();
-  const events = React.useMemo(() => {
-    const list = getArchivedEvents();
-    // El evento en curso puede estar archivado sólo en remoto: en ese caso el
-    // registry aún lo da como activo y hay que añadirlo (o sustituirlo, para
-    // quedarnos con el título/color que trae el panel).
-    if (!isEventArchived(activeEvent)) {
-      return list.filter((e) => e.id !== activeEvent.id);
-    }
-    const i = list.findIndex((e) => e.id === activeEvent.id);
-    if (i === -1) return [...list, activeEvent];
-    const merged = [...list];
-    merged[i] = activeEvent;
-    return merged;
-  }, [activeEvent]);
+  const { events: allEvents } = useActiveMeta();
+  // Ya vienen con el `_meta` del panel aplicado (incluido el evento en curso,
+  // que puede estar archivado sólo en remoto), así que basta con filtrar.
+  const events = React.useMemo(
+    () => allEvents.filter(isEventArchived),
+    [allEvents],
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -74,7 +70,7 @@ export default function EventosPasadosScreen() {
               key={event.id}
               style={[
                 styles.card,
-                { backgroundColor: isDark ? '#2C2C2E' : '#fff' },
+                { backgroundColor: themeColors(isDark).background },
                 Platform.OS !== 'web'
                   ? {
                       shadowColor: event.tintColor,
@@ -88,15 +84,14 @@ export default function EventosPasadosScreen() {
                     } as ViewStyle),
               ]}
               onPress={() =>
-                navigation.navigate('JubileoHome', { eventId: event.id })
+                router.push(
+                  masHref('JubileoHome', { eventId: event.id }) as never,
+                )
               }
               accessibilityRole="button"
               accessibilityLabel={event.title}
             >
               <PressableFeedback.Highlight />
-              <View
-                style={[styles.accentBar, { backgroundColor: event.tintColor }]}
-              />
               <View style={styles.cardBody}>
                 <View
                   style={[
@@ -113,7 +108,7 @@ export default function EventosPasadosScreen() {
                 <Text
                   style={[
                     styles.cardTitle,
-                    { color: isDark ? '#fff' : '#1C1C1E' },
+                    { color: themeColors(isDark).text },
                   ]}
                   numberOfLines={2}
                 >
@@ -140,22 +135,21 @@ export default function EventosPasadosScreen() {
   );
 }
 
-interface Styles {
+type Styles = {
   safeArea: ViewStyle;
   container: ViewStyle;
   card: ViewStyle;
-  accentBar: ViewStyle;
   cardBody: ViewStyle;
   iconCircle: ViewStyle;
   cardTitle: TextStyle;
   arrowCircle: ViewStyle;
-}
+};
 
 const createStyles = (isDark: boolean) =>
   StyleSheet.create<Styles>({
     safeArea: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     container: {
       flex: 1,
@@ -164,10 +158,6 @@ const createStyles = (isDark: boolean) =>
       borderRadius: radii.xl,
       marginBottom: spacing.md,
       overflow: 'hidden',
-    },
-    accentBar: {
-      height: 4,
-      width: '100%',
     },
     cardBody: {
       flexDirection: 'row',
@@ -186,14 +176,14 @@ const createStyles = (isDark: boolean) =>
     },
     cardTitle: {
       flex: 1,
-      fontSize: 18,
+      ...typography.h3,
       fontWeight: '700',
       letterSpacing: -0.3,
     },
     arrowCircle: {
       width: 36,
       height: 36,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       justifyContent: 'center',
       alignItems: 'center',
       flexShrink: 0,

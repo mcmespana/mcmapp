@@ -1,4 +1,9 @@
-import { buildPlaylistPdfHtml } from '@/utils/playlistPdfHtml';
+import {
+  buildPlaylistPdfHtml,
+  estimateSongHeightPt,
+} from '@/utils/playlistPdfHtml';
+import { parseChordPro } from '@/utils/songDocument';
+import { buildSheet } from '@/utils/songSheet';
 
 const baseOpts = {
   playlistName: 'Misa joven',
@@ -53,5 +58,119 @@ describe('buildPlaylistPdfHtml — pie de página', () => {
       playlistName: 'Misa "joven"',
     });
     expect(html).toContain('"Misa \\"joven\\""');
+  });
+});
+
+describe('buildPlaylistPdfHtml — la hoja de la app', () => {
+  const song = (content: string, extra = {}) => ({
+    ...baseOpts,
+    songs: [{ title: 'Canción', key: 'C', content, ...extra }],
+  });
+
+  it('pinta el cuerpo con la hoja de la app, no con HtmlDivFormatter', () => {
+    const html = buildPlaylistPdfHtml(
+      song('[C]Verso uno\n\n{soc}\n[G]Estribillo aquí\n{eoc}'),
+    );
+    expect(html).toContain('class="sheet"');
+    expect(html).toMatch(/class="sec chorus/);
+    expect(html).not.toContain('class="paragraph');
+    // Acordes en la notación pedida.
+    expect(html).toContain('>DO<');
+  });
+
+  it('aplica el tono de la playlist a los acordes', () => {
+    const html = buildPlaylistPdfHtml(
+      song('[C]Alaba a tu Se[G]ñor', { transpose: 2 }),
+    );
+    expect(html).toContain('>RE<');
+    expect(html).toContain('>LA<');
+    expect(html).not.toContain('>DO<');
+  });
+
+  it('escapa el texto de la canción', () => {
+    const html = buildPlaylistPdfHtml(song('[C]Hola <script>x</script>'));
+    expect(html).not.toContain('<script>x');
+    expect(html).toContain('&lt;script&gt;');
+  });
+
+  it('deja los avisos de «revisar acordes» fuera de la letra', () => {
+    const html = buildPlaylistPdfHtml(
+      song('{c: ♩ REVISAR ACORDES}\n[C]Letra de verdad'),
+    );
+    expect(html).not.toContain('REVISAR ACORDES');
+  });
+
+  it('lleva en el <body> las clases de la hoja según las opciones', () => {
+    const plain = buildPlaylistPdfHtml(song('[C]Hola'));
+    expect(plain).toContain('<body class="ch-negrita">');
+    const all = buildPlaylistPdfHtml({
+      ...song('[C]Hola'),
+      showChords: false,
+      compact: true,
+      twoColumns: true,
+      chorusStyle: 'raya',
+      chorusLabel: false,
+      verseNumbers: false,
+    });
+    expect(all).toContain(
+      '<body class="ch-raya ch-nolabel nums-hidden chords-hidden compact cols2">',
+    );
+  });
+
+  it('una canción más larga que una página no salta de página entera', () => {
+    const verse = (n: number) =>
+      Array.from(
+        { length: 4 },
+        (_, i) => `[C]Línea ${n}.${i} de la [G]estrofa`,
+      ).join('\n');
+    const long = Array.from({ length: 12 }, (_, n) => verse(n)).join('\n\n');
+    const html = buildPlaylistPdfHtml({
+      ...baseOpts,
+      songs: [
+        { title: 'Larga', content: long },
+        { title: 'Corta', content: verse(0) },
+      ],
+    });
+    expect(html).toContain('class="song long"');
+    expect(html.match(/class="song"/g)).toHaveLength(1);
+  });
+});
+
+describe('estimateSongHeightPt', () => {
+  const model = (content: string) => {
+    const { song } = parseChordPro(content);
+    return buildSheet(song!, { notation: 'ES' });
+  };
+  const verse = Array.from(
+    { length: 4 },
+    () => '[C]Una línea [G]normal de canción',
+  ).join('\n');
+  const o = { lyricsPt: 13, showChords: true };
+
+  it('crece con las estrofas y menguan sin acordes o a dos columnas', () => {
+    const one = estimateSongHeightPt(model(verse), o);
+    const three = estimateSongHeightPt(
+      model([verse, verse, verse].join('\n\n')),
+      o,
+    );
+    expect(three).toBeGreaterThan(one * 2);
+    expect(
+      estimateSongHeightPt(model(verse), { ...o, showChords: false }),
+    ).toBeLessThan(one);
+    expect(
+      estimateSongHeightPt(model([verse, verse, verse].join('\n\n')), {
+        ...o,
+        twoColumns: true,
+      }),
+    ).toBeLessThan(three);
+  });
+
+  it('cuenta los renglones de más de una línea larga', () => {
+    const short = estimateSongHeightPt(model('[C]Corta'), o);
+    const longLine = estimateSongHeightPt(
+      model('[C]' + 'palabra '.repeat(40)),
+      o,
+    );
+    expect(longLine).toBeGreaterThan(short);
   });
 });

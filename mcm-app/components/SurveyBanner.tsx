@@ -1,13 +1,15 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { router } from 'expo-router';
 
 import colors, { Colors } from '@/constants/colors';
-import { getBrightness } from '@/components/ui/glass';
+import { fillForWhiteText } from '@/utils/tintInk';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import type { SurveyIndexEntry } from '@/constants/surveys';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface SurveyBannerProps {
   entry: SurveyIndexEntry;
@@ -80,9 +82,9 @@ export default function SurveyBanner({
     );
   }
 
-  // El acento puede ser muy claro; si lo es, el texto blanco no se lee, así que
-  // usamos un fondo legible (primary) manteniendo el acento solo en el botón.
-  const bg = getBrightness(accent) > 200 ? colors.primary : accent;
+  // El acento puede ser muy claro; si el texto blanco no se lee sobre él
+  // (contraste real < 4,5:1), el fondo cae al azul de marca.
+  const bg = fillForWhiteText(accent, colors.primary);
   const ctaLabel = entry.placement?.ctaLabel || 'Responder';
 
   return (
@@ -130,7 +132,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     padding: 14,
     shadowColor: '#000',
     shadowOpacity: 0.12,
@@ -141,7 +143,7 @@ const styles = StyleSheet.create({
   ctaIcon: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: radii.md,
     backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -150,7 +152,7 @@ const styles = StyleSheet.create({
   ctaTextWrap: { flex: 1 },
   ctaTitle: {
     color: '#fff',
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
@@ -162,7 +164,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: radii.md,
   },
   ctaBtnText: { fontSize: 13, fontWeight: '800' },
   // Fila compacta (Ajustes)
@@ -175,7 +177,7 @@ const styles = StyleSheet.create({
   rowIcon: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },

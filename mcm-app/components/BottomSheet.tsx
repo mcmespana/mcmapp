@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Modal,
   Platform,
@@ -8,22 +14,102 @@ import {
   Text,
   Animated,
   StyleSheet,
-  Dimensions,
   Keyboard,
 } from 'react-native';
+import useAnimatedValue from '@/hooks/useAnimatedValue';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { durations, easings } from '@/constants/animations';
+import { breakpoints, sheetMaxWidth } from '@/constants/breakpoints';
 import { UIColors, Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useEscapeToClose } from '@/hooks/useEscapeToClose';
+import { keyboardEventsFor } from '@/hooks/useKeyboardVisible';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { h } from '@/utils/haptics';
 
+// ⚠️ Estas animaciones van con el `Animated` de React Native A PROPÓSITO, NO
+// con Reanimated. Dentro de un `Modal` TRANSPARENTE de RN los estilos animados
+// de Reanimated 4 no se aplican (comprobado con una vista de prueba que anima
+// su opacidad de 0 a 1 y se queda invisible; en un Modal opaco, como el del
+// escáner de QR, sí funcionan). Aquí eso era fatal: la hoja se quedaba en su
+// posición inicial —fuera de pantalla, con el fondo a opacidad 0— y el callback
+// de la animación de cierre, que es quien desmonta el `Modal`, no se disparaba
+// nunca. Resultado: un modal invisible a pantalla completa que se comía todos
+// los toques y dejaba la pestaña muerta hasta reiniciar (calendarios, sugerir
+// canción, multimedia, calendario de evangelios…). Si alguien vuelve a migrar
+// esto a Reanimated, hay que comprobar ANTES que la hoja aparece de verdad.
+//
+// Y por eso mismo el arrastre sigue con `PanResponder` en vez de con
+// `Gesture.Pan()` de gesture-handler, que es lo que pediría la skill
+// `animate-expo`: el gesto solo tiene sentido moviendo la MISMA
+// `Animated.Value` que la animación de entrada/salida, y esa no puede ser un
+// shared value de Reanimated mientras el Modal transparente siga sin aplicar
+// sus estilos. Lo que sí se ha traído de la skill —umbral por velocidad,
+// resistencia elástica arriba, velocidad arrastrada al muelle, háptica en el
+// commit— está abajo y no depende del hilo en el que corra.
 const nativeDriver = Platform.OS !== 'web';
 
-const OFF_SCREEN = Dimensions.get('window').height;
-const DURATION = 300;
-// Swipe down threshold to trigger close
+const DURATION = durations.slow;
+
+/** Arrastrar la hoja más de esto hacia abajo y soltar la cierra. */
 const CLOSE_THRESHOLD = 80;
-const VELOCITY_THRESHOLD = 400;
+/**
+ * Umbral de velocidad para cerrar de un flick, **en px/ms** — que son las
+ * unidades del `vy` de `PanResponder`, no px/s.
+ *
+ * Aquí decía `400`, o sea 400 px/ms = 400.000 px/s: inalcanzable con un dedo
+ * humano, así que la rama de velocidad era código muerto y solo cerraba el
+ * umbral de distancia. Efecto para el usuario: un flick corto y rápido hacia
+ * abajo —el gesto natural para descartar una hoja— no cerraba nada y la hoja
+ * volvía a su sitio. Un flick de verdad va sobre 1–3 px/ms; 0,5 deja fuera el
+ * arrastre lento (que es el que sí quiere el umbral de distancia).
+ */
+const VELOCITY_THRESHOLD = 0.5;
+/**
+ * Cuánto "cede" la hoja al tirar hacia ARRIBA, donde no hay nada que
+ * descubrir. Antes se ignoraba el movimiento hacia arriba por completo: el
+ * dedo se movía y la hoja se quedaba clavada, que es lo que se siente como
+ * que la app se ha colgado. Con resistencia elástica sigue el dedo un poco y
+ * se nota que el tope es un tope.
+ */
+const UPWARD_RESISTANCE = 0.2;
+
+/**
+ * Duración del desplazamiento de la hoja con el teclado. iOS manda la de su
+ * animación; Android manda 0 (el teclado ya está arriba cuando avisa), y un 0
+ * sería un salto seco: ahí, una microtransición.
+ */
+export function keyboardShiftDuration(eventDuration: number | undefined) {
+  return eventDuration || durations.quick;
+}
+
+/**
+ * Ancho de la hoja: todo el de la pantalla en móvil; en pantalla ancha (web
+ * de escritorio, iPad) `sheetMaxWidth` y centrada. Decisión del usuario,
+ * 2026-10-16.
+ */
+export function sheetWidthFor(windowWidth: number): number | undefined {
+  return windowWidth >= breakpoints.md
+    ? Math.min(windowWidth, sheetMaxWidth)
+    : undefined;
+}
+
+/**
+ * ¿Cierra el gesto al soltar? Velocidad **o** distancia: un flick es
+ * suficiente aunque haya recorrido poco.
+ *
+ * @param dy desplazamiento vertical acumulado, px (positivo = hacia abajo)
+ * @param vy velocidad vertical al soltar, px/ms (positiva = hacia abajo)
+ */
+export function shouldCloseOnRelease(dy: number, vy: number): boolean {
+  return dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD;
+}
+
+/** Posición de la hoja para un arrastre de `dy` px, con tope elástico arriba. */
+export function dragOffsetFor(dy: number): number {
+  return dy > 0 ? dy : dy * UPWARD_RESISTANCE;
+}
 
 interface BottomSheetProps {
   visible: boolean;
@@ -39,6 +125,14 @@ interface BottomSheetProps {
   onCloseComplete?: () => void;
   paddingHorizontal?: number;
   dragFromContent?: boolean;
+  /**
+   * Reservar el safe-area inferior (barra de gestos / botón home) dentro de la
+   * hoja. Por defecto SÍ: sin esto el último control queda pegado al borde de
+   * abajo, encima del indicador, y se toca fatal. Ponlo a `false` solo si la
+   * hoja ya se come el inset por su cuenta (p. ej. en el `contentContainerStyle`
+   * de su propia lista), para no sumarlo dos veces.
+   */
+  safeAreaBottom?: boolean;
 }
 
 export default function BottomSheet({
@@ -52,6 +146,7 @@ export default function BottomSheet({
   onCloseComplete,
   paddingHorizontal = 16,
   dragFromContent = false,
+  safeAreaBottom = true,
 }: BottomSheetProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -64,91 +159,219 @@ export default function BottomSheet({
   const onCloseCompleteRef = useRef(onCloseComplete);
   onCloseCompleteRef.current = onCloseComplete;
 
-  const [modalVisible, setModalVisible] = useState(false);
+  // Igual con `onClose`: los `PanResponder` se crean UNA vez, así que sin este
+  // ref se quedarían con el `onClose` del primer render.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // El `Modal` de RN tiene que seguir MONTADO mientras se reproduce la
+  // animación de salida: por eso no basta con `visible`.
+  //
+  // `modalVisible` es DERIVADO —`visible || closing`— y no un estado que se
+  // encendía con un setState EN FASE DE RENDER. Ese patrón fallaba en pantallas
+  // que a su vez hacen su propio setState en fase de render (el detalle de
+  // canción, sin ir más lejos): el `setModalVisible(true)` se perdía por el
+  // camino, la hoja se quedaba con `visible` a true pero sin `Modal` montado, y
+  // no aparecía hasta que algo ajeno forzaba otro render. Derivado no se puede
+  // perder: en el mismo render en que `visible` es true, el Modal se monta.
+  const [closing, setClosing] = useState(false);
+  const modalVisible = visible || closing;
+
   const [kbHeight, setKbHeight] = useState(0);
   const insets = useSafeAreaInsets();
-  const screenHeight = Dimensions.get('window').height;
+  // `useWindowDimensions` (vía `useResponsiveLayout`) y no `Dimensions.get`:
+  // leído a pelo en el render —o peor, al cargar el módulo— no se recalcula al
+  // girar el dispositivo ni al redimensionar la ventana en web, y la hoja se
+  // quedaba con el tope de altura del portrait estando en horizontal.
+  const { height: screenHeight, width: screenWidth } = useResponsiveLayout();
+  const sheetWidth = sheetWidthFor(screenWidth);
+  // Sitio de partida/salida de la hoja: el alto ACTUAL de la ventana. Antes era
+  // una constante leída al cargar el módulo, y un iPad que arrancaba en
+  // horizontal y giraba a vertical hacía nacer la hoja ya asomando. Va en un
+  // ref actualizado en efecto (no en render) porque solo lo leen las
+  // animaciones, y cambiarlo no debe relanzar la de entrada.
+  const offScreenRef = useRef(screenHeight);
+  useEffect(() => {
+    offScreenRef.current = screenHeight;
+  }, [screenHeight]);
   // Altura máxima de la hoja: siempre deja sitio para el safe-area superior y,
   // si el teclado está abierto, para el teclado. Así la hoja nunca se sale por
   // arriba al subir, y el ScrollView interno scrollea al campo enfocado.
   const sheetMaxHeight = screenHeight - insets.top - kbHeight - 8;
-  const slideAnim = useRef(new Animated.Value(OFF_SCREEN)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-  const dragAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useAnimatedValue(screenHeight);
+  const opacityAnim = useAnimatedValue(0);
+  const dragAnim = useAnimatedValue(0);
   // Keyboard offset: negative value moves the sheet up. Kept separate from
   // translateY so both can use useNativeDriver without a driver conflict.
-  const keyboardOffsetAnim = useRef(new Animated.Value(0)).current;
+  const keyboardOffsetAnim = useAnimatedValue(0);
+
+  // `visible` del render anterior: al montar con `visible` a false no hay nada
+  // que cerrar, así que no se dispara la animación de salida (que además
+  // encendería `closing` y montaría el Modal para nada).
+  const prevVisible = useRef(visible);
+
+  // `onCloseComplete` se llama UNA sola vez por cierre, venga de donde venga
+  // (el `onDismiss` de iOS o el temporizador de respaldo). Sin este pestillo,
+  // una acción diferida podría ejecutarse dos veces.
+  const completePendingRef = useRef(false);
+  const dismissFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Red de seguridad del CIERRE: si el callback de fin de la animación de
+  // salida no llega, la hoja se ve cerrada (bajó y se desvaneció) pero el
+  // `Modal` sigue presentado, invisible, y nada de lo que venía detrás
+  // (`onCloseComplete`: abrir otra hoja, el panel secreto…) ocurre. Ver
+  // `finishClose`.
+  const closeSafetyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fireCloseComplete = useCallback(() => {
+    if (dismissFallbackRef.current) {
+      clearTimeout(dismissFallbackRef.current);
+      dismissFallbackRef.current = null;
+    }
+    if (!completePendingRef.current) return;
+    completePendingRef.current = false;
+    onCloseCompleteRef.current?.();
+  }, []);
+
+  // Al desmontar, ni temporizador vivo ni callback a destiempo.
+  useEffect(
+    () => () => {
+      if (dismissFallbackRef.current) clearTimeout(dismissFallbackRef.current);
+      if (closeSafetyRef.current) clearTimeout(closeSafetyRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
+    const wasVisible = prevVisible.current;
+    prevVisible.current = visible;
+
     if (visible) {
+      if (closeSafetyRef.current) {
+        clearTimeout(closeSafetyRef.current);
+        closeSafetyRef.current = null;
+      }
+      setClosing(false);
       dragAnim.setValue(0);
       keyboardOffsetAnim.setValue(0);
-      setModalVisible(true);
+      slideAnim.setValue(offScreenRef.current);
+      opacityAnim.setValue(0);
+      // Curva de sheet (arranca rápida y se posa): con el default de
+      // `Animated.timing` (ease-in-out) la hoja arrancaba lenta justo en el
+      // instante que se mira. design.md §6: nunca ease-in en algo que entra.
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
           duration: DURATION,
+          easing: easings.sheet,
           useNativeDriver: nativeDriver,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
           duration: DURATION,
+          easing: easings.sheet,
           useNativeDriver: nativeDriver,
         }),
       ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: OFF_SCREEN,
-          duration: DURATION,
-          useNativeDriver: nativeDriver,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: DURATION,
-          useNativeDriver: nativeDriver,
-        }),
-      ]).start(() => {
-        setModalVisible(false);
-        // Android / Web: call directly — no native sequencing concern.
-        // iOS: onDismiss on the Modal fires instead, after UIKit confirms the
-        // view controller is gone. Calling here on iOS would batch this with
-        // setModalVisible(false), making the new Modal appear in the same
-        // render cycle — which iOS rejects silently.
-        if (Platform.OS !== 'ios') {
-          onCloseCompleteRef.current?.();
-        }
-      });
+      return;
     }
-  }, [visible, slideAnim, opacityAnim, dragAnim, keyboardOffsetAnim]);
 
-  // Shift the sheet up when the keyboard appears (iOS only).
+    if (!wasVisible) return;
+
+    completePendingRef.current = true;
+    setClosing(true);
+    // El fin del cierre llega por el callback de la animación o, si ese no
+    // aparece (pasó con la primera build de Expo 58: el panel secreto no se
+    // abría tras «Reportar fallitos»), por tiempo. Lo que llegue primero; el
+    // otro no hace nada.
+    let finished = false;
+    const finishClose = () => {
+      if (finished) return;
+      finished = true;
+      if (closeSafetyRef.current) {
+        clearTimeout(closeSafetyRef.current);
+        closeSafetyRef.current = null;
+      }
+      setClosing(false);
+      // Android / Web: call directly — no native sequencing concern.
+      // iOS: lo normal es que lo dispare `onDismiss` del Modal, cuando UIKit
+      // confirma que el view controller ya no está; llamarlo aquí lo agruparía
+      // con desmontar el Modal y el modal nuevo aparecería en el mismo ciclo de
+      // render, cosa que iOS rechaza en silencio. Pero NO se puede depender solo
+      // de `onDismiss`: si no llega, la acción pendiente se pierde sin ruido —y
+      // es justo el caso del menú "..." del cantoral, donde cada opción es
+      // "cierra la hoja y abre otra cosa", así que sin callback el menú entero
+      // parece muerto. De ahí la red de seguridad de abajo.
+      if (Platform.OS !== 'ios') {
+        fireCloseComplete();
+        return;
+      }
+      dismissFallbackRef.current = setTimeout(fireCloseComplete, 400);
+    };
+    closeSafetyRef.current = setTimeout(finishClose, DURATION + 150);
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: offScreenRef.current,
+        duration: DURATION,
+        easing: easings.sheet,
+        useNativeDriver: nativeDriver,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: DURATION,
+        easing: easings.sheet,
+        useNativeDriver: nativeDriver,
+      }),
+    ]).start(finishClose);
+  }, [
+    visible,
+    slideAnim,
+    opacityAnim,
+    dragAnim,
+    keyboardOffsetAnim,
+    fireCloseComplete,
+  ]);
+
+  // Shift the sheet up when the keyboard appears — en iOS y también en
+  // Android (ver `keyboardEventsFor`). En Android no se puede contar con el
+  // sistema: el `Modal` de RN 0.86 abre su ventana en edge-to-edge
+  // (`setDecorFitsSystemWindows(false)`) y en ese modo `adjustResize` ya no
+  // redimensiona nada, así que sin esto el teclado tapaba el campo y el botón
+  // de enviar de todas las hojas con formulario.
   // Uses a separate Animated.Value so it can share the native driver with
   // translateY — mixing useNativeDriver: false and true on one Animated.View
   // crashes React Native.
+  //
+  // En Android la altura que da RN es la del teclado MENOS la barra de
+  // navegación (ReactRootView: `ime.bottom - systemBars.bottom`), y la hoja ya
+  // reserva ese inset en su `paddingBottom`: al subir esa altura, el inset
+  // queda detrás del teclado y el último control justo encima. No se resta
+  // nada más.
   useEffect(() => {
-    if (Platform.OS !== 'ios') return;
+    const events = keyboardEventsFor(Platform.OS);
+    if (!events) return;
     const showSub = Keyboard.addListener(
-      'keyboardWillShow',
-      (e: { endCoordinates: { height: number }; duration: number }) => {
+      events.show,
+      (e: { endCoordinates: { height: number }; duration?: number }) => {
         // Guardamos la altura del teclado para CAPAR la altura de la hoja (que
         // quepa encima del teclado) y que su tope no se salga de pantalla al
         // subir. El scroll interno lleva el campo enfocado a la vista.
         setKbHeight(e.endCoordinates.height);
         Animated.timing(keyboardOffsetAnim, {
           toValue: -e.endCoordinates.height,
-          duration: e.duration ?? 250,
+          duration: keyboardShiftDuration(e.duration),
+          easing: easings.sheet,
           useNativeDriver: nativeDriver,
         }).start();
       },
     );
     const hideSub = Keyboard.addListener(
-      'keyboardWillHide',
-      (e: { duration: number }) => {
+      events.hide,
+      (e: { duration?: number }) => {
         setKbHeight(0);
         Animated.timing(keyboardOffsetAnim, {
           toValue: 0,
-          duration: e.duration ?? 250,
+          duration: keyboardShiftDuration(e.duration),
+          easing: easings.sheet,
           useNativeDriver: nativeDriver,
         }).start();
       },
@@ -159,66 +382,63 @@ export default function BottomSheet({
     };
   }, [keyboardOffsetAnim]);
 
-  const headerPanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderMove: (_, { dy }) => {
-        if (dy > 0) dragAnim.setValue(dy);
+  // `useMemo` y no `useRef(...).current`: el patrón del ref construía un
+  // PanResponder NUEVO en cada render para tirarlo acto seguido. Los handlers
+  // solo cierran sobre `dragAnim` (estable) y sobre refs, así que una sola
+  // instancia vale para toda la vida del sheet.
+  const [headerPanResponder, contentPanResponder] = useMemo(() => {
+    // La velocidad del gesto se ARRASTRA al muelle de vuelta (`velocity`): si
+    // no, el rebote arranca de cero y se siente como si la hoja se hubiera
+    // soltado sola en vez de haberla soltado tú. `velocity` va en px/s, y el
+    // `vy` de PanResponder en px/ms.
+    const snapBack = (vy = 0) => {
+      Animated.spring(dragAnim, {
+        toValue: 0,
+        useNativeDriver: nativeDriver,
+        tension: 180,
+        friction: 20,
+        velocity: vy * 1000,
+      }).start();
+    };
+    // Soltar arrastrando lo bastante (o rápido) cierra; si no, vuelve a su sitio.
+    const onRelease = (dy: number, vy: number) => {
+      if (shouldCloseOnRelease(dy, vy)) {
+        // Háptica en el instante en que el gesto se compromete, no al acabar la
+        // animación: un toque que llega tarde se lee como un fallo, no como
+        // respuesta. Y nunca es el único feedback — la hoja se va igual.
+        h.menuClose();
+        onCloseRef.current();
+      } else {
+        snapBack(vy);
+      }
+    };
+    const shared = {
+      onPanResponderMove: (_: unknown, { dy }: { dy: number }) => {
+        dragAnim.setValue(dragOffsetFor(dy));
       },
-      onPanResponderRelease: (_, { dy, vy }) => {
-        if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
-          onClose();
-        } else {
-          Animated.spring(dragAnim, {
-            toValue: 0,
-            useNativeDriver: nativeDriver,
-            tension: 180,
-            friction: 20,
-          }).start();
-        }
-      },
-      onPanResponderTerminate: () => {
-        Animated.spring(dragAnim, {
-          toValue: 0,
-          useNativeDriver: nativeDriver,
-          tension: 180,
-          friction: 20,
-        }).start();
-      },
-    }),
-  ).current;
-
-  const contentPanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, { dy, dx }) =>
-        Math.abs(dy) > Math.abs(dx) && dy > 5,
-      onPanResponderMove: (_, { dy }) => {
-        if (dy > 0) dragAnim.setValue(dy);
-      },
-      onPanResponderRelease: (_, { dy, vy }) => {
-        if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
-          onClose();
-        } else {
-          Animated.spring(dragAnim, {
-            toValue: 0,
-            useNativeDriver: nativeDriver,
-            tension: 180,
-            friction: 20,
-          }).start();
-        }
-      },
-      onPanResponderTerminate: () => {
-        Animated.spring(dragAnim, {
-          toValue: 0,
-          useNativeDriver: nativeDriver,
-          tension: 180,
-          friction: 20,
-        }).start();
-      },
-    }),
-  ).current;
+      onPanResponderRelease: (
+        _: unknown,
+        { dy, vy }: { dy: number; vy: number },
+      ) => onRelease(dy, vy),
+      onPanResponderTerminate: () => snapBack(),
+    };
+    return [
+      // La cabecera arrastra desde el primer toque: ahí no hay nada que scrollear.
+      PanResponder.create({
+        ...shared,
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+      }),
+      // El contenido solo secuestra el gesto si es claramente vertical y hacia
+      // abajo, para no robarle el scroll a la lista de dentro.
+      PanResponder.create({
+        ...shared,
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, { dy, dx }) =>
+          Math.abs(dy) > Math.abs(dx) && dy > 5,
+      }),
+    ];
+  }, [dragAnim]);
 
   const handleColor = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.18)';
   const translateY = Animated.add(slideAnim, dragAnim);
@@ -235,7 +455,7 @@ export default function BottomSheet({
       animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
-      onDismiss={() => onCloseCompleteRef.current?.()}
+      onDismiss={fireCloseComplete}
     >
       {/* Backdrop */}
       <Animated.View
@@ -253,8 +473,12 @@ export default function BottomSheet({
       <Animated.View
         style={[
           styles.sheetPositioner,
+          sheetWidth !== undefined && styles.sheetPositionerWide,
           { transform: [{ translateY: keyboardOffsetAnim }] },
         ]}
+        // El hueco a los lados de una hoja centrada es fondo: que el toque
+        // llegue al `Pressable` de detrás y cierre, como en el resto.
+        pointerEvents="box-none"
       >
         {/* Inner: slide-in / drag animation */}
         <Animated.View
@@ -262,9 +486,10 @@ export default function BottomSheet({
             styles.sheet,
             {
               backgroundColor: bgColor,
-              paddingBottom: 8,
+              paddingBottom: safeAreaBottom ? 8 + insets.bottom : 8,
               transform: [{ translateY }],
               maxHeight: sheetMaxHeight,
+              ...(sheetWidth !== undefined && { width: sheetWidth }),
               ...(height !== undefined && { height }),
             },
           ]}
@@ -328,6 +553,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
   },
+  sheetPositionerWide: {
+    alignItems: 'center',
+  },
   sheet: {
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
@@ -341,7 +569,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radii.pillFull,
   },
   headerContainer: {
     height: 48,

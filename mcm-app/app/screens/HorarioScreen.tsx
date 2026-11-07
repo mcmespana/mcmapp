@@ -1,8 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Animated, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Platform } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { Skeleton } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
@@ -10,22 +19,18 @@ import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import { getClosestDateIndex } from '@/utils/dateUtils';
 import DateSelector from '@/components/DateSelector';
 import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MasStackParamList } from '../(tabs)/mas';
-
-type Nav = NativeStackNavigationProp<MasStackParamList, 'Materiales'>;
 
 export default function HorarioScreen() {
-  const navigation = useNavigation<Nav>();
+  const { open } = useEventNavigation();
   const scheme = useColorScheme();
   const fontScale = useFontScale();
+  const bottomPadding = useTabBarPaddingBottom(spacing.xl * 2);
   const styles = React.useMemo(
     () => createStyles(scheme, fontScale),
     [scheme, fontScale],
@@ -36,20 +41,24 @@ export default function HorarioScreen() {
     getEventCacheKey(event, 'horario'),
   );
 
-  const [index, setIndex] = useState(() => {
-    return horarioData ? getClosestDateIndex(horarioData) : 0;
-  });
-
-  // Update index when horarioData loads — abrimos en el día más cercano a hoy.
-  useEffect(() => {
-    if (horarioData && horarioData.length > 0) {
-      setIndex(getClosestDateIndex(horarioData));
-    }
-  }, [horarioData]);
+  // Se abre por el día más cercano a hoy; en cuanto el usuario elige otro,
+  // manda su elección. Derivarlo (en vez de sincronizarlo con un efecto) evita
+  // además que un refresco de Firebase le devolviera al día de hoy estando en
+  // otro día.
+  const closestIndex = React.useMemo(
+    () => (horarioData?.length ? getClosestDateIndex(horarioData) : 0),
+    [horarioData],
+  );
+  const [pickedIndex, setIndex] = useState<number | null>(null);
+  // Acotado por si los datos encogen y el día elegido ya no existe.
+  const index = Math.min(
+    pickedIndex ?? closestIndex,
+    Math.max(0, (horarioData?.length ?? 0) - 1),
+  );
 
   // Animation values for last day
-  const shakeAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const shakeAnim = useSharedValue(0);
+  const fadeAnim = useSharedValue(1);
 
   const fechas = horarioData
     ? horarioData.map((d) => ({ fecha: d.fecha, titulo: d.titulo }))
@@ -58,7 +67,7 @@ export default function HorarioScreen() {
 
   // Calculate progressive green color based on day index
   const getProgressiveGreenColor = (dayIndex: number, totalDays: number) => {
-    if (totalDays <= 1) return colors.success;
+    if (totalDays <= 1) return colors.green;
 
     // Base green color: #A3BD31
     const baseR = 163;
@@ -88,48 +97,32 @@ export default function HorarioScreen() {
       let fadeTimeout: ReturnType<typeof setTimeout> | undefined;
       // Subtle shake animation
       const shake = () => {
-        Animated.sequence([
-          Animated.timing(shakeAnim, {
-            toValue: 3,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.timing(shakeAnim, {
-            toValue: -3,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.timing(shakeAnim, {
-            toValue: 3,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.timing(shakeAnim, {
-            toValue: 0,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-        ]).start();
+        shakeAnim.set(
+          withSequence(
+            withTiming(3, { duration: 100 }),
+            withTiming(-3, { duration: 100 }),
+            withTiming(3, { duration: 100 }),
+            withTiming(0, { duration: 100 }),
+          ),
+        );
       };
 
       // Subtle fade animation
+      const scheduleFade = () => {
+        if (cancelled) return;
+        fadeTimeout = setTimeout(fade, 2000);
+      };
       const fade = () => {
-        Animated.sequence([
-          Animated.timing(fadeAnim, {
-            toValue: 0.7,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          // Repeat fade animation
-          if (cancelled) return;
-          fadeTimeout = setTimeout(fade, 2000);
-        });
+        fadeAnim.set(
+          withSequence(
+            withTiming(0.7, { duration: 1500 }),
+            withTiming(1, { duration: 1500 }, () => {
+              'worklet';
+              // Repeat fade animation
+              scheduleOnRN(scheduleFade);
+            }),
+          ),
+        );
       };
 
       // Start animations with delays
@@ -144,34 +137,34 @@ export default function HorarioScreen() {
         clearTimeout(shakeTimeout);
         if (fadeTimeout) clearTimeout(fadeTimeout);
         clearInterval(shakeInterval);
+        cancelAnimation(shakeAnim);
+        cancelAnimation(fadeAnim);
       };
     }
   }, [isLastDay, shakeAnim, fadeAnim]);
 
   const currentColor = horarioData
     ? getProgressiveGreenColor(index, horarioData.length)
-    : colors.success;
+    : colors.green;
 
   // Handle navigation to materials with specific day
   const handleNavigateToMateriales = (dayIndex: number) => {
-    navigation.navigate('Materiales', {
+    open('Materiales', {
       initialDayIndex: dayIndex,
       eventId: event.id,
     });
   };
 
   const dynamicStyles = React.useMemo(
-    () =>
-      createDynamicStyles(
-        scheme,
-        fontScale,
-        currentColor,
-        isLastDay,
-        shakeAnim,
-        fadeAnim,
-      ),
-    [scheme, fontScale, currentColor, isLastDay, shakeAnim, fadeAnim],
+    () => createDynamicStyles(scheme, fontScale, currentColor, isLastDay),
+    [scheme, fontScale, currentColor, isLastDay],
   );
+
+  // El último día llama la atención con un temblor y un latido suaves.
+  const attentionStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shakeAnim.get() }],
+    opacity: fadeAnim.get(),
+  }));
 
   if (!dia) {
     const empty = !loading && (!horarioData || horarioData.length === 0);
@@ -218,17 +211,14 @@ export default function HorarioScreen() {
       </View>
       <PageContainer>
         <ScrollView
-          contentContainerStyle={styles.eventsContainer}
+          contentContainerStyle={[
+            styles.eventsContainer,
+            { paddingBottom: bottomPadding },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           <Animated.View
-            style={[
-              dynamicStyles.titleWrapper,
-              isLastDay && {
-                transform: [{ translateX: shakeAnim }],
-                opacity: fadeAnim,
-              },
-            ]}
+            style={[dynamicStyles.titleWrapper, isLastDay && attentionStyle]}
           >
             <ThemedText style={styles.titleText} selectable>
               {dia.titulo}
@@ -297,7 +287,6 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
     eventsContainer: {
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.lg,
-      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.xl * 2,
     },
   });
 };
@@ -307,14 +296,12 @@ const createDynamicStyles = (
   scale: number,
   currentColor: string,
   isLastDay: boolean,
-  shakeAnim: Animated.Value,
-  fadeAnim: Animated.Value,
 ) => {
   return StyleSheet.create({
     titleWrapper: {
       backgroundColor: currentColor,
       padding: spacing.md,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       marginBottom: spacing.xs,
       ...Platform.select({
         web: {

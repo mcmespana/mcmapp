@@ -10,7 +10,7 @@
  *   app/evaluations/<pushId>                              (evaluación de la app)
  */
 import type { ComponentProps } from 'react';
-import type { MaterialIcons } from '@expo/vector-icons';
+import type { MaterialIcons } from '@/components/ui/icons';
 
 /**
  * Tipos de pregunta soportados por el wizard de encuestas/evaluaciones.
@@ -22,12 +22,7 @@ import type { MaterialIcons } from '@expo/vector-icons';
  *  - `multi`  → varias opciones de una lista (checkbox).
  */
 export type EvalQuestionType =
-  | 'stars'
-  | 'text'
-  | 'yesno'
-  | 'scale'
-  | 'single'
-  | 'multi';
+  'stars' | 'text' | 'yesno' | 'scale' | 'single' | 'multi';
 
 /** Opción de una pregunta `single`/`multi`. */
 export interface EvalOption {

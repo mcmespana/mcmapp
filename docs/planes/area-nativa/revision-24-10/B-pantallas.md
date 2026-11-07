@@ -1,0 +1,26 @@
+# Revisión B — pantallas (24/10/2026). Rutas relativas a mcm-app/
+
+ALTA
+1. Pérdida de marcas al salir con «Guardar» o al corregir mientras sube — components/comunica/pasar-lista/RollScreen.tsx:375-395 y :323-326. El beforeRemove solo se re-registra al cambiar dirty/future/queued?.status → su closure de `save` usa el draft del primer toque; y al aplicar, resetTo(fresh) pisa lo editado tras encolar. Escenario: marcas 20, atrás → «Guardar» → se encola 1; al aplicar, resetTo borra las otras 19. Igual si corriges mientras «Guardando…». Arreglo: save lee latest.current.draft; al aplicar, comparar sent con el borrador actual y conservar las diferencias.
+2. desmarcar = «borrar» no implementado — utils/comunica/rollDraft.ts (toRollWrite salta null; hasSomethingToSave), RollScreen.tsx:406, :441. Quitar la marca (MarkSheet.tsx:131-144) + Guardar → «Lista guardada» y el «Vino» vuelve; no se puede dejar a cero una lista pasada («No has marcado a nadie»). Arreglo: mandar mark:null para quien tenía marca guardada (contrato + falso, plan 04 pregunta 1) y permitir esa escritura.
+3. futuras = «como el plugin» no implementado — utils/comunica/sessions.ts:68, RollScreen.tsx:278: isFutureSession bloquea también la próxima que propone la regla (portada «Próxima · Pasar lista» abre lista apagada). Arreglo: canMark = !future || (proposal.notice?.kind==='next' && session.id===proposal.session.id) y meterla en sessionOptions.
+4. La web del plugin queda tapada arriba y abajo — components/comunica/comun/LegacyWebScreen.tsx:52-59: contentInsetAdjustmentBehavior por defecto y sin hueco para la barra flotante; en iOS el principio queda bajo la cabecera transparente; abajo los botones quedan bajo la barra. Arreglo: reutilizar contentInset + safeAreaBridgeJS de app/screens/ComunicaScreen.tsx (useTabBarClearance) y añadir estado de error (onError/onHttpError).
+
+MEDIA
+5. Cargando/error/sin acceso fuera de AreaScreen — RollScreen.tsx:186-222 (Message padding 24), GroupsTreeScreen.tsx:57, GruposIndexScreen.tsx:105, ParticipantScreen.tsx:92-110, GroupScreen.tsx:51, RollHistoryScreen.tsx:82 → sin contentInsetAdjustmentBehavior, quedan bajo la cabecera iOS. Arreglo: AreaState dentro de AreaScreen.
+6. BottomActionBar altura fija — comun/BottomActionBar.tsx:92 (BOTTOM_ACTION_BAR_SPACE=120) cuando con aviso+recuentos+botón+estado+Descartar y fontScale 1,3 pasa de 170 pt → tapa las últimas filas. Arreglo: medir con onLayout y pasar la altura al scroll.
+7. territorio (A) no aplicado — comun/theme.ts:251-255, :328: acento = brand.purple #9D1E74 en vez del violeta #6c4b9e; sin degradado en la acción principal; «Guardar lista» (RollScreen.tsx:567-587) botón a mano en vez de AppPrimaryButton; COM II/III, pañuelos, avisos no son tokens de constants/colors.ts. Arreglo: ComunicaColors en constants/colors.ts (acento + variante oscura AA) y degradado solo en el CTA.
+8. salud-no = «sí, en la ficha» no implementado — ParticipantScreen.tsx:373-394 depende de una ruta; services/comunica/fake/index.ts:803 devuelve [] y fixtures.ts:880 quita la marca. Arreglo: la ficha enseña el texto aunque healthData=no; la hoja/marca de las listas lo sigue ocultando (p. ej. `?for=ficha` o flag consent:false en la respuesta).
+9. Rendimiento de marcar (~60) — RollScreen.tsx:700-727, comun/Section.tsx:181-183: RollRow sin memo, closures nuevas, absenceStreak por fila; Section usa key={i} → al filtrar se remontan filas y parpadean fotos. Arreglo: React.memo(RollRow) con callbacks por id, rachas en useMemo, key del hijo.
+10. Táctiles <44 pt — RollScreen.tsx:538-546 (Descartar), :640-657, :663-676 (Sin registro), :736-749; MarkSheet.tsx:116-143; email ParticipantScreen (hitSlop 6); peor: pastilla de salud PersonMarks.tsx:66-74 (~20 pt) dentro de una fila pulsable. Arreglo: minHeight 44 / LinkButton común.
+11. Web: confirmaciones que no salen — RollScreen.tsx:458-461 (Sin registro guarda sin preguntar y descarta marcas), :472-480 (Descartar usa Alert, no hace nada en web), AccountScreen confirmLeave (sale sin preguntar). Arreglo: confirmAction (ya existe en comun/confirm.ts).
+12. «Abrir la versión web» no usa openLegacy — AccountScreen.tsx: router.push('/comunica/web') sin pase. Plan 10 §2: openLegacy a la portada.
+13. acceso-elegir.tsx:10-11: JSON.parse sin proteger (un enlace malformado tumba la app); DNI/código/nombres en parámetros de URL (como `value` de acceso-codigo) → en web quedan en el historial. Arreglo: try/catch y pasarlos en memoria.
+
+BAJA
+- RollScreen.tsx 947 líneas y GruposIndexScreen.tsx 865: con futuras+desmarcar pasa de 1000 → sacar useRollSave testeable.
+- design.md: bordes 2-3 px (MarkSheet.tsx:162, FichaNotices borderLeftWidth 3); «✓» y «›» como texto en vez de IconSymbol; enviar de FichaNotices no es AppPrimaryButton; buscadores TextInput en vez de headerSearchBarOptions; prosa importante en caption gris.
+- RollHistoryScreen.tsx:117-122 apila otro RollScreen (Roll→Historial→Roll).
+- Sesión revocada a mitad de pila: solo la puerta lo trata; internas quedan en «No se ha podido cargar». Arreglo: unauthenticated → dismissAll.
+- HealthSheet y hoja de avisos pintan <View/> durante la animación de cierre.
+- Falta del plan 04: anillo de pulsación larga y pista (l.283).

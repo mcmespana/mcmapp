@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, View, Platform, Text } from 'react-native';
+import { ScrollView, StyleSheet, View, Text } from 'react-native';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { h } from '@/utils/haptics';
 import FormattedContent from '@/components/FormattedContent';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import useFontScale from '@/hooks/useFontScale';
 import { radii } from '@/constants/uiStyles';
 import PageContainer from '@/components/ui/PageContainer';
@@ -14,6 +15,7 @@ import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
+import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
 interface Pagina {
   titulo: string;
@@ -106,8 +108,10 @@ function AccordionSection({
 }
 
 export default function ProfundizaScreen() {
+  useSuppressCarismochito();
   const scheme = useColorScheme();
   const fontScale = useFontScale(1.2);
+  const bottomPadding = useTabBarPaddingBottom(16);
   const styles = React.useMemo(
     () => createStyles(scheme, fontScale),
     [scheme, fontScale],
@@ -182,7 +186,10 @@ export default function ProfundizaScreen() {
     <PageContainer>
       <ScrollView
         style={styles.container}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: bottomPadding },
+        ]}
       >
         <ScreenHero title={heroTitle} hideOnWeb />
         <View style={styles.body}>
@@ -209,7 +216,6 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
     container: { flex: 1, backgroundColor: theme.background },
     content: {
       paddingTop: 8,
-      paddingBottom: Platform.OS === 'ios' ? 100 : 16,
     },
     body: { paddingHorizontal: 20, paddingTop: 8 },
     seccionTitulo: {
@@ -223,7 +229,7 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      borderRadius: 16,
+      borderRadius: radii.lg,
       paddingHorizontal: 16,
       paddingVertical: 14,
     },

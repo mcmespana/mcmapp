@@ -1,0 +1,169 @@
+// Barra de pestañas flotante nativa (iOS + Android).
+//
+// Envuelve `NativeCompactTabBar` de `expo-native-compact-tabs`: en iOS 26+ se
+// pinta con Liquid Glass de UIKit, en iOS 16.4–18.x y Android con una píldora
+// sólida con cápsula de selección animada. Lo que aporta frente a la barra
+// nativa del sistema es que al COMPACTARSE mantiene todos los iconos visibles,
+// en vez de colapsar a una píldora que los esconde.
+//
+// OJO: es un control VISUAL, no un navegador. Quien navega es expo-router
+// desde `onTabSelected`; `selectedIndex` se deriva del pathname.
+
+import { useCallback, useMemo } from 'react';
+import { Platform, StyleSheet } from 'react-native';
+import { useNavigationContainerRef, usePathname } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  NativeCompactTabBar,
+  type NativeCompactTabBarItem,
+} from 'expo-native-compact-tabs';
+
+import type { TabConfig } from '@/constants/tabsCatalog';
+import { TAB_ICONS } from '@/constants/tabIcons';
+import { TAB_BAR_HEIGHT, TAB_BAR_COMPACT_HEIGHT } from '@/constants/spacing';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { useCarismochito } from '@/contexts/CarismochitoContext';
+import { CarismoColors, Colors } from '@/constants/colors';
+import { tabBarController } from '@/components/tabs/tabBarController';
+import { h } from '@/utils/haptics';
+import {
+  hrefForTab,
+  routeNameForTab,
+  selectedIndexFor,
+} from '@/utils/tabRoutes';
+import { CANTORAL_SLUGS, lastSegment } from '@/utils/eventRoutes';
+import { jumpToTab } from '@/components/tabs/jumpToTab';
+
+/* Verdes del modo carismochito (ver app/(tabs)/_layout.tsx para el detalle). */
+const CARISMO_ACTIVE_DARK = CarismoColors.dark;
+const CARISMO_INACTIVE_DARK = CarismoColors.inactiveDark;
+const CARISMO_ACTIVE_LIGHT = CarismoColors.light;
+const CARISMO_INACTIVE_LIGHT = CarismoColors.inactiveLight;
+
+interface CompactTabBarProps {
+  /** Tabs que van en la barra, ya recortados por `splitTabsForBar`. */
+  tabs: TabConfig[];
+}
+
+export default function CompactTabBar({ tabs }: CompactTabBarProps) {
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  const { isActive: carismoActive } = useCarismochito();
+  const compact = tabBarController.useCompact();
+  const navRef = useNavigationContainerRef();
+
+  const items = useMemo<NativeCompactTabBarItem[]>(
+    () =>
+      tabs.map((tab) => {
+        const icons = TAB_ICONS[tab.name];
+        return {
+          key: tab.name,
+          label: tab.label,
+          icon: icons.icon,
+          animationFrames: icons.frames,
+          accessibilityLabel: tab.label,
+        };
+      }),
+    [tabs],
+  );
+
+  const selectedIndex = selectedIndexFor(tabs, pathname);
+
+  // La barra nativa se RECREA cuando cambia el juego de pestañas, en vez de
+  // cambiarle los items en caliente. En el primer arranque de la app no hay
+  // configuración de perfiles en caché: la barra se monta con las pestañas por
+  // defecto y, al llegar las de Firebase, `setItems` del módulo nativo
+  // sustituye los `UITabBarItem` de una barra ya maquetada. UIKit no vuelve a
+  // repartir bien los items y las etiquetas salían cortadas y desplazadas
+  // («Con», «Co», «Cal») hasta reiniciar. En los arranques siguientes las
+  // pestañas vienen de la caché desde el primer render y nunca pasaba.
+  // Cambiar de juego de pestañas es raro (perfil, evento), así que recrear la
+  // vista no cuesta nada.
+  const itemsKey = items.map((i) => `${i.key}:${i.label}`).join('|');
+
+  const onTabSelected = useCallback(
+    ({ nativeEvent }: { nativeEvent: { index: number } }) => {
+      const tab = tabs[nativeEvent.index];
+      if (!tab) return;
+
+      h.tap();
+      tabBarController.expand();
+
+      const href = hrefForTab(tab.name);
+      const isReselection = nativeEvent.index === selectedIndex;
+
+      if (isReselection) {
+        // Re-tap del tab activo. Primero se deja que el stack del tab vuelva a
+        // su pantalla raíz (cantoral, más y visitapapa se suscriben con
+        // `useTabReselect`); si no había nada que cerrar, sube el scroll. Es la
+        // UX de siempre de iOS, que antes daba el evento `tabPress` del
+        // navegador — con la barra del sistema oculta ese evento ya no existe.
+        tabBarController.handleReselect(tab.name);
+        return;
+      }
+
+      // Como la barra del sistema: la pestaña vuelve tal y como se dejó (ver
+      // `jumpToTab`). `router.navigate(href)` la devolvía a su portada.
+      jumpToTab(navRef, routeNameForTab(tab.name), href);
+    },
+    [tabs, selectedIndex, navRef],
+  );
+
+  // Canción a pantalla completa: en Android la barra es un overlay del
+  // navegador y el `fullScreenModal` del stack NO la cubre (en iOS el modal
+  // nativo sí), así que tapaba los botones de reproducir y del lector. Sin
+  // barra mientras esa ruta esté a la vista.
+  const inFullscreenSong =
+    Platform.OS === 'android' &&
+    lastSegment(pathname) === CANTORAL_SLUGS.SongFullscreen;
+  if (inFullscreenSong) return null;
+
+  const tintColor = carismoActive
+    ? isDark
+      ? CARISMO_ACTIVE_DARK
+      : CARISMO_ACTIVE_LIGHT
+    : Colors[scheme ?? 'light'].tint;
+
+  const inactiveTintColor = carismoActive
+    ? isDark
+      ? CARISMO_INACTIVE_DARK
+      : CARISMO_INACTIVE_LIGHT
+    : Colors[scheme ?? 'light'].icon;
+
+  return (
+    <NativeCompactTabBar
+      // El esquema va en la clave: en Android la barra nativa no se repintaba al
+      // cambiar el tema en caliente (salía clara con iconos claros).
+      key={`${itemsKey}|${scheme ?? 'light'}`}
+      items={items}
+      selectedIndex={selectedIndex}
+      compact={compact}
+      tintColor={tintColor}
+      inactiveTintColor={inactiveTintColor}
+      expandedHeight={TAB_BAR_HEIGHT}
+      compactHeight={TAB_BAR_COMPACT_HEIGHT}
+      onTabSelected={onTabSelected}
+      pointerEvents="box-none"
+      style={[
+        styles.bar,
+        {
+          // En iOS UIKit ya respeta el home indicator dentro de la propia
+          // barra. En Android la app va edge-to-edge desde el SDK 55, así que
+          // hay que levantarla nosotros sobre la barra de gestos.
+          bottom: Platform.OS === 'android' ? insets.bottom : 0,
+        },
+      ]}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  bar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: TAB_BAR_HEIGHT,
+  },
+});

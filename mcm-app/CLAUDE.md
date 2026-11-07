@@ -4,9 +4,9 @@
 
 ## Resumen del proyecto
 
-MCM App es la aplicación de MCM España (Misioneros y Misioneras Claretianos). Proporciona cantoral/cancionero con acordes, calendario de eventos, fotos, grupos, reflexiones, materiales, juego Wordle y notificaciones push.
+MCM App es la aplicación de MCM España (Movimiento Consolación para el Mundo). Proporciona cantoral/cancionero con acordes, calendario de eventos, fotos, grupos, reflexiones, materiales, juego Wordle y notificaciones push.
 
-**Stack:** Expo 55 · React Native 0.83 · React 19.2 · TypeScript · Firebase Realtime Database · **heroui-native** · ChordSheetJS
+**Stack:** Expo 58 · React Native 0.88 · React 19.3 · TypeScript · Firebase Realtime Database · **heroui-native** · ChordSheetJS
 
 ## Comandos de desarrollo
 
@@ -18,7 +18,7 @@ npm run android        # App en Android
 npm run ios            # App en iOS
 npm run lint           # ESLint
 npm run format         # Prettier
-npm test               # Jest (16 ficheros en __tests__/, 150 tests)
+npm test               # Jest (suite completa en __tests__/)
 npm run typecheck:tests # Typecheck incluyendo __tests__ (tsconfig.test.json)
 npx tsc --noEmit       # Verificar tipos TypeScript
 ```
@@ -27,13 +27,16 @@ npx tsc --noEmit       # Verificar tipos TypeScript
 
 Los OTA updates (EAS Update) solo envían el **bundle JS** — no incluyen código nativo. Si añades un paquete con módulos nativos (`expo-*`, `react-native-*` con carpeta `ios/` o `android/`) y haces OTA, **la app crashea** porque el binario instalado no tiene ese módulo.
 
+**Esto es una restricción de despliegue, NO un argumento en contra de un cambio.** No uses "no es OTA" como riesgo, contra ni motivo para descartar una librería o una feature: el cambio entra igual y se queda esperando al siguiente build nativo. Quien decide si eso viene mal es el usuario.
+
 Cuando añadas un paquete nativo:
 
 1. Añade `[skip-ota]` al mensaje del commit → el workflow `ota-production.yml` se salta automáticamente
-2. Avisa al usuario de que necesita un **build de producción** antes de mergear a `production`:
+2. Cierra la respuesta con **una sola línea al final**, sin párrafos ni avisos repetidos:
    ```
-   ⚠️ Este cambio incluye paquetes nativos ([lista]). Requiere build de tienda antes del merge a production. El commit lleva [skip-ota] para no lanzar la OTA.
+   OTA: ❌ — requiere build nativo (paquetes: [lista]). Commit con [skip-ota].
    ```
+   Y cuando el cambio es solo JS: `OTA: ✅ — solo JS.`
 3. Comando para el build: `npm run eas:build -- --profile production`
 
 En `workflow_dispatch` manual la OTA siempre corre independientemente del flag.
@@ -62,112 +65,64 @@ npm run eas:build -- --profile production          # Build ambas plataformas
 
 ## Estructura de archivos
 
+Una frase por carpeta, no fichero a fichero: la lista exhaustiva se quedaba
+vieja en semanas. Para saber qué hay, `ls` y `git grep`.
+
 ```
-app/
-├── _layout.tsx                 # Root layout: providers + Stack navigator
-├── (tabs)/
-│   ├── _layout.tsx             # Tabs: plataforma iOS (NativeTabs) vs Android/Web (Tabs)
-│   ├── index.tsx               # Home: grid de botones de navegación
-│   ├── cancionero.tsx          # Cantoral: stack navigator interno (Categories → Songs → Detail → Fullscreen)
-│   ├── contigo/                # Contigo: acompañamiento y oración (rutas anidadas)
-│   ├── comunica.tsx            # Comunica: WebView del portal (envuelve ComunicaScreen)
-│   ├── visitapapa.tsx          # Tab del evento Visita Papa (oculta: evento archivado)
-│   ├── calendario.tsx          # Calendario: eventos ICS
-│   ├── fotos.tsx               # Galería de fotos
-│   └── mas.tsx                 # Más opciones (JubileoHome, Grupos, Materiales, etc.)
-├── screens/                    # 20 pantallas individuales
-│   ├── CategoriesScreen.tsx    # Lista de categorías del cantoral
-│   ├── SongListScreen.tsx      # Lista de canciones por categoría
-│   ├── SongDetailScreen.tsx    # Detalle de canción con acordes
-│   ├── SongFullscreenScreen.tsx # Modo presentación
-│   ├── SelectedSongsScreen.tsx # Playlist de canciones seleccionadas
-│   ├── EventHomeScreen.tsx     # Hub genérico de eventos (Jubileo, encuentros, etc.)
-│   ├── MasHomeScreen.tsx       # Menú "Más"
-│   ├── GruposScreen.tsx        # Grupos
-│   ├── MaterialesScreen.tsx    # Materiales (BBCode → HTML)
-│   ├── ProfundizaScreen.tsx    # Profundiza (BBCode → HTML)
-│   ├── HorarioScreen.tsx       # Horario
-│   ├── ContactosScreen.tsx     # Contactos
-│   ├── VisitasScreen.tsx       # Visitas
-│   ├── ReflexionesScreen.tsx   # Reflexiones (lectura + escritura en Firebase)
-│   ├── WordleScreen.tsx        # Juego Wordle
-│   ├── ComidaScreen.tsx        # Comida
-│   ├── ComidaWebScreen.tsx     # Comida versión web
-│   ├── AppsScreen.tsx          # Apps recomendadas
-│   └── MaterialPagesScreen.tsx # Páginas de materiales
-├── wordle.tsx                  # Entrada al Wordle desde root stack
-├── notifications.tsx           # Pantalla de notificaciones
-├── +not-found.tsx              # 404
-└── +html.tsx                   # Template HTML para web
+app/                            # Rutas (expo-router). Una pantalla por fichero
+├── _layout.tsx                 # Root layout: AppProviders + Stack navigator
+├── +native-intent.ts           # Reescribe enlaces entrantes (universal links, custom scheme)
+├── +html.tsx / +not-found.tsx  # Template HTML web / 404
+├── (tabs)/                     # Tabs: _layout.tsx + (inicio)/ (Home), cancionero/, contigo/,
+│                               #   comunica/ (puerta nativa/legado, docs/planes/area-nativa/),
+│                               #   calendario, fotos, mas, visitapapa (oculta)
+├── screens/                    # Pantallas "de contenido" que montan las rutas y los
+│                               #   stacks internos (cantoral, Más, eventos, evaluación…)
+├── onboarding.tsx              # Perfil + delegación (primer arranque)
+├── carismochito.tsx            # Colección del modo Carismochito
+├── coro.tsx / playlist.tsx     # Coro compartido y playlists compartidas (enlaces)
+├── encuesta/[id].tsx           # Encuesta por id
+├── evaluacion-app.tsx          # Evaluación de la app
+├── notifications/              # Bandeja: _layout, index (lista) y [id] (detalle)
+└── wordle.tsx                  # Wordle (congelado, ver "Notas importantes")
 
-components/                     # ~40 componentes
-├── ui/                         # Componentes base por plataforma
-│   ├── TabScreenWrapper.ios.tsx  # Wrapper de tabs con barra de color (iOS)
-│   ├── GlassHeader.ios.tsx       # Header glass para iOS
-│   ├── GlassFAB.ios.tsx          # FAB con glass effect (iOS)
-│   ├── TopColorBar.ios.tsx       # Barra de color superior (iOS)
-│   ├── IconSymbol.tsx / .ios.tsx  # Iconos por plataforma
-│   └── TabBarBackground.tsx / .ios.tsx
-├── Song*.tsx                   # SongControls, SongDisplay, SongFontBottomSheet, SongListItem, SongSearch
-├── Toast.tsx                   # Sistema de toasts
-├── SettingsBottomSheet.tsx     # Bottom sheet de ajustes (Home, Mas, Contigo)
-├── AppFeedbackModal.tsx        # Modal de feedback/bugs
-├── UserProfileModal.tsx        # Modal de perfil de usuario
-├── FormattedContent.tsx        # Renderizador de BBCode → HTML
-├── AddToHomeBanner.tsx         # Banner PWA "añadir a inicio"
-├── VersionDisplay.tsx          # Muestra versión de la app
-└── [otros]
+components/                     # Componentes sueltos (modales, sheets, banners, Song*…)
+├── ui/                         # Primitivas de la app: PressableScale, EmptyState,
+│                               #   AppTextField, AppPrimaryButton, SegmentedControl,
+│                               #   IconSymbol, Glass*, ScreenHero, TabScreenWrapper…
+│                               #   (catálogo y reglas en design.md)
+└── {calendar,contigo,evaluation,grupos,home,mas,materiales,medallas,
+     notifications,playlist,preview-channel,secret-panel,song-media,
+     song-onboarding,song-sheet,song-tags,tabs}/
+                                # Subcomponentes de cada área (tabs/ = las tres
+                                #   implementaciones de la barra, ver TABS_MAINTENANCE.md)
 
-contexts/                       # Estado global (React Context, NO Redux)
-├── ProfileConfigContext.tsx    # Config remota /profileConfig (cache offline)
-├── AppSettingsContext.tsx      # Font scale, tema (→ AsyncStorage)
-├── UserProfileContext.tsx     # profileType, delegationId, onboardingCompleted, name (→ AsyncStorage)
-├── SettingsContext.tsx         # Ajustes del cantoral (→ AsyncStorage)
-└── SelectedSongsContext.tsx   # Playlist temporal (in-memory)
+contexts/                       # Estado global (React Context, NO Redux): perfil,
+                                #   ajustes, auth, notificaciones, playlist, Contigo,
+                                #   Carismochito, coro, OTA, versión mínima…
+hooks/                          # Hooks. CLAVE: useFirebaseData.ts (fetch con caché offline)
+constants/                      # Tokens (colors, spacing, typography, uiStyles,
+                                #   animations…) y catálogos (tabsCatalog, profileCatalog…)
+utils/                          # Lógica pura y sin UI: songSheet*, chordNotation,
+                                #   icsParser, resolveProfileConfig, logger, haptics…
+services/                       # Escrituras y servicios con Firebase (firebaseWrites,
+                                #   coro, playlists en la nube, push)
+notifications/                  # Handler global y registro de push (.ts nativo / .web.ts)
+types/                          # Tipos compartidos (perfiles, notificaciones, media)
+styles/                         # CSS módulo de Comunica (web)
 
-hooks/                          # Custom hooks
-├── useFirebaseData.ts         # CLAVE: fetch genérico con caché offline
-├── useSongProcessor.ts        # ChordPro → HTML
-├── useCalendarEvents.ts       # ICS → eventos
-├── useCalendarConfigs.ts      # Configuraciones de calendarios
-├── useColorScheme.ts          # Tema claro/oscuro
-├── useStatusBarTheme.ts       # StatusBar por ruta
-├── useCurrentTabColor.ts      # Color del tab actual
-├── useFontScale.ts            # Escala de fuente
-├── useNetworkStatus.ts        # Estado de red
-├── useWordleGame.ts           # Lógica del Wordle
-├── useWordleStats.ts          # Estadísticas Wordle
-├── useWordleLeaderboard.ts    # Leaderboard Wordle
-├── useWordleWords.ts          # Palabras del Wordle
-└── useUnreadNotificationsCount.ts
-
-constants/
-├── defaultProfileConfig.ts    # Fallback hardcoded del sistema de perfiles (importa firebase-seed/profileConfig.json)
-├── profileCatalog.ts          # KNOWN_TABS / HOME_BUTTONS / MAS_ITEMS / ALBUM_TAGS / NOTIFICATION_TOPICS
-├── colors.ts                  # Colores de marca + TabHeaderColors
-├── firebase.ts                # Config Firebase (lee de env vars)
-├── spacing.ts                 # Espaciado
-├── typography.ts              # Tipografía
-└── iconAssets.ts              # Precarga de iconos
-
-utils/
-├── firebaseApp.ts             # Singleton de Firebase App
-├── chordNotation.ts           # Conversión acordes EN ↔ ES
-├── filterSongsData.ts         # Filtra canciones borrador/pendiente
-├── songUtils.ts               # Limpieza de títulos, mapeo de categorías
-├── formatText.ts              # BBCode → HTML
-├── resolveProfileConfig.ts    # Resolver puro del sistema de perfiles + isAppVersionSupported
-└── fontUtils.ts               # Utilidades de fuentes
-
-services/
-└── pushNotificationService.ts # Servicio de notificaciones push
-
-notifications/
-├── NotificationHandler.ts     # Handler global de notificaciones
-└── usePushNotifications.ts    # Hook de notificaciones push
-
-types/
-└── notifications.ts           # Tipos de notificaciones
+__tests__/                      # Jest: una suite por unidad o guardarraíl (ver el dir.)
+__mocks__/                      # Mocks de Firebase, AsyncStorage y expo-network
+assets/                         # Imágenes, iconos de tabs/app, JSONs locales (calendario
+                                #   litúrgico, wordle)
+firebase-seed/                  # JSON de ejemplo/seed de los nodos de Firebase
+functions/                      # Cloud Functions (precacheo de calendarios ICS)
+modules/ plugins/ targets/ patches/
+                                # Código nativo propio: módulo highlight-menu, plugin y
+                                #   target de la extensión de notificaciones, patch de tabs
+scripts/                        # Generadores (iconos de tabs/app, bundle de hoja,
+                                #   ventana litúrgica)
+public/                         # Web: manifest PWA, service worker, iconos
 ```
 
 ## Arquitectura de navegación
@@ -175,28 +130,58 @@ types/
 ```
 RootLayout (Stack)
 ├── (tabs) ← Bottom Tabs
-│   ├── index (Home)           ← Grid de botones
-│   ├── cancionero             ← Stack interno: Categories → SongsList → SongDetail → SongFullscreen
+│   ├── (inicio)/ (Home)       ← Stack propio: cabecera nativa + grid de botones
+│   ├── cancionero/            ← Stack: index (Categorías) → categoria → cancion → pantalla-completa (+ seleccion)
 │   ├── contigo                ← Acompañamiento y oración
-│   ├── comunica               ← WebView del portal de comunicación
-│   ├── calendario             ← Eventos ICS
-│   ├── fotos                  ← Galería
-│   ├── visitapapa             ← Stack del evento (oculto mientras esté archivado)
-│   └── mas                    ← Stack interno: MasHome → Jubileo/Grupos/Materiales/etc.
+│   ├── comunica/              ← Área nativa (alpha) o WebView del portal; carpeta con _layout
+│   ├── calendario/            ← Eventos ICS (carpeta con _layout)
+│   ├── fotos/                 ← Galería (carpeta con _layout)
+│   ├── visitapapa/            ← Stack del evento (oculto mientras esté archivado)
+│   └── mas/                   ← Stack: index (MasHome) → fotos, calendario, evento, horario…
 ├── wordle                     ← Juego
-└── notifications              ← Lista de notificaciones
+└── notifications/             ← Bandeja: lista + detalle [id]
 ```
 
-**Tabs implementación dual:**
+**Los stacks de una pestaña son CARPETAS de rutas** (`_layout.tsx` con `Stack` de
+expo-router + un fichero por pantalla, que re-exporta la de `app/screens/`).
+Con expo-router 58 el estado de navegación sale de los ficheros: **no se monta
+`createNativeStackNavigator` en `app/`** (lo prohíbe `__tests__/router/`). Los
+params de ruta son texto, nunca objetos. Los nombres de pantalla de siempre
+(`'Horario'`, `'Fotos'`…) se traducen a rutas en `utils/eventRoutes.ts`.
+`renderEventScreens()` devuelve un array de `Stack.Screen`: el `Stack` no aplana
+fragmentos. Estado de la migración: `docs/planes/PLAN_EXPO_58.md`.
 
-- **iOS**: `NativeTabs` (expo-router/unstable-native-tabs) para liquid glass
-- **Android/Web**: `Tabs` tradicionales (expo-router)
+**Una canción viaja por la ruta como texto**: `filename` (+ `list`,
+`currentIndex`, `source`, `firebaseCategory`). La pantalla la lee de la lista
+con la que se abrió (almacén en memoria, `utils/songNavList.ts`) o del
+catálogo (`hooks/useRouteSong.ts`). Para abrir una pantalla del cantoral:
+`openCantoral('SongDetail', songRouteParams({...}))`
+(`utils/cantoralNavigation.ts`); nunca la canción entera en los params.
+
+**`app/+html.tsx` tiene que pintar `headNodes` y `bodyNodes`**
+(`useServerDocumentContext`): en Expo 58 el export ya no mete el JS en el HTML
+por su cuenta, y sin ellos la web sale en blanco
+(`__tests__/htmlTemplateAssets.test.tsx`).
+
+**Tabs — tres implementaciones (ver `docs/desarrollo/TABS_MAINTENANCE.md`):**
+
+- **iOS y Android**: barra flotante nativa `CompactTabBar`
+  (`expo-native-compact-tabs`), que al compactarse con el scroll mantiene todos
+  los iconos visibles. iOS usa `NativeTabs` de navegador con la barra del
+  sistema oculta; Android usa `Tabs` con `tabBar={() => null}` (así conserva los
+  headers, que salen de las options de cada `Tabs.Screen`)
+- **Web**: `Tabs` tradicionales de expo-router, sin cambios
 - Config centralizada en `TABS_CONFIG` (`constants/tabsCatalog.ts`); el **orden
   de la barra** lo da ese array, NO la lista `tabs` del perfil
+- Iconos: PNGs en `assets/tab-icons/`, generados con `npm run icons:tabs` y
+  registrados en `constants/tabIcons.ts` (la librería no admite SF Symbols)
 - Qué tabs se ven: `hooks/useVisibleTabs.ts` = `tabs` del perfil resuelto menos
   el tab del evento en curso si está archivado (`status: 'archived'`)
-- En iOS sólo caben 5 triggers: `splitTabsForIOS` deja los 4 primeros + "Más", y
+- Caben 6 (`MAX_TAB_BAR_ITEMS`): `splitTabsForBar` deja los 5 primeros + "Más" y
   el resto se ve como tarjetas en `MasHomeScreen`
+- **La barra FLOTA**: no ocupa layout. Cada pantalla de tab engancha su scroller
+  con `components/tabs/useTabScroll.ts`, que da el `onScroll` del colapso y el
+  `paddingBottom` que hay que reservar
 
 ## Sistema de Perfiles (reemplaza a los feature flags)
 
@@ -213,7 +198,9 @@ utils/resolveProfileConfig.ts        ← resolver puro + isAppVersionSupported
 contexts/ProfileConfigContext.tsx    ← descarga /profileConfig con caché offline
 hooks/useResolvedProfileConfig.ts    ← combina config + UserProfile → ResolvedProfileConfig
 app/onboarding.tsx                   ← pantalla inicial (perfil + delegación)
-components/MaintenanceScreen.tsx     ← bloqueo por mantenimiento o versión mínima
+components/MaintenanceScreen.tsx     ← bloqueo por mantenimiento
+components/UpdateRequiredScreen.tsx  ← «hay versión nueva» (versión mínima; estricta o con «Ahora no» según minAppVersionSkips)
+contexts/OTAContext.tsx              ← OTA: descarga en segundo plano y se aplica sola (overlay «un momentín», frases en constants/updatePhrases.ts)
 ```
 
 ### Uso en componentes
@@ -242,7 +229,7 @@ Edita `/profileConfig/data/*` en Firebase RTDB (desde `mcmpanel` o consola). Los
 
 - Credenciales en `.env.local` (no commiteado), template en `.env.example`
 - Todas las variables con prefijo `EXPO_PUBLIC_`
-- Config en `constants/firebase.ts`, app inicializada en `hooks/firebaseApp.ts`
+- Config en `constants/firebase.ts`, app inicializada en `utils/firebaseApp.ts`
 
 ### Estructura de la base de datos
 
@@ -254,6 +241,10 @@ Firebase Realtime Database
 ├── albums
 │   ├── updatedAt: timestamp
 │   └── data: { álbumes }
+├── calendars                  → { updatedAt, data }  (URLs de los .ics)
+├── calendarEvents             ← precacheado por la Cloud Function cacheCalendarIcs
+│   ├── meta: { updatedAt, checkedAt, hash, calendarIds }
+│   └── data: { <calendarId>: { events: PortableEvent[] } }
 └── jubileo
     ├── horario    → { updatedAt, data }
     ├── materiales → { updatedAt, data }  (contenido BBCode)
@@ -267,25 +258,50 @@ Firebase Realtime Database
 
 ### Patrón de datos
 
-Todo usa `useFirebaseData<T>(path, cacheKey, transform?)`:
+Todo usa `useFirebaseData<T>(path, cacheKey, transform?)`. Con el nodo ya
+parseado en la caché en memoria, el primer render ya trae los datos (sin
+parpadeo de «Cargando…») y devuelve además `refresh()` para el pull-to-refresh:
 
 1. Carga desde AsyncStorage (caché local)
 2. Muestra datos cacheados inmediatamente
 3. Consulta Firebase por `updatedAt`
 4. Si cambió, descarga `data` y actualiza caché
-5. Único punto de escritura: `ReflexionesScreen` (reflexiones)
+5. Escrituras: las de UI pasan por `services/firebaseWrites.ts`
+   (`pushWithRetry`/`setWithRetry`, con reintento) — feedback, reportes de
+   fallos, sugerencias de canción, evaluaciones, encuestas, reflexiones y
+   ediciones del cantoral. Coro, playlists compartidas y push tienen sus
+   propios servicios dedicados (`choirSessionService.ts`,
+   `cloudPlaylistService.ts`, `pushNotificationService.ts`)
 
 ## Colores de marca
+
+`brand` es una paleta **cromática** (los colores del logo), no semántica: el
+estado vive en `ToastColors` y `SwipeColors`. Si un token de marca se llama
+como un estado, se acaba usando por su nombre y pintando lo que no es — pasó
+con `success`/`warning`/`danger` y hay un test que ya no lo permite
+(`__tests__/designTokens.test.ts`).
 
 ```typescript
 primary: '#253883'; // Azul oscuro (fondo principal)
 secondary: '#95d2f2'; // Azul claro
-accent: '#E15C62'; // Rojo MIC
+accent: '#E15C62'; // Rojo MIC — acento institucional
 info: '#31AADF'; // Celeste
-success: '#A3BD31'; // Verde COM
-warning: '#FCD200'; // Amarillo COM
-danger: '#9D1E74'; // Morado LC
+green: '#A3BD31'; // Verde COM
+yellow: '#FCD200'; // Amarillo COM
+purple: '#9D1E74'; // Morado LC
 ```
+
+Roles por modo en `Colors.light`/`Colors.dark`, resueltos con
+`themeColors(isDark)`: `text`, `textSecondary`, `textMuted`, `link`,
+`background`, `backgroundSunken`, `card`, `separator`, `icon`. **No hay un
+nivel por encima de `text`**: `textStrong` existió y se borró (2026-09-09)
+porque era más claro que el cuerpo en los dos modos; los títulos se
+distinguen por tamaño y peso, como en iOS.
+Además: `SystemGray` (paleta cruda de Apple), `LiturgicalColors`,
+`HighlightColors`, `CarismoColors`, `StateColors`.
+
+**Las reglas de uso están en `design.md`** (raíz del monorepo); el inventario
+completo, en `docs/desarrollo/DESIGN.md`.
 
 ## Convenciones de código
 
@@ -296,21 +312,30 @@ danger: '#9D1E74'; // Morado LC
 - **Nombres**: PascalCase componentes, camelCase hooks/utils, kebab-case archivos de assets
 - **Importaciones**: usar `@/` siempre, no rutas relativas largas
 - **Plataforma**: usar `Platform.OS` para diferencias, archivos `.ios.tsx` para componentes iOS-only
-- **Tamaño de archivo (anti-gigantes)**: ningún archivo **nuevo** debe superar las **400 líneas** (ESLint avisa con `max-lines`). Si una pantalla supera las **600 líneas**, extraer subcomponentes a `components/<área>/` y la lógica a un hook `use<Pantalla>.ts` **ANTES** de añadir la feature. No engordar un archivo ya grande: el saneamiento de los gigantes está en `docs/planes/PLAN_CALIDAD.md` (Fase 1).
+- **Tamaño de archivo**: el techo son **1.000 líneas** (ESLint avisa con `max-lines`); a partir de **1.500** hay que trocear de verdad — extraer subcomponentes a `components/<área>/` y la lógica a un hook `use<Pantalla>.ts` **ANTES** de añadir la feature. Umbrales subidos desde 400/600 el 2026-08-08: con agentes de IA leyendo el código, un archivo largo pero coherente cuesta menos que la misma lógica repartida en seis ficheros que hay que reconstruir mentalmente. Los gigantes que ya hay **se quedan**: no hace falta trocearlos por tamaño.
+- **Tests con DOM real (jsdom):** se llaman `*.dom.test.ts` y corren en el proyecto `dom` de `jest.config.js`, sin React Native (el setup de RN redefine `window` y revienta en jsdom). El resto va en el proyecto `native`.
 - **Logging**: nunca `console.*` (ESLint lo bloquea como error). Usar el logger central `@/utils/logger` (`logger.debug/info/warn/error`).
+- **Una regla que se puede romper sin enterarse va en un test, no en un documento.** Este código lo edita siempre una IA, y una IA puede no leer un párrafo — pero no puede ignorar un test en rojo. El modelo es `__tests__/tabsLayoutWebSafety.test.ts`: no comprueba una función, comprueba que **nadie vuelva a importar** el módulo nativo de tabs en el grafo de web (el fallo real solo se veía al desplegar). Cuando algo se rompa por no saber una regla, el arreglo correcto no es ampliar este archivo: es un test-guardarraíl que falle solo. Razonamiento completo en `docs/planes/PLAN_CALIDAD.md` §0.
 
 ## Patrones comunes
 
 ### Añadir nuevo tab
 
-1. Crear archivo en `app/(tabs)/nuevoTab.tsx` — **imprescindible**: sin la ruta,
-   meter el ID en `TABS_CONFIG`/`tabs` no muestra nada (le pasaba a `comunica`)
+1. Crear la CARPETA `app/(tabs)/nuevoTab/` con un `_layout.tsx` que monte un
+   `<Stack>` y un `index.tsx` — **imprescindible**: sin la ruta, meter el ID en
+   `TABS_CONFIG`/`tabs` no muestra nada (le pasaba a `comunica`), y sin pila no
+   hay cabecera nativa ni `Stack.Toolbar` (lo comprueba
+   `__tests__/router/tabsHaveOwnStack.test.ts`). Inicio es el caso especial: su id
+   es `index` pero vive en el grupo `(inicio)/`; `routeNameForTab`
+   (`utils/tabRoutes.ts`) traduce el id al nombre de ruta
 2. Añadir objeto a `TABS_CONFIG` en `constants/tabsCatalog.ts`, en la posición
-   que deba ocupar en la barra (ese array define el orden)
+   que deba ocupar en la barra (ese array define el orden), y generar su icono
+   PNG (`npm run icons:tabs`) registrándolo en `constants/tabIcons.ts`
 3. Añadir el ID a `KNOWN_TABS` en `constants/profileCatalog.ts`
 4. Añadir el ID a `profiles.*.tabs` en `firebase-seed/profileConfig.json` y en `/profileConfig` en Firebase
 5. Definir color en `TabHeaderColors` si aplica (en `constants/colors.ts`)
-6. Usar `TabScreenWrapper` en el componente del tab
+6. Usar `TabScreenWrapper` en el componente del tab y enganchar su scroller con
+   `useTabScroll` / `useTabListScroll` (la barra flota: sin eso tapa el final)
 7. Documentar en CHANGELOG.md
 
 ### Añadir pantalla nueva
@@ -322,11 +347,12 @@ danger: '#9D1E74'; // Morado LC
 ### Fetch de datos Firebase
 
 ```typescript
-const { data, loading, offline } = useFirebaseData<TipoData>(
+const { data, loading, offline, hidden, refresh } = useFirebaseData<TipoData>(
   'ruta/firebase',
   'clave-cache',
   funcionTransformOptional,
 );
+// `refresh()` revalida por `updatedAt` (pull-to-refresh); nunca rechaza.
 ```
 
 ## Documentación de cambios
@@ -355,24 +381,26 @@ Documentar NO:
 
 ## Archivos clave (referencia rápida)
 
-| Qué necesitas             | Archivo                                                  |
-| ------------------------- | -------------------------------------------------------- |
-| Entry point               | `app/_layout.tsx`                                        |
-| Configuración de tabs     | `app/(tabs)/_layout.tsx`                                 |
-| Home screen               | `app/(tabs)/index.tsx`                                   |
-| Fallback de perfiles      | `constants/defaultProfileConfig.ts`                      |
-| Catálogo de IDs conocidos | `constants/profileCatalog.ts`                            |
-| Resolver de perfil        | `utils/resolveProfileConfig.ts`                          |
-| Seed JSON de Firebase     | `firebase-seed/profileConfig.json`                       |
-| Colores                   | `constants/colors.ts`                                    |
-| Firebase config           | `constants/firebase.ts`                                  |
-| Firebase app singleton    | `utils/firebaseApp.ts`                                   |
-| Fetch de datos            | `hooks/useFirebaseData.ts`                               |
-| Procesador de canciones   | `hooks/useSongProcessor.ts`                              |
-| Parser de calendario      | `hooks/useCalendarEvents.ts`                             |
-| BBCode → HTML             | `utils/formatText.ts`                                    |
-| Notificaciones            | `notifications/` + `services/pushNotificationService.ts` |
-| Env vars template         | `.env.example`                                           |
+| Qué necesitas             | Archivo                                                   |
+| ------------------------- | --------------------------------------------------------- |
+| Entry point               | `app/_layout.tsx`                                         |
+| Configuración de tabs     | `app/(tabs)/_layout.tsx`                                  |
+| Home screen               | `app/(tabs)/(inicio)/index.tsx`                           |
+| Fallback de perfiles      | `constants/defaultProfileConfig.ts`                       |
+| Catálogo de IDs conocidos | `constants/profileCatalog.ts`                             |
+| Resolver de perfil        | `utils/resolveProfileConfig.ts`                           |
+| Seed JSON de Firebase     | `firebase-seed/profileConfig.json`                        |
+| Colores                   | `constants/colors.ts`                                     |
+| Firebase config           | `constants/firebase.ts`                                   |
+| Firebase app singleton    | `utils/firebaseApp.ts`                                    |
+| Fetch de datos            | `hooks/useFirebaseData.ts`                                |
+| Procesador de canciones   | `hooks/useSongProcessor.ts`                               |
+| Hoja de canción (HTML)    | `utils/songSheet*.ts` + `utils/songDocument.ts`           |
+| Parser de calendario      | `utils/icsParser.ts` (puro, compartido con las functions) |
+| Hook de calendario        | `hooks/useCalendarEvents.ts`                              |
+| BBCode → HTML             | `utils/formatText.ts`                                     |
+| Notificaciones            | `notifications/` + `services/pushNotificationService.ts`  |
+| Env vars template         | `.env.example`                                            |
 
 ## Identificadores de la app
 
@@ -380,16 +408,16 @@ Documentar NO:
 - **Android Package**: `com.mcmespana.mcmapp`
 - **Apple Team ID**: `5P53S6QB23`
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
-- **App version**: 2.0.0
-- **Runtime version**: 2.0.0
+- **App version**: 2.5.1 (la de `app.json`; 2.5.0 fue la primera build de la serie 2.5 y no lleva `react-native-audio-api`, así que no tiene el afinador)
+- **Runtime version**: 2.5.1 (SDK 58; subida a la vez que la versión al añadir `react-native-audio-api`: las builds 2.5.0 dejan de recibir OTAs nuevas)
 
 ## HeroUI Native — UI Library
 
-La app usa **heroui-native v1.0.0** (reemplaza react-native-paper desde marzo 2026). Es una biblioteca de componentes React Native construida sobre **Uniwind** (Tailwind CSS v4 para RN).
+La app usa **heroui-native v1.0.x** (ver `package.json`) (reemplaza react-native-paper desde marzo 2026). Es una biblioteca de componentes React Native construida sobre **Uniwind** (Tailwind CSS v4 para RN).
 
-> **Para cualquier tarea de UI con HeroUI Native, usa siempre el skill `heroui-native`** — tiene acceso a la documentación completa de todos los componentes.
->
-> Docs locales en `.heroui-docs/native/` (generadas con `npx heroui-cli@latest agents-md --native`)
+> Para consultar la API de un componente de HeroUI Native, usa el servidor MCP
+> `heroui-native` (ver «MCP Server» más abajo). No hay docs locales versionadas
+> ni skill instalado en el repo.
 
 ### Configuración básica
 
@@ -402,14 +430,8 @@ La app usa **heroui-native v1.0.0** (reemplaza react-native-paper desde marzo 20
 </GestureHandlerRootView>
 ```
 
-**global.css** (Tailwind v4 entry point):
-
-```css
-@import 'tailwindcss';
-@import 'uniwind';
-@import 'heroui-native/styles';
-@source './node_modules/heroui-native/lib';
-```
+**global.css** (Tailwind v4 entry point): importa `tailwindcss`, `uniwind` y
+`heroui-native/styles`, y declara los `@theme` de la app. Ver el fichero.
 
 **metro.config.js** extendido con `withUniwindConfig`.
 
@@ -476,8 +498,9 @@ toast.show({
 **Accordion** (custom en esta app — ver ProfundizaScreen.tsx):
 
 ```tsx
-// Usamos accordion custom con TouchableOpacity + useState en vez de HeroUI Accordion
-// para mayor control sobre el estilo de los items con color dinámico
+// Usamos un accordion propio (`AccordionSection`): PressableFeedback + useState
+// en vez del Accordion de HeroUI, para controlar el estilo de los items con
+// color dinámico
 ```
 
 **Avatar** (reemplaza Avatar.Text de Paper):
@@ -543,20 +566,14 @@ Configurado en `.mcp.json`:
 
 Para activar en Claude Code: `claude mcp add heroui-native -- npx -y @heroui/native-mcp@latest`
 
-### Actualizar documentación local
-
-```bash
-# Desde mcm-app/
-npx heroui-cli@latest agents-md --native --output AGENTS.md
-```
-
 ## Notas importantes
 
 - `ReportBugsModal.tsx` es usado por `SongControls.tsx` — NO eliminar (las variantes *Fixed, *New, \*Simple ya fueron eliminadas)
 - `ErrorBoundary.tsx` envuelve toda la app en `_layout.tsx`
-- Splash screen: HelloWave con 3 repeticiones (900ms total)
+- Splash screen: el splash nativo lo retiene y lo suelta `utils/splashGate.ts` (`holdSplash` a nivel de módulo en `app/_layout.tsx`, `releaseSplash` cuando hay algo que pintar; temporizador de seguridad de 3 s para no colgar la app). `HelloWave` (🌐, 600 ms) solo sale en el primer arranque de la vida de la app
 - Sistema de Perfiles: reemplaza al viejo `featureFlags.ts`. Ver `types/profileConfig.ts` + `utils/resolveProfileConfig.ts`
 - Sistema de notificaciones push: ver `docs/funcionalidades/NOTIFICACIONES.md` en la raíz del monorepo
 - **Wordle:** `app/screens/WordleScreen.tsx` y `app/wordle.tsx` no tienen uso activo, pero **se conservan a propósito** como código de referencia para recuperar el Wordle algún día. NO eliminar, NO refactorizar, NO añadirle funcionalidades hasta que se decida reactivarlo.
 - **Haptics:** `utils/haptics.ts` centraliza todo el feedback háptico. Usar las funciones semánticas de `h` (h.tap, h.add, h.remove, h.select, h.toggle, h.formSuccess…) en lugar de llamar a expo-haptics directamente.
+- **Etiquetas del cantoral:** directiva custom `{tags: a, b, c}` + catálogo opcional en `songs/tags`. Modelo puro en `utils/songTags.ts`, índice en `hooks/useSongTags.ts`, UI en `components/song-tags/` y categoría virtual `__TAG__:<slug>` en `SongListScreen`. El botón del header **solo aparece si hay canciones etiquetadas**. Ver `docs/funcionalidades/ETIQUETAS.md` (raíz del monorepo).
 - **Arreglos del cantoral:** directiva custom `{arr: texto}` para anotaciones de arreglo (render sutil alineado a la derecha, toggle ON-por-canción). Lógica en `utils/arrangements.ts`; ver `docs/funcionalidades/ARREGLOS.md` (raíz del monorepo) para sintaxis, comportamiento y el prompt del generador de ChordPro.

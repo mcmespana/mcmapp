@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { MaterialIcons } from '@/components/ui/icons';
+import { useNavigation } from 'expo-router/react-navigation';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { shadows } from '@/constants/uiStyles';
 import GlassSurface from './GlassSurface';
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2,
-    ...(shadows.sm as ViewStyle),
+    ...(shadows.card as ViewStyle),
   },
   btn: {
     flex: 1,

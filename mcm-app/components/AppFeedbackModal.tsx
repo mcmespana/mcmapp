@@ -8,8 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { getDatabase, push, ref, set } from 'firebase/database';
+import { MaterialIcons } from '@/components/ui/icons';
 
 import BottomSheet from './BottomSheet';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
@@ -19,9 +18,10 @@ import { Colors, FeedbackCategoryColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import { getFirebaseApp } from '@/utils/firebaseApp';
+import { pushWithRetry } from '@/services/firebaseWrites';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
 
 // Apple system color used inside the modal — not part of the MCM brand
 // palette, but matches iOS native conventions for "destructive text".
@@ -103,11 +103,7 @@ export default function AppFeedbackModal({
     setIsSubmitting(true);
 
     try {
-      const db = getDatabase(getFirebaseApp());
-      const feedbackRef = ref(db, `app/feedback/${selectedCategory}`);
-      const newFeedbackRef = push(feedbackRef);
-
-      await set(newFeedbackRef, {
+      await pushWithRetry(`app/feedback/${selectedCategory}`, {
         text: feedbackText.trim(),
         timestamp: Date.now(),
         platform: Platform.OS,
@@ -164,7 +160,7 @@ export default function AppFeedbackModal({
     <BottomSheet
       visible={visible}
       onClose={handleClose}
-      title="Feedback 💬"
+      title="Feedback"
       headerLeft={headerLeft}
       paddingHorizontal={0}
     >
@@ -290,12 +286,12 @@ export default function AppFeedbackModal({
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 48,
   },
   subtitle: {
-    fontSize: 14,
+    ...typography.subhead,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -310,7 +306,7 @@ const styles = StyleSheet.create({
   },
   categoryBtnText: {
     flex: 1,
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   categoryArrow: {
@@ -326,7 +322,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   selectedCategoryText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   textArea: {
@@ -334,7 +330,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   charCount: {
-    fontSize: 11,
+    ...typography.micro,
     textAlign: 'right',
     marginTop: 6,
     marginBottom: 16,
@@ -347,7 +343,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: APPLE_SYSTEM_RED,
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
   },
 });

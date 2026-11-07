@@ -6,6 +6,27 @@ export const WARM_LIGHT = {
   bgDeep: '#F2EAD9',
   bgCard: '#FFFFFF',
   accent: '#C4922A',
+  /**
+   * El mismo dorado, oscurecido hasta que se puede LEER (2026-09-09).
+   *
+   * `accent` está pensado para rellenos: fondos de pastilla, bordes, el punto
+   * del calendario, la barra del teaser. Como color de texto no llega: da
+   * 2,60:1 sobre el fondo cálido de la sección, por debajo del 4,5:1 mínimo e
+   * incluso del 3:1 de los elementos no textuales — y aun así pintaba el
+   * kicker "EVANGELIO DEL DÍA", la cita, el CTA, el día de hoy del calendario
+   * y la cita de `ReadingCard`. Es el mismo fallo que el azul de marca en
+   * oscuro (§H4 de PLAN_DISENO): un color de marca vale como relleno y no como
+   * primer plano.
+   *
+   * `#876208` conserva tono (43°) y saturación y solo baja luminosidad, así
+   * que sigue siendo el dorado de Contigo: 5,16:1 sobre `bg`, 5,55:1 sobre
+   * `bgCard` y 4,64:1 sobre `bgDeep`. En oscuro no hacía falta tocar nada
+   * (`#DAA520` ya da 7,98:1), así que allí `accentText` es el propio `accent`
+   * y el par se usa igual en los dos modos.
+   *
+   * Hay un trinquete en `__tests__/designTokens.test.ts` que lo comprueba.
+   */
+  accentText: '#876208',
   accentLight: 'rgba(196,146,42,0.10)',
   accentMid: 'rgba(196,146,42,0.22)',
   blue: '#2563EB',
@@ -17,9 +38,22 @@ export const WARM_LIGHT = {
   fire: '#EA580C',
   text: '#1C1610',
   textSec: '#7A6550',
+  /**
+   * DECORATIVO: placeholders, iconos inactivos y chevrones. NO vale para texto
+   * que haya que leer: da 2,33:1 sobre `bg` y 2,10:1 sobre `bgDeep`. Subirlo no
+   * lo arregla (para llegar a 4,5:1 sobre `bgDeep` hay que bajar a ~`#7A644D`,
+   * que es justo `textSec` y se perdería el escalón), así que el texto pequeño
+   * —etiquetas, leyendas, fechas, subtítulos— usa `textSec` (5,13:1).
+   */
   textMuted: '#B5A08A',
   border: 'rgba(196,146,42,0.13)',
   shadow: 'rgba(100,70,20,0.08)',
+  /**
+   * Fondo de pantalla de las tres hermanas (inicio, guardados, examen): de `bg`
+   * al beige profundo. Estaba escrito a mano en cada pantalla, y la del examen
+   * había derivado a `#FBF7F1` de inicio.
+   */
+  bgGradient: ['#FAF6F0', '#F0E8D8'] as const,
 } as const;
 
 export const WARM_DARK = {
@@ -27,6 +61,8 @@ export const WARM_DARK = {
   bgDeep: '#100F0C',
   bgCard: '#26221C',
   accent: '#DAA520',
+  /** En oscuro el acento ya se lee (7,98:1): mismo color. Ver `WARM_LIGHT`. */
+  accentText: '#DAA520',
   accentLight: 'rgba(218,165,32,0.12)',
   accentMid: 'rgba(218,165,32,0.25)',
   blue: '#60A5FA',
@@ -38,9 +74,11 @@ export const WARM_DARK = {
   fire: '#FB923C',
   text: '#F5EFE3',
   textSec: '#A09A8A',
+  /** Decorativo, igual que en `WARM_LIGHT`: 3,02:1 sobre `bg`. No para texto. */
   textMuted: '#6B6358',
   border: 'rgba(218,165,32,0.12)',
   shadow: 'rgba(0,0,0,0.25)',
+  bgGradient: ['#1A1712', '#100F0C'] as const,
 } as const;
 
 export type WarmTheme = {
@@ -48,6 +86,8 @@ export type WarmTheme = {
   bgDeep: string;
   bgCard: string;
   accent: string;
+  /** El acento cuando pinta TEXTO o iconos. Ver el docblock de `WARM_LIGHT`. */
+  accentText: string;
   accentLight: string;
   accentMid: string;
   blue: string;
@@ -62,6 +102,8 @@ export type WarmTheme = {
   textMuted: string;
   border: string;
   shadow: string;
+  /** Fondo en degradado de las pantallas de Contigo. */
+  bgGradient: readonly [string, string];
 };
 
 export const warm = (isDark: boolean): WarmTheme =>
@@ -154,21 +196,20 @@ export function formatDateLong(ds: string): string {
   return `${DAYS_ES[dt.getDay()]}, ${d} de ${MONTHS_ES[m - 1]}`;
 }
 
-export function getWeekDates(todayStr: string): string[] {
-  const [y, m, d] = todayStr.split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
-  const dow = (dt.getDay() + 6) % 7; // Mon = 0
-  const monday = new Date(dt);
-  monday.setDate(dt.getDate() - dow);
-  return Array.from({ length: 7 }, (_, i) => {
-    const dd = new Date(monday);
-    dd.setDate(monday.getDate() + i);
-    return [
-      dd.getFullYear(),
-      String(dd.getMonth() + 1).padStart(2, '0'),
-      String(dd.getDate()).padStart(2, '0'),
-    ].join('-');
-  });
+/**
+ * Últimos `n` días TERMINANDO en `todayStr` (hoy siempre el último).
+ * No se reinicia cada lunes: la racha se lee
+ * como una ventana móvil, que es lo que de verdad refleja el hábito.
+ */
+export function getRollingDays(todayStr: string, n = 7): string[] {
+  return Array.from({ length: n }, (_, i) => offsetDate(todayStr, i - (n - 1)));
+}
+
+/** Inicial del día de la semana (L M X J V S D) de una fecha 'YYYY-MM-DD'. */
+export function weekdayLetter(ds: string): string {
+  const [y, m, d] = ds.split('-').map(Number);
+  const dow = new Date(y, m - 1, d).getDay(); // 0 = domingo
+  return WEEKDAYS[(dow + 6) % 7];
 }
 
 export function buildCalendar(ds: string) {

@@ -26,8 +26,16 @@
  * - `wordle`                  → ruta raíz, no está bajo `(tabs)`.
  * - `(tabs)/notifications`    → el centro de notificaciones es ruta raíz
  *                                `/notifications`, no una tab.
+ * - `(tabs)/index` / `index`  → Inicio. Su pantalla vive en el grupo
+ *                                `(tabs)/(inicio)/` (pila propia), así que ya no
+ *                                existe una ruta `/(tabs)/index`: la URL de
+ *                                Inicio es `/`. El panel sigue mandando
+ *                                `/(tabs)/index` (contrato).
  */
 const ROUTE_ALIASES: Record<string, string> = {
+  '/(tabs)/index': '/',
+  '/index': '/',
+  '/(tabs)': '/',
   '/(tabs)/notifications': '/notifications',
   '/(tabs)/actividades': '/(tabs)/mas',
   '/(tabs)/jubileo': '/(tabs)/mas',

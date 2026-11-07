@@ -1,0 +1,1076 @@
+// services/comunica/client.ts
+//
+// La interfaz `ComunicaApi` (lo que la app puede pedir) y el cliente real, que
+// habla por HTTP con `mcm-comunica-api`. El servidor falso (`fake/`) implementa
+// la MISMA interfaz: las pantallas no saben con cuál hablan, y ninguna importa
+// ni uno ni otro directamente — pasan por `getComunicaApi()` (`index.ts`).
+//
+// Todo lo que llega se valida con los esquemas de `contract.ts`. Una respuesta
+// con forma rota es un error tipado (`bad_response`), no un `undefined` que
+// revienta tres pantallas más allá.
+
+import { z } from 'zod';
+import {
+  DELEGATION_HEADER,
+  delegationForRequest,
+  isTeamPath,
+} from './delegation';
+import {
+  type AppAccountRequest,
+  EventsResponse,
+  EventRollWriteResult,
+  EventRollWrite,
+  EventRoll,
+  type CodeRequest,
+  type DeviceRegistration,
+  NoContent,
+  CoordinationHome,
+  CoordinationSummary,
+  FollowUpsResponse,
+  type FollowUpWrite,
+  FollowUpWriteResult,
+  MeetingsResponse,
+  type MeetingWrite,
+  MeetingWriteResult,
+  MonitorDetail,
+  MonitorsRoll,
+  type MonitorsRollKind,
+  type MonitorsRollWrite,
+  MonitorsRollWriteResult,
+  type SessionTodayWrite,
+  SessionTodayResult,
+  type Stage,
+  type ExchangeRequest,
+  WebPass,
+  type WebPassRequest,
+  CodeResponse,
+  ErrorBody,
+  type ErrorCode,
+  GroupDetail,
+  GroupsResponse,
+  HealthNote,
+  type MembershipGroupWrite,
+  type NoticeWrite,
+  NoticeWriteResult,
+  ParticipantProfile,
+  PeopleIndex,
+  PersonalData,
+  type ScarfWrite,
+  WriteResult,
+  MeResponse,
+  MyProfiles,
+  ActivityList,
+  CalendarData,
+  DocumentResponse,
+  DocumentsResponse,
+  SessionResponse,
+  CardAttempt,
+  type CardAttemptCheck,
+  type CardAttemptCreate,
+  type CardAttemptResult,
+  CardAttemptStatus,
+  CardCheckout,
+  PaymentDetail,
+  PaymentsList,
+  AdvancedFormResult,
+  RegistrationDetail,
+  RegistrationsList,
+  type RegistrationCancel,
+  type RegistrationEdit,
+  SignupForm,
+  type SignupWrite,
+  SignupResult,
+  DetailsWriteResult,
+  EventDetail,
+  type HealthWrite,
+  PersonDetails,
+  type PersonDetailsWrite,
+  type PhotoFields,
+  PhotoWriteResult,
+  ProfileHealth,
+  RollDetail,
+  type RollWrite,
+  RollWriteResult,
+  RefreshResponse,
+  TodayResponse,
+  type VerifyRequest,
+  VerifyResponse,
+  type DocumentUploadFields,
+  MonitorProfile,
+  type MonitorProfileWrite,
+} from './contract';
+import { logger } from '@/utils/logger';
+
+export interface ReadOptions {
+  /** El `?fresh=1` del pull-to-refresh: el servidor no tira de su caché. */
+  fresh?: boolean;
+}
+
+export interface ComunicaApi {
+  // Acceso (plan 02). Sin sesión.
+  requestCode(body: CodeRequest): Promise<CodeResponse>;
+  verify(body: VerifyRequest): Promise<VerifyResponse>;
+  refresh(refreshToken: string): Promise<RefreshResponse>;
+  logout(refreshToken: string): Promise<void>;
+  /** El pase de Firebase de la cuenta de la app (Google o Apple) por una sesión (`identidad-app`). */
+  appAccount(body: AppAccountRequest): Promise<VerifyResponse>;
+  /** Un enlace del plugin (`acceso_magico` o `token`) por una sesión (plan 10). */
+  exchange(body: ExchangeRequest): Promise<VerifyResponse>;
+  /** Pase de 2 minutos para abrir una página del plugin con la sesión (plan 10). */
+  webPass(body: WebPassRequest): Promise<WebPass>;
+
+  getMe(): Promise<MeResponse>;
+  /** Familias (plan 11): quien ha entrado y sus hijos. Con `fresh`, se mira otra vez quiénes son los míos. */
+  getMyProfiles(opts?: ReadOptions): Promise<MyProfiles>;
+  /** Familias (plan 16): los documentos del perfil. NUNCA se guardan en el móvil. */
+  getProfileDocuments(pid: string): Promise<DocumentsResponse>;
+  getProfileDocument(pid: string, id: string): Promise<DocumentResponse>;
+  /** Subir un documento: directo y con conexión (sin cola); el archivo, hasta 4 MB. `clientId` en memoria para reintentar sin duplicar. */
+  createProfileDocument(
+    pid: string,
+    fields: { clientId: string; name: string; description?: string },
+    file: UploadFile,
+  ): Promise<WriteResult>;
+  /** Editar: solo lo que cambia; un archivo nuevo es una revisión nueva. */
+  updateProfileDocument(
+    pid: string,
+    id: string,
+    fields: { clientId: string; name?: string; description?: string },
+    file?: UploadFile,
+  ): Promise<WriteResult>;
+  /** Borrado lógico. Solo por `DELETE` con el token en la cabecera: nunca por `GET` ni por un enlace. */
+  deleteProfileDocument(
+    pid: string,
+    id: string,
+    clientId: string,
+  ): Promise<WriteResult>;
+  /** El archivo de un documento, como lo entiende una descarga: con la sesión puesta. Ninguna pantalla construye URLs. */
+  documentFileSource(pid: string, id: string): PhotoSource;
+  /** El calendario del perfil (se guarda en el móvil). */
+  getProfileCalendar(pid: string, opts?: ReadOptions): Promise<CalendarData>;
+  getProfileSession(
+    pid: string,
+    id: string,
+    opts?: ReadOptions,
+  ): Promise<SessionResponse>;
+  /** Familias (plan 15): los pagos del perfil. Nunca se guardan en el móvil. */
+  getProfilePayments(pid: string): Promise<PaymentsList>;
+  getProfilePayment(pid: string, id: string): Promise<PaymentDetail>;
+  /** Si se puede pagar con tarjeta y qué se pagaría. SOLO lee: no crea ningún intento. */
+  getCardCheckout(
+    pid: string,
+    source: { payment: string } | { registration: string },
+  ): Promise<CardCheckout>;
+  /** Crea un intento de pago con tarjeta: la URL de la pasarela (de un solo uso) y la de vuelta. Con el servidor falso, `simulated`. */
+  createCardAttempt(
+    pid: string,
+    body: CardAttemptCreate,
+  ): Promise<CardAttemptResult>;
+  /** Pregunta cómo va un intento. El estado lo decide SIEMPRE el servidor, con el cobro del CRM. */
+  checkCardAttempt(
+    pid: string,
+    id: string,
+    body: CardAttemptCheck,
+  ): Promise<CardAttemptStatus>;
+  /** Familias (plan 14): las inscripciones del perfil (todas; la app las ordena). */
+  getProfileRegistrations(
+    pid: string,
+    opts?: ReadOptions,
+  ): Promise<RegistrationsList>;
+  /** La ficha de una inscripción (con teléfonos de tutores e importes: nunca se guarda). */
+  getProfileRegistration(pid: string, rid: string): Promise<RegistrationDetail>;
+  /** Lo que hace falta para el alta corta, y por qué no se puede (si no). Sin caché: el guard de duplicados se mira al abrir. */
+  getSignupForm(pid: string, eventId: string): Promise<SignupForm>;
+  /** Apuntarse. DIRECTO y con conexión (nunca por la cola: lleva el IBAN). `clientId` en memoria para reintentar sin duplicar. */
+  signUp(pid: string, body: SignupWrite): Promise<SignupResult>;
+  updateRegistration(
+    pid: string,
+    rid: string,
+    body: RegistrationEdit,
+  ): Promise<WriteResult>;
+  cancelRegistration(
+    pid: string,
+    rid: string,
+    body: RegistrationCancel,
+  ): Promise<WriteResult>;
+  /** La URL del formulario avanzado del CRM con los datos de `pid` ya puestos. Lleva datos personales: ni se guarda ni se registra. */
+  getAdvancedFormUrl(pid: string, eventId: string): Promise<AdvancedFormResult>;
+  /** Familias (plan 13): los eventos de un perfil (a qué apuntarse y a qué ya está apuntado). */
+  getProfileActivities(pid: string, opts?: ReadOptions): Promise<ActivityList>;
+  /** La ficha de un evento de ese perfil, por id. Se sirve aunque no sea para él (con el motivo). */
+  getProfileEvent(
+    pid: string,
+    eventId: string,
+    opts?: ReadOptions,
+  ): Promise<EventDetail>;
+  /** Lo mismo por el slug o el id de la página pública (`/actividades/?e=`). */
+  getProfileEventBySlug(
+    pid: string,
+    slug: string,
+    opts?: ReadOptions,
+  ): Promise<EventDetail>;
+  /** Un archivo del evento (cartel, galería, PDF) como lo entiende `expo-image` o una descarga: con la sesión puesta. */
+  eventFileSource(
+    pid: string,
+    eventId: string,
+    documentId: string,
+  ): PhotoSource;
+  /** Familias (plan 12): los datos de quien se ve. Nunca se guardan en el móvil. */
+  getProfileDetails(pid: string): Promise<PersonDetails>;
+  /** Directo y con conexión (sin cola: son datos personales). Responde con lo releído. */
+  updateProfileDetails(
+    pid: string,
+    body: PersonDetailsWrite,
+  ): Promise<DetailsWriteResult>;
+  /** La salud de quien se ve. Nunca se guarda en el móvil. */
+  getProfileHealth(pid: string): Promise<ProfileHealth>;
+  updateProfileHealth(pid: string, body: HealthWrite): Promise<WriteResult>;
+  /**
+   * Familias (plan 12): la foto de quien se ve. Directa, con conexión y sin cola; el archivo, un JPEG o PNG ya recortado de hasta 4 MB.
+   * Con el mismo `clientId` se reintenta sin duplicar. Responde con la `photoUrl` nueva (versionada).
+   */
+  uploadProfilePhoto(
+    pid: string,
+    fields: PhotoFields,
+    file: UploadFile,
+  ): Promise<PhotoWriteResult>;
+  getGroups(opts?: ReadOptions): Promise<GroupsResponse>;
+  getToday(opts?: ReadOptions): Promise<TodayResponse>;
+  getRoll(
+    sessionId: string,
+    groupId: string,
+    opts?: ReadOptions,
+  ): Promise<RollDetail>;
+  saveRoll(
+    sessionId: string,
+    groupId: string,
+    body: RollWrite,
+  ): Promise<RollWriteResult>;
+  getHealth(personId: string): Promise<HealthNote>;
+
+  // Grupos y fichas (plan 05).
+  getPeople(opts?: ReadOptions): Promise<PeopleIndex>;
+  getGroupDetail(groupId: string, opts?: ReadOptions): Promise<GroupDetail>;
+  getPerson(personId: string, opts?: ReadOptions): Promise<ParticipantProfile>;
+  /** Nunca se guarda: solo con conexión. */
+  getPersonal(personId: string): Promise<PersonalData>;
+  createNotice(personId: string, body: NoticeWrite): Promise<NoticeWriteResult>;
+  setScarf(personId: string, body: ScarfWrite): Promise<WriteResult>;
+  assignGroup(
+    membershipId: string,
+    body: MembershipGroupWrite,
+  ): Promise<WriteResult>;
+
+  // Coordinación (plan 06).
+  getCoordination(opts?: ReadOptions): Promise<CoordinationHome>;
+  getCoordinationSummary(opts?: ReadOptions): Promise<CoordinationSummary>;
+  getMonitorsRoll(
+    params: MonitorsRollParams,
+    opts?: ReadOptions,
+  ): Promise<MonitorsRoll>;
+  saveMonitorsRoll(
+    sessionId: string,
+    body: MonitorsRollWrite,
+  ): Promise<MonitorsRollWriteResult>;
+  getMeetings(opts?: ReadOptions): Promise<MeetingsResponse>;
+  createMeeting(body: MeetingWrite): Promise<MeetingWriteResult>;
+  getMonitor(monitorId: string, opts?: ReadOptions): Promise<MonitorDetail>;
+  /** Nunca se guarda: lo que una persona escribió sobre otra. */
+  getFollowUps(monitorId: string): Promise<FollowUpsResponse>;
+  createFollowUp(
+    monitorId: string,
+    body: FollowUpWrite,
+  ): Promise<FollowUpWriteResult>;
+  createSessionToday(
+    eventId: string,
+    body: SessionTodayWrite,
+  ): Promise<SessionTodayResult>;
+
+  // Pasar lista en un evento (plan 07).
+  getEvents(opts?: ReadOptions): Promise<EventsResponse>;
+  getEventRoll(eventId: string, opts?: ReadOptions): Promise<EventRoll>;
+  saveEventRoll(
+    eventId: string,
+    body: EventRollWrite,
+  ): Promise<EventRollWriteResult>;
+  // Avisos en el móvil (plan 08).
+  registerDevice(body: DeviceRegistration): Promise<WriteResult>;
+  /** Al salir: se borra este móvil (solo el tuyo). */
+  unregisterDevice(deviceId: string): Promise<void>;
+  // Mis datos de monitor (plan 09).
+  getMyMonitorProfile(opts?: ReadOptions): Promise<MonitorProfile>;
+  updateMyMonitorProfile(body: MonitorProfileWrite): Promise<WriteResult>;
+  /**
+   * Subir un título o certificado (multipart). Va DIRECTO, con conexión: el
+   * archivo nunca se guarda en la cola del móvil.
+   */
+  uploadMyDocument(
+    fields: DocumentUploadFields,
+    file: UploadFile,
+  ): Promise<WriteResult>;
+  /**
+   * Cómo pedir una foto (`photoUrl`): con el servidor de verdad, la URL con el
+   * token; con el falso, su imagen inventada. Ninguna pantalla importa el falso.
+   */
+  photoSource(url: string): PhotoSource;
+}
+
+/** Qué lista de monitores: la semanal (de una etapa) o la de una reunión. */
+export interface MonitorsRollParams {
+  kind: MonitorsRollKind;
+  stage?: Stage;
+  session?: string;
+}
+
+/**
+ * Un archivo elegido en el móvil para subir: la ruta local (nativo) o el
+ * `Blob` del navegador (web). No es del contrato: es cómo viaja el `file`.
+ */
+export interface UploadFile {
+  uri: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  /** En web, el `File` que da el selector. */
+  blob?: Blob;
+}
+
+/** Lo que entiende `expo-image` como `source`. */
+export interface PhotoSource {
+  uri: string;
+  headers?: Record<string, string>;
+  /** La URL lleva la versión (`?v=`): sirve de clave de caché. */
+  cacheKey?: string;
+}
+
+/** Lo que puede fallar: los códigos del contrato, más los de la app. */
+/**
+ * `queued` no es un fallo: el servidor ha apuntado la escritura en su cola y la
+ * sube él solo al CRM (202). La cola del móvil pregunta luego mandando lo mismo.
+ */
+export type ApiErrorCode = ErrorCode | 'network' | 'bad_response' | 'queued';
+
+/** Le dice al servidor que esta app entiende el 202 «encolada». */
+export const QUEUE_HEADER = 'X-Comunica-Queue';
+
+export class ComunicaApiError extends Error {
+  readonly code: ApiErrorCode;
+  readonly status: number;
+  readonly reason?: string;
+  /** Con `rate_limited`: segundos que hay que esperar. */
+  readonly retryAfter?: number;
+
+  constructor(
+    code: ApiErrorCode,
+    message: string,
+    status = 0,
+    reason?: string,
+    retryAfter?: number,
+  ) {
+    super(message);
+    this.name = 'ComunicaApiError';
+    this.code = code;
+    this.status = status;
+    this.reason = reason;
+    this.retryAfter = retryAfter;
+  }
+
+  /** Vale la pena reintentar: el CRM o la red, no la petición. */
+  get retryable(): boolean {
+    return this.code === 'crm_unavailable' || this.code === 'network';
+  }
+}
+
+export const isComunicaApiError = (e: unknown): e is ComunicaApiError =>
+  e instanceof ComunicaApiError;
+
+/**
+ * Sin cuerpo de error del contrato, el código sale del estado HTTP. Un 400 es
+ * la petición (no se arregla insistiendo); lo que no esté aquí (500, 502…) se
+ * toma por CRM caído y se reintenta.
+ */
+const STATUS_CODE: Record<number, ErrorCode> = {
+  400: 'validation',
+  401: 'unauthenticated',
+  403: 'forbidden',
+  404: 'not_found',
+  409: 'conflict',
+  422: 'validation',
+  429: 'rate_limited',
+  503: 'crm_unavailable',
+};
+
+/**
+ * Cuántas veces se reintenta AL MOMENTO una lectura que falla por un corte de
+ * red (un parpadeo del móvil). Un 503 o un 5xx del servidor NO se reintenta
+ * aquí: lo hace la caché de consultas con espera (1 s, 2 s; `useAreaQuery`).
+ * Reintentarlo aquí también multiplicaba por dos las peticiones de cada
+ * pantalla mientras el servidor estaba caído (caída del 6/11/2026).
+ */
+const READ_RETRIES = 1;
+
+/**
+ * Lo que se espera a una respuesta antes de darla por perdida. Sin plazo, una
+ * petición colgada (cobertura que va y viene, servidor atascado) dejaba la
+ * pantalla en el esqueleto para siempre y, si era una escritura, paraba la
+ * cola entera hasta reiniciar la app. Una escritura cortada así se repite con
+ * el mismo `clientId`: el servidor la reconoce y no la duplica.
+ */
+export const READ_TIMEOUT_MS = 20_000;
+export const WRITE_TIMEOUT_MS = 30_000;
+/** Subir una foto o un documento por datos móviles puede tardar. */
+export const UPLOAD_TIMEOUT_MS = 90_000;
+
+/**
+ * Avisos a Sentry de que el SERVIDOR falla (5xx) o no contesta a tiempo: sin
+ * esto, una caída era invisible desde la app (6/11/2026). Uno por tipo cada
+ * `REPORT_EVERY_MS` en cada móvil, con la ruta sin ids: ni nombres ni personas.
+ */
+export const REPORT_EVERY_MS = 10 * 60_000;
+const lastReport = new Map<string, number>();
+const CRM_ID =
+  /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+/** `/v1/people/<id>/photo?v=1` → `/v1/people/:id/photo`. */
+export const routeOf = (path: string) =>
+  path.split('?')[0]!.replace(CRM_ID, '/:id');
+function reportTrouble(
+  kind: 'server' | 'timeout',
+  method: string,
+  path: string,
+  status: number,
+  reason?: string,
+) {
+  const t = Date.now();
+  if ((lastReport.get(kind) ?? -Infinity) > t - REPORT_EVERY_MS) return;
+  lastReport.set(kind, t);
+  logger.warn(
+    `[comunica] ${kind === 'server' ? 'el servidor falla' : 'el servidor no contesta a tiempo'}`,
+    method,
+    routeOf(path),
+    status,
+    reason ?? '',
+  );
+}
+/** Para los tests: olvida los avisos ya dados. */
+export const resetTroubleReports = () => lastReport.clear();
+
+export interface HttpClientOptions {
+  baseUrl: string;
+  /** El token de acceso de la sesión (lo pone el plan 02). */
+  getToken?: () => string | null | Promise<string | null>;
+  fetchImpl?: typeof fetch;
+}
+
+export function createHttpClient({
+  baseUrl,
+  getToken,
+  fetchImpl,
+}: HttpClientOptions): ComunicaApi {
+  const doFetch =
+    fetchImpl ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
+  const root = baseUrl.replace(/\/+$/, '');
+
+  async function request<S extends z.ZodType>(
+    method: 'GET' | 'PUT' | 'POST' | 'PATCH' | 'DELETE',
+    path: string,
+    schema: S,
+    body?: unknown,
+    retries = 0,
+  ): Promise<z.infer<S>> {
+    const token = getToken ? await getToken() : null;
+    // La delegación de trabajo (plan 17), solo en lo de equipo.
+    const delegation = isTeamPath(path)
+      ? delegationForRequest(method !== 'GET')
+      : null;
+    // Un archivo va en multipart: el `Content-Type` (con su frontera) lo pone
+    // `fetch`, y el cuerpo no se pasa a JSON.
+    const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+    const timeoutMs = isForm
+      ? UPLOAD_TIMEOUT_MS
+      : method === 'GET'
+        ? READ_TIMEOUT_MS
+        : WRITE_TIMEOUT_MS;
+    // El plazo cubre la respuesta Y el cuerpo (un cuerpo que no acaba también
+    // cuelga la pantalla).
+    const abort =
+      typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = abort ? setTimeout(() => abort.abort(), timeoutMs) : null;
+    // En Node (los tests) que el plazo no retenga el proceso; en el móvil no
+    // existe y no hace falta.
+    (timer as { unref?: () => void } | null)?.unref?.();
+    const tooSlow = () =>
+      new ComunicaApiError(
+        'network',
+        'Comunica tarda demasiado en contestar',
+        0,
+        'timeout',
+      );
+    let res: Response;
+    try {
+      res = await doFetch(`${root}${path}`, {
+        method,
+        ...(abort ? { signal: abort.signal } : {}),
+        headers: {
+          Accept: 'application/json',
+          ...(body !== undefined && !isForm
+            ? { 'Content-Type': 'application/json' }
+            : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(delegation ? { [DELEGATION_HEADER]: delegation } : {}),
+          // Las escrituras pueden quedarse en la cola del servidor (202).
+          ...(method !== 'GET' ? { [QUEUE_HEADER]: '1' } : {}),
+        },
+        body:
+          body === undefined
+            ? undefined
+            : isForm
+              ? (body as FormData)
+              : JSON.stringify(body),
+      });
+    } catch {
+      if (timer) clearTimeout(timer);
+      // Tras esperar el plazo entero no se repite al momento: otro plazo
+      // entero de espera no ayuda a nadie (ya reintentará la caché, con pausa).
+      if (abort?.signal.aborted) {
+        reportTrouble('timeout', method, path, 0);
+        throw tooSlow();
+      }
+      if (retries > 0) return request(method, path, schema, body, retries - 1);
+      throw new ComunicaApiError('network', 'Sin conexión con el servidor');
+    }
+
+    let json: unknown = null;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+    if (abort?.signal.aborted) {
+      reportTrouble('timeout', method, path, res.status);
+      throw tooSlow();
+    }
+
+    if (!res.ok) {
+      const parsed = ErrorBody.safeParse(json);
+      const code = parsed.success
+        ? parsed.data.error.code
+        : (STATUS_CODE[res.status] ?? 'crm_unavailable');
+      const err = new ComunicaApiError(
+        code,
+        parsed.success ? parsed.data.error.message : `HTTP ${res.status}`,
+        res.status,
+        parsed.success ? parsed.data.error.reason : undefined,
+        parsed.success ? parsed.data.error.retryAfter : undefined,
+      );
+      if (res.status >= 500) {
+        reportTrouble('server', method, path, res.status, err.reason);
+      }
+      if (code === 'forbidden') {
+        // Un 403 que la app no esperaba suele ser un fallo de alcance: ids,
+        // nunca nombres (`01-cimientos.md` §6).
+        logger.warn('[comunica] 403', method, path);
+      }
+      throw err;
+    }
+
+    // 202 «queued»: el servidor ya la tiene y la sube él. No hay resultado
+    // todavía; la cola del móvil volverá a preguntar con el mismo `clientId`.
+    if (
+      res.status === 202 &&
+      method !== 'GET' &&
+      (json as { status?: unknown } | null)?.status === 'queued'
+    ) {
+      throw new ComunicaApiError(
+        'queued',
+        'Recibida. Se está guardando en Comunica.',
+        202,
+      );
+    }
+
+    const parsed = schema.safeParse(json);
+    if (!parsed.success) {
+      logger.error(
+        '[comunica] respuesta con forma rota',
+        method,
+        path,
+        parsed.error.issues.slice(0, 3),
+      );
+      throw new ComunicaApiError(
+        'bad_response',
+        'Respuesta inesperada del servidor',
+        res.status,
+      );
+    }
+    return parsed.data;
+  }
+
+  const q = (opts?: ReadOptions) => (opts?.fresh ? '?fresh=1' : '');
+  const isOwnUrl = (url: string) => url.startsWith(`${root}/`);
+  const enc = encodeURIComponent;
+
+  return {
+    requestCode: (body) => request('POST', '/v1/auth/code', CodeResponse, body),
+    verify: (body) => request('POST', '/v1/auth/verify', VerifyResponse, body),
+    refresh: (refreshToken) =>
+      request('POST', '/v1/auth/refresh', RefreshResponse, { refreshToken }),
+    logout: async (refreshToken) => {
+      await request('POST', '/v1/auth/logout', z.unknown(), { refreshToken });
+    },
+    appAccount: (body) =>
+      request('POST', '/v1/auth/app-account', VerifyResponse, body),
+    exchange: (body) =>
+      request('POST', '/v1/auth/exchange', VerifyResponse, body),
+    // El pase nunca se registra: es una llave de 2 minutos.
+    webPass: (body) => request('POST', '/v1/web-pass', WebPass, body),
+    getMe: () => request('GET', '/v1/me', MeResponse, undefined, READ_RETRIES),
+    getGroups: (opts) =>
+      request(
+        'GET',
+        `/v1/groups${q(opts)}`,
+        GroupsResponse,
+        undefined,
+        READ_RETRIES,
+      ),
+    getToday: (opts) =>
+      request(
+        'GET',
+        `/v1/today${q(opts)}`,
+        TodayResponse,
+        undefined,
+        READ_RETRIES,
+      ),
+    getRoll: (sid, gid, opts) =>
+      request(
+        'GET',
+        `/v1/sessions/${enc(sid)}/groups/${enc(gid)}/roll${q(opts)}`,
+        RollDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    // Las escrituras no se reintentan aquí: las reintenta la cola (plan 01),
+    // con el mismo `clientId`.
+    saveRoll: (sid, gid, body) =>
+      request(
+        'PUT',
+        `/v1/sessions/${enc(sid)}/groups/${enc(gid)}/roll`,
+        RollWriteResult,
+        body,
+      ),
+    // La salud no se reintenta ni se registra: o llega, o «sin conexión».
+    getHealth: (id) =>
+      request('GET', `/v1/people/${enc(id)}/health`, HealthNote),
+    getPeople: (opts) =>
+      request(
+        'GET',
+        `/v1/people${q(opts)}`,
+        PeopleIndex,
+        undefined,
+        READ_RETRIES,
+      ),
+    getGroupDetail: (gid, opts) =>
+      request(
+        'GET',
+        `/v1/groups/${enc(gid)}${q(opts)}`,
+        GroupDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    getPerson: (id, opts) =>
+      request(
+        'GET',
+        `/v1/people/${enc(id)}${q(opts)}`,
+        ParticipantProfile,
+        undefined,
+        READ_RETRIES,
+      ),
+    getPersonal: (id) =>
+      request('GET', `/v1/people/${enc(id)}/personal`, PersonalData),
+    createNotice: (id, body) =>
+      request('POST', `/v1/people/${enc(id)}/notices`, NoticeWriteResult, body),
+    setScarf: (id, body) =>
+      request('PUT', `/v1/people/${enc(id)}/scarf`, WriteResult, body),
+    assignGroup: (mid, body) =>
+      request('PUT', `/v1/memberships/${enc(mid)}/group`, WriteResult, body),
+    getCoordination: (opts) =>
+      request(
+        'GET',
+        `/v1/coordination${q(opts)}`,
+        CoordinationHome,
+        undefined,
+        READ_RETRIES,
+      ),
+    getCoordinationSummary: (opts) =>
+      request(
+        'GET',
+        `/v1/coordination/summary${q(opts)}`,
+        CoordinationSummary,
+        undefined,
+        READ_RETRIES,
+      ),
+    getMonitorsRoll: (params, opts) => {
+      const query = [
+        `kind=${enc(params.kind)}`,
+        params.stage ? `stage=${enc(params.stage)}` : '',
+        params.session ? `session=${enc(params.session)}` : '',
+        opts?.fresh ? 'fresh=1' : '',
+      ]
+        .filter(Boolean)
+        .join('&');
+      return request(
+        'GET',
+        `/v1/coordination/monitors-roll?${query}`,
+        MonitorsRoll,
+        undefined,
+        READ_RETRIES,
+      );
+    },
+    saveMonitorsRoll: (sid, body) =>
+      request(
+        'PUT',
+        `/v1/sessions/${enc(sid)}/monitors-roll`,
+        MonitorsRollWriteResult,
+        body,
+      ),
+    getMeetings: (opts) =>
+      request(
+        'GET',
+        `/v1/coordination/meetings${q(opts)}`,
+        MeetingsResponse,
+        undefined,
+        READ_RETRIES,
+      ),
+    createMeeting: (body) =>
+      request('POST', '/v1/meetings', MeetingWriteResult, body),
+    getMonitor: (id, opts) =>
+      request(
+        'GET',
+        `/v1/monitors/${enc(id)}${q(opts)}`,
+        MonitorDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    // Como la salud: no se reintenta ni se guarda; o llega, o «sin conexión».
+    getFollowUps: (id) =>
+      request('GET', `/v1/monitors/${enc(id)}/follow-ups`, FollowUpsResponse),
+    createFollowUp: (id, body) =>
+      request(
+        'POST',
+        `/v1/monitors/${enc(id)}/follow-ups`,
+        FollowUpWriteResult,
+        body,
+      ),
+    createSessionToday: (eventId, body) =>
+      request(
+        'POST',
+        `/v1/events/${enc(eventId)}/sessions/today`,
+        SessionTodayResult,
+        body,
+      ),
+    getEvents: (opts) =>
+      request(
+        'GET',
+        `/v1/events${q(opts)}`,
+        EventsResponse,
+        undefined,
+        READ_RETRIES,
+      ),
+    getEventRoll: (id, opts) =>
+      request(
+        'GET',
+        `/v1/events/${enc(id)}/roll${q(opts)}`,
+        EventRoll,
+        undefined,
+        READ_RETRIES,
+      ),
+    saveEventRoll: (id, body) =>
+      request('PUT', `/v1/events/${enc(id)}/roll`, EventRollWriteResult, body),
+    // Por la cola (el alta) o directa con tope (el borrado, al salir).
+    registerDevice: (body) => request('POST', '/v1/devices', WriteResult, body),
+    unregisterDevice: async (deviceId) => {
+      await request('DELETE', `/v1/devices/${enc(deviceId)}`, NoContent);
+    },
+    getMyProfiles: (opts) =>
+      request(
+        'GET',
+        `/v1/me/profiles${q(opts)}`,
+        MyProfiles,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileDocuments: (pid) =>
+      request('GET', `/v1/profiles/${enc(pid)}/documents`, DocumentsResponse),
+    getProfileDocument: (pid, id) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/documents/${enc(id)}`,
+        DocumentResponse,
+      ),
+    createProfileDocument: (pid, fields, file) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/documents`,
+        WriteResult,
+        documentForm(fields, file),
+      ),
+    updateProfileDocument: (pid, id, fields, file) =>
+      request(
+        'PATCH',
+        `/v1/profiles/${enc(pid)}/documents/${enc(id)}`,
+        WriteResult,
+        documentForm(fields, file),
+      ),
+    deleteProfileDocument: (pid, id, clientId) =>
+      request(
+        'DELETE',
+        `/v1/profiles/${enc(pid)}/documents/${enc(id)}?clientId=${enc(clientId)}`,
+        WriteResult,
+      ),
+    documentFileSource: (pid, id) => {
+      const uri = `${root}/v1/profiles/${enc(pid)}/documents/${enc(id)}/file`;
+      const token = getToken?.();
+      return typeof token === 'string'
+        ? {
+            uri,
+            headers: { Authorization: `Bearer ${token}` },
+            cacheKey: `doc-${id}`,
+          }
+        : { uri, cacheKey: `doc-${id}` };
+    },
+    getProfileCalendar: (pid, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/calendar${q(opts)}`,
+        CalendarData,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileSession: (pid, id, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/sessions/${enc(id)}${q(opts)}`,
+        SessionResponse,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfilePayments: (pid) =>
+      request('GET', `/v1/profiles/${enc(pid)}/payments`, PaymentsList),
+    getProfilePayment: (pid, id) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/payments/${enc(id)}`,
+        PaymentDetail,
+      ),
+    getCardCheckout: (pid, source) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/card-checkout?${
+          'payment' in source
+            ? `payment=${enc(source.payment)}`
+            : `registration=${enc(source.registration)}`
+        }`,
+        CardCheckout,
+      ),
+    // El servidor de verdad NUNCA devuelve `simulated`: si llega, es un fallo (`bad_response`), no una pasarela de mentira.
+    createCardAttempt: (pid, body) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/card-attempts`,
+        CardAttempt,
+        body,
+      ) as Promise<CardAttemptResult>,
+    checkCardAttempt: (pid, id, body) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/card-attempts/${enc(id)}/check`,
+        CardAttemptStatus,
+        body,
+      ),
+    getProfileRegistrations: (pid, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/registrations${q(opts)}`,
+        RegistrationsList,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileRegistration: (pid, rid) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/registrations/${enc(rid)}`,
+        RegistrationDetail,
+      ),
+    getSignupForm: (pid, eventId) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events/${enc(eventId)}/signup`,
+        SignupForm,
+      ),
+    signUp: (pid, body) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/registrations`,
+        SignupResult,
+        body,
+      ),
+    updateRegistration: (pid, rid, body) =>
+      request(
+        'PATCH',
+        `/v1/profiles/${enc(pid)}/registrations/${enc(rid)}`,
+        WriteResult,
+        body,
+      ),
+    cancelRegistration: (pid, rid, body) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/registrations/${enc(rid)}/cancel`,
+        WriteResult,
+        body,
+      ),
+    getAdvancedFormUrl: (pid, eventId) =>
+      request(
+        'POST',
+        `/v1/profiles/${enc(pid)}/events/${enc(eventId)}/advanced-form`,
+        AdvancedFormResult,
+        {},
+      ),
+    getProfileActivities: (pid, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events${q(opts)}`,
+        ActivityList,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileEvent: (pid, id, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events/${enc(id)}${q(opts)}`,
+        EventDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    getProfileEventBySlug: (pid, slug, opts) =>
+      request(
+        'GET',
+        `/v1/profiles/${enc(pid)}/events/by-slug/${enc(slug)}${q(opts)}`,
+        EventDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    eventFileSource: (pid, eventId, documentId) => {
+      const uri = `${root}/v1/profiles/${enc(pid)}/events/${enc(eventId)}/documents/${enc(documentId)}`;
+      const token = getToken?.();
+      return typeof token === 'string'
+        ? {
+            uri,
+            headers: { Authorization: `Bearer ${token}` },
+            cacheKey: documentId,
+          }
+        : { uri, cacheKey: documentId };
+    },
+    getProfileDetails: (pid) =>
+      request('GET', `/v1/profiles/${enc(pid)}/details`, PersonDetails),
+    updateProfileDetails: (pid, body) =>
+      request(
+        'PATCH',
+        `/v1/profiles/${enc(pid)}/details`,
+        DetailsWriteResult,
+        body,
+      ),
+    getProfileHealth: (pid) =>
+      request('GET', `/v1/profiles/${enc(pid)}/health`, ProfileHealth),
+    updateProfileHealth: (pid, body) =>
+      request('PUT', `/v1/profiles/${enc(pid)}/health`, WriteResult, body),
+    uploadProfilePhoto: (pid, fields, file) =>
+      request(
+        'PUT',
+        `/v1/profiles/${enc(pid)}/photo`,
+        PhotoWriteResult,
+        documentForm({ clientId: fields.clientId }, file),
+      ),
+    getMyMonitorProfile: (opts) =>
+      request(
+        'GET',
+        `/v1/me/monitor${q(opts)}`,
+        MonitorProfile,
+        undefined,
+        READ_RETRIES,
+      ),
+    updateMyMonitorProfile: (body) =>
+      request('PATCH', '/v1/me/monitor', WriteResult, body),
+    uploadMyDocument: (fields, file) =>
+      request(
+        'POST',
+        '/v1/me/documents',
+        WriteResult,
+        uploadForm(fields, file),
+      ),
+    photoSource: (url) => {
+      // `expo-image` pide la foto él solo: el token va en la cabecera, y SOLO
+      // si la foto es de nuestro servidor (una `photoUrl` de otro dominio no se
+      // lleva la sesión). Si aún no hay token de acceso, sin cabecera (dará 401
+      // y saldrán las iniciales).
+      const own = isOwnUrl(url);
+      const token = own ? getToken?.() : null;
+      if (typeof token !== 'string') return { uri: url, cacheKey: url };
+      // La foto de alguien del equipo (`/v1/people/:id/photo`) va con la
+      // delegación de trabajo, como su ficha: sin ella, el servidor mira la de
+      // TU ficha y quien trabaja con otra delegación veía 403 (6/11/2026).
+      const path = url.slice(root.length).split('?')[0]!;
+      const delegation = isTeamPath(path) ? delegationForRequest(false) : null;
+      return {
+        uri: url,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(delegation ? { [DELEGATION_HEADER]: delegation } : {}),
+        },
+        cacheKey: url,
+      };
+    },
+  };
+}
+
+/** El multipart de crear o editar un documento de un perfil: los campos que hay y, si lo hay, `file`. */
+export function documentForm(
+  fields: Record<string, string | undefined>,
+  file?: UploadFile,
+): FormData {
+  const form = new FormData();
+  for (const [k, v] of Object.entries(fields))
+    if (v !== undefined) form.append(k, v);
+  if (file) {
+    if (file.blob) {
+      form.append('file', file.blob, file.name);
+    } else {
+      form.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType,
+      } as unknown as Blob);
+    }
+  }
+  return form;
+}
+
+/** El multipart de `POST /v1/me/documents`: `clientId`, `kind` y `file`. */
+export function uploadForm(
+  fields: DocumentUploadFields,
+  file: UploadFile,
+): FormData {
+  const form = new FormData();
+  form.append('clientId', fields.clientId);
+  form.append('kind', fields.kind);
+  if (file.blob) {
+    form.append('file', file.blob, file.name);
+  } else {
+    // React Native sube el archivo desde su ruta con esta forma.
+    form.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.mimeType,
+    } as unknown as Blob);
+  }
+  return form;
+}

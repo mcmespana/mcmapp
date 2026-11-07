@@ -51,15 +51,31 @@ GoogleService-Info.plist
 
 
 # prebuilds (CNG/Prebuild generated folders)
+# OJO: SOLO con barra inicial. Sin ella, `ios/` y `android/` casan con
+# CUALQUIER carpeta con ese nombre a cualquier profundidad, y se tragaron el
+# código nativo de `modules/highlight-menu/{ios,android}` — el módulo llegó a
+# EAS sin fuentes y la build reventó. Con `/android` y `/ios` basta: las
+# carpetas de prebuild solo existen en la raíz de `mcm-app/`.
 /android
 /ios
-ios/
-android/
 
 # builds
 *.apk
 *.aab
 /builds/
 /android/app/build/
+
+# Salidas de Gradle/CMake de los módulos locales (`modules/*`). Se colaron 120
+# ficheros de `highlight-menu/android/build/` en un commit (2026-11-05). Reglas
+# ESTRECHAS a propósito: ignorar `android/` o `ios/` enteros se tragaría las
+# fuentes nativas del módulo (ver el aviso de arriba). Lo vigila
+# `__tests__/modulesBuildArtifacts.test.ts`.
+/modules/*/android/build/
+/modules/*/android/.gradle/
+/modules/*/android/.cxx/
+/modules/*/ios/build/
 # heroui-agents-md
 .heroui-docs/
+
+# Cobertura de tests (npm run test:coverage)
+coverage/

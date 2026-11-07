@@ -7,17 +7,31 @@ import React, {
   useState,
 } from 'react';
 import {
-  Animated,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
+import { radii } from '@/constants/uiStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { MaterialIcons } from '@/components/ui/icons';
+import { h } from '@/utils/haptics';
+import {
+  durations,
+  motionEasings,
+  reaEasings,
+  springs,
+} from '@/constants/animations';
 
 type ToastVariant = 'default' | 'success' | 'danger' | 'warning';
 
@@ -97,25 +111,22 @@ const VARIANT_STYLES: Record<ToastVariant, VariantStyle> = {
   },
 };
 
+/** `h` ya ignora web y se traga los fallos del módulo nativo. */
 function triggerHaptic(variant: ToastVariant) {
-  if (Platform.OS === 'web') return;
-  try {
-    switch (variant) {
-      case 'success':
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        break;
-      case 'danger':
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        break;
-      case 'warning':
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        break;
-      default:
-        Haptics.selectionAsync();
-        break;
-    }
-  } catch {
-    // Haptics unavailable on this device — silently ignore.
+  switch (variant) {
+    case 'success':
+      h.success();
+      break;
+    case 'danger':
+      h.error();
+      break;
+    case 'warning':
+      // `limit` es la notificación Warning de iOS (y Reject en Android).
+      h.limit();
+      break;
+    default:
+      h.select();
+      break;
   }
 }
 
@@ -127,53 +138,41 @@ function ToastItem({
   onHide: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(28)).current;
-  const scale = useRef(new Animated.Value(0.96)).current;
+  // Con "reducir movimiento" el toast solo aparece y desaparece: el fundido
+  // explica igual de bien que ha pasado algo, y es la traslación lo que marea.
+  const reducedMotion = useReducedMotion();
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(reducedMotion ? 0 : 28);
+  const scale = useSharedValue(reducedMotion ? 1 : 0.96);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hide = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
+    // Salida: se va de pantalla, así que aquí sí vale acelerar.
+    const exit = { duration: durations.base, easing: reaEasings.exit };
+    if (!reducedMotion) {
+      translateY.set(withTiming(20, exit));
+      scale.set(withTiming(0.97, exit));
+    }
+    opacity.set(
+      withTiming(0, exit, () => {
+        'worklet';
+        scheduleOnRN(onHide);
       }),
-      Animated.timing(translateY, {
-        toValue: 20,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 0.97,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(onHide);
-  }, [opacity, translateY, scale, onHide]);
+    );
+  }, [opacity, translateY, scale, onHide, reducedMotion]);
 
   useEffect(() => {
     triggerHaptic(t.variant ?? 'default');
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-      Animated.spring(translateY, {
-        toValue: 0,
-        tension: 110,
-        friction: 11,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scale, {
-        toValue: 1,
-        tension: 130,
-        friction: 12,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Un aviso funcional entra sin rebote: el `bouncy` es para celebrar
+    // (design.md §6). Antes eran muelles a mano con ζ≈0,5.
+    opacity.set(
+      withTiming(1, { duration: durations.base, easing: motionEasings.out }),
+    );
+    if (!reducedMotion) {
+      translateY.set(withSpring(0, springs.settle));
+      scale.set(withSpring(1, springs.settle));
+    }
 
     const duration = t.duration ?? (t.actionLabel ? 5200 : 3400);
     timerRef.current = setTimeout(hide, duration);
@@ -183,6 +182,11 @@ function ToastItem({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const toastStyle = useAnimatedStyle(() => ({
+    opacity: opacity.get(),
+    transform: [{ translateY: translateY.get() }, { scale: scale.get() }],
+  }));
 
   const v = VARIANT_STYLES[t.variant ?? 'default'];
   // El overlay del toast se pinta por ENCIMA de todo (zIndex alto) anclado a
@@ -205,11 +209,7 @@ function ToastItem({
 
   return (
     <Animated.View
-      style={[
-        styles.toastShadow,
-        { marginBottom: bottomOffset },
-        { opacity, transform: [{ translateY }, { scale }] },
-      ]}
+      style={[styles.toastShadow, { marginBottom: bottomOffset }, toastStyle]}
     >
       <View style={styles.toastClip}>
         {useBlur ? (
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   iconBadge: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radii.pillFull,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,

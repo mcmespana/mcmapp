@@ -5,18 +5,67 @@ on:
   push:
     branches: [preview]
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Saltar el guard de cambios nativos (usar con cuidado)'
+        type: boolean
+        default: false
 
 concurrency:
   group: ota-preview
   cancel-in-progress: false
 
 jobs:
+  # Ver comentario extenso en ota-production.yml — misma lógica, canal preview.
+  guard-native:
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.force != 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Comprobar cambios en rutas nativas
+        id: check
+        run: |
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            BEFORE="$(git rev-parse "$AFTER"^)"
+          fi
+          NATIVE_CHANGES=$(git diff --name-only "$BEFORE" "$AFTER" -- \
+            mcm-app/package.json mcm-app/package-lock.json mcm-app/app.json \
+            mcm-app/app.config.ts mcm-app/eas.json \
+            mcm-app/patches/ mcm-app/plugins/ mcm-app/modules/ mcm-app/targets/)
+          if [ -n "$NATIVE_CHANGES" ]; then
+            if git log --format=%B "$BEFORE".."$AFTER" | grep -q '\[skip-ota\]'; then
+              echo "Cambios en rutas nativas + [skip-ota] presente en el push → se salta la OTA."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "::error::Cambios en rutas nativas SIN [skip-ota] en ningún commit del push:"
+              echo "$NATIVE_CHANGES"
+              exit 1
+            fi
+          fi
+
+  verify:
+    uses: ./.github/workflows/verify.yml
+
   publish-preview:
-    # Salta si el mensaje del commit contiene [skip-ota] (p.ej. cuando se añaden paquetes nativos)
-    # En workflow_dispatch siempre corre (el usuario lo lanzó explícitamente)
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      !contains(github.event.head_commit.message, '[skip-ota]')
+    needs: [guard-native, verify]
+    # Con `force`, guard-native se SALTA, y un job cuyo `needs` se ha saltado
+    # se salta también salvo que su `if` lleve una función de estado. Sin el
+    # `!cancelled()` de aquí, `force` no publicaba nunca (2026-09-29: el run
+    # salía en verde con este job en "skipped"). Publica si el guard se saltó
+    # a propósito o si pasó sin pedir skip; nunca si falló.
+    if: >-
+      ${{ !cancelled() && needs.verify.result == 'success' &&
+      (needs.guard-native.result == 'skipped' ||
+      (needs.guard-native.result == 'success' &&
+      needs.guard-native.outputs.skip != 'true')) }}
     runs-on: ubuntu-latest
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }} # yamllint disable-line
@@ -34,6 +83,20 @@ jobs:
       # secretos: van embebidos en la app igualmente).
       EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: 333436090762-mimunbdpp07nv2hr8mvc2u52ncgrlsr3.apps.googleusercontent.com
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: 333436090762-tl5ltg6f1ad7lrqtbs3jq3ae2uu3v0sr.apps.googleusercontent.com
+      # Sentry: por lo mismo. El DSN se hornea en el bundle, así que si falta
+      # aquí la primera OTA APAGA el crash reporting de la build de tienda sin
+      # avisar. El DSN no es un secreto (va dentro de la app igualmente), pero
+      # se guarda como secret de GitHub para no publicarlo en el repo.
+      EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
+      # Aptabase: idéntico razonamiento — si falta aquí, la primera OTA apaga
+      # la analítica en toda la base instalada.
+      EXPO_PUBLIC_APTABASE_KEY: ${{ secrets.EXPO_PUBLIC_APTABASE_KEY }}
+      # Área privada nativa de Comunica: el middleware de verdad (comunicaMiddleware).
+      # La MISMA URL que eas.json (preview y production) y ota-production.yml: una
+      # OTA sin ella apagaría el área en las builds que la llevan. Quién la ve lo
+      # decide el Laboratorio Alpha y `global.comunicaNativa` (utils/comunica/router.ts).
+      # Con datos inventados: el perfil `production-comunica-falso`.
+      EXPO_PUBLIC_COMUNICA_API: https://comunica-middleware.vercel.app
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -43,7 +106,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: mcm-app/package-lock.json
 

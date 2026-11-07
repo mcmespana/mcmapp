@@ -58,14 +58,54 @@ export interface GlobalConfig {
   maintenanceMessage?: string;
   /** Versión semver mínima soportada. Si la app es inferior, fuerza actualización. `0.0.0` = sin bloqueo. */
   minAppVersion: string;
-  /** «Ahora no» permitidos antes de ser estricto. Ausente = sin límite. (Aún sin uso en esta rama.) */
-  minAppVersionSkips?: number;
   /**
-   * Fotos EN iPAD (solo iPad, cualquier iOS). Ausente = `true`. Con `false`
-   * desaparecen la pestaña, el botón de Home y la tarjeta de «Más». Pensado
-   * para iPads con MDM de colegios: la app no distingue MDM, se apaga en todos.
+   * Modo revisión de las tiendas. Lo escribe y lo gestiona el MCM Panel: al
+   * activarlo reescribe las `tabs` de todos los perfiles para ocultar Cantoral
+   * y Comunica mientras Apple/Google revisan una build, y guarda las originales
+   * en `appReviewBackup` para restaurarlas al apagarlo.
+   *
+   * La app NO lee este flag: el efecto le llega ya aplicado en las `tabs`. Se
+   * tipa para que el contrato esté completo y para no perderlo al serializar.
+   * Ver `docs/contratos/PANEL_PERFILES.md`.
+   */
+  appReviewMode?: boolean;
+  /**
+   * Interruptor del área privada nativa de Comunica (plan 10 §1 de
+   * `docs/planes/area-nativa/`). Ausente = `alpha`.
+   *   · `off`   → todos ven la WebView de siempre (vuelta atrás sin build).
+   *   · `alpha` → solo quien enciende el Laboratorio Alpha ve la nativa.
+   *   · `all`   → la nativa para todos (el lanzamiento).
+   */
+  comunicaNativa?: 'off' | 'alpha' | 'all';
+  /**
+   * Interruptor de TODO Carismochito: el modo (agitar el móvil), la caza y la
+   * colección. Ausente = `alpha`. Ver `utils/carismochitoGate.ts`.
+   *   · `off`   → nadie (vuelta atrás de emergencia; apaga también a los probadores).
+   *   · `alpha` → solo quien enciende el Laboratorio Alpha. Es el estado actual.
+   *   · `all`   → para todos (el lanzamiento previsto: 25 aniversario, 2027).
+   */
+  carismochito?: 'off' | 'alpha' | 'all';
+  /**
+   * Interruptor de las Fotos EN iPAD (y solo en iPad, cualquier versión de
+   * iOS). Ausente = `true`: se ven, como siempre.
+   *
+   * Existe porque los iPads gestionados por MDM (los de los colegios, por
+   * ejemplo) no deben mostrar fotos y la app no puede saber si un iPad está
+   * en un MDM: se apaga para TODO iPad. Con `false` desaparecen la pestaña, el
+   * botón de Home, la tarjeta de «Más» y la propia pantalla. iPhone, Android y
+   * web no se enteran.
    */
   fotosEnIpad?: boolean;
+  /**
+   * Cuántas veces puede alguien pulsar «Ahora no» en la pantalla de
+   * actualización obligatoria (`minAppVersion`) antes de que ya no pueda
+   * entrar sin actualizar. El contador es por dispositivo y se reinicia cuando
+   * cambia `minAppVersion`.
+   *   · ausente → sin límite: se puede saltar en cada sesión (lo de siempre).
+   *   · `0`     → estricto: no hay botón de saltar.
+   *   · `1`..   → ese número de veces y luego estricto.
+   */
+  minAppVersionSkips?: number;
 }
 
 /**
@@ -89,6 +129,12 @@ export interface ProfileConfigData {
   delegations: Record<string, Delegation> & { _default: Delegation };
   delegationList: DelegationListItem[];
   overrides?: Partial<Record<OverrideKey, Partial<ProfileBase>>>;
+  /**
+   * Copia de seguridad de las tabs/botones que el modo revisión sobrescribió,
+   * para poder devolverlas al apagarlo. Lo escribe y lo consume el MCM Panel;
+   * la app lo ignora. Ver `global.appReviewMode`.
+   */
+  appReviewBackup?: unknown;
 }
 
 /**
@@ -112,9 +158,13 @@ export interface ResolvedProfileConfig {
   maintenanceMode: boolean;
   maintenanceMessage?: string;
   minAppVersion: string;
-  /** `null` = sin límite de «Ahora no». */
+  /** `null` = sin límite de «Ahora no». Ver `GlobalConfig.minAppVersionSkips`. */
   minAppVersionSkips: number | null;
-  /** Las Fotos no se enseñan en este dispositivo (iPad con `fotosEnIpad: false`). */
+  /**
+   * Las Fotos no se enseñan en ESTE dispositivo (iPad con `fotosEnIpad: false`).
+   * Las tabs, botones de Home y tarjetas de «Más» ya vienen sin Fotos; este
+   * flag es para las pantallas a las que aún se llega por enlace o notificación.
+   */
   fotosHidden: boolean;
   // --- identidad resuelta ---
   profileType: ProfileType;

@@ -1,6 +1,6 @@
 # Sistema de Notificaciones Push — MCM App
 
-> Documento consolidado. Reemplaza a: `NOTIS_APP_MEJORAS.md`, `NOTIS_DEVELOP_BACKEND.md`, `NOTIS_GUIA_PRUEBAS.md`, `PANEL_NOTIFICACIONES_NEXTJS.md`
+> Documento consolidado: es la única referencia del sistema de notificaciones push.
 
 ---
 
@@ -44,9 +44,11 @@ app/_layout.tsx
 ├── notifications/NotificationHandler.ts             ← Configuración global + categorías iOS
 ├── notifications/usePushNotifications.ts            ← Lifecycle + iOS action button routing
 ├── services/pushNotificationService.ts              ← Capa de datos: Firebase + AsyncStorage
-├── hooks/useUnreadNotificationsCount.ts             ← Badge: delega a NotificationsContext
+├── contexts/NotificationsContext.tsx                ← Badge: expone `unreadCount` (no hay hook aparte)
 ├── types/notifications.ts                           ← Tipos TypeScript
-└── app/notifications.tsx                            ← Pantalla (real-time, detalle modal, mark all)
+├── app/notifications/{_layout,index,[id]}.tsx       ← Bandeja (lista) y detalle de cada notificación
+├── hooks/useNotificationsInbox.ts                   ← Estado y acciones de la bandeja (único sitio)
+└── utils/notificationsInbox.ts                      ← Lógica pura: fusionar, leídas, agrupar
 ```
 
 ### Firebase paths
@@ -66,7 +68,22 @@ Todo implementado:
 - `app/notifications.tsx` — reescrita con modal de detalle, botones marcar leída, rediseño de tarjetas
 - `notifications/usePushNotifications.ts` — routing de iOS action buttons (`actionIdentifier`)
 - `services/pushNotificationService.ts` — `markAllNotificationsAsRead()` batch, `initializeNewUserReadStatus()`
-- `hooks/useUnreadNotificationsCount.ts` — simplificado, delega a NotificationsContext
+- El contador de no leídas (`unreadCount`) lo expone `NotificationsContext` (`contexts/NotificationsContext.tsx`); no hay un hook aparte
+- `getUnreadNotificationsCount(firebaseHistory, filter?)` (`services/pushNotificationService.ts`) cuenta con el **histórico que el contexto ya tiene en memoria** por su suscripción en tiempo real: no hace otro `get()` de `/notifications`. `filter` descuenta del badge los avisos dirigidos a otra audiencia.
+
+### Bandeja rehecha (6 de noviembre de 2026)
+
+Antes eran dos implementaciones distintas (una hoja desde la campana y una pantalla desde la push), que no hacían lo mismo. Ahora hay **una sola**:
+
+- La **campana**, la tarjeta de Novedades de Inicio y **tocar una push** abren rutas de la misma bandeja: `/notifications` (lista) y `/notifications/[id]` (detalle, con la lista debajo para volver). Cabecera nativa del sistema.
+- **Nada se borra.** Se quitó «Eliminar» (decisión del propietario: hay avisos genéricos que no tienen por qué desaparecer). Leer una notificación solo la baja de «Nuevas» a «Anteriores». Las que se borraron en versiones anteriores siguen ocultas (`getDismissedNotificationKeys`).
+- Si hay algo **sin leer** se abre en «Sin leer (n)» con «Todas» al lado; si no queda nada sin leer, salen directamente todas. En «Todas», las nuevas van arriba.
+- **Marcar como leída**: abrir el detalle, **deslizar y soltar** la fila (se marca al soltar, sin pulsar nada) o el doble tick de la cabecera («Marcar todas», pide confirmar y solo aparece si hay sin leer).
+- **Marcar como leída / no leída: UN solo gesto que alterna.** Arrastrar la fila hacia la izquierda y soltar: en una sin leer muestra «Leída» y la marca; en una leída muestra «No leída» y la devuelve a «Nuevas». No hay gesto hacia la derecha, y el detalle no tiene botón de «no leída» (se marca leída al abrirla, y devolverla estando dentro no tenía sentido). Lo marcado «no leída» a mano gana a la regla de los 60 días (`getForcedUnreadIds`, `isInboxRead(…, forcedUnread)`): antes las notificaciones de más de 60 días no se podían devolver a «sin leer».
+- La cabecera de `/notifications` es pequeña y en una línea: volver a la izquierda, «Notificaciones» centrado y el doble tick a la derecha (sin título grande).
+- La fila es plana: punto de no leída, título, dos líneas de texto, hora y chip de categoría. Destinos y botones de acción (hasta 3) viven en el detalle, que además muestra `bodyLong` y el botón «Ir a <evento>» de `eventId`.
+- Lógica en `hooks/useNotificationsInbox.ts` + `utils/notificationsInbox.ts` (con `__tests__/notificationsInbox.test.ts`).
+- **Datos de prueba**: con `EXPO_PUBLIC_FIREBASE_FIXTURES=1` el historial sale de `devNotificationsFixture()` (`utils/devFirebaseFixtures.ts`): 11 avisos que cubren todos los casos (sin leer y leídas, con y sin icono, imagen, texto largo, 1-3 botones, destino interno, evento, cada categoría, título larguísimo, de más de 60 días y dos con audiencia: uno que se ve con el perfil Monitor/a y otro que no). Ver `docs/desarrollo/PRUEBAS_EN_SIMULADOR.md`.
 
 ---
 
@@ -338,6 +355,50 @@ El backend debe:
 
 ---
 
+## Avisos del área privada de Comunica (plan 08, octubre 2026)
+
+Los avisos del área nativa de Comunica (monitores) **no son del Panel** y van
+aparte de todo lo de arriba. Plan: `docs/planes/area-nativa/08-avisos-y-compartir.md`;
+contrato y requisitos del servidor: `docs/contratos/COMUNICA_API.md` («Avisos
+en el móvil»).
+
+| Aviso | Lo manda | Canal Android | Al tocarlo |
+|---|---|---|---|
+| «¿Has pasado lista?» | El servidor del área (`mcm-comunica-api`) | `comunica-listas` (HIGH) | Marcar ese grupo en esa sesión |
+| «Novedades en tu grupo» | El servidor del área | `comunica-grupos` (DEFAULT) | La ficha del grupo |
+| «Tienes N listas sin subir» | **La app** (aviso local) | `comunica-listas` | La portada del área |
+
+- **Mismo permiso y mismo token de Expo** que el resto de la app; no se pide
+  otro. El móvil se registra en **nuestro** servidor (no en `/pushTokens`)
+  desde `components/comunica/ComunicaBackground.tsx` (montado en la raíz),
+  por la cola del área, y se da de baja al salir del área.
+- `data.source === 'comunica'` → rama propia y **primera** en
+  `notifications/usePushNotifications.ts`: se valida con zod
+  (`ComunicaPushData`), **no va a la campana** ni en primer plano ni al
+  tocar (son operativos: su sitio es la portada del área), en primer plano
+  refresca las consultas del área (`services/comunica/bridge.ts`) y al
+  tocarlo el destino lo decide `utils/comunica/noticeRoutes.ts` — **nunca**
+  una ruta que venga en el aviso. Con el área nativa apagada, todo va a la
+  pestaña Comunica (la WebView). Analítica: `notificacion_abierta` con
+  `categoria: 'comunica'`, sin ids.
+- Los dos canales están en `constants/notificationChannels.ts` con
+  `source: 'comunica'` y **sin categoría**: el Panel no llega a ellos por
+  `category`. **Una vez publicados no se quitan nunca** (la limpieza del
+  arranque los borraría y Android tiraría lo que llegue): lo vigila
+  `__tests__/notificationChannels.test.ts`.
+- El aviso local (`services/comunica/localNotices.ts`, `.web.ts` vacío): al
+  irse la app a segundo plano con listas sin subir, uno a los 60 min (de
+  22:00 a 8:30 de Madrid, a las 8:30), id fijo `comunica-outbox`; se cancela
+  al volver, al vaciarse la cola y al salir.
+- Preferencias por móvil en «Tu cuenta» → «Avisos en este móvil»
+  (`app/(tabs)/comunica/yo/avisos.tsx`); la portada del área pinta
+  `NotificationPermissionBanner placement="comunica"` (descarte propio).
+- **Probar sin servidor**: Laboratorio Alpha → «Comunica nueva» → «Simular
+  aviso» programa un aviso local a los 5 s con el `data` de cada tipo (sal de
+  la app para verlo; vale en el simulador de iOS).
+
+---
+
 ## Rutas internas disponibles para deep linking
 
 ```
@@ -380,6 +441,7 @@ Notas:
 }]
 ```
 
+- **Icono de notificación de Android** (`assets/images/notification-icon.png`, 96×96) e icono monocromo del launcher (`monochrome-icon.png`): Android los pinta solo con el canal alfa, así que se generan a partir del logo con `node scripts/generate-notification-icon.js` (desde `mcm-app/`). Si cambia `adaptive-icon.png`, hay que regenerarlos.
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
 - **Canal Android**: "Notificaciones MCM" (importancia MAX)
 - **Categorías iOS**: general, eventos, fotos (con action buttons)
@@ -453,5 +515,7 @@ Notas:
   }
 }
 ```
+
+Pendiente: añadir a mano, en la consola de Firebase, `".indexOn": ["createdAt"]` en `/notifications` (no está desplegado; ver `mcm-app/TODO.md`).
 
 Nota: la escritura en `/notifications` se hace desde el backend con Firebase Admin SDK (bypasa rules).

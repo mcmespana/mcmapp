@@ -1,25 +1,37 @@
-import React, { useEffect, useRef } from 'react';
-import {
-  Animated,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useEffect } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { MaterialIcons } from '@/components/ui/icons';
+import { onColor } from '@/utils/colorUtils';
 import {
   HIGHLIGHT_COLORS,
   HIGHLIGHT_COLOR_KEYS,
   type HighlightColorKey,
+  type SelectionHighlight,
 } from '@/utils/highlightRanges';
 import { h } from '@/utils/haptics';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import { WARM_DARK, warm } from '@/components/contigo/theme';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
+import { durations, motionEasings, springs } from '@/constants/animations';
 
 interface HighlightActionBarProps {
   visible: boolean;
   /** Hay una selección activa (habilita colores y goma). */
   hasSelection: boolean;
+  /**
+   * Subrayado que la selección YA tiene, si lo tiene. Cuando llega, la barra
+   * deja de comportarse como si fuera texto nuevo: marca el color puesto y el
+   * copy pasa a hablar de cambiarlo o quitarlo.
+   */
+  selection?: SelectionHighlight | null;
   onPickColor: (color: HighlightColorKey) => void;
   onErase: () => void;
   onDone: () => void;
@@ -33,38 +45,44 @@ interface HighlightActionBarProps {
 export function HighlightActionBar({
   visible,
   hasSelection,
+  selection = null,
   onPickColor,
   onErase,
   onDone,
   isDark,
 }: HighlightActionBarProps) {
-  const insets = useSafeAreaInsets();
-  const anim = useRef(new Animated.Value(0)).current;
+  // La barra de subrayado se coloca justo encima de la de pestañas.
+  const tabBarClearance = useTabBarClearance();
+  const anim = useSharedValue(0);
+  const opacity = useSharedValue(0);
 
   useEffect(() => {
-    Animated.spring(anim, {
-      toValue: visible ? 1 : 0,
-      useNativeDriver: Platform.OS !== 'web',
-      tension: 60,
-      friction: 10,
-    }).start();
-  }, [visible, anim]);
+    // Sin rebote: es una barra de herramientas, no una celebración. El muelle
+    // anterior (stiffness 60, damping 10) tardaba ~1 s en asentarse y botaba
+    // sobre su sitio. La opacidad va aparte para no heredar el muelle.
+    anim.set(withSpring(visible ? 1 : 0, springs.settle));
+    opacity.set(
+      withTiming(visible ? 1 : 0, {
+        duration: durations.base,
+        easing: motionEasings.out,
+      }),
+    );
+  }, [visible, anim, opacity]);
 
-  const translateY = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [120, 0],
-  });
+  const barStyle = useAnimatedStyle(() => ({
+    opacity: opacity.get(),
+    transform: [{ translateY: interpolate(anim.get(), [0, 1], [120, 0]) }],
+  }));
 
   return (
     <Animated.View
       pointerEvents={visible ? 'auto' : 'none'}
       style={[
         styles.wrap,
+        barStyle,
         {
-          bottom: insets.bottom + 14,
-          opacity: anim,
-          transform: [{ translateY }],
-          backgroundColor: isDark ? '#26221C' : '#FFFFFF',
+          bottom: tabBarClearance + 8,
+          backgroundColor: isDark ? WARM_DARK.bgCard : '#FFFFFF',
           borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
           shadowColor: '#000',
         },
@@ -72,25 +90,39 @@ export function HighlightActionBar({
     >
       {hasSelection ? (
         <View style={styles.row}>
-          {HIGHLIGHT_COLOR_KEYS.map((key) => (
-            <TouchableOpacity
-              key={key}
-              onPress={() => {
-                h.add();
-                onPickColor(key);
-              }}
-              style={[
-                styles.swatch,
-                {
-                  backgroundColor: HIGHLIGHT_COLORS[key].swatch,
-                  borderColor: isDark
-                    ? 'rgba(255,255,255,0.25)'
-                    : 'rgba(0,0,0,0.10)',
-                },
-              ]}
-              accessibilityLabel={`Subrayar en color ${key}`}
-            />
-          ))}
+          {HIGHLIGHT_COLOR_KEYS.map((key) => {
+            const isCurrent = selection?.color === key;
+            return (
+              <TouchableOpacity
+                key={key}
+                onPress={() => {
+                  h.add();
+                  onPickColor(key);
+                }}
+                style={[
+                  styles.swatch,
+                  {
+                    backgroundColor: HIGHLIGHT_COLORS[key].swatch,
+                    borderColor: isDark
+                      ? 'rgba(255,255,255,0.25)'
+                      : 'rgba(0,0,0,0.10)',
+                  },
+                  // El color que ya tiene la selección se marca con un aro,
+                  // para que se vea de un vistazo cuál está puesto.
+                  isCurrent && styles.swatchCurrent,
+                  isCurrent && {
+                    borderColor: isDark ? '#FFFFFF' : '#3A3A3C',
+                  },
+                ]}
+                accessibilityLabel={
+                  isCurrent
+                    ? `Color ${key}, el que ya tiene la selección`
+                    : `Subrayar en color ${key}`
+                }
+                accessibilityState={{ selected: isCurrent }}
+              />
+            );
+          })}
           <View
             style={[
               styles.divider,
@@ -107,18 +139,22 @@ export function HighlightActionBar({
               onErase();
             }}
             style={styles.eraseBtn}
-            accessibilityLabel="Quitar subrayado de la selección"
+            accessibilityLabel={
+              selection
+                ? 'Quitar el subrayado de la selección'
+                : 'Quitar subrayado de la selección'
+            }
           >
             <MaterialIcons
               name="format-color-reset"
               size={22}
-              color={isDark ? '#A09A8A' : '#7A6550'}
+              color={warm(isDark).textSec}
             />
           </TouchableOpacity>
         </View>
       ) : (
         <Text
-          style={[styles.hint, { color: isDark ? '#A09A8A' : '#7A6550' }]}
+          style={[styles.hint, { color: warm(isDark).textSec }]}
           numberOfLines={2}
         >
           Mantén pulsado y desliza para elegir inicio y fin
@@ -130,19 +166,26 @@ export function HighlightActionBar({
           h.tap();
           onDone();
         }}
-        style={[
-          styles.doneBtn,
-          { backgroundColor: isDark ? '#DAA520' : '#C4922A' },
-        ]}
+        style={[styles.doneBtn, { backgroundColor: warm(isDark).accent }]}
         accessibilityLabel="Terminar de subrayar"
       >
-        <Text style={styles.doneText}>Listo</Text>
+        {/* El color lo decide el contraste, no el modo: sobre el dorado de
+            Contigo el blanco daba 2,24:1. Mismo arreglo que §H4/§A6-bis de
+            PLAN_DISENO. */}
+        <Text
+          style={[styles.doneText, { color: onColor(warm(isDark).accent) }]}
+        >
+          Listo
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  swatchCurrent: {
+    borderWidth: 2.5,
+  },
   wrap: {
     position: 'absolute',
     left: 16,
@@ -153,7 +196,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     borderWidth: 1,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.18,
@@ -170,7 +213,7 @@ const styles = StyleSheet.create({
   swatch: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1,
   },
   divider: {
@@ -181,24 +224,23 @@ const styles = StyleSheet.create({
   eraseBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   hint: {
     flex: 1,
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '600',
     lineHeight: 16,
   },
   doneBtn: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
   },
   doneText: {
-    color: '#FFFFFF',
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '800',
   },
 });

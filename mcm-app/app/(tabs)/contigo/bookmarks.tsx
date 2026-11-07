@@ -3,26 +3,41 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   useWindowDimensions,
-  Platform,
 } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PressableFeedback } from 'heroui-native';
+import { MaterialIcons } from '@/components/ui/icons';
+import Animated from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { warm, formatDateLong } from '@/components/contigo/theme';
+import { formatDateLong, warm } from '@/components/contigo/theme';
+import {
+  contigoHeaderChrome,
+  useContigoHeaderInset,
+} from '@/components/contigo/headerChrome';
 import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
-import { countHighlights } from '@/utils/contigoBookmarks';
+import { h } from '@/utils/haptics';
+import { confirmAsync } from '@/utils/confirmDialog';
+import {
+  countHighlights,
+  removeBookmarkWarning,
+} from '@/utils/contigoBookmarks';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function BookmarksScreen() {
+  // Subruta de Contigo: se registra con la clave del tab (gana el último
+  // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const headerInset = useContigoHeaderInset();
   const W = warm(isDark);
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 720;
@@ -42,6 +57,22 @@ export default function BookmarksScreen() {
     }, [reload]),
   );
 
+  // Quitar borra el guardado Y sus subrayados, en local y en la nube, y no hay
+  // deshacer: con subrayados de por medio se pregunta antes.
+  const handleRemove = async (date: string, nHighlights: number) => {
+    if (nHighlights > 0) {
+      const ok = await confirmAsync({
+        title: '¿Quitar de guardados?',
+        message: removeBookmarkWarning(nHighlights),
+        confirmLabel: 'Quitar',
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    h.remove();
+    await removeBookmark(date);
+  };
+
   return (
     <View style={styles.container}>
       {/* Header NATIVO: back del sistema (con gota iOS 26) + título. */}
@@ -49,25 +80,25 @@ export default function BookmarksScreen() {
         options={{
           headerShown: true,
           headerTitle: 'Guardados',
+          // El total, como texto sin botón (no es pulsable).
+          headerRight: () =>
+            bookmarks.length > 0 ? (
+              <Text
+                style={[styles.headerCount, { color: W.textSec }]}
+                accessibilityLabel={`${bookmarks.length} evangelios guardados`}
+              >
+                {bookmarks.length}
+              </Text>
+            ) : null,
           headerTransparent: true,
           headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: false,
           headerTintColor: W.text,
           headerTitleStyle: { color: W.text, fontWeight: '700', fontSize: 17 },
-          ...(Platform.OS === 'ios' &&
-          parseInt(String(Platform.Version), 10) < 26
-            ? { headerBlurEffect: 'systemChromeMaterial' as const }
-            : {}),
+          ...contigoHeaderChrome(isDark),
         }}
       />
-      <LinearGradient
-        colors={
-          isDark
-            ? (['#1A1712', '#100F0C'] as const)
-            : (['#FAF6F0', '#F0E8D8'] as const)
-        }
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient colors={W.bgGradient} style={StyleSheet.absoluteFill} />
 
       {isLoading ? (
         <View style={styles.center}>
@@ -75,28 +106,30 @@ export default function BookmarksScreen() {
         </View>
       ) : bookmarks.length === 0 ? (
         <View style={styles.center}>
-          <Text style={{ fontSize: 48 }}>🔖</Text>
-          <Text style={[styles.emptyTitle, { color: W.text }]}>
-            Sin guardados aún
-          </Text>
-          <Text style={[styles.emptyText, { color: W.textSec }]}>
-            Guarda evangelios para releerlos cuando quieras
-          </Text>
+          <EmptyState
+            icon="bookmark-border"
+            title="Sin guardados aún"
+            subtitle="Guarda evangelios para releerlos cuando quieras"
+            accentColor={W.accentText}
+            titleColor={W.text}
+            subtitleColor={W.textSec}
+          />
         </View>
       ) : (
-        <ScrollView
+        <Animated.ScrollView
+          ref={scrollRef}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           contentContainerStyle={[
             styles.listWrap,
-            { paddingTop: insets.top + 56 },
+            {
+              paddingTop: headerInset,
+              paddingBottom: contentPaddingBottom,
+            },
           ]}
           showsVerticalScrollIndicator={false}
         >
           <View style={wideWrapperStyle}>
-            <Text style={[styles.countLabel, { color: W.textSec }]}>
-              {bookmarks.length} evangelio
-              {bookmarks.length !== 1 ? 's' : ''} guardado
-              {bookmarks.length !== 1 ? 's' : ''}
-            </Text>
             {bookmarks.map((b) => {
               const ev = b.readings?.evangelio;
               const titulo =
@@ -115,30 +148,23 @@ export default function BookmarksScreen() {
                     styles.card,
                     {
                       backgroundColor: W.bgCard,
-                      borderColor: W.border,
                       shadowColor: W.shadow,
                     },
                   ]}
                 >
-                  <LinearGradient
-                    colors={['#E8A838', '#C4922A']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.cardBar}
-                  />
                   <View style={styles.cardBody}>
                     <View style={styles.cardHdrRow}>
                       <View style={{ flex: 1 }}>
                         {ev?.cita ? (
                           <Text
-                            style={[styles.cita, { color: W.accent }]}
+                            style={[styles.cita, { color: W.accentText }]}
                             numberOfLines={1}
                           >
                             {ev.cita}
                           </Text>
                         ) : null}
                         <Text
-                          style={[styles.dateText, { color: W.textMuted }]}
+                          style={[styles.dateText, { color: W.textSec }]}
                           numberOfLines={1}
                         >
                           {formatDateLong(b.date)}
@@ -148,10 +174,13 @@ export default function BookmarksScreen() {
                             <MaterialIcons
                               name="border-color"
                               size={11}
-                              color={W.accent}
+                              color={W.accentText}
                             />
                             <Text
-                              style={[styles.hlChipText, { color: W.accent }]}
+                              style={[
+                                styles.hlChipText,
+                                { color: W.accentText },
+                              ]}
                             >
                               {nHighlights} subrayado
                               {nHighlights !== 1 ? 's' : ''}
@@ -159,8 +188,10 @@ export default function BookmarksScreen() {
                           </View>
                         ) : null}
                       </View>
-                      <TouchableOpacity
-                        onPress={() => removeBookmark(b.date)}
+                      <PressableFeedback
+                        onPress={() => handleRemove(b.date, nHighlights)}
+                        // 28 de círculo + 8 por lado = 44 pt de área táctil.
+                        hitSlop={8}
                         style={[
                           styles.removeBtn,
                           {
@@ -169,14 +200,15 @@ export default function BookmarksScreen() {
                               : 'rgba(0,0,0,0.05)',
                           },
                         ]}
+                        accessibilityRole="button"
                         accessibilityLabel="Quitar de guardados"
                       >
                         <MaterialIcons
                           name="close"
                           size={14}
-                          color={W.textMuted}
+                          color={W.textSec}
                         />
-                      </TouchableOpacity>
+                      </PressableFeedback>
                     </View>
                     <Text
                       style={[styles.cardTitle, { color: W.text }]}
@@ -205,11 +237,10 @@ export default function BookmarksScreen() {
                           backgroundColor: isDark
                             ? 'rgba(218,165,32,0.10)'
                             : 'rgba(196,146,42,0.09)',
-                          borderColor: W.border,
                         },
                       ]}
                     >
-                      <Text style={[styles.openText, { color: W.accent }]}>
+                      <Text style={[styles.openText, { color: W.accentText }]}>
                         Leer evangelio →
                       </Text>
                     </TouchableOpacity>
@@ -218,7 +249,7 @@ export default function BookmarksScreen() {
               );
             })}
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       )}
     </View>
   );
@@ -237,17 +268,16 @@ const styles = StyleSheet.create({
   iconBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
   subtitle: { fontSize: 12, marginTop: 2 },
-  countLabel: {
-    fontSize: 12,
+  headerCount: {
+    ...typography.subhead,
     fontWeight: '600',
-    marginBottom: 12,
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
   },
 
   center: {
@@ -257,20 +287,15 @@ const styles = StyleSheet.create({
     padding: 32,
     gap: 12,
   },
-  emptyTitle: { fontSize: 17, fontWeight: '700' },
-  emptyText: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
 
   listWrap: {
     padding: 16,
-    paddingBottom: 60,
     gap: 12,
   },
   card: {
-    borderRadius: 18,
+    borderRadius: radii.xl,
     overflow: 'hidden',
-    borderWidth: 1,
   },
-  cardBar: { height: 3 },
   cardBody: { padding: 14 },
   cardHdrRow: {
     flexDirection: 'row',
@@ -290,7 +315,7 @@ const styles = StyleSheet.create({
   removeBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 10,
@@ -302,17 +327,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   preview: {
-    fontSize: 13,
+    ...typography.caption,
     lineHeight: 20,
     fontStyle: 'italic',
     marginBottom: 12,
   },
   openBtn: {
     alignSelf: 'flex-start',
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderWidth: 1,
   },
   openText: { fontSize: 11, fontWeight: '700' },
 });

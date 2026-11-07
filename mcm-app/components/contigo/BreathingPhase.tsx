@@ -1,69 +1,92 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  Animated,
-  Easing,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
+import { reaEasings } from '@/constants/animations';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 const BREATH_MS = 2100;
 
 /**
  * "Para un momento..." breathing animation shown when entering the
- * Revisión screen. Inhale → exhale → inhale, then auto-dismiss.
- * Tap to skip.
+ * Revisión screen. Inhale → exhale → inhale, then auto-dismiss once the third
+ * breath has finished. Tap to skip.
  */
 export function BreathingPhase({ onDone }: { onDone: () => void }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.72)).current;
+  // Con "reducir movimiento" los anillos no laten: el texto "Inspira... /
+  // Espira..." se sigue turnando al mismo ritmo, así que el ejercicio de
+  // respiración funciona igual sin el movimiento que marea. Esta pantalla es
+  // contemplativa y puntual (entra a propósito al abrir Revisión), así que se
+  // queda con opacidad y con el propio ciclo de la respiración: solo se quita
+  // el latido de escala.
+  const reducedMotion = useReducedMotion();
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.72);
   const [phaseLabel, setPhaseLabel] = React.useState<'inhale' | 'exhale'>(
     'inhale',
   );
   const finished = useRef(false);
 
   useEffect(() => {
-    Animated.timing(opacity, {
-      toValue: 1,
-      duration: 480,
-      useNativeDriver: true,
-    }).start();
+    opacity.set(withTiming(1, { duration: 480 }));
 
     const breath = (to: number, label: 'inhale' | 'exhale') => {
       setPhaseLabel(label);
-      Animated.timing(scale, {
-        toValue: to,
-        duration: BREATH_MS,
-        easing: Easing.inOut(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
+      if (reducedMotion) return;
+      scale.set(
+        withTiming(to, {
+          duration: BREATH_MS,
+          easing: reaEasings.cubic,
+        }),
+      );
     };
 
     // inhale (already at 0.72) → exhale ↑ → inhale ↓ → done
     breath(1.35, 'inhale');
     const t1 = setTimeout(() => breath(0.72, 'exhale'), BREATH_MS);
     const t2 = setTimeout(() => breath(1.35, 'inhale'), BREATH_MS * 2);
-    const t3 = setTimeout(() => fade(), 5000);
+    // Después de la tercera respiración COMPLETA (empieza en 2×, dura 1×): con
+    // el fundido a 5000 ms se cortaba a los 800 ms de empezarla.
+    const t3 = setTimeout(() => fade(), BREATH_MS * 3);
     return () => {
       [t1, t2, t3].forEach(clearTimeout);
       finished.current = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reducedMotion]);
 
   const fade = () => {
     if (finished.current) return;
     finished.current = true;
-    Animated.timing(opacity, {
-      toValue: 0,
-      duration: 380,
-      useNativeDriver: true,
-    }).start(() => onDone());
+    opacity.set(
+      withTiming(0, { duration: 380 }, () => {
+        'worklet';
+        scheduleOnRN(onDone);
+      }),
+    );
   };
 
+  // Los tres anillos siguen la MISMA respiración a distinta escala; antes eran
+  // `Animated.multiply(scale, k)`.
+  const rootStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
+  const glowStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.get() * 1.35 }],
+  }));
+  const ring2Style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.get() }],
+  }));
+  const ring1Style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.get() * 0.84 }],
+  }));
+
   return (
-    <Animated.View pointerEvents="auto" style={[styles.root, { opacity }]}>
+    <Animated.View pointerEvents="auto" style={[styles.root, rootStyle]}>
       <TouchableWithoutFeedback onPress={fade}>
         <View style={styles.touch}>
           <View style={styles.headWrap}>
@@ -73,21 +96,11 @@ export function BreathingPhase({ onDone }: { onDone: () => void }) {
             </Text>
           </View>
           <View style={styles.ringStack}>
-            <Animated.View
-              style={[
-                styles.glow,
-                { transform: [{ scale: Animated.multiply(scale, 1.35) }] },
-              ]}
-            />
-            <Animated.View style={[styles.ring2, { transform: [{ scale }] }]} />
-            <Animated.View
-              style={[
-                styles.ring1,
-                { transform: [{ scale: Animated.multiply(scale, 0.84) }] },
-              ]}
-            >
+            <Animated.View style={[styles.glow, glowStyle]} />
+            <Animated.View style={[styles.ring2, ring2Style]} />
+            <Animated.View style={[styles.ring1, ring1Style]}>
               <Text style={styles.phaseText}>
-                {phaseLabel === 'inhale' ? 'Respira...' : 'Inspira...'}
+                {phaseLabel === 'inhale' ? 'Inspira...' : 'Espira...'}
               </Text>
             </Animated.View>
           </View>
@@ -121,7 +134,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   subtitle: {
-    fontSize: 13,
+    ...typography.caption,
     color: 'rgba(240,232,216,0.36)',
     marginTop: 8,
   },
@@ -135,21 +148,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 200,
     height: 200,
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(196,146,42,0.10)',
   },
   ring2: {
     position: 'absolute',
     width: 164,
     height: 164,
-    borderRadius: 82,
+    borderRadius: radii.pillFull,
     borderWidth: 1,
     borderColor: 'rgba(196,146,42,0.22)',
   },
   ring1: {
     width: 108,
     height: 108,
-    borderRadius: 54,
+    borderRadius: radii.pillFull,
     borderWidth: 1.5,
     borderColor: 'rgba(196,146,42,0.52)',
     backgroundColor: 'rgba(196,146,42,0.08)',
@@ -157,7 +170,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   phaseText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '600',
     color: 'rgba(240,232,216,0.65)',
     letterSpacing: 0.4,

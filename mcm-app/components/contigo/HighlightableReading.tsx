@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Platform,
   StyleSheet,
@@ -12,6 +12,7 @@ import {
   highlightBg,
   type HighlightRange,
 } from '@/utils/highlightRanges';
+import { HighlightMenuView } from '@/modules/highlight-menu';
 
 export interface ReadingSelection {
   start: number;
@@ -23,10 +24,19 @@ interface HighlightableReadingProps {
   text: string;
   /** Rangos subrayados (offsets sobre el texto canónico). */
   ranges?: HighlightRange[];
-  /** Modo subrayar: activa el reporte de selección para pintar. */
+  /** Modo subrayar: en Android cambia a TextInput para conocer los offsets. */
   penMode?: boolean;
-  /** Selección nativa actual (null si no hay o es vacía). */
+  /**
+   * Selección nativa actual (null si no hay o es vacía). Se reporta SIEMPRE que
+   * el texto sea un `TextInput` (en iOS, los dos modos), no solo en modo lápiz:
+   * así el botón de subrayar puede usar la selección que ya hubiera hecha.
+   */
   onSelectionChange?: (sel: ReadingSelection | null) => void;
+  /**
+   * "Subrayar" desde el menú NATIVO de selección, sin pasar por el modo lápiz.
+   * Si no se pasa, el ítem no se añade y todo funciona como antes.
+   */
+  onNativeHighlightRequest?: (sel: ReadingSelection) => void;
   color: string;
   fontSize: number;
   lineHeight: number;
@@ -60,10 +70,14 @@ interface HighlightableReadingProps {
  *
  * ## Por plataforma
  *
- * - **iOS**: `TextInput` de solo lectura en los dos modos.
+ * - **iOS**: `TextInput` de solo lectura en los dos modos. Como la capa es la
+ *   misma, la selección se conoce SIEMPRE: se puede seleccionar y tocar después
+ *   el botón de subrayar, sin tener que entrar antes en el modo lápiz.
  * - **Android**: `Text selectable` al leer (menú nativo de copiar sin riesgo de
  *   pegar dentro) y `TextInput` al subrayar (única forma de conocer los
- *   offsets exactos de la selección).
+ *   offsets exactos de la selección). Ahí el camino de "selecciono y luego toco
+ *   el lápiz" no puede funcionar —un `Text` no reporta offsets—; el atajo bueno
+ *   en Android es el ítem "Subrayar" del propio menú de selección.
  * - **Web**: `Text` seleccionable al leer (selección del navegador) y
  *   `TextInput` con `value` al subrayar — RNW no admite hijos en el textarea,
  *   así que ahí el color se ve al salir del modo subrayar.
@@ -77,6 +91,7 @@ export function HighlightableReading({
   ranges = [],
   penMode = false,
   onSelectionChange,
+  onNativeHighlightRequest,
   color,
   fontSize,
   lineHeight,
@@ -86,17 +101,12 @@ export function HighlightableReading({
 }: HighlightableReadingProps) {
   const spans = useMemo(() => computeSpans(text, ranges), [text, ranges]);
 
-  // Altura del TextInput multilínea: seguimos el tamaño de su contenido para
-  // que crezca como un texto normal dentro del scroll.
-  const [inputHeight, setInputHeight] = useState<number | undefined>(undefined);
-
-  // Al salir del modo subrayar (o desmontar), la selección deja de existir.
+  // Al desmontar, la selección deja de existir. (Al SALIR del modo lápiz no se
+  // toca: la selección es "pegajosa" a propósito, ver useReadingHighlights, y
+  // quien la limpia de verdad es `exitHighlightMode` en la pantalla.)
   const onSelRef = useRef(onSelectionChange);
   onSelRef.current = onSelectionChange;
-  useEffect(() => {
-    if (!penMode) onSelRef.current?.(null);
-    return () => onSelRef.current?.(null);
-  }, [penMode]);
+  useEffect(() => () => onSelRef.current?.(null), []);
 
   const textStyle = {
     color,
@@ -129,24 +139,42 @@ export function HighlightableReading({
   // iOS siempre en UITextView; el resto solo cuando hace falta seleccionar.
   const asInput = Platform.OS === 'ios' || penMode;
 
+  // El ítem del menú nativo se engancha envolviendo el texto. `withMenu` lo
+  // hace opcional: sin `onNativeHighlightRequest` no se monta la vista nativa
+  // y el árbol queda EXACTAMENTE como antes.
+  const withMenu = (node: React.ReactElement) =>
+    onNativeHighlightRequest ? (
+      <HighlightMenuView
+        label="Subrayar"
+        onHighlightRequest={({ nativeEvent }) => {
+          const { start, end } = nativeEvent;
+          if (end > start) onNativeHighlightRequest({ start, end });
+        }}
+      >
+        {node}
+      </HighlightMenuView>
+    ) : (
+      node
+    );
+
   if (!asInput) {
-    return (
+    return withMenu(
       <Text selectable style={[styles.base, textStyle, style]}>
         {spanChildren}
-      </Text>
+      </Text>,
     );
   }
 
-  return (
+  return withMenu(
     <TextInput
-      style={[
-        styles.base,
-        styles.input,
-        textStyle,
-        style,
-        { minHeight: lineHeight, height: inputHeight },
-      ]}
+      style={[styles.base, styles.input, textStyle, style]}
       multiline
+      // Con `scrollEnabled={false}` el propio React Native mide el texto y da
+      // al campo la altura que le toca. Antes se le imponía a mano la altura
+      // medida en `onContentSizeChange`, y eso se retroalimentaba: cada medida
+      // volvía a incluir el inset del UITextView, así que la lectura crecía
+      // sola poco a poco, y al cambiar de día se quedaba con la altura del
+      // texto anterior (el salmo, corto, aparecía con medio folio en blanco).
       scrollEnabled={false}
       // iOS: un UITextView de solo lectura sigue siendo seleccionable con asas
       // nativas y menú completo. Android necesita editable para poder
@@ -158,14 +186,18 @@ export function HighlightableReading({
       autoCorrect={false}
       spellCheck={false}
       textBreakStrategy="highQuality"
-      onContentSizeChange={(e) =>
-        setInputHeight(Math.ceil(e.nativeEvent.contentSize.height))
-      }
       onSelectionChange={(e) => {
-        if (!penMode) return;
+        // Se reporta SIEMPRE, también fuera del modo lápiz. Es lo que permite
+        // seleccionar primero y tocar el lápiz después: si solo escucháramos
+        // dentro del modo, la selección que ya había era invisible para JS y la
+        // barra salía pidiendo "selecciona un texto" hasta que la movías un pelo.
         const { start, end } = e.nativeEvent.selection;
+        // `end !== start`, no `end > start`: arrastrando de derecha a izquierda
+        // Android reporta los offsets al revés, y con el `>` la selección se
+        // descartaba como vacía (el Math.min/Math.max de al lado nunca llegaba
+        // a ejecutarse).
         onSelRef.current?.(
-          end > start
+          end !== start
             ? { start: Math.min(start, end), end: Math.max(start, end) }
             : null,
         );
@@ -174,7 +206,7 @@ export function HighlightableReading({
         penMode ? 'Selecciona el texto que quieres subrayar' : undefined
       }
       {...(isWeb ? { value: text } : { children: spanChildren })}
-    />
+    />,
   );
 }
 

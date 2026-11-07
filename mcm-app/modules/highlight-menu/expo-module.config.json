@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["HighlightMenuModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.highlightmenu.HighlightMenuModule"]
+  }
+}

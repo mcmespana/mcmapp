@@ -11,6 +11,8 @@
 //      b. notificationResponse — usuario toca la notificación: navega a la ruta correspondiente y marca como leída
 //
 import { useEffect, useMemo, useRef } from 'react';
+import { useTabNavigation } from '@/hooks/useTabNavigation';
+import { parseTabPath } from '@/utils/tabNavigation';
 import { AppState, AppStateStatus, Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 import * as Notifications from 'expo-notifications';
@@ -23,18 +25,32 @@ import {
   markNotificationAsRead,
   type TokenProfileMetadata,
 } from '@/services/pushNotificationService';
-import { ReceivedNotification } from '@/types/notifications';
+import {
+  ReceivedNotification,
+  type NotificationCategory,
+} from '@/types/notifications';
 import {
   normalizeNotificationRoute,
   extractActionButton,
   extractActionButtons,
 } from '@/utils/notificationRoutes';
+import { notificationDetailHref } from '@/utils/notificationsInbox';
 import { routeForEventId } from '@/utils/notificationEventRoute';
+import { isContigoReminderData } from '@/utils/contigoReminders';
+import { syncAndroidNotificationChannels } from '@/notifications/androidChannels';
+import { trackEvent } from '@/utils/analytics';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useEventSubscriptions } from '@/contexts/EventSubscriptionsContext';
 import { router } from 'expo-router';
+import { useComunicaMode } from '@/hooks/comunica/useComunicaMode';
+import { emitComunicaNotice } from '@/services/comunica/bridge';
+import {
+  isComunicaNotice,
+  parseComunicaNotice,
+  routeForComunicaNotice,
+} from '@/utils/comunica/noticeRoutes';
 
 /**
  * Genera un ID estable y determinístico para una notificación.
@@ -99,10 +115,22 @@ export default function usePushNotifications() {
   const notificationListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
   const { refreshCount } = useNotifications();
+  // Ref al último `goToPath`: el listener se registra una sola vez y tiene que
+  // ver siempre el reparto de tabs actual (en iOS un tab de overflow no tiene ruta).
+  const { goToPath } = useTabNavigation();
+  const goToPathRef = useRef(goToPath);
+  goToPathRef.current = goToPath;
 
   const resolved = useResolvedProfileConfig();
   const { profile } = useUserProfile();
   const { eventTopics } = useEventSubscriptions();
+  // ¿Área nativa de Comunica encendida? Sus avisos van a la nativa o, si no,
+  // a la pestaña (la WebView). Plan 08 de `docs/planes/area-nativa/`.
+  const comunicaMode = useComunicaMode();
+  const comunicaNativeRef = useRef(comunicaMode === 'native');
+  useEffect(() => {
+    comunicaNativeRef.current = comunicaMode === 'native';
+  }, [comunicaMode]);
 
   // Metadata para segmentación en Firebase. Solo la construimos cuando el
   // usuario ya tiene perfil/delegación definidos (post onboarding). Antes,
@@ -163,6 +191,18 @@ export default function usePushNotifications() {
     // Listener para notificaciones recibidas (app en foreground)
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
+        // Avisos del área de Comunica (plan 08): NO van a la campana (son
+        // operativos y su sitio es la portada del área). Se refresca lo que
+        // tocan para que la pantalla ya lo enseñe.
+        const comunica = notification.request.content.data;
+        // Recordatorios de Contigo (los programa el móvil): tampoco van a la
+        // campana. Se acabaría llenando de un «evangelio de hoy» por día.
+        if (isContigoReminderData(comunica)) return;
+        if (isComunicaNotice(comunica)) {
+          const parsed = parseComunicaNotice(comunica);
+          if (parsed) emitComunicaNotice(parsed);
+          return;
+        }
         const notificationId = getStableNotificationId(
           notification.request.content,
         );
@@ -171,12 +211,10 @@ export default function usePushNotifications() {
           title: notification.request.content.title || 'Notificación',
           body: notification.request.content.body || '',
           bodyLong: notification.request.content.data?.bodyLong as
-            | string
-            | undefined,
+            string | undefined,
           icon: notification.request.content.data?.icon as string | undefined,
           imageUrl: notification.request.content.data?.imageUrl as
-            | string
-            | undefined,
+            string | undefined,
           actionButton: extractActionButton(notification.request.content.data),
           actionButtons: extractActionButtons(
             notification.request.content.data,
@@ -185,11 +223,9 @@ export default function usePushNotifications() {
           isRead: false,
           category: notification.request.content.data?.category as any,
           internalRoute: notification.request.content.data?.internalRoute as
-            | string
-            | undefined,
+            string | undefined,
           eventId: notification.request.content.data?.eventId as
-            | string
-            | undefined,
+            string | undefined,
           data: notification.request.content.data,
         };
 
@@ -207,11 +243,45 @@ export default function usePushNotifications() {
         const data = response.notification.request.content.data;
         const actionIdentifier = response.actionIdentifier;
 
+        // Avisos del área de Comunica (plan 08), lo primero: el destino lo
+        // decide la app (nunca una ruta que venga en el aviso) y no pasan por
+        // la campana. Analítica sin ids.
+        if (isComunicaNotice(data)) {
+          trackEvent('notificacion_abierta', { categoria: 'comunica' });
+          try {
+            router.navigate(
+              routeForComunicaNotice(data, {
+                nativeOn: comunicaNativeRef.current,
+              }) as any,
+            );
+          } catch {}
+          return;
+        }
+
+        // Recordatorios de Contigo: van directos a su pantalla, sin pasar por
+        // la campana ni por el centro de notificaciones. El destino sale de una
+        // lista cerrada (`isContigoReminderData`), nunca de texto libre.
+        if (isContigoReminderData(data)) {
+          trackEvent('notificacion_abierta', { categoria: 'contigo' });
+          try {
+            router.navigate(data.internalRoute as any);
+          } catch {}
+          return;
+        }
+
         // ID estable de la notificación (lo necesitamos también para el
         // deep-link al centro de notificaciones).
         const notificationId = getStableNotificationId(
           response.notification.request.content,
         );
+
+        // Analítica: qué tipo de aviso se abre de verdad. Solo la categoría,
+        // nunca el título ni el id — eso identificaría el envío concreto.
+        trackEvent('notificacion_abierta', {
+          categoria:
+            (data?.category as NotificationCategory | undefined) ??
+            'sin_categoria',
+        });
 
         // Determinar ruta de navegación
         let targetRoute: string | undefined;
@@ -247,12 +317,12 @@ export default function usePushNotifications() {
           // Si vamos al centro de notificaciones, hacemos deep-link a ESTA
           // notificación concreta para abrir su detalle (vista "en grande").
           if (normalized === '/notifications') {
-            router.navigate({
-              pathname: '/notifications',
-              params: { openId: notificationId },
-            } as any);
+            router.navigate(notificationDetailHref(notificationId) as any);
           } else {
-            router.navigate(normalized as any);
+            // Los tabs (puede estar en "Más" en iOS) los resuelve `goToPath`;
+            // el resto de rutas sigue con `navigate`, que no apila duplicados.
+            if (parseTabPath(normalized)) goToPathRef.current(normalized);
+            else router.navigate(normalized as any);
           }
         } catch {}
 
@@ -323,7 +393,12 @@ async function registerAndSaveToken(
   if (Platform.OS === 'web') return;
 
   try {
-    // 1. Permisos
+    // 1. Canales de Android. Antes que los permisos a propósito: crear canales
+    // no requiere permiso, y así los ajustes del sistema ya salen poblados
+    // cuando el usuario va a mirarlos.
+    await syncAndroidNotificationChannels();
+
+    // 2. Permisos
     // Cast to any: TS no resuelve `expo-modules-core` (anidado bajo expo/) y
     // por eso no ve los campos heredados de PermissionResponse (`status`,
     // `granted`...). En runtime sí existen.
@@ -337,16 +412,6 @@ async function registerAndSaveToken(
 
     if (!granted) {
       return;
-    }
-
-    // 2. Canal Android
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Notificaciones MCM',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#253883',
-      });
     }
 
     // 3. Obtener token

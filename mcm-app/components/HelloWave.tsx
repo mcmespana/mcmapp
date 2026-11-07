@@ -14,17 +14,19 @@ export function HelloWave() {
   const rotationAnimation = useSharedValue(0);
 
   useEffect(() => {
-    rotationAnimation.value = withRepeat(
-      withSequence(
-        withTiming(25, { duration: 150 }),
-        withTiming(0, { duration: 150 }),
+    rotationAnimation.set(
+      withRepeat(
+        withSequence(
+          withTiming(25, { duration: 150 }),
+          withTiming(0, { duration: 150 }),
+        ),
+        2, // Run the animation 2 times (300ms each = 600ms total)
       ),
-      2, // Run the animation 2 times (300ms each = 600ms total)
     );
   }, [rotationAnimation]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotationAnimation.value}deg` }],
+    transform: [{ rotate: `${rotationAnimation.get()}deg` }],
   }));
 
   return (

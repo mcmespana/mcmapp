@@ -1,13 +1,11 @@
-import React, { useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import React, { useMemo, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import { MaterialIcons } from '@/components/ui/icons';
 import BottomSheet from '@/components/BottomSheet';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { warm, buildCalendar, WEEKDAYS, MONTHS_CAP } from './theme';
@@ -15,6 +13,9 @@ import { hasHighlights, type StoredBookmark } from '@/utils/contigoBookmarks';
 import { HIGHLIGHT_COLORS } from '@/utils/highlightRanges';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
+import { springs } from '@/constants/animations';
 
 interface ReadingCalendarSheetProps {
   visible: boolean;
@@ -48,15 +49,19 @@ export function ReadingCalendarSheet({
 
   // Mes visible (YYYY-MM); arranca en el mes de la fecha seleccionada.
   const [monthKey, setMonthKey] = useState(() => selectedDate.slice(0, 7));
-  const slide = useRef(new Animated.Value(0)).current;
+  const slide = useSharedValue(0);
 
-  // Re-centrar el mes al abrir.
-  const wasVisible = useRef(false);
-  if (visible && !wasVisible.current) {
-    const target = selectedDate.slice(0, 7);
-    if (target !== monthKey) setMonthKey(target);
+  // Re-centrar el mes al abrir. Es el patrón oficial de "ajustar estado cuando
+  // cambia una prop" (estado espejo + comparación en render), NO un ref: leer y
+  // escribir un ref durante el render es justo lo que el compilador prohíbe.
+  const [wasVisible, setWasVisible] = useState(false);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    if (visible) {
+      const target = selectedDate.slice(0, 7);
+      if (target !== monthKey) setMonthKey(target);
+    }
   }
-  wasVisible.current = visible;
 
   const bookmarkedSet = useMemo(
     () => new Set(bookmarks.map((b) => b.date)),
@@ -78,14 +83,13 @@ export function ReadingCalendarSheet({
     const d = new Date(year, month - 1 + delta, 1);
     setMonthKey(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
     // Pequeño deslizamiento direccional al cambiar de mes.
-    slide.setValue(delta * 26);
-    Animated.spring(slide, {
-      toValue: 0,
-      useNativeDriver: Platform.OS !== 'web',
-      tension: 90,
-      friction: 12,
-    }).start();
+    slide.set(delta * 26);
+    slide.set(withSpring(0, springs.settle));
   };
+
+  const gridStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: slide.get() }],
+  }));
 
   const roseDot = HIGHLIGHT_COLORS.rose.swatch;
 
@@ -99,7 +103,7 @@ export function ReadingCalendarSheet({
             style={[styles.navBtn, { backgroundColor: W.accentLight }]}
             accessibilityLabel="Mes anterior"
           >
-            <MaterialIcons name="chevron-left" size={24} color={W.accent} />
+            <MaterialIcons name="chevron-left" size={24} color={W.accentText} />
           </TouchableOpacity>
           <Text style={[styles.monthTitle, { color: W.text }]}>
             {MONTHS_CAP[month - 1]} {year}
@@ -109,7 +113,11 @@ export function ReadingCalendarSheet({
             style={[styles.navBtn, { backgroundColor: W.accentLight }]}
             accessibilityLabel="Mes siguiente"
           >
-            <MaterialIcons name="chevron-right" size={24} color={W.accent} />
+            <MaterialIcons
+              name="chevron-right"
+              size={24}
+              color={W.accentText}
+            />
           </TouchableOpacity>
         </View>
 
@@ -123,9 +131,7 @@ export function ReadingCalendarSheet({
         </View>
 
         {/* ── Rejilla ── */}
-        <Animated.View
-          style={[styles.grid, { transform: [{ translateX: slide }] }]}
-        >
+        <Animated.View style={[styles.grid, gridStyle]}>
           {cells.map((day, i) => {
             if (day === null) {
               return <View key={`e${i}`} style={styles.cell} />;
@@ -166,7 +172,7 @@ export function ReadingCalendarSheet({
                     style={[
                       styles.dayText,
                       { color: isSelected ? '#FFFFFF' : W.text },
-                      isToday && !isSelected && { color: W.accent },
+                      isToday && !isSelected && { color: W.accentText },
                     ]}
                   >
                     {day}
@@ -232,8 +238,10 @@ export function ReadingCalendarSheet({
           }}
           style={[styles.todayBtn, { backgroundColor: W.accentLight }]}
         >
-          <MaterialIcons name="today" size={16} color={W.accent} />
-          <Text style={[styles.todayText, { color: W.accent }]}>Ir a hoy</Text>
+          <MaterialIcons name="today" size={16} color={W.accentText} />
+          <Text style={[styles.todayText, { color: W.accentText }]}>
+            Ir a hoy
+          </Text>
         </TouchableOpacity>
       </View>
     </BottomSheet>
@@ -255,7 +263,7 @@ const styles = StyleSheet.create({
   navBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -272,7 +280,7 @@ const styles = StyleSheet.create({
   weekday: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -288,7 +296,7 @@ const styles = StyleSheet.create({
   dayBtn: {
     width: 40,
     height: 44,
-    borderRadius: 13,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 3,
@@ -297,7 +305,7 @@ const styles = StyleSheet.create({
     opacity: 0.28,
   },
   dayText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
@@ -311,12 +319,12 @@ const styles = StyleSheet.create({
   dot: {
     width: 4.5,
     height: 4.5,
-    borderRadius: 3,
+    borderRadius: radii.xs,
   },
   legendSquare: {
     width: 11,
     height: 11,
-    borderRadius: 4,
+    borderRadius: radii.xs,
   },
   legend: {
     flexDirection: 'row',
@@ -332,7 +340,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   legendText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '600',
   },
   todayBtn: {
@@ -344,10 +352,10 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingHorizontal: 18,
     paddingVertical: 9,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
   },
   todayText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '800',
   },
 });

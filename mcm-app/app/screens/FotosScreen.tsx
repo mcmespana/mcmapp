@@ -1,0 +1,303 @@
+// Pantalla de Fotos. La montan `app/(tabs)/fotos/` (la pestaña) y el stack de
+// «Más» (cuando Fotos no cabe en la barra).
+import { logger } from '@/utils/logger';
+import React from 'react';
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  Linking,
+  Platform,
+  useWindowDimensions,
+  ViewStyle,
+  Alert,
+} from 'react-native';
+import Animated from 'react-native-reanimated';
+import { useHeaderHeight } from 'expo-router/react-navigation';
+import { useTabListScroll } from '@/components/tabs/useTabScroll';
+import { Button } from 'heroui-native';
+import AlbumCard from '@/components/AlbumCard';
+import ProgressWithMessage from '@/components/ProgressWithMessage';
+import OfflineBanner from '@/components/OfflineBanner';
+import EmptyState from '@/components/ui/EmptyState';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useAlbumPagination } from '@/hooks/useAlbumPagination';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { Colors as ThemeColors, themeColors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { radii } from '@/constants/uiStyles';
+
+interface Album {
+  id: string;
+  title: string;
+  location?: string;
+  date?: string;
+  imageUrl: string;
+  albumUrl: string;
+  tags?: string[];
+}
+
+/**
+ * Reglas de visibilidad:
+ *  - Perfil con `['all']` → ve todos los álbumes.
+ *  - Álbum sin tags (o vacío) → visible para todos (equivalente a `['general']`).
+ *  - Si no, hay intersección entre `album.tags` y `albumTags` del perfil.
+ */
+function isAlbumVisibleForProfile(
+  album: Album,
+  profileTags: readonly string[],
+): boolean {
+  if (profileTags.includes('all')) return true;
+  const albumTags = album.tags;
+  if (!albumTags || albumTags.length === 0) return true;
+  return albumTags.some((tag) => profileTags.includes(tag));
+}
+
+type FotosScreenStyles = {
+  container: ViewStyle;
+
+  listContentContainer: ViewStyle;
+  albumCardContainerOneColumn: ViewStyle;
+  albumCardContainerTwoColumns: ViewStyle;
+  albumCardContainerThreeColumns: ViewStyle;
+  loadMoreButton: ViewStyle;
+};
+
+/**
+ * Con `fotosEnIpad: false` el iPad no enseña fotos (MDM de colegios, ver
+ * `GlobalConfig.fotosEnIpad`). La pestaña, el botón de Home y la tarjeta de
+ * «Más» ya no existen; esto cubre lo que aún llega por enlace o notificación.
+ * La galería ni se monta: ni siquiera se lee `albums` de Firebase.
+ */
+export function FotosScreen() {
+  const resolved = useResolvedProfileConfig();
+  if (resolved.fotosHidden) return <FotosNoDisponible />;
+  return <FotosGallery />;
+}
+
+function FotosNoDisponible() {
+  const headerHeight = useHeaderHeight();
+  return (
+    <View style={{ flex: 1, paddingTop: headerHeight }}>
+      <EmptyState
+        icon="photo-library"
+        title="Las fotos no están disponibles"
+        subtitle="En este iPad no se muestran fotos. Puedes verlas desde tu móvil."
+      />
+    </View>
+  );
+}
+
+function FotosGallery() {
+  const { listRef, onScroll, contentPaddingBottom } =
+    useTabListScroll<FlatList>('fotos');
+  // El header es transparente y las portadas pasan POR DEBAJO: la lista
+  // arranca justo bajo la barra y se funde con ella al deslizar.
+  const headerHeight = useHeaderHeight();
+  const { width } = useWindowDimensions();
+  const scheme = useColorScheme();
+  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const {
+    data: allAlbumsData,
+    loading,
+    offline,
+  } = useFirebaseData<Album[]>('albums', 'albums');
+  const resolved = useResolvedProfileConfig();
+  const sortedAlbums = React.useMemo(() => {
+    // Sin duplicados por id: un álbum repetido en Firebase rompía el
+    // `keyExtractor` de la lista. (Venía de AlbumListScreen, la copia que se
+    // abría desde «Más» y que ya no existe.)
+    const seen = new Set<string>();
+    const visible = (allAlbumsData ?? []).filter((album) => {
+      if (seen.has(album.id)) return false;
+      seen.add(album.id);
+      return isAlbumVisibleForProfile(album, resolved.albumTags);
+    });
+    // Orden inverso por ID (más nuevos primero).
+    return visible.sort((a, b) => b.id.localeCompare(a.id));
+  }, [allAlbumsData, resolved.albumTags]);
+  const { displayedAlbums, allAlbumsLoaded, loadMoreAlbums } =
+    useAlbumPagination(sortedAlbums);
+
+  const handleAlbumPress = async (albumUrl: string) => {
+    const supported = await Linking.canOpenURL(albumUrl);
+    if (supported) {
+      try {
+        await Linking.openURL(albumUrl);
+      } catch (error) {
+        logger.error('Failed to open URL:', error);
+        Alert.alert(
+          'No se pudo abrir el álbum',
+          'Inténtalo de nuevo en un momento.',
+        );
+      }
+    } else {
+      logger.warn(`Don't know how to open this URL: ${albumUrl}`);
+      Alert.alert(
+        'Enlace no válido',
+        'Este álbum no tiene un enlace que se pueda abrir.',
+      );
+    }
+  };
+
+  const renderFooter = () => {
+    if (allAlbumsLoaded) {
+      return null;
+    }
+    return (
+      <Button
+        variant="outline"
+        onPress={loadMoreAlbums}
+        style={styles.loadMoreButton}
+      >
+        <Button.Label>Cargar más</Button.Label>
+      </Button>
+    );
+  };
+
+  // Columnas según ancho: 3 en iPad landscape (≥1024, incluye iPad 9 a 1080),
+  // 2 en tablet portrait / pantallas medianas, 1 en móvil.
+  const numColumns = width >= 1024 ? 3 : width > 600 ? 2 : 1;
+  const columnContainerStyle =
+    numColumns === 3
+      ? styles.albumCardContainerThreeColumns
+      : numColumns === 2
+        ? styles.albumCardContainerTwoColumns
+        : styles.albumCardContainerOneColumn;
+
+  if (loading && displayedAlbums.length === 0) {
+    return <ProgressWithMessage message="Cargando álbumes..." />;
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* El header flota sobre el contenido: el aviso de "sin conexión" tiene
+          que bajar hasta debajo de la barra para no quedar tapado. */}
+      {offline && (
+        <View style={{ marginTop: headerHeight }}>
+          <OfflineBanner text="Mostrando datos sin conexión" />
+        </View>
+      )}
+      <Animated.FlatList
+        ref={listRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        data={displayedAlbums}
+        renderItem={({ item }) => (
+          <View style={columnContainerStyle}>
+            <AlbumCard
+              album={item}
+              onPress={() => handleAlbumPress(item.albumUrl)}
+            />
+          </View>
+        )}
+        keyExtractor={(item) => item.id}
+        // SIN título: la pestaña ya se llama Fotos y las portadas se explican
+        // solas, así que un hero de dos líneas solo robaba una pantalla entera
+        // de álbumes. El `TabScreenWrapper` con `edges={['top']}` ya deja el
+        // hueco de la barra de estado; el contenido arranca ahí y se va con el
+        // scroll, sin nada fijo que lo tape.
+        numColumns={numColumns}
+        key={`COLS_${numColumns}`} // Important for re-render on column change
+        contentContainerStyle={[
+          styles.listContentContainer,
+          {
+            maxWidth: width > 1200 ? 1600 : 1200,
+            alignSelf: 'center',
+          },
+          {
+            paddingTop: offline ? 12 : headerHeight + 12,
+            paddingBottom: contentPaddingBottom,
+          },
+        ]}
+        // El contenido ya reserva el hueco del header; sin esto iOS lo suma
+        // otra vez y deja una franja vacía.
+        contentInsetAdjustmentBehavior="never"
+        onEndReached={loadMoreAlbums}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+        // Un perfil sin álbumes visibles, o sin conexión y sin caché, dejaba
+        // la pantalla en blanco.
+        ListEmptyComponent={
+          <EmptyState
+            icon="photo-library"
+            title="Aún no hay álbumes"
+            subtitle={
+              offline
+                ? 'Conéctate para ver los álbumes'
+                : 'Cuando se publiquen fotos aparecerán aquí'
+            }
+          />
+        }
+      />
+    </View>
+  );
+}
+
+/**
+ * Header de `FotosScreen`: NATIVO y transparente — las portadas pasan por
+ * debajo y se funden con él al deslizar, igual que en el cantoral. La pantalla
+ * cuenta con que es transparente (reserva `useHeaderHeight()` arriba), así que
+ * quien la monte tiene que usar estas opciones: `app/(tabs)/fotos/_layout.tsx` y
+ * el stack de «Más» (cuando Fotos no cabe en la barra).
+ */
+export function fotosHeaderOptions(isDark: boolean) {
+  const isIOS = Platform.OS === 'ios';
+  return {
+    headerShadowVisible: false,
+    headerTransparent: true,
+    headerTintColor: themeColors(isDark).headerTint,
+    // iOS <26 necesita el blur explícito; en iOS 26+ lo pone el sistema
+    // (combinarlo provoca solape, ver cancionero/_layout.tsx).
+    ...(isIOS && parseInt(String(Platform.Version), 10) < 26
+      ? { headerBlurEffect: 'systemChromeMaterial' as const }
+      : {}),
+    // Android/Web no tienen blur nativo: una barra semitransparente del
+    // color del fondo deja intuir las fotos por debajo.
+    ...(isIOS
+      ? {}
+      : {
+          headerStyle: {
+            backgroundColor: isDark
+              ? 'rgba(21,23,24,0.72)'
+              : 'rgba(255,255,255,0.72)',
+          },
+        }),
+  };
+}
+
+export default FotosScreen;
+
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const theme = ThemeColors[scheme ?? 'light'];
+  return StyleSheet.create<FotosScreenStyles>({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+
+    listContentContainer: {
+      paddingTop: 12,
+    },
+    albumCardContainerOneColumn: {
+      width: '100%',
+      paddingHorizontal: 16,
+    },
+    albumCardContainerTwoColumns: {
+      width: '50%',
+      paddingHorizontal: 6,
+    },
+    albumCardContainerThreeColumns: {
+      width: '33.333%',
+      paddingHorizontal: 6,
+    },
+    loadMoreButton: {
+      marginVertical: 20,
+      alignSelf: 'center',
+      backgroundColor: theme.tint,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: radii.sm,
+    },
+  });
+};

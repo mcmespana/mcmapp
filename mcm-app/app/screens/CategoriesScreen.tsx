@@ -4,81 +4,107 @@ import {
   StyleSheet,
   View,
   Platform,
-  TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useIsFocused, useNavigation } from 'expo-router/react-navigation';
+import { openCantoral } from '@/utils/cantoralNavigation';
 import {
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   useCallback,
   useEffect,
 } from 'react';
-import ProgressWithMessage from '@/components/ProgressWithMessage';
+import Animated from 'react-native-reanimated';
+import { useTabListScroll } from '@/components/tabs/useTabScroll';
+import ListSkeleton from '@/components/ListSkeleton';
+import EmptyState from '@/components/ui/EmptyState';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { Colors } from '@/constants/colors';
-import { radii } from '@/constants/uiStyles';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import colors, {
+  Colors,
+  KeyPillColors,
+  SystemGray,
+  themeColors,
+} from '@/constants/colors';
+import { cantoralHeaderTint } from '@/utils/cantoralHeader';
+import { radii, shadows } from '@/constants/uiStyles';
+import { MaterialIcons } from '@/components/ui/icons';
 import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import SuggestSongModal from '@/components/SuggestSongModal';
+import ContextMenuSheet, {
+  type ContextMenuAction,
+} from '@/components/ContextMenuSheet';
+import { useMyChoir } from '@/hooks/useMyChoir';
 import { filterSongsData } from '@/utils/filterSongsData';
+import { extractTrailingEmoji, stripCategoryPrefix } from '@/utils/songUtils';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
+import { useSongTagIndex } from '@/hooks/useSongTags';
+import TagCloudSheet from '@/components/song-tags/TagCloudSheet';
+import TagChip from '@/components/song-tags/TagChip';
+import CantoralOnboarding from '@/components/song-onboarding/CantoralOnboarding';
+import { useSettings } from '@/contexts/SettingsContext';
+import {
+  CANTORAL_ONBOARDING_VERSION,
+  shouldAutoOpenOnboarding,
+} from '@/utils/cantoralOnboarding';
+import { tagCategoryId, type ResolvedTag } from '@/utils/songTags';
+import { h } from '@/utils/haptics';
 import {
   consumePendingCloudPlaylistCode,
   consumePendingChoirCode,
   consumePendingOfflinePlaylist,
+  consumePendingChoirImport,
 } from '@/utils/pendingCloudPlaylist';
+import typography from '@/constants/typography';
+import spacing from '@/constants/spacing';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
 const SELECTED_SONGS_CATEGORY_ID = '__SELECTED_SONGS__';
 
-const EMOJI_REGEX =
-  /[\p{Emoji_Presentation}\p{Extended_Pictographic}][\u{FE0F}\u{200D}\p{Emoji_Presentation}\p{Extended_Pictographic}]*$/u;
-
-function extractTrailingEmoji(text: string): {
-  emoji: string;
-  cleanText: string;
-} {
-  const trimmed = text.trim();
-  const match = trimmed.match(EMOJI_REGEX);
-  if (match) {
-    return {
-      emoji: match[0],
-      cleanText: trimmed.slice(0, match.index).trim(),
-    };
-  }
-  return { emoji: '🎵', cleanText: trimmed };
-}
-
-const isIOS = Platform.OS === 'ios';
-
-export default function CategoriesScreen({
-  navigation,
-}: {
-  navigation: NativeStackNavigationProp<{
-    Categories: undefined;
-    SongsList: { categoryId: string; categoryName: string };
-    SongDetail: { songId: string; songTitle?: string };
-    SelectedSongs: { p?: string; c?: string; d?: string } | undefined;
-  }>;
-}) {
+export default function CategoriesScreen() {
+  const navigation = useNavigation();
   const scheme = useColorScheme();
   const layout = useResponsiveLayout();
+  // Pantalla raíz del tab Cantoral: colapsa la barra flotante al scrollear y
+  // reserva su hueco al final de la lista.
+  const { listRef, onScroll, contentPaddingBottom } =
+    useTabListScroll<FlatList>('cancionero');
   const styles = useMemo(
     () => createStyles(scheme, layout.isWide, layout.contentMaxWidth),
     [scheme, layout.isWide, layout.contentMaxWidth],
   );
   const isDark = scheme === 'dark';
-  const { data: songsData, loading } = useFirebaseData<Record<
+  const glyphColor = themeColors(isDark).link;
+  const {
+    data: songsData,
+    loading,
+    offline,
+    refresh,
+  } = useFirebaseData<Record<
     string,
     { categoryTitle: string; songs: any[] }
   > | null>('songs', 'songs', filterSongsData);
+
+  // Pull-to-refresh: la canción que se subió justo antes de misa, sin salir y
+  // volver a entrar. Revalida por `updatedAt`: si nada cambió no se descarga
+  // el cantoral entero.
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refresh();
+    h.tap();
+    setRefreshing(false);
+  }, [refresh]);
   const { selectedSongs } = useSelectedSongs();
-  const { sortedCategories, displayCategories } = useMemo(() => {
+  // ⚡ Bolt Optimization:
+  // Split the useMemo to prevent re-sorting and re-mapping all categories
+  // every time `selectedSongs.length` changes (O(N log N) -> O(1) on selection change).
+  const { sortedCategories, baseCategoryItems } = useMemo(() => {
     const actualCategories = songsData ? Object.keys(songsData) : [];
     const sortedCats = actualCategories.sort((a, b) => {
       const titleA = songsData?.[a]?.categoryTitle ?? a;
@@ -86,86 +112,252 @@ export default function CategoriesScreen({
       return titleA.localeCompare(titleB);
     });
 
-    const displayCats = [
+    const mappedCats = sortedCats.map((cat) => ({
+      id: cat,
+      name: songsData?.[cat]?.categoryTitle ?? cat,
+      songCount: songsData?.[cat]?.songs?.length || 0,
+    }));
+
+    return { sortedCategories: sortedCats, baseCategoryItems: mappedCats };
+  }, [songsData]);
+
+  const displayCategories = useMemo(() => {
+    return [
       {
         id: SELECTED_SONGS_CATEGORY_ID,
         name: 'Tu selección',
         songCount: selectedSongs.length,
       },
-      ...sortedCats.map((cat) => ({
-        id: cat,
-        name: songsData?.[cat]?.categoryTitle ?? cat,
-        songCount: songsData?.[cat]?.songs?.length || 0,
-      })),
+      ...baseCategoryItems,
     ];
-
-    return { sortedCategories: sortedCats, displayCategories: displayCats };
-  }, [songsData, selectedSongs.length]);
+  }, [baseCategoryItems, selectedSongs.length]);
 
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
+
+  // ── Etiquetas ────────────────────────────────────────────────────────────
+  // El índice se construye sobre los datos ya descargados; el catálogo de
+  // metadatos (`songs/tags`) es opcional. Si NO hay ninguna canción etiquetada
+  // el botón del header ni siquiera se pinta: nada de un botón que abre una
+  // hoja vacía.
+  const tagIndex = useSongTagIndex(songsData);
+  const hasTags = tagIndex.tags.length > 0;
+  const [showTags, setShowTags] = useState(false);
+  // La navegación espera a que la hoja esté DESMONTADA: en iOS es un Modal de
+  // verdad y empujar una pantalla con él vivo deja la transición a medias.
+  const pendingTagRef = useRef<ResolvedTag | null>(null);
+
+  const handleTagsCloseComplete = useCallback(() => {
+    const tag = pendingTagRef.current;
+    if (!tag) return;
+    pendingTagRef.current = null;
+    openCantoral('SongsList', {
+      categoryId: tagCategoryId([tag.slug]),
+      categoryName: tag.label,
+    });
+  }, []);
+
+  // ── Onboarding («?» del header) ──────────────────────────────────────────
+  // Se abre solo la primera vez (por versión) y se vuelve a abrir con el «?».
+  // Solo con esta pantalla delante: si un enlace a una playlist o un coro nos
+  // ha llevado a otra, espera a la vuelta. Se da por visto al cerrarlo.
+  const { settings, setSettings, isLoadingSettings } = useSettings();
+  const isFocused = useIsFocused();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [autoDismissed, setAutoDismissed] = useState(false);
+  const autoOpen =
+    !autoDismissed &&
+    isFocused &&
+    !!songsData &&
+    shouldAutoOpenOnboarding(settings.cantoralOnboarding, isLoadingSettings);
+  const onboardingVisible = showOnboarding || autoOpen;
+  const openOnboarding = useCallback(() => setShowOnboarding(true), []);
+  const closeOnboarding = () => {
+    setShowOnboarding(false);
+    setAutoDismissed(true);
+    if (settings.cantoralOnboarding < CANTORAL_ONBOARDING_VERSION) {
+      setSettings({ cantoralOnboarding: CANTORAL_ONBOARDING_VERSION });
+    }
+  };
+
+  // Etiquetas destacadas (★) en el onboarding o en Etiquetas → Editar:
+  // atajos arriba de la lista.
+  const featuredTags = useMemo(() => {
+    const wanted = new Set(settings.featuredTags);
+    return tagIndex.tags.filter((t) => wanted.has(t.slug));
+  }, [settings.featuredTags, tagIndex.tags]);
+  const openTag = useCallback(
+    (tag: ResolvedTag) =>
+      openCantoral('SongsList', {
+        categoryId: tagCategoryId([tag.slug]),
+        categoryName: tag.label,
+      }),
+    [],
+  );
 
   const handleSuccessSubmit = () => {
     toast.show({ variant: 'success', label: '¡Sugerencia enviada!' });
   };
 
-  // Deep link: si llegamos con un código pendiente de la nube
-  // (proveniente de /playlist?p=1234 o /coro?c=1234), saltamos a la pantalla de
-  // seleccionadas con ese código para que dispare el autoimport o auto-join.
+  // Deep link: si llegamos con algo pendiente de la nube (de /playlist?p=1234,
+  // /playlist?coro=<id> o /coro?coro=<id>), saltamos a la pantalla de
+  // seleccionadas con ese parámetro para que dispare el autoimport o auto-join.
   useEffect(() => {
     const pendingPlaylist = consumePendingCloudPlaylistCode();
     const pendingChoir = consumePendingChoirCode();
     const pendingOffline = consumePendingOfflinePlaylist();
+    const pendingChoirImport = consumePendingChoirImport();
 
     if (pendingOffline) {
       // setParams no funciona para una nueva pantalla; usamos navigate.
-      navigation.navigate('SelectedSongs', { d: pendingOffline } as any);
+      openCantoral('SelectedSongs', { d: pendingOffline });
+    } else if (pendingChoirImport) {
+      openCantoral('SelectedSongs', { coro: pendingChoirImport });
     } else if (pendingPlaylist) {
-      navigation.navigate('SelectedSongs', { p: pendingPlaylist } as any);
+      openCantoral('SelectedSongs', { p: pendingPlaylist });
     } else if (pendingChoir) {
-      navigation.navigate('SelectedSongs', { c: pendingChoir } as any);
+      openCantoral('SelectedSongs', { c: pendingChoir });
     }
-  }, [navigation]);
+  }, []);
 
-  // Header NATIVO: los botones "sugerir" + "buscar" van como bar items del
-  // header nativo (headerRight) para que iOS 26 les aplique el efecto
-  // liquid-glass del sistema (igual que el back/buscar de dentro de una
-  // categoría). Antes vivían en un header inline dentro del scroll, por eso NO
-  // tenían ese efecto. El título "Cantoral" lo pone el screenOptions del stack.
-  const headerIconColor = isIOS ? (isDark ? '#f4c11e' : '#3d79b9') : '#1a1a1a';
+  // ── Cabecera ─────────────────────────────────────────────────────────────
+  // Fuera, solo lo que se usa de verdad: el CORO a la izquierda (un toque y
+  // te traes la última playlist de tu coro, sin pasar por «Tu selección») y
+  // BUSCAR a la derecha del todo. Lo demás —afinador, etiquetas, sugerir una
+  // canción, la ayuda— va al «⋯»: se usan menos y cuatro iconos sueltos
+  // obligaban a adivinar qué era cada uno. Son bar items del header NATIVO
+  // para que iOS 26 les ponga su cápsula liquid-glass (una por lado).
+  const { choir: myChoir, isHydrated: choirHydrated } = useMyChoir();
+  const [showMenu, setShowMenu] = useState(false);
+  const hasSongs = sortedCategories.length > 0;
+  const headerIconColor = cantoralHeaderTint(isDark);
+
+  const onChoirPress = useCallback(() => {
+    h.tap();
+    if (myChoir) {
+      // Mismo camino que el enlace `?coro=<id>`: reemplaza la selección con
+      // la última del coro y deja 10 s de «Deshacer».
+      openCantoral('SelectedSongs', { coro: myChoir.id });
+    } else {
+      openCantoral(
+        'SelectedSongs',
+        choirHydrated ? { hoja: 'elegir-coro' } : undefined,
+      );
+    }
+  }, [myChoir, choirHydrated]);
+
+  const menuActions = useMemo<ContextMenuAction[]>(
+    () => [
+      {
+        key: 'tuner',
+        label: 'Afinador',
+        icon: 'graphic-eq',
+        onPress: () => openCantoral('Tuner'),
+      },
+      ...(hasTags
+        ? [
+            {
+              key: 'tags',
+              label: 'Etiquetas',
+              icon: 'sell' as const,
+              onPress: () => setShowTags(true),
+            },
+          ]
+        : []),
+      ...(myChoir
+        ? [
+            {
+              key: 'choir',
+              label: `Playlists de ${myChoir.name}`,
+              icon: 'groups' as const,
+              onPress: () => openCantoral('SelectedSongs', { hoja: 'coro' }),
+            },
+          ]
+        : []),
+      // Sugerir y la ayuda necesitan el cantoral descargado (sus hojas solo
+      // se montan con la lista). El afinador funciona siempre, también sin
+      // conexión y sin canciones.
+      ...(hasSongs
+        ? [
+            {
+              key: 'suggest',
+              label: 'Sugerir una canción',
+              icon: 'add-circle-outline' as const,
+              onPress: () => setShowForm(true),
+            },
+            {
+              key: 'help',
+              label: 'Cómo ver las canciones',
+              icon: 'help-outline' as const,
+              onPress: openOnboarding,
+            },
+          ]
+        : []),
+    ],
+    [hasTags, hasSongs, myChoir, openOnboarding],
+  );
+  const menuSheet = (
+    <ContextMenuSheet
+      visible={showMenu}
+      onClose={() => setShowMenu(false)}
+      title="Cantoral"
+      actions={menuActions}
+    />
+  );
+
   useLayoutEffect(() => {
-    // Título pequeño nativo (centrado, heredado del stack) + los 2 botones
-    // separados. "Sugerir" a la IZQUIERDA y "Buscar" a la DERECHA → son dos bar
-    // items nativos distintos, así que iOS 26 les da una cápsula liquid-glass a
-    // cada uno (separadas), en vez de agruparlos en una sola.
     navigation.setOptions({
       headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => setShowForm(true)}
+        <PressableFeedback
+          onPress={onChoirPress}
           style={styles.headerNativeButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityLabel="Sugerir canción"
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={
+            myChoir
+              ? `Traer la última playlist de ${myChoir.name}`
+              : 'Elegir tu coro'
+          }
         >
-          <MaterialIcons name="add" size={24} color={headerIconColor} />
-        </TouchableOpacity>
+          <MaterialIcons name="groups" size={24} color={headerIconColor} />
+        </PressableFeedback>
       ),
       headerRight: () => (
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('SongsList', {
-              categoryId: ALL_SONGS_CATEGORY_ID,
-              categoryName: ALL_SONGS_CATEGORY_NAME,
-            })
-          }
-          style={styles.headerNativeButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityLabel="Buscar canción"
-        >
-          <MaterialIcons name="search" size={24} color={headerIconColor} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <PressableFeedback
+            onPress={() => {
+              h.tap();
+              setShowMenu(true);
+            }}
+            style={styles.headerNativeButton}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Más opciones del cantoral"
+          >
+            <MaterialIcons
+              name="more-horiz"
+              size={24}
+              color={headerIconColor}
+            />
+          </PressableFeedback>
+          <PressableFeedback
+            onPress={() =>
+              openCantoral('SongsList', {
+                categoryId: ALL_SONGS_CATEGORY_ID,
+                categoryName: ALL_SONGS_CATEGORY_NAME,
+              })
+            }
+            style={styles.headerNativeButton}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Buscar canción"
+          >
+            <MaterialIcons name="search" size={24} color={headerIconColor} />
+          </PressableFeedback>
+        </View>
       ),
     });
-  }, [navigation, styles, headerIconColor]);
+  }, [navigation, styles, headerIconColor, onChoirPress, myChoir]);
 
   // En iPad/web amplio rendiriamos la "Tu selección" en una card destacada
   // de ancho completo arriba, y las categorías reales en un grid de 2-3 cols
@@ -179,6 +371,7 @@ export default function CategoriesScreen({
     return displayCategories.slice(1);
   }, [displayCategories, isWideLayout]);
 
+  const lastIndex = gridData.length - 1;
   const renderItem = useCallback(
     ({
       item,
@@ -189,16 +382,16 @@ export default function CategoriesScreen({
     }) => {
       const isSpecial = item.id === SELECTED_SONGS_CATEGORY_ID;
       const { emoji, cleanText } = isSpecial
-        ? { emoji: '🎵', cleanText: item.name }
+        ? { emoji: '', cleanText: item.name }
         : extractTrailingEmoji(item.name);
       const displayName = isSpecial
         ? cleanText
-        : cleanText.replace(/^\w\.?\s*/, '');
+        : stripCategoryPrefix(cleanText);
       const onPress = () => {
         if (item.id === SELECTED_SONGS_CATEGORY_ID) {
-          navigation.navigate('SelectedSongs');
+          openCantoral('SelectedSongs');
         } else {
-          navigation.navigate('SongsList', {
+          openCantoral('SongsList', {
             categoryId: item.id,
             categoryName: item.name,
           });
@@ -210,9 +403,11 @@ export default function CategoriesScreen({
         return (
           <PressableFeedback onPress={onPress} style={styles.gridCard}>
             <PressableFeedback.Highlight />
-            <View style={styles.gridCardEmojiWrap}>
-              <Text style={styles.gridCardEmoji}>{emoji}</Text>
-            </View>
+            {emoji ? (
+              <View style={styles.gridCardEmojiWrap}>
+                <Text style={styles.gridCardEmoji}>{emoji}</Text>
+              </View>
+            ) : null}
             <Text style={styles.gridCardTitle} numberOfLines={2}>
               {displayName}
             </Text>
@@ -223,42 +418,102 @@ export default function CategoriesScreen({
         );
       }
 
-      // ── Layout móvil: fila tradicional ───────────────────────────────
-      return (
-        <PressableFeedback
-          onPress={onPress}
-          style={[
-            styles.card,
-            isSpecial && styles.cardSpecial,
-            index === 0 && { marginTop: 12 },
-          ]}
-        >
-          <PressableFeedback.Highlight />
-          <View
-            style={[styles.cardEmoji, isSpecial && styles.cardEmojiSpecial]}
+      // ── Layout móvil ──────────────────────────────────────────────────
+      // «Tu selección» va suelta y destacada; las categorías, en UNA lista
+      // agrupada con separadores finos, como agrupa iOS sus ajustes. Antes
+      // eran 16 tarjetas con su sombra cada una: más alto, más ruido y
+      // ninguna jerarquía entre lo tuyo y el catálogo.
+      if (isSpecial) {
+        const count = item.songCount;
+        return (
+          <PressableFeedback
+            onPress={onPress}
+            style={[styles.row, styles.selectionRow]}
+            accessibilityRole="button"
+            accessibilityLabel={`Tu selección, ${
+              count === 0
+                ? 'vacía'
+                : `${count} ${count === 1 ? 'canción' : 'canciones'}`
+            }`}
           >
-            <Text style={styles.emojiText}>{emoji}</Text>
-          </View>
-          <View style={styles.cardContent}>
-            <Text
-              style={[styles.cardTitle, isSpecial && styles.cardTitleSpecial]}
-              numberOfLines={1}
-            >
-              {displayName}
-            </Text>
-          </View>
-          <View style={styles.cardRight}>
-            <Text style={styles.countBadge}>{item.songCount}</Text>
+            <PressableFeedback.Highlight />
+            <View style={[styles.rowIcon, styles.selectionIcon]}>
+              {emoji ? (
+                <Text style={styles.emojiText}>{emoji}</Text>
+              ) : (
+                <MaterialIcons
+                  name="queue-music"
+                  size={22}
+                  color={glyphColor}
+                />
+              )}
+            </View>
+            <View style={styles.selectionContent}>
+              <Text style={[styles.rowTitle, styles.selectionTitle]}>
+                {displayName}
+              </Text>
+              <Text style={styles.selectionSubtitle} numberOfLines={1}>
+                {count === 0
+                  ? 'Vacía · añade canciones desde el cantoral'
+                  : `${count} ${count === 1 ? 'canción' : 'canciones'}`}
+              </Text>
+            </View>
             <MaterialIcons
               name="chevron-right"
               size={20}
-              color={isDark ? '#8E8E93' : '#C7C7CC'}
+              color={themeColors(isDark).link}
+            />
+          </PressableFeedback>
+        );
+      }
+
+      // `index` cuenta «Tu selección» (posición 0): la primera categoría es 1.
+      const isFirst = index === 1;
+      const isLast = index === lastIndex;
+      const row = (
+        <PressableFeedback
+          onPress={onPress}
+          style={[
+            styles.row,
+            styles.groupRow,
+            isFirst && styles.groupFirst,
+            isLast && styles.groupLast,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={`${displayName}, ${item.songCount} ${
+            item.songCount === 1 ? 'canción' : 'canciones'
+          }`}
+        >
+          <PressableFeedback.Highlight />
+          {emoji ? (
+            <View style={styles.rowIcon}>
+              <Text style={styles.emojiText}>{emoji}</Text>
+            </View>
+          ) : null}
+          <View style={[styles.rowContent, !isLast && styles.rowDivider]}>
+            <Text style={styles.rowTitle} numberOfLines={1}>
+              {displayName}
+            </Text>
+            <Text style={styles.rowCount}>{item.songCount}</Text>
+            <MaterialIcons
+              name="chevron-right"
+              size={20}
+              color={isDark ? SystemGray.dark.gray : SystemGray.light.gray3}
             />
           </View>
         </PressableFeedback>
       );
+      if (!isFirst) return row;
+      return (
+        <View>
+          <Text style={styles.groupLabel} accessibilityRole="header">
+            Categorías
+          </Text>
+          {row}
+        </View>
+      );
     },
-    [isDark, navigation, isWideLayout, styles],
+    [isDark, isWideLayout, styles, lastIndex, glyphColor],
   );
 
   // ── Hero "Tu selección" para iPad ────────────────────────────────────
@@ -268,31 +523,31 @@ export default function CategoriesScreen({
     if (!selectionItem) return null;
     return (
       <PressableFeedback
-        onPress={() => navigation.navigate('SelectedSongs')}
+        onPress={() => openCantoral('SelectedSongs')}
         style={styles.heroCard}
       >
         <PressableFeedback.Highlight />
         <View style={styles.heroEmojiWrap}>
-          <Text style={styles.heroEmoji}>🎵</Text>
+          <MaterialIcons name="queue-music" size={30} color={glyphColor} />
         </View>
         <View style={styles.heroContent}>
           <Text style={styles.heroTitle}>Tu selección</Text>
           <Text style={styles.heroSubtitle}>
             {selectionItem.songCount === 0
-              ? 'Añade canciones a tu playlist para tenerlas a mano'
+              ? 'Añade canciones para tenerlas a mano'
               : `${selectionItem.songCount} ${
                   selectionItem.songCount === 1 ? 'canción' : 'canciones'
-                } en tu playlist`}
+                }`}
           </Text>
         </View>
         <MaterialIcons
           name="chevron-right"
           size={24}
-          color={isDark ? '#7AB3FF' : '#253883'}
+          color={themeColors(isDark).link}
         />
       </PressableFeedback>
     );
-  }, [isWideLayout, displayCategories, navigation, isDark, styles]);
+  }, [isWideLayout, displayCategories, isDark, styles, glyphColor]);
 
   const sectionLabel = useCallback(() => {
     if (!isWideLayout) return null;
@@ -306,24 +561,69 @@ export default function CategoriesScreen({
   const listHeader = useMemo(
     () => (
       <View>
+        {featuredTags.length > 0 && (
+          <View style={styles.featuredTags}>
+            {featuredTags.map((tag) => (
+              <TagChip
+                key={tag.slug}
+                tag={tag}
+                isDark={isDark}
+                onPress={openTag}
+              />
+            ))}
+          </View>
+        )}
         {renderSelectionHero()}
         {sectionLabel()}
       </View>
     ),
-    [renderSelectionHero, sectionLabel],
+    [renderSelectionHero, sectionLabel, featuredTags, isDark, openTag, styles],
   );
 
   if (loading && sortedCategories.length === 0) {
-    return <ProgressWithMessage message="Cargando canciones..." />;
+    return (
+      <>
+        <ListSkeleton
+          isDark={isDark}
+          label="Cargando el cantoral"
+          maxWidth={isWideLayout ? layout.contentMaxWidth : undefined}
+        />
+        {menuSheet}
+      </>
+    );
+  }
+
+  // Sin caché y sin haber podido descargar (primer arranque sin red): antes
+  // quedaba una única fila, «Tu selección», sin ninguna explicación, y parecía
+  // que el cantoral estaba roto. El reintento lo hace el hook solo al volver
+  // la red; si hay red y aun así falló, se puede reintentar a mano.
+  if (!loading && sortedCategories.length === 0) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <EmptyState
+          icon={offline ? 'cloud-off' : 'library-music'}
+          title={offline ? 'Sin conexión' : 'No hay canciones'}
+          subtitle="El cantoral se descarga la primera vez que hay internet y luego funciona sin conexión."
+          actionLabel={offline ? undefined : 'Reintentar'}
+          onAction={offline ? undefined : onRefresh}
+        />
+        {menuSheet}
+      </View>
+    );
   }
 
   return (
     <View style={styles.container}>
-      {/* Old topColorBar removed to clean up inline custom header */}
-      <FlatList
+      <Animated.FlatList
+        ref={listRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         data={gridData}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: contentPaddingBottom },
+        ]}
         contentInsetAdjustmentBehavior="automatic"
         initialNumToRender={10}
         maxToRenderPerBatch={15}
@@ -335,7 +635,36 @@ export default function CategoriesScreen({
         columnWrapperStyle={numColumns > 1 ? styles.gridRow : undefined}
         // Cambiar numColumns en runtime requiere remontar la lista.
         key={`cats-${numColumns}`}
+        refreshControl={
+          Platform.OS === 'web' ? undefined : (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={headerIconColor}
+            />
+          )
+        }
       />
+
+      <TagCloudSheet
+        visible={showTags}
+        onClose={() => setShowTags(false)}
+        tags={tagIndex.tags}
+        onSelectTag={(tag) => {
+          pendingTagRef.current = tag;
+          setShowTags(false);
+        }}
+        onCloseComplete={handleTagsCloseComplete}
+      />
+
+      <CantoralOnboarding
+        visible={onboardingVisible}
+        onClose={closeOnboarding}
+        songsData={songsData}
+        tags={tagIndex.tags}
+      />
+
+      {menuSheet}
 
       <SuggestSongModal
         visible={showForm}
@@ -354,103 +683,39 @@ const createStyles = (
   contentMaxWidth: number,
 ) => {
   const isDark = scheme === 'dark';
-  const cardShadow =
-    Platform.OS === 'web'
-      ? ({
-          boxShadow: isDark
-            ? '0 1px 3px rgba(0,0,0,0.4)'
-            : '0 1px 3px rgba(0,0,0,0.06)',
-        } as any)
-      : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.25 : 0.04,
-          shadowRadius: 3,
-          elevation: 1,
-        };
-  const gridCardShadow =
-    Platform.OS === 'web'
-      ? ({
-          boxShadow: isDark
-            ? '0 2px 10px rgba(0,0,0,0.4)'
-            : '0 2px 10px rgba(0,0,0,0.06)',
-        } as any)
-      : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDark ? 0.3 : 0.06,
-          shadowRadius: 8,
-          elevation: 2,
-        };
 
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
+    },
+    // Vacío/error a pantalla completa: centrado, para que en iOS no quede
+    // debajo de la cabecera transparente.
+    centered: {
+      justifyContent: 'center',
     },
     // Botones del header NATIVO (sugerir/buscar). Minimal —solo padding, sin
     // fondo— para que iOS 26 los envuelva en su cápsula liquid-glass.
+    // Atajos a las etiquetas elegidas en el onboarding.
+    featuredTags: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      paddingHorizontal: isWide ? 0 : spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.md,
+    },
     headerActions: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 14,
+      gap: 4,
       marginRight: Platform.OS === 'web' ? 8 : 0,
     },
     headerNativeButton: {
       padding: 6,
     },
-    inlineHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-end',
-      paddingBottom: 16,
-      paddingHorizontal: 4,
-      marginBottom: 8,
-    },
-    headerLeftContainer: {
-      flex: 1,
-      justifyContent: 'flex-end',
-    },
-    headerTitle: {
-      fontSize: 34,
-      fontWeight: '800',
-      letterSpacing: -1.4,
-      lineHeight: 38,
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
-    },
-    headerSubtitle: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: isDark ? '#A09A8A' : '#7A6550',
-      marginTop: 2,
-    },
-    headerRightContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      marginBottom: 2,
-    },
-    headerFloatingButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      borderWidth: 1,
-      borderColor: isDark
-        ? 'rgba(218, 165, 32, 0.3)'
-        : 'rgba(196, 146, 42, 0.25)',
-      backgroundColor: isDark
-        ? 'rgba(218, 165, 32, 0.08)'
-        : 'rgba(196, 146, 42, 0.06)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    headerButton: {
-      padding: 4,
-      marginHorizontal: Platform.OS === 'web' ? 4 : 0,
-    },
     listContent: {
       paddingHorizontal: isWide ? 24 : 16,
-      paddingBottom: isIOS ? 100 : 80,
       ...(isWide
         ? {
             maxWidth: contentMaxWidth,
@@ -459,80 +724,97 @@ const createStyles = (
           }
         : null),
     },
-    // ── Móvil: fila tradicional ─────────────────────────────────────────
-    card: {
+    // ── Móvil: «Tu selección» suelta + lista agrupada ───────────────────
+    row: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
+      paddingLeft: 14,
+    },
+    selectionRow: {
+      marginTop: 12,
+      paddingRight: 12,
+      paddingVertical: 12,
       borderRadius: radii.lg,
-      paddingHorizontal: 14,
-      paddingVertical: 11,
-      marginBottom: 8,
-      ...cardShadow,
-    },
-    cardSpecial: {
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
       borderWidth: 1,
-      borderColor: isDark ? '#2A3D66' : '#D4E2FF',
+      borderColor: isDark
+        ? KeyPillColors.borderDark
+        : KeyPillColors.borderLight,
     },
-    cardEmoji: {
-      width: 38,
-      height: 38,
-      borderRadius: 10,
-      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
+    selectionIcon: {
+      backgroundColor: isDark ? colors.primary : KeyPillColors.borderLight,
+    },
+    selectionContent: {
+      flex: 1,
+    },
+    selectionTitle: {
+      color: themeColors(isDark).link,
+      flex: 0,
+    },
+    selectionSubtitle: {
+      ...typography.caption,
+      color: themeColors(isDark).textSecondary,
+      marginTop: 1,
+    },
+    groupLabel: {
+      ...typography.overline,
+      color: themeColors(isDark).textMuted,
+      marginTop: 24,
+      marginBottom: 8,
+      paddingLeft: 14,
+    },
+    groupRow: {},
+    groupFirst: {
+      borderTopLeftRadius: radii.lg,
+      borderTopRightRadius: radii.lg,
+    },
+    groupLast: {
+      borderBottomLeftRadius: radii.lg,
+      borderBottomRightRadius: radii.lg,
+    },
+    rowIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: radii.sm,
+      backgroundColor: themeColors(isDark).backgroundSunken,
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 12,
     },
-    cardEmojiSpecial: {
-      backgroundColor: isDark ? '#253883' : '#D4E2FF',
-    },
     emojiText: {
       fontSize: 20,
     },
-    cardContent: {
+    rowContent: {
       flex: 1,
-    },
-    cardTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
-      letterSpacing: -0.2,
-    },
-    cardTitleSpecial: {
-      color: isDark ? '#7AB3FF' : '#253883',
-    },
-    cardRight: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
+      minHeight: 52,
+      paddingRight: 10,
+      gap: 6,
     },
-    countBadge: {
-      fontSize: 12,
+    // El separador empieza DESPUÉS del icono, como en iOS: separa filas, no
+    // corta la columna de iconos.
+    rowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: themeColors(isDark).separator,
+    },
+    rowTitle: {
+      ...typography.body,
       fontWeight: '600',
-      color: isDark ? '#8E8E93' : '#6E6E73',
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
-      paddingHorizontal: 7,
-      paddingVertical: 2,
-      borderRadius: 10,
-      overflow: 'hidden',
-      fontVariant: ['tabular-nums'],
+      color: themeColors(isDark).text,
+      letterSpacing: -0.2,
+      flex: 1,
     },
-    topColorBar: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: 4,
-      backgroundColor: '#f4c11e',
-      zIndex: 1000,
+    rowCount: {
+      ...typography.subhead,
+      color: themeColors(isDark).textMuted,
+      fontVariant: ['tabular-nums'],
     },
     // ── iPad: hero + grid ───────────────────────────────────────────────
     sectionLabel: {
-      fontSize: 11,
-      fontWeight: '800',
-      letterSpacing: 1.2,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      ...typography.overline,
+      color: themeColors(isDark).textMuted,
       marginTop: 22,
       marginBottom: 12,
       paddingLeft: 4,
@@ -540,20 +822,22 @@ const createStyles = (
     heroCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
-      borderRadius: radii.lg + 6,
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
+      borderRadius: radii.xl,
       paddingHorizontal: 22,
       paddingVertical: 20,
       marginTop: 18,
       borderWidth: 1,
-      borderColor: isDark ? '#2A3D66' : '#D4E2FF',
+      borderColor: isDark
+        ? KeyPillColors.borderDark
+        : KeyPillColors.borderLight,
       gap: 18,
     },
     heroEmojiWrap: {
       width: 56,
       height: 56,
-      borderRadius: 16,
-      backgroundColor: isDark ? '#253883' : '#D4E2FF',
+      borderRadius: radii.lg,
+      backgroundColor: isDark ? colors.primary : KeyPillColors.borderLight,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -564,15 +848,14 @@ const createStyles = (
       flex: 1,
     },
     heroTitle: {
-      fontSize: 22,
-      fontWeight: '800',
+      ...typography.h2,
       letterSpacing: -0.4,
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
       marginBottom: 4,
     },
     heroSubtitle: {
-      fontSize: 14,
-      color: isDark ? '#9CB7E0' : '#5A6B8A',
+      ...typography.subhead,
+      color: themeColors(isDark).textSecondary,
       lineHeight: 19,
     },
     gridRow: {
@@ -581,19 +864,23 @@ const createStyles = (
     },
     gridCard: {
       flex: 1,
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: radii.lg + 4,
+      backgroundColor: themeColors(isDark).background,
+      borderRadius: radii.xl,
       paddingVertical: 22,
       paddingHorizontal: 18,
       minHeight: 140,
       justifyContent: 'flex-start',
-      ...gridCardShadow,
+      // La sombra de card del sistema (≤ 0,1). La propia llegaba a 0,3 en
+      // oscuro (0,4 en web) y dejaba un halo sucio alrededor de cada tarjeta.
+      ...shadows.card,
     },
     gridCardEmojiWrap: {
       width: 52,
       height: 52,
-      borderRadius: 14,
-      backgroundColor: isDark ? Colors.dark.card : '#F7F7FB',
+      borderRadius: radii.lg,
+      backgroundColor: isDark
+        ? Colors.dark.card
+        : themeColors(isDark).backgroundSunken,
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 14,
@@ -602,17 +889,17 @@ const createStyles = (
       fontSize: 28,
     },
     gridCardTitle: {
-      fontSize: 17,
+      ...typography.title,
       fontWeight: '700',
       letterSpacing: -0.3,
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      color: themeColors(isDark).text,
       lineHeight: 21,
       marginBottom: 4,
     },
     gridCardCount: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '500',
-      color: isDark ? '#8E8E93' : '#8A8A8E',
+      color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
     },
   });

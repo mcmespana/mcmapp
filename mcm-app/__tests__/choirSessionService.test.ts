@@ -3,26 +3,35 @@
  *
  * Cubre la lógica de coordinación maestro/oyentes que vive en el cliente
  * (PLAN_CALIDAD §5.2): validación de códigos, forma del payload publicado en
- * Firebase, expiración a 2 semanas, limpieza de `undefined`, y el traspaso de
- * sesión entre códigos (`changeChoirSessionCode`) con sus casos de error.
+ * Firebase, expiración a 12h con alargue por actividad, limpieza de
+ * `undefined`, y el traspaso de sesión entre códigos
+ * (`changeChoirSessionCode`) con sus casos de error.
  *
  * Firebase RTDB está mockeado en `__mocks__/firebase.ts` (mapeado en
  * jest.config.js); aquí controlamos las respuestas por llamada con
  * `mockResolvedValueOnce`.
  */
-import { get, set, update, remove } from 'firebase/database';
+import { get, set, update, remove, onValue } from 'firebase/database';
 import {
   createChoirSession,
   fetchChoirSession,
+  fetchLiveChoirSession,
   choirSessionExists,
   publishChoirCurrent,
   publishChoirPlaylist,
   changeChoirSessionCode,
   closeChoirSession,
+  subscribeChoirSession,
+  shouldRenewChoirSession,
+  extendChoirSession,
+  CHOIR_SESSION_TTL_MS,
+  CHOIR_SESSION_RENEWAL_WINDOW_MS,
+  CHOIR_SESSION_EXTENSION_MS,
 } from '@/services/choirSessionService';
+import type { ChoirSession } from '@/services/choirSessionService';
 import type { SelectedSong } from '@/contexts/SelectedSongsContext';
 
-const TWO_WEEKS_MS = 1000 * 60 * 60 * 24 * 14;
+const SESSION_TTL_MS = CHOIR_SESSION_TTL_MS;
 const VALID = '1234';
 const OTHER = '5678';
 
@@ -45,7 +54,7 @@ describe('validación de código', () => {
     ['12', 'demasiado corto'],
     ['123456', 'demasiado largo'],
     ['', 'vacío'],
-  ])('rechaza el código "%s" (%s)', async (code) => {
+  ])('rechaza la clave "%s" (%s)', async (code) => {
     await expect(choirSessionExists(code)).rejects.toThrow(/inválido/i);
   });
 
@@ -56,7 +65,7 @@ describe('validación de código', () => {
 });
 
 describe('createChoirSession', () => {
-  it('construye el payload con expiración a 2 semanas y current nulo', async () => {
+  it('construye el payload con expiración a 12 h y current nulo', async () => {
     const now = 1_700_000_000_000;
     jest.spyOn(Date, 'now').mockReturnValue(now);
 
@@ -71,7 +80,8 @@ describe('createChoirSession', () => {
     expect(result.master.deviceId).toBe('dev-1');
     expect(result.current).toBeNull();
     expect(result.createdAt).toBe(now);
-    expect(result.expiresAt).toBe(now + TWO_WEEKS_MS);
+    expect(result.startedAt).toBe(now);
+    expect(result.expiresAt).toBe(now + SESSION_TTL_MS);
     expect(result.playlist).toHaveLength(2);
     expect(set).toHaveBeenCalledTimes(1);
   });
@@ -111,7 +121,9 @@ describe('publicaciones del maestro', () => {
     expect(payload.current.transpose).toBe(2);
     expect(payload.current.updatedAt).toBe(now);
     expect(payload['master/lastSeen']).toBe(now);
-    expect(payload.expiresAt).toBe(now + TWO_WEEKS_MS);
+    // publishChoirCurrent por sí solo NO alarga la caducidad: eso lo decide
+    // el llamador con shouldRenewChoirSession + extendChoirSession (abajo).
+    expect(payload).not.toHaveProperty('expiresAt');
   });
 
   it('publishChoirPlaylist actualiza la playlist y la actividad', async () => {
@@ -119,6 +131,65 @@ describe('publicaciones del maestro', () => {
     const payload = (update as jest.Mock).mock.calls[0][1];
     expect(payload.playlist).toHaveLength(1);
     expect(payload).toHaveProperty('lastActivity');
+  });
+});
+
+describe('shouldRenewChoirSession', () => {
+  const baseSession = (overrides: Partial<ChoirSession> = {}): ChoirSession =>
+    ({
+      v: 1,
+      master: { deviceId: 'dev-1', lastSeen: 0 },
+      playlist: [],
+      current: null,
+      createdAt: 0,
+      startedAt: 0,
+      updatedAt: 0,
+      lastActivity: 0,
+      expiresAt: SESSION_TTL_MS,
+      ...overrides,
+    }) as ChoirSession;
+
+  it('no alarga una sesión ya caducada', () => {
+    const now = SESSION_TTL_MS + 1;
+    expect(shouldRenewChoirSession(baseSession(), now)).toBe(false);
+  });
+
+  it('no alarga si aún faltan más de 2 h para caducar', () => {
+    const now = SESSION_TTL_MS - CHOIR_SESSION_RENEWAL_WINDOW_MS - 1;
+    expect(shouldRenewChoirSession(baseSession(), now)).toBe(false);
+  });
+
+  it('alarga si quedan 2 h o menos para caducar (dentro de la ventana)', () => {
+    const now = SESSION_TTL_MS - CHOIR_SESSION_RENEWAL_WINDOW_MS;
+    expect(shouldRenewChoirSession(baseSession(), now)).toBe(true);
+  });
+
+  it('alarga justo en el límite de la ventana (falta 1ms más)', () => {
+    const now = SESSION_TTL_MS - CHOIR_SESSION_RENEWAL_WINDOW_MS + 1;
+    expect(shouldRenewChoirSession(baseSession(), now)).toBe(true);
+  });
+
+  it('no revienta ni alarga con sesión null', () => {
+    expect(shouldRenewChoirSession(null, 0)).toBe(false);
+  });
+});
+
+describe('extendChoirSession', () => {
+  it('escribe expiresAt = ahora + 12h y refresca actividad/lastSeen', async () => {
+    const now = 1_700_000_500_000;
+    jest.spyOn(Date, 'now').mockReturnValue(now);
+
+    await extendChoirSession(VALID);
+
+    const payload = (update as jest.Mock).mock.calls[0][1];
+    expect(payload.expiresAt).toBe(now + CHOIR_SESSION_EXTENSION_MS);
+    expect(payload.updatedAt).toBe(now);
+    expect(payload.lastActivity).toBe(now);
+    expect(payload['master/lastSeen']).toBe(now);
+  });
+
+  it('rechaza un código inválido, igual que el resto de operaciones', async () => {
+    await expect(extendChoirSession('abc')).rejects.toThrow(/inválido/i);
   });
 });
 
@@ -167,9 +238,85 @@ describe('changeChoirSessionCode', () => {
   });
 });
 
+describe('subscribeChoirSession', () => {
+  it('la limpieza devuelta ES el Unsubscribe de onValue (no un no-op)', () => {
+    const mockUnsubscribe = jest.fn();
+    (onValue as jest.Mock).mockReturnValueOnce(mockUnsubscribe);
+
+    const cleanup = subscribeChoirSession(VALID, jest.fn());
+    cleanup();
+
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('closeChoirSession', () => {
   it('borra la sesión', async () => {
     await closeChoirSession(VALID);
     expect(remove).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('subscribeChoirSession — sesiones caducadas', () => {
+  /** Llama al callback de datos que el servicio registró en `onValue`. */
+  const emit = (value: unknown) => {
+    const onData = (onValue as jest.Mock).mock.calls.at(-1)![1];
+    onData(snapshot(value));
+  };
+  const emitError = (err: Error) => {
+    const onErr = (onValue as jest.Mock).mock.calls.at(-1)![2];
+    onErr(err);
+  };
+
+  it('una sesión caducada llega como null: el oyente sale solo a las 24 h', () => {
+    const onChange = jest.fn();
+    subscribeChoirSession(VALID, onChange);
+    emit({ v: 1, expiresAt: Date.now() - 1 });
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('una sesión viva se entrega tal cual', () => {
+    const onChange = jest.fn();
+    subscribeChoirSession(VALID, onChange);
+    const live = { v: 1, expiresAt: Date.now() + 60_000 };
+    emit(live);
+    expect(onChange).toHaveBeenCalledWith(live);
+  });
+
+  it('un nodo borrado (cierre del líder) llega como null', () => {
+    const onChange = jest.fn();
+    subscribeChoirSession(VALID, onChange);
+    emit(null);
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('reenvía el error de Firebase al llamante (reglas, red)', () => {
+    const onError = jest.fn();
+    subscribeChoirSession(VALID, jest.fn(), onError);
+    const err = new Error('permission_denied');
+    emitError(err);
+    expect(onError).toHaveBeenCalledWith(err);
+  });
+});
+
+describe('fetchLiveChoirSession', () => {
+  it('una sesión caducada que sigue en Firebase (sin purgar) se trata como inexistente', async () => {
+    (get as jest.Mock).mockResolvedValueOnce(
+      snapshot({ v: 1, expiresAt: Date.now() - 1 }),
+    );
+    await expect(fetchLiveChoirSession(VALID)).resolves.toBeNull();
+  });
+
+  it('una sesión muy antigua con solo createdAt se mide desde createdAt', async () => {
+    (get as jest.Mock).mockResolvedValueOnce(
+      snapshot({ v: 1, createdAt: Date.now() - SESSION_TTL_MS - 1 }),
+    );
+    await expect(fetchLiveChoirSession(VALID)).resolves.toBeNull();
+  });
+
+  it('una sesión viva se devuelve', async () => {
+    const live = { v: 1, startedAt: Date.now() };
+    (get as jest.Mock).mockResolvedValueOnce(snapshot(live));
+    await expect(fetchLiveChoirSession(VALID)).resolves.toEqual(live);
   });
 });

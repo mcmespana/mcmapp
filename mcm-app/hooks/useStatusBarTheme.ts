@@ -102,9 +102,7 @@ export function getPageThemeColor(pathname: string): string {
 export function updateThemeColor(
   color: string,
   statusBarStyle:
-    | 'default'
-    | 'black'
-    | 'black-translucent' = 'black-translucent',
+    'default' | 'black' | 'black-translucent' = 'black-translucent',
 ) {
   if (Platform.OS !== 'web') return;
 

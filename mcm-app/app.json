@@ -2,8 +2,8 @@
   "expo": {
     "name": "MCM App",
     "slug": "mcm-app",
-    "version": "2.0.0",
-    "runtimeVersion": "2.0.0",
+    "version": "2.5.1",
+    "runtimeVersion": "2.5.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mcmapp",
@@ -14,6 +14,12 @@
       "bundleIdentifier": "com.familiaconsolacion.mcmapp",
       "infoPlist": {
         "CFBundleDisplayName": "MCM App",
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ],
         "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": ["webcal"],
         "NSLocationWhenInUseUsageDescription": "La app puede usar tu ubicación para habilitar funciones basadas en ubicación cuando estén disponibles (por ejemplo, mostrar información relevante cerca de ti).",
@@ -39,17 +45,26 @@
         ]
       },
       "appleTeamId": "5P53S6QB23",
-      "associatedDomains": ["applinks:mcm.expo.app"]
+      "associatedDomains": [
+        "applinks:mcm.expo.app",
+        "applinks:comunica.movimientoconsolacion.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
+        "monochromeImage": "./assets/images/monochrome-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.mcmespana.mcmapp",
       "blockedPermissions": ["android.permission.ACTIVITY_RECOGNITION"],
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT", "BROWSABLE"],
+          "data": [{ "scheme": "mcmapp" }]
+        },
         {
           "action": "VIEW",
           "category": ["DEFAULT", "BROWSABLE"],
@@ -82,53 +97,45 @@
               "pathPrefix": "/coro"
             }
           ]
+        },
+        {
+          "autoVerify": true,
+          "action": "VIEW",
+          "category": ["DEFAULT", "BROWSABLE"],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "comunica.movimientoconsolacion.com",
+              "pathPrefix": "/ap"
+            },
+            {
+              "scheme": "https",
+              "host": "comunica.movimientoconsolacion.com",
+              "pathPrefix": "/app"
+            },
+            {
+              "scheme": "https",
+              "host": "comunica.movimientoconsolacion.com",
+              "pathPrefix": "/area-privada"
+            },
+            {
+              "scheme": "https",
+              "host": "comunica.movimientoconsolacion.com",
+              "pathPrefix": "/actividades"
+            },
+            {
+              "scheme": "https",
+              "host": "comunica.movimientoconsolacion.com",
+              "path": "/"
+            }
+          ]
         }
       ]
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png",
-      "meta": {
-        "apple": {
-          "mobileWebAppCapable": "yes",
-          "statusBarStyle": "black-translucent",
-          "title": "MCM App · Web",
-          "touchIcon": "./assets/images/icon.png",
-          "icons": {
-            "120": "./assets/images/icon-120.png",
-            "152": "./assets/images/icon-152.png",
-            "167": "./assets/images/icon-167.png",
-            "180": "./assets/images/icon-180.png"
-          }
-        },
-        "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
-      },
-      "manifest": {
-        "name": "MCM App · Web",
-        "short_name": "MCM",
-        "description": "Aplicación móvil de MCM España para seguimiento de actividades, cantoral y mucho más",
-        "start_url": "/",
-        "scope": "/",
-        "display": "standalone",
-        "orientation": "portrait",
-        "background_color": "#ffffff",
-        "theme_color": "#253883",
-        "icons": [
-          {
-            "src": "./assets/images/icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any maskable"
-          },
-          {
-            "src": "./assets/images/icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
-          }
-        ]
-      }
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
@@ -148,19 +155,91 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/adaptive-icon.png",
+          "icon": "./assets/images/notification-icon.png",
           "color": "#253883",
           "sounds": [],
           "mode": "production"
         }
       ],
       "expo-asset",
+      "./plugins/withNotificationServiceExtension",
+      [
+        "expo-alternate-app-icons",
+        [
+          {
+            "name": "Carismochito",
+            "ios": "./assets/app-icons/carismochito.png",
+            "android": {
+              "foregroundImage": "./assets/app-icons/carismochito-foreground.png",
+              "backgroundColor": "#A3BD31"
+            }
+          }
+        ]
+      ],
       ["expo-build-properties"],
       "@react-native-community/datetimepicker",
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf",
+            "./node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf"
+          ]
+        }
+      ],
       "expo-image",
       "expo-sharing",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "MCM App usa la cámara para escanear los códigos QR de playlists y sesiones de coro, y para hacer tu foto de perfil y fotos de títulos y documentos en tu área privada.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "react-native-nfc-manager",
+        {
+          "nfcPermission": "MCM App usa NFC para leer tarjetas y pegatinas del movimiento.",
+          "includeNdefEntitlement": false
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "MCM App usa Face ID para proteger el acceso a tu área privada."
+        }
+      ],
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "MCM App usa Face ID para proteger el acceso a tu área privada."
+        }
+      ],
+      [
+        "react-native-audio-api",
+        {
+          "iosMicrophonePermission": "MCM App usa el micrófono para el afinador del cantoral: escucha tu guitarra para decirte si está afinada. El sonido se analiza en el móvil y no se guarda ni se envía.",
+          "iosBackgroundMode": false,
+          "androidPermissions": ["android.permission.RECORD_AUDIO"],
+          "androidForegroundService": false,
+          "enableFFmpeg": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "MCM App usa tus fotos para subir tu foto de perfil, títulos, certificados y documentos a tu área privada.",
+          "cameraPermission": "MCM App usa la cámara para escanear los códigos QR de playlists y sesiones de coro, y para hacer tu foto de perfil y fotos de títulos y documentos en tu área privada.",
+          "microphonePermission": "MCM App usa el micrófono para el afinador del cantoral: escucha tu guitarra para decirte si está afinada. El sonido se analiza en el móvil y no se guarda ni se envía."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -169,14 +248,25 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "aa9f2d3a-b74a-4169-bad4-e851015e30c6"
+        "projectId": "aa9f2d3a-b74a-4169-bad4-e851015e30c6",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "MCMNotificationService",
+                  "bundleIdentifier": "com.familiaconsolacion.mcmapp.MCMNotificationService"
+                }
+              ]
+            }
+          }
+        }
       }
     },
     "updates": {
       "url": "https://u.expo.dev/aa9f2d3a-b74a-4169-bad4-e851015e30c6",
       "fallbackToCacheTimeout": 0,
-      "checkAutomatically": "ON_LOAD",
-      "disableAntiBrickingMeasures": true
+      "checkAutomatically": "ON_LOAD"
     }
   }
 }

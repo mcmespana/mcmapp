@@ -10,9 +10,9 @@
 //   2. MasHomeScreen reads and clears the pending screen on focus,
 //      then programmatically navigates to it within the native stack.
 
-import type { MasStackParamList } from '@/app/(tabs)/mas';
+import type { MasScreenName } from '@/utils/eventRoutes';
 
-type PendingScreen = keyof MasStackParamList;
+type PendingScreen = MasScreenName;
 
 interface PendingNavigation {
   screen: PendingScreen;

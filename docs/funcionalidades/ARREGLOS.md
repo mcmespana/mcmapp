@@ -54,12 +54,11 @@ los violines", "intro solo guitarra", dinámicas, entradas de voces, etc.).
   local) y además se **propone como edición** a `songs/ediciones`
   (`contentOld`/`contentNew`, `status: 'arrangement'`) para que el repo lo sincronice al
   `.cho`.
-- **Mapeo robusto:** el visor renderiza HTML en un WebView. `HtmlDivFormatter` emite una
-  `<div class="row">` por cada línea renderable, en orden de fuente, así que etiquetamos
-  cada fila con `data-line` = índice de su línea en el ChordPro original
-  (`injectRowLineIndices`). La transposición no cambia el número ni el orden de filas, por
-  lo que el índice es **transpose-invariante**. Si por lo que sea los conteos no cuadran,
-  no se etiqueta nada (no se arriesga una inserción en el sitio equivocado).
+- **Mapeo robusto:** en modo admin, la hoja de canción (`utils/songSheet.ts`) pinta cada
+  línea con `data-line` = número de línea que da el parser, que es el de la línea en el
+  ChordPro original (el preproceso de `useSongProcessor` no añade ni quita líneas). La
+  transposición no mueve líneas, así que el índice es **transpose-invariante**. Antes se
+  deducía contando filas del `HtmlDivFormatter` (`injectRowLineIndices`, ya borrado).
 
 ## Detalles técnicos (para mantenimiento)
 
@@ -67,9 +66,11 @@ los violines", "intro solo guitarra", dinámicas, entradas de voces, etc.).
   - `hasArrangements(chordPro)` — detecta si hay `{arr:}`.
   - `preprocessArrangements(chordPro)` — convierte `{arr: T}` en `{comment: @@ARR@@T}`
     **antes** de parsear con ChordSheetJS (así el `HtmlDivFormatter` lo posiciona solo).
-  - `postProcessArrangementsHtml(html)` — reetiqueta esos comentarios-centinela como
-    `<div class="arrangement">…</div>` y antepone el prefijo `"| "` al texto (sin duplicarlo
-    si ya empieza por `|`).
+  - En la canción, la hoja (`utils/songSheet.ts`) reconoce el centinela y pinta
+    `<div class="arrangement">` con el prefijo `"| "` (sin duplicarlo), alineado a la
+    derecha.
+  - `postProcessArrangementsHtml(html)` hace lo mismo sobre el HTML de `HtmlDivFormatter`,
+    que solo sigue usando el PDF de la playlist.
 - El toggle de visibilidad usa la clase `arr-hidden` en `<body>` (igual que `chords-hidden`),
   por lo que es un cambio **en vivo** sin reconstruir el HTML (`hooks/useSongProcessor.ts`).
 - `utils/playlistPdfHtml.ts` aplica el mismo pre/post-proceso para el PDF.

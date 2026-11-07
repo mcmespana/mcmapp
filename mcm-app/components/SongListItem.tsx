@@ -1,12 +1,25 @@
-import React, { useCallback, useRef, useEffect, useMemo } from 'react';
+import React, {
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {
   TouchableOpacity,
   Text,
   View,
   StyleSheet,
   Animated,
+  Platform,
 } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
+import Swipeable, {
+  type SwipeableMethods,
+} from 'react-native-gesture-handler/ReanimatedSwipeable';
+import type { SharedValue } from 'react-native-reanimated';
+import { openedActionsSide } from '@/utils/swipeSide';
+import SwipeActionContent from './ui/SwipeActionContent';
+import { PressableFeedback } from 'heroui-native';
 import { h } from '@/utils/haptics';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -14,15 +27,22 @@ import { useContextMenu } from '@/hooks/useContextMenu';
 import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
 import { transposeKey, transposeLabel } from '../utils/transposeKey';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons } from '@/components/ui/icons';
 import {
   Colors,
+  HighlightColors,
+  KeyPillColors,
   StateColors,
   SwipeColors,
-  KeyPillColors,
+  SystemGray,
+  themeColors,
 } from '@/constants/colors';
 import { durations } from '@/constants/animations';
 import { extractSongMedia, mediaKinds } from '@/types/songMedia';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
+import spacing from '@/constants/spacing';
+import type { ResolvedTag } from '@/utils/songTags';
 
 // Type for song data
 interface Song {
@@ -52,6 +72,10 @@ interface SongListItemProps {
   selectedTranspose: number;
   onAddSong: (filename: string) => void;
   onRemoveSong: (filename: string) => void;
+  /** Última fila de un grupo con esquinas: el separador sobra. */
+  hideSeparator?: boolean;
+  /** Etiquetas destacadas que lleva la canción: se ven discretas. */
+  featuredTags?: ResolvedTag[];
 }
 
 const SongListItem: React.FC<SongListItemProps> = React.memo(
@@ -64,18 +88,30 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     selectedTranspose,
     onAddSong,
     onRemoveSong,
+    hideSeparator = false,
+    featuredTags,
   }) {
     const { settings } = useSettings();
     const { notation } = settings;
     const scheme = useColorScheme();
-    const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
     const isDark = scheme === 'dark';
-    const swipeableRow = useRef<Swipeable>(null);
+    // Estilos de módulo, uno por tema: antes cada fila hacía su propio
+    // `StyleSheet.create` de ~45 estilos al montarse.
+    const styles = isDark ? stylesDark : stylesLight;
+    const swipeableRow = useRef<SwipeableMethods>(null);
     const backgroundColorAnim = useRef(
       new Animated.Value(isSelected ? 1 : 0),
     ).current;
 
+    // El valor ya NACE en su destino (`isSelected ? 1 : 0`), así que en el
+    // montaje no hay nada que animar. Antes se lanzaba igualmente un
+    // `Animated.timing` de 0 a 0 sin driver nativo (250 ms de rAF en el hilo
+    // de JS) por cada fila que entraba al hacer scroll, compitiendo con el
+    // propio scroll. Solo se anima cuando la selección CAMBIA.
+    const prevSelected = useRef(isSelected);
     useEffect(() => {
+      if (prevSelected.current === isSelected) return;
+      prevSelected.current = isSelected;
       Animated.timing(backgroundColorAnim, {
         toValue: isSelected ? 1 : 0,
         duration: durations.base,
@@ -83,81 +119,87 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
       }).start();
     }, [isSelected, backgroundColorAnim]);
 
-    const animatedStyle = {
-      backgroundColor: backgroundColorAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [
-          isDark ? Colors.dark.background : Colors.light.background,
-          isDark ? StateColors.selectedBgDark : StateColors.selectedBgLight,
-        ],
+    const animatedStyle = useMemo(
+      () => ({
+        backgroundColor: backgroundColorAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [
+            isDark ? Colors.dark.background : Colors.light.background,
+            isDark ? StateColors.selectedBgDark : StateColors.selectedBgLight,
+          ],
+        }),
       }),
-    };
+      [backgroundColorAnim, isDark],
+    );
+
+    // Web: la fila reacciona al cursor y lleva un botón visible para añadir o
+    // quitar de «Tu selección». Con ratón, arrastrar la fila (el swipe) o
+    // descubrir el clic derecho no es una forma razonable de armar la lista.
+    const [hovered, setHovered] = useState(false);
+    const hoverProps = isWeb
+      ? {
+          onPointerEnter: () => setHovered(true),
+          onPointerLeave: () => setHovered(false),
+        }
+      : null;
 
     const renderRightActions = (
-      progress: Animated.AnimatedInterpolation<number>,
-      dragX: Animated.AnimatedInterpolation<number>,
-    ) => {
-      const trans = dragX.interpolate({
-        inputRange: [-100, 0],
-        outputRange: [0, 100],
-        extrapolate: 'clamp',
-      });
-      return (
-        <TouchableOpacity
-          style={styles.rightAction}
-          onPress={() => {
-            onAddSong(song.filename);
-            swipeableRow.current?.close();
-          }}
+      _progress: SharedValue<number>,
+      translation: SharedValue<number>,
+    ) => (
+      <TouchableOpacity
+        style={styles.rightAction}
+        onPress={() => {
+          h.add();
+          onAddSong(song.filename);
+          swipeableRow.current?.close();
+        }}
+      >
+        <SwipeActionContent
+          translation={translation}
+          inputRange={[-100, 0]}
+          outputRange={[0, 100]}
+          property="translateX"
+          style={styles.actionContent}
         >
-          <Animated.View
-            style={[
-              styles.actionContent,
-              { transform: [{ translateX: trans }] },
-            ]}
-          >
-            <IconSymbol name="plus.circle" size={22} color="#fff" />
-            <Text style={styles.actionText}>Seleccionar</Text>
-          </Animated.View>
-        </TouchableOpacity>
-      );
-    };
+          <IconSymbol name="plus.circle" size={22} color="#fff" />
+          <Text style={styles.actionText}>Añadir</Text>
+        </SwipeActionContent>
+      </TouchableOpacity>
+    );
 
     const renderLeftActions = (
-      progress: Animated.AnimatedInterpolation<number>,
-      dragX: Animated.AnimatedInterpolation<number>,
-    ) => {
-      const trans = dragX.interpolate({
-        inputRange: [0, 100],
-        outputRange: [-100, 0],
-        extrapolate: 'clamp',
-      });
-      return (
-        <TouchableOpacity
-          style={styles.leftAction}
-          onPress={() => {
-            onRemoveSong(song.filename);
-            swipeableRow.current?.close();
-          }}
+      _progress: SharedValue<number>,
+      translation: SharedValue<number>,
+    ) => (
+      <TouchableOpacity
+        style={styles.leftAction}
+        onPress={() => {
+          h.remove();
+          onRemoveSong(song.filename);
+          swipeableRow.current?.close();
+        }}
+      >
+        <SwipeActionContent
+          translation={translation}
+          inputRange={[0, 100]}
+          outputRange={[-100, 0]}
+          property="translateX"
+          style={styles.actionContent}
         >
-          <Animated.View
-            style={[
-              styles.actionContent,
-              { transform: [{ translateX: trans }] },
-            ]}
-          >
-            <IconSymbol name="minus.circle" size={22} color="#fff" />
-            <Text style={styles.actionText}>Quitar</Text>
-          </Animated.View>
-        </TouchableOpacity>
-      );
-    };
+          <IconSymbol name="minus.circle" size={22} color="#fff" />
+          <Text style={styles.actionText}>Quitar</Text>
+        </SwipeActionContent>
+      </TouchableOpacity>
+    );
 
     const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
 
-    // Indicador sutil de multimedia (▶ vídeo / 🎧 audio) en la fila.
+    // Indicador sutil de multimedia (▶ vídeo / 🎧 audio / 🔗 enlaces) en la fila.
     const kinds = useMemo(() => mediaKinds(extractSongMedia(song)), [song]);
-    const mediaIconColor = isDark ? '#5A5A5E' : '#B7B7BC';
+    // El mismo rol que la leyenda «vídeo · audio» de la cabecera de la lista:
+    // antes era un gris a mano que en claro se quedaba en 2:1 sobre blanco.
+    const mediaIconColor = themeColors(isDark).textMuted;
 
     const contextHandler = useCallback(() => {
       h.tap();
@@ -173,26 +215,46 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         renderRightActions={!isSelected ? renderRightActions : undefined}
         renderLeftActions={isSelected ? renderLeftActions : undefined}
         onSwipeableOpen={(direction) => {
-          if (direction === 'right' && !isSelected) {
+          // El lado ABIERTO, no la dirección del dedo (ver `utils/swipeSide`).
+          const side = openedActionsSide(direction);
+          if (side === 'right' && !isSelected) {
             h.add();
             onAddSong(song.filename);
             swipeableRow.current?.close();
-          } else if (direction === 'left' && isSelected) {
+          } else if (side === 'left' && isSelected) {
             h.remove();
             onRemoveSong(song.filename);
             swipeableRow.current?.close();
           }
         }}
       >
-        <Animated.View style={[styles.songItemOuter, animatedStyle]}>
+        <Animated.View
+          style={[styles.songItemOuter, animatedStyle]}
+          {...hoverProps}
+        >
           <TouchableOpacity
             onPress={() => onPress(song)}
-            style={styles.songItemInner}
+            style={[
+              styles.songItemInner,
+              hideSeparator && styles.noSeparator,
+              hovered && styles.hovered,
+            ]}
             activeOpacity={0.6}
             {...contextMenuProps}
           >
             <View style={styles.leftSection}>
               {isSelected && <View style={styles.selectedDot} />}
+              {/* El número va delante, en su columna: en misa se busca
+                  «la 98», y escondido en gris detrás de «#» al lado del autor
+                  costaba encontrarlo. Sin ceros a la izquierda («2», no
+                  «02»). En «Buscar general» la pastilla de categoría ya lo
+                  lleva. */}
+              {!isSearchAllMode && !!song.numericFilenamePart && (
+                <Text style={styles.numberColumn}>
+                  {parseInt(song.numericFilenamePart, 10) ||
+                    song.numericFilenamePart}
+                </Text>
+              )}
               <View style={styles.songInfoContainer}>
                 <Text
                   style={styles.songTitle}
@@ -211,7 +273,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                           {`${song.originalCategoryKey}${song.numericFilenamePart}`}
                         </Text>
                       </View>
-                      {song.author && (
+                      {!!song.author && (
                         <Text
                           style={styles.authorText}
                           numberOfLines={1}
@@ -223,15 +285,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                     </View>
                   ) : (
                     <View style={styles.metaPills}>
-                      {song.numericFilenamePart && (
-                        <Text style={styles.numberText}>
-                          #{song.numericFilenamePart}
-                        </Text>
-                      )}
-                      {song.numericFilenamePart && song.author ? (
-                        <Text style={styles.metaSeparator}>{' - '}</Text>
-                      ) : null}
-                      {song.author && (
+                      {!!song.author && (
                         <Text
                           style={styles.authorText}
                           numberOfLines={1}
@@ -242,11 +296,39 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                       )}
                     </View>
                   )}
+                  {featuredTags && featuredTags.length > 0 && (
+                    // Una pastilla callada, como las del tono: en texto
+                    // suelto detrás del autor parecía un segundo autor.
+                    <View
+                      style={styles.tagPill}
+                      accessibilityLabel={`Etiquetas: ${featuredTags
+                        .map((t) => t.label)
+                        .join(', ')}`}
+                    >
+                      {featuredTags[0].emoji ? (
+                        <Text style={styles.tagPillText}>
+                          {featuredTags[0].emoji}
+                        </Text>
+                      ) : (
+                        <MaterialIcons
+                          name="local-offer"
+                          size={10}
+                          color={themeColors(isDark).textMuted}
+                        />
+                      )}
+                      <Text style={styles.tagPillText} numberOfLines={1}>
+                        {featuredTags[0].label}
+                        {featuredTags.length > 1
+                          ? ` +${featuredTags.length - 1}`
+                          : ''}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
             </View>
             <View style={styles.rightSection}>
-              {(kinds.video || kinds.audio) && (
+              {(kinds.video || kinds.audio || kinds.links) && (
                 <View style={styles.mediaIndicators}>
                   {kinds.video && (
                     <MaterialIcons
@@ -258,6 +340,13 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                   {kinds.audio && (
                     <MaterialIcons
                       name="headphones"
+                      size={12}
+                      color={mediaIconColor}
+                    />
+                  )}
+                  {kinds.links && (
+                    <MaterialIcons
+                      name="link"
                       size={12}
                       color={mediaIconColor}
                     />
@@ -298,6 +387,30 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                   </View>
                 )
               ) : null}
+              {isWeb && (
+                <PressableFeedback
+                  onPress={() =>
+                    isSelected
+                      ? onRemoveSong(song.filename)
+                      : onAddSong(song.filename)
+                  }
+                  style={styles.webSelectButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    isSelected
+                      ? `Quitar «${cleanTitle}» de tu selección`
+                      : `Añadir «${cleanTitle}» a tu selección`
+                  }
+                >
+                  <IconSymbol
+                    name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
+                    size={22}
+                    color={
+                      isSelected ? SwipeColors.add : themeColors(isDark).link
+                    }
+                  />
+                </PressableFeedback>
+              )}
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -305,6 +418,8 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     );
   },
 );
+
+const isWeb = Platform.OS === 'web';
 
 const createStyles = (scheme: 'light' | 'dark' | null) => {
   const isDark = scheme === 'dark';
@@ -314,10 +429,29 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 14,
-      paddingHorizontal: 20,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      borderColor: themeColors(isDark).separator,
+    },
+    noSeparator: {
+      borderBottomWidth: 0,
+    },
+    hovered: {
+      backgroundColor: isDark
+        ? StateColors.hoverOverlayDark
+        : StateColors.hoverOverlay,
+    },
+    // 44 pt de área táctil; el margen negativo lo come el padding de la fila
+    // para que la altura no crezca.
+    webSelectButton: {
+      width: 44,
+      height: 44,
+      marginVertical: -spacing.sm,
+      marginRight: -spacing.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radii.pillFull,
     },
     leftSection: {
       flex: 1,
@@ -328,7 +462,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     selectedDot: {
       width: 6,
       height: 6,
-      borderRadius: 3,
+      borderRadius: radii.pillFull,
       backgroundColor: SwipeColors.add,
       marginRight: 10,
     },
@@ -336,8 +470,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
     },
     songTitle: {
-      fontSize: 16,
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      ...typography.body,
+      color: themeColors(isDark).text,
       fontWeight: '500',
       letterSpacing: -0.2,
     },
@@ -354,29 +488,48 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     categoryPill: {
       paddingHorizontal: 7,
       paddingVertical: 2,
-      borderRadius: 100,
-      backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderRadius: radii.pillFull,
+      backgroundColor: themeColors(isDark).separator,
       borderWidth: 1,
-      borderColor: isDark ? '#48484A' : '#D1D1D6',
+      borderColor: isDark ? SystemGray.dark.gray3 : SystemGray.light.gray4,
     },
     categoryPillText: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
       fontVariant: ['tabular-nums'],
     },
-    numberText: {
-      fontSize: 13,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+    numberColumn: {
+      ...typography.subhead,
+      fontWeight: '600',
+      color: themeColors(isDark).textSecondary,
       fontVariant: ['tabular-nums'],
+      minWidth: 26,
+      marginRight: spacing.xs + 2,
     },
-    metaSeparator: {
-      fontSize: 13,
-      color: isDark ? '#636366' : '#C7C7CC',
+    // Discretas: que se vean sin competir con el título ni el autor.
+    tagPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      flexShrink: 1,
+      maxWidth: '55%',
+      marginLeft: spacing.sm,
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: radii.pillFull,
+      backgroundColor: themeColors(isDark).backgroundSunken,
+    },
+    tagPillText: {
+      ...typography.micro,
+      fontWeight: '600',
+      color: themeColors(isDark).textSecondary,
+      flexShrink: 1,
     },
     authorText: {
-      fontSize: 13,
-      color: isDark ? '#AEAEB2' : '#8E8E93',
+      ...typography.caption,
+      // Era #8E8E93 en claro: 3,3:1 sobre blanco, por debajo del mínimo.
+      color: themeColors(isDark).textSecondary,
       fontStyle: 'italic',
       flex: 1,
     },
@@ -394,25 +547,25 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     capoPill: {
       paddingHorizontal: 6,
       paddingVertical: 3,
-      borderRadius: 5,
-      backgroundColor: isDark ? '#3A3A3C' : '#EBEBEB',
+      borderRadius: radii.xs,
+      backgroundColor: isDark ? Colors.dark.card : SystemGray.light.gray5,
     },
     capoText: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '600',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
       fontVariant: ['tabular-nums'],
     },
     keyPill: {
       paddingHorizontal: 8,
       paddingVertical: 3,
-      borderRadius: 6,
+      borderRadius: radii.xs,
       backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     keyText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
     },
     toneTransposedWrap: {
       flexDirection: 'row',
@@ -420,9 +573,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       gap: 4,
     },
     toneOriginalStriked: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '500',
-      color: isDark ? '#636366' : '#A0A0A8',
+      color: themeColors(isDark).textMuted,
       textDecorationLine: 'line-through',
     },
     keyPillTransposed: {
@@ -430,20 +583,26 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       paddingHorizontal: 7,
       paddingVertical: 3,
-      borderRadius: 6,
-      backgroundColor: isDark ? '#3A2800' : '#FFF4DA',
+      borderRadius: radii.xs,
+      backgroundColor: isDark
+        ? HighlightColors.dark.bg
+        : HighlightColors.light.bg,
       borderWidth: 1,
-      borderColor: '#F4C11E',
+      borderColor: isDark
+        ? HighlightColors.dark.border
+        : HighlightColors.light.border,
     },
     keyTextTransposed: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
-      color: '#7A5A00',
+      // Antes era el fg de CLARO también en oscuro: #7A5A00 sobre #3A2D0A,
+      // ilegible. Mismo fallo que el azul de marca en oscuro (§H4).
+      color: isDark ? HighlightColors.dark.fg : HighlightColors.light.fg,
     },
     transposeParenLabel: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
-      color: '#8E8E93',
+      color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
     },
     rightAction: {
@@ -464,11 +623,14 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     actionText: {
       color: '#fff',
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
       marginTop: 4,
     },
   });
 };
+
+const stylesLight = createStyles('light');
+const stylesDark = createStyles('dark');
 
 export default SongListItem;

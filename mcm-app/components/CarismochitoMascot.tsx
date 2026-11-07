@@ -1,7 +1,22 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import Animated, {
+  Easing,
+  cancelAnimation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
+import {
+  CarismochitoPalettes,
+  type CarismochitoPalette,
+  type CarismochitoPaletteId,
+} from '@/constants/colors';
 
 /* -------------------------------------------------------------------------- */
 /* PNG opcional                                                               */
@@ -18,17 +33,26 @@ const MASCOT_PNG: number | null = require('@/assets/carismochito.png');
 /* Carismochito vectorial (respaldo)                                          */
 /* -------------------------------------------------------------------------- */
 
-const SKIN = '#4FA37A';
-const SKIN_DARK = '#2E6B4F';
-const OUTLINE = '#173A2A';
-const CAP = '#7C7C82';
-const CAP_DARK = '#5C5C62';
-const MOHAWK_RED = '#E2342B';
-const MOHAWK_YEL = '#F2D43B';
-const IRIS = '#5B86B5';
-const MOUTH = '#E2342B';
-
-function CarismochitoFace({ size = 140 }: { size?: number }) {
+function CarismochitoFace({
+  size = 140,
+  palette,
+}: {
+  size?: number;
+  palette: CarismochitoPalette;
+}) {
+  const {
+    skin: SKIN,
+    skinDark: SKIN_DARK,
+    outline: OUTLINE,
+    cap: CAP,
+    capDark: CAP_DARK,
+    mohawkA: MOHAWK_RED,
+    mohawkB: MOHAWK_YEL,
+    iris: IRIS,
+    mouth: MOUTH,
+  } = palette;
+  // La silueta no lleva el blanco de los ojos ni los brillos: sin detalle.
+  const eyeWhite = palette === CarismochitoPalettes.silueta ? SKIN : '#ffffff';
   return (
     <Svg width={size} height={size} viewBox="0 0 130 140">
       {/* Cresta (mohawk) — pinchos rojos y amarillos */}
@@ -99,7 +123,7 @@ function CarismochitoFace({ size = 140 }: { size?: number }) {
         cy="74"
         rx="14"
         ry="17"
-        fill="#ffffff"
+        fill={eyeWhite}
         stroke={OUTLINE}
         strokeWidth={2}
       />
@@ -108,7 +132,7 @@ function CarismochitoFace({ size = 140 }: { size?: number }) {
         cy="74"
         rx="14"
         ry="17"
-        fill="#ffffff"
+        fill={eyeWhite}
         stroke={OUTLINE}
         strokeWidth={2}
       />
@@ -116,8 +140,8 @@ function CarismochitoFace({ size = 140 }: { size?: number }) {
       <Circle cx="82" cy="78" r="6.5" fill={IRIS} />
       <Circle cx="50" cy="78" r="3" fill={OUTLINE} />
       <Circle cx="82" cy="78" r="3" fill={OUTLINE} />
-      <Circle cx="52" cy="75" r="1.6" fill="#fff" />
-      <Circle cx="84" cy="75" r="1.6" fill="#fff" />
+      <Circle cx="52" cy="75" r="1.6" fill={eyeWhite} />
+      <Circle cx="84" cy="75" r="1.6" fill={eyeWhite} />
 
       {/* Sonrisa + lengua */}
       <Path
@@ -142,80 +166,82 @@ function CarismochitoFace({ size = 140 }: { size?: number }) {
 
 export default function CarismochitoMascot({
   size = 140,
-  /** Intensidad del baile: 1 = sutil (badge), 2 = enérgico (cuenta atrás). */
+  /** Intensidad del baile: 0 = quieto, 1 = sutil (badge), 2 = enérgico. */
   dance = 2,
+  /**
+   * Paleta de una variante de la colección. Sin ella, el Carismochito de
+   * siempre (el PNG). `silueta` es el de "todavía no lo has encontrado".
+   */
+  palette,
 }: {
   size?: number;
-  dance?: 1 | 2;
+  dance?: 0 | 1 | 2;
+  palette?: CarismochitoPaletteId | null;
 }) {
-  const sway = useRef(new Animated.Value(0)).current; // rotación + balanceo lateral
-  const bob = useRef(new Animated.Value(0)).current; // salto vertical + escala
+  const sway = useSharedValue(0); // rotación + balanceo lateral
+  const bob = useSharedValue(0); // salto vertical + escala
 
   useEffect(() => {
-    const swayLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(sway, {
-          toValue: 1,
-          duration: dance === 2 ? 460 : 900,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(sway, {
-          toValue: -1,
-          duration: dance === 2 ? 460 : 900,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
+    if (dance === 0) return;
+    const swayMs = dance === 2 ? 460 : 900;
+    const bobMs = dance === 2 ? 300 : 700;
+
+    sway.set(
+      withRepeat(
+        withSequence(
+          withTiming(1, {
+            duration: swayMs,
+            easing: Easing.inOut(Easing.quad),
+          }),
+          withTiming(-1, {
+            duration: swayMs,
+            easing: Easing.inOut(Easing.quad),
+          }),
+        ),
+        -1,
+        false,
+      ),
     );
-    const bobLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bob, {
-          toValue: 1,
-          duration: dance === 2 ? 300 : 700,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(bob, {
-          toValue: 0,
-          duration: dance === 2 ? 300 : 700,
-          easing: Easing.in(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
+    bob.set(
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: bobMs, easing: Easing.out(Easing.quad) }),
+          withTiming(0, { duration: bobMs, easing: Easing.in(Easing.quad) }),
+        ),
+        -1,
+        false,
+      ),
     );
-    swayLoop.start();
-    bobLoop.start();
+
+    // Los bucles de Reanimated corren en el hilo de UI y NO se paran solos al
+    // desmontar: hay que cancelarlos.
     return () => {
-      swayLoop.stop();
-      bobLoop.stop();
+      cancelAnimation(sway);
+      cancelAnimation(bob);
     };
   }, [sway, bob, dance]);
 
-  const rotate = sway.interpolate({
-    inputRange: [-1, 1],
-    outputRange: dance === 2 ? ['-9deg', '9deg'] : ['-4deg', '4deg'],
-  });
-  const translateX = sway.interpolate({
-    inputRange: [-1, 1],
-    outputRange: dance === 2 ? [-6, 6] : [-2, 2],
-  });
-  const translateY = bob.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, dance === 2 ? -16 : -5],
-  });
-  const scale = bob.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, dance === 2 ? 1.08 : 1.03],
+  const danceStyle = useAnimatedStyle(() => {
+    const big = dance === 2;
+    return {
+      transform: [
+        {
+          translateX: interpolate(sway.get(), [-1, 1], big ? [-6, 6] : [-2, 2]),
+        },
+        { translateY: interpolate(bob.get(), [0, 1], [0, big ? -16 : -5]) },
+        {
+          rotate: `${interpolate(sway.get(), [-1, 1], big ? [-9, 9] : [-4, 4])}deg`,
+        },
+        { scale: interpolate(bob.get(), [0, 1], [1, big ? 1.08 : 1.03]) },
+      ],
+    };
   });
 
   return (
-    <Animated.View
-      style={{
-        transform: [{ translateX }, { translateY }, { rotate }, { scale }],
-      }}
-    >
-      {MASCOT_PNG != null ? (
+    <Animated.View style={danceStyle}>
+      {palette ? (
+        <CarismochitoFace size={size} palette={CarismochitoPalettes[palette]} />
+      ) : MASCOT_PNG != null ? (
         <Image
           source={MASCOT_PNG}
           style={[styles.png, { width: size, height: size }]}
@@ -223,7 +249,7 @@ export default function CarismochitoMascot({
           transition={150}
         />
       ) : (
-        <CarismochitoFace size={size} />
+        <CarismochitoFace size={size} palette={CarismochitoPalettes.verde} />
       )}
     </Animated.View>
   );

@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Card, PressableFeedback } from 'heroui-native';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@/components/ui/icons';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 import {
@@ -13,6 +13,8 @@ import {
 import type { HighlightRange } from '@/utils/highlightRanges';
 
 import useFontScale from '@/hooks/useFontScale';
+import { warm } from '@/components/contigo/theme';
+import typography from '@/constants/typography';
 
 interface ReadingCardProps {
   title: string;
@@ -27,11 +29,13 @@ interface ReadingCardProps {
   penMode?: boolean;
   ranges?: HighlightRange[];
   onSelectionChange?: (sel: ReadingSelection | null) => void;
+  /** "Subrayar" desde el menú nativo de selección. */
+  onNativeHighlightRequest?: (sel: ReadingSelection) => void;
 }
 
-// Warm amber accent for Contigo section
-const WARM_ACCENT_LIGHT = '#B8860B';
-const WARM_ACCENT_DARK = '#DAA520';
+// El acento cálido sale de `theme.ts` (`warm(isDark)`). Aquí había un
+// `#B8860B` escrito a mano que era un TERCER dorado, distinto del de la
+// sección y del de la cabecera (§A3 de PLAN_DISENO).
 
 export function ReadingCard({
   title,
@@ -43,24 +47,21 @@ export function ReadingCard({
   penMode = false,
   ranges = [],
   onSelectionChange,
+  onNativeHighlightRequest,
 }: ReadingCardProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
-  const accent = isDark ? WARM_ACCENT_DARK : WARM_ACCENT_LIGHT;
+  const accent = warm(isDark).accent;
+  const accentText = warm(isDark).accentText;
   const globalScale = useFontScale();
   const fontScale = scale ?? globalScale;
 
+  // Entrar en modo subrayar NO abre las tarjetas: si las tenías cerradas, se
+  // quedan cerradas. Abrirlas todas de golpe desplegaba media pantalla de texto
+  // que no habías pedido, y encima costaba encontrar la lectura que sí querías
+  // subrayar. Quien quiera subrayar una lectura la abre y ya.
   const [expanded, setExpanded] = useState(defaultExpanded);
-  // Al ENTRAR en modo subrayar la tarjeta subrayable se abre una vez, para que
-  // haya texto que seleccionar. A partir de ahí manda el usuario: si la cierra
-  // se queda cerrada (antes `isOpen` la forzaba abierta y el toggle no hacía
-  // nada visible — parecía que la tarjeta se volvía loca).
-  const prevPenMode = useRef(penMode);
-  useEffect(() => {
-    if (highlightable && penMode && !prevPenMode.current) setExpanded(true);
-    prevPenMode.current = penMode;
-  }, [penMode, highlightable]);
 
   const isOpen = expanded;
 
@@ -97,7 +98,7 @@ export function ReadingCard({
                     { backgroundColor: hexAlpha(accent, '12') },
                   ]}
                 >
-                  <Text style={[styles.citaText, { color: accent }]}>
+                  <Text style={[styles.citaText, { color: accentText }]}>
                     {cita}
                   </Text>
                 </View>
@@ -127,6 +128,9 @@ export function ReadingCard({
                 text={texto}
                 ranges={highlightable ? ranges : []}
                 penMode={highlightable && penMode}
+                onNativeHighlightRequest={
+                  highlightable ? onNativeHighlightRequest : undefined
+                }
                 onSelectionChange={
                   highlightable ? onSelectionChange : undefined
                 }
@@ -147,7 +151,7 @@ export function ReadingCard({
 const styles = StyleSheet.create({
   wrapper: {
     marginBottom: 10,
-    ...shadows.sm,
+    ...shadows.card,
   },
   card: {
     borderRadius: radii.lg,
@@ -181,10 +185,10 @@ const styles = StyleSheet.create({
   citaBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 100,
+    borderRadius: radii.pillFull,
   },
   citaText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
   },
   body: {

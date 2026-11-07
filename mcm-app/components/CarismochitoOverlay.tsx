@@ -1,18 +1,33 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  Animated,
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
   Easing,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+  cancelAnimation,
+  interpolate,
+  useAnimatedProps,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withSpring,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { useCarismochito } from '@/contexts/CarismochitoContext';
+import { useCarismochitoHunt } from '@/contexts/CarismochitoHuntContext';
+import { useToast } from '@/contexts/AppToastContext';
+import {
+  RARITY_LABEL,
+  pickVariant,
+  type CarismochitoVariant,
+} from '@/utils/carismochitoCollection';
+import { h } from '@/utils/haptics';
 import { useShakeDetector } from '@/hooks/useShakeDetector';
 import CarismochitoMascot from '@/components/CarismochitoMascot';
 import ChargeDots from '@/components/CarismochitoChargeDots';
@@ -20,23 +35,26 @@ import {
   CarismochitoOnboarding,
   CarismochitoExitConfirm,
 } from '@/components/CarismochitoDialogs';
+import colors, { CarismoColors } from '@/constants/colors';
+import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /* Verdes del HUD del modo (distintos tonos). */
-const G = '#1B9E4B'; // verde principal
-const G_LIGHT = '#9DE86B'; // verde lima claro
-const G_GLOW = '#5AE08A'; // verde brillo
-const G_DARK = '#06210F'; // verde casi negro
+const G = CarismoColors.light; // verde principal
+const G_LIGHT = CarismoColors.dark; // verde lima claro
+const G_GLOW = CarismoColors.glow; // verde brillo
+const G_DARK = CarismoColors.deep; // verde casi negro
 
 /* Paleta festiva del confeti (verdes protagonistas + toques de marca). */
 const CONFETTI_COLORS = [
-  '#1B9E4B',
-  '#5AE08A',
-  '#9DE86B',
-  '#A3BD31',
-  '#7AC943',
-  '#FCD200',
-  '#31AADF',
-  '#E15C62',
+  G,
+  G_GLOW,
+  G_LIGHT,
+  colors.green,
+  CarismoColors.leaf,
+  colors.yellow,
+  colors.info,
+  colors.accent,
 ];
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -60,53 +78,47 @@ function CountdownScreen({
   onCancel: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const enter = useRef(new Animated.Value(0)).current;
-  const numberScale = useRef(new Animated.Value(1)).current;
+  const enter = useSharedValue(0);
+  const numberScale = useSharedValue(1);
   // Progreso del anillo: 0 (lleno) → 1 (vacío) de forma continua.
-  const progress = useRef(new Animated.Value(0)).current;
+  const progress = useSharedValue(0);
 
   useEffect(() => {
-    Animated.spring(enter, {
-      toValue: 1,
-      tension: 90,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
+    enter.set(withSpring(1, { stiffness: 90, damping: 10, mass: 1 }));
     // El anillo se vacía suavemente durante toda la cuenta atrás.
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: totalSeconds * 1000,
-      easing: Easing.linear,
-      useNativeDriver: false,
-    }).start();
+    progress.set(
+      withTiming(1, {
+        duration: totalSeconds * 1000,
+        easing: Easing.linear,
+      }),
+    );
   }, [enter, progress, totalSeconds]);
 
   useEffect(() => {
-    numberScale.setValue(0.5);
-    Animated.spring(numberScale, {
-      toValue: 1,
-      tension: 80,
-      friction: 6,
-      useNativeDriver: true,
-    }).start();
+    // Cada segundo el número entra de golpe desde pequeño.
+    numberScale.set(0.5);
+    numberScale.set(withSpring(1, { stiffness: 80, damping: 6, mass: 1 }));
   }, [countdown, numberScale]);
 
-  const enterScale = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.9, 1],
-  });
-  const dashoffset = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, RING_C],
-  });
+  const rootStyle = useAnimatedStyle(() => ({ opacity: enter.get() }));
+  const contentStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(enter.get(), [0, 1], [0.9, 1]) }],
+  }));
+  const numberStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: numberScale.get() }],
+  }));
+  // El anillo es una prop de SVG, no un estilo: va por `useAnimatedProps`.
+  const ringProps = useAnimatedProps(() => ({
+    strokeDashoffset: interpolate(progress.get(), [0, 1], [0, RING_C]),
+  }));
 
   return (
     <Animated.View
-      style={[styles.countdownRoot, { opacity: enter }]}
+      style={[styles.countdownRoot, rootStyle]}
       pointerEvents="auto"
     >
       <LinearGradient
-        colors={['#011A0A', G_DARK, '#0C3D1C']}
+        colors={[CarismoColors.abyss, G_DARK, CarismoColors.deepEdge]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -119,8 +131,8 @@ function CountdownScreen({
       <Animated.View
         style={[
           styles.countdownContent,
-          { transform: [{ scale: enterScale }] },
           { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
+          contentStyle,
         ]}
       >
         <Text style={styles.activatingLabel}>activando modo</Text>
@@ -150,7 +162,7 @@ function CountdownScreen({
               strokeLinecap="round"
               fill="none"
               strokeDasharray={`${RING_C} ${RING_C}`}
-              strokeDashoffset={dashoffset}
+              animatedProps={ringProps}
               // Empieza arriba (12 en punto).
               transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
             />
@@ -158,9 +170,7 @@ function CountdownScreen({
 
           <View style={styles.ringInner} pointerEvents="none">
             <CarismochitoMascot size={132} dance={2} />
-            <Animated.Text
-              style={[styles.number, { transform: [{ scale: numberScale }] }]}
-            >
+            <Animated.Text style={[styles.number, numberStyle]}>
               {countdown}
             </Animated.Text>
           </View>
@@ -241,64 +251,244 @@ const PEEK_HOLD_MS = 2200;
 const PEEK_MIN_GAP_MS = 45000;
 const PEEK_MAX_GAP_MS = 90000;
 
-function randomGap() {
-  return PEEK_MIN_GAP_MS + Math.random() * (PEEK_MAX_GAP_MS - PEEK_MIN_GAP_MS);
+/** Con la caza encendida se asoma más a menudo: si no, probarla es eterno. */
+const HUNT_MIN_GAP_MS = 20000;
+const HUNT_MAX_GAP_MS = 45000;
+/** Y se queda un poco más, para que dé tiempo a tocarlo. */
+const HUNT_HOLD_MS = 3000;
+
+function randomGap(hunting: boolean) {
+  const [min, max] = hunting
+    ? [HUNT_MIN_GAP_MS, HUNT_MAX_GAP_MS]
+    : [PEEK_MIN_GAP_MS, PEEK_MAX_GAP_MS];
+  return min + Math.random() * (max - min);
+}
+
+type Peek = {
+  side: 'left' | 'right';
+  topPct: number;
+  /** `null` = el de siempre, sin caza. */
+  variant: CarismochitoVariant | null;
+};
+
+/**
+ * El cuerpo de la asomada. Va en su propio componente porque `hiddenX`/`shownX`
+ * sólo se conocen DESPUÉS del `if (!peek) return null`, y `useAnimatedStyle` no
+ * puede ir detrás de un return condicional.
+ */
+function PeekMascotBody({
+  slide,
+  caught,
+  isRight,
+  hiddenX,
+  shownX,
+  topPct,
+  palette,
+  onCatch,
+}: {
+  slide: SharedValue<number>;
+  caught: SharedValue<number>;
+  isRight: boolean;
+  hiddenX: number;
+  shownX: number;
+  topPct: number;
+  palette: CarismochitoVariant['palette'];
+  /** Solo con la caza encendida: sin esto, no se puede tocar. */
+  onCatch: (() => void) | null;
+}) {
+  const style = useAnimatedStyle(() => {
+    // Al atraparlo: salta hacia dentro, crece y se desvanece.
+    const c = caught.get();
+    const inward = isRight ? -40 : 40;
+    return {
+      opacity: slide.get() * (1 - c),
+      transform: [
+        {
+          translateX:
+            interpolate(slide.get(), [0, 1], [hiddenX, shownX]) + inward * c,
+        },
+        // Girada 90°: asoma tumbada de lado desde el borde. Al atraparlo se
+        // endereza, como si saliera del escondite.
+        { rotate: `${(isRight ? -90 : 90) * (1 - c)}deg` },
+        { scale: 1 + 0.5 * c },
+      ],
+    };
+  });
+
+  const mascot = (
+    <CarismochitoMascot size={PEEK_SIZE} dance={1} palette={palette} />
+  );
+
+  return (
+    <Animated.View
+      pointerEvents={onCatch ? 'auto' : 'none'}
+      style={[
+        styles.peekMascot,
+        isRight ? { right: 0 } : { left: 0 },
+        { top: `${topPct * 100}%` },
+        style,
+      ]}
+    >
+      {onCatch ? (
+        <PressableFeedback
+          onPress={onCatch}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="¡Un Carismochito! Tócalo para atraparlo"
+        >
+          {mascot}
+        </PressableFeedback>
+      ) : (
+        mascot
+      )}
+    </Animated.View>
+  );
 }
 
 function SidePeekMascot() {
-  // 'left' | 'right' alternando; posición vertical algo aleatoria por asomada.
-  const [peek, setPeek] = useState<{
-    side: 'left' | 'right';
-    topPct: number;
-  } | null>(null);
-  const slide = useRef(new Animated.Value(0)).current;
+  const { huntEnabled, suppressed, summonToken, catchCarismochito } =
+    useCarismochitoHunt();
+  const { toast } = useToast();
+  const [peek, setPeek] = useState<Peek | null>(null);
+  const slide = useSharedValue(0);
+  const caught = useSharedValue(0);
   const sideRef = useRef<'left' | 'right'>('right');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // El bucle de asomadas vive en un efecto; lo que cambia mientras corre se
+  // lee por ref para no reiniciar el bucle (y su primera asomada) cada vez.
+  const huntRef = useRef(huntEnabled);
+  const suppressedRef = useRef(suppressed);
+  const cancelledRef = useRef(false);
+  const startPeekRef = useRef<() => void>(() => {});
+  const catchingRef = useRef(false);
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+  }, []);
+
+  const scheduleNext = useCallback(
+    (delay: number) => {
+      clearTimer();
+      timerRef.current = setTimeout(() => {
+        if (cancelledRef.current) return;
+        startPeekRef.current();
+      }, delay);
+    },
+    [clearTimer],
+  );
+
+  const finishPeek = useCallback(() => {
+    if (cancelledRef.current) return;
+    catchingRef.current = false;
+    setPeek(null);
+    scheduleNext(randomGap(huntRef.current));
+  }, [scheduleNext]);
+
+  const startPeek = useCallback(() => {
+    // En una pantalla protegida (lectura, presentación) no se asoma: se
+    // vuelve a intentar más tarde, sin gastar la asomada.
+    if (suppressedRef.current) {
+      scheduleNext(randomGap(huntRef.current));
+      return;
+    }
+    const hunting = huntRef.current;
+    sideRef.current = sideRef.current === 'right' ? 'left' : 'right';
+    setPeek({
+      side: sideRef.current,
+      // Altura aleatoria, entre el 25% y el 60% de la pantalla.
+      topPct: 0.25 + Math.random() * 0.35,
+      variant: hunting ? pickVariant() : null,
+    });
+    caught.set(0);
+    slide.set(0);
+    slide.set(
+      withSequence(
+        withSpring(1, { stiffness: 70, damping: 9, mass: 1 }),
+        withDelay(
+          hunting ? HUNT_HOLD_MS : PEEK_HOLD_MS,
+          withTiming(
+            0,
+            { duration: 380, easing: Easing.in(Easing.cubic) },
+            (finished) => {
+              'worklet';
+              // Si se canceló porque lo han atrapado, el cierre lo lleva la
+              // animación de captura, no esta.
+              if (finished) scheduleOnRN(finishPeek);
+            },
+          ),
+        ),
+      ),
+    );
+  }, [caught, slide, scheduleNext, finishPeek]);
+  // Refs al día tras cada render (en un efecto, no durante el render). Se
+  // declara antes que los efectos que las leen, así que corre primero.
+  useEffect(() => {
+    huntRef.current = huntEnabled;
+    suppressedRef.current = suppressed;
+    startPeekRef.current = startPeek;
+  });
 
   useEffect(() => {
-    let cancelled = false;
-
-    const scheduleNext = (delay: number) => {
-      timerRef.current = setTimeout(() => {
-        if (cancelled) return;
-        // Alterna de lado y elige una altura aleatoria (entre 25% y 60%).
-        sideRef.current = sideRef.current === 'right' ? 'left' : 'right';
-        setPeek({
-          side: sideRef.current,
-          topPct: 0.25 + Math.random() * 0.35,
-        });
-        slide.setValue(0);
-        Animated.sequence([
-          Animated.spring(slide, {
-            toValue: 1,
-            tension: 70,
-            friction: 9,
-            useNativeDriver: true,
-          }),
-          Animated.delay(PEEK_HOLD_MS),
-          Animated.timing(slide, {
-            toValue: 0,
-            duration: 380,
-            easing: Easing.in(Easing.cubic),
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          if (cancelled) return;
-          setPeek(null);
-          scheduleNext(randomGap());
-        });
-      }, delay);
-    };
-
+    cancelledRef.current = false;
     // Primera asomada relativamente pronto para dar señal de vida del modo.
     scheduleNext(6000 + Math.random() * 6000);
-
     return () => {
-      cancelled = true;
-      if (timerRef.current) clearTimeout(timerRef.current);
-      slide.stopAnimation();
+      cancelledRef.current = true;
+      clearTimer();
+      cancelAnimation(slide);
+      cancelAnimation(caught);
     };
-  }, [slide]);
+  }, [scheduleNext, clearTimer, slide, caught]);
+
+  // "Que aparezca ya", desde el laboratorio.
+  useEffect(() => {
+    if (summonToken === 0) return;
+    clearTimer();
+    cancelAnimation(slide);
+    catchingRef.current = false;
+    startPeekRef.current();
+  }, [summonToken, clearTimer, slide]);
+
+  // Si se entra en una pantalla protegida con él asomado, se esconde ya.
+  useEffect(() => {
+    if (!suppressed || !peek || catchingRef.current) return;
+    slide.set(
+      withTiming(0, { duration: 200 }, (finished) => {
+        'worklet';
+        if (finished) scheduleOnRN(finishPeek);
+      }),
+    );
+  }, [suppressed, peek, slide, finishPeek]);
+
+  const onCatch = useCallback(() => {
+    if (!peek?.variant || catchingRef.current) return;
+    catchingRef.current = true;
+    const result = catchCarismochito(peek.variant.id);
+    h.formSuccess();
+    cancelAnimation(slide);
+    slide.set(1);
+    caught.set(
+      withTiming(
+        1,
+        { duration: 420, easing: Easing.out(Easing.cubic) },
+        (finished) => {
+          'worklet';
+          // Si una aparición forzada la interrumpe, no cerrar la nueva.
+          if (finished) scheduleOnRN(finishPeek);
+        },
+      ),
+    );
+    if (result) {
+      const rarity = RARITY_LABEL[result.variant.rarity];
+      toast.show({
+        variant: 'success',
+        label: result.isNew
+          ? `¡Nuevo! ${result.variant.name} · ${rarity}`
+          : `${result.variant.name} atrapado · llevas ${result.count}`,
+      });
+    }
+  }, [peek, catchCarismochito, slide, caught, finishPeek, toast]);
 
   if (!peek) return null;
 
@@ -306,30 +496,19 @@ function SidePeekMascot() {
   // Oculta fuera de pantalla → asoma dejando PEEK_REVEAL px dentro.
   const hiddenX = isRight ? PEEK_SIZE : -PEEK_SIZE;
   const shownX = isRight ? PEEK_SIZE - PEEK_REVEAL : -(PEEK_SIZE - PEEK_REVEAL);
-  const translateX = slide.interpolate({
-    inputRange: [0, 1],
-    outputRange: [hiddenX, shownX],
-  });
 
   return (
-    <View pointerEvents="none" style={styles.peekRoot}>
-      <Animated.View
-        style={[
-          styles.peekMascot,
-          isRight ? { right: 0 } : { left: 0 },
-          {
-            top: `${peek.topPct * 100}%`,
-            opacity: slide,
-            transform: [
-              { translateX },
-              // Girada 90°: asoma tumbada de lado desde el borde.
-              { rotate: isRight ? '-90deg' : '90deg' },
-            ],
-          },
-        ]}
-      >
-        <CarismochitoMascot size={PEEK_SIZE} dance={1} />
-      </Animated.View>
+    <View pointerEvents="box-none" style={styles.peekRoot}>
+      <PeekMascotBody
+        slide={slide}
+        caught={caught}
+        isRight={isRight}
+        hiddenX={hiddenX}
+        shownX={shownX}
+        topPct={peek.topPct}
+        palette={peek.variant?.palette ?? null}
+        onCatch={peek.variant ? onCatch : null}
+      />
     </View>
   );
 }
@@ -343,44 +522,40 @@ const BADGE_VISIBLE_MS = 3800;
 
 function FloatingBadge({ onOpenInfo }: { onOpenInfo: () => void }) {
   const insets = useSafeAreaInsets();
-  const enter = useRef(new Animated.Value(0)).current;
+  const enter = useSharedValue(0);
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    Animated.spring(enter, {
-      toValue: 1,
-      tension: 80,
-      friction: 9,
-      useNativeDriver: true,
-    }).start();
+    enter.set(withSpring(1, { stiffness: 80, damping: 9, mass: 1 }));
 
     // Se asoma para anunciar el modo y, pasados unos segundos, se desliza
     // hacia arriba y se desmonta para no estorbar (se sigue saliendo agitando).
     const t = setTimeout(() => {
-      Animated.timing(enter, {
-        toValue: 0,
-        duration: 420,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }).start(() => setHidden(true));
+      enter.set(
+        withTiming(
+          0,
+          { duration: 420, easing: Easing.in(Easing.cubic) },
+          () => {
+            'worklet';
+            scheduleOnRN(setHidden, true);
+          },
+        ),
+      );
     }, BADGE_VISIBLE_MS);
     return () => clearTimeout(t);
   }, [enter]);
 
-  const translateY = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-60, 0],
-  });
+  const badgeStyle = useAnimatedStyle(() => ({
+    opacity: enter.get(),
+    transform: [{ translateY: interpolate(enter.get(), [0, 1], [-60, 0]) }],
+  }));
 
   if (hidden) return null;
 
   return (
     <Animated.View
       pointerEvents="box-none"
-      style={[
-        styles.badgeRoot,
-        { top: insets.top + 8, opacity: enter, transform: [{ translateY }] },
-      ]}
+      style={[styles.badgeRoot, { top: insets.top + 8 }, badgeStyle]}
     >
       <Pressable
         onPress={onOpenInfo}
@@ -419,13 +594,19 @@ export default function CarismochitoOverlay() {
     onboardingVisible,
     openOnboarding,
     dismissOnboarding,
+    requestExit,
     exitConfirmVisible,
     confirmExit,
     cancelExit,
   } = useCarismochito();
 
-  // Listener de shake siempre activo — el contexto decide qué hacer según estado.
-  useShakeDetector(toggleByShake);
+  const { huntEnabled, suppressed } = useCarismochitoHunt();
+
+  // El contexto decide qué hacer con cada sacudida según el estado. El
+  // acelerómetro se pausa en las pantallas de lectura y presentación (las
+  // mismas donde no se asoma la mascota): en el atril, con el móvil en un
+  // soporte, solo gastaba hilo JS y podía activar el modo sin querer.
+  useShakeDetector(toggleByShake, { enabled: !suppressed });
 
   return (
     <>
@@ -453,6 +634,8 @@ export default function CarismochitoOverlay() {
       <CarismochitoOnboarding
         visible={onboardingVisible}
         onDismiss={dismissOnboarding}
+        onExit={state === 'active' ? requestExit : undefined}
+        huntEnabled={huntEnabled}
       />
       {/* Confirmación antes de salir (tras un par de sacudidas fuertes). */}
       <CarismochitoExitConfirm
@@ -477,7 +660,7 @@ const styles = StyleSheet.create({
 
   /* Mascota asomándose girada 90° desde un lateral */
   peekRoot: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 9300,
     elevation: 52,
   },
@@ -492,8 +675,10 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 12 },
       default: {
+        // `drop-shadow` y no `boxShadow`: el primero sigue la silueta del
+        // dibujo (como la sombra de iOS); el segundo pintaba la caja entera.
         // @ts-ignore - web only
-        boxShadow: `0px 0px 18px ${G_GLOW}`,
+        filter: `drop-shadow(0px 0px 10px ${G_GLOW})`,
       },
     }),
   },
@@ -511,7 +696,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: G_DARK,
-    borderRadius: 28,
+    borderRadius: radii.full,
     paddingVertical: 6,
     paddingLeft: 6,
     paddingRight: 16,
@@ -540,11 +725,11 @@ const styles = StyleSheet.create({
   badgeTitle: {
     color: G_LIGHT,
     fontWeight: '900',
-    fontSize: 12,
+    ...typography.footnote,
     letterSpacing: 1.4,
   },
   badgeSubtitle: {
-    color: '#D4F5A0',
+    color: CarismoColors.onDeepSoft,
     fontSize: 10,
     marginTop: 2,
     letterSpacing: 0.3,
@@ -552,12 +737,12 @@ const styles = StyleSheet.create({
 
   /* Modal de cuenta atrás */
   modalRoot: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 9998,
     elevation: 80,
   },
   countdownRoot: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -567,14 +752,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   haloOuter: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
   halo: {
     width: 360,
     height: 360,
-    borderRadius: 180,
+    borderRadius: radii.pillFull,
     backgroundColor: G,
     opacity: 0.16,
     ...Platform.select({
@@ -593,14 +778,14 @@ const styles = StyleSheet.create({
   },
   activatingLabel: {
     color: G_LIGHT,
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     letterSpacing: 4,
     textTransform: 'uppercase',
     opacity: 0.85,
   },
   carismoTitle: {
-    color: '#E8FFB8',
+    color: CarismoColors.onDeep,
     fontSize: 28,
     fontWeight: '900',
     letterSpacing: 3,
@@ -617,7 +802,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ringInner: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -633,8 +818,8 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   subtle: {
-    color: '#A3D86E',
-    fontSize: 13,
+    color: CarismoColors.onDeepMuted,
+    ...typography.caption,
     marginTop: 22,
     marginBottom: 28,
     textAlign: 'center',
@@ -664,7 +849,7 @@ const styles = StyleSheet.create({
   cancelText: {
     color: G_DARK,
     fontWeight: '800',
-    fontSize: 16,
+    ...typography.body,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
