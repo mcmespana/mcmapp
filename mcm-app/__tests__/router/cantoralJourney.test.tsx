@@ -169,6 +169,15 @@ beforeEach(async () => {
   );
 });
 
+/**
+ * El recorrido entero monta cinco pantallas con el router de verdad: en local
+ * va en ~2 s, pero en el runner de GitHub, con otros workflows a la vez, se
+ * pasó de los 5 s por defecto (2026-11-08, el mismo día en `preview` y en
+ * `production`, que no compartían código nuevo). Es margen, no un parche:
+ * si algo se cuelga de verdad sigue fallando.
+ */
+const JOURNEY_TIMEOUT_MS = 30_000;
+
 it('categorías → lista → canción → pantalla completa → atrás', async () => {
   app = await renderRouter(
     {
@@ -228,7 +237,7 @@ it('categorías → lista → canción → pantalla completa → atrás', async 
   await act(async () => router.back());
   await waitFor(() => expect(screen).toHavePathname('/cancionero'));
   expect(router.canGoBack()).toBe(false);
-});
+}, JOURNEY_TIMEOUT_MS);
 
 it('una canción abierta en frío por su ruta se lee del catálogo', async () => {
   app = await renderRouter(
