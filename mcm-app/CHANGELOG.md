@@ -4,6 +4,36 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-08 17:25 — Gestos que se descubren solos: pistas de las primeras veces y acciones que se «arman»
+
+- **Pistas de gesto (`hooks/useGestureHint.ts`)**: un gesto escondido no se descubre solo. Las 3 primeras veces (una por sesión como mucho) se DEMUESTRA el gesto sobre el contenido real, y en cuanto el usuario lo usa no vuelve a salir. Recuento en AsyncStorage (`gestureHint:<clave>`). Si el usuario toca durante la demo, su dedo manda.
+  - **Detalle de canción en una lista** (tu selección, una categoría): al entrar, la letra se aparta un poco hacia la canción siguiente, asoma la pastilla «Siguiente · Título» y vuelve. Con «reducir movimiento», la letra no se mueve: solo aparece la pastilla un par de segundos. Clave `cantoral.swipeSong`.
+  - **Lista de canciones**: la primera canción sin seleccionar se entreabre sola y enseña su «Añadir» verde, y se cierra (sin añadir nada). No en web (allí hay botón) ni con «reducir movimiento». Clave `cantoral.swipeAdd`.
+- **Pastillas «Anterior / Siguiente» (`components/SongSwipePeek.tsx`)**: al arrastrar la letra, asoma por el borde a qué canción se va. Van enlazadas al arrastre (sin animación propia) y, al pasar el umbral en el que soltar ya cambia de canción, se «arman»: crecen un poco, la flecha toma el color de acción y suena un tic.
+- **Filas deslizables «armadas»** (cantoral, playlist, notificaciones): al cruzar el punto en el que soltar ya ejecuta la acción, el icono da un pequeño salto y suena un tic (patrón de Mail en iOS). `SwipeActionContent` gana `armAt`/`onArm`.
+
+## 2026-11-08 14:56 — Gestos que siguen al dedo (skill `gestures` de Emil Kowalski)
+
+- **Skill instalada**: `gestures` (`emilkowalski/skills`) en `.agents/skills/gestures`, registrada en `skills-lock.json`.
+- **Nuevo `utils/gesturePhysics.ts`**: `rubberBand`/`rubberBandClamp` (resistencia elástica pasado un tope, en vez de un tope seco), `shouldCommitGesture` (al soltar se compromete por distancia **o** velocidad, y no si se suelta volviendo atrás) y `toCoreSpring` (los muelles de token `springs.*` traducidos para `Animated.spring` de core). Tests en `__tests__/gesturePhysics.test.ts`.
+- **Detalle de canción — swipe entre canciones**: la letra ahora **sigue al dedo** mientras se arrastra (antes no se movía hasta soltar). Basta distancia (80 px) **o** velocidad (500 px/s): antes hacían falta las dos, y un flick corto o un arrastre lento no cambiaban de canción. En la primera/última canción la letra cede elástica. La salida hereda la velocidad del flick. Pasa de `PanGestureHandler` (API vieja) a `Gesture.Pan()`.
+- **BottomSheet (todas las hojas)**: el fondo oscuro se aclara a la par que se arrastra la hoja hacia abajo (valor derivado del arrastre, no animación aparte). Cerrar de un flick hereda la velocidad del dedo (muelle sin rebote) en vez de frenar y arrancar una curva fija. Soltar subiendo con decisión anula el cierre. El muelle de vuelta pasa a `springs.snap`.
+- **Calendario mensual**: el mes sale con un muelle sembrado con la velocidad del flick y el nuevo entra heredándola; tope elástico; háptica en el instante del commit. Fuera el muelle a mano y las dos duraciones a mano.
+- **Reproductor flotante (PiP)**: ya no se puede sacar de pantalla; pasado el borde cede elástico y al soltar vuelve dentro con muelle.
+- Trinquete `noLooseMotion`: acepta `Animated.spring` con `toCoreSpring(springs.…)`; topes bajados a 3 muelles y 50 duraciones.
+
+## 2026-11-08 09:00 — Login de Android: el `INTERNAL_ERROR` (8) cuenta como fallo de configuración
+
+- Sentry recogió en la 2.5.1 (Pixel 8, canal `preview`) un `AuthError: No se pudo iniciar sesión` cuya causa era `INTERNAL_ERROR`, el código 8 de Google Play Services. `utils/authErrors.ts` no lo conocía y lo daba por «desconocido».
+- Ahora `8` e `INTERNAL_ERROR` van a `MISCONFIGURED`, como el `DEVELOPER_ERROR` (10): mismo mensaje y mismo arreglo, dar de alta las huellas SHA-1 en Firebase (`docs/funcionalidades/LOGIN.md` §4). El código no arregla el login: lo que falta es esa configuración.
+
+## 2026-11-07 18:00 — «Actualizar en la tienda» llevaba a una ficha que no existe en iOS
+
+- `utils/storeLinks.ts` abría `apps.apple.com/app/id6745557177`, un id que no existe en la App Store. Al subir la versión mínima a 2.5.1, el botón de la pantalla de actualizar decía «no disponible en tu país». El id bueno es **6753905393** (el `ascAppId` de `eas.json`, comprobado contra la API de búsqueda de Apple: «MCM App», `com.familiaconsolacion.mcmapp`, 2.5.1).
+- El id roto venía de abril de 2026. Las versiones viejas también lo llevan: la 2.0.0 en `MaintenanceScreen` y la 2.5.0 en `storeLinks`. Para ellas hay ramas de parche con una OTA en su propio `runtimeVersion` (ver `docs/desarrollo/OTA.md`, «OTA a una versión vieja»).
+- Las dos ramas de parche llevan además un cartel «Hay una versión nueva» en Inicio (`components/StoreUpdateBanner.tsx`, solo en esas ramas). Lleva a la tienda, se puede cerrar y vuelve a salir a los 3 días. Publicadas el 2026-11-07 con Actions → OTA Production sobre cada rama. Plan: versión mínima en 2.0.0 (nadie bloqueado) y subirla a 2.5.1 en una semana y pico para los rezagados.
+- Guardarraíl en `__tests__/storeLinks.test.ts`: el id del enlace tiene que ser el `ascAppId` de `eas.json`, y el id viejo no puede volver a aparecer.
+
 ## 2026-11-07 17:05 — Comunica: marca menor «Otras patologías» (TEA, TDAH…)
 
 - **Antes**: solo había una marca de salud, «Alergia o tratamiento». Un chaval con solo «otras patologías» (TEA, TDAH…) no llevaba ninguna, y la ficha enseñaba el texto de alergias/intolerancias pero no el de los tratamientos ni el de las patologías.

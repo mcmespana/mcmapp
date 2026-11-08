@@ -125,6 +125,10 @@ const PlaylistRow: React.FC<Props> = ({
         outputRange={[-100, 0]}
         property="translateX"
         style={styles.actionContent}
+        // Mitad de los 100 px de la acción (umbral por defecto del swipe):
+        // pasado ahí, soltar ya quita. Salto + tic para que se sepa.
+        armAt={50}
+        onArm={h.select}
       >
         <IconSymbol name="minus.circle" size={22} color="#fff" />
         <Text style={styles.actionText}>Quitar</Text>

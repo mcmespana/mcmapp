@@ -319,6 +319,16 @@ sueltos **nuevos** están prohibidos (decisión cerrada, `PLAN_UI_NATIVA.md` §4
 `hero 800` loops. Curvas: `motionEasings.out` por defecto, `inOut` para morph,
 `sheet` para sheets. Muelles (`springs`) siempre que haya intervenido un dedo:
 un muelle conserva la velocidad del gesto, una curva la reinicia.
+**Gestos** (skill `gestures`): con el dedo abajo, el elemento ES el dedo
+(1:1, sin curva) y pasado un tope cede elástico (`rubberBand`); al soltar, se
+compromete por distancia **o** velocidad (`shouldCommitGesture`) y termina un
+muelle sembrado con la velocidad. Lo que acompaña (el fondo de una hoja) se
+deriva del arrastre, no se anima aparte. Todo en `utils/gesturePhysics.ts`.
+**Un gesto escondido se enseña, no se explica**: las primeras veces, una
+demostración breve del propio gesto sobre el contenido real
+(`hooks/useGestureHint.ts`), que se apaga en cuanto el usuario lo usa. Nada de
+tutoriales ni carteles fijos. Al cruzar el umbral de una acción deslizable, la
+acción se «arma» (salto + tic): `SwipeActionContent` con `armAt`.
 **Nunca `ease-in` en algo que entra.** Siempre native driver. Bouncy solo para
 celebración. En `Animated` de core, la curva de un sheet es `easings.sheet`
 (la de Reanimated no se puede ejecutar ahí). Hay un trinquete,

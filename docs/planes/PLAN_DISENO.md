@@ -221,11 +221,10 @@ Piezas y reglas actuales: `docs/desarrollo/AREA_NATIVA_DISENO.md`.
       poner el `Highlight` el ÚLTIMO hijo de la fila. Falta aplicarlo a
       `PersonRow`, `NavRow`, `EventListRow` y las filas de `SessionPicker`.
 
-- [ ] **Muelles (`springs`) sin adoptar.** `constants/animations.ts` exporta
-      `springs`, el token que `design.md` §6 prescribe para todo lo que mueve un
-      dedo (drag, sheets), pero **ningún componente lo importa todavía**:
-      `PressableScale` y el resto usan `durations`/`motionEasings`. No se borra;
-      hay que usarlo al tocar gestos.
+- [x] **Muelles (`springs`) sin adoptar — hecho el 2026-11-08.** Ya lo usan
+      los gestos (hoja, calendario, swipe de canción, PiP, toast…); el core
+      `Animated` lo recibe traducido con `toCoreSpring` (`utils/gesturePhysics.ts`).
+      Quedan 3 muelles a mano (trinquete `noLooseMotion`).
 - [ ] **H1-ter.** `SegmentedControl` no tiene indicador de foco. Ahí el pulsado
       y el seleccionado ya compiten por el mismo espacio visual: hay que
       pensarlo, no copiar el patrón del botón.

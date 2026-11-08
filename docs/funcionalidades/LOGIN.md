@@ -151,6 +151,7 @@ Ya lo está (es lo que usa iOS), pero si algún día sale
 | Lo que ve el usuario | Causa casi segura | Arreglo |
 | --- | --- | --- |
 | *"El inicio de sesión no está disponible ahora mismo"* | `DEVELOPER_ERROR` (10): la huella SHA-1 de ese build no está en Firebase | §4.1 y §4.2. Ojo: la huella del build de la tienda **no** es la del build de desarrollo |
+| Sentry: `AuthError: No se pudo iniciar sesión` con causa `INTERNAL_ERROR` (código 8) | Lo mismo que el 10: el Google Sign-In de Android no encuentra cliente OAuth para paquete + SHA-1. Desde el 2026-11-08 se muestra como *"no disponible ahora mismo"* | §4.1 y §4.2 |
 | Funciona en el APK de desarrollo pero no desde Google Play | Falta la huella de **Play App Signing** | §4.1, el SHA-1 de la Play Console |
 | *"Necesitas Google Play Services actualizado"* | Dispositivo sin Play Services (Huawei, emulador sin Google APIs) | No tiene arreglo por nuestra parte |
 | *"Esta versión de la app no admite el inicio de sesión"* | El binario instalado no trae el módulo nativo (OTA sobre un binario viejo) | Instalar un build nuevo |
