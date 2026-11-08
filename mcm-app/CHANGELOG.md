@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-08 17:40 — Android: lecturas de Contigo «en blanco pero con scroll» (NATIVO, rama `native/2.5.2`)
+
+- `HighlightMenuView` (módulo nativo `highlight-menu`) hereda de `ExpoView`, que es un `LinearLayout`, y su `onLayout` llamaba a `super.onLayout`: el `LinearLayout` recolocaba el texto con medidas de Android que nunca se calculan (0 de alto), y el texto ocupaba su hueco en el scroll pero se recortaba a una caja sin altura. Afectaba a las tarjetas que se montan después (Primera lectura, Salmo y Segunda lectura al desplegarlas); el Evangelio, montado con la pantalla, se salvaba por el orden de layout. Ahora `onLayout` no llama al `super` (como `ReactViewGroup`).
+- **Solo llega con la build 2.5.2** (`docs/desarrollo/BUILD_2_5_2.md`). Diagnóstico por lectura del código, sin verlo en un Android: confirmar tras la build.
+
 ## 2026-11-08 17:30 — Envío de reportes que no termina y teclado de iOS en las hojas
 
 - **Reportar canción, envío infinito.** `set()` de Firebase RTDB solo se resuelve cuando el servidor confirma: sin red no resuelve ni rechaza, así que `withRetry` (que solo actúa al rechazar) nunca entraba y el botón quedaba en «Enviando…» para siempre. `pushWithRetry`/`setWithRetry` tienen ahora un tope de 12 s (`WRITE_TIMEOUT_MS`) y rechazan con `WriteTimeoutError`; `ReportBugsModal` enseña el error (antes solo lo logueaba) y conserva el texto para reintentar. Beneficia a todas las escrituras de UI (feedback, sugerir canción, encuestas, evaluaciones). Ojo: tras un timeout el SDK conserva la escritura en cola y la manda al volver la red, así que reintentar a mano puede dejar un aviso duplicado.

@@ -158,6 +158,12 @@ Teniendo el texto dentro, basta recorrer las subvistas hasta el primer
 y sólo cuando se pasa `onNativeHighlightRequest`: sin ese prop,
 `HighlightableReading` renderiza exactamente el mismo árbol que antes.
 
+**Android — `onLayout` sin `super`.** `ExpoView` es un `LinearLayout`: su
+`onLayout` recoloca a los hijos con medidas de Android que aquí nunca se
+calculan (mide Yoga), dejando el texto con 0 de alto — la lectura «en blanco
+pero con scroll». `HighlightMenuView.onLayout` NO llama a `super`, como
+`ReactViewGroup`. No reintroducirlo.
+
 **iOS — el proxy del delegate.** Desde iOS 16 el menú se construye en
 `textView(_:editMenuForTextIn:suggestedActions:)`, y ese delegate **ya lo ocupa
 React Native**. Quitárselo rompería cosas que sí usamos (`onSelectionChange`).

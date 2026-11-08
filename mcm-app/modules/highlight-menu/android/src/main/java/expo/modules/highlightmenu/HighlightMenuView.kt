@@ -41,8 +41,19 @@ class HighlightMenuView(context: Context, appContext: AppContext) :
   private var attachedTextView: TextView? = null
   private var attachedCallback: HighlightActionModeCallback? = null
 
+  /**
+   * NO llamar a `super.onLayout`. `ExpoView` es un `LinearLayout`, y su
+   * `onLayout` recoloca a los hijos con las medidas de Android... que aquí
+   * NUNCA se calculan: quien mide y coloca al texto es Yoga/Fabric (cada hijo
+   * recibe su `layout()` por su cuenta, igual que en `ReactViewGroup`, cuyo
+   * `onLayout` está vacío por este mismo motivo). Con el `super`, cada vez que
+   * este contenedor se recolocaba DESPUÉS de su hijo —p. ej. al montarse la
+   * lectura al desplegar su tarjeta— el `LinearLayout` le asignaba un
+   * `measuredHeight` de 0: el texto seguía ocupando su hueco en el scroll
+   * (Yoga lo medía bien) pero se recortaba a una caja sin altura y no se veía.
+   * Era la lectura «en blanco pero con scroll» de Contigo en Android.
+   */
   override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-    super.onLayout(changed, l, t, r, b)
     // El TextView puede aparecer después del primer layout: se reintenta.
     attachIfNeeded()
   }
