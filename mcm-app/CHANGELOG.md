@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-08 18:39 — Arreglo: deslizar el calendario o el vídeo flotante cerraba la app
+
+- **Causa**: `rubberBand`/`rubberBandClamp` (`utils/gesturePhysics.ts`) tenían `factor = RUBBER_BAND` como valor por defecto. El plugin de worklets mete las constantes de fuera en el cuerpo de la función, y el valor por defecto se evalúa antes: en el hilo de UI `RUBBER_BAND` no existía → `ReferenceError` → crash al arrastrar. Afectaba al calendario mensual, al reproductor flotante y al detalle de canción al tirar más allá de la primera/última. En Jest no se veía (allí el worklet corre como JS normal).
+- **Arreglo**: sin valores por defecto en los parámetros (`factor ?? RUBBER_BAND` dentro del cuerpo).
+- **Guardarraíl**: `__tests__/workletClosures.test.ts` compila cada fichero con worklets con el preset de Expo y falla si alguno usa una variable de fuera en un valor por defecto.
+
 ## 2026-11-08 17:25 — Gestos que se descubren solos: pistas de las primeras veces y acciones que se «arman»
 
 - **Pistas de gesto (`hooks/useGestureHint.ts`)**: un gesto escondido no se descubre solo. Las 3 primeras veces (una por sesión como mucho) se DEMUESTRA el gesto sobre el contenido real, y en cuanto el usuario lo usa no vuelve a salir. Recuento en AsyncStorage (`gestureHint:<clave>`). Si el usuario toca durante la demo, su dedo manda.
