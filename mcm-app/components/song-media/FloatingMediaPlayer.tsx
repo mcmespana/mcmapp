@@ -54,6 +54,8 @@ const VIDEO_HEIGHT = Math.round((PLAYER_WIDTH * 9) / 16);
 // nada".
 const AUDIO_HEIGHT = 116;
 const SIDE_MARGIN = 14;
+/** Aire entre la cabecera y el reproductor cuando se sube del todo. */
+const HEADER_GAP = 8;
 /**
  * Alto de la barra de navegación del sistema, sin contar la barra de estado.
  * Solo es el respaldo para cuando el reproductor se monta fuera de una
@@ -420,15 +422,22 @@ export default function FloatingMediaPlayer({
             ],
       ]}
       // Layout SIN transform: su sitio de reposo. De ahí salen los límites del
-      // arrastre (que no se pueda sacar de pantalla). La barra de estado
-      // queda fuera de su alcance para que el asa siga siendo agarrable.
+      // arrastre (que no se pueda sacar de pantalla). Por arriba, el tope es
+      // el FINAL DE LA CABECERA (`headerReserve`), no la barra de estado: con
+      // la cabecera transparente, sus botones (atrás, multimedia, opciones)
+      // quedan encima y se comen los toques, así que la barra de arrastre
+      // metida debajo ya no se podía agarrar (2026-11-08).
       onLayout={
         fullscreen
           ? undefined
           : (e) => {
               const { x, y } = e.nativeEvent.layout;
               minX.set(SIDE_MARGIN - x);
-              minY.set(insets.top - y);
+              const top = headerReserve + HEADER_GAP - y;
+              minY.set(top);
+              // Si ya estaba por encima del tope (giro de pantalla, cabecera
+              // que cambia de alto), se recoloca dentro.
+              if (panY.get() < top) panY.set(withSpring(top, springs.snap));
             }
       }
     >
