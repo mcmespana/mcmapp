@@ -23,13 +23,21 @@ export const RUBBER_BAND = 0.2;
 /** Desplazamiento con resistencia elástica: 1:1 hasta `limit`, luego cede. */
 export function rubberBand(
   offset: number,
-  limit = 0,
-  factor = RUBBER_BAND,
+  limit?: number,
+  factor?: number,
 ): number {
   'worklet';
+  // ⚠️ Sin valores por defecto en los parámetros (`factor = RUBBER_BAND`):
+  // el plugin de worklets mete las constantes de fuera en el CUERPO
+  // (`const [RUBBER_BAND] = this.__closure`) y un valor por defecto se evalúa
+  // antes, donde en el hilo de UI no existen → ReferenceError → la app se
+  // cierra al arrastrar (calendario y vídeo flotante, 2026-11-08). Lo vigila
+  // `__tests__/workletClosures.test.ts`.
+  const lim = limit ?? 0;
+  const f = factor ?? RUBBER_BAND;
   const abs = Math.abs(offset);
-  if (abs <= limit) return offset;
-  return Math.sign(offset) * (limit + (abs - limit) * factor);
+  if (abs <= lim) return offset;
+  return Math.sign(offset) * (lim + (abs - lim) * f);
 }
 
 /** Lleva `value` dentro de [min, max] con resistencia elástica fuera. */
@@ -37,11 +45,13 @@ export function rubberBandClamp(
   value: number,
   min: number,
   max: number,
-  factor = RUBBER_BAND,
+  factor?: number,
 ): number {
   'worklet';
-  if (value < min) return min - (min - value) * factor;
-  if (value > max) return max + (value - max) * factor;
+  // Sin valor por defecto en el parámetro: ver `rubberBand`.
+  const f = factor ?? RUBBER_BAND;
+  if (value < min) return min - (min - value) * f;
+  if (value > max) return max + (value - max) * f;
   return value;
 }
 
