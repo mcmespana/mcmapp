@@ -16,10 +16,15 @@ import {
 } from 'react-native';
 import Animated, {
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
+  withDelay,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import SongSwipePeek from '@/components/SongSwipePeek';
+import { useGestureHint } from '@/hooks/useGestureHint';
 import { scheduleOnRN } from 'react-native-worklets';
 import { MaterialIcons } from '@/components/ui/icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -64,7 +69,12 @@ import ArrangementInputModal from '@/components/ArrangementInputModal';
 import * as Clipboard from 'expo-clipboard';
 import brandColors, { SwipeColors, themeColors } from '@/constants/colors';
 import { cantoralHeaderTint } from '@/utils/cantoralHeader';
-import { durations, reaEasings, springs } from '@/constants/animations';
+import {
+  durations,
+  motionEasings,
+  reaEasings,
+  springs,
+} from '@/constants/animations';
 import { h } from '@/utils/haptics';
 import { useToast } from '@/contexts/AppToastContext';
 import { pushWithRetry } from '@/services/firebaseWrites';
@@ -96,6 +106,19 @@ const availableFonts = SONG_FONTS.map((f) => ({ ...f }));
  */
 const SONG_SWIPE_DISTANCE = 80;
 const SONG_SWIPE_VELOCITY = 500;
+/**
+ * Pista de las primeras veces: la letra se aparta esto (px) — menos que el
+ * umbral, así que la pastilla asoma sin «armarse» — y vuelve.
+ */
+const HINT_NUDGE = 64;
+/** Espera antes de la pista (que la letra haya cargado) y cuánto se queda. */
+const HINT_DELAY_MS = 1100;
+const HINT_HOLD_MS = 900;
+const HINT_REVEAL_MS = 2200;
+
+/** Título para la pastilla, sin el «12. » del número del cantoral. */
+const peekTitle = (title: string | undefined) =>
+  (title ?? '').replace(/^\d+\.\s*/, '');
 
 const KEYS_TRANSPOSE_UP = ['+', '='];
 const KEYS_TRANSPOSE_DOWN = ['-'];
@@ -319,6 +342,16 @@ function SongDetailBody({
     currentCapoOverride !== null ? currentCapoOverride : capo;
 
   const slideAnim = useSharedValue(0);
+  // Pastillas «Anterior/Siguiente» (SongSwipePeek): se apagan al cambiar de
+  // canción para que no asome la del otro lado mientras entra la nueva.
+  const peekEnabled = useSharedValue(1);
+  const swipeArmed = useSharedValue(false);
+  // Pista de las primeras veces (ver el efecto junto al gesto).
+  const hintReveal = useSharedValue(0);
+  const hintPlayed = useRef(false);
+  const swipeHint = useGestureHint('cantoral.swipeSong');
+  const markSwipeLearned = swipeHint.markLearned;
+  const reducedMotion = useReducedMotion();
   const screenWidth = Dimensions.get('window').width;
 
   const {
@@ -962,14 +995,84 @@ function SongDetailBody({
   const hasPrev = canSwipe && (currentIndex as number) > 0;
   const hasNext =
     canSwipe && (currentIndex as number) < (navigationList?.length ?? 0) - 1;
+
+  // ── Pista de gesto: «desliza para pasar de canción» ──
+  // Mucha gente no descubre que en una lista (su selección, una categoría) se
+  // pasa de canción deslizando. Las primeras veces (`useGestureHint`), al
+  // entrar, la letra se aparta un poco hacia la canción de al lado, asoma la
+  // pastilla «Siguiente · Título» y vuelve: es el propio gesto, demostrado
+  // sobre la letra real. Si el usuario toca mientras, su dedo manda (el
+  // gesto escribe `slideAnim` y corta la demo). En cuanto pasa de canción
+  // deslizando, no vuelve a salir. Con «reducir movimiento», la letra no se
+  // mueve: solo aparece la pastilla un par de segundos.
+  const hintTarget: 'prev' | 'next' | null = hasNext
+    ? 'next'
+    : hasPrev
+      ? 'prev'
+      : null;
+  const { due: hintDue, consume: consumeHint } = swipeHint;
+  const hintSide = hintDue ? hintTarget : null;
+  useEffect(() => {
+    if (!hintSide || hintPlayed.current) return;
+    hintPlayed.current = true;
+    consumeHint();
+    peekEnabled.set(1);
+    if (reducedMotion) {
+      hintReveal.set(
+        withDelay(
+          HINT_DELAY_MS,
+          withSequence(
+            withTiming(1, { duration: durations.base }),
+            withDelay(
+              HINT_REVEAL_MS,
+              withTiming(0, { duration: durations.base }),
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+    const dir = hintSide === 'next' ? -1 : 1;
+    slideAnim.set(
+      withDelay(
+        HINT_DELAY_MS,
+        withSequence(
+          withTiming(dir * HINT_NUDGE, {
+            duration: durations.slow,
+            easing: motionEasings.out,
+          }),
+          withDelay(HINT_HOLD_MS, withSpring(0, springs.settle)),
+        ),
+      ),
+    );
+  }, [
+    hintSide,
+    consumeHint,
+    reducedMotion,
+    slideAnim,
+    hintReveal,
+    peekEnabled,
+  ]);
+
   const songSwipe = Gesture.Pan()
     .enabled(canSwipe)
     .activeOffsetX([-20, 20])
     .failOffsetY([-15, 15])
+    .onStart(() => {
+      peekEnabled.set(1);
+      swipeArmed.set(false);
+    })
     .onUpdate((e) => {
       const tx = e.translationX;
       const blocked = (tx > 0 && !hasPrev) || (tx < 0 && !hasNext);
       slideAnim.set(blocked ? rubberBand(tx) : tx);
+      // Tic al cruzar el umbral (soltar ya cambia de canción), a la vez que
+      // la pastilla se arma. Uno por cruce, nunca por frame.
+      const armed = !blocked && Math.abs(tx) >= SONG_SWIPE_DISTANCE;
+      if (armed !== swipeArmed.get()) {
+        swipeArmed.set(armed);
+        if (armed) scheduleOnRN(h.select);
+      }
     })
     .onEnd((e, success) => {
       const tx = e.translationX;
@@ -982,8 +1085,12 @@ function SongDetailBody({
           SONG_SWIPE_VELOCITY,
         );
       if (commit && tx > 0 && hasPrev) {
+        peekEnabled.set(0);
+        scheduleOnRN(markSwipeLearned);
         scheduleOnRN(handleSwipeLeft, e.velocityX);
       } else if (commit && tx < 0 && hasNext) {
+        peekEnabled.set(0);
+        scheduleOnRN(markSwipeLearned);
         scheduleOnRN(handleSwipeRight, e.velocityX);
       } else {
         // Vuelta rápida, heredando la velocidad (también si el gesto se
@@ -994,6 +1101,13 @@ function SongDetailBody({
       }
     });
 
+  const prevTitle = hasPrev
+    ? peekTitle(navigationList?.[(currentIndex as number) - 1]?.title)
+    : '';
+  const nextTitle = hasNext
+    ? peekTitle(navigationList?.[(currentIndex as number) + 1]?.title)
+    : '';
+
   const gestureContent = canSwipe ? (
     <GestureDetector gesture={songSwipe}>{contentView}</GestureDetector>
   ) : (
@@ -1003,6 +1117,28 @@ function SongDetailBody({
   return (
     <View style={{ flex: 1, backgroundColor: screenBg }}>
       {gestureContent}
+      {hasPrev && (
+        <SongSwipePeek
+          side="prev"
+          title={prevTitle}
+          slide={slideAnim}
+          enabled={peekEnabled}
+          armAt={SONG_SWIPE_DISTANCE}
+          reveal={hintSide === 'prev' ? hintReveal : undefined}
+          isDark={isDark}
+        />
+      )}
+      {hasNext && (
+        <SongSwipePeek
+          side="next"
+          title={nextTitle}
+          slide={slideAnim}
+          enabled={peekEnabled}
+          armAt={SONG_SWIPE_DISTANCE}
+          reveal={hintSide === 'next' ? hintReveal : undefined}
+          isDark={isDark}
+        />
+      )}
       <SongMediaSheet
         visible={showMediaSheet}
         onClose={() => setShowMediaSheet(false)}

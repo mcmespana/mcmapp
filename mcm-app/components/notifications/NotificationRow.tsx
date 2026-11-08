@@ -96,6 +96,10 @@ function NotificationRow({
         outputRange={[1, 0]}
         property="scale"
         style={styles.actionContent}
+        // Pasado el umbral de la fila (`rightThreshold`), soltar ya marca:
+        // la acción salta y suena un tic.
+        armAt={spacing.xl}
+        onArm={h.select}
       >
         <MaterialIcons
           name={unread ? 'check' : 'markunread'}

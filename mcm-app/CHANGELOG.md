@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-08 17:25 — Gestos que se descubren solos: pistas de las primeras veces y acciones que se «arman»
+
+- **Pistas de gesto (`hooks/useGestureHint.ts`)**: un gesto escondido no se descubre solo. Las 3 primeras veces (una por sesión como mucho) se DEMUESTRA el gesto sobre el contenido real, y en cuanto el usuario lo usa no vuelve a salir. Recuento en AsyncStorage (`gestureHint:<clave>`). Si el usuario toca durante la demo, su dedo manda.
+  - **Detalle de canción en una lista** (tu selección, una categoría): al entrar, la letra se aparta un poco hacia la canción siguiente, asoma la pastilla «Siguiente · Título» y vuelve. Con «reducir movimiento», la letra no se mueve: solo aparece la pastilla un par de segundos. Clave `cantoral.swipeSong`.
+  - **Lista de canciones**: la primera canción sin seleccionar se entreabre sola y enseña su «Añadir» verde, y se cierra (sin añadir nada). No en web (allí hay botón) ni con «reducir movimiento». Clave `cantoral.swipeAdd`.
+- **Pastillas «Anterior / Siguiente» (`components/SongSwipePeek.tsx`)**: al arrastrar la letra, asoma por el borde a qué canción se va. Van enlazadas al arrastre (sin animación propia) y, al pasar el umbral en el que soltar ya cambia de canción, se «arman»: crecen un poco, la flecha toma el color de acción y suena un tic.
+- **Filas deslizables «armadas»** (cantoral, playlist, notificaciones): al cruzar el punto en el que soltar ya ejecuta la acción, el icono da un pequeño salto y suena un tic (patrón de Mail en iOS). `SwipeActionContent` gana `armAt`/`onArm`.
+
 ## 2026-11-08 14:56 — Gestos que siguen al dedo (skill `gestures` de Emil Kowalski)
 
 - **Skill instalada**: `gestures` (`emilkowalski/skills`) en `.agents/skills/gestures`, registrada en `skills-lock.json`.
