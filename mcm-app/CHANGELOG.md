@@ -28,6 +28,11 @@
 - **Reproductor flotante (PiP)**: ya no se puede sacar de pantalla; pasado el borde cede elástico y al soltar vuelve dentro con muelle.
 - Trinquete `noLooseMotion`: acepta `Animated.spring` con `toCoreSpring(springs.…)`; topes bajados a 3 muelles y 50 duraciones.
 
+## 2026-11-08 12:45 — Push: sin red ya no se reporta como error
+
+- Sentry recogía `Error encountered while fetching Expo token: … UnknownHostException: Unable to resolve host "exp.host"`: el móvil abría la app sin conexión y `getExpoPushTokenAsync` no llegaba al servidor de Expo. No es un fallo: el registro se reintenta solo al volver la app al primer plano.
+- Nuevo `utils/networkErrors.ts` (`isOfflineError`, puro y con test): reconoce los mensajes de «sin red» de Android, iOS, React Native y Firebase, también dentro de `error.cause`. `registerAndSaveToken` lo usa para dejar esos casos en `logger.debug` y seguir mandando a Sentry el resto.
+
 ## 2026-11-08 09:00 — Login de Android: el `INTERNAL_ERROR` (8) cuenta como fallo de configuración
 
 - Sentry recogió en la 2.5.1 (Pixel 8, canal `preview`) un `AuthError: No se pudo iniciar sesión` cuya causa era `INTERNAL_ERROR`, el código 8 de Google Play Services. `utils/authErrors.ts` no lo conocía y lo daba por «desconocido».
