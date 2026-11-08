@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-08 09:00 — Login de Android: el `INTERNAL_ERROR` (8) cuenta como fallo de configuración
+
+- Sentry recogió en la 2.5.1 (Pixel 8, canal `preview`) un `AuthError: No se pudo iniciar sesión` cuya causa era `INTERNAL_ERROR`, el código 8 de Google Play Services. `utils/authErrors.ts` no lo conocía y lo daba por «desconocido».
+- Ahora `8` e `INTERNAL_ERROR` van a `MISCONFIGURED`, como el `DEVELOPER_ERROR` (10): mismo mensaje y mismo arreglo, dar de alta las huellas SHA-1 en Firebase (`docs/funcionalidades/LOGIN.md` §4). El código no arregla el login: lo que falta es esa configuración.
+
 ## 2026-11-07 18:00 — «Actualizar en la tienda» llevaba a una ficha que no existe en iOS
 
 - `utils/storeLinks.ts` abría `apps.apple.com/app/id6745557177`, un id que no existe en la App Store. Al subir la versión mínima a 2.5.1, el botón de la pantalla de actualizar decía «no disponible en tu país». El id bueno es **6753905393** (el `ascAppId` de `eas.json`, comprobado contra la API de búsqueda de Apple: «MCM App», `com.familiaconsolacion.mcmapp`, 2.5.1).
