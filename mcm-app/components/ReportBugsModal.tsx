@@ -15,7 +15,7 @@ import { MaterialIcons } from '@/components/ui/icons';
 import { Colors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
-import { pushWithRetry } from '@/services/firebaseWrites';
+import { pushWithRetry, WriteTimeoutError } from '@/services/firebaseWrites';
 import {
   getCategoryFromFirebaseCategory,
   cleanSongTitle,
@@ -55,6 +55,7 @@ export default function ReportBugsModal({
   const resolved = useResolvedProfileConfig();
   const [bugDescription, setBugDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   // iOS no puede mostrar dos Modal a la vez: si abrimos el panel secreto en el
   // mismo tick que cerramos este sheet, el secreto nunca se monta. Marcamos la
   // intención y la disparamos en onCloseComplete (tras el onDismiss del Modal).
@@ -62,6 +63,7 @@ export default function ReportBugsModal({
 
   const handleSubmit = async () => {
     if (!bugDescription.trim()) return;
+    setErrorMsg('');
     setIsSubmitting(true);
     try {
       const category = firebaseCategory
@@ -85,6 +87,13 @@ export default function ReportBugsModal({
       if (onSuccess) onSuccess();
     } catch (error) {
       logger.error('Error submitting bug report:', error);
+      // Antes el fallo solo iba al log: el botón volvía a su sitio sin decir
+      // nada y parecía que no pasaba nada. El texto se conserva para reintentar.
+      setErrorMsg(
+        error instanceof WriteTimeoutError
+          ? 'Sin conexión con el servidor. Revisa tu internet e inténtalo de nuevo.'
+          : 'No se pudo enviar. Inténtalo de nuevo.',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -92,6 +101,7 @@ export default function ReportBugsModal({
 
   const handleClose = () => {
     setBugDescription('');
+    setErrorMsg('');
     onClose();
   };
 
@@ -152,6 +162,13 @@ export default function ReportBugsModal({
         <Text style={[styles.charCount, { color: theme.icon }]}>
           {bugDescription.length}/500
         </Text>
+
+        {errorMsg ? (
+          <View style={styles.errorRow}>
+            <MaterialIcons name="error-outline" size={15} color="#FF3B30" />
+            <Text style={styles.errorText}>{errorMsg}</Text>
+          </View>
+        ) : null}
 
         {/* Botón principal */}
         <AppPrimaryButton
@@ -250,6 +267,18 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: 6,
     marginBottom: 20,
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  errorText: {
+    ...typography.caption,
+    color: '#FF3B30',
+    fontWeight: '500',
+    flex: 1,
   },
   submitBtn: {
     marginBottom: 4,

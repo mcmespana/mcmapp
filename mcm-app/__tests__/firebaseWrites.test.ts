@@ -5,7 +5,12 @@
  * key UNA sola vez, aunque `set()` se reintente varias.
  */
 import { push, set } from 'firebase/database';
-import { pushWithRetry, setWithRetry } from '@/services/firebaseWrites';
+import {
+  pushWithRetry,
+  setWithRetry,
+  WRITE_TIMEOUT_MS,
+  WriteTimeoutError,
+} from '@/services/firebaseWrites';
 
 jest.useFakeTimers();
 
@@ -16,10 +21,10 @@ async function runAllTimers<T>(promise: Promise<T>): Promise<T> {
     (value) => ({ ok: true as const, value }),
     (error) => ({ ok: false as const, error }),
   );
-  for (let i = 0; i < 5; i++) {
-    await Promise.resolve();
-    jest.runOnlyPendingTimers();
-  }
+  // Se avanza solo lo que duran las esperas de reintento (400 + 1200 ms), muy
+  // por debajo de `WRITE_TIMEOUT_MS`: con `runOnlyPendingTimers` también saltaba
+  // el tope de tiempo de la escritura y estos casos fallaban por timeout.
+  await jest.advanceTimersByTimeAsync(2000);
   const result = await settled;
   if (!result.ok) throw result.error;
   return result.value;
@@ -88,5 +93,31 @@ describe('setWithRetry', () => {
     await runAllTimers(setWithRetry('app/config', { enabled: true }));
 
     expect(set).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('escritura que nunca responde (sin red)', () => {
+  it('pushWithRetry rechaza con WriteTimeoutError en vez de colgarse', async () => {
+    (set as jest.Mock).mockImplementation(() => new Promise(() => {}));
+
+    const settled = pushWithRetry('songs/fallitos/x', { a: 1 }).then(
+      () => 'ok',
+      (e) => e,
+    );
+    await jest.advanceTimersByTimeAsync(WRITE_TIMEOUT_MS + 1);
+
+    expect(await settled).toBeInstanceOf(WriteTimeoutError);
+  });
+
+  it('setWithRetry también', async () => {
+    (set as jest.Mock).mockImplementation(() => new Promise(() => {}));
+
+    const settled = setWithRetry('songs/updatedAt', '1').then(
+      () => 'ok',
+      (e) => e,
+    );
+    await jest.advanceTimersByTimeAsync(WRITE_TIMEOUT_MS + 1);
+
+    expect(await settled).toBeInstanceOf(WriteTimeoutError);
   });
 });

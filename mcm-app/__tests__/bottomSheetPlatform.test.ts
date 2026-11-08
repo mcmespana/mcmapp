@@ -7,7 +7,11 @@
  *  · Ancho: en web de escritorio y iPad las hojas ocupaban todo el ancho del
  *    monitor. Decisión del usuario (2026-10-16): ~560 px y centradas.
  */
-import { keyboardShiftDuration, sheetWidthFor } from '@/components/BottomSheet';
+import {
+  keyboardHeightFromFrame,
+  keyboardShiftDuration,
+  sheetWidthFor,
+} from '@/components/BottomSheet';
 import { keyboardEventsFor } from '@/hooks/useKeyboardVisible';
 import { durations } from '@/constants/animations';
 import { breakpoints, sheetMaxWidth } from '@/constants/breakpoints';
@@ -40,6 +44,26 @@ describe('keyboardShiftDuration', () => {
   it('un 0 (Android) o ausente no es un salto seco', () => {
     expect(keyboardShiftDuration(0)).toBe(durations.quick);
     expect(keyboardShiftDuration(undefined)).toBe(durations.quick);
+  });
+});
+
+describe('keyboardHeightFromFrame', () => {
+  it('altura = pie de la ventana menos el borde superior del teclado', () => {
+    expect(
+      keyboardHeightFromFrame({ screenY: 550, width: 390 }, 844, 390),
+    ).toBe(294);
+  });
+
+  it('teclado cerrado (borde en el pie) = 0', () => {
+    expect(
+      keyboardHeightFromFrame({ screenY: 844, width: 390 }, 844, 390),
+    ).toBe(0);
+  });
+
+  it('teclado flotante del iPad (más estrecho que la ventana) = 0', () => {
+    expect(
+      keyboardHeightFromFrame({ screenY: 300, width: 320 }, 1180, 820),
+    ).toBe(0);
   });
 });
 

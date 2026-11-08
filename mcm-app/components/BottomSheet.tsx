@@ -15,6 +15,7 @@ import {
   Animated,
   StyleSheet,
   Keyboard,
+  Dimensions,
 } from 'react-native';
 import useAnimatedValue from '@/hooks/useAnimatedValue';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -84,6 +85,21 @@ const UPWARD_RESISTANCE = 0.2;
  */
 export function keyboardShiftDuration(eventDuration: number | undefined) {
   return eventDuration || durations.quick;
+}
+
+/**
+ * Altura que ocupa el teclado según el rectángulo que avisa
+ * `keyboardWillChangeFrame` (iOS). Se calcula desde el borde superior del
+ * teclado hasta el pie de la ventana: 0 si está cerrado o si es el teclado
+ * flotante del iPad, que no tapa el pie de la hoja.
+ */
+export function keyboardHeightFromFrame(
+  frame: { screenY: number; width?: number },
+  windowHeight: number,
+  windowWidth: number,
+): number {
+  if (frame.width !== undefined && frame.width < windowWidth - 1) return 0;
+  return Math.max(0, Math.round(windowHeight - frame.screenY));
 }
 
 /**
@@ -403,9 +419,43 @@ export default function BottomSheet({
         }).start();
       },
     );
+    // iOS: la primera vez que sale el teclado, `keyboardWillShow` puede traer
+    // una altura que luego cambia (aparece la barra de sugerencias, termina de
+    // cargar el teclado…), y sin enterarnos la hoja se quedaba demasiado baja
+    // con el campo de texto DETRÁS del teclado hasta la siguiente apertura.
+    // `keyboardWillChangeFrame` avisa de cada cambio de tamaño.
+    const frameSub =
+      Platform.OS === 'ios'
+        ? Keyboard.addListener(
+            'keyboardWillChangeFrame',
+            (e: {
+              endCoordinates: {
+                screenY: number;
+                height: number;
+                width?: number;
+              };
+              duration?: number;
+            }) => {
+              const { width: winW, height: winH } = Dimensions.get('window');
+              const height = keyboardHeightFromFrame(
+                e.endCoordinates,
+                winH,
+                winW,
+              );
+              setKbHeight(height);
+              Animated.timing(keyboardOffsetAnim, {
+                toValue: -height,
+                duration: keyboardShiftDuration(e.duration),
+                easing: easings.sheet,
+                useNativeDriver: nativeDriver,
+              }).start();
+            },
+          )
+        : null;
     return () => {
       showSub.remove();
       hideSub.remove();
+      frameSub?.remove();
     };
   }, [keyboardOffsetAnim]);
 

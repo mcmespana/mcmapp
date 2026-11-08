@@ -198,6 +198,10 @@ Detalle en `docs/planes/PLAN_INTEGRACIONES.md`.
 | ~~**`channelId` en el push**~~                     | MCM Panel | ✅ **Hecho.** El Panel manda `channelId` top-level derivado de `data.category` (`general` → `default`) contra una lista cerrada (`api/_lib/push.ts`), verificada contra los 7 canales que declara la app. También manda `mutableContent`. Tabla en `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8 |
 | **Probar los channels en un Android real**         | Usuario   | Requisito que ya fijaba `TODO.md`: verificar heads-up/sonido por canal antes de mergear a `production`. Los canales aparecen en los ajustes del sistema de todos los Android y sus preferencias no se pueden revertir a mano                                                                      |
 
+> **Próxima build nativa (2.5.2)**: la lista viva y el checklist están en
+> [`docs/desarrollo/BUILD_2_5_2.md`](../desarrollo/BUILD_2_5_2.md). Lo nativo
+> nuevo vive en la rama `native/2.5.2`, no en `main` (2026-11-08).
+
 ### C-bis. Build 2.2 — noviembre/diciembre de 2026
 
 Decidido el 2026-08-03: estas dos son NATIVAS y **no entran en la 2.1**. Se

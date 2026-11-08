@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-08 17:30 — Envío de reportes que no termina y teclado de iOS en las hojas
+
+- **Reportar canción, envío infinito.** `set()` de Firebase RTDB solo se resuelve cuando el servidor confirma: sin red no resuelve ni rechaza, así que `withRetry` (que solo actúa al rechazar) nunca entraba y el botón quedaba en «Enviando…» para siempre. `pushWithRetry`/`setWithRetry` tienen ahora un tope de 12 s (`WRITE_TIMEOUT_MS`) y rechazan con `WriteTimeoutError`; `ReportBugsModal` enseña el error (antes solo lo logueaba) y conserva el texto para reintentar. Beneficia a todas las escrituras de UI (feedback, sugerir canción, encuestas, evaluaciones). Ojo: tras un timeout el SDK conserva la escritura en cola y la manda al volver la red, así que reintentar a mano puede dejar un aviso duplicado.
+- **iOS, «Reportar» con el campo detrás del teclado la primera vez.** `BottomSheet` solo escuchaba `keyboardWillShow`; si el teclado cambia de altura después (barra de sugerencias, primera carga), la hoja se quedaba baja. Ahora en iOS escucha también `keyboardWillChangeFrame` (`keyboardHeightFromFrame`, ignora el teclado flotante del iPad). Es la causa más probable, no verificada en dispositivo.
+- **Pendiente de build nativa (no incluido aquí):** las lecturas de Contigo «en blanco pero con scroll» en Android. El arreglo es nativo (`HighlightMenuView.kt`) y está en la rama `native/2.5.2`; lista en `docs/desarrollo/BUILD_2_5_2.md`.
+
 ## 2026-11-08 17:25 — Gestos que se descubren solos: pistas de las primeras veces y acciones que se «arman»
 
 - **Pistas de gesto (`hooks/useGestureHint.ts`)**: un gesto escondido no se descubre solo. Las 3 primeras veces (una por sesión como mucho) se DEMUESTRA el gesto sobre el contenido real, y en cuanto el usuario lo usa no vuelve a salir. Recuento en AsyncStorage (`gestureHint:<clave>`). Si el usuario toca durante la demo, su dedo manda.
