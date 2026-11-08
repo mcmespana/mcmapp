@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-08 14:56 — Gestos que siguen al dedo (skill `gestures` de Emil Kowalski)
+
+- **Skill instalada**: `gestures` (`emilkowalski/skills`) en `.agents/skills/gestures`, registrada en `skills-lock.json`.
+- **Nuevo `utils/gesturePhysics.ts`**: `rubberBand`/`rubberBandClamp` (resistencia elástica pasado un tope, en vez de un tope seco), `shouldCommitGesture` (al soltar se compromete por distancia **o** velocidad, y no si se suelta volviendo atrás) y `toCoreSpring` (los muelles de token `springs.*` traducidos para `Animated.spring` de core). Tests en `__tests__/gesturePhysics.test.ts`.
+- **Detalle de canción — swipe entre canciones**: la letra ahora **sigue al dedo** mientras se arrastra (antes no se movía hasta soltar). Basta distancia (80 px) **o** velocidad (500 px/s): antes hacían falta las dos, y un flick corto o un arrastre lento no cambiaban de canción. En la primera/última canción la letra cede elástica. La salida hereda la velocidad del flick. Pasa de `PanGestureHandler` (API vieja) a `Gesture.Pan()`.
+- **BottomSheet (todas las hojas)**: el fondo oscuro se aclara a la par que se arrastra la hoja hacia abajo (valor derivado del arrastre, no animación aparte). Cerrar de un flick hereda la velocidad del dedo (muelle sin rebote) en vez de frenar y arrancar una curva fija. Soltar subiendo con decisión anula el cierre. El muelle de vuelta pasa a `springs.snap`.
+- **Calendario mensual**: el mes sale con un muelle sembrado con la velocidad del flick y el nuevo entra heredándola; tope elástico; háptica en el instante del commit. Fuera el muelle a mano y las dos duraciones a mano.
+- **Reproductor flotante (PiP)**: ya no se puede sacar de pantalla; pasado el borde cede elástico y al soltar vuelve dentro con muelle.
+- Trinquete `noLooseMotion`: acepta `Animated.spring` con `toCoreSpring(springs.…)`; topes bajados a 3 muelles y 50 duraciones.
+
 ## 2026-11-08 09:00 — Login de Android: el `INTERNAL_ERROR` (8) cuenta como fallo de configuración
 
 - Sentry recogió en la 2.5.1 (Pixel 8, canal `preview`) un `AuthError: No se pudo iniciar sesión` cuya causa era `INTERNAL_ERROR`, el código 8 de Google Play Services. `utils/authErrors.ts` no lo conocía y lo daba por «desconocido».

@@ -20,10 +20,11 @@
  *     la forma de Apple (`{ duration: MI_MS, dampingRatio }`, con la duración
  *     en una constante con nombre), que también cuenta como bueno — pero
  *     piénsalo dos veces.
- *   · Has AÑADIDO un `Animated.spring` de core → no hay token de muelle para
- *     core: usa `Animated.timing` con `durations.*` y `easings.*` (p.ej.
- *     `easings.sheet`), como la apertura de BottomSheet o la entrada de
- *     OTAUpdatingOverlay.
+ *   · Has AÑADIDO un `Animated.spring` de core → pásale el token traducido,
+ *     `...toCoreSpring(springs.snap)` (`utils/gesturePhysics.ts`), como el
+ *     arrastre de BottomSheet; o, si no hay dedo de por medio, usa
+ *     `Animated.timing` con `durations.*` y `easings.*` (p.ej.
+ *     `easings.sheet`), como la apertura de BottomSheet.
  *   · Has AÑADIDO un `duration: <número>` → usa `durations.quick/base/slow/
  *     hero`. Si ninguno encaja (un bucle de respiración de 4 s, por ejemplo),
  *     sácalo a una constante con nombre en tu fichero: `duration: BREATH_MS`
@@ -101,7 +102,7 @@ function callArgs(src: string, open: number): string {
  *   · `withSpring(...)` cuyos argumentos no mencionan `springs.` ni llevan
  *     `dampingRatio` (incluye el `withSpring(x)` pelado, que usa el muelle
  *     por defecto de Reanimated, con rebote).
- *   · Cualquier `Animated.spring(` de core: no hay token para él.
+ *   · `Animated.spring(...)` de core sin `toCoreSpring(springs.…)`.
  */
 function countLooseSprings(src: string): number {
   let n = 0;
@@ -109,7 +110,10 @@ function countLooseSprings(src: string): number {
     const args = callArgs(src, m.index! + m[0].length - 1);
     if (!/\bsprings\./.test(args) && !/\bdampingRatio\b/.test(args)) n++;
   }
-  n += [...src.matchAll(/\bAnimated\.spring\(/g)].length;
+  for (const m of src.matchAll(/\bAnimated\.spring\(/g)) {
+    const args = callArgs(src, m.index! + m[0].length - 1);
+    if (!/\btoCoreSpring\(\s*springs\./.test(args)) n++;
+  }
   return n;
 }
 
@@ -120,11 +124,11 @@ function countLooseDurations(src: string): number {
 }
 
 /**
- * Topes actuales (2026-10-17, rama del pulido de animación). Bajar SIEMPRE
+ * Topes actuales (2026-11-08, pasada de la skill `gestures`). Bajar SIEMPRE
  * que se migre algo; no subir nunca (ver arriba la excepción de los merges).
  */
-const SPRING_BUDGET = 5;
-const DURATION_BUDGET = 58;
+const SPRING_BUDGET = 3;
+const DURATION_BUDGET = 50;
 /**
  * Cuánto puede quedar el recuento por debajo del tope sin obligar a bajarlo.
  * Más corto que en los colores porque aquí los números son pequeños.

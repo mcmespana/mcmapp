@@ -18,7 +18,8 @@ import {
 } from 'react-native';
 import useAnimatedValue from '@/hooks/useAnimatedValue';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { durations, easings } from '@/constants/animations';
+import { durations, easings, springs } from '@/constants/animations';
+import { toCoreSpring } from '@/utils/gesturePhysics';
 import { breakpoints, sheetMaxWidth } from '@/constants/breakpoints';
 import { UIColors, Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
@@ -45,9 +46,10 @@ import { h } from '@/utils/haptics';
 // `animate-expo`: el gesto solo tiene sentido moviendo la MISMA
 // `Animated.Value` que la animación de entrada/salida, y esa no puede ser un
 // shared value de Reanimated mientras el Modal transparente siga sin aplicar
-// sus estilos. Lo que sí se ha traído de la skill —umbral por velocidad,
-// resistencia elástica arriba, velocidad arrastrada al muelle, háptica en el
-// commit— está abajo y no depende del hilo en el que corra.
+// sus estilos. Lo que sí se ha traído de las skills (`animate-expo` y
+// `gestures`) —umbral por velocidad, resistencia elástica arriba, velocidad
+// arrastrada al muelle (también al CERRAR de un flick), el fondo derivado del
+// arrastre, háptica en el commit— está abajo y no depende del hilo.
 const nativeDriver = Platform.OS !== 'web';
 
 const DURATION = durations.slow;
@@ -103,6 +105,9 @@ export function sheetWidthFor(windowWidth: number): number | undefined {
  * @param vy velocidad vertical al soltar, px/ms (positiva = hacia abajo)
  */
 export function shouldCloseOnRelease(dy: number, vy: number): boolean {
+  // Soltar subiendo con decisión anula el cierre aunque se hubiera bajado
+  // mucho: es el usuario arrepintiéndose a mitad de gesto (skill `gestures`).
+  if (vy < -VELOCITY_THRESHOLD) return false;
   return dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD;
 }
 
@@ -204,6 +209,15 @@ export default function BottomSheet({
   // Keyboard offset: negative value moves the sheet up. Kept separate from
   // translateY so both can use useNativeDriver without a driver conflict.
   const keyboardOffsetAnim = useAnimatedValue(0);
+  // Alto real de la hoja (onLayout): el fondo se aclara en proporción a cuánto
+  // de ella se ha arrastrado hacia abajo. Se mide una vez por cambio de
+  // contenido, no por frame.
+  const [sheetHeight, setSheetHeight] = useState(0);
+  // Velocidad (px/ms) con la que se soltó la hoja al cerrarla con el dedo. El
+  // cierre la hereda: la hoja sale a la velocidad que llevaba, en vez de
+  // frenar en seco y arrancar una curva fija de 300 ms. 0 = cierre sin gesto
+  // (botón, fondo, Escape), que va con la curva de siempre.
+  const releaseVyRef = useRef(0);
 
   // `visible` del render anterior: al montar con `visible` a false no hay nada
   // que cerrar, así que no se dispara la animación de salida (que además
@@ -308,13 +322,26 @@ export default function BottomSheet({
       dismissFallbackRef.current = setTimeout(fireCloseComplete, 400);
     };
     closeSafetyRef.current = setTimeout(finishClose, DURATION + 150);
+    const releaseVy = releaseVyRef.current;
+    releaseVyRef.current = 0;
     Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: offScreenRef.current,
-        duration: DURATION,
-        easing: easings.sheet,
-        useNativeDriver: nativeDriver,
-      }),
+      // Cerrada con un flick: muelle sembrado con la velocidad del dedo y sin
+      // pasarse del destino (`overshootClamping`: fuera de pantalla no hay
+      // nada contra lo que rebotar). Cerrada sin dedo: la curva de sheet.
+      releaseVy > 0
+        ? Animated.spring(slideAnim, {
+            toValue: offScreenRef.current,
+            velocity: releaseVy * 1000,
+            overshootClamping: true,
+            ...toCoreSpring(springs.sheet),
+            useNativeDriver: nativeDriver,
+          })
+        : Animated.timing(slideAnim, {
+            toValue: offScreenRef.current,
+            duration: DURATION,
+            easing: easings.sheet,
+            useNativeDriver: nativeDriver,
+          }),
       Animated.timing(opacityAnim, {
         toValue: 0,
         duration: DURATION,
@@ -392,12 +419,13 @@ export default function BottomSheet({
     // soltado sola en vez de haberla soltado tú. `velocity` va en px/s, y el
     // `vy` de PanResponder en px/ms.
     const snapBack = (vy = 0) => {
+      // Vuelta rápida (`springs.snap`): un regreso lento se siente como si la
+      // interfaz le llevara la contraria al usuario a cámara lenta.
       Animated.spring(dragAnim, {
         toValue: 0,
-        useNativeDriver: nativeDriver,
-        tension: 180,
-        friction: 20,
         velocity: vy * 1000,
+        ...toCoreSpring(springs.snap),
+        useNativeDriver: nativeDriver,
       }).start();
     };
     // Soltar arrastrando lo bastante (o rápido) cierra; si no, vuelve a su sitio.
@@ -407,6 +435,7 @@ export default function BottomSheet({
         // animación: un toque que llega tarde se lee como un fallo, no como
         // respuesta. Y nunca es el único feedback — la hoja se va igual.
         h.menuClose();
+        releaseVyRef.current = Math.max(0, vy);
         onCloseRef.current();
       } else {
         snapBack(vy);
@@ -442,6 +471,22 @@ export default function BottomSheet({
 
   const handleColor = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.18)';
   const translateY = Animated.add(slideAnim, dragAnim);
+  // Valores enlazados: el fondo NO tiene su propia animación durante el
+  // arrastre, se deriva de él. Así siempre está exactamente tan desvanecido
+  // como la hoja está descartada — también a mitad de gesto y si el usuario
+  // se arrepiente y la vuelve a subir.
+  const backdropOpacity = useMemo(
+    () =>
+      Animated.multiply(
+        opacityAnim,
+        dragAnim.interpolate({
+          inputRange: [0, Math.max(1, sheetHeight)],
+          outputRange: [1, 0],
+          extrapolate: 'clamp',
+        }),
+      ),
+    [opacityAnim, dragAnim, sheetHeight],
+  );
 
   const hasHeader =
     title !== undefined ||
@@ -461,7 +506,7 @@ export default function BottomSheet({
       <Animated.View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: UIColors.modalOverlay, opacity: opacityAnim },
+          { backgroundColor: UIColors.modalOverlay, opacity: backdropOpacity },
         ]}
         pointerEvents="none"
       />
@@ -482,6 +527,7 @@ export default function BottomSheet({
       >
         {/* Inner: slide-in / drag animation */}
         <Animated.View
+          onLayout={(e) => setSheetHeight(e.nativeEvent.layout.height)}
           style={[
             styles.sheet,
             {

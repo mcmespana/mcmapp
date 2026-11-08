@@ -23,7 +23,8 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 import { MaterialIcons } from '@/components/ui/icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { rubberBand, shouldCommitGesture } from '@/utils/gesturePhysics';
 import { PressableFeedback } from 'heroui-native';
 import SongDisplay from '@/components/SongDisplay';
 import { useSongProcessor } from '@/hooks/useSongProcessor';
@@ -89,6 +90,13 @@ const availableFonts = SONG_FONTS.map((f) => ({ ...f }));
 
 // Atajos de teclado del detalle (web). Fuera del componente: un array nuevo en
 // cada render haría que el atajo se volviera a registrar cada vez.
+/**
+ * Swipe entre canciones: se cambia al soltar si se ha arrastrado más de esto
+ * (px) o se suelta más rápido que esto (px/s). Basta con UNO de los dos.
+ */
+const SONG_SWIPE_DISTANCE = 80;
+const SONG_SWIPE_VELOCITY = 500;
+
 const KEYS_TRANSPOSE_UP = ['+', '='];
 const KEYS_TRANSPOSE_DOWN = ['-'];
 
@@ -773,15 +781,25 @@ function SongDetailBody({
       slideAnim.set(-toValue);
       slideAnim.set(withSpring(0, { ...springs.snap, velocity }));
     };
+    // Con el dedo (velocidad ≠ 0) sale con un muelle sembrado con la
+    // velocidad del flick, desde donde el dedo la dejó; sin dedo (flechas,
+    // teclado en web) con la curva corta de salida.
+    const done = (finished?: boolean) => {
+      'worklet';
+      if (finished) scheduleOnRN(swapAndSlideIn);
+    };
     slideAnim.set(
-      withTiming(
-        toValue,
-        { duration: durations.quick, easing: reaEasings.exit },
-        () => {
-          'worklet';
-          scheduleOnRN(swapAndSlideIn);
-        },
-      ),
+      velocity !== 0
+        ? withSpring(
+            toValue,
+            { ...springs.snap, velocity, overshootClamping: true },
+            done,
+          )
+        : withTiming(
+            toValue,
+            { duration: durations.quick, easing: reaEasings.exit },
+            done,
+          ),
     );
   };
 
@@ -931,26 +949,56 @@ function SongDetailBody({
     </Animated.View>
   );
 
-  const gestureContent =
-    navigationList &&
+  // Swipe entre canciones (skill `gestures`). Antes solo se miraba al SOLTAR
+  // —la letra no se movía con el dedo— y pedía distancia Y velocidad a la vez,
+  // así que un flick corto o un arrastre lento no cambiaban de canción.
+  //   · SEGUIR: la letra va pegada al dedo, 1:1. Hacia un lado sin canción
+  //     (la primera o la última) cede elástica: se nota el tope.
+  //   · SOLTAR: distancia o velocidad; si no, vuelve rápida con la velocidad.
+  const canSwipe =
+    !!navigationList &&
     typeof currentIndex === 'number' &&
-    Platform.OS !== 'web' ? (
-      <PanGestureHandler
-        activeOffsetX={[-20, 20]}
-        failOffsetY={[-15, 15]}
-        onHandlerStateChange={(event) => {
-          if (event.nativeEvent.state !== State.END) return;
-          const { translationX, velocityX } = event.nativeEvent;
-          if (Math.abs(translationX) < 60 || Math.abs(velocityX) < 150) return;
-          if (translationX > 0) handleSwipeLeft(velocityX);
-          else handleSwipeRight(velocityX);
-        }}
-      >
-        {contentView}
-      </PanGestureHandler>
-    ) : (
-      contentView
-    );
+    Platform.OS !== 'web';
+  const hasPrev = canSwipe && (currentIndex as number) > 0;
+  const hasNext =
+    canSwipe && (currentIndex as number) < (navigationList?.length ?? 0) - 1;
+  const songSwipe = Gesture.Pan()
+    .enabled(canSwipe)
+    .activeOffsetX([-20, 20])
+    .failOffsetY([-15, 15])
+    .onUpdate((e) => {
+      const tx = e.translationX;
+      const blocked = (tx > 0 && !hasPrev) || (tx < 0 && !hasNext);
+      slideAnim.set(blocked ? rubberBand(tx) : tx);
+    })
+    .onEnd((e, success) => {
+      const tx = e.translationX;
+      const commit =
+        success &&
+        shouldCommitGesture(
+          tx,
+          e.velocityX,
+          SONG_SWIPE_DISTANCE,
+          SONG_SWIPE_VELOCITY,
+        );
+      if (commit && tx > 0 && hasPrev) {
+        scheduleOnRN(handleSwipeLeft, e.velocityX);
+      } else if (commit && tx < 0 && hasNext) {
+        scheduleOnRN(handleSwipeRight, e.velocityX);
+      } else {
+        // Vuelta rápida, heredando la velocidad (también si el gesto se
+        // canceló: lo robó el scroll, entró una llamada…).
+        slideAnim.set(
+          withSpring(0, { ...springs.snap, velocity: e.velocityX }),
+        );
+      }
+    });
+
+  const gestureContent = canSwipe ? (
+    <GestureDetector gesture={songSwipe}>{contentView}</GestureDetector>
+  ) : (
+    contentView
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: screenBg }}>
