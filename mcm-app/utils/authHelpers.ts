@@ -8,6 +8,8 @@ import {
   type CarismochitoCollection,
   type CollectionEntry,
 } from '@/utils/carismochitoCollection';
+import { sanitizeUserState } from '@/utils/panuelo';
+import type { PanueloOwned, PanueloUserState } from '@/types/panuelo';
 
 function db() {
   return getDatabase(getFirebaseApp());
@@ -261,5 +263,66 @@ export async function clearCarismochitos(uid: string): Promise<void> {
     await remove(ref(db(), `users/${uid}/carismochitos`));
   } catch (err) {
     logger.error('[authHelpers] clearCarismochitos:', err);
+  }
+}
+
+// ── Pañuelo virtual (`users/{uid}/panuelo`) ────────────────────────────────
+
+/**
+ * Descarga el pañuelo del usuario, ya saneado. `null` si la lectura falla:
+ * quien llama NO debe tomarlo por «no tiene nada» y subir encima lo del móvil.
+ */
+export async function fetchPanuelo(
+  uid: string,
+): Promise<PanueloUserState | null> {
+  try {
+    const snap = await get(ref(db(), `users/${uid}/panuelo`));
+    return sanitizeUserState(snap.exists() ? snap.val() : null);
+  } catch (err) {
+    logger.error('[authHelpers] fetchPanuelo:', err);
+    return null;
+  }
+}
+
+/** Sube UNA pieza conseguida. Una por escritura: así dos móviles (o el Panel,
+ *  que reparte piezas escribiendo aquí) no se pisan las de los demás. */
+export async function syncPanueloItem(
+  uid: string,
+  itemId: string,
+  owned: PanueloOwned,
+): Promise<void> {
+  try {
+    await set(ref(db(), `users/${uid}/panuelo/items/${itemId}`), {
+      at: owned.at,
+      via: owned.via,
+    });
+  } catch (err) {
+    logger.error('[authHelpers] syncPanueloItem:', err);
+  }
+}
+
+/** Sube el color y la colocación enteros (son de quien los tocó el último).
+ *  No toca `items`. */
+export async function syncPanueloLayout(
+  uid: string,
+  state: PanueloUserState,
+): Promise<void> {
+  try {
+    await update(ref(db(), `users/${uid}/panuelo`), {
+      color: state.color,
+      layout: state.layout,
+      layoutAt: state.layoutAt,
+    });
+  } catch (err) {
+    logger.error('[authHelpers] syncPanueloLayout:', err);
+  }
+}
+
+/** Borra el pañuelo de la nube («empezar de cero» del laboratorio). */
+export async function clearPanuelo(uid: string): Promise<void> {
+  try {
+    await remove(ref(db(), `users/${uid}/panuelo`));
+  } catch (err) {
+    logger.error('[authHelpers] clearPanuelo:', err);
   }
 }

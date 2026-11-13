@@ -1,0 +1,280 @@
+{
+  "items": {
+    "pionero-alpha": {
+      "id": "pionero-alpha",
+      "kind": "chapa",
+      "name": "Pionero del pañuelo",
+      "origin": "Laboratorio Alpha · 2026",
+      "description": "Para quienes probaron el pañuelo virtual antes que nadie.",
+      "rarity": "especial",
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "chapa",
+        "bg": "#253883",
+        "ring": "#ffffff",
+        "ink": "#ffffff",
+        "logo": true,
+        "text": "Pañuelo virtual",
+        "textBottom": "Pionero"
+      },
+      "order": 10
+    },
+    "corazon-consolacion": {
+      "id": "corazon-consolacion",
+      "kind": "pin",
+      "name": "Corazón de Consolación",
+      "origin": "Con el código CONSOLACION",
+      "description": "Consolad, consolad a mi pueblo.",
+      "grant": {
+        "type": "code",
+        "hash": "35523d6c0439bfa39070fa791c48a7e3be602d49740e85694137292aeeaa6e87"
+      },
+      "look": {
+        "kind": "pin",
+        "shape": "heart",
+        "enamel": "#D32F3F",
+        "metal": "oro"
+      },
+      "order": 20
+    },
+    "parche-pascua": {
+      "id": "parche-pascua",
+      "kind": "parche",
+      "name": "Pascua Joven",
+      "origin": "Con el código PASCUA27",
+      "description": "Un parche para quien vivió la Pascua.",
+      "grant": {
+        "type": "code",
+        "hash": "c97058c1989c266e69682b518a1c6a82ec61fec0df7a7047aa23cfc2fed22361"
+      },
+      "look": {
+        "kind": "parche",
+        "shape": "shield",
+        "bg": "#9D1E74",
+        "border": "#FCD200",
+        "ink": "#FCD200",
+        "glyph": "cross",
+        "text": "Pascua"
+      },
+      "order": 30
+    },
+    "vieira-camino": {
+      "id": "vieira-camino",
+      "kind": "pin",
+      "name": "Vieira del Camino",
+      "origin": "Con el código CAMINO",
+      "description": "Para quien ha hecho camino.",
+      "grant": {
+        "type": "code",
+        "hash": "9728274f1b6a10c3a0174a0d5f8a19ca7cfe2089ba03521be573aa5fcd2e719a"
+      },
+      "look": {
+        "kind": "pin",
+        "shape": "shell",
+        "enamel": "#ffffff",
+        "metal": "oro"
+      },
+      "order": 40
+    },
+    "cinta-campamento": {
+      "id": "cinta-campamento",
+      "kind": "cinta",
+      "name": "Cinta del campamento",
+      "origin": "Con el código VERANO",
+      "description": "Los colores del campamento de verano.",
+      "grant": {
+        "type": "code",
+        "hash": "d5e0df885a07d7cdbbf922e44771c567056ad9312c1d430e415685641b8c32a1"
+      },
+      "look": {
+        "kind": "cinta",
+        "colors": ["#253883", "#ffffff", "#A3BD31", "#ffffff", "#253883"]
+      },
+      "order": 50
+    },
+    "medalla-jubileo-2025": {
+      "id": "medalla-jubileo-2025",
+      "kind": "medalla",
+      "name": "Jubileo de los Jóvenes",
+      "origin": "Roma · 2025",
+      "description": "Peregrinos de esperanza.",
+      "rarity": "unica",
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "medalla",
+        "metal": "oro",
+        "ribbon": ["#FCD200", "#ffffff", "#FCD200"],
+        "glyph": "cross",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/medallas-3d/thumbs/jubileo-jovenes-2025.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/medallas-3d/jubileo-jovenes-2025.glb"
+      },
+      "order": 60
+    },
+    "medalla-visita-papa-2026": {
+      "id": "medalla-visita-papa-2026",
+      "kind": "medalla",
+      "name": "Alza la mirada",
+      "origin": "Visita del Papa · 2026",
+      "rarity": "unica",
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "medalla",
+        "metal": "plata",
+        "ribbon": ["#ffffff", "#FCD200"],
+        "glyph": "star",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/medallas-3d/thumbs/visita-papa-2026.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/medallas-3d/visita-papa-2026.glb"
+      },
+      "order": 70
+    },
+    "estrella-guia": {
+      "id": "estrella-guia",
+      "kind": "pin",
+      "name": "Estrella guía",
+      "origin": "Monitores y acompañantes",
+      "description": "Para quien acompaña a otros.",
+      "rarity": "especial",
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "pin",
+        "shape": "star",
+        "enamel": "#FCD200",
+        "metal": "oro"
+      },
+      "order": 80
+    },
+    "luna-vigilia": {
+      "id": "luna-vigilia",
+      "kind": "pin",
+      "name": "Luna de la vigilia",
+      "origin": "Vigilia de oración",
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "pin",
+        "shape": "moon",
+        "enamel": "#31AADF",
+        "enamel2": "#253883",
+        "metal": "plata"
+      },
+      "order": 90
+    },
+    "llama-pentecostes": {
+      "id": "llama-pentecostes",
+      "kind": "pin",
+      "name": "Llama de Pentecostés",
+      "origin": "Pentecostés",
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "pin",
+        "shape": "flame",
+        "enamel": "#F6A21E",
+        "enamel2": "#D32F3F",
+        "metal": "oro"
+      },
+      "order": 100
+    },
+    "chapa-convivencia": {
+      "id": "chapa-convivencia",
+      "kind": "chapa",
+      "name": "Convivencia",
+      "origin": "Convivencia de grupo",
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "chapa",
+        "bg": "#FCD200",
+        "ink": "#253883",
+        "glyph": "sun"
+      },
+      "order": 110
+    },
+    "parche-en-salida": {
+      "id": "parche-en-salida",
+      "kind": "parche",
+      "name": "En salida",
+      "origin": "Encuentro de misión",
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "parche",
+        "shape": "arrow",
+        "bg": "#31AADF",
+        "border": "#ffffff",
+        "ink": "#ffffff",
+        "glyph": "flame",
+        "text": "En salida"
+      },
+      "order": 120
+    },
+    "parche-marcha": {
+      "id": "parche-marcha",
+      "kind": "parche",
+      "name": "Marcha",
+      "origin": "Marcha de montaña",
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "parche",
+        "shape": "circle",
+        "bg": "#178A3A",
+        "border": "#ffffff",
+        "ink": "#ffffff",
+        "glyph": "mountain",
+        "text": "Marcha"
+      },
+      "order": 130
+    },
+    "nota-coro": {
+      "id": "nota-coro",
+      "kind": "pin",
+      "name": "Nota del coro",
+      "origin": "Coro",
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "pin",
+        "shape": "note",
+        "enamel": "#9D1E74",
+        "metal": "plata"
+      },
+      "order": 140
+    },
+    "chapa-25-aniversario": {
+      "id": "chapa-25-aniversario",
+      "kind": "chapa",
+      "name": "25 años",
+      "origin": "25.º aniversario · 2027",
+      "rarity": "unica",
+      "secret": true,
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "chapa",
+        "bg": "#A3BD31",
+        "ring": "#253883",
+        "ink": "#ffffff",
+        "logo": true,
+        "text": "25 años",
+        "textBottom": "2027"
+      },
+      "order": 150
+    }
+  }
+}

@@ -544,3 +544,35 @@ export const LiturgicalColors = {
   /** Gaudete y Laetare — el rosa de los dos domingos de alegría. */
   rose: '#D4A0A7',
 } as const;
+
+/**
+ * El pañuelo virtual (`docs/funcionalidades/PANUELO.md`).
+ *
+ * `cloth` es el color de la TELA de cada pañuelo, sacado de fotos de los de
+ * verdad: no es el punto de color de las listas (ese es
+ * `ComunicaColors.scarf`), es lo que el modelo 3D usa de material. `print` es
+ * la tinta de la serigrafía del logo: blanca en todos menos en el amarillo,
+ * que la lleva azul marino.
+ *
+ * `metal` son los cuatro acabados de pines y medallas.
+ */
+export const PanueloColors = {
+  cloth: {
+    red: '#C21F2B',
+    green: '#178A3A',
+    blue: '#2747A4',
+    yellow: '#F2B91A',
+  },
+  print: {
+    red: '#F4F1EA',
+    green: '#F4F1EA',
+    blue: '#F4F1EA',
+    yellow: '#27307A',
+  },
+  metal: {
+    oro: '#E9B949',
+    plata: '#D5D9DF',
+    cobre: '#C8794A',
+    negro: '#2B2B30',
+  },
+} as const;
