@@ -21,7 +21,8 @@ export const PANUELO_COLORS: readonly PanueloColor[] = [
 ];
 
 /** Qué clase de cosa es. Decide cómo se modela en 3D. */
-export type PanueloItemKind = 'chapa' | 'pin' | 'cinta' | 'parche' | 'medalla';
+export type PanueloItemKind =
+  'chapa' | 'pin' | 'cinta' | 'parche' | 'medalla' | 'pulsera';
 
 export type PanueloRarity = 'comun' | 'especial' | 'unica';
 
@@ -112,8 +113,20 @@ export interface MedallaLook {
   glb?: string;
 }
 
+/** Pulsera de hilo trenzado: la que se intercambia en los encuentros. */
+export interface PulseraLook {
+  kind: 'pulsera';
+  /** Los hilos. De uno a seis colores. */
+  colors: string[];
+  /** `chevron` (espigas, por defecto), `stripes` (rayas) o `solid`. */
+  pattern?: 'chevron' | 'stripes' | 'solid';
+  /** Texto tejido: con él la pulsera es lisa, del primer color. */
+  text?: string;
+  ink?: string;
+}
+
 export type PanueloLook =
-  ChapaLook | PinLook | CintaLook | ParcheLook | MedallaLook;
+  ChapaLook | PinLook | CintaLook | ParcheLook | MedallaLook | PulseraLook;
 
 /**
  * Cómo se consigue una pieza.
@@ -147,12 +160,18 @@ export interface PanueloItemDef {
   order?: number;
   /** No se enseña (ni como silueta) hasta que se consigue. */
   secret?: boolean;
+  /**
+   * Se puede intercambiar con otra persona (`utils/panueloTrade.ts`). Las
+   * pulseras lo son salvo que se diga lo contrario; lo demás, no: una medalla
+   * se gana por haber estado.
+   */
+  tradeable?: boolean;
 }
 
 export type PanueloCatalog = Record<string, PanueloItemDef>;
 
 /** Por dónde llegó una pieza. */
-export type PanueloVia = 'all' | 'code' | 'manual' | 'demo';
+export type PanueloVia = 'all' | 'code' | 'manual' | 'demo' | 'trade';
 
 export interface PanueloOwned {
   /** Cuándo se consiguió (ms). */
@@ -177,6 +196,12 @@ export interface PanueloUserState {
   layout: Record<string, PanueloPlacement>;
   /** Última vez que cambió el color o la colocación (ms). Gana el más nuevo. */
   layoutAt: number;
+  /**
+   * Piezas que se han dado en un intercambio: id → cuándo. Sin esto, al
+   * juntar el móvil con la nube (que SUMAN piezas) lo regalado volvería a
+   * aparecer. Una pieza se tiene si se consiguió DESPUÉS de darla.
+   */
+  gone?: Record<string, number>;
 }
 
 // ── Puente con el visor 3D ─────────────────────────────────────────────────
@@ -205,7 +230,9 @@ export type PanueloCommand =
   | { type: 'select'; id: string | null }
   /** Inclinación del móvil, de −1 a 1 en cada eje. */
   | { type: 'tilt'; x: number; y: number }
-  | { type: 'recenter' };
+  | { type: 'recenter' }
+  /** Pide una foto del pañuelo tal como se ve, sobre un fondo de ese color. */
+  | { type: 'snapshot'; background: string };
 
 /** Visor → app. */
 export type PanueloEvent =
@@ -216,5 +243,7 @@ export type PanueloEvent =
   | { type: 'select'; id: string | null }
   | { type: 'pickup'; id: string }
   | { type: 'drop'; id: string; u: number; v: number }
+  /** La foto pedida con `snapshot`, como `data:image/jpeg;base64,…`. */
+  | { type: 'snapshot'; dataUrl: string }
   /** Háptica: el visor no puede vibrar; la app sí. */
   | { type: 'haptic'; kind: 'tap' | 'select' };

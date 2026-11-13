@@ -70,6 +70,13 @@ const SLOTS: readonly (readonly [number, number])[] = [
   [0.74, 0.54],
 ];
 
+/** Donde está serigrafiado el logo: lo último que se tapa. */
+const LOGO_ZONE: readonly { u: number; v: number }[] = [
+  { u: 0, v: 0.5 },
+  { u: 0, v: 0.6 },
+  { u: 0, v: 0.7 },
+];
+
 /** Dos piezas más cerca que esto se pisan. */
 const MIN_GAP = 0.3;
 
@@ -87,12 +94,16 @@ export function nextFreeSlot(
   for (const [u, v] of SLOTS) {
     if (gap({ u, v }) >= MIN_GAP) return { u, v, rot: 0 };
   }
+  // La rejilla esquiva el logo mientras quede sitio en otra parte.
+  const crowd = [...taken, ...LOGO_ZONE];
+  const gapAll = (p: { u: number; v: number }) =>
+    crowd.reduce((min, q) => Math.min(min, placementDistance(p, q)), Infinity);
   let best = { u: 0, v: 0.2 };
   let bestGap = -1;
   for (let v = 0.14; v <= 0.86; v += 0.06) {
     for (let u = -0.84; u <= 0.84; u += 0.12) {
       const [cu, cv] = clampToFlap(u, v);
-      const g = gap({ u: cu, v: cv });
+      const g = gapAll({ u: cu, v: cv });
       if (g > bestGap) {
         bestGap = g;
         best = { u: cu, v: cv };

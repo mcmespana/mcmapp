@@ -274,7 +274,56 @@
         "text": "25 años",
         "textBottom": "2027"
       },
-      "order": 150
+      "order": 900
+    },
+    "pulsera-amistad": {
+      "id": "pulsera-amistad",
+      "kind": "pulsera",
+      "name": "Pulsera de la amistad",
+      "origin": "Para intercambiar",
+      "description": "De las que se cambian de muñeca en cada encuentro.",
+      "tradeable": true,
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "pulsera",
+        "colors": ["#E15C62", "#FCD200", "#31AADF", "#A3BD31"]
+      },
+      "order": 160
+    },
+    "pulsera-encuentro": {
+      "id": "pulsera-encuentro",
+      "kind": "pulsera",
+      "name": "Pulsera del encuentro",
+      "origin": "Encuentro de verano",
+      "tradeable": true,
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "pulsera",
+        "colors": ["#253883"],
+        "text": "MCM",
+        "ink": "#ffffff"
+      },
+      "order": 170
+    },
+    "pulsera-consolacion": {
+      "id": "pulsera-consolacion",
+      "kind": "pulsera",
+      "name": "Pulsera azul y blanca",
+      "origin": "Para intercambiar",
+      "tradeable": true,
+      "grant": {
+        "type": "manual"
+      },
+      "look": {
+        "kind": "pulsera",
+        "colors": ["#253883", "#ffffff", "#95d2f2"],
+        "pattern": "stripes"
+      },
+      "order": 180
     }
   }
 }

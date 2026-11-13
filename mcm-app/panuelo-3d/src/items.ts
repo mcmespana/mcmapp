@@ -21,10 +21,12 @@ import type {
   PanueloMetal,
   ParcheLook,
   PinLook,
+  PulseraLook,
 } from '@/types/panuelo';
 
 import {
   loadImage,
+  paintBraid,
   paintChapa,
   paintEnamel,
   paintMedalFace,
@@ -36,6 +38,13 @@ export interface BuiltItem {
   group: THREE.Group;
   /** Radio aproximado: para tocarla, para el aro de selección y para el margen. */
   radius: number;
+  /**
+   * La parte que cuelga (de una medalla, de una cinta), con el origen en el
+   * punto del que cuelga: el visor la balancea al girar el pañuelo.
+   */
+  swing?: THREE.Object3D;
+  /** Cuánto se mueve: una cinta ligera, menos que un disco de metal. */
+  swingGain?: number;
 }
 
 export interface BuildContext {
@@ -310,6 +319,10 @@ function buildCinta(look: CintaLook): BuiltItem {
   const material = ribbonMaterial(look.colors);
   const group = new THREE.Group();
   const top = length / 2 - 0.01;
+  // Las dos colas cuelgan del imperdible: son lo que se balancea.
+  const swing = new THREE.Group();
+  swing.position.set(0, top, 0);
+  group.add(swing);
   [
     { angle: 0.2, z: 0, phase: 0.4 },
     { angle: -0.2, z: 0.007, phase: 2.1 },
@@ -317,9 +330,9 @@ function buildCinta(look: CintaLook): BuiltItem {
     const tail = shadowed(
       new THREE.Mesh(ribbonTail(width, length, phase), material),
     );
-    tail.position.set(0, top, z);
+    tail.position.z = z;
     tail.rotation.z = angle;
-    group.add(tail);
+    swing.add(tail);
   });
   const bar = shadowed(
     new THREE.Mesh(
@@ -330,7 +343,7 @@ function buildCinta(look: CintaLook): BuiltItem {
   bar.rotation.z = Math.PI / 2;
   bar.position.set(0, top - 0.004, 0.02);
   group.add(bar);
-  return { group, radius: length * 0.52 };
+  return { group, radius: length * 0.52, swing, swingGain: 0.6 };
 }
 
 // ── Medalla ────────────────────────────────────────────────────────────────
@@ -338,54 +351,59 @@ function buildCinta(look: CintaLook): BuiltItem {
 function buildMedalla(look: MedallaLook, ctx: BuildContext): BuiltItem {
   const group = new THREE.Group();
   const m = metal(look.metal);
+  const BAR_Y = 0.19;
+  // Todo lo que cuelga del pasador (cinta, anilla y disco) se balancea junto.
+  const swing = new THREE.Group();
+  swing.position.set(0, BAR_Y, 0);
+  group.add(swing);
 
   // La cinta: un rectángulo acabado en punta.
   const w = 0.13;
   const shape = new THREE.Shape();
-  shape.moveTo(-w / 2, 0.19);
-  shape.lineTo(w / 2, 0.19);
-  shape.lineTo(w / 2, 0.075);
-  shape.lineTo(0, 0.035);
-  shape.lineTo(-w / 2, 0.075);
+  shape.moveTo(-w / 2, 0);
+  shape.lineTo(w / 2, 0);
+  shape.lineTo(w / 2, -0.115);
+  shape.lineTo(0, -0.155);
+  shape.lineTo(-w / 2, -0.115);
   shape.closePath();
   const ribbonGeometry = new THREE.ShapeGeometry(shape);
   const pos = ribbonGeometry.getAttribute('position');
   const uv = ribbonGeometry.getAttribute('uv') as THREE.BufferAttribute;
   for (let i = 0; i < pos.count; i++) {
-    uv.setXY(i, pos.getX(i) / w + 0.5, (pos.getY(i) - 0.035) / 0.155);
+    uv.setXY(i, pos.getX(i) / w + 0.5, (pos.getY(i) + 0.155) / 0.155);
   }
   const ribbon = shadowed(
     new THREE.Mesh(ribbonGeometry, ribbonMaterial(look.ribbon)),
   );
   ribbon.position.z = 0.008;
-  group.add(ribbon);
+  swing.add(ribbon);
 
   const bar = shadowed(
     new THREE.Mesh(new THREE.CapsuleGeometry(0.012, w * 1.02, 4, 10), m),
   );
   bar.rotation.z = Math.PI / 2;
-  bar.position.set(0, 0.19, 0.014);
+  bar.position.set(0, BAR_Y, 0.014);
   group.add(bar);
 
   const link = shadowed(
     new THREE.Mesh(new THREE.TorusGeometry(0.019, 0.0045, 10, 24), m),
   );
-  link.position.set(0, 0.022, 0.01);
-  group.add(link);
+  link.position.set(0, -0.168, 0.01);
+  swing.add(link);
 
   const R = 0.105;
-  const cy = -0.1;
+  const cy = -0.29;
   const disc = shadowed(
     new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.016, 56), m),
   );
   disc.rotation.x = Math.PI / 2;
   disc.position.set(0, cy, 0.01);
-  group.add(disc);
+  swing.add(disc);
   const rim = shadowed(
     new THREE.Mesh(new THREE.TorusGeometry(R - 0.004, 0.009, 12, 56), m),
   );
   rim.position.set(0, cy, 0.012);
-  group.add(rim);
+  swing.add(rim);
 
   // La cara: el mismo metal, con el dibujo en relieve.
   const faceMaterial = m.clone();
@@ -399,7 +417,7 @@ function buildMedalla(look: MedallaLook, ctx: BuildContext): BuiltItem {
   );
   face.receiveShadow = true;
   face.position.set(0, cy, 0.0185);
-  group.add(face);
+  swing.add(face);
 
   if (look.image) {
     loadImage(look.image).then((img) => {
@@ -425,7 +443,97 @@ function buildMedalla(look: MedallaLook, ctx: BuildContext): BuiltItem {
       ctx.invalidate();
     });
   }
-  return { group, radius: 0.22 };
+  return { group, radius: 0.22, swing, swingGain: 1 };
+}
+
+// ── Pulsera ────────────────────────────────────────────────────────────────
+
+/**
+ * Una pulsera de hilo, puesta plana sobre la tela: un aro trenzado, cerrado
+ * con un nudo del que salen los dos cabos.
+ */
+function buildPulsera(look: PulseraLook): BuiltItem {
+  const RX = 0.17;
+  const RY = 0.125;
+  const WIDTH = 0.05;
+  const AROUND = 120;
+  const ACROSS = 6;
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const index: number[] = [];
+  for (let i = 0; i <= AROUND; i++) {
+    const a = (i / AROUND) * Math.PI * 2 - Math.PI / 2;
+    for (let j = 0; j <= ACROSS; j++) {
+      const k = j / ACROSS - 0.5;
+      const r = k * WIDTH;
+      positions.push(
+        (RX + r) * Math.cos(a),
+        (RY + r) * Math.sin(a),
+        // Abombada: es un cordón trenzado, no una cinta plana.
+        0.004 + 0.011 * Math.cos(k * Math.PI),
+      );
+      // Al revés a lo largo: así el texto se lee de izquierda a derecha por
+      // arriba, con las letras mirando hacia fuera.
+      uvs.push((1 - i / AROUND) * 9, j / ACROSS);
+    }
+  }
+  const row = ACROSS + 1;
+  for (let i = 0; i < AROUND; i++) {
+    for (let j = 0; j < ACROSS; j++) {
+      const p = i * row + j;
+      index.push(p, p + row, p + 1, p + 1, p + row, p + row + 1);
+    }
+  }
+  const band = new THREE.BufferGeometry();
+  band.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  band.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  band.setIndex(index);
+  band.computeVertexNormals();
+
+  const { map, bump } = paintBraid(look);
+  const material = new THREE.MeshPhysicalMaterial({
+    map,
+    bumpMap: bump,
+    bumpScale: 1.4,
+    roughness: 0.85,
+    sheen: 0.8,
+    sheenRoughness: 0.5,
+    sheenColor: new THREE.Color('#ffffff'),
+    side: THREE.DoubleSide,
+  });
+  const group = new THREE.Group();
+  group.add(shadowed(new THREE.Mesh(band, material)));
+
+  // El nudo y los dos cabos, abajo.
+  const first = look.colors[0] ?? '#ffffff';
+  const last = look.colors[look.colors.length - 1] ?? first;
+  const thread = (color: string) =>
+    new THREE.MeshStandardMaterial({ color, roughness: 0.9 });
+  const knot = shadowed(
+    new THREE.Mesh(new THREE.SphereGeometry(0.03, 14, 10), thread(first)),
+  );
+  knot.scale.set(1, 0.85, 0.6);
+  knot.position.set(0, -RY, 0.016);
+  group.add(knot);
+  [
+    { angle: 0.5, color: first, length: 0.1 },
+    { angle: -0.35, color: last, length: 0.12 },
+  ].forEach(({ angle, color, length }) => {
+    const end = shadowed(
+      new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.008, length, 3, 8),
+        thread(color),
+      ),
+    );
+    end.rotation.z = angle;
+    end.position.set(
+      Math.sin(angle) * (length / 2 + 0.02),
+      -RY - Math.cos(angle) * (length / 2 + 0.02),
+      0.01,
+    );
+    group.add(end);
+  });
+  return { group, radius: 0.21 };
 }
 
 // ── Entrada ────────────────────────────────────────────────────────────────
@@ -442,6 +550,8 @@ export function buildItem(look: PanueloLook, ctx: BuildContext): BuiltItem {
       return buildCinta(look);
     case 'medalla':
       return buildMedalla(look, ctx);
+    case 'pulsera':
+      return buildPulsera(look);
     default:
       // Una clase que esta versión del visor no conoce: una chapa lisa, para
       // que la pieza exista aunque no sepamos dibujarla.

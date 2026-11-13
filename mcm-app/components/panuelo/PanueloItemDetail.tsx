@@ -14,6 +14,7 @@ import {
   KIND_LABEL,
   RARITY_LABEL,
   formatOwnedDate,
+  isTradeable,
   type PanueloCollectionEntry,
 } from '@/utils/panuelo';
 
@@ -29,6 +30,8 @@ type IconName = React.ComponentProps<typeof MaterialIcons>['name'];
 export type PanueloDetailAction = {
   key: string;
   label: string;
+  /** Si la etiqueta visible se queda corta («Girar»), lo que lee VoiceOver. */
+  accessibilityLabel?: string;
   icon: IconName;
   onPress: () => void;
 };
@@ -81,6 +84,14 @@ export function PanueloItemDetail({
               <AppChip label="Nueva" color={colors.green} size="sm" />
             ) : null}
             <AppChip label={KIND_LABEL[item.kind]} color={t.icon} size="sm" />
+            {isTradeable(item) ? (
+              <AppChip
+                label="Intercambiable"
+                icon="swap-horiz"
+                color={colors.info}
+                size="sm"
+              />
+            ) : null}
             {rarity !== 'comun' ? (
               <AppChip
                 label={RARITY_LABEL[rarity]}
@@ -130,7 +141,7 @@ export function PanueloItemDetail({
               key={action.key}
               onPress={action.onPress}
               accessibilityRole="button"
-              accessibilityLabel={action.label}
+              accessibilityLabel={action.accessibilityLabel ?? action.label}
               style={[styles.action, { backgroundColor: t.backgroundSunken }]}
             >
               <PressableFeedback.Highlight />

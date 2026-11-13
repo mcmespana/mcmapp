@@ -51,6 +51,8 @@ import {
 } from '@/types/panuelo';
 import { trackEvent } from '@/utils/analytics';
 import { h } from '@/utils/haptics';
+import { logger } from '@/utils/logger';
+import { sharePanueloSnapshot } from '@/utils/panueloShare';
 import {
   COLOR_LABEL,
   DEFAULT_PANUELO_COLOR,
@@ -173,6 +175,11 @@ function PanueloScreen() {
           if (event.kind === 'select') h.select();
           else h.tap();
           break;
+        case 'snapshot':
+          sharePanueloSnapshot(event.dataUrl).catch((err) =>
+            logger.warn('[Pañuelo] no se pudo compartir la foto:', err),
+          );
+          break;
       }
     },
     [panuelo, settle],
@@ -287,13 +294,15 @@ function PanueloScreen() {
         ? [
             {
               key: 'rotate-left',
-              label: 'Girar a la izquierda',
+              label: 'Girar',
+              accessibilityLabel: 'Girar a la izquierda',
               icon: 'rotate-left',
               onPress: () => rotateActive(id, -ROTATE_STEP),
             },
             {
               key: 'rotate-right',
-              label: 'Girar a la derecha',
+              label: 'Girar',
+              accessibilityLabel: 'Girar a la derecha',
               icon: 'rotate-right',
               onPress: () => rotateActive(id, ROTATE_STEP),
             },
@@ -322,12 +331,23 @@ function PanueloScreen() {
       ...closeup,
       {
         key: 'unplace',
-        label: 'Quitar del pañuelo',
+        label: 'Quitar',
+        accessibilityLabel: 'Quitar del pañuelo',
         icon: 'inventory-2',
         onPress: () => unplaceActive(id),
       },
     ];
   }, [active, mode, placeActive, rotateActive, unplaceActive]);
+
+  const sharePhoto = useCallback(() => {
+    h.tap();
+    // Si hay una pieza en primer plano, vuelve al pañuelo: la foto es de él.
+    if (activeId) closeDetail();
+    setTimeout(
+      () => sendToViewer({ type: 'snapshot', background: t.backgroundSunken }),
+      activeId ? durations.slow * 2 : 0,
+    );
+  }, [activeId, closeDetail, sendToViewer, t.backgroundSunken]);
 
   const changeColor = useCallback(
     (next: PanueloColor) => {
@@ -394,25 +414,45 @@ function PanueloScreen() {
             ))}
           </View>
 
-          <PressableFeedback
-            onPress={toggleMode}
-            accessibilityRole="button"
-            accessibilityLabel={
-              mode === 'edit' ? 'Terminar de decorar' : 'Decorar el pañuelo'
-            }
-            style={[styles.modeButton, { backgroundColor: t.card }]}
-          >
-            <PressableFeedback.Highlight />
-            <MaterialIcons
-              name={mode === 'edit' ? 'check' : 'edit'}
-              size={18}
-              color={t.link}
-            />
-            <Text style={[styles.modeLabel, { color: t.link }]}>
-              {mode === 'edit' ? 'Listo' : 'Decorar'}
-            </Text>
-          </PressableFeedback>
+          <View style={styles.stageActions}>
+            {mode === 'view' && viewerReady ? (
+              <PressableFeedback
+                onPress={sharePhoto}
+                accessibilityRole="button"
+                accessibilityLabel="Compartir una foto de mi pañuelo"
+                style={[styles.iconButton, { backgroundColor: t.card }]}
+              >
+                <PressableFeedback.Highlight />
+                <MaterialIcons name="ios-share" size={20} color={t.link} />
+              </PressableFeedback>
+            ) : null}
+            <PressableFeedback
+              onPress={toggleMode}
+              accessibilityRole="button"
+              accessibilityLabel={
+                mode === 'edit' ? 'Terminar de decorar' : 'Decorar el pañuelo'
+              }
+              style={[styles.modeButton, { backgroundColor: t.card }]}
+            >
+              <PressableFeedback.Highlight />
+              <MaterialIcons
+                name={mode === 'edit' ? 'check' : 'edit'}
+                size={18}
+                color={t.link}
+              />
+              <Text style={[styles.modeLabel, { color: t.link }]}>
+                {mode === 'edit' ? 'Listo' : 'Decorar'}
+              </Text>
+            </PressableFeedback>
+          </View>
         </View>
+
+        <Text
+          style={[styles.stageLabel, { color: t.textSecondary }]}
+          pointerEvents="none"
+        >
+          {COLOR_LABEL[color].name} · {COLOR_LABEL[color].stage}
+        </Text>
 
         {active ? null : (
           <Text
@@ -539,6 +579,25 @@ const styles = StyleSheet.create({
   },
   swatchSelected: {
     borderWidth: 3,
+  },
+  stageActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  iconButton: {
+    width: TOUCH,
+    height: TOUCH,
+    borderRadius: radii.pillFull,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    ...shadows.card,
+  },
+  stageLabel: {
+    ...typography.caption,
+    paddingHorizontal: spacing.md + spacing.sm,
+    paddingTop: spacing.xs,
   },
   modeButton: {
     flexDirection: 'row',

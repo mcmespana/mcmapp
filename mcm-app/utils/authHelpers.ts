@@ -312,6 +312,7 @@ export async function syncPanueloLayout(
       color: state.color,
       layout: state.layout,
       layoutAt: state.layoutAt,
+      gone: state.gone ?? null,
     });
   } catch (err) {
     logger.error('[authHelpers] syncPanueloLayout:', err);

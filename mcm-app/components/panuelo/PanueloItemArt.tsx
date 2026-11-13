@@ -5,6 +5,7 @@ import Svg, {
   Circle,
   ClipPath,
   Defs,
+  Ellipse,
   G,
   Path,
   Polygon,
@@ -156,6 +157,51 @@ export function PanueloItemArt({ look, size, silhouette }: Props) {
             rx={4}
             fill={paint(PanueloColors.metal.oro)}
           />
+        </>
+      );
+      break;
+    }
+    case 'pulsera': {
+      const threads = look.colors.length > 0 ? look.colors : ['#ffffff'];
+      // El aro, y encima un punteado por cada hilo: de lejos, el trenzado.
+      const dash = 9;
+      art = (
+        <>
+          <Ellipse
+            cx={50}
+            cy={44}
+            rx={36}
+            ry={27}
+            fill="none"
+            stroke={paint(threads[0])}
+            strokeWidth={12}
+          />
+          {silhouette
+            ? null
+            : threads
+                .slice(1)
+                .map((color, i) => (
+                  <Ellipse
+                    key={i}
+                    cx={50}
+                    cy={44}
+                    rx={36}
+                    ry={27}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={12}
+                    strokeDasharray={`${dash} ${dash * (threads.length - 1)}`}
+                    strokeDashoffset={-dash * (i + 1)}
+                  />
+                ))}
+          <Path
+            d="M50 71 L40 92 M50 71 L58 94"
+            stroke={paint(threads[threads.length - 1])}
+            strokeWidth={4}
+            strokeLinecap="round"
+            fill="none"
+          />
+          <Circle cx={50} cy={71} r={6} fill={paint(threads[0])} />
         </>
       );
       break;

@@ -87,7 +87,23 @@ interface Entry {
   /** Escala de la pieza cosida (tamaño del catálogo). */
   scale: number;
   signature: string;
+  /** La parte que cuelga, si la tiene, y su vaivén. */
+  swing: THREE.Object3D | null;
+  swingGain: number;
+  swingAngle: number;
+  swingVelocity: number;
 }
+
+/** La cámara mira al pañuelo un poco desde arriba (rad). */
+const CAMERA_TILT = 0.11;
+/** Altura del suelo imaginario, justo bajo el pico. */
+const FLOOR_Y = -2.02;
+/** Péndulo de las piezas que cuelgan: rigidez y freno (ζ ≈ 0,3: se mecen). */
+const SWING_STIFFNESS = 70;
+const SWING_DAMPING = 5;
+/** Vaivén en reposo: amplitud (rad) y velocidad. */
+const IDLE_SWAY = 0.07;
+const IDLE_SPEED = 0.7;
 
 // ── Visor ──────────────────────────────────────────────────────────────────
 
@@ -121,6 +137,13 @@ class Viewer {
   private distance = 8;
   /** Giro de la pieza que se está mirando de cerca. */
   private spin = { yaw: 0, pitch: 0, velocity: 0 };
+
+  /** Giro real del pañuelo en el último fotograma, para saber cuánto corre. */
+  private lastYaw = 0;
+  /** Vaivén en reposo: el pañuelo no está clavado, cuelga. */
+  private idleSince = 0;
+  private reducedMotion = false;
+  private floor: THREE.Mesh;
 
   private tweens: Tween[] = [];
   private dirty = true;
@@ -231,6 +254,11 @@ class Viewer {
     this.sparks = this.createSparks();
     this.scene.add(this.sparks);
 
+    this.floor = this.createFloorShadow();
+    this.scene.add(this.floor);
+    this.reducedMotion =
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+
     this.mode = init.mode ?? 'view';
     this.still = Boolean(init.still);
     this.syncItems(init.state.items, false);
@@ -289,6 +317,9 @@ class Viewer {
         break;
       case 'recenter':
         this.turnTo(0, 0);
+        break;
+      case 'snapshot':
+        this.snapshot(cmd.background);
         break;
     }
   }
@@ -354,6 +385,10 @@ class Viewer {
       hit,
       scale,
       signature,
+      swing: built.swing ?? null,
+      swingGain: built.swingGain ?? 1,
+      swingAngle: 0,
+      swingVelocity: 0,
     };
     hit.userData.entry = entry;
     this.itemsGroup.add(built.group);
@@ -375,6 +410,8 @@ class Viewer {
     disposeItem(old);
     entry.group = built.group;
     entry.radius = built.radius;
+    entry.swing = built.swing ?? null;
+    entry.swingGain = built.swingGain ?? 1;
     entry.scale = clamp(entry.data.size ?? 1, 0.7, 1.5);
   }
 
@@ -562,10 +599,13 @@ class Viewer {
       this.burst(pose.position);
     }
     this.dimmer.visible = true;
-    this.dimmer.position.set(0, BOUNDS.center.y, pose.position.z - 0.9);
+    const axis = this.camera.position.clone().sub(BOUNDS.center).normalize();
+    this.dimmer.position.copy(pose.position).addScaledVector(axis, -0.9);
+    this.dimmer.quaternion.copy(this.camera.quaternion);
     const dim = this.dimmer.material as THREE.MeshBasicMaterial;
     const dimFrom = dim.opacity;
-    const identity = new THREE.Quaternion();
+    // De frente a la cámara.
+    const identity = this.camera.quaternion.clone();
     // Al presentarla, entra dando dos vueltas que frenan (como una medalla).
     const turns = reveal ? Math.PI * 4 : 0;
     this.tween({
@@ -637,14 +677,18 @@ class Viewer {
   }
 
   private applySpin(entry: Entry) {
-    entry.group.quaternion.setFromEuler(
-      new THREE.Euler(
-        this.spin.pitch + this.tiltY * 0.25,
-        this.spin.yaw + this.tiltX * 0.35,
-        0,
-        'YXZ',
-      ),
-    );
+    entry.group.quaternion
+      .copy(this.camera.quaternion)
+      .multiply(
+        new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(
+            this.spin.pitch + this.tiltY * 0.25,
+            this.spin.yaw + this.tiltX * 0.35,
+            0,
+            'YXZ',
+          ),
+        ),
+      );
   }
 
   // ── Decorar ──────────────────────────────────────────────────────────────
@@ -731,6 +775,81 @@ class Viewer {
         this.sparks.visible = false;
       },
     });
+  }
+
+  // ── Suelo, vaivén y foto ─────────────────────────────────────────────────
+
+  /** Una sombra blanda bajo el pañuelo: sin ella parece pegado a la pantalla. */
+  private createFloorShadow(): THREE.Mesh {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 128;
+    const ctx = canvas.getContext('2d')!;
+    const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, 'rgba(0,0,0,0.5)');
+    g.addColorStop(0.5, 'rgba(0,0,0,0.18)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 128, 128);
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(3.4, 1.9),
+      new THREE.MeshBasicMaterial({
+        map: new THREE.CanvasTexture(canvas),
+        transparent: true,
+        opacity: 0.5,
+        depthWrite: false,
+      }),
+    );
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(0, FLOOR_Y, 0);
+    mesh.renderOrder = -1;
+    return mesh;
+  }
+
+  /**
+   * Las piezas que cuelgan (medallas, cintas) se balancean cuando el pañuelo
+   * gira o el móvil se inclina: un péndulo amortiguado por pieza. Devuelve si
+   * alguna sigue moviéndose.
+   */
+  private stepSwing(dt: number, yawRate: number): boolean {
+    const seconds = dt / 1000;
+    let moving = false;
+    for (const entry of this.entries.values()) {
+      if (!entry.swing) continue;
+      // Enfocada, la pieza se queda quieta para poder mirarla.
+      const target =
+        entry === this.focused
+          ? 0
+          : clamp(-yawRate * 0.22 - this.tiltX * 0.3, -0.75, 0.75) *
+            entry.swingGain;
+      const accel =
+        SWING_STIFFNESS * (target - entry.swingAngle) -
+        SWING_DAMPING * entry.swingVelocity;
+      entry.swingVelocity += accel * seconds;
+      entry.swingAngle += entry.swingVelocity * seconds;
+      entry.swing.rotation.z = entry.swingAngle;
+      if (
+        Math.abs(entry.swingVelocity) > 0.004 ||
+        Math.abs(target - entry.swingAngle) > 0.002
+      ) {
+        moving = true;
+      }
+    }
+    return moving;
+  }
+
+  /** Una foto de lo que se ve, sobre un fondo liso, para compartirla. */
+  private snapshot(background: string) {
+    this.renderer.render(this.scene, this.camera);
+    const source = this.renderer.domElement;
+    const out = document.createElement('canvas');
+    out.width = source.width;
+    out.height = source.height;
+    const ctx = out.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, out.width, out.height);
+    ctx.drawImage(source, 0, 0);
+    post({ type: 'snapshot', dataUrl: out.toDataURL('image/jpeg', 0.92) });
   }
 
   // ── El dedo ──────────────────────────────────────────────────────────────
@@ -1015,10 +1134,12 @@ class Viewer {
     const fitH = BOUNDS.height / (2 * half);
     const fitW = BOUNDS.width / (2 * half * this.camera.aspect);
     this.distance = Math.max(fitH, fitW);
+    const d = this.distance / this.zoom;
+    // Un poco desde arriba: se ve el volumen del rollo y la sombra del suelo.
     this.camera.position.set(
       BOUNDS.center.x,
-      BOUNDS.center.y,
-      this.distance / this.zoom,
+      BOUNDS.center.y + d * Math.sin(CAMERA_TILT),
+      d * Math.cos(CAMERA_TILT),
     );
     this.camera.lookAt(BOUNDS.center);
     this.camera.updateProjectionMatrix();
@@ -1059,12 +1180,35 @@ class Viewer {
       }
     }
 
+    // En reposo el pañuelo se mece un poco, como colgado de una percha.
+    const resting =
+      !this.gesture &&
+      !this.focused &&
+      this.mode === 'view' &&
+      !this.reducedMotion &&
+      !this.still &&
+      !document.hidden &&
+      Math.abs(this.yawVelocity) <= 0.0004 &&
+      !this.tweens.some((t) => t.key === 'turn');
+    if (!resting) this.idleSince = now;
+    const idle = resting
+      ? IDLE_SWAY *
+        Math.sin(((now - this.idleSince) / 1000) * IDLE_SPEED) *
+        Math.min(1, (now - this.idleSince) / 1500)
+      : 0;
+    if (resting) this.dirty = true;
+
+    const yawNow = this.yaw + idle + (this.focused ? 0 : this.tiltX * 0.16);
+    const yawRate = dt > 0 ? ((yawNow - this.lastYaw) / dt) * 1000 : 0;
+    this.lastYaw = yawNow;
+    if (this.stepSwing(dt, yawRate)) this.dirty = true;
+
     if (!this.dirty) return;
     this.dirty = false;
     // El móvil inclinado mueve un poco el pañuelo: así brilla el metal.
     this.root.rotation.set(
       this.pitch + (this.focused ? 0 : this.tiltY * 0.1),
-      this.yaw + (this.focused ? 0 : this.tiltX * 0.16),
+      yawNow,
       0,
     );
     this.cullHidden();

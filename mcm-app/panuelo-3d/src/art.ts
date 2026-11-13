@@ -14,6 +14,7 @@ import type {
   MedallaLook,
   PanueloGlyph,
   ParcheLook,
+  PulseraLook,
 } from '@/types/panuelo';
 
 const SIZE = 512;
@@ -369,4 +370,77 @@ export function paintEnamel(top: string, bottom: string): THREE.CanvasTexture {
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 8, 128);
   return colorTexture(canvas);
+}
+
+// ── Pulsera ────────────────────────────────────────────────────────────────
+
+/**
+ * El trenzado de una pulsera de hilo, en una tira que se repite a lo largo.
+ * `chevron` son las espigas de la pulsera de la amistad; `stripes`, rayas a
+ * lo largo; `solid`, un solo color (el primero), con el texto si lo hay.
+ */
+export function paintBraid(look: PulseraLook): {
+  map: THREE.CanvasTexture;
+  bump: THREE.CanvasTexture;
+} {
+  const colors = look.colors.length > 0 ? look.colors.slice(0, 6) : ['#ffffff'];
+  const W = 256;
+  const H = 64;
+  const { canvas, ctx } = newCanvas(W, H);
+  const pattern = look.text ? 'solid' : (look.pattern ?? 'chevron');
+  ctx.fillStyle = colors[0];
+  ctx.fillRect(0, 0, W, H);
+  if (pattern === 'stripes') {
+    const h = H / colors.length;
+    colors.forEach((color, i) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(0, Math.floor(i * h), W, Math.ceil(h) + 1);
+    });
+  } else if (pattern === 'chevron') {
+    // Espigas: una «V» tumbada por color, una detrás de otra.
+    const step = W / (colors.length * 2);
+    ctx.lineWidth = step * 1.02;
+    for (let i = -2; i < colors.length * 2 + 2; i++) {
+      ctx.strokeStyle =
+        colors[((i % colors.length) + colors.length) % colors.length];
+      ctx.beginPath();
+      ctx.moveTo(i * step - H / 2, -4);
+      ctx.lineTo(i * step, H / 2);
+      ctx.lineTo(i * step - H / 2, H + 4);
+      ctx.stroke();
+    }
+  }
+  if (look.text) {
+    ctx.fillStyle = look.ink ?? '#ffffff';
+    ctx.font = `800 ${H * 0.5}px ${FONT}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(look.text.toUpperCase(), W / 2, H / 2 + 1, W * 0.92);
+  }
+  const map = colorTexture(canvas);
+  map.wrapS = THREE.RepeatWrapping;
+  // Con texto, la tira se repite menos veces para que se lea.
+  if (look.text) map.repeat.set(3 / 9, 1);
+
+  // Relieve: los hilos, en diagonal.
+  const bump = newCanvas(64, 64);
+  bump.ctx.fillStyle = '#808080';
+  bump.ctx.fillRect(0, 0, 64, 64);
+  bump.ctx.lineWidth = 3;
+  for (let i = -64; i < 128; i += 8) {
+    bump.ctx.strokeStyle = '#e0e0e0';
+    bump.ctx.beginPath();
+    bump.ctx.moveTo(i, 0);
+    bump.ctx.lineTo(i + 32, 64);
+    bump.ctx.stroke();
+    bump.ctx.strokeStyle = '#303030';
+    bump.ctx.beginPath();
+    bump.ctx.moveTo(i + 4, 0);
+    bump.ctx.lineTo(i + 36, 64);
+    bump.ctx.stroke();
+  }
+  const bumpTex = new THREE.CanvasTexture(bump.canvas);
+  bumpTex.wrapS = bumpTex.wrapT = THREE.RepeatWrapping;
+  bumpTex.repeat.set(4, 1);
+  return { map, bump: bumpTex };
 }

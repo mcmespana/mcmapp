@@ -48,6 +48,7 @@ export const KIND_LABEL: Record<PanueloItemKind, string> = {
   cinta: 'Cinta',
   parche: 'Parche',
   medalla: 'Medalla',
+  pulsera: 'Pulsera',
 };
 
 export const RARITY_LABEL: Record<PanueloRarity, string> = {
@@ -75,9 +76,10 @@ const KINDS: readonly PanueloItemKind[] = [
   'cinta',
   'parche',
   'medalla',
+  'pulsera',
 ];
 const RARITIES: readonly PanueloRarity[] = ['comun', 'especial', 'unica'];
-const VIAS: readonly PanueloVia[] = ['all', 'code', 'manual', 'demo'];
+const VIAS: readonly PanueloVia[] = ['all', 'code', 'manual', 'demo', 'trade'];
 const PARCHE_SHAPES = ['circle', 'shield', 'arrow', 'rect'] as const;
 const METALS = ['oro', 'plata', 'cobre', 'negro'] as const;
 
@@ -163,6 +165,19 @@ function sanitizeLook(kind: PanueloItemKind, raw: unknown): PanueloLook | null {
         text: str(raw.text)?.slice(0, 14),
       };
     }
+    case 'pulsera': {
+      const list = colors(raw.colors).slice(0, 6);
+      if (list.length === 0) return null;
+      return {
+        kind,
+        colors: list,
+        pattern: (['chevron', 'stripes', 'solid'] as const).find(
+          (p) => p === raw.pattern,
+        ),
+        text: str(raw.text)?.slice(0, 16),
+        ink: color(raw.ink),
+      };
+    }
     case 'medalla': {
       const ribbon = colors(raw.ribbon);
       if (ribbon.length === 0) return null;
@@ -229,6 +244,8 @@ export function sanitizeCatalog(raw: unknown): PanueloCatalog {
       grant: sanitizeGrant(value.grant),
       order: num(value.order),
       secret: value.secret === true || undefined,
+      tradeable:
+        typeof value.tradeable === 'boolean' ? value.tradeable : undefined,
     });
   }
   return out;
@@ -263,12 +280,43 @@ export function sanitizeUserState(raw: unknown): PanueloUserState {
       if (placement && items[id]) layout[id] = placement;
     }
   }
-  return {
-    color: PANUELO_COLORS.find((c) => c === raw.color) ?? null,
-    items,
-    layout,
-    layoutAt: num(raw.layoutAt) ?? 0,
-  };
+  const gone: Record<string, number> = {};
+  if (isObject(raw.gone)) {
+    for (const [id, value] of Object.entries(raw.gone)) {
+      const at = num(value);
+      if (at !== undefined) gone[id] = at;
+    }
+  }
+  return withGone(
+    {
+      color: PANUELO_COLORS.find((c) => c === raw.color) ?? null,
+      items,
+      layout,
+      layoutAt: num(raw.layoutAt) ?? 0,
+    },
+    gone,
+  );
+}
+
+/**
+ * Aplica el registro de piezas dadas: fuera las que se dieron después de
+ * conseguirlas (y su sitio en el pañuelo). El registro solo se guarda si
+ * tiene algo.
+ */
+function withGone(
+  state: PanueloUserState,
+  gone: Record<string, number>,
+): PanueloUserState {
+  if (Object.keys(gone).length === 0) return state;
+  const items: Record<string, PanueloOwned> = {};
+  for (const [id, owned] of Object.entries(state.items)) {
+    if (!(gone[id] >= owned.at)) items[id] = owned;
+  }
+  const layout: Record<string, PanueloPlacement> = {};
+  for (const [id, placement] of Object.entries(state.layout)) {
+    if (items[id]) layout[id] = placement;
+  }
+  return { ...state, items, layout, gone };
 }
 
 // ── Fusionar móvil y nube ──────────────────────────────────────────────────
@@ -280,6 +328,8 @@ export function sanitizeUserState(raw: unknown): PanueloUserState {
  *   una pieza repetida queda la fecha más antigua.
  * - **El color y la colocación son de quien los tocó el último** (`layoutAt`):
  *   mezclar dos colocaciones pieza a pieza deja un pañuelo que nadie hizo.
+ * - **Lo dado en un intercambio se queda dado** (`gone`), venga de donde
+ *   venga: si no, la suma de piezas lo resucitaría.
  *
  * `upload` dice si la nube se queda atrás y hay que subirle la mezcla.
  */
@@ -303,13 +353,24 @@ export function mergePanuelo(
   for (const [id, placement] of Object.entries(winner.layout)) {
     if (items[id]) layout[id] = placement;
   }
+  // Lo que cualquiera de los dos lados dio en un intercambio, se queda dado.
+  const gone: Record<string, number> = { ...remote.gone };
+  for (const [id, at] of Object.entries(local.gone ?? {})) {
+    if (!(gone[id] >= at)) {
+      gone[id] = at;
+      upload = true;
+    }
+  }
   return {
-    merged: {
-      color: winner.color ?? local.color ?? remote.color,
-      items,
-      layout,
-      layoutAt: winner.layoutAt,
-    },
+    merged: withGone(
+      {
+        color: winner.color ?? local.color ?? remote.color,
+        items,
+        layout,
+        layoutAt: winner.layoutAt,
+      },
+      gone,
+    ),
     upload,
   };
 }
@@ -559,4 +620,12 @@ export function formatOwnedDate(at: number): string {
   ];
   const d = new Date(at);
   return `${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+/**
+ * ¿Se puede intercambiar esta pieza? Lo que diga el catálogo; si no dice
+ * nada, solo las pulseras (son las que se cambian de mano en los encuentros).
+ */
+export function isTradeable(item: PanueloItemDef): boolean {
+  return item.tradeable ?? item.kind === 'pulsera';
 }
