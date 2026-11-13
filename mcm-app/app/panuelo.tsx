@@ -447,12 +447,14 @@ function PanueloScreen() {
           </View>
         </View>
 
-        <Text
-          style={[styles.stageLabel, { color: t.textSecondary }]}
-          pointerEvents="none"
-        >
-          {COLOR_LABEL[color].name} · {COLOR_LABEL[color].stage}
-        </Text>
+        {active ? null : (
+          <Text
+            style={[styles.stageLabel, { color: t.textSecondary }]}
+            pointerEvents="none"
+          >
+            {COLOR_LABEL[color].name} · {COLOR_LABEL[color].stage}
+          </Text>
+        )}
 
         {active ? null : (
           <Text
