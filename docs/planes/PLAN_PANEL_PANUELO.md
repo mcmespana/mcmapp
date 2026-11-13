@@ -1,186 +1,111 @@
-# Plan — Pañuelo (POR DEFINIR)
+# Plan — Pañuelo virtual
 
-> ## ⚠️ POR DEFINIR — el usuario explicará la idea
+> **Estado (2026-11-13): la primera versión está hecha** y escondida en el
+> Laboratorio Alpha. Este documento ya no es una propuesta: dice qué se
+> decidió, qué está hecho y qué queda, en orden.
 >
-> **No ejecutar nada de aquí, ni tomarlo como decidido.** El 2026-09-26 el
-> usuario dijo que la idea del pañuelo la explicará él. Lo de abajo es una
-> **propuesta** que escribió Claude ese mismo día para tener algo sobre la
-> mesa (perfil con chapas, Carismochitos y logros); puede cambiar entera
-> cuando el usuario la cuente. Cuando la explique, se reescribe este plan
-> partiendo de lo que diga, no de esta propuesta.
+> Cómo funciona hoy: [`../funcionalidades/PANUELO.md`](../funcionalidades/PANUELO.md).
+> Datos y lado del Panel: [`../contratos/PANUELO_CONTRATO.md`](../contratos/PANUELO_CONTRATO.md).
 
-> ### Lo que ha contado el usuario (2026-09-29)
->
-> - Un **sistema de recompensas por ir a eventos**, dentro de la app y **por
->   usuario**. Hay que poder **repartirlas** de alguna forma (sin decidir cómo:
->   QR/código en el evento o asignación desde el Panel siguen abiertos).
-> - Son **medallas** (chapas metálicas esmaltadas modeladas en 3D). La idea es
->   que se **coloquen en el pañuelo** y que al tocar una salga un **pop-up
->   donde se ve en 3D**. Referencia: los premios de la app Fitness de Apple.
-> - Primer paso ya hecho: la prueba **"Medallas en 3D" del Laboratorio Alpha**
->   (`components/preview-channel/MedallasLabPanel.tsx`), con las medallas del
->   Jubileo de los Jóvenes 2025 y de la visita del Papa 2026 ("Alza la
->   mirada"). Visor: `<model-viewer>` en WebView — **OTA, sin build nativo**,
->   así que lo que dice abajo §4 v2 ("las dos son nativas") ya no aplica al
->   pop-up. Modelos y cómo prepararlos: `medallas-3d/README.md`.
-> - Lo que sigue **pendiente de que el usuario lo explique**: cómo se reparten,
->   cómo es el pañuelo (dibujo 2D con huecos, 3D…) y dónde vive en la app.
+## Lo que pidió el usuario
 
-## 1. Qué es, en una frase
+**2026-09-29.** Un sistema de recompensas por ir a eventos, por usuario:
+medallas en 3D que se colocan en el pañuelo, y al tocar una, verla de cerca.
+Referencia: los premios de la app Fitness de Apple.
 
-Una **pantalla de perfil** —"Tu pañuelo"— donde cada persona ve lo que ha ido
-juntando en el Movimiento: las **chapas** de las actividades a las que ha ido
-(colocadas en un pañuelo del MCM, como las de verdad), su **colección de
-Carismochitos** y unos cuantos **logros**.
+**2026-11-12.** La idea completa: _el pañuelo virtual_. El pañuelo identifica a
+quien es del MCM — rojo (etapa infantil), verde (conocimiento), azul
+(incorporación y crecimiento) y amarillo (opción responsable) —, y a la gente
+le encanta decorarlo. Un modelo 3D «muy guapo» del color que tengas, al que
+darle vueltas, con chapas, pines, cintas y otros decorados que se dan **en
+digital** por asistir a las actividades («a todos los inscritos en este
+evento, os damos…»). Tocar un pin, ver de dónde viene, darle vueltas. Por
+ahora, en un menú oculto del canal preview; hay que pensar dónde ponerlo.
 
-## 2. Dónde vive (y dónde no)
+**2026-11-13.** Prioridad a lo visual y al diseño. Y dejar puestas las bases
+para **intercambiar pulseras y chapas en persona**: le das un código a la otra
+persona y hacéis el intercambio.
 
-- **No es una pestaña.** Eso ya se estudió y se descartó el 2026-09-19
-  (`BACKLOG.md` §3): la barra admite 6 y los perfiles ya declaran 7; una pestaña
-  "Perfil" sería siempre la primera en caerse a Más.
-- **Es una pantalla del stack de Más** (`app/screens/PerfilScreen.tsx`,
-  deep-linkable), que es justo la "idea buena y barata" que dejó apuntada esa
-  misma investigación: sacar el contenido del `SettingsBottomSheet` a una
-  pantalla propia con sitio para crecer.
-- **Entrada**: el engranaje de la Home pasa a ser el **avatar/inicial** cuando hay
-  sesión, y abre esta pantalla. Sin sesión, el engranaje de siempre.
-- Estructura de la pantalla, de arriba abajo:
-  1. Cabecera: avatar, nombre, perfil y delegación.
-  2. **El pañuelo** con sus chapas (§3).
-  3. **Carismochitos**: la rejilla que hoy vive en `app/carismochito.tsx` se
-     muda aquí tal cual (`VariantCard` ya está pensado para eso).
-  4. **Logros** (§5).
-  5. Ajustes (lo que hoy es el `SettingsBottomSheet`).
+## Decisiones tomadas (y por qué)
 
-## 3. Las chapas
+| Decisión                                           | Por qué                                                                                                              |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Visor en un **WebView con three.js**, no `expo-gl` | Un solo código para iOS, Android y web; sale por **OTA**; se prueba en un navegador. Misma decisión que las medallas |
+| three.js **empaquetado en la app**, no descargado  | El pañuelo abre sin red, y cada versión de la app lleva su visor                                                     |
+| El pañuelo **se calcula**, no hay `.glb`           | Pesa cero, y la fórmula que lo dibuja dice dónde va cosida cada pieza. No hace falta nadie que modele                |
+| Las piezas **salen de datos**, no de imágenes      | Una pieza nueva es JSON en el catálogo: sin build, sin OTA, sin diseñador. La imagen propia es opcional              |
+| Canje por código **validado en el móvil**          | Trampeable por quien tenga el código, pero es un juego de comunidad. Sale ya, sin servidor                           |
+| Un **hook**, no un contexto global                 | Solo lo usa su pantalla: no carga nada al arrancar la app                                                            |
+| Interruptor `global.panuelo`, como Carismochito    | Se lanza (o se retira) sin build ni OTA                                                                              |
+| Las piezas se **suman** entre móvil y nube         | Lo conseguido no se pierde nunca. El color y la colocación sí son del último que los tocó                            |
 
-### Cómo se consigue una
+## Fases
 
-Por **estar** en la actividad, no por abrirla en la app. La forma que cuadra
-con lo que ya hay:
+| Fase | Qué                                                                                                  | Estado                | OTA | Depende de                         |
+| ---- | ---------------------------------------------------------------------------------------------------- | --------------------- | --- | ---------------------------------- |
+| 0    | Visor 3D: pañuelo en los cuatro colores, girar, acercar, luz, sombras                                | ✅ Hecho (2026-11-13) | ✅  | —                                  |
+| 1    | Seis clases de pieza, colección, ficha, verla de cerca, decorar (mover, girar, quitar)               | ✅ Hecho (2026-11-13) | ✅  | —                                  |
+| 2    | Conseguir piezas: para todos, por código, repartidas; presentación de la pieza nueva; compartir foto | ✅ Hecho (2026-11-13) | ✅  | —                                  |
+| 3    | **Probar en iPhone y Android de verdad** y ajustar (rendimiento, WebView transparente, inclinación)  | ⏳ Siguiente          | ✅  | Un móvil con el canal preview      |
+| 4    | **Sacarlo del laboratorio**: avatar en la cabecera de Inicio → «Tu pañuelo»; tarjeta de pieza nueva  | ⏳                    | ✅  | Decisión 1 (abajo) + Fase 3        |
+| 5    | **Intercambios** en persona con código: servicio, pantalla, reglas de Firebase                       | 🟡 Base puesta        | ✅  | Sesión iniciada en los dos móviles |
+| 6    | **Panel**: editor de piezas con vista previa, código + QR, repartir a una lista, cuántas se han dado | ⏳                    | —   | Repo `mcmpanel` + Integración D    |
+| 7    | Canje y reparto **validados en servidor**                                                            | ⏳                    | ✅  | Integración D                      |
+| 8    | El color viene de la etapa de la persona en el área privada                                          | ⏳                    | ✅  | Área privada nativa                |
+| 9    | Logros calculados (rachas de oración, primera pieza, colección completa…)                            | 💡 Idea               | ✅  | —                                  |
 
-- **Un QR (o un código corto) por actividad**, que los monitores enseñan in situ
-  —en una pantalla, impreso en la acreditación, al final de la misa—. La app ya
-  tiene escáner (`components/playlist/QrScannerModal.tsx`) y entrada de código
-  (`CodeInputModal.tsx`) de las playlists: se reutilizan.
-- El QR lleva `mcmapp://chapa/<badgeId>?c=<código>`, así que también funciona
-  escaneándolo con la cámara del sistema.
-- Cada chapa tiene **ventana de validez** (`validFrom`/`validTo`): fuera de las
-  fechas del encuentro no se puede canjear.
+### Fase 3 — qué mirar en el móvil
 
-Descartado para la v1: darla automáticamente por estar suscrito al evento o por
-abrir su hub durante las fechas. Suscribirse no es ir.
+Solo se ha probado en navegador (el visor suelto y la pantalla entera en web).
+Lista de lo que puede fallar en un móvil y no se ve en un navegador:
 
-### El problema de las trampas (y cuánto importa)
+- **Android: el fondo del WebView.** Tiene que ser transparente
+  (`androidLayerType="hardware"`). Si sale blanco, es eso.
+- **Rendimiento** con 15-20 piezas en un Android modesto. Si va justo: bajar el
+  mapa de sombras (1024 → 512) o el `pixelRatio` (2 → 1,5) en `main.ts`.
+- **La inclinación** (`useTilt` en `Panuelo3D.tsx`): que el sentido sea el
+  natural y no maree. Los signos están en un solo sitio.
+- **El gesto de atrás de iOS** contra girar el pañuelo desde el borde izquierdo.
+- **Compartir**: que la hoja del sistema reciba la imagen.
+- **La memoria**: abrir y cerrar la pantalla varias veces.
 
-Con un código que valida el propio móvil, quien tenga una foto del QR se lleva
-la chapa desde el sofá. Dos niveles:
+### Fase 4 — sacarlo del laboratorio
 
-- **v1 — validación en el cliente**: el catálogo guarda un **hash** del código,
-  no el código; la app compara. Trampeable por quien tenga el QR, pero no por
-  quien no lo tenga. **Para un juego de comunidad, suficiente**, y sale por OTA.
-- **v2 — validación en servidor**: una función del Panel (`api/badges/claim`)
-  comprueba el código y escribe la chapa con credencial de servidor, y la regla
-  de RTDB impide que el cliente la escriba solo. Necesita la **Integración D**
-  (auth real del Panel), que hoy está bloqueada por la decisión D2.
+La recomendación está razonada en `PANUELO.md` («Dónde debería vivir»):
+**no es una pestaña**; es la pantalla de perfil, a la que se entra por el
+avatar de la cabecera de Inicio, con una tarjeta en Inicio cuando hay pieza
+nueva. La colección de Carismochitos y los Ajustes cuelgan de ahí.
 
-### Modelo de datos
+Antes de abrirlo a todos (`global.panuelo = "all"`): importar el catálogo en
+Firebase, desplegar las reglas, y tener al menos una pieza de verdad que dar.
 
-```
-badges                          ← catálogo, lo mantiene el Panel
-  updatedAt
-  data
-    <badgeId>
-      name          "Encuentro de Pascua 2027"
-      eventId       "pascua-2027"          (opcional: enlaza con /activities)
-      image         URL (PNG con fondo transparente, cuadrado)
-      rarity        "normal" | "especial"
-      codeHash      sha256(código + badgeId)
-      validFrom     ms
-      validTo       ms
+### Fase 5 — intercambios
 
-users/{uid}/panuelo/{badgeId}
-  at            ms, cuándo se canjeó
-  slot          número de hueco en el pañuelo (null = colocada automáticamente)
-```
+Hecho: las reglas (`utils/panueloTrade.ts`) y el registro de lo que se da
+(`gone`). Lo que falta, paso a paso, y la propuesta de reglas de Firebase están
+en `PANUELO.md` («Intercambios»). No hay nada a medias en la interfaz: la ficha
+solo enseña el chip «Intercambiable».
 
-- Sigue el patrón `{ updatedAt, data }` y se lee con `useFirebaseData`.
-- La regla de `users/$uid` que ya existe cubre `panuelo` en la v1.
-- Las chapas **requieren sesión**: sin ella no hay dónde guardarlas de forma
-  que sobrevivan a un cambio de móvil. Sin sesión, la pantalla invita a entrar.
+## Decisiones pendientes — preguntar antes de seguir
 
-## 4. El pañuelo (el dibujo)
+1. **¿Dónde vive?** Recomendación: avatar en la cabecera de Inicio → pantalla
+   «Tu pañuelo». ¿O una tarjeta en «Más» mientras tanto?
+2. **¿Quién elige el color?** Hoy lo elige cada persona en la pantalla. Lo
+   suyo es que venga de su etapa (Fase 8); mientras, ¿se deja elegir o se
+   pregunta una vez?
+3. **El logo del pañuelo rojo**: hace falta el archivo del logo del MIC (hoy
+   los cuatro llevan el del COM).
+4. **¿Qué piezas se intercambian?** Hoy, solo las pulseras salvo que el
+   catálogo diga otra cosa. ¿También las chapas, como en la vida real?
+5. **¿Quién crea las piezas** de cada actividad? Con el catálogo en JSON puede
+   hacerlo cualquiera con el Panel; sin Panel (Fase 6), hay que pedirlas.
+6. **¿Las piezas de muestra se quedan?** El catálogo de hoy es inventado para
+   probar. Para el lanzamiento hay que decidir cuáles son de verdad.
 
-- **v1 — 2D**: el pañuelo del MCM en SVG (`react-native-svg`, ya instalado), de
-  frente, con **huecos fijos** donde van las chapas en orden de canje. Se puede
-  tocar una chapa para ver su ficha (evento, fecha). **OTA.**
-- **v1.5 — colocar a mano**: arrastrar una chapa a otro hueco
-  (`react-native-gesture-handler`, ya instalado) y guardar el `slot`. **OTA.**
-- **v2 — 3D** (2026-10-08: `expo-gl` ya va en el binario de la build 2.1, así
-  que `expo-gl` + `three` dejaría de pedir build en cuanto esa build esté
-  publicada): el pañuelo con volumen, que gira. Opciones: `expo-gl` + `three`
-  o `react-native-filament`; las dos son **nativas** (build de tienda) y piden
-  un modelo `.glb` del pañuelo hecho por alguien que sepa modelar. Se decide
-  después de ver si la v1 engancha; el modelo de datos no cambia.
+## Lo que ya había y se aprovecha
 
-## 5. Logros
-
-Se **calculan** a partir de datos que ya existen; no se guardan (así no hay nada
-que sincronizar ni que se desincronice). Un módulo puro, `utils/achievements.ts`,
-con sus tests:
-
-| Logro                                 | Sale de                                        |
-| ------------------------------------- | ---------------------------------------------- |
-| Racha de oración de 7 / 30 / 100 días | `ContigoHabitsContext` (`getStreak('prayer')`) |
-| Primer mes rezando                    | hábitos de Contigo                             |
-| Primera chapa · 5 · 10                | `users/{uid}/panuelo`                          |
-| Colección de Carismochitos completa   | `summarizeCollection(...).complete`            |
-| Has visto al dorado                   | colección de Carismochitos                     |
-
-⚠️ **Antes de enseñar nada del Wordle aquí**: sus estadísticas se identifican con
-un id aleatorio de AsyncStorage (`hooks/useWordleStats.ts`), no con el uid de
-Firebase. Hasta unificarlo, el Wordle no entra en los logros.
-
-## 6. Lado del Panel (repo `mcmpanel`)
-
-- CRUD del catálogo `badges` (nombre, imagen, evento, fechas, rareza) y
-  **generación del QR** listo para imprimir o proyectar. El código se genera en
-  el Panel y solo se guarda su hash.
-- La previsualización de la chapa se pinta con los tokens de la app (`design.md`
-  §9: lo que el admin ve se parece a lo que verá la persona).
-- Estadística: cuántas chapas se han canjeado por actividad.
-- Es trabajo en otro repo: hay que añadirlo a la sesión.
-
-## 7. Fases
-
-| Fase | Qué                                                                                                       | OTA       | Depende de                    |
-| ---- | --------------------------------------------------------------------------------------------------------- | --------- | ----------------------------- |
-| 0    | `PerfilScreen` en el stack de Más + avatar en la Home, con Ajustes y la colección de Carismochitos dentro | ✅        | Sacar la caza del laboratorio |
-| 1    | Chapas v1: catálogo, canje por QR/código con hash, pañuelo 2D con huecos fijos                            | ✅        | Panel: CRUD + QR              |
-| 2    | Logros calculados                                                                                         | ✅        | —                             |
-| 3    | Colocar las chapas a mano                                                                                 | ✅        | —                             |
-| 4    | Canje validado en servidor                                                                                | ✅ (app)  | Integración D                 |
-| 5    | Pañuelo 3D                                                                                                | ❌ nativo | Modelo `.glb`                 |
-
-## 8. Lo que ya está hecho y se aprovecha
-
-- Colección de Carismochitos (`utils/carismochitoCollection.ts`,
-  `CarismochitoHuntContext`, `app/carismochito.tsx`) — hoy escondida en el
-  Laboratorio Alpha.
-- Escáner de QR y entrada de código (playlists).
-- Sincronización por usuario con fusión (`utils/authHelpers.ts`, patrón de
-  Contigo y Carismochitos).
-- Rachas de Contigo.
-
-## 9. Decisiones pendientes — preguntar antes de empezar
-
-1. **¿Validación en cliente (v1, trampeable con el QR) o esperar a la de
-   servidor?** Recomendación: cliente; es un juego.
-2. **¿Quién crea las chapas y sus imágenes** en cada actividad (coordinación,
-   monitores, el equipo de comunicación)? Sin imágenes no hay pañuelo.
-3. **¿La pantalla de perfil sustituye al `SettingsBottomSheet`** o conviven un
-   tiempo?
-4. **¿Cuándo sale la caza de Carismochitos del laboratorio?** La Fase 0 la
-   necesita a la vista.
-5. **¿Chapas "especiales"** (solo para monitores, por años de participación…)?
-   Cambia el catálogo pero no la mecánica.
+- Las medallas `.glb` del Jubileo y de la visita del Papa (`medallas-3d/`) y su
+  visor (`components/medallas/`): ahora son piezas del pañuelo, y su visor es
+  el «Verla de cerca».
+- El patrón de sincronización de la colección de Carismochitos.
+- El escáner de QR y la hoja de código de las playlists, para los intercambios.

@@ -3,7 +3,7 @@
 > **Lee esto antes de abrir ningún `PLAN_*.md`.** Su único trabajo es que no
 > vuelvas a ejecutar algo que ya está hecho.
 >
-> Última actualización: 2026-10-21.
+> Última actualización: 2026-11-13.
 
 ## La regla, en una línea
 
@@ -30,6 +30,7 @@ El coste de mantener esta tabla al día es mucho menor que el de repetirlo.
 | [`TRASPASO_REDISENO_AREA_NATIVA.md`](TRASPASO_REDISENO_AREA_NATIVA.md) | 🟡 **Rediseño del área nativa de Comunica + auditoría de «tics de IA».** Hecho y verificado en iPhone y Android (rama `claudito/area-nativa-estilo-plugin`, sin PR); pendiente: bugs de Android (`REVISION_ANDROID.md`) y resto de la auditoría (`AUDITORIA_TICS_Y_SINERGIA.md`) |
 | [`PLAN_CALIDAD.md`](PLAN_CALIDAD.md)             | 🟡 Parcial — Fase 0 (guardarraíles) ✅. **Fase 1 (trocear gigantes) descartada por decisión del usuario** el 2026-08-15, ver abajo                                                                                                | `BACKLOG.md` §2.A                                     |
 | [`PLAN_DISENO.md`](PLAN_DISENO.md)               | 🟡 En curso — dos pasadas hechas (tokens, tipografía, radios, sombras, responsive, panel) + 3 bugs de contraste arreglados. Lo que queda necesita **dispositivo** o revisión fichero a fichero                                    | `BACKLOG.md` §2.G                                     |
+| [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md) | 🟡 **Pañuelo virtual.** El usuario contó la idea el 2026-11-12 y la primera versión está hecha (Fases 0-2): pañuelo 3D, seis clases de pieza, decorar, canje por código, compartir, todo en el Laboratorio Alpha. Queda lo de la tabla de fases: probar en móvil, sacarlo del laboratorio, intercambios (base puesta) y el Panel. Doc viva: [`PANUELO.md`](../funcionalidades/PANUELO.md) | El propio plan (§ «Fases») |
 | [`PLAN_HOJA_CANCION.md`](PLAN_HOJA_CANCION.md)   | 🟡 Hecho y en `main`: hoja, modo atril, onboarding, 258 canciones repasadas, admin fiel a la app, PDF y pantalla completa web. Queda: aplicar las etiquetas aprobadas, mapa de la canción (opcional) y probar el pedal en un iPad | `BACKLOG.md` §2.H                                     |
 
 ## 🔵 Futuro lejano — no se tocan hasta que el usuario lo pida
@@ -40,7 +41,6 @@ no entran en la bolsa oportunista, y no hace falta preguntar por ellos.
 | Plan                                               | Por qué espera                                                                                                                                      |
 | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`PLAN_WIDGET_CONTIGO.md`](PLAN_WIDGET_CONTIGO.md) | Feature entera + build de tienda dedicada (WidgetKit + App Group). Ampliado el 2026-09-19: son **tres** widgets (hábitos, racha, evangelio del día) |
-| [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md)   | ⚠️ **Por definir**: el usuario explicará la idea. Lo que hay escrito es solo una propuesta de Claude (2026-09-26), no un plan decidido              |
 
 ## 🔬 En análisis — todavía no hay plan
 

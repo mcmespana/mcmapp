@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 
 import { PanueloItemArt } from '@/components/panuelo/PanueloItemArt';
@@ -15,6 +15,8 @@ type Props = {
   activeId: string | null;
   isDark: boolean;
   onSelect: (entry: PanueloCollectionEntry) => void;
+  /** En pantalla ancha hay sitio: una rejilla en vez de una tira. */
+  grid?: boolean;
 };
 
 const ART = 56;
@@ -30,8 +32,67 @@ export function PanueloCollectionStrip({
   activeId,
   isDark,
   onSelect,
+  grid,
 }: Props) {
   const t = themeColors(isDark);
+  const renderTile = (entry: PanueloCollectionEntry) => {
+    const { item, owned, placed } = entry;
+    const active = item.id === activeId;
+    return (
+      <PressableFeedback
+        key={item.id}
+        onPress={() => onSelect(entry)}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        accessibilityLabel={
+          owned
+            ? `${item.name}${placed ? ', puesta en el pañuelo' : ', sin poner'}`
+            : 'Pieza que todavía no tienes'
+        }
+        style={[styles.tile, active && { backgroundColor: t.backgroundSunken }]}
+      >
+        <PressableFeedback.Highlight />
+        <View>
+          <PanueloItemArt
+            look={item.look}
+            size={ART}
+            silhouette={owned ? undefined : t.separator}
+          />
+          {owned && !placed ? (
+            <View
+              style={[
+                styles.boxed,
+                { backgroundColor: t.card, borderColor: t.separator },
+              ]}
+            >
+              <MaterialIcons
+                name="inventory-2"
+                size={12}
+                color={t.textSecondary}
+              />
+            </View>
+          ) : null}
+        </View>
+        <Text
+          style={[styles.name, { color: owned ? t.text : t.textMuted }]}
+          numberOfLines={2}
+        >
+          {owned ? item.name : '¿?'}
+        </Text>
+      </PressableFeedback>
+    );
+  };
+
+  if (grid) {
+    return (
+      <ScrollView
+        style={styles.gridScroll}
+        contentContainerStyle={[styles.content, styles.grid]}
+      >
+        {entries.map(renderTile)}
+      </ScrollView>
+    );
+  }
   return (
     <FlatList
       horizontal
@@ -39,55 +100,7 @@ export function PanueloCollectionStrip({
       keyExtractor={(e) => e.item.id}
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.content}
-      renderItem={({ item: entry }) => {
-        const { item, owned, placed } = entry;
-        const active = item.id === activeId;
-        return (
-          <PressableFeedback
-            onPress={() => onSelect(entry)}
-            accessibilityRole="button"
-            accessibilityState={{ selected: active }}
-            accessibilityLabel={
-              owned
-                ? `${item.name}${placed ? ', puesta en el pañuelo' : ', sin poner'}`
-                : 'Pieza que todavía no tienes'
-            }
-            style={[
-              styles.tile,
-              active && { backgroundColor: t.backgroundSunken },
-            ]}
-          >
-            <PressableFeedback.Highlight />
-            <View>
-              <PanueloItemArt
-                look={item.look}
-                size={ART}
-                silhouette={owned ? undefined : t.separator}
-              />
-              {owned && !placed ? (
-                <View
-                  style={[
-                    styles.boxed,
-                    { backgroundColor: t.card, borderColor: t.separator },
-                  ]}
-                >
-                  <MaterialIcons
-                    name="inventory-2"
-                    size={12}
-                    color={t.textSecondary}
-                  />
-                </View>
-              ) : null}
-            </View>
-            <Text
-              style={[styles.name, { color: owned ? t.text : t.textMuted }]}
-              numberOfLines={2}
-            >
-              {owned ? item.name : '¿?'}
-            </Text>
-          </PressableFeedback>
-        );
-      }}
+      renderItem={({ item }) => renderTile(item)}
     />
   );
 }
@@ -98,6 +111,13 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.sm,
     gap: spacing.xs,
+  },
+  gridScroll: {
+    flex: 1,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   tile: {
     width: TILE,

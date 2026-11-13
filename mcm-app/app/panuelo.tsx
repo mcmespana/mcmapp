@@ -518,6 +518,7 @@ function PanueloScreen() {
               activeId={activeId}
               isDark={isDark}
               onSelect={selectFromStrip}
+              grid={isWide}
             />
             {!user ? (
               <Text style={[styles.notice, { color: t.textSecondary }]}>
@@ -631,7 +632,6 @@ const styles = StyleSheet.create({
   },
   panelWide: {
     width: SIDE_PANEL_WIDTH,
-    justifyContent: 'center',
   },
   panelHead: {
     flexDirection: 'row',

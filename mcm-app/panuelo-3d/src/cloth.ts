@@ -50,8 +50,8 @@ const TIP = new THREE.Vector3(0, -1.8, 0.66);
 /** Caja que hay que encuadrar (el pañuelo entero, con algo de aire). */
 export const BOUNDS = {
   center: new THREE.Vector3(0, -0.86, 0),
-  width: 3.0,
-  height: 2.3,
+  width: 3.25,
+  height: 2.45,
 };
 
 const smooth = (a: number, b: number, x: number) => {

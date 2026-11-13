@@ -4,6 +4,20 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-13 12:40 — Pañuelo virtual en 3D (en el Laboratorio Alpha)
+
+Funcionalidad nueva, escondida tras `global.panuelo` (ausente = `alpha`: solo con el Laboratorio Alpha encendido). Documentación: `docs/funcionalidades/PANUELO.md`; contrato: `docs/contratos/PANUELO_CONTRATO.md`; lo que queda: `docs/planes/PLAN_PANEL_PANUELO.md`.
+
+- **Pantalla nueva** `/panuelo` («Tu pañuelo»): el pañuelo en 3D en sus cuatro colores, con las piezas que se van consiguiendo. Se gira con el dedo, se acerca con dos y se mueve inclinando el móvil. Tocar una pieza la saca del pañuelo para verla de cerca, con su ficha. Modo «Decorar» para mover, girar y quitar piezas. Canje por código, foto para compartir. Entrada: panel «Pañuelo virtual» del Laboratorio Alpha.
+- **Seis clases de pieza** —chapa, pin esmaltado, cinta, parche bordado, medalla y pulsera de hilo— que se **dibujan a partir de datos** del catálogo (colores, forma, texto): una pieza nueva es JSON, no una imagen ni una versión de la app.
+- **Visor 3D propio** (`panuelo-3d/`, three.js) dentro de un WebView / iframe: sale por OTA y funciona sin red. El pañuelo no es un modelo, se calcula. **Artefacto commiteado**: `panuelo-3d/dist/viewer.bundle.json`, que se regenera con `npm run build:panuelo` (script nuevo). Guardarraíl: `__tests__/panueloViewerBundle.test.ts` reconstruye el bundle y lo compara.
+- **Dependencias nuevas, solo de build**: `three` y `@types/three` en `devDependencies`. No entran en el bundle de Metro ni llevan código nativo.
+- **Firebase**: nodo nuevo `/panuelo` (catálogo, lectura pública, lo escribe el panel; regla añadida a `database.rules.json`, **sin desplegar**) y `users/{uid}/panuelo` (lo de cada persona; lo cubre la regla de `users/$uid`). Seed: `firebase-seed/panuelo.json`, que es también el catálogo que se usa mientras no haya uno remoto. `global.panuelo` añadido al seed de perfiles y al contrato (`PANEL_PERFILES.md` §1.10-bis).
+- **Intercambios**: puesta la base, sin interfaz. `utils/panueloTrade.ts` tiene las reglas de un intercambio cara a cara con código (abrir, contestar, aceptar, aplicar) y el estado apunta lo que se da (`gone`) para que juntar el móvil con la nube no lo resucite.
+- **Analítica**: `panuelo_abierto` y `panuelo_pieza_conseguida`.
+- Tokens nuevos: `PanueloColors` (tela, tinta de la serigrafía y metales) en `constants/colors.ts`.
+- **Sin probar en móvil**: se ha probado en navegador (el visor y la pantalla entera en web). Lista de lo que hay que mirar en un dispositivo, en el plan (Fase 3).
+
 ## 2026-11-08 18:39 — Arreglo: deslizar el calendario o el vídeo flotante cerraba la app
 
 - **Causa**: `rubberBand`/`rubberBandClamp` (`utils/gesturePhysics.ts`) tenían `factor = RUBBER_BAND` como valor por defecto. El plugin de worklets mete las constantes de fuera en el cuerpo de la función, y el valor por defecto se evalúa antes: en el hilo de UI `RUBBER_BAND` no existía → `ReferenceError` → crash al arrastrar. Afectaba al calendario mensual, al reproductor flotante y al detalle de canción al tirar más allá de la primera/última. En Jest no se veía (allí el worklet corre como JS normal).

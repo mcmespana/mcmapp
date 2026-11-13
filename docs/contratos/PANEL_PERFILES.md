@@ -70,7 +70,8 @@ edita JSON. El cliente combina perfil + delegación + overrides al arrancar.
   "fotosEnIpad": true,              // false → sin Fotos en iPad, solo iPad (§1.9). Ausente = true
   "appReviewMode": false,           // modo revisión de tiendas — lo gestiona el panel (§1.6)
   "comunicaNativa": "alpha",        // área privada nativa: "off" | "alpha" | "all" (§1.7). Ausente = "alpha"
-  "carismochito": "alpha"           // modo/caza/colección Carismochito: "off" | "alpha" | "all" (§1.10). Ausente = "alpha"
+  "carismochito": "alpha",          // modo/caza/colección Carismochito: "off" | "alpha" | "all" (§1.10). Ausente = "alpha"
+  "panuelo": "alpha"                // pañuelo virtual: "off" | "alpha" | "all" (§1.10-bis). Ausente = "alpha"
 }
 ```
 
@@ -266,6 +267,16 @@ Interruptor de la pestaña Comunica: ¿área nativa o la WebView de siempre (el
   enseña el legado diga lo que diga este campo. Hoy solo el canal preview lo
   lleva, apuntando al servidor falso con datos inventados.
 - Hasta que el panel lo enseñe, se cambia desde la consola de Firebase.
+
+### 1.10-bis. `data.global.panuelo` — el pañuelo virtual
+
+Interruptor del pañuelo virtual, con la misma tabla que Carismochito: `"off"`
+(nadie), `"alpha"` o ausente (solo con el Laboratorio Alpha encendido; es el
+estado actual) y `"all"` (todo el mundo, sin build ni OTA). Lo lee la app
+(`utils/panueloGate.ts`, `hooks/usePanueloAvailable.ts`). Cerrado, la ruta
+`/panuelo` devuelve a Inicio. Documentación en
+`docs/funcionalidades/PANUELO.md`; el catálogo de piezas y el nodo de cada
+persona, en `docs/contratos/PANUELO_CONTRATO.md`.
 
 ---
 

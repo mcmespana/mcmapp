@@ -55,6 +55,8 @@ describe('app: lecturas públicas', () => {
     ['songs/tags/updatedAt', 'useSongTags'],
     ['albums/data', 'FotosScreen'],
     ['calendars/data', 'useCalendarConfigs'],
+    ['panuelo/data', 'usePanuelo — catálogo de piezas'],
+    ['panuelo/updatedAt', 'useFirebaseData'],
     ['profileConfig/data', 'ProfileConfigContext'],
     ['profileConfig/updatedAt', 'ProfileConfigContext'],
     ['seccion_oracion/lecturas/2026-08-13', 'useDailyReadings'],
@@ -138,6 +140,20 @@ describe('app: escrituras sin login', () => {
 });
 
 describe('app: datos del usuario autenticado', () => {
+  it('el pañuelo de cada persona es suyo y de nadie más', () => {
+    const mine = { auth: { uid: 'u1' } };
+    const other = { auth: { uid: 'u2' } };
+    expect(can('users/u1/panuelo', 'read', mine)).toBe(true);
+    expect(can('users/u1/panuelo/items/pionero-alpha', 'write', mine)).toBe(
+      true,
+    );
+    expect(can('users/u1/panuelo', 'read', other)).toBe(false);
+    expect(can('users/u1/panuelo/items/medalla', 'write', other)).toBe(false);
+    expect(can('users/u1/panuelo/items/medalla', 'write', FLAGS_ON)).toBe(
+      false,
+    );
+  });
+
   it('el dueño lee y escribe su nodo', () => {
     expect(can('users/alice/contigo/habits/2026-08-13', 'read', ALICE)).toBe(
       true,
@@ -274,6 +290,7 @@ describe('banderas apagadas: lo que se cierra', () => {
   it('el contenido deja de ser escribible por cualquiera', () => {
     expect(can('albums', 'write', FLAGS_OFF)).toBe(false);
     expect(can('calendars', 'write', FLAGS_OFF)).toBe(false);
+    expect(can('panuelo', 'write', FLAGS_OFF)).toBe(false);
     expect(can('profileConfig', 'write', FLAGS_OFF)).toBe(false);
     expect(can('songs/data', 'write', FLAGS_OFF)).toBe(false);
     expect(can(`${EV}/horario`, 'write', FLAGS_OFF)).toBe(false);
