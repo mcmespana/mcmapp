@@ -25,6 +25,7 @@ import {
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 
 import { Medalla3DModal } from '@/components/medallas/Medalla3DModal';
 import type { LabMedal } from '@/components/medallas/labMedals';
@@ -93,6 +94,19 @@ function PanueloScreen() {
   const t = themeColors(isDark);
   const insets = useSafeAreaInsets();
   const { isWide } = useResponsiveLayout();
+  // En iOS la cabecera puede ser translúcida y la pantalla empieza DEBAJO de
+  // ella (y del notch): los botones de arriba quedaban tapados. Se mide dónde
+  // empieza de verdad la pantalla y se baja solo lo que la cabecera tape; con
+  // una cabecera opaca (Android, web) no se añade nada.
+  const headerHeight = useHeaderHeight();
+  const rootRef = useRef<React.ComponentRef<typeof View>>(null);
+  const [underHeader, setUnderHeader] = useState(0);
+  const measureTop = useCallback(() => {
+    rootRef.current?.measureInWindow((_x, y) => {
+      if (!Number.isFinite(y)) return;
+      setUnderHeader(Math.max(0, Math.round(headerHeight - y)));
+    });
+  }, [headerHeight]);
   const large = useLargeText();
   const { height: windowHeight } = useWindowDimensions();
   const { user } = useAuth();
@@ -504,10 +518,12 @@ function PanueloScreen() {
 
   return (
     <View
+      ref={rootRef}
+      onLayout={measureTop}
       style={[
         styles.root,
         isWide && styles.rootWide,
-        { backgroundColor: t.backgroundSunken },
+        { backgroundColor: t.backgroundSunken, paddingTop: underHeader },
       ]}
     >
       <View style={styles.stage}>

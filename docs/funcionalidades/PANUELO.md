@@ -152,7 +152,9 @@ se puede probar en un navegador. La diferencia con las medallas es que aquí
 three.js va **empaquetado dentro de la app** (≈630 KB), no se descarga: el
 pañuelo abre sin red.
 
-- **No hay modelo `.glb` del pañuelo: se calcula.** El rollo del cuello, el
+- **No hay modelo `.glb` del pañuelo: se calcula.** La banda del cuello
+  (plana y lisa: el pañuelo NO va enrollado — decisión del propietario,
+  2026-11-14), el
   nudo con sus dos puntas y el triángulo de la espalda salen de fórmulas
   (`cloth.ts`). Pesa cero bytes, y la misma fórmula que dibuja el triángulo
   dice dónde y con qué inclinación va cosida cada pieza.
@@ -295,6 +297,9 @@ transacción y nada de lo demás cambia.
   `firebase-seed/panuelo.json` en `/panuelo/data` y desplegar las reglas
   (`docs/desarrollo/FIREBASE_REGLAS.md`). Sin eso funciona igual, con el
   catálogo de muestra.
+- **Accesibilidad sin oír**: la pantalla tiene etiquetas, anuncios y acciones
+  para mover piezas sin tocar el 3D, pero nadie lo ha probado con VoiceOver ni
+  TalkBack.
 - **No se ha probado en un móvil de verdad.** Se ha probado en navegador (el
   visor y la pantalla entera en web). Falta ver en iPhone y Android: el WebView
   transparente, el rendimiento con muchas piezas, la inclinación y compartir.

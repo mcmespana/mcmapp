@@ -28,6 +28,10 @@ import type {
 // ── Dobles ──────────────────────────────────────────────────────────────────
 
 const mockRouter: { params: Record<string, string> } = { params: {} };
+jest.mock('expo-router/react-navigation', () => ({
+  useHeaderHeight: () => 0,
+}));
+
 jest.mock('expo-router', () => {
   const Local = jest.requireActual<typeof React>('react');
   return {
