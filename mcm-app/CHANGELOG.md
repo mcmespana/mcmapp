@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-14 21:43 — Área privada nativa para todos y acceso nuevo («Entra en Comunica»)
+
+- **La nativa es el área de todo el mundo**: `utils/comunica/router.ts` lee `global.comunicaNativa` ausente, `all` o el `alpha` que quedó en Firebase de las pruebas como **nativa para todos**. Vuelta atrás: `off` (la WebView, deprecada, para todos) o `solo-alpha` (solo el Laboratorio Alpha). Llega a todos con la próxima OTA de `production`, sin tocar el panel. Seed a `all`.
+- **Acceso rehecho** (`components/comunica/acceso/`): con cuenta de la app, «Tienes la sesión iniciada con <correo>» y un botón, «Entrar en Comunica» (`AccountEntry`); la comprobación con el middleware sale sola al abrir (`checkAppAccount` en `services/comunica/appAccount.ts`) y al pulsar hay una entrada animada (`WelcomeOverlay`, sin animación con «Reducir movimiento»). Si el correo no está en Comunica, aviso y formulario vacío para otro; el código y el DNI siempre a mano (`CodeRequestForm`). Textos cortos; fuera la línea técnica (`validation · bad_app_token · 422`).
+- **`bad_app_token`**: la app pide un pase nuevo a Firebase y repite una vez; en el middleware, las cuentas de Google Workspace ya entran (ver `comunicaMiddleware:docs/ACCESO-APP.md`).
+- **La sesión no se pierde**: si el servidor cierra la sesión y la persona no había salido a propósito, se vuelve a entrar sola con la cuenta de la app; la OTA espera a que acabe un refresco en vuelo antes de recargar (`settleSession`); el middleware ya no revoca un refresco que se repite porque la app se recargó a mitad. Arreglada la carrera de «Salir» → la puerta entraba sola 46 ms después.
+- **Pantalla del código**: «¿No te llega? Entra con el DNI» vuelve al acceso con el DNI abierto; por DNI dice a qué correo (tapado) se ha mandado.
+- Tests: `__tests__/comunica/accessAccount.test.tsx` (nuevo), puerta y enrutador actualizados.
 ## 2026-11-13 12:40 — Pañuelo virtual en 3D (en el Laboratorio Alpha)
 
 Funcionalidad nueva, escondida tras `global.panuelo` (ausente = `alpha`: solo con el Laboratorio Alpha encendido). Documentación: `docs/funcionalidades/PANUELO.md`; contrato: `docs/contratos/PANUELO_CONTRATO.md`; lo que queda: `docs/planes/PLAN_PANEL_PANUELO.md`.

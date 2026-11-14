@@ -138,7 +138,7 @@ RootLayout (Stack)
 │   ├── (inicio)/ (Home)       ← Stack propio: cabecera nativa + grid de botones
 │   ├── cancionero/            ← Stack: index (Categorías) → categoria → cancion → pantalla-completa (+ seleccion)
 │   ├── contigo                ← Acompañamiento y oración
-│   ├── comunica/              ← Área nativa (alpha) o WebView del portal; carpeta con _layout
+│   ├── comunica/              ← Área privada nativa (la de todos; la WebView del plugin, deprecada, solo con `comunicaNativa: off`)
 │   ├── calendario/            ← Eventos ICS (carpeta con _layout)
 │   ├── fotos/                 ← Galería (carpeta con _layout)
 │   ├── visitapapa/            ← Stack del evento (oculto mientras esté archivado)

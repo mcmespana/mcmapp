@@ -1,10 +1,11 @@
 // app/(tabs)/comunica/index.tsx
 //
 // La puerta de la pestaña Comunica (planes 01 §1, 02 y 10 §1):
-//   1. Modo normal (o interruptor en `off`, o sin servidor) → la WebView de
-//      siempre, que pasa a ser el legado y no cambia en nada.
-//   2. Nativa sin sesión → «Entra en tu área».
-//   3. Nativa con sesión → la portada.
+//   1. Nativa (la de todos desde el 14/11/2026) sin sesión → «Entra en Comunica».
+//   2. Nativa con sesión → la portada.
+//   3. Interruptor en `off` (o `solo-alpha` sin el Laboratorio, o sin
+//      servidor) → la WebView de siempre: el legado, DEPRECADO, solo de
+//      vuelta atrás (`utils/comunica/router.ts`).
 
 import React from 'react';
 import { StyleSheet } from 'react-native';
@@ -61,13 +62,7 @@ function NativeGate() {
             headerRight: undefined,
           }}
         />
-        <AccessScreen
-          notice={
-            session.reason === 'revoked'
-              ? 'Tu sesión ha terminado. Vuelve a entrar.'
-              : undefined
-          }
-        />
+        <AccessScreen revoked={session.reason === 'revoked'} />
       </>
     );
   }

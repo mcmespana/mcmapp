@@ -71,12 +71,14 @@ export interface GlobalConfig {
   appReviewMode?: boolean;
   /**
    * Interruptor del área privada nativa de Comunica (plan 10 §1 de
-   * `docs/planes/area-nativa/`). Ausente = `alpha`.
-   *   · `off`   → todos ven la WebView de siempre (vuelta atrás sin build).
-   *   · `alpha` → solo quien enciende el Laboratorio Alpha ve la nativa.
-   *   · `all`   → la nativa para todos (el lanzamiento).
+   * `docs/planes/area-nativa/`). Ausente = `all` (la nativa es la de todos
+   * desde el 14/11/2026; ver `utils/comunica/router.ts`).
+   *   · `all`        → la nativa para todos. `alpha` (el valor de las pruebas)
+   *                    se lee igual.
+   *   · `off`        → todos ven la WebView de siempre (vuelta atrás sin build).
+   *   · `solo-alpha` → solo quien enciende el Laboratorio Alpha ve la nativa.
    */
-  comunicaNativa?: 'off' | 'alpha' | 'all';
+  comunicaNativa?: 'off' | 'solo-alpha' | 'alpha' | 'all';
   /**
    * Interruptor de TODO Carismochito: el modo (agitar el móvil), la caza y la
    * colección. Ausente = `alpha`. Ver `utils/carismochitoGate.ts`.
