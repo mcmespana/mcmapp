@@ -29,6 +29,7 @@ import {
   paintBraid,
   paintChapa,
   paintEnamel,
+  paintGrosgrain,
   paintMedalFace,
   paintParche,
   paintRibbon,
@@ -255,15 +256,15 @@ function buildPin(look: PinLook): BuiltItem {
 function buildParche(look: ParcheLook): BuiltItem {
   const wide = look.shape === 'arrow' || look.shape === 'rect';
   const size = wide ? 0.4 : 0.32;
-  const geometry = extrudeGlyph(look.shape, size, 0.01, 0.003);
+  const geometry = extrudeGlyph(look.shape, size, 0.013, 0.004);
   const { map, bump } = paintParche(look);
   const face = new THREE.MeshPhysicalMaterial({
     map,
     bumpMap: bump,
-    bumpScale: 1.6,
-    roughness: 0.92,
-    sheen: 0.7,
-    sheenRoughness: 0.5,
+    bumpScale: 1.7,
+    roughness: 0.88,
+    sheen: 1,
+    sheenRoughness: 0.4,
     sheenColor: new THREE.Color('#ffffff'),
   });
   const side = new THREE.MeshStandardMaterial({
@@ -277,23 +278,36 @@ function buildParche(look: ParcheLook): BuiltItem {
 
 // ── Cinta ──────────────────────────────────────────────────────────────────
 
-/** Una tira de cinta que cuelga desde y = 0, acabada en cola de golondrina. */
+/**
+ * Una tira de cinta que cuelga desde y = 0, acabada en cola de golondrina.
+ * Con la caída: el canto se curva, hay una onda a lo largo, un pliegue en
+ * diagonal y un pequeño vaivén hacia un lado. Las UV salen de la posición
+ * final, así las costillas del gros-grain no se deforman con el corte.
+ */
 function ribbonTail(
   width: number,
   length: number,
   phase: number,
 ): THREE.BufferGeometry {
-  const g = new THREE.PlaneGeometry(width, length, 6, 22);
+  const g = new THREE.PlaneGeometry(width, length, 8, 32);
   g.translate(0, -length / 2, 0);
   const pos = g.getAttribute('position');
+  const uv = g.getAttribute('uv') as THREE.BufferAttribute;
   const notch = width * 0.42;
   for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i);
-    const k = -pos.getY(i) / length;
+    const u = pos.getX(i) / (width / 2); // -1 … 1
+    const t = -pos.getY(i) / length; // 0 arriba … 1 abajo
     // Cada columna mide algo menos hacia el centro: eso es el corte en V.
-    const column = length - notch * (1 - Math.abs(x) / (width / 2));
-    pos.setY(i, -k * column);
-    pos.setZ(i, 0.006 + 0.012 * k * Math.sin(k * 7 + phase) + 0.004 * k);
+    const y = -t * (length - notch * (1 - Math.abs(u)));
+    const sway = 0.012 * t * t * Math.sin(t * 3 + phase);
+    const z =
+      0.006 +
+      0.004 * t -
+      0.005 * u * u * (0.4 + t) +
+      0.01 * t * Math.sin(t * 6.5 + phase) +
+      0.006 * t * Math.sin(u * 2.6 + t * 5 + phase * 1.7);
+    pos.setXYZ(i, pos.getX(i) + sway, y, z);
+    uv.setXY(i, u / 2 + 0.5, 1 + y / length);
   }
   g.computeVertexNormals();
   return g;
@@ -313,10 +327,59 @@ function ribbonMaterial(colors: string[]): THREE.MeshPhysicalMaterial {
   });
 }
 
+/** Un imperdible de acero que sujeta la cinta: dos alambres, muelle y cierre. */
+function safetyPin(length: number, y: number): THREE.Group {
+  const m = metal('plata');
+  const pin = new THREE.Group();
+  const z = 0.028;
+  const gap = 0.024;
+  const r = 0.0042;
+  const add = (geometry: THREE.BufferGeometry, x: number, yy: number) => {
+    const mesh = shadowed(new THREE.Mesh(geometry, m));
+    mesh.position.set(x, yy, z);
+    pin.add(mesh);
+    return mesh;
+  };
+  [y, y - gap].forEach((yy) => {
+    add(new THREE.CylinderGeometry(r, r, length, 8), 0, yy).rotation.z =
+      Math.PI / 2;
+  });
+  const mid = y - gap / 2;
+  // El muelle, a la izquierda: media vuelta que une los alambres y una espira.
+  add(
+    new THREE.TorusGeometry(gap / 2, r, 8, 18, Math.PI),
+    -length / 2,
+    mid,
+  ).rotation.z = Math.PI / 2;
+  add(
+    new THREE.TorusGeometry(gap * 0.3, r * 0.9, 8, 18),
+    -length / 2 - gap * 0.62,
+    mid,
+  ).rotation.x = 0.35;
+  // El cierre, a la derecha: una cápsula aplastada que abraza los dos alambres.
+  const clasp = add(
+    new THREE.CapsuleGeometry(0.0062, gap, 4, 10),
+    length / 2 - 0.006,
+    mid,
+  );
+  clasp.scale.z = 0.8;
+  return pin;
+}
+
 function buildCinta(look: CintaLook): BuiltItem {
   const width = 0.115;
   const length = 0.36;
-  const material = ribbonMaterial(look.colors);
+  const { map, bump } = paintGrosgrain(look.colors);
+  const material = new THREE.MeshPhysicalMaterial({
+    map,
+    bumpMap: bump,
+    bumpScale: 1.4,
+    roughness: 0.7,
+    sheen: 1,
+    sheenRoughness: 0.3,
+    sheenColor: new THREE.Color('#ffffff'),
+    side: THREE.DoubleSide,
+  });
   const group = new THREE.Group();
   const top = length / 2 - 0.01;
   // Las dos colas cuelgan del imperdible: son lo que se balancea.
@@ -334,15 +397,7 @@ function buildCinta(look: CintaLook): BuiltItem {
     tail.rotation.z = angle;
     swing.add(tail);
   });
-  const bar = shadowed(
-    new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.011, width * 1.05, 4, 10),
-      metal('oro'),
-    ),
-  );
-  bar.rotation.z = Math.PI / 2;
-  bar.position.set(0, top - 0.004, 0.02);
-  group.add(bar);
+  group.add(safetyPin(width * 1.12, top - 0.004));
   return { group, radius: length * 0.52, swing, swingGain: 0.6 };
 }
 
