@@ -5,13 +5,13 @@
  * El JavaScript del visor (three.js + `panuelo-3d/src/`) va DENTRO de la
  * página, no se descarga: el pañuelo se abre sin red y cada versión de la app
  * lleva su visor. Se genera con `npm run build:panuelo` y se commitea
- * (`panuelo-3d/dist/viewer.bundle.json`).
+ * (`panuelo-3d/generated/viewer.bundle.json`).
  *
  * Por qué un WebView y no `expo-gl`: es la misma decisión que con las
  * medallas (`components/medallas/medalViewerHtml.ts`). Un solo código para
  * iOS, Android y web, sale por OTA y se puede probar en un navegador.
  */
-import viewerBundle from '@/panuelo-3d/dist/viewer.bundle.json';
+import viewerBundle from '@/panuelo-3d/generated/viewer.bundle.json';
 import type { PanueloViewerState } from '@/types/panuelo';
 
 export type PanueloViewerInit = {

@@ -123,7 +123,7 @@ modules/ plugins/ targets/ patches/
                                 # Código nativo propio: módulo highlight-menu, plugin y
                                 #   target de la extensión de notificaciones, patch de tabs
 panuelo-3d/                     # Visor 3D del pañuelo virtual (three.js). NO lo empaqueta
-                                #   Metro: `npm run build:panuelo` lo deja en dist/ (commiteado)
+                                #   Metro: `npm run build:panuelo` lo deja en generated/ (commiteado)
                                 #   y la app lo mete en un WebView. Ver PANUELO.md
 scripts/                        # Generadores (iconos de tabs/app, bundle de hoja,
                                 #   ventana litúrgica, visor del pañuelo)
@@ -581,5 +581,5 @@ Para activar en Claude Code: `claude mcp add heroui-native -- npx -y @heroui/nat
 - **Wordle:** `app/screens/WordleScreen.tsx` y `app/wordle.tsx` no tienen uso activo, pero **se conservan a propósito** como código de referencia para recuperar el Wordle algún día. NO eliminar, NO refactorizar, NO añadirle funcionalidades hasta que se decida reactivarlo.
 - **Haptics:** `utils/haptics.ts` centraliza todo el feedback háptico. Usar las funciones semánticas de `h` (h.tap, h.add, h.remove, h.select, h.toggle, h.formSuccess…) en lugar de llamar a expo-haptics directamente.
 - **Etiquetas del cantoral:** directiva custom `{tags: a, b, c}` + catálogo opcional en `songs/tags`. Modelo puro en `utils/songTags.ts`, índice en `hooks/useSongTags.ts`, UI en `components/song-tags/` y categoría virtual `__TAG__:<slug>` en `SongListScreen`. El botón del header **solo aparece si hay canciones etiquetadas**. Ver `docs/funcionalidades/ETIQUETAS.md` (raíz del monorepo).
-- **Pañuelo virtual:** el visor 3D (`panuelo-3d/`) se empaqueta aparte con esbuild y se commitea (`panuelo-3d/dist/viewer.bundle.json`). **Si tocas `panuelo-3d/src/`, `constants/panueloGlyphs.ts`, `utils/panueloPlacement.ts`, `types/panuelo.ts` o `PanueloColors`, lanza `npm run build:panuelo`** — si no, `__tests__/panueloViewerBundle.test.ts` se pone en rojo. `three` es solo `devDependency`: no puede importarse desde `app/`, `components/`, `hooks/` ni `utils/`. Ver `docs/funcionalidades/PANUELO.md` (raíz del monorepo).
+- **Pañuelo virtual:** el visor 3D (`panuelo-3d/`) se empaqueta aparte con esbuild y se commitea (`panuelo-3d/generated/viewer.bundle.json`). **Si tocas `panuelo-3d/src/`, `constants/panueloGlyphs.ts`, `utils/panueloPlacement.ts`, `types/panuelo.ts` o `PanueloColors`, lanza `npm run build:panuelo`** — si no, `__tests__/panueloViewerBundle.test.ts` se pone en rojo. `three` es solo `devDependency`: no puede importarse desde `app/`, `components/`, `hooks/` ni `utils/`. Ver `docs/funcionalidades/PANUELO.md` (raíz del monorepo).
 - **Arreglos del cantoral:** directiva custom `{arr: texto}` para anotaciones de arreglo (render sutil alineado a la derecha, toggle ON-por-canción). Lógica en `utils/arrangements.ts`; ver `docs/funcionalidades/ARREGLOS.md` (raíz del monorepo) para sintaxis, comportamiento y el prompt del generador de ChordPro.

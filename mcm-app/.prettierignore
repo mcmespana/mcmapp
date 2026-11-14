@@ -4,4 +4,4 @@ web-build
 dist
 functions/lib
 uniwind-types.d.ts
-panuelo-3d/dist
+panuelo-3d/generated

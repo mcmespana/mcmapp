@@ -2,7 +2,7 @@
  * Guardarraíl del visor 3D del pañuelo.
  *
  * El visor (three.js + `panuelo-3d/src/`) se empaqueta con esbuild en
- * `panuelo-3d/dist/viewer.bundle.json` y ESE fichero es lo que la app mete en
+ * `panuelo-3d/generated/viewer.bundle.json` y ESE fichero es lo que la app mete en
  * el WebView. Es un artefacto commiteado: si alguien toca el visor, los
  * trazados (`constants/panueloGlyphs.ts`), los colores de la tela
  * (`PanueloColors`) o las reglas de colocación y no lo regenera, la app sigue

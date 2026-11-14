@@ -5,7 +5,7 @@
  *
  *   npm run build:panuelo
  *
- * El resultado (`panuelo-3d/dist/viewer.bundle.json`) SE COMMITEA: Metro no
+ * El resultado (`panuelo-3d/generated/viewer.bundle.json`) SE COMMITEA: Metro no
  * sabe empaquetar three.js para un WebView, así que la app importa el JSON ya
  * hecho. Va en JSON y no en un `.ts` para que ni Prettier ni ESLint se pongan
  * a formatear medio mega de código minificado.
@@ -20,7 +20,7 @@ const fs = require('fs');
 const esbuild = require('esbuild');
 
 const root = path.join(__dirname, '..');
-const OUT = path.join(root, 'panuelo-3d/dist/viewer.bundle.json');
+const OUT = path.join(root, 'panuelo-3d/generated/viewer.bundle.json');
 
 /** Construye el bundle y lo devuelve como texto, sin escribir nada. */
 async function buildPanueloViewer() {
