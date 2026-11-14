@@ -194,6 +194,9 @@ export function usePanuelo(): PanueloValue {
     [persist, scheduleLayoutSync, catalog],
   );
 
+  /** El móvil no tenía nada guardado al abrir: es un móvil nuevo. */
+  const freshInstallRef = useRef(false);
+
   // Local al montar.
   useEffect(() => {
     let mounted = true;
@@ -209,6 +212,8 @@ export function usePanuelo(): PanueloValue {
         );
         stateRef.current = local;
         setState(local);
+        freshInstallRef.current =
+          Object.keys(local.items).length === 0 && !storedSeen;
         const ids: unknown = storedSeen ? JSON.parse(storedSeen) : [];
         const seenMap: Record<string, true> = {};
         if (Array.isArray(ids)) {
@@ -235,17 +240,18 @@ export function usePanuelo(): PanueloValue {
       // Si la lectura falla no se sabe qué hay arriba: no se sube nada.
       if (!mounted || !remote) return;
       const local = stateRef.current;
-      const firstTimeHere =
-        Object.keys(local.items).length === 0 &&
-        Object.keys(seenRef.current).length === 0;
       const { merged, upload } = mergePanuelo(local, remote);
       persist(merged);
-      if (firstTimeHere) {
+      if (freshInstallRef.current) {
         // Móvil nuevo: lo que ya tenía en la nube no se le «presenta» otra
-        // vez, pieza a pieza, como si lo acabara de conseguir.
-        const all: Record<string, true> = {};
-        for (const id of Object.keys(merged.items)) all[id] = true;
-        persistSeen(all);
+        // vez, pieza a pieza, como si lo acabara de conseguir. Se mira cómo
+        // estaba el móvil AL ABRIR (la pieza de bienvenida se concede antes
+        // de que conteste la nube) y solo se da por visto lo que venía de
+        // arriba: lo conseguido aquí mientras tanto sí se presenta.
+        freshInstallRef.current = false;
+        const known: Record<string, true> = { ...seenRef.current };
+        for (const id of Object.keys(remote.items)) known[id] = true;
+        persistSeen(known);
       }
       if (upload) {
         for (const [id, owned] of Object.entries(merged.items)) {
