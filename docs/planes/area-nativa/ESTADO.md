@@ -5,6 +5,24 @@
 > [`decisiones/`](decisiones/README.md) (todas contestadas). Este documento es
 > la revisión del código del 23-24/10 y la lista de lo que falta, en orden.
 
+## ⭐ 14/11/2026: la nativa pasa a ser el área de TODOS (lanzamiento)
+
+Decisión del propietario: el área nativa es la de todo el mundo y el plugin queda **solo para la web**
+(`comunicaAreaPrivada/CLAUDE.md`). La documentación se escribe ya como si estuviera en `production`: el siguiente paso
+del propietario es pasar `preview` → `production`, y con esa OTA se enciende para todos.
+
+- **Interruptor** (`utils/comunica/router.ts`, `PANEL_PERFILES.md` §1.7): ausente, `all` o `alpha` → nativa para todos;
+  `off` → la WebView (deprecada) para todos; `solo-alpha` → solo el Laboratorio Alpha. No hace falta tocar Firebase.
+- **Acceso nuevo** (plan 02, sección «Rehecho el 14/11/2026»): cuenta de la app → un botón «Entrar en Comunica» con la
+  comprobación hecha en segundo plano y una entrada animada; si el correo no está, aviso y formulario para otro; código y
+  DNI siempre a mano; «¿No te llega? Entra con el DNI» en la pantalla del código.
+- **Que no se pierda la sesión**: vuelta automática con la cuenta de la app si el servidor la cierra (sin haber salido a
+  propósito), la OTA espera al refresco en vuelo, y el middleware perdona el refresco repetido tras una recarga.
+- **`bad_app_token` del 14/11** (cuenta `@movimientoconsolacion.com`): causa probable, Firebase con `email_verified: false`
+  en cuentas de Google Workspace; arreglado en el middleware, que ahora registra el motivo exacto
+  (`app_account_rejected`). Si vuelve a salir, mirar el `why` en los registros de Vercel.
+- **Sin comprobar en un móvil**: la animación de entrada y el flujo completo con una cuenta de Google Workspace real.
+
 ## ⭐ 1/11/2026 (tarde): «ese correo no existe» y la foto de perfil
 
 Dos cambios del servidor (`comunicaMiddleware`, rama `claude/correo-igual-que-la-web`) ya llevados a la app, contra el

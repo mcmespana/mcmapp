@@ -13,6 +13,34 @@ export const looksLikeEmail = (v: string) =>
 export const OFFICE_EMAIL = 'comunica@movimientoconsolacion.com';
 
 export const ACCESS_TEXT = {
+  /** Cortos y directos (propietario, 14/11/2026): nada de explicar el porqué. */
+  title: 'Entra en Comunica',
+  account: {
+    signedInAs: 'Tienes la sesión iniciada con',
+    enter: 'Entrar en Comunica',
+    keepOpen: 'La sesión se quedará abierta en la app.',
+    otherEmail: 'Usar otro correo',
+    /** El correo de la cuenta de la app no tiene ficha. */
+    notFound: (email: string) => `${email} no está en Comunica.`,
+    notFoundHint: 'Escribe el correo que tiene tu delegación.',
+    /** El pase no vale ni pidiendo otro: queda el código. */
+    failed: 'No hemos podido usar tu cuenta. Entra con un código.',
+    back: (email: string) => `Entrar como ${email}`,
+  },
+  form: {
+    emailBody: 'Te mandamos un código a tu correo.',
+    dniBody: 'Te mandamos un código al correo de tu ficha.',
+    send: 'Recibir código',
+    toDni: 'Entrar con el DNI',
+    toEmail: 'Entrar con el correo',
+  },
+  code: {
+    title: 'Escribe el código',
+    sentTo: 'Lo hemos mandado a',
+    spam: 'Si no llega en un minuto, mira en el correo no deseado.',
+    noMail: '¿No te llega? Entra con el DNI',
+  },
+  welcome: (name: string) => (name ? `¡Hola, ${name}!` : '¡Ya estás dentro!'),
   /** El correo no está en Comunica (se dice, como la web desde el 31/10/2026). */
   noEmailMatch: 'Ese correo no está en Comunica.',
   noEmailMatchHint: 'Revisa que esté bien escrito.',
@@ -35,7 +63,7 @@ export function accessErrorText(e: unknown): string {
   if (!isComunicaApiError(e)) return 'No se ha podido. Inténtalo de nuevo.';
   switch (e.code) {
     case 'network':
-      return 'Sin conexión. Necesitas conexión para entrar la primera vez.';
+      return 'Sin conexión. Para entrar hace falta conexión.';
     case 'rate_limited': {
       if (e.reason === 'too_many_misses') return ACCESS_TEXT.tooManyMisses;
       if (e.reason === 'blocked') {
@@ -51,10 +79,9 @@ export function accessErrorText(e: unknown): string {
         return 'El enlace ha caducado. Pide un código.';
       if (e.reason === 'bad_code') return 'Ese código no es. Revísalo.';
       if (e.reason === 'no_match')
-        return 'El correo de tu cuenta de la app no está en Comunica. Entra con el correo que tiene tu delegación o con el DNI.';
+        return 'Ese correo no está en Comunica. Prueba con otro o con el DNI.';
       if (e.reason === 'no_email') return ACCESS_TEXT.noEmailOnFile;
-      if (e.reason === 'bad_app_token')
-        return 'No se ha podido comprobar tu cuenta de la app. Entra con un código.';
+      if (e.reason === 'bad_app_token') return ACCESS_TEXT.account.failed;
       return 'Revisa lo que has escrito.';
     case 'crm_unavailable':
       return 'Comunica no responde ahora mismo. Inténtalo dentro de un rato.';

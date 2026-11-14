@@ -69,7 +69,7 @@ edita JSON. El cliente combina perfil + delegación + overrides al arrancar.
   "minAppVersionSkips": 3,          // «Ahora no» permitidos antes de ser estricto (§1.8). Ausente = sin límite
   "fotosEnIpad": true,              // false → sin Fotos en iPad, solo iPad (§1.9). Ausente = true
   "appReviewMode": false,           // modo revisión de tiendas — lo gestiona el panel (§1.6)
-  "comunicaNativa": "alpha",        // área privada nativa: "off" | "alpha" | "all" (§1.7). Ausente = "alpha"
+  "comunicaNativa": "all",          // área privada nativa: "all" | "off" | "solo-alpha" (§1.7). Ausente o "alpha" = "all"
   "carismochito": "alpha",          // modo/caza/colección Carismochito: "off" | "alpha" | "all" (§1.10). Ausente = "alpha"
   "panuelo": "alpha"                // pañuelo virtual: "off" | "alpha" | "all" (§1.10-bis). Ausente = "alpha"
 }
@@ -254,11 +254,14 @@ Interruptor de la pestaña Comunica: ¿área nativa o la WebView de siempre (el
 **legado**)? Lo lee la app (`utils/comunica/router.ts`); plan:
 `docs/planes/area-nativa/10-enrutador-enlaces-y-legado.md` §1.
 
+Desde el 14/11/2026 la nativa es la de **todos** y el legado (la WebView del
+plugin) está **deprecado**: solo queda como vuelta atrás.
+
 | Valor | Modo normal | Laboratorio Alpha encendido |
 | --- | --- | --- |
+| `"all"`, `"alpha"` (el de la fase de pruebas), ausente o raro | **Nativa** | **Nativa** |
 | `"off"` | Legado | Legado |
-| `"alpha"` (o ausente) | Legado | **Nativa** |
-| `"all"` | Nativa | Nativa |
+| `"solo-alpha"` | Legado | **Nativa** |
 
 - `"alpha"` es el estado de construcción: solo los probadores la ven.
 - `"all"` es el lanzamiento; `"off"`, la vuelta atrás de emergencia sin build

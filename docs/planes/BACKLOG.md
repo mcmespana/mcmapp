@@ -338,7 +338,12 @@ usuario el 2026-10-09 («la mejor experiencia para músicos y cantantes»).
 - 📝 Queda, en este orden (§11 del plan): aplicar las etiquetas que el
   usuario apruebe en el repaso → mapa de la canción → pedal en un iPad.
 
-### I. Área privada nativa — en desarrollo en `nuevoComunicaChulo` (sale con la 2.1 en modo alpha)
+### I. Área privada nativa — ✅ la de TODOS desde el 14/11/2026 (sale con la OTA de `production`)
+
+> **14/11/2026**: el enrutador da la nativa a todo el mundo (`all`/`alpha`/ausente) y la WebView del plugin queda
+> deprecada (vuelta atrás: `global.comunicaNativa = "off"`). El plugin es solo para la web. Acceso rehecho («Entrar en
+> Comunica» con la cuenta de la app). Lo de abajo es la historia; el estado vivo, en
+> [`area-nativa/ESTADO.md`](area-nativa/ESTADO.md).
 
 **Documento: [`ANALISIS_AREA_PRIVADA_NATIVA.md`](ANALISIS_AREA_PRIVADA_NATIVA.md).**
 Pedido por el usuario el 2026-10-21: rehacer en nativo el área privada de
