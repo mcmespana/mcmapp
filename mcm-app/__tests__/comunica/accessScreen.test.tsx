@@ -247,12 +247,12 @@ describe('«Entra en tu área»', () => {
     expect(has(tree, 'Tu DNI o NIE', 'onChangeText')).toBe(true);
     expect(texts(tree)).not.toContain('Ese correo no está en Comunica.');
     expect(texts(tree)).not.toContain('¿Te diste de alta con otro correo?');
-    await press(tree, 'Entrar con el correo');
+    await press(tree, 'Correo');
     expect(valueOf(tree, 'Tu correo')).toBe('ana@noexiste.test');
   });
 
   it('por DNI sin ficha: «No encontramos a nadie con ese documento.», sin tarjeta del DNI', async () => {
-    await press(tree, 'Entrar con el DNI');
+    await press(tree, 'DNI o NIE');
     await send(tree, 'Tu DNI o NIE', '99999999R');
     expect(texts(tree)).toContain('No encontramos a nadie con ese documento.');
     expect(texts(tree)).not.toContain('¿Te diste de alta con otro correo?');
@@ -263,7 +263,7 @@ describe('«Entra en tu área»', () => {
     const open = jest
       .spyOn(Linking, 'openURL')
       .mockImplementation(async () => undefined);
-    await press(tree, 'Entrar con el DNI');
+    await press(tree, 'DNI o NIE');
     await send(tree, 'Tu DNI o NIE', FAKE_NO_EMAIL_DNI);
     expect(texts(tree)).toContain(ACCESS_TEXT.noEmailOnFile);
     const link = byLabel(
@@ -279,7 +279,7 @@ describe('«Entra en tu área»', () => {
   });
 
   it('por DNI con ficha: manda el código y enseña el correo tapado', async () => {
-    await press(tree, 'Entrar con el DNI');
+    await press(tree, 'DNI o NIE');
     await send(tree, 'Tu DNI o NIE', '12345678z');
     const { params } = mockRouter.push.mock.calls[0][0];
     expect(getCodeHandoff(params.k)).toMatchObject({

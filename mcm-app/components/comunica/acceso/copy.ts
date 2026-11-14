@@ -26,9 +26,15 @@ export const ACCESS_TEXT = {
     /** El pase no vale ni pidiendo otro: queda el código. */
     failed: 'No hemos podido usar tu cuenta. Entra con un código.',
     back: (email: string) => `Entrar como ${email}`,
+    hello: (first: string) => (first ? `Hola, ${first}` : 'Entra en Comunica'),
+    several: (n: number) => `Tu correo tiene ${n} fichas en Comunica.`,
+    choose: 'Elegir quién eres',
+    google: 'Cuenta de Google de la app',
+    apple: 'Cuenta de Apple de la app',
+    notYou: '¿No eres tú?',
   },
   form: {
-    emailBody: 'Te mandamos un código a tu correo.',
+    emailBody: 'Te mandamos un código de 6 cifras a tu correo.',
     dniBody: 'Te mandamos un código al correo de tu ficha.',
     send: 'Recibir código',
     toDni: 'Entrar con el DNI',
@@ -41,6 +47,8 @@ export const ACCESS_TEXT = {
     noMail: '¿No te llega? Entra con el DNI',
   },
   welcome: (name: string) => (name ? `¡Hola, ${name}!` : '¡Ya estás dentro!'),
+  /** Las dos vías del formulario. */
+  via: { email: 'Correo', dni: 'DNI o NIE' },
   /** El correo no está en Comunica (se dice, como la web desde el 31/10/2026). */
   noEmailMatch: 'Ese correo no está en Comunica.',
   noEmailMatchHint: 'Revisa que esté bien escrito.',
