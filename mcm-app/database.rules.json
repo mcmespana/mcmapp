@@ -135,6 +135,18 @@
     },
 
     /* ------------------------------------------------------------------ *
+     *  PAÑUELO VIRTUAL  (/panuelo)  — catálogo de piezas (chapas, pines,
+     *  cintas, parches, medallas, pulseras). Lectura pública: no hay nada
+     *  personal, y de los códigos de canje solo se guarda el hash. Lo escribe
+     *  el panel. Lo que TIENE cada persona vive en /users/$uid/panuelo.
+     *  Ver ../docs/contratos/PANUELO_CONTRATO.md.
+     * ------------------------------------------------------------------ */
+    "panuelo": {
+      ".read": true,
+      ".write": "root.child('_config/legacyPanelWrites').val() === true"
+    },
+
+    /* ------------------------------------------------------------------ *
      *  CALENDARIOS PRECACHEADOS  (/calendarEvents)
      *  Los ICS de /calendars ya descargados y parseados. Lectura pública
      *  (es el mismo contenido público que los .ics). Lo escribe SOLO la

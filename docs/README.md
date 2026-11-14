@@ -28,6 +28,7 @@ Cómo funciona cada sistema de la app, de principio a fin.
 | [ENLACES_CANCION.md](funcionalidades/ENLACES_CANCION.md)             | Enlaces de una canción: `audioLinks` (suenan dentro de la app) frente a enlaces externos (Spotify, partituras, webs)                                        |
 | [CANAL_PREVIEW.md](funcionalidades/CANAL_PREVIEW.md)                 | Modo tester ("Laboratorio Alpha"): cómo un dispositivo recibe los OTA de `preview` en vez de los de `production`, y cómo comprobarlo                        |
 | [CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)                   | Modo Carismochito (agitar el móvil) y la caza de Carismochitos con su colección, escondida en el Laboratorio Alpha                                          |
+| [PANUELO.md](funcionalidades/PANUELO.md) | El pañuelo virtual en 3D: piezas (chapas, pines, cintas, parches, medallas, pulseras), visor, canje por código, intercambios. En el Laboratorio Alpha |
 | [AFINADOR.md](funcionalidades/AFINADOR.md)                           | Afinador de guitarra del cantoral: dónde está, cómo detecta la nota (pitchy + suavizado), permisos de micrófono y las dos trampas de web                    |
 | [RECORDATORIOS_CONTIGO.md](funcionalidades/RECORDATORIOS_CONTIGO.md) | Recordatorios de Contigo: qué se configura, dónde se editan los textos y cómo se programan los avisos locales                                               |
 
@@ -41,6 +42,7 @@ Si cambias uno de estos formatos, actualiza el contrato.
 | [NOTIFICACIONES_CONTRATO.md](contratos/NOTIFICACIONES_CONTRATO.md) | Payload de notificaciones push: rutas, `actionButtons[]`, segmentación                                               |
 | [ENCUESTAS_CONTRATO.md](contratos/ENCUESTAS_CONTRATO.md)           | Estructura de encuestas/evaluaciones en Firebase                                                                     |
 | [PANEL_PERFILES.md](contratos/PANEL_PERFILES.md)                   | Sistema de perfiles: nodo `/profileConfig`, delegaciones, visibilidad                                                |
+| [PANUELO_CONTRATO.md](contratos/PANUELO_CONTRATO.md) | Pañuelo virtual: catálogo de piezas (`/panuelo`), nodo de cada persona, hash de los códigos e intercambios |
 | [COMUNICA_WEBVIEW.md](contratos/COMUNICA_WEBVIEW.md)               | Comunica embebido: `?app=1`, tema claro/oscuro (`?theme=` + cookie), zona segura, enlaces de acceso del correo       |
 | [COMUNICA_API.md](contratos/COMUNICA_API.md)                       | Área privada nativa: contrato con `mcm-comunica-api` (rutas, errores, fechas, salud). Hoy lo sirve un servidor falso |
 
@@ -67,6 +69,7 @@ Si cambias uno de estos formatos, actualiza el contrato.
 | [PLAN_INTEGRACIONES.md](planes/PLAN_INTEGRACIONES.md)                     | Integraciones app ↔ panel ↔ cantoral — 🟡 solo queda la **Integración D** (reglas Firebase)                                                                                          |
 | [PLAN_CALIDAD.md](planes/PLAN_CALIDAD.md)                                 | Saneamiento de código — 🟡 Fase 0 hecha; **Fase 1 descartada**. Su §0 explica cómo organizar código que solo edita una IA                                                            |
 | [archivo/PLAN_CARISMOCHITO.md](planes/archivo/PLAN_CARISMOCHITO.md)       | ✅ Hecho (2026-09-26). Cómo funciona hoy: [funcionalidades/CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)                                                                         |
+| [PLAN_PANEL_PANUELO.md](planes/PLAN_PANEL_PANUELO.md)                     | 🟡 Pañuelo virtual — la primera versión está hecha y en el Laboratorio Alpha (2026-11-13). Queda: probar en móvil, sacarlo del laboratorio, intercambios y el lado del Panel. Doc viva: [funcionalidades/PANUELO.md](funcionalidades/PANUELO.md) |
 | [PLAN_DISENO.md](planes/PLAN_DISENO.md)                                   | ⏳ Unificación del diseño: incoherencias de tokens con evidencia + mejoras. Bolsa oportunista, tareas sueltas de un commit                                                           |
 | [ANALISIS_AREA_PRIVADA_NATIVA.md](planes/ANALISIS_AREA_PRIVADA_NATIVA.md) | 🔬 Análisis: el área privada de Comunica en nativo con backend propio. Planes de la app en [planes/area-nativa/](planes/area-nativa/README.md)                                       |
 
@@ -75,7 +78,6 @@ Si cambias uno de estos formatos, actualiza el contrato.
 | Documento                                               | Qué cubre                                                                     |
 | ------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | [PLAN_WIDGET_CONTIGO.md](planes/PLAN_WIDGET_CONTIGO.md) | Widget nativo de hábitos diarios de Contigo                                   |
-| [PLAN_PANEL_PANUELO.md](planes/PLAN_PANEL_PANUELO.md)   | Concepto nuevo (sin plan funcional aún): colección de chapas en un pañuelo 3D |
 
 **🗄️ Archivados — HECHOS o ANULADOS, no re-ejecutar:**
 

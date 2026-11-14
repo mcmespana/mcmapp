@@ -42,7 +42,7 @@
 | **⚠️ Roto y sin dueño**      | 🚨 **Android no muestra las notificaciones con categoría** desde el 2026-08-03: el Panel manda `channelId` y la app de `production` no tiene esos canales. **Decidido (2026-09-26): no se toca `production`, se arregla con la build 2.1** (`mcm-app/TODO.md`, Notificaciones)       |
 | **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                                                                                               |
 | **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                                                                                           |
-| **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio) · Panel Pañuelo (§1 notas)                                                                                                                                                                                                         |
+| **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio)                                                                                                                                                                                                                                   |
 | **Cerrado**                  | Pulido de octubre (12 paquetes, 2026-10-17) · Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                                                                       |
 
 > **Ojo con el orden al publicar**: `production` dispara la OTA sola. No se
@@ -97,12 +97,17 @@
 | 7   | **Editor de canciones en la app** (admin): editar una canción en el sitio y que se escriba DIRECTAMENTE en el repo del cantoral y lance la generación de `songs.json` | Opus                                         | **Sí** — cómo se escribe en el repo sin meter un token en la app (Cloud Function o el Panel hacen el commit) | ⏳ **IMPORTANTE, no tardar** (usuario, 2026-10-31). Sustituye al Panel Secreto (cola `songs/ediciones` que alguien tiene que aplicar a mano). Algo simple primero: editar el ChordPro y guardar                                                                                         | —                                                    |
 
 **Fuera de la cola — futuro lejano (decisión del usuario, 2026-08-15):**
-**Widgets de Contigo** (los tres) y **Panel Pañuelo** salen de la Cola Principal. Son dos
-funcionalidades "muy futuras": _ya se hará, no hay prisa_. No las propongas al
-decir "seguimos", no las metas en la bolsa oportunista y **no preguntes por
-ellas** — la decisión de cuándo es del usuario y ya la ha tomado: todavía no.
-Sus planes siguen en `PLAN_WIDGET_CONTIGO.md` y `PLAN_PANEL_PANUELO.md` para
-cuando toque.
+**Widgets de Contigo** (los tres) salen de la Cola Principal. Es una
+funcionalidad "muy futura": _ya se hará, no hay prisa_. No la propongas al
+decir "seguimos", no la metas en la bolsa oportunista y **no preguntes por
+ella** — la decisión de cuándo es del usuario y ya la ha tomado: todavía no.
+Su plan sigue en `PLAN_WIDGET_CONTIGO.md` para cuando toque.
+
+**El Pañuelo ya no está aquí** (2026-11-13): el usuario contó la idea y pidió
+construirlo. La primera versión está hecha y escondida en el Laboratorio
+Alpha; lo que queda (probar en móvil, sacarlo del laboratorio, intercambios,
+el Panel) está en `PLAN_PANEL_PANUELO.md`. Tampoco entra solo en "seguimos":
+se retoma cuando el usuario lo pida.
 
 **Notas de orden:**
 
@@ -453,7 +458,7 @@ ningún sitio compartido.
 | **⏰ Área nativa: ¿a qué evento van los sábados de los monitores del MIC?** — anotado 2026-10-31, mirar pronto | Lista de monitores y ficha del monitor nativas (`area-nativa/06`) | `docs/planes/area-nativa/06-coordinacion.md` §«Cambios del plugin del 31/10/2026» (punto 1, «Aparte, sin tocar») + en el plugin, `docs/comunica/PASAR-LISTA-ESTADO.md` (fila 🔴 «MIC y COM en eventos separados») | Con MIC y COM en eventos separados, quien coordina toda la delegación marca a los monitores del MIC contra el evento COM. ¿Una lista por etapa (selector MIC/COM) y los del MIC siempre contra el evento MIC? Hay que decidirlo ANTES de portar la lista de monitores y la fila «Sábados» de la ficha. |
 | **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D"                                                                                 | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                                                        |
 | **Carismochito 2027 (25.º aniversario)** — ✅ decidido el 2026-11-06, falta fecha y enlace | Carismochito  | `docs/funcionalidades/CARISMOCHITO.md` («El interruptor» y «Plan para 2027») + `docs/contratos/PANEL_PERFILES.md` §1.10 | Cerrado para todo el mundo con `global.carismochito` (ausente = `"alpha"`, solo probadores); sin toques escondidos. Se abre a todos con `"all"` sin build ni OTA. **Por decidir con Izan**: la fecha de apertura en 2027 y dónde se enlaza la colección (la propuesta era el logo verde de Inicio). |
-| **Pañuelo — por definir**                                                                  | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md`                                                                                                  | Idea parcial contada el 2026-09-29 (medallas 3D por evento, en el pañuelo, pop-up al tocar; prueba ya en el laboratorio). Falta: **cómo se reparten** y cómo es el pañuelo. No propongas la propuesta escrita como si estuviera decidida. **Las medallas se quedan como están por ahora (2026-11-06), pero hay que hacerlas.** |
+| **Pañuelo — dónde vive y cómo se reparte** — primera versión hecha el 2026-11-13 | Sacar el pañuelo del laboratorio | `docs/funcionalidades/PANUELO.md` («Dónde debería vivir») + `docs/planes/PLAN_PANEL_PANUELO.md` §«Decisiones pendientes» | "¿Dónde ponemos el pañuelo: avatar en la cabecera de Inicio que abre «Tu pañuelo», como propone el documento? ¿Y el color lo elige cada persona o viene de su etapa en el área privada?" |
 
 ---
 
