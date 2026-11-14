@@ -6,7 +6,7 @@
 
 ## 2026-11-15 00:40 — Pañuelo virtual: liso (sin rollo), cabecera de iOS, accesibilidad y bordados
 
-- **El pañuelo ya no va enrollado** (`panuelo-3d/src/cloth.ts`): el cuello era un tubo con surcos que se veía arrugado. Ahora es una banda de tela plana y lisa, las puntas del nudo son tela plana en pico, el nudo es más prieto y las arrugas del triángulo bajan a menos de la mitad.
+- **El pañuelo ya no va enrollado** (`panuelo-3d/src/cloth.ts`): el cuello era un tubo con surcos que se veía arrugado. Ahora es lo que es de verdad: **un triángulo entero, atado**. Sin dobladillo ni banda arriba; las dos esquinas pasan por los hombros como tela ancha (`buildWing`) y se van recogiendo, con sus pliegues, hasta el nudo — nunca un cordel. Las puntas del nudo son tela plana en pico y las arrugas del triángulo bajan a menos de la mitad. Referencia: fotos del propietario (2026-11-15).
 - **iOS: los botones de arriba quedaban bajo la cabecera y el notch.** La pantalla mide dónde empieza de verdad y baja lo que la cabecera tape (`useHeaderHeight` + `measureInWindow` en `app/panuelo.tsx`); con cabecera opaca no añade nada.
 - **Accesibilidad de la pantalla**: el visor se describe al lector (color, etapa, cuántas piezas), todo lo que se hace tocando el 3D se puede hacer desde la colección —también mover una pieza, con acciones de accesibilidad—, se anuncian la pieza nueva, el modo decorar y los errores del canje; con letra grande la barra envuelve y el panel hace scroll; los colores llegan a 44 pt. Sin probar con VoiceOver/TalkBack reales.
 - **Parches que se leen como bordado** (ribete de puntadas, fondo de sarga, dibujo en satén con relieve) y **cinta de gros-grain** con caída y un imperdible de verdad.

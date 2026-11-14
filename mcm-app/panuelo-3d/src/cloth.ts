@@ -1,8 +1,8 @@
 /**
  * El pañuelo: geometría y tela.
  *
- * No hay modelo `.glb`: el pañuelo se calcula. Es un pañuelo PUESTO —la banda
- * alrededor del cuello, el nudo delante con sus dos puntas y el triángulo
+ * No hay modelo `.glb`: el pañuelo se calcula. Es un pañuelo PUESTO —un triángulo
+ * entero cuyas esquinas pasan por los hombros, el nudo delante con sus dos puntas y el triángulo
  * cayendo por la espalda—, sin cuerpo debajo. Calcularlo en vez de modelarlo
  * tiene dos ventajas: pesa cero bytes, y la misma fórmula que dibuja el
  * triángulo dice dónde y con qué inclinación va cosida cada pieza
@@ -44,6 +44,8 @@ const RING = new THREE.CatmullRomCurve3(
 );
 /** En qué tramo de la curva está el hombro (el punto 2 de 10). */
 const SHOULDER = 2 / 10;
+/** Dónde empieza la tela que va del hombro al nudo. */
+const WING_START = SHOULDER - 0.025;
 /** El pico del triángulo. */
 const TIP = new THREE.Vector3(0, -2.3, 0.7);
 
@@ -72,8 +74,6 @@ const _c = new THREE.Vector3();
 function flapBase(s: number, t: number, out: THREE.Vector3): THREE.Vector3 {
   // El triángulo cuelga del tramo trasero de la banda, de hombro a hombro.
   ringPoint(s * SHOULDER, out);
-  // La banda tapa el arranque: la tela sale de un poco más abajo.
-  out.y -= 0.02;
   out.lerp(TIP, t);
   // Los omóplatos: la tela se abomba a media altura.
   out.z += 0.09 * Math.sin(Math.PI * Math.pow(t, 0.8)) * (1 - 0.6 * s * s);
@@ -251,26 +251,95 @@ function weldSeam(g: THREE.BufferGeometry, segments: number, row: number) {
 
 const KNOT = ringPoint(0.5);
 
-function buildCollar(): THREE.BufferGeometry {
+/**
+ * Lo que va del hombro al nudo: el triángulo ES un triángulo entero, sin
+ * rollo ni cordel. Sus dos esquinas pasan por encima de los hombros y se
+ * juntan delante; la tela cae ancha en el hombro y se va recogiendo, con sus
+ * pliegues, según se acerca al nudo.
+ *
+ * Es una lámina: el borde de arriba sigue la curva del cuello y el de abajo
+ * arranca donde el lado del triángulo deja el hombro.
+ */
+function buildWing(sign: 1 | -1): THREE.BufferGeometry {
+  const NK = 64;
+  const NW = 18;
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const index: number[] = [];
+  const top = new THREE.Vector3();
+  const next = new THREE.Vector3();
+  const drop = new THREE.Vector3();
+  const out = new THREE.Vector3();
+  const along = new THREE.Vector3();
   const center = new THREE.Vector3(0, -0.5, 0);
-  return buildRoll({
-    point: (k, out) => ringPoint(k, out),
-    // La sección se tumba sobre el cuerpo: su «ancho» mira hacia fuera.
-    side: (k, _t, out) => {
-      ringPoint(k, out).sub(center);
-      out.y *= 0.3;
-    },
-    shape: (k) => {
-      // Por detrás es el borde del triángulo, con su dobladillo; hacia el
-      // nudo son las dos esquinas, que se van estrechando.
-      const front = 1 - Math.abs(1 - 2 * k);
-      const half = 0.058 - 0.022 * smooth(0.35, 1, front);
-      return [0.011, half];
-    },
-    segments: 200,
-    closed: true,
-    uvRepeat: 40,
-  });
+  // En el hombro la tela cae en la dirección del lado del triángulo.
+  const toTip = TIP.clone().sub(ringPoint(SHOULDER)).normalize();
+  const down = new THREE.Vector3(0, -1, 0);
+  for (let i = 0; i <= NK; i++) {
+    const q = i / NK;
+    // Arranca un poco antes del hombro, por debajo del triángulo: sin rendija.
+    const k = WING_START + q * (0.5 - WING_START);
+    ringPoint(k, top);
+    ringPoint(Math.min(0.5, k + 0.004), next);
+    along.copy(next).sub(top);
+    if (along.lengthSq() < 1e-10) {
+      ringPoint(k - 0.004, next);
+      along.copy(top).sub(next);
+    }
+    along.normalize();
+    drop
+      .copy(toTip)
+      .lerp(down, smooth(0.12, 0.7, q))
+      .normalize();
+    // Hacia fuera del cuerpo, perpendicular a la caída.
+    out.copy(top).sub(center);
+    out.y = 0;
+    out.addScaledVector(drop, -out.dot(drop)).normalize();
+    // Ancha al pasar el hombro y sobre el pecho; al llegar al nudo, recogida
+    // (pero nunca un hilo: sigue siendo la esquina del triángulo).
+    const depth =
+      0.5 -
+      0.38 * smooth(0.2, 1, q) +
+      0.08 * Math.sin(Math.PI * Math.min(1, q / 0.6));
+    // Junto al hombro va por dentro del triángulo, para que no se peleen.
+    const tuck = 0.035 * (1 - smooth(0, 0.3, q));
+    const gather = smooth(0.1, 0.85, q);
+    for (let j = 0; j <= NW; j++) {
+      const w = j / NW;
+      // La tela se despega un poco del cuerpo a media caída…
+      const belly = 0.05 * Math.sin(Math.PI * w) * (1 - 0.5 * q);
+      // …y se frunce en pliegues a lo largo, más prietos cuanto más cerca
+      // del nudo.
+      const folds =
+        gather *
+        (0.022 * Math.sin(w * Math.PI * 5 + q * 3.1) +
+          0.012 * Math.sin(w * Math.PI * 9 - q * 5.3)) *
+        Math.sin(Math.PI * Math.min(1, w * 1.15));
+      const d = depth * w;
+      const x = top.x + drop.x * d + out.x * (belly + folds);
+      positions.push(
+        sign * x,
+        top.y + drop.y * d + out.y * (belly + folds),
+        top.z + drop.z * d + out.z * (belly + folds) - tuck,
+      );
+      uvs.push(q * 6, w * 2);
+    }
+  }
+  const row = NW + 1;
+  for (let i = 0; i < NK; i++) {
+    for (let j = 0; j < NW; j++) {
+      const a = i * row + j;
+      if (sign === 1)
+        index.push(a, a + 1, a + row, a + 1, a + row + 1, a + row);
+      else index.push(a, a + row, a + 1, a + 1, a + row, a + row + 1);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  g.setIndex(index);
+  g.computeVertexNormals();
+  return g;
 }
 
 function buildTail(sign: 1 | -1): THREE.BufferGeometry {
@@ -499,7 +568,8 @@ export function createPanuelo(
   const group = new THREE.Group();
   group.add(flap, flapBack);
   for (const geometry of [
-    buildCollar(),
+    buildWing(1),
+    buildWing(-1),
     buildKnot(),
     buildTail(1),
     buildTail(-1),

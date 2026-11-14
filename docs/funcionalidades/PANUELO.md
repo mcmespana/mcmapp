@@ -152,9 +152,10 @@ se puede probar en un navegador. La diferencia con las medallas es que aquí
 three.js va **empaquetado dentro de la app** (≈630 KB), no se descarga: el
 pañuelo abre sin red.
 
-- **No hay modelo `.glb` del pañuelo: se calcula.** La banda del cuello
-  (plana y lisa: el pañuelo NO va enrollado — decisión del propietario,
-  2026-11-14), el
+- **No hay modelo `.glb` del pañuelo: se calcula.** Es un triángulo entero, atado: NO va
+  enrollado ni tiene dobladillo o banda arriba (decisión del propietario,
+  2026-11-15, con fotos). Las esquinas pasan por los hombros como tela ancha
+  que se recoge hacia el nudo (`buildWing`), nunca como un cordel. Eso, el
   nudo con sus dos puntas y el triángulo de la espalda salen de fórmulas
   (`cloth.ts`). Pesa cero bytes, y la misma fórmula que dibuja el triángulo
   dice dónde y con qué inclinación va cosida cada pieza.
