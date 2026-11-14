@@ -4,6 +4,8 @@
 > Laboratorio Alpha. Este documento ya no es una propuesta: dice qué se
 > decidió, qué está hecho y qué queda, en orden.
 >
+> **Si vas a seguir con esto, lee primero [`TRASPASO_PANUELO.md`](TRASPASO_PANUELO.md).**
+>
 > Cómo funciona hoy: [`../funcionalidades/PANUELO.md`](../funcionalidades/PANUELO.md).
 > Datos y lado del Panel: [`../contratos/PANUELO_CONTRATO.md`](../contratos/PANUELO_CONTRATO.md).
 
