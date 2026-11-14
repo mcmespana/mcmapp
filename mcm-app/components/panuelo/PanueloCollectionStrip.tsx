@@ -1,5 +1,12 @@
 import React from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 
 import { PanueloItemArt } from '@/components/panuelo/PanueloItemArt';
@@ -8,7 +15,8 @@ import { themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
-import type { PanueloCollectionEntry } from '@/utils/panuelo';
+import { isLargeText } from '@/hooks/useLargeText';
+import { KIND_LABEL, type PanueloCollectionEntry } from '@/utils/panuelo';
 
 type Props = {
   entries: PanueloCollectionEntry[];
@@ -21,6 +29,8 @@ type Props = {
 
 const ART = 56;
 const TILE = 84;
+/** Hasta cuánto crece la casilla con la letra grande (×1,5 la de siempre). */
+const MAX_TILE_GROWTH = 1.5;
 
 /**
  * La colección, en una tira horizontal bajo el pañuelo: primero lo que se
@@ -35,9 +45,16 @@ export function PanueloCollectionStrip({
   grid,
 }: Props) {
   const t = themeColors(isDark);
+  const { fontScale } = useWindowDimensions();
+  // Con la letra grande los nombres no caben en 84 pt ni en dos líneas: la
+  // casilla crece con la letra y el nombre sale entero. Con la letra normal,
+  // igual que siempre.
+  const large = isLargeText(fontScale);
+  const tileWidth = large ? TILE * Math.min(fontScale, MAX_TILE_GROWTH) : TILE;
   const renderTile = (entry: PanueloCollectionEntry) => {
     const { item, owned, placed } = entry;
     const active = item.id === activeId;
+    const kind = KIND_LABEL[item.kind].toLowerCase();
     return (
       <PressableFeedback
         key={item.id}
@@ -46,10 +63,19 @@ export function PanueloCollectionStrip({
         accessibilityState={{ selected: active }}
         accessibilityLabel={
           owned
-            ? `${item.name}${placed ? ', puesta en el pañuelo' : ', sin poner'}`
-            : 'Pieza que todavía no tienes'
+            ? `${item.name}, ${kind}${item.secret ? ', pieza secreta' : ''}, ${
+                placed ? 'puesta en el pañuelo' : 'sin poner'
+              }`
+            : `Pieza sin conseguir, ${kind}`
         }
-        style={[styles.tile, active && { backgroundColor: t.backgroundSunken }]}
+        accessibilityHint={
+          owned ? 'Abre su ficha' : 'Abre su ficha y dice cómo conseguirla'
+        }
+        style={[
+          styles.tile,
+          { width: tileWidth },
+          active && { backgroundColor: t.backgroundSunken },
+        ]}
       >
         <PressableFeedback.Highlight />
         <View>
@@ -75,7 +101,7 @@ export function PanueloCollectionStrip({
         </View>
         <Text
           style={[styles.name, { color: owned ? t.text : t.textMuted }]}
-          numberOfLines={2}
+          numberOfLines={large ? undefined : 2}
         >
           {owned ? item.name : '¿?'}
         </Text>
@@ -86,6 +112,7 @@ export function PanueloCollectionStrip({
   if (grid) {
     return (
       <ScrollView
+        accessibilityLabel="Colección de piezas"
         style={styles.gridScroll}
         contentContainerStyle={[styles.content, styles.grid]}
       >
@@ -95,6 +122,7 @@ export function PanueloCollectionStrip({
   }
   return (
     <FlatList
+      accessibilityLabel="Colección de piezas"
       horizontal
       data={entries}
       keyExtractor={(e) => e.item.id}
@@ -120,7 +148,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   tile: {
-    width: TILE,
     alignItems: 'center',
     gap: spacing.xs,
     paddingVertical: spacing.sm,

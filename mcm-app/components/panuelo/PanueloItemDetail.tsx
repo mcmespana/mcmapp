@@ -1,5 +1,11 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import {
+  AccessibilityInfo,
+  findNodeHandle,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 
 import { PanueloItemArt } from '@/components/panuelo/PanueloItemArt';
@@ -9,6 +15,7 @@ import colors, { themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
+import useLargeText from '@/hooks/useLargeText';
 import type { PanueloRarity } from '@/types/panuelo';
 import {
   KIND_LABEL,
@@ -36,12 +43,44 @@ export type PanueloDetailAction = {
   onPress: () => void;
 };
 
+/**
+ * Mover una pieza arrastrándola en el 3D no tiene equivalente táctil para el
+ * lector de pantalla: estas acciones personalizadas (VoiceOver, TalkBack,
+ * Control por voz y Acceso con interruptor las ofrecen sin pintar nada) la
+ * mueven por pasos. `v` va del cuello (0) al pico (1) y `u` de izquierda a
+ * derecha del triángulo.
+ */
+export const MOVE_STEP = 0.1;
+const MOVE_ACTIONS = [
+  { name: 'moveLeft', label: 'Mover a la izquierda', du: -MOVE_STEP, dv: 0 },
+  { name: 'moveRight', label: 'Mover a la derecha', du: MOVE_STEP, dv: 0 },
+  { name: 'moveNeck', label: 'Mover hacia el cuello', du: 0, dv: -MOVE_STEP },
+  { name: 'moveTip', label: 'Mover hacia el pico', du: 0, dv: MOVE_STEP },
+] as const;
+
+/**
+ * Lleva el foco del lector de pantalla a un elemento (al abrirse o cerrarse
+ * la ficha el elemento enfocado desaparece y el foco se pierde). Sin lector
+ * de pantalla no hace nada.
+ */
+export function moveScreenReaderFocus(node: unknown) {
+  if (!node) return;
+  try {
+    const handle = findNodeHandle(node as React.Component);
+    if (handle != null) AccessibilityInfo.setAccessibilityFocus(handle);
+  } catch {
+    // Sin soporte en esta plataforma: el foco se queda donde estaba.
+  }
+}
+
 type Props = {
   entry: PanueloCollectionEntry;
   isDark: boolean;
   /** Recién conseguida: se dice. */
   isNew?: boolean;
   actions: PanueloDetailAction[];
+  /** Si se pasa, la pieza se puede mover por pasos desde el lector de pantalla. */
+  onMove?: (id: string, du: number, dv: number) => void;
   onClose: () => void;
 };
 
@@ -57,11 +96,29 @@ export function PanueloItemDetail({
   isDark,
   isNew,
   actions,
+  onMove,
   onClose,
 }: Props) {
   const t = themeColors(isDark);
+  const large = useLargeText();
   const { item, owned } = entry;
   const rarity = item.rarity ?? 'comun';
+  const titleRef = useRef<React.ComponentRef<typeof Text>>(null);
+
+  // La pieza recién conseguida se anuncia (aparece sola, sin que nadie la
+  // toque, y el lector no se enteraría). Si la ficha la abre la persona, el
+  // foco va al título.
+  useEffect(() => {
+    if (isNew && owned) {
+      AccessibilityInfo.announceForAccessibility(
+        `Pieza nueva: ${item.name}. ${KIND_LABEL[item.kind]}.`,
+      );
+    } else {
+      moveScreenReaderFocus(titleRef.current);
+    }
+    // Solo al cambiar de pieza (o al pasar a ser nueva), no en cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id, isNew]);
 
   return (
     <View style={styles.root}>
@@ -73,9 +130,28 @@ export function PanueloItemDetail({
         />
         <View style={styles.headText}>
           <Text
+            ref={titleRef}
             style={[styles.name, { color: t.text }]}
-            numberOfLines={2}
+            numberOfLines={large ? undefined : 2}
             accessibilityRole="header"
+            accessibilityHint={
+              onMove ? 'Tiene acciones para moverla por el pañuelo.' : undefined
+            }
+            accessibilityActions={
+              onMove
+                ? MOVE_ACTIONS.map(({ name, label }) => ({ name, label }))
+                : undefined
+            }
+            onAccessibilityAction={
+              onMove
+                ? (e) => {
+                    const move = MOVE_ACTIONS.find(
+                      (a) => a.name === e.nativeEvent.actionName,
+                    );
+                    if (move) onMove(item.id, move.du, move.dv);
+                  }
+                : undefined
+            }
           >
             {owned ? item.name : 'Todavía no la tienes'}
           </Text>

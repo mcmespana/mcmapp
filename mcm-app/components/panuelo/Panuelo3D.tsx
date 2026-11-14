@@ -41,6 +41,13 @@ type Props = {
   onEvent?: (event: PanueloEvent) => void;
   /** Color del indicador de carga y del texto de error. */
   tintColor: string;
+  /**
+   * Lo que lee el lector de pantalla del visor (color del pañuelo y piezas
+   * que lleva): el 3D es opaco para VoiceOver y TalkBack.
+   */
+  accessibilityLabel?: string;
+  /** Qué se puede hacer con él y dónde está la alternativa nativa. */
+  accessibilityHint?: string;
   /** Mover el pañuelo al inclinar el móvil (solo nativo). */
   tilt?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -60,7 +67,16 @@ type Props = {
  * dejado el pañuelo.
  */
 export const Panuelo3D = forwardRef<Panuelo3DHandle, Props>(function Panuelo3D(
-  { state, mode, onEvent, tintColor, tilt = true, style },
+  {
+    state,
+    mode,
+    onEvent,
+    tintColor,
+    accessibilityLabel = 'Pañuelo en tres dimensiones',
+    accessibilityHint,
+    tilt = true,
+    style,
+  },
   ref,
 ) {
   const [html] = useState(() => buildPanueloViewerHtml({ state, mode }));
@@ -136,14 +152,29 @@ export const Panuelo3D = forwardRef<Panuelo3DHandle, Props>(function Panuelo3D(
 
   useTilt(tilt && status === 'ready', send);
 
+  // El lienzo 3D no tiene nada que el lector pueda recorrer: se describe el
+  // visor entero como una imagen y se oculta lo de dentro.
+  const spoken =
+    status === 'error'
+      ? `${accessibilityLabel}. No se puede mostrar en 3D en este dispositivo.`
+      : status === 'loading'
+        ? `${accessibilityLabel}. Cargando.`
+        : accessibilityLabel;
+
   return (
-    <View style={[styles.root, style]}>
+    <View
+      style={[styles.root, style]}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={spoken}
+      accessibilityHint={accessibilityHint}
+    >
       {Platform.OS === 'web' ? (
         // @ts-ignore — iframe solo existe en web
         <iframe
           ref={frameRef}
           srcDoc={html}
-          title="Pañuelo en 3D"
+          title={accessibilityLabel}
           style={{
             width: '100%',
             height: '100%',
@@ -173,7 +204,8 @@ export const Panuelo3D = forwardRef<Panuelo3DHandle, Props>(function Panuelo3D(
           setSupportMultipleWindows={false}
           // Sin esto Android pinta un fondo blanco detrás del canvas.
           androidLayerType="hardware"
-          accessibilityLabel="Pañuelo en tres dimensiones. Arrastra para girarlo."
+          importantForAccessibility="no-hide-descendants"
+          accessibilityElementsHidden
         />
       )}
 
