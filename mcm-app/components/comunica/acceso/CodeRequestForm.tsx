@@ -9,6 +9,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import AppTextField from '@/components/ui/AppTextField';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
@@ -133,6 +134,18 @@ export default function CodeRequestForm({
           : ACCESS_TEXT.form.dniBody}
       </Text>
 
+      {/* Las dos vías, siempre a la vista: el correo primero. */}
+      <SegmentedControl
+        options={[
+          { value: 'email', label: ACCESS_TEXT.via.email, icon: 'mail' },
+          { value: 'dni', label: ACCESS_TEXT.via.dni, icon: 'badge' },
+        ]}
+        value={via}
+        onChange={(v) => switchVia(v, v === 'dni')}
+        accentColor={t.accentFill}
+        accessibilityLabel="Entrar con"
+      />
+
       {banner ? (
         <View
           style={[styles.banner, { backgroundColor: t.warningSoft }]}
@@ -217,20 +230,14 @@ export default function CodeRequestForm({
         loading={sending}
       />
 
-      <View style={styles.links}>
-        <Link
-          label={
-            via === 'email' ? ACCESS_TEXT.form.toDni : ACCESS_TEXT.form.toEmail
-          }
-          onPress={() => switchVia(via === 'email' ? 'dni' : 'email', false)}
-        />
-        {accountEmail && notice?.kind !== 'account_miss' ? (
+      {accountEmail && notice?.kind !== 'account_miss' ? (
+        <View style={styles.links}>
           <Link
             label={ACCESS_TEXT.account.back(accountEmail)}
             onPress={onBackToAccount}
           />
-        ) : null}
-      </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -260,7 +267,7 @@ function Link({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  root: { gap: 16 },
+  root: { gap: 18 },
   title: { ...typography.h1 },
   body: { ...typography.body },
   banner: {

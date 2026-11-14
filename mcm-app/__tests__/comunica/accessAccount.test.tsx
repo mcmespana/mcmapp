@@ -53,7 +53,11 @@ jest.mock('@/utils/firebaseAuth', () => ({
 }));
 
 import AccessScreen from '@/components/comunica/acceso/AccessScreen';
-import { WELCOME_MS } from '@/components/comunica/acceso/WelcomeOverlay';
+import {
+  COVER_GRACE_MS,
+  COVER_MS,
+  getWelcome,
+} from '@/components/comunica/acceso/welcome';
 import {
   __resetComunicaApiForTests,
   getComunicaApi,
@@ -140,9 +144,14 @@ describe('«Entra en Comunica» con la cuenta de la app', () => {
     expect(t).toContain('La sesión se quedará abierta en la app.');
     // Sin pulsar no se entra.
     expect(getSessionState().status).not.toBe('signedIn');
+    // La comprobación ya ha vuelto: saluda por el nombre antes de pulsar.
+    expect(texts(tree)).toMatch(/Hola, /);
     await press(tree, 'Entrar en Comunica');
-    expect(texts(tree)).toMatch(/¡Hola, /);
-    await wait(WELCOME_MS + 50);
+    await wait(120);
+    // La entrada empieza (la pinta la puerta) con el nombre y la delegación.
+    expect(getWelcome()).toMatchObject({ phase: 'cover' });
+    expect(getWelcome()?.subtitle).toBeTruthy();
+    await wait(COVER_MS + COVER_GRACE_MS + 50);
     expect(getSessionState().status).toBe('signedIn');
   });
 
@@ -153,15 +162,14 @@ describe('«Entra en Comunica» con la cuenta de la app', () => {
     expect(t).toContain('Escribe el correo que tiene tu delegación.');
     expect(t).not.toContain('Tienes la sesión iniciada con');
     expect(byLabel(tree, 'Tu correo', 'onChangeText')[0].props.value).toBe('');
-    expect(
-      byLabel(tree, 'Entrar con el DNI', 'onPress').length,
-    ).toBeGreaterThan(0);
+    expect(byLabel(tree, 'DNI o NIE', 'onPress').length).toBeGreaterThan(0);
   });
 
   it('un correo de varias fichas: al pulsar, «¿Quién eres?»', async () => {
     await open('dos@ejemplo.org');
-    await press(tree, 'Entrar en Comunica');
-    await wait(10);
+    expect(texts(tree)).toMatch(/Tu correo tiene 2 fichas/);
+    await press(tree, 'Elegir quién eres');
+    await wait(120);
     expect(mockRouter.push).toHaveBeenCalledWith(
       expect.objectContaining({ pathname: '/comunica/acceso-elegir' }),
     );
@@ -172,7 +180,7 @@ describe('«Entra en Comunica» con la cuenta de la app', () => {
     await open('monitor@ejemplo.org');
     expect(mockGetIdToken).toHaveBeenCalledWith(true);
     await press(tree, 'Entrar en Comunica');
-    await wait(WELCOME_MS + 50);
+    await wait(COVER_MS + COVER_GRACE_MS + 150);
     expect(getSessionState().status).toBe('signedIn');
   });
 
@@ -192,20 +200,22 @@ describe('«Entra en Comunica» con la cuenta de la app', () => {
 
   it('sin cuenta de la app: el formulario del código', async () => {
     await open(null);
-    expect(texts(tree)).toContain('Te mandamos un código a tu correo.');
+    expect(texts(tree)).toContain(
+      'Te mandamos un código de 6 cifras a tu correo.',
+    );
     expect(texts(tree)).not.toContain('Tienes la sesión iniciada con');
   });
 
   it('el servidor cerró la sesión: se vuelve a entrar sola', async () => {
     await open('monitor@ejemplo.org', true);
-    await wait(WELCOME_MS + 50);
+    await wait(COVER_MS + COVER_GRACE_MS + 50);
     expect(getSessionState().status).toBe('signedIn');
   });
 
   it('…pero no si había salido a propósito', async () => {
     await AsyncStorage.setItem(APP_ACCOUNT_OPT_OUT_KEY, '1');
     await open('monitor@ejemplo.org', true);
-    await wait(WELCOME_MS + 50);
+    await wait(COVER_MS + COVER_GRACE_MS + 50);
     expect(getSessionState().status).not.toBe('signedIn');
     expect(texts(tree)).toContain('Tienes la sesión iniciada con');
   });

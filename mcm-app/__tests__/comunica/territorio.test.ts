@@ -101,6 +101,9 @@ describe('el degradado de marca', () => {
       'components/comunica/comun/RecordCard.tsx',
       'components/comunica/grupos/FichaAttendance.tsx',
       'components/comunica/perfiles/ProfileInitial.tsx',
+      // La entrada en Comunica: una transición de poco más de un segundo
+      // entre el acceso y la portada, no un bloque de ninguna pantalla.
+      'components/comunica/acceso/WelcomeLayer.tsx',
     ];
     const users = AREA.filter((f) =>
       /<BrandGradient\b/.test(fs.readFileSync(f, 'utf8')),
