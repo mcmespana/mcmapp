@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as Updates from 'expo-updates';
 import { logger } from '@/utils/logger';
+import { settleSession } from '@/services/comunica/session';
 
 /**
  * Mecánica de suscripción al canal `preview` de EAS Update.
@@ -236,5 +237,6 @@ export function readChannelDiagnostics(): {
 
 /** Reinicia la app para estrenar el bundle descargado. */
 export async function restartApp(): Promise<void> {
+  await settleSession();
   await Updates.reloadAsync();
 }

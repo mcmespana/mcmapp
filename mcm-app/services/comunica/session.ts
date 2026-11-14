@@ -184,8 +184,18 @@ function setAccess(tokens: Tokens) {
   accessExp = Date.now() + (tokens.expiresIn - 60) * 1000;
 }
 
-/** Lo lee `appAccount.ts` (mismo valor): tras «Salir», no se entra solo. */
+/**
+ * Lo lee `appAccount.ts` (mismo valor): tras «Salir», si el servidor cierra la
+ * sesión no se vuelve a entrar solo con la cuenta de la app.
+ */
 export const APP_ACCOUNT_OPT_OUT_KEY = 'comunica.appAccount.optOut';
+/**
+ * Lo mismo en memoria, puesto ANTES de que la puerta pinte el acceso: la clave
+ * de AsyncStorage se escribe después de cerrar y la pantalla la leía antes
+ * (en los registros del 14/11: «Salir» y, 46 ms después, a entrar solo).
+ */
+let optedOutNow = false;
+export const appAccountOptOutMarked = (): boolean => optedOutNow;
 
 export async function signIn(tokens: Tokens, me: Me): Promise<void> {
   if (!deps) throw new Error('Sesión sin configurar');
@@ -194,6 +204,9 @@ export async function signIn(tokens: Tokens, me: Me): Promise<void> {
   await deps.secrets.set(REFRESH_KEY, tokens.refreshToken);
   await AsyncStorage.setItem(PERSON_KEY, JSON.stringify(me));
   emit({ status: 'signedIn', me });
+  // Ha vuelto a entrar: si algún día el servidor la cierra, se puede volver solo.
+  optedOutNow = false;
+  await AsyncStorage.removeItem(APP_ACCOUNT_OPT_OUT_KEY).catch(() => {});
 }
 
 /** Actualiza el `Me` guardado (cuando `/v1/me` trae algo nuevo). */
@@ -272,6 +285,26 @@ export async function getAccessToken(force = false): Promise<string | null> {
   return p;
 }
 
+/**
+ * Espera (con tope) a que acabe un refresco en vuelo. Lo llama la OTA antes de
+ * recargar la app: si recargara justo después de que el servidor cambie el
+ * token y antes de guardarlo, el móvil se quedaría con el viejo (14/11/2026:
+ * «se me pierde la sesión cuando llega una actualización»). El servidor ya
+ * perdona ese caso, pero así ni siquiera pasa.
+ */
+export async function settleSession(maxMs = 5_000): Promise<void> {
+  const p = refreshing;
+  if (!p) return;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([
+    p.catch(() => null),
+    new Promise((r) => {
+      timer = setTimeout(r, maxMs);
+    }),
+  ]);
+  clearTimeout(timer);
+}
+
 async function endSession(reason: 'signedOut' | 'revoked') {
   // Primero, que nada de esta sesión siga: época nueva, sin token, la cola
   // apagada y el estado fuera. Luego se borra lo guardado.
@@ -313,6 +346,7 @@ export async function signOut(): Promise<void> {
   }
   const refresh = await deps?.secrets.get(REFRESH_KEY).catch(() => null);
   const logout = deps?.logout;
+  optedOutNow = true;
   await endSession('signedOut');
   // Ha salido a propósito: el acceso ya no entra solo con la cuenta de la app.
   // (Después de cerrar: antes de la época nueva no puede haber ningún `await`.)
@@ -468,4 +502,5 @@ export function __resetSessionForTests(): void {
   signOutCleanups.clear();
   beforeSignOut.clear();
   sessionEndHooks.clear();
+  optedOutNow = false;
 }
