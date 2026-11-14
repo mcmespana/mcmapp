@@ -41,9 +41,10 @@ import {
   onSwitchToDni,
   putChooseHandoff,
 } from './handoff';
-import WelcomeOverlay, { WELCOME_MS } from './WelcomeOverlay';
+import { cancelWelcome, playWelcome } from './welcome';
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? '';
+type Origin = { x: number; y: number } | null;
 
 export default function AccessScreen({
   revoked = false,
@@ -64,7 +65,9 @@ export default function AccessScreen({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [welcome, setWelcome] = useState<string | null>(null);
+  const [entering, setEntering] = useState(false);
+  // Lo que ya ha dicho la comprobación de fondo (para saludar antes de pulsar).
+  const [known, setKnown] = useState<AppAccountCheck | null>(null);
   const check = useRef<Promise<AppAccountCheck> | null>(null);
   const mounted = useRef(true);
   useEffect(
@@ -77,17 +80,23 @@ export default function AccessScreen({
   const shown = view ?? (accountEmail ? 'account' : 'form');
 
   const finish = useCallback(
-    async (r: Extract<AppAccountCheck, { kind: 'ready' }>) => {
-      h.formSuccess();
-      setWelcome(firstName(r.me.name));
-      await new Promise((res) => setTimeout(res, WELCOME_MS));
+    async (r: Extract<AppAccountCheck, { kind: 'ready' }>, origin: Origin) => {
+      setEntering(true);
+      // La entrada (`WelcomeLayer`, en la puerta): cuando el degradado lo
+      // tapa todo, se guarda la sesión y la portada aparece debajo.
+      await playWelcome({
+        name: firstName(r.me.name),
+        subtitle: r.me.delegation.name,
+        origin,
+      });
       try {
         await signIn(r.tokens, r.me);
         clearAccessHandoffs();
       } catch (e) {
         logger.warn('[comunica] no se ha podido guardar la sesión', e);
+        cancelWelcome();
         if (mounted.current) {
-          setWelcome(null);
+          setEntering(false);
           setError(accessErrorText(e));
         }
       }
@@ -97,8 +106,8 @@ export default function AccessScreen({
 
   /** Lo que no es «entrar»: a elegir ficha, al formulario o el aviso. */
   const route = useCallback(
-    (r: AppAccountCheck, tapped: boolean) => {
-      if (r.kind === 'ready') return void finish(r);
+    (r: AppAccountCheck, tapped: boolean, origin: Origin = null) => {
+      if (r.kind === 'ready') return void finish(r, origin);
       if (r.kind === 'choose') {
         if (!tapped) return;
         router.push({
@@ -146,9 +155,10 @@ export default function AccessScreen({
       // La sesión la cerró el servidor y no había salido a propósito: dentro
       // otra vez, sin pulsar nada.
       if (r.kind === 'ready' && revoked && !(await appAccountOptedOut())) {
-        if (!cancelled) void finish(r);
+        if (!cancelled) void finish(r, null);
         return;
       }
+      if (r.kind === 'ready' || r.kind === 'choose') setKnown(r);
       // Lo que se sabe ya sin pulsar (no está, no hay cuenta, el pase no
       // vale) se enseña ya; «entrar» y «elegir» esperan al botón.
       if (r.kind !== 'ready' && r.kind !== 'choose') route(r, false);
@@ -169,8 +179,8 @@ export default function AccessScreen({
     [],
   );
 
-  const enter = async () => {
-    if (busy) return;
+  const enter = async (origin: Origin) => {
+    if (busy || entering) return;
     setBusy(true);
     setError(null);
     try {
@@ -182,8 +192,8 @@ export default function AccessScreen({
       }
       // Una sesión preparada se usa una vez: la siguiente pulsación pide otra.
       check.current = null;
-      if (r.kind !== 'ready') h.error();
-      route(r, true);
+      if (r.kind !== 'ready' && r.kind !== 'choose') h.error();
+      route(r, true, origin);
     } finally {
       if (mounted.current) setBusy(false);
     }
@@ -199,15 +209,25 @@ export default function AccessScreen({
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.scroll, { paddingBottom: bottom + 24 }]}
       >
-        <PageContainer maxWidth={480}>
+        <PageContainer maxWidth={480} style={styles.page}>
           <View style={styles.content}>
             {shown === 'account' && accountEmail ? (
               <AccountEntry
                 email={accountEmail}
                 provider={user?.provider ?? 'google'}
-                busy={busy || welcome !== null}
+                person={
+                  known?.kind === 'ready'
+                    ? {
+                        name: known.me.name,
+                        delegation: known.me.delegation.name,
+                      }
+                    : null
+                }
+                choices={known?.kind === 'choose' ? known.choices.length : 0}
+                checking={known === null}
+                busy={busy || entering}
                 error={error}
-                onEnter={() => void enter()}
+                onEnter={(origin) => void enter(origin)}
                 onOtherEmail={() => {
                   setVia('email');
                   setNotice(null);
@@ -240,7 +260,6 @@ export default function AccessScreen({
           </View>
         </PageContainer>
       </ScrollView>
-      {welcome !== null ? <WelcomeOverlay name={welcome} /> : null}
     </KeyboardAvoidingView>
   );
 }
@@ -248,5 +267,6 @@ export default function AccessScreen({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flexGrow: 1 },
-  content: { padding: 24, paddingTop: 32 },
+  page: { flex: 1 },
+  content: { flex: 1, padding: 24, paddingTop: 28 },
 });

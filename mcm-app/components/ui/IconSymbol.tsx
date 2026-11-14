@@ -53,6 +53,7 @@ type IconMapping = {
   magnifyingglass: 'search';
   'phone.fill': 'phone';
   'message.fill': 'chat';
+  'arrow.right': 'arrow-forward';
   'arrow.up.right': 'open-in-new';
   'bell.fill': 'notifications';
   'square.and.pencil': 'edit';
@@ -135,6 +136,7 @@ const MAPPING: IconMapping = {
   magnifyingglass: 'search',
   'phone.fill': 'phone',
   'message.fill': 'chat',
+  'arrow.right': 'arrow-forward',
   'arrow.up.right': 'open-in-new',
   'bell.fill': 'notifications',
   'square.and.pencil': 'edit',

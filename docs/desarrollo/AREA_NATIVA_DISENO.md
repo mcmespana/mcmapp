@@ -108,6 +108,16 @@ el plan 07 iba a duplicar los chips y el buscador de Grupos y fichas; pasaron a
     estados de carga**: si va dentro de `AreaState`, desaparece mientras carga
     lo de la otra y parece que no ha hecho nada.
 
+23. **Una transición de marca no es un bloque** (14/11/2026). La entrada en
+    Comunica (`acceso/WelcomeLayer.tsx`) llena la pantalla con el degradado
+    durante un segundo; está en la lista blanca de `territorio` por eso, no
+    abre la puerta a fondos de degradado en pantallas. Vive en la puerta y
+    no en la pantalla de acceso: al entrar, la pila de Comunica se vuelve a
+    montar (el perfil cambia de clave) y cualquier cosa de dentro se corta.
+    Para ver una animación, **vídeo y fotogramas** (`recordVideo` de
+    Playwright + `ffmpeg -vf fps=10`): las capturas sueltas paran el reloj de
+    la animación y engañan.
+
 ## 3. Cómo se comprueba (antes de cada commit con pantallas)
 
 - Tests: `npx tsc --noEmit && npm run lint && npm test` (en particular

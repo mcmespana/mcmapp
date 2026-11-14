@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-14 23:09 — Comunica: la entrada, rehecha (saludo antes de pulsar y transición de marca)
+
+- **«Entra en Comunica» con cuenta de la app** (`AccountEntry`): la comprobación de fondo ya dice quién eres, así que la pantalla saluda antes de pulsar — avatar con el degradado, «Hola, David» y la delegación, la cuenta de la app con su sello y «Entrar en Comunica». Si el correo es de varias fichas, «Tu correo tiene N fichas» y «Elegir quién eres». «¿No eres tú?» con otro correo o el DNI, abajo.
+- **La entrada** (`WelcomeLayer` + `welcome.ts`): un círculo con el degradado crece desde el botón, un anillo blanco se dibuja y cierra con su marca, sube «¡Hola, David!» con la delegación y la capa se abre ya sobre la portada. La capa vive en la puerta (`app/(tabs)/comunica/index.tsx`) para seguir viva cuando el acceso se cambia por la portada; la sesión se guarda cuando la capa avisa de que todo está tapado (con tope por si no avisa) y, como la pila se rehace al entrar, la capa recuerda por dónde iba. Con «Reducir movimiento», sin círculo ni trazo. Es la única pieza fuera de `comun/` con permiso para `BrandGradient` (transición, no bloque).
+- **Formulario del código**: correo y DNI en un conmutador arriba (`SegmentedControl`), en vez de un enlace suelto.
+- Sustituye a `WelcomeOverlay` (el check con «¡Hola!» sobre blanco).
+
 ## 2026-11-14 21:43 — Área privada nativa para todos y acceso nuevo («Entra en Comunica»)
 
 - **La nativa es el área de todo el mundo**: `utils/comunica/router.ts` lee `global.comunicaNativa` ausente, `all` o el `alpha` que quedó en Firebase de las pruebas como **nativa para todos**. Vuelta atrás: `off` (la WebView, deprecada, para todos) o `solo-alpha` (solo el Laboratorio Alpha). Llega a todos con la próxima OTA de `production`, sin tocar el panel. Seed a `all`.
