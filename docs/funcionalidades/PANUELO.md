@@ -120,7 +120,7 @@ panuelo-3d/                         El visor 3D (three.js). NO lo empaqueta Metr
 ├── src/items.ts                    Las seis clases de pieza, en 3D
 ├── src/art.ts                      Lo que se pinta en un <canvas>: caras, bordados, trenzados
 ├── assets/logo-com.png             El logo del COM (máscara blanca)
-└── dist/viewer.bundle.json         ⚠️ GENERADO y commiteado (npm run build:panuelo)
+└── generated/viewer.bundle.json       ⚠️ GENERADO y commiteado (npm run build:panuelo)
 
 app/panuelo.tsx                     La pantalla
 components/panuelo/
@@ -172,7 +172,7 @@ npm run build:panuelo        # desde mcm-app/
 
 Hay que hacerlo al tocar `panuelo-3d/src/`, `constants/panueloGlyphs.ts`,
 `utils/panueloPlacement.ts`, `types/panuelo.ts` o `PanueloColors`, y commitear
-`panuelo-3d/dist/viewer.bundle.json`. Si se olvida, lo dice
+`panuelo-3d/generated/viewer.bundle.json`. Si se olvida, lo dice
 `__tests__/panueloViewerBundle.test.ts`, que reconstruye el bundle y lo compara
 con el commiteado. `three` es solo una herramienta de build
 (`devDependencies`): no entra en el bundle de Metro.
