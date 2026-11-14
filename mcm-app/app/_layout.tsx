@@ -259,6 +259,11 @@ function InnerLayout() {
           name="carismochito"
           options={{ headerShown: true, title: 'Colección' }}
         />
+        {/* Solo se llega desde el Laboratorio Alpha (ver app/panuelo.tsx). */}
+        <Stack.Screen
+          name="panuelo"
+          options={{ headerShown: true, title: 'Tu pañuelo' }}
+        />
         <Stack.Screen
           name="playlist"
           options={{

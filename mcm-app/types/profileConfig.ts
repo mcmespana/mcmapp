@@ -86,6 +86,14 @@ export interface GlobalConfig {
    */
   carismochito?: 'off' | 'alpha' | 'all';
   /**
+   * Interruptor del pañuelo virtual (`docs/funcionalidades/PANUELO.md`).
+   * Ausente = `alpha`. Ver `utils/panueloGate.ts`.
+   *   · `off`   → nadie.
+   *   · `alpha` → solo quien enciende el Laboratorio Alpha. Es el estado actual.
+   *   · `all`   → para todos.
+   */
+  panuelo?: 'off' | 'alpha' | 'all';
+  /**
    * Interruptor de las Fotos EN iPAD (y solo en iPad, cualquier versión de
    * iOS). Ausente = `true`: se ven, como siempre.
    *

@@ -103,3 +103,19 @@ Cada archivo corresponde a una sección del nodo `jubileo/` de Firebase
 | ---------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------- |
 | `visitapapa-materiales.json` | `activities/visitapapa26/materiales` | Materiales por día con páginas en BBCode                                                              |
 | `visita-misa.json`           | —                                    | Texto fuente del libreto de la misa (no es JSON pese a la extensión; materia prima de los materiales) |
+
+## `panuelo.json`
+
+Catálogo de muestra del **pañuelo virtual** (chapas, pines, cintas, parches,
+medallas y pulseras). Es el nodo `data` de `/panuelo`:
+
+1. Crea el nodo `panuelo` en la raíz.
+2. Dentro, importa `panuelo.json` como `data` (queda `/panuelo/data/items/…`).
+3. Añade `/panuelo/updatedAt` con la fecha en milisegundos. **Hay que cambiarla
+   cada vez que se toque el catálogo**: es lo que la app mira para volver a
+   descargarlo.
+
+Sin este nodo la app funciona igual: usa este mismo fichero, que va
+empaquetado (`constants/panueloCatalog.ts`). Formato de cada pieza y cómo se
+calcula el hash de un código: `docs/contratos/PANUELO_CONTRATO.md` (raíz del
+monorepo).
