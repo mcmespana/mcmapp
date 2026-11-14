@@ -33,7 +33,7 @@ import {
 } from './cloth';
 import { buildItem, disposeItem, type BuildContext } from './items';
 import { loadImage } from './art';
-import { clampToFlap } from '@/utils/panueloPlacement';
+import { clampToFlap, FLAP_HEIGHT, FLAP_WIDTH } from '@/utils/panueloPlacement';
 
 declare global {
   interface Window {
@@ -102,7 +102,9 @@ interface Entry {
 /** La cámara mira al pañuelo un poco desde arriba (rad). */
 const CAMERA_TILT = 0.11;
 /** Altura del suelo imaginario, justo bajo el pico. */
-const FLOOR_Y = -2.02;
+const FLOOR_Y = -2.52;
+/** En cuántos puntos se palpa la tela alrededor de una pieza al coserla. */
+const SEAT_SAMPLES = 8;
 /** Péndulo de las piezas que cuelgan: rigidez y freno (ζ ≈ 0,3: se mecen). */
 const SWING_STIFFNESS = 70;
 const SWING_DAMPING = 5;
@@ -437,9 +439,33 @@ class Viewer {
 
   /** Dónde y cómo va cosida una pieza (en el espacio del pañuelo). */
   private seat(entry: Entry, lift = 0) {
-    const { position, normal, up } = flapPoint(entry.data.u, entry.data.v);
-    const right = new THREE.Vector3().crossVectors(up, normal).normalize();
-    const basis = new THREE.Matrix4().makeBasis(right, up, normal);
+    const { u, v } = entry.data;
+    const { position, normal, up } = flapPoint(u, v);
+    // La tela no es plana y la pieza sí: se mira cómo está la tela alrededor,
+    // a la distancia de su borde, para inclinarla con ella y levantarla lo
+    // justo. Sin esto, una pulsera o un parche grande se hundían en un pliegue.
+    const reach = entry.radius * entry.scale * 0.85;
+    const du = reach / Math.max(0.2, ((1 - v) * FLAP_WIDTH) / 2);
+    const dv = reach / FLAP_HEIGHT;
+    const around: THREE.Vector3[] = [];
+    const tilt = normal.clone().multiplyScalar(2);
+    for (let i = 0; i < SEAT_SAMPLES; i++) {
+      const a = (i / SEAT_SAMPLES) * Math.PI * 2;
+      const p = flapPoint(
+        clamp(u + Math.cos(a) * du, -1, 1),
+        clamp(v + Math.sin(a) * dv, 0, 0.98),
+      );
+      around.push(p.position);
+      tilt.add(p.normal);
+    }
+    tilt.normalize();
+    let bump = 0;
+    for (const p of around) {
+      bump = Math.max(bump, p.sub(position).dot(tilt));
+    }
+    const upward = up.clone().addScaledVector(tilt, -up.dot(tilt)).normalize();
+    const right = new THREE.Vector3().crossVectors(upward, tilt).normalize();
+    const basis = new THREE.Matrix4().makeBasis(right, upward, tilt);
     const quaternion = new THREE.Quaternion().setFromRotationMatrix(basis);
     quaternion.multiply(
       new THREE.Quaternion().setFromAxisAngle(
@@ -447,7 +473,7 @@ class Viewer {
         (-entry.data.rot * Math.PI) / 180,
       ),
     );
-    position.addScaledVector(normal, 0.004 + lift);
+    position.addScaledVector(tilt, 0.004 + Math.min(bump, 0.09) + lift);
     return { position, quaternion };
   }
 

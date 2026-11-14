@@ -35,7 +35,8 @@ Lo que se puede hacer hoy:
 
 Detalles que le dan vida: las medallas y las cintas **cuelgan de verdad** y se
 mecen al girar el pañuelo o inclinar el móvil; en reposo el pañuelo se mece un
-poco; tiene sombra de suelo. Quien tiene activado «reducir movimiento» en el
+poco durante un rato y luego se queda quieto (para no gastar batería); tiene
+sombra de suelo. Quien tiene activado «reducir movimiento» en el
 sistema no ve el vaivén.
 
 ## Dónde está (y dónde debería vivir)
@@ -160,7 +161,15 @@ pañuelo abre sin red.
 - **La app manda.** El visor no decide qué piezas hay ni dónde: pinta el estado
   que le llega (`PanueloCommand`) y avisa de lo que hace el dedo
   (`PanueloEvent`). Los dos tipos están en `types/panuelo.ts`.
-- **Solo se pinta cuando algo cambia.** En modo decorar, quieto, no gasta.
+- **Solo se pinta cuando algo cambia, y quieto se duerme.** El vaivén en
+  reposo dura unos 12 s, se va parando y el bucle deja de pedir fotogramas
+  (`wake()` / `invalidate()` en `main.ts` lo despiertan: un toque, una orden,
+  la inclinación). Mientras solo se mece pinta a la mitad de fotogramas.
+- **Cada pieza ocupa lo suyo.** `itemReach` (`utils/panueloPlacement.ts`) dice
+  el radio de cada clase; `nextFreeSlot` busca hueco con eso, sin pegarla al
+  borde y dejando el logo para lo último. Al coserla, el visor palpa la tela
+  alrededor (`seat()` en `main.ts`) para inclinarla y que no se hunda en un
+  pliegue. Si cambias el tamaño de una clase en `items.ts`, cambia su `REACH`.
 - El tono es «Neutral», no ACES: el verde del pañuelo tiene que ser EL verde
   del pañuelo (`PanueloColors.cloth`, sacados de fotos de los de verdad).
 

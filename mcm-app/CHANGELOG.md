@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-14 23:32 — Pañuelo virtual: no gasta en reposo, más alto y piezas que no se pisan
+
+- **Batería**: el vaivén en reposo pintaba a 60 fps sin parar. Ahora se mece unos 12 s, se va parando y el visor **se duerme** (deja de pedir fotogramas) hasta que alguien toca, inclina el móvil o llega una orden; mientras solo se mece pinta a la mitad de fotogramas. Al volver a la app se mece otro rato.
+- **El triángulo es más alto** (`FLAP_HEIGHT` 1,75 → 2,25): en un móvil en vertical el pañuelo ocupaba un tercio de la pantalla y las piezas quedaban pequeñas y apretadas. Las colocaciones guardadas (`u`, `v`) siguen valiendo: son proporciones.
+- **Hueco según el tamaño** (`itemReach`, `nextFreeSlot(taken, reach)`): una medalla o una pulsera piden más sitio que un pin, y una pieza grande ya no cae pegada al borde. `placeItem` acepta el catálogo para saberlo. Con el pañuelo lleno, se pisa antes el logo que otra pieza.
+- **Las piezas se asientan sobre la tela**: al coser una, el visor palpa la tela a su alrededor, la inclina con ella y la levanta lo justo. Las pulseras y los parches grandes se hundían en los pliegues.
+- **Pulseras con cuerpo**: cordón trenzado de sección ovalada en vez de una cinta plana.
+
 ## 2026-11-14 23:09 — Comunica: la entrada, rehecha (saludo antes de pulsar y transición de marca)
 
 - **«Entra en Comunica» con cuenta de la app** (`AccountEntry`): la comprobación de fondo ya dice quién eres, así que la pantalla saluda antes de pulsar — avatar con el degradado, «Hola, David» y la delegación, la cuenta de la app con su sello y «Entrar en Comunica». Si el correo es de varias fichas, «Tu correo tiene N fichas» y «Elegir quién eres». «¿No eres tú?» con otro correo o el DNI, abajo.

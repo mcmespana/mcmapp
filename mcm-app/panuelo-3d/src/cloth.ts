@@ -45,13 +45,13 @@ const RING = new THREE.CatmullRomCurve3(
 /** En qué tramo de la curva está el hombro (el punto 2 de 10). */
 const SHOULDER = 2 / 10;
 /** El pico del triángulo. */
-const TIP = new THREE.Vector3(0, -1.8, 0.66);
+const TIP = new THREE.Vector3(0, -2.3, 0.7);
 
 /** Caja que hay que encuadrar (el pañuelo entero, con algo de aire). */
 export const BOUNDS = {
-  center: new THREE.Vector3(0, -0.86, 0),
+  center: new THREE.Vector3(0, -1.1, 0),
   width: 3.25,
-  height: 2.45,
+  height: 2.95,
 };
 
 const smooth = (a: number, b: number, x: number) => {

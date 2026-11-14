@@ -27,6 +27,8 @@ import {
 } from '@/types/panuelo';
 import {
   clampToFlap,
+  DEFAULT_REACH,
+  itemReach,
   nextFreeSlot,
   normalizeRotation,
 } from '@/utils/panueloPlacement';
@@ -458,14 +460,30 @@ export function grantItem(
 
 // ── Decorar ────────────────────────────────────────────────────────────────
 
-/** Cose una pieza en el primer hueco libre. Sin tenerla, no se puede. */
+/**
+ * Cose una pieza en el primer hueco libre. Sin tenerla, no se puede. Con el
+ * catálogo delante, el hueco se busca sabiendo lo que ocupa cada pieza (una
+ * medalla pide más sitio que un pin).
+ */
 export function placeItem(
   state: PanueloUserState,
   id: string,
   now: number,
+  catalog?: PanueloCatalog,
 ): PanueloUserState {
   if (!state.items[id] || state.layout[id]) return state;
-  const slot = nextFreeSlot(Object.values(state.layout));
+  const reachOf = (itemId: string) => {
+    const def = catalog?.[itemId];
+    return def ? itemReach(def.kind, def.size) : DEFAULT_REACH;
+  };
+  const slot = nextFreeSlot(
+    Object.entries(state.layout).map(([itemId, p]) => ({
+      u: p.u,
+      v: p.v,
+      reach: reachOf(itemId),
+    })),
+    reachOf(id),
+  );
   return {
     ...state,
     layout: { ...state.layout, [id]: slot },

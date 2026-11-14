@@ -173,7 +173,12 @@ export function usePanuelo(): PanueloValue {
       const fresh: string[] = [];
       for (const item of items) {
         if (next.items[item.id]) continue;
-        next = placeItem(grantItem(next, item.id, via, now), item.id, now);
+        next = placeItem(
+          grantItem(next, item.id, via, now),
+          item.id,
+          now,
+          catalog,
+        );
         fresh.push(item.id);
         trackEvent('panuelo_pieza_conseguida', { clase: item.kind, via });
       }
@@ -186,7 +191,7 @@ export function usePanuelo(): PanueloValue {
       }
       return fresh;
     },
-    [persist, scheduleLayoutSync],
+    [persist, scheduleLayoutSync, catalog],
   );
 
   // Local al montar.
@@ -272,7 +277,7 @@ export function usePanuelo(): PanueloValue {
     );
     if (loose.length === 0) return;
     applyLayout((s, now) =>
-      loose.reduce((acc, id) => placeItem(acc, id, now), s),
+      loose.reduce((acc, id) => placeItem(acc, id, now, catalog), s),
     );
   }, [localLoaded, catalog, state.items, applyLayout]);
 
@@ -299,8 +304,8 @@ export function usePanuelo(): PanueloValue {
     [applyLayout],
   );
   const place = useCallback(
-    (id: string) => applyLayout((s, now) => placeItem(s, id, now)),
-    [applyLayout],
+    (id: string) => applyLayout((s, now) => placeItem(s, id, now, catalog)),
+    [applyLayout, catalog],
   );
   const unplace = useCallback(
     (id: string) => applyLayout((s, now) => unplaceItem(s, id, now)),

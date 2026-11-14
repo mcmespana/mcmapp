@@ -449,32 +449,35 @@ function buildMedalla(look: MedallaLook, ctx: BuildContext): BuiltItem {
 // ── Pulsera ────────────────────────────────────────────────────────────────
 
 /**
- * Una pulsera de hilo, puesta plana sobre la tela: un aro trenzado, cerrado
- * con un nudo del que salen los dos cabos.
+ * Una pulsera de hilo, apoyada sobre la tela: un cordón trenzado con cuerpo,
+ * cerrado con un nudo del que salen los dos cabos.
  */
 function buildPulsera(look: PulseraLook): BuiltItem {
-  const RX = 0.17;
-  const RY = 0.125;
+  const RX = 0.155;
+  const RY = 0.118;
   const WIDTH = 0.05;
+  /** Grosor del cordón: es un trenzado con cuerpo, no una cinta. */
+  const THICK = 0.026;
   const AROUND = 120;
-  const ACROSS = 6;
+  const ACROSS = 12;
   const positions: number[] = [];
   const uvs: number[] = [];
   const index: number[] = [];
   for (let i = 0; i <= AROUND; i++) {
     const a = (i / AROUND) * Math.PI * 2 - Math.PI / 2;
     for (let j = 0; j <= ACROSS; j++) {
-      const k = j / ACROSS - 0.5;
-      const r = k * WIDTH;
+      // La sección es un óvalo cerrado: 0 es el lomo, π lo que toca la tela.
+      const phi = (j / ACROSS) * Math.PI * 2;
+      const r = (WIDTH / 2) * Math.sin(phi);
       positions.push(
         (RX + r) * Math.cos(a),
         (RY + r) * Math.sin(a),
-        // Abombada: es un cordón trenzado, no una cinta plana.
-        0.004 + 0.011 * Math.cos(k * Math.PI),
+        0.002 + (THICK / 2) * (1 + Math.cos(phi)),
       );
       // Al revés a lo largo: así el texto se lee de izquierda a derecha por
-      // arriba, con las letras mirando hacia fuera.
-      uvs.push((1 - i / AROUND) * 9, j / ACROSS);
+      // arriba, con las letras mirando hacia fuera. A lo ancho, el dibujo va
+      // por el lomo y se repite en espejo por debajo.
+      uvs.push((1 - i / AROUND) * 9, (1 + Math.sin(phi)) / 2);
     }
   }
   const row = ACROSS + 1;
@@ -499,7 +502,6 @@ function buildPulsera(look: PulseraLook): BuiltItem {
     sheen: 0.8,
     sheenRoughness: 0.5,
     sheenColor: new THREE.Color('#ffffff'),
-    side: THREE.DoubleSide,
   });
   const group = new THREE.Group();
   group.add(shadowed(new THREE.Mesh(band, material)));
@@ -512,8 +514,8 @@ function buildPulsera(look: PulseraLook): BuiltItem {
   const knot = shadowed(
     new THREE.Mesh(new THREE.SphereGeometry(0.03, 14, 10), thread(first)),
   );
-  knot.scale.set(1, 0.85, 0.6);
-  knot.position.set(0, -RY, 0.016);
+  knot.scale.set(1, 0.85, 0.7);
+  knot.position.set(0, -RY, 0.018);
   group.add(knot);
   [
     { angle: 0.5, color: first, length: 0.1 },
@@ -533,7 +535,7 @@ function buildPulsera(look: PulseraLook): BuiltItem {
     );
     group.add(end);
   });
-  return { group, radius: 0.21 };
+  return { group, radius: 0.2 };
 }
 
 // ── Entrada ────────────────────────────────────────────────────────────────
