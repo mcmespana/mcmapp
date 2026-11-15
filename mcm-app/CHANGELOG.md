@@ -32,6 +32,7 @@
 
 - **Simulación de tela** (`createClothSim` en `panuelo-3d/src/cloth.ts`): cada vértice de la malla es una partícula con inercia, unida a sus vecinas por hilos que no se estiran (Verlet + restricciones de distancia, ~4.400 partículas). Al girar el pañuelo o inclinar el móvil la tela se retrasa, ondea, hace pliegues y se asienta sola; las piezas cosidas van con ella (`offsetAt`). El cuello y el nudo están fijos y cada punto tiende a su sitio de reposo, que hace de «cuerpo». Cuando se asienta, el visor se duerme. Con «reducir movimiento», quieta.
 - La tela es **lisa**: sin textura de trama.
+- **Más firme, el cuello cede y el nudo se mueve** (11:30): su sitio tira más fuerte de cada punto y el aire la frena antes; el borde del cuello se deja llevar un poco más y, al girar, se queda un pelín atrás (`NECK_LAG`); el nudo sigue a la tela de las esquinas y las dos puntas cuelgan de él y se mecen con un péndulo firme (`withKnot`).
 - **Tela con peso y piezas que pesan** (09:20): la tela acompaña el giro en vez de flotar (`CLOTH_LAG`, `CLOTH_DRAG`, malla más gruesa), y cada pieza cosida añade su peso donde está (`setLoads`, `ITEM_WEIGHT`): una medalla hunde un poco la tela, tarda más en volver y arrastra la de alrededor.
 - **iOS**: en `/panuelo` se desactiva el gesto de «atrás» (`gestureEnabled: false`); girar el pañuelo de izquierda a derecha sacaba de la pantalla.
 
