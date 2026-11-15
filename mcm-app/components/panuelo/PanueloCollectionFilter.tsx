@@ -28,17 +28,14 @@ function emptyCopy(filter: CollectionFilter, owned: number) {
   if (filter === 'placed') {
     return {
       title: 'Ninguna pieza puesta',
-      subtitle: 'Las que cosas en el pañuelo salen aquí.',
     };
   }
   return owned === 0
     ? {
         title: 'Todavía no tienes piezas',
-        subtitle: 'Las que consigas saldrán aquí.',
       }
     : {
         title: 'Todo lo que tienes está puesto',
-        subtitle: 'Las que quites del pañuelo salen aquí.',
       };
 }
 

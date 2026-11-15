@@ -7,9 +7,13 @@ import {
   EMPTY_PANUELO,
   MAX_PANUELO_HISTORY,
   archivePanuelo,
+  autoArrange,
   buildCollection,
   buildMemoryCollection,
   changeStage,
+  comunicaScarfColor,
+  decideScarfStage,
+  exampleViewerState,
   filterCollection,
   formatMonthYear,
   grantItem,
@@ -33,6 +37,11 @@ import {
   toViewerState,
   unplaceItem,
 } from '@/utils/panuelo';
+import {
+  PANUELO_TUTORIAL,
+  PANUELO_TUTORIAL_VERSION,
+} from '@/constants/panueloTutorial';
+import { itemReach, placementDistance } from '@/utils/panueloPlacement';
 import { isPanueloAvailable, parsePanueloFlag } from '@/utils/panueloGate';
 import { sha256Hex } from '@/utils/sha256';
 
@@ -734,5 +743,201 @@ describe('el filtro de la colección', () => {
   });
   it('«Sin poner» son las que tienes y no están cosidas, no las que faltan', () => {
     expect(ids('boxed')).toEqual(['b']);
+  });
+});
+
+describe('recolocar (autoArrange)', () => {
+  const catalog = sanitizeCatalog({
+    pin1: {
+      kind: 'pin',
+      name: 'Pin',
+      look: { shape: 'heart', enamel: '#fff' },
+    },
+    pin2: {
+      kind: 'pin',
+      name: 'Pin 2',
+      look: { shape: 'star', enamel: '#fff' },
+    },
+    medalla: { kind: 'medalla', name: 'Medalla', look: { ribbon: ['#fff'] } },
+    pulsera: { kind: 'pulsera', name: 'Pulsera', look: { colors: ['#fff'] } },
+    caja: {
+      kind: 'pin',
+      name: 'Caja',
+      look: { shape: 'moon', enamel: '#fff' },
+    },
+  });
+  // Todas amontonadas en el mismo sitio y con giro.
+  const piled = state({
+    color: 'blue',
+    items: {
+      pin1: { at: 1, via: 'all' },
+      pin2: { at: 2, via: 'all' },
+      medalla: { at: 3, via: 'all' },
+      pulsera: { at: 4, via: 'all' },
+      caja: { at: 5, via: 'all' },
+    },
+    layout: {
+      pin1: { u: 0, v: 0.5, rot: 40 },
+      pin2: { u: 0, v: 0.5, rot: 90 },
+      medalla: { u: 0, v: 0.5, rot: 10 },
+      pulsera: { u: 0, v: 0.5, rot: 200 },
+    },
+    layoutAt: 5,
+  });
+
+  it('las piezas cosidas dejan de pisarse', () => {
+    const next = autoArrange(piled, catalog, NOW);
+    const ids = Object.keys(next.layout);
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        const a = next.layout[ids[i]];
+        const b = next.layout[ids[j]];
+        const reach = (id: string) =>
+          itemReach(catalog[id].kind, catalog[id].size);
+        expect(placementDistance(a, b)).toBeGreaterThanOrEqual(
+          reach(ids[i]) + reach(ids[j]) - 1e-6,
+        );
+      }
+    }
+  });
+
+  it('rotación a 0, `layoutAt` = ahora y solo se mueven las cosidas', () => {
+    const next = autoArrange(piled, catalog, NOW);
+    expect(Object.keys(next.layout).sort()).toEqual([
+      'medalla',
+      'pin1',
+      'pin2',
+      'pulsera',
+    ]);
+    expect(Object.values(next.layout).every((p) => p.rot === 0)).toBe(true);
+    expect(next.layoutAt).toBe(NOW);
+    // La de la caja sigue en la caja; el color y las piezas, intactos.
+    expect(next.layout.caja).toBeUndefined();
+    expect(next.color).toBe('blue');
+    expect(next.items).toBe(piled.items);
+  });
+
+  it('las grandes se llevan los primeros huecos', () => {
+    const next = autoArrange(piled, catalog, NOW);
+    // El primer hueco bonito es (0, 0.2): se lo lleva la medalla (la más grande).
+    expect(next.layout.medalla).toMatchObject({ u: 0, v: 0.2 });
+  });
+
+  it('es estable: recolocar lo recolocado da lo mismo', () => {
+    const once = autoArrange(piled, catalog, NOW);
+    const twice = autoArrange(once, catalog, NOW + 1);
+    expect(twice.layout).toEqual(once.layout);
+  });
+
+  it('sin piezas cosidas no hace nada', () => {
+    const empty = state({ items: piled.items });
+    expect(autoArrange(empty, catalog, NOW)).toBe(empty);
+  });
+
+  it('una pieza que ya no está en el catálogo se recoloca con el tamaño por defecto', () => {
+    const next = autoArrange(
+      state({
+        items: { vieja: { at: 1, via: 'all' } },
+        layout: { vieja: { u: 0.9, v: 0.8, rot: 30 } },
+      }),
+      catalog,
+      NOW,
+    );
+    expect(next.layout.vieja.rot).toBe(0);
+  });
+});
+
+describe('el color que dice Comunica', () => {
+  it('solo cuatro valores son un color', () => {
+    for (const c of ['red', 'green', 'blue', 'yellow']) {
+      expect(comunicaScarfColor(c)).toBe(c);
+    }
+    for (const c of ['none', 'cross', 'unknown', '', null, undefined, 3]) {
+      expect(comunicaScarfColor(c)).toBeNull();
+    }
+  });
+
+  it('sin color de Comunica se elige a mano', () => {
+    for (const scarf of ['none', 'cross', 'unknown', null, undefined]) {
+      expect(decideScarfStage(scarf, state({ color: 'red' }))).toEqual({
+        kind: 'manual',
+      });
+    }
+  });
+
+  it('el mismo color: nada que hacer', () => {
+    expect(decideScarfStage('blue', state({ color: 'blue' }))).toEqual({
+      kind: 'same',
+      color: 'blue',
+    });
+  });
+
+  it('un color distinto del guardado es un cambio de etapa', () => {
+    expect(decideScarfStage('red', state({ color: 'blue' }))).toEqual({
+      kind: 'change',
+      color: 'red',
+    });
+  });
+
+  it('sin color guardado se asigna sin preguntar, lleve o no la pieza de bienvenida', () => {
+    expect(decideScarfStage('yellow', state())).toEqual({
+      kind: 'assign',
+      color: 'yellow',
+    });
+    expect(
+      decideScarfStage(
+        'yellow',
+        state({
+          items: { a: { at: 1, via: 'all' } },
+          layout: { a: { u: 0, v: 0.3, rot: 0 } },
+        }),
+      ),
+    ).toEqual({ kind: 'assign', color: 'yellow' });
+  });
+});
+
+describe('el tutorial (datos)', () => {
+  it('tiene versión y secciones con id único, título y texto', () => {
+    expect(PANUELO_TUTORIAL_VERSION).toBeGreaterThanOrEqual(1);
+    expect(PANUELO_TUTORIAL.length).toBeGreaterThanOrEqual(5);
+    const ids = PANUELO_TUTORIAL.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const s of PANUELO_TUTORIAL) {
+      expect(s.id).toMatch(/^[a-z0-9-]+$/);
+      expect(s.title.trim()).not.toBe('');
+      expect(s.body.trim()).not.toBe('');
+    }
+  });
+
+  it('sus ejemplos usan piezas que existen en el catálogo de muestra', () => {
+    for (const s of PANUELO_TUTORIAL) {
+      const used = [...(s.example?.pieces ?? []), ...(s.example?.art ?? [])];
+      for (const id of used) expect(DEFAULT_PANUELO_CATALOG[id]).toBeDefined();
+    }
+  });
+
+  it('el pañuelo de ejemplo se pinta con piezas cosidas y sin pisarse', () => {
+    const section = PANUELO_TUTORIAL.find((s) => s.id === 'las-piezas');
+    const viewer = exampleViewerState(
+      DEFAULT_PANUELO_CATALOG,
+      'green',
+      section?.example?.pieces ?? [],
+    );
+    expect(viewer.color).toBe('green');
+    expect(viewer.items).toHaveLength(6);
+    expect(new Set(viewer.items.map((i) => `${i.u},${i.v}`)).size).toBe(6);
+  });
+
+  it('ignora piezas que no existen', () => {
+    expect(
+      exampleViewerState(DEFAULT_PANUELO_CATALOG, 'red', ['nada']).items,
+    ).toEqual([]);
+  });
+
+  it('no promete lo que no existe (los intercambios no tienen pantalla)', () => {
+    const text = PANUELO_TUTORIAL.map((s) => `${s.title} ${s.body}`)
+      .join(' ')
+      .toLowerCase();
+    expect(text).not.toContain('intercambi');
   });
 });

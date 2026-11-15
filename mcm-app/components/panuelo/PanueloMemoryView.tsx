@@ -87,16 +87,11 @@ export function PanueloMemoryPanel({
           {memoryName(memory).replace(/^./, (c) => c.toUpperCase())}
         </Text>
         <Text style={[styles.meta, { color: t.textSecondary }]}>
-          Hasta {formatMonthYear(memory.at)} · {piecesLabel(entries.length)} ·
-          solo para ver
+          Hasta {formatMonthYear(memory.at)} · {piecesLabel(entries.length)}
         </Text>
       </View>
       {entries.length === 0 ? (
-        <EmptyState
-          compact
-          title="Sin piezas que enseñar"
-          subtitle="Las que llevaba ya no están en el catálogo."
-        />
+        <EmptyState compact title="Sin piezas que enseñar" />
       ) : (
         <PanueloCollectionStrip
           entries={entries}

@@ -90,10 +90,6 @@ function RedeemForm({
 
   return (
     <View style={styles.body}>
-      <Text style={[styles.help, { color: t.textSecondary }]}>
-        En algunas actividades se reparte un código. Escríbelo aquí y la pieza
-        es tuya.
-      </Text>
       <AppTextField
         value={code}
         onChangeText={(text) => {
@@ -133,9 +129,6 @@ const styles = StyleSheet.create({
   body: {
     gap: spacing.md,
     paddingBottom: spacing.md,
-  },
-  help: {
-    ...typography.body,
   },
   message: {
     ...typography.subhead,

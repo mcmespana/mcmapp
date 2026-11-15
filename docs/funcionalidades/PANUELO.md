@@ -27,7 +27,11 @@ Lo que se puede hacer hoy:
   vueltas. Debajo aparece su ficha: qué es, de dónde viene y cuándo se
   consiguió. Las medallas que tienen modelo propio ofrecen «Verla de cerca».
 - **Decorar**: arrastrar las piezas por el pañuelo, girarlas, quitarlas (vuelven
-  a la colección, no se pierden) o volver a ponerlas.
+  a la colección, no se pierden) o volver a ponerlas. **Recolocar** las reparte
+  solas sin que se pisen.
+- **Tutorial** por secciones, la primera vez y siempre desde el botón de
+  información. Sustituye a los textos de ayuda: la pantalla no lleva
+  rótulos que expliquen cómo se usa.
 - **Cambiar de pañuelo** (de etapa): se pregunta qué hacer con las piezas, el de ahora se guarda como recuerdo, el visor da una vuelta y hay confeti. Ver «Cambio de etapa e historial».
 - **Ver los pañuelos anteriores** («Mis pañuelos»), solo para mirarlos.
 - **Filtrar la colección**: Todas · Puestas · Sin poner.
@@ -131,6 +135,7 @@ components/panuelo/
 ├── panueloViewerHtml.ts            La página que se le da al WebView
 ├── PanueloItemArt.tsx              Una pieza dibujada en plano (SVG)
 ├── PanueloCollectionStrip.tsx      La colección
+├── PanueloTutorial.tsx             El tutorial: texto, indicador de paso y piezas en plano
 ├── PanueloCollectionFilter.tsx     El filtro (Todas · Puestas · Sin poner) y su vacío
 ├── PanueloItemDetail.tsx           La ficha de una pieza
 ├── PanueloRedeemSheet.tsx          Canjear un código
@@ -142,6 +147,10 @@ components/panuelo/
 components/preview-channel/PanueloLabPanel.tsx   La puerta del Laboratorio
 
 hooks/usePanuelo.ts                 Estado: catálogo, piezas, colocación, sincronización
+hooks/usePanueloStage.ts            Cambio de etapa: hoja, confeti, detección del color de Comunica
+hooks/usePanueloScarf.ts            Lee `mcm.scarf` de Comunica (fuera del área)
+hooks/usePanueloTutorial.ts         Si el tutorial toca, y que ya se vio
+constants/panueloTutorial.ts        Las secciones del tutorial (datos)
 utils/panuelo.ts                    Lógica pura: sanear, fusionar, conseguir, decorar
 utils/panueloPlacement.ts           Dónde cabe una pieza (lo comparten app y visor)
 utils/panueloTrade.ts               Intercambios: las reglas (sin pantalla todavía)
@@ -212,6 +221,7 @@ RTDB  /panuelo                          { updatedAt, data: { items: { <id>: piez
 RTDB  /users/{uid}/panuelo              { color, items, layout, layoutAt, gone?, history? }
 AsyncStorage  @panuelo_state            Lo mismo que el nodo del usuario
 AsyncStorage  @panuelo_seen             Ids de las piezas ya presentadas en este móvil
+AsyncStorage  @panuelo_tutorial_seen    Versión del tutorial ya vista en este móvil
 AsyncStorage  panuelo_catalog           Caché del catálogo (useFirebaseData)
 ```
 
@@ -304,6 +314,81 @@ lo útil al decorar). Con el filtro vacío sale un `EmptyState` breve. Se recuer
 mientras la pantalla está abierta (no se persiste) y entrar en modo decorar no
 lo cambia.
 
+## Tutorial
+
+Sustituye a los rótulos y pistas sueltos que había por la pantalla («arrastra
+para girarlo», «toca una pieza»…): la pantalla ya no explica nada por su cuenta,
+lo cuenta esto, una vez y a mano cuando se quiera. Las ayudas de accesibilidad
+(etiquetas, `accessibilityHint`, anuncios) no se tocaron: no se ven.
+
+- **Contenido en datos**: `constants/panueloTutorial.ts`, un array de secciones
+  `{ id, title, body, example? }`. El comentario de arriba del fichero dice cómo
+  añadir una. Hoy: Tu pañuelo · Las piezas · Decorarlo · Verlas de cerca ·
+  Cambiar de etapa. Solo se cuenta lo que la app hace hoy (nada de
+  intercambios hasta que tengan pantalla): un test lo vigila.
+- **Cómo se ve**: ocupa el sitio de la colección, bajo el visor, con indicador de
+  paso, «Siguiente» / «Atrás» / «Saltar» (o deslizar) y «Entendido» en la última.
+  El ejemplo es **el propio visor de la pantalla con otro estado** (un pañuelo
+  verde con piezas del catálogo de muestra, `exampleViewerState`), no un visor
+  nuevo: un único contexto WebGL (varios WebView en una hoja serían memoria y
+  batería para nada) y el ejemplo se puede girar. Las secciones que hablan de
+  piezas añaden además las piezas dibujadas en plano (`PanueloItemArt`,
+  `example.art`), que son baratas. Mientras dura se ocultan colores y decorar.
+- **Cuándo sale**: solo, la primera vez que se abre el pañuelo; y siempre desde
+  el botón de información (esquina inferior del visor). Se recuerda en
+  `@panuelo_tutorial_seen` con la **versión** (`PANUELO_TUTORIAL_VERSION`): al
+  subirla —cuando cambia de verdad una función, no por retocar una frase— se
+  vuelve a enseñar una vez. Va **primero**: ni el canje de `?codigo=`, ni la
+  presentación de una pieza nueva, ni la pregunta de cambio de etapa salen
+  hasta que se cierra.
+- **Cómo ampliarlo**: añade la sección al array; si es una función nueva, sube
+  la versión; pon el cambio aquí y en el CHANGELOG.
+
+## Recolocar
+
+En modo decorar, el botón «Recolocar» reparte solas todas las piezas cosidas
+(`autoArrange` en `utils/panuelo.ts`). Parte de un pañuelo vacío y coloca de
+mayor a menor (`itemReach`: medallas y pulseras primero, luego lo pequeño) con
+`nextFreeSlot`, que no las pisa y deja el logo para lo último; todas a rotación
+0 y, a igualdad de tamaño, por id (el resultado es siempre el mismo). Las
+piezas en la caja se quedan en la caja. Pregunta antes (`confirmAsync`) porque
+deshace la colocación a mano.
+
+## El color viene de Comunica
+
+El pañuelo es la etapa, y la etapa está en Comunica: `mcm.scarf` de los datos de
+la propia persona (`red | green | blue | yellow | cross | none | unknown`).
+
+- **De dónde se lee** (`hooks/usePanueloScarf.ts`): `/panuelo` es de la raíz y
+  el `QueryClient` del área vive en el layout de la pestaña, así que no se usan
+  sus hooks (`useMe`, `useProfileDetails`…). Sí sirve la capa de servicios, que
+  es de módulo: `getComunicaApi()` con la sesión puesta y `initSession()` (lee
+  la sesión guardada sin red). Dos peticiones, **solo al abrir el pañuelo**:
+  `getMyProfiles()` → `getProfileDetails(self.id)`. No reutiliza la caché del
+  área (es otra instancia y esa consulta es personal: `persist: false`, no se
+  guarda en el móvil).
+- **De quién**: de `profiles.self`, la ficha de la propia persona, **no** de la
+  «ficha activa» del área. El pañuelo es de quien ha entrado: un padre que está
+  viendo a su hija en el área sigue teniendo el suyo, y los datos de una hija ni
+  traen `mcm` (el servidor solo lo da a la audiencia `member`).
+- **Qué se hace** (`decideScarfStage`, pura):
+  - Comunica da `red|green|blue|yellow`: ese es el color; los círculos no se
+    muestran, en su sitio sale la etapa en texto.
+  - Nunca se eligió color: se **asigna sin preguntar ni celebrar** (el verde que
+    se veía era el de por defecto). Las piezas cosidas que pueda haber son solo
+    la de bienvenida.
+  - Distinto del guardado: es un cambio de etapa **detectado**. Se abre sola, una
+    vez por apertura, la hoja «Tienes pañuelo nuevo» («Llevarme las piezas» /
+    «Empezar con el pañuelo limpio» / «Luego»), con recuerdo y confeti. «Luego»
+    no cambia nada: se vuelve a preguntar la próxima vez, y mientras tanto el
+    aviso «Tienes pañuelo nuevo» del pañuelo la reabre.
+  - `none`, `unknown`, `cross`, sin sesión, sin servidor, sin red o con error:
+    todo como antes, con los círculos para elegir a mano. Nunca se espera a
+    Comunica: se pinta con lo guardado y se corrige si llega otra cosa.
+- **Límite**: la sesión de Comunica solo existe si la persona ha entrado alguna
+  vez en el área nativa; si no, no hay nada que leer y el pañuelo se elige a
+  mano. Sin probar contra el servidor real (solo contra dobles).
+
 ## Intercambios (la base está puesta; falta la pantalla)
 
 La idea: dos personas, cara a cara, se cambian una pulsera o una chapa, como se
@@ -390,6 +475,7 @@ transacción y nada de lo demás cambia.
 - **Accesibilidad sin oír**: la pantalla tiene etiquetas, anuncios y acciones
   para mover piezas sin tocar el 3D, pero nadie lo ha probado con VoiceOver ni
   TalkBack.
+- **Tutorial, Recolocar y el color de Comunica no se han probado en un móvil** (ni con el servidor de Comunica real). Sin ver: el pañuelo de ejemplo del tutorial en el visor, el deslizamiento, el aspecto de la barra de arriba al envolver y la lectura con VoiceOver/TalkBack.
 - **El cambio de etapa y el historial no se han probado en un móvil.** Sin ver: el confeti sobre el WebView, el giro del visor al pasar a un recuerdo, el háptico y los anuncios con VoiceOver/TalkBack.
 - **No se ha probado en un móvil de verdad.** Se ha probado en navegador (el
   visor y la pantalla entera en web). Falta ver en iPhone y Android: el WebView

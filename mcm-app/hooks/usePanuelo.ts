@@ -38,6 +38,7 @@ import {
 import { logger } from '@/utils/logger';
 import {
   EMPTY_PANUELO,
+  autoArrange,
   changeStage as changeStageOf,
   grantItem,
   listMemories,
@@ -81,6 +82,8 @@ export interface PanueloValue {
    * cosidas; sin él se descosen todas (vuelven a la colección).
    */
   changeStage: (color: PanueloColor, keepPieces: boolean) => void;
+  /** «Recolocar»: reparte solas las piezas cosidas, sin que se pisen. */
+  arrange: () => void;
   /** Los pañuelos anteriores, del más reciente al más antiguo. */
   history: PanueloMemory[];
   /** Cose la pieza en el primer hueco libre. */
@@ -343,6 +346,10 @@ export function usePanuelo(): PanueloValue {
     },
     [persist, scheduleLayoutSync],
   );
+  const arrange = useCallback(
+    () => applyLayout((s, now) => autoArrange(s, catalog, now)),
+    [applyLayout, catalog],
+  );
   const history = useMemo(() => listMemories(state), [state]);
   const place = useCallback(
     (id: string) => applyLayout((s, now) => placeItem(s, id, now, catalog)),
@@ -405,6 +412,7 @@ export function usePanuelo(): PanueloValue {
     markSeen,
     setColor,
     changeStage,
+    arrange,
     history,
     place,
     unplace,

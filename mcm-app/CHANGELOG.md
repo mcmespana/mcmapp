@@ -4,10 +4,19 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-15 09:11 — Pañuelo virtual: tutorial, «Recolocar», color desde Comunica y fuera los textos sueltos
+
+- **Fuera los textos de explicación sueltos** (pedido del propietario): la pista y el aviso de sesión sobre/bajo el visor, la ayuda del canje, la de «Mis pañuelos», la frase de relleno de la hoja de cambio, «· solo para ver» y los subtítulos de los vacíos. Las ayudas de accesibilidad se quedan.
+- **Tutorial por secciones** (`constants/panueloTutorial.ts`, datos fáciles de ampliar; `PanueloTutorial`): sale solo la primera vez (`@panuelo_tutorial_seen` con versión) y siempre desde el botón de información. El pañuelo de ejemplo es el propio visor con otro estado (un solo WebGL). Va antes que el canje por enlace, las piezas nuevas y el cambio de etapa.
+- **Recolocar** (modo decorar): `autoArrange` reparte las piezas cosidas sin pisarse (las grandes primero, rotación 0), con confirmación.
+- **El color viene de Comunica** (`hooks/usePanueloScarf.ts`, `usePanueloStage.ts`, `decideScarfStage`): `mcm.scarf` de la ficha de la propia persona (no la de una hija), leído solo al abrir el pañuelo con los servicios del área. Si da un color, no se elige a mano; si cambia, se abre la hoja «Tienes pañuelo nuevo» (recuerdo + confeti; «Luego» no cambia nada); la primera vez se asigna sin preguntar. Sin pañuelo de Comunica, todo como antes.
+- No toca `types/panuelo.ts`, `panueloGlyphs` ni `panueloPlacement`: no hay que regenerar el visor por esto. Sin probar en móvil ni contra el Comunica real.
+
 ## 2026-11-15 01:40 — Pañuelo virtual: tela simulada, y girarlo ya no vuelve atrás
 
 - **Simulación de tela** (`createClothSim` en `panuelo-3d/src/cloth.ts`): cada vértice de la malla es una partícula con inercia, unida a sus vecinas por hilos que no se estiran (Verlet + restricciones de distancia, ~4.400 partículas). Al girar el pañuelo o inclinar el móvil la tela se retrasa, ondea, hace pliegues y se asienta sola; las piezas cosidas van con ella (`offsetAt`). El cuello y el nudo están fijos y cada punto tiende a su sitio de reposo, que hace de «cuerpo». Cuando se asienta, el visor se duerme. Con «reducir movimiento», quieta.
 - La tela es **lisa**: sin textura de trama.
+- **Tela con peso y piezas que pesan** (09:20): la tela acompaña el giro en vez de flotar (`CLOTH_LAG`, `CLOTH_DRAG`, malla más gruesa), y cada pieza cosida añade su peso donde está (`setLoads`, `ITEM_WEIGHT`): una medalla hunde un poco la tela, tarda más en volver y arrastra la de alrededor.
 - **iOS**: en `/panuelo` se desactiva el gesto de «atrás» (`gestureEnabled: false`); girar el pañuelo de izquierda a derecha sacaba de la pantalla.
 
 ## 2026-11-15 01:35 — Pañuelo virtual: cambio de etapa con despedida, «Mis pañuelos» y filtro de la colección

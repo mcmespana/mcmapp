@@ -55,9 +55,6 @@ export function PanueloHistorySheet({
   const { height } = useWindowDimensions();
   return (
     <BottomSheet visible={visible} onClose={onClose} title="Mis pañuelos">
-      <Text style={[styles.help, { color: t.textSecondary }]}>
-        Los pañuelos que fuiste dejando. Toca uno para verlo.
-      </Text>
       <ScrollView
         style={{ maxHeight: height * LIST_MAX_SHARE }}
         contentContainerStyle={styles.list}
@@ -103,10 +100,6 @@ export function PanueloHistorySheet({
 }
 
 const styles = StyleSheet.create({
-  help: {
-    ...typography.body,
-    paddingBottom: spacing.sm,
-  },
   list: {
     gap: spacing.xs,
     paddingBottom: spacing.md,
