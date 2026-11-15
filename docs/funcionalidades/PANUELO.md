@@ -135,7 +135,7 @@ components/panuelo/
 ├── panueloViewerHtml.ts            La página que se le da al WebView
 ├── PanueloItemArt.tsx              Una pieza dibujada en plano (SVG)
 ├── PanueloCollectionStrip.tsx      La colección
-├── PanueloTutorial.tsx             El tutorial: cabecera con X, tarjeta del paso e indicador
+├── PanueloTutorial.tsx             El tutorial: páginas, indicador, botón único y cabecera con X
 ├── PanueloCollectionFilter.tsx     El filtro (Todas · Puestas · Sin poner) y su vacío
 ├── PanueloItemDetail.tsx           La ficha de una pieza
 ├── PanueloRedeemSheet.tsx          Canjear un código
@@ -322,51 +322,84 @@ para girarlo», «toca una pieza»…): la pantalla no explica nada por su cuent
 lo cuenta esto, una vez y a mano cuando se quiera. Las ayudas de accesibilidad
 (etiquetas, `accessibilityHint`, anuncios) no se tocaron: no se ven.
 
-- **Contenido en datos**: `constants/panueloTutorial.ts`, un array de secciones
-  `{ id, title, body, steps?, example? }`. El comentario de arriba del fichero
-  dice cómo añadir una. Solo se cuenta lo que la app hace hoy (nada de
-  intercambios hasta que tengan pantalla): un test lo vigila.
-- **A pantalla completa**: la primera vez y al pulsar el «?» de la cabecera.
-  Mientras dura se **oculta la cabecera nativa** (`navigation.setOptions({
+### Contenido
+
+`constants/panueloTutorial.ts`, un array de secciones
+`{ id, title, body, steps?, rows?, example? }`: `body` es la frase de entrada,
+`steps` un «cómo se hace» numerado y `rows` filas «icono + título +
+descripción». El comentario de arriba del fichero dice cómo añadir una. Es una
+introducción, no un manual: **6–7 pasos como mucho**; lo que va junto a un paso
+se funde en una fila más. Solo se cuenta lo que la app hace hoy (nada de
+intercambios hasta que tengan pantalla): un test lo vigila.
+
+| Paso              | Qué lleva                                                  | Ejemplo en el visor                                |
+| ----------------- | ---------------------------------------------------------- | -------------------------------------------------- |
+| Tu pañuelo        | Gíralo y acércalo · su color es tu etapa · se guarda solo  | Pañuelo verde con dos piezas, para girar           |
+| Chapas y pines    | Las seis clases · para todos / con código / repartidas     | Las seis cosidas + dibujadas en plano debajo       |
+| Canjear un código | 3 pasos numerados · el enlace con el código escrito        | Una pieza que se presenta (`reveal`)               |
+| Verlas de cerca   | Su ficha · medallas con modelo propio                      | Una medalla enfocada (`focus`)                     |
+| Tu colección      | Filtrar (Todas · Puestas · Sin poner) · **Compartir**      | Pañuelo con piezas                                 |
+| Decorarlo         | 3 pasos numerados · **Recolocar**                          | Modo decorar con una pieza seleccionada (`select`) |
+| Cambiar de etapa  | Tú decides (mantener o empezar de cero) · **Mis pañuelos** | La tela pasa de verde a azul (`toColor`)           |
+
+### Cómo se presenta (a la manera de las hojas de introducción de Apple)
+
+La referencia son las hojas «Novedades» y de bienvenida de iOS y las HIG de
+onboarding y de `UIPageControl`: pocas páginas, una acción clara y la certeza
+de cuántas hay.
+
+- **Una sola acción principal, fija abajo**: un botón ancho (≥ 50 pt, sobre el
+  área segura) que dice **«Continuar»** y, en el último paso, **«Empezar»**. No
+  hay «Saltar», «Atrás» ni «Siguiente» como botones: salir es la **X** de
+  arriba (en cualquier paso) y volver atrás es **deslizar hacia la derecha**.
+  Para el lector de pantalla, la acción «Paso anterior» del título, y un
+  chevron discreto arriba a la izquierda **solo desde el segundo paso**.
+- **Indicador de páginas** como `UIPageControl`: una fila de puntos centrada,
+  justo encima del botón; el de ahora alargado y el resto tenues. Es un control
+  **ajustable** (`accessibilityRole="adjustable"`, «Paso 3 de 7»,
+  incrementar/decrementar). Sin barras que «se iluminan».
+- **La mitad de abajo, con presencia**: ~45 % visor / ~55 % contenido
+  (`useWindowDimensions`), en ancho la columna lateral. Cada página: título
+  grande (`h1`), frase de entrada, y los pasos o filas con su número o icono a
+  la izquierda. Texto a la izquierda, márgenes `spacing.lg`, apoyado en el
+  fondo (sin tarjeta flotante) con la esquina de arriba redondeada. Si no cabe
+  (pantalla baja, letra grande), la página hace scroll; el botón y los puntos
+  quedan fijos.
+- **Transición**: paginado real (`ScrollView` horizontal con `pagingEnabled`):
+  el contenido sigue al dedo 1:1 y al soltar se asienta por distancia o
+  velocidad, con el muelle nativo. **El visor no se desliza**: cambia de estado
+  cuando la página se asienta. «Continuar» avanza con la misma animación; con
+  «reducir movimiento» salta sin animar.
+- **Háptico**: `h.select` al cambiar de página, `h.success` al «Empezar».
+
+### A pantalla completa y con un único visor
+
+Mientras dura se **oculta la cabecera nativa** (`navigation.setOptions({
 headerShown: false })`) y el tutorial lleva la suya, por debajo de la barra de
-  estado y del notch: «Tu pañuelo» y una X (44 pt) para salir. Así no hay dos
-  títulos ni la cabecera tapando la X. Debajo, el visor grande y, abajo, el
-  texto del paso con su indicador, «Atrás» / «Siguiente» (o deslizar) y
-  «Entendido» en el último; «Saltar» antes.
-- **Un único visor**: no es un `Modal` ni un segundo WebView (un WebView no se
-  puede mover entre árboles sin recargarse, y dos contextos WebGL son memoria y
-  batería para nada). El tutorial es la **misma pantalla re-maquetada**: el
-  visor sigue montado en el mismo sitio del árbol y solo cambia de tamaño al
-  desaparecer el panel de la colección, que cede su sitio a la tarjeta del paso.
-- **Cada paso ilustra lo que cuenta** (`usePanueloTutorialStage`): el visor
-  recibe un pañuelo de ejemplo del catálogo de muestra y las órdenes del paso.
+estado y del notch: «Tu pañuelo» y la X (44 pt). No es un `Modal` ni hay un
+segundo WebView (no se puede mover uno entre árboles sin recargarlo, y dos
+contextos WebGL son memoria y batería para nada): es la **misma pantalla
+re-maquetada**, con el visor montado en el mismo sitio del árbol. Cada paso lo
+deja como lo explica (`usePanueloTutorialStage`): estado de ejemplo del
+catálogo de muestra y órdenes (`focus`, `select`, `reveal`; `mode` por prop;
+`toColor` cambia la tela). En el ejemplo no se toca nada de lo tuyo: arrastrar,
+enfocar o seleccionar se ignoran mientras dura.
 
-  | Paso              | Ejemplo en el visor                                                 |
-  | ----------------- | ------------------------------------------------------------------- |
-  | Tu pañuelo        | Pañuelo verde con dos piezas, para girar                            |
-  | Las piezas        | Las seis clases cosidas + dibujadas en plano debajo                 |
-  | Verlas de cerca   | Una medalla enfocada (`focus`)                                      |
-  | Decorarlo         | Modo decorar con una pieza seleccionada (`select`); los pasos 1-2-3 |
-  | Recolocar         | Modo decorar con todas las piezas repartidas                        |
-  | Canjear un código | Una pieza que se presenta (`reveal`); los pasos 1-2-3               |
-  | Tu colección      | Pañuelo con piezas (el filtro Todas · Puestas · Sin poner)          |
-  | Compartir         | Pañuelo con piezas                                                  |
-  | Cambiar de etapa  | La tela pasa de verde a azul (`toColor`)                            |
-  | Mis pañuelos      | Un pañuelo rojo, como un recuerdo                                   |
+### Cuándo sale
 
-  En el ejemplo no se toca nada de lo tuyo: arrastrar piezas, enfocar o
-  seleccionar se ignoran mientras dura.
+Solo, la primera vez; y siempre desde el «?» de la cabecera nativa
+(`accessibilityLabel` «Cómo funciona tu pañuelo»; en iOS un
+`Stack.Toolbar.Button`, en Android y web un `headerRight`). Se recuerda en
+`@panuelo_tutorial_seen` con la **versión** (`PANUELO_TUTORIAL_VERSION`, hoy 3):
+al subirla —cuando cambia de verdad una función, no por retocar una frase— se
+vuelve a enseñar una vez. Va **primero**: ni el canje de `?codigo=`, ni la
+presentación de una pieza nueva, ni la pregunta de cambio de etapa salen hasta
+que se cierra.
 
-- **Cuándo sale**: solo, la primera vez; y siempre desde el «?» de la cabecera
-  nativa (`accessibilityLabel` «Cómo funciona tu pañuelo»; en iOS un
-  `Stack.Toolbar.Button`, en Android y web un `headerRight`). Se recuerda en
-  `@panuelo_tutorial_seen` con la **versión** (`PANUELO_TUTORIAL_VERSION`, hoy
-  2): al subirla —cuando cambia de verdad una función, no por retocar una
-  frase— se vuelve a enseñar una vez. Va **primero**: ni el canje de
-  `?codigo=`, ni la presentación de una pieza nueva, ni la pregunta de cambio
-  de etapa salen hasta que se cierra.
-- **Cómo ampliarlo**: añade la sección al array; si es una función nueva, sube
-  la versión; pon el cambio aquí y en el CHANGELOG.
+### Cómo ampliarlo
+
+Añade la sección al array (o una fila a una existente si va junto a ella); si
+es una función nueva, sube la versión; pon el cambio aquí y en el CHANGELOG.
 
 ## Recolocar
 

@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-15 11:01 — Pañuelo virtual: el tutorial, rediseñado como una introducción de Apple
+
+- **Una sola acción principal, fija abajo**: «Continuar» y, al final, «Empezar» (≥ 50 pt, sobre el área segura). Fuera «Saltar», «Atrás» y «Siguiente»: se sale con la X de arriba y se vuelve atrás deslizando a la derecha (acción «Paso anterior» para el lector y chevron arriba a la izquierda solo desde el segundo paso).
+- **Indicador de páginas** como `UIPageControl` (puntos, el de ahora alargado), ajustable por el lector («Paso 3 de 7»).
+- **7 pasos en vez de 10**, sin perder información: Recolocar pasa a Decorarlo, Compartir a Tu colección, Mis pañuelos a Cambiar de etapa. Más aire: título grande, frase de entrada y filas con número o icono. `PANUELO_TUTORIAL_VERSION` pasa a 3: se vuelve a enseñar una vez.
+- **Reparto ~45 % visor / ~55 % contenido** y paginado real que sigue al dedo; el visor no se desliza, cambia al asentarse la página. Con «reducir movimiento», «Continuar» salta sin animar. Háptico suave por página y de éxito al empezar.
+- Datos del tutorial: nuevo `rows` (icono + título + descripción) junto a `steps`. No toca `types/panuelo.ts` ni el visor. Sin probar en móvil.
+
 ## 2026-11-15 10:46 — Pañuelo virtual: tutorial a pantalla completa, «?» en la cabecera y nuevo texto del cambio de pañuelo
 
 - **Tutorial a pantalla completa y paso a paso**: se oculta la cabecera nativa mientras dura y lleva la suya con una X (44 pt, por debajo del notch). Diez pasos (Tu pañuelo, Las piezas, Verlas de cerca, Decorarlo, Recolocar, Canjear un código, Tu colección, Compartir, Cambiar de etapa, Mis pañuelos), con «cómo se hace» en pasos numerados. `PANUELO_TUTORIAL_VERSION` pasa a 2: se vuelve a enseñar una vez.

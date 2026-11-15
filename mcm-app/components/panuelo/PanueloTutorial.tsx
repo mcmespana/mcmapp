@@ -1,22 +1,30 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  type GestureResponderEvent,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type StyleProp,
+  ScrollView,
   StyleSheet,
   Text,
   View,
+  type ViewStyle,
+  useWindowDimensions,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { moveScreenReaderFocus } from '@/components/panuelo/PanueloItemDetail';
 import { PanueloItemArt } from '@/components/panuelo/PanueloItemArt';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { MaterialIcons } from '@/components/ui/icons';
+import { DEFAULT_PANUELO_CATALOG } from '@/constants/panueloCatalog';
 import {
   PANUELO_TUTORIAL,
   type PanueloTutorialSection,
 } from '@/constants/panueloTutorial';
-import { DEFAULT_PANUELO_CATALOG } from '@/constants/panueloCatalog';
 import { themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
@@ -25,27 +33,83 @@ import { h } from '@/utils/haptics';
 
 const TOUCH = 44;
 const ART = 44;
+/** Como `UIPageControl`: puntos de 7 pt, 9 pt entre ellos; el activo, alargado. */
 const DOT = 8;
-/** Lo que hay que arrastrar el dedo para pasar de sección. */
-const SWIPE = 48;
+const DOT_ACTIVE = 20;
+const DOT_GAP = spacing.sm;
+/** Alto cómodo del botón principal (≥ 50 pt). */
+const BUTTON_MIN = 54;
+const ROW_ICON = 28;
+
+/** Lo que ocupa el contenido del tutorial; el visor se queda con el resto. */
+const CONTENT_SHARE = 0.55;
 
 type Props = {
   isDark: boolean;
-  /** Sección que se ve (índice en `sections`). */
+  /** Paso que se ve (índice en `sections`). */
   index: number;
   onIndex: (index: number) => void;
-  /** «Saltar» y «Entendido»: el tutorial se da por visto. */
+  /** «Empezar» en el último paso: el tutorial se da por visto. */
   onFinish: () => void;
   sections?: readonly PanueloTutorialSection[];
+  style?: StyleProp<ViewStyle>;
 };
 
 /**
- * El tutorial, por secciones, en el sitio de la colección (bajo el visor). El
- * pañuelo de ejemplo es el propio visor de la pantalla con otro estado: un
- * único contexto 3D, y se puede girar. Aquí van el texto, el indicador de
- * página y, si la sección lo pide, las piezas dibujadas en plano.
+ * El indicador estándar de páginas (`UIPageControl`): una fila de puntos
+ * centrada, el de ahora alargado y el resto tenues. Es un control ajustable:
+ * el lector de pantalla dice «Paso 3 de 7» y lo cambia con subir y bajar.
+ */
+export function PanueloPageDots({
+  isDark,
+  index,
+  count,
+  onIndex,
+}: {
+  isDark: boolean;
+  index: number;
+  count: number;
+  onIndex: (index: number) => void;
+}) {
+  const t = themeColors(isDark);
+  return (
+    <View
+      style={styles.dots}
+      accessible
+      accessibilityRole="adjustable"
+      accessibilityLabel={`Paso ${index + 1} de ${count}`}
+      accessibilityValue={{ min: 1, max: count, now: index + 1 }}
+      accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+      onAccessibilityAction={(e) => {
+        const next = e.nativeEvent.actionName === 'increment' ? 1 : -1;
+        if (index + next >= 0 && index + next < count) onIndex(index + next);
+      }}
+    >
+      {Array.from({ length: count }, (_, i) => (
+        <View
+          key={i}
+          style={[
+            styles.dot,
+            i === index && styles.dotActive,
+            { backgroundColor: i === index ? t.link : t.textMuted },
+            i === index ? null : styles.dotDim,
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
+/**
+ * El tutorial, a la manera de las hojas de introducción de Apple: páginas que
+ * se deslizan siguiendo al dedo, una sola acción principal fija abajo
+ * («Continuar» y, en el último, «Empezar») y el indicador de páginas justo
+ * encima. Se vuelve atrás deslizando hacia la derecha.
  *
- * Se pasa de sección con «Siguiente» / «Atrás» o deslizando.
+ * El pañuelo de ejemplo es el propio visor de la pantalla (un único contexto
+ * 3D): cambia de estado cuando la página se asienta, no se desliza. El
+ * contenido de cada página hace scroll si no cabe (pantallas bajas, letra
+ * grande); el botón y los puntos quedan fijos.
  */
 export function PanueloTutorial({
   isDark,
@@ -53,126 +117,224 @@ export function PanueloTutorial({
   onIndex,
   onFinish,
   sections = PANUELO_TUTORIAL,
+  style,
 }: Props) {
   const t = themeColors(isDark);
-  const section = sections[index];
-  const last = index === sections.length - 1;
+  const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
+  const { width: windowWidth } = useWindowDimensions();
+  const [width, setWidth] = useState(windowWidth);
+  const pager = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  /** La página en la que se asentó el dedo (o a la que se ha ido). */
+  const shown = useRef(0);
+  const first = useRef(true);
   const titleRef = useRef<React.ComponentRef<typeof Text>>(null);
-  const startX = useRef<number | null>(null);
+  const last = index === sections.length - 1;
 
-  // Al cambiar de sección el lector de pantalla lee la nueva.
+  // «Continuar», los puntos o el chevron de arriba cambian `index`: el pager
+  // va a esa página (sin animar con «reducir movimiento»). Si el cambio vino
+  // del dedo, ya está allí.
   useEffect(() => {
+    if (shown.current === index) return;
+    shown.current = index;
+    pager.current?.scrollTo({ x: index * width, animated: !reducedMotion });
+  }, [index, width, reducedMotion]);
+
+  // Un toque suave al cambiar de página, y el lector lee el título nuevo.
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    h.select();
     moveScreenReaderFocus(titleRef.current);
   }, [index]);
 
-  if (!section) return null;
-
-  const go = (next: number) => {
-    if (next < 0 || next >= sections.length) return;
-    h.select();
-    onIndex(next);
+  const onLayout = (e: LayoutChangeEvent) => {
+    const next = Math.round(e.nativeEvent.layout.width);
+    if (next > 0 && next !== width) {
+      setWidth(next);
+      pager.current?.scrollTo({ x: shown.current * next, animated: false });
+    }
   };
-  const onTouchEnd = (e: GestureResponderEvent) => {
-    const from = startX.current;
-    startX.current = null;
-    if (from === null) return;
-    const dx = e.nativeEvent.pageX - from;
-    if (Math.abs(dx) < SWIPE) return;
-    go(index + (dx < 0 ? 1 : -1));
+  const onSettle = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const page = Math.round(e.nativeEvent.contentOffset.x / width);
+    const clamped = Math.max(0, Math.min(sections.length - 1, page));
+    shown.current = clamped;
+    if (clamped !== index) onIndex(clamped);
   };
 
+  return (
+    <View style={[styles.root, style]} onLayout={onLayout}>
+      <ScrollView
+        ref={pager}
+        horizontal
+        pagingEnabled
+        bounces={false}
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={onSettle}
+        style={styles.pager}
+      >
+        {sections.map((section, i) => (
+          <TutorialPage
+            key={section.id}
+            section={section}
+            isDark={isDark}
+            width={width}
+            current={i === index}
+            titleRef={i === index ? titleRef : undefined}
+            onPrevious={i > 0 ? () => onIndex(i - 1) : undefined}
+          />
+        ))}
+      </ScrollView>
+      <View
+        style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}
+      >
+        <PanueloPageDots
+          isDark={isDark}
+          index={index}
+          count={sections.length}
+          onIndex={onIndex}
+        />
+        <AppPrimaryButton
+          label={last ? 'Empezar' : 'Continuar'}
+          color={t.link}
+          haptic={false}
+          style={styles.button}
+          onPress={() => {
+            if (last) {
+              h.success();
+              onFinish();
+            } else {
+              onIndex(index + 1);
+            }
+          }}
+        />
+      </View>
+    </View>
+  );
+}
+
+type PanelProps = Omit<Props, 'style'> & {
+  /** Pantalla ancha: columna lateral de este ancho, en vez de la mitad de abajo. */
+  sideWidth?: number;
+};
+
+/**
+ * El sitio del tutorial en la pantalla: ~45 % visor, ~55 % contenido (con
+ * `useWindowDimensions`); en ancho, la columna lateral. El contenido se apoya
+ * en el fondo, sin tarjeta flotando, con la esquina de arriba redondeada para
+ * separarlo del visor.
+ */
+export function PanueloTutorialPanel({ sideWidth, ...props }: PanelProps) {
+  const { height } = useWindowDimensions();
+  const t = themeColors(props.isDark);
+  return (
+    <View
+      style={[
+        sideWidth ? { width: sideWidth } : styles.panelTop,
+        sideWidth ? null : { height: height * CONTENT_SHARE },
+        { backgroundColor: t.card },
+      ]}
+    >
+      <PanueloTutorial {...props} />
+    </View>
+  );
+}
+
+function TutorialPage({
+  section,
+  isDark,
+  width,
+  current,
+  titleRef,
+  onPrevious,
+}: {
+  section: PanueloTutorialSection;
+  isDark: boolean;
+  width: number;
+  current: boolean;
+  titleRef?: React.Ref<React.ComponentRef<typeof Text>>;
+  onPrevious?: () => void;
+}) {
+  const t = themeColors(isDark);
   const art = (section.example?.art ?? [])
     .map((id) => DEFAULT_PANUELO_CATALOG[id])
     .filter(Boolean);
-
   return (
+    // Las páginas que no se ven no existen para el lector de pantalla.
     <View
-      style={styles.root}
-      onTouchStart={(e) => {
-        startX.current = e.nativeEvent.pageX;
-      }}
-      onTouchEnd={onTouchEnd}
+      style={{ width }}
+      accessibilityElementsHidden={!current}
+      importantForAccessibility={current ? 'auto' : 'no-hide-descendants'}
     >
-      <View
-        style={styles.dots}
-        accessible
-        accessibilityRole="progressbar"
-        accessibilityLabel={`Tutorial, paso ${index + 1} de ${sections.length}`}
+      <ScrollView
+        contentContainerStyle={styles.page}
+        showsVerticalScrollIndicator={false}
       >
-        {sections.map((s, i) => (
-          <View
-            key={s.id}
-            style={[
-              styles.dot,
-              { backgroundColor: i === index ? t.link : t.separator },
-            ]}
-          />
-        ))}
-      </View>
-      <Text
-        ref={titleRef}
-        style={[styles.title, { color: t.text }]}
-        accessibilityRole="header"
-      >
-        {section.title}
-      </Text>
-      <Text style={[styles.body, { color: t.text }]}>{section.body}</Text>
-      {section.steps ? (
-        <View style={styles.steps}>
-          {section.steps.map((text, i) => (
-            <View key={text} style={styles.step}>
-              <Text style={[styles.stepNumber, { color: t.link }]}>
-                {i + 1}.
-              </Text>
-              <Text style={[styles.stepText, { color: t.text }]}>{text}</Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
-      {art.length > 0 ? (
-        <View
-          style={styles.art}
-          accessible
-          accessibilityLabel={`Ejemplos: ${art.map((a) => a.name).join(', ')}`}
+        <Text
+          ref={titleRef}
+          style={[styles.title, { color: t.text }]}
+          accessibilityRole="header"
+          // Volver atrás sin gesto: una acción del título.
+          accessibilityActions={
+            onPrevious ? [{ name: 'previous', label: 'Paso anterior' }] : []
+          }
+          onAccessibilityAction={() => onPrevious?.()}
         >
-          {art.map((item) => (
-            <PanueloItemArt key={item.id} look={item.look} size={ART} />
-          ))}
-        </View>
-      ) : null}
-      <View style={styles.actions}>
-        {index > 0 ? (
-          <PressableFeedback
-            onPress={() => go(index - 1)}
-            accessibilityRole="button"
-            accessibilityLabel="Atrás"
-            style={styles.link}
-          >
-            <Text style={[styles.linkLabel, { color: t.link }]}>Atrás</Text>
-          </PressableFeedback>
+          {section.title}
+        </Text>
+        <Text style={[styles.body, { color: t.text }]}>{section.body}</Text>
+        {section.steps ? (
+          <View style={styles.list}>
+            {section.steps.map((text, i) => (
+              <View key={text} style={styles.row}>
+                <View style={[styles.number, { backgroundColor: t.link }]}>
+                  <Text
+                    style={[
+                      styles.numberText,
+                      { color: isDark ? t.background : t.card },
+                    ]}
+                  >
+                    {i + 1}
+                  </Text>
+                </View>
+                <Text style={[styles.rowText, { color: t.text }]}>{text}</Text>
+              </View>
+            ))}
+          </View>
         ) : null}
-        {last ? null : (
-          <PressableFeedback
-            onPress={() => {
-              h.tap();
-              onFinish();
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Saltar el tutorial"
-            style={styles.link}
+        {section.rows ? (
+          <View style={styles.list}>
+            {section.rows.map((row) => (
+              <View key={row.title} style={styles.row}>
+                <MaterialIcons name={row.icon} size={ROW_ICON} color={t.link} />
+                <View style={styles.rowTexts}>
+                  <Text style={[styles.rowTitle, { color: t.text }]}>
+                    {row.title}
+                  </Text>
+                  {row.text ? (
+                    <Text style={[styles.rowText, { color: t.textSecondary }]}>
+                      {row.text}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : null}
+        {art.length > 0 ? (
+          <View
+            style={styles.art}
+            accessible
+            accessibilityLabel={`Ejemplos: ${art.map((a) => a.name).join(', ')}`}
           >
-            <Text style={[styles.linkLabel, { color: t.link }]}>Saltar</Text>
-          </PressableFeedback>
-        )}
-        <View style={styles.primary}>
-          <AppPrimaryButton
-            label={last ? 'Entendido' : 'Siguiente'}
-            onPress={() => (last ? onFinish() : go(index + 1))}
-            haptic={!last}
-            color={t.link}
-          />
-        </View>
-      </View>
+            {art.map((item) => (
+              <PanueloItemArt key={item.id} look={item.look} size={ART} />
+            ))}
+          </View>
+        ) : null}
+      </ScrollView>
     </View>
   );
 }
@@ -180,14 +342,21 @@ export function PanueloTutorial({
 type HeaderProps = {
   isDark: boolean;
   onClose: () => void;
+  /** A partir del segundo paso: el chevron de «Paso anterior». */
+  onBack?: () => void;
 };
 
 /**
  * La cabecera del tutorial a pantalla completa: la cabecera nativa se oculta
- * mientras dura y esta lleva el título y la X de salir (≥ 44 pt), por debajo
- * de la barra de estado y del notch.
+ * mientras dura y esta lleva el título, la X de salir (≥ 44 pt) y, desde el
+ * segundo paso, un chevron discreto para volver atrás; por debajo de la barra
+ * de estado y del notch.
  */
-export function PanueloTutorialHeader({ isDark, onClose }: HeaderProps) {
+export function PanueloTutorialHeader({
+  isDark,
+  onClose,
+  onBack,
+}: HeaderProps) {
   const t = themeColors(isDark);
   const insets = useSafeAreaInsets();
   return (
@@ -202,6 +371,20 @@ export function PanueloTutorialHeader({ isDark, onClose }: HeaderProps) {
       ]}
       pointerEvents="box-none"
     >
+      {onBack ? (
+        <PressableFeedback
+          onPress={() => {
+            h.tap();
+            onBack();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Paso anterior"
+          style={[styles.round, { backgroundColor: t.card }]}
+        >
+          <PressableFeedback.Highlight />
+          <IconSymbol name="chevron.left" size={20} color={t.link} />
+        </PressableFeedback>
+      ) : null}
       <Text
         style={[styles.headerTitle, { color: t.text }]}
         accessibilityRole="header"
@@ -215,7 +398,7 @@ export function PanueloTutorialHeader({ isDark, onClose }: HeaderProps) {
         }}
         accessibilityRole="button"
         accessibilityLabel="Cerrar el tutorial"
-        style={[styles.close, { backgroundColor: t.card }]}
+        style={[styles.round, { backgroundColor: t.card }]}
       >
         <PressableFeedback.Highlight />
         <IconSymbol name="xmark" size={20} color={t.link} />
@@ -225,18 +408,22 @@ export function PanueloTutorialHeader({ isDark, onClose }: HeaderProps) {
 }
 
 const styles = StyleSheet.create({
+  panelTop: {
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    overflow: 'hidden',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: spacing.md,
     paddingBottom: spacing.sm,
   },
   headerTitle: {
     ...typography.h2,
-    flexShrink: 1,
+    flex: 1,
   },
-  close: {
+  round: {
     width: TOUCH,
     height: TOUCH,
     borderRadius: radii.pillFull,
@@ -245,66 +432,84 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.card,
   },
-  steps: {
-    gap: spacing.xs,
-  },
-  step: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  stepNumber: {
-    ...typography.body,
-    fontWeight: '700',
-    minWidth: spacing.md,
-  },
-  stepText: {
-    ...typography.body,
+  root: {
     flex: 1,
   },
-  root: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
+  pager: {
+    flex: 1,
   },
-  dots: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    minHeight: spacing.md,
-    alignItems: 'center',
-  },
-  dot: {
-    width: DOT,
-    height: DOT,
-    borderRadius: radii.pillFull,
+  page: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.md,
   },
   title: {
-    ...typography.h3,
+    ...typography.h1,
   },
   body: {
     ...typography.body,
+  },
+  list: {
+    gap: spacing.md,
+    marginTop: spacing.xs,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  rowTexts: {
+    flex: 1,
+  },
+  rowTitle: {
+    ...typography.body,
+    fontWeight: '600',
+  },
+  rowText: {
+    ...typography.body,
+    flex: 1,
+  },
+  number: {
+    width: ROW_ICON,
+    height: ROW_ICON,
+    borderRadius: radii.pillFull,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  numberText: {
+    ...typography.button,
+    fontWeight: '700',
   },
   art: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  actions: {
+  footer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    gap: spacing.md,
+  },
+  dots: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  link: {
-    minHeight: TOUCH,
-    minWidth: TOUCH,
-    paddingHorizontal: spacing.sm,
-    alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.sm,
+    alignItems: 'center',
+    gap: DOT_GAP,
+    minHeight: spacing.lg,
   },
-  linkLabel: {
-    ...typography.button,
+  dot: {
+    width: DOT,
+    height: DOT,
+    borderRadius: radii.pillFull,
   },
-  primary: {
-    flex: 1,
+  dotActive: {
+    width: DOT_ACTIVE,
+  },
+  dotDim: {
+    opacity: 0.35,
+  },
+  button: {
+    minHeight: BUTTON_MIN,
   },
 });
