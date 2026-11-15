@@ -44,8 +44,6 @@ const RING = new THREE.CatmullRomCurve3(
 );
 /** En qué tramo de la curva está el hombro (el punto 2 de 10). */
 const SHOULDER = 2 / 10;
-/** Dónde empieza la tela que va del hombro al nudo. */
-const WING_START = SHOULDER - 0.025;
 /** El pico del triángulo. */
 const TIP = new THREE.Vector3(0, -2.3, 0.7);
 
@@ -88,10 +86,8 @@ function wrinkle(s: number, t: number): number {
     0.04 * Math.sin(5.2 * s + 2.4 * t + 0.5) +
     0.02 * Math.sin(11.5 * s - 5 * t + 1.9) +
     0.012 * Math.sin(3.1 * s + 9 * t);
-  // El dobladillo se levanta un poco en los bordes.
-  const hem = 0.022 * smooth(0.8, 1, Math.abs(s)) * (1 - t);
   // Muy poco: el pañuelo va liso, solo con la caída natural de la tela.
-  return env * folds * 0.45 + hem;
+  return env * folds * 0.45;
 }
 
 const EPS = 0.004;
@@ -136,26 +132,109 @@ export function uvToFlap(u: number, v: number): [number, number] {
 
 // ── Geometría ──────────────────────────────────────────────────────────────
 
+/** Columnas de tela a cada lado, del hombro al nudo. */
+const NE = 44;
+const _top = new THREE.Vector3();
+const _hem = new THREE.Vector3();
+const _edge = new THREE.Vector3();
+const _drop = new THREE.Vector3();
+const _out = new THREE.Vector3();
+const _ref = new THREE.Vector3();
+const BODY = new THREE.Vector3(0, -0.5, 0);
+const DOWN = new THREE.Vector3(0, -1, 0);
+
+/**
+ * La tela que sigue más allá del hombro, hasta el nudo. Es LA MISMA tela que
+ * el triángulo de la espalda —una sola malla, sin costura ni corte—: el
+ * pañuelo es un triángulo entero cuyas esquinas pasan por los hombros.
+ *
+ * Cada «hilo» va del borde de arriba (la curva del cuello) al bajo de la
+ * tela. En la espalda todos los hilos acaban en el pico; pasado el hombro, el
+ * bajo sube por el costado del triángulo y da la vuelta hasta el nudo, que es
+ * por donde va el borde de un pañuelo puesto.
+ *
+ * @param e de 0 (el hombro: coincide con el borde del triángulo) a 1 (el nudo)
+ * @param t de 0 (arriba) a 1 (el bajo)
+ */
+function sidePoint(
+  sign: 1 | -1,
+  e: number,
+  t: number,
+  out: THREE.Vector3,
+): THREE.Vector3 {
+  const k = SHOULDER + e * (0.5 - SHOULDER);
+  ringPoint(k, _top);
+  // El bajo, por delante: cae del cuello, ancho en el hombro y recogido al
+  // llegar al nudo (pero nunca un hilo: es la esquina del triángulo).
+  ringPoint(SHOULDER, _ref);
+  _drop
+    .copy(TIP)
+    .sub(_ref)
+    .normalize()
+    .lerp(DOWN, smooth(0.1, 0.65, e));
+  _drop.normalize();
+  const depth = 0.62 - 0.5 * smooth(0.15, 1, e) + 0.06 * Math.sin(Math.PI * e);
+  _hem.copy(_top).addScaledVector(_drop, depth);
+  // El bajo, junto a la espalda: sube por el costado del triángulo.
+  _edge.copy(TIP).lerp(_ref, 0.9 * smooth(0, 0.42, e));
+  _edge.lerp(_hem, smooth(0.06, 0.5, e));
+
+  // Lo que se aparta este hilo del borde del triángulo: en e = 0, nada.
+  out.copy(_top).lerp(_edge, t);
+  _a.copy(_ref).lerp(TIP, t);
+  out.sub(_a);
+
+  // La tela se despega un poco del cuerpo y, hacia el nudo, se frunce.
+  _out.copy(_top).sub(BODY);
+  _out.y = 0;
+  _out.normalize();
+  const live = smooth(0.05, 0.4, e);
+  const belly = 0.05 * Math.sin(Math.PI * t) * (1 - 0.5 * e);
+  const folds =
+    smooth(0.2, 0.9, e) *
+    (0.022 * Math.sin(t * Math.PI * 5 + e * 3.1) +
+      0.012 * Math.sin(t * Math.PI * 9 - e * 5.3)) *
+    Math.sin(Math.PI * Math.min(1, t * 1.15));
+  out.addScaledVector(_out, live * (belly + folds));
+
+  out.add(flapPoint(1, t).position);
+  out.x *= sign;
+  return out;
+}
+
 function buildFlapGeometry(): THREE.BufferGeometry {
   const NS = 84;
   const NT = 76;
   const positions: number[] = [];
   const uvs: number[] = [];
   const index: number[] = [];
+  const p = new THREE.Vector3();
+  // Una sola malla: [lado izquierdo] [triángulo de la espalda] [lado derecho].
+  const row = NS + 1 + 2 * NE;
   for (let j = 0; j <= NT; j++) {
     const t = (j / NT) * 0.999;
-    for (let i = 0; i <= NS; i++) {
-      const s = (i / NS) * 2 - 1;
-      const p = flapPoint(s, t).position;
-      positions.push(p.x, p.y, p.z);
-      const [u, v] = flapUv(s, t);
-      uvs.push(u, v);
+    for (let c = 0; c < row; c++) {
+      const i = c - NE;
+      if (i < 0 || i > NS) {
+        const sign = i < 0 ? -1 : 1;
+        const e = (i < 0 ? -i : i - NS) / NE;
+        sidePoint(sign, e, t, p);
+        positions.push(p.x, p.y, p.z);
+        // Sin dibujo: el color del borde de la tela.
+        const [u, v] = flapUv(sign, t);
+        uvs.push(u, v);
+      } else {
+        const s = (i / NS) * 2 - 1;
+        const q = flapPoint(s, t).position;
+        positions.push(q.x, q.y, q.z);
+        const [u, v] = flapUv(s, t);
+        uvs.push(u, v);
+      }
     }
   }
-  const row = NS + 1;
   for (let j = 0; j < NT; j++) {
-    for (let i = 0; i < NS; i++) {
-      const a = j * row + i;
+    for (let c = 0; c < row - 1; c++) {
+      const a = j * row + c;
       index.push(a, a + row, a + 1, a + 1, a + row, a + row + 1);
     }
   }
@@ -250,97 +329,6 @@ function weldSeam(g: THREE.BufferGeometry, segments: number, row: number) {
 }
 
 const KNOT = ringPoint(0.5);
-
-/**
- * Lo que va del hombro al nudo: el triángulo ES un triángulo entero, sin
- * rollo ni cordel. Sus dos esquinas pasan por encima de los hombros y se
- * juntan delante; la tela cae ancha en el hombro y se va recogiendo, con sus
- * pliegues, según se acerca al nudo.
- *
- * Es una lámina: el borde de arriba sigue la curva del cuello y el de abajo
- * arranca donde el lado del triángulo deja el hombro.
- */
-function buildWing(sign: 1 | -1): THREE.BufferGeometry {
-  const NK = 64;
-  const NW = 18;
-  const positions: number[] = [];
-  const uvs: number[] = [];
-  const index: number[] = [];
-  const top = new THREE.Vector3();
-  const next = new THREE.Vector3();
-  const drop = new THREE.Vector3();
-  const out = new THREE.Vector3();
-  const along = new THREE.Vector3();
-  const center = new THREE.Vector3(0, -0.5, 0);
-  // En el hombro la tela cae en la dirección del lado del triángulo.
-  const toTip = TIP.clone().sub(ringPoint(SHOULDER)).normalize();
-  const down = new THREE.Vector3(0, -1, 0);
-  for (let i = 0; i <= NK; i++) {
-    const q = i / NK;
-    // Arranca un poco antes del hombro, por debajo del triángulo: sin rendija.
-    const k = WING_START + q * (0.5 - WING_START);
-    ringPoint(k, top);
-    ringPoint(Math.min(0.5, k + 0.004), next);
-    along.copy(next).sub(top);
-    if (along.lengthSq() < 1e-10) {
-      ringPoint(k - 0.004, next);
-      along.copy(top).sub(next);
-    }
-    along.normalize();
-    drop
-      .copy(toTip)
-      .lerp(down, smooth(0.12, 0.7, q))
-      .normalize();
-    // Hacia fuera del cuerpo, perpendicular a la caída.
-    out.copy(top).sub(center);
-    out.y = 0;
-    out.addScaledVector(drop, -out.dot(drop)).normalize();
-    // Ancha al pasar el hombro y sobre el pecho; al llegar al nudo, recogida
-    // (pero nunca un hilo: sigue siendo la esquina del triángulo).
-    const depth =
-      0.5 -
-      0.38 * smooth(0.2, 1, q) +
-      0.08 * Math.sin(Math.PI * Math.min(1, q / 0.6));
-    // Junto al hombro va por dentro del triángulo, para que no se peleen.
-    const tuck = 0.035 * (1 - smooth(0, 0.3, q));
-    const gather = smooth(0.1, 0.85, q);
-    for (let j = 0; j <= NW; j++) {
-      const w = j / NW;
-      // La tela se despega un poco del cuerpo a media caída…
-      const belly = 0.05 * Math.sin(Math.PI * w) * (1 - 0.5 * q);
-      // …y se frunce en pliegues a lo largo, más prietos cuanto más cerca
-      // del nudo.
-      const folds =
-        gather *
-        (0.022 * Math.sin(w * Math.PI * 5 + q * 3.1) +
-          0.012 * Math.sin(w * Math.PI * 9 - q * 5.3)) *
-        Math.sin(Math.PI * Math.min(1, w * 1.15));
-      const d = depth * w;
-      const x = top.x + drop.x * d + out.x * (belly + folds);
-      positions.push(
-        sign * x,
-        top.y + drop.y * d + out.y * (belly + folds),
-        top.z + drop.z * d + out.z * (belly + folds) - tuck,
-      );
-      uvs.push(q * 6, w * 2);
-    }
-  }
-  const row = NW + 1;
-  for (let i = 0; i < NK; i++) {
-    for (let j = 0; j < NW; j++) {
-      const a = i * row + j;
-      if (sign === 1)
-        index.push(a, a + 1, a + row, a + 1, a + row + 1, a + row);
-      else index.push(a, a + row, a + 1, a + 1, a + row, a + row + 1);
-    }
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-  g.setIndex(index);
-  g.computeVertexNormals();
-  return g;
-}
 
 function buildTail(sign: 1 | -1): THREE.BufferGeometry {
   const start = KNOT.clone().add(new THREE.Vector3(sign * 0.03, -0.05, -0.02));
@@ -457,27 +445,6 @@ function paintFlap(
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
   }
 
-  // Dobladillo: los dos lados largos, de las esquinas de arriba al pico.
-  const hem = (x0: number, inset: number) => {
-    ctx.beginPath();
-    ctx.moveTo(x0 + inset, 0);
-    ctx.lineTo(TEX / 2 + inset * 0.2, TEX);
-  };
-  for (const side of [1, -1] as const) {
-    const x0 = side === 1 ? 0 : TEX;
-    ctx.setLineDash([]);
-    ctx.strokeStyle = 'rgba(0,0,0,0.10)';
-    ctx.lineWidth = 34;
-    hem(x0, side * 8);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-    ctx.lineWidth = 2.2;
-    ctx.setLineDash([9, 7]);
-    hem(x0, side * 30);
-    ctx.stroke();
-  }
-  ctx.setLineDash([]);
-
   if (logo) {
     // El triángulo mide FLAP_WIDTH × FLAP_HEIGHT y la textura es cuadrada:
     // el logo se pinta estirado a lo alto para que cosido salga redondo.
@@ -567,13 +534,7 @@ export function createPanuelo(
 
   const group = new THREE.Group();
   group.add(flap, flapBack);
-  for (const geometry of [
-    buildWing(1),
-    buildWing(-1),
-    buildKnot(),
-    buildTail(1),
-    buildTail(-1),
-  ]) {
+  for (const geometry of [buildKnot(), buildTail(1), buildTail(-1)]) {
     const mesh = new THREE.Mesh(geometry, rollMaterial);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
