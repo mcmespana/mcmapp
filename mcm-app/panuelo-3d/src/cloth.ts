@@ -133,10 +133,10 @@ export function uvToFlap(u: number, v: number): [number, number] {
 // ── Geometría ──────────────────────────────────────────────────────────────
 
 /** Columnas de tela a cada lado, del hombro al nudo. */
-const NE = 16;
+const NE = 12;
 /** Hilos a lo ancho del triángulo de la espalda, y filas de arriba abajo. */
-const NS = 40;
-const NT = 34;
+const NS = 30;
+const NT = 26;
 /** Puntos por fila de la malla: [lado] [espalda] [lado]. */
 const ROW = NS + 1 + 2 * NE;
 const _top = new THREE.Vector3();
@@ -280,6 +280,17 @@ export interface ClothSim {
   /** Cuánto se ha movido de su sitio el punto (s, t) del triángulo. */
   offsetAt(s: number, t: number, out: THREE.Vector3): THREE.Vector3;
   /**
+   * Cuánto ha girado la tela en el punto (s, t) respecto a su reposo, y hacia
+   * dónde mira ahora (`normal`): con esto una pieza cosida se inclina con la
+   * tela en vez de quedarse tiesa y atravesarla.
+   */
+  tiltAt(
+    s: number,
+    t: number,
+    out: THREE.Quaternion,
+    normal: THREE.Vector3,
+  ): THREE.Quaternion;
+  /**
    * Lo que pesa cada pieza cosida y dónde está (`s`, `t` del triángulo). Una
    * medalla pesa: hunde un poco la tela donde cuelga, tarda más en volver y
    * tira de la tela de alrededor al moverse.
@@ -337,6 +348,10 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
       // amplios de tela y no se arrugue como papel.
       if (c + 2 < ROW) link(a, a + 2);
       if (j + 2 <= NT) link(a, a + 2 * ROW);
+      // Y de tres en tres: la tela no se dobla en pliegues pequeños y secos,
+      // que es donde una chapa (que es rígida) acababa atravesándola.
+      if (c + 3 < ROW) link(a, a + 3);
+      if (j + 3 <= NT) link(a, a + 3 * ROW);
     }
   }
   const linkA = Uint32Array.from(links.filter((_, k) => k % 2 === 0));
@@ -485,6 +500,33 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
         }
       }
       return out;
+    },
+    tiltAt(s, t, out, normal) {
+      const col = NE + ((Math.min(1, Math.max(-1, s)) + 1) / 2) * NS;
+      const rowAt = Math.min(1, Math.max(0, t)) * NT;
+      // Un trozo de tela del tamaño de una pieza, no un solo triángulo.
+      const c = Math.min(ROW - 3, Math.max(2, Math.round(col)));
+      const j = Math.min(NT - 2, Math.max(2, Math.round(rowAt)));
+      const span = (arr: Float32Array, to: THREE.Vector3) => {
+        const l = (j * ROW + c - 2) * 3;
+        const r = (j * ROW + c + 2) * 3;
+        const u = ((j - 2) * ROW + c) * 3;
+        const d = ((j + 2) * ROW + c) * 3;
+        _a.set(
+          arr[r] - arr[l],
+          arr[r + 1] - arr[l + 1],
+          arr[r + 2] - arr[l + 2],
+        );
+        _b.set(
+          arr[d] - arr[u],
+          arr[d + 1] - arr[u + 1],
+          arr[d + 2] - arr[u + 2],
+        );
+        return to.crossVectors(_b, _a).normalize();
+      };
+      span(rest, _c);
+      span(pos, normal);
+      return out.setFromUnitVectors(_c, normal);
     },
     setLoads(loads) {
       mass.fill(1);
