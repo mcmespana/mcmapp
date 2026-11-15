@@ -907,17 +907,35 @@ class Viewer {
    * devuelve a su sitio: así ni los arrastres ni las animaciones se enteran.
    */
   private renderBent() {
-    const moved: [Entry, THREE.Vector3][] = [];
+    const moved: [Entry, THREE.Vector3, THREE.Quaternion][] = [];
     const offset = new THREE.Vector3();
+    const normal = new THREE.Vector3();
+    const tilt = new THREE.Quaternion();
+    const cloth = this.panuelo.cloth;
     for (const entry of this.entries.values()) {
       if (entry.group.parent !== this.itemsGroup) continue;
-      this.panuelo.cloth.offsetAt(entry.data.u, entry.data.v, offset);
+      const { u, v } = entry.data;
+      cloth.offsetAt(u, v, offset);
       if (offset.lengthSq() < 1e-10) continue;
-      moved.push([entry, entry.group.position.clone()]);
-      entry.group.position.add(offset);
+      moved.push([
+        entry,
+        entry.group.position.clone(),
+        entry.group.quaternion.clone(),
+      ]);
+      // La pieza es rígida y la tela no: se inclina con ella y, cuanto más
+      // doblada está la tela, más se despega, para no atravesarla.
+      cloth.tiltAt(u, v, tilt, normal);
+      const bend = 1 - Math.abs(tilt.w);
+      entry.group.position
+        .add(offset)
+        .addScaledVector(normal, Math.min(0.05, 0.006 + bend * 0.9));
+      entry.group.quaternion.premultiply(tilt);
     }
     this.renderer.render(this.scene, this.camera);
-    for (const [entry, at] of moved) entry.group.position.copy(at);
+    for (const [entry, at, facing] of moved) {
+      entry.group.position.copy(at);
+      entry.group.quaternion.copy(facing);
+    }
   }
 
   /**
