@@ -133,10 +133,10 @@ export function uvToFlap(u: number, v: number): [number, number] {
 // ── Geometría ──────────────────────────────────────────────────────────────
 
 /** Columnas de tela a cada lado, del hombro al nudo. */
-const NE = 22;
+const NE = 16;
 /** Hilos a lo ancho del triángulo de la espalda, y filas de arriba abajo. */
-const NS = 52;
-const NT = 44;
+const NS = 40;
+const NT = 34;
 /** Puntos por fila de la malla: [lado] [espalda] [lado]. */
 const ROW = NS + 1 + 2 * NE;
 const _top = new THREE.Vector3();
@@ -279,6 +279,12 @@ export interface ClothSim {
   ): boolean;
   /** Cuánto se ha movido de su sitio el punto (s, t) del triángulo. */
   offsetAt(s: number, t: number, out: THREE.Vector3): THREE.Vector3;
+  /**
+   * Lo que pesa cada pieza cosida y dónde está (`s`, `t` del triángulo). Una
+   * medalla pesa: hunde un poco la tela donde cuelga, tarda más en volver y
+   * tira de la tela de alrededor al moverse.
+   */
+  setLoads(loads: readonly { s: number; t: number; weight: number }[]): void;
   /** Devuelve la tela a su sitio, quieta. */
   reset(): void;
 }
@@ -292,6 +298,8 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
   /** Cuánto se deja mover cada punto (0 = fijo) y cuánto tira de él su sitio. */
   const free = new Float32Array(count);
   const pull = new Float32Array(count);
+  /** Lo que pesa cada punto: 1 la tela sola; más donde hay una pieza cosida. */
+  const mass = new Float32Array(count).fill(1);
   for (let j = 0; j <= NT; j++) {
     const t = j / NT;
     for (let c = 0; c < ROW; c++) {
@@ -300,7 +308,7 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
       // Fijo arriba (el cuello) y al llegar al nudo.
       const w = smooth(0, 0.22, t) * (1 - smooth(0.55, 0.95, e));
       free[j * ROW + c] = w;
-      pull[j * ROW + c] = 46 - 34 * smooth(0.1, 1, t);
+      pull[j * ROW + c] = 95 - 50 * smooth(0.1, 1, t);
     }
   }
   // Los hilos: a lo ancho, a lo largo y en diagonal.
@@ -378,8 +386,10 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
         const x = pos[k + a];
         const v = (x - prev[k + a]) * drag;
         // Su sitio tira de él, y el móvil inclinado cambia hacia dónde cae.
-        let acc = pull[p] * (rest[k + a] - x);
-        if (a === 0) acc += tiltX * CLOTH_TILT;
+        // (a más peso, menos le puede su sitio: tarda más y se pasa más).
+        let acc = (pull[p] * (rest[k + a] - x)) / mass[p];
+        if (a === 1) acc -= (CLOTH_SAG * (mass[p] - 1)) / mass[p];
+        else if (a === 0) acc += tiltX * CLOTH_TILT;
         else if (a === 2) acc += tiltY * CLOTH_TILT;
         prev[k + a] = x;
         pos[k + a] = x + v + acc * h2 * w;
@@ -393,8 +403,9 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
       for (let n = 0; n < linkLen.length; n++) {
         const a = linkA[n];
         const b = linkB[n];
-        const wa = free[a];
-        const wb = free[b];
+        // Lo pesado se mueve menos y arrastra a lo ligero.
+        const wa = free[a] / mass[a];
+        const wb = free[b] / mass[b];
         const ka = a * 3;
         const kb = b * 3;
         const dx = pos[kb] - pos[ka];
@@ -475,6 +486,24 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
       }
       return out;
     },
+    setLoads(loads) {
+      mass.fill(1);
+      for (const load of loads) {
+        const col = NE + ((Math.min(1, Math.max(-1, load.s)) + 1) / 2) * NS;
+        const rowAt = Math.min(1, Math.max(0, load.t)) * NT;
+        // El peso se reparte por la tela de alrededor del punto de costura.
+        for (let dj = -2; dj <= 2; dj++) {
+          for (let dc = -2; dc <= 2; dc++) {
+            const j = Math.round(rowAt) + dj;
+            const c = Math.round(col) + dc;
+            if (j < 0 || j > NT || c < 0 || c >= ROW) continue;
+            const d2 = (c - col) * (c - col) + (j - rowAt) * (j - rowAt);
+            mass[j * ROW + c] += load.weight * Math.exp(-d2 / 2.2);
+          }
+        }
+      }
+      awake = true;
+    },
     reset() {
       pos.set(rest);
       prev.set(rest);
@@ -486,14 +515,19 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
 }
 
 /** Lo que frena el aire a la tela, por paso. */
-const CLOTH_DRAG = 0.972;
-/** Cuánto se queda atrás la tela al girar el pañuelo (1 = del todo). */
-const CLOTH_LAG = 0.92;
+const CLOTH_DRAG = 0.945;
+/**
+ * Cuánto se queda atrás la tela al girar el pañuelo (1 = del todo). Bajo: es
+ * una tela con peso que acompaña el giro, no una gasa que flota.
+ */
+const CLOTH_LAG = 0.42;
 /** Cuánto tira del pico inclinar el móvil. */
-const CLOTH_TILT = 2.4;
-const CLOTH_ITERATIONS = 3;
-/** Por debajo de 1 la tela da un poco de sí, y se ve más blanda. */
-const CLOTH_STRETCH = 0.9;
+const CLOTH_TILT = 1.1;
+const CLOTH_ITERATIONS = 4;
+/** Cuánto hunde la tela el peso de una pieza. */
+const CLOTH_SAG = 2.2;
+/** Por debajo de 1 la tela da de sí y se ve blanda; a 1 es un algodón con peso. */
+const CLOTH_STRETCH = 1;
 
 /**
  * Una banda de tela a lo largo de una curva: sección elíptica muy aplastada,
