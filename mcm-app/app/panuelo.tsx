@@ -54,8 +54,8 @@ import {
 } from '@/components/panuelo/PanueloColorSwatches';
 import { PanueloStageBurst } from '@/components/panuelo/PanueloStageBurst';
 import {
-  PanueloTutorial,
   PanueloTutorialHeader,
+  PanueloTutorialPanel,
 } from '@/components/panuelo/PanueloTutorial';
 import { PanueloStageSheet } from '@/components/panuelo/PanueloStageSheet';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -686,24 +686,13 @@ function PanueloScreen() {
       {children}
     </ScrollView>
   );
-  const tutorialView = (
-    <PanueloTutorial
-      isDark={isDark}
-      index={tutorialStep}
-      onIndex={setTutorialStep}
-      onFinish={tutorial.finish}
-    />
-  );
-  // El tutorial cabe en una columna con scroll: el visor se queda con el resto.
-  const panelBody = tutorial.open
-    ? panelScroll(tutorialView)
-    : active
-      ? large || isWide
-        ? panelScroll(detail)
-        : detail
-      : large && !isWide
-        ? panelScroll(collectionView)
-        : collectionView;
+  const panelBody = active
+    ? large || isWide
+      ? panelScroll(detail)
+      : detail
+    : large && !isWide
+      ? panelScroll(collectionView)
+      : collectionView;
 
   const topLeft = tutorial.open ? null : memory ? (
     <PanueloMemoryBar isDark={isDark} memory={memory} onBack={leaveMemory} />
@@ -794,7 +783,13 @@ function PanueloScreen() {
         />
 
         {tutorial.open ? (
-          <PanueloTutorialHeader isDark={isDark} onClose={tutorial.finish} />
+          <PanueloTutorialHeader
+            isDark={isDark}
+            onClose={tutorial.finish}
+            onBack={
+              tutorialStep > 0 ? () => setTutorialStep((i) => i - 1) : undefined
+            }
+          />
         ) : (
           <View style={styles.stageTop} pointerEvents="box-none">
             {topLeft}
@@ -817,18 +812,28 @@ function PanueloScreen() {
         <PanueloStageBurst color={stage.burst} onDone={stage.clearBurst} />
       </View>
 
-      <View
-        style={[
-          styles.panel,
-          isWide ? styles.panelWide : styles.panelBottom,
-          {
-            backgroundColor: t.card,
-            paddingBottom: insets.bottom + spacing.md,
-          },
-        ]}
-      >
-        {panelBody}
-      </View>
+      {tutorial.open ? (
+        <PanueloTutorialPanel
+          isDark={isDark}
+          sideWidth={isWide ? SIDE_PANEL_WIDTH : undefined}
+          index={tutorialStep}
+          onIndex={setTutorialStep}
+          onFinish={tutorial.finish}
+        />
+      ) : (
+        <View
+          style={[
+            styles.panel,
+            isWide ? styles.panelWide : styles.panelBottom,
+            {
+              backgroundColor: t.card,
+              paddingBottom: insets.bottom + spacing.md,
+            },
+          ]}
+        >
+          {panelBody}
+        </View>
+      )}
 
       <PanueloRedeemSheet
         visible={redeemOpen && !tutorial.busy}

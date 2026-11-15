@@ -1071,33 +1071,69 @@ describe('sin textos de explicación sueltos', () => {
 
 describe('el tutorial', () => {
   const first = PANUELO_TUTORIAL[0];
-  // El título del PASO: el de la tarjeta del tutorial, no el de la cabecera
-  // («Tu pañuelo») ni el de la colección.
-  const headerTitles = (root: ReactTestInstance) => {
-    const dots = root.findAll(
+  const count = PANUELO_TUTORIAL.length;
+  const pageWidth = originalWindow.width;
+
+  /** El pager: el ScrollView horizontal con paginado. */
+  const pager = (root: ReactTestInstance) =>
+    root.findAll(
+      (n) =>
+        n.props.pagingEnabled === true &&
+        typeof n.props.onMomentumScrollEnd === 'function',
+    )[0];
+  /** El dedo suelta y la página se asienta en `page`. */
+  async function settleOn(root: ReactTestInstance, page: number) {
+    await act(async () => {
+      pager(root).props.onMomentumScrollEnd({
+        nativeEvent: { contentOffset: { x: page * pageWidth, y: 0 } },
+      });
+    });
+  }
+  /** La página que se ve (las demás están ocultas al lector). */
+  const currentPage = (root: ReactTestInstance) =>
+    root.findAll(
       (n) =>
         typeof n.type === 'string' &&
-        n.props.accessibilityRole === 'progressbar',
+        n.props.accessibilityElementsHidden === false &&
+        n.props.importantForAccessibility === 'auto',
     )[0];
-    // Se sube desde el indicador hasta la tarjeta que tiene el título del paso.
-    const isTitle = (n: ReactTestInstance) =>
-      typeof n.type === 'string' && n.props.accessibilityRole === 'header';
-    for (let card = dots?.parent; card; card = card.parent) {
-      const titles = card.findAll(isTitle);
-      if (titles.length > 0) return titles.map((n) => textOf(n));
-    }
-    return [];
+  const isHeader = (n: ReactTestInstance) =>
+    typeof n.type === 'string' && n.props.accessibilityRole === 'header';
+  /** El título del paso que se ve; `null` si no hay tutorial. */
+  const stepTitle = (root: ReactTestInstance) => {
+    const page = currentPage(root);
+    return page ? textOf(page.findAll(isHeader)[0]) : null;
   };
+  const dots = (root: ReactTestInstance) =>
+    root.findAll(
+      (n) =>
+        typeof n.type === 'string' &&
+        n.props.accessibilityRole === 'adjustable',
+    )[0];
+  let select: jest.SpyInstance;
+  let success: jest.SpyInstance;
 
   beforeEach(async () => {
     await AsyncStorage.clear();
+    select = jest.spyOn(h, 'select').mockImplementation(() => undefined);
+    success = jest.spyOn(h, 'success').mockImplementation(() => undefined);
+  });
+  afterEach(() => {
+    select.mockRestore();
+    success.mockRestore();
   });
 
-  it('sale solo la primera vez, en el sitio de la colección, con el pañuelo de ejemplo en el visor', async () => {
+  it('tiene entre 6 y 7 pasos: una introducción, no un manual', () => {
+    expect(count).toBeGreaterThanOrEqual(6);
+    expect(count).toBeLessThanOrEqual(7);
+  });
+
+  it('sale solo la primera vez, con el pañuelo de ejemplo en el visor', async () => {
     const { root } = await mount();
-    expect(headerTitles(root)).toEqual([first.title]);
-    expect(textOf(root)).toContain(first.body);
-    expect(textOf(root)).not.toContain('Tu colección');
+    expect(stepTitle(root)).toBe(first.title);
+    expect(textOf(currentPage(root))).toContain(first.body);
+    expect(labelsOf(root)).not.toContain('Filtrar la colección');
+    expect(labelsOf(root)).not.toContain('Canjear un código');
     // Un único visor, con el estado de ejemplo (verde, con sus piezas).
     expect(mockViewer.props.state?.color).toBe('green');
     expect(mockViewer.props.state?.items.length).toBe(
@@ -1111,53 +1147,153 @@ describe('el tutorial', () => {
     expect(labels).not.toContain('Decorar el pañuelo');
   });
 
-  it('se recorre con Siguiente y Atrás, con indicador de paso accesible', async () => {
+  it('una sola acción principal, «Continuar»: nada de Saltar, Atrás o Siguiente', async () => {
     const { root } = await mount();
-    expect(labelsOf(root)).toContain(
-      `Tutorial, paso 1 de ${PANUELO_TUTORIAL.length}`,
+    const labels = labelsOf(root);
+    expect(pressable(root, 'Continuar').props.accessibilityRole).toBe('button');
+    for (const gone of ['Saltar', 'Saltar el tutorial', 'Atrás', 'Siguiente']) {
+      expect(labels).not.toContain(gone);
+    }
+    // El botón es alto (≥ 50 pt).
+    const style = Object.assign(
+      {},
+      ...[pressable(root, 'Continuar').props.style]
+        .flat(Infinity)
+        .filter(Boolean),
     );
-    await press(root, 'Siguiente');
-    expect(headerTitles(root)).toEqual([PANUELO_TUTORIAL[1].title]);
-    expect(labelsOf(root)).toContain(
-      `Tutorial, paso 2 de ${PANUELO_TUTORIAL.length}`,
+    expect(style.minHeight).toBeGreaterThanOrEqual(50);
+  });
+
+  it('el indicador de páginas dice cuántas hay y es ajustable', async () => {
+    const { root } = await mount();
+    const control = dots(root);
+    expect(control.props.accessibilityLabel).toBe(`Paso 1 de ${count}`);
+    expect(control.props.accessibilityValue).toEqual({
+      min: 1,
+      max: count,
+      now: 1,
+    });
+    // Un punto por paso, y el de ahora más ancho.
+    const dotViews = control.findAll(
+      (n) =>
+        typeof n.type === 'string' &&
+        n.props.accessibilityRole === undefined &&
+        n !== control &&
+        Array.isArray(n.props.style),
     );
-    // «Las piezas» enseña las seis clases, en el visor y en plano.
+    expect(dotViews.length).toBeGreaterThanOrEqual(count);
+    await act(async () => {
+      control.props.onAccessibilityAction({
+        nativeEvent: { actionName: 'increment' },
+      });
+    });
+    expect(dots(root).props.accessibilityLabel).toBe(`Paso 2 de ${count}`);
+    await act(async () => {
+      dots(root).props.onAccessibilityAction({
+        nativeEvent: { actionName: 'decrement' },
+      });
+    });
+    expect(dots(root).props.accessibilityLabel).toBe(`Paso 1 de ${count}`);
+    // Fuera de la fila no hace nada.
+    await act(async () => {
+      dots(root).props.onAccessibilityAction({
+        nativeEvent: { actionName: 'decrement' },
+      });
+    });
+    expect(dots(root).props.accessibilityLabel).toBe(`Paso 1 de ${count}`);
+  });
+
+  it('«Continuar» avanza un paso y el visor cambia de ejemplo', async () => {
+    const { root } = await mount();
+    await press(root, 'Continuar');
+    expect(stepTitle(root)).toBe(PANUELO_TUTORIAL[1].title);
+    expect(dots(root).props.accessibilityLabel).toBe(`Paso 2 de ${count}`);
     expect(mockViewer.props.state?.items.length).toBe(6);
     expect([...labelsOf(root)].some((l) => l.startsWith('Ejemplos: '))).toBe(
       true,
     );
-    await press(root, 'Atrás');
-    expect(headerTitles(root)).toEqual([first.title]);
   });
 
-  it('deslizar también cambia de sección', async () => {
+  it('el chevron de arriba, «Paso anterior», solo desde el segundo paso', async () => {
     const { root } = await mount();
-    const swipeArea = root.findAll(
+    expect(labelsOf(root)).not.toContain('Paso anterior');
+    await press(root, 'Continuar');
+    await press(root, 'Paso anterior');
+    expect(stepTitle(root)).toBe(first.title);
+    expect(labelsOf(root)).not.toContain('Paso anterior');
+  });
+
+  it('deslizar cambia de paso, también hacia atrás (a la derecha)', async () => {
+    const { root } = await mount();
+    await settleOn(root, 1);
+    expect(stepTitle(root)).toBe(PANUELO_TUTORIAL[1].title);
+    await settleOn(root, 2);
+    expect(stepTitle(root)).toBe(PANUELO_TUTORIAL[2].title);
+    await settleOn(root, 1);
+    expect(stepTitle(root)).toBe(PANUELO_TUTORIAL[1].title);
+    // Un desplazamiento fuera de rango se queda en el último paso.
+    await settleOn(root, count + 3);
+    expect(stepTitle(root)).toBe(PANUELO_TUTORIAL[count - 1].title);
+  });
+
+  it('para el lector, volver atrás es una acción del título y las páginas ocultas no se leen', async () => {
+    const { root } = await mount();
+    await press(root, 'Continuar');
+    const title = currentPage(root).findAll(isHeader)[0];
+    expect(title.props.accessibilityActions).toEqual([
+      { name: 'previous', label: 'Paso anterior' },
+    ]);
+    await act(async () => {
+      title.props.onAccessibilityAction({
+        nativeEvent: { actionName: 'previous' },
+      });
+    });
+    expect(stepTitle(root)).toBe(first.title);
+    const hidden = root.findAll(
       (n) =>
         typeof n.type === 'string' &&
-        typeof n.props.onTouchStart === 'function',
-    )[0];
-    const touch = (pageX: number) => ({ nativeEvent: { pageX } });
-    await act(async () => {
-      swipeArea.props.onTouchStart(touch(300));
-      swipeArea.props.onTouchEnd(touch(100));
-    });
-    expect(headerTitles(root)).toEqual([PANUELO_TUTORIAL[1].title]);
-    // Un toque corto no cuenta.
-    await act(async () => {
-      swipeArea.props.onTouchStart(touch(300));
-      swipeArea.props.onTouchEnd(touch(290));
-    });
-    expect(headerTitles(root)).toEqual([PANUELO_TUTORIAL[1].title]);
+        n.props.importantForAccessibility === 'no-hide-descendants' &&
+        n.props.accessibilityElementsHidden === true,
+    );
+    expect(hidden).toHaveLength(count - 1);
   });
 
-  it('«Entendido» en la última lo da por visto, con su versión, y vuelve la colección', async () => {
-    const { root } = await mount();
-    for (let i = 0; i < PANUELO_TUTORIAL.length - 1; i++) {
-      await press(root, 'Siguiente');
+  it('«Continuar» desliza a la página siguiente, y con «reducir movimiento» cambia directo', async () => {
+    for (const reduced of [false, true]) {
+      mockMotion.reduced = reduced;
+      const { root } = await mount();
+      const instance = pager(root).instance;
+      const scrollTo = jest.fn();
+      instance.scrollTo = scrollTo;
+      await press(root, 'Continuar');
+      expect(scrollTo).toHaveBeenCalledWith({
+        x: pageWidth,
+        animated: !reduced,
+      });
+      await act(async () => {
+        tree?.unmount();
+      });
     }
-    expect(labelsOf(root)).not.toContain('Saltar el tutorial');
-    await press(root, 'Entendido');
+  });
+
+  it('háptico suave al cambiar de página, no al abrirse', async () => {
+    const { root } = await mount();
+    expect(select).not.toHaveBeenCalled();
+    await press(root, 'Continuar');
+    expect(select).toHaveBeenCalledTimes(1);
+    await settleOn(root, 2);
+    expect(select).toHaveBeenCalledTimes(2);
+  });
+
+  it('en el último paso el botón dice «Empezar», lo da por visto y vuelve la colección', async () => {
+    const { root } = await mount();
+    for (let i = 0; i < count - 1; i++) await press(root, 'Continuar');
+    expect(dots(root).props.accessibilityLabel).toBe(
+      `Paso ${count} de ${count}`,
+    );
+    expect(labelsOf(root)).not.toContain('Continuar');
+    await press(root, 'Empezar');
+    expect(success).toHaveBeenCalledTimes(1);
     expect(await AsyncStorage.getItem(PANUELO_TUTORIAL_KEY)).toBe(
       String(PANUELO_TUTORIAL_VERSION),
     );
@@ -1165,28 +1301,58 @@ describe('el tutorial', () => {
     expect(mockViewer.props.state?.color).toBe('blue');
   });
 
-  it('«Saltar» también lo da por visto', async () => {
+  it('la X sale del tutorial en cualquier paso y lo da por visto', async () => {
     const { root } = await mount();
-    await press(root, 'Saltar el tutorial');
+    await press(root, 'Continuar');
+    await press(root, 'Cerrar el tutorial');
     expect(await AsyncStorage.getItem(PANUELO_TUTORIAL_KEY)).toBe(
       String(PANUELO_TUTORIAL_VERSION),
     );
     expect(textOf(root)).toContain('Tu colección');
   });
 
-  it('visto, no vuelve a salir solo; el botón de información lo enseña siempre', async () => {
+  it('reparte la pantalla: ~55 % para el contenido', async () => {
+    const { root } = await mount();
+    const panel = root.findAll(
+      (n) =>
+        typeof n.type === 'string' &&
+        [n.props.style]
+          .flat(Infinity)
+          .some(
+            (st: { height?: number } | false | null | undefined) =>
+              !!st && st.height === originalWindow.height * 0.55,
+          ),
+    );
+    expect(panel.length).toBeGreaterThan(0);
+  });
+
+  it('cada paso es una página con título grande, frase de entrada y filas', async () => {
+    const { root } = await mount();
+    const page = currentPage(root);
+    const text = textOf(page);
+    expect(text).toContain('Gíralo y acércalo');
+    expect(text).toContain('Su color es tu etapa');
+    // Los «cómo se hace» van numerados.
+    const canjear = PANUELO_TUTORIAL.findIndex((s) => s.id === 'canjear');
+    await settleOn(root, canjear);
+    expect(textOf(currentPage(root))).toContain(
+      'Pulsa «Canjear» en tu colección.',
+    );
+  });
+
+  it('visto, no vuelve a salir solo; el «?» de la cabecera lo enseña siempre', async () => {
     await AsyncStorage.setItem(
       PANUELO_TUTORIAL_KEY,
       String(PANUELO_TUTORIAL_VERSION),
     );
     const { root } = await mount();
-    expect(headerTitles(root)).toEqual([]);
+    expect(stepTitle(root)).toBeNull();
     expect(pressable(root, 'Cómo funciona tu pañuelo')).toBeTruthy();
     await press(root, 'Cómo funciona tu pañuelo');
-    expect(headerTitles(root)).toEqual([first.title]);
+    expect(stepTitle(root)).toBe(first.title);
   });
 
-  it('al abrirlo a mano sale de decorar y vuelve a la primera sección', async () => {
+  it('al abrirlo a mano sale de decorar y vuelve al primer paso', async () => {
     await AsyncStorage.setItem(
       PANUELO_TUTORIAL_KEY,
       String(PANUELO_TUTORIAL_VERSION),
@@ -1195,10 +1361,10 @@ describe('el tutorial', () => {
     await press(root, 'Decorar el pañuelo');
     await press(root, 'Cómo funciona tu pañuelo');
     expect(mockViewer.props.mode).toBe('view');
-    await press(root, 'Siguiente');
-    await press(root, 'Saltar el tutorial');
+    await press(root, 'Continuar');
+    await press(root, 'Cerrar el tutorial');
     await press(root, 'Cómo funciona tu pañuelo');
-    expect(headerTitles(root)).toEqual([first.title]);
+    expect(stepTitle(root)).toBe(first.title);
   });
 
   it('una versión guardada anterior lo vuelve a enseñar', async () => {
@@ -1207,14 +1373,14 @@ describe('el tutorial', () => {
       String(PANUELO_TUTORIAL_VERSION - 1),
     );
     const { root } = await mount();
-    expect(headerTitles(root)).toEqual([first.title]);
+    expect(stepTitle(root)).toBe(first.title);
   });
 
   it('el canje de `?codigo=` espera a que acabe el tutorial', async () => {
     mockRouter.params = { codigo: 'CAMINO' };
     const { root } = await mount();
     expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
-    await press(root, 'Saltar el tutorial');
+    await press(root, 'Cerrar el tutorial');
     expect(root.findByType('BottomSheet' as never).props.title).toBe(
       'Canjear un código',
     );
@@ -1232,9 +1398,9 @@ describe('el tutorial', () => {
         jest.advanceTimersByTime(4000);
       });
       expect(mockSend).not.toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'reveal' }),
+        expect.objectContaining({ type: 'reveal', id: 'chapa1' }),
       );
-      await press(root, 'Saltar el tutorial');
+      await press(root, 'Cerrar el tutorial');
       await act(async () => {
         jest.advanceTimersByTime(1000);
       });
@@ -1367,7 +1533,7 @@ describe('el color viene de Comunica', () => {
     mockScarf.value = 'red';
     const { root } = await mount();
     expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
-    await press(root, 'Saltar el tutorial');
+    await press(root, 'Cerrar el tutorial');
     expect(root.findByType('BottomSheet' as never).props.title).toBe(
       'Tienes pañuelo nuevo',
     );
@@ -1470,17 +1636,23 @@ describe('el tutorial a pantalla completa y la cabecera nativa', () => {
   it('cada paso deja el único visor como lo explica: «Decorarlo» en modo decorar', async () => {
     const { root } = await mount();
     const index = PANUELO_TUTORIAL.findIndex((s) => s.id === 'decorarlo');
-    for (let i = 0; i < index; i++) await press(root, 'Siguiente');
+    for (let i = 0; i < index; i++) await press(root, 'Continuar');
     expect(mockViewer.props.mode).toBe('edit');
     // «Cómo se hace», en pasos numerados.
-    expect(textOf(root)).toContain('1.');
-    expect(textOf(root)).toContain('Entra en «Decorar».');
+    const page = root.findAll(
+      (n) =>
+        typeof n.type === 'string' &&
+        n.props.accessibilityElementsHidden === false &&
+        n.props.importantForAccessibility === 'auto',
+    )[0];
+    expect(textOf(page)).toContain('Entra en «Decorar».');
+    expect(textOf(page)).toContain('Recolocar');
     // Al arrastrar en el ejemplo no se mueve nada de verdad.
     await act(async () => {
       mockViewer.props.onEvent?.({ type: 'drop', id: 'chapa1', u: 0, v: 0.3 });
     });
     expect(mockPanuelo.move).not.toHaveBeenCalled();
-    await press(root, 'Saltar el tutorial');
+    await press(root, 'Cerrar el tutorial');
     expect(mockViewer.props.mode).toBe('view');
   });
 
@@ -1494,7 +1666,7 @@ describe('el tutorial a pantalla completa y la cabecera nativa', () => {
       const index = PANUELO_TUTORIAL.findIndex(
         (s) => s.id === 'verlas-de-cerca',
       );
-      for (let i = 0; i < index; i++) await press(root, 'Siguiente');
+      for (let i = 0; i < index; i++) await press(root, 'Continuar');
       await act(async () => {
         jest.advanceTimersByTime(1000);
       });
@@ -1514,7 +1686,7 @@ describe('el tutorial a pantalla completa y la cabecera nativa', () => {
         (n) => n.props.accessibilityHint !== undefined && n.props.state,
       );
     const before = viewers().length;
-    await press(root, 'Siguiente');
+    await press(root, 'Continuar');
     await press(root, 'Cerrar el tutorial');
     expect(viewers().length).toBe(before);
   });

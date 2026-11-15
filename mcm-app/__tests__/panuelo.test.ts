@@ -902,14 +902,11 @@ describe('el tutorial (datos)', () => {
     for (const id of [
       'tu-panuelo',
       'las-piezas',
-      'verlas-de-cerca',
-      'decorarlo',
-      'recolocar',
       'canjear',
+      'verlas-de-cerca',
       'tu-coleccion',
-      'compartir',
+      'decorarlo',
       'cambiar-de-etapa',
-      'mis-panuelos',
     ]) {
       expect(ids).toContain(id);
     }
@@ -932,8 +929,30 @@ describe('el tutorial (datos)', () => {
     }
   });
 
-  it('la versión subió con el tutorial a pantalla completa', () => {
-    expect(PANUELO_TUTORIAL_VERSION).toBeGreaterThanOrEqual(2);
+  it('son 6 o 7 pasos y lo fundido no se ha perdido', () => {
+    expect(PANUELO_TUTORIAL.length).toBeGreaterThanOrEqual(6);
+    expect(PANUELO_TUTORIAL.length).toBeLessThanOrEqual(7);
+    const all = (id: string) => {
+      const s = PANUELO_TUTORIAL.find((x) => x.id === id);
+      return JSON.stringify(s).toLowerCase();
+    };
+    expect(all('decorarlo')).toContain('recolocar');
+    expect(all('tu-coleccion')).toContain('compartir');
+    expect(all('cambiar-de-etapa')).toContain('mis pañuelos');
+  });
+
+  it('los iconos de las filas existen en Material Icons', () => {
+    const glyphs = require('@expo/vector-icons/build/vendor/react-native-vector-icons/glyphmaps/MaterialIcons.json');
+    for (const s of PANUELO_TUTORIAL) {
+      for (const row of s.rows ?? []) {
+        expect(glyphs[row.icon]).toBeDefined();
+        expect(row.title.trim()).not.toBe('');
+      }
+    }
+  });
+
+  it('la versión subió con el rediseño por páginas', () => {
+    expect(PANUELO_TUTORIAL_VERSION).toBeGreaterThanOrEqual(3);
   });
 
   it('tiene versión y secciones con id único, título y texto', () => {
