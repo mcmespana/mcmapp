@@ -262,7 +262,13 @@ function InnerLayout() {
         {/* Solo se llega desde el Laboratorio Alpha (ver app/panuelo.tsx). */}
         <Stack.Screen
           name="panuelo"
-          options={{ headerShown: true, title: 'Tu pañuelo' }}
+          // Sin el gesto de «atrás» de iOS: girar el pañuelo o arrastrar una
+          // pieza desde el borde se llevaba la pantalla. Se sale con la flecha.
+          options={{
+            headerShown: true,
+            title: 'Tu pañuelo',
+            gestureEnabled: false,
+          }}
         />
         <Stack.Screen
           name="playlist"
