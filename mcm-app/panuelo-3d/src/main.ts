@@ -25,7 +25,9 @@ import type {
 
 import logoUrl from '../assets/logo-com.png';
 import {
+  bendPoint,
   BOUNDS,
+  clothBend,
   createPanuelo,
   flapPoint,
   uvToFlap,
@@ -105,6 +107,9 @@ const CAMERA_TILT = 0.11;
 const FLOOR_Y = -2.52;
 /** En cuántos puntos se palpa la tela alrededor de una pieza al coserla. */
 const SEAT_SAMPLES = 8;
+/** La caída de la tela: blanda y poco amortiguada, para que se pase y vuelva. */
+const DRAPE_STIFFNESS = 34;
+const DRAPE_DAMPING = 5.5;
 /** Péndulo de las piezas que cuelgan: rigidez y freno (ζ ≈ 0,3: se mecen). */
 const SWING_STIFFNESS = 70;
 const SWING_DAMPING = 5;
@@ -166,6 +171,8 @@ class Viewer {
   private frame = 0;
   private lastTime = 0;
   private lastRender = 0;
+  /** La caída de la tela: dos péndulos (de lado y hacia fuera) y su onda. */
+  private drape = { x: 0, vx: 0, z: 0, vz: 0, phase: 0 };
 
   private pointers = new Map<number, { x: number; y: number }>();
   private gesture: null | {
@@ -852,6 +859,59 @@ class Viewer {
   }
 
   /**
+   * La tela cuelga: al girar el pañuelo o inclinar el móvil, lo de abajo
+   * llega tarde, se pasa y vuelve. Devuelve si sigue moviéndose.
+   */
+  private stepDrape(dt: number, yawRate: number): boolean {
+    const d = this.drape;
+    if (this.reducedMotion || this.still) return false;
+    const seconds = dt / 1000;
+    // Girando, el pico se queda atrás y la tela se abre un poco hacia fuera.
+    const targetX = clamp(-yawRate * 0.085 - this.tiltX * 0.07, -0.34, 0.34);
+    const targetZ = clamp(
+      Math.abs(yawRate) * 0.03 + this.tiltY * 0.06,
+      -0.12,
+      0.2,
+    );
+    d.vx +=
+      (DRAPE_STIFFNESS * (targetX - d.x) - DRAPE_DAMPING * d.vx) * seconds;
+    d.x += d.vx * seconds;
+    d.vz +=
+      (DRAPE_STIFFNESS * (targetZ - d.z) - DRAPE_DAMPING * d.vz) * seconds;
+    d.z += d.vz * seconds;
+    // La onda que le corre a la tela es más alta cuanto más deprisa se mueve.
+    const speed = Math.abs(d.vx) + Math.abs(d.vz);
+    const ripple = Math.min(0.05, speed * 0.05);
+    d.phase += seconds * 9;
+    clothBend.value.set(d.x, d.z, ripple, d.phase);
+    const moving =
+      speed > 0.004 ||
+      Math.abs(targetX - d.x) > 0.002 ||
+      Math.abs(targetZ - d.z) > 0.002;
+    if (!moving) clothBend.value.z = 0;
+    return moving;
+  }
+
+  /**
+   * Pinta con las piezas cosidas movidas a donde está la tela doblada, y las
+   * devuelve a su sitio: así ni los arrastres ni las animaciones se enteran.
+   */
+  private renderBent() {
+    const b = clothBend.value;
+    const bent = b.x !== 0 || b.y !== 0 || b.z !== 0;
+    const moved: [Entry, THREE.Vector3][] = [];
+    if (bent) {
+      for (const entry of this.entries.values()) {
+        if (entry.group.parent !== this.itemsGroup) continue;
+        moved.push([entry, entry.group.position.clone()]);
+        bendPoint(entry.group.position);
+      }
+    }
+    this.renderer.render(this.scene, this.camera);
+    for (const [entry, at] of moved) entry.group.position.copy(at);
+  }
+
+  /**
    * Las piezas que cuelgan (medallas, cintas) se balancean cuando el pañuelo
    * gira o el móvil se inclina: un péndulo amortiguado por pieza. Devuelve si
    * alguna sigue moviéndose.
@@ -885,7 +945,7 @@ class Viewer {
 
   /** Una foto de lo que se ve, sobre un fondo liso, para compartirla. */
   private snapshot(background: string) {
-    this.renderer.render(this.scene, this.camera);
+    this.renderBent();
     const source = this.renderer.domElement;
     const out = document.createElement('canvas');
     out.width = source.width;
@@ -1275,6 +1335,9 @@ class Viewer {
     const swinging = this.stepSwing(dt, yawRate);
     if (swinging) dirty = true;
 
+    const draping = this.stepDrape(dt, yawRate);
+    if (draping) dirty = true;
+
     // ¿Queda algo en marcha? Si no, el bucle se duerme: `invalidate()` y los
     // toques lo despiertan.
     const coasting =
@@ -1283,6 +1346,7 @@ class Viewer {
     if (
       swaying ||
       swinging ||
+      draping ||
       coasting ||
       this.tweens.length > 0 ||
       this.gesture
@@ -1313,7 +1377,7 @@ class Viewer {
       // Durante el vuelo de entrada, el giro se suma a la orientación.
       this.focused.group.rotateY(this.spin.yaw);
     }
-    this.renderer.render(this.scene, this.camera);
+    this.renderBent();
   };
 }
 
