@@ -105,6 +105,18 @@ const CAMERA_TILT = 0.11;
 const FLOOR_Y = -2.52;
 /** En cuántos puntos se palpa la tela alrededor de una pieza al coserla. */
 const SEAT_SAMPLES = 8;
+/**
+ * Lo que pesa cada clase de pieza para la tela (la tela sola pesa 1 por
+ * punto). Una medalla de metal tira; un parche bordado, casi nada.
+ */
+const ITEM_WEIGHT: Record<PanueloViewerItem['kind'], number> = {
+  parche: 0.5,
+  cinta: 0.7,
+  pin: 0.9,
+  pulsera: 1,
+  chapa: 1.3,
+  medalla: 2.6,
+};
 /** Péndulo de las piezas que cuelgan: rigidez y freno (ζ ≈ 0,3: se mecen). */
 const SWING_STIFFNESS = 70;
 const SWING_DAMPING = 5;
@@ -167,7 +179,7 @@ class Viewer {
   private lastTime = 0;
   private lastRender = 0;
   /** El giro del pañuelo en el último paso de la tela simulada. */
-  private drape = { yaw: 0, pitch: 0 };
+  private drape = { yaw: 0, pitch: 0, loads: '' };
 
   private pointers = new Map<number, { x: number; y: number }>();
   private gesture: null | {
@@ -859,6 +871,7 @@ class Viewer {
    */
   private stepDrape(dt: number, yawNow: number, pitchNow: number): boolean {
     if (this.reducedMotion || this.still) return false;
+    this.syncLoads();
     const dYaw = yawNow - this.drape.yaw;
     const dPitch = pitchNow - this.drape.pitch;
     this.drape.yaw = yawNow;
@@ -872,6 +885,21 @@ class Viewer {
       this.focused ? 0 : this.tiltX,
       this.focused ? 0 : this.tiltY,
     );
+  }
+
+  /** Le dice a la tela qué piezas lleva cosidas, dónde, y lo que pesan. */
+  private syncLoads() {
+    const loads: { s: number; t: number; weight: number }[] = [];
+    let signature = '';
+    for (const entry of this.entries.values()) {
+      if (entry.group.parent !== this.itemsGroup) continue;
+      const weight = ITEM_WEIGHT[entry.data.kind] * entry.scale;
+      loads.push({ s: entry.data.u, t: entry.data.v, weight });
+      signature += `${entry.id}:${entry.data.u.toFixed(2)}:${entry.data.v.toFixed(2)}:${weight.toFixed(2)};`;
+    }
+    if (signature === this.drape.loads) return;
+    this.drape.loads = signature;
+    this.panuelo.cloth.setLoads(loads);
   }
 
   /**
