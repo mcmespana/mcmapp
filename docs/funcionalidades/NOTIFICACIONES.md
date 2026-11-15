@@ -365,6 +365,7 @@ en el móvil»).
 | Aviso | Lo manda | Canal Android | Al tocarlo |
 |---|---|---|---|
 | «¿Has pasado lista?» | El servidor del área (`mcm-comunica-api`) | `comunica-listas` (HIGH) | Marcar ese grupo en esa sesión |
+| Recordatorio de coordinación (15/11/2026): «Pasar lista · M5.3» con el texto que elige quien lo manda (gracioso, serio o escrito a mano, 120 caracteres) | El servidor del área, cuando coordinación lo pide desde el Resumen de grupos. **No mira el interruptor «¿Has pasado lista?»** del móvil | `comunica-listas` (HIGH) | La última sesión sin lista de ese grupo |
 | «Novedades en tu grupo» | El servidor del área | `comunica-grupos` (DEFAULT) | La ficha del grupo |
 | «Tienes N listas sin subir» | **La app** (aviso local) | `comunica-listas` | La portada del área |
 

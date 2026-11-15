@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-15 22:20 — Comunica: coordinación recuerda a los monitores que pasen lista
+
+- **Campana en la cabecera del Resumen de grupos** (solo coordinación): entra en modo de elegir grupos, con los de la última lista sin pasar ya marcados. Solo se pueden marcar grupos de su alcance y con monitores vinculados. Abajo, «Recordar a N grupos».
+- **Hoja «Recordar que pasen lista»** (`RollReminderSheet`): tono Gracioso/Serio (se queda guardado en el móvil), un mensaje al azar de 100 (50 y 50, en `utils/comunica/rollReminders.ts`), «Otro al azar» y el texto editable a mano (120 caracteres, una línea). Lo que se ve es lo que llega.
+- **Ruta nueva del middleware** `POST /v1/coordination/roll-reminders` (contrato: `RollReminderWrite` / `RollReminderResult`): manda un aviso `rollcall_due` a todos los móviles de los monitores de esos grupos, **sin mirar el interruptor «¿Has pasado lista?»**; al tocarlo abre la última sesión sin lista. Como mucho un aviso cada 10 minutos por grupo. La respuesta dice a cuántos monitores ha llegado («Aviso enviado a 5 de 7 monitores»).
+- No va por la cola (hace falta conexión). Servidor falso incluido. Sin paquetes nuevos. Sin probar en móvil.
+
 ## 2026-11-15 11:01 — Pañuelo virtual: el tutorial, rediseñado como una introducción de Apple
 
 - **Una sola acción principal, fija abajo**: «Continuar» y, al final, «Empezar» (≥ 50 pt, sobre el área segura). Fuera «Saltar», «Atrás» y «Siguiente»: se sale con la X de arriba y se vuelve atrás deslizando a la derecha (acción «Paso anterior» para el lector y chevron arriba a la izquierda solo desde el segundo paso).

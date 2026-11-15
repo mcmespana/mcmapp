@@ -26,6 +26,8 @@ import {
   MeetingsResponse,
   MeetingWrite,
   MeetingWriteResult,
+  RollReminderResult,
+  RollReminderWrite,
   MonitorDetail,
   MonitorsRoll,
   MonitorsRollWrite,
@@ -89,6 +91,7 @@ type CoordinationApi = Pick<
   | 'saveMonitorsRoll'
   | 'getMeetings'
   | 'createMeeting'
+  | 'sendRollReminders'
   | 'getMonitor'
   | 'getFollowUps'
   | 'createFollowUp'
@@ -383,6 +386,9 @@ export function createCoordinationRoutes(
 
   /** ¿Puede abrir la ficha de este monitor? (coordinación en su alcance o acompañamiento). */
   const canSeeMonitor = (pid: string) => teamIds().includes(pid);
+
+  /** Cuándo se avisó a cada grupo (recordatorios de pasar lista). */
+  const nudged = new Map<string, number>();
 
   const remember = <T>(clientId: string, result: T) => {
     ctx.seen.set(clientId, result);
@@ -687,6 +693,40 @@ export function createCoordinationRoutes(
           status: 'applied',
           crmIds: [session.id],
           meeting: meetingOf(session),
+        }),
+      );
+    },
+
+    async sendRollReminders(body) {
+      await ctx.gate('rollReminders', true);
+      requireCoord();
+      const parsed = RollReminderWrite.safeParse(body);
+      if (!parsed.success) {
+        throw validation('bad_body', 'Elige algún grupo y escribe el mensaje');
+      }
+      const w = parsed.data;
+      const repeated = ctx.seen.get(w.clientId);
+      if (repeated) return RollReminderResult.parse(repeated);
+      const mine = new Map(scopedGroups().map((g) => [g.id, g]));
+      const ids = [...new Set(w.groupIds)];
+      if (ids.some((id) => !mine.has(id))) throw forbidden();
+      // Como el servidor: a un grupo avisado hace menos de 10 minutos, no.
+      const at = ctx.now().getTime();
+      const recent = ids.filter(
+        (id) => at - (nudged.get(id) ?? -Infinity) < 600_000,
+      );
+      const go = ids.filter((id) => !recent.includes(id));
+      go.forEach((id) => nudged.set(id, at));
+      const monitors = new Set(go.flatMap((id) => mine.get(id)!.monitorIds));
+      return remember(
+        w.clientId,
+        RollReminderResult.parse({
+          clientId: w.clientId,
+          status: 'applied',
+          monitors: monitors.size,
+          // El servidor falso no tiene móviles: hace como que uno no tiene la app.
+          reached: Math.max(0, monitors.size - 1),
+          recent,
         }),
       );
     },

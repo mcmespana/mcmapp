@@ -421,6 +421,7 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     saveMonitorsRoll: authed((s, b) => api.saveMonitorsRoll(s, b)),
     getMeetings: authed((o) => api.getMeetings(o)),
     createMeeting: authed((b) => api.createMeeting(b)),
+    sendRollReminders: authed((b) => api.sendRollReminders(b)),
     getMonitor: authed((id, o) => api.getMonitor(id, o)),
     getFollowUps: authed((id) => api.getFollowUps(id)),
     createFollowUp: authed((id, b) => api.createFollowUp(id, b)),
