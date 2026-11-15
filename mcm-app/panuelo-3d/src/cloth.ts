@@ -308,7 +308,7 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
       // Fijo arriba (el cuello) y al llegar al nudo.
       const w = smooth(0, 0.22, t) * (1 - smooth(0.55, 0.95, e));
       free[j * ROW + c] = w;
-      pull[j * ROW + c] = 95 - 50 * smooth(0.1, 1, t);
+      pull[j * ROW + c] = 170 - 80 * smooth(0.1, 1, t);
     }
   }
   // Los hilos: a lo ancho, a lo largo y en diagonal.
@@ -515,17 +515,17 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
 }
 
 /** Lo que frena el aire a la tela, por paso. */
-const CLOTH_DRAG = 0.945;
+const CLOTH_DRAG = 0.93;
 /**
  * Cuánto se queda atrás la tela al girar el pañuelo (1 = del todo). Bajo: es
  * una tela con peso que acompaña el giro, no una gasa que flota.
  */
-const CLOTH_LAG = 0.42;
+const CLOTH_LAG = 0.36;
 /** Cuánto tira del pico inclinar el móvil. */
 const CLOTH_TILT = 1.1;
 const CLOTH_ITERATIONS = 4;
 /** Cuánto hunde la tela el peso de una pieza. */
-const CLOTH_SAG = 2.2;
+const CLOTH_SAG = 5;
 /** Por debajo de 1 la tela da de sí y se ve blanda; a 1 es un algodón con peso. */
 const CLOTH_STRETCH = 1;
 
