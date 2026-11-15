@@ -86,8 +86,30 @@ function wrinkle(s: number, t: number): number {
     0.04 * Math.sin(5.2 * s + 2.4 * t + 0.5) +
     0.02 * Math.sin(11.5 * s - 5 * t + 1.9) +
     0.012 * Math.sin(3.1 * s + 9 * t);
-  // Muy poco: el pañuelo va liso, solo con la caída natural de la tela.
-  return env * folds * 0.45;
+  // Pliegues de caída, suaves: el pañuelo va liso, no arrugado como un trapo…
+  // …pero es tela: tiene el arrugado fino de un algodón que se ha usado y
+  // doblado, que es lo que hace que no parezca de plástico.
+  const crumple =
+    0.011 * (valueNoise(s * 3.1 + 7, t * 4.3) - 0.5) +
+    0.006 * (valueNoise(s * 7.3 - 2, t * 9.1 + 5) - 0.5);
+  return env * folds * 0.6 + smooth(0.02, 0.2, t) * crumple;
+}
+
+/** Ruido suave y repetible (0…1): la misma arruga en cada apertura. */
+function valueNoise(x: number, y: number): number {
+  const hash = (i: number, j: number) => {
+    const h = Math.sin(i * 127.1 + j * 311.7) * 43758.5453;
+    return h - Math.floor(h);
+  };
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const fx = x - x0;
+  const fy = y - y0;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+  const a = hash(x0, y0) + (hash(x0 + 1, y0) - hash(x0, y0)) * ux;
+  const b = hash(x0, y0 + 1) + (hash(x0 + 1, y0 + 1) - hash(x0, y0 + 1)) * ux;
+  return a + (b - a) * uy;
 }
 
 const EPS = 0.004;
@@ -445,6 +467,20 @@ function paintFlap(
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
   }
 
+  // La trama: hilos claros y oscuros cruzados, muy tenues. De lejos se lee
+  // como «tela» y no como un color plano; de cerca se ven los hilos.
+  const thread = seeded(11);
+  for (let i = 0; i < TEX; i += 3) {
+    ctx.fillStyle = `rgba(${thread() > 0.5 ? '255,255,255' : '0,0,0'},${
+      0.015 + thread() * 0.04
+    })`;
+    ctx.fillRect(i, 0, 1.5, TEX);
+    ctx.fillStyle = `rgba(${thread() > 0.5 ? '255,255,255' : '0,0,0'},${
+      0.015 + thread() * 0.04
+    })`;
+    ctx.fillRect(0, i, TEX, 1.5);
+  }
+
   if (logo) {
     // El triángulo mide FLAP_WIDTH × FLAP_HEIGHT y la textura es cuadrada:
     // el logo se pinta estirado a lo alto para que cosido salga redondo.
@@ -493,16 +529,17 @@ export function createPanuelo(
   map.anisotropy = Math.min(8, maxAnisotropy);
 
   const flapWeave = weave.clone();
-  flapWeave.repeat.set(FLAP_WIDTH * 24, FLAP_HEIGHT * 24);
+  flapWeave.repeat.set(FLAP_WIDTH * 7, FLAP_HEIGHT * 7);
   flapWeave.needsUpdate = true;
 
   const common = {
     roughness: 0.9,
     metalness: 0,
-    sheen: 0.2,
-    sheenRoughness: 0.5,
+    // Algodón: mate, con la pelusilla clara que se ve al mirarlo de refilón.
+    sheen: 0.55,
+    sheenRoughness: 0.75,
     side: THREE.DoubleSide,
-    normalScale: new THREE.Vector2(0.2, 0.2),
+    normalScale: new THREE.Vector2(0.42, 0.42),
   } as const;
 
   // La serigrafía va solo por fuera: el revés es tela lisa.
