@@ -123,7 +123,7 @@ export function usePanueloStage({
             ? ''
             : keepPieces
               ? 'El anterior queda en Mis pañuelos y tus piezas siguen cosidas.'
-              : 'El anterior queda en Mis pañuelos y las piezas han vuelto a la colección.'
+              : 'El anterior queda en Mis pañuelos y las piezas se quedan sin poner.'
         }`.trim(),
       );
     },

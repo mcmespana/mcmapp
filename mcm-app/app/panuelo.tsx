@@ -10,22 +10,24 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
 import {
   AccessibilityInfo,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from 'react-native';
-import { Redirect, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHeaderHeight } from 'expo-router/react-navigation';
+import { useHeaderHeight, useNavigation } from 'expo-router/react-navigation';
 
 import { Medalla3DModal } from '@/components/medallas/Medalla3DModal';
 import type { LabMedal } from '@/components/medallas/labMedals';
@@ -51,13 +53,14 @@ import {
   PanueloStagePill,
 } from '@/components/panuelo/PanueloColorSwatches';
 import { PanueloStageBurst } from '@/components/panuelo/PanueloStageBurst';
-import { PanueloTutorial } from '@/components/panuelo/PanueloTutorial';
+import {
+  PanueloTutorial,
+  PanueloTutorialHeader,
+} from '@/components/panuelo/PanueloTutorial';
 import { PanueloStageSheet } from '@/components/panuelo/PanueloStageSheet';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { MaterialIcons } from '@/components/ui/icons';
 import { durations } from '@/constants/animations';
-import { DEFAULT_PANUELO_CATALOG } from '@/constants/panueloCatalog';
-import { PANUELO_TUTORIAL } from '@/constants/panueloTutorial';
 import { themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
@@ -70,6 +73,7 @@ import { usePanueloAvailable } from '@/hooks/usePanueloAvailable';
 import { usePanueloScarf } from '@/hooks/usePanueloScarf';
 import { usePanueloStage } from '@/hooks/usePanueloStage';
 import { usePanueloTutorial } from '@/hooks/usePanueloTutorial';
+import { usePanueloTutorialStage } from '@/hooks/usePanueloTutorialStage';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import {
   type PanueloCommand,
@@ -87,7 +91,6 @@ import {
   DEFAULT_PANUELO_COLOR,
   buildCollection,
   buildMemoryCollection,
-  exampleViewerState,
   memoryToViewerState,
   summarizePanuelo,
   toViewerState,
@@ -103,6 +106,8 @@ const ROTATE_STEP = 15;
 const SIDE_PANEL_WIDTH = 400;
 /** Con letra grande, lo más que ocupa el panel de abajo (el resto es del 3D). */
 const PANEL_MAX_SHARE = 0.55;
+/** Lo que lee el lector del «?» de la cabecera. */
+const HELP_LABEL = 'Cómo funciona tu pañuelo';
 
 export default function PanueloRoute() {
   const { available, settled } = usePanueloAvailable();
@@ -162,21 +167,22 @@ function PanueloScreen() {
   const memory: PanueloMemory | null =
     history.find((m) => m.at === viewingAt) ?? null;
 
-  const tutorialExample = tutorial.open
-    ? PANUELO_TUTORIAL[tutorialStep]?.example
-    : undefined;
+  // El tutorial usa ESTE visor con otro estado y sus propias órdenes.
+  const tutorialStage = usePanueloTutorialStage({
+    open: tutorial.open,
+    step: tutorialStep,
+    viewerReady,
+    sendToViewer,
+  });
+  const tutorialExample = tutorialStage.example;
+  const tutorialState = tutorialStage.state;
   const viewerState = useMemo(
     () =>
-      tutorialExample
-        ? exampleViewerState(
-            DEFAULT_PANUELO_CATALOG,
-            tutorialExample.color,
-            tutorialExample.pieces ?? [],
-          )
-        : memory
-          ? memoryToViewerState(catalog, memory)
-          : toViewerState(catalog, state),
-    [catalog, state, memory, tutorialExample],
+      tutorialState ??
+      (memory
+        ? memoryToViewerState(catalog, memory)
+        : toViewerState(catalog, state)),
+    [catalog, state, memory, tutorialState],
   );
   const memoryCollection = useMemo(
     () => (memory ? buildMemoryCollection(catalog, state, memory) : []),
@@ -269,6 +275,7 @@ function PanueloScreen() {
           h.select();
           break;
         case 'drop':
+          if (tutorial.open) break;
           h.tap();
           panuelo.move(event.id, event.u, event.v);
           break;
@@ -486,6 +493,7 @@ function PanueloScreen() {
     );
   }, [activeId, closeDetail, sendToViewer, t.backgroundSunken]);
 
+  const { show: openTutorial } = tutorial;
   const showTutorial = useCallback(() => {
     h.tap();
     setMode('view');
@@ -493,8 +501,38 @@ function PanueloScreen() {
     sendToViewer({ type: 'blur' });
     settle();
     setTutorialStep(0);
-    tutorial.show();
-  }, [sendToViewer, settle, tutorial]);
+    openTutorial();
+  }, [sendToViewer, settle, openTutorial]);
+
+  // Cabecera nativa: el «?» a la derecha (en iOS lo pone `Stack.Toolbar`, más
+  // abajo; en Android y web, una vista normal) y, mientras dura el tutorial a
+  // pantalla completa, fuera: el tutorial lleva su propia cabecera con la X.
+  const navigation = useNavigation();
+  const linkTint = t.link;
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: !tutorial.open,
+      ...(Platform.OS === 'ios'
+        ? {}
+        : {
+            headerRight: () => (
+              <PressableFeedback
+                onPress={showTutorial}
+                hitSlop={10}
+                style={styles.headerButton}
+                accessibilityRole="button"
+                accessibilityLabel={HELP_LABEL}
+              >
+                <IconSymbol
+                  name="questionmark.circle"
+                  size={22}
+                  color={linkTint}
+                />
+              </PressableFeedback>
+            ),
+          }),
+    });
+  }, [navigation, tutorial.open, showTutorial, linkTint]);
 
   // «Recolocar» deshace la colocación a mano: se pregunta antes.
   const arrange = useCallback(async () => {
@@ -542,7 +580,7 @@ function PanueloScreen() {
       ? 'No lleva ninguna pieza.'
       : `${memory ? 'Llevaba' : 'Lleva'} ${shown} ${shown === 1 ? 'pieza' : 'piezas'}.`;
   const viewerLabel = tutorialExample
-    ? `Pañuelo de ejemplo del tutorial, ${COLOR_LABEL[tutorialExample.color].name.toLowerCase()}.`
+    ? `Pañuelo de ejemplo del tutorial, ${COLOR_LABEL[tutorialStage.state?.color ?? tutorialExample.color].name.toLowerCase()}.`
     : memory
       ? `Tu ${memoryName(memory)}, ${COLOR_LABEL[shownColor].stage}. Recuerdo, solo para verlo. ${placedCount}`
       : `Pañuelo ${COLOR_LABEL[color].name.toLowerCase()}, ${COLOR_LABEL[color].stage}. ${placedCount}`;
@@ -656,10 +694,9 @@ function PanueloScreen() {
       onFinish={tutorial.finish}
     />
   );
+  // El tutorial cabe en una columna con scroll: el visor se queda con el resto.
   const panelBody = tutorial.open
-    ? large || isWide
-      ? panelScroll(tutorialView)
-      : tutorialView
+    ? panelScroll(tutorialView)
     : active
       ? large || isWide
         ? panelScroll(detail)
@@ -737,14 +774,18 @@ function PanueloScreen() {
       style={[
         styles.root,
         isWide && styles.rootWide,
-        { backgroundColor: t.backgroundSunken, paddingTop: underHeader },
+        {
+          backgroundColor: t.backgroundSunken,
+          // A pantalla completa no hay cabecera nativa a la que esquivar.
+          paddingTop: tutorial.open ? 0 : underHeader,
+        },
       ]}
     >
       <View style={styles.stage}>
         <Panuelo3D
           ref={viewerRef}
           state={viewerState}
-          mode={memory || tutorial.open ? 'view' : mode}
+          mode={tutorial.open ? tutorialStage.mode : memory ? 'view' : mode}
           onEvent={onViewerEvent}
           tintColor={t.textSecondary}
           accessibilityLabel={viewerLabel}
@@ -752,10 +793,14 @@ function PanueloScreen() {
           style={StyleSheet.absoluteFill}
         />
 
-        <View style={styles.stageTop} pointerEvents="box-none">
-          {topLeft}
-          {topRight}
-        </View>
+        {tutorial.open ? (
+          <PanueloTutorialHeader isDark={isDark} onClose={tutorial.finish} />
+        ) : (
+          <View style={styles.stageTop} pointerEvents="box-none">
+            {topLeft}
+            {topRight}
+          </View>
+        )}
 
         {active || tutorial.open || stage.locked ? null : (
           <Text
@@ -767,18 +812,6 @@ function PanueloScreen() {
           >
             {COLOR_LABEL[shownColor].name} · {COLOR_LABEL[shownColor].stage}
           </Text>
-        )}
-
-        {tutorial.open || memory ? null : (
-          <PressableFeedback
-            onPress={showTutorial}
-            accessibilityRole="button"
-            accessibilityLabel="Ver el tutorial del pañuelo"
-            style={[styles.help, { backgroundColor: t.card }]}
-          >
-            <PressableFeedback.Highlight />
-            <IconSymbol name="info.circle" size={20} color={t.link} />
-          </PressableFeedback>
         )}
 
         <PanueloStageBurst color={stage.burst} onDone={stage.clearBurst} />
@@ -808,7 +841,6 @@ function PanueloScreen() {
         <PanueloStageSheet
           visible={stage.open}
           isDark={isDark}
-          from={color}
           to={stage.target}
           placedCount={stage.layoutCount}
           detected={stage.detected}
@@ -825,6 +857,16 @@ function PanueloScreen() {
         onSelect={openMemory}
       />
       <Medalla3DModal medal={medal} onClose={() => setMedal(null)} />
+      {Platform.OS === 'ios' && !tutorial.open ? (
+        <Stack.Toolbar placement="right">
+          <Stack.Toolbar.Button
+            icon="questionmark.circle"
+            tintColor={t.link}
+            accessibilityLabel={HELP_LABEL}
+            onPress={showTutorial}
+          />
+        </Stack.Toolbar>
+      ) : null}
     </View>
   );
 }
@@ -882,17 +924,11 @@ const styles = StyleSheet.create({
   modeLabel: {
     ...typography.button,
   },
-  help: {
-    position: 'absolute',
-    right: spacing.md,
-    bottom: spacing.sm,
-    width: TOUCH,
-    height: TOUCH,
-    borderRadius: radii.pillFull,
+  headerButton: {
+    minWidth: TOUCH,
+    minHeight: TOUCH,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    ...shadows.card,
   },
   panel: {
     paddingTop: spacing.md,

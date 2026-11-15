@@ -11,7 +11,7 @@
  * resumen y colocación es la de verdad (`utils/panuelo.ts`).
  */
 import React from 'react';
-import { AccessibilityInfo, Dimensions } from 'react-native';
+import { AccessibilityInfo, Dimensions, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   act,
@@ -40,8 +40,10 @@ import { h } from '@/utils/haptics';
 // ── Dobles ──────────────────────────────────────────────────────────────────
 
 const mockRouter: { params: Record<string, string> } = { params: {} };
+const mockSetOptions = jest.fn();
 jest.mock('expo-router/react-navigation', () => ({
   useHeaderHeight: () => 0,
+  useNavigation: () => ({ setOptions: mockSetOptions }),
 }));
 
 jest.mock('expo-router', () => {
@@ -50,6 +52,17 @@ jest.mock('expo-router', () => {
     Redirect: (props: { href: string }) =>
       Local.createElement('Redirect', { href: props.href }),
     useLocalSearchParams: () => mockRouter.params,
+    // La cabecera nativa: en iOS el «?» es un botón de `Stack.Toolbar`.
+    Stack: {
+      Toolbar: Object.assign(
+        (props: { children?: React.ReactNode }) =>
+          Local.createElement('Toolbar', null, props.children),
+        {
+          Button: (props: Record<string, unknown>) =>
+            Local.createElement('ToolbarButton', props),
+        },
+      ),
+    },
   };
 });
 
@@ -643,11 +656,15 @@ describe('cambio de pañuelo (de etapa)', () => {
     const { root } = await mount();
     await press(root, 'Pañuelo rojo: Etapa infantil');
     const text = sheetText(root);
-    expect(text).toContain('Tu pañuelo azul se guarda como recuerdo.');
+    expect(text).toContain(
+      'En cualquier caso, tu pañuelo de ahora se guarda en Mis pañuelos.',
+    );
+    expect(text).toContain('Siguen cosidas donde están.');
+    expect(text).toContain('Las conservas, pero quedan sin poner.');
     expect(text).toContain('Pasas al pañuelo rojo (Etapa infantil).');
     for (const label of [
-      'Llevarme las piezas',
-      'Empezar con el pañuelo limpio',
+      'Mantener mis chapas y pines. Siguen cosidas donde están.',
+      'Empezar de cero la nueva etapa. Las conservas, pero quedan sin poner.',
       'Cancelar',
     ]) {
       expect(pressable(root, label).props.accessibilityRole).toBe('button');
@@ -657,7 +674,10 @@ describe('cambio de pañuelo (de etapa)', () => {
   it('«Llevarme las piezas» cambia de etapa dejando las piezas cosidas', async () => {
     const { root } = await mount();
     await press(root, 'Pañuelo rojo: Etapa infantil');
-    await press(root, 'Llevarme las piezas');
+    await press(
+      root,
+      'Mantener mis chapas y pines. Siguen cosidas donde están.',
+    );
     expect(mockPanuelo.changeStage).toHaveBeenCalledTimes(1);
     expect(mockPanuelo.changeStage).toHaveBeenCalledWith('red', true);
     expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
@@ -666,8 +686,39 @@ describe('cambio de pañuelo (de etapa)', () => {
   it('«Empezar con el pañuelo limpio» las descose todas', async () => {
     const { root } = await mount();
     await press(root, 'Pañuelo verde: Conocimiento');
-    await press(root, 'Empezar con el pañuelo limpio');
+    await press(
+      root,
+      'Empezar de cero la nueva etapa. Las conservas, pero quedan sin poner.',
+    );
     expect(mockPanuelo.changeStage).toHaveBeenCalledWith('green', false);
+  });
+
+  it('la explicación de cada salida va dentro de su botón y de su etiqueta', async () => {
+    const { root } = await mount();
+    await press(root, 'Pañuelo rojo: Etapa infantil');
+    const keep = pressable(
+      root,
+      'Mantener mis chapas y pines. Siguen cosidas donde están.',
+    );
+    expect(textOf(keep)).toContain('Mantener mis chapas y pines');
+    expect(textOf(keep)).toContain('Siguen cosidas donde están.');
+    const fresh = pressable(
+      root,
+      'Empezar de cero la nueva etapa. Las conservas, pero quedan sin poner.',
+    );
+    expect(textOf(fresh)).toContain('Empezar de cero la nueva etapa');
+    expect(textOf(fresh)).toContain('Las conservas, pero quedan sin poner.');
+  });
+
+  it('la variante detectada usa el mismo texto', async () => {
+    mockScarf.value = 'red';
+    const { root } = await mount();
+    const text = textOf(root.findByType('BottomSheet' as never));
+    expect(text).toContain('Siguen cosidas donde están.');
+    expect(text).toContain('Las conservas, pero quedan sin poner.');
+    expect(text).toContain(
+      'En cualquier caso, tu pañuelo de ahora se guarda en Mis pañuelos.',
+    );
   });
 
   it('cancelar no cambia nada y cierra la hoja', async () => {
@@ -689,7 +740,9 @@ describe('cambio de pañuelo (de etapa)', () => {
     const { root } = await mount();
     await press(root, 'Pañuelo rojo: Etapa infantil');
     expect(sheetText(root)).not.toContain('recuerdo');
-    expect(labelsOf(root)).not.toContain('Empezar con el pañuelo limpio');
+    expect(labelsOf(root)).not.toContain(
+      'Empezar de cero la nueva etapa. Las conservas, pero quedan sin poner.',
+    );
     await press(root, 'Cambiar de pañuelo');
     expect(mockPanuelo.changeStage).toHaveBeenCalledWith('red', true);
   });
@@ -699,7 +752,10 @@ describe('cambio de pañuelo (de etapa)', () => {
     try {
       const { root } = await mount();
       await press(root, 'Pañuelo rojo: Etapa infantil');
-      await press(root, 'Llevarme las piezas');
+      await press(
+        root,
+        'Mantener mis chapas y pines. Siguen cosidas donde están.',
+      );
       const burst = root.findByType(CelebrationBurst);
       expect(burst.props.visible).toBe(true);
       expect(burst.props.emoji).toBe('');
@@ -727,9 +783,12 @@ describe('cambio de pañuelo (de etapa)', () => {
   it('el anuncio de empezar limpio dice que las piezas vuelven a la colección', async () => {
     const { root } = await mount();
     await press(root, 'Pañuelo rojo: Etapa infantil');
-    await press(root, 'Empezar con el pañuelo limpio');
+    await press(
+      root,
+      'Empezar de cero la nueva etapa. Las conservas, pero quedan sin poner.',
+    );
     expect(announce).toHaveBeenCalledWith(
-      expect.stringContaining('han vuelto a la colección'),
+      expect.stringContaining('se quedan sin poner'),
     );
   });
 
@@ -737,7 +796,10 @@ describe('cambio de pañuelo (de etapa)', () => {
     mockMotion.reduced = true;
     const { root } = await mount();
     await press(root, 'Pañuelo rojo: Etapa infantil');
-    await press(root, 'Llevarme las piezas');
+    await press(
+      root,
+      'Mantener mis chapas y pines. Siguen cosidas donde están.',
+    );
     expect(root.findByType(CelebrationBurst).props.visible).toBe(false);
     expect(success).toHaveBeenCalledTimes(1);
     expect(announce).toHaveBeenCalledWith(
@@ -1009,15 +1071,23 @@ describe('sin textos de explicación sueltos', () => {
 
 describe('el tutorial', () => {
   const first = PANUELO_TUTORIAL[0];
-  const headerTitles = (root: ReactTestInstance) =>
-    root
-      .findAll(
-        (n) =>
-          typeof n.type === 'string' &&
-          n.props.accessibilityRole === 'header' &&
-          PANUELO_TUTORIAL.some((s) => s.title === textOf(n)),
-      )
-      .map((n) => textOf(n));
+  // El título del PASO: el de la tarjeta del tutorial, no el de la cabecera
+  // («Tu pañuelo») ni el de la colección.
+  const headerTitles = (root: ReactTestInstance) => {
+    const dots = root.findAll(
+      (n) =>
+        typeof n.type === 'string' &&
+        n.props.accessibilityRole === 'progressbar',
+    )[0];
+    // Se sube desde el indicador hasta la tarjeta que tiene el título del paso.
+    const isTitle = (n: ReactTestInstance) =>
+      typeof n.type === 'string' && n.props.accessibilityRole === 'header';
+    for (let card = dots?.parent; card; card = card.parent) {
+      const titles = card.findAll(isTitle);
+      if (titles.length > 0) return titles.map((n) => textOf(n));
+    }
+    return [];
+  };
 
   beforeEach(async () => {
     await AsyncStorage.clear();
@@ -1111,8 +1181,8 @@ describe('el tutorial', () => {
     );
     const { root } = await mount();
     expect(headerTitles(root)).toEqual([]);
-    expect(pressable(root, 'Ver el tutorial del pañuelo')).toBeTruthy();
-    await press(root, 'Ver el tutorial del pañuelo');
+    expect(pressable(root, 'Cómo funciona tu pañuelo')).toBeTruthy();
+    await press(root, 'Cómo funciona tu pañuelo');
     expect(headerTitles(root)).toEqual([first.title]);
   });
 
@@ -1123,11 +1193,11 @@ describe('el tutorial', () => {
     );
     const { root } = await mount();
     await press(root, 'Decorar el pañuelo');
-    await press(root, 'Ver el tutorial del pañuelo');
+    await press(root, 'Cómo funciona tu pañuelo');
     expect(mockViewer.props.mode).toBe('view');
     await press(root, 'Siguiente');
     await press(root, 'Saltar el tutorial');
-    await press(root, 'Ver el tutorial del pañuelo');
+    await press(root, 'Cómo funciona tu pañuelo');
     expect(headerTitles(root)).toEqual([first.title]);
   });
 
@@ -1249,7 +1319,10 @@ describe('el color viene de Comunica', () => {
     const sheet = root.findByType('BottomSheet' as never);
     expect(sheet.props.title).toBe('Tienes pañuelo nuevo');
     expect(textOf(sheet)).toContain('pañuelo rojo (Etapa infantil)');
-    await press(root, 'Llevarme las piezas');
+    await press(
+      root,
+      'Mantener mis chapas y pines. Siguen cosidas donde están.',
+    );
     expect(mockPanuelo.changeStage).toHaveBeenCalledWith('red', true);
     expect(success).toHaveBeenCalledTimes(1);
     expect(root.findByType(CelebrationBurst).props.visible).toBe(true);
@@ -1258,7 +1331,10 @@ describe('el color viene de Comunica', () => {
   it('también se puede empezar limpio', async () => {
     mockScarf.value = 'yellow';
     const { root } = await mount();
-    await press(root, 'Empezar con el pañuelo limpio');
+    await press(
+      root,
+      'Empezar de cero la nueva etapa. Las conservas, pero quedan sin poner.',
+    );
     expect(mockPanuelo.changeStage).toHaveBeenCalledWith('yellow', false);
   });
 
@@ -1295,5 +1371,151 @@ describe('el color viene de Comunica', () => {
     expect(root.findByType('BottomSheet' as never).props.title).toBe(
       'Tienes pañuelo nuevo',
     );
+  });
+});
+
+describe('el tutorial a pantalla completa y la cabecera nativa', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  const opts = () => mockSetOptions.mock.calls.map((c) => c[0]);
+
+  it('mientras dura se oculta la cabecera nativa y el tutorial lleva la suya con una X de 44 pt', async () => {
+    const { root } = await mount();
+    expect(opts().some((o) => o.headerShown === false)).toBe(true);
+    const close = pressable(root, 'Cerrar el tutorial');
+    expect(close.props.accessibilityRole).toBe('button');
+    const style = Object.assign(
+      {},
+      ...[close.props.style].flat(Infinity).filter(Boolean),
+    );
+    expect(style.width).toBeGreaterThanOrEqual(44);
+    expect(style.height).toBeGreaterThanOrEqual(44);
+    // El «?» de la cabecera no se pinta mientras tanto.
+    expect(root.findAllByType('ToolbarButton' as never)).toHaveLength(0);
+    // Sin título duplicado: el de la cabecera del tutorial.
+    const titles = root.findAll(
+      (n) =>
+        typeof n.type === 'string' &&
+        n.props.accessibilityRole === 'header' &&
+        textOf(n) === 'Tu pañuelo',
+    );
+    expect(titles.length).toBeGreaterThan(0);
+  });
+
+  it('la X sale del tutorial, lo da por visto y devuelve la cabecera', async () => {
+    const { root } = await mount();
+    await press(root, 'Cerrar el tutorial');
+    expect(await AsyncStorage.getItem(PANUELO_TUTORIAL_KEY)).toBe(
+      String(PANUELO_TUTORIAL_VERSION),
+    );
+    expect(textOf(root)).toContain('Tu colección');
+    expect(opts()[opts().length - 1].headerShown).toBe(true);
+    expect(labelsOf(root)).not.toContain('Cerrar el tutorial');
+  });
+
+  it('el «?» está en la cabecera nativa (iOS: botón de Stack.Toolbar) y abre el tutorial', async () => {
+    await AsyncStorage.setItem(
+      PANUELO_TUTORIAL_KEY,
+      String(PANUELO_TUTORIAL_VERSION),
+    );
+    const { root } = await mount();
+    const button = root.findByType('ToolbarButton' as never);
+    expect(button.props.accessibilityLabel).toBe('Cómo funciona tu pañuelo');
+    expect(button.props.icon).toBe('questionmark.circle');
+    expect(button.props.tintColor).toBeDefined();
+    // Ya no hay botón de información en la esquina del visor.
+    expect(labelsOf(root)).not.toContain('Ver el tutorial del pañuelo');
+    await act(async () => {
+      button.props.onPress();
+    });
+    expect(labelsOf(root)).toContain('Cerrar el tutorial');
+  });
+
+  it('en Android y web el «?» va como headerRight', async () => {
+    await AsyncStorage.setItem(
+      PANUELO_TUTORIAL_KEY,
+      String(PANUELO_TUTORIAL_VERSION),
+    );
+    const spy = jest.replaceProperty(Platform, 'OS', 'android');
+    try {
+      const { root } = await mount();
+      expect(root.findAllByType('ToolbarButton' as never)).toHaveLength(0);
+      const withRight = opts().filter(
+        (o) => typeof o.headerRight === 'function',
+      );
+      expect(withRight.length).toBeGreaterThan(0);
+      const headerRight = withRight[withRight.length - 1].headerRight;
+      let rendered!: ReactTestRenderer;
+      await act(async () => {
+        rendered = create(headerRight());
+      });
+      const button = rendered.root.findAll(
+        (n) =>
+          n.props.accessibilityLabel === 'Cómo funciona tu pañuelo' &&
+          typeof n.props.onPress === 'function',
+      )[0];
+      expect(button.props.accessibilityRole).toBe('button');
+      await act(async () => {
+        button.props.onPress();
+      });
+      expect(labelsOf(root)).toContain('Cerrar el tutorial');
+      rendered.unmount();
+    } finally {
+      spy.restore();
+    }
+  });
+
+  it('cada paso deja el único visor como lo explica: «Decorarlo» en modo decorar', async () => {
+    const { root } = await mount();
+    const index = PANUELO_TUTORIAL.findIndex((s) => s.id === 'decorarlo');
+    for (let i = 0; i < index; i++) await press(root, 'Siguiente');
+    expect(mockViewer.props.mode).toBe('edit');
+    // «Cómo se hace», en pasos numerados.
+    expect(textOf(root)).toContain('1.');
+    expect(textOf(root)).toContain('Entra en «Decorar».');
+    // Al arrastrar en el ejemplo no se mueve nada de verdad.
+    await act(async () => {
+      mockViewer.props.onEvent?.({ type: 'drop', id: 'chapa1', u: 0, v: 0.3 });
+    });
+    expect(mockPanuelo.move).not.toHaveBeenCalled();
+    await press(root, 'Saltar el tutorial');
+    expect(mockViewer.props.mode).toBe('view');
+  });
+
+  it('los pasos que explican con una orden la mandan al visor', async () => {
+    jest.useFakeTimers();
+    try {
+      const { root } = await mount();
+      await act(async () => {
+        mockViewer.props.onEvent?.({ type: 'ready' } as PanueloEvent);
+      });
+      const index = PANUELO_TUTORIAL.findIndex(
+        (s) => s.id === 'verlas-de-cerca',
+      );
+      for (let i = 0; i < index; i++) await press(root, 'Siguiente');
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+      expect(mockSend).toHaveBeenCalledWith({
+        type: 'focus',
+        id: 'medalla-jubileo-2025',
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('el visor de la pantalla y el del tutorial son el mismo: no se monta otro', async () => {
+    const { root } = await mount();
+    const viewers = () =>
+      root.findAll(
+        (n) => n.props.accessibilityHint !== undefined && n.props.state,
+      );
+    const before = viewers().length;
+    await press(root, 'Siguiente');
+    await press(root, 'Cerrar el tutorial');
+    expect(viewers().length).toBe(before);
   });
 });

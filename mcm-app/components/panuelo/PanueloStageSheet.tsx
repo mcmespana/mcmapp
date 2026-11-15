@@ -4,12 +4,12 @@ import { PressableFeedback } from 'heroui-native';
 
 import BottomSheet from '@/components/BottomSheet';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
-import { MaterialIcons } from '@/components/ui/icons';
 import { PanueloColors, themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import type { PanueloColor } from '@/types/panuelo';
+import { contrastRatio, onColor } from '@/utils/colorUtils';
 import { COLOR_LABEL } from '@/utils/panuelo';
 
 const TOUCH = 48;
@@ -17,8 +17,6 @@ const TOUCH = 48;
 type Props = {
   visible: boolean;
   isDark: boolean;
-  /** El pañuelo de ahora. */
-  from: PanueloColor;
   /** El que se ha tocado. */
   to: PanueloColor;
   /** Cuántas piezas lleva cosidas el de ahora. Sin ninguna no hay recuerdo. */
@@ -26,19 +24,31 @@ type Props = {
   /** El cambio lo ha detectado la app (cuenta de Comunica): «Tienes pañuelo nuevo». */
   detected?: boolean;
   onClose: () => void;
-  /** `keepPieces`: las piezas siguen cosidas (true) o vuelven a la colección. */
+  /** `keepPieces`: las piezas siguen cosidas (true) o quedan sin poner. */
   onConfirm: (keepPieces: boolean) => void;
 };
 
+/** Las dos salidas son la decisión, no relleno: su explicación se ve y se lee. */
+const KEEP = {
+  title: 'Mantener mis chapas y pines',
+  hint: 'Siguen cosidas donde están.',
+};
+const FRESH = {
+  title: 'Empezar de cero la nueva etapa',
+  hint: 'Las conservas, pero quedan sin poner.',
+};
+const FOOT =
+  'En cualquier caso, tu pañuelo de ahora se guarda en Mis pañuelos.';
+
 /**
  * La hoja de cambio de pañuelo (de etapa): un cambio que pasa una vez cada
- * varios años y que no se hace a la ligera. El pañuelo de ahora se guarda como
- * recuerdo, y quien cambia decide qué hace con sus piezas.
+ * varios años y que no se hace a la ligera. Quien cambia decide si mantiene
+ * sus piezas cosidas o empieza de cero (las conserva, sin poner); en los dos
+ * casos el pañuelo de ahora queda en «Mis pañuelos».
  */
 export function PanueloStageSheet({
   visible,
   isDark,
-  from,
   to,
   placedCount,
   detected = false,
@@ -47,10 +57,13 @@ export function PanueloStageSheet({
 }: Props) {
   const t = themeColors(isDark);
   const next = COLOR_LABEL[to];
+  const cloth = PanueloColors.cloth[to];
   const goes = detected
     ? `Has cambiado de etapa: ahora es el pañuelo ${next.name.toLowerCase()} (${next.stage}).`
     : `Pasas al pañuelo ${next.name.toLowerCase()} (${next.stage}).`;
   const hasMemory = placedCount > 0;
+  // Sobre el color de la tela manda el contraste, como en el botón principal.
+  const ink = contrastRatio('#FFFFFF', cloth) >= 3 ? '#fff' : onColor(cloth);
   return (
     <BottomSheet
       visible={visible}
@@ -58,33 +71,35 @@ export function PanueloStageSheet({
       title={detected ? 'Tienes pañuelo nuevo' : '¿Cambias de pañuelo?'}
     >
       <View style={styles.body}>
-        <Text style={[styles.text, { color: t.text }]}>
-          {hasMemory
-            ? `Tu pañuelo ${COLOR_LABEL[from].name.toLowerCase()} se guarda como recuerdo. ${goes}`
-            : goes}
-        </Text>
+        <Text style={[styles.text, { color: t.text }]}>{goes}</Text>
         {hasMemory ? (
           <>
-            <AppPrimaryButton
-              label="Llevarme las piezas"
-              icon="push-pin"
-              color={PanueloColors.cloth[to]}
+            <PressableFeedback
               onPress={() => onConfirm(true)}
-            />
+              accessibilityRole="button"
+              accessibilityLabel={`${KEEP.title}. ${KEEP.hint}`}
+              style={[styles.option, { backgroundColor: cloth }]}
+            >
+              <PressableFeedback.Scale />
+              <Text style={[styles.optionTitle, { color: ink }]}>
+                {KEEP.title}
+              </Text>
+              <Text style={[styles.optionHint, { color: ink }]}>
+                {KEEP.hint}
+              </Text>
+            </PressableFeedback>
             <PressableFeedback
               onPress={() => onConfirm(false)}
               accessibilityRole="button"
-              accessibilityLabel="Empezar con el pañuelo limpio"
-              accessibilityHint="Las piezas vuelven a tu colección, no se pierden"
-              style={[
-                styles.secondary,
-                { backgroundColor: t.backgroundSunken },
-              ]}
+              accessibilityLabel={`${FRESH.title}. ${FRESH.hint}`}
+              style={[styles.option, { backgroundColor: t.backgroundSunken }]}
             >
               <PressableFeedback.Highlight />
-              <MaterialIcons name="inventory-2" size={18} color={t.link} />
-              <Text style={[styles.secondaryLabel, { color: t.link }]}>
-                Empezar con el pañuelo limpio
+              <Text style={[styles.optionTitle, { color: t.link }]}>
+                {FRESH.title}
+              </Text>
+              <Text style={[styles.optionHint, { color: t.textSecondary }]}>
+                {FRESH.hint}
               </Text>
             </PressableFeedback>
           </>
@@ -92,7 +107,7 @@ export function PanueloStageSheet({
           <AppPrimaryButton
             label="Cambiar de pañuelo"
             icon="check"
-            color={PanueloColors.cloth[to]}
+            color={cloth}
             onPress={() => onConfirm(true)}
           />
         )}
@@ -102,10 +117,13 @@ export function PanueloStageSheet({
           accessibilityLabel={detected ? 'Luego' : 'Cancelar'}
           style={styles.cancel}
         >
-          <Text style={[styles.secondaryLabel, { color: t.link }]}>
+          <Text style={[styles.cancelLabel, { color: t.link }]}>
             {detected ? 'Luego' : 'Cancelar'}
           </Text>
         </PressableFeedback>
+        {hasMemory ? (
+          <Text style={[styles.foot, { color: t.textSecondary }]}>{FOOT}</Text>
+        ) : null}
       </View>
     </BottomSheet>
   );
@@ -119,23 +137,32 @@ const styles = StyleSheet.create({
   text: {
     ...typography.body,
   },
-  secondary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
+  option: {
     minHeight: TOUCH,
+    gap: spacing.xs,
+    paddingVertical: spacing.sm + spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
     overflow: 'hidden',
   },
-  secondaryLabel: {
-    ...typography.button,
-    textAlign: 'center',
+  optionTitle: {
+    ...typography.body,
+    fontWeight: '700',
+  },
+  optionHint: {
+    ...typography.caption,
   },
   cancel: {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: TOUCH,
+  },
+  cancelLabel: {
+    ...typography.button,
+    textAlign: 'center',
+  },
+  foot: {
+    ...typography.caption,
+    textAlign: 'center',
   },
 });

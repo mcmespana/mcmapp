@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-15 10:46 — Pañuelo virtual: tutorial a pantalla completa, «?» en la cabecera y nuevo texto del cambio de pañuelo
+
+- **Tutorial a pantalla completa y paso a paso**: se oculta la cabecera nativa mientras dura y lleva la suya con una X (44 pt, por debajo del notch). Diez pasos (Tu pañuelo, Las piezas, Verlas de cerca, Decorarlo, Recolocar, Canjear un código, Tu colección, Compartir, Cambiar de etapa, Mis pañuelos), con «cómo se hace» en pasos numerados. `PANUELO_TUTORIAL_VERSION` pasa a 2: se vuelve a enseñar una vez.
+- **Cada paso ilustra lo que cuenta** con el MISMO visor (sin segundo WebView ni `Modal`): modo decorar con una pieza seleccionada, una medalla enfocada, una pieza que se presenta, la tela que pasa de verde a azul… (`usePanueloTutorialStage`; datos en `constants/panueloTutorial.ts`: `mode`, `select`, `focus`, `reveal`, `toColor`, `steps`). En el ejemplo no se toca nada de lo tuyo.
+- **«?» en la cabecera nativa** (iOS `Stack.Toolbar`, Android y web `headerRight`), «Cómo funciona tu pañuelo». Fuera el botón de la esquina del visor.
+- **Hoja de cambio de pañuelo**: «Mantener mis chapas y pines» («Siguen cosidas donde están.»), «Empezar de cero la nueva etapa» («Las conservas, pero quedan sin poner.») y el pie «En cualquier caso, tu pañuelo de ahora se guarda en Mis pañuelos.». Igual en «Tienes pañuelo nuevo».
+- No toca `types/panuelo.ts`, `panueloGlyphs` ni `panueloPlacement`: no hay que regenerar el visor. Sin probar en móvil.
+
 ## 2026-11-15 09:11 — Pañuelo virtual: tutorial, «Recolocar», color desde Comunica y fuera los textos sueltos
 
 - **Fuera los textos de explicación sueltos** (pedido del propietario): la pista y el aviso de sesión sobre/bajo el visor, la ayuda del canje, la de «Mis pañuelos», la frase de relleno de la hoja de cambio, «· solo para ver» y los subtítulos de los vacíos. Las ayudas de accesibilidad se quedan.
