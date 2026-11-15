@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- una sola suite para la pantalla: los dobles (visor, hook, hojas) son lo caro y se comparten; partirla obligaría a copiarlos. */
 /**
  * La pantalla del pañuelo virtual (`app/panuelo.tsx`): que pinta la colección,
  * que todo lo que se hace tocando el 3D se puede hacer también desde la UI
@@ -11,6 +12,7 @@
  */
 import React from 'react';
 import { AccessibilityInfo, Dimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   act,
   create,
@@ -21,6 +23,11 @@ import {
 import PanueloRoute from '@/app/panuelo';
 import CelebrationBurst from '@/components/ui/CelebrationBurst';
 import { PanueloColors } from '@/constants/colors';
+import {
+  PANUELO_TUTORIAL,
+  PANUELO_TUTORIAL_VERSION,
+} from '@/constants/panueloTutorial';
+import { PANUELO_TUTORIAL_KEY } from '@/hooks/usePanueloTutorial';
 import type {
   PanueloCatalog,
   PanueloEvent,
@@ -70,6 +77,20 @@ jest.mock('@/components/ui/icons', () => {
   };
 });
 
+jest.mock('@/components/ui/IconSymbol', () => {
+  const Local = jest.requireActual<typeof React>('react');
+  return {
+    IconSymbol: (props: Record<string, unknown>) =>
+      Local.createElement('IconSymbol', props),
+  };
+});
+
+// Lo que dice Comunica (`mcm.scarf`): lo decide cada prueba.
+const mockScarf: { value: string | null } = { value: null };
+jest.mock('@/hooks/usePanueloScarf', () => ({
+  usePanueloScarf: () => mockScarf.value,
+}));
+
 jest.mock('@/components/medallas/Medalla3DModal', () => ({
   Medalla3DModal: () => null,
 }));
@@ -104,6 +125,10 @@ jest.mock('@/contexts/PreviewChannelContext', () => ({
   usePreviewChannel: () => ({ enabled: false }),
 }));
 jest.mock('@/utils/analytics', () => ({ trackEvent: jest.fn() }));
+const mockConfirm = jest.fn();
+jest.mock('@/utils/confirmDialog', () => ({
+  confirmAsync: (...args: unknown[]) => mockConfirm(...args),
+}));
 
 // «Reducir movimiento» del sistema: lo decide cada prueba.
 const mockMotion = { reduced: false };
@@ -207,6 +232,7 @@ const mockPanuelo = {
   markSeen: jest.fn(),
   setColor: jest.fn(),
   changeStage: jest.fn(),
+  arrange: jest.fn(),
   history: [] as PanueloMemory[],
   place: jest.fn(),
   unplace: jest.fn(),
@@ -268,8 +294,15 @@ const labelsOf = (root: ReactTestInstance) =>
       .map((n) => n.props.accessibilityLabel as string),
   );
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  mockScarf.value = null;
+  // Por defecto el tutorial ya está visto: sale solo en las pruebas que lo piden.
+  await AsyncStorage.clear();
+  await AsyncStorage.setItem(
+    PANUELO_TUTORIAL_KEY,
+    String(PANUELO_TUTORIAL_VERSION),
+  );
   mockRouter.params = {};
   mockAvailable.available = true;
   mockAvailable.settled = true;
@@ -473,7 +506,7 @@ describe('accesibilidad de la pantalla del pañuelo', () => {
         n.props.importantForAccessibility === 'no' &&
         n.props.accessibilityElementsHidden === true,
     );
-    expect(hidden.length).toBeGreaterThanOrEqual(2);
+    expect(hidden.length).toBeGreaterThanOrEqual(1);
   });
 
   it('el botón de decorar cambia de etiqueta, anuncia el modo y la letra del botón visible está en ella', async () => {
@@ -932,5 +965,335 @@ describe('Mis pañuelos (historial)', () => {
     await press(root, 'Volver a mi pañuelo');
     expect(mockViewer.props.mode).toBe('view');
     expect(pressable(root, 'Decorar el pañuelo')).toBeTruthy();
+  });
+});
+
+describe('sin textos de explicación sueltos', () => {
+  it('ni pista sobre el 3D ni aviso de sesión ni ayuda en las hojas', async () => {
+    const { root } = await mount();
+    const text = textOf(root);
+    for (const gone of [
+      'Arrastra para girarlo',
+      'Arrastra una pieza',
+      'Sin sesión iniciada',
+    ]) {
+      expect(text).not.toContain(gone);
+    }
+    await press(root, 'Canjear un código');
+    expect(textOf(root.findByType('BottomSheet' as never))).not.toContain(
+      'En algunas actividades',
+    );
+  });
+
+  it('en modo decorar tampoco sale ninguna pista', async () => {
+    const { root } = await mount();
+    await press(root, 'Decorar el pañuelo');
+    expect(textOf(root)).not.toContain('Arrastra');
+  });
+
+  it('la lista de Mis pañuelos y la hoja de cambio van sin frases de relleno', async () => {
+    mockPanuelo.history = [
+      { color: 'red', at: 5, layout: { chapa1: { u: 0, v: 0.5, rot: 0 } } },
+    ];
+    const { root } = await mount();
+    await press(root, 'Mis pañuelos');
+    expect(textOf(root)).not.toContain('Toca uno para verlo');
+    await act(async () => {
+      tree?.unmount();
+    });
+    const again = await mount();
+    await press(again.root, 'Pañuelo rojo: Etapa infantil');
+    expect(textOf(again.root)).not.toContain('no se pierden');
+  });
+});
+
+describe('el tutorial', () => {
+  const first = PANUELO_TUTORIAL[0];
+  const headerTitles = (root: ReactTestInstance) =>
+    root
+      .findAll(
+        (n) =>
+          typeof n.type === 'string' &&
+          n.props.accessibilityRole === 'header' &&
+          PANUELO_TUTORIAL.some((s) => s.title === textOf(n)),
+      )
+      .map((n) => textOf(n));
+
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('sale solo la primera vez, en el sitio de la colección, con el pañuelo de ejemplo en el visor', async () => {
+    const { root } = await mount();
+    expect(headerTitles(root)).toEqual([first.title]);
+    expect(textOf(root)).toContain(first.body);
+    expect(textOf(root)).not.toContain('Tu colección');
+    // Un único visor, con el estado de ejemplo (verde, con sus piezas).
+    expect(mockViewer.props.state?.color).toBe('green');
+    expect(mockViewer.props.state?.items.length).toBe(
+      first.example?.pieces?.length,
+    );
+    expect(mockViewer.props.mode).toBe('view');
+    expect(mockViewer.props.accessibilityLabel).toContain('ejemplo');
+    // Ni colores ni decorar mientras dura.
+    const labels = labelsOf(root);
+    expect(labels).not.toContain('Color del pañuelo');
+    expect(labels).not.toContain('Decorar el pañuelo');
+  });
+
+  it('se recorre con Siguiente y Atrás, con indicador de paso accesible', async () => {
+    const { root } = await mount();
+    expect(labelsOf(root)).toContain(
+      `Tutorial, paso 1 de ${PANUELO_TUTORIAL.length}`,
+    );
+    await press(root, 'Siguiente');
+    expect(headerTitles(root)).toEqual([PANUELO_TUTORIAL[1].title]);
+    expect(labelsOf(root)).toContain(
+      `Tutorial, paso 2 de ${PANUELO_TUTORIAL.length}`,
+    );
+    // «Las piezas» enseña las seis clases, en el visor y en plano.
+    expect(mockViewer.props.state?.items.length).toBe(6);
+    expect([...labelsOf(root)].some((l) => l.startsWith('Ejemplos: '))).toBe(
+      true,
+    );
+    await press(root, 'Atrás');
+    expect(headerTitles(root)).toEqual([first.title]);
+  });
+
+  it('deslizar también cambia de sección', async () => {
+    const { root } = await mount();
+    const swipeArea = root.findAll(
+      (n) =>
+        typeof n.type === 'string' &&
+        typeof n.props.onTouchStart === 'function',
+    )[0];
+    const touch = (pageX: number) => ({ nativeEvent: { pageX } });
+    await act(async () => {
+      swipeArea.props.onTouchStart(touch(300));
+      swipeArea.props.onTouchEnd(touch(100));
+    });
+    expect(headerTitles(root)).toEqual([PANUELO_TUTORIAL[1].title]);
+    // Un toque corto no cuenta.
+    await act(async () => {
+      swipeArea.props.onTouchStart(touch(300));
+      swipeArea.props.onTouchEnd(touch(290));
+    });
+    expect(headerTitles(root)).toEqual([PANUELO_TUTORIAL[1].title]);
+  });
+
+  it('«Entendido» en la última lo da por visto, con su versión, y vuelve la colección', async () => {
+    const { root } = await mount();
+    for (let i = 0; i < PANUELO_TUTORIAL.length - 1; i++) {
+      await press(root, 'Siguiente');
+    }
+    expect(labelsOf(root)).not.toContain('Saltar el tutorial');
+    await press(root, 'Entendido');
+    expect(await AsyncStorage.getItem(PANUELO_TUTORIAL_KEY)).toBe(
+      String(PANUELO_TUTORIAL_VERSION),
+    );
+    expect(textOf(root)).toContain('Tu colección');
+    expect(mockViewer.props.state?.color).toBe('blue');
+  });
+
+  it('«Saltar» también lo da por visto', async () => {
+    const { root } = await mount();
+    await press(root, 'Saltar el tutorial');
+    expect(await AsyncStorage.getItem(PANUELO_TUTORIAL_KEY)).toBe(
+      String(PANUELO_TUTORIAL_VERSION),
+    );
+    expect(textOf(root)).toContain('Tu colección');
+  });
+
+  it('visto, no vuelve a salir solo; el botón de información lo enseña siempre', async () => {
+    await AsyncStorage.setItem(
+      PANUELO_TUTORIAL_KEY,
+      String(PANUELO_TUTORIAL_VERSION),
+    );
+    const { root } = await mount();
+    expect(headerTitles(root)).toEqual([]);
+    expect(pressable(root, 'Ver el tutorial del pañuelo')).toBeTruthy();
+    await press(root, 'Ver el tutorial del pañuelo');
+    expect(headerTitles(root)).toEqual([first.title]);
+  });
+
+  it('al abrirlo a mano sale de decorar y vuelve a la primera sección', async () => {
+    await AsyncStorage.setItem(
+      PANUELO_TUTORIAL_KEY,
+      String(PANUELO_TUTORIAL_VERSION),
+    );
+    const { root } = await mount();
+    await press(root, 'Decorar el pañuelo');
+    await press(root, 'Ver el tutorial del pañuelo');
+    expect(mockViewer.props.mode).toBe('view');
+    await press(root, 'Siguiente');
+    await press(root, 'Saltar el tutorial');
+    await press(root, 'Ver el tutorial del pañuelo');
+    expect(headerTitles(root)).toEqual([first.title]);
+  });
+
+  it('una versión guardada anterior lo vuelve a enseñar', async () => {
+    await AsyncStorage.setItem(
+      PANUELO_TUTORIAL_KEY,
+      String(PANUELO_TUTORIAL_VERSION - 1),
+    );
+    const { root } = await mount();
+    expect(headerTitles(root)).toEqual([first.title]);
+  });
+
+  it('el canje de `?codigo=` espera a que acabe el tutorial', async () => {
+    mockRouter.params = { codigo: 'CAMINO' };
+    const { root } = await mount();
+    expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
+    await press(root, 'Saltar el tutorial');
+    expect(root.findByType('BottomSheet' as never).props.title).toBe(
+      'Canjear un código',
+    );
+  });
+
+  it('la presentación de una pieza nueva espera a que acabe el tutorial', async () => {
+    jest.useFakeTimers();
+    try {
+      mockPanuelo.unseen = ['chapa1'];
+      const { root } = await mount();
+      await act(async () => {
+        mockViewer.props.onEvent?.({ type: 'ready' } as PanueloEvent);
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(4000);
+      });
+      expect(mockSend).not.toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'reveal' }),
+      );
+      await press(root, 'Saltar el tutorial');
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+      expect(mockSend).toHaveBeenCalledWith({ type: 'reveal', id: 'chapa1' });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('Recolocar', () => {
+  it('solo en modo decorar y con piezas cosidas', async () => {
+    const { root } = await mount();
+    expect(labelsOf(root)).not.toContain('Recolocar las piezas');
+    await press(root, 'Decorar el pañuelo');
+    expect(pressable(root, 'Recolocar las piezas')).toBeTruthy();
+    expect(textOf(root)).toContain('Recolocar');
+  });
+
+  it('sin ninguna pieza cosida no hay nada que recolocar', async () => {
+    mockPanuelo.state = { ...STATE, layout: {} };
+    const { root } = await mount();
+    await press(root, 'Decorar el pañuelo');
+    expect(labelsOf(root)).not.toContain('Recolocar las piezas');
+  });
+
+  it('pregunta antes y, si se acepta, recoloca y lo anuncia', async () => {
+    mockConfirm.mockResolvedValue(true);
+    const { root } = await mount();
+    await press(root, 'Decorar el pañuelo');
+    await press(root, 'Recolocar las piezas');
+    expect(mockConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '¿Recolocar las piezas?',
+        confirmLabel: 'Recolocar',
+      }),
+    );
+    expect(mockPanuelo.arrange).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith('Piezas recolocadas.');
+  });
+
+  it('si se cancela no toca nada', async () => {
+    mockConfirm.mockResolvedValue(false);
+    const { root } = await mount();
+    await press(root, 'Decorar el pañuelo');
+    await press(root, 'Recolocar las piezas');
+    expect(mockPanuelo.arrange).not.toHaveBeenCalled();
+  });
+});
+
+describe('el color viene de Comunica', () => {
+  let success: jest.SpyInstance;
+  beforeEach(() => {
+    success = jest.spyOn(h, 'formSuccess').mockImplementation(() => undefined);
+  });
+  afterEach(() => success.mockRestore());
+
+  it('sin pañuelo de Comunica (nada, none, cross, unknown) se elige a mano como siempre', async () => {
+    for (const value of [null, 'none', 'cross', 'unknown']) {
+      mockScarf.value = value;
+      const { root } = await mount();
+      expect(labelsOf(root)).toContain('Color del pañuelo');
+      expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
+      await act(async () => {
+        tree?.unmount();
+      });
+    }
+  });
+
+  it('con el mismo color que el guardado: sin círculos, la etapa en texto y nada que preguntar', async () => {
+    mockScarf.value = 'blue';
+    const { root } = await mount();
+    expect(labelsOf(root)).not.toContain('Color del pañuelo');
+    expect(textOf(root)).toContain('Azul · Incorporación y crecimiento');
+    expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
+    expect(mockPanuelo.changeStage).not.toHaveBeenCalled();
+  });
+
+  it('un color distinto es un cambio de etapa: abre sola la hoja «Tienes pañuelo nuevo»', async () => {
+    mockScarf.value = 'red';
+    const { root } = await mount();
+    const sheet = root.findByType('BottomSheet' as never);
+    expect(sheet.props.title).toBe('Tienes pañuelo nuevo');
+    expect(textOf(sheet)).toContain('pañuelo rojo (Etapa infantil)');
+    await press(root, 'Llevarme las piezas');
+    expect(mockPanuelo.changeStage).toHaveBeenCalledWith('red', true);
+    expect(success).toHaveBeenCalledTimes(1);
+    expect(root.findByType(CelebrationBurst).props.visible).toBe(true);
+  });
+
+  it('también se puede empezar limpio', async () => {
+    mockScarf.value = 'yellow';
+    const { root } = await mount();
+    await press(root, 'Empezar con el pañuelo limpio');
+    expect(mockPanuelo.changeStage).toHaveBeenCalledWith('yellow', false);
+  });
+
+  it('«Luego» no cambia nada, no vuelve a saltar solo y el aviso la reabre', async () => {
+    mockScarf.value = 'red';
+    const { root } = await mount();
+    await press(root, 'Luego');
+    expect(mockPanuelo.changeStage).not.toHaveBeenCalled();
+    expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
+    // El color sigue siendo de Comunica: no se elige a mano, pero hay aviso.
+    expect(labelsOf(root)).not.toContain('Color del pañuelo');
+    await press(root, 'Tienes pañuelo nuevo');
+    expect(root.findByType('BottomSheet' as never).props.title).toBe(
+      'Tienes pañuelo nuevo',
+    );
+  });
+
+  it('la primera vez (sin color guardado) se asigna sin preguntar ni celebrar', async () => {
+    mockPanuelo.state = { ...STATE, color: null };
+    mockScarf.value = 'red';
+    const { root } = await mount();
+    expect(mockPanuelo.setColor).toHaveBeenCalledWith('red');
+    expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
+    expect(mockPanuelo.changeStage).not.toHaveBeenCalled();
+    expect(root.findByType(CelebrationBurst).props.visible).toBe(false);
+  });
+
+  it('espera al tutorial antes de preguntar', async () => {
+    await AsyncStorage.clear();
+    mockScarf.value = 'red';
+    const { root } = await mount();
+    expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
+    await press(root, 'Saltar el tutorial');
+    expect(root.findByType('BottomSheet' as never).props.title).toBe(
+      'Tienes pañuelo nuevo',
+    );
   });
 });

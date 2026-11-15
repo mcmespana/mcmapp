@@ -668,6 +668,85 @@ export function changeStage(
   };
 }
 
+/**
+ * «Recolocar»: reparte solas todas las piezas cosidas, sin que se pisen y
+ * esquivando el logo. Parte de un pañuelo vacío y va colocando de mayor a
+ * menor (`itemReach`): las grandes (medallas, pulseras) se llevan los huecos
+ * buenos y las pequeñas rellenan, que reparte mejor que por orden de
+ * llegada. A igualdad, por id, para que el resultado sea siempre el mismo.
+ * Todas a rotación 0. Las piezas en la caja se quedan en la caja.
+ */
+export function autoArrange(
+  state: PanueloUserState,
+  catalog: PanueloCatalog,
+  now: number,
+): PanueloUserState {
+  const reachOf = (id: string) => {
+    const def = catalog[id];
+    return def ? itemReach(def.kind, def.size) : DEFAULT_REACH;
+  };
+  const ids = Object.keys(state.layout)
+    .filter((id) => state.items[id])
+    .sort((a, b) => reachOf(b) - reachOf(a) || a.localeCompare(b));
+  if (ids.length === 0) return state;
+  const layout: Record<string, PanueloPlacement> = {};
+  const taken: { u: number; v: number; reach: number }[] = [];
+  for (const id of ids) {
+    const reach = reachOf(id);
+    const slot = nextFreeSlot(taken, reach);
+    layout[id] = { u: slot.u, v: slot.v, rot: 0 };
+    taken.push({ u: slot.u, v: slot.v, reach });
+  }
+  return { ...state, layout, layoutAt: now };
+}
+
+/** Los colores que Comunica sabe darnos como pañuelo (los otros no son un color). */
+export function comunicaScarfColor(scarf: unknown): PanueloColor | null {
+  return PANUELO_COLORS.find((c) => c === scarf) ?? null;
+}
+
+/**
+ * Qué hacer con el pañuelo que dice Comunica (`mcm.scarf`):
+ * - `manual`: Comunica no da color (`none`, `unknown`, `cross`, nada): se elige
+ *   a mano, como siempre.
+ * - `same`: coincide con el guardado: el color es de Comunica y no hay nada
+ *   que preguntar.
+ * - `assign`: nunca se eligió color (el verde que se veía era el de por
+ *   defecto, no el suyo): se asigna sin preguntar ni celebrar. Las piezas
+ *   cosidas que pueda haber son la de bienvenida: no hay etapa que despedir.
+ * - `change`: había uno guardado y Comunica dice otro: etapa nueva.
+ */
+export type ScarfDecision =
+  | { kind: 'manual' }
+  | { kind: 'same' | 'assign' | 'change'; color: PanueloColor };
+
+export function decideScarfStage(
+  scarf: unknown,
+  state: PanueloUserState,
+): ScarfDecision {
+  const color = comunicaScarfColor(scarf);
+  if (!color) return { kind: 'manual' };
+  if (state.color === null) return { kind: 'assign', color };
+  return { kind: state.color === color ? 'same' : 'change', color };
+}
+
+/**
+ * El pañuelo de ejemplo del tutorial: un color y unas piezas del catálogo
+ * (cosidas en los primeros huecos). No es de nadie: no se guarda.
+ */
+export function exampleViewerState(
+  catalog: PanueloCatalog,
+  color: PanueloColor,
+  pieceIds: readonly string[],
+): PanueloViewerState {
+  let s: PanueloUserState = { ...EMPTY_PANUELO, color };
+  for (const id of pieceIds) {
+    if (!catalog[id]) continue;
+    s = placeItem(grantItem(s, id, 'demo', 0), id, 0, catalog);
+  }
+  return toViewerState(catalog, s);
+}
+
 /** Los recuerdos de `after` que `before` no tenía (los que hay que subir). */
 export function newMemories(
   before: PanueloUserState,

@@ -23,6 +23,8 @@ type Props = {
   to: PanueloColor;
   /** Cuántas piezas lleva cosidas el de ahora. Sin ninguna no hay recuerdo. */
   placedCount: number;
+  /** El cambio lo ha detectado la app (cuenta de Comunica): «Tienes pañuelo nuevo». */
+  detected?: boolean;
   onClose: () => void;
   /** `keepPieces`: las piezas siguen cosidas (true) o vuelven a la colección. */
   onConfirm: (keepPieces: boolean) => void;
@@ -39,18 +41,21 @@ export function PanueloStageSheet({
   from,
   to,
   placedCount,
+  detected = false,
   onClose,
   onConfirm,
 }: Props) {
   const t = themeColors(isDark);
   const next = COLOR_LABEL[to];
-  const goes = `Pasas al pañuelo ${next.name.toLowerCase()} (${next.stage}).`;
+  const goes = detected
+    ? `Has cambiado de etapa: ahora es el pañuelo ${next.name.toLowerCase()} (${next.stage}).`
+    : `Pasas al pañuelo ${next.name.toLowerCase()} (${next.stage}).`;
   const hasMemory = placedCount > 0;
   return (
     <BottomSheet
       visible={visible}
       onClose={onClose}
-      title="¿Cambias de pañuelo?"
+      title={detected ? 'Tienes pañuelo nuevo' : '¿Cambias de pañuelo?'}
     >
       <View style={styles.body}>
         <Text style={[styles.text, { color: t.text }]}>
@@ -60,10 +65,6 @@ export function PanueloStageSheet({
         </Text>
         {hasMemory ? (
           <>
-            <Text style={[styles.text, { color: t.textSecondary }]}>
-              Si empiezas con el pañuelo limpio, las piezas vuelven a tu
-              colección: no se pierden.
-            </Text>
             <AppPrimaryButton
               label="Llevarme las piezas"
               icon="push-pin"
@@ -74,6 +75,7 @@ export function PanueloStageSheet({
               onPress={() => onConfirm(false)}
               accessibilityRole="button"
               accessibilityLabel="Empezar con el pañuelo limpio"
+              accessibilityHint="Las piezas vuelven a tu colección, no se pierden"
               style={[
                 styles.secondary,
                 { backgroundColor: t.backgroundSunken },
@@ -97,11 +99,11 @@ export function PanueloStageSheet({
         <PressableFeedback
           onPress={onClose}
           accessibilityRole="button"
-          accessibilityLabel="Cancelar"
+          accessibilityLabel={detected ? 'Luego' : 'Cancelar'}
           style={styles.cancel}
         >
           <Text style={[styles.secondaryLabel, { color: t.link }]}>
-            Cancelar
+            {detected ? 'Luego' : 'Cancelar'}
           </Text>
         </PressableFeedback>
       </View>

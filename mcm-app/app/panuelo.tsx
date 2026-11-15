@@ -24,7 +24,6 @@ import {
 } from 'react-native';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 
@@ -47,29 +46,38 @@ import {
   memoryName,
 } from '@/components/panuelo/PanueloMemoryView';
 import { PanueloRedeemSheet } from '@/components/panuelo/PanueloRedeemSheet';
-import { PanueloColorSwatches } from '@/components/panuelo/PanueloColorSwatches';
+import {
+  PanueloColorSwatches,
+  PanueloStagePill,
+} from '@/components/panuelo/PanueloColorSwatches';
 import { PanueloStageBurst } from '@/components/panuelo/PanueloStageBurst';
+import { PanueloTutorial } from '@/components/panuelo/PanueloTutorial';
 import { PanueloStageSheet } from '@/components/panuelo/PanueloStageSheet';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import { MaterialIcons } from '@/components/ui/icons';
 import { durations } from '@/constants/animations';
+import { DEFAULT_PANUELO_CATALOG } from '@/constants/panueloCatalog';
+import { PANUELO_TUTORIAL } from '@/constants/panueloTutorial';
 import { themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { radii, shadows } from '@/constants/uiStyles';
-import { useAuth } from '@/contexts/AuthContext';
 import { usePreviewChannel } from '@/contexts/PreviewChannelContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useLargeText from '@/hooks/useLargeText';
 import { usePanuelo } from '@/hooks/usePanuelo';
 import { usePanueloAvailable } from '@/hooks/usePanueloAvailable';
+import { usePanueloScarf } from '@/hooks/usePanueloScarf';
+import { usePanueloStage } from '@/hooks/usePanueloStage';
+import { usePanueloTutorial } from '@/hooks/usePanueloTutorial';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import {
-  type PanueloColor,
   type PanueloCommand,
   type PanueloEvent,
   type PanueloMemory,
 } from '@/types/panuelo';
 import { trackEvent } from '@/utils/analytics';
+import { confirmAsync } from '@/utils/confirmDialog';
 import { h } from '@/utils/haptics';
 import { logger } from '@/utils/logger';
 import { clampToFlap } from '@/utils/panueloPlacement';
@@ -79,6 +87,7 @@ import {
   DEFAULT_PANUELO_COLOR,
   buildCollection,
   buildMemoryCollection,
+  exampleViewerState,
   memoryToViewerState,
   summarizePanuelo,
   toViewerState,
@@ -122,12 +131,13 @@ function PanueloScreen() {
   }, [headerHeight]);
   const large = useLargeText();
   const { height: windowHeight } = useWindowDimensions();
-  const { user } = useAuth();
   const params = useLocalSearchParams<{ codigo?: string; demo?: string }>();
   const { enabled: testerMode } = usePreviewChannel();
   const panuelo = usePanuelo();
   const { catalog, state, unseen, markSeen, history } = panuelo;
-  const reducedMotion = useReducedMotion();
+  const tutorial = usePanueloTutorial();
+  const scarf = usePanueloScarf();
+  const [tutorialStep, setTutorialStep] = useState(0);
 
   const viewerRef = useRef<Panuelo3DHandle>(null);
   const sendToViewer = useCallback((command: PanueloCommand) => {
@@ -146,23 +156,27 @@ function PanueloScreen() {
   const [medal, setMedal] = useState<LabMedal | null>(null);
   /** El filtro del cajón: se recuerda mientras la pantalla está abierta. */
   const [filter, setFilter] = useState<CollectionFilter>('all');
-  /** Cambio de pañuelo: el color tocado y si la hoja está abierta. */
-  const [stageTarget, setStageTarget] = useState<PanueloColor | null>(null);
-  const [stageOpen, setStageOpen] = useState(false);
-  /** Confeti del cambio: el color del pañuelo nuevo. */
-  const [burst, setBurst] = useState<PanueloColor | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   /** El pañuelo anterior que se está viendo (`at`), solo para mirar. */
   const [viewingAt, setViewingAt] = useState<number | null>(null);
   const memory: PanueloMemory | null =
     history.find((m) => m.at === viewingAt) ?? null;
 
+  const tutorialExample = tutorial.open
+    ? PANUELO_TUTORIAL[tutorialStep]?.example
+    : undefined;
   const viewerState = useMemo(
     () =>
-      memory
-        ? memoryToViewerState(catalog, memory)
-        : toViewerState(catalog, state),
-    [catalog, state, memory],
+      tutorialExample
+        ? exampleViewerState(
+            DEFAULT_PANUELO_CATALOG,
+            tutorialExample.color,
+            tutorialExample.pieces ?? [],
+          )
+        : memory
+          ? memoryToViewerState(catalog, memory)
+          : toViewerState(catalog, state),
+    [catalog, state, memory, tutorialExample],
   );
   const memoryCollection = useMemo(
     () => (memory ? buildMemoryCollection(catalog, state, memory) : []),
@@ -227,6 +241,15 @@ function PanueloScreen() {
     });
   }, [markSeen]);
 
+  const stage = usePanueloStage({
+    panuelo,
+    scarf,
+    mode,
+    busy: tutorial.busy || redeemOpen || viewingAt !== null,
+    sendToViewer,
+    settle,
+  });
+
   const onViewerEvent = useCallback(
     (event: PanueloEvent) => {
       switch (event.type) {
@@ -234,13 +257,13 @@ function PanueloScreen() {
           setViewerReady(true);
           break;
         case 'focus':
-          setActiveId(event.id);
+          if (!tutorial.open) setActiveId(event.id);
           break;
         case 'blur':
           settle();
           break;
         case 'select':
-          setActiveId(event.id);
+          if (!tutorial.open) setActiveId(event.id);
           break;
         case 'pickup':
           h.select();
@@ -260,14 +283,20 @@ function PanueloScreen() {
           break;
       }
     },
-    [panuelo, settle],
+    [panuelo, settle, tutorial.open],
   );
 
   // Presentación de las piezas recién conseguidas, de una en una: cada una
   // espera a que se cierre la anterior.
   const nextUnseen = unseen.find((id) => state.layout[id]) ?? null;
   useEffect(() => {
-    if (!introDone || mode !== 'view' || redeemOpen || viewingAt !== null) {
+    if (
+      !introDone ||
+      mode !== 'view' ||
+      redeemOpen ||
+      viewingAt !== null ||
+      tutorial.busy
+    ) {
       return;
     }
     if (revealing || activeId || !nextUnseen) return;
@@ -283,6 +312,7 @@ function PanueloScreen() {
     mode,
     redeemOpen,
     viewingAt,
+    tutorial.busy,
     revealing,
     activeId,
     nextUnseen,
@@ -456,55 +486,31 @@ function PanueloScreen() {
     );
   }, [activeId, closeDetail, sendToViewer, t.backgroundSunken]);
 
-  // Cambiar de pañuelo es cambiar de etapa: no es instantáneo. Tocar un color
-  // abre la hoja que pregunta qué hacer con las piezas.
-  const changeColor = useCallback(
-    (next: PanueloColor) => {
-      if (next === color) return;
-      h.select();
-      setStageTarget(next);
-      setStageOpen(true);
-    },
-    [color],
-  );
+  const showTutorial = useCallback(() => {
+    h.tap();
+    setMode('view');
+    setViewingAt(null);
+    sendToViewer({ type: 'blur' });
+    settle();
+    setTutorialStep(0);
+    tutorial.show();
+  }, [sendToViewer, settle, tutorial]);
 
-  const clearBurst = useCallback(() => setBurst(null), []);
-  const layoutCount = Object.keys(state.layout).length;
-  const confirmStage = useCallback(
-    (keepPieces: boolean) => {
-      if (!stageTarget) return;
-      const to = stageTarget;
-      setStageOpen(false);
-      if (!keepPieces) {
-        sendToViewer(
-          mode === 'edit' ? { type: 'select', id: null } : { type: 'blur' },
-        );
-      }
-      settle();
-      panuelo.changeStage(to, keepPieces);
-      h.formSuccess();
-      // Con «reducir movimiento» el cambio se queda sin confeti.
-      if (!reducedMotion) setBurst(to);
-      AccessibilityInfo.announceForAccessibility(
-        `Ahora llevas el pañuelo ${COLOR_LABEL[to].name.toLowerCase()}, ${COLOR_LABEL[to].stage}. ${
-          layoutCount === 0
-            ? ''
-            : keepPieces
-              ? 'El anterior queda en Mis pañuelos y tus piezas siguen cosidas.'
-              : 'El anterior queda en Mis pañuelos y las piezas han vuelto a la colección.'
-        }`.trim(),
-      );
-    },
-    [
-      stageTarget,
-      mode,
-      layoutCount,
-      panuelo,
-      reducedMotion,
-      sendToViewer,
-      settle,
-    ],
-  );
+  // «Recolocar» deshace la colocación a mano: se pregunta antes.
+  const arrange = useCallback(async () => {
+    const ok = await confirmAsync({
+      title: '¿Recolocar las piezas?',
+      message:
+        'Se repartirán solas por el pañuelo y se perderá cómo las habías colocado.',
+      confirmLabel: 'Recolocar',
+    });
+    if (!ok) return;
+    h.add();
+    sendToViewer({ type: 'select', id: null });
+    settle();
+    panuelo.arrange();
+    AccessibilityInfo.announceForAccessibility('Piezas recolocadas.');
+  }, [panuelo, sendToViewer, settle]);
 
   const openMemory = useCallback(
     (picked: PanueloMemory) => {
@@ -535,18 +541,13 @@ function PanueloScreen() {
     shown === 0
       ? 'No lleva ninguna pieza.'
       : `${memory ? 'Llevaba' : 'Lleva'} ${shown} ${shown === 1 ? 'pieza' : 'piezas'}.`;
-  const viewerLabel = memory
-    ? `Tu ${memoryName(memory)}, ${COLOR_LABEL[shownColor].stage}. Recuerdo, solo para verlo. ${placedCount}`
-    : `Pañuelo ${COLOR_LABEL[color].name.toLowerCase()}, ${COLOR_LABEL[color].stage}. ${placedCount}`;
+  const viewerLabel = tutorialExample
+    ? `Pañuelo de ejemplo del tutorial, ${COLOR_LABEL[tutorialExample.color].name.toLowerCase()}.`
+    : memory
+      ? `Tu ${memoryName(memory)}, ${COLOR_LABEL[shownColor].stage}. Recuerdo, solo para verlo. ${placedCount}`
+      : `Pañuelo ${COLOR_LABEL[color].name.toLowerCase()}, ${COLOR_LABEL[color].stage}. ${placedCount}`;
   const viewerHint =
     'Se gira arrastrando con el dedo. Para ver, poner, quitar o mover una pieza, usa la colección que hay debajo.';
-
-  const hint =
-    mode === 'edit'
-      ? 'Arrastra una pieza para moverla. Toca una de tu colección para ponerla.'
-      : summary.placed === 0
-        ? 'Arrastra para girarlo. Las piezas que consigas irán aquí.'
-        : 'Arrastra para girarlo. Toca una pieza para verla de cerca.';
 
   const detail = active ? (
     <PanueloItemDetail
@@ -633,11 +634,6 @@ function PanueloScreen() {
         onSelect={selectFromStrip}
         grid={isWide}
       />
-      {!user ? (
-        <Text style={[styles.notice, { color: t.textSecondary }]}>
-          Sin sesión iniciada, tu pañuelo solo se guarda en este móvil.
-        </Text>
-      ) : null}
     </>
   );
   const panelScroll = (children: React.ReactNode) => (
@@ -652,13 +648,87 @@ function PanueloScreen() {
       {children}
     </ScrollView>
   );
-  const panelBody = active
+  const tutorialView = (
+    <PanueloTutorial
+      isDark={isDark}
+      index={tutorialStep}
+      onIndex={setTutorialStep}
+      onFinish={tutorial.finish}
+    />
+  );
+  const panelBody = tutorial.open
     ? large || isWide
-      ? panelScroll(detail)
-      : detail
-    : large && !isWide
-      ? panelScroll(collectionView)
-      : collectionView;
+      ? panelScroll(tutorialView)
+      : tutorialView
+    : active
+      ? large || isWide
+        ? panelScroll(detail)
+        : detail
+      : large && !isWide
+        ? panelScroll(collectionView)
+        : collectionView;
+
+  const topLeft = tutorial.open ? null : memory ? (
+    <PanueloMemoryBar isDark={isDark} memory={memory} onBack={leaveMemory} />
+  ) : stage.locked ? (
+    <PanueloStagePill
+      isDark={isDark}
+      color={color}
+      pending={stage.pending}
+      onPending={stage.reopen}
+    />
+  ) : (
+    <PanueloColorSwatches isDark={isDark} color={color} onPick={stage.pick} />
+  );
+  const topRight =
+    tutorial.open || memory ? null : (
+      <View style={styles.stageActions}>
+        {mode === 'view' && viewerReady ? (
+          <PressableFeedback
+            onPress={sharePhoto}
+            accessibilityRole="button"
+            accessibilityLabel="Compartir una foto de mi pañuelo"
+            style={[styles.iconButton, { backgroundColor: t.card }]}
+          >
+            <PressableFeedback.Highlight />
+            <MaterialIcons name="ios-share" size={20} color={t.link} />
+          </PressableFeedback>
+        ) : null}
+        {mode === 'edit' && stage.layoutCount > 0 ? (
+          <PressableFeedback
+            onPress={arrange}
+            accessibilityRole="button"
+            accessibilityLabel="Recolocar las piezas"
+            accessibilityHint="Las reparte solas por el pañuelo sin que se pisen"
+            style={[styles.modeButton, { backgroundColor: t.card }]}
+          >
+            <PressableFeedback.Highlight />
+            <MaterialIcons name="auto-fix-high" size={18} color={t.link} />
+            <Text style={[styles.modeLabel, { color: t.link }]}>Recolocar</Text>
+          </PressableFeedback>
+        ) : null}
+        <PressableFeedback
+          onPress={toggleMode}
+          accessibilityRole="button"
+          accessibilityLabel={
+            mode === 'edit'
+              ? 'Listo, terminar de decorar'
+              : 'Decorar el pañuelo'
+          }
+          style={[styles.modeButton, { backgroundColor: t.card }]}
+        >
+          <PressableFeedback.Highlight />
+          <MaterialIcons
+            name={mode === 'edit' ? 'check' : 'edit'}
+            size={18}
+            color={t.link}
+          />
+          <Text style={[styles.modeLabel, { color: t.link }]}>
+            {mode === 'edit' ? 'Listo' : 'Decorar'}
+          </Text>
+        </PressableFeedback>
+      </View>
+    );
 
   return (
     <View
@@ -674,7 +744,7 @@ function PanueloScreen() {
         <Panuelo3D
           ref={viewerRef}
           state={viewerState}
-          mode={memory ? 'view' : mode}
+          mode={memory || tutorial.open ? 'view' : mode}
           onEvent={onViewerEvent}
           tintColor={t.textSecondary}
           accessibilityLabel={viewerLabel}
@@ -682,62 +752,12 @@ function PanueloScreen() {
           style={StyleSheet.absoluteFill}
         />
 
-        <View
-          style={[styles.stageTop, large && styles.stageTopLarge]}
-          pointerEvents="box-none"
-        >
-          {memory ? (
-            <PanueloMemoryBar
-              isDark={isDark}
-              memory={memory}
-              onBack={leaveMemory}
-            />
-          ) : (
-            <PanueloColorSwatches
-              isDark={isDark}
-              color={color}
-              onPick={changeColor}
-            />
-          )}
-
-          {memory ? null : (
-            <View style={styles.stageActions}>
-              {mode === 'view' && viewerReady ? (
-                <PressableFeedback
-                  onPress={sharePhoto}
-                  accessibilityRole="button"
-                  accessibilityLabel="Compartir una foto de mi pañuelo"
-                  style={[styles.iconButton, { backgroundColor: t.card }]}
-                >
-                  <PressableFeedback.Highlight />
-                  <MaterialIcons name="ios-share" size={20} color={t.link} />
-                </PressableFeedback>
-              ) : null}
-              <PressableFeedback
-                onPress={toggleMode}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  mode === 'edit'
-                    ? 'Listo, terminar de decorar'
-                    : 'Decorar el pañuelo'
-                }
-                style={[styles.modeButton, { backgroundColor: t.card }]}
-              >
-                <PressableFeedback.Highlight />
-                <MaterialIcons
-                  name={mode === 'edit' ? 'check' : 'edit'}
-                  size={18}
-                  color={t.link}
-                />
-                <Text style={[styles.modeLabel, { color: t.link }]}>
-                  {mode === 'edit' ? 'Listo' : 'Decorar'}
-                </Text>
-              </PressableFeedback>
-            </View>
-          )}
+        <View style={styles.stageTop} pointerEvents="box-none">
+          {topLeft}
+          {topRight}
         </View>
 
-        {active ? null : (
+        {active || tutorial.open || stage.locked ? null : (
           <Text
             style={[styles.stageLabel, { color: t.textSecondary }]}
             pointerEvents="none"
@@ -749,20 +769,19 @@ function PanueloScreen() {
           </Text>
         )}
 
-        {active ? null : (
-          <Text
-            style={[styles.hint, { color: t.textSecondary }]}
-            pointerEvents="none"
-            // Habla de arrastrar y tocar el 3D: al lector se lo cuenta el
-            // `accessibilityHint` del visor.
-            importantForAccessibility="no"
-            accessibilityElementsHidden
+        {tutorial.open || memory ? null : (
+          <PressableFeedback
+            onPress={showTutorial}
+            accessibilityRole="button"
+            accessibilityLabel="Ver el tutorial del pañuelo"
+            style={[styles.help, { backgroundColor: t.card }]}
           >
-            {hint}
-          </Text>
+            <PressableFeedback.Highlight />
+            <IconSymbol name="info.circle" size={20} color={t.link} />
+          </PressableFeedback>
         )}
 
-        <PanueloStageBurst color={burst} onDone={clearBurst} />
+        <PanueloStageBurst color={stage.burst} onDone={stage.clearBurst} />
       </View>
 
       <View
@@ -779,21 +798,22 @@ function PanueloScreen() {
       </View>
 
       <PanueloRedeemSheet
-        visible={redeemOpen}
+        visible={redeemOpen && !tutorial.busy}
         isDark={isDark}
         initialCode={linkedCode}
         onClose={() => setRedeemOpen(false)}
         onRedeem={panuelo.redeem}
       />
-      {stageTarget ? (
+      {stage.target ? (
         <PanueloStageSheet
-          visible={stageOpen}
+          visible={stage.open}
           isDark={isDark}
           from={color}
-          to={stageTarget}
-          placedCount={layoutCount}
-          onClose={() => setStageOpen(false)}
-          onConfirm={confirmStage}
+          to={stage.target}
+          placedCount={stage.layoutCount}
+          detected={stage.detected}
+          onClose={stage.close}
+          onConfirm={stage.confirm}
         />
       ) : null}
       <PanueloHistorySheet
@@ -823,14 +843,12 @@ const styles = StyleSheet.create({
   },
   stageTop: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
+    rowGap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
-  },
-  stageTopLarge: {
-    flexWrap: 'wrap',
-    rowGap: spacing.sm,
   },
   stageActions: {
     flexDirection: 'row',
@@ -864,13 +882,17 @@ const styles = StyleSheet.create({
   modeLabel: {
     ...typography.button,
   },
-  hint: {
-    ...typography.caption,
+  help: {
     position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
+    right: spacing.md,
     bottom: spacing.sm,
-    textAlign: 'center',
+    width: TOUCH,
+    height: TOUCH,
+    borderRadius: radii.pillFull,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    ...shadows.card,
   },
   panel: {
     paddingTop: spacing.md,
@@ -924,9 +946,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radii.sm,
     overflow: 'hidden',
-  },
-  notice: {
-    ...typography.caption,
-    paddingHorizontal: spacing.md,
   },
 });

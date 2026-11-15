@@ -799,3 +799,48 @@ describe('usePanuelo: cambio de etapa e historial', () => {
     });
   });
 });
+
+describe('usePanuelo: recolocar', () => {
+  it('reparte las piezas cosidas sin giros, lo guarda y lo sube con el retardo de siempre', async () => {
+    mockAuth.user = { uid: 'u1' };
+    fetchPanuelo.mockResolvedValue(state());
+    const { result } = await mount();
+    await act(async () => {
+      result.current.redeem('CAMINO');
+    });
+    await act(async () => {
+      result.current.rotate('vieira-camino', 45);
+      result.current.move('vieira-camino', 0.5, 0.5);
+    });
+    jest.useFakeTimers();
+    syncPanueloLayout.mockClear();
+    await act(async () => {
+      result.current.arrange();
+    });
+    const layout = result.current.state.layout;
+    expect(Object.keys(layout).sort()).toEqual([AUTO, 'vieira-camino'].sort());
+    expect(Object.values(layout).every((p) => p.rot === 0)).toBe(true);
+    expect((await saved(PANUELO_STATE_KEY)).layout['vieira-camino'].rot).toBe(
+      0,
+    );
+    await act(async () => {
+      jest.advanceTimersByTime(LAYOUT_DELAY);
+    });
+    expect(syncPanueloLayout).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ layout }),
+    );
+  });
+
+  it('sin piezas cosidas no escribe nada', async () => {
+    const { result } = await mount();
+    await act(async () => {
+      result.current.unplace(AUTO);
+    });
+    const writes = (AsyncStorage.setItem as jest.Mock).mock.calls.length;
+    await act(async () => {
+      result.current.arrange();
+    });
+    expect((AsyncStorage.setItem as jest.Mock).mock.calls.length).toBe(writes);
+  });
+});
