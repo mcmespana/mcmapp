@@ -176,8 +176,8 @@ function sidePoint(
   const depth = 0.62 - 0.5 * smooth(0.15, 1, e) + 0.06 * Math.sin(Math.PI * e);
   _hem.copy(_top).addScaledVector(_drop, depth);
   // El bajo, junto a la espalda: sube por el costado del triángulo.
-  _edge.copy(TIP).lerp(_ref, 0.9 * smooth(0, 0.42, e));
-  _edge.lerp(_hem, smooth(0.06, 0.5, e));
+  _edge.copy(TIP).lerp(_ref, 0.6 * smooth(0, 0.5, e));
+  _edge.lerp(_hem, smooth(0.1, 0.8, e));
 
   // Lo que se aparta este hilo del borde del triángulo: en e = 0, nada.
   out.copy(_top).lerp(_edge, t);
