@@ -6,10 +6,12 @@ import {
   View,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { moveScreenReaderFocus } from '@/components/panuelo/PanueloItemDetail';
 import { PanueloItemArt } from '@/components/panuelo/PanueloItemArt';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import {
   PANUELO_TUTORIAL,
   type PanueloTutorialSection,
@@ -18,7 +20,7 @@ import { DEFAULT_PANUELO_CATALOG } from '@/constants/panueloCatalog';
 import { themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
-import { radii } from '@/constants/uiStyles';
+import { radii, shadows } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
 
 const TOUCH = 44;
@@ -115,6 +117,18 @@ export function PanueloTutorial({
         {section.title}
       </Text>
       <Text style={[styles.body, { color: t.text }]}>{section.body}</Text>
+      {section.steps ? (
+        <View style={styles.steps}>
+          {section.steps.map((text, i) => (
+            <View key={text} style={styles.step}>
+              <Text style={[styles.stepNumber, { color: t.link }]}>
+                {i + 1}.
+              </Text>
+              <Text style={[styles.stepText, { color: t.text }]}>{text}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
       {art.length > 0 ? (
         <View
           style={styles.art}
@@ -163,7 +177,90 @@ export function PanueloTutorial({
   );
 }
 
+type HeaderProps = {
+  isDark: boolean;
+  onClose: () => void;
+};
+
+/**
+ * La cabecera del tutorial a pantalla completa: la cabecera nativa se oculta
+ * mientras dura y esta lleva el título y la X de salir (≥ 44 pt), por debajo
+ * de la barra de estado y del notch.
+ */
+export function PanueloTutorialHeader({ isDark, onClose }: HeaderProps) {
+  const t = themeColors(isDark);
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      style={[
+        styles.header,
+        {
+          paddingTop: insets.top + spacing.sm,
+          paddingLeft: Math.max(spacing.md, insets.left),
+          paddingRight: Math.max(spacing.md, insets.right),
+        },
+      ]}
+      pointerEvents="box-none"
+    >
+      <Text
+        style={[styles.headerTitle, { color: t.text }]}
+        accessibilityRole="header"
+      >
+        Tu pañuelo
+      </Text>
+      <PressableFeedback
+        onPress={() => {
+          h.tap();
+          onClose();
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Cerrar el tutorial"
+        style={[styles.close, { backgroundColor: t.card }]}
+      >
+        <PressableFeedback.Highlight />
+        <IconSymbol name="xmark" size={20} color={t.link} />
+      </PressableFeedback>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  headerTitle: {
+    ...typography.h2,
+    flexShrink: 1,
+  },
+  close: {
+    width: TOUCH,
+    height: TOUCH,
+    borderRadius: radii.pillFull,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    ...shadows.card,
+  },
+  steps: {
+    gap: spacing.xs,
+  },
+  step: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  stepNumber: {
+    ...typography.body,
+    fontWeight: '700',
+    minWidth: spacing.md,
+  },
+  stepText: {
+    ...typography.body,
+    flex: 1,
+  },
   root: {
     paddingHorizontal: spacing.md,
     gap: spacing.sm,

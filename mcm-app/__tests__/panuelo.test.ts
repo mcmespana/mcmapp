@@ -897,6 +897,45 @@ describe('el color que dice Comunica', () => {
 });
 
 describe('el tutorial (datos)', () => {
+  it('cubre lo que hoy existe', () => {
+    const ids = PANUELO_TUTORIAL.map((s) => s.id);
+    for (const id of [
+      'tu-panuelo',
+      'las-piezas',
+      'verlas-de-cerca',
+      'decorarlo',
+      'recolocar',
+      'canjear',
+      'tu-coleccion',
+      'compartir',
+      'cambiar-de-etapa',
+      'mis-panuelos',
+    ]) {
+      expect(ids).toContain(id);
+    }
+  });
+
+  it('los «cómo se hace» llevan 2 o 3 pasos y sus órdenes apuntan a piezas del ejemplo', () => {
+    for (const s of PANUELO_TUTORIAL) {
+      if (s.steps) {
+        expect(s.steps.length).toBeGreaterThanOrEqual(2);
+        expect(s.steps.length).toBeLessThanOrEqual(3);
+      }
+      const e = s.example;
+      if (!e) continue;
+      for (const id of [e.select, e.focus, e.reveal]) {
+        if (id) expect(e.pieces).toContain(id);
+      }
+      // Seleccionar una pieza solo tiene sentido en modo decorar.
+      if (e.select) expect(e.mode).toBe('edit');
+      if (e.toColor) expect(e.toColor).not.toBe(e.color);
+    }
+  });
+
+  it('la versión subió con el tutorial a pantalla completa', () => {
+    expect(PANUELO_TUTORIAL_VERSION).toBeGreaterThanOrEqual(2);
+  });
+
   it('tiene versión y secciones con id único, título y texto', () => {
     expect(PANUELO_TUTORIAL_VERSION).toBeGreaterThanOrEqual(1);
     expect(PANUELO_TUTORIAL.length).toBeGreaterThanOrEqual(5);

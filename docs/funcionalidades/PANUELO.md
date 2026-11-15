@@ -135,7 +135,7 @@ components/panuelo/
 ├── panueloViewerHtml.ts            La página que se le da al WebView
 ├── PanueloItemArt.tsx              Una pieza dibujada en plano (SVG)
 ├── PanueloCollectionStrip.tsx      La colección
-├── PanueloTutorial.tsx             El tutorial: texto, indicador de paso y piezas en plano
+├── PanueloTutorial.tsx             El tutorial: cabecera con X, tarjeta del paso e indicador
 ├── PanueloCollectionFilter.tsx     El filtro (Todas · Puestas · Sin poner) y su vacío
 ├── PanueloItemDetail.tsx           La ficha de una pieza
 ├── PanueloRedeemSheet.tsx          Canjear un código
@@ -150,6 +150,7 @@ hooks/usePanuelo.ts                 Estado: catálogo, piezas, colocación, sinc
 hooks/usePanueloStage.ts            Cambio de etapa: hoja, confeti, detección del color de Comunica
 hooks/usePanueloScarf.ts            Lee `mcm.scarf` de Comunica (fuera del área)
 hooks/usePanueloTutorial.ts         Si el tutorial toca, y que ya se vio
+hooks/usePanueloTutorialStage.ts    Qué hace el visor en cada paso del tutorial
 constants/panueloTutorial.ts        Las secciones del tutorial (datos)
 utils/panuelo.ts                    Lógica pura: sanear, fusionar, conseguir, decorar
 utils/panueloPlacement.ts           Dónde cabe una pieza (lo comparten app y visor)
@@ -253,10 +254,10 @@ tocarlos**.
 1. Tocar un color distinto del actual abre la hoja «¿Cambias de pañuelo?»
    (`PanueloStageSheet`, el mismo patrón de hoja que el canje). Dice que el
    pañuelo de ahora se guarda como recuerdo y ofrece:
-   - **Llevarme las piezas**: cambia el color y las piezas se quedan cosidas
-     donde estaban.
-   - **Empezar con el pañuelo limpio**: cambia el color y las descose todas.
-     Vuelven a la colección: **no se pierden**.
+   - **Mantener mis chapas y pines**: cambia el color y las piezas se quedan
+     cosidas donde estaban.
+   - **Empezar de cero la nueva etapa**: cambia el color y las descose todas.
+     Siguen en la colección, sin poner: **no se pierden**.
    - **Cancelar**.
      Si el pañuelo de ahora no lleva ninguna pieza cosida, no hay recuerdo que
      guardar y las dos salidas serían la misma: la hoja ofrece un solo botón,
@@ -317,30 +318,53 @@ lo cambia.
 ## Tutorial
 
 Sustituye a los rótulos y pistas sueltos que había por la pantalla («arrastra
-para girarlo», «toca una pieza»…): la pantalla ya no explica nada por su cuenta,
+para girarlo», «toca una pieza»…): la pantalla no explica nada por su cuenta,
 lo cuenta esto, una vez y a mano cuando se quiera. Las ayudas de accesibilidad
 (etiquetas, `accessibilityHint`, anuncios) no se tocaron: no se ven.
 
 - **Contenido en datos**: `constants/panueloTutorial.ts`, un array de secciones
-  `{ id, title, body, example? }`. El comentario de arriba del fichero dice cómo
-  añadir una. Hoy: Tu pañuelo · Las piezas · Decorarlo · Verlas de cerca ·
-  Cambiar de etapa. Solo se cuenta lo que la app hace hoy (nada de
+  `{ id, title, body, steps?, example? }`. El comentario de arriba del fichero
+  dice cómo añadir una. Solo se cuenta lo que la app hace hoy (nada de
   intercambios hasta que tengan pantalla): un test lo vigila.
-- **Cómo se ve**: ocupa el sitio de la colección, bajo el visor, con indicador de
-  paso, «Siguiente» / «Atrás» / «Saltar» (o deslizar) y «Entendido» en la última.
-  El ejemplo es **el propio visor de la pantalla con otro estado** (un pañuelo
-  verde con piezas del catálogo de muestra, `exampleViewerState`), no un visor
-  nuevo: un único contexto WebGL (varios WebView en una hoja serían memoria y
-  batería para nada) y el ejemplo se puede girar. Las secciones que hablan de
-  piezas añaden además las piezas dibujadas en plano (`PanueloItemArt`,
-  `example.art`), que son baratas. Mientras dura se ocultan colores y decorar.
-- **Cuándo sale**: solo, la primera vez que se abre el pañuelo; y siempre desde
-  el botón de información (esquina inferior del visor). Se recuerda en
-  `@panuelo_tutorial_seen` con la **versión** (`PANUELO_TUTORIAL_VERSION`): al
-  subirla —cuando cambia de verdad una función, no por retocar una frase— se
-  vuelve a enseñar una vez. Va **primero**: ni el canje de `?codigo=`, ni la
-  presentación de una pieza nueva, ni la pregunta de cambio de etapa salen
-  hasta que se cierra.
+- **A pantalla completa**: la primera vez y al pulsar el «?» de la cabecera.
+  Mientras dura se **oculta la cabecera nativa** (`navigation.setOptions({
+headerShown: false })`) y el tutorial lleva la suya, por debajo de la barra de
+  estado y del notch: «Tu pañuelo» y una X (44 pt) para salir. Así no hay dos
+  títulos ni la cabecera tapando la X. Debajo, el visor grande y, abajo, el
+  texto del paso con su indicador, «Atrás» / «Siguiente» (o deslizar) y
+  «Entendido» en el último; «Saltar» antes.
+- **Un único visor**: no es un `Modal` ni un segundo WebView (un WebView no se
+  puede mover entre árboles sin recargarse, y dos contextos WebGL son memoria y
+  batería para nada). El tutorial es la **misma pantalla re-maquetada**: el
+  visor sigue montado en el mismo sitio del árbol y solo cambia de tamaño al
+  desaparecer el panel de la colección, que cede su sitio a la tarjeta del paso.
+- **Cada paso ilustra lo que cuenta** (`usePanueloTutorialStage`): el visor
+  recibe un pañuelo de ejemplo del catálogo de muestra y las órdenes del paso.
+
+  | Paso              | Ejemplo en el visor                                                 |
+  | ----------------- | ------------------------------------------------------------------- |
+  | Tu pañuelo        | Pañuelo verde con dos piezas, para girar                            |
+  | Las piezas        | Las seis clases cosidas + dibujadas en plano debajo                 |
+  | Verlas de cerca   | Una medalla enfocada (`focus`)                                      |
+  | Decorarlo         | Modo decorar con una pieza seleccionada (`select`); los pasos 1-2-3 |
+  | Recolocar         | Modo decorar con todas las piezas repartidas                        |
+  | Canjear un código | Una pieza que se presenta (`reveal`); los pasos 1-2-3               |
+  | Tu colección      | Pañuelo con piezas (el filtro Todas · Puestas · Sin poner)          |
+  | Compartir         | Pañuelo con piezas                                                  |
+  | Cambiar de etapa  | La tela pasa de verde a azul (`toColor`)                            |
+  | Mis pañuelos      | Un pañuelo rojo, como un recuerdo                                   |
+
+  En el ejemplo no se toca nada de lo tuyo: arrastrar piezas, enfocar o
+  seleccionar se ignoran mientras dura.
+
+- **Cuándo sale**: solo, la primera vez; y siempre desde el «?» de la cabecera
+  nativa (`accessibilityLabel` «Cómo funciona tu pañuelo»; en iOS un
+  `Stack.Toolbar.Button`, en Android y web un `headerRight`). Se recuerda en
+  `@panuelo_tutorial_seen` con la **versión** (`PANUELO_TUTORIAL_VERSION`, hoy
+  2): al subirla —cuando cambia de verdad una función, no por retocar una
+  frase— se vuelve a enseñar una vez. Va **primero**: ni el canje de
+  `?codigo=`, ni la presentación de una pieza nueva, ni la pregunta de cambio
+  de etapa salen hasta que se cierra.
 - **Cómo ampliarlo**: añade la sección al array; si es una función nueva, sube
   la versión; pon el cambio aquí y en el CHANGELOG.
 

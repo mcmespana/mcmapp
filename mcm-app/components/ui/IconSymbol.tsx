@@ -75,6 +75,7 @@ type IconMapping = {
   gearshape: 'settings';
   // Mis datos de monitor (plan 09)
   'info.circle': 'info-outline';
+  'questionmark.circle': 'help-outline';
   circle: 'radio-button-unchecked';
   'photo.on.rectangle': 'photo-library';
   paperclip: 'attach-file';
@@ -158,6 +159,7 @@ const MAPPING: IconMapping = {
   gearshape: 'settings',
   // Mis datos de monitor (plan 09)
   'info.circle': 'info-outline',
+  'questionmark.circle': 'help-outline',
   circle: 'radio-button-unchecked',
   'photo.on.rectangle': 'photo-library',
   paperclip: 'attach-file',

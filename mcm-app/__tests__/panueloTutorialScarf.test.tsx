@@ -6,7 +6,11 @@
 import { renderHook, act } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { PANUELO_TUTORIAL_VERSION } from '@/constants/panueloTutorial';
+import {
+  PANUELO_TUTORIAL,
+  PANUELO_TUTORIAL_VERSION,
+} from '@/constants/panueloTutorial';
+import { usePanueloTutorialStage } from '@/hooks/usePanueloTutorialStage';
 import {
   PANUELO_TUTORIAL_KEY,
   shouldAutoShowTutorial,
@@ -173,5 +177,99 @@ describe('usePanueloScarf', () => {
       mockSession.listeners.forEach((l) => l());
     });
     expect(result.current).toBeNull();
+  });
+});
+
+describe('usePanueloTutorialStage', () => {
+  const stepOf = (id: string) => PANUELO_TUTORIAL.findIndex((s) => s.id === id);
+  const send = jest.fn();
+  beforeEach(() => {
+    send.mockClear();
+    jest.useFakeTimers();
+  });
+  afterEach(() => jest.useRealTimers());
+
+  const mount = (step: number, open = true, viewerReady = true) =>
+    renderHook(
+      (p: { step: number; open: boolean }) =>
+        usePanueloTutorialStage({
+          open: p.open,
+          step: p.step,
+          viewerReady,
+          sendToViewer: send,
+        }),
+      { initialProps: { step, open } },
+    );
+
+  it('cerrado no pone nada', async () => {
+    const { result } = await mount(0, false);
+    expect(result.current.state).toBeUndefined();
+    expect(result.current.mode).toBe('view');
+  });
+
+  it('abierto da el pañuelo de ejemplo del paso', async () => {
+    const { result } = await mount(stepOf('las-piezas'));
+    expect(result.current.state?.color).toBe('green');
+    expect(result.current.state?.items).toHaveLength(6);
+  });
+
+  it('«Decorarlo»: modo decorar y una pieza seleccionada', async () => {
+    const { result } = await mount(stepOf('decorarlo'));
+    expect(result.current.mode).toBe('edit');
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(send).toHaveBeenCalledWith({
+      type: 'select',
+      id: 'corazon-consolacion',
+    });
+  });
+
+  it('«Verlas de cerca»: una pieza enfocada', async () => {
+    await mount(stepOf('verlas-de-cerca'));
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(send).toHaveBeenCalledWith({
+      type: 'focus',
+      id: 'medalla-jubileo-2025',
+    });
+  });
+
+  it('«Canjear»: una pieza que se presenta', async () => {
+    await mount(stepOf('canjear'));
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(send).toHaveBeenCalledWith({ type: 'reveal', id: 'parche-pascua' });
+  });
+
+  it('«Cambiar de etapa»: la tela pasa de verde a azul', async () => {
+    const { result } = await mount(stepOf('cambiar-de-etapa'));
+    expect(result.current.state?.color).toBe('green');
+    await act(async () => {
+      jest.advanceTimersByTime(3000);
+    });
+    expect(result.current.state?.color).toBe('blue');
+  });
+
+  it('al cambiar de paso vuelve a la tela del ejemplo y suelta la pieza', async () => {
+    const { result, rerender } = await mount(stepOf('cambiar-de-etapa'));
+    await act(async () => {
+      jest.advanceTimersByTime(3000);
+    });
+    send.mockClear();
+    await rerender({ step: stepOf('cambiar-de-etapa') - 1, open: true });
+    expect(result.current.state?.color).toBe('green');
+    expect(send).toHaveBeenCalledWith({ type: 'blur' });
+    expect(send).toHaveBeenCalledWith({ type: 'select', id: null });
+  });
+
+  it('sin el visor listo no manda órdenes', async () => {
+    await mount(stepOf('verlas-de-cerca'), true, false);
+    await act(async () => {
+      jest.advanceTimersByTime(3000);
+    });
+    expect(send).not.toHaveBeenCalled();
   });
 });
