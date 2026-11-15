@@ -189,6 +189,19 @@ export interface PanueloPlacement {
   rot: number;
 }
 
+/**
+ * Un pañuelo que se dejó al cambiar de etapa. No es una imagen: las piezas se
+ * pintan a partir de datos, así que basta saber de qué color era y dónde
+ * llevaba cada pieza para que el visor lo vuelva a pintar igual.
+ */
+export interface PanueloMemory {
+  color: PanueloColor;
+  /** Cuándo se dejó (ms). Es también su clave en `history`. */
+  at: number;
+  /** Lo que llevaba cosido: id de la pieza → dónde. */
+  layout: Record<string, PanueloPlacement>;
+}
+
 /** Lo que guarda cada persona (`users/{uid}/panuelo`). */
 export interface PanueloUserState {
   color: PanueloColor | null;
@@ -202,6 +215,14 @@ export interface PanueloUserState {
    * aparecer. Una pieza se tiene si se consiguió DESPUÉS de darla.
    */
   gone?: Record<string, number>;
+  /**
+   * Los pañuelos anteriores («Mis pañuelos»), por clave `String(at)`. Un mapa
+   * y no una lista: Realtime Database convierte las listas en objetos con
+   * huecos, y con una clave por recuerdo cada móvil sube SOLO el suyo y dos
+   * móviles que dejen el mismo no se duplican. Los más recientes, hasta
+   * `MAX_PANUELO_HISTORY`.
+   */
+  history?: Record<string, PanueloMemory>;
 }
 
 // ── Puente con el visor 3D ─────────────────────────────────────────────────

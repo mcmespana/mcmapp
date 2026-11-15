@@ -5,12 +5,22 @@ import { PANUELO_GLYPHS } from '@/constants/panueloGlyphs';
 import type { PanueloCatalog, PanueloUserState } from '@/types/panuelo';
 import {
   EMPTY_PANUELO,
+  MAX_PANUELO_HISTORY,
+  archivePanuelo,
   buildCollection,
+  buildMemoryCollection,
+  changeStage,
+  filterCollection,
+  formatMonthYear,
   grantItem,
   hashPanueloCode,
   isTradeable,
+  listMemories,
+  memoryPieceCount,
+  memoryToViewerState,
   mergePanuelo,
   moveItem,
+  newMemories,
   normalizeCode,
   pendingAutoGrants,
   placeItem,
@@ -445,5 +455,284 @@ describe('el interruptor', () => {
     ['all', true, true],
   ] as const)('%s con probador=%s → %s', (flag, testerMode, expected) => {
     expect(isPanueloAvailable({ flag, testerMode })).toBe(expected);
+  });
+});
+
+// ── Cambio de etapa e historial ────────────────────────────────────────────
+
+describe('cambio de etapa', () => {
+  const placement = { u: 0, v: 0.3, rot: 0 };
+  const dressed = (over: Partial<PanueloUserState> = {}) =>
+    state({
+      color: 'green',
+      items: { a: { at: 5, via: 'code' }, b: { at: 6, via: 'all' } },
+      layout: { a: placement },
+      layoutAt: 10,
+      ...over,
+    });
+
+  it('archivar guarda el color y la colocación de ahora', () => {
+    const next = archivePanuelo(dressed(), NOW);
+    expect(next.history).toEqual({
+      [String(NOW)]: { color: 'green', at: NOW, layout: { a: placement } },
+    });
+    // No toca lo demás.
+    expect(next.layout).toEqual({ a: placement });
+    expect(next.color).toBe('green');
+  });
+
+  it('un pañuelo sin piezas cosidas no es un recuerdo', () => {
+    const empty = dressed({ layout: {} });
+    expect(archivePanuelo(empty, NOW)).toBe(empty);
+  });
+
+  it('sin color elegido se archiva el que se veía (verde)', () => {
+    const next = archivePanuelo(dressed({ color: null }), NOW);
+    expect(listMemories(next)[0].color).toBe('green');
+  });
+
+  it('el recuerdo no comparte objeto con la colocación viva', () => {
+    const next = archivePanuelo(dressed(), NOW);
+    expect(next.history?.[String(NOW)].layout).not.toBe(next.layout);
+  });
+
+  it('dos recuerdos en el mismo milisegundo no se pisan', () => {
+    const once = archivePanuelo(dressed(), NOW);
+    const twice = archivePanuelo(once, NOW);
+    expect(Object.keys(twice.history ?? {})).toHaveLength(2);
+  });
+
+  it('llevándose las piezas: cambia el color, las piezas siguen donde estaban', () => {
+    const next = changeStage(dressed(), 'red', true, NOW);
+    expect(next.color).toBe('red');
+    expect(next.layout).toEqual({ a: placement });
+    expect(next.layoutAt).toBe(NOW);
+    expect(listMemories(next)).toHaveLength(1);
+    expect(listMemories(next)[0].color).toBe('green');
+  });
+
+  it('con el pañuelo limpio: se descosen todas pero se siguen teniendo', () => {
+    const next = changeStage(dressed(), 'blue', false, NOW);
+    expect(next.color).toBe('blue');
+    expect(next.layout).toEqual({});
+    expect(Object.keys(next.items)).toEqual(['a', 'b']);
+    // Lo que llevaba queda en el recuerdo.
+    expect(listMemories(next)[0].layout).toEqual({ a: placement });
+  });
+
+  it('sin piezas cosidas cambia de color pero no guarda recuerdo', () => {
+    const next = changeStage(dressed({ layout: {} }), 'yellow', false, NOW);
+    expect(next.color).toBe('yellow');
+    expect(next.history).toBeUndefined();
+  });
+
+  it('al mismo color no hace nada (ni con el color sin elegir, que se ve verde)', () => {
+    const s = dressed();
+    expect(changeStage(s, 'green', true, NOW)).toBe(s);
+    const unset = dressed({ color: null });
+    expect(changeStage(unset, 'green', false, NOW)).toBe(unset);
+  });
+
+  it('guarda como mucho los más recientes', () => {
+    let s = dressed();
+    for (let i = 0; i < MAX_PANUELO_HISTORY + 3; i++) {
+      s = archivePanuelo(s, NOW + i * 1000);
+    }
+    const list = listMemories(s);
+    expect(list).toHaveLength(MAX_PANUELO_HISTORY);
+    // Del más reciente al más antiguo, y se han ido los más viejos.
+    expect(list[0].at).toBe(NOW + (MAX_PANUELO_HISTORY + 2) * 1000);
+    expect(list[list.length - 1].at).toBe(NOW + 3000);
+  });
+
+  it('newMemories dice cuáles son los nuevos (los que hay que subir)', () => {
+    const before = archivePanuelo(dressed(), NOW);
+    const after = archivePanuelo(before, NOW + 5000);
+    expect(newMemories(before, after).map((m) => m.at)).toEqual([NOW + 5000]);
+    expect(newMemories(after, after)).toEqual([]);
+  });
+
+  it('el historial se sanea: lo mal formado se descarta y la clave manda', () => {
+    const s = sanitizeUserState({
+      history: {
+        '100': {
+          color: 'red',
+          at: 999,
+          layout: { a: { u: 0, v: 0.3, rot: 0 } },
+        },
+        '200': { color: 'fucsia', layout: {} },
+        '300': 'basura',
+        '400': {
+          color: 'blue',
+          layout: { x: { u: 'no' }, y: { u: 0, v: 40 } },
+        },
+      },
+    });
+    expect(Object.keys(s.history ?? {}).sort()).toEqual(['100', '400']);
+    expect(s.history?.['100'].at).toBe(100);
+    expect(s.history?.['100'].layout.a).toEqual({ u: 0, v: 0.3, rot: 0 });
+    // Una colocación rota se descarta; una que se sale se mete en el triángulo.
+    expect(Object.keys(s.history?.['400'].layout ?? {})).toEqual(['y']);
+    expect(s.history?.['400'].layout.y.v).toBeLessThanOrEqual(0.9);
+  });
+
+  it('un recuerdo puede llevar piezas que ya no se tienen (se llevaban entonces)', () => {
+    const s = sanitizeUserState({
+      history: { '100': { color: 'red', layout: { a: { u: 0, v: 0.3 } } } },
+    });
+    expect(s.history?.['100'].layout).toHaveProperty('a');
+  });
+
+  it('al sanear se queda con los más recientes y sin historial no hay clave', () => {
+    const history: Record<string, unknown> = {};
+    for (let i = 1; i <= MAX_PANUELO_HISTORY + 5; i++) {
+      history[String(i * 100)] = { color: 'red', layout: {} };
+    }
+    const s = sanitizeUserState({ history });
+    expect(listMemories(s)).toHaveLength(MAX_PANUELO_HISTORY);
+    expect(listMemories(s)[0].at).toBe((MAX_PANUELO_HISTORY + 5) * 100);
+    expect(sanitizeUserState({ color: 'red' })).not.toHaveProperty('history');
+    expect(sanitizeUserState({ history: 'no' })).not.toHaveProperty('history');
+  });
+
+  it('se conserva al ida y vuelta por Firebase', () => {
+    const s = changeStage(dressed(), 'red', true, NOW);
+    const back = sanitizeUserState(JSON.parse(JSON.stringify(s)));
+    expect(back.history).toEqual(s.history);
+  });
+
+  describe('al juntar móvil y nube', () => {
+    const memory = (at: number, color: 'red' | 'blue' = 'red') => ({
+      color,
+      at,
+      layout: {},
+    });
+
+    it('los recuerdos de los dos lados se suman', () => {
+      const local = state({ history: { '1': memory(1) } });
+      const remote = state({ history: { '2': memory(2, 'blue') } });
+      const { merged, upload } = mergePanuelo(local, remote);
+      expect(Object.keys(merged.history ?? {}).sort()).toEqual(['1', '2']);
+      // El 1 solo estaba en el móvil: hay que subirlo.
+      expect(upload).toBe(true);
+    });
+
+    it('el mismo `at` no se duplica y, si la nube ya lo tiene, no hay nada que subir', () => {
+      const both = state({ history: { '1': memory(1) } });
+      const { merged, upload } = mergePanuelo(both, both);
+      expect(listMemories(merged)).toHaveLength(1);
+      expect(upload).toBe(false);
+    });
+
+    it('lo que solo tiene la nube no se pierde ni se sube de vuelta', () => {
+      const remote = state({ history: { '2': memory(2) } });
+      const { merged, upload } = mergePanuelo(state(), remote);
+      expect(listMemories(merged)).toHaveLength(1);
+      expect(upload).toBe(false);
+    });
+
+    it('sin historial en ninguno no aparece la clave', () => {
+      expect(mergePanuelo(state(), state()).merged).not.toHaveProperty(
+        'history',
+      );
+    });
+
+    it('tras sumar también se respeta el tope', () => {
+      const many = (from: number) =>
+        Object.fromEntries(
+          Array.from({ length: MAX_PANUELO_HISTORY }, (_, i) => {
+            const at = from + i;
+            return [String(at), memory(at)];
+          }),
+        );
+      const { merged } = mergePanuelo(
+        state({ history: many(100) }),
+        state({ history: many(1000) }),
+      );
+      const list = listMemories(merged);
+      expect(list).toHaveLength(MAX_PANUELO_HISTORY);
+      expect(list[0].at).toBe(1000 + MAX_PANUELO_HISTORY - 1);
+    });
+
+    it('el historial sobrevive a lo dado en un intercambio', () => {
+      const { merged } = mergePanuelo(
+        state({ history: { '1': memory(1) }, gone: { a: 5 } }),
+        state({ items: { a: { at: 1, via: 'all' } } }),
+      );
+      expect(listMemories(merged)).toHaveLength(1);
+      expect(merged.items).toEqual({});
+    });
+  });
+});
+
+describe('ver un pañuelo anterior', () => {
+  const catalog = sanitizeCatalog({
+    chapa: { kind: 'cinta', name: 'Chapa', look: { colors: ['#fff'] } },
+    pin: { kind: 'cinta', name: 'Pin', look: { colors: ['#000'] } },
+  });
+  const memory = {
+    color: 'red' as const,
+    at: NOW,
+    layout: {
+      chapa: { u: 0, v: 0.3, rot: 0 },
+      viejo: { u: 0.1, v: 0.4, rot: 0 },
+    },
+  };
+
+  it('el visor recibe el color del recuerdo y solo las piezas que siguen en el catálogo', () => {
+    const viewer = memoryToViewerState(catalog, memory);
+    expect(viewer.color).toBe('red');
+    expect(viewer.items.map((i) => i.id)).toEqual(['chapa']);
+    expect(viewer.items[0]).toMatchObject({ u: 0, v: 0.3, kind: 'cinta' });
+  });
+
+  it('cuenta solo las piezas que se pueden enseñar', () => {
+    expect(memoryPieceCount(catalog, memory)).toBe(1);
+  });
+
+  it('se puede recorrer como colección, tenga o no hoy la pieza', () => {
+    const entries = buildMemoryCollection(
+      catalog,
+      state({ items: { chapa: { at: 7, via: 'code' } } }),
+      memory,
+    );
+    expect(entries.map((e) => e.item.id)).toEqual(['chapa']);
+    expect(entries[0].placed).toBe(true);
+    expect(entries[0].owned).toEqual({ at: 7, via: 'code' });
+    // Sin tenerla hoy, igual se enseña (se llevaba entonces).
+    expect(
+      buildMemoryCollection(catalog, state(), memory)[0].owned,
+    ).toBeTruthy();
+  });
+
+  it('«Hasta noviembre de 2026»', () => {
+    expect(formatMonthYear(new Date(2026, 10, 15).getTime())).toBe(
+      'noviembre de 2026',
+    );
+  });
+});
+
+describe('el filtro de la colección', () => {
+  const catalog = sanitizeCatalog({
+    a: { kind: 'cinta', name: 'A', look: { colors: ['#fff'] }, order: 1 },
+    b: { kind: 'cinta', name: 'B', look: { colors: ['#fff'] }, order: 2 },
+    c: { kind: 'cinta', name: 'C', look: { colors: ['#fff'] }, order: 3 },
+  });
+  const s = state({
+    items: { a: { at: 2, via: 'all' }, b: { at: 1, via: 'all' } },
+    layout: { a: { u: 0, v: 0.3, rot: 0 } },
+  });
+  const all = buildCollection(catalog, s);
+  const ids = (f: 'all' | 'placed' | 'boxed') =>
+    filterCollection(all, f).map((e) => e.item.id);
+
+  it('«Todas» incluye las siluetas de las que faltan', () => {
+    expect(ids('all')).toEqual(['a', 'b', 'c']);
+  });
+  it('«Puestas» son las que tienes y llevas cosidas', () => {
+    expect(ids('placed')).toEqual(['a']);
+  });
+  it('«Sin poner» son las que tienes y no están cosidas, no las que faltan', () => {
+    expect(ids('boxed')).toEqual(['b']);
   });
 });

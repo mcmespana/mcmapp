@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 
@@ -33,16 +34,25 @@ import {
   Panuelo3D,
   type Panuelo3DHandle,
 } from '@/components/panuelo/Panuelo3D';
-import { PanueloCollectionStrip } from '@/components/panuelo/PanueloCollectionStrip';
+import { PanueloCollectionFilter } from '@/components/panuelo/PanueloCollectionFilter';
+import { PanueloHistorySheet } from '@/components/panuelo/PanueloHistorySheet';
 import {
   PanueloItemDetail,
   moveScreenReaderFocus,
   type PanueloDetailAction,
 } from '@/components/panuelo/PanueloItemDetail';
+import {
+  PanueloMemoryBar,
+  PanueloMemoryPanel,
+  memoryName,
+} from '@/components/panuelo/PanueloMemoryView';
 import { PanueloRedeemSheet } from '@/components/panuelo/PanueloRedeemSheet';
+import { PanueloColorSwatches } from '@/components/panuelo/PanueloColorSwatches';
+import { PanueloStageBurst } from '@/components/panuelo/PanueloStageBurst';
+import { PanueloStageSheet } from '@/components/panuelo/PanueloStageSheet';
 import { MaterialIcons } from '@/components/ui/icons';
 import { durations } from '@/constants/animations';
-import { PanueloColors, themeColors } from '@/constants/colors';
+import { themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -54,10 +64,10 @@ import { usePanuelo } from '@/hooks/usePanuelo';
 import { usePanueloAvailable } from '@/hooks/usePanueloAvailable';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import {
-  PANUELO_COLORS,
   type PanueloColor,
   type PanueloCommand,
   type PanueloEvent,
+  type PanueloMemory,
 } from '@/types/panuelo';
 import { trackEvent } from '@/utils/analytics';
 import { h } from '@/utils/haptics';
@@ -68,8 +78,11 @@ import {
   COLOR_LABEL,
   DEFAULT_PANUELO_COLOR,
   buildCollection,
+  buildMemoryCollection,
+  memoryToViewerState,
   summarizePanuelo,
   toViewerState,
+  type CollectionFilter,
   type PanueloCollectionEntry,
 } from '@/utils/panuelo';
 
@@ -113,7 +126,8 @@ function PanueloScreen() {
   const params = useLocalSearchParams<{ codigo?: string; demo?: string }>();
   const { enabled: testerMode } = usePreviewChannel();
   const panuelo = usePanuelo();
-  const { catalog, state, unseen, markSeen } = panuelo;
+  const { catalog, state, unseen, markSeen, history } = panuelo;
+  const reducedMotion = useReducedMotion();
 
   const viewerRef = useRef<Panuelo3DHandle>(null);
   const sendToViewer = useCallback((command: PanueloCommand) => {
@@ -130,10 +144,29 @@ function PanueloScreen() {
   const linkedCode = typeof params.codigo === 'string' ? params.codigo : '';
   const [redeemOpen, setRedeemOpen] = useState(linkedCode !== '');
   const [medal, setMedal] = useState<LabMedal | null>(null);
+  /** El filtro del cajón: se recuerda mientras la pantalla está abierta. */
+  const [filter, setFilter] = useState<CollectionFilter>('all');
+  /** Cambio de pañuelo: el color tocado y si la hoja está abierta. */
+  const [stageTarget, setStageTarget] = useState<PanueloColor | null>(null);
+  const [stageOpen, setStageOpen] = useState(false);
+  /** Confeti del cambio: el color del pañuelo nuevo. */
+  const [burst, setBurst] = useState<PanueloColor | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  /** El pañuelo anterior que se está viendo (`at`), solo para mirar. */
+  const [viewingAt, setViewingAt] = useState<number | null>(null);
+  const memory: PanueloMemory | null =
+    history.find((m) => m.at === viewingAt) ?? null;
 
   const viewerState = useMemo(
-    () => toViewerState(catalog, state),
-    [catalog, state],
+    () =>
+      memory
+        ? memoryToViewerState(catalog, memory)
+        : toViewerState(catalog, state),
+    [catalog, state, memory],
+  );
+  const memoryCollection = useMemo(
+    () => (memory ? buildMemoryCollection(catalog, state, memory) : []),
+    [catalog, state, memory],
   );
   const collection = useMemo(
     () => buildCollection(catalog, state),
@@ -143,8 +176,13 @@ function PanueloScreen() {
     () => summarizePanuelo(catalog, state),
     [catalog, state],
   );
-  const active = collection.find((e) => e.item.id === activeId) ?? null;
+  const active =
+    (memory ? memoryCollection : collection).find(
+      (e) => e.item.id === activeId,
+    ) ?? null;
   const color = state.color ?? DEFAULT_PANUELO_COLOR;
+  /** El color que se ve ahora: el del recuerdo, si se está viendo uno. */
+  const shownColor = memory?.color ?? color;
 
   useEffect(() => {
     trackEvent('panuelo_abierto');
@@ -229,7 +267,9 @@ function PanueloScreen() {
   // espera a que se cierre la anterior.
   const nextUnseen = unseen.find((id) => state.layout[id]) ?? null;
   useEffect(() => {
-    if (!introDone || mode !== 'view' || redeemOpen) return;
+    if (!introDone || mode !== 'view' || redeemOpen || viewingAt !== null) {
+      return;
+    }
     if (revealing || activeId || !nextUnseen) return;
     const timer = setTimeout(() => {
       setRevealing(nextUnseen);
@@ -242,6 +282,7 @@ function PanueloScreen() {
     introDone,
     mode,
     redeemOpen,
+    viewingAt,
     revealing,
     activeId,
     nextUnseen,
@@ -390,6 +431,8 @@ function PanueloScreen() {
             },
           ]
         : [];
+    // Un pañuelo anterior es solo para verlo: ni quitar ni girar.
+    if (memory) return closeup;
     return [
       ...rotate,
       ...closeup,
@@ -401,7 +444,7 @@ function PanueloScreen() {
         onPress: () => unplaceActive(id),
       },
     ];
-  }, [active, mode, placeActive, rotateActive, unplaceActive]);
+  }, [active, mode, memory, placeActive, rotateActive, unplaceActive]);
 
   const sharePhoto = useCallback(() => {
     h.tap();
@@ -413,22 +456,88 @@ function PanueloScreen() {
     );
   }, [activeId, closeDetail, sendToViewer, t.backgroundSunken]);
 
+  // Cambiar de pañuelo es cambiar de etapa: no es instantáneo. Tocar un color
+  // abre la hoja que pregunta qué hacer con las piezas.
   const changeColor = useCallback(
     (next: PanueloColor) => {
       if (next === color) return;
       h.select();
-      panuelo.setColor(next);
+      setStageTarget(next);
+      setStageOpen(true);
     },
-    [color, panuelo],
+    [color],
   );
+
+  const clearBurst = useCallback(() => setBurst(null), []);
+  const layoutCount = Object.keys(state.layout).length;
+  const confirmStage = useCallback(
+    (keepPieces: boolean) => {
+      if (!stageTarget) return;
+      const to = stageTarget;
+      setStageOpen(false);
+      if (!keepPieces) {
+        sendToViewer(
+          mode === 'edit' ? { type: 'select', id: null } : { type: 'blur' },
+        );
+      }
+      settle();
+      panuelo.changeStage(to, keepPieces);
+      h.formSuccess();
+      // Con «reducir movimiento» el cambio se queda sin confeti.
+      if (!reducedMotion) setBurst(to);
+      AccessibilityInfo.announceForAccessibility(
+        `Ahora llevas el pañuelo ${COLOR_LABEL[to].name.toLowerCase()}, ${COLOR_LABEL[to].stage}. ${
+          layoutCount === 0
+            ? ''
+            : keepPieces
+              ? 'El anterior queda en Mis pañuelos y tus piezas siguen cosidas.'
+              : 'El anterior queda en Mis pañuelos y las piezas han vuelto a la colección.'
+        }`.trim(),
+      );
+    },
+    [
+      stageTarget,
+      mode,
+      layoutCount,
+      panuelo,
+      reducedMotion,
+      sendToViewer,
+      settle,
+    ],
+  );
+
+  const openMemory = useCallback(
+    (picked: PanueloMemory) => {
+      h.tap();
+      setHistoryOpen(false);
+      setMode('view');
+      sendToViewer({ type: 'blur' });
+      settle();
+      setViewingAt(picked.at);
+      AccessibilityInfo.announceForAccessibility(
+        `Viendo tu ${memoryName(picked)}. Solo para verlo: se puede girar y tocar sus piezas.`,
+      );
+    },
+    [sendToViewer, settle],
+  );
+  const leaveMemory = useCallback(() => {
+    h.tap();
+    sendToViewer({ type: 'blur' });
+    settle();
+    setViewingAt(null);
+    AccessibilityInfo.announceForAccessibility('Has vuelto a tu pañuelo.');
+  }, [sendToViewer, settle]);
 
   if (!panuelo.ready) return null;
 
+  const shown = memory ? memoryCollection.length : summary.placed;
   const placedCount =
-    summary.placed === 0
+    shown === 0
       ? 'No lleva ninguna pieza.'
-      : `Lleva ${summary.placed} ${summary.placed === 1 ? 'pieza' : 'piezas'}.`;
-  const viewerLabel = `Pañuelo ${COLOR_LABEL[color].name.toLowerCase()}, ${COLOR_LABEL[color].stage}. ${placedCount}`;
+      : `${memory ? 'Llevaba' : 'Lleva'} ${shown} ${shown === 1 ? 'pieza' : 'piezas'}.`;
+  const viewerLabel = memory
+    ? `Tu ${memoryName(memory)}, ${COLOR_LABEL[shownColor].stage}. Recuerdo, solo para verlo. ${placedCount}`
+    : `Pañuelo ${COLOR_LABEL[color].name.toLowerCase()}, ${COLOR_LABEL[color].stage}. ${placedCount}`;
   const viewerHint =
     'Se gira arrastrando con el dedo. Para ver, poner, quitar o mover una pieza, usa la colección que hay debajo.';
 
@@ -445,6 +554,11 @@ function PanueloScreen() {
       isDark={isDark}
       isNew={revealing === active.item.id}
       actions={actions}
+      note={
+        memory
+          ? `Lo llevabas en tu pañuelo ${COLOR_LABEL[memory.color].name.toLowerCase()}.`
+          : undefined
+      }
       onMove={
         mode === 'edit' && active?.owned && active.placed
           ? moveActive
@@ -453,9 +567,19 @@ function PanueloScreen() {
       onClose={closeDetail}
     />
   ) : null;
-  const collectionView = (
+  const collectionView = memory ? (
+    <PanueloMemoryPanel
+      isDark={isDark}
+      memory={memory}
+      entries={memoryCollection}
+      activeId={activeId}
+      grid={isWide}
+      titleRef={collectionTitleRef}
+      onSelect={selectFromStrip}
+    />
+  ) : (
     <>
-      <View style={styles.panelHead}>
+      <View style={[styles.panelHead, large && styles.panelHeadLarge]}>
         <View style={styles.panelTitles}>
           <Text
             ref={collectionTitleRef}
@@ -468,6 +592,24 @@ function PanueloScreen() {
             {summary.owned} de {summary.total} · {summary.placed} en el pañuelo
           </Text>
         </View>
+        {history.length > 0 ? (
+          <PressableFeedback
+            onPress={() => {
+              h.tap();
+              setHistoryOpen(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Mis pañuelos"
+            accessibilityHint="Los pañuelos que dejaste al cambiar de etapa"
+            style={[
+              styles.historyButton,
+              { backgroundColor: t.backgroundSunken },
+            ]}
+          >
+            <PressableFeedback.Highlight />
+            <MaterialIcons name="history" size={20} color={t.link} />
+          </PressableFeedback>
+        ) : null}
         <PressableFeedback
           onPress={() => {
             h.tap();
@@ -482,8 +624,10 @@ function PanueloScreen() {
           <Text style={[styles.modeLabel, { color: t.link }]}>Canjear</Text>
         </PressableFeedback>
       </View>
-      <PanueloCollectionStrip
+      <PanueloCollectionFilter
         entries={collection}
+        filter={filter}
+        onFilterChange={setFilter}
         activeId={activeId}
         isDark={isDark}
         onSelect={selectFromStrip}
@@ -530,7 +674,7 @@ function PanueloScreen() {
         <Panuelo3D
           ref={viewerRef}
           state={viewerState}
-          mode={mode}
+          mode={memory ? 'view' : mode}
           onEvent={onViewerEvent}
           tintColor={t.textSecondary}
           accessibilityLabel={viewerLabel}
@@ -542,71 +686,55 @@ function PanueloScreen() {
           style={[styles.stageTop, large && styles.stageTopLarge]}
           pointerEvents="box-none"
         >
-          <View
-            style={[styles.swatches, { backgroundColor: t.card }]}
-            accessibilityRole="radiogroup"
-            accessibilityLabel="Color del pañuelo"
-          >
-            {PANUELO_COLORS.map((c) => (
-              <PressableFeedback
-                key={c}
-                onPress={() => changeColor(c)}
-                accessibilityRole="radio"
-                accessibilityState={{
-                  selected: c === color,
-                  checked: c === color,
-                }}
-                hitSlop={SWATCH_HIT_SLOP}
-                accessibilityLabel={`Pañuelo ${COLOR_LABEL[c].name.toLowerCase()}: ${COLOR_LABEL[c].stage}`}
-                style={styles.swatchTarget}
-              >
-                <View
-                  style={[
-                    styles.swatch,
-                    { backgroundColor: PanueloColors.cloth[c] },
-                    c === color && [
-                      styles.swatchSelected,
-                      { borderColor: t.text },
-                    ],
-                  ]}
-                />
-              </PressableFeedback>
-            ))}
-          </View>
+          {memory ? (
+            <PanueloMemoryBar
+              isDark={isDark}
+              memory={memory}
+              onBack={leaveMemory}
+            />
+          ) : (
+            <PanueloColorSwatches
+              isDark={isDark}
+              color={color}
+              onPick={changeColor}
+            />
+          )}
 
-          <View style={styles.stageActions}>
-            {mode === 'view' && viewerReady ? (
+          {memory ? null : (
+            <View style={styles.stageActions}>
+              {mode === 'view' && viewerReady ? (
+                <PressableFeedback
+                  onPress={sharePhoto}
+                  accessibilityRole="button"
+                  accessibilityLabel="Compartir una foto de mi pañuelo"
+                  style={[styles.iconButton, { backgroundColor: t.card }]}
+                >
+                  <PressableFeedback.Highlight />
+                  <MaterialIcons name="ios-share" size={20} color={t.link} />
+                </PressableFeedback>
+              ) : null}
               <PressableFeedback
-                onPress={sharePhoto}
+                onPress={toggleMode}
                 accessibilityRole="button"
-                accessibilityLabel="Compartir una foto de mi pañuelo"
-                style={[styles.iconButton, { backgroundColor: t.card }]}
+                accessibilityLabel={
+                  mode === 'edit'
+                    ? 'Listo, terminar de decorar'
+                    : 'Decorar el pañuelo'
+                }
+                style={[styles.modeButton, { backgroundColor: t.card }]}
               >
                 <PressableFeedback.Highlight />
-                <MaterialIcons name="ios-share" size={20} color={t.link} />
+                <MaterialIcons
+                  name={mode === 'edit' ? 'check' : 'edit'}
+                  size={18}
+                  color={t.link}
+                />
+                <Text style={[styles.modeLabel, { color: t.link }]}>
+                  {mode === 'edit' ? 'Listo' : 'Decorar'}
+                </Text>
               </PressableFeedback>
-            ) : null}
-            <PressableFeedback
-              onPress={toggleMode}
-              accessibilityRole="button"
-              accessibilityLabel={
-                mode === 'edit'
-                  ? 'Listo, terminar de decorar'
-                  : 'Decorar el pañuelo'
-              }
-              style={[styles.modeButton, { backgroundColor: t.card }]}
-            >
-              <PressableFeedback.Highlight />
-              <MaterialIcons
-                name={mode === 'edit' ? 'check' : 'edit'}
-                size={18}
-                color={t.link}
-              />
-              <Text style={[styles.modeLabel, { color: t.link }]}>
-                {mode === 'edit' ? 'Listo' : 'Decorar'}
-              </Text>
-            </PressableFeedback>
-          </View>
+            </View>
+          )}
         </View>
 
         {active ? null : (
@@ -617,7 +745,7 @@ function PanueloScreen() {
             importantForAccessibility="no"
             accessibilityElementsHidden
           >
-            {COLOR_LABEL[color].name} · {COLOR_LABEL[color].stage}
+            {COLOR_LABEL[shownColor].name} · {COLOR_LABEL[shownColor].stage}
           </Text>
         )}
 
@@ -633,6 +761,8 @@ function PanueloScreen() {
             {hint}
           </Text>
         )}
+
+        <PanueloStageBurst color={burst} onDone={clearBurst} />
       </View>
 
       <View
@@ -655,15 +785,31 @@ function PanueloScreen() {
         onClose={() => setRedeemOpen(false)}
         onRedeem={panuelo.redeem}
       />
+      {stageTarget ? (
+        <PanueloStageSheet
+          visible={stageOpen}
+          isDark={isDark}
+          from={color}
+          to={stageTarget}
+          placedCount={layoutCount}
+          onClose={() => setStageOpen(false)}
+          onConfirm={confirmStage}
+        />
+      ) : null}
+      <PanueloHistorySheet
+        visible={historyOpen}
+        isDark={isDark}
+        catalog={catalog}
+        history={history}
+        onClose={() => setHistoryOpen(false)}
+        onSelect={openMemory}
+      />
       <Medalla3DModal medal={medal} onClose={() => setMedal(null)} />
     </View>
   );
 }
 
 const TOUCH = 44;
-const SWATCH = 24;
-/** Cada color mide `TOUCH - sm` de ancho: se completa hasta 44 pt con hitSlop. */
-const SWATCH_HIT_SLOP = { left: spacing.xs, right: spacing.xs };
 
 const styles = StyleSheet.create({
   root: {
@@ -685,26 +831,6 @@ const styles = StyleSheet.create({
   stageTopLarge: {
     flexWrap: 'wrap',
     rowGap: spacing.sm,
-  },
-  swatches: {
-    flexDirection: 'row',
-    borderRadius: radii.pillFull,
-    paddingHorizontal: spacing.xs,
-    ...shadows.card,
-  },
-  swatchTarget: {
-    width: TOUCH - spacing.sm,
-    height: TOUCH,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  swatch: {
-    width: SWATCH,
-    height: SWATCH,
-    borderRadius: radii.pillFull,
-  },
-  swatchSelected: {
-    borderWidth: 3,
   },
   stageActions: {
     flexDirection: 'row',
@@ -770,8 +896,19 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.md,
   },
+  panelHeadLarge: {
+    flexWrap: 'wrap',
+  },
   panelTitles: {
     flex: 1,
+  },
+  historyButton: {
+    width: TOUCH,
+    height: TOUCH,
+    borderRadius: radii.pillFull,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   panelTitle: {
     ...typography.h3,

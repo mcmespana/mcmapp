@@ -19,11 +19,16 @@ import {
 } from 'react-test-renderer';
 
 import PanueloRoute from '@/app/panuelo';
+import CelebrationBurst from '@/components/ui/CelebrationBurst';
+import { PanueloColors } from '@/constants/colors';
 import type {
   PanueloCatalog,
   PanueloEvent,
+  PanueloMemory,
   PanueloUserState,
+  PanueloViewerState,
 } from '@/types/panuelo';
+import { h } from '@/utils/haptics';
 
 // ── Dobles ──────────────────────────────────────────────────────────────────
 
@@ -99,6 +104,22 @@ jest.mock('@/contexts/PreviewChannelContext', () => ({
   usePreviewChannel: () => ({ enabled: false }),
 }));
 jest.mock('@/utils/analytics', () => ({ trackEvent: jest.fn() }));
+
+// «Reducir movimiento» del sistema: lo decide cada prueba.
+const mockMotion = { reduced: false };
+jest.mock('react-native-reanimated', () => {
+  const actual = jest.requireActual('react-native-reanimated');
+  return new Proxy(actual, {
+    get: (target, key) =>
+      key === 'useReducedMotion' ? () => mockMotion.reduced : target[key],
+  });
+});
+// El confeti se prueba por lo que se le pide (color, visible), no por cómo se
+// anima: Reanimated no corre bajo Jest.
+jest.mock('@/components/ui/CelebrationBurst', () => ({
+  __esModule: true,
+  default: () => null,
+}));
 jest.mock('@/utils/panueloShare', () => ({
   sharePanueloSnapshot: jest.fn(() => Promise.resolve()),
 }));
@@ -114,6 +135,8 @@ const mockViewer: {
   props: {
     accessibilityLabel?: string;
     accessibilityHint?: string;
+    state?: PanueloViewerState;
+    mode?: 'view' | 'edit';
     onEvent?: (event: PanueloEvent) => void;
   };
 } = { props: {} };
@@ -183,6 +206,8 @@ const mockPanuelo = {
   unseen: [] as string[],
   markSeen: jest.fn(),
   setColor: jest.fn(),
+  changeStage: jest.fn(),
+  history: [] as PanueloMemory[],
   place: jest.fn(),
   unplace: jest.fn(),
   move: jest.fn(),
@@ -250,6 +275,8 @@ beforeEach(() => {
   mockAvailable.settled = true;
   mockPanuelo.state = STATE;
   mockPanuelo.unseen = [];
+  mockPanuelo.history = [];
+  mockMotion.reduced = false;
   mockViewer.props = {};
   announce = jest
     .spyOn(AccessibilityInfo, 'announceForAccessibility')
@@ -417,10 +444,14 @@ describe('accesibilidad de la pantalla del pañuelo', () => {
     expect(selected[0].props.hitSlop).toEqual({ left: 4, right: 4 });
   });
 
-  it('cambiar de color funciona desde el grupo de radio', async () => {
+  it('tocar otro color ya no cambia nada: abre la hoja de cambio de pañuelo', async () => {
     const { root } = await mount();
     await press(root, 'Pañuelo rojo: Etapa infantil');
-    expect(mockPanuelo.setColor).toHaveBeenCalledWith('red');
+    expect(mockPanuelo.setColor).not.toHaveBeenCalled();
+    expect(mockPanuelo.changeStage).not.toHaveBeenCalled();
+    expect(root.findByType('BottomSheet' as never).props.title).toBe(
+      '¿Cambias de pañuelo?',
+    );
   });
 
   it('lo interactivo tiene etiqueta y rol', async () => {
@@ -563,5 +594,343 @@ describe('letra grande', () => {
     );
     expect(scrolls.length).toBeGreaterThan(0);
     expect(textOf(root)).toContain('Pascua Joven');
+  });
+});
+
+describe('cambio de pañuelo (de etapa)', () => {
+  const sheetText = (root: ReactTestInstance) =>
+    textOf(root.findByType('BottomSheet' as never));
+  let success: jest.SpyInstance;
+  beforeEach(() => {
+    success = jest.spyOn(h, 'formSuccess').mockImplementation(() => undefined);
+  });
+  afterEach(() => success.mockRestore());
+
+  it('la hoja explica que el de ahora se guarda como recuerdo y ofrece las dos salidas y cancelar', async () => {
+    const { root } = await mount();
+    await press(root, 'Pañuelo rojo: Etapa infantil');
+    const text = sheetText(root);
+    expect(text).toContain('Tu pañuelo azul se guarda como recuerdo.');
+    expect(text).toContain('Pasas al pañuelo rojo (Etapa infantil).');
+    for (const label of [
+      'Llevarme las piezas',
+      'Empezar con el pañuelo limpio',
+      'Cancelar',
+    ]) {
+      expect(pressable(root, label).props.accessibilityRole).toBe('button');
+    }
+  });
+
+  it('«Llevarme las piezas» cambia de etapa dejando las piezas cosidas', async () => {
+    const { root } = await mount();
+    await press(root, 'Pañuelo rojo: Etapa infantil');
+    await press(root, 'Llevarme las piezas');
+    expect(mockPanuelo.changeStage).toHaveBeenCalledTimes(1);
+    expect(mockPanuelo.changeStage).toHaveBeenCalledWith('red', true);
+    expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
+  });
+
+  it('«Empezar con el pañuelo limpio» las descose todas', async () => {
+    const { root } = await mount();
+    await press(root, 'Pañuelo verde: Conocimiento');
+    await press(root, 'Empezar con el pañuelo limpio');
+    expect(mockPanuelo.changeStage).toHaveBeenCalledWith('green', false);
+  });
+
+  it('cancelar no cambia nada y cierra la hoja', async () => {
+    const { root } = await mount();
+    await press(root, 'Pañuelo rojo: Etapa infantil');
+    await press(root, 'Cancelar');
+    expect(mockPanuelo.changeStage).not.toHaveBeenCalled();
+    expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
+  });
+
+  it('tocar el color que ya se lleva no abre nada', async () => {
+    const { root } = await mount();
+    await press(root, 'Pañuelo azul: Incorporación y crecimiento');
+    expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
+  });
+
+  it('sin ninguna pieza puesta no hay recuerdo que guardar ni dos salidas', async () => {
+    mockPanuelo.state = { ...STATE, layout: {} };
+    const { root } = await mount();
+    await press(root, 'Pañuelo rojo: Etapa infantil');
+    expect(sheetText(root)).not.toContain('recuerdo');
+    expect(labelsOf(root)).not.toContain('Empezar con el pañuelo limpio');
+    await press(root, 'Cambiar de pañuelo');
+    expect(mockPanuelo.changeStage).toHaveBeenCalledWith('red', true);
+  });
+
+  it('al cambiar: confeti del color del pañuelo nuevo, háptico y anuncio', async () => {
+    jest.useFakeTimers();
+    try {
+      const { root } = await mount();
+      await press(root, 'Pañuelo rojo: Etapa infantil');
+      await press(root, 'Llevarme las piezas');
+      const burst = root.findByType(CelebrationBurst);
+      expect(burst.props.visible).toBe(true);
+      expect(burst.props.emoji).toBe('');
+      const colors = new Set(
+        (burst.props.particles as { c: string }[]).map((p) => p.c),
+      );
+      expect([...colors]).toEqual([PanueloColors.cloth.red]);
+      expect(success).toHaveBeenCalledTimes(1);
+      expect(announce).toHaveBeenCalledWith(
+        expect.stringContaining('Ahora llevas el pañuelo rojo'),
+      );
+      expect(announce).toHaveBeenCalledWith(
+        expect.stringContaining('tus piezas siguen cosidas'),
+      );
+      // El confeti se apaga solo.
+      await act(async () => {
+        jest.advanceTimersByTime(2000);
+      });
+      expect(root.findByType(CelebrationBurst).props.visible).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('el anuncio de empezar limpio dice que las piezas vuelven a la colección', async () => {
+    const { root } = await mount();
+    await press(root, 'Pañuelo rojo: Etapa infantil');
+    await press(root, 'Empezar con el pañuelo limpio');
+    expect(announce).toHaveBeenCalledWith(
+      expect.stringContaining('han vuelto a la colección'),
+    );
+  });
+
+  it('con «reducir movimiento» no hay confeti, pero sí háptico y anuncio', async () => {
+    mockMotion.reduced = true;
+    const { root } = await mount();
+    await press(root, 'Pañuelo rojo: Etapa infantil');
+    await press(root, 'Llevarme las piezas');
+    expect(root.findByType(CelebrationBurst).props.visible).toBe(false);
+    expect(success).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith(
+      expect.stringContaining('Ahora llevas el pañuelo rojo'),
+    );
+  });
+});
+
+describe('el filtro de la colección', () => {
+  const tileLabels = (root: ReactTestInstance) =>
+    [...labelsOf(root)].filter((l) =>
+      /, (chapa|pin|medalla)|sin conseguir/.test(l),
+    );
+
+  it('es un segmentado Todas · Puestas · Sin poner y empieza en Todas', async () => {
+    const { root } = await mount();
+    const tabs = root.findAll(
+      (n) => n.props.accessibilityRole === 'tablist',
+    )[0];
+    expect(tabs.props.accessibilityLabel).toBe('Filtrar la colección');
+    const selected = root
+      .findAll(
+        (n) =>
+          n.props.accessibilityRole === 'tab' &&
+          n.props.accessibilityState?.selected === true &&
+          typeof n.props.onPress === 'function',
+      )
+      .map((n) => n.props.accessibilityLabel);
+    expect(new Set(selected)).toEqual(new Set(['Todas']));
+    for (const label of ['Todas', 'Puestas', 'Sin poner']) {
+      expect(pressable(root, label)).toBeTruthy();
+    }
+    expect(tileLabels(root)).toHaveLength(3);
+  });
+
+  it('«Puestas» solo enseña las cosidas', async () => {
+    const { root } = await mount();
+    await press(root, 'Puestas');
+    expect(tileLabels(root)).toEqual([
+      'Chapa uno, chapa, puesta en el pañuelo',
+    ]);
+  });
+
+  it('«Sin poner» enseña las que tienes y no están cosidas, no las siluetas', async () => {
+    const { root } = await mount();
+    await press(root, 'Sin poner');
+    expect(tileLabels(root)).toEqual(['Pin uno, pin, sin poner']);
+  });
+
+  it('con el filtro vacío sale un vacío breve', async () => {
+    mockPanuelo.state = { ...STATE, layout: {} };
+    const { root } = await mount();
+    await press(root, 'Puestas');
+    expect(textOf(root)).toContain('Ninguna pieza puesta');
+    expect(tileLabels(root)).toHaveLength(0);
+  });
+
+  it('«Sin poner» vacío: todo lo que tienes está puesto', async () => {
+    mockPanuelo.state = {
+      ...STATE,
+      layout: {
+        chapa1: { u: 0, v: 0.5, rot: 0 },
+        pin1: { u: 0.2, v: 0.4, rot: 0 },
+      },
+    };
+    const { root } = await mount();
+    await press(root, 'Sin poner');
+    expect(textOf(root)).toContain('Todo lo que tienes está puesto');
+  });
+
+  it('se recuerda al abrir una ficha y al decorar: no cambia por su cuenta', async () => {
+    const { root } = await mount();
+    await press(root, 'Sin poner');
+    await press(root, 'Decorar el pañuelo');
+    expect(tileLabels(root)).toEqual(['Pin uno, pin, sin poner']);
+    await press(root, 'Pin uno, pin, sin poner');
+    await press(root, 'Cerrar la ficha');
+    expect(tileLabels(root)).toEqual(['Pin uno, pin, sin poner']);
+    const selected = root.findAll(
+      (n) =>
+        n.props.accessibilityRole === 'tab' &&
+        n.props.accessibilityState?.selected === true &&
+        typeof n.props.onPress === 'function',
+    );
+    expect(selected[0].props.accessibilityLabel).toBe('Sin poner');
+  });
+
+  it('los segmentos son lo bastante altos para el dedo (44 pt)', async () => {
+    const { root } = await mount();
+    const tabs = root.findAll(
+      (n) => n.props.accessibilityRole === 'tablist',
+    )[0];
+    const style = Array.isArray(tabs.props.style)
+      ? Object.assign({}, ...tabs.props.style.flat(Infinity).filter(Boolean))
+      : tabs.props.style;
+    expect(style.minHeight).toBeGreaterThanOrEqual(48);
+  });
+});
+
+describe('Mis pañuelos (historial)', () => {
+  const MEMORY: PanueloMemory = {
+    color: 'red',
+    at: new Date(2026, 10, 15).getTime(),
+    layout: {
+      chapa1: { u: 0, v: 0.5, rot: 0 },
+      pin1: { u: 0.2, v: 0.4, rot: 0 },
+    },
+  };
+  const OLDER: PanueloMemory = {
+    color: 'yellow',
+    at: new Date(2024, 5, 1).getTime(),
+    layout: { chapa1: { u: 0, v: 0.5, rot: 0 } },
+  };
+
+  it('sin recuerdos la entrada no sale', async () => {
+    const { root } = await mount();
+    expect(labelsOf(root)).not.toContain('Mis pañuelos');
+  });
+
+  it('con recuerdos hay una entrada discreta que abre la lista', async () => {
+    mockPanuelo.history = [MEMORY, OLDER];
+    const { root } = await mount();
+    expect(pressable(root, 'Mis pañuelos').props.accessibilityRole).toBe(
+      'button',
+    );
+    await press(root, 'Mis pañuelos');
+    const sheet = root.findByType('BottomSheet' as never);
+    expect(sheet.props.title).toBe('Mis pañuelos');
+    const text = textOf(sheet);
+    expect(text).toContain('Pañuelo rojo · Etapa infantil');
+    expect(text).toContain('Hasta noviembre de 2026 · 2 piezas');
+    expect(text).toContain('Pañuelo amarillo · Opción responsable');
+    expect(text).toContain('Hasta junio de 2024 · 1 pieza');
+    expect(
+      labelsOf(root).has(
+        'Pañuelo rojo, Etapa infantil. Hasta noviembre de 2026. 2 piezas.',
+      ),
+    ).toBe(true);
+  });
+
+  async function openMemory(root: ReactTestInstance) {
+    await press(root, 'Mis pañuelos');
+    await press(
+      root,
+      'Pañuelo rojo, Etapa infantil. Hasta noviembre de 2026. 2 piezas.',
+    );
+  }
+
+  it('al tocar uno, el visor lo pinta en solo lectura con un banner y la salida', async () => {
+    mockPanuelo.history = [MEMORY];
+    const { root } = await mount();
+    await openMemory(root);
+    expect(mockViewer.props.state?.color).toBe('red');
+    expect(mockViewer.props.state?.items.map((i) => i.id).sort()).toEqual([
+      'chapa1',
+      'pin1',
+    ]);
+    expect(mockViewer.props.mode).toBe('view');
+    expect(textOf(root)).toContain('Estás viendo tu pañuelo rojo de 2026');
+    expect(announce).toHaveBeenCalledWith(
+      expect.stringContaining('Viendo tu pañuelo rojo de 2026'),
+    );
+    expect(mockViewer.props.accessibilityLabel).toContain('Recuerdo');
+    expect(mockViewer.props.accessibilityLabel).toContain('Llevaba 2 piezas.');
+    // Ni decorar, ni colores, ni compartir mientras se mira un recuerdo.
+    const labels = labelsOf(root);
+    expect(labels).not.toContain('Decorar el pañuelo');
+    expect(labels).not.toContain('Color del pañuelo');
+    expect(labels).not.toContain('Compartir una foto de mi pañuelo');
+    expect(labels).not.toContain('Canjear un código');
+    // Sin tocar el estado real.
+    expect(mockPanuelo.changeStage).not.toHaveBeenCalled();
+    expect(mockPanuelo.unplace).not.toHaveBeenCalled();
+  });
+
+  it('desde el panel se puede ver la ficha de una pieza, pero no quitarla ni ponerla', async () => {
+    mockPanuelo.history = [MEMORY];
+    const { root } = await mount();
+    await openMemory(root);
+    expect(textOf(root)).toContain('Hasta noviembre de 2026 · 2 piezas');
+    await press(root, 'Chapa uno, chapa, puesta en el pañuelo');
+    expect(mockSend).toHaveBeenCalledWith({ type: 'focus', id: 'chapa1' });
+    expect(textOf(root)).toContain('Lo llevabas en tu pañuelo rojo.');
+    expect(textOf(root)).not.toContain('Conseguida el');
+    const labels = labelsOf(root);
+    expect(labels).not.toContain('Quitar del pañuelo');
+    expect(labels).not.toContain('Ponérmela');
+  });
+
+  it('«Volver» devuelve el pañuelo actual', async () => {
+    mockPanuelo.history = [MEMORY];
+    const { root } = await mount();
+    await openMemory(root);
+    await press(root, 'Volver a mi pañuelo');
+    expect(mockViewer.props.state?.color).toBe('blue');
+    expect(textOf(root)).not.toContain('Estás viendo');
+    expect(textOf(root)).toContain('Tu colección');
+    expect(pressable(root, 'Decorar el pañuelo')).toBeTruthy();
+    expect(announce).toHaveBeenCalledWith('Has vuelto a tu pañuelo.');
+  });
+
+  it('un recuerdo con piezas que ya no existen en el catálogo solo pinta las que quedan', async () => {
+    mockPanuelo.history = [
+      {
+        ...MEMORY,
+        layout: { ...MEMORY.layout, quitada: { u: 0, v: 0.3, rot: 0 } },
+      },
+    ];
+    const { root } = await mount();
+    await press(root, 'Mis pañuelos');
+    await press(
+      root,
+      'Pañuelo rojo, Etapa infantil. Hasta noviembre de 2026. 2 piezas.',
+    );
+    expect(mockViewer.props.state?.items).toHaveLength(2);
+  });
+
+  it('si se estaba decorando, al ver un recuerdo se sale del modo decorar', async () => {
+    mockPanuelo.history = [MEMORY];
+    const { root } = await mount();
+    await press(root, 'Decorar el pañuelo');
+    expect(mockViewer.props.mode).toBe('edit');
+    await openMemory(root);
+    expect(mockViewer.props.mode).toBe('view');
+    await press(root, 'Volver a mi pañuelo');
+    expect(mockViewer.props.mode).toBe('view');
+    expect(pressable(root, 'Decorar el pañuelo')).toBeTruthy();
   });
 });

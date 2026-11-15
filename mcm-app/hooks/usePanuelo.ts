@@ -23,6 +23,7 @@ import type {
   PanueloCatalog,
   PanueloColor,
   PanueloItemDef,
+  PanueloMemory,
   PanueloUserState,
   PanueloVia,
 } from '@/types/panuelo';
@@ -32,13 +33,17 @@ import {
   fetchPanuelo,
   syncPanueloItem,
   syncPanueloLayout,
+  syncPanueloMemory,
 } from '@/utils/authHelpers';
 import { logger } from '@/utils/logger';
 import {
   EMPTY_PANUELO,
+  changeStage as changeStageOf,
   grantItem,
+  listMemories,
   mergePanuelo,
   moveItem,
+  newMemories,
   pendingAutoGrants,
   placeItem,
   redeemCode,
@@ -70,6 +75,14 @@ export interface PanueloValue {
   /** Marca una pieza como presentada. */
   markSeen: (id: string) => void;
   setColor: (color: PanueloColor) => void;
+  /**
+   * Cambio de etapa: guarda el pañuelo de ahora en el historial (si llevaba
+   * alguna pieza) y pasa al color nuevo. Con `keepPieces` las piezas siguen
+   * cosidas; sin él se descosen todas (vuelven a la colección).
+   */
+  changeStage: (color: PanueloColor, keepPieces: boolean) => void;
+  /** Los pañuelos anteriores, del más reciente al más antiguo. */
+  history: PanueloMemory[];
   /** Cose la pieza en el primer hueco libre. */
   place: (id: string) => void;
   /** La descose: vuelve a la colección, no se pierde. */
@@ -260,6 +273,9 @@ export function usePanuelo(): PanueloValue {
           }
         }
         if (merged.layoutAt > remote.layoutAt) syncPanueloLayout(uid, merged);
+        for (const memory of newMemories(remote, merged)) {
+          syncPanueloMemory(uid, memory);
+        }
       }
     })();
     return () => {
@@ -309,6 +325,25 @@ export function usePanuelo(): PanueloValue {
       applyLayout((s, now) => setPanueloColor(s, color, now)),
     [applyLayout],
   );
+  const changeStage = useCallback(
+    (color: PanueloColor, keepPieces: boolean) => {
+      const before = stateRef.current;
+      const next = changeStageOf(before, color, keepPieces, Date.now());
+      if (next === before) return;
+      persist(next);
+      const current = uidRef.current;
+      // El recuerdo sube ya (una escritura suelta); el color y la colocación,
+      // con el retardo de siempre.
+      if (current) {
+        for (const memory of newMemories(before, next)) {
+          syncPanueloMemory(current, memory);
+        }
+      }
+      scheduleLayoutSync();
+    },
+    [persist, scheduleLayoutSync],
+  );
+  const history = useMemo(() => listMemories(state), [state]);
   const place = useCallback(
     (id: string) => applyLayout((s, now) => placeItem(s, id, now, catalog)),
     [applyLayout, catalog],
@@ -369,6 +404,8 @@ export function usePanuelo(): PanueloValue {
     unseen,
     markSeen,
     setColor,
+    changeStage,
+    history,
     place,
     unplace,
     move,

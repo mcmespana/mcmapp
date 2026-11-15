@@ -18,6 +18,7 @@ import {
   type PanueloItemDef,
   type PanueloItemKind,
   type PanueloLook,
+  type PanueloMemory,
   type PanueloOwned,
   type PanueloPlacement,
   type PanueloRarity,
@@ -40,6 +41,12 @@ export const EMPTY_PANUELO: PanueloUserState = {
   layout: {},
   layoutAt: 0,
 };
+
+/** Cuántos pañuelos anteriores se guardan: los más recientes. */
+export const MAX_PANUELO_HISTORY = 12;
+/** Tope de piezas de un recuerdo: nadie lleva tantas, es para que un nodo
+ *  mal escrito no engorde el estado. */
+const MAX_MEMORY_PIECES = 100;
 
 /** El pañuelo que se enseña a quien todavía no ha elegido el suyo. */
 export const DEFAULT_PANUELO_COLOR: PanueloColor = 'green';
@@ -262,6 +269,60 @@ function sanitizePlacement(raw: unknown): PanueloPlacement | null {
   return { u: cu, v: cv, rot: normalizeRotation(num(raw.rot) ?? 0) };
 }
 
+/** Un recuerdo, o `null` si no se puede volver a pintar. La clave manda sobre
+ *  el `at` de dentro: es lo que dos móviles comparten para no duplicarlo. */
+function sanitizeMemory(key: string, raw: unknown): PanueloMemory | null {
+  if (!isObject(raw)) return null;
+  const color = PANUELO_COLORS.find((c) => c === raw.color);
+  const at = Number(key) > 0 ? Number(key) : num(raw.at);
+  if (!color || at === undefined || !Number.isFinite(at)) return null;
+  const layout: Record<string, PanueloPlacement> = {};
+  if (isObject(raw.layout)) {
+    for (const [id, value] of Object.entries(raw.layout)) {
+      if (Object.keys(layout).length >= MAX_MEMORY_PIECES) break;
+      const placement = sanitizePlacement(value);
+      if (placement) layout[id] = placement;
+    }
+  }
+  return { color, at, layout };
+}
+
+/** Se queda con los `MAX_PANUELO_HISTORY` recuerdos más recientes. */
+function capHistory(
+  history: Record<string, PanueloMemory>,
+): Record<string, PanueloMemory> {
+  const keep = Object.values(history)
+    .sort((a, b) => b.at - a.at)
+    .slice(0, MAX_PANUELO_HISTORY);
+  const out: Record<string, PanueloMemory> = {};
+  for (const memory of keep) out[String(memory.at)] = memory;
+  return out;
+}
+
+function sanitizeHistory(raw: unknown): Record<string, PanueloMemory> {
+  const out: Record<string, PanueloMemory> = {};
+  if (!isObject(raw)) return out;
+  for (const [key, value] of Object.entries(raw)) {
+    const memory = sanitizeMemory(key, value);
+    if (memory) out[String(memory.at)] = memory;
+  }
+  return capHistory(out);
+}
+
+/** El estado con su historial; la clave solo existe si hay algo. */
+function withHistory(
+  state: PanueloUserState,
+  history: Record<string, PanueloMemory>,
+): PanueloUserState {
+  if (Object.keys(history).length === 0) {
+    if (!state.history) return state;
+    const rest = { ...state };
+    delete rest.history;
+    return rest;
+  }
+  return { ...state, history };
+}
+
 /** Lo que el usuario tenía guardado (en el móvil o en la nube), saneado. */
 export function sanitizeUserState(raw: unknown): PanueloUserState {
   if (!isObject(raw)) return EMPTY_PANUELO;
@@ -289,14 +350,17 @@ export function sanitizeUserState(raw: unknown): PanueloUserState {
       if (at !== undefined) gone[id] = at;
     }
   }
-  return withGone(
-    {
-      color: PANUELO_COLORS.find((c) => c === raw.color) ?? null,
-      items,
-      layout,
-      layoutAt: num(raw.layoutAt) ?? 0,
-    },
-    gone,
+  return withHistory(
+    withGone(
+      {
+        color: PANUELO_COLORS.find((c) => c === raw.color) ?? null,
+        items,
+        layout,
+        layoutAt: num(raw.layoutAt) ?? 0,
+      },
+      gone,
+    ),
+    sanitizeHistory(raw.history),
   );
 }
 
@@ -332,6 +396,8 @@ function withGone(
  *   mezclar dos colocaciones pieza a pieza deja un pañuelo que nadie hizo.
  * - **Lo dado en un intercambio se queda dado** (`gone`), venga de donde
  *   venga: si no, la suma de piezas lo resucitaría.
+ * - **Los recuerdos se SUMAN** (`history`): un pañuelo que se dejó no se
+ *   pierde porque el otro lado no lo tuviera, y el mismo `at` no se duplica.
  *
  * `upload` dice si la nube se queda atrás y hay que subirle la mezcla.
  */
@@ -363,15 +429,25 @@ export function mergePanuelo(
       upload = true;
     }
   }
+  const history: Record<string, PanueloMemory> = { ...remote.history };
+  for (const [key, memory] of Object.entries(local.history ?? {})) {
+    if (!history[key]) {
+      history[key] = memory;
+      upload = true;
+    }
+  }
   return {
-    merged: withGone(
-      {
-        color: winner.color ?? local.color ?? remote.color,
-        items,
-        layout,
-        layoutAt: winner.layoutAt,
-      },
-      gone,
+    merged: withHistory(
+      withGone(
+        {
+          color: winner.color ?? local.color ?? remote.color,
+          items,
+          layout,
+          layoutAt: winner.layoutAt,
+        },
+        gone,
+      ),
+      capHistory(history),
     ),
     upload,
   };
@@ -547,6 +623,66 @@ export function setPanueloColor(
   return { ...state, color: next, layoutAt: now };
 }
 
+// ── Cambiar de etapa ───────────────────────────────────────────────────────
+
+/**
+ * Guarda el pañuelo de ahora en el historial. Un pañuelo sin ninguna pieza
+ * cosida no es un recuerdo: no se guarda nada. Los recuerdos son del tamaño
+ * que dice `MAX_PANUELO_HISTORY`: al pasarse, salen los más antiguos.
+ */
+export function archivePanuelo(
+  state: PanueloUserState,
+  now: number,
+): PanueloUserState {
+  if (Object.keys(state.layout).length === 0) return state;
+  const history = { ...state.history };
+  // Dos recuerdos no comparten clave: si coincide el milisegundo, el siguiente.
+  let at = now;
+  while (history[String(at)]) at += 1;
+  history[String(at)] = {
+    color: state.color ?? DEFAULT_PANUELO_COLOR,
+    at,
+    layout: { ...state.layout },
+  };
+  return { ...state, history: capHistory(history) };
+}
+
+/**
+ * Cambio de etapa: se archiva el pañuelo de ahora y se pasa al color nuevo.
+ * Con `keepPieces` las piezas se quedan cosidas donde estaban; sin él se
+ * descosen todas (vuelven a la colección: siguen siendo tuyas).
+ */
+export function changeStage(
+  state: PanueloUserState,
+  next: PanueloColor,
+  keepPieces: boolean,
+  now: number,
+): PanueloUserState {
+  if (next === (state.color ?? DEFAULT_PANUELO_COLOR)) return state;
+  const archived = archivePanuelo(state, now);
+  return {
+    ...archived,
+    color: next,
+    layout: keepPieces ? archived.layout : {},
+    layoutAt: now,
+  };
+}
+
+/** Los recuerdos de `after` que `before` no tenía (los que hay que subir). */
+export function newMemories(
+  before: PanueloUserState,
+  after: PanueloUserState,
+): PanueloMemory[] {
+  return Object.entries(after.history ?? {})
+    .filter(([key]) => !before.history?.[key])
+    .map(([, memory]) => memory);
+}
+
+/** El historial, del más reciente al más antiguo. */
+export function listMemories(state: PanueloUserState): PanueloMemory[] {
+  return Object.values(state.history ?? {}).sort((a, b) => b.at - a.at);
+}
+
 // ── Leer ───────────────────────────────────────────────────────────────────
 
 /** El catálogo en el orden en que se enseña: por `order` y luego por nombre. */
@@ -620,24 +756,94 @@ export function toViewerState(
   return { color: state.color ?? DEFAULT_PANUELO_COLOR, items };
 }
 
+/**
+ * Un recuerdo tal como se le manda al visor: las piezas que llevaba y que
+ * siguen en el catálogo (una que el Panel ya quitó no se pinta).
+ */
+export function memoryToViewerState(
+  catalog: PanueloCatalog,
+  memory: PanueloMemory,
+): PanueloViewerState {
+  const items: Record<string, PanueloOwned> = {};
+  for (const id of Object.keys(memory.layout)) {
+    items[id] = { at: memory.at, via: 'manual' };
+  }
+  return toViewerState(catalog, {
+    color: memory.color,
+    items,
+    layout: memory.layout,
+    layoutAt: memory.at,
+  });
+}
+
+/**
+ * Las piezas de un recuerdo como entradas de colección, para recorrerlas sin
+ * tocar el 3D. Lo que se tiene hoy conserva su fecha; lo que ya no, se
+ * enseña igual (se llevaba entonces).
+ */
+export function buildMemoryCollection(
+  catalog: PanueloCatalog,
+  state: PanueloUserState,
+  memory: PanueloMemory,
+): PanueloCollectionEntry[] {
+  return sortCatalog(catalog)
+    .filter((item) => memory.layout[item.id])
+    .map((item) => ({
+      item,
+      owned: state.items[item.id] ?? { at: memory.at, via: 'manual' as const },
+      placed: true,
+    }));
+}
+
+/** Cuántas piezas de un recuerdo se pueden enseñar (siguen en el catálogo). */
+export function memoryPieceCount(
+  catalog: PanueloCatalog,
+  memory: PanueloMemory,
+): number {
+  return Object.keys(memory.layout).filter((id) => catalog[id]).length;
+}
+
+/** Qué piezas enseña el cajón de la colección. */
+export type CollectionFilter = 'all' | 'placed' | 'boxed';
+
+/**
+ * «Puestas» = las que tienes y llevas cosidas; «Sin poner» = las que tienes y
+ * no (lo útil al decorar); «Todas» incluye las siluetas de las que faltan.
+ */
+export function filterCollection(
+  entries: PanueloCollectionEntry[],
+  filter: CollectionFilter,
+): PanueloCollectionEntry[] {
+  if (filter === 'placed') return entries.filter((e) => e.owned && e.placed);
+  if (filter === 'boxed') return entries.filter((e) => e.owned && !e.placed);
+  return entries;
+}
+
+const MONTHS = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+
 /** «12 de abril de 2027». */
 export function formatOwnedDate(at: number): string {
-  const months = [
-    'enero',
-    'febrero',
-    'marzo',
-    'abril',
-    'mayo',
-    'junio',
-    'julio',
-    'agosto',
-    'septiembre',
-    'octubre',
-    'noviembre',
-    'diciembre',
-  ];
   const d = new Date(at);
-  return `${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
+  return `${d.getDate()} de ${MONTHS[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+/** «noviembre de 2026». */
+export function formatMonthYear(at: number): string {
+  const d = new Date(at);
+  return `${MONTHS[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
 /**

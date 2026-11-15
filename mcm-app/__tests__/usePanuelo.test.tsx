@@ -37,6 +37,7 @@ jest.mock('@/utils/authHelpers', () => ({
   fetchPanuelo: jest.fn(),
   syncPanueloItem: jest.fn(),
   syncPanueloLayout: jest.fn(),
+  syncPanueloMemory: jest.fn(),
   clearPanuelo: jest.fn(),
 }));
 
@@ -45,6 +46,7 @@ const helpers = require('@/utils/authHelpers');
 const fetchPanuelo = helpers.fetchPanuelo as jest.Mock;
 const syncPanueloItem = helpers.syncPanueloItem as jest.Mock;
 const syncPanueloLayout = helpers.syncPanueloLayout as jest.Mock;
+const syncPanueloMemory = helpers.syncPanueloMemory as jest.Mock;
 const clearPanuelo = helpers.clearPanuelo as jest.Mock;
 
 const AUTO = 'pionero-alpha';
@@ -83,6 +85,7 @@ beforeEach(async () => {
   fetchPanuelo.mockReset().mockResolvedValue(null);
   syncPanueloItem.mockReset();
   syncPanueloLayout.mockReset();
+  syncPanueloMemory.mockReset();
   clearPanuelo.mockReset().mockResolvedValue(undefined);
   await AsyncStorage.clear();
   jest.clearAllMocks();
@@ -611,5 +614,188 @@ describe('usePanuelo: con sesión', () => {
       jest.advanceTimersByTime(LAYOUT_DELAY * 2);
     });
     expect(syncPanueloLayout).not.toHaveBeenCalled();
+  });
+});
+
+describe('usePanuelo: cambio de etapa e historial', () => {
+  /** Un móvil con la pieza `vieira-camino` ya cosida. */
+  async function dressed() {
+    const hook = await mount();
+    await act(async () => {
+      hook.result.current.redeem('CAMINO');
+    });
+    return hook;
+  }
+
+  it('llevándose las piezas: guarda el recuerdo, cambia el color y deja las piezas', async () => {
+    const { result } = await dressed();
+    const before = result.current.state.layout;
+    await act(async () => {
+      result.current.changeStage('red', true);
+    });
+    expect(result.current.state.color).toBe('red');
+    expect(result.current.state.layout).toEqual(before);
+    expect(result.current.history).toHaveLength(1);
+    expect(result.current.history[0].color).toBe('green');
+    expect(result.current.history[0].layout).toEqual(before);
+    // Y todo, en el móvil.
+    const persisted = await saved(PANUELO_STATE_KEY);
+    expect(persisted.color).toBe('red');
+    expect(Object.values(persisted.history)).toHaveLength(1);
+  });
+
+  it('con el pañuelo limpio: descose todo pero lo conserva en la colección y en el recuerdo', async () => {
+    const { result } = await dressed();
+    const before = result.current.state.layout;
+    await act(async () => {
+      result.current.changeStage('blue', false);
+    });
+    expect(result.current.state.layout).toEqual({});
+    expect(result.current.state.items['vieira-camino']).toBeDefined();
+    expect(result.current.history[0].layout).toEqual(before);
+    expect((await saved(PANUELO_STATE_KEY)).layout).toEqual({});
+  });
+
+  it('el historial sale del más reciente al más antiguo', async () => {
+    const { result } = await dressed();
+    await act(async () => {
+      result.current.changeStage('red', true);
+    });
+    await act(async () => {
+      result.current.changeStage('blue', true);
+    });
+    expect(result.current.history.map((m) => m.color)).toEqual([
+      'red',
+      'green',
+    ]);
+  });
+
+  it('sin piezas cosidas no hay recuerdo; al mismo color, tampoco cambio', async () => {
+    const { result } = await mount();
+    await act(async () => {
+      result.current.unplace(AUTO);
+    });
+    await act(async () => {
+      result.current.changeStage('red', false);
+    });
+    expect(result.current.state.color).toBe('red');
+    expect(result.current.history).toEqual([]);
+    const writes = (AsyncStorage.setItem as jest.Mock).mock.calls.length;
+    await act(async () => {
+      result.current.changeStage('red', true);
+    });
+    expect((AsyncStorage.setItem as jest.Mock).mock.calls.length).toBe(writes);
+  });
+
+  it('lee el historial guardado en el móvil', async () => {
+    await store(
+      PANUELO_STATE_KEY,
+      state({
+        history: {
+          '5': { color: 'yellow', at: 5, layout: {} },
+          '9': { color: 'red', at: 9, layout: {} },
+        },
+      }),
+    );
+    const { result } = await mount();
+    expect(result.current.history.map((m) => m.at)).toEqual([9, 5]);
+  });
+
+  it('reset también vacía el historial', async () => {
+    const { result } = await dressed();
+    await act(async () => {
+      result.current.changeStage('red', true);
+    });
+    await act(async () => {
+      await result.current.reset();
+    });
+    expect(result.current.history).toEqual([]);
+    expect((await saved(PANUELO_STATE_KEY)).history).toBeUndefined();
+  });
+
+  it('sin sesión no sube nada', async () => {
+    jest.useFakeTimers();
+    const { result } = await dressed();
+    await act(async () => {
+      result.current.changeStage('red', true);
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(LAYOUT_DELAY * 2);
+    });
+    expect(syncPanueloMemory).not.toHaveBeenCalled();
+  });
+
+  describe('con sesión', () => {
+    beforeEach(() => {
+      mockAuth.user = { uid: 'u1' };
+      fetchPanuelo.mockResolvedValue(state());
+    });
+
+    it('sube el recuerdo ya (una escritura suelta) y el color con el retardo de siempre', async () => {
+      const { result } = await dressed();
+      jest.useFakeTimers();
+      syncPanueloMemory.mockClear();
+      syncPanueloLayout.mockClear();
+      await act(async () => {
+        result.current.changeStage('red', false);
+      });
+      expect(syncPanueloMemory).toHaveBeenCalledTimes(1);
+      expect(syncPanueloMemory).toHaveBeenCalledWith(
+        'u1',
+        expect.objectContaining({
+          color: 'green',
+          layout: expect.objectContaining({
+            'vieira-camino': expect.anything(),
+          }),
+        }),
+      );
+      expect(syncPanueloLayout).not.toHaveBeenCalled();
+      await act(async () => {
+        jest.advanceTimersByTime(LAYOUT_DELAY);
+      });
+      expect(syncPanueloLayout).toHaveBeenCalledWith(
+        'u1',
+        expect.objectContaining({ color: 'red', layout: {} }),
+      );
+    });
+
+    it('sin piezas cosidas no sube ningún recuerdo', async () => {
+      const { result } = await mount();
+      await act(async () => {
+        result.current.unplace(AUTO);
+      });
+      await act(async () => {
+        result.current.changeStage('red', true);
+      });
+      expect(syncPanueloMemory).not.toHaveBeenCalled();
+    });
+
+    it('al abrir, suma los recuerdos de la nube y sube solo los que le faltan a la nube', async () => {
+      await store(
+        PANUELO_STATE_KEY,
+        state({ history: { '1': { color: 'red', at: 1, layout: {} } } }),
+      );
+      await store(PANUELO_SEEN_KEY, [AUTO]);
+      fetchPanuelo.mockResolvedValue(
+        state({
+          history: { '2': { color: 'blue', at: 2, layout: {} } },
+        }),
+      );
+      const { result } = await mount();
+      expect(result.current.history.map((m) => m.at)).toEqual([2, 1]);
+      expect(syncPanueloMemory).toHaveBeenCalledTimes(1);
+      expect(syncPanueloMemory).toHaveBeenCalledWith(
+        'u1',
+        expect.objectContaining({ at: 1 }),
+      );
+    });
+
+    it('si la nube ya lo tiene, no se vuelve a subir', async () => {
+      const history = { '1': { color: 'red' as const, at: 1, layout: {} } };
+      await store(PANUELO_STATE_KEY, state({ history }));
+      fetchPanuelo.mockResolvedValue(state({ history }));
+      await mount();
+      expect(syncPanueloMemory).not.toHaveBeenCalled();
+    });
   });
 });
