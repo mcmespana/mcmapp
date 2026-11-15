@@ -9,7 +9,11 @@ import {
   type CollectionEntry,
 } from '@/utils/carismochitoCollection';
 import { sanitizeUserState } from '@/utils/panuelo';
-import type { PanueloOwned, PanueloUserState } from '@/types/panuelo';
+import type {
+  PanueloMemory,
+  PanueloOwned,
+  PanueloUserState,
+} from '@/types/panuelo';
 
 function db() {
   return getDatabase(getFirebaseApp());
@@ -316,6 +320,23 @@ export async function syncPanueloLayout(
     });
   } catch (err) {
     logger.error('[authHelpers] syncPanueloLayout:', err);
+  }
+}
+
+/** Sube UN recuerdo (`history/{at}`). Una clave por recuerdo: cada móvil sube
+ *  solo el suyo y no pisa los del otro. */
+export async function syncPanueloMemory(
+  uid: string,
+  memory: PanueloMemory,
+): Promise<void> {
+  try {
+    await set(ref(db(), `users/${uid}/panuelo/history/${memory.at}`), {
+      color: memory.color,
+      at: memory.at,
+      layout: memory.layout,
+    });
+  } catch (err) {
+    logger.error('[authHelpers] syncPanueloMemory:', err);
   }
 }
 

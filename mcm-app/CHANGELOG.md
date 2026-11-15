@@ -4,6 +4,20 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-15 01:40 — Pañuelo virtual: tela simulada, y girarlo ya no vuelve atrás
+
+- **Simulación de tela** (`createClothSim` en `panuelo-3d/src/cloth.ts`): cada vértice de la malla es una partícula con inercia, unida a sus vecinas por hilos que no se estiran (Verlet + restricciones de distancia, ~4.400 partículas). Al girar el pañuelo o inclinar el móvil la tela se retrasa, ondea, hace pliegues y se asienta sola; las piezas cosidas van con ella (`offsetAt`). El cuello y el nudo están fijos y cada punto tiende a su sitio de reposo, que hace de «cuerpo». Cuando se asienta, el visor se duerme. Con «reducir movimiento», quieta.
+- La tela es **lisa**: sin textura de trama.
+- **iOS**: en `/panuelo` se desactiva el gesto de «atrás» (`gestureEnabled: false`); girar el pañuelo de izquierda a derecha sacaba de la pantalla.
+
+## 2026-11-15 01:35 — Pañuelo virtual: cambio de etapa con despedida, «Mis pañuelos» y filtro de la colección
+
+- **Cambiar de pañuelo ya no es instantáneo.** Es un cambio de etapa: tocar otro color abre la hoja «¿Cambias de pañuelo?» con «Llevarme las piezas», «Empezar con el pañuelo limpio» (las descose todas; vuelven a la colección, no se pierden) y Cancelar. Al cambiar: el giro del visor, confeti del color del pañuelo nuevo (`CelebrationBurst`), háptico de celebración y anuncio para el lector de pantalla; con «reducir movimiento», sin confeti. Hoja en `PanueloStageSheet`.
+- **Historial «Mis pañuelos».** Antes de cambiar se guarda el pañuelo de antes, solo si llevaba alguna pieza cosida. No es una imagen: `{ color, at, layout }`, y el visor lo vuelve a pintar. Se ve en el visor principal en solo lectura, con un banner «Estás viendo tu pañuelo rojo de 2026 · Volver». La entrada solo sale si hay algún recuerdo. Lógica pura en `utils/panuelo.ts` (`archivePanuelo`, `changeStage`, saneado y fusión que SUMA los recuerdos, tope de 12).
+- **Firebase**: nodo nuevo `users/{uid}/panuelo/history/{at}` (un recuerdo por clave; ver `docs/contratos/PANUELO_CONTRATO.md` §2). `syncPanueloMemory` en `utils/authHelpers.ts`. Las reglas de `users/{uid}` ya lo cubren. `types/panuelo.ts` cambia: **hay que regenerar el visor** (`npm run build:panuelo`) antes de integrar.
+- **Filtro en el cajón de la colección**: Todas · Puestas · Sin poner, con un vacío breve. Se recuerda mientras la pantalla está abierta.
+- Tests nuevos en `panuelo.test.ts`, `usePanuelo.test.tsx` y `panueloScreen.test.tsx`; el de «cambiar de color desde el radio» ahora comprueba que abre la hoja. Sin probar en un móvil.
+
 ## 2026-11-15 00:40 — Pañuelo virtual: liso (sin rollo), cabecera de iOS, accesibilidad y bordados
 
 - **El pañuelo ya no va enrollado** (`panuelo-3d/src/cloth.ts`): el cuello era un tubo con surcos que se veía arrugado. Ahora es lo que es de verdad: **un triángulo entero, atado**. Sin dobladillo ni banda arriba, y **una sola malla, sin corte**: la tela de la espalda sigue por los hombros (`sidePoint`) y se va recogiendo, con sus pliegues, hasta el nudo — nunca un cordel. Las puntas del nudo son tela plana en pico y las arrugas del triángulo bajan a menos de la mitad. Referencia: fotos del propietario (2026-11-15).
@@ -36,6 +50,7 @@
 - **La sesión no se pierde**: si el servidor cierra la sesión y la persona no había salido a propósito, se vuelve a entrar sola con la cuenta de la app; la OTA espera a que acabe un refresco en vuelo antes de recargar (`settleSession`); el middleware ya no revoca un refresco que se repite porque la app se recargó a mitad. Arreglada la carrera de «Salir» → la puerta entraba sola 46 ms después.
 - **Pantalla del código**: «¿No te llega? Entra con el DNI» vuelve al acceso con el DNI abierto; por DNI dice a qué correo (tapado) se ha mandado.
 - Tests: `__tests__/comunica/accessAccount.test.tsx` (nuevo), puerta y enrutador actualizados.
+
 ## 2026-11-13 12:40 — Pañuelo virtual en 3D (en el Laboratorio Alpha)
 
 Funcionalidad nueva, escondida tras `global.panuelo` (ausente = `alpha`: solo con el Laboratorio Alpha encendido). Documentación: `docs/funcionalidades/PANUELO.md`; contrato: `docs/contratos/PANUELO_CONTRATO.md`; lo que queda: `docs/planes/PLAN_PANEL_PANUELO.md`.

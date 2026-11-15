@@ -28,7 +28,9 @@ Lo que se puede hacer hoy:
   consiguió. Las medallas que tienen modelo propio ofrecen «Verla de cerca».
 - **Decorar**: arrastrar las piezas por el pañuelo, girarlas, quitarlas (vuelven
   a la colección, no se pierden) o volver a ponerlas.
-- **Cambiar el color** del pañuelo (da una vuelta y cambia de tela).
+- **Cambiar de pañuelo** (de etapa): se pregunta qué hacer con las piezas, el de ahora se guarda como recuerdo, el visor da una vuelta y hay confeti. Ver «Cambio de etapa e historial».
+- **Ver los pañuelos anteriores** («Mis pañuelos»), solo para mirarlos.
+- **Filtrar la colección**: Todas · Puestas · Sin poner.
 - **Canjear un código** de una actividad: la pieza nueva se presenta girando,
   con chispas, y cae en su sitio.
 - **Compartir** una foto del pañuelo.
@@ -129,8 +131,14 @@ components/panuelo/
 ├── panueloViewerHtml.ts            La página que se le da al WebView
 ├── PanueloItemArt.tsx              Una pieza dibujada en plano (SVG)
 ├── PanueloCollectionStrip.tsx      La colección
+├── PanueloCollectionFilter.tsx     El filtro (Todas · Puestas · Sin poner) y su vacío
 ├── PanueloItemDetail.tsx           La ficha de una pieza
-└── PanueloRedeemSheet.tsx          Canjear un código
+├── PanueloRedeemSheet.tsx          Canjear un código
+├── PanueloColorSwatches.tsx        Los cuatro colores (grupo de radio)
+├── PanueloStageSheet.tsx           La hoja «¿Cambias de pañuelo?»
+├── PanueloStageBurst.tsx           El confeti del cambio, del color nuevo
+├── PanueloHistorySheet.tsx         La lista «Mis pañuelos»
+└── PanueloMemoryView.tsx           Banner y panel al ver un pañuelo anterior
 components/preview-channel/PanueloLabPanel.tsx   La puerta del Laboratorio
 
 hooks/usePanuelo.ts                 Estado: catálogo, piezas, colocación, sincronización
@@ -160,6 +168,13 @@ pañuelo abre sin red.
   nudo con sus dos puntas y el triángulo de la espalda salen de fórmulas
   (`cloth.ts`). Pesa cero bytes, y la misma fórmula que dibuja el triángulo
   dice dónde y con qué inclinación va cosida cada pieza.
+- **La tela está simulada** (`createClothSim` en `cloth.ts`): cada vértice es
+  una partícula con inercia unida a sus vecinas por hilos que no se estiran.
+  No hay cuerpo debajo: el cuello y el nudo están fijos y cada punto tiende a
+  su sitio de reposo. `main.ts` solo le dice cuánto ha girado el pañuelo
+  (`stepDrape`); las piezas cosidas la siguen con `offsetAt`. Es lisa, sin
+  textura de trama (decisión del propietario). Si va justo en un móvil modesto:
+  bajar `NS`/`NT`/`NE` o `CLOTH_ITERATIONS`.
 - **Se gira el pañuelo, no la cámara.** La luz y los reflejos se quedan
   quietos, como al darle vueltas a algo en la mano.
 - **La app manda.** El visor no decide qué piezas hay ni dónde: pinta el estado
@@ -194,7 +209,7 @@ con el commiteado. `three` es solo una herramienta de build
 
 ```
 RTDB  /panuelo                          { updatedAt, data: { items: { <id>: pieza } } }
-RTDB  /users/{uid}/panuelo              { color, items, layout, layoutAt, gone? }
+RTDB  /users/{uid}/panuelo              { color, items, layout, layoutAt, gone?, history? }
 AsyncStorage  @panuelo_state            Lo mismo que el nodo del usuario
 AsyncStorage  @panuelo_seen             Ids de las piezas ya presentadas en este móvil
 AsyncStorage  panuelo_catalog           Caché del catálogo (useFirebaseData)
@@ -215,6 +230,79 @@ AsyncStorage  panuelo_catalog           Caché del catálogo (useFirebaseData)
   tumbar la pantalla; los colores tienen que ser hex; las imágenes, `https`.
 
 Analítica: `panuelo_abierto` y `panuelo_pieza_conseguida { clase, via }`.
+
+## Cambio de etapa e historial
+
+El color del pañuelo es la **etapa** de la persona en el movimiento. Cambiar de
+color pasa una vez cada varios años y es una pequeña ceremonia, no un
+interruptor: por eso los cuatro círculos de color **ya no cambian nada al
+tocarlos**.
+
+### Cómo va
+
+1. Tocar un color distinto del actual abre la hoja «¿Cambias de pañuelo?»
+   (`PanueloStageSheet`, el mismo patrón de hoja que el canje). Dice que el
+   pañuelo de ahora se guarda como recuerdo y ofrece:
+   - **Llevarme las piezas**: cambia el color y las piezas se quedan cosidas
+     donde estaban.
+   - **Empezar con el pañuelo limpio**: cambia el color y las descose todas.
+     Vuelven a la colección: **no se pierden**.
+   - **Cancelar**.
+     Si el pañuelo de ahora no lleva ninguna pieza cosida, no hay recuerdo que
+     guardar y las dos salidas serían la misma: la hoja ofrece un solo botón,
+     «Cambiar de pañuelo».
+2. En los dos casos el pañuelo de antes se **archiva antes** de cambiar
+   (`changeStage` → `archivePanuelo`), **solo si llevaba al menos una pieza
+   cosida**: un pañuelo vacío no es un recuerdo.
+3. Al cambiar: el visor hace su giro de cambio de color; encima, confeti **del
+   color del pañuelo nuevo** (`PanueloStageBurst` sobre `CelebrationBurst`,
+   color de `PanueloColors.cloth`, sin emoji), háptico de celebración
+   (`h.formSuccess`) y anuncio para el lector de pantalla. Con «reducir
+   movimiento» no se monta el confeti.
+
+### El historial («Mis pañuelos»)
+
+**Un recuerdo no es una imagen.** Las piezas se pintan a partir de datos, así
+que basta `{ color, at, layout }` y el visor lo vuelve a pintar igual
+(`memoryToViewerState`, que reutiliza `toViewerState` y descarta las piezas que
+ya no estén en el catálogo).
+
+- Se guardan como mucho los **12 más recientes** (`MAX_PANUELO_HISTORY`).
+- Se sincroniza **un recuerdo por escritura** en
+  `/users/{uid}/panuelo/history/{at}` (`syncPanueloMemory`), al momento: no
+  espera al retardo de la colocación. Con la clave por `at`, dos móviles que
+  dejen el mismo recuerdo no lo duplican, y cada uno sube solo el suyo.
+- Al juntar móvil y nube los recuerdos se **suman** (`mergePanuelo`), igual que
+  las piezas; nunca se borran por el tope remoto.
+- «Empezar de cero» del Laboratorio borra también el historial (borra el nodo).
+
+**La entrada** es un botón de icono discreto junto a «Canjear» en la cabecera
+de la colección, **solo si hay al menos un recuerdo**. Abre una hoja con los
+pañuelos anteriores: color, etapa, «Hasta noviembre de 2026» y cuántas piezas
+llevaba.
+
+**Ver uno** cambia el visor principal a ese pañuelo, en solo lectura, con un
+banner «Estás viendo tu pañuelo rojo de 2026 · Volver» en el sitio de los
+colores y de «Decorar» (que desaparecen, igual que compartir y canjear). El
+panel de abajo pasa a ser la lista de sus piezas con su ficha («Lo llevabas en
+tu pañuelo rojo»), sin Quitar ni Ponérmela. Se puede girar y tocar una pieza.
+
+Por qué el visor principal y no un segundo visor en una hoja:
+
+- Un solo contexto WebGL. Un segundo WebView 3D en una hoja deja vivos los dos
+  a la vez; en un Android modesto es memoria y batería que no hacen falta.
+- Reutiliza todo lo ya revisado: gestos, ficha, presentación, anuncios, y la
+  alternativa nativa de la colección para quien usa lector de pantalla.
+- El giro de cambio de color del visor ya ES la transición entre pañuelos.
+
+### El cajón de la colección: filtro
+
+Un `SegmentedControl` encima de la colección (`PanueloCollectionFilter`):
+**Todas** (con las siluetas de las que faltan, como siempre), **Puestas** (las
+que tienes y llevas cosidas) y **Sin poner** (las que tienes y no están cosidas:
+lo útil al decorar). Con el filtro vacío sale un `EmptyState` breve. Se recuerda
+mientras la pantalla está abierta (no se persiste) y entrar en modo decorar no
+lo cambia.
 
 ## Intercambios (la base está puesta; falta la pantalla)
 
@@ -302,6 +390,7 @@ transacción y nada de lo demás cambia.
 - **Accesibilidad sin oír**: la pantalla tiene etiquetas, anuncios y acciones
   para mover piezas sin tocar el 3D, pero nadie lo ha probado con VoiceOver ni
   TalkBack.
+- **El cambio de etapa y el historial no se han probado en un móvil.** Sin ver: el confeti sobre el WebView, el giro del visor al pasar a un recuerdo, el háptico y los anuncios con VoiceOver/TalkBack.
 - **No se ha probado en un móvil de verdad.** Se ha probado en navegador (el
   visor y la pantalla entera en web). Falta ver en iPhone y Android: el WebView
   transparente, el rendimiento con muchas piezas, la inclinación y compartir.

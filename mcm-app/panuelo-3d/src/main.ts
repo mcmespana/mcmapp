@@ -25,9 +25,7 @@ import type {
 
 import logoUrl from '../assets/logo-com.png';
 import {
-  bendPoint,
   BOUNDS,
-  clothBend,
   createPanuelo,
   flapPoint,
   uvToFlap,
@@ -107,9 +105,6 @@ const CAMERA_TILT = 0.11;
 const FLOOR_Y = -2.52;
 /** En cuántos puntos se palpa la tela alrededor de una pieza al coserla. */
 const SEAT_SAMPLES = 8;
-/** La caída de la tela: blanda y poco amortiguada, para que se pase y vuelva. */
-const DRAPE_STIFFNESS = 34;
-const DRAPE_DAMPING = 5.5;
 /** Péndulo de las piezas que cuelgan: rigidez y freno (ζ ≈ 0,3: se mecen). */
 const SWING_STIFFNESS = 70;
 const SWING_DAMPING = 5;
@@ -171,8 +166,8 @@ class Viewer {
   private frame = 0;
   private lastTime = 0;
   private lastRender = 0;
-  /** La caída de la tela: dos péndulos (de lado y hacia fuera) y su onda. */
-  private drape = { x: 0, vx: 0, z: 0, vz: 0, phase: 0 };
+  /** El giro del pañuelo en el último paso de la tela simulada. */
+  private drape = { yaw: 0, pitch: 0 };
 
   private pointers = new Map<number, { x: number; y: number }>();
   private gesture: null | {
@@ -859,53 +854,39 @@ class Viewer {
   }
 
   /**
-   * La tela cuelga: al girar el pañuelo o inclinar el móvil, lo de abajo
-   * llega tarde, se pasa y vuelve. Devuelve si sigue moviéndose.
+   * Un paso de la tela simulada: se le dice cuánto ha girado el pañuelo y
+   * ella sola se retrasa, ondea y se asienta. Devuelve si sigue moviéndose.
    */
-  private stepDrape(dt: number, yawRate: number): boolean {
-    const d = this.drape;
+  private stepDrape(dt: number, yawNow: number, pitchNow: number): boolean {
     if (this.reducedMotion || this.still) return false;
-    const seconds = dt / 1000;
-    // Girando, el pico se queda atrás y la tela se abre un poco hacia fuera.
-    const targetX = clamp(-yawRate * 0.085 - this.tiltX * 0.07, -0.34, 0.34);
-    const targetZ = clamp(
-      Math.abs(yawRate) * 0.03 + this.tiltY * 0.06,
-      -0.12,
-      0.2,
+    const dYaw = yawNow - this.drape.yaw;
+    const dPitch = pitchNow - this.drape.pitch;
+    this.drape.yaw = yawNow;
+    this.drape.pitch = pitchNow;
+    return this.panuelo.cloth.step(
+      dt,
+      // Un cambio de golpe (cambiar de color da una vuelta entera) no es un
+      // tirón: se reparte.
+      clamp(dYaw, -0.35, 0.35),
+      clamp(dPitch, -0.2, 0.2),
+      this.focused ? 0 : this.tiltX,
+      this.focused ? 0 : this.tiltY,
     );
-    d.vx +=
-      (DRAPE_STIFFNESS * (targetX - d.x) - DRAPE_DAMPING * d.vx) * seconds;
-    d.x += d.vx * seconds;
-    d.vz +=
-      (DRAPE_STIFFNESS * (targetZ - d.z) - DRAPE_DAMPING * d.vz) * seconds;
-    d.z += d.vz * seconds;
-    // La onda que le corre a la tela es más alta cuanto más deprisa se mueve.
-    const speed = Math.abs(d.vx) + Math.abs(d.vz);
-    const ripple = Math.min(0.05, speed * 0.05);
-    d.phase += seconds * 9;
-    clothBend.value.set(d.x, d.z, ripple, d.phase);
-    const moving =
-      speed > 0.004 ||
-      Math.abs(targetX - d.x) > 0.002 ||
-      Math.abs(targetZ - d.z) > 0.002;
-    if (!moving) clothBend.value.z = 0;
-    return moving;
   }
 
   /**
-   * Pinta con las piezas cosidas movidas a donde está la tela doblada, y las
+   * Pinta con las piezas cosidas movidas a donde está ahora la tela, y las
    * devuelve a su sitio: así ni los arrastres ni las animaciones se enteran.
    */
   private renderBent() {
-    const b = clothBend.value;
-    const bent = b.x !== 0 || b.y !== 0 || b.z !== 0;
     const moved: [Entry, THREE.Vector3][] = [];
-    if (bent) {
-      for (const entry of this.entries.values()) {
-        if (entry.group.parent !== this.itemsGroup) continue;
-        moved.push([entry, entry.group.position.clone()]);
-        bendPoint(entry.group.position);
-      }
+    const offset = new THREE.Vector3();
+    for (const entry of this.entries.values()) {
+      if (entry.group.parent !== this.itemsGroup) continue;
+      this.panuelo.cloth.offsetAt(entry.data.u, entry.data.v, offset);
+      if (offset.lengthSq() < 1e-10) continue;
+      moved.push([entry, entry.group.position.clone()]);
+      entry.group.position.add(offset);
     }
     this.renderer.render(this.scene, this.camera);
     for (const [entry, at] of moved) entry.group.position.copy(at);
@@ -1335,7 +1316,8 @@ class Viewer {
     const swinging = this.stepSwing(dt, yawRate);
     if (swinging) dirty = true;
 
-    const draping = this.stepDrape(dt, yawRate);
+    const pitchNow = this.pitch + (this.focused ? 0 : this.tiltY * 0.1);
+    const draping = this.stepDrape(dt, yawNow, pitchNow);
     if (draping) dirty = true;
 
     // ¿Queda algo en marcha? Si no, el bucle se duerme: `invalidate()` y los

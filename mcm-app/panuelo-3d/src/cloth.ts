@@ -130,63 +130,15 @@ export function uvToFlap(u: number, v: number): [number, number] {
   return [(2 * u - 1) / (1 - t), t];
 }
 
-// ── Caída ──────────────────────────────────────────────────────────────────
-
-/**
- * El pañuelo cuelga del cuello y se mueve como tela: al girarlo o inclinar el
- * móvil, lo de abajo llega tarde, se pasa y vuelve, y le corre una onda. No
- * es una simulación de tela (en un WebView de móvil no compensa): es una
- * flexión que crece hacia el pico, hecha en el sombreador, que es gratis.
- *
- * `clothBend` lo mueve `main.ts` (un péndulo amortiguado). `bendPoint` hace
- * LA MISMA cuenta en JavaScript para que las piezas cosidas vayan con la tela.
- */
-export const clothBend = {
-  /** x: de lado · y: hacia fuera · z: altura de la onda · w: fase de la onda */
-  value: new THREE.Vector4(0, 0, 0, 0),
-};
-/** Por encima de aquí la tela está sujeta al cuello y no se mueve. */
-const BEND_TOP = -0.15;
-const BEND_SPAN = 2.15;
-const RIPPLE_WAVES = 7;
-
-export function bendPoint(p: THREE.Vector3): THREE.Vector3 {
-  const k = Math.min(1, Math.max(0, (BEND_TOP - p.y) / BEND_SPAN));
-  const f = k * k;
-  const b = clothBend.value;
-  p.x += b.x * f;
-  p.z += b.y * f + b.z * Math.sin(k * RIPPLE_WAVES - b.w) * f;
-  return p;
-}
-
-/** Enseña a un material a doblarse con `clothBend`. */
-function bendable<T extends THREE.Material>(material: T): T {
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.uClothBend = clothBend;
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        '#include <common>',
-        '#include <common>\nuniform vec4 uClothBend;',
-      )
-      .replace(
-        '#include <begin_vertex>',
-        `#include <begin_vertex>
-        {
-          float bendK = clamp((${BEND_TOP.toFixed(3)} - transformed.y) / ${BEND_SPAN.toFixed(3)}, 0.0, 1.0);
-          float bendF = bendK * bendK;
-          transformed.x += uClothBend.x * bendF;
-          transformed.z += uClothBend.y * bendF
-            + uClothBend.z * sin(bendK * ${RIPPLE_WAVES.toFixed(1)} - uClothBend.w) * bendF;
-        }`,
-      );
-  };
-  return material;
-}
-
 // ── Geometría ──────────────────────────────────────────────────────────────
 
 /** Columnas de tela a cada lado, del hombro al nudo. */
-const NE = 44;
+const NE = 22;
+/** Hilos a lo ancho del triángulo de la espalda, y filas de arriba abajo. */
+const NS = 52;
+const NT = 44;
+/** Puntos por fila de la malla: [lado] [espalda] [lado]. */
+const ROW = NS + 1 + 2 * NE;
 const _top = new THREE.Vector3();
 const _hem = new THREE.Vector3();
 const _edge = new THREE.Vector3();
@@ -256,14 +208,12 @@ function sidePoint(
 }
 
 function buildFlapGeometry(): THREE.BufferGeometry {
-  const NS = 84;
-  const NT = 76;
   const positions: number[] = [];
   const uvs: number[] = [];
   const index: number[] = [];
   const p = new THREE.Vector3();
   // Una sola malla: [lado izquierdo] [triángulo de la espalda] [lado derecho].
-  const row = NS + 1 + 2 * NE;
+  const row = ROW;
   for (let j = 0; j <= NT; j++) {
     const t = (j / NT) * 0.999;
     for (let c = 0; c < row; c++) {
@@ -298,6 +248,252 @@ function buildFlapGeometry(): THREE.BufferGeometry {
   g.computeVertexNormals();
   return g;
 }
+
+// ── Simulación de tela ─────────────────────────────────────────────────────
+
+/**
+ * La tela, simulada: cada vértice de la malla es una partícula con su inercia,
+ * unida a sus vecinas por hilos que no se estiran (dinámica basada en
+ * posiciones, integración de Verlet). No es una animación ni una flexión
+ * calculada: al girar el pañuelo cada punto se queda donde estaba y son los
+ * hilos los que tiran de él, así que la tela se retrasa, ondea, se pliega y
+ * se asienta sola.
+ *
+ * Lo que la sujeta: el borde del cuello y el nudo están fijos, y cada punto
+ * tiende a su sitio de reposo (la forma del pañuelo puesto) con una fuerza
+ * que afloja hacia el pico — es lo que hace de «cuerpo» debajo, sin tener que
+ * modelar uno.
+ */
+export interface ClothSim {
+  /**
+   * Un paso. `dYaw`/`dPitch`: cuánto ha girado el pañuelo desde el paso
+   * anterior; `tiltX`/`tiltY`: inclinación del móvil. Devuelve si la tela
+   * sigue moviéndose (si no, no hace falta volver a pintar).
+   */
+  step(
+    dt: number,
+    dYaw: number,
+    dPitch: number,
+    tiltX: number,
+    tiltY: number,
+  ): boolean;
+  /** Cuánto se ha movido de su sitio el punto (s, t) del triángulo. */
+  offsetAt(s: number, t: number, out: THREE.Vector3): THREE.Vector3;
+  /** Devuelve la tela a su sitio, quieta. */
+  reset(): void;
+}
+
+function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
+  const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
+  const pos = attr.array as Float32Array;
+  const count = attr.count;
+  const rest = new Float32Array(pos);
+  const prev = new Float32Array(pos);
+  /** Cuánto se deja mover cada punto (0 = fijo) y cuánto tira de él su sitio. */
+  const free = new Float32Array(count);
+  const pull = new Float32Array(count);
+  for (let j = 0; j <= NT; j++) {
+    const t = j / NT;
+    for (let c = 0; c < ROW; c++) {
+      const i = c - NE;
+      const e = i < 0 ? -i / NE : i > NS ? (i - NS) / NE : 0;
+      // Fijo arriba (el cuello) y al llegar al nudo.
+      const w = smooth(0, 0.22, t) * (1 - smooth(0.55, 0.95, e));
+      free[j * ROW + c] = w;
+      pull[j * ROW + c] = 46 - 34 * smooth(0.1, 1, t);
+    }
+  }
+  // Los hilos: a lo ancho, a lo largo y en diagonal.
+  const links: number[] = [];
+  const lengths: number[] = [];
+  const link = (a: number, b: number) => {
+    const d = Math.hypot(
+      rest[a * 3] - rest[b * 3],
+      rest[a * 3 + 1] - rest[b * 3 + 1],
+      rest[a * 3 + 2] - rest[b * 3 + 2],
+    );
+    if (d < 1e-4 || free[a] + free[b] === 0) return;
+    links.push(a, b);
+    lengths.push(d);
+  };
+  for (let j = 0; j <= NT; j++) {
+    for (let c = 0; c < ROW; c++) {
+      const a = j * ROW + c;
+      if (c + 1 < ROW) link(a, a + 1);
+      if (j < NT) link(a, a + ROW);
+      if (c + 1 < ROW && j < NT) {
+        link(a, a + ROW + 1);
+        link(a + 1, a + ROW);
+      }
+      // Y de dos en dos: es lo que le da cuerpo, para que haga pliegues
+      // amplios de tela y no se arrugue como papel.
+      if (c + 2 < ROW) link(a, a + 2);
+      if (j + 2 <= NT) link(a, a + 2 * ROW);
+    }
+  }
+  const linkA = Uint32Array.from(links.filter((_, k) => k % 2 === 0));
+  const linkB = Uint32Array.from(links.filter((_, k) => k % 2 === 1));
+  const linkLen = Float32Array.from(lengths);
+
+  const STEP = 1 / 60;
+  const cx = BOUNDS.center.x;
+  const cy = BOUNDS.center.y;
+  const cz = BOUNDS.center.z;
+  let pending = 0;
+  let awake = false;
+  let calm = 0;
+  let lastTiltX = 0;
+  let lastTiltY = 0;
+
+  /** Gira un punto alrededor del centro: se queda donde estaba en el mundo. */
+  const hold = (arr: Float32Array, k: number, yaw: number, pitch: number) => {
+    let x = arr[k] - cx;
+    let y = arr[k + 1] - cy;
+    let z = arr[k + 2] - cz;
+    const cyaw = Math.cos(yaw);
+    const syaw = Math.sin(yaw);
+    const x1 = x * cyaw + z * syaw;
+    const z1 = -x * syaw + z * cyaw;
+    x = x1;
+    z = z1;
+    const cp = Math.cos(pitch);
+    const sp = Math.sin(pitch);
+    const y1 = y * cp - z * sp;
+    const z2 = y * sp + z * cp;
+    y = y1;
+    z = z2;
+    arr[k] = x + cx;
+    arr[k + 1] = y + cy;
+    arr[k + 2] = z + cz;
+  };
+
+  const substep = (tiltX: number, tiltY: number, drag: number): number => {
+    let fastest = 0;
+    const h2 = STEP * STEP;
+    for (let p = 0; p < count; p++) {
+      const w = free[p];
+      if (w === 0) continue;
+      const k = p * 3;
+      for (let a = 0; a < 3; a++) {
+        const x = pos[k + a];
+        const v = (x - prev[k + a]) * drag;
+        // Su sitio tira de él, y el móvil inclinado cambia hacia dónde cae.
+        let acc = pull[p] * (rest[k + a] - x);
+        if (a === 0) acc += tiltX * CLOTH_TILT;
+        else if (a === 2) acc += tiltY * CLOTH_TILT;
+        prev[k + a] = x;
+        pos[k + a] = x + v + acc * h2 * w;
+        const speed = v < 0 ? -v : v;
+        if (speed > fastest) fastest = speed;
+      }
+    }
+    // Los hilos no se estiran: es lo que lleva el movimiento de un punto al
+    // de al lado, y lo que hace que ondee.
+    for (let it = 0; it < CLOTH_ITERATIONS; it++) {
+      for (let n = 0; n < linkLen.length; n++) {
+        const a = linkA[n];
+        const b = linkB[n];
+        const wa = free[a];
+        const wb = free[b];
+        const ka = a * 3;
+        const kb = b * 3;
+        const dx = pos[kb] - pos[ka];
+        const dy = pos[kb + 1] - pos[ka + 1];
+        const dz = pos[kb + 2] - pos[ka + 2];
+        const d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+        const corr = ((d - linkLen[n]) / d / (wa + wb)) * CLOTH_STRETCH;
+        pos[ka] += dx * corr * wa;
+        pos[ka + 1] += dy * corr * wa;
+        pos[ka + 2] += dz * corr * wa;
+        pos[kb] -= dx * corr * wb;
+        pos[kb + 1] -= dy * corr * wb;
+        pos[kb + 2] -= dz * corr * wb;
+      }
+    }
+    return fastest;
+  };
+
+  return {
+    step(dt, dYaw, dPitch, tiltX, tiltY) {
+      const turning = Math.abs(dYaw) > 1e-5 || Math.abs(dPitch) > 1e-5;
+      if (turning) {
+        awake = true;
+        // El pañuelo ha girado; la tela, todavía no (casi: el aire la frena).
+        for (let p = 0; p < count; p++) {
+          const w = free[p] * CLOTH_LAG;
+          if (w === 0) continue;
+          hold(pos, p * 3, -dYaw * w, -dPitch * w);
+          hold(prev, p * 3, -dYaw * w, -dPitch * w);
+        }
+      }
+      // El móvil se ha inclinado (no «está» inclinado: eso no la despierta).
+      if (Math.abs(tiltX - lastTiltX) + Math.abs(tiltY - lastTiltY) > 0.01) {
+        lastTiltX = tiltX;
+        lastTiltY = tiltY;
+        awake = true;
+      }
+      if (!awake) return false;
+      pending = Math.min(pending + dt / 1000, STEP * 3);
+      let fastest = 1;
+      let stepped = false;
+      while (pending >= STEP) {
+        pending -= STEP;
+        // Un rato después del último tirón el aire la frena más: se asienta
+        // en un par de segundos en vez de quedarse temblando.
+        calm = turning ? 0 : calm + STEP;
+        const drag = CLOTH_DRAG - 0.05 * smooth(0.8, 2.2, calm);
+        fastest = substep(tiltX, tiltY, drag);
+        stepped = true;
+      }
+      if (stepped) {
+        attr.needsUpdate = true;
+        geometry.computeVertexNormals();
+        if (!turning && fastest < 0.0004) {
+          // Se ha asentado: a dormir, hasta que algo la mueva.
+          awake = false;
+          return false;
+        }
+      }
+      return true;
+    },
+    offsetAt(s, t, out) {
+      const col = NE + ((Math.min(1, Math.max(-1, s)) + 1) / 2) * NS;
+      const rowAt = Math.min(1, Math.max(0, t)) * NT;
+      const c0 = Math.min(ROW - 2, Math.floor(col));
+      const j0 = Math.min(NT - 1, Math.floor(rowAt));
+      const fc = col - c0;
+      const fj = rowAt - j0;
+      out.set(0, 0, 0);
+      for (let dj = 0; dj < 2; dj++) {
+        for (let dc = 0; dc < 2; dc++) {
+          const k = ((j0 + dj) * ROW + c0 + dc) * 3;
+          const w = (dc ? fc : 1 - fc) * (dj ? fj : 1 - fj);
+          out.x += (pos[k] - rest[k]) * w;
+          out.y += (pos[k + 1] - rest[k + 1]) * w;
+          out.z += (pos[k + 2] - rest[k + 2]) * w;
+        }
+      }
+      return out;
+    },
+    reset() {
+      pos.set(rest);
+      prev.set(rest);
+      awake = false;
+      attr.needsUpdate = true;
+      geometry.computeVertexNormals();
+    },
+  };
+}
+
+/** Lo que frena el aire a la tela, por paso. */
+const CLOTH_DRAG = 0.972;
+/** Cuánto se queda atrás la tela al girar el pañuelo (1 = del todo). */
+const CLOTH_LAG = 0.92;
+/** Cuánto tira del pico inclinar el móvil. */
+const CLOTH_TILT = 2.4;
+const CLOTH_ITERATIONS = 3;
+/** Por debajo de 1 la tela da un poco de sí, y se ve más blanda. */
+const CLOTH_STRETCH = 0.9;
 
 /**
  * Una banda de tela a lo largo de una curva: sección elíptica muy aplastada,
@@ -527,6 +723,8 @@ export interface Panuelo {
   group: THREE.Group;
   /** El triángulo: es donde se cosen las piezas y lo que se toca al arrastrar. */
   flap: THREE.Mesh;
+  /** La tela simulada (ver `ClothSim`). */
+  cloth: ClothSim;
   setColor(color: PanueloColor): void;
   setLogo(logo: HTMLImageElement): void;
 }
@@ -578,9 +776,6 @@ export function createPanuelo(
     normalMap: rollWeave,
   });
 
-  // Todo el pañuelo se dobla a la vez: triángulo, revés, nudo y puntas.
-  for (const m of [flapMaterial, flapBackMaterial, rollMaterial]) bendable(m);
-
   const flap = new THREE.Mesh(buildFlapGeometry(), flapMaterial);
   flap.receiveShadow = true;
   flap.castShadow = true;
@@ -613,9 +808,14 @@ export function createPanuelo(
   };
   repaint();
 
+  // La tela se mueve: que no desaparezca al salirse de su caja de reposo.
+  flap.frustumCulled = false;
+  flapBack.frustumCulled = false;
+
   return {
     group,
     flap,
+    cloth: createClothSim(flap.geometry),
     setColor(next) {
       current = next;
       repaint();

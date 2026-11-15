@@ -81,6 +81,11 @@ type Props = {
   actions: PanueloDetailAction[];
   /** Si se pasa, la pieza se puede mover por pasos desde el lector de pantalla. */
   onMove?: (id: string, du: number, dv: number) => void;
+  /**
+   * Sustituye a «Conseguida el…»: en un pañuelo anterior lo que importa es
+   * que la pieza se llevaba, no cuándo se consiguió.
+   */
+  note?: string;
   onClose: () => void;
 };
 
@@ -97,6 +102,7 @@ export function PanueloItemDetail({
   isNew,
   actions,
   onMove,
+  note,
   onClose,
 }: Props) {
   const t = themeColors(isDark);
@@ -199,7 +205,7 @@ export function PanueloItemDetail({
             </Text>
           ) : null}
           <Text style={[styles.meta, { color: t.textSecondary }]}>
-            Conseguida el {formatOwnedDate(owned.at)}
+            {note ?? `Conseguida el ${formatOwnedDate(owned.at)}`}
           </Text>
         </>
       ) : (
