@@ -33,7 +33,7 @@ import {
 } from './cloth';
 import { buildItem, disposeItem, type BuildContext } from './items';
 import { loadImage } from './art';
-import { clampToFlap } from '@/utils/panueloPlacement';
+import { clampToFlap, FLAP_HEIGHT, FLAP_WIDTH } from '@/utils/panueloPlacement';
 
 declare global {
   interface Window {
@@ -51,6 +51,11 @@ declare global {
 // ── Utilidades ─────────────────────────────────────────────────────────────
 
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
+/** De 0 a 1 sin esquinas: arranca y frena suave. */
+const smooth01 = (x: number) => {
+  const k = clamp(x, 0, 1);
+  return k * k * (3 - 2 * k);
+};
 const easeOut = (k: number) => 1 - Math.pow(1 - k, 3);
 const easeInOut = (k: number) =>
   k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
@@ -97,13 +102,24 @@ interface Entry {
 /** La cámara mira al pañuelo un poco desde arriba (rad). */
 const CAMERA_TILT = 0.11;
 /** Altura del suelo imaginario, justo bajo el pico. */
-const FLOOR_Y = -2.02;
+const FLOOR_Y = -2.52;
+/** En cuántos puntos se palpa la tela alrededor de una pieza al coserla. */
+const SEAT_SAMPLES = 8;
 /** Péndulo de las piezas que cuelgan: rigidez y freno (ζ ≈ 0,3: se mecen). */
 const SWING_STIFFNESS = 70;
 const SWING_DAMPING = 5;
 /** Vaivén en reposo: amplitud (rad) y velocidad. */
 const IDLE_SWAY = 0.07;
 const IDLE_SPEED = 0.7;
+/**
+ * El vaivén no dura para siempre: pintar a 60 fps un pañuelo que nadie toca
+ * se come la batería. Se mece un rato, se va parando y el visor se duerme
+ * (deja de pedir fotogramas) hasta que alguien lo toca.
+ */
+const IDLE_SWAY_MS = 9000;
+const IDLE_FADE_MS = 3000;
+/** Mientras solo se mece, basta con la mitad de fotogramas: va muy lento. */
+const IDLE_FRAME_MS = 30;
 
 // ── Visor ──────────────────────────────────────────────────────────────────
 
@@ -141,7 +157,7 @@ class Viewer {
   /** Giro real del pañuelo en el último fotograma, para saber cuánto corre. */
   private lastYaw = 0;
   /** Vaivén en reposo: el pañuelo no está clavado, cuelga. */
-  private idleSince = 0;
+  private idleSince = performance.now();
   private reducedMotion = false;
   private floor: THREE.Mesh;
 
@@ -149,6 +165,7 @@ class Viewer {
   private dirty = true;
   private frame = 0;
   private lastTime = 0;
+  private lastRender = 0;
 
   private pointers = new Map<number, { x: number; y: number }>();
   private gesture: null | {
@@ -265,6 +282,11 @@ class Viewer {
 
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    // Al volver a la app, el pañuelo vuelve a mecerse un rato.
+    document.addEventListener('visibilitychange', () => {
+      this.idleSince = performance.now();
+      this.invalidate();
+    });
     this.bindPointer();
 
     loadImage(logoUrl).then((img) => {
@@ -417,9 +439,33 @@ class Viewer {
 
   /** Dónde y cómo va cosida una pieza (en el espacio del pañuelo). */
   private seat(entry: Entry, lift = 0) {
-    const { position, normal, up } = flapPoint(entry.data.u, entry.data.v);
-    const right = new THREE.Vector3().crossVectors(up, normal).normalize();
-    const basis = new THREE.Matrix4().makeBasis(right, up, normal);
+    const { u, v } = entry.data;
+    const { position, normal, up } = flapPoint(u, v);
+    // La tela no es plana y la pieza sí: se mira cómo está la tela alrededor,
+    // a la distancia de su borde, para inclinarla con ella y levantarla lo
+    // justo. Sin esto, una pulsera o un parche grande se hundían en un pliegue.
+    const reach = entry.radius * entry.scale * 0.85;
+    const du = reach / Math.max(0.2, ((1 - v) * FLAP_WIDTH) / 2);
+    const dv = reach / FLAP_HEIGHT;
+    const around: THREE.Vector3[] = [];
+    const tilt = normal.clone().multiplyScalar(2);
+    for (let i = 0; i < SEAT_SAMPLES; i++) {
+      const a = (i / SEAT_SAMPLES) * Math.PI * 2;
+      const p = flapPoint(
+        clamp(u + Math.cos(a) * du, -1, 1),
+        clamp(v + Math.sin(a) * dv, 0, 0.98),
+      );
+      around.push(p.position);
+      tilt.add(p.normal);
+    }
+    tilt.normalize();
+    let bump = 0;
+    for (const p of around) {
+      bump = Math.max(bump, p.sub(position).dot(tilt));
+    }
+    const upward = up.clone().addScaledVector(tilt, -up.dot(tilt)).normalize();
+    const right = new THREE.Vector3().crossVectors(upward, tilt).normalize();
+    const basis = new THREE.Matrix4().makeBasis(right, upward, tilt);
     const quaternion = new THREE.Quaternion().setFromRotationMatrix(basis);
     quaternion.multiply(
       new THREE.Quaternion().setFromAxisAngle(
@@ -427,7 +473,7 @@ class Viewer {
         (-entry.data.rot * Math.PI) / 180,
       ),
     );
-    position.addScaledVector(normal, 0.004 + lift);
+    position.addScaledVector(tilt, 0.004 + Math.min(bump, 0.09) + lift);
     return { position, quaternion };
   }
 
@@ -856,10 +902,21 @@ class Viewer {
 
   private bindPointer() {
     const el = this.canvas;
-    el.addEventListener('pointerdown', (e) => this.onDown(e));
+    // Cada toque despierta el bucle: dormido, no hay quien dé la inercia ni
+    // quien vuelva a mecer el pañuelo al soltar.
+    el.addEventListener('pointerdown', (e) => {
+      this.onDown(e);
+      this.wake();
+    });
     el.addEventListener('pointermove', (e) => this.onMove(e));
-    el.addEventListener('pointerup', (e) => this.onUp(e));
-    el.addEventListener('pointercancel', (e) => this.onUp(e, true));
+    el.addEventListener('pointerup', (e) => {
+      this.onUp(e);
+      this.wake();
+    });
+    el.addEventListener('pointercancel', (e) => {
+      this.onUp(e, true);
+      this.wake();
+    });
     el.addEventListener(
       'wheel',
       (e) => {
@@ -1112,6 +1169,12 @@ class Viewer {
 
   invalidate() {
     this.dirty = true;
+    this.wake();
+  }
+
+  /** Vuelve a pedir fotogramas si el bucle estaba dormido. */
+  private wake() {
+    if (!this.frame) this.frame = requestAnimationFrame(this.loop);
   }
 
   private resize() {
@@ -1146,9 +1209,11 @@ class Viewer {
   }
 
   private loop = (now: number) => {
-    this.frame = requestAnimationFrame(this.loop);
+    this.frame = 0;
     const dt = Math.min(50, now - (this.lastTime || now));
     this.lastTime = now;
+    let dirty = this.dirty;
+    this.dirty = false;
 
     // Inercia: al soltar, sigue girando y se va frenando.
     if (!this.gesture) {
@@ -1156,17 +1221,17 @@ class Viewer {
       if (Math.abs(this.yawVelocity) > 0.0004) {
         this.yaw += this.yawVelocity * (dt / 16.7);
         this.yawVelocity *= friction;
-        this.dirty = true;
+        dirty = true;
       }
       if (this.focused && Math.abs(this.spin.velocity) > 0.0004) {
         this.spin.yaw += this.spin.velocity * (dt / 16.7);
         this.spin.velocity *= friction;
-        this.dirty = true;
+        dirty = true;
       }
     }
 
     if (this.tweens.length > 0) {
-      this.dirty = true;
+      dirty = true;
       const finished: Tween[] = [];
       for (const t of this.tweens) {
         if (now < t.start) continue;
@@ -1180,7 +1245,7 @@ class Viewer {
       }
     }
 
-    // En reposo el pañuelo se mece un poco, como colgado de una percha.
+    // En reposo el pañuelo se mece un poco, como colgado de una percha…
     const resting =
       !this.gesture &&
       !this.focused &&
@@ -1191,20 +1256,50 @@ class Viewer {
       Math.abs(this.yawVelocity) <= 0.0004 &&
       !this.tweens.some((t) => t.key === 'turn');
     if (!resting) this.idleSince = now;
-    const idle = resting
+    // …pero solo un rato: luego se va parando y deja de pintarse.
+    const idleFor = now - this.idleSince;
+    const swaying = resting && idleFor < IDLE_SWAY_MS + IDLE_FADE_MS;
+    const idle = swaying
       ? IDLE_SWAY *
-        Math.sin(((now - this.idleSince) / 1000) * IDLE_SPEED) *
-        Math.min(1, (now - this.idleSince) / 1500)
+        Math.sin((idleFor / 1000) * IDLE_SPEED) *
+        Math.min(1, idleFor / 1500) *
+        smooth01(1 - (idleFor - IDLE_SWAY_MS) / IDLE_FADE_MS)
       : 0;
-    if (resting) this.dirty = true;
 
     const yawNow = this.yaw + idle + (this.focused ? 0 : this.tiltX * 0.16);
     const yawRate = dt > 0 ? ((yawNow - this.lastYaw) / dt) * 1000 : 0;
     this.lastYaw = yawNow;
-    if (this.stepSwing(dt, yawRate)) this.dirty = true;
+    // Lo que obliga a pintar este fotograma sí o sí (una orden, un dedo, una
+    // animación), frente a lo que solo es el vaivén.
+    const hard = dirty;
+    const swinging = this.stepSwing(dt, yawRate);
+    if (swinging) dirty = true;
 
-    if (!this.dirty) return;
-    this.dirty = false;
+    // ¿Queda algo en marcha? Si no, el bucle se duerme: `invalidate()` y los
+    // toques lo despiertan.
+    const coasting =
+      Math.abs(this.yawVelocity) > 0.0004 ||
+      (this.focused !== null && Math.abs(this.spin.velocity) > 0.0004);
+    if (
+      swaying ||
+      swinging ||
+      coasting ||
+      this.tweens.length > 0 ||
+      this.gesture
+    ) {
+      this.wake();
+    } else {
+      // Al despertar, que no cuente el tiempo dormido como un fotograma.
+      this.lastTime = 0;
+    }
+
+    // Solo se mece (y con él, lo que cuelga): va tan lento que con la mitad
+    // de fotogramas no se nota. El primer segundo y medio no: ahí todavía se
+    // están asentando las medallas del último giro.
+    const onlySway = swaying && idleFor > 1500 && !coasting && !hard;
+    if (!dirty && !swaying) return;
+    if (onlySway && now - this.lastRender < IDLE_FRAME_MS) return;
+    this.lastRender = now;
     // El móvil inclinado mueve un poco el pañuelo: así brilla el metal.
     this.root.rotation.set(
       this.pitch + (this.focused ? 0 : this.tiltY * 0.1),

@@ -1,5 +1,7 @@
 import {
   clampToFlap,
+  FLAP_WIDTH,
+  itemReach,
   nextFreeSlot,
   normalizeRotation,
   placementDistance,
@@ -62,5 +64,33 @@ describe('nextFreeSlot', () => {
     for (let i = 0; i < 11; i++) taken.push(nextFreeSlot(taken));
     const next = nextFreeSlot(taken);
     expect(placementDistance(next, { u: 0, v: 0.6 })).toBeGreaterThan(0.25);
+  });
+
+  it('una pieza grande pide más sitio que una pequeña', () => {
+    const medalla = itemReach('medalla');
+    const pin = itemReach('pin');
+    expect(medalla).toBeGreaterThan(pin);
+    const first = { ...nextFreeSlot([], medalla), reach: medalla };
+    const second = nextFreeSlot([first], medalla);
+    expect(placementDistance(first, second)).toBeGreaterThanOrEqual(
+      medalla * 2 - 1e-6,
+    );
+  });
+
+  it('una pieza grande no cae pegada al borde ni en el pico', () => {
+    const reach = itemReach('medalla', 1.5);
+    const taken: { u: number; v: number; reach: number }[] = [];
+    for (let i = 0; i < 8; i++) {
+      const slot = nextFreeSlot(taken, reach);
+      const toEdge = ((1 - Math.abs(slot.u)) * (1 - slot.v) * FLAP_WIDTH) / 2;
+      expect(toEdge).toBeGreaterThanOrEqual(reach - 1e-6);
+      taken.push({ ...slot, reach });
+    }
+  });
+
+  it('el tamaño de la pieza cuenta, dentro de sus límites', () => {
+    expect(itemReach('chapa', 1.5)).toBeCloseTo(itemReach('chapa') * 1.5);
+    expect(itemReach('chapa', 99)).toBeCloseTo(itemReach('chapa') * 1.5);
+    expect(itemReach('chapa', NaN)).toBeCloseTo(itemReach('chapa'));
   });
 });

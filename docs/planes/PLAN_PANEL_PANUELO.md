@@ -56,6 +56,11 @@ persona y hacéis el intercambio.
 
 ### Fase 3 — qué mirar en el móvil
 
+> **2026-11-14, hecho sin móvil** (medido y visto en navegador): el visor ya
+> no pinta en reposo, el triángulo es más alto, el hueco de cada pieza va
+> según su tamaño y las piezas se asientan sobre la tela. Sigue pendiente
+> **verlo en un iPhone y un Android**: la lista de abajo no se ha tachado.
+
 Solo se ha probado en navegador (el visor suelto y la pantalla entera en web).
 Lista de lo que puede fallar en un móvil y no se ve en un navegador:
 

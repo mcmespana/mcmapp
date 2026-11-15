@@ -35,7 +35,8 @@ Lo que se puede hacer hoy:
 
 Detalles que le dan vida: las medallas y las cintas **cuelgan de verdad** y se
 mecen al girar el pañuelo o inclinar el móvil; en reposo el pañuelo se mece un
-poco; tiene sombra de suelo. Quien tiene activado «reducir movimiento» en el
+poco durante un rato y luego se queda quieto (para no gastar batería); tiene
+sombra de suelo. Quien tiene activado «reducir movimiento» en el
 sistema no ve el vaivén.
 
 ## Dónde está (y dónde debería vivir)
@@ -151,7 +152,11 @@ se puede probar en un navegador. La diferencia con las medallas es que aquí
 three.js va **empaquetado dentro de la app** (≈630 KB), no se descarga: el
 pañuelo abre sin red.
 
-- **No hay modelo `.glb` del pañuelo: se calcula.** El rollo del cuello, el
+- **No hay modelo `.glb` del pañuelo: se calcula.** Es un triángulo entero, atado: NO va
+  enrollado ni tiene dobladillo o banda arriba (decisión del propietario,
+  2026-11-15, con fotos). Es UNA sola malla, sin corte: la tela de la
+  espalda sigue por los hombros y se recoge hacia el nudo (`sidePoint`), nunca
+  como un cordel ni como una pieza aparte. Eso, el
   nudo con sus dos puntas y el triángulo de la espalda salen de fórmulas
   (`cloth.ts`). Pesa cero bytes, y la misma fórmula que dibuja el triángulo
   dice dónde y con qué inclinación va cosida cada pieza.
@@ -160,7 +165,15 @@ pañuelo abre sin red.
 - **La app manda.** El visor no decide qué piezas hay ni dónde: pinta el estado
   que le llega (`PanueloCommand`) y avisa de lo que hace el dedo
   (`PanueloEvent`). Los dos tipos están en `types/panuelo.ts`.
-- **Solo se pinta cuando algo cambia.** En modo decorar, quieto, no gasta.
+- **Solo se pinta cuando algo cambia, y quieto se duerme.** El vaivén en
+  reposo dura unos 12 s, se va parando y el bucle deja de pedir fotogramas
+  (`wake()` / `invalidate()` en `main.ts` lo despiertan: un toque, una orden,
+  la inclinación). Mientras solo se mece pinta a la mitad de fotogramas.
+- **Cada pieza ocupa lo suyo.** `itemReach` (`utils/panueloPlacement.ts`) dice
+  el radio de cada clase; `nextFreeSlot` busca hueco con eso, sin pegarla al
+  borde y dejando el logo para lo último. Al coserla, el visor palpa la tela
+  alrededor (`seat()` en `main.ts`) para inclinarla y que no se hunda en un
+  pliegue. Si cambias el tamaño de una clase en `items.ts`, cambia su `REACH`.
 - El tono es «Neutral», no ACES: el verde del pañuelo tiene que ser EL verde
   del pañuelo (`PanueloColors.cloth`, sacados de fotos de los de verdad).
 
@@ -286,6 +299,9 @@ transacción y nada de lo demás cambia.
   `firebase-seed/panuelo.json` en `/panuelo/data` y desplegar las reglas
   (`docs/desarrollo/FIREBASE_REGLAS.md`). Sin eso funciona igual, con el
   catálogo de muestra.
+- **Accesibilidad sin oír**: la pantalla tiene etiquetas, anuncios y acciones
+  para mover piezas sin tocar el 3D, pero nadie lo ha probado con VoiceOver ni
+  TalkBack.
 - **No se ha probado en un móvil de verdad.** Se ha probado en navegador (el
   visor y la pantalla entera en web). Falta ver en iPhone y Android: el WebView
   transparente, el rendimiento con muchas piezas, la inclinación y compartir.

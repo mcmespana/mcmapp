@@ -245,6 +245,14 @@ Piezas y reglas actuales: `docs/desarrollo/AREA_NATIVA_DISENO.md`.
       las menos tokenizadas. Al migrarla (A5.5), revisar de paso altura de fila
       y jerarquía título/subtítulo/pill de tono.
 
+- [ ] **P1 — Pañuelo virtual (anotado 2026-11-14, revisión de accesibilidad).**
+      (a) El color amarillo sin seleccionar, en el selector de color de
+      `app/panuelo.tsx`, no llega a 3:1 contra la tarjeta clara: necesita un
+      borde, que es un valor nuevo. (b) El error de `PanueloRedeemSheet` va en
+      `typography.subhead` y es texto que hay que leer: le toca `body`.
+      (c) En un móvil de 320 pt, con letra normal, la barra superior no
+      envuelve.
+
 ---
 
 ## Orden sugerido si hay un hueco

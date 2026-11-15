@@ -1,8 +1,8 @@
 /**
  * El pañuelo: geometría y tela.
  *
- * No hay modelo `.glb`: el pañuelo se calcula. Es un pañuelo PUESTO —el rollo
- * alrededor del cuello, el nudo delante con sus dos puntas y el triángulo
+ * No hay modelo `.glb`: el pañuelo se calcula. Es un pañuelo PUESTO —un triángulo
+ * entero cuyas esquinas pasan por los hombros, el nudo delante con sus dos puntas y el triángulo
  * cayendo por la espalda—, sin cuerpo debajo. Calcularlo en vez de modelarlo
  * tiene dos ventajas: pesa cero bytes, y la misma fórmula que dibuja el
  * triángulo dice dónde y con qué inclinación va cosida cada pieza
@@ -19,7 +19,7 @@ import { FLAP_HEIGHT, FLAP_WIDTH } from '@/utils/panueloPlacement';
 // ── Medidas ────────────────────────────────────────────────────────────────
 
 /**
- * El recorrido del rollo: de la nuca, por encima de los hombros, hasta el
+ * El recorrido de la banda del cuello: de la nuca, por encima de los hombros, hasta el
  * nudo del pecho, y vuelta. Diez puntos; la curva pasa por todos.
  */
 const HALF_RING: [number, number, number][] = [
@@ -45,13 +45,13 @@ const RING = new THREE.CatmullRomCurve3(
 /** En qué tramo de la curva está el hombro (el punto 2 de 10). */
 const SHOULDER = 2 / 10;
 /** El pico del triángulo. */
-const TIP = new THREE.Vector3(0, -1.8, 0.66);
+const TIP = new THREE.Vector3(0, -2.3, 0.7);
 
 /** Caja que hay que encuadrar (el pañuelo entero, con algo de aire). */
 export const BOUNDS = {
-  center: new THREE.Vector3(0, -0.86, 0),
+  center: new THREE.Vector3(0, -1.1, 0),
   width: 3.25,
-  height: 2.45,
+  height: 2.95,
 };
 
 const smooth = (a: number, b: number, x: number) => {
@@ -59,7 +59,7 @@ const smooth = (a: number, b: number, x: number) => {
   return k * k * (3 - 2 * k);
 };
 
-/** Un punto del rollo. k = 0 es la nuca; k = 0,5, el nudo. */
+/** Un punto de la banda del cuello. k = 0 es la nuca; k = 0,5, el nudo. */
 function ringPoint(k: number, out = new THREE.Vector3()): THREE.Vector3 {
   return RING.getPoint(((k % 1) + 1) % 1, out);
 }
@@ -70,10 +70,8 @@ const _c = new THREE.Vector3();
 
 /** El triángulo liso: del arco del cuello al pico, algo abombado. */
 function flapBase(s: number, t: number, out: THREE.Vector3): THREE.Vector3 {
-  // El triángulo cuelga del tramo trasero del rollo, de hombro a hombro.
+  // El triángulo cuelga del tramo trasero de la banda, de hombro a hombro.
   ringPoint(s * SHOULDER, out);
-  // El rollo tapa el arranque: la tela sale de un poco más abajo.
-  out.y -= 0.02;
   out.lerp(TIP, t);
   // Los omóplatos: la tela se abomba a media altura.
   out.z += 0.09 * Math.sin(Math.PI * Math.pow(t, 0.8)) * (1 - 0.6 * s * s);
@@ -88,9 +86,8 @@ function wrinkle(s: number, t: number): number {
     0.04 * Math.sin(5.2 * s + 2.4 * t + 0.5) +
     0.02 * Math.sin(11.5 * s - 5 * t + 1.9) +
     0.012 * Math.sin(3.1 * s + 9 * t);
-  // El dobladillo se levanta un poco en los bordes.
-  const hem = 0.022 * smooth(0.8, 1, Math.abs(s)) * (1 - t);
-  return env * folds + hem;
+  // Muy poco: el pañuelo va liso, solo con la caída natural de la tela.
+  return env * folds * 0.45;
 }
 
 const EPS = 0.004;
@@ -135,26 +132,109 @@ export function uvToFlap(u: number, v: number): [number, number] {
 
 // ── Geometría ──────────────────────────────────────────────────────────────
 
+/** Columnas de tela a cada lado, del hombro al nudo. */
+const NE = 44;
+const _top = new THREE.Vector3();
+const _hem = new THREE.Vector3();
+const _edge = new THREE.Vector3();
+const _drop = new THREE.Vector3();
+const _out = new THREE.Vector3();
+const _ref = new THREE.Vector3();
+const BODY = new THREE.Vector3(0, -0.5, 0);
+const DOWN = new THREE.Vector3(0, -1, 0);
+
+/**
+ * La tela que sigue más allá del hombro, hasta el nudo. Es LA MISMA tela que
+ * el triángulo de la espalda —una sola malla, sin costura ni corte—: el
+ * pañuelo es un triángulo entero cuyas esquinas pasan por los hombros.
+ *
+ * Cada «hilo» va del borde de arriba (la curva del cuello) al bajo de la
+ * tela. En la espalda todos los hilos acaban en el pico; pasado el hombro, el
+ * bajo sube por el costado del triángulo y da la vuelta hasta el nudo, que es
+ * por donde va el borde de un pañuelo puesto.
+ *
+ * @param e de 0 (el hombro: coincide con el borde del triángulo) a 1 (el nudo)
+ * @param t de 0 (arriba) a 1 (el bajo)
+ */
+function sidePoint(
+  sign: 1 | -1,
+  e: number,
+  t: number,
+  out: THREE.Vector3,
+): THREE.Vector3 {
+  const k = SHOULDER + e * (0.5 - SHOULDER);
+  ringPoint(k, _top);
+  // El bajo, por delante: cae del cuello, ancho en el hombro y recogido al
+  // llegar al nudo (pero nunca un hilo: es la esquina del triángulo).
+  ringPoint(SHOULDER, _ref);
+  _drop
+    .copy(TIP)
+    .sub(_ref)
+    .normalize()
+    .lerp(DOWN, smooth(0.1, 0.65, e));
+  _drop.normalize();
+  const depth = 0.62 - 0.5 * smooth(0.15, 1, e) + 0.06 * Math.sin(Math.PI * e);
+  _hem.copy(_top).addScaledVector(_drop, depth);
+  // El bajo, junto a la espalda: sube por el costado del triángulo.
+  _edge.copy(TIP).lerp(_ref, 0.6 * smooth(0, 0.5, e));
+  _edge.lerp(_hem, smooth(0.1, 0.8, e));
+
+  // Lo que se aparta este hilo del borde del triángulo: en e = 0, nada.
+  out.copy(_top).lerp(_edge, t);
+  _a.copy(_ref).lerp(TIP, t);
+  out.sub(_a);
+
+  // La tela se despega un poco del cuerpo y, hacia el nudo, se frunce.
+  _out.copy(_top).sub(BODY);
+  _out.y = 0;
+  _out.normalize();
+  const live = smooth(0.05, 0.4, e);
+  const belly = 0.05 * Math.sin(Math.PI * t) * (1 - 0.5 * e);
+  const folds =
+    smooth(0.2, 0.9, e) *
+    (0.022 * Math.sin(t * Math.PI * 5 + e * 3.1) +
+      0.012 * Math.sin(t * Math.PI * 9 - e * 5.3)) *
+    Math.sin(Math.PI * Math.min(1, t * 1.15));
+  out.addScaledVector(_out, live * (belly + folds));
+
+  out.add(flapPoint(1, t).position);
+  out.x *= sign;
+  return out;
+}
+
 function buildFlapGeometry(): THREE.BufferGeometry {
   const NS = 84;
   const NT = 76;
   const positions: number[] = [];
   const uvs: number[] = [];
   const index: number[] = [];
+  const p = new THREE.Vector3();
+  // Una sola malla: [lado izquierdo] [triángulo de la espalda] [lado derecho].
+  const row = NS + 1 + 2 * NE;
   for (let j = 0; j <= NT; j++) {
     const t = (j / NT) * 0.999;
-    for (let i = 0; i <= NS; i++) {
-      const s = (i / NS) * 2 - 1;
-      const p = flapPoint(s, t).position;
-      positions.push(p.x, p.y, p.z);
-      const [u, v] = flapUv(s, t);
-      uvs.push(u, v);
+    for (let c = 0; c < row; c++) {
+      const i = c - NE;
+      if (i < 0 || i > NS) {
+        const sign = i < 0 ? -1 : 1;
+        const e = (i < 0 ? -i : i - NS) / NE;
+        sidePoint(sign, e, t, p);
+        positions.push(p.x, p.y, p.z);
+        // Sin dibujo: el color del borde de la tela.
+        const [u, v] = flapUv(sign, t);
+        uvs.push(u, v);
+      } else {
+        const s = (i / NS) * 2 - 1;
+        const q = flapPoint(s, t).position;
+        positions.push(q.x, q.y, q.z);
+        const [u, v] = flapUv(s, t);
+        uvs.push(u, v);
+      }
     }
   }
-  const row = NS + 1;
   for (let j = 0; j < NT; j++) {
-    for (let i = 0; i < NS; i++) {
-      const a = j * row + i;
+    for (let c = 0; c < row - 1; c++) {
+      const a = j * row + c;
       index.push(a, a + row, a + 1, a + 1, a + row, a + row + 1);
     }
   }
@@ -167,9 +247,10 @@ function buildFlapGeometry(): THREE.BufferGeometry {
 }
 
 /**
- * Un tubo de sección elíptica a lo largo de una curva, con surcos en espiral
- * (la tela enrollada). `shape(k)` da el semiancho y el semigrosor en cada
- * punto, y con eso salen el rollo del cuello y las dos puntas.
+ * Una banda de tela a lo largo de una curva: sección elíptica muy aplastada,
+ * LISA (el pañuelo no va enrollado: es tela plana doblada). `shape(k)` da el
+ * semigrosor y el semiancho en cada punto, y con eso salen la banda del cuello
+ * y las dos puntas del nudo.
  */
 function buildRoll(opts: {
   point: (k: number, out: THREE.Vector3) => THREE.Vector3;
@@ -178,7 +259,6 @@ function buildRoll(opts: {
   shape: (k: number) => [number, number];
   segments: number;
   closed: boolean;
-  twist: number;
   uvRepeat: number;
 }): THREE.BufferGeometry {
   const { segments, closed } = opts;
@@ -207,10 +287,8 @@ function buildRoll(opts: {
     const [a, b] = opts.shape(k);
     for (let j = 0; j <= RADIAL; j++) {
       const phi = (j / RADIAL) * Math.PI * 2;
-      const groove =
-        1 + 0.13 * Math.sin(2 * phi + opts.twist * k * Math.PI * 2);
-      const x = Math.cos(phi) * a * groove;
-      const y = Math.sin(phi) * b * groove;
+      const x = Math.cos(phi) * a;
+      const y = Math.sin(phi) * b;
       positions.push(
         p.x + side.x * x + up.x * y,
         p.y + side.y * x + up.y * y,
@@ -252,28 +330,6 @@ function weldSeam(g: THREE.BufferGeometry, segments: number, row: number) {
 
 const KNOT = ringPoint(0.5);
 
-function buildCollar(): THREE.BufferGeometry {
-  const center = new THREE.Vector3(0, -0.5, 0);
-  return buildRoll({
-    point: (k, out) => ringPoint(k, out),
-    // La sección se tumba sobre el cuerpo: su «ancho» mira hacia fuera.
-    side: (k, _t, out) => {
-      ringPoint(k, out).sub(center);
-      out.y *= 0.3;
-    },
-    shape: (k) => {
-      // Gordo en la nuca (lleva más vueltas), fino al llegar al nudo.
-      const front = 1 - Math.abs(1 - 2 * k);
-      const thick = 0.082 - 0.03 * smooth(0.3, 1, front);
-      return [thick * 0.9, thick * 1.05];
-    },
-    segments: 200,
-    closed: true,
-    twist: 16,
-    uvRepeat: 40,
-  });
-}
-
 function buildTail(sign: 1 | -1): THREE.BufferGeometry {
   const start = KNOT.clone().add(new THREE.Vector3(sign * 0.03, -0.05, -0.02));
   const ctrl = KNOT.clone().add(new THREE.Vector3(sign * 0.06, -0.3, -0.14));
@@ -287,12 +343,12 @@ function buildTail(sign: 1 | -1): THREE.BufferGeometry {
       out.set(Math.cos(angle), 0, Math.sin(angle));
     },
     shape: (k) => {
+      // Una punta de tela plana que acaba en pico.
       const a = 0.085 * (1 - Math.pow(k, 1.6)) + 0.004;
-      return [a, a * 0.34 + 0.006];
+      return [a, 0.009];
     },
     segments: 44,
     closed: false,
-    twist: 1.5,
     uvRepeat: 12,
   });
 }
@@ -304,10 +360,10 @@ function buildKnot(): THREE.BufferGeometry {
     const x = pos.getX(i);
     const y = pos.getY(i);
     const z = pos.getZ(i);
-    // Un nudo no es una bola: tiene bultos donde la tela se cruza.
+    // Un nudo plano y prieto: apenas un pliegue donde la tela se cruza.
     const lump =
-      1 + 0.1 * Math.sin(5 * x + 2 * y) * Math.cos(4 * y - 3 * z) + 0.06 * y;
-    pos.setXYZ(i, x * 0.14 * lump, y * 0.115 * lump, z * 0.11 * lump);
+      1 + 0.035 * Math.sin(5 * x + 2 * y) * Math.cos(4 * y - 3 * z) + 0.05 * y;
+    pos.setXYZ(i, x * 0.12 * lump, y * 0.1 * lump, z * 0.075 * lump);
   }
   g.computeVertexNormals();
   g.translate(KNOT.x, KNOT.y - 0.01, KNOT.z - 0.015);
@@ -388,27 +444,6 @@ function paintFlap(
     ctx.fillStyle = g;
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
   }
-
-  // Dobladillo: los dos lados largos, de las esquinas de arriba al pico.
-  const hem = (x0: number, inset: number) => {
-    ctx.beginPath();
-    ctx.moveTo(x0 + inset, 0);
-    ctx.lineTo(TEX / 2 + inset * 0.2, TEX);
-  };
-  for (const side of [1, -1] as const) {
-    const x0 = side === 1 ? 0 : TEX;
-    ctx.setLineDash([]);
-    ctx.strokeStyle = 'rgba(0,0,0,0.10)';
-    ctx.lineWidth = 34;
-    hem(x0, side * 8);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-    ctx.lineWidth = 2.2;
-    ctx.setLineDash([9, 7]);
-    hem(x0, side * 30);
-    ctx.stroke();
-  }
-  ctx.setLineDash([]);
 
   if (logo) {
     // El triángulo mide FLAP_WIDTH × FLAP_HEIGHT y la textura es cuadrada:
@@ -499,12 +534,7 @@ export function createPanuelo(
 
   const group = new THREE.Group();
   group.add(flap, flapBack);
-  for (const geometry of [
-    buildCollar(),
-    buildKnot(),
-    buildTail(1),
-    buildTail(-1),
-  ]) {
+  for (const geometry of [buildKnot(), buildTail(1), buildTail(-1)]) {
     const mesh = new THREE.Mesh(geometry, rollMaterial);
     mesh.castShadow = true;
     mesh.receiveShadow = true;

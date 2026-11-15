@@ -4,6 +4,23 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-15 00:40 — Pañuelo virtual: liso (sin rollo), cabecera de iOS, accesibilidad y bordados
+
+- **El pañuelo ya no va enrollado** (`panuelo-3d/src/cloth.ts`): el cuello era un tubo con surcos que se veía arrugado. Ahora es lo que es de verdad: **un triángulo entero, atado**. Sin dobladillo ni banda arriba, y **una sola malla, sin corte**: la tela de la espalda sigue por los hombros (`sidePoint`) y se va recogiendo, con sus pliegues, hasta el nudo — nunca un cordel. Las puntas del nudo son tela plana en pico y las arrugas del triángulo bajan a menos de la mitad. Referencia: fotos del propietario (2026-11-15).
+- **iOS: los botones de arriba quedaban bajo la cabecera y el notch.** La pantalla mide dónde empieza de verdad y baja lo que la cabecera tape (`useHeaderHeight` + `measureInWindow` en `app/panuelo.tsx`); con cabecera opaca no añade nada.
+- **Accesibilidad de la pantalla**: el visor se describe al lector (color, etapa, cuántas piezas), todo lo que se hace tocando el 3D se puede hacer desde la colección —también mover una pieza, con acciones de accesibilidad—, se anuncian la pieza nueva, el modo decorar y los errores del canje; con letra grande la barra envuelve y el panel hace scroll; los colores llegan a 44 pt. Sin probar con VoiceOver/TalkBack reales.
+- **Parches que se leen como bordado** (ribete de puntadas, fondo de sarga, dibujo en satén con relieve) y **cinta de gros-grain** con caída y un imperdible de verdad.
+- **Móvil nuevo con sesión**: las piezas que ya estaban en la nube se presentaban otra vez como recién conseguidas (la de bienvenida se concedía antes de que contestara la nube). Arreglado en `hooks/usePanuelo.ts`.
+- Tests nuevos: `usePanuelo.test.tsx` (42) y `panueloScreen.test.tsx` (21).
+
+## 2026-11-14 23:32 — Pañuelo virtual: no gasta en reposo, más alto y piezas que no se pisan
+
+- **Batería**: el vaivén en reposo pintaba a 60 fps sin parar. Ahora se mece unos 12 s, se va parando y el visor **se duerme** (deja de pedir fotogramas) hasta que alguien toca, inclina el móvil o llega una orden; mientras solo se mece pinta a la mitad de fotogramas. Al volver a la app se mece otro rato.
+- **El triángulo es más alto** (`FLAP_HEIGHT` 1,75 → 2,25): en un móvil en vertical el pañuelo ocupaba un tercio de la pantalla y las piezas quedaban pequeñas y apretadas. Las colocaciones guardadas (`u`, `v`) siguen valiendo: son proporciones.
+- **Hueco según el tamaño** (`itemReach`, `nextFreeSlot(taken, reach)`): una medalla o una pulsera piden más sitio que un pin, y una pieza grande ya no cae pegada al borde. `placeItem` acepta el catálogo para saberlo. Con el pañuelo lleno, se pisa antes el logo que otra pieza.
+- **Las piezas se asientan sobre la tela**: al coser una, el visor palpa la tela a su alrededor, la inclina con ella y la levanta lo justo. Las pulseras y los parches grandes se hundían en los pliegues.
+- **Pulseras con cuerpo**: cordón trenzado de sección ovalada en vez de una cinta plana.
+
 ## 2026-11-14 23:09 — Comunica: la entrada, rehecha (saludo antes de pulsar y transición de marca)
 
 - **«Entra en Comunica» con cuenta de la app** (`AccountEntry`): la comprobación de fondo ya dice quién eres, así que la pantalla saluda antes de pulsar — avatar con el degradado, «Hola, David» y la delegación, la cuenta de la app con su sello y «Entrar en Comunica». Si el correo es de varias fichas, «Tu correo tiene N fichas» y «Elegir quién eres». «¿No eres tú?» con otro correo o el DNI, abajo.

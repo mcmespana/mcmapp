@@ -14,10 +14,18 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 
 import { Medalla3DModal } from '@/components/medallas/Medalla3DModal';
 import type { LabMedal } from '@/components/medallas/labMedals';
@@ -28,6 +36,7 @@ import {
 import { PanueloCollectionStrip } from '@/components/panuelo/PanueloCollectionStrip';
 import {
   PanueloItemDetail,
+  moveScreenReaderFocus,
   type PanueloDetailAction,
 } from '@/components/panuelo/PanueloItemDetail';
 import { PanueloRedeemSheet } from '@/components/panuelo/PanueloRedeemSheet';
@@ -40,6 +49,7 @@ import { radii, shadows } from '@/constants/uiStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePreviewChannel } from '@/contexts/PreviewChannelContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useLargeText from '@/hooks/useLargeText';
 import { usePanuelo } from '@/hooks/usePanuelo';
 import { usePanueloAvailable } from '@/hooks/usePanueloAvailable';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -52,6 +62,7 @@ import {
 import { trackEvent } from '@/utils/analytics';
 import { h } from '@/utils/haptics';
 import { logger } from '@/utils/logger';
+import { clampToFlap } from '@/utils/panueloPlacement';
 import { sharePanueloSnapshot } from '@/utils/panueloShare';
 import {
   COLOR_LABEL,
@@ -68,6 +79,8 @@ const INTRO_MS = 1700;
 const ROTATE_STEP = 15;
 /** Ancho de la columna de la colección en pantalla ancha. */
 const SIDE_PANEL_WIDTH = 400;
+/** Con letra grande, lo más que ocupa el panel de abajo (el resto es del 3D). */
+const PANEL_MAX_SHARE = 0.55;
 
 export default function PanueloRoute() {
   const { available, settled } = usePanueloAvailable();
@@ -81,6 +94,21 @@ function PanueloScreen() {
   const t = themeColors(isDark);
   const insets = useSafeAreaInsets();
   const { isWide } = useResponsiveLayout();
+  // En iOS la cabecera puede ser translúcida y la pantalla empieza DEBAJO de
+  // ella (y del notch): los botones de arriba quedaban tapados. Se mide dónde
+  // empieza de verdad la pantalla y se baja solo lo que la cabecera tape; con
+  // una cabecera opaca (Android, web) no se añade nada.
+  const headerHeight = useHeaderHeight();
+  const rootRef = useRef<React.ComponentRef<typeof View>>(null);
+  const [underHeader, setUnderHeader] = useState(0);
+  const measureTop = useCallback(() => {
+    rootRef.current?.measureInWindow((_x, y) => {
+      if (!Number.isFinite(y)) return;
+      setUnderHeader(Math.max(0, Math.round(headerHeight - y)));
+    });
+  }, [headerHeight]);
+  const large = useLargeText();
+  const { height: windowHeight } = useWindowDimensions();
   const { user } = useAuth();
   const params = useLocalSearchParams<{ codigo?: string; demo?: string }>();
   const { enabled: testerMode } = usePreviewChannel();
@@ -121,6 +149,18 @@ function PanueloScreen() {
   useEffect(() => {
     trackEvent('panuelo_abierto');
   }, []);
+
+  // Al cerrarse la ficha desaparece el elemento que tenía el foco del lector
+  // de pantalla: se lleva al título de la colección.
+  const collectionTitleRef = useRef<React.ComponentRef<typeof Text>>(null);
+  const hadActive = useRef(false);
+  const hasActive = active !== null;
+  useEffect(() => {
+    if (hadActive.current && !hasActive) {
+      moveScreenReaderFocus(collectionTitleRef.current);
+    }
+    hadActive.current = hasActive;
+  }, [hasActive]);
 
   // Los mandos del Laboratorio Alpha llegan por la ruta (`?demo=todas|cero`):
   // así el estado del pañuelo tiene un solo dueño, esta pantalla.
@@ -218,8 +258,13 @@ function PanueloScreen() {
   const toggleMode = useCallback(() => {
     h.toggle();
     settle();
+    AccessibilityInfo.announceForAccessibility(
+      mode === 'view'
+        ? 'Modo decorar. Elige una pieza de la colección para ponerla, quitarla o moverla.'
+        : 'Has terminado de decorar.',
+    );
     setMode((m) => (m === 'view' ? 'edit' : 'view'));
-  }, [settle]);
+  }, [mode, settle]);
 
   const selectFromStrip = useCallback(
     (entry: PanueloCollectionEntry) => {
@@ -273,6 +318,25 @@ function PanueloScreen() {
       panuelo.rotate(id, degrees);
     },
     [panuelo],
+  );
+
+  const { layout } = state;
+  const moveActive = useCallback(
+    (id: string, du: number, dv: number) => {
+      const current = layout[id];
+      if (!current) return;
+      const [u, v] = clampToFlap(current.u + du, current.v + dv);
+      if (u === current.u && v === current.v) {
+        AccessibilityInfo.announceForAccessibility(
+          'No se puede mover más en esa dirección.',
+        );
+        return;
+      }
+      h.tap();
+      panuelo.move(id, u, v);
+      AccessibilityInfo.announceForAccessibility('Pieza movida.');
+    },
+    [layout, panuelo],
   );
 
   const actions = useMemo<PanueloDetailAction[]>(() => {
@@ -360,6 +424,14 @@ function PanueloScreen() {
 
   if (!panuelo.ready) return null;
 
+  const placedCount =
+    summary.placed === 0
+      ? 'No lleva ninguna pieza.'
+      : `Lleva ${summary.placed} ${summary.placed === 1 ? 'pieza' : 'piezas'}.`;
+  const viewerLabel = `Pañuelo ${COLOR_LABEL[color].name.toLowerCase()}, ${COLOR_LABEL[color].stage}. ${placedCount}`;
+  const viewerHint =
+    'Se gira arrastrando con el dedo. Para ver, poner, quitar o mover una pieza, usa la colección que hay debajo.';
+
   const hint =
     mode === 'edit'
       ? 'Arrastra una pieza para moverla. Toca una de tu colección para ponerla.'
@@ -367,12 +439,91 @@ function PanueloScreen() {
         ? 'Arrastra para girarlo. Las piezas que consigas irán aquí.'
         : 'Arrastra para girarlo. Toca una pieza para verla de cerca.';
 
+  const detail = active ? (
+    <PanueloItemDetail
+      entry={active}
+      isDark={isDark}
+      isNew={revealing === active.item.id}
+      actions={actions}
+      onMove={
+        mode === 'edit' && active?.owned && active.placed
+          ? moveActive
+          : undefined
+      }
+      onClose={closeDetail}
+    />
+  ) : null;
+  const collectionView = (
+    <>
+      <View style={styles.panelHead}>
+        <View style={styles.panelTitles}>
+          <Text
+            ref={collectionTitleRef}
+            style={[styles.panelTitle, { color: t.text }]}
+            accessibilityRole="header"
+          >
+            Tu colección
+          </Text>
+          <Text style={[styles.panelMeta, { color: t.textSecondary }]}>
+            {summary.owned} de {summary.total} · {summary.placed} en el pañuelo
+          </Text>
+        </View>
+        <PressableFeedback
+          onPress={() => {
+            h.tap();
+            setRedeemOpen(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Canjear un código"
+          style={[styles.redeem, { backgroundColor: t.backgroundSunken }]}
+        >
+          <PressableFeedback.Highlight />
+          <MaterialIcons name="redeem" size={18} color={t.link} />
+          <Text style={[styles.modeLabel, { color: t.link }]}>Canjear</Text>
+        </PressableFeedback>
+      </View>
+      <PanueloCollectionStrip
+        entries={collection}
+        activeId={activeId}
+        isDark={isDark}
+        onSelect={selectFromStrip}
+        grid={isWide}
+      />
+      {!user ? (
+        <Text style={[styles.notice, { color: t.textSecondary }]}>
+          Sin sesión iniciada, tu pañuelo solo se guarda en este móvil.
+        </Text>
+      ) : null}
+    </>
+  );
+  const panelScroll = (children: React.ReactNode) => (
+    <ScrollView
+      style={
+        isWide
+          ? styles.panelScroll
+          : { maxHeight: windowHeight * PANEL_MAX_SHARE }
+      }
+      contentContainerStyle={styles.panelScrollContent}
+    >
+      {children}
+    </ScrollView>
+  );
+  const panelBody = active
+    ? large || isWide
+      ? panelScroll(detail)
+      : detail
+    : large && !isWide
+      ? panelScroll(collectionView)
+      : collectionView;
+
   return (
     <View
+      ref={rootRef}
+      onLayout={measureTop}
       style={[
         styles.root,
         isWide && styles.rootWide,
-        { backgroundColor: t.backgroundSunken },
+        { backgroundColor: t.backgroundSunken, paddingTop: underHeader },
       ]}
     >
       <View style={styles.stage}>
@@ -382,10 +533,15 @@ function PanueloScreen() {
           mode={mode}
           onEvent={onViewerEvent}
           tintColor={t.textSecondary}
+          accessibilityLabel={viewerLabel}
+          accessibilityHint={viewerHint}
           style={StyleSheet.absoluteFill}
         />
 
-        <View style={styles.stageTop} pointerEvents="box-none">
+        <View
+          style={[styles.stageTop, large && styles.stageTopLarge]}
+          pointerEvents="box-none"
+        >
           <View
             style={[styles.swatches, { backgroundColor: t.card }]}
             accessibilityRole="radiogroup"
@@ -396,7 +552,11 @@ function PanueloScreen() {
                 key={c}
                 onPress={() => changeColor(c)}
                 accessibilityRole="radio"
-                accessibilityState={{ selected: c === color }}
+                accessibilityState={{
+                  selected: c === color,
+                  checked: c === color,
+                }}
+                hitSlop={SWATCH_HIT_SLOP}
                 accessibilityLabel={`Pañuelo ${COLOR_LABEL[c].name.toLowerCase()}: ${COLOR_LABEL[c].stage}`}
                 style={styles.swatchTarget}
               >
@@ -430,7 +590,9 @@ function PanueloScreen() {
               onPress={toggleMode}
               accessibilityRole="button"
               accessibilityLabel={
-                mode === 'edit' ? 'Terminar de decorar' : 'Decorar el pañuelo'
+                mode === 'edit'
+                  ? 'Listo, terminar de decorar'
+                  : 'Decorar el pañuelo'
               }
               style={[styles.modeButton, { backgroundColor: t.card }]}
             >
@@ -451,6 +613,9 @@ function PanueloScreen() {
           <Text
             style={[styles.stageLabel, { color: t.textSecondary }]}
             pointerEvents="none"
+            // Ya lo dice la etiqueta del visor.
+            importantForAccessibility="no"
+            accessibilityElementsHidden
           >
             {COLOR_LABEL[color].name} · {COLOR_LABEL[color].stage}
           </Text>
@@ -460,6 +625,10 @@ function PanueloScreen() {
           <Text
             style={[styles.hint, { color: t.textSecondary }]}
             pointerEvents="none"
+            // Habla de arrastrar y tocar el 3D: al lector se lo cuenta el
+            // `accessibilityHint` del visor.
+            importantForAccessibility="no"
+            accessibilityElementsHidden
           >
             {hint}
           </Text>
@@ -476,59 +645,7 @@ function PanueloScreen() {
           },
         ]}
       >
-        {active ? (
-          <PanueloItemDetail
-            entry={active}
-            isDark={isDark}
-            isNew={revealing === active.item.id}
-            actions={actions}
-            onClose={closeDetail}
-          />
-        ) : (
-          <>
-            <View style={styles.panelHead}>
-              <View style={styles.panelTitles}>
-                <Text
-                  style={[styles.panelTitle, { color: t.text }]}
-                  accessibilityRole="header"
-                >
-                  Tu colección
-                </Text>
-                <Text style={[styles.panelMeta, { color: t.textSecondary }]}>
-                  {summary.owned} de {summary.total} · {summary.placed} en el
-                  pañuelo
-                </Text>
-              </View>
-              <PressableFeedback
-                onPress={() => {
-                  h.tap();
-                  setRedeemOpen(true);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Canjear un código"
-                style={[styles.redeem, { backgroundColor: t.backgroundSunken }]}
-              >
-                <PressableFeedback.Highlight />
-                <MaterialIcons name="redeem" size={18} color={t.link} />
-                <Text style={[styles.modeLabel, { color: t.link }]}>
-                  Canjear
-                </Text>
-              </PressableFeedback>
-            </View>
-            <PanueloCollectionStrip
-              entries={collection}
-              activeId={activeId}
-              isDark={isDark}
-              onSelect={selectFromStrip}
-              grid={isWide}
-            />
-            {!user ? (
-              <Text style={[styles.notice, { color: t.textSecondary }]}>
-                Sin sesión iniciada, tu pañuelo solo se guarda en este móvil.
-              </Text>
-            ) : null}
-          </>
-        )}
+        {panelBody}
       </View>
 
       <PanueloRedeemSheet
@@ -545,6 +662,8 @@ function PanueloScreen() {
 
 const TOUCH = 44;
 const SWATCH = 24;
+/** Cada color mide `TOUCH - sm` de ancho: se completa hasta 44 pt con hitSlop. */
+const SWATCH_HIT_SLOP = { left: spacing.xs, right: spacing.xs };
 
 const styles = StyleSheet.create({
   root: {
@@ -562,6 +681,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
+  },
+  stageTopLarge: {
+    flexWrap: 'wrap',
+    rowGap: spacing.sm,
   },
   swatches: {
     flexDirection: 'row',
@@ -606,7 +729,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    height: TOUCH,
+    minHeight: TOUCH,
     paddingHorizontal: spacing.md,
     borderRadius: radii.pillFull,
     overflow: 'hidden',
@@ -625,6 +748,12 @@ const styles = StyleSheet.create({
   },
   panel: {
     paddingTop: spacing.md,
+    gap: spacing.sm,
+  },
+  panelScroll: {
+    flex: 1,
+  },
+  panelScrollContent: {
     gap: spacing.sm,
   },
   panelBottom: {
@@ -654,7 +783,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    height: TOUCH,
+    minHeight: TOUCH,
     paddingHorizontal: spacing.md,
     borderRadius: radii.sm,
     overflow: 'hidden',

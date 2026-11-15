@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import BottomSheet from '@/components/BottomSheet';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
@@ -73,7 +79,13 @@ function RedeemForm({
       return;
     }
     h.error();
-    setMessage(MESSAGES[result.ok ? 'already' : result.reason]);
+    const text = MESSAGES[result.ok ? 'already' : result.reason];
+    setMessage(text);
+    // `accessibilityLiveRegion` solo funciona en Android: fuera de él se
+    // anuncia a mano (en Android se leería dos veces).
+    if (Platform.OS !== 'android') {
+      AccessibilityInfo.announceForAccessibility(text);
+    }
   };
 
   return (
