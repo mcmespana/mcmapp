@@ -246,6 +246,11 @@ describe('servidor falso', () => {
         startTime: '19:00',
         durationHours: 1,
       }),
+      rollReminders: await s.sendRollReminders({
+        clientId: CLIENT(60),
+        groupIds: [s.data.groups[0].id],
+        message: 'Pasa lista',
+      }),
       monitor: await s.getMonitor(s.data.groups[0].monitorIds[0]),
       followUps: await s.getFollowUps(s.data.groups[0].monitorIds[0]),
       createFollowUp: await s.createFollowUp(s.data.groups[0].monitorIds[0], {
