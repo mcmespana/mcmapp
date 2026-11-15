@@ -316,10 +316,14 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
     for (let c = 0; c < ROW; c++) {
       const i = c - NE;
       const e = i < 0 ? -i / NE : i > NS ? (i - NS) / NE : 0;
-      // Fijo arriba (el cuello) y al llegar al nudo.
-      const w = smooth(0, 0.22, t) * (1 - smooth(0.55, 0.95, e));
+      // El cuello no es una barra: la tela va apoyada, no clavada. Arriba
+      // cede un poco (y vuelve enseguida, que ahí su sitio tira mucho más);
+      // lo único fijo de verdad es el nudo.
+      const w =
+        (0.16 + 0.84 * smooth(0, 0.22, t)) * (1 - smooth(0.55, 0.95, e));
       free[j * ROW + c] = w;
-      pull[j * ROW + c] = 170 - 80 * smooth(0.1, 1, t);
+      pull[j * ROW + c] =
+        170 - 80 * smooth(0.1, 1, t) + 190 * (1 - smooth(0, 0.18, t));
     }
   }
   // Los hilos: a lo ancho, a lo largo y en diagonal.
