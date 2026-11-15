@@ -296,6 +296,8 @@ export interface ClothSim {
    * tira de la tela de alrededor al moverse.
    */
   setLoads(loads: readonly { s: number; t: number; weight: number }[]): void;
+  /** Cuánto se ha movido la tela donde se ata el nudo. */
+  knotOffset(out: THREE.Vector3): THREE.Vector3;
   /** Devuelve la tela a su sitio, quieta. */
   reset(): void;
 }
@@ -311,6 +313,8 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
   const pull = new Float32Array(count);
   /** Lo que pesa cada punto: 1 la tela sola; más donde hay una pieza cosida. */
   const mass = new Float32Array(count).fill(1);
+  /** Cuánto se queda atrás cada punto cuando el pañuelo gira. */
+  const lag = new Float32Array(count);
   for (let j = 0; j <= NT; j++) {
     const t = j / NT;
     for (let c = 0; c < ROW; c++) {
@@ -319,11 +323,20 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
       // El cuello no es una barra: la tela va apoyada, no clavada. Arriba
       // cede un poco (y vuelve enseguida, que ahí su sitio tira mucho más);
       // lo único fijo de verdad es el nudo.
+      // El nudo tampoco es un clavo: se deja llevar un poco y vuelve.
       const w =
-        (0.16 + 0.84 * smooth(0, 0.22, t)) * (1 - smooth(0.55, 0.95, e));
+        (0.3 + 0.7 * smooth(0, 0.22, t)) * (1 - 0.82 * smooth(0.55, 0.95, e));
       free[j * ROW + c] = w;
+      // Un pañuelo de algodón es firme: su sitio tira con fuerza de cada
+      // punto, y más todavía junto al cuello y al nudo.
       pull[j * ROW + c] =
-        170 - 80 * smooth(0.1, 1, t) + 190 * (1 - smooth(0, 0.18, t));
+        250 -
+        110 * smooth(0.1, 1, t) +
+        120 * (1 - smooth(0, 0.18, t)) +
+        160 * smooth(0.6, 1, e);
+      // Al girar, el cuello entero se queda un pelín atrás, como si el
+      // pañuelo resbalara sobre los hombros; el resto, lo suyo.
+      lag[j * ROW + c] = w * CLOTH_LAG + NECK_LAG * (1 - smooth(0, 0.3, t));
     }
   }
   // Los hilos: a lo ancho, a lo largo y en diagonal.
@@ -450,8 +463,8 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
         awake = true;
         // El pañuelo ha girado; la tela, todavía no (casi: el aire la frena).
         for (let p = 0; p < count; p++) {
-          const w = free[p] * CLOTH_LAG;
-          if (w === 0) continue;
+          if (free[p] === 0) continue;
+          const w = lag[p];
           hold(pos, p * 3, -dYaw * w, -dPitch * w);
           hold(prev, p * 3, -dYaw * w, -dPitch * w);
         }
@@ -504,6 +517,22 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
         }
       }
       return out;
+    },
+    knotOffset(out) {
+      // Las dos esquinas, junto al nudo: las primeras filas de las columnas
+      // de los extremos.
+      out.set(0, 0, 0);
+      let n = 0;
+      for (let j = 0; j <= 3; j++) {
+        for (const c of [0, 1, ROW - 2, ROW - 1]) {
+          const k = (j * ROW + c) * 3;
+          out.x += pos[k] - rest[k];
+          out.y += pos[k + 1] - rest[k + 1];
+          out.z += pos[k + 2] - rest[k + 2];
+          n++;
+        }
+      }
+      return out.multiplyScalar(1 / n);
     },
     tiltAt(s, t, out, normal) {
       const col = NE + ((Math.min(1, Math.max(-1, s)) + 1) / 2) * NS;
@@ -560,18 +589,80 @@ function createClothSim(geometry: THREE.BufferGeometry): ClothSim {
   };
 }
 
+/**
+ * La tela, más el nudo que va con ella y las dos puntas que cuelgan del nudo
+ * y se mecen (un péndulo amortiguado y firme por eje).
+ */
+function withKnot(
+  sim: ClothSim,
+  knot: THREE.Object3D,
+  tails: THREE.Object3D,
+): ClothSim {
+  const offset = new THREE.Vector3();
+  const swing = { z: 0, vz: 0, x: 0, vx: 0 };
+  const settle = () => {
+    sim.knotOffset(offset);
+    knot.position.copy(KNOT).add(offset);
+  };
+  return {
+    ...sim,
+    step(dt, dYaw, dPitch, tiltX, tiltY) {
+      const moving = sim.step(dt, dYaw, dPitch, tiltX, tiltY);
+      settle();
+      const seconds = Math.min(0.05, dt / 1000);
+      if (seconds <= 0) return moving;
+      // Al girar, las puntas se quedan atrás; al inclinar, caen hacia ese lado.
+      const yawRate = dYaw / seconds;
+      const pitchRate = dPitch / seconds;
+      const targetZ = Math.max(
+        -0.45,
+        Math.min(0.45, -yawRate * 0.09 - tiltX * 0.18),
+      );
+      const targetX = Math.max(
+        -0.3,
+        Math.min(0.3, pitchRate * 0.07 + tiltY * 0.12),
+      );
+      swing.vz +=
+        (TAIL_STIFFNESS * (targetZ - swing.z) - TAIL_DAMPING * swing.vz) *
+        seconds;
+      swing.z += swing.vz * seconds;
+      swing.vx +=
+        (TAIL_STIFFNESS * (targetX - swing.x) - TAIL_DAMPING * swing.vx) *
+        seconds;
+      swing.x += swing.vx * seconds;
+      tails.rotation.set(swing.x, 0, swing.z);
+      const tailsMoving =
+        Math.abs(swing.vz) + Math.abs(swing.vx) > 0.003 ||
+        Math.abs(targetZ - swing.z) + Math.abs(targetX - swing.x) > 0.002;
+      return moving || tailsMoving;
+    },
+    reset() {
+      sim.reset();
+      swing.z = swing.vz = swing.x = swing.vx = 0;
+      tails.rotation.set(0, 0, 0);
+      knot.position.copy(KNOT);
+    },
+  };
+}
+
+/** Las puntas del nudo: firmes, se mecen y paran pronto. */
+const TAIL_STIFFNESS = 60;
+const TAIL_DAMPING = 9;
+
 /** Lo que frena el aire a la tela, por paso. */
-const CLOTH_DRAG = 0.93;
+const CLOTH_DRAG = 0.9;
 /**
  * Cuánto se queda atrás la tela al girar el pañuelo (1 = del todo). Bajo: es
  * una tela con peso que acompaña el giro, no una gasa que flota.
  */
-const CLOTH_LAG = 0.36;
+const CLOTH_LAG = 0.26;
+/** Lo que se retrasa el cuello al girar, encima de lo de la tela. */
+const NECK_LAG = 0.12;
 /** Cuánto tira del pico inclinar el móvil. */
-const CLOTH_TILT = 1.1;
+const CLOTH_TILT = 0.8;
 const CLOTH_ITERATIONS = 4;
 /** Cuánto hunde la tela el peso de una pieza. */
-const CLOTH_SAG = 5;
+const CLOTH_SAG = 4;
 /** Por debajo de 1 la tela da de sí y se ve blanda; a 1 es un algodón con peso. */
 const CLOTH_STRETCH = 1;
 
@@ -865,12 +956,23 @@ export function createPanuelo(
 
   const group = new THREE.Group();
   group.add(flap, flapBack);
-  for (const geometry of [buildKnot(), buildTail(1), buildTail(-1)]) {
+  // El nudo va con la tela de las esquinas, y las puntas cuelgan de él y se
+  // mecen: los dos con el pivote en el nudo.
+  const knotGroup = new THREE.Group();
+  knotGroup.position.copy(KNOT);
+  const tailsGroup = new THREE.Group();
+  knotGroup.add(tailsGroup);
+  group.add(knotGroup);
+  const rollMesh = (geometry: THREE.BufferGeometry, parent: THREE.Object3D) => {
+    geometry.translate(-KNOT.x, -KNOT.y, -KNOT.z);
     const mesh = new THREE.Mesh(geometry, rollMaterial);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    group.add(mesh);
-  }
+    parent.add(mesh);
+  };
+  rollMesh(buildKnot(), knotGroup);
+  rollMesh(buildTail(1), tailsGroup);
+  rollMesh(buildTail(-1), tailsGroup);
 
   let current = color;
   let logoImage: HTMLImageElement | null = null;
@@ -895,7 +997,7 @@ export function createPanuelo(
   return {
     group,
     flap,
-    cloth: createClothSim(flap.geometry),
+    cloth: withKnot(createClothSim(flap.geometry), knotGroup, tailsGroup),
     setColor(next) {
       current = next;
       repaint();
