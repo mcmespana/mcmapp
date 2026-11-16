@@ -187,6 +187,30 @@ del flujo equivocado.
 
 ---
 
+## Ayudas para montar la playlist (noviembre de 2026)
+
+Dos chips en «Tu selección» (`components/playlist/PlaylistDesignTools.tsx`):
+
+- **Lecturas del domingo** — hoja con las lecturas del próximo domingo y los
+  cantos del cantoral cuya letra comparte palabras con ellas
+  (`SundayReadingsSheet` + `utils/sundayMatch.ts`). Es una pista, no un
+  veredicto: por eso se enseñan las palabras que coinciden. No hay IA.
+- **Historial** — interruptor. Encendido, cada canción (en la playlist y en
+  las listas del cantoral) lleva ocho puntos —las últimas ocho semanas, la de
+  ahora a la derecha— y «×N», las veces de este curso (desde el 1 de
+  septiembre). Sale de `/choirs/{id}/log`:
+
+```
+/choirs/{choirId}/log/{AAAAMMDD}-{code} = { at, code, songs: ["01.fichero.cho", …] }
+```
+
+  Se apunta en cada guardado en el coro (subir o actualizar): un apunte por
+  día y playlist, así que actualizar la misma playlist cada domingo también
+  deja rastro. Lo anterior al registro se reconstruye del índice de playlists
+  leyendo su contenido una vez por playlist (`hooks/useChoirHistory.ts`). Una
+  canción cuenta una vez por día. El panel puede borrar apuntes viejos de
+  `log` sin romper nada.
+
 ## Panel de administración (lo que falta fuera de este repo)
 
 El nodo `/choirs` está pensado para poder gestionarse desde `mcmpanel`:

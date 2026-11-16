@@ -400,6 +400,8 @@ monitores, con un backend nuevo que no sea el plugin.
 
 Apuntadas por el usuario junto a la tanda «batiburrillo» de noviembre de 2026.
 **No están planificadas ni entran en «seguimos»**: se retoman cuando lo pida.
+Las dos de Live Activities las llevará Ethan (usuario, 2026-11-16): aquí solo
+queda la idea apuntada, no las empieces.
 
 - **Modo evento sin conexión** — antes de salir de casa, precargar el
   horario, los materiales, los grupos y los contactos del evento para que

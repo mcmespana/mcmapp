@@ -4,6 +4,14 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-16 20:15 — Playlist: lecturas del domingo con cantos que encajan, e historial de lo cantado por el coro
+
+- **Dos chips en «Tu selección»** (`PlaylistDesignTools`, también con la lista vacía): «Lecturas del domingo» e «Historial».
+- **Lecturas del domingo** (`SundayReadingsSheet`): las del próximo domingo (de `seccion_oracion/lecturas`, que el scraper trae con 30 días de adelanto), plegables para leerlas, y debajo los cantos del cantoral con palabras en común, con las palabras que coinciden y un «+» para añadirlos. Sin IA ni servidor: `utils/sundayMatch.ts` (sin tildes, sin palabras vacías, plural recortado, pesa más lo raro en el cantoral y el salmo/evangelio; hacen falta dos palabras en común).
+- **Historial del coro** (se enciende y se apaga, se recuerda; solo con coro elegido): en cada fila de la playlist y del cantoral, ocho puntos (las últimas ocho semanas) y «×N» (veces este curso, desde el 1 de septiembre). `utils/choirHistory.ts`, `hooks/useChoirHistory.ts`, `components/playlist/SungDots.tsx`.
+- **Firebase**: cada guardado en el coro apunta además `choirs/{id}/log/{AAAAMMDD}-{código} = { at, code, songs: [ficheros] }` (misma escritura multi-path de `upsertChoirPlaylist`; cabe en las reglas actuales de `/choirs/$choirId`). Las playlists anteriores al registro se cuentan leyendo su contenido una vez (caché en el móvil).
+- Sin paquetes nuevos. Sin probar en móvil.
+
 ## 2026-11-16 19:40 — Cantoral: metrónomo en la hoja del afinador
 
 - **Conmutador «Afinador · Metrónomo»** arriba de la hoja del afinador (`TunerScreen`). No tiene entrada propia en ningún menú: se usa menos. Al pasar al metrónomo se suelta el micrófono.

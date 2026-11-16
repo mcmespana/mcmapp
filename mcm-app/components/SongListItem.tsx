@@ -1,3 +1,5 @@
+import SungDots from '@/components/playlist/SungDots';
+import { useChoirHistory } from '@/hooks/useChoirHistory';
 import React, {
   useCallback,
   useRef,
@@ -117,6 +119,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     const { settings } = useSettings();
     const { notation } = settings;
     const scheme = useColorScheme();
+    const sung = useChoirHistory();
     const isDark = scheme === 'dark';
     // Letra del sistema grande: el título cabía en ~10 caracteres a una
     // línea; pasa a poder ocupar varias.
@@ -400,6 +403,9 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                     </View>
                   )}
                 </View>
+                {sung.enabled ? (
+                  <SungDots history={sung.history?.get(song.filename)} />
+                ) : null}
               </View>
             </View>
             <View style={styles.rightSection}>
