@@ -43,8 +43,7 @@
       "origin": "Festival vocacional Samuel 2024",
       "description": "«Estoy contigo. Testigos de la esperanza». La chapa del festival vocacional Samuel.",
       "grant": {
-        "type": "code",
-        "hash": "fa322f0ce412855de0ffbffce719f9d906feea2712fdf8543942570eab20f8d2"
+        "type": "all"
       },
       "look": {
         "kind": "chapa",
@@ -62,8 +61,7 @@
       "description": "La chapa del Jubileo: «Peregrinos de esperanza».",
       "size": 0.8,
       "grant": {
-        "type": "code",
-        "hash": "fb5f19dd0b45ecade9b2638f0b857009e6ea11f0bf1a396bdceb4b10aed2557e"
+        "type": "all"
       },
       "look": {
         "kind": "chapa",
@@ -82,8 +80,7 @@
       "size": 1.5,
       "tradeable": true,
       "grant": {
-        "type": "code",
-        "hash": "900303ca23fc656c0e5a9746749517ee95282601c34b69293558f7198240244d"
+        "type": "all"
       },
       "look": {
         "kind": "pin",
@@ -103,8 +100,7 @@
       "description": "«Yo soy Monitor Consolación». La chapa grande del primer año de congreso de monitores.",
       "size": 1.4,
       "grant": {
-        "type": "code",
-        "hash": "3669db0c292c9a17beec11476d5eabad7fe99151ff384d83725aa4b9c9964e40"
+        "type": "all"
       },
       "look": {
         "kind": "chapa",
@@ -122,7 +118,7 @@
       "description": "El pin pequeño de metal del tercer año de congreso de monitores.",
       "size": 0.85,
       "grant": {
-        "type": "manual"
+        "type": "all"
       },
       "look": {
         "kind": "pin",
@@ -145,7 +141,7 @@
       "rarity": "especial",
       "tradeable": true,
       "grant": {
-        "type": "manual"
+        "type": "all"
       },
       "look": {
         "kind": "chapa",
@@ -164,7 +160,7 @@
       "rarity": "especial",
       "tradeable": true,
       "grant": {
-        "type": "manual"
+        "type": "all"
       },
       "look": {
         "kind": "chapa",
@@ -182,7 +178,7 @@
       "description": "Peregrinos de esperanza.",
       "rarity": "unica",
       "grant": {
-        "type": "manual"
+        "type": "all"
       },
       "look": {
         "kind": "medalla",
@@ -201,7 +197,7 @@
       "origin": "Visita del Papa · 2026",
       "rarity": "unica",
       "grant": {
-        "type": "manual"
+        "type": "all"
       },
       "look": {
         "kind": "medalla",

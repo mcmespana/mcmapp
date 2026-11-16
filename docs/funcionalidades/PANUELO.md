@@ -52,8 +52,9 @@ sistema no ve el vaivén.
 
 **Hoy: escondido en el Laboratorio Alpha.** El panel «Pañuelo virtual» del
 laboratorio abre la pantalla `/panuelo`. Tiene tres botones: abrir el pañuelo,
-abrirlo con todas las piezas de muestra, y empezar de cero. Códigos de prueba:
-`SAMUEL`, `JUBILEO`, `LISBOA`, `MONITOR`.
+abrirlo con todas las piezas de muestra, y empezar de cero. **Mientras se
+prueba, todas las piezas del catálogo se dan solas al abrir** (`grant: all`);
+cómo se repartirán de verdad (por eventos, códigos…) está por decidir.
 
 El interruptor es `global.panuelo` en `/profileConfig`, igual que Carismochito
 (`utils/panueloGate.ts`, `hooks/usePanueloAvailable.ts`):
@@ -112,8 +113,10 @@ troncho. Sus modelos y sus caras están en `piezas-3d/` (raíz; ver su README).
   cose) y `glb` (su modelo: la ficha ofrece «Verla de cerca», como las
   medallas). Un pin rectangular usa la forma `card`.
 - **Tres tallas**, con `size`: pequeña ≈ 0,7–0,85 · mediana 1 · grande 1,4.
-- **El troncho** no se cose en el triángulo: va por delante, abrazando la tela
-  donde se junta, con el nudo debajo. Se «lleva puesto» (está en `layout`,
+- **El troncho** no se cose en el triángulo: va por delante. Con él puesto,
+  la tela se recoge en un cabo que baja desde donde se junta el pañuelo
+  (`Panuelo.strand`), el troncho va ceñido a ese cabo y el nudo y las puntas
+  quedan justo debajo (como el de verdad, según foto del propietario). Se «lleva puesto» (está en `layout`,
   sin gastar hueco) o no; no se arrastra, no se gira y **no se intercambia**.
   El visor lo recibe aparte (`PanueloViewerState.troncho`) y hoy no se puede
   tocar en el 3D: su ficha se abre desde la colección.

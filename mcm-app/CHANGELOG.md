@@ -4,9 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 00:10 — Pañuelo: en pruebas, todas las piezas se dan solas
+
+- Todas las piezas de `firebase-seed/panuelo.json` pasan a `grant: all`: se consiguen al abrir el pañuelo, sin códigos. Es provisional, para probar; el reparto real (por eventos u otra vía) está por decidir.
+
 ## 2026-11-16 23:55 — Pañuelo: el catálogo de pruebas son ya las piezas de verdad
 
-- `firebase-seed/panuelo.json` (el catálogo que lleva la app) pasa a tener **solo piezas reales**: Estoy contigo Samuel, Chapa M+C (1.er año, grande), Pin M+C (3.er año, pequeño), Monitor OG (grande), JMJ Lisboa 2023 (pin rectangular), Jubileo 2025, Chapa OG, COM sonriente, las dos medallas y el **troncho**. Códigos de prueba nuevos: `SAMUEL`, `JUBILEO`, `LISBOA`, `MONITOR`. Las piezas inventadas quedan en `constants/panueloEjemplo.json` para el tutorial y los tests.
+- `firebase-seed/panuelo.json` (el catálogo que lleva la app) pasa a tener **solo piezas reales**: Estoy contigo Samuel, Chapa M+C (1.er año, grande), Pin M+C (3.er año, pequeño), Monitor OG (grande), JMJ Lisboa 2023 (pin rectangular), Jubileo 2025, Chapa OG, COM sonriente, las dos medallas y el **troncho**. Las piezas inventadas quedan en `constants/panueloEjemplo.json` para el tutorial y los tests.
 - **Clase nueva `troncho`**: va por delante, sobre el nudo, en sitio fijo; no se arrastra ni se intercambia (`isFixed`, `PanueloViewerState.troncho`, `buildTroncho`).
 - Chapas y pines aceptan `glb` («Verla de cerca» con el modelo de `piezas-3d/`) y los pines `image`; forma nueva `card` para pines rectangulares. La colección pinta la foto de la pieza.
 - `piezas-3d/`: tres modelos nuevos (`mc-congreso-1`, `monitor-og`, `jmj-lisboa-2023`), `pin-mc` pasa a llamarse `mc-congreso-3`, y carpeta `caras/` con la cara plana de cada pieza.
