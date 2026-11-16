@@ -1,93 +1,19 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import liturgicalCalendar from '@/assets/calendario-liturgico.json';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { LiturgicalColors, themeColors } from '@/constants/colors';
+import { themeColors } from '@/constants/colors';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { onColor } from '@/utils/colorUtils';
+import { getLiturgicalInfo } from '@/utils/liturgicalDay';
 
 interface LiturgicalBadgeProps {
   dateStr: string; // YYYY-MM-DD
 }
 
-// Map liturgical info to HeroUI Chip colors
-type ChipColor = 'accent' | 'default' | 'success' | 'warning' | 'danger';
-
-export function getLiturgicalInfo(dateStr: string) {
-  const [year] = dateStr.split('-');
-  const calYear = liturgicalCalendar[year as keyof typeof liturgicalCalendar];
-  if (!calYear)
-    return {
-      color: 'success' as ChipColor,
-      name: 'Tiempo Ordinario',
-      hex: LiturgicalColors.green,
-    };
-
-  // Check special dates first
-  const specialDate = calYear.fechas_especiales?.find(
-    (d: any) => d.fecha === dateStr,
-  );
-  if (specialDate) {
-    let color: ChipColor = 'default';
-    let hex = '#F5F5F5';
-    if (
-      specialDate.id === 'pentecostes' ||
-      specialDate.id.includes('ramos') ||
-      specialDate.id.includes('viernes_santo') ||
-      specialDate.id.includes('apostol')
-    ) {
-      color = 'danger';
-      hex = '#C41E3A';
-    } else if (specialDate.id === 'miercoles_ceniza') {
-      color = 'accent';
-      hex = '#6B3FA0';
-    }
-    return { color, name: specialDate.nombre, hex };
-  }
-
-  // Check Gaudete / Laetare
-  if (
-    calYear.domingos_adviento?.[2] === dateStr ||
-    calYear.domingos_cuaresma?.[3] === dateStr
-  ) {
-    return {
-      color: 'warning' as ChipColor,
-      name:
-        calYear.domingos_adviento?.[2] === dateStr
-          ? 'Adviento (Gaudete)'
-          : 'Cuaresma (Laetare)',
-      hex: LiturgicalColors.rose,
-    };
-  }
-
-  // Find the season
-  for (const tiempo of calYear.tiempos) {
-    if (dateStr >= tiempo.inicio && dateStr <= tiempo.fin) {
-      let color: ChipColor = 'success';
-      let hex: string = LiturgicalColors.green;
-      if (tiempo.id === 'adviento' || tiempo.id === 'cuaresma') {
-        color = 'accent';
-        hex = LiturgicalColors.purple;
-      } else if (tiempo.id === 'navidad' || tiempo.id === 'pascua') {
-        // 'warning' (golden) renders readable in both light and dark mode;
-        // 'default' renders with dark foreground text that's invisible on dark backgrounds.
-        color = 'warning';
-        hex = LiturgicalColors.gold;
-      } else if (tiempo.id === 'semana_santa') {
-        color = 'danger';
-        hex = LiturgicalColors.red;
-      }
-      return { color, name: tiempo.nombre, hex };
-    }
-  }
-
-  return {
-    color: 'success' as ChipColor,
-    name: 'Tiempo Ordinario',
-    hex: LiturgicalColors.green,
-  };
-}
+// La lógica del día litúrgico vive en `utils/liturgicalDay.ts` (la comparte el
+// cantoral); aquí se reexporta para no tocar a quien ya importa de este fichero.
+export { getLiturgicalInfo } from '@/utils/liturgicalDay';
 
 export function LiturgicalBadge({ dateStr }: LiturgicalBadgeProps) {
   // Estado DERIVADO de la fecha: se calcula, no se guarda en estado y se

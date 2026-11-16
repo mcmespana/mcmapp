@@ -80,6 +80,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2025-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2025-04-13",
         "nombre": "Domingo de Ramos"
@@ -150,9 +155,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2025-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2025-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2025-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2025-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2025-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2025-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2025-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2025-11-23",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2025-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -260,6 +305,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2026-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2026-03-29",
         "nombre": "Domingo de Ramos"
@@ -330,9 +380,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2026-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2026-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2026-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2026-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2026-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2026-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2026-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2026-11-22",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2026-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -440,6 +530,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2027-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2027-03-21",
         "nombre": "Domingo de Ramos"
@@ -510,9 +605,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2027-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2027-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2027-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2027-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2027-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2027-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2027-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2027-11-21",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2027-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -620,6 +755,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2028-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2028-04-09",
         "nombre": "Domingo de Ramos"
@@ -690,9 +830,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2028-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2028-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2028-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2028-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2028-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2028-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2028-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2028-11-26",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2028-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -800,6 +980,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2029-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2029-03-25",
         "nombre": "Domingo de Ramos"
@@ -870,9 +1055,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2029-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2029-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2029-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2029-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2029-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2029-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2029-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2029-11-25",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2029-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -980,6 +1205,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2030-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2030-04-14",
         "nombre": "Domingo de Ramos"
@@ -1050,9 +1280,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2030-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2030-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2030-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2030-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2030-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2030-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2030-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2030-11-24",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2030-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -1160,6 +1430,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2031-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2031-04-06",
         "nombre": "Domingo de Ramos"
@@ -1230,9 +1505,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2031-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2031-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2031-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2031-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2031-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2031-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2031-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2031-11-23",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2031-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -1340,6 +1655,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2032-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2032-03-21",
         "nombre": "Domingo de Ramos"
@@ -1410,9 +1730,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2032-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2032-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2032-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2032-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2032-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2032-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2032-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2032-11-21",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2032-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -1520,6 +1880,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2033-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2033-04-10",
         "nombre": "Domingo de Ramos"
@@ -1590,9 +1955,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2033-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2033-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2033-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2033-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2033-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2033-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2033-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2033-11-20",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2033-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -1700,6 +2105,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2034-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2034-04-02",
         "nombre": "Domingo de Ramos"
@@ -1770,9 +2180,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2034-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2034-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2034-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2034-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2034-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2034-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2034-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2034-11-26",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2034-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -1890,6 +2340,11 @@
         "nombre": "Lunes Santo"
       },
       {
+        "id": "san_jose",
+        "fecha": "2035-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "martes_santo",
         "fecha": "2035-03-20",
         "nombre": "Martes Santo"
@@ -1950,9 +2405,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2035-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2035-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2035-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2035-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2035-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2035-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2035-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2035-11-25",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2035-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -2060,6 +2555,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2036-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2036-04-06",
         "nombre": "Domingo de Ramos"
@@ -2130,9 +2630,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2036-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2036-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2036-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2036-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2036-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2036-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2036-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2036-11-23",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2036-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -2240,6 +2780,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2037-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2037-03-29",
         "nombre": "Domingo de Ramos"
@@ -2310,9 +2855,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2037-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2037-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2037-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2037-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2037-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2037-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2037-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2037-11-22",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2037-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -2420,6 +3005,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2038-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2038-04-18",
         "nombre": "Domingo de Ramos"
@@ -2490,9 +3080,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2038-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2038-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2038-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2038-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2038-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2038-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2038-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2038-11-21",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2038-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -2600,6 +3230,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2039-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2039-04-03",
         "nombre": "Domingo de Ramos"
@@ -2670,9 +3305,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2039-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2039-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2039-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2039-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2039-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2039-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2039-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2039-11-20",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2039-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -2780,6 +3455,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2040-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2040-03-25",
         "nombre": "Domingo de Ramos"
@@ -2850,9 +3530,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2040-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2040-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2040-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2040-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2040-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2040-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2040-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2040-11-25",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2040-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -2960,6 +3680,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2041-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2041-04-14",
         "nombre": "Domingo de Ramos"
@@ -3030,9 +3755,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2041-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2041-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2041-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2041-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2041-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2041-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2041-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2041-11-24",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2041-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -3140,6 +3905,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2042-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2042-03-30",
         "nombre": "Domingo de Ramos"
@@ -3210,9 +3980,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2042-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2042-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2042-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2042-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2042-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2042-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2042-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2042-11-23",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2042-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -3320,6 +4130,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2043-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2043-03-22",
         "nombre": "Domingo de Ramos"
@@ -3390,9 +4205,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2043-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2043-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2043-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2043-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2043-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2043-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2043-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2043-11-22",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2043-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -3500,6 +4355,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2044-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2044-04-10",
         "nombre": "Domingo de Ramos"
@@ -3570,9 +4430,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2044-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2044-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2044-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2044-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2044-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2044-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2044-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2044-11-20",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2044-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -3680,6 +4580,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2045-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2045-04-02",
         "nombre": "Domingo de Ramos"
@@ -3750,9 +4655,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2045-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2045-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2045-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2045-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2045-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2045-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2045-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2045-11-26",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2045-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -3870,6 +4815,11 @@
         "nombre": "Lunes Santo"
       },
       {
+        "id": "san_jose",
+        "fecha": "2046-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "martes_santo",
         "fecha": "2046-03-20",
         "nombre": "Martes Santo"
@@ -3930,9 +4880,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2046-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2046-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2046-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2046-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2046-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2046-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2046-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2046-11-25",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2046-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -4040,6 +5030,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2047-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2047-04-07",
         "nombre": "Domingo de Ramos"
@@ -4110,9 +5105,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2047-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2047-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2047-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2047-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2047-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2047-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2047-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2047-11-24",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2047-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -4220,6 +5255,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2048-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2048-03-29",
         "nombre": "Domingo de Ramos"
@@ -4290,9 +5330,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2048-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2048-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2048-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2048-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2048-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2048-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2048-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2048-11-22",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2048-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -4400,6 +5480,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2049-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2049-04-11",
         "nombre": "Domingo de Ramos"
@@ -4470,9 +5555,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2049-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2049-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2049-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2049-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2049-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2049-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2049-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2049-11-21",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2049-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -4580,6 +5705,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2050-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2050-04-03",
         "nombre": "Domingo de Ramos"
@@ -4650,9 +5780,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2050-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2050-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2050-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2050-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2050-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2050-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2050-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2050-11-20",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2050-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -4760,6 +5930,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2051-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2051-03-26",
         "nombre": "Domingo de Ramos"
@@ -4830,9 +6005,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2051-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2051-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2051-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2051-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2051-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2051-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2051-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2051-11-26",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2051-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -4940,6 +6155,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2052-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2052-04-14",
         "nombre": "Domingo de Ramos"
@@ -5010,9 +6230,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2052-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2052-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2052-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2052-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2052-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2052-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2052-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2052-11-24",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2052-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -5120,6 +6380,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2053-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2053-03-30",
         "nombre": "Domingo de Ramos"
@@ -5190,9 +6455,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2053-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2053-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2053-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2053-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2053-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2053-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2053-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2053-11-23",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2053-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -5300,6 +6605,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2054-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2054-03-22",
         "nombre": "Domingo de Ramos"
@@ -5370,9 +6680,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2054-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2054-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2054-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2054-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2054-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2054-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2054-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2054-11-22",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2054-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -5480,6 +6830,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2055-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2055-04-11",
         "nombre": "Domingo de Ramos"
@@ -5550,9 +6905,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2055-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2055-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2055-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2055-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2055-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2055-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2055-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2055-11-21",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2055-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -5660,6 +7055,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2056-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2056-03-26",
         "nombre": "Domingo de Ramos"
@@ -5730,9 +7130,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2056-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2056-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2056-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2056-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2056-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2056-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2056-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2056-11-26",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2056-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -5840,6 +7280,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2057-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2057-04-15",
         "nombre": "Domingo de Ramos"
@@ -5910,9 +7355,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2057-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2057-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2057-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2057-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2057-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2057-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2057-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2057-11-25",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2057-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -6020,6 +7505,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2058-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2058-04-07",
         "nombre": "Domingo de Ramos"
@@ -6090,9 +7580,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2058-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2058-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2058-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2058-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2058-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2058-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2058-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2058-11-24",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2058-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -6200,6 +7730,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2059-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2059-03-23",
         "nombre": "Domingo de Ramos"
@@ -6270,9 +7805,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2059-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2059-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2059-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2059-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2059-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2059-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2059-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2059-11-23",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2059-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -6380,6 +7955,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2060-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2060-04-11",
         "nombre": "Domingo de Ramos"
@@ -6450,9 +8030,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2060-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2060-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2060-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2060-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2060-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2060-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2060-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2060-11-21",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2060-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -6560,6 +8180,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2061-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2061-04-03",
         "nombre": "Domingo de Ramos"
@@ -6630,9 +8255,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2061-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2061-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2061-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2061-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2061-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2061-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2061-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2061-11-20",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2061-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -6745,6 +8410,11 @@
         "nombre": "Domingo de Ramos"
       },
       {
+        "id": "san_jose",
+        "fecha": "2062-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "lunes_santo",
         "fecha": "2062-03-20",
         "nombre": "Lunes Santo"
@@ -6810,9 +8480,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2062-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2062-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2062-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2062-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2062-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2062-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2062-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2062-11-26",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2062-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -6920,6 +8630,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2063-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2063-04-08",
         "nombre": "Domingo de Ramos"
@@ -6990,9 +8705,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2063-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2063-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2063-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2063-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2063-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2063-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2063-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2063-11-25",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2063-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -7100,6 +8855,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2064-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2064-03-30",
         "nombre": "Domingo de Ramos"
@@ -7170,9 +8930,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2064-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2064-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2064-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2064-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2064-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2064-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2064-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2064-11-23",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2064-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -7280,6 +9080,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2065-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2065-03-22",
         "nombre": "Domingo de Ramos"
@@ -7350,9 +9155,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2065-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2065-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2065-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2065-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2065-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2065-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2065-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2065-11-22",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2065-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -7460,6 +9305,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2066-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2066-04-04",
         "nombre": "Domingo de Ramos"
@@ -7530,9 +9380,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2066-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2066-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2066-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2066-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2066-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2066-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2066-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2066-11-21",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2066-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -7640,6 +9530,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2067-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2067-03-27",
         "nombre": "Domingo de Ramos"
@@ -7710,9 +9605,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2067-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2067-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2067-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2067-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2067-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2067-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2067-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2067-11-20",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2067-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -7820,6 +9755,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2068-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2068-04-15",
         "nombre": "Domingo de Ramos"
@@ -7890,9 +9830,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2068-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2068-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2068-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2068-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2068-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2068-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2068-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2068-11-25",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2068-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -8000,6 +9980,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2069-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2069-04-07",
         "nombre": "Domingo de Ramos"
@@ -8070,9 +10055,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2069-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2069-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2069-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2069-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2069-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2069-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2069-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2069-11-24",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2069-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -8180,6 +10205,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2070-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2070-03-23",
         "nombre": "Domingo de Ramos"
@@ -8250,9 +10280,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2070-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2070-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2070-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2070-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2070-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2070-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2070-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2070-11-23",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2070-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -8360,6 +10430,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2071-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2071-04-12",
         "nombre": "Domingo de Ramos"
@@ -8430,9 +10505,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2071-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2071-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2071-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2071-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2071-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2071-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2071-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2071-11-22",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2071-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -8540,6 +10655,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2072-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2072-04-03",
         "nombre": "Domingo de Ramos"
@@ -8610,9 +10730,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2072-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2072-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2072-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2072-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2072-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2072-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2072-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2072-11-20",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2072-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -8725,6 +10885,11 @@
         "nombre": "Domingo de Ramos"
       },
       {
+        "id": "san_jose",
+        "fecha": "2073-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "lunes_santo",
         "fecha": "2073-03-20",
         "nombre": "Lunes Santo"
@@ -8790,9 +10955,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2073-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2073-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2073-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2073-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2073-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2073-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2073-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2073-11-26",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2073-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -8900,6 +11105,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2074-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2074-04-08",
         "nombre": "Domingo de Ramos"
@@ -8970,9 +11180,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2074-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2074-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2074-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2074-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2074-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2074-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2074-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2074-11-25",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2074-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -9080,6 +11330,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2075-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2075-03-31",
         "nombre": "Domingo de Ramos"
@@ -9150,9 +11405,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2075-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2075-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2075-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2075-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2075-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2075-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2075-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2075-11-24",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2075-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -9260,6 +11555,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2076-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2076-04-12",
         "nombre": "Domingo de Ramos"
@@ -9330,9 +11630,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2076-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2076-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2076-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2076-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2076-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2076-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2076-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2076-11-22",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2076-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -9440,6 +11780,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2077-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2077-04-04",
         "nombre": "Domingo de Ramos"
@@ -9510,9 +11855,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2077-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2077-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2077-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2077-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2077-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2077-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2077-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2077-11-21",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2077-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -9620,6 +12005,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2078-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2078-03-27",
         "nombre": "Domingo de Ramos"
@@ -9690,9 +12080,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2078-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2078-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2078-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2078-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2078-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2078-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2078-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2078-11-20",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2078-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -9800,6 +12230,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2079-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2079-04-16",
         "nombre": "Domingo de Ramos"
@@ -9870,9 +12305,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2079-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2079-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2079-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2079-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2079-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2079-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2079-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2079-11-26",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2079-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -9980,6 +12455,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2080-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2080-03-31",
         "nombre": "Domingo de Ramos"
@@ -10050,9 +12530,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2080-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2080-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2080-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2080-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2080-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2080-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2080-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2080-11-24",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2080-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -10160,6 +12680,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2081-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2081-03-23",
         "nombre": "Domingo de Ramos"
@@ -10230,9 +12755,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2081-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2081-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2081-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2081-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2081-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2081-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2081-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2081-11-23",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2081-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -10340,6 +12905,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2082-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2082-04-12",
         "nombre": "Domingo de Ramos"
@@ -10410,9 +12980,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2082-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2082-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2082-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2082-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2082-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2082-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2082-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2082-11-22",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2082-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -10520,6 +13130,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2083-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2083-03-28",
         "nombre": "Domingo de Ramos"
@@ -10590,9 +13205,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2083-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2083-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2083-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2083-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2083-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2083-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2083-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2083-11-21",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2083-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -10705,6 +13360,11 @@
         "nombre": "Domingo de Ramos"
       },
       {
+        "id": "san_jose",
+        "fecha": "2084-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "lunes_santo",
         "fecha": "2084-03-20",
         "nombre": "Lunes Santo"
@@ -10770,9 +13430,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2084-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2084-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2084-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2084-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2084-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2084-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2084-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2084-11-26",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2084-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -10880,6 +13580,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2085-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2085-04-08",
         "nombre": "Domingo de Ramos"
@@ -10950,9 +13655,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2085-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2085-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2085-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2085-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2085-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2085-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2085-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2085-11-25",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2085-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -11060,6 +13805,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2086-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2086-03-24",
         "nombre": "Domingo de Ramos"
@@ -11130,9 +13880,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2086-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2086-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2086-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2086-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2086-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2086-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2086-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2086-11-24",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2086-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -11240,6 +14030,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2087-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2087-04-13",
         "nombre": "Domingo de Ramos"
@@ -11310,9 +14105,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2087-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2087-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2087-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2087-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2087-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2087-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2087-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2087-11-23",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2087-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -11420,6 +14255,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2088-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2088-04-04",
         "nombre": "Domingo de Ramos"
@@ -11490,9 +14330,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2088-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2088-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2088-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2088-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2088-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2088-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2088-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2088-11-21",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2088-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -11600,6 +14480,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2089-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2089-03-27",
         "nombre": "Domingo de Ramos"
@@ -11670,9 +14555,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2089-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2089-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2089-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2089-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2089-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2089-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2089-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2089-11-20",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2089-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -11780,6 +14705,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2090-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2090-04-09",
         "nombre": "Domingo de Ramos"
@@ -11850,9 +14780,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2090-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2090-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2090-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2090-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2090-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2090-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2090-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2090-11-26",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2090-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -11960,6 +14930,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2091-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2091-04-01",
         "nombre": "Domingo de Ramos"
@@ -12030,9 +15005,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2091-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2091-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2091-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2091-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2091-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2091-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2091-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2091-11-25",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2091-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -12140,6 +15155,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2092-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2092-03-23",
         "nombre": "Domingo de Ramos"
@@ -12210,9 +15230,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2092-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2092-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2092-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2092-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2092-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2092-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2092-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2092-11-23",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2092-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -12320,6 +15380,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2093-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2093-04-05",
         "nombre": "Domingo de Ramos"
@@ -12390,9 +15455,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2093-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2093-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2093-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2093-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2093-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2093-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2093-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2093-11-22",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2093-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -12500,6 +15605,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2094-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2094-03-28",
         "nombre": "Domingo de Ramos"
@@ -12570,9 +15680,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2094-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2094-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2094-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2094-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2094-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2094-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2094-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2094-11-21",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2094-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -12680,6 +15830,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2095-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2095-04-17",
         "nombre": "Domingo de Ramos"
@@ -12750,9 +15905,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2095-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2095-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2095-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2095-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2095-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2095-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2095-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2095-11-20",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2095-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -12860,6 +16055,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2096-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2096-04-08",
         "nombre": "Domingo de Ramos"
@@ -12930,9 +16130,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2096-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2096-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2096-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2096-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2096-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2096-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2096-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2096-11-25",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2096-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -13040,6 +16280,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2097-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2097-03-24",
         "nombre": "Domingo de Ramos"
@@ -13110,9 +16355,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2097-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2097-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2097-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2097-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2097-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2097-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2097-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2097-11-24",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2097-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -13220,6 +16505,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2098-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2098-04-13",
         "nombre": "Domingo de Ramos"
@@ -13290,9 +16580,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2098-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2098-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2098-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2098-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2098-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2098-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2098-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2098-11-23",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2098-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -13400,6 +16730,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2099-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2099-04-05",
         "nombre": "Domingo de Ramos"
@@ -13470,9 +16805,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2099-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2099-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2099-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2099-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2099-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2099-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2099-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2099-11-22",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2099-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",
@@ -13580,6 +16955,11 @@
         "nombre": "Miércoles de Ceniza"
       },
       {
+        "id": "san_jose",
+        "fecha": "2100-03-19",
+        "nombre": "San José"
+      },
+      {
         "id": "domingo_ramos",
         "fecha": "2100-03-21",
         "nombre": "Domingo de Ramos"
@@ -13650,9 +17030,49 @@
         "nombre": "Corpus Christi (domingo)"
       },
       {
+        "id": "san_pedro_san_pablo",
+        "fecha": "2100-06-29",
+        "nombre": "San Pedro y San Pablo"
+      },
+      {
+        "id": "santiago_apostol",
+        "fecha": "2100-07-25",
+        "nombre": "Santiago Apóstol"
+      },
+      {
+        "id": "transfiguracion",
+        "fecha": "2100-08-06",
+        "nombre": "Transfiguración del Señor"
+      },
+      {
+        "id": "asuncion",
+        "fecha": "2100-08-15",
+        "nombre": "Asunción de la Virgen María"
+      },
+      {
+        "id": "exaltacion_cruz",
+        "fecha": "2100-09-14",
+        "nombre": "Exaltación de la Santa Cruz"
+      },
+      {
+        "id": "todos_los_santos",
+        "fecha": "2100-11-01",
+        "nombre": "Todos los Santos"
+      },
+      {
+        "id": "dedicacion_letran",
+        "fecha": "2100-11-09",
+        "nombre": "Dedicación de la Basílica de Letrán"
+      },
+      {
         "id": "cristo_rey",
         "fecha": "2100-11-21",
         "nombre": "Cristo Rey"
+      },
+      {
+        "id": "inmaculada",
+        "fecha": "2100-12-08",
+        "nombre": "Inmaculada Concepción"
       },
       {
         "id": "navidad",

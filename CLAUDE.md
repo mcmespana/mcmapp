@@ -114,4 +114,5 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Contigo: compartir como imagen, exportar y «Tu año»                     | `docs/funcionalidades/CONTIGO_COMPARTIR.md`                                  |
 | Subrayado de lecturas (Contigo)                                          | `docs/funcionalidades/SUBRAYADO.md`                                          |
 | Afinador de guitarra del cantoral                                        | `docs/funcionalidades/AFINADOR.md`                                           |
+| «Cantos para el domingo» (misa propuesta según el día litúrgico)         | `docs/funcionalidades/CANTOS_DOMINGO.md`                                     |
 | Recordatorios de Contigo (textos editables)                              | `docs/funcionalidades/RECORDATORIOS_CONTIGO.md`                              |

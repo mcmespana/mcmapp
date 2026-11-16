@@ -82,7 +82,8 @@ interface Props {
   /** Flujo desde el que se abre, para avisar si el QR es del otro. */
   expected: QrTarget;
   onClose: () => void;
-  /** QR con código de 4 dígitos. */
+  /** QR con código de 4 dígitos (o, con `expected: 'panuelo'`, el de 6 de un
+   *  intercambio del pañuelo). */
   onCode: (code: string) => void;
   /** QR offline con la playlist embebida (solo llega en `expected: playlist`). */
   onOffline?: (payload: string) => void;
@@ -191,7 +192,7 @@ const QrScannerModal: React.FC<Props> = ({
           // que va por el mismo camino que un código de 4 dígitos.
           if (result.target === 'choir') onCode(result.choirId);
           else onChoir?.(result.choirId);
-        } else onCode(result.code);
+        } else onCode(result.code); // 'code' y 'trade'
       }, CELEBRATION_MS);
     },
     [onCode, onOffline, onChoir],
@@ -255,7 +256,7 @@ const QrScannerModal: React.FC<Props> = ({
             <ActivityIndicator color="#fff" size="large" />
           </View>
         ) : granted === false ? (
-          <PermissionDenied onClose={onClose} />
+          <PermissionDenied onClose={onClose} expected={expected} />
         ) : (
           <>
             <CameraView
@@ -295,7 +296,9 @@ const QrScannerModal: React.FC<Props> = ({
               <Text style={styles.title}>
                 {expected === 'choir'
                   ? 'Escanea el QR del coro'
-                  : 'Escanea el QR de la playlist'}
+                  : expected === 'panuelo'
+                    ? 'Escanea el QR del intercambio'
+                    : 'Escanea el QR de la playlist'}
               </Text>
               <TouchableOpacity
                 onPress={() => {
@@ -345,14 +348,21 @@ const QrScannerModal: React.FC<Props> = ({
 };
 
 /** Pantalla de "no hay permiso", con la salida a mano. */
-function PermissionDenied({ onClose }: { onClose: () => void }) {
+function PermissionDenied({
+  onClose,
+  expected,
+}: {
+  onClose: () => void;
+  expected: QrTarget;
+}) {
   return (
     <View style={styles.center}>
       <MaterialIcons name="no-photography" size={56} color="#8E8E93" />
       <Text style={styles.deniedTitle}>Sin acceso a la cámara</Text>
       <Text style={styles.deniedText}>
         Dale permiso a MCM App en los ajustes del móvil para escanear los QR. Si
-        no, siempre puedes teclear el código de 4 dígitos.
+        no, siempre puedes teclear el código
+        {expected === 'panuelo' ? '.' : ' de 4 dígitos.'}
       </Text>
       <TouchableOpacity onPress={onClose} style={styles.deniedBtn}>
         <Text style={styles.deniedBtnText}>Escribir el código</Text>

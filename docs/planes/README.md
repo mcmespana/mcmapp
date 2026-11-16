@@ -3,7 +3,7 @@
 > **Lee esto antes de abrir ningún `PLAN_*.md`.** Su único trabajo es que no
 > vuelvas a ejecutar algo que ya está hecho.
 >
-> Última actualización: 2026-11-13.
+> Última actualización: 2026-11-16.
 
 ## La regla, en una línea
 
@@ -31,6 +31,9 @@ El coste de mantener esta tabla al día es mucho menor que el de repetirlo.
 | [`PLAN_CALIDAD.md`](PLAN_CALIDAD.md)             | 🟡 Parcial — Fase 0 (guardarraíles) ✅. **Fase 1 (trocear gigantes) descartada por decisión del usuario** el 2026-08-15, ver abajo                                                                                                | `BACKLOG.md` §2.A                                     |
 | [`PLAN_DISENO.md`](PLAN_DISENO.md)               | 🟡 En curso — dos pasadas hechas (tokens, tipografía, radios, sombras, responsive, panel) + 3 bugs de contraste arreglados. Lo que queda necesita **dispositivo** o revisión fichero a fichero                                    | `BACKLOG.md` §2.G                                     |
 | [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md) | 🟡 **Pañuelo virtual.** El usuario contó la idea el 2026-11-12 y la primera versión está hecha (Fases 0-2): pañuelo 3D, seis clases de pieza, decorar, canje por código, compartir, todo en el Laboratorio Alpha. Queda lo de la tabla de fases: probar en móvil, sacarlo del laboratorio, intercambios (base puesta) y el Panel. Doc viva: [`PANUELO.md`](../funcionalidades/PANUELO.md) | El propio plan (§ «Fases») |
+| [`PLAN_PANUELO_INTERCAMBIOS.md`](PLAN_PANUELO_INTERCAMBIOS.md) | 🟡 **Fases 0-5 y 7 hechas el 2026-11-16** (detalla la Fase 5 del plan del pañuelo). Quedan: que el usuario pegue las reglas en la consola, probar con dos móviles y la Fase 6 (opcional). Decisiones contestadas | `BACKLOG.md` §2.K |
+| [`PLAN_PANUELO_ASISTENCIA.md`](PLAN_PANUELO_ASISTENCIA.md) | 📝 **Escrito el 2026-11-16, sin empezar.** Piezas por asistencia a eventos y desvelado una a una. Parte en `comunicaMiddleware` y `mcmpanel`. Tiene decisiones 🔒 | `BACKLOG.md` §2.K |
+| [`PLAN_CANTOS_DOMINGO.md`](PLAN_CANTOS_DOMINGO.md) | 🟡 **Fases 1-4 hechas el 2026-11-16** (pantalla, motor y tarjeta de Inicio). Quedan: Fase 0 (contar etiquetas), probar en móvil, Fase 5 (salmo) y 6 (opcional). Decisiones contestadas | `BACKLOG.md` §2.K |
 | [`PLAN_HOJA_CANCION.md`](PLAN_HOJA_CANCION.md)   | 🟡 Hecho y en `main`: hoja, modo atril, onboarding, 258 canciones repasadas, admin fiel a la app, PDF y pantalla completa web. Queda: aplicar las etiquetas aprobadas, mapa de la canción (opcional) y probar el pedal en un iPad | `BACKLOG.md` §2.H                                     |
 
 ## 🔵 Futuro lejano — no se tocan hasta que el usuario lo pida

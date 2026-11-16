@@ -3,13 +3,17 @@ import { EMPTY_PANUELO, mergePanuelo, sanitizeCatalog } from '@/utils/panuelo';
 import {
   TRADE_TTL_MS,
   acceptTrade,
+  answerChoices,
   answerTrade,
   applyTrade,
   cancelTrade,
   createTradeOffer,
+  firstName,
   generateTradeCode,
   isTradeCode,
   normalizeTradeCode,
+  sanitizeTrade,
+  tradeableOwned,
   type PanueloTrade,
 } from '@/utils/panueloTrade';
 
@@ -18,6 +22,7 @@ const NOW = 1_800_000_000_000;
 const catalog = sanitizeCatalog({
   roja: { kind: 'pulsera', name: 'Roja', look: { colors: ['#f00'] } },
   azul: { kind: 'pulsera', name: 'Azul', look: { colors: ['#00f'] } },
+  verde: { kind: 'pulsera', name: 'Verde', look: { colors: ['#0f0'] } },
   medalla: {
     kind: 'medalla',
     name: 'Medalla',
@@ -230,5 +235,117 @@ describe('aplicar el intercambio', () => {
     // La nube todavía cree que Ana tiene la roja.
     const { merged } = mergePanuelo(ana, owning('roja'));
     expect(Object.keys(merged.items)).toEqual(['azul']);
+  });
+});
+
+describe('lo que Ana ya tiene (`offer.have`)', () => {
+  const offer = createTradeOffer({
+    catalog,
+    state: owning('roja', 'verde', 'medalla'),
+    uid: 'ana',
+    itemId: 'roja',
+    now: NOW,
+  });
+  if (!offer.ok) throw new Error('tenía que valer');
+
+  it('apunta sus intercambiables, sin la ofrecida ni lo que no se cambia', () => {
+    expect(offer.trade.offer.have).toEqual(['verde']);
+  });
+
+  it('sin nombre ni `have` no deja claves `undefined` (Firebase las rechaza)', () => {
+    const bare = createTradeOffer({
+      catalog,
+      state: owning('roja'),
+      uid: 'ana',
+      itemId: 'roja',
+      now: NOW,
+    });
+    if (!bare.ok) throw new Error('tenía que valer');
+    expect(Object.keys(bare.trade.offer).sort()).toEqual(['itemId', 'uid']);
+  });
+
+  it('Luis no puede darle una que ya tiene', () => {
+    expect(
+      answerTrade({
+        trade: offer.trade,
+        catalog,
+        state: owning('verde'),
+        uid: 'luis',
+        itemId: 'verde',
+        now: NOW + 1,
+      }),
+    ).toEqual({ ok: false, reason: 'they-have' });
+  });
+
+  it('las opciones de Luis: la que Ana tiene sale deshabilitada', () => {
+    const choices = answerChoices(
+      catalog,
+      owning('azul', 'verde', 'medalla'),
+      offer.trade,
+    );
+    expect(choices.map((c) => [c.item.id, c.disabled ?? null])).toEqual([
+      ['azul', null],
+      ['verde', 'they-have'],
+    ]);
+  });
+
+  it('tradeableOwned: solo lo que se tiene y se puede cambiar, en orden', () => {
+    expect(
+      tradeableOwned(catalog, owning('verde', 'medalla', 'azul')).map(
+        (i) => i.id,
+      ),
+    ).toEqual(['azul', 'verde']);
+  });
+});
+
+describe('sanitizeTrade', () => {
+  const good = {
+    code: 'K7WQ4M',
+    status: 'proposed',
+    createdAt: NOW,
+    expiresAt: NOW + TRADE_TTL_MS,
+    offer: { uid: 'ana', name: 'Ana', itemId: 'roja', have: ['verde', 'X!'] },
+    answer: { uid: 'luis', itemId: 'azul' },
+  };
+
+  it('deja pasar uno bueno y limpia los ids raros', () => {
+    expect(sanitizeTrade(good)).toEqual({
+      ...good,
+      offer: { uid: 'ana', name: 'Ana', itemId: 'roja', have: ['verde'] },
+    });
+  });
+
+  it('una respuesta sin `itemId` es un regalo', () => {
+    expect(sanitizeTrade({ ...good, answer: { uid: 'luis' } })?.answer).toEqual(
+      { uid: 'luis', itemId: null },
+    );
+  });
+
+  it.each([
+    ['basura', 'hola'],
+    ['null', null],
+    ['estado desconocido', { ...good, status: 'robado' }],
+    ['código con letras prohibidas', { ...good, code: 'K7WQ4O' }],
+    ['sin oferta', { ...good, offer: undefined }],
+    ['pieza con id raro', { ...good, offer: { uid: 'ana', itemId: '../x' } }],
+    ['fechas que no son números', { ...good, expiresAt: '1' }],
+    ['propuesto sin respuesta', { ...good, answer: undefined }],
+  ])('descarta: %s', (_label, raw) => {
+    expect(sanitizeTrade(raw)).toBeNull();
+  });
+
+  it('uno abierto sin respuesta vale', () => {
+    expect(
+      sanitizeTrade({ ...good, status: 'open', answer: undefined })?.status,
+    ).toBe('open');
+  });
+});
+
+describe('firstName', () => {
+  it('se queda con el nombre de pila', () => {
+    expect(firstName('Ana María López')).toBe('Ana');
+    expect(firstName('  Luis ')).toBe('Luis');
+    expect(firstName('')).toBeUndefined();
+    expect(firstName(null)).toBeUndefined();
   });
 });

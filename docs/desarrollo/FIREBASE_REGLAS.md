@@ -209,6 +209,100 @@ Usuarios y el contador de destinatarios, y la mitad del trabajo (el flag
 | Desplegar y probar | tú | ⏳ |
 | `FIREBASE_DB_SECRET` en Vercel | tú | ⏳ |
 | **Decidir modelo de auth (A o B)** | **tú** | 🔒 desbloquea Usuarios y el composer |
+| **Pegar el bloque de `panueloTrades`** (§8) | **tú** | ⏳ antes de probar intercambios en `preview` |
 
 Riesgos y filosofía de las reglas: `docs/SEGURIDAD.md`. Contexto largo:
 `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D".
+
+---
+
+## 8. Intercambios del pañuelo: el bloque que hay que pegar a mano
+
+> Decisión del usuario (2026-11-16): **este bloque lo despliega el usuario a
+> mano desde la consola**, sin esperar al despliegue completo de §5 (no
+> depende de `/_config`). Ningún agente despliega reglas.
+
+Los intercambios del pañuelo (`/panueloTrades/<código>`,
+`docs/planes/PLAN_PANUELO_INTERCAMBIOS.md`) necesitan su regla. **Sin ella, la
+app no puede intercambiar**: al pulsar «Intercambiar» sale el aviso «Los
+intercambios todavía no están activados en el servidor…», no un error raro. El
+resto de la app no se entera.
+
+### Qué hace la regla, en cristiano
+
+- Solo quien ha iniciado sesión (Google/Apple) puede leer un intercambio, y
+  solo si sabe su código: la lista entera no la puede leer nadie.
+- Lo abre quien ofrece su pieza, y nadie puede cambiar después qué pieza
+  ofreció ni cuándo caduca.
+- Lo contesta otra persona, una sola vez y antes de que caduque (10 min).
+- Lo acepta solo quien lo abrió. Cualquiera de los dos puede echarse atrás
+  antes de aceptar. Un tercero no puede tocar nada.
+- Lo borra quien lo abrió, o cualquiera cuando lleva más de un día caducado.
+
+### Paso a paso (unos 5 minutos)
+
+1. Entra en <https://console.firebase.google.com>, proyecto **mcmapp**
+   (`mcmapp-39b71`).
+2. Menú de la izquierda → **Realtime Database** → pestaña **Reglas**.
+3. **Copia todo lo que hay** y guárdalo en un `.txt` (no hay botón de
+   deshacer).
+4. Busca la línea que dice `"rules": {` (casi arriba del todo). Pon el cursor
+   **justo al final de esa línea**, pulsa Intro y pega el bloque de abajo
+   **tal cual** (con la coma del final).
+5. Si justo debajo de lo que has pegado no hay nada más que `}` (las reglas
+   estaban vacías), **borra la última coma** del bloque.
+6. Pulsa **Publicar**. Si la consola marca algo en rojo, no publica: suele ser
+   una coma que falta o sobra. Revisa el paso 4/5 o vuelve a pegar lo que
+   guardaste en el paso 3.
+
+```json
+"panueloTrades": {
+  ".read": false,
+  ".write": false,
+  "$code": {
+    ".read": "auth != null",
+    ".write": "auth != null && (((!data.exists() || data.child('expiresAt').val() + 86400000 < now) && newData.child('offer/uid').val() === auth.uid && newData.child('status').val() === 'open' && !newData.child('answer').exists() && newData.child('expiresAt').val() <= now + 900000) || (data.exists() && !newData.exists() && (data.child('offer/uid').val() === auth.uid || data.child('expiresAt').val() + 86400000 < now)) || (data.exists() && newData.exists() && newData.child('offer/uid').val() === data.child('offer/uid').val() && newData.child('offer/itemId').val() === data.child('offer/itemId').val() && newData.child('expiresAt').val() === data.child('expiresAt').val() && ((data.child('status').val() === 'open' && newData.child('status').val() === 'proposed' && newData.child('answer/uid').val() === auth.uid && auth.uid !== data.child('offer/uid').val() && now < data.child('expiresAt').val()) || (data.child('status').val() === 'proposed' && newData.child('status').val() === 'accepted' && auth.uid === data.child('offer/uid').val() && newData.child('answer/uid').val() === data.child('answer/uid').val() && newData.child('answer/itemId').val() === data.child('answer/itemId').val()) || (newData.child('status').val() === 'cancelled' && (data.child('status').val() === 'open' || data.child('status').val() === 'proposed') && (auth.uid === data.child('offer/uid').val() || auth.uid === data.child('answer/uid').val())))))",
+    ".validate": "$code.length === 6 && $code.matches(/^[A-HJKMNP-Z2-9]+$/) && newData.child('code').val() === $code && newData.hasChildren(['code', 'status', 'createdAt', 'expiresAt', 'offer']) && newData.child('createdAt').isNumber() && newData.child('expiresAt').isNumber()"
+  }
+},
+```
+
+> El mismo bloque está en `mcm-app/database.rules.json` (con un comentario
+> que explica cada rama). Si alguien lo cambia allí, hay que volver a pegarlo
+> aquí y en la consola: `__tests__/databaseRules.test.ts` vigila que el
+> fichero y su copia de pruebas no se separen.
+
+**Si en tus reglas actuales hay un `".read": true` o `".write": true` justo
+debajo de `"rules": {`** (reglas abiertas, de prueba), el bloque no cierra
+nada: en Firebase un permiso concedido arriba no se puede quitar más abajo.
+Los intercambios funcionarán igual, pero sin la protección de arriba. Se
+arregla el día que se despliegue el fichero entero (§5).
+
+### Cómo comprobar que ha quedado bien (simulador de la consola)
+
+En la misma pestaña **Reglas**, botón **Simulador de reglas** (Rules
+Playground):
+
+1. **Tipo**: `set`. **Ubicación**: `/panueloTrades/K7WQ4M`. Activa
+   **Autenticado** con el proveedor que quieras y UID `ana`. **Datos**:
+
+   ```json
+   {
+     "code": "K7WQ4M",
+     "status": "open",
+     "createdAt": 1800000000000,
+     "expiresAt": 1800000600000,
+     "offer": { "uid": "ana", "itemId": "pulsera-amistad" }
+   }
+   ```
+
+   → **Denegado**, porque `expiresAt` tiene que ser «dentro de 10-15 minutos»
+   y esa fecha es de 2027. Cambia los dos números por la hora de ahora en
+   milisegundos (<https://currentmillis.com>) y ahora + 600000 → **Permitido**.
+2. Lo mismo con UID `luis` (abrir a nombre de Ana) → **Denegado**.
+3. Tipo `read`, la misma ubicación, **sin** autenticar → **Denegado**; Tipo
+   `read` en `/panueloTrades` (la raíz) con UID `ana` → **Denegado**.
+
+La prueba buena es la de dos móviles del plan (§7 de
+`PLAN_PANUELO_INTERCAMBIOS.md`): un tercero intentando reescribir la pieza
+ofrecida tiene que fallar.

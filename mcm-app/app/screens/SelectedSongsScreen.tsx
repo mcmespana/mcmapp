@@ -1159,6 +1159,11 @@ const SelectedSongsScreen: React.FC = () => {
     } else if (params.hoja === 'coro' && sharing.myChoir) {
       sheetParamHandled.current = true;
       sharing.openSheet('home');
+    } else if (params.hoja === 'guardar-coro' && sharing.myChoir) {
+      // «Subir a mi coro» desde «Cantos para el domingo»: directo al paso de
+      // guardar, con la misa ya puesta como selección.
+      sheetParamHandled.current = true;
+      sharing.openSheet('save');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharing.myChoir]);

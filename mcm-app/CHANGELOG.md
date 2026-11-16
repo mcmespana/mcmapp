@@ -35,6 +35,25 @@
 - **Metrónomo** (`components/tuner/MetronomePanel.tsx`): tempo 40–220 con −/+ (mantener repite) y «Marcar el tempo»; 1, 2, 3, 4 o 6 pulsos por compás con el primero acentuado; puntos que marcan el pulso. Tempo y compás se recuerdan.
 - **Sonido sintetizado** (`services/metronome/engine.ts`, un «toc» de madera, sin ficheros de audio) con el `react-native-audio-api` del afinador, programado sobre el reloj del audio. Lógica pura y tests en `utils/metronome.ts` / `metronome.test.ts`.
 - Sin paquetes nuevos (sale por OTA en la 2.5.1). Probado en web; sin oír en un móvil. Detalle en `docs/funcionalidades/AFINADOR.md`.
+## 2026-11-16 19:21 — Pañuelo: intercambios de piezas (pantalla, servicio y reglas)
+
+- Nueva hoja «Intercambiar» (Laboratorio Alpha): se ofrece una pieza con un código de 6 y su QR, la otra persona lo escribe o lo escanea, elige qué da (o lo regala) y se acepta. Cada móvil aplica su mitad: la pieza recibida queda cosida donde estaba la dada.
+- Se pueden cambiar pulseras y chapas comunes; nunca medallas ni piezas únicas (`isTradeable`). Hace falta sesión y red en los dos móviles.
+- Firebase: nodo nuevo `/panueloTrades/{code}`, escrito siempre con transacciones (`services/panueloTradeService.ts`). Sus reglas están en `database.rules.json` y **hay que pegarlas a mano en la consola** (`docs/desarrollo/FIREBASE_REGLAS.md` §8); hasta entonces la app avisa de que los intercambios no están activados.
+- Recuperación si la app se cierra a mitad (`@panuelo_trade_pending`) y limpieza de los intercambios caducados al abrir el pañuelo (`@panuelo_trade_mine`).
+- Fallo arreglado: recuperar una pieza que ya se había dado ya no la hace desaparecer al juntar el móvil con la nube (`mergePanuelo`).
+- El escáner de QR lee `…/panuelo?intercambio=` y el enlace abre la hoja. Nueva analítica `panuelo_intercambio`. El tutorial pasa a la versión 4.
+- **Sin probar con dos móviles** (lista en `docs/planes/PLAN_PANUELO_INTERCAMBIOS.md` §7).
+
+## 2026-11-16 18:17 — Cantos para el domingo (cantoral + Inicio)
+
+- Pantalla nueva `/cancionero/domingo`: la app propone una misa para el domingo (entrada, salmo, aleluya, ofertorio, santo, comunión, salida) según el día litúrgico. Cambiar, elegir otra o quitar cada momento; lo cambiado se recuerda por fecha en el dispositivo. Entrada: fila «Cantos para el domingo» bajo «Tu selección».
+- «Pasar a Tu selección» reemplaza la selección con 10 s de Deshacer; «Subir a mi coro» abre directamente el paso de guardar de la hoja del coro.
+- Reglas litúrgicas como filtros: sin Aleluya en Cuaresma ni Semana Santa (el momento pasa a «Aclamación»), sin canciones de otro tiempo o fiesta, sin repetir canción en una misma misa. Misma fecha, misma propuesta en todos los móviles (rotación determinista por semana). El tiempo de cada canción sale de sus etiquetas; `liturgicalTime` solo de respaldo.
+- Día litúrgico completo (`utils/liturgicalDay.ts`): domingo N, ciclo A/B/C por año litúrgico (el JSON lo traía mal desde Adviento) y solemnidades fijas que caen en domingo (Todos los Santos, Inmaculada, Asunción…), añadidas al generador del calendario. El badge de Contigo comparte esa lógica.
+- Tarjeta «Cantos para el domingo» en Inicio de viernes a domingo, con el id `cantos-domingo` en `homeButtons` del perfil (apagable por perfil; **hay que añadirlo en `/profileConfig` de Firebase y en el Panel para que salga**).
+- Sin probar: iOS/Android nativo, y con el cantoral real (falta contar qué canciones llevan etiqueta de tiempo litúrgico, Fase 0 del plan).
+- Doc: `docs/funcionalidades/CANTOS_DOMINGO.md`; plan `docs/planes/PLAN_CANTOS_DOMINGO.md` con fases 1-4 hechas (quedan 0, 5 y 6).
 
 ## 2026-11-15 22:20 — Comunica: coordinación recuerda a los monitores que pasen lista
 

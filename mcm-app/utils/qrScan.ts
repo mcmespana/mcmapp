@@ -11,7 +11,11 @@
  *      (se une a su sesión en vivo). Estos no caducan: el mismo QR pegado en la
  *      carpeta del coro sirve todos los domingos.
  *
- * Además aceptamos que alguien escriba/pegue un QR con solo los 4 dígitos.
+ *   5. Intercambio del pañuelo → mcmapp://panuelo?intercambio=K7WQ4M (o el
+ *      mismo path en https). Ver `utils/panueloTrade.ts`.
+ *
+ * Además aceptamos que alguien escriba/pegue un QR con solo los 4 dígitos (o
+ * con solo los 6 caracteres de un intercambio).
  *
  * NO usamos `URL`/`URLSearchParams`: la implementación de React Native es
  * parcial (y en Hermes `searchParams` no existe), así que troceamos a mano.
@@ -19,9 +23,10 @@
  */
 import { isValidCode } from '@/utils/playlistCodes';
 import { isChoirId } from '@/utils/choirIds';
+import { isTradeCode, normalizeTradeCode } from '@/utils/panueloTrade';
 
 /** A qué flujo apunta un QR escaneado. */
-export type QrTarget = 'playlist' | 'choir';
+export type QrTarget = 'playlist' | 'choir' | 'panuelo';
 
 export type QrScanResult =
   /** QR de coro: `choirId` identifica al coro; el flujo depende del path. */
@@ -33,7 +38,9 @@ export type QrScanResult =
    */
   | { kind: 'code'; target: QrTarget | null; code: string }
   /** QR offline: la playlist entera viaja embebida en el payload. */
-  | { kind: 'offline'; payload: string };
+  | { kind: 'offline'; payload: string }
+  /** Intercambio del pañuelo: el código de 6 caracteres, ya normalizado. */
+  | { kind: 'trade'; code: string };
 
 /** Trocea `a=1&b=2` en un mapa, con los valores ya decodificados. */
 function parseQuery(query: string): Record<string, string> {
@@ -66,12 +73,24 @@ export function parseScannedQr(raw: string): QrScanResult | null {
 
   // 1. Solo el código, sin URL alrededor.
   if (isValidCode(text)) return { kind: 'code', target: null, code: text };
+  // Seis caracteres sueltos (sin espacios raros): un intercambio del pañuelo.
+  if (/^[a-z0-9]{6}$/i.test(text) && isTradeCode(text)) {
+    return { kind: 'trade', code: normalizeTradeCode(text) };
+  }
 
   const qIndex = text.indexOf('?');
   if (qIndex < 0) return null;
 
   const path = text.slice(0, qIndex).toLowerCase();
   const params = parseQuery(text.slice(qIndex + 1));
+
+  // El pañuelo: solo el intercambio (un `?codigo=` de pieza no se escanea aquí).
+  if (/(^|\/)panuelo\/?$/.test(path)) {
+    const trade = params.intercambio;
+    return trade && isTradeCode(trade)
+      ? { kind: 'trade', code: normalizeTradeCode(trade) }
+      : null;
+  }
 
   // El path nos dice de qué flujo es el QR. Sin esto, cualquier enlace con un
   // `?p=1234` suelto se colaría como playlist.
@@ -114,6 +133,23 @@ export function describeMismatch(
   result: QrScanResult,
   expected: QrTarget,
 ): string | null {
+  if (result.kind === 'trade') {
+    if (expected === 'panuelo') return null;
+    return expected === 'choir'
+      ? 'Ese QR es un intercambio del pañuelo, no una sesión de coro'
+      : 'Ese QR es un intercambio del pañuelo, no una playlist';
+  }
+  if (expected === 'panuelo') {
+    if (result.kind === 'offline') {
+      return 'Ese QR es una playlist, no un intercambio del pañuelo';
+    }
+    const target = result.target;
+    return target === 'choir'
+      ? 'Ese QR es de un coro, no un intercambio del pañuelo'
+      : target === 'playlist'
+        ? 'Ese QR es una playlist, no un intercambio del pañuelo'
+        : 'Ese código es de una playlist o un coro, no de un intercambio';
+  }
   if (result.kind === 'offline') {
     return expected === 'playlist'
       ? null
