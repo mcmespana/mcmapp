@@ -5,6 +5,7 @@
   "scripts": {
     "build:sheet-bundle": "node scripts/build-sheet-bundle.js",
     "build:panuelo": "node scripts/build-panuelo-viewer.js",
+    "panuelo:subir": "node scripts/panuelo-subir.js",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",

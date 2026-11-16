@@ -106,16 +106,31 @@ Cada archivo corresponde a una sección del nodo `jubileo/` de Firebase
 
 ## `panuelo.json`
 
-Catálogo de muestra del **pañuelo virtual** (chapas, pines, cintas, parches,
-medallas y pulseras). Es el nodo `data` de `/panuelo`:
+El catálogo del **pañuelo virtual**: solo piezas de verdad (ver
+`piezas-3d/README.md`, raíz). Es el nodo `data` de `/panuelo` y, además, el
+catálogo que va empaquetado en la app (`constants/panueloCatalog.ts`): sin
+nodo en Firebase la app usa este mismo fichero.
 
-1. Crea el nodo `panuelo` en la raíz.
-2. Dentro, importa `panuelo.json` como `data` (queda `/panuelo/data/items/…`).
-3. Añade `/panuelo/updatedAt` con la fecha en milisegundos. **Hay que cambiarla
-   cada vez que se toque el catálogo**: es lo que la app mira para volver a
-   descargarlo.
+**Se sube pieza a pieza, nunca entero:**
 
-Sin este nodo la app funciona igual: usa este mismo fichero, que va
-empaquetado (`constants/panueloCatalog.ts`). Formato de cada pieza y cómo se
-calcula el hash de un código: `docs/contratos/PANUELO_CONTRATO.md` (raíz del
-monorepo).
+```bash
+npm test -- panueloSeed                     # ninguna pieza se descarta al sanear
+npm run panuelo:subir -- <id> --dry-run     # enseña qué haría
+npm run panuelo:subir -- <id>               # pregunta «s» y sube SOLO esa pieza
+```
+
+`panuelo:subir` escribe `/panuelo/data/items/<id>` y `/panuelo/updatedAt`
+(la fecha que mira la app para volver a descargar) con la CLI de Firebase
+(`firebase login`). No escribe `/panuelo` ni `/panuelo/data` enteros, así que
+no puede borrar una pieza que el Panel o alguien añadiera por otro lado (avisa
+si las ve). Sin terminal: `npm run panuelo:subir -- <id> --export` deja el
+JSON de esa pieza y explica cómo importarlo **dentro de su hijo** en la
+consola.
+
+> ⚠️ Importar el fichero entero en `/panuelo/data` (o en `/panuelo`) desde la
+> consola **reemplaza el catálogo**: lo que hubiera arriba y no esté aquí se
+> pierde. Solo vale la primera vez, con el nodo vacío.
+
+Formato de cada pieza, el hash de un código y las piezas por asistencia:
+`docs/contratos/PANUELO_CONTRATO.md`. El flujo «pídele a la IA una pieza para
+un evento»: `docs/funcionalidades/PANUELO.md` (raíz del monorepo).
