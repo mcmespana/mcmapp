@@ -99,7 +99,8 @@ export interface AnalyticsEvents {
    * catálogo crece con cada actividad y el gráfico tiene que seguir leyéndose.
    */
   panuelo_pieza_conseguida: {
-    clase: 'chapa' | 'pin' | 'cinta' | 'parche' | 'medalla' | 'pulsera';
+    clase:
+      'chapa' | 'pin' | 'cinta' | 'parche' | 'medalla' | 'pulsera' | 'troncho';
     via: 'all' | 'code' | 'manual' | 'demo' | 'trade';
   };
 

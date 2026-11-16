@@ -20,6 +20,11 @@ import type { PanueloCatalog, PanueloUserState } from '@/types/panuelo';
 import { EMPTY_PANUELO } from '@/utils/panuelo';
 
 const mockAuth: { user: { uid: string } | null } = { user: null };
+// Estos tests usan las piezas de ejemplo (una de cada clase), no el catálogo
+// de verdad, que cambia cada vez que se añade una chapa.
+jest.mock('@/firebase-seed/panuelo.json', () =>
+  jest.requireActual('@/constants/panueloEjemplo.json'),
+);
 jest.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user: mockAuth.user }),
 }));

@@ -240,8 +240,16 @@ def jpg(img: Image.Image, q=90) -> tuple[bytes, str]:
     return b.getvalue(), 'image/jpeg'
 
 
-def cara(nombre) -> Image.Image:
-    return Image.open(TEX / f'{nombre}.png').convert('RGB')
+def cara(nombre, gamma=1.0, color=1.0) -> Image.Image:
+    """La cara de una pieza. `gamma` > 1 la oscurece y `color` > 1 la aviva:
+    el visor (ACES + exposición) deja pálidas las caras muy claras."""
+    img = Image.open(TEX / f'{nombre}.png').convert('RGB')
+    if gamma == 1.0 and color == 1.0:
+        return img
+    a = (np.asarray(img, np.float32) / 255) ** gamma
+    gris = a.mean(2, keepdims=True)
+    a = np.clip(gris + (a - gris) * color, 0, 1)
+    return Image.fromarray((a * 255).astype(np.uint8), 'RGB')
 
 
 def normal_de_altura(h: np.ndarray, fuerza: float) -> Image.Image:
@@ -417,7 +425,7 @@ def imperdible(m: Malla, largo, z, radio=0.45):
     tubo(m, gancho, radio)
 
 
-def chapa_imperdible(pid, diametro, textura, rugosidad=0.22):
+def chapa_imperdible(pid, diametro, textura, rugosidad=0.22, mate=False):
     """Chapa redonda abombada, con su trasera de hojalata y el imperdible."""
     R = diametro / 2
     g = max(3.4, diametro * 0.105)        # grosor total
@@ -452,7 +460,8 @@ def chapa_imperdible(pid, diametro, textura, rugosidad=0.22):
             'baseColorTexture': {'index': t_cara}, 'metallicFactor': 0.0,
             'roughnessFactor': rugosidad},
         'extensions': {'KHR_materials_clearcoat': {
-            'clearcoatFactor': 1.0, 'clearcoatRoughnessFactor': 0.06}}})
+            'clearcoatFactor': 0.25 if mate else 1.0,
+            'clearcoatRoughnessFactor': 0.45 if mate else 0.06}}})
     mat_tras = glb.material(metal('trasera', *HOJALATA))
     mat_al = glb.material(metal('imperdible', *ACERO))
     glb.nodo('chapa', [(cara_m, mat_cara), (tras, mat_tras)])
@@ -524,9 +533,91 @@ def chapa_og():
     return glb
 
 
+def mariposa(cierre: Malla, zc):
+    """Cierre de mariposa de un pin. `zc`: la cara que toca la tela."""
+    Rc = 5.6
+    torno(cierre, [
+        [(0.55, zc), (Rc - 0.4, zc)] + arco((Rc - 0.4, zc - 0.4), 0.4, 90, 0,
+                                            5)[1:],
+        [(Rc, zc - 0.4), (Rc, zc - 1.0)],
+        [(Rc, zc - 1.0), (2.6, zc - 1.0)],
+        [(2.6, zc - 1.0), (2.2, zc - 3.0)] + arco((1.6, zc - 3.0), 0.6, 0,
+                                                  -90, 5)[1:],
+        [(1.6, zc - 3.6), (0.55, zc - 3.6)],
+    ], uv_fija(), seg=48)
+    for sg in (-1, 1):               # las dos alas
+        a = np.linspace(0, np.pi, 14)
+        cam = np.stack([sg * (2.6 + (Rc - 2.9) * (1 - np.cos(a)) / 2),
+                        0 * a, zc - 1.0 - 1.9 * np.sin(a)], 1)
+        nor = np.stack([-sg * np.cos(a), 0 * a, -np.sin(a) - 0.2], 1)
+        cinta(cierre, cam, nor, (0, 1, 0), 4.2, 0.35)
+
+
+def pin_jmj():
+    """Pin esmaltado rectangular: metal con las letras en esmalte hundido."""
+    pid, W, H, g = 'jmj-lisboa-2023', 30.0, 38.0, 1.8
+    glb = Glb(pid)
+    lab = np.asarray(Image.open(TEX / f'{pid}-tintas.png').convert('L')) // 100
+    hh, ww = lab.shape
+    # Líneas de metal: el contorno de cada tinta y el marco
+    def suave(m, r):
+        return np.asarray(Image.fromarray((m * 255).astype(np.uint8))
+                          .filter(ImageFilter.GaussianBlur(r)), np.float32) / 255
+    tinta = (lab > 0).astype(np.float32)
+    b = suave(tinta, 2.2)
+    linea = np.clip(1 - np.abs(b - 0.5) / 0.32, 0, 1)
+    marco = np.zeros_like(tinta)
+    mm = 20
+    marco[:mm] = marco[-mm:] = 1
+    marco[:, :mm] = marco[:, -mm:] = 1
+    linea = np.clip(np.maximum(linea, suave(marco, 1.5)), 0, 1)
+    col = np.zeros((hh, ww, 3), np.float32)
+    col[:] = (244, 244, 240)
+    col[lab == 1] = (26, 146, 52)
+    col[lab == 2] = (208, 30, 38)
+    col = np.asarray(Image.fromarray(col.astype(np.uint8))
+                     .filter(ImageFilter.GaussianBlur(0.8)), np.float32)
+    plata = np.array((150, 150, 146), np.float32)
+    col = col * (1 - linea[..., None]) + plata * linea[..., None]
+    orm = np.zeros((hh, ww, 3), np.float32)
+    orm[..., 1] = 0.16 + 0.14 * linea       # rugosidad
+    orm[..., 2] = linea                     # metal
+    orm[..., 0] = 1
+    # El esmalte hace panza entre las líneas
+    altura = suave(1 - linea, 5) * 0.8 + linea
+    t_col = glb.textura(jpg(Image.fromarray(col.astype(np.uint8)), 92))
+    t_orm = glb.textura(jpg(Image.fromarray((orm * 255).astype(np.uint8)), 88))
+    t_nor = glb.textura(jpg(normal_de_altura(suave(altura, 1.5), 4.0), 92))
+    cara_m = Malla()
+    P = np.array([[-W / 2, -H / 2, 0], [W / 2, -H / 2, 0],
+                  [W / 2, H / 2, 0], [-W / 2, H / 2, 0]])
+    cara_m.add(P, np.tile([0, 0, 1.0], (4, 1)),
+               [[0, 1], [1, 1], [1, 0], [0, 0]], [[0, 1, 2], [0, 2, 3]])
+    cuerpo = Malla()
+    caja(cuerpo, (0, 0, -g / 2 - 0.01), (W, H, g))
+    pincho = Malla()
+    cierre = Malla()
+    for dy in (H * 0.22,):
+        tubo(pincho, np.linspace((0, dy, -g), (0, dy, -g - 8.2), 10), 0.5,
+             punta=True)
+        mariposa(cierre, -g - 2.6)
+        cierre.mover(t=(0, dy, 0))
+    mat_cara = glb.material({'name': 'esmalte', 'pbrMetallicRoughness': {
+        'baseColorTexture': {'index': t_col},
+        'metallicRoughnessTexture': {'index': t_orm},
+        'metallicFactor': 1.0, 'roughnessFactor': 1.0},
+        'normalTexture': {'index': t_nor, 'scale': 1.0}})
+    mat_metal = glb.material(metal('metal', '#CDCBC4', 0.28))
+    mat_cierre = glb.material(metal('cierre', *LATON))
+    glb.nodo('pin', [(cara_m, mat_cara), (cuerpo, mat_metal),
+                     (pincho, mat_metal)])
+    glb.nodo('cierre', [(cierre, mat_cierre)])
+    return glb
+
+
 def pin_mc():
     """Pin pequeño: cazoleta de metal, dibujo bajo resina y cierre de mariposa."""
-    pid, D, g = 'pin-mc', 18.0, 2.2
+    pid, D, g = 'mc-congreso-3', 18.0, 2.2
     R = D / 2
     aro = 1.15                      # ancho del reborde
     glb = Glb(pid)
@@ -548,29 +639,12 @@ def pin_mc():
     # Pincho
     pincho = Malla()
     tubo(pincho, np.linspace((0, 0, -g), (0, 0, -g - 8.2), 10), 0.5, punta=True)
-    # Cierre de mariposa
     cierre = Malla()
-    zc = -g - 2.6                    # cara del cierre que toca la tela
-    Rc = 5.6
-    torno(cierre, [
-        [(0.55, zc), (Rc - 0.4, zc)] + arco((Rc - 0.4, zc - 0.4), 0.4, 90, 0,
-                                            5)[1:],
-        [(Rc, zc - 0.4), (Rc, zc - 1.0)],
-        [(Rc, zc - 1.0), (2.6, zc - 1.0)],
-        [(2.6, zc - 1.0), (2.2, zc - 3.0)] + arco((1.6, zc - 3.0), 0.6, 0,
-                                                  -90, 5)[1:],
-        [(1.6, zc - 3.6), (0.55, zc - 3.6)],
-    ], uv_fija(), seg=48)
-    for sg in (-1, 1):               # las dos alas
-        a = np.linspace(0, np.pi, 14)
-        cam = np.stack([sg * (2.6 + (Rc - 2.9) * (1 - np.cos(a)) / 2),
-                        0 * a, zc - 1.0 - 1.9 * np.sin(a)], 1)
-        nor = np.stack([sg * -np.cos(a) * -1 * 0 + sg * np.cos(a) * -1,
-                        0 * a, -np.sin(a) - 0.2], 1)
-        cinta(cierre, cam, nor, (0, 1, 0), 4.2, 0.35)
+    mariposa(cierre, -g - 2.6)
 
-    arte_img = cara(pid).resize((768, 768), Image.LANCZOS)
-    a = (np.asarray(arte_img, np.float32) / 255) ** 1.5      # el visor lo aclara
+    # El visor aclara: se oscurece y se aviva para que el azul no se lave.
+    arte_img = cara(pid, 1.8, 1.35).resize((768, 768), Image.LANCZOS)
+    a = np.asarray(arte_img, np.float32) / 255
     t_arte = glb.textura(jpg(Image.fromarray((a * 255).astype(np.uint8)), 90))
     mat_arte = glb.material({
         'name': 'resina', 'pbrMetallicRoughness': {
@@ -745,7 +819,13 @@ PIEZAS = {
     'jubileo-2025': lambda: chapa_imperdible(
         'jubileo-2025', 25.0, cara('jubileo-2025')),
     'chapa-og': chapa_og,
-    'pin-mc': pin_mc,
+    'mc-congreso-3': pin_mc,
+    'mc-congreso-1': lambda: chapa_imperdible(
+        'mc-congreso-1', 58.0, cara('mc-congreso-1', 1.8, 1.35), rugosidad=0.6,
+        mate=True),
+    'monitor-og': lambda: chapa_imperdible(
+        'monitor-og', 58.0, cara('monitor-og', 1.3, 1.1)),
+    'jmj-lisboa-2023': pin_jmj,
     'troncho': troncho,
 }
 

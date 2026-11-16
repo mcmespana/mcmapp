@@ -75,6 +75,8 @@ export const PANUELO_GLYPHS: Record<PanueloGlyph, string> = {
   shield: 'M50 5 L89 17 V48 C89 71 72 87 50 95 C28 87 11 71 11 48 V17 Z',
   arrow: 'M5 30 H60 V11 L96 50 L60 89 V70 H5 Z',
   rect: 'M14 22 H86 A8 8 0 0 1 94 30 V70 A8 8 0 0 1 86 78 H14 A8 8 0 0 1 6 70 V30 A8 8 0 0 1 14 22 Z',
+  // Tarjeta de pie (un pin rectangular): 56 × 70 sobre la caja de 100.
+  card: 'M27 15 H73 A5 5 0 0 1 78 20 V80 A5 5 0 0 1 73 85 H27 A5 5 0 0 1 22 80 V20 A5 5 0 0 1 27 15 Z',
 };
 
 /** El trazado de una forma, o el círculo si llega un nombre que no existe. */

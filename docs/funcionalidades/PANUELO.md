@@ -53,7 +53,7 @@ sistema no ve el vaivén.
 **Hoy: escondido en el Laboratorio Alpha.** El panel «Pañuelo virtual» del
 laboratorio abre la pantalla `/panuelo`. Tiene tres botones: abrir el pañuelo,
 abrirlo con todas las piezas de muestra, y empezar de cero. Códigos de prueba:
-`CONSOLACION`, `PASCUA27`, `CAMINO`, `VERANO`.
+`SAMUEL`, `JUBILEO`, `LISBOA`, `MONITOR`.
 
 El interruptor es `global.panuelo` en `/profileConfig`, igual que Carismochito
 (`utils/panueloGate.ts`, `hooks/usePanueloAvailable.ts`):
@@ -82,7 +82,7 @@ OTA. Cerrado, la ruta `/panuelo` devuelve a Inicio.
 
 ## Las piezas
 
-Hay seis clases. Todas se **dibujan a partir de datos** (colores, forma,
+Hay siete clases. Todas se **dibujan a partir de datos** (colores, forma,
 texto): una pieza nueva es un trozo de JSON en el catálogo, no una imagen ni
 una versión nueva de la app.
 
@@ -94,12 +94,32 @@ una versión nueva de la app.
 | `parche`  | Parche bordado                                             | forma, fondo, borde, dibujo, texto                     |
 | `medalla` | Medalla de metal colgando de su cinta                      | metal, cinta, dibujo en relieve, imagen, modelo `.glb` |
 | `pulsera` | Pulsera de hilo trenzado: la que se cambia en un encuentro | colores de los hilos, trenzado, texto tejido           |
+| `troncho` | El pasador de cuero con el logo: va delante, sobre el nudo | color del cuero                                        |
 
 Las **formas** (corazón, estrella, cruz, luna, llama, vieira, montaña…) son
 trazados SVG en `constants/panueloGlyphs.ts`. Es una sola fuente para dos
 sitios: el visor 3D las extruye y las pinta, y la app las dibuja en plano en la
 colección (`components/panuelo/PanueloItemArt.tsx`). Añadir una forma es añadir
 un trazado ahí y su nombre a `PanueloGlyph` (`types/panuelo.ts`).
+
+### Las piezas de verdad
+
+El catálogo que va dentro de la app (`firebase-seed/panuelo.json`) **solo
+lleva piezas reales**, fotografiadas: chapas, pines, las dos medallas y el
+troncho. Sus modelos y sus caras están en `piezas-3d/` (raíz; ver su README).
+
+- Una **chapa** o un **pin** de verdad lleva `image` (su cara, que es lo que se
+  cose) y `glb` (su modelo: la ficha ofrece «Verla de cerca», como las
+  medallas). Un pin rectangular usa la forma `card`.
+- **Tres tallas**, con `size`: pequeña ≈ 0,7–0,85 · mediana 1 · grande 1,4.
+- **El troncho** no se cose en el triángulo: va por delante, abrazando la tela
+  donde se junta, con el nudo debajo. Se «lleva puesto» (está en `layout`,
+  sin gastar hueco) o no; no se arrastra, no se gira y **no se intercambia**.
+  El visor lo recibe aparte (`PanueloViewerState.troncho`) y hoy no se puede
+  tocar en el 3D: su ficha se abre desde la colección.
+- Las piezas inventadas de antes (una de cada clase) siguen en
+  `constants/panueloEjemplo.json`: las usan el **tutorial** —aún no hay
+  cinta, parche ni pulsera de verdad— y los tests. Nadie puede conseguirlas.
 
 Cada pieza puede llevar además: de dónde viene (`origin`), una descripción,
 rareza (`comun` / `especial` / `unica`), tamaño, si es **secreta** (no sale ni
@@ -166,7 +186,8 @@ utils/panueloShare.ts               Compartir la foto
 utils/sha256.ts                     Hash de los códigos
 types/panuelo.ts                    Tipos y el protocolo app ↔ visor
 constants/panueloGlyphs.ts          Las formas
-firebase-seed/panuelo.json          Catálogo de muestra (y el que se usa sin catálogo remoto)
+firebase-seed/panuelo.json          El catálogo: piezas de verdad (y el que se usa sin catálogo remoto)
+constants/panueloEjemplo.json       Piezas inventadas, una de cada clase: tutorial y tests
 ```
 
 ### El visor: un WebView con three.js dentro
@@ -538,12 +559,6 @@ transacción y nada de lo demás cambia.
 
 ## Lo que se sabe que falta
 
-- **Las piezas de verdad en 3D no están enchufadas.** En `piezas-3d/` (raíz)
-  hay modelos `.glb` de cinco chapas/pines reales y del **troncho**, con su
-  ficha en `piezas.json` (nombre, talla `pequena`/`mediana`/`grande`). Falta
-  que el visor los enseñe: la chapa tendría que aceptar un `.glb`, las tallas
-  pasar a `size`, y el troncho pide una clase nueva — va **por delante, justo
-  encima del nudo**, en un sitio fijo: ni se mueve ni se intercambia.
 - **El logo del pañuelo rojo.** El de verdad lleva el del MIC; aquí los cuatro
   llevan el del COM porque es el único que hay. Hace falta el archivo.
 - **Las miniaturas de las medallas** del Jubileo y de la visita del Papa se
