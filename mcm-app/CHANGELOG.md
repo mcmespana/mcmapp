@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-16 19:21 — Pañuelo: intercambios de piezas (pantalla, servicio y reglas)
+
+- Nueva hoja «Intercambiar» (Laboratorio Alpha): se ofrece una pieza con un código de 6 y su QR, la otra persona lo escribe o lo escanea, elige qué da (o lo regala) y se acepta. Cada móvil aplica su mitad: la pieza recibida queda cosida donde estaba la dada.
+- Se pueden cambiar pulseras y chapas comunes; nunca medallas ni piezas únicas (`isTradeable`). Hace falta sesión y red en los dos móviles.
+- Firebase: nodo nuevo `/panueloTrades/{code}`, escrito siempre con transacciones (`services/panueloTradeService.ts`). Sus reglas están en `database.rules.json` y **hay que pegarlas a mano en la consola** (`docs/desarrollo/FIREBASE_REGLAS.md` §8); hasta entonces la app avisa de que los intercambios no están activados.
+- Recuperación si la app se cierra a mitad (`@panuelo_trade_pending`) y limpieza de los intercambios caducados al abrir el pañuelo (`@panuelo_trade_mine`).
+- Fallo arreglado: recuperar una pieza que ya se había dado ya no la hace desaparecer al juntar el móvil con la nube (`mergePanuelo`).
+- El escáner de QR lee `…/panuelo?intercambio=` y el enlace abre la hoja. Nueva analítica `panuelo_intercambio`. El tutorial pasa a la versión 4.
+- **Sin probar con dos móviles** (lista en `docs/planes/PLAN_PANUELO_INTERCAMBIOS.md` §7).
+
 ## 2026-11-16 18:17 — Cantos para el domingo (cantoral + Inicio)
 
 - Pantalla nueva `/cancionero/domingo`: la app propone una misa para el domingo (entrada, salmo, aleluya, ofertorio, santo, comunión, salida) según el día litúrgico. Cambiar, elegir otra o quitar cada momento; lo cambiado se recuerda por fecha en el dispositivo. Entrada: fila «Cantos para el domingo» bajo «Tu selección».

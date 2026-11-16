@@ -48,7 +48,7 @@ persona y hacéis el intercambio.
 | 2    | Conseguir piezas: para todos, por código, repartidas; presentación de la pieza nueva; compartir foto | ✅ Hecho (2026-11-13) | ✅  | —                                  |
 | 3    | **Probar en iPhone y Android de verdad** y ajustar (rendimiento, WebView transparente, inclinación)  | ⏳ Siguiente          | ✅  | Un móvil con el canal preview      |
 | 4    | **Sacarlo del laboratorio**: avatar en la cabecera de Inicio → «Tu pañuelo»; tarjeta de pieza nueva  | ⏳                    | ✅  | Decisión 1 (abajo) + Fase 3        |
-| 5    | **Intercambios** en persona con código: servicio, pantalla, reglas de Firebase — detalle en `PLAN_PANUELO_INTERCAMBIOS.md`                       | 🟡 Base puesta        | ✅  | Sesión iniciada en los dos móviles |
+| 5    | **Intercambios** en persona con código: servicio, pantalla, reglas de Firebase — detalle en `PLAN_PANUELO_INTERCAMBIOS.md`                       | 🟡 Hecho, sin probar       | ✅  | Sesión iniciada en los dos móviles |
 | 6    | **Panel**: editor de piezas con vista previa, código + QR, repartir a una lista, cuántas se han dado | ⏳                    | —   | Repo `mcmpanel` + Integración D    |
 | 7    | Canje y reparto **validados en servidor**                                                            | ⏳                    | ✅  | Integración D                      |
 | 8    | El color viene de la etapa de la persona en el área privada                                          | ⏳                    | ✅  | Área privada nativa                |
