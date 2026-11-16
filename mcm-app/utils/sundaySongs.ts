@@ -26,8 +26,11 @@ import {
   type LiturgicalMark,
   type MassMomentId,
 } from '@/constants/massMoments';
+import type { SelectedSong } from '@/contexts/SelectedSongsContext';
 import type { SongEntry, SongsData } from '@/utils/filterSongsData';
 import {
+  addDays,
+  isIsoDate,
   weekdayOf,
   weekIndexOf,
   type LiturgicalDay,
@@ -366,4 +369,99 @@ export function shouldShowSundayCard(
 ): boolean {
   const wd = weekdayOf(fecha);
   return (wd === 5 || wd === 6 || wd === 0) && tabs.includes('cancionero');
+}
+
+// ── Lo que se recuerda por fecha (AsyncStorage `@mcm_sunday_songs_v1`) ──────
+
+export const SUNDAY_PICKS_KEY = '@mcm_sunday_songs_v1';
+
+/** Días a cada lado de hoy que se conservan; lo demás se poda al abrir. */
+export const SUNDAY_PICKS_KEEP_DAYS = 60;
+
+/** `{ [fecha]: { [momento]: filename | 'quitado' } }`. */
+export type StoredSundayPicks = Record<string, MassPicks>;
+
+const MOMENT_IDS = new Set<string>(MASS_MOMENTS.map((m) => m.id));
+
+/** Lee lo guardado tolerando cualquier basura (JSON roto, tipos cambiados). */
+export function parseSundayPicks(
+  raw: string | null | undefined,
+): StoredSundayPicks {
+  if (!raw) return {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return {};
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+  const out: StoredSundayPicks = {};
+  for (const [fecha, picks] of Object.entries(
+    parsed as Record<string, unknown>,
+  )) {
+    if (!isIsoDate(fecha) || !picks || typeof picks !== 'object') continue;
+    const clean: MassPicks = {};
+    for (const [moment, value] of Object.entries(
+      picks as Record<string, unknown>,
+    )) {
+      if (MOMENT_IDS.has(moment) && typeof value === 'string' && value) {
+        clean[moment as MassMomentId] = value;
+      }
+    }
+    if (Object.keys(clean).length > 0) out[fecha] = clean;
+  }
+  return out;
+}
+
+/** Quita las fechas a más de `days` de hoy (mismo patrón que las lecturas). */
+export function pruneSundayPicks(
+  all: StoredSundayPicks,
+  todayISO: string,
+  days: number = SUNDAY_PICKS_KEEP_DAYS,
+): StoredSundayPicks {
+  const from = addDays(todayISO, -days);
+  const to = addDays(todayISO, days);
+  return Object.fromEntries(
+    Object.entries(all).filter(([fecha]) => fecha >= from && fecha <= to),
+  );
+}
+
+/** Copia con el momento puesto (`null` = vuelve a la propuesta). Sin vacíos. */
+export function withPick(
+  all: StoredSundayPicks,
+  fecha: string,
+  moment: MassMomentId,
+  value: string | null,
+): StoredSundayPicks {
+  const day: MassPicks = { ...all[fecha] };
+  if (value === null) delete day[moment];
+  else day[moment] = value;
+  const next = { ...all };
+  if (Object.keys(day).length === 0) delete next[fecha];
+  else next[fecha] = day;
+  return next;
+}
+
+/**
+ * La misa elegida como «Tu selección»: las canciones en orden de misa, cada una
+ * con la categoría de la que sale como pista de agrupado (`categoryHint`, igual
+ * que al importar de un coro).
+ */
+export function massToSelection(
+  mass: readonly MomentSuggestion[],
+  now: number = Date.now(),
+): SelectedSong[] {
+  const out: SelectedSong[] = [];
+  for (const m of mass) {
+    const c = m.chosenIndex >= 0 ? m.candidates[m.chosenIndex] : undefined;
+    if (!c) continue;
+    out.push({
+      filename: c.filename,
+      transpose: 0,
+      order: out.length,
+      categoryHint: c.categoryKey,
+      addedAt: now + out.length,
+    });
+  }
+  return out;
 }

@@ -6,10 +6,14 @@
 import { liturgicalDayOf } from '@/utils/liturgicalDay';
 import {
   REMOVED,
+  massToSelection,
   nextCandidate,
+  parseSundayPicks,
+  pruneSundayPicks,
   shouldShowSundayCard,
   songMarks,
   suggestMass,
+  withPick,
   type MomentSuggestion,
 } from '@/utils/sundaySongs';
 import type { SongEntry, SongsData } from '@/utils/filterSongsData';
@@ -461,5 +465,80 @@ describe('shouldShowSundayCard (Inicio, de viernes a domingo)', () => {
   });
   it('sin el tab del cantoral no', () => {
     expect(shouldShowSundayCard('2026-11-21', ['index', 'mas'])).toBe(false);
+  });
+});
+
+describe('lo recordado por fecha', () => {
+  it('parseSundayPicks tolera JSON roto, fechas falsas y momentos inventados', () => {
+    expect(parseSundayPicks(null)).toEqual({});
+    expect(parseSundayPicks('{no json')).toEqual({});
+    expect(parseSundayPicks('[1,2]')).toEqual({});
+    expect(
+      parseSundayPicks(
+        JSON.stringify({
+          '2026-11-22': { entrada: 'ent2', inventado: 'x', salida: 7 },
+          ayer: { entrada: 'a' },
+          '2026-11-29': { salmo: 'quitado' },
+          '2026-12-06': {},
+        }),
+      ),
+    ).toEqual({
+      '2026-11-22': { entrada: 'ent2' },
+      '2026-11-29': { salmo: 'quitado' },
+    });
+  });
+
+  it('pruneSundayPicks deja ±60 días y poda el resto', () => {
+    const all = {
+      '2026-01-01': { entrada: 'a' },
+      '2026-09-17': { entrada: 'b' }, // 61 días antes: fuera
+      '2026-09-18': { entrada: 'c' }, // 60: se queda
+      '2026-11-22': { entrada: 'd' },
+      '2027-01-16': { entrada: 'e' }, // 60 días después: se queda
+      '2027-01-17': { entrada: 'f' }, // 61: fuera
+    };
+    expect(Object.keys(pruneSundayPicks(all, '2026-11-17'))).toEqual([
+      '2026-09-18',
+      '2026-11-22',
+      '2027-01-16',
+    ]);
+  });
+
+  it('withPick pone, quita y no deja fechas vacías ni muta lo anterior', () => {
+    const a = withPick({}, '2026-11-22', 'entrada', 'ent2');
+    expect(a).toEqual({ '2026-11-22': { entrada: 'ent2' } });
+    const b = withPick(a, '2026-11-22', 'salida', REMOVED);
+    expect(b['2026-11-22']).toEqual({ entrada: 'ent2', salida: 'quitado' });
+    expect(a['2026-11-22']).toEqual({ entrada: 'ent2' });
+    const c = withPick(
+      withPick(b, '2026-11-22', 'entrada', null),
+      '2026-11-22',
+      'salida',
+      null,
+    );
+    expect(c).toEqual({});
+  });
+});
+
+describe('massToSelection', () => {
+  it('las elegidas en orden de misa, con su categoría como pista', () => {
+    const mass = suggestMass(REY, toyData(), { picks: { salmo: REMOVED } });
+    const sel = massToSelection(mass, 1000);
+    expect(sel.map((s) => s.order)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(sel.map((s) => s.categoryHint)).toEqual([
+      'entrada',
+      'aleluya',
+      'ofertorio',
+      'santo',
+      'comunion',
+      'salida',
+    ]);
+    expect(sel.every((s) => s.transpose === 0)).toBe(true);
+    expect(sel.map((s) => s.filename)).toEqual(
+      chosen(mass).filter((f): f is string => !!f),
+    );
+  });
+  it('sin nada elegido, lista vacía', () => {
+    expect(massToSelection(suggestMass(REY, null))).toEqual([]);
   });
 });

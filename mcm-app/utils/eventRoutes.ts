@@ -131,6 +131,7 @@ export const CANTORAL_SLUGS = {
   SongFullscreen: 'pantalla-completa',
   SelectedSongs: 'seleccion',
   Tuner: 'afinador',
+  SundaySongs: 'domingo',
 } as const;
 
 export type CantoralScreenName = keyof typeof CANTORAL_SLUGS;

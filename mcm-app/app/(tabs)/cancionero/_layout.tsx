@@ -129,6 +129,10 @@ export default function CancioneroLayout() {
           name={CANTORAL_SLUGS.SelectedSongs}
           options={{ title: 'Tu selección' }}
         />
+        <Stack.Screen
+          name={CANTORAL_SLUGS.SundaySongs}
+          options={{ title: 'Cantos del domingo' }}
+        />
         {/* El afinador va en hoja: se abre encima de la canción y al
             cerrarla sigues donde estabas. */}
         <Stack.Screen

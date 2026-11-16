@@ -333,3 +333,39 @@ export function liturgicalDayOf(fecha: string): LiturgicalDay {
     colorHex: info.hex,
   };
 }
+
+const WEEKDAYS_ES = [
+  'Domingo',
+  'Lunes',
+  'Martes',
+  'Miércoles',
+  'Jueves',
+  'Viernes',
+  'Sábado',
+];
+const MONTHS_ES = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+
+/** «Domingo 22 de noviembre». Sin `Intl`: Hermes no siempre trae `es`. */
+export function longDateEs(fecha: string): string {
+  const [, m, d] = fecha.split('-').map(Number);
+  return `${WEEKDAYS_ES[weekdayOf(fecha)]} ${d} de ${MONTHS_ES[m - 1]}`;
+}
+
+/** «22 nov»: para el nombre de una playlist o una fila. */
+export function shortDateEs(fecha: string): string {
+  const [, m, d] = fecha.split('-').map(Number);
+  return `${d} ${MONTHS_ES[m - 1].slice(0, 3)}`;
+}

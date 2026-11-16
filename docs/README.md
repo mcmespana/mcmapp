@@ -30,6 +30,7 @@ Cómo funciona cada sistema de la app, de principio a fin.
 | [CARISMOCHITO.md](funcionalidades/CARISMOCHITO.md)                   | Modo Carismochito (agitar el móvil) y la caza de Carismochitos con su colección, escondida en el Laboratorio Alpha                                          |
 | [PANUELO.md](funcionalidades/PANUELO.md) | El pañuelo virtual en 3D: piezas (chapas, pines, cintas, parches, medallas, pulseras), visor, canje por código, intercambios. En el Laboratorio Alpha |
 | [AFINADOR.md](funcionalidades/AFINADOR.md)                           | Afinador de guitarra del cantoral: dónde está, cómo detecta la nota (pitchy + suavizado), permisos de micrófono y las dos trampas de web                    |
+| [CANTOS_DOMINGO.md](funcionalidades/CANTOS_DOMINGO.md)               | «Cantos para el domingo»: día litúrgico (domingo N, ciclo, fiestas), motor de sugerencia con reglas duras, pantalla del cantoral y lo recordado por fecha |
 | [RECORDATORIOS_CONTIGO.md](funcionalidades/RECORDATORIOS_CONTIGO.md) | Recordatorios de Contigo: qué se configura, dónde se editan los textos y cómo se programan los avisos locales                                               |
 
 ## Contratos de datos (App ↔ MCM Panel)

@@ -8,6 +8,8 @@ import {
   getLiturgicalInfo,
   isIsoDate,
   isoDateLocal,
+  longDateEs,
+  shortDateEs,
   liturgicalDayOf,
   targetSunday,
   toRoman,
@@ -202,5 +204,14 @@ describe('getLiturgicalInfo conserva lo que ya pintaba el badge', () => {
   it('el nombre de Gaudete / Laetare', () => {
     expect(getLiturgicalInfo('2026-12-13').name).toBe('Adviento (Gaudete)');
     expect(getLiturgicalInfo('2026-03-15').name).toBe('Cuaresma (Laetare)');
+  });
+});
+
+describe('fechas en español', () => {
+  it('longDateEs y shortDateEs', () => {
+    expect(longDateEs('2026-11-22')).toBe('Domingo 22 de noviembre');
+    expect(longDateEs('2026-12-31')).toBe('Jueves 31 de diciembre');
+    expect(shortDateEs('2026-11-22')).toBe('22 nov');
+    expect(shortDateEs('2027-03-07')).toBe('7 mar');
   });
 });
