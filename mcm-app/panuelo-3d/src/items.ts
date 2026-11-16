@@ -250,6 +250,37 @@ function buildPin(look: PinLook, ctx: BuildContext): BuiltItem {
   const mesh = shadowed(new THREE.Mesh(geometry, [enamel, metal(look.metal)]));
   const group = new THREE.Group();
   group.add(mesh);
+
+  // Por detrás un pin es metal liso, como su filo, con el pincho y su
+  // cierre: sin esto, al darle la vuelta se veía el esmalte del revés.
+  const k = size / GLYPH_BOX;
+  const plate = new THREE.ShapeGeometry(glyphShapes(look.shape), 18);
+  plate.translate(-GLYPH_BOX / 2, -GLYPH_BOX / 2, 0);
+  plate.scale(k * 0.985, -k * 0.985, 1);
+  const backMetal = metal(look.metal).clone();
+  backMetal.side = THREE.DoubleSide;
+  const back = new THREE.Mesh(plate, backMetal);
+  back.position.z = -0.0008;
+  group.add(back);
+  plate.computeBoundingBox();
+  const box = plate.boundingBox!;
+  const cx = (box.min.x + box.max.x) / 2;
+  const cy = (box.min.y + box.max.y) / 2;
+  const post = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.0045, 0.002, 0.03, 10),
+    metal(look.metal),
+  );
+  post.rotation.x = Math.PI / 2;
+  post.position.set(cx, cy, -0.015);
+  group.add(post);
+  const clutch = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.026, 0.03, 0.009, 24),
+    metal(look.metal),
+  );
+  clutch.rotation.x = Math.PI / 2;
+  clutch.position.set(cx, cy, -0.0125);
+  group.add(clutch);
+
   if (look.image) {
     // Un pin de verdad: su foto ocupa la caja de la forma (las UV de
     // `extrudeGlyph` son planas, de 0 a 1 sobre esa caja).

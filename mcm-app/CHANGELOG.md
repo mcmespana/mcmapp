@@ -4,6 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 00:40 — Pañuelo: los pines, por detrás, son metal con su pincho
+
+- Al darle la vuelta a un pin se veía el esmalte (o la foto) del revés. Ahora la trasera es metal liso del color del filo, con el pincho y su cierre (`buildPin` en `panuelo-3d/src/items.ts`). Vale para todos los pines.
+
 ## 2026-11-17 00:10 — Pañuelo: en pruebas, todas las piezas se dan solas
 
 - Todas las piezas de `firebase-seed/panuelo.json` pasan a `grant: all`: se consiguen al abrir el pañuelo, sin códigos. Es provisional, para probar; el reparto real (por eventos u otra vía) está por decidir.
