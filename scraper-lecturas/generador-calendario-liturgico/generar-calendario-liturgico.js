@@ -453,6 +453,24 @@ function generarAnio(anio) {
     nombre: 'Presentación del Señor (La Candelaria)'
   });
 
+  // Solemnidades y fiestas de fecha fija que pueden caer en domingo y mandan
+  // sobre el domingo del tiempo (p. ej. 2026-11-01: Todos los Santos, no el
+  // XXXI del Tiempo Ordinario). Santiago (25 jul) es solemnidad en España.
+  const FIJAS = [
+    ['san_jose', '03-19', 'San José'],
+    ['san_pedro_san_pablo', '06-29', 'San Pedro y San Pablo'],
+    ['santiago_apostol', '07-25', 'Santiago Apóstol'],
+    ['transfiguracion', '08-06', 'Transfiguración del Señor'],
+    ['asuncion', '08-15', 'Asunción de la Virgen María'],
+    ['exaltacion_cruz', '09-14', 'Exaltación de la Santa Cruz'],
+    ['todos_los_santos', '11-01', 'Todos los Santos'],
+    ['dedicacion_letran', '11-09', 'Dedicación de la Basílica de Letrán'],
+    ['inmaculada', '12-08', 'Inmaculada Concepción']
+  ];
+  for (const [id, mmdd, nombre] of FIJAS) {
+    fechas.push({ id, fecha: `${anio}-${mmdd}`, nombre });
+  }
+
   // Navidad (25 dic)
   fechas.push({
     id: 'navidad',
@@ -580,7 +598,11 @@ const calendario = generarCalendarioCompleto();
 
 // 3. Guardar
 const json = JSON.stringify(calendario, null, 2);
-const ruta = '/home/claude/calendario-liturgico.json';
+// Ruta de salida: argumento o, por defecto, el JSON completo que empaqueta la
+// app (después, `npm run liturgical:window` en mcm-app/ recorta la ventana).
+const ruta = process.argv[2] || require('path').join(
+  __dirname, '..', '..', 'mcm-app', 'assets', 'calendario-liturgico-completo.json'
+);
 fs.writeFileSync(ruta, json, 'utf-8');
 
 const tamKB = (Buffer.byteLength(json, 'utf-8') / 1024).toFixed(1);
