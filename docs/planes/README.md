@@ -3,7 +3,7 @@
 > **Lee esto antes de abrir ningún `PLAN_*.md`.** Su único trabajo es que no
 > vuelvas a ejecutar algo que ya está hecho.
 >
-> Última actualización: 2026-11-13.
+> Última actualización: 2026-11-16.
 
 ## La regla, en una línea
 
@@ -31,6 +31,10 @@ El coste de mantener esta tabla al día es mucho menor que el de repetirlo.
 | [`PLAN_CALIDAD.md`](PLAN_CALIDAD.md)             | 🟡 Parcial — Fase 0 (guardarraíles) ✅. **Fase 1 (trocear gigantes) descartada por decisión del usuario** el 2026-08-15, ver abajo                                                                                                | `BACKLOG.md` §2.A                                     |
 | [`PLAN_DISENO.md`](PLAN_DISENO.md)               | 🟡 En curso — dos pasadas hechas (tokens, tipografía, radios, sombras, responsive, panel) + 3 bugs de contraste arreglados. Lo que queda necesita **dispositivo** o revisión fichero a fichero                                    | `BACKLOG.md` §2.G                                     |
 | [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md) | 🟡 **Pañuelo virtual.** El usuario contó la idea el 2026-11-12 y la primera versión está hecha (Fases 0-2): pañuelo 3D, seis clases de pieza, decorar, canje por código, compartir, todo en el Laboratorio Alpha. Queda lo de la tabla de fases: probar en móvil, sacarlo del laboratorio, intercambios (base puesta) y el Panel. Doc viva: [`PANUELO.md`](../funcionalidades/PANUELO.md) | El propio plan (§ «Fases») |
+| [`PLAN_PANUELO_INTERCAMBIOS.md`](PLAN_PANUELO_INTERCAMBIOS.md) | 📝 **Escrito el 2026-11-16, sin empezar.** Pantalla de intercambio de piezas (detalla la Fase 5 del plan del pañuelo). Todo OTA; pide desplegar un bloque de reglas. Tiene decisiones 🔒 | `BACKLOG.md` §2.J |
+| [`PLAN_PANUELO_ASISTENCIA.md`](PLAN_PANUELO_ASISTENCIA.md) | 📝 **Escrito el 2026-11-16, sin empezar.** Piezas por asistencia a eventos y desvelado una a una. Parte en `comunicaMiddleware` y `mcmpanel`. Tiene decisiones 🔒 | `BACKLOG.md` §2.J |
+| [`PLAN_CANTOS_DOMINGO.md`](PLAN_CANTOS_DOMINGO.md) | 📝 **Escrito el 2026-11-16, sin empezar.** Cantos sugeridos para la misa del domingo. Todo OTA. Tiene decisiones 🔒 | `BACKLOG.md` §2.J |
+| [`PLAN_LIVE_ACTIVITIES.md`](PLAN_LIVE_ACTIVITIES.md) | 📝 **Escrito el 2026-11-16, sin empezar.** Live Activities: la sesión a mano para monitores y el horario del evento. Build nativo, **después de Expo 58**. Tiene decisiones 🔒 | `BACKLOG.md` §2.J |
 | [`PLAN_HOJA_CANCION.md`](PLAN_HOJA_CANCION.md)   | 🟡 Hecho y en `main`: hoja, modo atril, onboarding, 258 canciones repasadas, admin fiel a la app, PDF y pantalla completa web. Queda: aplicar las etiquetas aprobadas, mapa de la canción (opcional) y probar el pedal en un iPad | `BACKLOG.md` §2.H                                     |
 
 ## 🔵 Futuro lejano — no se tocan hasta que el usuario lo pida

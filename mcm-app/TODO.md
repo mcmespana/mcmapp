@@ -70,6 +70,18 @@ nativo (entró en la #313 el 2026-08-04). Todo NATIVO, nada sale por OTA.
 
 ---
 
+## Planes nuevos del 2026-11-16 — escritos, sin empezar
+
+> Orden y dependencias en `docs/planes/BACKLOG.md` §2.J. Cada plan acaba con
+> sus «🔒 Decisiones del usuario»: se preguntan antes de empezar.
+
+- [ ] **Pañuelo — pantalla de intercambios** (`docs/planes/PLAN_PANUELO_INTERCAMBIOS.md`). OTA. Empieza por su Fase 0, que arregla un fallo real: una pieza recuperada en un intercambio desaparece al juntarse el móvil con la nube.
+- [ ] **Pañuelo — piezas por asistencia y desvelado una a una** (`docs/planes/PLAN_PANUELO_ASISTENCIA.md`). La app, por OTA; necesita un endpoint en `comunicaMiddleware`, una Cloud Function y reglas. El desvelado se puede adelantar con datos simulados.
+- [ ] **Cantoral — cantos para este domingo** (`docs/planes/PLAN_CANTOS_DOMINGO.md`). OTA. De paso arregla el ciclo A/B/C y las solemnidades de fecha fija del calendario litúrgico.
+- [ ] **Live Activities — la sesión a mano (monitores) y horario del evento** (`docs/planes/PLAN_LIVE_ACTIVITIES.md`). Build nativo (`expo-widgets`, `@expo/ui`); va después de cerrar Expo 58.
+
+---
+
 ## UI nativa — pendientes (Fase 1/2 de `docs/planes/PLAN_UI_NATIVA.md`)
 
 > Hecho en la pasada del 2026-06-21 (ver CHANGELOG): headers nativos de Contigo,

@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-10-28 noche (área privada nativa: planes 06 y 07 hechos, 08 y 09 en marcha, sale con la 2.1 en modo alpha, §2.I). 2026-10-28 (paquetes del área privada nativa adelantados a la 2.1, §C.1). 2026-10-21 (área privada nativa: análisis, decisiones tomadas y pasarela sin espejo, §2.I; paquetes nativos a la 2.2, §C-bis). 2026-10-10 (hoja de canción: decisiones confirmadas, pantalla completa y etiquetas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> Última actualización: 2026-11-16 (cuatro planes nuevos escritos, ninguno empezado: intercambios y piezas por asistencia del pañuelo, cantos para el domingo y Live Activities, §2.J). 2026-10-28 noche (área privada nativa: planes 06 y 07 hechos, 08 y 09 en marcha, sale con la 2.1 en modo alpha, §2.I). 2026-10-28 (paquetes del área privada nativa adelantados a la 2.1, §C.1). 2026-10-21 (área privada nativa: análisis, decisiones tomadas y pasarela sin espejo, §2.I; paquetes nativos a la 2.2, §C-bis). 2026-10-10 (hoja de canción: decisiones confirmadas, pantalla completa y etiquetas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
 > de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
@@ -41,6 +41,7 @@
 | **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                                                                                                                     |
 | **⚠️ Roto y sin dueño**      | 🚨 **Android no muestra las notificaciones con categoría** desde el 2026-08-03: el Panel manda `channelId` y la app de `production` no tiene esos canales. **Decidido (2026-09-26): no se toca `production`, se arregla con la build 2.1** (`mcm-app/TODO.md`, Notificaciones)       |
 | **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                                                                                               |
+| **Planes nuevos (16/11)** | Cuatro planes escritos y **sin empezar**, cada uno con sus decisiones 🔒 al final: intercambios del pañuelo, piezas por asistencia, cantos para el domingo y Live Activities. No entran en «seguimos»: se ejecutan cuando el usuario diga cuál (§2.J) |
 | **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                                                                                           |
 | **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio)                                                                                                                                                                                                                                   |
 | **Cerrado**                  | Pulido de octubre (12 paquetes, 2026-10-17) · Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                                                                       |
@@ -395,6 +396,24 @@ monitores, con un backend nuevo que no sea el plugin.
 - Lo único que se puede adelantar fuera de la app está en §13 del análisis
   (pedir a SinergiaTIC usuario de lectura y `/TEST`, protección de datos,
   equivalencias de delegaciones).
+
+### J. Tanda de ideas del 16/11/2026 — cuatro planes escritos, ninguno empezado
+
+Pedidos por el usuario el 2026-11-16. **No entran en «seguimos»**: cada uno se
+ejecuta cuando el usuario lo pida, y **todos tienen una sección «🔒 Decisiones
+del usuario» al final que hay que preguntar antes de empezar** (cada pregunta
+lleva ya una recomendación).
+
+| Plan | Qué es | OTA | Depende de |
+| --- | --- | --- | --- |
+| [`PLAN_PANUELO_INTERCAMBIOS.md`](PLAN_PANUELO_INTERCAMBIOS.md) | La pantalla de intercambio de piezas (código + QR) sobre las reglas ya hechas en `utils/panueloTrade.ts`. Detalla la Fase 5 de `PLAN_PANEL_PANUELO.md`. Su Fase 0 arregla un fallo: una pieza recuperada en un intercambio desaparece al sincronizar | ✅ | Desplegar el bloque de reglas `panueloTrades` (usuario) |
+| [`PLAN_PANUELO_ASISTENCIA.md`](PLAN_PANUELO_ASISTENCIA.md) | Pieza asignada a un evento; se consigue cuando te marcan la asistencia en Comunica; al entrar, desvelado de las piezas nuevas una a una con «Siguiente» y luego «Colocarlas» | ✅ (app) | Endpoint nuevo en `comunicaMiddleware`, Cloud Function y reglas (despliega el usuario); el editor, en `mcmpanel`. El desvelado (F5) se puede hacer antes con datos simulados |
+| [`PLAN_CANTOS_DOMINGO.md`](PLAN_CANTOS_DOMINGO.md) | Sugerir cantos para la misa del domingo por momento, con el tiempo litúrgico y las categorías del cantoral. Su Fase 1 arregla el ciclo A/B/C y las solemnidades de fecha fija del calendario litúrgico | ✅ | Fase 0: contar etiquetas en el repo del cantoral (no está en la sesión por defecto) |
+| [`PLAN_LIVE_ACTIVITIES.md`](PLAN_LIVE_ACTIVITIES.md) | Base nativa común + dos usos: «la sesión a mano» (el monitor toca la pantalla de bloqueo y abre el doc o PDF de la sesión) y el horario del evento | ❌ build nativo (`expo-widgets`, `@expo/ui`) | **Después de cerrar Expo 58**; siguiente build de tienda |
+
+**Descartado en la misma conversación:** la «Command Palette v2» (solo existe
+en web con teclado). Quitada de `mcm-app/TODO.md`; si hace falta un buscador
+general se plantea de cero para móvil.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
