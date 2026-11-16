@@ -361,7 +361,10 @@ class Viewer {
         break;
       case 'reveal': {
         const entry = this.entries.get(cmd.id);
-        if (entry) this.focus(entry, false, true);
+        // Con «reducir movimiento» (lo dice la app, o el sistema si el
+        // WebView lo sabe) aparece sin giro ni chispas.
+        const still = Boolean(cmd.still) || this.reducedMotion;
+        if (entry) this.focus(entry, false, still ? 'still' : true);
         break;
       }
       case 'select':
@@ -686,8 +689,18 @@ class Viewer {
     };
   }
 
-  private focus(entry: Entry, notify: boolean, reveal = false) {
+  /**
+   * Saca una pieza al frente. Con `reveal` se presenta: entra creciendo y
+   * dando dos vueltas, con chispas; con `'still'`, aparece ya en su sitio y
+   * solo se oscurece el fondo (reducir movimiento).
+   */
+  private focus(
+    entry: Entry,
+    notify: boolean,
+    reveal: boolean | 'still' = false,
+  ) {
     if (this.focused === entry && !reveal) return;
+    const still = reveal === 'still';
     if (this.focused) this.blur(false, true);
     this.select(null, true);
     this.cancel('turn');
@@ -706,12 +719,11 @@ class Viewer {
     const from = {
       position: entry.group.position.clone(),
       quaternion: entry.group.quaternion.clone(),
-      scale: reveal ? 0.0001 : entry.group.scale.x,
+      scale: still ? pose.scale : reveal ? 0.0001 : entry.group.scale.x,
     };
-    if (reveal) {
-      from.position.copy(pose.position);
-      this.burst(pose.position);
-    }
+    if (reveal) from.position.copy(pose.position);
+    if (still) from.quaternion.copy(this.camera.quaternion);
+    else if (reveal) this.burst(pose.position);
     this.dimmer.visible = true;
     const axis = this.camera.position.clone().sub(BOUNDS.center).normalize();
     this.dimmer.position.copy(pose.position).addScaledVector(axis, -0.9);
@@ -721,15 +733,15 @@ class Viewer {
     // De frente a la cámara.
     const identity = this.camera.quaternion.clone();
     // Al presentarla, entra dando dos vueltas que frenan (como una medalla).
-    const turns = reveal ? Math.PI * 4 : 0;
+    const turns = reveal && !still ? Math.PI * 4 : 0;
     this.tween({
       key: 'focus',
-      duration: reveal ? 1300 : 420,
+      duration: still ? 420 : reveal ? 1300 : 420,
       ease: easeOut,
       update: (k) => {
         entry.group.position.lerpVectors(from.position, pose.position, k);
         entry.group.quaternion.slerpQuaternions(from.quaternion, identity, k);
-        const grow = reveal ? Math.min(1, k * 2.2) : k;
+        const grow = reveal && !still ? Math.min(1, k * 2.2) : k;
         entry.group.scale.setScalar(
           from.scale + (pose.scale - from.scale) * grow,
         );

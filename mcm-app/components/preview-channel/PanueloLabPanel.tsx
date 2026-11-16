@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { router } from 'expo-router';
@@ -10,12 +10,22 @@ import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { usePreviewChannel } from '@/contexts/PreviewChannelContext';
+import {
+  clearSimulation,
+  simulateAttendance,
+  simulateCorrection,
+  simulatedAttended,
+  simulatedEvents,
+} from '@/services/panueloAwards';
 import { confirmAsync } from '@/utils/confirmDialog';
 import { h } from '@/utils/haptics';
+import { logger } from '@/utils/logger';
 import { sortCatalog } from '@/utils/panuelo';
 
 /** Las piezas que asoman en la cabecera del panel, de adorno. */
 const SHOWCASE = sortCatalog(DEFAULT_PANUELO_CATALOG).slice(0, 5);
+/** Los eventos cuya asistencia se puede simular (servidor falso de Comunica). */
+const SIM_EVENTS = simulatedEvents();
 
 /**
  * El pañuelo virtual en el Laboratorio Alpha: la puerta de entrada mientras no
@@ -25,6 +35,11 @@ const SHOWCASE = sortCatalog(DEFAULT_PANUELO_CATALOG).slice(0, 5);
  * muestra» y «Empezar de cero» viajan como parámetro de la ruta
  * (`/panuelo?demo=…`) y los ejecuta la pantalla, que es la única dueña del
  * estado (`hooks/usePanuelo.ts`).
+ *
+ * La excepción es la SIMULACIÓN de las piezas por asistencia: hasta que haya
+ * servidor, escribe en el sustituto local que luego sustituirá
+ * `/panueloAwards` (`services/panueloAwards.ts`) y abre el pañuelo, que la
+ * lee al montar como leerá la de verdad.
  */
 export function PanueloLabPanel() {
   const { closeSecretMenu } = usePreviewChannel();
@@ -52,6 +67,30 @@ export function PanueloLabPanel() {
     });
     if (ok) open('cero');
   }, [open]);
+
+  // Qué eventos «tienen marca» ahora en la simulación.
+  const [attended, setAttended] = useState<string[]>([]);
+  useEffect(() => {
+    let mounted = true;
+    simulatedAttended().then((ids) => {
+      if (mounted) setAttended(ids);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+  const simulate = useCallback(
+    async (run: () => Promise<unknown>) => {
+      try {
+        await run();
+      } catch (err) {
+        logger.warn('[Pañuelo] la simulación no se pudo guardar:', err);
+        return;
+      }
+      open();
+    },
+    [open],
+  );
 
   return (
     <View style={styles.card}>
@@ -81,6 +120,35 @@ export function PanueloLabPanel() {
         onPress={() => open('todas')}
       />
       <LabButton label="Empezar de cero" onPress={confirmReset} subtle />
+
+      <View style={styles.simulation}>
+        <Text style={styles.eyebrow}>simulación</Text>
+        <Text style={styles.stat}>
+          Piezas por asistencia, como si te pasaran lista (o lo corrigieran). Se
+          guarda solo en este móvil hasta que exista el servidor.
+        </Text>
+        {SIM_EVENTS.map((event) =>
+          attended.includes(event.id) ? (
+            <LabButton
+              key={event.id}
+              label={`Simular que la quitan: ${event.name}`}
+              onPress={() => simulate(() => simulateCorrection(event.id))}
+              subtle
+            />
+          ) : (
+            <LabButton
+              key={event.id}
+              label={`Simular asistencia a ${event.name}`}
+              onPress={() => simulate(() => simulateAttendance(event.id))}
+            />
+          ),
+        )}
+        <LabButton
+          label="Borrar la simulación"
+          onPress={() => simulate(clearSimulation)}
+          subtle
+        />
+      </View>
     </View>
   );
 }
@@ -127,6 +195,10 @@ const styles = StyleSheet.create({
   title: {
     ...typography.h3,
     color: '#fff',
+  },
+  simulation: {
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
   },
   showcase: {
     flexDirection: 'row',

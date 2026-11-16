@@ -75,7 +75,7 @@ import { usePanueloScarf } from '@/hooks/usePanueloScarf';
 import { usePanueloStage } from '@/hooks/usePanueloStage';
 import { usePanueloTutorial } from '@/hooks/usePanueloTutorial';
 import { usePanueloTrade } from '@/hooks/usePanueloTrade';
-import { usePanueloTutorialStage } from '@/hooks/usePanueloTutorialStage';
+import { usePanueloIntro } from '@/hooks/usePanueloIntro';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import {
   type PanueloCommand,
@@ -181,15 +181,22 @@ function PanueloScreen() {
   const memory: PanueloMemory | null =
     history.find((m) => m.at === viewingAt) ?? null;
 
-  // El tutorial usa ESTE visor con otro estado y sus propias órdenes.
-  const tutorialStage = usePanueloTutorialStage({
-    open: tutorial.open,
-    step: tutorialStep,
+  // El tutorial y el desvelado de piezas nuevas usan ESTE visor con otro
+  // estado y sus propias órdenes, a pantalla completa.
+  const intro = usePanueloIntro({
+    tutorial,
+    panuelo,
     viewerReady,
     sendToViewer,
+    step: tutorialStep,
+    setStep: setTutorialStep,
+    free: viewingAt === null,
+    setMode,
+    setFilter,
+    setActiveId,
   });
-  const tutorialExample = tutorialStage.example;
-  const tutorialState = tutorialStage.state;
+  const tutorialExample = intro.example;
+  const tutorialState = intro.state;
   const viewerState = useMemo(
     () =>
       tutorialState ??
@@ -279,7 +286,7 @@ function PanueloScreen() {
     panuelo,
     scarf,
     mode,
-    busy: tutorial.busy || redeemOpen || trade.sheetOpen || viewingAt !== null,
+    busy: intro.busy || redeemOpen || trade.sheetOpen || viewingAt !== null,
     sendToViewer,
     settle,
   });
@@ -291,19 +298,19 @@ function PanueloScreen() {
           setViewerReady(true);
           break;
         case 'focus':
-          if (!tutorial.open) setActiveId(event.id);
+          if (!intro.open) setActiveId(event.id);
           break;
         case 'blur':
           settle();
           break;
         case 'select':
-          if (!tutorial.open) setActiveId(event.id);
+          if (!intro.open) setActiveId(event.id);
           break;
         case 'pickup':
           h.select();
           break;
         case 'drop':
-          if (tutorial.open) break;
+          if (intro.open) break;
           h.tap();
           panuelo.move(event.id, event.u, event.v);
           break;
@@ -318,7 +325,7 @@ function PanueloScreen() {
           break;
       }
     },
-    [panuelo, settle, tutorial.open],
+    [panuelo, settle, intro.open],
   );
 
   // Presentación de las piezas recién conseguidas, de una en una: cada una
@@ -331,7 +338,7 @@ function PanueloScreen() {
       redeemOpen ||
       trade.sheetOpen ||
       viewingAt !== null ||
-      tutorial.busy
+      intro.busy
     ) {
       return;
     }
@@ -349,7 +356,7 @@ function PanueloScreen() {
     redeemOpen,
     trade.sheetOpen,
     viewingAt,
-    tutorial.busy,
+    intro.busy,
     revealing,
     activeId,
     nextUnseen,
@@ -563,7 +570,7 @@ function PanueloScreen() {
   const linkTint = t.link;
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown: !tutorial.open,
+      headerShown: !intro.open,
       ...(Platform.OS === 'ios'
         ? {}
         : {
@@ -584,7 +591,7 @@ function PanueloScreen() {
             ),
           }),
     });
-  }, [navigation, tutorial.open, showTutorial, linkTint]);
+  }, [navigation, intro.open, showTutorial, linkTint]);
 
   // «Recolocar» deshace la colocación a mano: se pregunta antes.
   const arrange = useCallback(async () => {
@@ -632,7 +639,7 @@ function PanueloScreen() {
       ? 'No lleva ninguna pieza.'
       : `${memory ? 'Llevaba' : 'Lleva'} ${shown} ${shown === 1 ? 'pieza' : 'piezas'}.`;
   const viewerLabel = tutorialExample
-    ? `Pañuelo de ejemplo del tutorial, ${COLOR_LABEL[tutorialStage.state?.color ?? tutorialExample.color].name.toLowerCase()}.`
+    ? `Pañuelo de ejemplo del tutorial, ${COLOR_LABEL[tutorialState?.color ?? tutorialExample.color].name.toLowerCase()}.`
     : memory
       ? `Tu ${memoryName(memory)}, ${COLOR_LABEL[shownColor].stage}. Recuerdo, solo para verlo. ${placedCount}`
       : `Pañuelo ${COLOR_LABEL[color].name.toLowerCase()}, ${COLOR_LABEL[color].stage}. ${placedCount}`;
@@ -761,7 +768,7 @@ function PanueloScreen() {
       ? panelScroll(collectionView)
       : collectionView;
 
-  const topLeft = tutorial.open ? null : memory ? (
+  const topLeft = intro.open ? null : memory ? (
     <PanueloMemoryBar isDark={isDark} memory={memory} onBack={leaveMemory} />
   ) : stage.locked ? (
     <PanueloStagePill
@@ -774,7 +781,7 @@ function PanueloScreen() {
     <PanueloColorSwatches isDark={isDark} color={color} onPick={stage.pick} />
   );
   const topRight =
-    tutorial.open || memory ? null : (
+    intro.open || memory ? null : (
       <View style={styles.stageActions}>
         {mode === 'view' && viewerReady ? (
           <PressableFeedback
@@ -833,7 +840,7 @@ function PanueloScreen() {
         {
           backgroundColor: t.backgroundSunken,
           // A pantalla completa no hay cabecera nativa a la que esquivar.
-          paddingTop: tutorial.open ? 0 : underHeader,
+          paddingTop: intro.open ? 0 : underHeader,
         },
       ]}
     >
@@ -841,7 +848,7 @@ function PanueloScreen() {
         <Panuelo3D
           ref={viewerRef}
           state={viewerState}
-          mode={tutorial.open ? tutorialStage.mode : memory ? 'view' : mode}
+          mode={intro.open ? intro.mode : memory ? 'view' : mode}
           onEvent={onViewerEvent}
           tintColor={t.textSecondary}
           accessibilityLabel={viewerLabel}
@@ -849,14 +856,8 @@ function PanueloScreen() {
           style={StyleSheet.absoluteFill}
         />
 
-        {tutorial.open ? (
-          <PanueloTutorialHeader
-            isDark={isDark}
-            onClose={tutorial.finish}
-            onBack={
-              tutorialStep > 0 ? () => setTutorialStep((i) => i - 1) : undefined
-            }
-          />
+        {intro.open ? (
+          <PanueloTutorialHeader isDark={isDark} {...intro.header} />
         ) : (
           <View style={styles.stageTop} pointerEvents="box-none">
             {topLeft}
@@ -864,7 +865,7 @@ function PanueloScreen() {
           </View>
         )}
 
-        {active || tutorial.open || stage.locked ? null : (
+        {active || intro.open || stage.locked ? null : (
           <Text
             style={[styles.stageLabel, { color: t.textSecondary }]}
             pointerEvents="none"
@@ -877,15 +878,16 @@ function PanueloScreen() {
         )}
 
         <PanueloStageBurst color={stage.burst} onDone={stage.clearBurst} />
+        {intro.burst ? (
+          <PanueloStageBurst tint={intro.burst} onDone={intro.clearBurst} />
+        ) : null}
       </View>
 
-      {tutorial.open ? (
+      {intro.open ? (
         <PanueloTutorialPanel
           isDark={isDark}
           sideWidth={isWide ? SIDE_PANEL_WIDTH : undefined}
-          index={tutorialStep}
-          onIndex={setTutorialStep}
-          onFinish={tutorial.finish}
+          {...intro.panel}
         />
       ) : (
         <View
@@ -903,14 +905,14 @@ function PanueloScreen() {
       )}
 
       <PanueloRedeemSheet
-        visible={redeemOpen && !tutorial.busy}
+        visible={redeemOpen && !intro.busy}
         isDark={isDark}
         initialCode={linkedCode}
         onClose={() => setRedeemOpen(false)}
         onRedeem={panuelo.redeem}
       />
       <PanueloTradeSheet
-        visible={trade.sheetOpen && !tutorial.busy}
+        visible={trade.sheetOpen && !intro.busy}
         isDark={isDark}
         catalog={catalog}
         state={state}
@@ -936,7 +938,7 @@ function PanueloScreen() {
         onSelect={openMemory}
       />
       <Medalla3DModal medal={medal} onClose={() => setMedal(null)} />
-      {Platform.OS === 'ios' && !tutorial.open ? (
+      {Platform.OS === 'ios' && !intro.open ? (
         <Stack.Toolbar placement="right">
           <Stack.Toolbar.Button
             icon="questionmark.circle"

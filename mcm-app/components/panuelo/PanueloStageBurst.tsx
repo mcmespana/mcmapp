@@ -24,8 +24,14 @@ const OFFSETS = [
 ];
 
 type Props = {
-  /** El color del pañuelo NUEVO; `null` = sin confeti. */
-  color: PanueloColor | null;
+  /** El color del pañuelo NUEVO; `null` (o sin él) = sin confeti. */
+  color?: PanueloColor | null;
+  /**
+   * Otro color en lugar del de la tela: el de una pieza que se desvela (sale
+   * del catálogo, como sus dibujos). Con él hay confeti aunque `color` sea
+   * `null`.
+   */
+  tint?: string | null;
   /** Ya ha pasado el confeti: quien manda lo apaga. */
   onDone: () => void;
 };
@@ -35,22 +41,21 @@ type Props = {
  * en el centro (el burst lo admite vacío). Quien lo monta decide si lo hay:
  * con «reducir movimiento» no se monta.
  */
-export function PanueloStageBurst({ color, onDone }: Props) {
+export function PanueloStageBurst({ color, tint, onDone }: Props) {
+  const shown = Boolean(color || tint);
   useEffect(() => {
-    if (!color) return;
+    if (!shown) return;
     const timer = setTimeout(onDone, BURST_MS);
     return () => clearTimeout(timer);
-  }, [color, onDone]);
+  }, [shown, tint, color, onDone]);
 
   const particles = useMemo(
     () =>
       OFFSETS.map((o) => ({
         ...o,
-        c: PanueloColors.cloth[color ?? 'green'],
+        c: tint ?? PanueloColors.cloth[color ?? 'green'],
       })),
-    [color],
+    [color, tint],
   );
-  return (
-    <CelebrationBurst visible={color !== null} particles={particles} emoji="" />
-  );
+  return <CelebrationBurst visible={shown} particles={particles} emoji="" />;
 }

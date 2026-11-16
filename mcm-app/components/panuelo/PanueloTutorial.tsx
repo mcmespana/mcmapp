@@ -29,6 +29,7 @@ import { themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { radii, shadows } from '@/constants/uiStyles';
+import type { PanueloCatalog } from '@/types/panuelo';
 import { h } from '@/utils/haptics';
 
 const TOUCH = 44;
@@ -52,6 +53,17 @@ type Props = {
   /** «Empezar» en el último paso: el tutorial se da por visto. */
   onFinish: () => void;
   sections?: readonly PanueloTutorialSection[];
+  /** De dónde salen las piezas de `example.art` (por defecto, las de ejemplo). */
+  catalog?: PanueloCatalog;
+  /** El botón en los pasos que no son el último. Por defecto, «Continuar». */
+  nextLabel?: string;
+  /** El botón en el último paso. Por defecto, «Empezar». */
+  finishLabel?: string;
+  /** Un enlace bajo el botón, solo en el último paso («Ahora no»). */
+  secondaryLabel?: string;
+  onSecondary?: () => void;
+  /** Lo que lee el lector en los puntos. Por defecto, «Paso 3 de 7». */
+  pageLabel?: (index: number, count: number) => string;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -65,11 +77,14 @@ export function PanueloPageDots({
   index,
   count,
   onIndex,
+  label,
 }: {
   isDark: boolean;
   index: number;
   count: number;
   onIndex: (index: number) => void;
+  /** Por defecto, «Paso 3 de 7». */
+  label?: string;
 }) {
   const t = themeColors(isDark);
   return (
@@ -77,7 +92,7 @@ export function PanueloPageDots({
       style={styles.dots}
       accessible
       accessibilityRole="adjustable"
-      accessibilityLabel={`Paso ${index + 1} de ${count}`}
+      accessibilityLabel={label ?? `Paso ${index + 1} de ${count}`}
       accessibilityValue={{ min: 1, max: count, now: index + 1 }}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={(e) => {
@@ -117,6 +132,12 @@ export function PanueloTutorial({
   onIndex,
   onFinish,
   sections = PANUELO_TUTORIAL,
+  catalog = EXAMPLE_PANUELO_CATALOG,
+  nextLabel = 'Continuar',
+  finishLabel = 'Empezar',
+  secondaryLabel,
+  onSecondary,
+  pageLabel,
   style,
 }: Props) {
   const t = themeColors(isDark);
@@ -179,6 +200,7 @@ export function PanueloTutorial({
           <TutorialPage
             key={section.id}
             section={section}
+            catalog={catalog}
             isDark={isDark}
             width={width}
             current={i === index}
@@ -195,9 +217,10 @@ export function PanueloTutorial({
           index={index}
           count={sections.length}
           onIndex={onIndex}
+          label={pageLabel?.(index, sections.length)}
         />
         <AppPrimaryButton
-          label={last ? 'Empezar' : 'Continuar'}
+          label={last ? finishLabel : nextLabel}
           color={t.link}
           haptic={false}
           style={styles.button}
@@ -210,6 +233,22 @@ export function PanueloTutorial({
             }
           }}
         />
+        {last && secondaryLabel && onSecondary ? (
+          <PressableFeedback
+            onPress={() => {
+              h.tap();
+              onSecondary();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={secondaryLabel}
+            style={styles.secondary}
+          >
+            <PressableFeedback.Highlight />
+            <Text style={[styles.secondaryText, { color: t.link }]}>
+              {secondaryLabel}
+            </Text>
+          </PressableFeedback>
+        ) : null}
       </View>
     </View>
   );
@@ -244,6 +283,7 @@ export function PanueloTutorialPanel({ sideWidth, ...props }: PanelProps) {
 
 function TutorialPage({
   section,
+  catalog,
   isDark,
   width,
   current,
@@ -251,6 +291,7 @@ function TutorialPage({
   onPrevious,
 }: {
   section: PanueloTutorialSection;
+  catalog: PanueloCatalog;
   isDark: boolean;
   width: number;
   current: boolean;
@@ -259,7 +300,7 @@ function TutorialPage({
 }) {
   const t = themeColors(isDark);
   const art = (section.example?.art ?? [])
-    .map((id) => EXAMPLE_PANUELO_CATALOG[id])
+    .map((id) => catalog[id])
     .filter(Boolean);
   return (
     // Las páginas que no se ven no existen para el lector de pantalla.
@@ -341,7 +382,11 @@ function TutorialPage({
 
 type HeaderProps = {
   isDark: boolean;
+  /** Por defecto, «Tu pañuelo». */
+  title?: string;
   onClose: () => void;
+  /** Lo que lee el lector en la X. Por defecto, «Cerrar el tutorial». */
+  closeLabel?: string;
   /** A partir del segundo paso: el chevron de «Paso anterior». */
   onBack?: () => void;
 };
@@ -354,7 +399,9 @@ type HeaderProps = {
  */
 export function PanueloTutorialHeader({
   isDark,
+  title = 'Tu pañuelo',
   onClose,
+  closeLabel = 'Cerrar el tutorial',
   onBack,
 }: HeaderProps) {
   const t = themeColors(isDark);
@@ -389,7 +436,7 @@ export function PanueloTutorialHeader({
         style={[styles.headerTitle, { color: t.text }]}
         accessibilityRole="header"
       >
-        Tu pañuelo
+        {title}
       </Text>
       <PressableFeedback
         onPress={() => {
@@ -397,7 +444,7 @@ export function PanueloTutorialHeader({
           onClose();
         }}
         accessibilityRole="button"
-        accessibilityLabel="Cerrar el tutorial"
+        accessibilityLabel={closeLabel}
         style={[styles.round, { backgroundColor: t.card }]}
       >
         <PressableFeedback.Highlight />
@@ -511,5 +558,16 @@ const styles = StyleSheet.create({
   },
   button: {
     minHeight: BUTTON_MIN,
+  },
+  secondary: {
+    minHeight: TOUCH,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    overflow: 'hidden',
+    marginTop: -spacing.sm,
+  },
+  secondaryText: {
+    ...typography.button,
   },
 });

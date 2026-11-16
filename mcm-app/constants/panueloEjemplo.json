@@ -324,6 +324,66 @@
         "pattern": "stripes"
       },
       "order": 180
+    },
+    "chapa-salida-sierra": {
+      "id": "chapa-salida-sierra",
+      "kind": "chapa",
+      "name": "Salida a la sierra",
+      "origin": "Salida a la sierra · Octubre 2026",
+      "description": "Para quien subió a la sierra con su grupo. Pieza de prueba del Laboratorio: llega al simular que te pasan lista.",
+      "rarity": "especial",
+      "grant": {
+        "type": "attendance",
+        "events": ["f-evt-salida"]
+      },
+      "look": {
+        "kind": "chapa",
+        "bg": "#A3BD31",
+        "ring": "#253883",
+        "ink": "#FFFFFF",
+        "glyph": "mountain",
+        "text": "Salida",
+        "textBottom": "Sierra 2026"
+      },
+      "order": 200
+    },
+    "pin-convivencia-otono": {
+      "id": "pin-convivencia-otono",
+      "kind": "pin",
+      "name": "Hoja de otoño",
+      "origin": "Convivencia de otoño",
+      "description": "Un pin de cobre para la convivencia de otoño. Pieza de prueba del Laboratorio.",
+      "grant": {
+        "type": "attendance",
+        "events": ["f-evt-convivencia"]
+      },
+      "look": {
+        "kind": "pin",
+        "shape": "leaf",
+        "enamel": "#E15C62",
+        "enamel2": "#FCD200",
+        "metal": "cobre"
+      },
+      "order": 210
+    },
+    "medalla-pascua-joven": {
+      "id": "medalla-pascua-joven",
+      "kind": "medalla",
+      "name": "Pascua joven",
+      "origin": "Pascua joven 2027",
+      "description": "La medalla de quien vivió la Pascua joven. Pieza de prueba del Laboratorio.",
+      "rarity": "unica",
+      "grant": {
+        "type": "attendance",
+        "events": ["f-evt-pascua"]
+      },
+      "look": {
+        "kind": "medalla",
+        "metal": "oro",
+        "ribbon": ["#9D1E74", "#FCD200", "#9D1E74"],
+        "glyph": "cross"
+      },
+      "order": 220
     }
   }
 }

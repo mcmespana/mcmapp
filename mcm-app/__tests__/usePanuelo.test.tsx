@@ -12,10 +12,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { DEFAULT_PANUELO_CATALOG } from '@/constants/panueloCatalog';
 import {
+  PANUELO_REVOKED_KEY,
   PANUELO_SEEN_KEY,
   PANUELO_STATE_KEY,
   usePanuelo,
 } from '@/hooks/usePanuelo';
+import {
+  clearSimulation,
+  simulateAttendance,
+  simulateCorrection,
+} from '@/services/panueloAwards';
 import type { PanueloCatalog, PanueloUserState } from '@/types/panuelo';
 import { EMPTY_PANUELO } from '@/utils/panuelo';
 
@@ -44,6 +50,7 @@ jest.mock('@/utils/authHelpers', () => ({
   syncPanueloLayout: jest.fn(),
   syncPanueloMemory: jest.fn(),
   syncPanueloTradeHalf: jest.fn(),
+  syncPanueloRevoked: jest.fn(),
   clearPanuelo: jest.fn(),
 }));
 
@@ -899,5 +906,120 @@ describe('usePanuelo: la mitad de un intercambio', () => {
       applied = result.current.applyTradeHalf(trade);
     });
     expect(applied).toBe(false);
+  });
+});
+
+describe('usePanuelo: piezas por asistencia (simulación del Laboratorio)', () => {
+  const SALIDA = 'chapa-salida-sierra';
+  const syncPanueloRevoked = helpers.syncPanueloRevoked as jest.Mock;
+
+  it('lo concedido entra en la caja, sin coserse y sin ver', async () => {
+    await simulateAttendance('f-evt-salida');
+    const { result } = await mount();
+    expect(result.current.state.items[SALIDA]).toMatchObject({
+      via: 'attendance',
+    });
+    expect(result.current.state.layout[SALIDA]).toBeUndefined();
+    expect(result.current.unseen).toContain(SALIDA);
+    expect(result.current.catalog[SALIDA]).toBeDefined();
+  });
+
+  it('sin desvelar, si corrigen la lista se cae de la cola sin aviso', async () => {
+    await simulateAttendance('f-evt-salida');
+    const first = await mount();
+    await first.unmount();
+    await simulateCorrection('f-evt-salida');
+    const { result } = await mount();
+    expect(result.current.state.items[SALIDA]).toBeUndefined();
+    expect(result.current.unseen).not.toContain(SALIDA);
+    expect(result.current.revokedNotice).toBeNull();
+  });
+
+  it('desvelada y cosida: se descose y se avisa UNA vez', async () => {
+    await simulateAttendance('f-evt-salida');
+    const first = await mount();
+    await act(async () => {
+      first.result.current.markSeen(SALIDA);
+      first.result.current.place(SALIDA);
+    });
+    expect(first.result.current.state.layout[SALIDA]).toBeDefined();
+    await first.unmount();
+
+    await simulateCorrection('f-evt-salida');
+    const second = await mount();
+    expect(second.result.current.state.items[SALIDA]).toBeUndefined();
+    expect(second.result.current.state.layout[SALIDA]).toBeUndefined();
+    expect(second.result.current.revokedNotice).toBe(
+      'Ya no tienes «Salida a la sierra»: se corrigió la lista de Salida a la sierra · Octubre 2026.',
+    );
+    // Se recuerda hasta que se enseña…
+    expect(await saved(PANUELO_REVOKED_KEY)).toHaveLength(1);
+    await act(async () => {
+      second.result.current.dismissRevokedNotice();
+    });
+    await second.unmount();
+    // …y no vuelve a salir.
+    const third = await mount();
+    expect(third.result.current.revokedNotice).toBeNull();
+  });
+
+  it('si vuelven a marcarla, llega como nueva y a la caja', async () => {
+    await simulateAttendance('f-evt-salida');
+    const first = await mount();
+    await act(async () => {
+      first.result.current.markSeen(SALIDA);
+      first.result.current.place(SALIDA);
+    });
+    await first.unmount();
+    await simulateCorrection('f-evt-salida');
+    await (await mount()).unmount();
+    await simulateAttendance('f-evt-salida');
+    const { result } = await mount();
+    expect(result.current.state.items[SALIDA]).toBeDefined();
+    expect(result.current.state.layout[SALIDA]).toBeUndefined();
+    expect(result.current.unseen).toContain(SALIDA);
+  });
+
+  it('no se cose sola como las repartidas por el Panel', async () => {
+    await store(
+      PANUELO_STATE_KEY,
+      state({ items: { 'estrella-guia': { at: 50, via: 'manual' } } }),
+    );
+    await simulateAttendance('f-evt-salida');
+    const { result } = await mount();
+    expect(result.current.state.layout['estrella-guia']).toBeDefined();
+    expect(result.current.state.layout[SALIDA]).toBeUndefined();
+  });
+
+  it('borrar la simulación se lleva sus piezas sin aviso', async () => {
+    await simulateAttendance('f-evt-salida');
+    await (await mount()).unmount();
+    await clearSimulation();
+    const { result } = await mount();
+    expect(result.current.state.items[SALIDA]).toBeUndefined();
+    expect(result.current.revokedNotice).toBeNull();
+  });
+
+  it('con sesión: lo concedido se sube y lo retirado se borra de la nube', async () => {
+    mockAuth.user = { uid: 'u1' };
+    fetchPanuelo.mockResolvedValue(EMPTY_PANUELO);
+    await simulateAttendance('f-evt-salida');
+    const first = await mount();
+    expect(syncPanueloItem).toHaveBeenCalledWith(
+      'u1',
+      SALIDA,
+      expect.objectContaining({ via: 'attendance' }),
+    );
+    await first.unmount();
+    // La nube aún la tiene: la suma de piezas no la resucita.
+    fetchPanuelo.mockResolvedValue(
+      state({ items: { [SALIDA]: { at: 1, via: 'attendance' } } }),
+    );
+    await simulateCorrection('f-evt-salida');
+    const { result } = await mount();
+    expect(result.current.state.items[SALIDA]).toBeUndefined();
+    expect(syncPanueloRevoked).toHaveBeenCalledWith('u1', expect.anything(), [
+      SALIDA,
+    ]);
   });
 });

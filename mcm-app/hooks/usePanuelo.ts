@@ -19,6 +19,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_PANUELO_CATALOG } from '@/constants/panueloCatalog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import {
+  loadAwards,
+  type PanueloAwardsSnapshot,
+} from '@/services/panueloAwards';
 import type {
   PanueloCatalog,
   PanueloColor,
@@ -34,6 +38,7 @@ import {
   syncPanueloItem,
   syncPanueloLayout,
   syncPanueloMemory,
+  syncPanueloRevoked,
   syncPanueloTradeHalf,
 } from '@/utils/authHelpers';
 import { logger } from '@/utils/logger';
@@ -48,19 +53,24 @@ import {
   newMemories,
   pendingAutoGrants,
   placeItem,
+  reconcileAwards,
   redeemCode,
+  revokedNoticeText,
   rotateItem,
   sanitizeCatalog,
   sanitizeUserState,
   setPanueloColor,
   unplaceItem,
   type RedeemResult,
+  type RevokedPiece,
 } from '@/utils/panuelo';
 import { applyTrade, tradeHalf, type PanueloTrade } from '@/utils/panueloTrade';
 
 export const PANUELO_STATE_KEY = '@panuelo_state';
 /** Las piezas que ya se le han presentado a la persona en ESTE móvil. */
 export const PANUELO_SEEN_KEY = '@panuelo_seen';
+/** Piezas por asistencia retiradas que aún no se han avisado (una vez). */
+export const PANUELO_REVOKED_KEY = '@panuelo_retiradas';
 
 /** Cuánto se espera antes de subir la colocación: arrastrar no es escribir. */
 const LAYOUT_SYNC_DELAY_MS = 1200;
@@ -77,6 +87,13 @@ export interface PanueloValue {
   unseen: string[];
   /** Marca una pieza como presentada. */
   markSeen: (id: string) => void;
+  /**
+   * La línea discreta de las piezas por asistencia que se han quitado porque
+   * se corrigió la lista («Ya no tienes…»), o `null`. Se enseña una vez.
+   */
+  revokedNotice: string | null;
+  /** Ya se ha enseñado: no vuelve a salir. */
+  dismissRevokedNotice: () => void;
   setColor: (color: PanueloColor) => void;
   /**
    * Cambio de etapa: guarda el pañuelo de ahora en el historial (si llevaba
@@ -120,13 +137,22 @@ export function usePanuelo(): PanueloValue {
     'panuelo_catalog',
     sanitizeCatalog,
   );
-  const catalog = useMemo(
-    () =>
+  /** Piezas que solo existen mientras dura la simulación del Laboratorio. */
+  const [simCatalog, setSimCatalog] = useState<PanueloCatalog>({});
+  const catalog = useMemo(() => {
+    const base =
       remoteCatalog && Object.keys(remoteCatalog).length > 0
         ? remoteCatalog
-        : DEFAULT_PANUELO_CATALOG,
-    [remoteCatalog],
-  );
+        : DEFAULT_PANUELO_CATALOG;
+    return Object.keys(simCatalog).length > 0
+      ? { ...simCatalog, ...base }
+      : base;
+  }, [remoteCatalog, simCatalog]);
+  const catalogRef = useRef(catalog);
+  useEffect(() => {
+    catalogRef.current = catalog;
+  }, [catalog]);
+  const [revoked, setRevoked] = useState<RevokedPiece[]>([]);
 
   const [state, setState] = useState<PanueloUserState>(EMPTY_PANUELO);
   const [seen, setSeen] = useState<Record<string, true>>({});
@@ -222,14 +248,72 @@ export function usePanuelo(): PanueloValue {
   /** El móvil no tenía nada guardado al abrir: es un móvil nuevo. */
   const freshInstallRef = useRef(false);
 
+  /** Lo último que se supo de las piezas por asistencia. */
+  const awardsRef = useRef<PanueloAwardsSnapshot | null>(null);
+  /**
+   * Refleja las piezas por asistencia (`reconcileAwards`): lo concedido entra
+   * en la caja sin coserse; lo que ya no se sostiene sale (y se descose). Lo
+   * retirado deja de estar visto (si vuelve, se presenta como nueva) y, si
+   * ya se había desvelado, se avisa una vez.
+   */
+  const applyAwards = useCallback(
+    (snapshot: PanueloAwardsSnapshot) => {
+      const full = { ...snapshot.catalog, ...catalogRef.current };
+      const before = stateRef.current;
+      const result = reconcileAwards(before, snapshot.awards, full, Date.now());
+      if (result.state === before) return;
+      persist(result.state);
+      const seenNext = { ...seenRef.current };
+      const notices: RevokedPiece[] = [];
+      for (const id of result.revoked) {
+        const shown = seenNext[id] || before.layout[id];
+        delete seenNext[id];
+        const def = full[id];
+        if (def) trackEvent('panuelo_pieza_retirada', { clase: def.kind });
+        if (shown && def) {
+          notices.push({ id, name: def.name, origin: def.origin });
+        }
+      }
+      if (result.revoked.length > 0) persistSeen(seenNext);
+      if (notices.length > 0) {
+        setRevoked((current) => {
+          const next = [...current, ...notices];
+          AsyncStorage.setItem(PANUELO_REVOKED_KEY, JSON.stringify(next)).catch(
+            () => {},
+          );
+          return next;
+        });
+      }
+      for (const id of result.granted) {
+        const def = full[id];
+        if (def) {
+          trackEvent('panuelo_pieza_conseguida', {
+            clase: def.kind,
+            via: 'attendance',
+          });
+        }
+      }
+      const current = uidRef.current;
+      if (!current) return;
+      for (const id of result.granted) {
+        syncPanueloItem(current, id, result.state.items[id]);
+      }
+      if (result.revoked.length > 0) {
+        syncPanueloRevoked(current, result.state, result.revoked);
+      }
+    },
+    [persist, persistSeen],
+  );
+
   // Local al montar.
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const [storedState, storedSeen] = await Promise.all([
+        const [storedState, storedSeen, storedRevoked] = await Promise.all([
           AsyncStorage.getItem(PANUELO_STATE_KEY),
           AsyncStorage.getItem(PANUELO_SEEN_KEY),
+          AsyncStorage.getItem(PANUELO_REVOKED_KEY),
         ]);
         if (!mounted) return;
         const local = sanitizeUserState(
@@ -246,6 +330,15 @@ export function usePanuelo(): PanueloValue {
         }
         seenRef.current = seenMap;
         setSeen(seenMap);
+        const notices: unknown = storedRevoked ? JSON.parse(storedRevoked) : [];
+        if (Array.isArray(notices)) {
+          setRevoked(
+            notices.filter(
+              (n): n is RevokedPiece =>
+                typeof n?.id === 'string' && typeof n?.name === 'string',
+            ),
+          );
+        }
       } catch (err) {
         logger.warn('[Pañuelo] lo guardado en el móvil no se pudo leer:', err);
       }
@@ -267,6 +360,8 @@ export function usePanuelo(): PanueloValue {
       const local = stateRef.current;
       const { merged, upload } = mergePanuelo(local, remote);
       persist(merged);
+      // La nube SUMA piezas: una retirada que quedara arriba volvería.
+      if (awardsRef.current) applyAwards(awardsRef.current);
       if (freshInstallRef.current) {
         // Móvil nuevo: lo que ya tenía en la nube no se le «presenta» otra
         // vez, pieza a pieza, como si lo acabara de conseguir. Se mira cómo
@@ -293,7 +388,30 @@ export function usePanuelo(): PanueloValue {
     return () => {
       mounted = false;
     };
-  }, [uid, localLoaded, persist, persistSeen]);
+  }, [uid, localLoaded, persist, persistSeen, applyAwards]);
+
+  // Las piezas por asistencia, al abrir. F4: el día que haya servidor,
+  // `loadAwards` reclama (`panueloClaimAttendance`) en vez de leer la
+  // simulación; aquí no cambia nada. Sin poder leerlas no se quita nada.
+  useEffect(() => {
+    if (!localLoaded) return;
+    let mounted = true;
+    loadAwards().then((snapshot) => {
+      if (!mounted || !snapshot) return;
+      awardsRef.current = snapshot;
+      setSimCatalog(snapshot.catalog);
+      applyAwards(snapshot);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [localLoaded, applyAwards]);
+
+  // Si cambia el catálogo (llega el del Panel), se vuelve a reflejar: una
+  // pieza por asistencia que solo esté en el remoto entra ahora.
+  useEffect(() => {
+    if (awardsRef.current) applyAwards(awardsRef.current);
+  }, [catalog, applyAwards]);
 
   // Las piezas «para todo el mundo» se consiguen solas al abrir el pañuelo.
   useEffect(() => {
@@ -303,11 +421,16 @@ export function usePanuelo(): PanueloValue {
   }, [localLoaded, catalog, award]);
 
   // Una pieza repartida desde el Panel llega sin sitio: se le busca hueco.
+  // Las de asistencia no: esperan en la caja a su desvelado.
   useEffect(() => {
     if (!localLoaded) return;
     const current = stateRef.current;
     const loose = Object.keys(current.items).filter(
-      (id) => !current.layout[id] && !seenRef.current[id] && catalog[id],
+      (id) =>
+        !current.layout[id] &&
+        !seenRef.current[id] &&
+        catalog[id] &&
+        current.items[id].via !== 'attendance',
     );
     if (loose.length === 0) return;
     applyLayout((s, now) =>
@@ -323,6 +446,12 @@ export function usePanuelo(): PanueloValue {
         .map(([id]) => id),
     [state.items, seen, catalog],
   );
+
+  const revokedNotice = useMemo(() => revokedNoticeText(revoked), [revoked]);
+  const dismissRevokedNotice = useCallback(() => {
+    setRevoked([]);
+    AsyncStorage.removeItem(PANUELO_REVOKED_KEY).catch(() => {});
+  }, []);
 
   const markSeen = useCallback(
     (id: string) => {
@@ -451,6 +580,8 @@ export function usePanuelo(): PanueloValue {
     state,
     unseen,
     markSeen,
+    revokedNotice,
+    dismissRevokedNotice,
     setColor,
     changeStage,
     arrange,

@@ -40,6 +40,7 @@ import { h } from '@/utils/haptics';
 // ── Dobles ──────────────────────────────────────────────────────────────────
 
 const mockRouter: { params: Record<string, string> } = { params: {} };
+const mockToastShow = jest.fn();
 const mockSetOptions = jest.fn();
 // Estos tests usan las piezas de ejemplo (una de cada clase), no el catálogo
 // de verdad, que cambia cada vez que se añade una chapa.
@@ -84,7 +85,10 @@ jest.mock('heroui-native', () => {
       Local.createElement(Pressable, props),
     { Highlight: () => null, Scale: () => null },
   );
-  return { PressableFeedback };
+  return {
+    PressableFeedback,
+    useToast: () => ({ toast: { show: mockToastShow } }),
+  };
 });
 
 jest.mock('@/components/ui/icons', () => {
@@ -258,6 +262,8 @@ const mockPanuelo = {
   state: STATE,
   unseen: [] as string[],
   markSeen: jest.fn(),
+  revokedNotice: null as string | null,
+  dismissRevokedNotice: jest.fn(),
   setColor: jest.fn(),
   changeStage: jest.fn(),
   arrange: jest.fn(),
@@ -1729,5 +1735,232 @@ describe('el tutorial a pantalla completa y la cabecera nativa', () => {
     await press(root, 'Continuar');
     await press(root, 'Cerrar el tutorial');
     expect(viewers().length).toBe(before);
+  });
+});
+
+describe('el desvelado de las piezas por asistencia', () => {
+  const NEWS: PanueloCatalog = {
+    ...CATALOG,
+    'chapa-pascua': {
+      id: 'chapa-pascua',
+      kind: 'chapa',
+      name: 'Chapa de Pascua',
+      origin: 'Pascua Joven 2027',
+      description: 'Para quien vivió la Pascua.',
+      look: { kind: 'chapa', bg: '#9D1E74' },
+      grant: { type: 'attendance', events: ['evt-1'] },
+      tradeable: false,
+    },
+    'pin-salida': {
+      id: 'pin-salida',
+      kind: 'pin',
+      name: 'Pin de la salida',
+      origin: 'Salida a la sierra',
+      look: { kind: 'pin', shape: 'mountain', enamel: '#A3BD31' },
+      grant: { type: 'attendance', events: ['evt-2'] },
+      tradeable: false,
+    },
+  };
+  const WITH_NEWS: PanueloUserState = {
+    ...STATE,
+    items: {
+      ...STATE.items,
+      'chapa-pascua': { at: Date.UTC(2027, 3, 12, 12), via: 'attendance' },
+      'pin-salida': { at: Date.UTC(2027, 3, 20, 12), via: 'attendance' },
+    },
+  };
+  /** El título de la página que se ve. */
+  const pageTitle = (root: ReactTestInstance) => {
+    const page = root.findAll(
+      (n) =>
+        typeof n.type === 'string' &&
+        n.props.accessibilityElementsHidden === false &&
+        n.props.importantForAccessibility === 'auto',
+    )[0];
+    if (!page) return null;
+    const header = page.findAll(
+      (n) =>
+        typeof n.type === 'string' && n.props.accessibilityRole === 'header',
+    )[0];
+    return { title: textOf(header), text: textOf(page) };
+  };
+  const bursts = (root: ReactTestInstance) =>
+    root.findAllByType(CelebrationBurst).filter((b) => b.props.visible);
+
+  beforeEach(() => {
+    mockPanuelo.catalog = NEWS;
+    mockPanuelo.state = WITH_NEWS;
+    mockPanuelo.unseen = ['chapa-pascua', 'pin-salida'];
+  });
+  afterEach(() => {
+    mockPanuelo.catalog = CATALOG;
+    mockPanuelo.revokedNotice = null;
+  });
+
+  it('sale al abrir, una a una, con «Siguiente» y tu pañuelo de fondo', async () => {
+    const { root } = await mount();
+    expect(textOf(root)).toContain('Piezas nuevas');
+    expect(pageTitle(root)?.title).toBe('Chapa de Pascua');
+    expect(pageTitle(root)?.text).toContain('Por ir a Pascua Joven 2027.');
+    expect(pageTitle(root)?.text).toContain('Para quien vivió la Pascua.');
+    expect(pageTitle(root)?.text).toContain(
+      'La conseguiste el 12 de abril de 2027',
+    );
+    expect(labelsOf(root)).toContain('Pieza 1 de 2');
+    expect(pressable(root, 'Siguiente')).toBeTruthy();
+    expect(labelsOf(root)).not.toContain('Ahora no');
+    // El pañuelo de la persona (azul, con su chapa) y la nueva presentándose.
+    expect(mockViewer.props.state?.color).toBe('blue');
+    expect(mockViewer.props.state?.items.map((i) => i.id).sort()).toEqual([
+      'chapa-pascua',
+      'chapa1',
+    ]);
+    // La chapa de siempre sigue en su sitio.
+    expect(
+      mockViewer.props.state?.items.find((i) => i.id === 'chapa1'),
+    ).toMatchObject({ u: 0, v: 0.5 });
+    expect(mockPanuelo.markSeen).toHaveBeenCalledWith('chapa-pascua');
+    expect(mockPanuelo.markSeen).not.toHaveBeenCalledWith('pin-salida');
+    expect(announce).toHaveBeenCalledWith(
+      'Pieza nueva, 1 de 2: Chapa de Pascua. Por ir a Pascua Joven 2027.',
+    );
+    // Mientras dura no hay colores ni decorar ni colección.
+    expect(labelsOf(root)).not.toContain('Decorar el pañuelo');
+    expect(labelsOf(root)).not.toContain('Canjear un código');
+  });
+
+  it('la última dice «Colocarlas» y ofrece «Ahora no»', async () => {
+    const { root } = await mount();
+    await press(root, 'Siguiente');
+    expect(pageTitle(root)?.title).toBe('Pin de la salida');
+    expect(pageTitle(root)?.text).toContain('Te esperan en tu colección');
+    expect(mockPanuelo.markSeen).toHaveBeenCalledWith('pin-salida');
+    expect(pressable(root, 'Colocarlas')).toBeTruthy();
+    expect(pressable(root, 'Ahora no')).toBeTruthy();
+  });
+
+  it('«Colocarlas» abre decorar con «Sin poner» y la primera pieza a mano; no se cosen solas', async () => {
+    const { root } = await mount();
+    await press(root, 'Siguiente');
+    await press(root, 'Colocarlas');
+    expect(mockViewer.props.mode).toBe('edit');
+    // La ficha de la primera, con «Ponérmela»: se cose cuando la persona quiera.
+    expect(textOf(root)).toContain('Chapa de Pascua');
+    expect(pressable(root, 'Ponérmela')).toBeTruthy();
+    expect(mockPanuelo.place).not.toHaveBeenCalled();
+    // Y el visor vuelve al pañuelo de verdad: la nueva no está cosida.
+    expect(mockViewer.props.state?.items.map((i) => i.id)).toEqual(['chapa1']);
+    // Al cerrar la ficha, la colección está en «Sin poner».
+    await press(root, 'Cerrar la ficha');
+    const selected = root
+      .findAll(
+        (n) =>
+          n.props.accessibilityRole === 'tab' &&
+          n.props.accessibilityState?.selected === true &&
+          typeof n.props.onPress === 'function',
+      )
+      .map((n) => n.props.accessibilityLabel);
+    expect(new Set(selected)).toEqual(new Set(['Sin poner']));
+    expect(mockViewer.props.mode).toBe('edit');
+  });
+
+  it('la X cierra: queda visto solo lo que se enseñó', async () => {
+    const { root } = await mount();
+    await press(root, 'Cerrar');
+    expect(mockPanuelo.markSeen).toHaveBeenCalledTimes(1);
+    expect(mockPanuelo.markSeen).toHaveBeenCalledWith('chapa-pascua');
+    expect(textOf(root)).toContain('Tu colección');
+    expect(mockViewer.props.mode).toBe('view');
+  });
+
+  it('una sola pieza habla en singular', async () => {
+    mockPanuelo.unseen = ['pin-salida'];
+    const { root } = await mount();
+    expect(textOf(root)).toContain('Pieza nueva');
+    expect(pressable(root, 'Colocarla')).toBeTruthy();
+    expect(pressable(root, 'Ahora no')).toBeTruthy();
+  });
+
+  it('va después del tutorial, y el canje espera a las dos cosas', async () => {
+    await AsyncStorage.clear();
+    mockRouter.params = { codigo: 'CAMINO' };
+    const { root } = await mount();
+    expect(pressable(root, 'Continuar')).toBeTruthy();
+    expect(labelsOf(root)).not.toContain('Siguiente');
+    await press(root, 'Cerrar el tutorial');
+    expect(pageTitle(root)?.title).toBe('Chapa de Pascua');
+    expect(root.findAllByType('BottomSheet' as never)).toHaveLength(0);
+    await press(root, 'Cerrar');
+    expect(root.findByType('BottomSheet' as never).props.title).toBe(
+      'Canjear un código',
+    );
+  });
+
+  it('se presenta en el visor: con giro y confeti del color de la pieza', async () => {
+    jest.useFakeTimers();
+    const success = jest
+      .spyOn(h, 'formSuccess')
+      .mockImplementation(() => undefined);
+    try {
+      const { root } = await mount();
+      expect(success).toHaveBeenCalledTimes(1);
+      expect(bursts(root)).toHaveLength(1);
+      expect(bursts(root)[0].props.particles[0].c).toBe('#9D1E74');
+      await act(async () => {
+        mockViewer.props.onEvent?.({ type: 'ready' } as PanueloEvent);
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+      expect(mockSend).toHaveBeenCalledWith({
+        type: 'reveal',
+        id: 'chapa-pascua',
+        still: false,
+      });
+    } finally {
+      success.mockRestore();
+      jest.useRealTimers();
+    }
+  });
+
+  it('con «reducir movimiento»: aparece quieta y sin confeti', async () => {
+    jest.useFakeTimers();
+    mockMotion.reduced = true;
+    try {
+      const { root } = await mount();
+      expect(bursts(root)).toHaveLength(0);
+      await act(async () => {
+        mockViewer.props.onEvent?.({ type: 'ready' } as PanueloEvent);
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+      expect(mockSend).toHaveBeenCalledWith({
+        type: 'reveal',
+        id: 'chapa-pascua',
+        still: true,
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('lo que ya está colocado o llegó por otra vía no entra en el desvelado', async () => {
+    mockPanuelo.unseen = ['pin1'];
+    const { root } = await mount();
+    expect(labelsOf(root)).not.toContain('Siguiente');
+    expect(textOf(root)).toContain('Tu colección');
+  });
+
+  it('lo retirado se avisa una vez, con una línea discreta, cuando la pantalla está libre', async () => {
+    mockPanuelo.unseen = [];
+    mockPanuelo.revokedNotice =
+      'Ya no tienes «Chapa de Pascua»: se corrigió la lista de Pascua Joven 2027.';
+    await mount();
+    expect(mockToastShow).toHaveBeenCalledTimes(1);
+    expect(mockToastShow).toHaveBeenCalledWith({
+      label: mockPanuelo.revokedNotice,
+    });
+    expect(mockPanuelo.dismissRevokedNotice).toHaveBeenCalled();
   });
 });

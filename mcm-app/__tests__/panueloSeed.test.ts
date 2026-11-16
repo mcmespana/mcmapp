@@ -49,7 +49,7 @@ describe('firebase-seed/panuelo.json', () => {
 
   it.each(ids)('«%s»: no pierde nada del dibujo al sanear', (id) => {
     const look = raw[id].look ?? {};
-    const kept = (clean[id]?.look ?? {}) as Record<string, unknown>;
+    const kept = (clean[id]?.look ?? {}) as unknown as Record<string, unknown>;
     const lost = Object.keys(look).filter((k) => kept[k] === undefined);
     // Un color que no es hex o una imagen que no es https se caen solos.
     expect({ id, lost }).toEqual({ id, lost: [] });

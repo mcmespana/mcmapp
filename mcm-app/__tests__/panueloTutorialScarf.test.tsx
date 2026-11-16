@@ -246,7 +246,12 @@ describe('usePanueloTutorialStage', () => {
     await act(async () => {
       jest.advanceTimersByTime(1000);
     });
-    expect(send).toHaveBeenCalledWith({ type: 'reveal', id: 'parche-pascua' });
+    // Sin «reducir movimiento», con su giro (`still: false`).
+    expect(send).toHaveBeenCalledWith({
+      type: 'reveal',
+      id: 'parche-pascua',
+      still: false,
+    });
   });
 
   it('«Cambiar de etapa»: la tela pasa de verde a azul', async () => {

@@ -356,6 +356,28 @@ export async function syncPanueloTradeHalf(
   }
 }
 
+/**
+ * Refleja en la nube las piezas por asistencia que ya no respalda el servidor
+ * (`reconcileAwards`): fuera de `items` y la colocación como queda, en UNA
+ * escritura. Si no, la suma de piezas al juntar móvil y nube las devolvería.
+ */
+export async function syncPanueloRevoked(
+  uid: string,
+  state: PanueloUserState,
+  ids: string[],
+): Promise<void> {
+  const changes: Record<string, unknown> = {
+    layout: state.layout,
+    layoutAt: state.layoutAt,
+  };
+  for (const id of ids) changes[`items/${id}`] = null;
+  try {
+    await update(ref(db(), `users/${uid}/panuelo`), changes);
+  } catch (err) {
+    logger.error('[authHelpers] syncPanueloRevoked:', err);
+  }
+}
+
 /** Sube UN recuerdo (`history/{at}`). Una clave por recuerdo: cada móvil sube
  *  solo el suyo y no pisa los del otro. */
 export async function syncPanueloMemory(

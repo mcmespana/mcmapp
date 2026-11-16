@@ -723,6 +723,31 @@ export function newPiecesQueue(
   );
 }
 
+/** Una pieza por asistencia que se quitó y hay que avisar (una vez). */
+export interface RevokedPiece {
+  id: string;
+  name: string;
+  origin?: string;
+}
+
+/**
+ * La línea discreta de lo retirado: «Ya no tienes «Chapa de Pascua»: se
+ * corrigió la lista de Pascua Joven 2027.» `null` si no hay nada.
+ */
+export function revokedNoticeText(
+  pieces: readonly RevokedPiece[],
+): string | null {
+  if (pieces.length === 0) return null;
+  if (pieces.length === 1) {
+    const [only] = pieces;
+    return only.origin
+      ? `Ya no tienes «${only.name}»: se corrigió la lista de ${only.origin}.`
+      : `Ya no tienes «${only.name}»: se corrigió la lista.`;
+  }
+  const names = pieces.map((p) => `«${p.name}»`);
+  return `Ya no tienes ${names.slice(0, -1).join(', ')} ni ${names.at(-1)}: se corrigieron las listas.`;
+}
+
 /** El primer color de una pieza: el del confeti cuando se desvela. */
 export function pieceAccent(look: PanueloLook): string | undefined {
   switch (look.kind) {

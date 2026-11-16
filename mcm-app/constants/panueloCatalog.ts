@@ -9,7 +9,10 @@
 //
 // `EXAMPLE_PANUELO_CATALOG` son piezas inventadas, una de cada clase: las usa
 // el tutorial para explicar las seis clases (todavía no hay cinta, parche ni
-// pulsera de verdad) y los tests. Nadie las puede conseguir.
+// pulsera de verdad) y los tests. Nadie las puede conseguir, salvo las tres
+// por asistencia (`grant: attendance`, atadas a los eventos del servidor falso
+// de Comunica): las da la SIMULACIÓN del Laboratorio Alpha
+// (`services/panueloAwards.ts`) y solo existen mientras dura.
 
 import panueloExample from '@/constants/panueloEjemplo.json';
 import panueloSeed from '@/firebase-seed/panuelo.json';
