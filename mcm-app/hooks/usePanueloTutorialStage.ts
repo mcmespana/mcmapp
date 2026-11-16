@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { DEFAULT_PANUELO_CATALOG } from '@/constants/panueloCatalog';
+import { EXAMPLE_PANUELO_CATALOG } from '@/constants/panueloCatalog';
 import {
   PANUELO_TUTORIAL,
   type PanueloTutorialExample,
@@ -51,7 +51,7 @@ export function usePanueloTutorialStage({
   const state = useMemo(
     () =>
       color
-        ? exampleViewerState(DEFAULT_PANUELO_CATALOG, color, pieces ?? [])
+        ? exampleViewerState(EXAMPLE_PANUELO_CATALOG, color, pieces ?? [])
         : undefined,
     [color, pieces],
   );

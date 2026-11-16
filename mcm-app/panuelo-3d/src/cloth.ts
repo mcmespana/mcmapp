@@ -896,6 +896,8 @@ export interface Panuelo {
   flap: THREE.Mesh;
   /** La tela simulada (ver `ClothSim`). */
   cloth: ClothSim;
+  /** El nudo, con su origen en él: de aquí cuelga el troncho. */
+  knot: THREE.Group;
   setColor(color: PanueloColor): void;
   setLogo(logo: HTMLImageElement): void;
 }
@@ -997,6 +999,7 @@ export function createPanuelo(
   return {
     group,
     flap,
+    knot: knotGroup,
     cloth: withKnot(createClothSim(flap.geometry), knotGroup, tailsGroup),
     setColor(next) {
       current = next;

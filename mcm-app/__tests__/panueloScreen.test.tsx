@@ -41,6 +41,11 @@ import { h } from '@/utils/haptics';
 
 const mockRouter: { params: Record<string, string> } = { params: {} };
 const mockSetOptions = jest.fn();
+// Estos tests usan las piezas de ejemplo (una de cada clase), no el catálogo
+// de verdad, que cambia cada vez que se añade una chapa.
+jest.mock('@/firebase-seed/panuelo.json', () =>
+  jest.requireActual('@/constants/panueloEjemplo.json'),
+);
 jest.mock('expo-router/react-navigation', () => ({
   useHeaderHeight: () => 0,
   useNavigation: () => ({ setOptions: mockSetOptions }),

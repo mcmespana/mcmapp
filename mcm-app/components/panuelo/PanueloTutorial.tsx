@@ -20,7 +20,7 @@ import { PanueloItemArt } from '@/components/panuelo/PanueloItemArt';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { MaterialIcons } from '@/components/ui/icons';
-import { DEFAULT_PANUELO_CATALOG } from '@/constants/panueloCatalog';
+import { EXAMPLE_PANUELO_CATALOG } from '@/constants/panueloCatalog';
 import {
   PANUELO_TUTORIAL,
   type PanueloTutorialSection,
@@ -259,7 +259,7 @@ function TutorialPage({
 }) {
   const t = themeColors(isDark);
   const art = (section.example?.art ?? [])
-    .map((id) => DEFAULT_PANUELO_CATALOG[id])
+    .map((id) => EXAMPLE_PANUELO_CATALOG[id])
     .filter(Boolean);
   return (
     // Las páginas que no se ven no existen para el lector de pantalla.

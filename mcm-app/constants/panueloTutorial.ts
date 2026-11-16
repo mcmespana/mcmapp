@@ -23,7 +23,7 @@
  *       Es UN solo visor (el de la pantalla) con otro estado; cada paso lo deja
  *       como lo explica:
  *         · `color` y `pieces`: la tela y los ids de piezas del catálogo de
- *           muestra (`firebase-seed/panuelo.json`; se cosen en los primeros
+ *           ejemplo (`constants/panueloEjemplo.json`; se cosen en los primeros
  *           huecos). Imprescindibles.
  *         · `mode: 'edit'`: el visor en modo decorar.
  *         · `select`: una pieza seleccionada (con `mode: 'edit'`).

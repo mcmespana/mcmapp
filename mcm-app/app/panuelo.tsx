@@ -473,7 +473,7 @@ function PanueloScreen() {
         ...swap,
       ];
     }
-    const glbUrl = look.kind === 'medalla' ? look.glb : undefined;
+    const glbUrl = 'glb' in look ? look.glb : undefined;
     const rotate: PanueloDetailAction[] =
       mode === 'edit'
         ? [

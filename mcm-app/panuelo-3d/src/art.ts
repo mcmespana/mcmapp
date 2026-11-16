@@ -689,3 +689,68 @@ export function paintBraid(look: PulseraLook): {
   bumpTex.repeat.set(4, 1);
   return { map, bump: bumpTex };
 }
+
+// ── Troncho ────────────────────────────────────────────────────────────────
+
+/**
+ * El cuero del troncho desenrollado (2:1): el logo del COM grabado en el
+ * centro, que es el frente del tubo, y el grano del cuero alrededor.
+ */
+export function paintTroncho(
+  leather: string,
+  ink: string | undefined,
+  logo: HTMLImageElement | null,
+): { map: THREE.CanvasTexture; bump: THREE.CanvasTexture } {
+  const W = SIZE * 2;
+  const H = SIZE;
+  const { canvas, ctx } = newCanvas(W, H);
+  const relief = newCanvas(W, H);
+  ctx.fillStyle = leather;
+  ctx.fillRect(0, 0, W, H);
+  relief.ctx.fillStyle = '#808080';
+  relief.ctx.fillRect(0, 0, W, H);
+  // Grano: motas claras y oscuras, siempre las mismas.
+  let seed = 7;
+  const rnd = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
+  for (let i = 0; i < 2600; i++) {
+    const x = rnd() * W;
+    const y = rnd() * H;
+    const r = 1 + rnd() * 5;
+    const dark = rnd() < 0.5;
+    ctx.fillStyle = dark ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.045)';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    relief.ctx.fillStyle = dark ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)';
+    relief.ctx.beginPath();
+    relief.ctx.arc(x, y, r, 0, Math.PI * 2);
+    relief.ctx.fill();
+  }
+  // Los cantos, tostados por el roce.
+  for (const y0 of [0, H]) {
+    const g = ctx.createLinearGradient(0, y0, 0, y0 === 0 ? 40 : H - 40);
+    g.addColorStop(0, 'rgba(0,0,0,0.3)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, y0 === 0 ? 0 : H - 40, W, 40);
+  }
+  if (logo) {
+    // Media vuelta de tubo son W/2: el logo ocupa algo menos, para leerse
+    // entero de frente.
+    const side = H * 0.78;
+    const x = (W - side) / 2;
+    const y = (H - side) / 2;
+    ctx.globalAlpha = ink ? 0.92 : 0.5;
+    ctx.drawImage(tintedLogo(logo, ink ?? '#000000', SIZE), x, y, side, side);
+    ctx.globalAlpha = 1;
+    relief.ctx.globalAlpha = 0.75;
+    relief.ctx.drawImage(tintedLogo(logo, '#000000', SIZE), x, y, side, side);
+    relief.ctx.globalAlpha = 1;
+  }
+  const map = colorTexture(canvas);
+  const bump = new THREE.CanvasTexture(relief.canvas);
+  return { map, bump };
+}

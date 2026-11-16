@@ -83,6 +83,8 @@ const REACH: Record<PanueloItemKind, number> = {
   cinta: 0.19,
   pulsera: 0.2,
   medalla: 0.22,
+  // El troncho no va en el triángulo: no ocupa.
+  troncho: 0,
 };
 
 /** Lo que ocupa una pieza de la que no se sabe la clase. */

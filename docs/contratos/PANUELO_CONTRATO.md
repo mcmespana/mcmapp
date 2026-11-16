@@ -62,20 +62,20 @@ El seed importable es `mcm-app/firebase-seed/panuelo.json` (es el nodo `data`).
 
 ### Campos de una pieza
 
-| Campo         | Tipo    | Oblig. | Notas                                                                                                                                       |
-| ------------- | ------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| _clave_       | string  | Sí     | El `id`. `kebab-case`, de 1 a 64 caracteres `[a-z0-9-]`. **No se renombra ni se reutiliza**: es con lo que cada persona guarda que la tiene |
-| `kind`        | string  | Sí     | `chapa` · `pin` · `cinta` · `parche` · `medalla` · `pulsera`                                                                                |
-| `name`        | string  | Sí     |                                                                                                                                             |
-| `look`        | objeto  | Sí     | Cómo se dibuja. Depende de `kind` (abajo)                                                                                                   |
-| `origin`      | string  | No     | De dónde viene: «Pascua Joven · Abril 2027»                                                                                                 |
-| `description` | string  | No     |                                                                                                                                             |
-| `rarity`      | string  | No     | `comun` (por defecto) · `especial` · `unica`                                                                                                |
-| `size`        | número  | No     | Multiplicador, de 0,7 a 1,5                                                                                                                 |
-| `order`       | número  | No     | Orden en la colección; a igualdad, por nombre                                                                                               |
-| `secret`      | boolean | No     | No se enseña (ni en silueta) hasta que se consigue                                                                                          |
+| Campo         | Tipo    | Oblig. | Notas                                                                                                                                          |
+| ------------- | ------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| _clave_       | string  | Sí     | El `id`. `kebab-case`, de 1 a 64 caracteres `[a-z0-9-]`. **No se renombra ni se reutiliza**: es con lo que cada persona guarda que la tiene    |
+| `kind`        | string  | Sí     | `chapa` · `pin` · `cinta` · `parche` · `medalla` · `pulsera` · `troncho`                                                                       |
+| `name`        | string  | Sí     |                                                                                                                                                |
+| `look`        | objeto  | Sí     | Cómo se dibuja. Depende de `kind` (abajo)                                                                                                      |
+| `origin`      | string  | No     | De dónde viene: «Pascua Joven · Abril 2027»                                                                                                    |
+| `description` | string  | No     |                                                                                                                                                |
+| `rarity`      | string  | No     | `comun` (por defecto) · `especial` · `unica`                                                                                                   |
+| `size`        | número  | No     | Multiplicador, de 0,7 a 1,5                                                                                                                    |
+| `order`       | número  | No     | Orden en la colección; a igualdad, por nombre                                                                                                  |
+| `secret`      | boolean | No     | No se enseña (ni en silueta) hasta que se consigue                                                                                             |
 | `tradeable`   | boolean | No     | Si se puede intercambiar. Ausente: sí las pulseras y las chapas comunes, no lo demás. **Medallas y piezas `unica` nunca**, aunque digan `true` |
-| `grant`       | objeto  | No     | Cómo se consigue (abajo). Ausente = solo repartiéndola a mano                                                                               |
+| `grant`       | objeto  | No     | Cómo se consigue (abajo). Ausente = solo repartiéndola a mano                                                                                  |
 
 **Una pieza mal escrita se descarta entera** (no rompe el resto): `kind`
 desconocido, sin nombre, `look` incompleto, color que no es hex.
@@ -85,22 +85,30 @@ desconocido, sin nombre, `look` incompleto, color que no es hex.
 Los colores son siempre hex (`#rgb` o `#rrggbb`). Las imágenes, URL `https`
 con CORS abierto. `glyph` y `shape` son nombres de forma: `heart`, `star`,
 `cross`, `moon`, `flame`, `drop`, `sun`, `mountain`, `tent`, `shell`, `note`,
-`leaf`, `bolt`, `crown`, `fish`, `circle`, `shield`, `arrow`, `rect`.
+`leaf`, `bolt`, `crown`, `fish`, `circle`, `shield`, `arrow`, `rect`, `card`
+(tarjeta de pie, para un pin rectangular).
 
-| Clase     | Obligatorio              | Opcional                                                                     |
-| --------- | ------------------------ | ---------------------------------------------------------------------------- |
-| `chapa`   | `bg`                     | `ring`, `ink`, `glyph` o `logo: true`, `text` y `textBottom` (≤ 24), `image` |
-| `pin`     | `shape`, `enamel`        | `enamel2` (degradado), `metal`                                               |
-| `cinta`   | `colors` (1–7)           | —                                                                            |
-| `parche`  | `shape`¹, `bg`, `border` | `ink`, `glyph`, `text` (≤ 14)                                                |
-| `medalla` | `ribbon` (1–7 colores)   | `metal`, `glyph` o `logo: true`, `image`, `glb`                              |
-| `pulsera` | `colors` (1–6)           | `pattern` (`chevron` · `stripes` · `solid`), `text` (≤ 16), `ink`            |
+| Clase     | Obligatorio              | Opcional                                                                            |
+| --------- | ------------------------ | ----------------------------------------------------------------------------------- |
+| `chapa`   | `bg`                     | `ring`, `ink`, `glyph` o `logo: true`, `text` y `textBottom` (≤ 24), `image`, `glb` |
+| `pin`     | `shape`, `enamel`        | `enamel2` (degradado), `metal`, `image`, `glb`                                      |
+| `cinta`   | `colors` (1–7)           | —                                                                                   |
+| `parche`  | `shape`¹, `bg`, `border` | `ink`, `glyph`, `text` (≤ 14)                                                       |
+| `medalla` | `ribbon` (1–7 colores)   | `metal`, `glyph` o `logo: true`, `image`, `glb`                                     |
+| `pulsera` | `colors` (1–6)           | `pattern` (`chevron` · `stripes` · `solid`), `text` (≤ 16), `ink`                   |
+| `troncho` | —                        | `leather`, `ink`, `image` (miniatura), `glb`                                        |
 
 ¹ La forma de un parche solo puede ser `circle`, `shield`, `arrow` o `rect`.
 `metal`: `oro` (por defecto) · `plata` · `cobre` · `negro`.
 
-`glb` es el modelo a tamaño completo de una medalla (ver
-`medallas-3d/README.md`): con él, la ficha ofrece «Verla de cerca».
+`glb` es el modelo a tamaño completo de una medalla, chapa, pin o troncho
+(ver `medallas-3d/README.md` y `piezas-3d/README.md`): con él, la ficha
+ofrece «Verla de cerca». La `image` de una chapa lleva el dibujo hasta el
+86 % del radio; la de un pin es cuadrada y ocupa la caja de su forma.
+
+**El troncho** va por delante, sobre el nudo: se apunta en `layout` como
+`{ u: 0, v: 0, rot: 0 }` (llevarlo puesto o no), no ocupa hueco y nunca se
+intercambia, diga lo que diga `tradeable`.
 
 ### `grant` — cómo se consigue
 

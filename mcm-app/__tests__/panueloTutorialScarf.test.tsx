@@ -18,6 +18,11 @@ import {
 } from '@/hooks/usePanueloTutorial';
 import { readOwnScarf, usePanueloScarf } from '@/hooks/usePanueloScarf';
 
+// Estos tests usan las piezas de ejemplo (una de cada clase), no el catálogo
+// de verdad, que cambia cada vez que se añade una chapa.
+jest.mock('@/firebase-seed/panuelo.json', () =>
+  jest.requireActual('@/constants/panueloEjemplo.json'),
+);
 jest.mock('@/utils/logger', () => ({
   logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
