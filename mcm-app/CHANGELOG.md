@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-16 18:17 — Cantos para el domingo (cantoral + Inicio)
+
+- Pantalla nueva `/cancionero/domingo`: la app propone una misa para el domingo (entrada, salmo, aleluya, ofertorio, santo, comunión, salida) según el día litúrgico. Cambiar, elegir otra o quitar cada momento; lo cambiado se recuerda por fecha en el dispositivo. Entrada: fila «Cantos para el domingo» bajo «Tu selección».
+- «Pasar a Tu selección» reemplaza la selección con 10 s de Deshacer; «Subir a mi coro» abre directamente el paso de guardar de la hoja del coro.
+- Reglas litúrgicas como filtros: sin Aleluya en Cuaresma ni Semana Santa (el momento pasa a «Aclamación»), sin canciones de otro tiempo o fiesta, sin repetir canción en una misma misa. Misma fecha, misma propuesta en todos los móviles (rotación determinista por semana). El tiempo de cada canción sale de sus etiquetas; `liturgicalTime` solo de respaldo.
+- Día litúrgico completo (`utils/liturgicalDay.ts`): domingo N, ciclo A/B/C por año litúrgico (el JSON lo traía mal desde Adviento) y solemnidades fijas que caen en domingo (Todos los Santos, Inmaculada, Asunción…), añadidas al generador del calendario. El badge de Contigo comparte esa lógica.
+- Tarjeta «Cantos para el domingo» en Inicio de viernes a domingo, con el id `cantos-domingo` en `homeButtons` del perfil (apagable por perfil; **hay que añadirlo en `/profileConfig` de Firebase y en el Panel para que salga**).
+- Sin probar: iOS/Android nativo, y con el cantoral real (falta contar qué canciones llevan etiqueta de tiempo litúrgico, Fase 0 del plan).
+- Doc: `docs/funcionalidades/CANTOS_DOMINGO.md`; plan `docs/planes/PLAN_CANTOS_DOMINGO.md` con fases 1-4 hechas (quedan 0, 5 y 6).
+
 ## 2026-11-15 22:20 — Comunica: coordinación recuerda a los monitores que pasen lista
 
 - **Campana en la cabecera del Resumen de grupos** (solo coordinación): entra en modo de elegir grupos, con los de la última lista sin pasar ya marcados. Solo se pueden marcar grupos de su alcance y con monitores vinculados. Abajo, «Recordar a N grupos».
