@@ -1,16 +1,67 @@
 # Plan — Piezas del pañuelo por asistencia
 
-> **Estado (2026-11-16): propuesta con las decisiones contestadas** (ver el
-> final), sin empezar. Plan ejecutable por fases.
-> Se apoya en el pañuelo tal como está hoy
-> ([`../funcionalidades/PANUELO.md`](../funcionalidades/PANUELO.md), contrato
-> en [`../contratos/PANUELO_CONTRATO.md`](../contratos/PANUELO_CONTRATO.md)) y
-> en el pasar lista del área nativa de Comunica
-> ([`area-nativa/04-pasar-lista.md`](area-nativa/04-pasar-lista.md),
-> [`area-nativa/07-eventos.md`](area-nativa/07-eventos.md)).
-> Es la primera pieza que se concede **en servidor**: adelanta la Fase 7 de
-> [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md) («canje y reparto validados
-> en servidor») para este caso concreto.
+> **Estado (2026-11-16, tarde): EN CURSO.** Hecho lo que vive en este repo
+> y no necesita servidor: **F1** (tipos y lógica pura), **F1b** (test del
+> seed y `npm run panuelo:subir`), **F5** (el desvelado, con la simulación
+> del Laboratorio) y **F6** («Colocarlas» y documentación; el tutorial
+> espera a F4, ver abajo). **Pendiente:** F0 (comprobar el middleware),
+> F2 (Cloud Function y reglas), F3 (endpoint del middleware), **F4**
+> (reclamar y reflejar: el punto de enganche está marcado con `// F4:` en
+> `mcm-app/services/panueloAwards.ts`, `loadAwards`), F7 y F8. Sin servidor,
+> una pieza por asistencia no le llega a nadie: solo se ve con la simulación.
+> No se archiva hasta cerrar la última fase que se haga.
+>
+> **Diferencias con lo escrito abajo (manda el código):**
+>
+> 1. **La pieza de ejemplo no va en `firebase-seed/panuelo.json`**: desde
+>    hoy ese catálogo solo lleva piezas de verdad (con foto y `.glb`; lo
+>    vigila un test). Hay **tres piezas de prueba** por asistencia (chapa,
+>    pin y medalla, eventos `f-evt-salida`, `f-evt-convivencia`,
+>    `f-evt-pascua` del servidor falso) en `constants/panueloEjemplo.json`,
+>    y solo entran en el catálogo mientras hay simulación.
+> 2. **La simulación no pasa por el servidor falso de Comunica**: es un
+>    sustituto local (`@panuelo_awards_simulados`, `{ attended, awards }`)
+>    con la forma de `/panueloAwards/{personId}`, calculado con
+>    `computeAwards`. Botones del Laboratorio: «Simular asistencia a
+>    <evento>», «Simular que la quitan: <evento>» y «Borrar la simulación».
+>    F4 solo cambia `loadAwards()`.
+> 3. **No hace falta `?nuevas=1`**: la pantalla empieza el desvelado sola
+>    cuando hay piezas por asistencia sin ver en la caja. F4 puede abrir
+>    `/panuelo` sin más.
+> 4. **`usePanueloIntro`** (nuevo) junta tutorial y desvelado para la
+>    pantalla; `usePanueloTutorialStage` recibe `sections`, `catalog` y el
+>    pañuelo de `base`; `PanueloTutorial`, `nextLabel`/`finishLabel`/
+>    `secondaryLabel`/`pageLabel`/`catalog`; `PanueloTutorialHeader`,
+>    `title`/`closeLabel`; `PanueloStageBurst`, `tint`. Sin «muelle de
+>    celebración» aparte: ya anima el `reveal` del visor.
+> 5. **Lo retirado se avisa con un toast** (una vez, cuando la pantalla está
+>    libre), no con una línea fija en la pantalla. Se recuerda en
+>    `@panuelo_retiradas` hasta enseñarlo.
+> 6. **`reconcileAwards` no toca `via: demo`** (las de muestra del
+>    Laboratorio). Cualquier otra pieza `attendance` sin award se quita,
+>    también si alguien la apuntó a mano con `via: manual`.
+> 7. **`minDays` cuenta días de UN mismo evento**, no sumando eventos.
+> 8. **El script es `scripts/panuelo-subir.js`** (CommonJS como los demás
+>    scripts, para probar `planUpload` con Jest), no `.mjs`. Opciones:
+>    `--dry-run`, `--yes`, `--export`, `--project`, `--instance`. No se ha
+>    probado contra Firebase (aquí no hay credenciales): solo `--dry-run` y
+>    una CLI de mentira.
+> 9. **Adelantado de F4**: analítica `panuelo_pieza_retirada` y vía
+>    `attendance`; `syncPanueloRevoked` (borra en la nube lo retirado);
+>    reflejo en `usePanuelo` al abrir y tras juntar con la nube.
+> 10. **El tutorial no cambia todavía**: «solo lo que la app hace hoy», y hoy
+>     nadie recibe piezas por asistencia. Con F4: fila «Por ir a una
+>     actividad» en «Chapas y pines» («Cuando te pasan lista, te llega sola.
+>     Si se corrige la lista, se quita.») y `PANUELO_TUTORIAL_VERSION` → 5.
+>     Se apoya en el pañuelo tal como está hoy
+>     ([`../funcionalidades/PANUELO.md`](../funcionalidades/PANUELO.md), contrato
+>     en [`../contratos/PANUELO_CONTRATO.md`](../contratos/PANUELO_CONTRATO.md)) y
+>     en el pasar lista del área nativa de Comunica
+>     ([`area-nativa/04-pasar-lista.md`](area-nativa/04-pasar-lista.md),
+>     [`area-nativa/07-eventos.md`](area-nativa/07-eventos.md)).
+>     Es la primera pieza que se concede **en servidor**: adelanta la Fase 7 de
+>     [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md) («canje y reparto validados
+>     en servidor») para este caso concreto.
 
 ## Lo que pidió el usuario
 

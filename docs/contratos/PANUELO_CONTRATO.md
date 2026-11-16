@@ -9,12 +9,13 @@
 
 ## Resumen
 
-| Nodo                                 | Quién escribe                             | Quién lee     |
-| ------------------------------------ | ----------------------------------------- | ------------- |
-| `/panuelo`                           | Panel                                     | Todo el mundo |
-| `/users/{uid}/panuelo`               | La app del dueño; el Panel (repartir)     | Solo el dueño |
-| `/profileConfig/data/global/panuelo` | Panel / consola                           | Todo el mundo |
-| `/panueloTrades/{code}`              | _Futuro_ — las dos partes del intercambio | _Futuro_      |
+| Nodo                                 | Quién escribe                             | Quién lee                   |
+| ------------------------------------ | ----------------------------------------- | --------------------------- |
+| `/panuelo`                           | Panel                                     | Todo el mundo               |
+| `/users/{uid}/panuelo`               | La app del dueño; el Panel (repartir)     | Solo el dueño               |
+| `/profileConfig/data/global/panuelo` | Panel / consola                           | Todo el mundo               |
+| `/panueloTrades/{code}`              | _Futuro_ — las dos partes del intercambio | _Futuro_                    |
+| `/panueloAwards/{personId}`          | _Futuro (F2)_ — solo la Cloud Function    | La cuenta atada a esa ficha |
 
 ## 1. `/panuelo` — el catálogo de piezas
 
@@ -58,24 +59,31 @@ es lo que la app mira para saber si vuelve a descargar.
 }
 ```
 
-El seed importable es `mcm-app/firebase-seed/panuelo.json` (es el nodo `data`).
+El catálogo del repo es `mcm-app/firebase-seed/panuelo.json` (es el nodo
+`data`). **Se sube pieza a pieza** con `npm run panuelo:subir -- <id>`
+(`mcm-app/scripts/panuelo-subir.js`), que escribe solo
+`/panuelo/data/items/<id>` y `/panuelo/updatedAt`. Importar el fichero
+entero en `/panuelo/data` desde la consola **reemplaza el catálogo** (lo que
+el Panel u otra persona hubiera añadido se pierde): solo vale con el nodo
+vacío. Antes de subir, `npm test -- panueloSeed` comprueba que ninguna pieza
+se descarta ni pierde nada al sanearse.
 
 ### Campos de una pieza
 
-| Campo         | Tipo    | Oblig. | Notas                                                                                                                                          |
-| ------------- | ------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| _clave_       | string  | Sí     | El `id`. `kebab-case`, de 1 a 64 caracteres `[a-z0-9-]`. **No se renombra ni se reutiliza**: es con lo que cada persona guarda que la tiene    |
-| `kind`        | string  | Sí     | `chapa` · `pin` · `cinta` · `parche` · `medalla` · `pulsera` · `troncho`                                                                       |
-| `name`        | string  | Sí     |                                                                                                                                                |
-| `look`        | objeto  | Sí     | Cómo se dibuja. Depende de `kind` (abajo)                                                                                                      |
-| `origin`      | string  | No     | De dónde viene: «Pascua Joven · Abril 2027»                                                                                                    |
-| `description` | string  | No     |                                                                                                                                                |
-| `rarity`      | string  | No     | `comun` (por defecto) · `especial` · `unica`                                                                                                   |
-| `size`        | número  | No     | Multiplicador, de 0,7 a 1,5                                                                                                                    |
-| `order`       | número  | No     | Orden en la colección; a igualdad, por nombre                                                                                                  |
-| `secret`      | boolean | No     | No se enseña (ni en silueta) hasta que se consigue                                                                                             |
-| `tradeable`   | boolean | No     | Si se puede intercambiar. Ausente: sí las pulseras y las chapas comunes, no lo demás. **Medallas y piezas `unica` nunca**, aunque digan `true` |
-| `grant`       | objeto  | No     | Cómo se consigue (abajo). Ausente = solo repartiéndola a mano                                                                                  |
+| Campo         | Tipo    | Oblig. | Notas                                                                                                                                                                 |
+| ------------- | ------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _clave_       | string  | Sí     | El `id`. `kebab-case`, de 1 a 64 caracteres `[a-z0-9-]`. **No se renombra ni se reutiliza**: es con lo que cada persona guarda que la tiene                           |
+| `kind`        | string  | Sí     | `chapa` · `pin` · `cinta` · `parche` · `medalla` · `pulsera` · `troncho`                                                                                              |
+| `name`        | string  | Sí     |                                                                                                                                                                       |
+| `look`        | objeto  | Sí     | Cómo se dibuja. Depende de `kind` (abajo)                                                                                                                             |
+| `origin`      | string  | No     | De dónde viene: «Pascua Joven · Abril 2027»                                                                                                                           |
+| `description` | string  | No     |                                                                                                                                                                       |
+| `rarity`      | string  | No     | `comun` (por defecto) · `especial` · `unica`                                                                                                                          |
+| `size`        | número  | No     | Multiplicador, de 0,7 a 1,5                                                                                                                                           |
+| `order`       | número  | No     | Orden en la colección; a igualdad, por nombre                                                                                                                         |
+| `secret`      | boolean | No     | No se enseña (ni en silueta) hasta que se consigue                                                                                                                    |
+| `tradeable`   | boolean | No     | Si se puede intercambiar. Ausente: sí las pulseras y las chapas comunes, no lo demás. **Medallas, piezas `unica` y piezas por asistencia nunca**, aunque digan `true` |
+| `grant`       | objeto  | No     | Cómo se consigue (abajo). Ausente = solo repartiéndola a mano                                                                                                         |
 
 **Una pieza mal escrita se descarta entera** (no rompe el resto): `kind`
 desconocido, sin nombre, `look` incompleto, color que no es hex.
@@ -116,10 +124,25 @@ intercambia, diga lo que diga `tradeable`.
 { "type": "all",    "from": 1800000000000, "to": 1800600000000 }
 { "type": "code",   "hash": "<sha256 hex>", "from": …, "to": … }
 { "type": "manual" }
+{ "type": "attendance", "events": ["<id de evento del CRM>", "…"], "marks": ["yes", "partial"], "minDays": 1 }
 ```
 
 `from` y `to` (ms) son opcionales: fuera de la ventana la pieza no se puede
 conseguir.
+
+**`attendance`** — por ir a un evento (te pasan lista). Sin `from`/`to`:
+**manda la asistencia**, sin plazos (llega cuando se marca, se quita si se
+corrige). La concede el servidor en `/panueloAwards` (§5), nunca el móvil.
+
+| Campo     | Oblig. | Notas                                                                                                                          |
+| --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `events`  | Sí     | 1–50 ids de evento del CRM (cadenas opacas, sin repetir). Con ir a uno basta. Sin eventos, la pieza se queda **sin concesión** |
+| `marks`   | No     | Qué marcas cuentan: `yes` · `partial` · `no_justified` · `no_unjustified`. Por defecto `["yes", "partial"]`                    |
+| `minDays` | No     | Días distintos con marca **en un mismo evento**, como mínimo. Por defecto 1                                                    |
+
+Una pieza `attendance` **nunca es intercambiable** (`tradeable` se fuerza a
+`false` al sanear) y no se cose sola: espera en la caja a que la persona la
+desvele y la coloque.
 
 **El hash de un código** — el catálogo nunca guarda el código:
 
@@ -162,7 +185,7 @@ escrito: es lo que tiene que llevar el QR.
 | Campo          | Notas                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `color`        | `red` · `green` · `blue` · `yellow`. Las mismas claves que los pañuelos del área privada                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `items/{id}`   | Las piezas que tiene. `at`: cuándo (ms). `via`: `all` · `code` · `manual` · `demo` · `trade`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `items/{id}`   | Las piezas que tiene. `at`: cuándo (ms). `via`: `all` · `code` · `manual` · `demo` · `trade` · `attendance`. Una pieza `attendance` es solo el **reflejo** de `/panueloAwards`: si no está allí, la app la quita (escribirla a mano no da nada)                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `layout/{id}`  | Dónde está cosida. `u`: de −1 a 1 entre los bordes del triángulo a esa altura. `v`: de 0 (cuello) a 1 (pico). `rot`: grados. Una pieza que se tiene y no está aquí está «en la caja»                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `layoutAt`     | Última vez que cambió el color o la colocación (ms). Entre dos móviles gana el más nuevo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `gone/{id}`    | Piezas dadas en un intercambio: cuándo. Una pieza se tiene si `items[id].at > gone[id]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -232,7 +255,36 @@ desplegarlas en `docs/desarrollo/FIREBASE_REGLAS.md` §8. Cada móvil aplica
 luego su mitad en su propio `/users/{uid}/panuelo` (`items/{dada}` a `null`,
 `gone/{dada}`, `items/{recibida}` con `via: "trade"`, `layout`).
 
-## 5. Lo que el Panel tendría que ofrecer
+## 5. `/panueloAwards/{personId}` — piezas por asistencia (futuro, F2)
+
+> **Aún no existe.** Hoy lo sustituye una simulación local del Laboratorio
+> Alpha con la misma forma (`mcm-app/services/panueloAwards.ts`). Plan:
+> `docs/planes/PLAN_PANUELO_ASISTENCIA.md` §4.
+
+```json
+{
+  "pascua-joven-2027": {
+    "at": 1807000000000,
+    "via": "attendance",
+    "eventId": "<id del CRM>",
+    "grantedAt": 1807100000000
+  }
+}
+```
+
+- **Por ficha** (`personId` del CRM), no por cuenta: la pieza es del niño que
+  fue, nunca del padre.
+- `at`: el primer día con una marca que cuenta (mediodía UTC de ese día).
+  `grantedAt`: cuándo lo escribió el servidor. `eventId`: el evento que la
+  respalda.
+- **Lo escribe solo la Cloud Function** (`panueloClaimAttendance`), que lo
+  recalcula entero en cada reclamación con `computeAwards`
+  (`mcm-app/utils/panueloAttendance.ts`): existe si y solo si la asistencia
+  la respalda hoy. Ni la app ni el Panel escriben aquí.
+- La app lo refleja en `/users/{uid}/panuelo/items` con `via: "attendance"`
+  (`reconcileAwards`) y quita (y descose) lo que ya no esté.
+
+## 6. Lo que el Panel tendría que ofrecer
 
 1. **Editor de piezas** con vista previa. La vista previa se pinta con los
    colores de la app, no con los del Panel (`design.md` §9).
@@ -240,3 +292,7 @@ luego su mitad en su propio `/users/{uid}/panuelo` (`items/{dada}` a `null`,
    enseña una vez y solo se guarda el hash.
 3. **Repartir** una pieza a una lista de personas (los inscritos de un evento).
 4. **Cuántas se han repartido** de cada pieza.
+5. **Asignar una pieza a eventos** («Por asistencia»: la lista de ids de
+   evento) y contar las concedidas leyendo `/panueloAwards`. Mientras no
+   exista, se hace con IA editando el catálogo del repo y
+   `npm run panuelo:subir`.

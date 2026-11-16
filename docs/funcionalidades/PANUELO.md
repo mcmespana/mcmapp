@@ -37,6 +37,9 @@ Lo que se puede hacer hoy:
 - **Filtrar la colección**: Todas · Puestas · Sin poner.
 - **Canjear un código** de una actividad: la pieza nueva se presenta girando,
   con chispas, y cae en su sitio.
+- **Recibir piezas por ir a una actividad** (te pasan lista): al abrir el
+  pañuelo se **desvelan** una a una y luego se colocan. Hoy solo con la
+  simulación del Laboratorio: ver «Piezas por asistencia».
 - **Compartir** una foto del pañuelo.
 - **Intercambiar** una pulsera o una chapa común con otra persona, cara a
   cara, con un código o su QR. Hace falta sesión en los dos móviles. Ver
@@ -52,7 +55,9 @@ sistema no ve el vaivén.
 
 **Hoy: escondido en el Laboratorio Alpha.** El panel «Pañuelo virtual» del
 laboratorio abre la pantalla `/panuelo`. Tiene tres botones: abrir el pañuelo,
-abrirlo con todas las piezas de muestra, y empezar de cero. **Mientras se
+abrirlo con todas las piezas de muestra, y empezar de cero; y, debajo, la
+**simulación de las piezas por asistencia** («Simular asistencia a…»,
+«Simular que la quitan», «Borrar la simulación»). **Mientras se
 prueba, todas las piezas del catálogo se dan solas al abrir** (`grant: all`);
 cómo se repartirán de verdad (por eventos, códigos…) está por decidir.
 
@@ -130,15 +135,18 @@ en silueta hasta que se consigue) y si es **intercambiable**.
 
 ### Cómo se consigue una pieza
 
-| `grant.type` | Cómo                                                                                  |
-| ------------ | ------------------------------------------------------------------------------------- |
-| `all`        | Se la lleva todo el mundo al abrir el pañuelo dentro de las fechas (bienvenida)       |
-| `code`       | Con un código que se enseña en la actividad. El catálogo guarda el hash, no el código |
-| `manual`     | La reparte el Panel escribiendo en el nodo de la persona (p. ej. a los inscritos)     |
+| `grant.type` | Cómo                                                                                     |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| `all`        | Se la lleva todo el mundo al abrir el pañuelo dentro de las fechas (bienvenida)          |
+| `code`       | Con un código que se enseña en la actividad. El catálogo guarda el hash, no el código    |
+| `manual`     | La reparte el Panel escribiendo en el nodo de la persona (p. ej. a los inscritos)        |
+| `attendance` | Por ir a un evento (te pasan lista). La concede el servidor; ver «Piezas por asistencia» |
 
 Una pieza recién conseguida —por la vía que sea, también si el Panel la
 repartió con la app cerrada— se **presenta** al abrir el pañuelo, una a una. En
-un móvil nuevo no se vuelven a presentar las que ya se tenían.
+un móvil nuevo no se vuelven a presentar las que ya se tenían. Las de
+asistencia tienen su propia presentación, el **desvelado**, y no se cosen
+solas.
 
 **Sobre las trampas.** El código se valida en el móvil: quien tenga una foto
 del código se lleva la pieza desde el sofá. Para un juego de comunidad es
@@ -178,13 +186,17 @@ hooks/usePanuelo.ts                 Estado: catálogo, piezas, colocación, sinc
 hooks/usePanueloStage.ts            Cambio de etapa: hoja, confeti, detección del color de Comunica
 hooks/usePanueloScarf.ts            Lee `mcm.scarf` de Comunica (fuera del área)
 hooks/usePanueloTutorial.ts         Si el tutorial toca, y que ya se vio
-hooks/usePanueloTutorialStage.ts    Qué hace el visor en cada paso del tutorial
+hooks/usePanueloTutorialStage.ts    Qué hace el visor en cada paso del tutorial (y del desvelado)
+hooks/usePanueloIntro.ts            El modo a pantalla completa: tutorial o desvelado de piezas nuevas
 hooks/usePanueloTrade.ts            El intercambio en curso: pasos, en vivo, recuperación, limpieza
 services/panueloTradeService.ts     panueloTrades/{code} en RTDB, siempre con transacciones
+services/panueloAwards.ts           Piezas por asistencia: de dónde salen (hoy, la simulación; `// F4:`)
 constants/panueloTutorial.ts        Las secciones del tutorial (datos)
 utils/panuelo.ts                    Lógica pura: sanear, fusionar, conseguir, decorar
 utils/panueloPlacement.ts           Dónde cabe una pieza (lo comparten app y visor)
 utils/panueloTrade.ts               Intercambios: las reglas (puras), saneado y opciones
+utils/panueloAttendance.ts          La regla de las piezas por asistencia (pura; se copiará a functions/)
+scripts/panuelo-subir.js            `npm run panuelo:subir`: sube UNA pieza del catálogo a Firebase
 utils/panueloShare.ts               Compartir la foto
 utils/sha256.ts                     Hash de los códigos
 types/panuelo.ts                    Tipos y el protocolo app ↔ visor
@@ -257,6 +269,9 @@ AsyncStorage  @panuelo_trade_pending    { code, role }: el intercambio a medias,
 AsyncStorage  @panuelo_trade_mine       Los códigos que abrió este móvil, para borrarlos al caducar
 AsyncStorage  @panuelo_seen             Ids de las piezas ya presentadas en este móvil
 AsyncStorage  @panuelo_tutorial_seen    Versión del tutorial ya vista en este móvil
+AsyncStorage  @panuelo_retiradas        Piezas por asistencia quitadas que aún no se han avisado
+AsyncStorage  @panuelo_awards_simulados ⚠️ SIMULACIÓN del Laboratorio: { attended, awards }
+RTDB  /panueloAwards/{personId}         (F2, aún no existe) Lo concedido por asistencia; solo lo escribe el servidor
 AsyncStorage  panuelo_catalog           Caché del catálogo (useFirebaseData)
 ```
 
@@ -274,7 +289,9 @@ AsyncStorage  panuelo_catalog           Caché del catálogo (useFirebaseData)
   `sanitizeUserState`): una pieza mal escrita se descarta entera en vez de
   tumbar la pantalla; los colores tienen que ser hex; las imágenes, `https`.
 
-Analítica: `panuelo_abierto`, `panuelo_pieza_conseguida { clase, via }` y
+Analítica: `panuelo_abierto`, `panuelo_pieza_conseguida { clase, via }`,
+`panuelo_pieza_retirada { clase }` (una pieza por asistencia que se quita al
+corregirse la lista) y
 `panuelo_intercambio { paso: abierto | propuesto | aceptado | cancelado, regalo }`.
 
 ## Cambio de etapa e historial
@@ -436,6 +453,126 @@ que se cierra.
 Añade la sección al array (o una fila a una existente si va junto a ella); si
 es una función nueva, sube la versión; pon el cambio aquí y en el CHANGELOG.
 
+## Piezas por asistencia
+
+A ciertos eventos se les asigna una pieza (chapa, pin o medalla): a quien le
+**pasan lista** en ese evento le llega sola. El plan entero, con el servidor
+que falta, es
+[`../planes/PLAN_PANUELO_ASISTENCIA.md`](../planes/PLAN_PANUELO_ASISTENCIA.md).
+
+**Hoy está hecho lo de la app; el servidor no.** La concesión de verdad la
+hará una Cloud Function con el pasar lista de Comunica (F2–F4 del plan).
+Mientras tanto, la única fuente es una **simulación del Laboratorio Alpha**.
+
+### La regla: la pieza sigue siempre a la asistencia
+
+Decisión del propietario (2026-11-16), sin plazos (`utils/panueloAttendance.ts`,
+pura):
+
+- Cuenta «Sí» o «Parcial» en cualquier día del evento (`marks` y `minDays`
+  de la pieza lo cambian). Con ir a uno de sus `events` basta.
+- **Llega cuando se marca**, aunque sea tarde, y **se quita si se corrige**,
+  aunque haga años.
+- Lo concedido entra en la colección **en la caja**, sin coserse
+  (`reconcileAwards`), y espera su desvelado.
+- Si se quita: sin desvelar, **se cae de la cola sin decir nada**; ya
+  desvelada o cosida, **sale de la colección (se descose)** y la siguiente
+  vez que la pantalla está libre sale **una línea discreta, una sola vez**
+  (toast: «Ya no tienes «Chapa de Pascua»: se corrigió la lista de Pascua
+  Joven 2027.»). Sin sonido ni háptica de error.
+- Si la vuelven a marcar, **llega como nueva**: otra vez a la caja y otra vez
+  se desvela.
+- **No se intercambian nunca** (`tradeable` se fuerza a `false` al sanear).
+- Sin poder leer lo concedido (sin red), no se quita nada.
+- Las de muestra del Laboratorio (`via: demo`) no las toca.
+
+### El desvelado
+
+Lo que pidió el usuario: «la siguiente vez que entren y tienen nuevas les sale
+una animación y explicación de la nueva chapa o pin o medalla, una por una le
+van dando a siguiente y luego ya las pueden colocar».
+
+- **Es el tutorial con otras páginas**, no otra pantalla: el mismo
+  `PanueloTutorial` a pantalla completa, el mismo visor y
+  `usePanueloTutorialStage` (`hooks/usePanueloIntro.ts`). Una página por
+  pieza (`newPiecesSections`): su nombre, «Por ir a {origin}.», clase,
+  rareza y descripción, «La conseguiste el…» y, en la última, «Te esperan en
+  tu colección».
+- Arriba, **tu pañuelo** tal como lo llevas, con la pieza cosida de mentira
+  en un hueco libre y **presentándose** (`reveal`: entra girando, con
+  chispas). Confeti del primer color de la pieza y anuncio para el lector
+  («Pieza nueva, 2 de 3: …»). La primera, con háptico de celebración.
+- **«Siguiente»**; en la última, **«Colocarlas»** («Colocarla» si es una) y
+  el enlace **«Ahora no»**. La X cierra. Se vuelve atrás deslizando o con el
+  chevron. Los puntos dicen «Pieza 2 de 3».
+- **«Colocarlas»** abre el modo decorar con el filtro **«Sin poner»** y la
+  ficha de la primera abierta («Ponérmela»). Las piezas **esperan en la
+  caja**: no se cosen solas.
+- **«Ahora no» o la X**: lo enseñado queda visto; lo que falte sale la
+  próxima vez que se abra el pañuelo.
+- Va **después del tutorial** y **antes** del canje de `?codigo=`, del
+  intercambio por enlace y de la pregunta de cambio de etapa.
+- **Reducir movimiento**: la pieza aparece quieta (`reveal` con `still`) y
+  sin confeti; las páginas cambian sin animar. Sin visor (WebGL no arranca),
+  la pieza sale dibujada en plano en su página.
+- Las piezas de otras vías (código, intercambio, Panel) siguen con su
+  presentación de siempre.
+
+### La simulación del Laboratorio (mientras no hay servidor)
+
+En el panel «Pañuelo virtual» del Laboratorio Alpha:
+
+- **«Simular asistencia a Salida a la sierra»** (y a «Convivencia de otoño» y
+  «Pascua joven»): como si te pasaran lista hoy en ese evento del servidor
+  falso de Comunica (`f-evt-salida`, `f-evt-convivencia`, `f-evt-pascua`).
+  Abre el pañuelo y sale el desvelado. Dan una chapa, un pin y una medalla
+  de prueba (en `constants/panueloEjemplo.json`, con `grant: attendance`;
+  solo existen en el catálogo mientras hay simulación). Si una pieza de
+  verdad del catálogo ya fuera por asistencia, su evento sale también.
+- **«Simular que la quitan: …»** (en el evento ya marcado): como si
+  corrigieran la lista. Abre el pañuelo: la pieza desaparece y, si ya se
+  había desvelado, sale el aviso.
+- **«Borrar la simulación»**: se van sus piezas, sin aviso.
+
+Se guarda en este móvil (`@panuelo_awards_simulados`, `{ attended, awards }`)
+con la forma de `/panueloAwards/{personId}`, y lo calcula `computeAwards`, la
+misma regla que usará el servidor. **Para F4 solo cambia la fuente**:
+`loadAwards()` en `services/panueloAwards.ts` (comentario `// F4:`); el
+reflejo, las retiradas y el desvelado ya leen de ahí.
+
+### Asignar una pieza a un evento (con IA, sin editor del Panel)
+
+1. Pídele a una sesión de IA: «Haz una chapa de Pascua Joven 2027 para los
+   eventos `<id>` y `<id>`» (los ids de evento del CRM; el mismo encuentro en
+   dos delegaciones son dos eventos).
+2. La IA añade la pieza a `mcm-app/firebase-seed/panuelo.json` con
+   `"grant": { "type": "attendance", "events": [ … ] }` siguiendo
+   [`PANUELO_CONTRATO.md`](../contratos/PANUELO_CONTRATO.md) (id nuevo en
+   `kebab-case`, que no se reutiliza; pieza de verdad, con su `image` y su
+   `glb` en `piezas-3d/`), pasa `npm test -- panueloSeed` (ninguna pieza se
+   descarta ni pierde nada al sanear) y hace commit.
+3. Tú lo subes con **un solo comando**, desde la carpeta `mcm-app` (en
+   Windows, con **Git Bash**):
+
+   ```bash
+   cd mcm-app
+   npm run panuelo:subir -- pascua-joven-2027 --dry-run   # mira qué haría
+   npm run panuelo:subir -- pascua-joven-2027             # enseña y pide «s»
+   ```
+
+   Hace falta la CLI de Firebase con sesión (`npm install -g firebase-tools`
+   y `firebase login`, la de desplegar). Escribe **solo**
+   `/panuelo/data/items/<id>` y `/panuelo/updatedAt`; nunca el catálogo
+   entero, así que no puede borrar otras piezas. Avisa si va a sustituir una
+   pieza distinta y si arriba hay piezas que no están en el repo (no las
+   toca). Sin terminal: `--export` deja el JSON de la pieza y explica cómo
+   importarlo **dentro de su hijo** en la consola.
+
+El seed es además el catálogo empaquetado: la pieza llega también en la
+siguiente OTA como respaldo. **Hasta que exista el servidor (F2–F4), una
+pieza por asistencia no le llega a nadie**: solo se puede ver con la
+simulación del Laboratorio.
+
 ## Recolocar
 
 En modo decorar, el botón «Recolocar» reparte solas todas las piezas cosidas
@@ -561,6 +698,15 @@ servidor (Integración D), el paso 4 lo hace una función con una sola
 transacción y nada de lo demás cambia.
 
 ## Lo que se sabe que falta
+
+- **Las piezas por asistencia no tienen servidor todavía** (F2–F4 de
+  `PLAN_PANUELO_ASISTENCIA.md`): hoy solo llegan con la simulación del
+  Laboratorio. **El desvelado no se ha probado en un móvil**: visto en web
+  (export con datos de prueba y Playwright). Sin ver: la presentación en el
+  WebView de iPhone y Android, el confeti sobre el visor, el háptico, el toast
+  de lo retirado y la lectura con VoiceOver/TalkBack.
+- **`npm run panuelo:subir` no se ha probado contra Firebase**: solo con
+  `--dry-run` y con una CLI de mentira. La primera vez, `--dry-run` antes.
 
 - **El logo del pañuelo rojo.** El de verdad lleva el del MIC; aquí los cuatro
   llevan el del COM porque es el único que hay. Hace falta el archivo.
