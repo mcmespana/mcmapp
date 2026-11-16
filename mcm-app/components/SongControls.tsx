@@ -34,7 +34,7 @@ import SongFontBottomSheet, {
 } from './SongFontBottomSheet';
 import TransposeBottomSheet from './TransposeBottomSheet';
 import ReportBugsModal from './ReportBugsModal';
-import SecretPanelModal from './SecretPanelModal';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
@@ -200,7 +200,7 @@ const SongControls: React.FC<SongControlsProps> = ({
     useState(false);
   const [showFontPanel, setShowFontPanel] = useState(false);
   const [showReportBugsModal, setShowReportBugsModal] = useState(false);
-  const [showSecretPanel, setShowSecretPanel] = useState(false);
+  const { isAdmin } = useAdminStatus();
   const scheme = useColorScheme();
   const { toast } = useToast();
   const isDark = scheme === 'dark';
@@ -274,10 +274,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   // Web: Esc cierra el menú, como tocar el velo. Si hay una hoja o un modal
   // encima, ese Esc es suyo (lo cierra la pila de overlays): uno cada vez.
   const sheetOpen =
-    showTransposeBottomSheet ||
-    showFontPanel ||
-    showReportBugsModal ||
-    showSecretPanel;
+    showTransposeBottomSheet || showFontPanel || showReportBugsModal;
   useKeyboardShortcut('escape', () => setMenuOpen(false), {
     disabled: !showActionButtons || sheetOpen,
     preventDefault: false,
@@ -337,7 +334,6 @@ const SongControls: React.FC<SongControlsProps> = ({
       setShowTransposeBottomSheet(false);
       setShowFontPanel(false);
       setShowReportBugsModal(false);
-      setShowSecretPanel(false);
     };
   }, []);
 
@@ -349,16 +345,6 @@ const SongControls: React.FC<SongControlsProps> = ({
     toast.show({
       variant: 'success',
       label: '¡Gracias por tu aviso! Lo revisaremos pronto',
-      actionLabel: 'OK',
-      onActionPress: ({ hide }) => hide(),
-    });
-  };
-
-  const handleSecretPanelSuccess = () => {
-    toast.show({
-      variant: 'success',
-      label:
-        '¡Gracias por tu aviso totalmente secreto! Cada 48 horas se sincronizan estos cambios',
       actionLabel: 'OK',
       onActionPress: ({ hide }) => hide(),
     });
@@ -544,6 +530,20 @@ const SongControls: React.FC<SongControlsProps> = ({
                 }}
               />
             )}
+            {isAdmin && !!songFilename && !!firebaseCategory && (
+              <ActionButton
+                isDark={isDark}
+                icon="edit"
+                label="Editar canción"
+                onPress={() => {
+                  setMenuOpen(false);
+                  openCantoral('SongEditor', {
+                    filename: songFilename,
+                    firebaseCategory,
+                  });
+                }}
+              />
+            )}
             <ActionButton
               isDark={isDark}
               icon="bug-report"
@@ -650,21 +650,6 @@ const SongControls: React.FC<SongControlsProps> = ({
         songContent={songContent}
         firebaseCategory={firebaseCategory}
         onSuccess={handleReportSuccess}
-        onOpenSecretPanel={() => setShowSecretPanel(true)}
-      />
-
-      <SecretPanelModal
-        visible={showSecretPanel}
-        onClose={() => setShowSecretPanel(false)}
-        songTitle={songTitle}
-        songFilename={songFilename}
-        songAuthor={songAuthor}
-        songKey={songKey}
-        songCapo={songCapo}
-        songInfo={songInfo}
-        songContent={songContent}
-        firebaseCategory={firebaseCategory}
-        onSuccess={handleSecretPanelSuccess}
       />
     </>
   );

@@ -1,13 +1,6 @@
 import { logger } from '@/utils/logger';
-import React, { useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  ScrollView,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
 import BottomSheet from './BottomSheet';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import AppTextField from '@/components/ui/AppTextField';
@@ -36,7 +29,6 @@ interface ReportBugsModalProps {
   songContent?: string;
   firebaseCategory?: string;
   onSuccess?: () => void;
-  onOpenSecretPanel?: () => void;
 }
 
 export default function ReportBugsModal({
@@ -46,7 +38,6 @@ export default function ReportBugsModal({
   songFilename,
   firebaseCategory,
   onSuccess,
-  onOpenSecretPanel,
 }: ReportBugsModalProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -55,10 +46,6 @@ export default function ReportBugsModal({
   const resolved = useResolvedProfileConfig();
   const [bugDescription, setBugDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // iOS no puede mostrar dos Modal a la vez: si abrimos el panel secreto en el
-  // mismo tick que cerramos este sheet, el secreto nunca se monta. Marcamos la
-  // intención y la disparamos en onCloseComplete (tras el onDismiss del Modal).
-  const openSecretAfterClose = useRef(false);
 
   const handleSubmit = async () => {
     if (!bugDescription.trim()) return;
@@ -101,12 +88,6 @@ export default function ReportBugsModal({
     <BottomSheet
       visible={visible}
       onClose={handleClose}
-      onCloseComplete={() => {
-        if (openSecretAfterClose.current) {
-          openSecretAfterClose.current = false;
-          onOpenSecretPanel?.();
-        }
-      }}
       title="Reportar fallitos 🐛"
       paddingHorizontal={0}
     >
@@ -180,28 +161,6 @@ export default function ReportBugsModal({
             ]}
           />
         </View>
-
-        {/* Panel secreto */}
-        <TouchableOpacity
-          style={[
-            styles.secretBtn,
-            { borderColor: themeColors(isDark).separator },
-          ]}
-          onPress={() => {
-            openSecretAfterClose.current = true;
-            handleClose();
-          }}
-          activeOpacity={0.7}
-        >
-          <MaterialIcons
-            name="admin-panel-settings"
-            size={18}
-            color={theme.icon}
-          />
-          <Text style={[styles.secretBtnText, { color: theme.icon }]}>
-            Panel Secreto
-          </Text>
-        </TouchableOpacity>
 
         <Text style={[styles.disclaimer, { color: theme.icon }]}>
           Con tus avisos nos ayudas a mejorar la calidad del cantoral.

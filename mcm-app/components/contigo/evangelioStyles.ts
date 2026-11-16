@@ -9,6 +9,15 @@ import { radii, shadows } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 
 export const styles = StyleSheet.create({
+  shareLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 44,
+    marginTop: 16,
+  },
+  shareLinkText: { fontSize: 15, fontWeight: '600' },
   container: {
     flex: 1,
   },

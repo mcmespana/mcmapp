@@ -102,6 +102,15 @@ export interface AnalyticsEvents {
     clase: 'chapa' | 'pin' | 'cinta' | 'parche' | 'medalla' | 'pulsera';
     via: 'all' | 'code' | 'manual' | 'demo' | 'trade';
   };
+
+  /**
+   * Un paso de un intercambio del pañuelo. Sin ids, códigos ni nombres: solo
+   * cuántos se abren, se proponen, se cierran y cuántos son regalos.
+   */
+  panuelo_intercambio: {
+    paso: 'abierto' | 'propuesto' | 'aceptado' | 'cancelado';
+    regalo: boolean;
+  };
 }
 
 export type AnalyticsEventName = keyof AnalyticsEvents;

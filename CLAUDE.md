@@ -22,6 +22,7 @@
 ├── scraper-lecturas/       ← Scraper Python de lecturas litúrgicas (corre vía GitHub Action)
 ├── portadas-albumes/       ← Portadas de álbumes: las URLs de Firebase apuntan aquí — NO borrar
 ├── medallas-3d/            ← Modelos .glb de las medallas (y thumbs/ para el pañuelo); la app los descarga vía jsDelivr — NO borrar
+├── piezas-3d/              ← Modelos .glb de chapas, pin y troncho reales (ficha en piezas.json, generador en _fuente/) — NO borrar
 ├── .agents/skills/         ← Skills de UI para agentes (lockfile: skills-lock.json)
 ├── _para-borrar/           ← Cuarentena de ficheros dudosos; su README dice qué es cada uno
 └── README.md               ← Guía rápida para humanos (setup, builds, releases)
@@ -94,6 +95,8 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Calendarios ICS y su precacheo (Cloud Function)                          | `docs/funcionalidades/CALENDARIOS.md`                                        |
 | Modo Carismochito y la colección (escondida en el Laboratorio Alpha)     | `docs/funcionalidades/CARISMOCHITO.md`                                       |
 | **Pañuelo virtual en 3D** (piezas, visor, intercambios; en el Laboratorio) | `docs/funcionalidades/PANUELO.md` + `docs/contratos/PANUELO_CONTRATO.md`     |
+| Modelos 3D de chapas, pin y troncho de verdad (aún sin usar en la app)   | `piezas-3d/README.md`                                                        |
+| **Editor de canciones** (administradores; sustituye al panel secreto)     | `docs/funcionalidades/EDITOR_CANCIONES.md`                                   |
 | Coros y playlists compartidas                                            | `docs/funcionalidades/COROS.md`                                              |
 | Encuestas/evaluaciones                                                   | `docs/funcionalidades/ENCUESTAS.md` + `docs/contratos/ENCUESTAS_CONTRATO.md` |
 | Sistema de perfiles (App ↔ Panel)                                        | `docs/contratos/PANEL_PERFILES.md`                                           |
@@ -110,6 +113,8 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Build de tienda de agosto 2026 (paso a paso)                             | `docs/desarrollo/BUILD_AGOSTO_2026.md`                                       |
 | Cómo se pinta una canción (hoja, cortes, vista compacta, admin igual)    | `docs/funcionalidades/HOJA_CANCION.md`                                       |
 | Arreglos del cantoral (`{arr:}`)                                         | `docs/funcionalidades/ARREGLOS.md`                                           |
+| Contigo: compartir como imagen, exportar y «Tu año»                     | `docs/funcionalidades/CONTIGO_COMPARTIR.md`                                  |
 | Subrayado de lecturas (Contigo)                                          | `docs/funcionalidades/SUBRAYADO.md`                                          |
 | Afinador de guitarra del cantoral                                        | `docs/funcionalidades/AFINADOR.md`                                           |
+| «Cantos para el domingo» (misa propuesta según el día litúrgico)         | `docs/funcionalidades/CANTOS_DOMINGO.md`                                     |
 | Recordatorios de Contigo (textos editables)                              | `docs/funcionalidades/RECORDATORIOS_CONTIGO.md`                              |

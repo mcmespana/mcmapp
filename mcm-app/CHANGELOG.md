@@ -4,6 +4,62 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-16 23:20 — Pañuelo: modelos 3D de chapas, pin y troncho de verdad
+
+- Carpeta nueva en la raíz, `piezas-3d/`: seis `.glb` hechos a partir de fotos (Estoy contigo Samuel, Pin M+C, Jubileo 2025, Chapa OG, COM sonriente y el troncho), sus miniaturas y la ficha de cada una en `piezas.json` (nombre, talla `pequena`/`mediana`/`grande`). Se generan con `piezas-3d/_fuente/generar.py`.
+- **Todavía no se usan en la app**: no hay cambios de código. El troncho pedirá una clase nueva (va delante, encima del nudo, fijo y no intercambiable). Detalle en `piezas-3d/README.md`.
+
+## 2026-11-16 21:45 — Contigo: compartir el evangelio como imagen, exportar lo tuyo y «Tu año»
+
+- **Compartir como imagen** (enlace al final de las lecturas): tu subrayado del día —o el arranque del evangelio— en una tarjeta con cuatro estilos y dos formatos (historia y cuadrada). `utils/shareCard.ts`, `components/contigo/ShareCardSheet.tsx`. La imagen sale de `react-native-svg` (`toDataURL`), sin capturas ni paquetes nuevos.
+- **Exportar** (icono en la cabecera de Guardados): frases subrayadas y revisiones del día a PDF o texto. `utils/contigoExport.ts`, `services/contigoExport.ts`, `components/contigo/ExportSheet.tsx`.
+- **Tu año en Contigo** (pantalla nueva `/contigo/resumen`, enlace de una línea en la portada): cifras del año, meses con sus días y sus frases subrayadas, y tarjeta para compartir. `utils/contigoRecap.ts`.
+- Sin paquetes nuevos. Sin probar en móvil. Detalle en `docs/funcionalidades/CONTIGO_COMPARTIR.md`.
+
+## 2026-11-16 21:00 — Cantoral: editor de canciones para administradores (adiós al panel secreto)
+
+- **Editor nuevo** (`/cancionero/editar`, `SongEditorScreen`): pestañas Acordes (pastillas que se tocan y **se arrastran** sobre la letra), Texto (ChordPro), Datos (título, autor, tono, cejilla, multimedia) y Vista (la hoja real). Entradas: «Editar canción» en el menú de la canción y «Nueva canción» en el «⋯» del cantoral.
+- **Solo administradores de verdad**: `users/<uid>/isAdmin` (`useAdminStatus`). **Se elimina `SecretPanelModal` y la contraseña `coco`** del cantoral; los arreglos por pulsación larga pasan también a depender de `useAdminStatus`.
+- **Guardado en dos destinos** (`services/songEditorService.ts`): Firebase al momento (`songs/data/...` + `updatedAt`) y el repo del cantoral a través del admin del NAS (`POST /api/app/song/save`, con el pase de Firebase del admin; sin secretos en la app). Si el NAS no contesta, a la cola `songs/ediciones` de siempre.
+- **Canción nueva** por el NAS: de una foto (IA del cantoral), de texto pegado o en blanco.
+- **Firebase**: nodo nuevo de configuración `songs/editor/url` (URL del admin del cantoral; se pone a mano en la consola).
+- **`mcmapp-cantoral`** (rama `batiburrillo`): `/api/app/*` en `scripts/admin/server.py` y `apply_edition` extraído del script de sincronización.
+- Sin paquetes nuevos. Sin probar en móvil ni contra el NAS real. Detalle en `docs/funcionalidades/EDITOR_CANCIONES.md`.
+
+## 2026-11-16 20:15 — Playlist: lecturas del domingo con cantos que encajan, e historial de lo cantado por el coro
+
+- **Dos chips en «Tu selección»** (`PlaylistDesignTools`, también con la lista vacía): «Lecturas del domingo» e «Historial».
+- **Lecturas del domingo** (`SundayReadingsSheet`): las del próximo domingo (de `seccion_oracion/lecturas`, que el scraper trae con 30 días de adelanto), plegables para leerlas, y debajo los cantos del cantoral con palabras en común, con las palabras que coinciden y un «+» para añadirlos. Sin IA ni servidor: `utils/sundayMatch.ts` (sin tildes, sin palabras vacías, plural recortado, pesa más lo raro en el cantoral y el salmo/evangelio; hacen falta dos palabras en común).
+- **Historial del coro** (se enciende y se apaga, se recuerda; solo con coro elegido): en cada fila de la playlist y del cantoral, ocho puntos (las últimas ocho semanas) y «×N» (veces este curso, desde el 1 de septiembre). `utils/choirHistory.ts`, `hooks/useChoirHistory.ts`, `components/playlist/SungDots.tsx`.
+- **Firebase**: cada guardado en el coro apunta además `choirs/{id}/log/{AAAAMMDD}-{código} = { at, code, songs: [ficheros] }` (misma escritura multi-path de `upsertChoirPlaylist`; cabe en las reglas actuales de `/choirs/$choirId`). Las playlists anteriores al registro se cuentan leyendo su contenido una vez (caché en el móvil).
+- Sin paquetes nuevos. Sin probar en móvil.
+
+## 2026-11-16 19:40 — Cantoral: metrónomo en la hoja del afinador
+
+- **Conmutador «Afinador · Metrónomo»** arriba de la hoja del afinador (`TunerScreen`). No tiene entrada propia en ningún menú: se usa menos. Al pasar al metrónomo se suelta el micrófono.
+- **Metrónomo** (`components/tuner/MetronomePanel.tsx`): tempo 40–220 con −/+ (mantener repite) y «Marcar el tempo»; 1, 2, 3, 4 o 6 pulsos por compás con el primero acentuado; puntos que marcan el pulso. Tempo y compás se recuerdan.
+- **Sonido sintetizado** (`services/metronome/engine.ts`, un «toc» de madera, sin ficheros de audio) con el `react-native-audio-api` del afinador, programado sobre el reloj del audio. Lógica pura y tests en `utils/metronome.ts` / `metronome.test.ts`.
+- Sin paquetes nuevos (sale por OTA en la 2.5.1). Probado en web; sin oír en un móvil. Detalle en `docs/funcionalidades/AFINADOR.md`.
+## 2026-11-16 19:21 — Pañuelo: intercambios de piezas (pantalla, servicio y reglas)
+
+- Nueva hoja «Intercambiar» (Laboratorio Alpha): se ofrece una pieza con un código de 6 y su QR, la otra persona lo escribe o lo escanea, elige qué da (o lo regala) y se acepta. Cada móvil aplica su mitad: la pieza recibida queda cosida donde estaba la dada.
+- Se pueden cambiar pulseras y chapas comunes; nunca medallas ni piezas únicas (`isTradeable`). Hace falta sesión y red en los dos móviles.
+- Firebase: nodo nuevo `/panueloTrades/{code}`, escrito siempre con transacciones (`services/panueloTradeService.ts`). Sus reglas están en `database.rules.json` y **hay que pegarlas a mano en la consola** (`docs/desarrollo/FIREBASE_REGLAS.md` §8); hasta entonces la app avisa de que los intercambios no están activados.
+- Recuperación si la app se cierra a mitad (`@panuelo_trade_pending`) y limpieza de los intercambios caducados al abrir el pañuelo (`@panuelo_trade_mine`).
+- Fallo arreglado: recuperar una pieza que ya se había dado ya no la hace desaparecer al juntar el móvil con la nube (`mergePanuelo`).
+- El escáner de QR lee `…/panuelo?intercambio=` y el enlace abre la hoja. Nueva analítica `panuelo_intercambio`. El tutorial pasa a la versión 4.
+- **Sin probar con dos móviles** (lista en `docs/planes/PLAN_PANUELO_INTERCAMBIOS.md` §7).
+
+## 2026-11-16 18:17 — Cantos para el domingo (cantoral + Inicio)
+
+- Pantalla nueva `/cancionero/domingo`: la app propone una misa para el domingo (entrada, salmo, aleluya, ofertorio, santo, comunión, salida) según el día litúrgico. Cambiar, elegir otra o quitar cada momento; lo cambiado se recuerda por fecha en el dispositivo. Entrada: fila «Cantos para el domingo» bajo «Tu selección».
+- «Pasar a Tu selección» reemplaza la selección con 10 s de Deshacer; «Subir a mi coro» abre directamente el paso de guardar de la hoja del coro.
+- Reglas litúrgicas como filtros: sin Aleluya en Cuaresma ni Semana Santa (el momento pasa a «Aclamación»), sin canciones de otro tiempo o fiesta, sin repetir canción en una misma misa. Misma fecha, misma propuesta en todos los móviles (rotación determinista por semana). El tiempo de cada canción sale de sus etiquetas; `liturgicalTime` solo de respaldo.
+- Día litúrgico completo (`utils/liturgicalDay.ts`): domingo N, ciclo A/B/C por año litúrgico (el JSON lo traía mal desde Adviento) y solemnidades fijas que caen en domingo (Todos los Santos, Inmaculada, Asunción…), añadidas al generador del calendario. El badge de Contigo comparte esa lógica.
+- Tarjeta «Cantos para el domingo» en Inicio de viernes a domingo, con el id `cantos-domingo` en `homeButtons` del perfil (apagable por perfil; **hay que añadirlo en `/profileConfig` de Firebase y en el Panel para que salga**).
+- Sin probar: iOS/Android nativo, y con el cantoral real (falta contar qué canciones llevan etiqueta de tiempo litúrgico, Fase 0 del plan).
+- Doc: `docs/funcionalidades/CANTOS_DOMINGO.md`; plan `docs/planes/PLAN_CANTOS_DOMINGO.md` con fases 1-4 hechas (quedan 0, 5 y 6).
+
 ## 2026-11-15 22:20 — Comunica: coordinación recuerda a los monitores que pasen lista
 
 - **Campana en la cabecera del Resumen de grupos** (solo coordinación): entra en modo de elegir grupos, con los de la última lista sin pasar ya marcados. Solo se pueden marcar grupos de su alcance y con monitores vinculados. Abajo, «Recordar a N grupos».

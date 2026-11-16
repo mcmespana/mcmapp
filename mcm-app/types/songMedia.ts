@@ -1,7 +1,7 @@
 /**
  * Modelo multimedia de una canción del cantoral.
  *
- * Los datos los rellena el administrador desde `components/SecretPanelModal.tsx`
+ * Los datos los rellena el administrador desde el editor de canciones (`app/screens/SongEditorScreen.tsx`)
  * y viven en Firebase (`songs/data/<categoria>/songs[i]`). `extractSongMedia`
  * normaliza un objeto de canción crudo en una `SongMedia` lista para mostrar al
  * usuario final (cajón multimedia + indicadores de lista).

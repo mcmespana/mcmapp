@@ -38,6 +38,13 @@ export function useAdminStatus(): { isAdmin: boolean; loading: boolean } {
 
   const current = result?.uid === uid ? result : null;
 
+  // Solo en desarrollo con datos de ejemplo (`EXPO_PUBLIC_FIREBASE_FIXTURES=1`,
+  // que no llevan ni las builds de tienda ni la web publicada): no hay sesión
+  // y hay que poder ver las pantallas de administración.
+  if (process.env.EXPO_PUBLIC_FIREBASE_FIXTURES === '1') {
+    return { isAdmin: true, loading: false };
+  }
+
   return {
     isAdmin: current?.isAdmin ?? false,
     // Sin sesión no hay nada que esperar: no es admin y ya está.

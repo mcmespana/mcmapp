@@ -50,6 +50,8 @@ import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { h } from '@/utils/haptics';
 import PlaylistRow from '@/components/playlist/PlaylistRow';
 import { createStyles } from '@/components/playlist/selectedSongsStyles';
+import PlaylistDesignTools from '@/components/playlist/PlaylistDesignTools';
+import SundayReadingsSheet from '@/components/playlist/SundayReadingsSheet';
 import {
   PlaylistHeaderBar,
   type ViewMode,
@@ -138,8 +140,14 @@ const WEB_BASE_URL = 'https://mcm.expo.app';
 const APP_SCHEME = 'mcmapp://';
 
 const SelectedSongsScreen: React.FC = () => {
-  const { selectedSongs, isHydrated, addSong, removeSong, moveSong } =
-    useSelectedSongs();
+  const {
+    selectedSongs,
+    isHydrated,
+    addSong,
+    removeSong,
+    moveSong,
+    isSongSelected,
+  } = useSelectedSongs();
   const choir = useChoirSession();
   // Escalar suelto a propósito: leer `choir.session?.current?.filename` DENTRO
   // de un callback hace que se infiera `choir.session` entera como dependencia,
@@ -1151,6 +1159,11 @@ const SelectedSongsScreen: React.FC = () => {
     } else if (params.hoja === 'coro' && sharing.myChoir) {
       sheetParamHandled.current = true;
       sharing.openSheet('home');
+    } else if (params.hoja === 'guardar-coro' && sharing.myChoir) {
+      // «Subir a mi coro» desde «Cantos para el domingo»: directo al paso de
+      // guardar, con la misa ya puesta como selección.
+      sheetParamHandled.current = true;
+      sharing.openSheet('save');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharing.myChoir]);
@@ -1578,6 +1591,7 @@ const SelectedSongsScreen: React.FC = () => {
         </Text>
       </View>
       <View style={{ gap: 10, marginBottom: tabBarBottom }}>
+        <PlaylistDesignTools onOpenSunday={openSunday} />
         {/* Con la lista vacía, lo primero que quiere casi todo el mundo es
             traerse la del coro: va la primera y sin pedir ningún código. */}
         <PressableFeedback
@@ -1624,6 +1638,9 @@ const SelectedSongsScreen: React.FC = () => {
     </View>
   );
 
+  const [showSunday, setShowSunday] = useState(false);
+  const openSunday = useCallback(() => setShowSunday(true), []);
+
   const headerComponent = useMemo(
     () => (
       <PlaylistHeaderBar
@@ -1635,9 +1652,11 @@ const SelectedSongsScreen: React.FC = () => {
         viewMode={viewMode}
         setViewMode={setViewMode}
         styles={styles}
+        onOpenSunday={openSunday}
       />
     ),
     [
+      openSunday,
       visibleCount,
       link,
       sharing.isSynced,
@@ -1794,6 +1813,14 @@ const SelectedSongsScreen: React.FC = () => {
         />
       )}
 
+      <SundayReadingsSheet
+        visible={showSunday}
+        onClose={() => setShowSunday(false)}
+        songsData={allSongsData}
+        isSelected={isSongSelected}
+        onAdd={addSong}
+        onRemove={removeSong}
+      />
       <PlaylistActionsBottomSheet
         visible={showActions}
         sections={sheetSections}

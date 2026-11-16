@@ -94,7 +94,7 @@ components/                     # Componentes sueltos (modales, sheets, banners,
 │                               #   IconSymbol, Glass*, ScreenHero, TabScreenWrapper…
 │                               #   (catálogo y reglas en design.md)
 └── {calendar,contigo,evaluation,grupos,home,mas,materiales,medallas,
-     notifications,playlist,preview-channel,secret-panel,song-media,
+     notifications,playlist,preview-channel,song-editor,song-media,
      song-onboarding,song-sheet,song-tags,tabs}/
                                 # Subcomponentes de cada área (tabs/ = las tres
                                 #   implementaciones de la barra, ver TABS_MAINTENANCE.md)

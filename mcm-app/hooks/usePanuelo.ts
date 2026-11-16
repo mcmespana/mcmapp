@@ -34,6 +34,7 @@ import {
   syncPanueloItem,
   syncPanueloLayout,
   syncPanueloMemory,
+  syncPanueloTradeHalf,
 } from '@/utils/authHelpers';
 import { logger } from '@/utils/logger';
 import {
@@ -55,6 +56,7 @@ import {
   unplaceItem,
   type RedeemResult,
 } from '@/utils/panuelo';
+import { applyTrade, tradeHalf, type PanueloTrade } from '@/utils/panueloTrade';
 
 export const PANUELO_STATE_KEY = '@panuelo_state';
 /** Las piezas que ya se le han presentado a la persona en ESTE móvil. */
@@ -94,6 +96,13 @@ export interface PanueloValue {
   rotate: (id: string, degrees: number) => void;
   /** Canjea un código. Si abre una pieza nueva, la añade y la cose. */
   redeem: (code: string) => RedeemResult;
+  /**
+   * Aplica la mitad propia de un intercambio aceptado: sale la pieza que se
+   * da, entra la que se recibe (cosida en su sitio) y se sube en una sola
+   * escritura. La recibida se presenta (sale de las ya vistas). Idempotente:
+   * la segunda vez no cambia nada y devuelve `false`.
+   */
+  applyTradeHalf: (trade: PanueloTrade) => boolean;
   /** Solo laboratorio: darse piezas de muestra. */
   grantDemo: (ids: string[]) => void;
   /** Solo laboratorio: empezar de cero (móvil y nube). */
@@ -379,6 +388,38 @@ export function usePanuelo(): PanueloValue {
     [catalog, award],
   );
 
+  const applyTradeHalf = useCallback(
+    (trade: PanueloTrade): boolean => {
+      const current = uidRef.current;
+      if (!current) return false;
+      const half = tradeHalf(trade, current);
+      if (!half) return false;
+      const before = stateRef.current;
+      const next = applyTrade(before, trade, current, Date.now());
+      if (next === before) return false;
+      persist(next);
+      if (half.take && seenRef.current[half.take]) {
+        const seenNext = { ...seenRef.current };
+        delete seenNext[half.take];
+        persistSeen(seenNext);
+      }
+      if (half.take && catalog[half.take]) {
+        trackEvent('panuelo_pieza_conseguida', {
+          clase: catalog[half.take].kind,
+          via: 'trade',
+        });
+      }
+      // La colocación ya va en esta escritura: lo que esperaba, fuera.
+      if (layoutTimer.current) {
+        clearTimeout(layoutTimer.current);
+        layoutTimer.current = null;
+      }
+      syncPanueloTradeHalf(current, next, half);
+      return true;
+    },
+    [persist, persistSeen, catalog],
+  );
+
   const grantDemo = useCallback(
     (ids: string[]) => {
       const fresh = award(
@@ -419,6 +460,7 @@ export function usePanuelo(): PanueloValue {
     move,
     rotate,
     redeem,
+    applyTradeHalf,
     grantDemo,
     reset,
   };

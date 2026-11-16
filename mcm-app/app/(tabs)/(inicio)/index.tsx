@@ -76,6 +76,7 @@ import {
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useActiveSurveys } from '@/hooks/useActiveSurveys';
 import SurveyBanner from '@/components/SurveyBanner';
+import SundaySongsCard from '@/components/home/SundaySongsCard';
 import {
   getEventCacheKey,
   getEventFirebasePath,
@@ -1190,6 +1191,9 @@ export default function Home() {
                 </View>
               </View>
             ) : null}
+
+            {/* ── Cantos para el domingo (vie-dom, si el perfil lo enciende) ── */}
+            <SundaySongsCard />
 
             {/* ── Accesos rápidos ── */}
             <View style={styles.section}>

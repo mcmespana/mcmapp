@@ -291,6 +291,42 @@ describe('mergePanuelo', () => {
     const remote = state({ items: { a: { at: 90, via: 'trade' } } });
     expect(mergePanuelo(local, remote).merged.items).toHaveProperty('a');
   });
+
+  // PLAN_PANUELO_INTERCAMBIOS §1.1: Ana dio `a` en t=50 (la nube aún guarda
+  // `a` de t=10) y la recupera en t=90. Quedarse con la fecha más antigua
+  // (10) y luego quitar lo dado antes de 50 la hacía desaparecer.
+  it('recuperar una pieza que se dio no la hace desaparecer (nube con la copia vieja)', () => {
+    const local = state({
+      items: { a: { at: 90, via: 'trade' } },
+      layout: { a: placement },
+      layoutAt: 95,
+      gone: { a: 50 },
+    });
+    const remote = state({
+      items: { a: { at: 10, via: 'manual' } },
+      layoutAt: 20,
+      gone: { a: 50 },
+    });
+    const { merged, upload } = mergePanuelo(local, remote);
+    expect(merged.items.a).toEqual({ at: 90, via: 'trade' });
+    expect(merged.layout).toHaveProperty('a');
+    expect(upload).toBe(true);
+    // Y al revés (un segundo móvil de Ana que aún guarde la copia vieja).
+    const other = mergePanuelo(remote, local).merged;
+    expect(other.items.a).toEqual({ at: 90, via: 'trade' });
+  });
+
+  it('recuperar una pieza que se dio no la hace desaparecer (nube sin la copia vieja)', () => {
+    const local = state({
+      items: { a: { at: 90, via: 'trade' } },
+      gone: { a: 50 },
+    });
+    const remote = state({ gone: { a: 50 } });
+    expect(mergePanuelo(local, remote).merged.items.a).toEqual({
+      at: 90,
+      via: 'trade',
+    });
+  });
 });
 
 describe('códigos', () => {
@@ -445,6 +481,23 @@ describe('lo que se enseña', () => {
     expect(isTradeable(catalog.uno)).toBe(false);
     expect(isTradeable({ ...catalog.uno, tradeable: true })).toBe(true);
     expect(isTradeable({ ...catalog.pulsera, tradeable: false })).toBe(false);
+  });
+
+  it('chapas comunes sí; medallas y piezas únicas nunca, diga lo que diga el catálogo', () => {
+    const chapa = DEFAULT_PANUELO_CATALOG['chapa-convivencia'];
+    expect(chapa.kind).toBe('chapa');
+    expect(isTradeable(chapa)).toBe(true);
+    expect(isTradeable({ ...chapa, rarity: 'especial' })).toBe(false);
+    expect(isTradeable({ ...chapa, rarity: 'unica', tradeable: true })).toBe(
+      false,
+    );
+    const medalla = DEFAULT_PANUELO_CATALOG['medalla-jubileo-2025'];
+    expect(
+      isTradeable({ ...medalla, rarity: undefined, tradeable: true }),
+    ).toBe(false);
+    expect(isTradeable(DEFAULT_PANUELO_CATALOG['chapa-25-aniversario'])).toBe(
+      false,
+    );
   });
 });
 
@@ -992,10 +1045,14 @@ describe('el tutorial (datos)', () => {
     ).toEqual([]);
   });
 
-  it('no promete lo que no existe (los intercambios no tienen pantalla)', () => {
-    const text = PANUELO_TUTORIAL.map((s) => `${s.title} ${s.body}`)
-      .join(' ')
-      .toLowerCase();
-    expect(text).not.toContain('intercambi');
+  it('ahora que hay pantalla de intercambios, el tutorial lo cuenta (en una fila, no en una página)', () => {
+    const rows = PANUELO_TUTORIAL.flatMap((s) => s.rows ?? []);
+    expect(
+      rows.some((r) =>
+        `${r.title} ${r.text}`.toLowerCase().includes('intercambi'),
+      ),
+    ).toBe(true);
+    expect(PANUELO_TUTORIAL.length).toBeLessThanOrEqual(7);
+    expect(PANUELO_TUTORIAL_VERSION).toBeGreaterThanOrEqual(4);
   });
 });
