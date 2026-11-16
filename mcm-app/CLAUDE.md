@@ -154,7 +154,7 @@ Con expo-router 58 el estado de navegación sale de los ficheros: **no se monta
 params de ruta son texto, nunca objetos. Los nombres de pantalla de siempre
 (`'Horario'`, `'Fotos'`…) se traducen a rutas en `utils/eventRoutes.ts`.
 `renderEventScreens()` devuelve un array de `Stack.Screen`: el `Stack` no aplana
-fragmentos. Estado de la migración: `docs/planes/PLAN_EXPO_58.md`.
+fragmentos. La migración a Expo 58 está hecha (PR #353, 2026-10-31); el detalle, en el CHANGELOG del 2026-10-31.
 
 **Una canción viaja por la ruta como texto**: `filename` (+ `list`,
 `currentIndex`, `source`, `firebaseCategory`). La pantalla la lee de la lista
