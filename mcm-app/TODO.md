@@ -67,7 +67,6 @@ nativo (entró en la #313 el 2026-08-04). Todo NATIVO, nada sale por OTA.
       directos), ~~los tres navegadores de fecha distintos~~ (✅ unificados en
       `DateNavigator` el 2026-10-08) y repasar en dispositivo el evangelio,
       que en web sin datos se queda en «Preparando la Palabra…».
-- [ ] **Command Palette v2: deep-link a contenidos** — el palette actual (`CommandPalette.tsx`) solo navega a tabs/pantallas top-level. Para saltar a una canción concreta o a un punto dentro de los stacks anidados hay que exponer un `navigation ref` (p.ej. `CancioneroNavRefContext`). Después indexar canciones (`songs/data`), reflexiones (`compartiendo/data`) y eventos del calendario.
 
 ---
 
