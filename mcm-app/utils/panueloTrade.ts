@@ -1,5 +1,5 @@
 /**
- * Intercambios de piezas del pañuelo — LA BASE, sin pantalla todavía.
+ * Intercambios de piezas del pañuelo — las reglas (funciones puras).
  *
  * La idea (2026-11-13): dos personas, cara a cara, se cambian una pulsera o
  * una chapa, como se hace con las de verdad en un encuentro. Una enseña un
@@ -7,10 +7,10 @@
  *
  * Aquí está la parte que no depende de nada: las reglas (quién puede ofrecer
  * qué, cuándo caduca, qué pasa con el pañuelo de cada una) como funciones
- * puras, con sus tests. Falta lo que las usa: el servicio que guarda el
- * intercambio en `panueloTrades/{code}` y la pantalla. El diseño entero, los
- * pasos que quedan y las reglas de Firebase que hacen falta están en
- * `docs/funcionalidades/PANUELO.md` («Intercambios»).
+ * puras, con sus tests. Las usan el servicio (`services/panueloTradeService.ts`,
+ * que guarda el intercambio en `panueloTrades/{code}` con transacciones), el
+ * hook `hooks/usePanueloTrade.ts` y la hoja `PanueloTradeSheet`. Cómo funciona
+ * entero: `docs/funcionalidades/PANUELO.md` («Intercambios»).
  *
  * Cómo va un intercambio:
  *
@@ -32,10 +32,11 @@
  */
 import type {
   PanueloCatalog,
+  PanueloItemDef,
   PanueloPlacement,
   PanueloUserState,
 } from '@/types/panuelo';
-import { isTradeable } from '@/utils/panuelo';
+import { isTradeable, sortCatalog } from '@/utils/panuelo';
 import { nextFreeSlot } from '@/utils/panueloPlacement';
 
 /** Un intercambio abierto dura diez minutos: es para hacerlo en el momento. */
@@ -45,6 +46,12 @@ export const TRADE_CODE_LENGTH = 6;
 const TRADE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 export type PanueloTradeStatus = 'open' | 'proposed' | 'accepted' | 'cancelled';
+const STATUSES: readonly PanueloTradeStatus[] = [
+  'open',
+  'proposed',
+  'accepted',
+  'cancelled',
+];
 
 export interface PanueloTradeSide {
   uid: string;
@@ -60,8 +67,12 @@ export interface PanueloTrade {
   status: PanueloTradeStatus;
   createdAt: number;
   expiresAt: number;
-  /** Quien abre el intercambio y enseña el código. */
-  offer: PanueloTradeSide & { itemId: string };
+  /**
+   * Quien abre el intercambio y enseña el código. `have`: las piezas
+   * intercambiables que ya tiene (solo esas, no su colección), para que quien
+   * contesta no le ofrezca algo que no puede recibir.
+   */
+  offer: PanueloTradeSide & { itemId: string; have?: string[] };
   /** Quien escribe el código. */
   answer?: PanueloTradeSide;
 }
@@ -71,6 +82,7 @@ export type TradeError =
   | 'not-owned'
   | 'not-tradeable'
   | 'already-have'
+  | 'they-have'
   | 'own-offer'
   | 'not-yours'
   | 'expired'
@@ -130,6 +142,9 @@ export function createTradeOffer(input: {
 }): TradeResult {
   const error = canGive(input.catalog, input.state, input.itemId);
   if (error) return { ok: false, reason: error };
+  const have = tradeableOwned(input.catalog, input.state)
+    .map((item) => item.id)
+    .filter((id) => id !== input.itemId);
   return {
     ok: true,
     trade: {
@@ -137,7 +152,13 @@ export function createTradeOffer(input: {
       status: 'open',
       createdAt: input.now,
       expiresAt: input.now + TRADE_TTL_MS,
-      offer: { uid: input.uid, name: input.name, itemId: input.itemId },
+      // Sin claves `undefined`: Firebase las rechaza.
+      offer: {
+        uid: input.uid,
+        ...(input.name ? { name: input.name } : {}),
+        itemId: input.itemId,
+        ...(have.length > 0 ? { have } : {}),
+      },
     },
   };
 }
@@ -166,13 +187,16 @@ export function answerTrade(input: {
   if (itemId !== null) {
     const error = canGive(input.catalog, state, itemId);
     if (error) return { ok: false, reason: error };
+    if (trade.offer.have?.includes(itemId)) {
+      return { ok: false, reason: 'they-have' };
+    }
   }
   return {
     ok: true,
     trade: {
       ...trade,
       status: 'proposed',
-      answer: { uid, name: input.name, itemId },
+      answer: { uid, ...(input.name ? { name: input.name } : {}), itemId },
     },
   };
 }
@@ -253,4 +277,121 @@ export function applyTrade(
     layout[mine.take] = spot ?? nextFreeSlot(Object.values(layout));
   }
   return { ...state, items, layout, layoutAt: now, gone };
+}
+
+// ── Lo que llega de fuera, y lo que se enseña ──────────────────────────────
+
+const isObject = (x: unknown): x is Record<string, unknown> =>
+  typeof x === 'object' && x !== null && !Array.isArray(x);
+const ITEM_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const itemId = (x: unknown): string | undefined =>
+  typeof x === 'string' && ITEM_ID.test(x) ? x : undefined;
+const uidOf = (x: unknown): string | undefined =>
+  typeof x === 'string' && x.trim() !== '' && x.length <= 128 ? x : undefined;
+const nameOf = (x: unknown): string | undefined => {
+  if (typeof x !== 'string') return undefined;
+  const s = x.trim().slice(0, 40);
+  return s === '' ? undefined : s;
+};
+const numOf = (x: unknown): number | undefined =>
+  typeof x === 'number' && Number.isFinite(x) ? x : undefined;
+
+/**
+ * Un intercambio leído de `panueloTrades/{code}`, saneado, o `null` si no es
+ * uno. Lo escribe el móvil de otra persona: no se fía de nada. Un `answer`
+ * sin `itemId` es un regalo (Firebase no guarda `null`: la clave desaparece).
+ */
+export function sanitizeTrade(raw: unknown): PanueloTrade | null {
+  if (!isObject(raw) || !isObject(raw.offer)) return null;
+  const code = typeof raw.code === 'string' ? raw.code : '';
+  if (!/^[A-HJKMNP-Z2-9]{6}$/.test(code)) return null;
+  const status = STATUSES.find((s) => s === raw.status);
+  const createdAt = numOf(raw.createdAt);
+  const expiresAt = numOf(raw.expiresAt);
+  const offerUid = uidOf(raw.offer.uid);
+  const offerItem = itemId(raw.offer.itemId);
+  if (
+    !status ||
+    createdAt === undefined ||
+    expiresAt === undefined ||
+    !offerUid ||
+    !offerItem
+  ) {
+    return null;
+  }
+  const have = (Array.isArray(raw.offer.have) ? raw.offer.have : [])
+    .map(itemId)
+    .filter((id): id is string => Boolean(id))
+    .slice(0, 200);
+  const offerName = nameOf(raw.offer.name);
+  const trade: PanueloTrade = {
+    code,
+    status,
+    createdAt,
+    expiresAt,
+    offer: {
+      uid: offerUid,
+      ...(offerName ? { name: offerName } : {}),
+      itemId: offerItem,
+      ...(have.length > 0 ? { have } : {}),
+    },
+  };
+  if (isObject(raw.answer)) {
+    const uid = uidOf(raw.answer.uid);
+    if (uid) {
+      const name = nameOf(raw.answer.name);
+      trade.answer = {
+        uid,
+        ...(name ? { name } : {}),
+        itemId: itemId(raw.answer.itemId) ?? null,
+      };
+    }
+  }
+  // Propuesto o aceptado sin respuesta no es un intercambio que se pueda usar.
+  if ((status === 'proposed' || status === 'accepted') && !trade.answer) {
+    return null;
+  }
+  return trade;
+}
+
+/** Las piezas propias que se pueden dar, en el orden de la colección. */
+export function tradeableOwned(
+  catalog: PanueloCatalog,
+  state: PanueloUserState,
+): PanueloItemDef[] {
+  return sortCatalog(catalog).filter(
+    (item) => Boolean(state.items[item.id]) && isTradeable(item),
+  );
+}
+
+export interface TradeChoice {
+  item: PanueloItemDef;
+  /** Por qué no se puede elegir: quien ofrece ya la tiene. */
+  disabled?: 'they-have';
+}
+
+/**
+ * Lo que puede dar quien contesta: sus intercambiables, con las que la otra
+ * persona ya tiene deshabilitadas («Ya la tiene»). La pieza que le ofrecen no
+ * sale (no la tiene: si la tuviera, no podría contestar).
+ */
+export function answerChoices(
+  catalog: PanueloCatalog,
+  state: PanueloUserState,
+  trade: PanueloTrade,
+): TradeChoice[] {
+  const have = new Set(trade.offer.have ?? []);
+  return tradeableOwned(catalog, state)
+    .filter((item) => item.id !== trade.offer.itemId)
+    .map((item) =>
+      have.has(item.id) ? { item, disabled: 'they-have' as const } : { item },
+    );
+}
+
+/** El nombre de pila: el `displayName` hasta el primer espacio, o nada. */
+export function firstName(
+  displayName: string | null | undefined,
+): string | undefined {
+  const first = (displayName ?? '').trim().split(/\s+/)[0];
+  return first ? first.slice(0, 40) : undefined;
 }

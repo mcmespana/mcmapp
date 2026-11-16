@@ -405,9 +405,28 @@ export function mergePanuelo(
   local: PanueloUserState,
   remote: PanueloUserState,
 ): { merged: PanueloUserState; upload: boolean } {
-  const items: Record<string, PanueloOwned> = { ...remote.items };
   let upload = false;
-  for (const [id, mine] of Object.entries(local.items)) {
+  // Lo que cualquiera de los dos lados dio en un intercambio, se queda dado.
+  const gone: Record<string, number> = { ...remote.gone };
+  for (const [id, at] of Object.entries(local.gone ?? {})) {
+    if (!(gone[id] >= at)) {
+      gone[id] = at;
+      upload = true;
+    }
+  }
+  // Una copia de antes de darla ya no vale (`at <= gone`): si no se descarta
+  // antes de elegir la más antigua, recuperar una pieza dada la borraría
+  // (PLAN_PANUELO_INTERCAMBIOS §1.1).
+  const alive = (id: string, owned: PanueloOwned | undefined) =>
+    owned && !(gone[id] >= owned.at) ? owned : undefined;
+  const items: Record<string, PanueloOwned> = {};
+  for (const [id, theirs] of Object.entries(remote.items)) {
+    const kept = alive(id, theirs);
+    if (kept) items[id] = kept;
+  }
+  for (const [id, raw] of Object.entries(local.items)) {
+    const mine = alive(id, raw);
+    if (!mine) continue;
     const theirs = items[id];
     if (!theirs || mine.at < theirs.at) {
       items[id] = mine;
@@ -420,14 +439,6 @@ export function mergePanuelo(
   const layout: Record<string, PanueloPlacement> = {};
   for (const [id, placement] of Object.entries(winner.layout)) {
     if (items[id]) layout[id] = placement;
-  }
-  // Lo que cualquiera de los dos lados dio en un intercambio, se queda dado.
-  const gone: Record<string, number> = { ...remote.gone };
-  for (const [id, at] of Object.entries(local.gone ?? {})) {
-    if (!(gone[id] >= at)) {
-      gone[id] = at;
-      upload = true;
-    }
   }
   const history: Record<string, PanueloMemory> = { ...remote.history };
   for (const [key, memory] of Object.entries(local.history ?? {})) {
@@ -926,9 +937,17 @@ export function formatMonthYear(at: number): string {
 }
 
 /**
- * ¿Se puede intercambiar esta pieza? Lo que diga el catálogo; si no dice
- * nada, solo las pulseras (son las que se cambian de mano en los encuentros).
+ * ¿Se puede intercambiar esta pieza? Decisión del propietario (2026-11-16):
+ * pulseras y chapas comunes, y **nunca** medallas ni piezas únicas (las
+ * únicas son las de un evento: se ganan por haber estado). Lo segundo no lo
+ * cambia el catálogo; lo primero sí (`tradeable: false` para quitar una
+ * pulsera, `tradeable: true` para sumar un pin o una chapa especial).
  */
 export function isTradeable(item: PanueloItemDef): boolean {
-  return item.tradeable ?? item.kind === 'pulsera';
+  if (item.kind === 'medalla' || item.rarity === 'unica') return false;
+  if (item.tradeable !== undefined) return item.tradeable;
+  return (
+    item.kind === 'pulsera' ||
+    (item.kind === 'chapa' && (item.rarity ?? 'comun') === 'comun')
+  );
 }
