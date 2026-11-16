@@ -114,7 +114,7 @@ que la app no conoce, el cliente lo descarta silenciosamente con un warning
 | Campo                | IDs aceptados                                                                             | Notas                                               |
 | -------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------- |
 | `tabs`               | `index`, `cancionero`, `contigo`, `visitapapa`, `calendario`, `fotos`, `comunica`, `mas` | Pestañas de la barra inferior                        |
-| `homeButtons`        | `comunica`, `cancionero`, `fotos`, `evangelio`, `visitapapa`, `mas`                       | Botones del grid de la Home                          |
+| `homeButtons`        | `comunica`, `cancionero`, `fotos`, `evangelio`, `visitapapa`, `mas`, `cantos-domingo`      | Botones del grid de la Home. `cantos-domingo` no es un botón: enciende la tarjeta «Cantos para el domingo» (vie-dom) |
 | `masItems`           | `comunica`, `comunica-gestion`, `jubileo`, `eventos-pasados`                              | Items del menú "Más"                                 |
 | `albumTags`          | `all`, `general`, `encuentros`, `interno`, `monitores`, `miembros`                        | Tags de visibilidad de fotos. `"all"` = ver todo     |
 | `notificationTopics` | `general`, `eventos`, `familias`, `monitores`, `miembros`                                 | Topics base. Las delegaciones añaden los suyos       |

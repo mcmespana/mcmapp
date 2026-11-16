@@ -1,11 +1,40 @@
 # PLAN_CANTOS_DOMINGO — «Cantos para este domingo»
 
-> Estado (2026-11-16): **plan, sin empezar.** Nada de código todavía.
+> Estado (2026-11-16): **fases 1-4 HECHAS** (día litúrgico, motor, pantalla y
+> entrada en el cantoral, tarjeta en Inicio). **Pendientes: Fase 0** (contar
+> etiquetas; necesita acceso a Firebase o al repo del cantoral), **Fase 5**
+> (estribillo del salmo) y **Fase 6** (temas, opcional). El plan sigue VIVO:
+> no se mueve a `archivo/`. Doc viva de lo hecho:
+> [`funcionalidades/CANTOS_DOMINGO.md`](../funcionalidades/CANTOS_DOMINGO.md).
 > Función nueva del cantoral: abrir el cantoral el jueves y que te proponga una
 > misa entera para el domingo (entrada, salmo, aleluya, ofertorio, santo,
 > comunión, salida), con el tiempo litúrgico bien puesto, sin repetir siempre
 > las mismas, y que con un toque pase a «Tu selección» y de ahí al coro.
-> Todo es **OTA** (ver §9). Las 🔒 están al final.
+> Todo es **OTA** (ver §9). Las 🔒 están al final, ya contestadas.
+>
+> **Sin la Fase 0 el motor funciona pero «a ciegas»**: no se sabe cuántas
+> canciones llevan etiqueta de tiempo o de fiesta; sin ellas todo es neutro y
+> propone por rotación (no falla). El vocabulario de `SEASON_TAGS`
+> (`constants/massMoments.ts`) es la forma acordada, no una medición.
+>
+> **Diferencias entre lo escrito y lo hecho** (donde el código real mandó):
+> - Lo recordado por fecha guarda el **filename** elegido por momento, no un
+>   índice (`{ [fecha]: { [momento]: filename | 'quitado' } }`): un índice se
+>   desplazaba solo cuando una elección anterior liberaba una canción.
+> - `categoryHint` de «Pasar a Tu selección» es la **categoría** de la que sale
+>   la canción (como al importar de un coro), no el momento.
+> - «Subir a mi coro» abre el paso de guardar con el nombre por defecto de
+>   siempre («Canciones 21 nov»), no «Eucaristía domingo 22 nov»; y no hay
+>   botón «Hoy» en el selector de fechas (solo Anterior / Siguiente).
+> - El filtro de Cuaresma es más estricto que §4.3: además de la aclamación,
+>   **ninguna canción con «aleluya» en el título** sale en ningún momento.
+> - La tarjeta de Inicio se enciende con el id `cantos-domingo` en
+>   `homeButtons` (opt-in): hasta que se añada en `/profileConfig` de Firebase
+>   no sale a nadie (el seed y el fallback de la app ya lo traen).
+> - `getLiturgicalInfo` vive ahora en `utils/liturgicalDay.ts`; el badge lo
+>   reexporta. Se añadió `LiturgicalColors.white`.
+
+---
 
 ## 1. De dónde sale y qué NO es
 
@@ -458,7 +487,7 @@ OTA** salvo lo que no toca la app (scraper, cantoral). Ninguna añade
 dependencias nativas: calendario y tabla de temas son JSON empaquetados (van en
 el bundle JS), el resto es TypeScript sobre contextos que ya existen.
 
-### Fase 0 — Inventario de etiquetas (sin código de app)
+### Fase 0 — Inventario de etiquetas (sin código de app) ⏳ PENDIENTE
 
 - **Qué**: contar, sobre un export real de `songs/data` + `songs/tags`,
   canciones por categoría, cuántas tienen etiqueta de tiempo/fiesta, cuántas
@@ -475,7 +504,7 @@ el bundle JS), el resto es TypeScript sobre contextos que ya existen.
   repo del cantoral.
 - **OTA**: n/a.
 
-### Fase 1 — Día litúrgico completo
+### Fase 1 — Día litúrgico completo ✅ HECHA (2026-11-16)
 
 - **Qué**: `utils/liturgicalDay.ts` (§4.1); `getLiturgicalInfo` unificado con
   ella; solemnidades fijas añadidas al generador y ventana regenerada.
@@ -495,7 +524,7 @@ el bundle JS), el resto es TypeScript sobre contextos que ya existen.
 - **Modelo**: Sonnet.
 - **OTA**: ✅ solo JS (el JSON va en el bundle).
 
-### Fase 2 — Motor de sugerencias
+### Fase 2 — Motor de sugerencias ✅ HECHA (2026-11-16)
 
 - **Qué**: `constants/massMoments.ts` + `utils/sundaySongs.ts` (§4.2-4.5).
 - **Archivos**: nuevos `mcm-app/constants/massMoments.ts`,
@@ -510,7 +539,7 @@ el bundle JS), el resto es TypeScript sobre contextos que ya existen.
   error aquí se ve cada domingo).
 - **OTA**: ✅ solo JS.
 
-### Fase 3 — Pantalla y entrada en el cantoral
+### Fase 3 — Pantalla y entrada en el cantoral ✅ HECHA (2026-11-16)
 
 - **Qué**: §3.1-3.3 y §6.
 - **Archivos**:
@@ -533,7 +562,7 @@ el bundle JS), el resto es TypeScript sobre contextos que ya existen.
 - **Modelo**: Sonnet.
 - **OTA**: ✅ solo JS.
 
-### Fase 4 — Tarjeta en Inicio el fin de semana (si 🔒 4 = sí)
+### Fase 4 — Tarjeta en Inicio el fin de semana ✅ HECHA (2026-11-16)
 
 - **Archivos**: nuevo `mcm-app/components/home/SundaySongsCard.tsx`;
   `mcm-app/app/(tabs)/(inicio)/index.tsx` (montarla, nada más); si se quiere
@@ -545,7 +574,7 @@ el bundle JS), el resto es TypeScript sobre contextos que ya existen.
 - **Modelo**: Sonnet (Haiku si ya está el componente y es solo montarlo).
 - **OTA**: ✅ solo JS.
 
-### Fase 5 — Estribillo del salmo (scraper + app)
+### Fase 5 — Estribillo del salmo (scraper + app) ⏳ PENDIENTE
 
 - **Qué**: §7.
 - **Archivos**: `scraper-lecturas/scrapers/base.py`,
@@ -559,7 +588,7 @@ el bundle JS), el resto es TypeScript sobre contextos que ya existen.
 - **Modelo**: Sonnet.
 - **OTA**: ✅ la parte de app es solo JS.
 
-### Fase 6 — Temas (OPCIONAL, §8)
+### Fase 6 — Temas (OPCIONAL, §8) ⏳ PENDIENTE
 
 - **Archivos**: etiquetas de tema en `mcmapp-cantoral` (otro repo);
   nuevo `mcm-app/assets/leccionario-temas.json` (o nodo
@@ -590,32 +619,31 @@ ningún commit de este plan.
 
 ## 11. 🔒 Decisiones del usuario
 
-1. **¿De dónde sale el tiempo litúrgico de una canción?**
-   a) solo de las etiquetas `{tags: adviento}`; b) solo de `liturgicalTime`;
-   c) **etiquetas como fuente de verdad y `liturgicalTime` leído como
-   respaldo** (sin escribirlo ni migrarlo). → **Recomiendo c**: no obliga a
-   re-etiquetar hoy y va en la dirección que ya marcó ETIQUETAS.md §5.
+> **Todas contestadas el 2026-11-16** (las recomendadas). Se mantiene el
+> razonamiento original debajo de cada una.
 
-2. **¿Todos ven la misma sugerencia para el mismo domingo, o cada móvil la
-   suya?** → **Recomiendo «la misma»** (rotación determinista por fecha, sin
-   red ni historial). Es lo que permite que un coro hable de «la misa que
-   propone la app» sin compartir nada. La variedad personal (no repetir lo que
-   tu coro cantó) queda para después.
+1. ✅ **¿De dónde sale el tiempo litúrgico de una canción?** → **c**: las
+   etiquetas son la fuente de verdad y `liturgicalTime` se lee solo como
+   respaldo (sin escribirlo ni migrarlo). No obliga a re-etiquetar hoy y va en
+   la dirección que ya marcó ETIQUETAS.md §5.
 
-3. **¿Qué momentos salen?** → **Recomiendo los siete con categoría propia**:
-   Entrada, Salmo, Aleluya/Aclamación, Ofertorio, Santo, Comunión (también de
+2. ✅ **¿Todos ven la misma sugerencia para el mismo domingo?** → **La misma**
+   (rotación determinista por fecha, sin red ni historial). Es lo que permite
+   que un coro hable de «la misa que propone la app» sin compartir nada. La
+   variedad personal (no repetir lo que tu coro cantó) queda para después.
+
+3. ✅ **¿Qué momentos salen?** → **Los siete con categoría propia**: Entrada,
+   Salmo, Aleluya/Aclamación, Ofertorio, Santo, Comunión (también de
    Adoración) y Salida. Señor ten piedad, Gloria, Paz y Cordero solo si un día
    existen etiquetas para ellos; no se inventan categorías.
 
-4. **¿Tarjeta en Inicio de viernes a domingo?** → **Recomiendo sí**, solo con
-   el tab del cantoral en el perfil y apagable por perfil desde
-   `/profileConfig`. Es la forma de que la función se descubra; dentro del
-   cantoral solo la ve quien ya va a buscar canciones.
+4. ✅ **¿Tarjeta en Inicio de viernes a domingo?** → **Sí**, solo con el tab
+   del cantoral en el perfil y apagable por perfil (id `cantos-domingo` en
+   `homeButtons`). Es la forma de que la función se descubra.
 
-5. **«Pasar a Tu selección»: ¿reemplaza o añade?** → **Recomiendo reemplazar
-   con 10 s de «Deshacer»**, igual que importar del coro. Una misa es una lista
-   entera, no un trozo.
+5. ✅ **«Pasar a Tu selección»: ¿reemplaza o añade?** → **Reemplaza con 10 s de
+   «Deshacer»**, igual que importar del coro. Una misa es una lista entera.
 
-6. **¿Se hace la fase temática (§8)?** → **Recomiendo no por ahora**: primero
-   las fases 1-4 y ver si se usan. Si se hace, tabla curada por domingo del
-   leccionario empaquetada en la app, revisada por una persona.
+6. ✅ **¿Se hace la fase temática (§8)?** → **No por ahora**: primero las fases
+   1-4 y ver si se usan. Si se hace, tabla curada por domingo del leccionario
+   empaquetada en la app, revisada por una persona.

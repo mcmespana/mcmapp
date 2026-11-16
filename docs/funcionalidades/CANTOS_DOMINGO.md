@@ -27,6 +27,16 @@
 - Lo cambiado se recuerda **por fecha en el dispositivo**: volver el sábado
   enseña lo que se dejó el jueves.
 
+- **Inicio, de viernes a domingo**: una tarjeta «Cantos para el domingo · <fiesta
+  o tiempo>» (`components/home/SundaySongsCard.tsx`, montada en
+  `(inicio)/index.tsx`) que abre la pantalla con `fromOutside` (el cantoral
+  queda debajo, para volver). Sale solo si el perfil tiene el tab
+  `cancionero` **y** el id `cantos-domingo` en `homeButtons`: así se apaga por
+  perfil desde `/profileConfig`. La regla de cuándo sale es pura
+  (`shouldShowSundayCard`). **Hay que añadir `cantos-domingo` a los
+  `homeButtons` de los perfiles en Firebase** (y al espejo del catálogo del
+  panel); el seed y el fallback de la app ya lo traen.
+
 ## Cómo decide (puro y determinista)
 
 ```
