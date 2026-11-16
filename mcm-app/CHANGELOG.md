@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-16 19:40 — Cantoral: metrónomo en la hoja del afinador
+
+- **Conmutador «Afinador · Metrónomo»** arriba de la hoja del afinador (`TunerScreen`). No tiene entrada propia en ningún menú: se usa menos. Al pasar al metrónomo se suelta el micrófono.
+- **Metrónomo** (`components/tuner/MetronomePanel.tsx`): tempo 40–220 con −/+ (mantener repite) y «Marcar el tempo»; 1, 2, 3, 4 o 6 pulsos por compás con el primero acentuado; puntos que marcan el pulso. Tempo y compás se recuerdan.
+- **Sonido sintetizado** (`services/metronome/engine.ts`, un «toc» de madera, sin ficheros de audio) con el `react-native-audio-api` del afinador, programado sobre el reloj del audio. Lógica pura y tests en `utils/metronome.ts` / `metronome.test.ts`.
+- Sin paquetes nuevos (sale por OTA en la 2.5.1). Probado en web; sin oír en un móvil. Detalle en `docs/funcionalidades/AFINADOR.md`.
+
 ## 2026-11-15 22:20 — Comunica: coordinación recuerda a los monitores que pasen lista
 
 - **Campana en la cabecera del Resumen de grupos** (solo coordinación): entra en modo de elegir grupos, con los de la última lista sin pasar ya marcados. Solo se pueden marcar grupos de su alcance y con monitores vinculados. Abajo, «Recordar a N grupos».

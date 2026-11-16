@@ -396,6 +396,24 @@ monitores, con un backend nuevo que no sea el plugin.
   (pedir a SinergiaTIC usuario de lectura y `/TEST`, protección de datos,
   equivalencias de delegaciones).
 
+### J. Ideas anotadas para el futuro (usuario, 2026-11-16)
+
+Apuntadas por el usuario junto a la tanda «batiburrillo» de noviembre de 2026.
+**No están planificadas ni entran en «seguimos»**: se retoman cuando lo pida.
+
+- **Modo evento sin conexión** — antes de salir de casa, precargar el
+  horario, los materiales, los grupos y los contactos del evento para que
+  todo se abra sin cobertura. (Hoy cada pantalla guarda en caché lo que se ha
+  abierto alguna vez; faltaría un «descargar todo» explícito, con su estado.)
+- **Horario del evento en la pantalla de bloqueo** — Live Activity de iOS con
+  lo que toca ahora y lo siguiente. **Requiere build nativo** (target de
+  ActivityKit, como el NSE).
+- **Live Activity de los sábados para monitores** — la lanza el coordinador
+  desde Comunica: a cada monitor le sale la sesión del sábado con la hora a la
+  que empieza y el Google Docs a mano, para que no se le pase. **Requiere
+  build nativo** y un envío desde el middleware de Comunica (push de
+  ActivityKit). Va de la mano de la anterior: comparten target.
+
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
 - **Multilenguaje (i18n)** — catalán/portugués/inglés. Por ahora **no**. Si

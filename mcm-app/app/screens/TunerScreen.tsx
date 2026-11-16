@@ -1,13 +1,16 @@
 /**
  * Afinador del cantoral. Se abre como hoja desde el menú de una canción (y
  * desde el «⋯» del cantoral): afinas, la cierras y sigues con los acordes.
+ * En la misma hoja, al lado, el metrónomo (`components/tuner/MetronomePanel`):
+ * se usa menos, así que no tiene entrada propia. Al pasar a él se suelta el
+ * micrófono (el afinador se desmonta).
  *
  * Solo guitarra y afinación estándar, a propósito: tiene que afinar y ya. La
  * lógica está fuera de la pantalla —`hooks/useTuner.ts` (micrófono y ritmo),
  * `utils/tuner/` (notas, detección y suavizado, con tests)— y esto solo pinta.
  * Detalles en `docs/funcionalidades/AFINADOR.md`.
  */
-import React, { useEffect, useLayoutEffect } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import {
   Linking,
   Platform,
@@ -26,11 +29,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableFeedback } from 'heroui-native';
+import MetronomePanel from '@/components/tuner/MetronomePanel';
 import TunerGauge, { gaugeHeight } from '@/components/tuner/TunerGauge';
 import TunerStrings from '@/components/tuner/TunerStrings';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import CelebrationBurst from '@/components/ui/CelebrationBurst';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import { MaterialIcons } from '@/components/ui/icons';
 import {
   KeyPillColors,
@@ -81,22 +86,19 @@ function formatCents(c: number): string {
   return v > 0 ? `+${v}` : `−${Math.abs(v)}`;
 }
 
+type Mode = 'tuner' | 'metronome';
+
+const MODES = [
+  { value: 'tuner' as const, label: 'Afinador', icon: 'graphic-eq' as const },
+  { value: 'metronome' as const, label: 'Metrónomo', icon: 'timer' as const },
+];
+
 export default function TunerScreen() {
   const navigation = useNavigation();
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = useColorScheme() === 'dark';
   const theme = themeColors(isDark);
-  const tc = tunerColors(isDark);
   const insets = useSafeAreaInsets();
-  const layout = useResponsiveLayout();
-  const reducedMotion = useReducedMotion();
-  const { settings } = useSettings();
-  const notation = settings.notation;
-
-  useKeepAwakeWhileFocused('tuner');
-  const tuner = useTuner();
-  const { reading, status } = tuner;
-  const listening = status === 'listening' && reading.status === 'pitch';
+  const [mode, setMode] = useState<Mode>('tuner');
 
   // ── Cabecera: título nativo y una X para cerrar la hoja (en iOS también se
   // baja con el dedo). En web no es una hoja: ya está la flecha de volver.
@@ -112,7 +114,7 @@ export default function TunerScreen() {
           hitSlop={10}
           style={styles.headerButton}
           accessibilityRole="button"
-          accessibilityLabel="Cerrar el afinador"
+          accessibilityLabel="Cerrar"
         >
           <IconSymbol
             name="xmark"
@@ -123,6 +125,53 @@ export default function TunerScreen() {
       ),
     });
   }, [navigation, isDark]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: mode === 'tuner' ? 'Afinador' : 'Metrónomo',
+    });
+  }, [navigation, mode]);
+
+  return (
+    <ScrollView
+      style={{ backgroundColor: theme.background }}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: insets.bottom + spacing.lg },
+      ]}
+      alwaysBounceVertical={false}
+      contentInsetAdjustmentBehavior="automatic"
+    >
+      <View style={styles.modes}>
+        <SegmentedControl
+          options={MODES}
+          value={mode}
+          onChange={setMode}
+          accentColor={theme.link}
+          accessibilityLabel="Afinador o metrónomo"
+        />
+      </View>
+      <View style={styles.panel}>
+        {mode === 'tuner' ? <TunerPanel /> : <MetronomePanel />}
+      </View>
+    </ScrollView>
+  );
+}
+
+function TunerPanel() {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  const theme = themeColors(isDark);
+  const tc = tunerColors(isDark);
+  const layout = useResponsiveLayout();
+  const reducedMotion = useReducedMotion();
+  const { settings } = useSettings();
+  const notation = settings.notation;
+
+  useKeepAwakeWhileFocused('tuner');
+  const tuner = useTuner();
+  const { reading, status } = tuner;
+  const listening = status === 'listening' && reading.status === 'pitch';
 
   // Cuerdas afinadas en esta sesión (se olvidan al cerrar). Con las seis,
   // confeti: `CelebrationBurst` se dispara una vez al hacerse visible.
@@ -201,15 +250,7 @@ export default function TunerScreen() {
     status === 'unavailable';
 
   return (
-    <ScrollView
-      style={{ backgroundColor: theme.background }}
-      contentContainerStyle={[
-        styles.content,
-        { paddingBottom: insets.bottom + spacing.lg },
-      ]}
-      alwaysBounceVertical={false}
-      contentInsetAdjustmentBehavior="automatic"
-    >
+    <>
       <View style={styles.stage}>
         <TunerGauge
           width={gaugeWidth}
@@ -370,7 +411,7 @@ export default function TunerScreen() {
           </Text>
         </View>
       )}
-    </ScrollView>
+    </>
   );
 }
 
@@ -422,10 +463,25 @@ function PermissionCard({
 const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
+    alignItems: 'center',
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    gap: spacing.lg,
+  },
+  // En fila: la pista del conmutador lleva `flex: 1` y en columna crecería
+  // a lo alto.
+  modes: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: MAX_GAUGE_WIDTH,
+  },
+  // Lo de dentro se centra en el alto que queda bajo el conmutador.
+  panel: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: spacing.lg,
-    paddingHorizontal: spacing.md,
+    width: '100%',
     gap: spacing.lg,
   },
   headerButton: {
