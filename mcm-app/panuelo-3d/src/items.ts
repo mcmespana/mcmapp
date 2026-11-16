@@ -614,8 +614,8 @@ function buildPulsera(look: PulseraLook): BuiltItem {
 // ── Troncho ────────────────────────────────────────────────────────────────
 
 /** Alto y radio del tubo de cuero (el de verdad: 31 × 22 mm). */
-const TRONCHO_H = 0.26;
-const TRONCHO_R = 0.105;
+const TRONCHO_H = 0.2;
+const TRONCHO_R = 0.078;
 
 /**
  * El troncho: un tubo de cuero con el logo grabado. Se construye de pie (eje

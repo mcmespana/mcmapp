@@ -17,9 +17,6 @@ import { sortCatalog } from '@/utils/panuelo';
 /** Las piezas que asoman en la cabecera del panel, de adorno. */
 const SHOWCASE = sortCatalog(DEFAULT_PANUELO_CATALOG).slice(0, 5);
 
-/** Códigos del catálogo de muestra (`firebase-seed/panuelo.json`). */
-const DEMO_CODES = 'SAMUEL · JUBILEO · LISBOA · MONITOR';
-
 /**
  * El pañuelo virtual en el Laboratorio Alpha: la puerta de entrada mientras no
  * tenga sitio propio en la app.
@@ -74,7 +71,9 @@ export function PanueloLabPanel() {
         se reparten en las actividades. Gíralo, toca una pieza para verla de
         cerca y, en «Decorar», colócalas a tu gusto.
       </Text>
-      <Text style={styles.stat}>Códigos de prueba: {DEMO_CODES}</Text>
+      <Text style={styles.stat}>
+        Mientras se prueba, te llevas todas las piezas al abrirlo.
+      </Text>
 
       <LabButton label="Abrir mi pañuelo" onPress={() => open()} />
       <LabButton

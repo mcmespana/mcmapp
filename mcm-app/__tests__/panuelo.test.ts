@@ -92,26 +92,11 @@ describe('el catálogo de muestra', () => {
     );
   });
 
-  it('los códigos que anuncia el Laboratorio abren su pieza', () => {
-    const codes: Record<string, string> = {
-      SAMUEL: 'estoy-contigo-samuel',
-      JUBILEO: 'jubileo-2025',
-      LISBOA: 'jmj-lisboa-2023',
-      MONITOR: 'mc-congreso-1',
-    };
-    for (const [code, id] of Object.entries(codes)) {
-      const result = redeemCode(DEFAULT_PANUELO_CATALOG, state(), code, NOW);
-      expect(result).toMatchObject({ ok: true, already: false });
-      expect(result.ok && result.item.id).toBe(id);
-    }
-  });
-
-  it('da la chapa de bienvenida y el troncho a todo el mundo', () => {
+  it('mientras se prueba, todas las piezas se dan solas al abrir', () => {
     const pending = pendingAutoGrants(DEFAULT_PANUELO_CATALOG, state(), NOW);
-    expect(pending.map((i) => i.id).sort()).toEqual([
-      'com-sonriente',
-      'troncho',
-    ]);
+    expect(pending.map((i) => i.id).sort()).toEqual(
+      items.map((i) => i.id).sort(),
+    );
   });
 
   it('el catálogo de ejemplo tiene una pieza de cada clase cosida', () => {

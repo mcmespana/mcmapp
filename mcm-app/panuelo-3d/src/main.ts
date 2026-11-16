@@ -126,8 +126,8 @@ const ITEM_WEIGHT: Record<PanueloViewerItem['kind'], number> = {
   troncho: 0,
 };
 /** Dónde va el troncho respecto al nudo, y cuánto baja el nudo al llevarlo. */
-const TRONCHO_Y = 0.03;
-const KNOT_DROP = -0.17;
+const TRONCHO_Y = -0.14;
+const KNOT_DROP = -0.36;
 /** Péndulo de las piezas que cuelgan: rigidez y freno (ζ ≈ 0,3: se mecen). */
 const SWING_STIFFNESS = 70;
 const SWING_DAMPING = 5;
@@ -405,13 +405,17 @@ class Viewer {
       // El nudo mira a −Z (el frente de quien lleva el pañuelo). El troncho
       // abraza la tela justo donde se junta, y el nudo queda debajo de él.
       group.rotation.y = Math.PI;
-      group.position.set(0, TRONCHO_Y, -0.01);
+      group.position.set(0, TRONCHO_Y, 0);
       this.panuelo.knot.add(group);
       this.troncho = group;
     }
-    // Con troncho, el nudo y las puntas bajan: salen por debajo del tubo.
-    for (const child of this.panuelo.knot.children) {
-      if (child !== this.troncho) child.position.y = look ? KNOT_DROP : 0;
+    // Con troncho, la tela se recoge en un cabo que pasa por dentro del
+    // tubo, y el nudo y las puntas bajan: quedan justo debajo.
+    const { knot, strand } = this.panuelo;
+    strand.visible = Boolean(look);
+    for (const child of knot.children) {
+      if (child === this.troncho || child === strand) continue;
+      child.position.y = look ? KNOT_DROP : 0;
     }
     this.invalidate();
   }
