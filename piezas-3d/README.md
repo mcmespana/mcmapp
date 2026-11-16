@@ -55,7 +55,8 @@ python3 piezas-3d/_fuente/generar.py troncho    # solo una
 - `_fuente/tex/<id>.png`: la cara, de 1024 px. Sale de una foto de la pieza
   enderezada (la elipse de la foto pasa a círculo) y limpiada: las de pocas
   tintas (Estoy contigo, OG, COM sonriente) están redibujadas con colores
-  planos; el Jubileo es la foto con la luz igualada.
+  planos; el Jubileo también está pasado a limpio (blanco puro, tintas
+  aplanadas y avivadas). Ninguna cara es una foto tal cual.
 - Las dos M+C (chapa y pin) están **redibujadas**: la foto solo sirvió de
   calco de las formas; las tintas son planas, con los azules del logo.
 - «Monitor OG» sale del PDF original del diseño, no de una foto.
