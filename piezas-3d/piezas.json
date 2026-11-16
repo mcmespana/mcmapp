@@ -1,0 +1,71 @@
+{
+  "_": "Ficha de cada pieza real modelada en 3D. Los nombres y textos son provisionales: se cambian aquí, sin regenerar nada. Ver README.md.",
+  "tallas": {
+    "pequena": "Pin M+C y chapa del Jubileo",
+    "mediana": "Chapa normal de imperdible (Estoy contigo, Chapa OG)",
+    "grande": "Todavía no hay ninguna"
+  },
+  "piezas": {
+    "estoy-contigo-samuel": {
+      "clase": "chapa",
+      "nombre": "Estoy contigo, Samuel",
+      "origen": "Festival vocacional Samuel 2024",
+      "descripcion": "«Estoy contigo. Testigos de la esperanza». La chapa del festival vocacional Samuel.",
+      "talla": "mediana",
+      "diametroMm": 38,
+      "cierre": "imperdible",
+      "intercambiable": true
+    },
+    "pin-mc": {
+      "clase": "pin",
+      "nombre": "Pin M+C",
+      "origen": "MCM",
+      "descripcion": "Pin pequeño de metal con el logo en azules bajo una gota de resina. Se cierra con mariposa.",
+      "talla": "pequena",
+      "diametroMm": 18,
+      "cierre": "mariposa",
+      "intercambiable": true
+    },
+    "jubileo-2025": {
+      "clase": "chapa",
+      "nombre": "Jubileo 2025",
+      "origen": "Jubileo 2025 · Peregrinos de esperanza",
+      "descripcion": "La chapa del Jubileo: «Peregrinos de esperanza».",
+      "talla": "pequena",
+      "diametroMm": 25,
+      "cierre": "imperdible",
+      "intercambiable": true
+    },
+    "chapa-og": {
+      "clase": "chapa",
+      "nombre": "Chapa OG",
+      "origen": "Movimiento Juvenil Consolación para el Mundo",
+      "descripcion": "La de antes: plástico amarillo estampado en negro. Recuperada de los sótanos del COM.",
+      "talla": "mediana",
+      "diametroMm": 38,
+      "cierre": "alfiler",
+      "intercambiable": true
+    },
+    "com-sonriente": {
+      "clase": "chapa",
+      "nombre": "COM sonriente",
+      "origen": "COM",
+      "descripcion": "El logo de siempre en verde, con el mundo sonriendo.",
+      "talla": "mediana",
+      "diametroMm": 38,
+      "cierre": "imperdible",
+      "intercambiable": true
+    },
+    "troncho": {
+      "clase": "troncho",
+      "nombre": "Troncho",
+      "origen": "COM",
+      "descripcion": "El pasador de cuero con el logo del COM grabado, cosido por detrás.",
+      "altoMm": 31,
+      "diametroMm": 22,
+      "fijo": true,
+      "sitio": "Por delante del pañuelo, justo encima del nudo. Es lo único que va delante.",
+      "intercambiable": false
+    }
+  }
+}

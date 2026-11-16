@@ -538,6 +538,12 @@ transacción y nada de lo demás cambia.
 
 ## Lo que se sabe que falta
 
+- **Las piezas de verdad en 3D no están enchufadas.** En `piezas-3d/` (raíz)
+  hay modelos `.glb` de cinco chapas/pines reales y del **troncho**, con su
+  ficha en `piezas.json` (nombre, talla `pequena`/`mediana`/`grande`). Falta
+  que el visor los enseñe: la chapa tendría que aceptar un `.glb`, las tallas
+  pasar a `size`, y el troncho pide una clase nueva — va **por delante, justo
+  encima del nudo**, en un sitio fijo: ni se mueve ni se intercambia.
 - **El logo del pañuelo rojo.** El de verdad lleva el del MIC; aquí los cuatro
   llevan el del COM porque es el único que hay. Hace falta el archivo.
 - **Las miniaturas de las medallas** del Jubileo y de la visita del Papa se

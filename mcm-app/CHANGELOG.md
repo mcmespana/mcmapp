@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-16 23:20 — Pañuelo: modelos 3D de chapas, pin y troncho de verdad
+
+- Carpeta nueva en la raíz, `piezas-3d/`: seis `.glb` hechos a partir de fotos (Estoy contigo Samuel, Pin M+C, Jubileo 2025, Chapa OG, COM sonriente y el troncho), sus miniaturas y la ficha de cada una en `piezas.json` (nombre, talla `pequena`/`mediana`/`grande`). Se generan con `piezas-3d/_fuente/generar.py`.
+- **Todavía no se usan en la app**: no hay cambios de código. El troncho pedirá una clase nueva (va delante, encima del nudo, fijo y no intercambiable). Detalle en `piezas-3d/README.md`.
+
 ## 2026-11-16 21:45 — Contigo: compartir el evangelio como imagen, exportar lo tuyo y «Tu año»
 
 - **Compartir como imagen** (enlace al final de las lecturas): tu subrayado del día —o el arranque del evangelio— en una tarjeta con cuatro estilos y dos formatos (historia y cuadrada). `utils/shareCard.ts`, `components/contigo/ShareCardSheet.tsx`. La imagen sale de `react-native-svg` (`toDataURL`), sin capturas ni paquetes nuevos.
