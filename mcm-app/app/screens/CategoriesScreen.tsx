@@ -1,3 +1,4 @@
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 import {
   FlatList,
   Text,
@@ -232,6 +233,7 @@ export default function CategoriesScreen() {
   // para que iOS 26 les ponga su cápsula liquid-glass (una por lado).
   const { choir: myChoir, isHydrated: choirHydrated } = useMyChoir();
   const [showMenu, setShowMenu] = useState(false);
+  const { isAdmin } = useAdminStatus();
   const hasSongs = sortedCategories.length > 0;
   const headerIconColor = cantoralHeaderTint(isDark);
 
@@ -296,8 +298,18 @@ export default function CategoriesScreen() {
             },
           ]
         : []),
+      ...(isAdmin
+        ? [
+            {
+              key: 'new-song',
+              label: 'Nueva canción',
+              icon: 'post-add' as const,
+              onPress: () => openCantoral('SongEditor', { nueva: '1' }),
+            },
+          ]
+        : []),
     ],
-    [hasTags, hasSongs, myChoir, openOnboarding],
+    [hasTags, hasSongs, myChoir, openOnboarding, isAdmin],
   );
   const menuSheet = (
     <ContextMenuSheet

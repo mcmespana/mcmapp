@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-16 21:00 — Cantoral: editor de canciones para administradores (adiós al panel secreto)
+
+- **Editor nuevo** (`/cancionero/editar`, `SongEditorScreen`): pestañas Acordes (pastillas que se tocan y **se arrastran** sobre la letra), Texto (ChordPro), Datos (título, autor, tono, cejilla, multimedia) y Vista (la hoja real). Entradas: «Editar canción» en el menú de la canción y «Nueva canción» en el «⋯» del cantoral.
+- **Solo administradores de verdad**: `users/<uid>/isAdmin` (`useAdminStatus`). **Se elimina `SecretPanelModal` y la contraseña `coco`** del cantoral; los arreglos por pulsación larga pasan también a depender de `useAdminStatus`.
+- **Guardado en dos destinos** (`services/songEditorService.ts`): Firebase al momento (`songs/data/...` + `updatedAt`) y el repo del cantoral a través del admin del NAS (`POST /api/app/song/save`, con el pase de Firebase del admin; sin secretos en la app). Si el NAS no contesta, a la cola `songs/ediciones` de siempre.
+- **Canción nueva** por el NAS: de una foto (IA del cantoral), de texto pegado o en blanco.
+- **Firebase**: nodo nuevo de configuración `songs/editor/url` (URL del admin del cantoral; se pone a mano en la consola).
+- **`mcmapp-cantoral`** (rama `batiburrillo`): `/api/app/*` en `scripts/admin/server.py` y `apply_edition` extraído del script de sincronización.
+- Sin paquetes nuevos. Sin probar en móvil ni contra el NAS real. Detalle en `docs/funcionalidades/EDITOR_CANCIONES.md`.
+
 ## 2026-11-16 20:15 — Playlist: lecturas del domingo con cantos que encajan, e historial de lo cantado por el coro
 
 - **Dos chips en «Tu selección»** (`PlaylistDesignTools`, también con la lista vacía): «Lecturas del domingo» e «Historial».

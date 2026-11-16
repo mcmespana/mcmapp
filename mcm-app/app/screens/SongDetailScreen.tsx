@@ -1,3 +1,4 @@
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { logger } from '@/utils/logger';
 import {
   useCallback,
@@ -264,7 +265,8 @@ function SongDetailBody({
   // es más alto que los 44 pt del iPhone que se daban por hechos.
   const headerHeight = useHeaderHeight();
 
-  const { settings, setSettings, isLoadingSettings, isAdmin } = useSettings();
+  const { settings, setSettings, isLoadingSettings } = useSettings();
+  const { isAdmin } = useAdminStatus();
   const {
     chordsVisible,
     fontSize: currentFontSizeEm,

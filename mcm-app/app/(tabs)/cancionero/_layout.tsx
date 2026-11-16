@@ -143,6 +143,19 @@ export default function CancioneroLayout() {
             contentStyle: { backgroundColor: themeColors(isDark).background },
           }}
         />
+        {/* Editor de canciones (solo administradores): a pantalla completa,
+            con su X y su «Guardar». */}
+        <Stack.Screen
+          name={CANTORAL_SLUGS.SongEditor}
+          options={{
+            title: 'Editar canción',
+            presentation: 'fullScreenModal',
+            headerTransparent: false,
+            headerBackVisible: false,
+            gestureEnabled: false,
+            contentStyle: { backgroundColor: themeColors(isDark).background },
+          }}
+        />
       </Stack>
     </SettingsProvider>
   );

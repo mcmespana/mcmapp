@@ -94,6 +94,7 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Calendarios ICS y su precacheo (Cloud Function)                          | `docs/funcionalidades/CALENDARIOS.md`                                        |
 | Modo Carismochito y la colección (escondida en el Laboratorio Alpha)     | `docs/funcionalidades/CARISMOCHITO.md`                                       |
 | **Pañuelo virtual en 3D** (piezas, visor, intercambios; en el Laboratorio) | `docs/funcionalidades/PANUELO.md` + `docs/contratos/PANUELO_CONTRATO.md`     |
+| **Editor de canciones** (administradores; sustituye al panel secreto)     | `docs/funcionalidades/EDITOR_CANCIONES.md`                                   |
 | Coros y playlists compartidas                                            | `docs/funcionalidades/COROS.md`                                              |
 | Encuestas/evaluaciones                                                   | `docs/funcionalidades/ENCUESTAS.md` + `docs/contratos/ENCUESTAS_CONTRATO.md` |
 | Sistema de perfiles (App ↔ Panel)                                        | `docs/contratos/PANEL_PERFILES.md`                                           |
