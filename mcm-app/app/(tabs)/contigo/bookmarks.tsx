@@ -1,4 +1,5 @@
-import React, { useCallback } from 'react';
+import ExportSheet from '@/components/contigo/ExportSheet';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -50,6 +51,7 @@ export default function BookmarksScreen() {
     : undefined;
 
   const { bookmarks, isLoading, removeBookmark, reload } = useReaderBookmarks();
+  const [exportVisible, setExportVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -81,15 +83,17 @@ export default function BookmarksScreen() {
           headerShown: true,
           headerTitle: 'Guardados',
           // El total, como texto sin botón (no es pulsable).
-          headerRight: () =>
-            bookmarks.length > 0 ? (
-              <Text
-                style={[styles.headerCount, { color: W.textSec }]}
-                accessibilityLabel={`${bookmarks.length} evangelios guardados`}
-              >
-                {bookmarks.length}
-              </Text>
-            ) : null,
+          // Exportar lo tuyo (subrayados y revisiones) a PDF o texto.
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => setExportVisible(true)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel="Exportar subrayados y revisiones"
+            >
+              <MaterialIcons name="ios-share" size={22} color={W.text} />
+            </TouchableOpacity>
+          ),
           headerTransparent: true,
           headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: false,
@@ -251,6 +255,10 @@ export default function BookmarksScreen() {
           </View>
         </Animated.ScrollView>
       )}
+      <ExportSheet
+        visible={exportVisible}
+        onClose={() => setExportVisible(false)}
+      />
     </View>
   );
 }

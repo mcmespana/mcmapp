@@ -49,6 +49,13 @@ export default function ContigoLayout() {
           }}
         />
         <Stack.Screen
+          name="resumen"
+          options={{
+            headerShown: false,
+            title: 'Tu año',
+          }}
+        />
+        <Stack.Screen
           name="recordatorios"
           options={{
             headerShown: false,

@@ -111,6 +111,7 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Build de tienda de agosto 2026 (paso a paso)                             | `docs/desarrollo/BUILD_AGOSTO_2026.md`                                       |
 | Cómo se pinta una canción (hoja, cortes, vista compacta, admin igual)    | `docs/funcionalidades/HOJA_CANCION.md`                                       |
 | Arreglos del cantoral (`{arr:}`)                                         | `docs/funcionalidades/ARREGLOS.md`                                           |
+| Contigo: compartir como imagen, exportar y «Tu año»                     | `docs/funcionalidades/CONTIGO_COMPARTIR.md`                                  |
 | Subrayado de lecturas (Contigo)                                          | `docs/funcionalidades/SUBRAYADO.md`                                          |
 | Afinador de guitarra del cantoral                                        | `docs/funcionalidades/AFINADOR.md`                                           |
 | Recordatorios de Contigo (textos editables)                              | `docs/funcionalidades/RECORDATORIOS_CONTIGO.md`                              |

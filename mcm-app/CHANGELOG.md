@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-16 21:45 — Contigo: compartir el evangelio como imagen, exportar lo tuyo y «Tu año»
+
+- **Compartir como imagen** (enlace al final de las lecturas): tu subrayado del día —o el arranque del evangelio— en una tarjeta con cuatro estilos y dos formatos (historia y cuadrada). `utils/shareCard.ts`, `components/contigo/ShareCardSheet.tsx`. La imagen sale de `react-native-svg` (`toDataURL`), sin capturas ni paquetes nuevos.
+- **Exportar** (icono en la cabecera de Guardados): frases subrayadas y revisiones del día a PDF o texto. `utils/contigoExport.ts`, `services/contigoExport.ts`, `components/contigo/ExportSheet.tsx`.
+- **Tu año en Contigo** (pantalla nueva `/contigo/resumen`, enlace de una línea en la portada): cifras del año, meses con sus días y sus frases subrayadas, y tarjeta para compartir. `utils/contigoRecap.ts`.
+- Sin paquetes nuevos. Sin probar en móvil. Detalle en `docs/funcionalidades/CONTIGO_COMPARTIR.md`.
+
 ## 2026-11-16 21:00 — Cantoral: editor de canciones para administradores (adiós al panel secreto)
 
 - **Editor nuevo** (`/cancionero/editar`, `SongEditorScreen`): pestañas Acordes (pastillas que se tocan y **se arrastran** sobre la letra), Texto (ChordPro), Datos (título, autor, tono, cejilla, multimedia) y Vista (la hoja real). Entradas: «Editar canción» en el menú de la canción y «Nueva canción» en el «⋯» del cantoral.
