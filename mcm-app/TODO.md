@@ -78,7 +78,7 @@ nativo (entró en la #313 el 2026-08-04). Todo NATIVO, nada sale por OTA.
 - [ ] **Pañuelo — pantalla de intercambios** (`docs/planes/PLAN_PANUELO_INTERCAMBIOS.md`). OTA. Empieza por su Fase 0, que arregla un fallo real: una pieza recuperada en un intercambio desaparece al juntarse el móvil con la nube.
 - [ ] **Pañuelo — piezas por asistencia y desvelado una a una** (`docs/planes/PLAN_PANUELO_ASISTENCIA.md`). La app, por OTA; necesita un endpoint en `comunicaMiddleware`, una Cloud Function y reglas. El desvelado se puede adelantar con datos simulados.
 - [ ] **Cantoral — cantos para este domingo** (`docs/planes/PLAN_CANTOS_DOMINGO.md`). OTA. De paso arregla el ciclo A/B/C y las solemnidades de fecha fija del calendario litúrgico.
-- [ ] **Live Activities — la sesión a mano (monitores) y horario del evento** (`docs/planes/PLAN_LIVE_ACTIVITIES.md`). Build nativo (`expo-widgets`, `@expo/ui`); va después de cerrar Expo 58.
+- [ ] **Live Activities — la sesión a mano (monitores) y horario del evento** (`docs/planes/PLAN_LIVE_ACTIVITIES.md`). Build nativo (`expo-widgets`, `@expo/ui`); va en la siguiente build de tienda (2.6.0). La sesión la publica coordinación de etapa y les sale a sus monitores.
 
 ---
 

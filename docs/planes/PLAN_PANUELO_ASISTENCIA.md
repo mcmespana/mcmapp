@@ -1,6 +1,7 @@
 # Plan — Piezas del pañuelo por asistencia
 
-> **Estado (2026-11-16): propuesta, sin empezar.** Plan ejecutable por fases.
+> **Estado (2026-11-16): propuesta con las decisiones contestadas** (ver el
+> final), sin empezar. Plan ejecutable por fases.
 > Se apoya en el pañuelo tal como está hoy
 > ([`../funcionalidades/PANUELO.md`](../funcionalidades/PANUELO.md), contrato
 > en [`../contratos/PANUELO_CONTRATO.md`](../contratos/PANUELO_CONTRATO.md)) y
@@ -20,90 +21,97 @@
    animación con la explicación de cada pieza nueva, una por una**, dándole a
    «Siguiente». Al terminar ya puede **colocarlas** en el pañuelo.
 
+Y al contestar las decisiones (2026-11-16):
+
+3. **La pieza sigue siempre a la asistencia**, sin plazos: si la marcan tarde,
+   llega cuando la marquen; si la corrigen, se quita. Habrá gente apuntada
+   tarde o sin ficha al principio.
+4. **La pieza es del niño** (de la ficha de quien fue), **nunca del padre**.
+   Si el padre entra en Comunica y ve a su hijo, la pieza no va a su pañuelo.
+5. La pieza de cada evento la asigna el Panel; mientras no tenga editor,
+   **se hace con IA desde una sesión como esta** y el usuario la sube sin
+   complicarse.
+
 ---
 
 ## 0. Lo que hay hoy (verificado en el código)
 
-### La pregunta clave: ¿la cuenta de Comunica y la del pañuelo son la misma persona?
+### Las identidades: la cuenta de la app, la ficha y «soy yo» frente a «veo a mi hijo»
 
-**No son la misma identidad, pero hay un puente que ya funciona en el servidor.**
-
-| Lado             | Quién es                                                                                  | Dónde                                                                                     |
-| ---------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Pañuelo          | El **uid de Firebase Auth** (Google/Apple). Sin sesión, el pañuelo vive solo en el móvil  | `hooks/usePanuelo.ts` (`useAuth().user.uid`), nodo `/users/{uid}/panuelo`                 |
-| Comunica         | El **`personId` del CRM** (`Me.personId`, `profiles.self.id`), con tokens propios (~15 min + refresco) | `services/comunica/session.ts`, `contract.ts` (`Me`, `MyProfiles`)                        |
-| El puente        | `POST /v1/auth/app-account`: la app manda el **pase (idToken) de Firebase** y el middleware lo verifica y busca las fichas de **ese correo** (o «¿Quién eres?» si son varias) | `services/comunica/appAccount.ts`; servidor: `comunicaMiddleware:docs/ACCESO-APP.md`      |
+| Lado                       | Quién es                                                                                                                                                                                                  | Dónde                                                                                                          |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Pañuelo                    | El **uid de Firebase Auth** (Google/Apple). Sin sesión, el pañuelo vive solo en el móvil                                                                                                                  | `hooks/usePanuelo.ts` (`useAuth().user.uid`), nodo `/users/{uid}/panuelo`                                      |
+| Comunica: quien ha entrado | **`Me.personId`** (`GET /v1/me`) = **`profiles.self.id`** (`GET /v1/me/profiles`). Es la ficha con la que se entró: por la cuenta de la app, código de correo, DNI o enlace                               | `services/comunica/contract.ts` (`Me`, `MyProfiles`), `services/comunica/session.ts`                           |
+| Comunica: a quién se ve    | **`activeId`** de `useActiveProfile` (`hooks/comunica/useActiveProfile.tsx`): `self` o uno de `profiles.children`. Es la barra «Viendo a · Lucía ▾» (`components/comunica/perfiles/ActiveProfileBar.tsx`) | Se recuerda en el almacén del área; solo elige qué `pid` se pide en `/v1/profiles/:pid/…`, **no concede nada** |
+| Hijos                      | `profiles.children`: los que tienen una relación vigente de padre, madre, tutor o cuidador **en el CRM** con quien ha entrado. No salen del correo                                                        | `MyProfiles` en el contrato                                                                                    |
+| El puente cuenta ↔ ficha   | `POST /v1/auth/app-account`: la app manda el **idToken de Firebase**; el middleware lo verifica y busca las fichas **con ese correo** (si son varias, «¿Quién eres?», `PersonChoice`)                     | `services/comunica/appAccount.ts`; servidor: `comunicaMiddleware:docs/ACCESO-APP.md`                           |
 
 Consecuencias que mandan en el diseño:
 
-- **Una sesión de Comunica en el móvil no prueba nada sobre el uid.** Desde el
-  14/11/2026 se entra sola con la cuenta de la app, pero también se puede
-  entrar por código de correo, DNI o enlace, o como otra ficha del mismo correo
-  (un padre y sus hijos comparten correo a menudo). El pañuelo ya lee el color
-  de `profiles.self` de esa sesión (`hooks/usePanueloScarf.ts`) sin comprobar
-  que es el mismo que el uid: para un color vale; para conceder piezas, no.
-- **El único sitio donde uid y ficha se atan de verdad es el middleware**, al
-  verificar el idToken de Firebase con la regla «correo ↔ fichas». Este repo
-  no guarda esa relación en ninguna parte (la app no tiene `firebase/functions`
-  ni nodo de enlace).
+- **«Soy yo» es `self`; «veo a mi hijo» es `activeId ≠ self`.** El pañuelo
+  ya usa `profiles.self` para el color (`hooks/usePanueloScarf.ts`) e ignora la
+  barra «Viendo a». Para las piezas, igual: **nunca** se usa `activeId`.
+- **Una sesión de Comunica en el móvil no prueba nada sobre el uid**: se
+  puede entrar por código, DNI, enlace o como otra ficha del mismo correo (un
+  padre y sus hijos comparten correo a menudo). Para conceder piezas manda la
+  ficha que el **middleware** saca del idToken, no la sesión del móvil.
 - **El dueño de `/users/{uid}` puede escribir lo que quiera en su nodo**
-  (`database.rules.json`: `.write: auth.uid === $uid`). Por eso hoy un código
-  canjeado es trampeable, y por eso una pieza de asistencia **no puede vivir
+  (`database.rules.json`). Por eso una pieza de asistencia **no puede vivir
   solo en `/users/{uid}/panuelo/items`**.
 
 ### La asistencia
 
-- Hay dos listas: la de los **sábados** (`/v1/sessions/:sid/groups/:gid/roll`) y
-  la de **eventos** (`GET/PUT /v1/events/:id/roll`, `EventRollWrite` en
-  `contract.ts`, pantallas en `components/comunica/eventos/`). Este plan es de
+- Listas de **sábados** (`/v1/sessions/:sid/groups/:gid/roll`) y de **eventos**
+  (`GET/PUT /v1/events/:id/roll`, `EventRollWrite`). Este plan es de
   **eventos**.
-- Una marca de evento es por **día** (`sessionId`/`day`) y vale `yes` ·
-  `partial` · `no_justified` · `no_unjustified` (`MARKS`). Quitar una marca la
-  borra en el CRM (decisión `desmarcar`).
-- Guardar una lista **no espera al CRM**: cola del móvil (`services/comunica/outbox.ts`)
-  y cola del servidor (`comunicaMiddleware:docs/COLA.md`, estado `queued`). La
+- Una marca de evento es por **día** y vale `yes` · `partial` · `no_justified`
+  · `no_unjustified` (`MARKS`). Quitar una marca la borra en el CRM.
+- Guardar una lista **no espera al CRM** (cola del móvil y del servidor): la
   asistencia puede llegar al CRM minutos después.
-- La propia persona ve su asistencia en `GET /v1/profiles/:pid/calendar`
-  (`CalendarSession.attendance`, ventana de 14 meses atrás), solo de eventos con
-  inscripción no cancelada.
-- Los ids de evento son del CRM, opacos (`Id`). **El mismo encuentro en dos
+- La propia persona —y su padre, viendo al hijo— ve la asistencia en
+  `GET /v1/profiles/:pid/calendar` (`CalendarSession.attendance`, 14 meses
+  atrás), solo de eventos con inscripción no cancelada.
+- Los ids de evento son del CRM, opacos. **El mismo encuentro en dos
   delegaciones son dos eventos distintos.**
 
 ### El pañuelo
 
-- `grant.type` hoy: `all` · `code` · `manual` (`types/panuelo.ts`). `PanueloVia`:
-  `all` · `code` · `manual` · `demo` · `trade`.
-- Piezas «sin ver»: `@panuelo_seen` (AsyncStorage, por móvil) y `unseen` en
-  `usePanuelo`. En un móvil nuevo, lo que ya estaba en la nube se da por visto.
-- Al abrir `/panuelo`, una pieza conseguida sin sitio **se cose sola**
-  (efecto `loose` de `usePanuelo`) y luego se presenta en 3D, una a una,
-  esperando a que se cierre la ficha (`nextUnseen` + orden `reveal` en
-  `app/panuelo.tsx`).
-- El **tutorial** (`components/panuelo/PanueloTutorial.tsx`) ya es la pieza que
-  hace falta para el desvelado: pantalla re-maquetada (≈45 % visor / 55 %
-  contenido) con **el mismo visor** dentro, puntos de página
-  (`PanueloPageDots`), un único botón abajo, X arriba, `sections` por prop y un
-  `example` por paso que mueve el visor (`usePanueloTutorialStage`, hoy atado
-  al catálogo de muestra).
-- La orden `reveal` del visor (`panuelo-3d/src/main.ts`) gira la pieza dos
-  vueltas en 1,3 s y **no mira «reducir movimiento»** (el `reducedMotion` del
-  visor solo apaga el vaivén y sale de `prefers-reduced-motion` del WebView,
-  que en Android no refleja el ajuste del sistema).
-- Está en el Laboratorio Alpha: `global.panuelo` (`hooks/usePanueloAvailable.ts`).
+- `grant.type` hoy: `all` · `code` · `manual`. `PanueloVia`: `all` · `code` ·
+  `manual` · `demo` · `trade`.
+- Piezas «sin ver»: `@panuelo_seen` (AsyncStorage) y `unseen` en `usePanuelo`.
+- Al abrir `/panuelo`, una pieza sin sitio **se cose sola** (efecto `loose`) y
+  se presenta en 3D una a una (`nextUnseen` + `reveal`).
+- El **tutorial** (`components/panuelo/PanueloTutorial.tsx`) ya es la pieza
+  del desvelado: mismo visor, puntos de página, botón único, `sections` por
+  prop y un `example` por paso (`usePanueloTutorialStage`).
+- La orden `reveal` del visor **no mira «reducir movimiento»**.
+- Está en el Laboratorio Alpha (`hooks/usePanueloAvailable.ts`).
+
+### Cómo se sube hoy el catálogo
+
+- `mcm-app/firebase-seed/panuelo.json` es el nodo `/panuelo/data` y, además,
+  el **catálogo empaquetado** de respaldo (`constants/panueloCatalog.ts`).
+- `firebase-seed/README.md`: importar el fichero entero como `data` y cambiar
+  `/panuelo/updatedAt` a mano. **Importar en la consola reemplaza el nodo
+  entero** (lo avisa también `docs/funcionalidades/EVENTOS.md`): si el Panel o
+  alguien añadió una pieza en Firebase que no está en el seed, se pierde.
+- Reglas: `/panuelo` se lee por todos y solo se escribe con
+  `_config/legacyPanelWrites`. La CLI de Firebase del propietario
+  (`firebase login`, proyecto `mcmapp-39b71` en `mcm-app/.firebaserc`) escribe
+  como administrador y no pasa por las reglas.
+- No hay ningún script de subida en `mcm-app/scripts/`.
 
 ### Servidor que ya tenemos
 
-- `mcm-app/functions/` (Cloud Functions v2, `us-central1`, plan Blaze,
+- `mcm-app/functions/` (Cloud Functions v2, `us-central1`, Blaze,
   `firebase-admin`). Ya copia lógica pura de la app con un script
-  (`functions/scripts/sync-ics-parser.mjs` → `src/generated/`): el mismo truco
-  sirve aquí.
-- El middleware (`comunicaMiddleware`, repo aparte, Vercel + Supabase) es el
-  único que habla con el CRM y el único que sabe verificar el idToken contra
-  las fichas.
+  (`functions/scripts/sync-ics-parser.mjs`).
+- El middleware (`comunicaMiddleware`, otro repo) es el único que habla con el
+  CRM y el único que verifica el idToken contra las fichas.
 
 ---
 
-## 1. Arquitectura recomendada
+## 1. Arquitectura (vía C, aceptada)
 
 ```
 Monitor pasa lista (área nativa) ─► middleware ─► cola ─► CRM
@@ -113,59 +121,100 @@ App al abrirse (si hay piezas de asistencia en el catálogo)│
        Cloud Function (este repo, Admin SDK)                            │
          1. uid + idToken de quien llama (Firebase Auth)               │
          2. POST /v1/panuelo/attendance { idToken, personId?, eventIds }┘
-            → el middleware verifica el idToken (regla de app-account),
-              resuelve la ficha y devuelve SUS marcas en ESOS eventos
-         3. Cruza con el catálogo y escribe /panueloAwards/{uid}/{itemId}
-            (el cliente NO puede escribir ahí)
-  └─ La app lee /panueloAwards/{uid}, lo refleja en su estado y
+            → el middleware verifica el idToken, resuelve LA FICHA PROPIA
+              (correo ↔ fichas, nunca hijos) y devuelve SUS marcas
+         3. Ata la cuenta a esa ficha (/panueloAccounts, /panueloOwners)
+         4. Recalcula y escribe /panueloAwards/{personId}  (la pieza es de la ficha)
+  └─ La app lee /panueloAwards/{su personId}, lo refleja en su estado y
      presenta lo nuevo, una a una, con «Siguiente» → «Colocarlas»
 ```
 
-### Opciones comparadas (quién concede)
+**Por qué C** (contestado: aceptada). El cliente ni se inventa la asistencia
+(la pide el servidor) ni se escribe la pieza (nodo cerrado salvo al Admin SDK),
+y la ficha sale del idToken verificado, no de la sesión que el móvil tenga
+abierta. Si el endpoint del middleware tarda, la función puede empezar por la
+vía B (token de Comunica del móvil, solo `self`) sin tocar la app.
 
-| Opción                                                                                       | Trampas desde el cliente                                                       | Identidad uid ↔ ficha                                                | Cambios fuera de este repo                                         | Veredicto                         |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------ | --------------------------------- |
-| **A. El middleware concede al guardar la lista** (empuja a Firebase)                         | No                                                                             | Necesita una tabla uid↔ficha que hoy no existe y credenciales de Firebase en Vercel | Muchos: tabla, cuenta de servicio, escribir en RTDB, reintentos de la cola | Demasiado acoplado                |
-| **B. Cloud Function que usa el token de Comunica del móvil** (`/v1/me/profiles` + calendario) | No (la función pregunta ella)                                                 | **Débil**: vale la ficha que tenga abierta el móvil, sea de quien sea | Ninguno                                                            | Puente si el middleware se retrasa |
-| **C. Cloud Function + endpoint nuevo del middleware que verifica el idToken** ★              | No                                                                             | **Fuerte**: la misma regla «correo ↔ fichas» que entrar en Comunica | Un endpoint pequeño y un secreto compartido                         | **Recomendada**                   |
-| **D. La app lee su asistencia y se escribe la pieza**                                        | **Sí**: cualquiera escribe en su `/users/{uid}`                                | Ninguna                                                              | Ninguno                                                            | Descartada (es lo que pidió evitar) |
+**Por qué tirar del cliente.** El momento de conceder es «la siguiente vez que
+entra». Y tirar resuelve solo los casos difíciles: la pieza **espera** a quien
+aún no tiene cuenta (se calcula cuando reclama, desde lo que hay en el CRM) y
+cualquier corrección se ve en la siguiente reclamación.
 
-**Por qué C.** El cliente no puede ni inventarse una asistencia (la pide el
-servidor) ni escribirse la pieza (nodo cerrado a todos menos el Admin SDK), y
-la ficha sale del pase de Firebase verificado, no de la sesión que el móvil
-tenga abierta. El middleware sigue siendo el único que toca el CRM y Firebase
-sigue siendo cosa de este repo. No hace falta que el chaval haya abierto nunca
-Comunica: basta con la cuenta de la app.
+### 1.1 Identidad: la pieza es de la ficha
 
-**Por qué tirar del cliente y no empujar.** El usuario pidió que salga «la
-siguiente vez que entra en la app»: el momento natural de conceder es ese.
-Además, tirar resuelve solo los casos difíciles: quien aún no tiene la app la
-consigue cuando entre (retroactivo), y una corrección de la lista se ve en la
-siguiente reclamación.
-
-**La interfaz de la app no depende de A/B/C**: la app solo llama a
-`panueloClaimAttendance`. Si el endpoint del middleware tarda, la función puede
-empezar por B (con el token de Comunica que le pase la app) y cambiar a C sin
-tocar la app.
+- **La verdad es por ficha**: `/panueloAwards/{personId}/{itemId}`. El uid solo
+  decide **quién la ve en su pañuelo**.
+- **Cada cuenta de la app tiene como mucho una ficha propia, y cada ficha como
+  mucho una cuenta**: `/panueloAccounts/{uid} = { personId }` y
+  `/panueloOwners/{personId} = { uid }`, escritos solo por la función en una
+  transacción.
+- **Cuál es la ficha propia de una cuenta**: la que resuelve el middleware con
+  la regla de `app-account` (fichas **con el correo** de la cuenta). Nunca un
+  hijo por relación del CRM: el endpoint no mira `children`.
+  - Un solo resultado: esa.
+  - Varios (padre e hijo con el mismo correo): `choose`. La app manda como
+    pista **`Me.personId` de su sesión de Comunica** (quien entró, nunca el
+    `activeId` de «Viendo a»); si no hay sesión, pregunta una vez «¿De quién
+    es este pañuelo?» con la lista y lo recuerda.
+- **Padre que ve a su hijo en Comunica**: no cambia nada. Su pañuelo es el de
+  su ficha propia; las piezas del hijo **no** le llegan. Como mucho las ve en
+  **modo lectura** en la ficha del evento de familias (F7): «Lucía tiene la
+  Chapa de Pascua», calculado con el calendario que el padre ya puede ver
+  (`/v1/profiles/:pid/calendar` + el catálogo). Ni la reclama, ni la coloca,
+  ni abre el pañuelo del hijo.
+- **Niño sin cuenta propia todavía**: la pieza le espera. No se guarda nada
+  hasta que reclama; cuando inicie sesión con una cuenta cuyo correo esté en
+  su ficha (la suya, o la de la familia eligiéndose a sí mismo en «¿De quién
+  es este pañuelo?»), la primera reclamación le da todas las de los eventos a
+  los que fue, sin límite de fecha.
+- **Si un padre se queda por error la ficha del hijo** (correo compartido y
+  elige al hijo): esa cuenta queda atada al hijo. Se libera a mano borrando
+  `/panueloOwners/{personId}` y `/panueloAccounts/{uid}` (documentado en
+  `FIREBASE_REGLAS.md`). Las piezas no se pierden: son de la ficha.
+- **Límite conocido**: si el niño crea su cuenta con un correo que no está en
+  su ficha, el middleware contesta `no_match`. Se arregla poniendo ese correo
+  en el CRM, como para entrar en Comunica.
 
 ---
 
-## 2. Los casos (decididos aquí salvo los 🔒)
+## 2. Los casos
 
-| Caso                                             | Qué pasa                                                                                                                                                                                                                                                                                                                                                      |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Qué cuenta como «ha ido»**                     | Alguna marca `yes` o `partial` en cualquier día del evento (🔒 2). Configurable por pieza con `marks` y `minDays`                                                                                                                                                                                                                                              |
-| **Familias: un padre viendo a su hijo**          | No cambia nada. El pañuelo es de **quien ha iniciado sesión en la app** (`profiles.self`), igual que el color. La ficha activa del área no cuenta                                                                                                                                                                                                             |
-| **Varias fichas con el mismo correo**            | El middleware contesta `choose`. La app manda como pista el `personId` de su sesión de Comunica si lo tiene; si no, pregunta una vez «¿De quién es este pañuelo?» con la lista (`PersonChoice`) y lo recuerda. El middleware comprueba que la ficha es de ese correo                                                                                      |
-| **Una ficha, una cuenta**                        | La primera cuenta que reclama una ficha se queda con ella (`/panueloOwners/{personId}`). Otra cuenta recibe `other_owner` y la app dice «Estas piezas ya están en otra cuenta» (🔒 4)                                                                                                                                                                       |
-| **Sin cuenta de la app** (solo móvil, o Comunica por código) | No hay piezas por asistencia: no hay uid donde guardarlas. Nada se pierde: son retroactivas. En el pañuelo, un aviso discreto «Inicia sesión para recibir las piezas de las actividades»                                                                                                                                                  |
-| **Quien no tiene la app**                        | Nada. Cuando la instale e inicie sesión, la primera reclamación le da todas las de los eventos a los que fue (retroactivo, sin límite de fecha: se pregunta por los `eventIds` del catálogo, no por una ventana)                                                                                                                                              |
-| **Piezas de eventos pasados**                    | Asignar una pieza a un evento ya celebrado funciona igual: en la siguiente apertura, a todos los que fueron                                                                                                                                                                                                                                                |
-| **Asistencia que llega tarde** (colas)           | Se concede en la siguiente reclamación después de que el CRM la tenga                                                                                                                                                                                                                                                                                       |
-| **Asistencia corregida después**                 | La función recalcula en cada reclamación. Si una marca desaparece o pasa a «no» y la pieza se concedió hace **menos de 7 días**, se retira (`revoked`); pasado ese plazo, se queda y solo se quita a mano borrando su `/panueloAwards` (🔒 3). Una pieza retirada sale del estado de la app sin anuncio; si estaba en la cola de desvelado, se cae de ella |
-| **Varios eventos dan la misma pieza** (una por delegación) | `events` es una lista: con ir a uno basta. Una pieza se tiene una vez                                                                                                                                                                                                                                                                             |
-| **Monitores**                                    | Si están inscritos y les marcan, también la consiguen (la pieza es «haber estado»). Si se quiere excluirlos, campo `roles` en el futuro; no en la v1                                                                                                                                                                                                     |
-| **Servidor falso** (Laboratorio)                 | Con `comunicaApiTarget().kind === 'fake'` la reclamación se simula en el móvil contra el calendario falso, y el Laboratorio tiene «Simular piezas por asistencia»: así la interfaz se prueba sin la función desplegada                                                                                                                                  |
+| Caso                                                            | Qué pasa                                                                                                                                                                    |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Qué cuenta como «ha ido»**                                    | Una marca `yes` o `partial` en **cualquier día** del evento (contestado, «por ahora»). Configurable por pieza con `marks` y `minDays` para cuando cambie                    |
+| **Padre viendo a su hijo**                                      | Ver §1.1: la pieza es del hijo; el padre, como mucho, la ve en lectura en la ficha del evento                                                                               |
+| **Varias fichas con el mismo correo**                           | `choose`; pista `Me.personId`; si no, «¿De quién es este pañuelo?» una vez. El middleware comprueba que la ficha es de ese correo                                           |
+| **Una ficha, una cuenta**                                       | La primera cuenta que reclama una ficha se queda con ella; otra recibe `other_owner` («Estas piezas ya están en otra cuenta»). Se libera a mano                             |
+| **Sin cuenta de la app**                                        | No hay piezas por asistencia en ese móvil; nada se pierde. Aviso discreto en el pañuelo: «Inicia sesión para recibir las piezas de las actividades»                         |
+| **Niño sin cuenta o apuntado sin ficha al principio**           | Espera. En cuanto tenga ficha con la marca y entre con su cuenta, le llega                                                                                                  |
+| **Piezas de eventos pasados**                                   | Asignar una pieza a un evento ya celebrado funciona igual                                                                                                                   |
+| **Asistencia marcada tarde** (colas, lista pasada días después) | Llega en la siguiente reclamación después de que el CRM la tenga. **Sin límite de tiempo**                                                                                  |
+| **Asistencia corregida** (quitan la marca o pasa a «no»)        | La pieza **se quita**, sin límite de tiempo (contestado). Ver §2.1                                                                                                          |
+| **Varios eventos dan la misma pieza**                           | `events` es una lista: con ir a uno basta. Una pieza se tiene una vez                                                                                                       |
+| **Monitores**                                                   | Si están inscritos y les marcan, también la consiguen. Excluirlos (`roles`) no entra en la v1                                                                               |
+| **Intercambios**                                                | Las piezas `attendance` **no se pueden intercambiar** (`tradeable` se fuerza a `false` al sanear): si no, quitar una pieza corregida tras un intercambio no tendría arreglo |
+| **Servidor falso** (Laboratorio)                                | Con `comunicaApiTarget().kind === 'fake'` la reclamación se simula en el móvil contra el calendario falso, y el Laboratorio tiene «Simular piezas por asistencia»           |
+
+### 2.1 Una pieza que se retira
+
+La función recalcula en cada reclamación: **la pieza existe si y solo si la
+asistencia la respalda hoy**. Si deja de respaldarla, borra su
+`/panueloAwards/{personId}/{itemId}` y la devuelve en `revoked`. En la app
+(`reconcileAwards`, pura):
+
+- **Estaba sin desvelar** (en la cola de «nuevas»): se cae de la cola, sin
+  anuncio.
+- **Ya desvelada, en la caja**: sale de la colección. Si no es `secret`, vuelve
+  a verse en silueta como cualquier pieza que no se tiene.
+- **Ya cosida en el pañuelo**: **se descose** (desaparece de su sitio; las
+  demás no se mueven) y sale de la colección.
+- En los dos últimos casos, la siguiente vez que se abre el pañuelo sale **una
+  línea discreta, una sola vez**: «Ya no tienes la Chapa de Pascua: se corrigió
+  la lista de Pascua Joven». Sin sonido ni háptica de error.
+- **Si luego vuelven a marcarla**: llega como nueva (se desvela otra vez) y
+  espera en la caja; no vuelve sola a su sitio antiguo.
+- **Sin red** o sin poder leer `/panueloAwards`: no se quita nada (se respeta
+  lo que había en el móvil).
 
 ---
 
@@ -173,85 +222,60 @@ tocar la app.
 
 ### Cuándo salta
 
-- **Al abrir la app** (lo que pidió el usuario), no solo al abrir el pañuelo.
-  Un componente de fondo en la raíz, `PanueloAwardsBackground`, montado junto a
-  `ComunicaBackground` en `app/_layout.tsx`, que solo actúa si:
-  1. el pañuelo está disponible (`usePanueloAvailable`: hoy, Laboratorio Alpha;
-     el día de `global.panuelo = "all"`, todos),
+- **Al abrir la app**. Un componente de fondo, `PanueloAwardsBackground`,
+  montado junto a `ComunicaBackground` en `app/_layout.tsx`, que solo actúa si:
+  1. el pañuelo está disponible (`usePanueloAvailable`),
   2. hay uid de Firebase,
   3. el catálogo tiene al menos una pieza `attendance`,
   4. no se reclamó hace menos de **6 h** (o el usuario tira para refrescar en
-     el pañuelo). La función además limita por uid (1 por minuto).
+     el pañuelo). La función limita además a 1 por minuto y uid.
 - Si tras reclamar hay **piezas sin ver**, espera a que la app esté en primer
-  plano en una pestaña (no en onboarding, ni en una pantalla abierta por enlace,
-  ni con la entrada animada de Comunica) y abre **`/panuelo?nuevas=1`**. Una
-  vez por arranque. Las pantallas de mantenimiento y versión mínima ya
-  sustituyen al `Stack` entero, así que con ellas el componente ni se monta.
-- **También al abrir el pañuelo** (hoy, desde el Laboratorio): si hay piezas
-  sin ver, la misma secuencia antes que nada, después del tutorial (que va
-  siempre primero, `tutorial.busy`).
+  plano en una pestaña (no en onboarding, ni en una pantalla abierta por
+  enlace, ni con la entrada de Comunica) y abre **`/panuelo?nuevas=1`**. Una vez
+  por arranque.
+- **También al abrir el pañuelo**: si hay piezas sin ver, la misma secuencia,
+  después del tutorial.
 
-«Sin ver» = concedida (`/panueloAwards`) y fuera de `@panuelo_seen`. En un
-móvil nuevo se da por visto lo que ya estaba concedido **antes** de esta
-reclamación; lo que la función acaba de conceder (`granted`) sí se presenta.
+«Sin ver» = concedida y fuera de `@panuelo_seen`. En un móvil nuevo se da por
+visto lo que ya estaba concedido **antes** de esta reclamación; lo que la
+función acaba de conceder (`granted`) sí se presenta.
 
 ### Cómo se ve (reutilizando el tutorial y el visor)
 
-No es una pantalla nueva ni un segundo visor: es el **modo tutorial de
-`/panuelo` alimentado con las piezas nuevas**.
+Es el **modo tutorial de `/panuelo` alimentado con las piezas nuevas**:
 
 - `PanueloTutorial` recibe `sections` generadas desde las piezas
-  (`newPiecesSections(catalog, ids, awards)`) y los textos del botón por prop
-  (`nextLabel`, `finishLabel`). Cada página:
-  - título: el nombre de la pieza (`h1`);
-  - frase de entrada: «Por ir a {origin}» (o el nombre del evento si no hay
-    `origin`);
-  - filas: clase y rareza (`KIND_LABEL`, `RARITY_LABEL`), la descripción, y la
-    fecha «La conseguiste el 12 de abril de 2027»;
-  - indicador «Pieza 2 de 3» con `PanueloPageDots`.
+  (`newPiecesSections`) y los textos del botón por prop. Cada página: nombre de
+  la pieza; «Por ir a {origin}» (o el nombre del evento); clase, rareza,
+  descripción y «La conseguiste el 12 de abril de 2027»; «Pieza 2 de 3» con
+  `PanueloPageDots`.
 - Arriba, **el visor** con el pañuelo de la persona y la pieza presentándose
-  con la orden `reveal` (sale, gira, flota delante). `usePanueloTutorialStage`
-  se generaliza para recibir el catálogo de verdad y un `example` por página
-  (`{ color: el suyo, pieces: lo que lleva cosido, reveal: id }`).
-- **Botón único abajo: «Siguiente»**; en la última, **«Colocarlas»** (con una
-  sola pieza: «Colocarla»). Debajo, en la última, un enlace secundario
-  «Ahora no». La X de arriba cierra.
-  > El tutorial dice «Continuar» siguiendo a Apple; aquí se usa «Siguiente»
-  > porque es la palabra que pidió el usuario.
-- **Al pasar de página**: `h.select`; la pieza nueva entra con el muelle de
-  celebración y `PanueloStageBurst` (confeti) con el primer color de la pieza.
-  En la primera, `h.formSuccess`.
-- **«Colocarlas»**: se cierra la secuencia **en la misma pantalla**, entra en
-  modo decorar con el filtro «Sin poner» y la primera pieza nueva
-  seleccionada. Las piezas de asistencia **no se cosen solas** (🔒 5): esperan
-  en la caja, que es lo que pidió el usuario («al terminar ya puede
-  colocarlas»).
-- **«Ahora no» o X**: lo enseñado queda visto; lo que no se llegó a ver se
-  presenta la próxima vez que se abra el pañuelo (no al abrir la app: no se
-  insiste).
-- **Sin visor** (error del WebView, `Panuelo3D` en `error`): las mismas
-  páginas con la pieza dibujada en plano (`PanueloItemArt`, ya lo hace el
-  tutorial con `art`).
+  con `reveal`.
+- **Botón único: «Siguiente»**; en la última, **«Colocarlas»** («Colocarla» si
+  es una). En la última, enlace secundario «Ahora no». La X cierra.
+- Al pasar de página: `h.select`, muelle de celebración y `PanueloStageBurst`
+  con el primer color de la pieza. En la primera, `h.formSuccess`.
+- **«Colocarlas»**: modo decorar con el filtro «Sin poner» y la primera pieza
+  nueva seleccionada. Las piezas de asistencia **esperan en la caja**
+  (contestado): no se cosen solas.
+- **«Ahora no» o X**: lo enseñado queda visto; lo demás sale la próxima vez
+  que se abra el pañuelo.
+- **Sin visor**: las mismas páginas con `PanueloItemArt`.
 
 ### Reducir movimiento y accesibilidad
 
-- `useReducedMotion()` en la app: sin muelle de entrada, sin confeti, cambio de
-  página sin animar (como el tutorial).
-- El visor: la orden pasa a ser `{ type: 'reveal', id, still?: boolean }`; con
-  `still` la pieza aparece delante **sin girar** (fundido corto). La app manda
-  `still` desde `useReducedMotion()`, no del `prefers-reduced-motion` del
-  WebView. Hay que regenerar el bundle (`npm run build:panuelo`).
-- Anuncio al entrar en cada página: «Pieza nueva, 2 de 3: Chapa de Pascua
-  Joven. Por ir a Pascua Joven 2027.» y foco al título
-  (`moveScreenReaderFocus`). Los puntos ya son `adjustable`.
-- Claro y oscuro, letra grande con scroll (el tutorial ya lo resuelve).
+- `useReducedMotion()`: sin muelle, sin confeti, cambio de página sin animar.
+- Visor: `{ type: 'reveal', id, still?: boolean }`; con `still`, fundido corto
+  sin giro. Lo manda la app desde `useReducedMotion()`. `npm run build:panuelo`.
+- Anuncio por página («Pieza nueva, 2 de 3: Chapa de Pascua Joven. Por ir a
+  Pascua Joven 2027.») y foco al título.
 
 ---
 
 ## 4. Contrato de datos propuesto
 
-> Para añadir a `PANUELO_CONTRATO.md` en la última fase. Fuente de verdad
-> futura: `types/panuelo.ts`.
+> Para `PANUELO_CONTRATO.md` en la última fase. Fuente de verdad futura:
+> `types/panuelo.ts`.
 
 ### 4.1 Catálogo `/panuelo/data/items/{id}.grant` — tipo nuevo `attendance`
 
@@ -264,69 +288,72 @@ No es una pantalla nueva ni un segundo visor: es el **modo tutorial de
 }
 ```
 
-| Campo     | Oblig. | Notas                                                                                         |
-| --------- | ------ | --------------------------------------------------------------------------------------------- |
-| `events`  | Sí     | 1–50 ids de evento del CRM (cadenas opacas). Con ir a uno basta                               |
-| `marks`   | No     | Qué marcas cuentan. Por defecto `["yes", "partial"]`. Valores de `MARKS` del contrato del área |
-| `minDays` | No     | Días con marca que cuentan, como mínimo. Por defecto 1                                        |
+| Campo     | Oblig. | Notas                                                           |
+| --------- | ------ | --------------------------------------------------------------- |
+| `events`  | Sí     | 1–50 ids de evento del CRM (cadenas opacas). Con ir a uno basta |
+| `marks`   | No     | Qué marcas cuentan. Por defecto `["yes", "partial"]`            |
+| `minDays` | No     | Días con marca, como mínimo. Por defecto 1                      |
 
-Sin `from`/`to`: lo que manda es la asistencia. Una pieza `attendance` mal
-escrita (sin `events`) se descarta entera, como hoy. Los ids de evento son
-públicos en el catálogo: son opacos y no dicen nada de nadie.
+Sin `from`/`to`: manda la asistencia. Sin `events`, la pieza se descarta
+entera. Una pieza `attendance` **nunca es intercambiable** (aunque diga
+`tradeable: true`).
 
-### 4.2 `/panueloAwards/{uid}/{itemId}` — lo concedido por el servidor (nuevo)
+### 4.2 `/panueloAwards/{personId}/{itemId}` — lo concedido (nuevo)
 
 ```json
 {
   "at": 1807000000000,
   "via": "attendance",
   "eventId": "<id del CRM>",
-  "personId": "<id del CRM>",
   "grantedAt": 1807100000000
 }
 ```
 
-- `at`: el día del evento (el primero con marca que cuenta), para que la ficha
-  diga cuándo se consiguió de verdad. `grantedAt`: cuándo lo escribió la función.
-- **Lo escribe solo la Cloud Function** (Admin SDK). Reglas:
+- `at`: el primer día con marca que cuenta. `grantedAt`: cuándo lo escribió la
+  función.
+- **Lo escribe solo la Cloud Function.** Lo lee **la cuenta atada a esa
+  ficha**:
 
   ```json
   "panueloAwards": {
-    "$uid": {
-      ".read": "auth != null && auth.uid === $uid",
+    "$personId": {
+      ".read": "auth != null && root.child('panueloAccounts').child(auth.uid).child('personId').val() === $personId",
       ".write": false
     }
   },
-  "panueloOwners": { ".read": false, ".write": false }
+  "panueloAccounts": {
+    "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": false }
+  },
+  "panueloOwners": { ".read": false, ".write": false },
+  "panueloClaims": { ".read": false, ".write": false }
   ```
 
-- Es **la verdad** de las piezas de asistencia. Lo que el Panel cuente
-  («cuántas se han dado») se cuenta aquí (lectura del Panel: Integración D).
+- Es **la verdad** de estas piezas; lo que el Panel cuente se cuenta aquí.
 
-### 4.3 `/panueloOwners/{personId}` — una ficha, una cuenta (nuevo)
+### 4.3 `/panueloAccounts/{uid}` y `/panueloOwners/{personId}` (nuevos)
 
 ```json
+// /panueloAccounts/{uid}
+{ "personId": "<id>", "at": 1807100000000 }
+// /panueloOwners/{personId}
 { "uid": "<uid>", "at": 1807100000000 }
 ```
 
-Solo la función lo lee y lo escribe. Quitarlo a mano libera la ficha.
+Siempre a la vez, en transacción, solo la función. La app lee el suyo de
+`panueloAccounts` para saber qué `panueloAwards` leer. Borrar los dos libera.
 
 ### 4.4 `/users/{uid}/panuelo/items/{id}` — el reflejo
 
-La app copia cada award como `{ "at": …, "via": "attendance" }` para que la
-colección, la colocación y la mezcla entre móviles sigan como siempre. **Una
-pieza cuyo `grant.type` es `attendance` solo cuenta como tenida si está en
-`/panueloAwards/{uid}`** (`reconcileAwards`, pura): escribirse el reflejo a mano
-no da nada. Si no se pudo leer `/panueloAwards` (sin red), se respeta lo que
-había en el móvil.
-
-`PanueloVia` gana `attendance`.
+La app copia cada award como `{ "at": …, "via": "attendance" }`. **Una pieza
+`attendance` solo cuenta si está en `/panueloAwards/{su personId}`**
+(`reconcileAwards`): escribirse el reflejo a mano no da nada, y lo que el
+servidor ya no respalda se quita (§2.1). `PanueloVia` gana `attendance`.
 
 ### 4.5 Callable `panueloClaimAttendance` (Cloud Function, este repo)
 
 ```ts
 // petición (requiere Firebase Auth)
-{ personId?: string }   // pista: la ficha de la sesión de Comunica, o la elegida en «¿De quién es?»
+{ personId?: string }   // pista: Me.personId de la sesión de Comunica, o la elegida en «¿De quién es?»
 
 // respuesta
 | { status: 'ok'; personId: string; granted: string[]; revoked: string[];
@@ -334,288 +361,290 @@ había en el móvil.
 | { status: 'choose'; choices: { personId: string; name: string; delegation: string }[] }
 | { status: 'no_match' }        // ese correo no está en el CRM
 | { status: 'other_owner' }     // esa ficha ya es de otra cuenta
-| { status: 'unavailable'; retryAfter?: number } // middleware o CRM caído: se reintenta en la siguiente apertura
+| { status: 'unavailable'; retryAfter?: number }
 ```
+
+Si la cuenta ya está atada a una ficha, la pista se ignora y se usa esa.
 
 ### 4.6 Endpoint nuevo en `comunicaMiddleware`: `POST /v1/panuelo/attendance`
 
-Servidor a servidor. Cabecera `Authorization: Bearer <MW_PANUELO_SECRET>`
-(secreto en Vercel y en Secret Manager de Firebase; nunca en la app).
+Servidor a servidor, `Authorization: Bearer <MW_PANUELO_SECRET>` (secreto en
+Vercel y en Secret Manager; nunca en la app).
 
 ```json
 // petición
 { "idToken": "<pase de Firebase>", "personId": "<opcional>", "eventIds": ["…"] }
-
 // respuesta 200
-{
-  "generatedAt": "2027-04-14T10:00:00+02:00",
-  "personId": "<id>",
-  "attended": {
-    "<eventId>": [ { "day": "2027-04-12", "mark": "yes" } ]
-  }
-}
+{ "generatedAt": "…", "personId": "<id>",
+  "attended": { "<eventId>": [ { "day": "2027-04-12", "mark": "yes" } ] } }
 ```
 
-- Verifica el idToken **con la misma función que `app-account`** (incluido el
-  arreglo de `email_verified` de cuentas de Workspace del 14/11).
-- Errores como `app-account`: 422 `validation` con `reason` `bad_app_token`,
-  `no_match` o `choose` (lista `PersonChoice`). 503 `crm_unavailable`.
-- Solo la ficha resuelta (nunca hijos), solo los `eventIds` pedidos (≤ 100),
-  solo marcas puestas. Sin datos personales.
-- No crea sesión ni tokens. Límite de peticiones propio.
+- Verifica el idToken **con la misma función que `app-account`**.
+- Errores como `app-account`: 422 `bad_app_token` · `no_match` · `choose`.
+  503 `crm_unavailable`.
+- **Solo fichas con el correo del idToken, nunca hijos por relación**; solo
+  los `eventIds` pedidos (≤ 100); solo marcas puestas. Sin datos personales.
 
 ---
 
 ## 5. Fases
 
-Orden: **F0 → F1 → (F2 ∥ F3) → F4 → F6**, y **F5 puede empezar tras F1** con la
-simulación del Laboratorio, sin servidores. F7 y F8 cuando se quiera.
+Orden: **F0 → F1 → F1b → (F2 ∥ F3) → F4 → F6**; **F5 puede empezar tras F1**
+con la simulación del Laboratorio. F7 y F8 cuando se quiera.
 
-| Fase | Qué                                                     | Repo                   | Modelo | OTA                       |
-| ---- | ------------------------------------------------------- | ---------------------- | ------ | ------------------------- |
-| F0   | Comprobar supuestos contra el servidor real             | este + middleware (leer) | Sonnet | —                         |
-| F1   | Contrato, tipos y lógica pura                           | este                   | Sonnet | ✅ solo JS                |
-| F2   | Cloud Function y reglas                                 | este (`functions/`)    | Opus   | — despliegue de Firebase  |
-| F3   | Endpoint del middleware                                 | `comunicaMiddleware`   | Opus   | — despliegue de Vercel    |
-| F4   | Reclamar y reflejar en la app (fondo + estado)          | este                   | Sonnet | ✅ solo JS                |
-| F5   | El desvelado una a una                                  | este (+ visor)         | Opus   | ✅ solo JS                |
-| F6   | «Colocarlas», caja, tutorial y documentación            | este                   | Sonnet | ✅ solo JS                |
-| F7   | La pieza en el evento (área nativa)                     | este                   | Haiku  | ✅ solo JS                |
-| F8   | Panel: asignar eventos y contar                         | `mcmpanel`             | Sonnet | —                         |
+| Fase | Qué                                                                | Repo                     | Modelo | OTA                      |
+| ---- | ------------------------------------------------------------------ | ------------------------ | ------ | ------------------------ |
+| F0   | Comprobar supuestos contra el servidor real                        | este + middleware (leer) | Sonnet | —                        |
+| F1   | Contrato, tipos y lógica pura                                      | este                     | Sonnet | ✅ solo JS               |
+| F1b  | Asignar piezas con IA: test del seed y script de subida            | este                     | Sonnet | — (script)               |
+| F2   | Cloud Function y reglas                                            | este (`functions/`)      | Opus   | — despliegue de Firebase |
+| F3   | Endpoint del middleware                                            | `comunicaMiddleware`     | Opus   | — despliegue de Vercel   |
+| F4   | Reclamar y reflejar en la app (fondo + estado + retiradas)         | este                     | Sonnet | ✅ solo JS               |
+| F5   | El desvelado una a una                                             | este (+ visor)           | Opus   | ✅ solo JS               |
+| F6   | «Colocarlas», tutorial y documentación                             | este                     | Sonnet | ✅ solo JS               |
+| F7   | La pieza en el evento (área nativa) y vista de lectura para padres | este                     | Haiku  | ✅ solo JS               |
+| F8   | Panel: asignar eventos y contar                                    | `mcmpanel`               | Sonnet | —                        |
 
 ### F0 — Comprobar antes de construir (sin código)
 
-Leer en `comunicaMiddleware` (`docs/ACCESO-APP.md`, el handler de
-`app-account`, el de `GET /v1/events/:id/roll` y la consulta del calendario) y
-apuntar aquí, en esta sección, las respuestas:
+Leer en `comunicaMiddleware` y apuntar aquí:
 
-1. ¿Se puede sacar la asistencia de una ficha **por lista de eventos** en una
-   consulta al CRM? ¿Las marcas de evento salen de la misma tabla que
-   `marksBySession`?
-2. ¿La verificación del idToken de `app-account` es una función reutilizable?
-3. ¿Los monitores inscritos aparecen con marca en `EventRoll.people`?
-4. Cómo consigue un admin el **id de un evento** hoy (¿sale en el enlace de
-   compartir de `ShareEventButton`? ¿en la web del plugin?). Lo necesita F8 y la
-   carga a mano mientras tanto.
-5. Que el proyecto de Firebase admite una función `onCall` más y Secret
-   Manager (ya está en Blaze por las programadas).
+1. ¿Se saca la asistencia de una ficha **por lista de eventos** en una
+   consulta al CRM?
+2. ¿La verificación del idToken de `app-account` es reutilizable, y la
+   resolución de fichas devuelve **solo** las del correo (sin hijos)?
+3. ¿Los monitores inscritos salen con marca en `EventRoll.people`?
+4. **Cómo consigue el propietario el id de un evento** para dárselo a la IA
+   (¿sale en el enlace de compartir de `ShareEventButton`? ¿en la web del
+   plugin?). Si no hay forma cómoda, F1b añade «Copiar id del evento».
+5. Que el proyecto admite otra `onCall` y Secret Manager.
 
-Si la 1 o la 2 salen mal, F2 arranca con la opción B (§1) y F3 se replantea.
+Si la 1 o la 2 salen mal, F2 arranca con la vía B y F3 se replantea.
 
 ### F1 — Contrato, tipos y lógica pura
 
-Archivos:
-
-- `mcm-app/types/panuelo.ts`: `PanueloGrant` gana
-  `{ type: 'attendance'; events: string[]; marks?: SetMark[]; minDays?: number }`
-  (los valores de marca copiados como literales: `types/` no importa del área);
-  `PanueloVia` gana `'attendance'`; tipo `PanueloAward`; `PanueloCommand`
-  `reveal` gana `still?: boolean`.
-- `mcm-app/utils/panuelo.ts`: `sanitizeCatalog` acepta `attendance`;
-  `sanitizeAwards`; `reconcileAwards(state, awards, catalog)` (añade lo
-  concedido, quita lo que no esté respaldado, respeta `gone`);
-  `pendingAutoGrants` sigue ignorando `attendance`.
-- `mcm-app/utils/panueloAttendance.ts` (**nuevo, puro, sin imports de la app**,
-  porque se copia a la función): `attendanceEventIds(catalog)`,
-  `qualifies(grant, marksByDay)`, `computeAwards(catalog, attended, existing, now)`
-  → `{ granted, revoked, awards }` con la regla de los 7 días.
-- `mcm-app/firebase-seed/panuelo.json`: una pieza de ejemplo `attendance`
-  apuntando a `f-evt-salida` (evento del servidor falso,
-  `services/comunica/fake/fixtures.ts`).
-- `npm run build:panuelo` (toca `types/panuelo.ts`) y commitear
-  `panuelo-3d/generated/viewer.bundle.json`.
+- `types/panuelo.ts`: `PanueloGrant` gana
+  `{ type: 'attendance'; events: string[]; marks?: SetMark[]; minDays?: number }`;
+  `PanueloVia` gana `'attendance'`; tipo `PanueloAward`; `reveal` gana
+  `still?: boolean`.
+- `utils/panuelo.ts`: `sanitizeCatalog` acepta `attendance` (y fuerza
+  `tradeable: false`); `sanitizeAwards`; `reconcileAwards(state, awards,
+catalog)` → `{ state, revoked }` (añade lo concedido; quita lo no
+  respaldado, **también si está cosido**; respeta `gone`); `pendingAutoGrants`
+  sigue ignorando `attendance`.
+- `utils/panueloAttendance.ts` (**nuevo, puro, sin imports de la app**, se
+  copia a la función): `attendanceEventIds(catalog)`,
+  `qualifies(grant, marksByDay)`, `computeAwards(catalog, attended, existing,
+now)` → `{ granted, revoked, awards }`. **Sin plazos**: lo que no cumple se
+  revoca siempre.
+- `firebase-seed/panuelo.json`: una pieza de ejemplo `attendance` con
+  `f-evt-salida` (servidor falso).
+- `npm run build:panuelo` y commitear el bundle.
 
 Tests: `__tests__/panueloAttendance.test.ts` (marcas, `minDays`, varios
-eventos, revocación dentro y fuera de plazo, retroactivo), ampliar
-`__tests__/panuelo.test.ts` (saneado, `reconcileAwards`: un reflejo sin award
-no cuenta), `panueloViewerBundle.test.ts` en verde.
+eventos, marca tardía, revocación a los 2 días y a los 2 años, vuelta a
+conceder, retroactivo); `__tests__/panuelo.test.ts` (saneado, `tradeable`
+forzado, `reconcileAwards`: reflejo sin award no cuenta, revocada cosida se
+descose, sin awards legibles no se quita nada); `panueloViewerBundle.test.ts`
+en verde.
+
+### F1b — Asignar piezas con IA (sin editor del Panel)
+
+**El flujo, en una sesión como esta:**
+
+1. El usuario dice: «Haz una chapa de Pascua Joven 2027 para los eventos
+   `<id>` y `<id>`» (los ids, o los enlaces del evento de donde sacarlos, F0
+   punto 4).
+2. La IA añade la pieza a `mcm-app/firebase-seed/panuelo.json` con
+   `grant: { "type": "attendance", "events": [ … ] }`, siguiendo
+   `PANUELO_CONTRATO.md` (id nuevo en `kebab-case`, que no se reutiliza), y
+   pasa `npm test -- panueloSeed`.
+3. La IA hace commit (el seed es también el catálogo empaquetado: la pieza
+   llega igualmente en la siguiente OTA como respaldo) y le da al usuario
+   **un solo comando**:
+
+   ```bash
+   cd mcm-app && npm run panuelo:subir -- pascua-joven-2027
+   ```
+
+4. El script enseña qué va a escribir y pide «s» para confirmar. Listo.
+
+**Piezas de la fase:**
+
+- `__tests__/panueloSeed.test.ts` (nuevo, guardarraíl): **ninguna pieza del
+  seed se descarta** al sanear (si `sanitizeCatalog` tira una, el test dice
+  cuál y por qué); ids únicos y con formato; toda `attendance` tiene `events`
+  no vacío y sin repetidos; `tradeable` no es `true` en una `attendance`.
+- `mcm-app/scripts/panuelo-subir.mjs` (nuevo) y `"panuelo:subir"` en
+  `package.json`:
+  - Recibe uno o varios ids. Lee el seed y saca **solo esas piezas**.
+  - Escribe cada una con `firebase database:set
+/panuelo/data/items/<id> <fichero temporal> --project mcmapp-39b71` y
+    después `/panuelo/updatedAt` con la hora actual. **Nunca** escribe
+    `/panuelo` ni `/panuelo/data` enteros: no puede borrar otras piezas.
+  - Antes, `firebase database:get /panuelo/data/items` para avisar si la pieza
+    ya existe y es distinta («se va a sustituir») y para listar las piezas que
+    hay en Firebase y **no** en el seed (alguien las añadió por otro lado: se
+    avisa, no se tocan).
+  - Sin `--yes` pregunta; con `--dry-run` solo enseña. Necesita `firebase
+login` (el usuario ya lo usa para desplegar). La CLI escribe como
+    administrador, así que no depende de `legacyPanelWrites`.
+- **Si no se quiere usar la terminal** (alternativa por la consola): en
+  Firebase → Realtime Database, entrar en `/panuelo/data/items`, añadir un
+  hijo con el id de la pieza, y en **ese hijo** ⋮ → «Importar JSON» con el
+  fichero que deja `npm run panuelo:subir -- <id> --export` (solo esa pieza).
+  Luego editar `/panuelo/updatedAt`. **Nunca importar en `/panuelo` ni en
+  `/panuelo/data`**: reemplaza el catálogo entero.
+- Si F0 punto 4 dice que no hay forma cómoda de ver el id de un evento:
+  «Copiar id del evento» en el menú de `components/comunica/eventos/EventScreen.tsx`,
+  visible solo con el Laboratorio Alpha.
+- `firebase-seed/README.md` y `PANUELO_CONTRATO.md`: el flujo de arriba sustituye
+  a «importar el fichero entero».
 
 ### F2 — Cloud Function y reglas (este repo, servidor)
 
-Archivos:
-
-- `mcm-app/functions/src/panueloAttendance.ts` (nuevo) y exportarla en
-  `functions/src/index.ts`: `onCall` v2, `us-central1`, `enforceAppCheck` no
-  (no hay App Check), `secrets: ['MW_PANUELO_SECRET']`, parámetro
-  `COMUNICA_API_URL`. Pasos: exigir `request.auth`; sacar el idToken crudo de la
-  cabecera; leer `/panuelo/data/items` y sacar los `eventIds`; si no hay, `ok`
-  vacío sin llamar a nadie; llamar al middleware (F3); comprobar
-  `/panueloOwners/{personId}` en transacción; `computeAwards`; escribir con un
-  `update()` multi-ruta `/panueloAwards/{uid}/…`; límite de 1 llamada por
-  minuto y uid (`/panueloClaims/{uid}/lastAt`, cerrado a todos). Registrar
-  `granted`/`revoked` con `logger`, sin nombres.
-- `mcm-app/functions/scripts/sync-panuelo-attendance.mjs` (nuevo, como el de
-  ICS) y su llamada en `functions/package.json` (`build`).
-- `mcm-app/database.rules.json`: `panueloAwards`, `panueloOwners`,
+- `functions/src/panueloAttendance.ts` (nuevo, exportado en `index.ts`):
+  `onCall` v2, `us-central1`, `secrets: ['MW_PANUELO_SECRET']`, parámetro
+  `COMUNICA_API_URL`. Pasos: exigir `request.auth`; si hay
+  `/panueloAccounts/{uid}`, usar esa ficha; leer `/panuelo/data/items` y sacar
+  los `eventIds` (si no hay, `ok` vacío); llamar al middleware; atar cuenta y
+  ficha en transacción (`other_owner` si la ficha es de otro uid);
+  `computeAwards`; `update()` multi-ruta en `/panueloAwards/{personId}/…`
+  (escribir lo concedido y **borrar** lo revocado); límite de 1 por minuto y
+  uid (`/panueloClaims/{uid}/lastAt`). Registrar `granted`/`revoked` sin
+  nombres.
+- `functions/scripts/sync-panuelo-attendance.mjs` (nuevo) y su llamada en el
+  `build` de `functions/package.json`.
+- `database.rules.json`: `panueloAwards`, `panueloAccounts`, `panueloOwners`,
   `panueloClaims` (§4.2).
-- Mientras F3 no esté: modo B detrás de una constante (la app manda además
-  `comunicaAccessToken`, la función llama a `/v1/me/profiles` y
-  `/v1/profiles/:self/calendar`). Se borra al llegar F3.
+- Mientras F3 no esté: vía B detrás de una constante (la app manda
+  `comunicaAccessToken`; la función usa `/v1/me` → `personId` = **self** y
+  `/v1/profiles/:self/calendar`; nunca un hijo). Se borra al llegar F3.
 
-Tests: `__tests__/databaseRules.test.ts` (nadie escribe `panueloAwards` ni
-`panueloOwners`; el dueño lee el suyo y no el de otro). Guardarraíl nuevo
-`__tests__/panueloAwardsReadOnly.test.ts`: ningún fichero de `app/`,
-`components/`, `hooks/`, `services/` ni `utils/` escribe en `panueloAwards`
-(grep, como `tabsLayoutWebSafety`). La lógica ya está probada en F1.
+Tests: `__tests__/databaseRules.test.ts` (nadie escribe los cuatro nodos; una
+cuenta lee los awards de su ficha y no los de otra; sin `panueloAccounts` no
+lee ninguno). Guardarraíl `__tests__/panueloAwardsReadOnly.test.ts`: nada de
+`app/`, `components/`, `hooks/`, `services/` ni `utils/` escribe en esos
+nodos.
 
-Despliegue (lo hace el propietario): `firebase functions:secrets:set
-MW_PANUELO_SECRET` y `firebase deploy --only functions:panueloClaimAttendance,database`.
-Documentar en `docs/desarrollo/FIREBASE_REGLAS.md`.
+Despliegue (propietario): `firebase functions:secrets:set MW_PANUELO_SECRET`
+y `firebase deploy --only functions:panueloClaimAttendance,database`.
+Documentar en `docs/desarrollo/FIREBASE_REGLAS.md`, con cómo liberar una
+ficha.
 
 ### F3 — Endpoint del middleware (`comunicaMiddleware`)
 
-Fuera de esta sesión. Entregar como encargo con §4.6 tal cual:
-
-- Ruta `POST /v1/panuelo/attendance`, autenticación por secreto compartido,
-  reutilizando la verificación del idToken de `app-account` y la resolución de
-  fichas («¿Quién eres?»).
-- Consulta de marcas de evento para una ficha y una lista de eventos.
-- Tests del middleware, variable `MW_PANUELO_SECRET` en Vercel, doc en
-  `comunicaMiddleware:docs/`.
-- En **este** repo: añadir la ruta al contrato (`services/comunica/contract.ts`)
-  solo como documentación de tipos si la función la reutiliza vía script de
-  copia; la app no la llama nunca.
+Fuera de esta sesión. Encargo con §4.6: ruta, secreto, verificación del
+idToken de `app-account`, resolución de fichas **por correo y sin hijos**,
+consulta de marcas por ficha y eventos, tests, `MW_PANUELO_SECRET` en Vercel,
+doc. La app no la llama nunca.
 
 ### F4 — Reclamar y reflejar en la app
 
-Archivos:
-
-- `mcm-app/services/panueloAwards.ts` (nuevo): `claimAttendance(personId?)`
-  con `httpsCallable` de `firebase/functions` (va dentro del paquete
-  `firebase`, es JS), `fetchAwards(uid)`, `subscribeAwards(uid)`. Con el
-  servidor falso de Comunica, `claimAttendance` se resuelve en el móvil con
-  `computeAwards` y el calendario falso (y no escribe en Firebase).
-- `mcm-app/utils/authHelpers.ts`: leer `/panueloAwards/{uid}` junto a
+- `services/panueloAwards.ts` (nuevo): `claimAttendance(personId?)` con
+  `httpsCallable` (va en el paquete `firebase`, es JS), `fetchAccount(uid)`,
+  `fetchAwards(personId)`. Con el servidor falso se resuelve en el móvil.
+- `utils/authHelpers.ts`: leer `panueloAccounts/{uid}` y sus awards junto a
   `fetchPanuelo`.
-- `mcm-app/hooks/usePanuelo.ts`: aplicar `reconcileAwards` al mezclar con la
-  nube; no coser solas las piezas `attendance` (filtro en el efecto `loose`);
-  exponer `newFromAwards` y `claim()`.
-- Para usar el estado fuera de la pantalla: sacar de `usePanuelo` lo justo
-  (leer/guardar `@panuelo_state` y `@panuelo_seen`) a
-  `mcm-app/services/panueloStore.ts`, para que el componente de fondo y la
-  pantalla compartan almacenamiento sin montar el hook dos veces.
-- `mcm-app/components/panuelo/PanueloAwardsBackground.tsx` (nuevo, no pinta):
-  condiciones de §3, reclama, guarda el reflejo, y abre `/panuelo?nuevas=1`
-  cuando toca. Montado en `mcm-app/app/_layout.tsx` junto a
-  `ComunicaBackground`.
-- «¿De quién es este pañuelo?» (respuesta `choose`): una hoja sencilla con la
-  lista, del mismo patrón que `PanueloStageSheet`; se recuerda la elección en
-  AsyncStorage (`@panuelo_person`).
-- Analítica: `panuelo_pieza_conseguida { clase, via: 'attendance' }` por cada
-  `granted`.
+- `hooks/usePanuelo.ts`: `reconcileAwards` al mezclar con la nube; no coser
+  solas las `attendance`; exponer `newFromAwards`, `revokedNotice` y `claim()`.
+- `services/panueloStore.ts`: sacar de `usePanuelo` lo justo
+  (`@panuelo_state`, `@panuelo_seen`) para compartirlo con el componente de
+  fondo.
+- `components/panuelo/PanueloAwardsBackground.tsx` (nuevo, no pinta),
+  montado en `app/_layout.tsx`.
+- La pista de ficha: `Me.personId` si hay sesión de Comunica (**nunca**
+  `useActiveProfile().active.id`). «¿De quién es este pañuelo?» si contesta
+  `choose`, recordado en `@panuelo_person`.
+- La línea de §2.1 para lo retirado, una vez.
+- Analítica: `panuelo_pieza_conseguida { clase, via: 'attendance' }` y
+  `panuelo_pieza_retirada { clase }`.
 
-Tests: `__tests__/usePanuelo.test.tsx` (award entra, reflejo sin award se cae,
-revocado sale, móvil nuevo no re-presenta lo antiguo), test nuevo del fondo
-(throttle de 6 h, no actúa sin uid, sin piezas `attendance` ni con el pañuelo
-cerrado; abre la ruta una sola vez por arranque).
+Tests: `__tests__/usePanuelo.test.tsx` (award entra; reflejo sin award se cae;
+revocada cosida se descose y sale la línea una vez; móvil nuevo no re-presenta
+lo antiguo); test del fondo (throttle de 6 h; sin uid, sin piezas `attendance`
+o con el pañuelo cerrado no actúa; abre la ruta una vez por arranque; la pista
+es `Me.personId` aunque «Viendo a» sea un hijo).
 
 ### F5 — El desvelado una a una
 
-Archivos:
+- `PanueloTutorial.tsx`: props `nextLabel`, `finishLabel`,
+  `secondaryLabel`/`onSecondary`, `pageLabel`.
+- `usePanueloTutorialStage.ts`: `sections` y `catalog` por argumento; `reveal`
+  con `still`.
+- `utils/panuelo.ts`: `newPiecesSections(catalog, state, ids, awards)`.
+- `app/panuelo.tsx`: modo «nuevas» (por `?nuevas=1` o por piezas `attendance`
+  sin ver), después del tutorial y antes del canje o el cambio de etapa.
+- `panuelo-3d/src/main.ts`: `reveal` con `still`. `npm run build:panuelo`.
+- Laboratorio (`PanueloLabPanel.tsx`): «Simular piezas por asistencia» y
+  «Simular una pieza retirada».
 
-- `mcm-app/components/panuelo/PanueloTutorial.tsx`: props `nextLabel`,
-  `finishLabel`, `secondaryLabel`/`onSecondary` (por defecto lo de hoy), y un
-  `pageLabel` para el anuncio («Pieza 2 de 3» en vez de «Paso»).
-- `mcm-app/hooks/usePanueloTutorialStage.ts`: recibir `sections` y `catalog`
-  por argumento (hoy lee `PANUELO_TUTORIAL` y el catálogo de muestra) y la
-  orden `reveal` con `still`.
-- `mcm-app/utils/panuelo.ts`: `newPiecesSections(catalog, state, ids, awards)`
-  (pura) → secciones con `example: { color, pieces: lo cosido, reveal: id }`.
-- `mcm-app/app/panuelo.tsx`: modo «nuevas» (por `?nuevas=1` o porque hay
-  piezas `attendance` sin ver al abrir): mismo mecanismo que el tutorial
-  (`headerShown: false`, mismo visor), después del tutorial y antes que el
-  canje o el cambio de etapa. Marca vista cada pieza al enseñarla.
-- `mcm-app/panuelo-3d/src/main.ts`: `reveal` con `still` (sin giro, fundido de
-  `durations.base`). `npm run build:panuelo`.
-- Laboratorio (`mcm-app/components/preview-channel/PanueloLabPanel.tsx`):
-  botón «Simular piezas por asistencia» (`/panuelo?demo=asistencia`), que
-  concede dos piezas de muestra como `attendance` en local y abre la secuencia.
+Tests: `panueloScreen.test.tsx` (sale la secuencia; «Siguiente» avanza; la
+última dice «Colocarlas»; la X deja vistas solo las enseñadas; el tutorial va
+antes); `newPiecesSections`; `panueloTutorialScarf.test.tsx` verde;
+`noLooseMotion` y `noNewMagicNumbers`.
 
-Tests: ampliar `__tests__/panueloScreen.test.tsx` (con piezas sin ver sale la
-secuencia; «Siguiente» avanza; la última dice «Colocarlas»; la X deja vistas
-solo las enseñadas; el tutorial va antes); `newPiecesSections` en
-`panuelo.test.ts`; `__tests__/panueloTutorialScarf.test.tsx` sigue verde con
-las props nuevas. Comprobar `noLooseMotion.test.ts` y
-`noNewMagicNumbers.test.ts`.
-
-Diseño: `design.md` §6 (muelle solo para celebración, `useReducedMotion`),
-§8 (sin emoji: `PanueloStageBurst` ya lo quita), copy corto y sin
-exclamaciones: «Por ir a Pascua Joven», no «¡Enhorabuena!».
+Diseño: `design.md` §6 y §8; copy corto y sin exclamaciones.
 
 ### F6 — «Colocarlas», tutorial y documentación
 
-- `mcm-app/app/panuelo.tsx`: al acabar con «Colocarlas», modo decorar + filtro
-  `unplaced` + primera pieza seleccionada; al coserla, `reveal` con su
-  presentación (o `still`).
-- `mcm-app/constants/panueloTutorial.ts`: en «Chapas y pines», una fila «Por ir
-  a una actividad» («Cuando te pasan lista, te llega sola»). Es función nueva:
-  subir `PANUELO_TUTORIAL_VERSION` a 4.
-- Docs: `docs/funcionalidades/PANUELO.md` («Cómo se consigue una pieza»,
-  «Datos», el desvelado), `docs/contratos/PANUELO_CONTRATO.md` (§4 de este
-  plan), `docs/planes/PLAN_PANEL_PANUELO.md` (fila nueva en Fases),
-  `mcm-app/CHANGELOG.md`. Mover este plan a `archivo/` en el commit que cierre
-  la última fase que se haga.
+- `app/panuelo.tsx`: tras «Colocarlas», modo decorar + filtro `unplaced` +
+  primera pieza seleccionada.
+- `constants/panueloTutorial.ts`: fila «Por ir a una actividad» («Cuando te
+  pasan lista, te llega sola. Si se corrige la lista, se quita»).
+  `PANUELO_TUTORIAL_VERSION` → 4.
+- Docs: `PANUELO.md`, `PANUELO_CONTRATO.md` (§4), `PLAN_PANEL_PANUELO.md`,
+  `CHANGELOG.md`. Mover este plan a `archivo/` en el commit que cierre la
+  última fase que se haga.
 
 ### F7 — La pieza en el evento (área nativa, opcional)
 
-Lo que ya sugería `PANUELO.md` («En el hub de cada evento»):
-
-- Monitores, `mcm-app/components/comunica/eventos/EventScreen.tsx`: una fila
-  discreta «Este evento da una pieza: Chapa de Pascua» con su dibujo
-  (`PanueloItemArt`). Recuerda que pasar lista importa.
-- Familias, `mcm-app/components/comunica/actividades/EventDetailScreen.tsx`: la
-  pieza en silueta hasta conseguirla (nunca si es `secret`).
-- Solo con el pañuelo disponible. Lee el catálogo con `useFirebaseData`.
-  Territorio Comunica: sin color nuevo, la pieza lleva sus propios colores.
+- Monitores, `components/comunica/eventos/EventScreen.tsx`: fila discreta
+  «Este evento da una pieza: Chapa de Pascua» con `PanueloItemArt`.
+- Familias, `components/comunica/actividades/EventDetailScreen.tsx`, **según
+  a quién se vea**: si es uno mismo, la pieza en silueta hasta tenerla; si es
+  un hijo (`activeId ≠ self`), **solo lectura**: «Lucía tiene la Chapa de
+  Pascua» si su `CalendarSession.attendance` cumple la regla
+  (`qualifies`, la misma lógica pura), o la silueta. Nunca si es `secret`.
+  No reclama nada ni toca ningún pañuelo.
+- Solo con el pañuelo disponible. Sin color nuevo.
 
 ### F8 — Panel (`mcmpanel`)
 
-Fuera de esta sesión. En el editor de piezas (Fase 6 de
-`PLAN_PANEL_PANUELO.md`): tipo de concesión «Por asistencia» con la lista de
-ids de evento (pegados al principio; con selector cuando el middleware ofrezca
-`GET /v1/events` al Panel) y «Concedidas: N» leyendo `/panueloAwards`
-(necesita la autenticación real del Panel, Integración D). Escribir el
-catálogo ya funciona hoy (`legacyPanelWrites`). Mientras no exista: el
-propietario edita `/panuelo/data` a mano o con el seed.
+Fuera de esta sesión. En el editor de piezas: concesión «Por asistencia» con
+la lista de ids de evento y «Concedidas: N» leyendo `/panueloAwards`. Mientras
+no exista: el flujo con IA de F1b.
 
 ---
 
 ## 6. Lo que NO entra
 
-- Notificación push «Tienes una pieza nueva» (el middleware ya avisa a
-  móviles registrados; se puede añadir después con el mismo `granted`).
-- Piezas por asistencia a los **sábados** (rachas): es la Fase 9 de
-  `PLAN_PANEL_PANUELO.md` (logros calculados).
-- Validar en servidor los **códigos** y los **intercambios**: la función de F2
-  es el sitio, pero es otro plan.
-- Que un padre vea o gestione el pañuelo de un hijo.
-- Sacar el pañuelo del Laboratorio (Fase 4 de `PLAN_PANEL_PANUELO.md`). Este
-  plan funciona igual dentro y fuera.
+- Push «Tienes una pieza nueva».
+- Piezas por asistencia a los **sábados** (rachas): Fase 9 de
+  `PLAN_PANEL_PANUELO.md`.
+- Validar en servidor los **códigos** y los **intercambios**.
+- Que un padre **gestione** el pañuelo de un hijo (solo la lectura de F7).
+- Sacar el pañuelo del Laboratorio.
 
 ---
 
-## 🔒 Decisiones del usuario
+## 🔒 Decisiones del usuario — contestadas el 2026-11-16
 
-1. **¿Se acepta la vía C** (endpoint nuevo en `comunicaMiddleware` + Cloud
-   Function en este repo)? Es la única en la que ni se inventa la asistencia
-   ni se escribe la pieza desde el móvil, y la ficha sale de la cuenta de la
-   app y no de la sesión que haya abierta. **Recomendación: sí**, con la vía B
-   como puente si el middleware tarda.
-2. **¿Qué cuenta como haber ido?** **Recomendación:** una marca «Sí» o
-   «Parcial» en cualquier día del evento. Cada pieza puede pedir más días
-   (`minDays`).
-3. **Si los monitores corrigen la lista después**: **Recomendación:** la pieza
-   se retira sola si la corrección llega en los **7 días** siguientes a
-   concederla; después se queda (lo conseguido no se pierde) y solo se quita a
-   mano.
-4. **Una ficha, una cuenta**: la primera cuenta que reclama las piezas de una
-   persona se queda con ellas. Evita que un hermano, entrando por el correo
-   compartido de la familia, se las lleve a otra cuenta. **Recomendación:
-   sí**; si alguien cambia de cuenta, se libera a mano.
-5. **Al acabar el desvelado, ¿las piezas se cosen solas o esperan en la
-   caja?** **Recomendación: en la caja**, y «Colocarlas» abre el modo decorar
-   con ellas a mano. Es lo que pediste y es más bonito ponerlas uno.
-6. **¿Quién asigna una pieza a un evento?** **Recomendación: el Panel**
-   (quien crea las piezas). Hasta que tenga editor, a mano en Firebase con el
-   id del evento. Dejar que coordinación lo haga desde la app es posible, pero
-   exige otra escritura con permisos en el servidor.
+1. **Vía C** (endpoint en `comunicaMiddleware` + Cloud Function): **aceptada**,
+   con la B como puente.
+2. **Qué cuenta como haber ido**: «Sí» o «Parcial» en cualquier día del
+   evento, **por ahora** (`marks`/`minDays` quedan para cambiarlo).
+3. **Correcciones de la lista**: **sin plazos**. La pieza sigue siempre a la
+   asistencia: llega cuando se marque y se quita si se corrige, aunque ya
+   esté desvelada o cosida (§2.1).
+4. **De quién es la pieza**: **del niño** (la ficha que asistió), nunca del
+   padre. Las piezas se guardan por ficha; cada cuenta de la app se ata a una
+   ficha propia y viceversa (§1.1); el padre, como mucho, las ve en lectura;
+   si el niño no tiene cuenta, le esperan.
+5. **Tras el desvelado**: las piezas **esperan en la caja**; «Colocarlas» abre
+   el modo decorar.
+6. **Quién asigna una pieza a un evento**: el **Panel**; mientras no tenga
+   editor, **con IA** editando `firebase-seed/panuelo.json` y subiendo solo esa
+   pieza con `npm run panuelo:subir` (F1b).
+
+Sin preguntas nuevas: lo que queda abierto son comprobaciones técnicas (F0).

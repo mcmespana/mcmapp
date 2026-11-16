@@ -1,532 +1,598 @@
 # Plan — Live Activities (iOS) y su equivalente en Android
 
+> **Por qué hacen falta `expo-widgets` y `@expo/ui` aunque esto «no sea un
+> widget».** En iOS, Apple obliga a que una Live Activity viva dentro de una
+> _extensión de widgets_ (es la misma pieza técnica que los widgets de la
+> pantalla de inicio), y `expo-widgets` es la librería oficial de Expo que crea
+> esa extensión y la arranca desde JS. `@expo/ui` es con lo que se **dibuja**
+> lo que sale en la pantalla de bloqueo y en la Dynamic Island.
+
 > Objetivo: una **base nativa común** para tener algo de la app «vivo» en la
 > pantalla de bloqueo (iOS: Live Activity + Dynamic Island; Android:
-> notificación persistente, promovida a *Live Update* en Android 16) y **dos
-> usos** encima:
+> notificación fija) y **dos usos** encima:
 >
-> - **Uso A — «La sesión a mano»** (monitores; lo que más importa): el monitor
->   lanza desde la app una Live Activity de su sesión o reunión; al tocarla, se
->   abre directamente el documento o PDF de la sesión. Se acabó buscarlo en
->   WhatsApp.
+> - **Uso A — «La sesión de hoy»** (monitores; lo que más importa): un
+>   **coordinador de etapa** publica en la app la sesión de hoy (título, horas
+>   y un **enlace o un documento**) y **a todos los monitores de sus grupos**
+>   les sale la Live Activity; al tocarla, se abre el **PDF**, que la app ya se
+>   ha bajado y guarda para abrirlo sin red. Se acabó buscarlo en WhatsApp.
 > - **Uso B — «Horario del evento»**: durante un encuentro o retiro, «ahora» y
->   «siguiente» del horario en la pantalla de bloqueo.
+>   «siguiente» del horario en la pantalla de bloqueo. Local, sin servidor.
 >
-> Escrito el 2026-11-16. **Estado: 🔵 propuesta.** No se ejecuta hasta que el
-> usuario lo pida y conteste las 🔒 del final. **Todo esto es nativo** (build
-> de tienda, commit `[skip-ota]`), salvo lo que se marca como «solo JS».
+> Escrito el 2026-11-16; **rehecho el mismo día** con las respuestas del
+> usuario (el Uso A pasa de «cada monitor pega su enlace» a «coordinación
+> publica para todos»). **Estado: 🔵 propuesta, decisiones contestadas salvo
+> las 🔒 nuevas del final.** Todo lo de iOS es nativo (build de tienda, commit
+> `[skip-ota]`); lo que es solo JS se marca.
 
 ---
 
-## 0. Resumen en diez líneas
+## 0. Resumen
 
-1. **Librería iOS: `expo-widgets` (oficial de Expo, `~58.0.28`)** + su
-   dependencia `@expo/ui` (`~58.0.28`). Va versionada con el SDK, crea el target
-   de WidgetKit y el App Group en el prebuild y **es la misma que servirá para
-   los widgets de Contigo** cuando se retomen.
-2. **Android, primera versión: sin paquete nuevo.** Una notificación local
-   `sticky` de `expo-notifications` (ya instalado) con su canal propio. *Live
-   Updates* de Android 16 (la píldora en la barra de estado) va en una fase
-   opcional con un módulo local mínimo.
-3. **Uso A mínimo**: el monitor pega un **enlace** (Docs/Drive/PDF) o elige un
-   **fichero** del móvil; la app guarda una copia local si es PDF, lanza la
-   actividad hasta la hora de fin y, al tocarla, abre el documento. Sin
-   servidor.
-4. **Uso B**: **local primero** (la app escribe «ahora/siguiente» cada vez que
-   corre, con horas absolutas y cuenta atrás nativa para que no mienta aunque no
-   se actualice). Push de ActivityKit solo si eso se queda corto.
-5. Va **después de cerrar `PLAN_EXPO_58.md`** (que su build esté validada en
-   TestFlight) y entra en la **siguiente build de tienda** (previsiblemente la
-   2.6.0, con `runtimeVersion` nueva).
+1. **Librería iOS: `expo-widgets ~58.0.28` + `@expo/ui ~58.0.28`** (oficiales
+   de Expo, versionadas con el SDK). Crean la extensión y el App Group en el
+   prebuild y **son las mismas que servirán para los widgets de Contigo**.
+   Hoy no están instaladas (en el `package-lock.json` solo salen como
+   dependencias _opcionales_ de `expo-router` y del preset de Babel).
+2. **Android: sin paquete nuevo.** Notificación local fija (`sticky`) de
+   `expo-notifications`. _Live Updates_ de Android 16: **más adelante**
+   (contestado).
+3. **Uso A**: coordinación publica «la sesión de hoy» en **Comunica** (el
+   middleware), con el mismo patrón que «Recordar que pasen lista»
+   (`RollReminderSheet` → `POST /v1/coordination/roll-reminders`): elige
+   grupos de su alcance y a sus monitores les llega. La app de cada monitor
+   **convierte el enlace en PDF y se lo baja** (Google Docs/Slides/Sheets
+   públicos, Drive, PDF directo); si no puede, abre el enlace tal cual.
+4. **Cómo «les sale a todos»**, en dos escalones:
+   - **(a) mínimo**: push normal «Sesión de hoy: tócala para tenerla a mano»
+     (Expo Push, el que ya usa el middleware) que al tocarla abre la app, baja
+     el PDF y arranca la actividad; **y arranque automático al abrir la app**
+     si hay una sesión publicada vigente.
+   - **(b) después: push-to-start real**: la Live Activity aparece sola en la
+     pantalla de bloqueo sin abrir la app. **Es viable con `expo-widgets` 58**
+     (`addPushToStartTokenListener`, iOS 17.2+), pero exige que el servidor
+     hable **directamente con APNs** con una clave `.p8` (Expo Push no sirve).
+5. **Que el monitor pegue su propio enlace** queda como opción secundaria,
+   local, sin servidor.
+6. **Expo 58 ya está hecho**: `main` está en SDK 58 desde el 31/10 y la 2.5.1
+   (SDK 58) está publicada en las tiendas. **No falta nada para empezar**; esto
+   va en la **siguiente build de tienda** (2.6.0, con `runtimeVersion` nueva).
+   Detalle en §7.
 
 ---
 
 ## 1. Lo que hay hoy en el repo y condiciona el plan
 
-| Pieza                                                                                         | Qué implica                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mcm-app/package.json`: `expo ~58.0.22`, RN 0.88.1, `runtimeVersion` 2.5.1                     | `main` ya está en SDK 58; lo que falta de `PLAN_EXPO_58.md` es la build de TestFlight y probar en el móvil. Las librerías se eligen para **58**.                                                                                                                                                                                                                                                                                                              |
-| `plugins/withNotificationServiceExtension.js` + `targets/notification-service/`               | Ya hay **un target de extensión iOS** (la NSE) añadido con un plugin propio. Su cabecera documenta lo que se va a repetir: bundle id nuevo ⇒ perfil de aprovisionamiento nuevo ⇒ **EAS pregunta por terminal la primera vez**. Y `app.json` → `extra.eas.build.experimental.ios.appExtensions` lista la NSE a mano.                                                                                                                                              |
-| `eas.json`: `EXPO_NO_CAPABILITY_SYNC=1` en todos los perfiles                                 | EAS **no** sincroniza capacidades con Apple. El **App Group** (nuevo) hay que darlo de alta a mano en el portal de Apple Developer para el bundle principal y para el de la extensión, o quitar ese flag solo para esa build (ver Fase 0).                                                                                                                                                                                                                      |
-| `app.json` → `scheme: "mcmapp"`; `app/+native-intent.ts`                                       | El toque en la Live Activity abre `mcmapp://…`. `redirectSystemPath` hoy reescribe enlaces de Comunica y manda **cualquier `file://`/`content://` al cantoral** (es para las playlists `.mcm`): hay que distinguir los PDF (Fase A2).                                                                                                                                                                                                                         |
-| `app.json` → `CFBundleDocumentTypes` (`.mcm`) + `LSSupportsOpeningDocumentsInPlace` + `hooks/useIncomingPlaylist.ts` | Ya existe el patrón «la app aparece en *Abrir con…* para un tipo de fichero y lo recoge al arrancar». Es la vía barata para «compartir el PDF desde WhatsApp» **sin share extension**.                                                                                                                                                                                                                                                                          |
-| `services/comunica/contract.ts`: `SessionSummary {id, eventId, date, startsAt, endsAt, kind}` y `Meeting {session, name, durationHours, rollCall}` | Una sesión o reunión de Comunica **trae nombre y horas, pero ningún material ni enlace**. Los únicos adjuntos del contrato son los de la ficha de evento de familias (`EventDetail.attachments`). ⇒ El documento **no puede salir de Comunica** sin tocar el servidor (ver 🔒 2). Sí sirve para **rellenar título y horas** del Uso A.                                                                                                                        |
-| `components/comunica/pasar-lista/ComunicaHome.tsx` (punto 4: «el atajo: tu grupo y su sesión») y `coordinacion/MeetingsScreen.tsx` | Los dos sitios naturales para el botón «Llevar a mano»: la sesión de tu grupo y la reunión de programación.                                                                                                                                                                                                                                                                                                                                                       |
-| `services/comunica/eventFiles.ts` + `components/comunica/documentos/FileViewerScreen.tsx`      | Ya hay visor propio: PDF en WebView (iOS) e imagen con `expo-image`. **Ojo**: ese visor **borra la copia al cerrarse** (es para documentos sensibles del área). El Uso A necesita una copia que **persista** hasta que acabe la sesión: carpeta y ciclo de vida propios, reutilizando el visor con una opción que no borre.                                                                                                                                      |
-| Horario de un evento: `app/screens/HorarioScreen.tsx`, `firebase-seed/eventos/jubileo-2025/jubileo-horario.json` | Forma: `[{ fecha: "2025-07-29", titulo, eventos: [{ hora: "08:40", nombre, subtitulo?, lugar?, icono?, maps?, materiales? }] }]`. **Sin hora de fin** y con horas que pueden ser `"??"`. «Ahora» = el último cuya hora ya pasó; «siguiente» = el primero que no. Se lee con `useFirebaseData(getEventFirebasePath(event, 'horario'))` y el evento activo lo da `ActiveEventContext`.                                                                                 |
-| `notifications/usePushNotifications.ts` (navega con `data.internalRoute`) y `utils/contigoReminders.ts` (lista cerrada `REMINDER_ROUTES`) | Patrón ya hecho para notificaciones **locales** con ruta interna. La notificación persistente de Android lo reutiliza; hay que **excluirla del buzón** de notificaciones guardadas (no es un aviso).                                                                                                                                                                                                                                                             |
-| `functions/` (Cloud Functions del precacheo ICS)                                                | Si algún día el Uso B necesita push de ActivityKit, ya hay dónde poner el emisor. **Expo Push no sirve para Live Activities**: se habla con APNs directamente con una clave `.p8` (lo confirma el propio blog de Expo, ver §2).                                                                                                                                                                                                                                 |
+| Pieza                                                                                                                                                                                                                               | Qué implica                                                                                                                                                                                                                                                                             |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mcm-app/package.json`: `expo ~58.0.22`, RN 0.88.1; `app.json`: `version`/`runtimeVersion` 2.5.1                                                                                                                                    | El SDK 58 ya está en `main` y en tiendas. Las librerías se eligen para **58**.                                                                                                                                                                                                          |
+| `services/comunica/contract.ts`: `Me.roles` (`monitor` · `coordination` · `accompaniment` · `member` · `guardian`) y `Me.scope` (`'delegation'` o `{ stages, segments }`)                                                           | El middleware ya sabe **quién coordina qué etapa**. Es lo que decide quién puede publicar y a quién le llega. Firebase no lo sabe.                                                                                                                                                      |
+| `components/comunica/coordinacion/SummaryScreen.tsx` + `RollReminderSheet.tsx` → `POST /v1/coordination/roll-reminders` (`RollReminderWrite { clientId, groupIds ≤ 60, message ≤ 120 }`, respuesta `{ monitors, reached, recent }`) | **El patrón exacto** «coordinación → todos los monitores de sus grupos»: coordinación elige grupos de su alcance en el Resumen, el servidor comprueba el alcance (403 si no), busca los monitores, mira sus móviles y manda el aviso; contesta a cuántos ha llegado. El Uso A lo copia. |
+| `POST /v1/devices` / `DELETE /v1/devices/:id` (área nativa, plan 08)                                                                                                                                                                | El middleware ya guarda **un token de Expo Push por móvil y persona** y ya manda pushes. El escalón (a) no necesita nada nuevo de push; el (b) añade un token más por móvil.                                                                                                            |
+| `docs/funcionalidades/NOTIFICACIONES.md`                                                                                                                                                                                            | Las push de la app van por **Expo Push API** (que por debajo usa APNs/FCM con las credenciales que gestiona EAS, `eas credentials`). **Para push-to-start de una Live Activity hay que hablar con APNs directamente** (§5.4).                                                           |
+| `services/comunica/contract.ts`: `SessionSummary {id, eventId, date, startsAt, endsAt, kind}` y `Meeting {session, name, durationHours, rollCall}`                                                                                  | Una sesión trae nombre y horas, **ningún material**. Sirve para **rellenar título y horas** al publicar.                                                                                                                                                                                |
+| `services/comunica/uploads.ts` + `POST /v1/me/documents`                                                                                                                                                                            | El middleware ya acepta ficheros subidos desde el móvil (títulos y certificados). Subir un PDF de sesión es el mismo mecanismo.                                                                                                                                                         |
+| `services/comunica/eventFiles.ts` + `components/comunica/documentos/FileViewerScreen.tsx`                                                                                                                                           | Visor propio: PDF en WebView (iOS), imagen con `expo-image`. **Borra la copia al cerrarse** (documentos sensibles). El Uso A necesita una copia que **persista** hasta el fin de la sesión: carpeta propia y opción «no borres».                                                        |
+| `expo-file-system`, `expo-clipboard`, `expo-document-picker`, `expo-intent-launcher`, `expo-web-browser`, `expo-sharing`                                                                                                            | Todo ya instalado: descargar, pegar, elegir fichero y abrir PDF en Android no necesita paquetes nuevos.                                                                                                                                                                                 |
+| `plugins/withNotificationServiceExtension.js` + `targets/notification-service/`                                                                                                                                                     | Ya hay **una extensión iOS** (la NSE). Bundle id nuevo ⇒ perfil nuevo ⇒ **EAS pregunta por terminal la primera vez**. `app.json` → `extra.eas.build.experimental.ios.appExtensions` la lista a mano.                                                                                    |
+| `eas.json`: `EXPO_NO_CAPABILITY_SYNC=1`                                                                                                                                                                                             | EAS **no** da de alta capacidades en Apple: el **App Group** se crea a mano en el portal (Fase 0).                                                                                                                                                                                      |
+| `app.json` → `scheme: "mcmapp"`; `app/+native-intent.ts`                                                                                                                                                                            | El toque en la actividad abre `mcmapp://…`. Hoy cualquier `file://`/`content://` va al cantoral (`.mcm`): hay que separar los PDF si se hace «Abrir con…» (opción secundaria).                                                                                                          |
+| `app/screens/HorarioScreen.tsx`, `firebase-seed/eventos/jubileo-2025/jubileo-horario.json`                                                                                                                                          | Horario: `[{ fecha, titulo, eventos: [{ hora: "08:40", nombre, lugar?, icono? }] }]`, sin hora de fin y con `"??"` posibles. Base del Uso B.                                                                                                                                            |
+| `notifications/usePushNotifications.ts` (`data.internalRoute`)                                                                                                                                                                      | Patrón para que un push abra una ruta interna. El push del Uso A lo usa; la notificación fija de Android **no** entra en el buzón.                                                                                                                                                      |
 
 ---
 
 ## 2. Librerías: comparación y elección
 
-Comprobado el 2026-11-16 contra el registro de npm y la documentación de cada
-una (no de memoria).
+Comprobado el 2026-11-16 contra npm y la documentación (no de memoria).
 
-| Opción                                                                                                                    | Versión hoy                                    | iOS (Live Activity)                                                                                                                                                                                        | Android                                                                                                                                                       | Encaje con el repo                                                                                                                                                                                                                                                       |
-| ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **[`expo-widgets`](https://docs.expo.dev/versions/v58.0.0/sdk/widgets/)** (Expo, oficial) ⭐                             | `58.0.28` (11-nov-2026); recomendado `~58.0.28` en la doc de SDK 58 | ✅ `createLiveActivity(name, layout)` → `start(props, url?, staleDate?)`, `update`, `end(dismissalPolicy)`, `getPushToken()`, push-to-start (iOS 17.2+). Layout en TSX con `@expo/ui/swift-ui`.              | Solo **widgets de pantalla de inicio** (`enableAndroid`). **No** hace notificaciones persistentes ni Live Updates.                                           | Versionada con el SDK (sube sola con `expo install --fix`). El plugin crea target + App Group (`group.<bundle>` por defecto). **Es la misma pieza que necesitan los widgets de Contigo**, incluso en Android. Estable desde SDK 56 según Expo.                            |
-| **[Voltra](https://www.use-voltra.dev/)** (Callstack, `@use-voltra/ios-client` / `android-client`)                       | `2.4.0` (6-oct-2026), peer `expo: *`           | ✅ `startLiveActivity(variants, { activityName, deepLinkUrl, staleDate, dismissalPolicy, relevanceScore })`, `updateLiveActivity`, `stopLiveActivity`, `isLiveActivityActive`, push y canales (iOS 18).  | ✅ **Notificaciones *ongoing* con promoción a Live Updates** (`startAndroidOngoingNotification(..., { requestPromotedOngoing, deepLinkUrl })`), más widgets Glance. | Muy completa y bien documentada. Pero versionado propio (no va con el SDK), extensión con `deploymentTarget` 17.0 por defecto y un tercero más que mantener. **Plan B** si `expo-widgets` falla en la Fase 0.                                                           |
-| [`expo-live-activity`](https://github.com/software-mansion-labs/expo-live-activity) (Software Mansion)                    | `0.4.2`, **deprecada y archivada (1-jun-2026)** | Remite a `expo-widgets`.                                                                                                                                                                                   | —                                                                                                                                                             | ❌ Descartada.                                                                                                                                                                                                                                                            |
-| [`@bacons/apple-targets`](https://github.com/EvanBacon/expo-apple-targets)                                                | `5.0.0` (jul-2026), peer `expo >=52`           | Solo crea el **target**; el SwiftUI y el puente JS ↔ ActivityKit se escriben a mano (módulo Expo local).                                                                                                   | —                                                                                                                                                             | Máximo control, máximo código propio. Tiene sentido si se quisiera SwiftUI «de verdad»; aquí no compensa.                                                                                                                                                                 |
-| `react-native-live-activities`                                                                                            | `0.1.1` (2022)                                 | Abandonada.                                                                                                                                                                                                | —                                                                                                                                                             | ❌                                                                                                                                                                                                                                                                         |
+| Opción                                                                              | Versión hoy                         | iOS (Live Activity)                                                                                                                                                                                                                                         | Android                                         | Encaje                                                                                            |
+| ----------------------------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **[`expo-widgets`](https://docs.expo.dev/versions/v58.0.0/sdk/widgets/)** (Expo) ⭐ | `58.0.28`; recomendado `~58.0.28`   | ✅ `createLiveActivity(name, layout)` → `start(props, url?, staleDate?)`, `update`, `end`, `getInstances()`, `getPushToken()`, `addPushTokenListener`, **`addPushToStartTokenListener` (push-to-start, iOS 17.2+)**. Layout en TSX con `@expo/ui/swift-ui`. | Solo widgets de inicio. Nada de notificaciones. | Versionada con el SDK. El plugin crea target + App Group. Misma pieza que los widgets de Contigo. |
+| [Voltra](https://www.use-voltra.dev/) (Callstack)                                   | `2.4.0`                             | ✅ completo, con push y canales                                                                                                                                                                                                                             | ✅ notificaciones _ongoing_ + Live Updates      | Versionado propio. **Plan B** si `expo-widgets` falla en la Fase 0.                               |
+| [`expo-live-activity`](https://github.com/software-mansion-labs/expo-live-activity) | `0.4.2`, **deprecada (1-jun-2026)** | Remite a `expo-widgets`                                                                                                                                                                                                                                     | —                                               | ❌                                                                                                |
+| [`@bacons/apple-targets`](https://github.com/EvanBacon/expo-apple-targets)          | `5.0.0`                             | Solo crea el target; Swift a mano                                                                                                                                                                                                                           | —                                               | No compensa.                                                                                      |
 
 ### Elegida: `expo-widgets` (+ `@expo/ui`) en iOS; `expo-notifications` en Android
 
-Por qué:
+- **Va con el SDK** (`expo install --fix` la sube). Voltra no.
+- **Abre la puerta a los widgets de Contigo** con el mismo plugin y App Group.
+- **Android no necesita librería**: la notificación `sticky` de
+  `expo-notifications` es solo JS.
 
-- **Va con el SDK.** El repo acaba de pasar un salto de SDK doloroso (58); una
-  librería versionada `~58.x` por Expo se actualiza con `expo install --fix` y
-  la prueba Expo en cada SDK. Voltra no.
-- **No cierra la puerta a los widgets, la abre.** `PLAN_WIDGET_CONTIGO.md`
-  hablaba de `@bacons/apple-targets`; hoy `expo-widgets` hace widgets de iOS
-  **y de Android** con el mismo plugin y el mismo target. Cuando se retomen,
-  serán entradas en `widgets[]` del mismo plugin, sin segundo target ni segundo
-  App Group.
-- **Android no necesita librería para lo útil.** La notificación fija con
-  `sticky: true` de `expo-notifications` (ya en el binario) hace el 90 % del Uso
-  A en Android, y **es solo JS** (podría salir incluso por OTA). La píldora de
-  Live Updates de Android 16 es un adorno que se puede añadir después con un
-  módulo local de ~100 líneas de Kotlin (patrón de `modules/highlight-menu/`)
-  o, si se prefiere no escribir Kotlin, con `@use-voltra/android-client`
-  (🔒 5).
+Lo que hay que saber de `expo-widgets` (doc de SDK 58):
 
-Lo que hay que saber de `expo-widgets` (de su doc de SDK 58):
+- El layout es una función TSX con la directiva `'widget'` que se compila aparte
+  y corre aislada: **sin hooks, sin imports, sin nada de fuera de la función**.
+  Todo llega por `props`. ⇒ Guardarraíl en test.
+- Regiones: `banner` (bloqueo), `compactLeading`, `compactTrailing`, `minimal`
+  y las expandidas de la Dynamic Island. En iOS 17+ la raíz necesita
+  `containerBackground`.
+- `enablePushNotifications` (por defecto `false`) añade el entitlement
+  `aps-environment` y `ExpoWidgets_EnablePushNotifications` al `Info.plist`.
+  Solo hace falta para el escalón (b).
+- La doc no menciona `NSSupportsLiveActivities`: se pone a mano en `app.json`.
+- **Lo que la doc NO aclara** (se comprueba en la Fase 0 con un iPhone): cómo
+  lleva su enlace una actividad **arrancada por push** (el `url` de `start()`
+  solo existe al arrancar desde la app). Plan: que el layout ponga el enlace
+  él mismo a partir de un `id` de `props` (`widgetURL`/`Link` de `@expo/ui`) y
+  que, si eso no funciona en la Dynamic Island, el toque abra la app en
+  `mcmapp://a-mano` sin `id` y la app abra la sesión vigente.
 
-- El layout es una función TSX con la directiva `'widget'` que **se compila
-  aparte y corre en un runtime aislado dentro de la extensión**: sin hooks, sin
-  estado, sin `async`, sin imports y **sin referencias a nada de fuera de la
-  función** (ni constantes de módulo). Todo lo que pinte llega por `props`.
-  ⇒ Guardarraíl en test (§6).
-- Regiones del layout: `banner` (pantalla de bloqueo), `compactLeading`,
-  `compactTrailing`, `minimal` y las expandidas de la Dynamic Island.
-- En iOS 17+ la vista raíz necesita `containerBackground` con placement
-  `'widget'` o sale el aviso «adopt containerBackground API».
-- La doc **no menciona `NSSupportsLiveActivities`** (solo
-  `NSSupportsLiveActivitiesFrequentUpdates` con `frequentUpdates`). Se pone a
-  mano en `app.json` → `ios.infoPlist` y se comprueba tras el prebuild.
-- Las imágenes hay que escribirlas en `widgetsDirectory` (el contenedor del App
-  Group) y referenciarlas por ruta. Para estos dos usos basta con SF Symbols /
-  emoji: **ninguna imagen**.
+Límites de Apple ([ActivityKit](https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities)):
 
-Límites de Apple que mandan sobre todo lo demás
-([ActivityKit](https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities)):
-
-- Una Live Activity **solo se arranca con la app en primer plano** (o por push
-  en iOS 17.2+).
-- Vive **hasta 8 h activa**; después el sistema la termina y aún puede quedarse
-  **hasta 4 h** en la pantalla de bloqueo. Total máximo: 12 h.
-- `props` (estado + atributos) **≤ 4 KB**.
-- El toque **solo abre la propia app** (su URL); no puede abrir Google Docs ni
-  Safari directamente. ⇒ Siempre se pasa por la app, que abre lo que toque.
-- El usuario puede desactivar las Live Activities de la app en Ajustes: hay que
-  comprobarlo antes de prometer nada en la interfaz.
-- Sin la app corriendo, **no hay forma local de actualizar ni de terminar** la
-  actividad a una hora: solo `staleDate` (la marca como caducada, el layout lo
-  lee como `isStale`) y el tope de 8 h. Los textos de cuenta atrás nativos (tipo
-  `Text(timerInterval:)`) sí avanzan solos.
+- Una Live Activity **solo se arranca con la app en primer plano, o por
+  push-to-start (iOS 17.2+)**.
+- Vive hasta **8 h** activa (+ hasta 4 h en el bloqueo). `props` ≤ **4 KB**.
+- El toque **solo abre la propia app**: nunca Google Docs ni Safari directo.
+- El usuario puede desactivarlas en Ajustes: comprobarlo antes de prometer.
+- Sin la app corriendo no se puede actualizar ni terminar en local: solo
+  `staleDate` y el tope de 8 h. La cuenta atrás nativa sí avanza sola.
 
 ---
 
 ## 3. Arquitectura
 
 ```
-                 ┌──────────────── app (JS) ─────────────────┐
-  Pantalla  ──►  │ services/liveActivity/                    │
-  «Llevar a      │   index.ts        API común: start/update/end/active
-   mano»         │   ios.ts          expo-widgets (createLiveActivity)
-                 │   android.ts      expo-notifications sticky (+ Live Update opcional)
-                 │   index.web.ts    no-op                               │
-                 │ services/aMano/store.ts  (AsyncStorage: actual + recientes)
-                 │ services/aMano/files.ts  (copias persistentes de PDF) │
-                 └───────────────┬───────────────────────────┬───────────┘
-                                 │ props ≤ 4 KB              │ notificación local
-                     ┌───────────▼──────────┐      ┌─────────▼─────────┐
-                     │ iOS: extensión        │      │ Android: canal    │
-                     │ WidgetKit (expo-      │      │ «a-mano» (bajo,   │
-                     │ widgets) + App Group  │      │ sin sonido)       │
-                     └───────────┬──────────┘      └─────────┬─────────┘
-                                 │ toque: mcmapp://a-mano?id=…│ data.internalRoute
-                                 └──────────────┬─────────────┘
-                                   app/+native-intent.ts → app/a-mano.tsx
-                                   (abre el PDF local o el enlace)
+COORDINACIÓN (app)                         MIDDLEWARE (comunicaMiddleware)
+Resumen → «Sesión de hoy»  ──POST──►  /v1/coordination/session-materials
+  título, horas, grupos,               · comprueba alcance (como roll-reminders)
+  enlace o PDF subido                  · guarda en Supabase (+ el PDF en Storage)
+                                       · (a) Expo Push a los monitores de esos grupos
+                                       · (b) push-to-start por APNs (.p8), iOS 17.2+
+                                                     │
+MONITOR (app) ◄──────────────────────────────────────┘
+  · al tocar el push, o al abrir la app: GET /v1/me/session-materials
+  · services/aMano/: baja el PDF (enlace → PDF), copia en documentDirectory/a-mano/
+  · services/liveActivity/: arranca la actividad (iOS) o la notificación fija (Android)
+  · toque en la actividad: mcmapp://a-mano?id=… → app/a-mano.tsx → abre el PDF (sin red)
 ```
 
-### 3.1 Qué viaja a la actividad (nada sensible)
+### 3.1 Dónde se guarda «la sesión de hoy»: middleware vs. Firebase
 
-Uso A (`SesionAManoProps`):
+|                        | **Middleware de Comunica** ⭐                                                                              | Firebase (RTDB + Storage)                                                                                                                                                |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ¿Quién puede publicar? | Ya lo sabe: `Me.roles` + `Me.scope` del CRM, y ya lo comprueba en `roll-reminders` (403 fuera de alcance). | No lo sabe. El uid de Firebase no es la ficha del CRM; habría que copiar roles y alcances a Firebase y mantenerlos al día, o abrir la escritura a cualquiera con sesión. |
+| ¿A quién le llega?     | Ya sabe qué monitores lleva cada grupo y qué móviles tienen (`/v1/devices`).                               | No sabe quién es monitor de qué grupo.                                                                                                                                   |
+| Avisos                 | Ya manda Expo Push a monitores.                                                                            | Habría que montar el envío en `functions/`.                                                                                                                              |
+| Fichero                | Ya acepta subidas (`POST /v1/me/documents`); Supabase Storage.                                             | Firebase Storage no está en uso en la app (otra pieza, otras reglas).                                                                                                    |
+| Sesión del monitor     | Hace falta sesión de Comunica (los monitores la tienen: pasan lista ahí).                                  | Haría falta login de la app.                                                                                                                                             |
+| Coste                  | Trabajo en **otro repo** (endpoints + tabla + almacenamiento).                                             | Trabajo aquí, pero reinventando permisos que ya existen.                                                                                                                 |
+
+**Recomendación: el middleware.** Es lo más simple que **respeta quién puede
+publicar**, porque los papeles y los grupos ya viven ahí y el envío a
+monitores ya está hecho para los recordatorios de lista. Firebase solo
+convendría si el middleware no pudiera tocarse, y entonces cualquiera con
+sesión podría publicar.
+
+### 3.2 Contrato propuesto (para `services/comunica/contract.ts` y el middleware)
+
+```ts
+// Una sesión publicada por coordinación.
+SessionMaterial = {
+  id: Id,
+  title: string,                 // ≤ 60, «Sesión C2 · La confianza»
+  startsAt: string, endsAt: string, // ISO con zona (Madrid)
+  groupIds: Id[],                // a quién va (dentro del alcance de quien publica)
+  source:
+    | { kind: 'link', url: string, docKind: 'gdoc' | 'gslides' | 'gsheet' | 'drive' | 'pdf' | 'link' }
+    | { kind: 'file', fileId: Id, name: string, size: number },
+  publishedBy: { name: string }, publishedAt: string,
+}
+
+POST   /v1/coordination/session-materials   { clientId, title, startsAt, endsAt, groupIds, source }
+       → WriteResult & { material, monitors, reached }      // como roll-reminders
+POST   /v1/coordination/session-materials/file  (multipart, como /v1/me/documents) → { fileId }
+PATCH  /v1/coordination/session-materials/:id   (corregir hora o enlace; vuelve a avisar solo si se pide)
+DELETE /v1/coordination/session-materials/:id
+GET    /v1/me/session-materials                 // las vigentes para mis grupos (hoy y mañana)
+GET    /v1/session-materials/:id/file           // binario, con sesión; solo si va a uno de mis grupos
+```
+
+- **No va por la cola** (como los recordatorios): hace falta red y la
+  respuesta dice a cuántos ha llegado. `clientId` estable entre reintentos.
+- Límite de envío como `roll-reminders` (no repetir aviso a un grupo en 10 min).
+- Vigente = `now < endsAt` y `startsAt` es hoy o mañana (Madrid). Se borra sola
+  a los 7 días.
+
+### 3.3 Enlace → PDF (en el móvil de cada monitor)
+
+`utils/aMano/pdfUrl.ts` (puro, con tests) traduce el enlace:
+
+| Enlace                                                   | URL de descarga                                             | Funciona si…                                |
+| -------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------- |
+| `docs.google.com/document/d/<ID>/…`                      | `https://docs.google.com/document/d/<ID>/export?format=pdf` | El documento es «cualquiera con el enlace»  |
+| `docs.google.com/presentation/d/<ID>/…`                  | `…/presentation/d/<ID>/export/pdf`                          | Ídem                                        |
+| `docs.google.com/spreadsheets/d/<ID>/…`                  | `…/spreadsheets/d/<ID>/export?format=pdf`                   | Ídem                                        |
+| `drive.google.com/file/d/<ID>/…` (un PDF subido a Drive) | `https://drive.google.com/uc?export=download&id=<ID>`       | Ídem, y el fichero es PDF                   |
+| `https://…/algo.pdf` o respuesta `application/pdf`       | La misma                                                    | Siempre                                     |
+| Cualquier otra cosa                                      | —                                                           | No se convierte: se abre el enlace tal cual |
+
+- Descarga con `expo-file-system` (ya instalado) a
+  `documentDirectory/a-mano/<id>.pdf`. **Se comprueba que lo bajado es un PDF**
+  (cabecera `%PDF`): un documento privado devuelve la página de login de
+  Google, y eso **no** se guarda.
+- **Si no se puede** (privado, sin red, formato raro): se guarda el enlace y
+  al tocar la actividad se abre tal cual (`Linking.openURL`: la app de Google
+  si está, si no el navegador). La pantalla lo dice: «No se ha podido guardar
+  el PDF; se abrirá el enlace».
+- **Comprobación al publicar**: el móvil de coordinación hace la misma
+  conversión antes de enviar y, si no sale un PDF, avisa: «Este documento no
+  es público: los monitores no podrán tenerlo sin red. Compártelo como
+  "cualquiera con el enlace" o sube el PDF».
+- **Fichero subido**: se baja de `GET /v1/session-materials/:id/file` con la
+  sesión de Comunica (patrón de `eventFiles.ts`), a la misma carpeta.
+- La copia se borra cuando la sesión deja de estar vigente y no está en
+  «recientes». La copia **no** se borra al cerrar el visor.
+
+### 3.4 Qué viaja a la Live Activity (nada sensible)
 
 ```jsonc
 {
-  "title": "Sesión Grupo Juveniles 2",   // ≤ 60 caracteres, lo escribe el monitor
-  "docLabel": "Dinámica del perdón.pdf",  // solo el nombre visible
-  "docKind": "pdf",                       // pdf | doc | sheet | slides | link
-  "startsAt": 1763290800000,              // ms
-  "endsAt": 1763298000000                 // ms → cuenta atrás «termina en…»
+  "id": "<id de la sesión>", // para el enlace de vuelta
+  "title": "Sesión C2 · La confianza", // ≤ 60
+  "docLabel": "La confianza.pdf", // solo el nombre visible
+  "docKind": "pdf", // pdf | doc | slides | sheet | link
+  "offline": true, // ¿hay copia local?
+  "startsAt": 1763290800000,
+  "endsAt": 1763298000000,
 }
 ```
 
-Uso B (`HorarioProps`):
+La URL, la ruta del fichero y los tokens **no viajan nunca** a la actividad ni
+al enlace: la app los saca de su almacén por `id`.
 
-```jsonc
-{
-  "eventTitle": "Encuentro MCM 2027",
-  "now":  { "hora": "16:00", "nombre": "Actividades de bienvenida", "lugar": "Casal Loiola", "icono": "👋" },
-  "next": { "hora": "17:00", "nombre": "Eucaristía de Envío", "lugar": "Casal Loiola", "icono": "⛪️", "at": 1763298000000 },
-  "later": [{ "hora": "19:00", "nombre": "Salida hacia Roma" }]   // como mucho 2
-}
-```
-
-**La URL, la ruta del fichero y el token no viajan nunca** a la actividad ni a
-la URL del deep link: la actividad lleva un `id` local y la app resuelve el
-resto desde su almacén (mismo criterio que `services/comunica/fileViewer.ts`:
-«nunca en la URL»).
-
-### 3.2 Deep link de vuelta
+### 3.5 Deep link de vuelta
 
 - iOS: `start(props, 'mcmapp://a-mano?id=<id>', staleDate)`. Android:
-  `data.internalRoute = '/a-mano?id=<id>'` (más el `id` en `data`).
-- `app/+native-intent.ts`: `mcmapp://a-mano?…` **no** es de Comunica
-  (`classifyComunicaLink` devuelve `null`) y pasa tal cual → ruta raíz
-  `app/a-mano.tsx` (hermana de `panuelo.tsx`). Se añade un test a
-  `redirectSystemPath` que lo fije.
-- Uso B: `mcmapp://horario` → la pantalla de horario del evento activo (la ruta
-  real la da `utils/eventRoutes.ts`).
-- La pantalla `a-mano` **no depende de tener sesión de Comunica**: tiene que
-  abrir el PDF sin red y sin login (el monitor puede estar en un campamento sin
-  cobertura).
+  `data.internalRoute = '/a-mano?id=<id>'`.
+- `app/+native-intent.ts`: `mcmapp://a-mano?…` no es de Comunica y pasa tal cual
+  a `app/a-mano.tsx` (ruta raíz, hermana de `panuelo.tsx`). Test en
+  `redirectSystemPath`.
+- `app/a-mano.tsx` **no exige sesión de Comunica para abrir lo ya bajado**: el
+  monitor puede estar en un campamento sin cobertura.
 
-### 3.3 Dónde se abre el documento
+### 3.6 Dónde se abre el documento
 
-| Origen                                  | Dónde se abre                                                                                                               | Sin red              |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| PDF (fichero elegido, o enlace a un PDF que se descarga al crear) | **Visor dentro de la app**: iOS reutiliza `FileViewerScreen` (WebView) en modo «no borres»; Android lo abre con el visor del sistema (`expo-intent-launcher`, ya instalado), porque la WebView de Android no pinta PDF | ✅ copia en `documentDirectory/a-mano/` |
-| Google Docs / Drive / Slides / Sheets   | **App externa** (`Linking.openURL`: si está la app de Google, se abre allí; si no, Safari/Chrome). Opción secundaria «Abrir aquí» con `expo-web-browser` | ❌ (lo dice la pantalla al crear) |
-| Otro enlace `https://`                   | `expo-web-browser` (hoja de Safari / Custom Tab)                                                                             | ❌                    |
+| Origen                             | Dónde se abre                                                                                                                           | Sin red       |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| PDF (convertido, directo o subido) | iOS: `FileViewerScreen` en modo «no borres». Android: visor del sistema con `expo-intent-launcher` (la WebView de Android no pinta PDF) | ✅            |
+| Enlace que no se pudo convertir    | `Linking.openURL` (app de Google o navegador)                                                                                           | ❌ (se avisa) |
 
-Las copias se borran cuando la sesión deja de estar en «recientes» (no al
-cerrar el visor, como en Comunica).
+### 3.7 Android
 
-### 3.4 Equivalente Android, por uso
+| Uso | Android ≤ 15                                                                                                                                                                          | Android 16+                                                       |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| A   | Notificación local `sticky`, canal `a-mano` de importancia baja, sin sonido; toque → `/a-mano?id=`; acción «Terminar». Se pone al tocar el push o al abrir la app (igual que en iOS). | Igual. _Live Updates_ (la píldora) **más adelante** (contestado). |
+| B   | Notificación `sticky` con «Ahora · Siguiente», se reescribe al abrir la app.                                                                                                          | Igual.                                                            |
 
-| Uso | Android ≤ 15                                                                                                    | Android 16+                                                                                                                       |
-| --- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| A   | Notificación local `sticky` (no se quita deslizando), canal `a-mano` de importancia baja, sin sonido; toque → `/a-mano?id=`; botón de acción «Terminar». | Igual, y en la fase opcional se **promueve a Live Update** (chip en la barra de estado, arriba en la pantalla de bloqueo). Requiere `POST_PROMOTED_NOTIFICATIONS` y estilo `BigText`/`Progress` con título. |
-| B   | Notificación `sticky` con «Ahora · Siguiente»; se reescribe cada vez que la app corre. Espiga a probar: dejar **programadas** las notificaciones de cada franja con el mismo identificador para que se sustituyan solas (si `expo-notifications` lo respeta, Android se actualiza sin app). | Igual + Live Update con `ProgressStyle` (segmentos = franjas del día) en la fase opcional. |
-
-Sin *foreground service*: no hace falta y evitaría la declaración de tipo de
-servicio en Play.
+Sin _foreground service_. Android no tiene un equivalente de push-to-start;
+la alternativa (que un push de datos ponga la notificación fija con la app
+cerrada, con la tarea en segundo plano de `expo-notifications`) se prueba como
+espiga en la Fase A3 y solo se usa si funciona con la app cerrada.
 
 ---
 
-## 4. Uso A — «La sesión a mano»
+## 4. Uso A — «La sesión de hoy»
 
-### 4.1 Flujo mínimo (A1)
+### 4.1 Lo que hace coordinación
 
-1. Entrada: botón **«Llevar a mano»** en la tarjeta del atajo de
-   `ComunicaHome` (tu grupo y su sesión) y en cada reunión de
-   `MeetingsScreen`; abre una hoja con **título y horas ya rellenos** desde
-   `SessionSummary.startsAt/endsAt` (o `Meeting.name` + `durationHours`).
-   Además, una entrada sin Comunica en Más (ver 🔒 1).
-2. En la hoja: **«Pegar enlace»** (lee el portapapeles con `expo-clipboard`,
-   ya instalado, si trae un `https://`) o **«Elegir PDF»**
-   (`expo-document-picker`, ya instalado; WhatsApp en iOS deja «Guardar en
-   Archivos»). Si el enlace es un PDF directo, se ofrece guardarlo para tenerlo
-   sin red.
-3. «Empezar» → se guarda en `services/aMano/store.ts` y se lanza la actividad
-   con `staleDate = endsAt`.
-4. Al tocar la actividad → `app/a-mano.tsx` abre el documento al instante (sin
-   pasos intermedios); dentro, «Terminar» y «Cambiar documento».
-5. **Caducidad**: con `staleDate` en `endsAt` el layout pinta «Terminada · toca
-   para cerrar». Al volver la app a primer plano (`AppState`) o al arrancar, si
-   `now > endsAt` se termina con `dismissalPolicy` inmediata. El tope de 8 h de
-   iOS cubre de sobra las reuniones (1-4 h, `MEETING_DURATIONS`). Una sola
-   actividad «a mano» a la vez: empezar otra termina la anterior.
+1. Entrada: en el **Resumen de grupos** (`SummaryScreen`), junto a la campana
+   de «Recordar que pasen lista», un botón **«Sesión de hoy»**. Lo ve quien
+   puede mandar recordatorios (mismo criterio; ver 🔒 1). También desde
+   `MeetingsScreen` para las reuniones de programación.
+2. Hoja `components/aMano/PublicarSesionSheet.tsx` (mismo patrón que
+   `RollReminderSheet`):
+   - **Grupos**: los de su alcance, todos marcados por defecto («todos los
+     monitores de tu etapa»), se pueden quitar.
+   - **Título** y **horas**: rellenas desde la sesión del día de esos grupos
+     (`SessionSummary.startsAt/endsAt`); editables.
+   - **Material**: «Pegar enlace» (`expo-clipboard`) o «Subir PDF»
+     (`expo-document-picker`, sube por la ruta de fichero). Comprobación de
+     §3.3 con aviso si el enlace no es público.
+   - «Publicar» → respuesta «Le ha llegado a 14 de 16 monitores» (como el
+     recordatorio).
+3. Puede corregir (otra hora, otro enlace) o retirar la sesión. Retirar
+   termina la actividad en los móviles la próxima vez que abran la app.
 
-Layout (iOS):
+### 4.2 Lo que ve cada monitor
 
-- Pantalla de bloqueo: icono por tipo de documento, `title`, `docLabel`, y a la
-  derecha «termina en 1:12» con cuenta atrás nativa.
-- Dynamic Island compacta: icono a la izquierda, cuenta atrás a la derecha;
-  mínima: el icono.
-- Colores: los de Comunica según `design.md` (no inventar paleta; leer los
-  tokens de `constants/` y copiarlos **literalmente** dentro de la función del
-  layout, porque no puede importar).
+- **Escalón (a)** (primera build):
+  - Llega el push «Sesión de hoy: La confianza. Tócala para tenerla a mano».
+    Al tocarlo: la app abre `/a-mano?id=…`, baja el PDF, arranca la Live
+    Activity (o la notificación fija en Android) y enseña el documento.
+  - **Arranque automático al abrir la app**: un componente de fondo
+    (`AManoBackground`, junto a `ComunicaBackground` en `app/_layout.tsx`) mira
+    `GET /v1/me/session-materials` al volver a primer plano; si hay una
+    vigente que aún no está puesta y el monitor no la ha quitado, la baja y la
+    arranca. Así basta con abrir la app una vez esa mañana.
+  - Si la quita («Terminar»), no vuelve a arrancarse sola esa sesión.
+- **Escalón (b)** (cuando se haga): la actividad aparece sola en la pantalla
+  de bloqueo de los iPhone con iOS 17.2+, sin abrir la app. **El PDF se baja
+  al tocarla** (ese primer toque necesita red; luego queda guardado). Para
+  quien abra la app antes, ya estará bajado por el arranque automático.
 
-### 4.2 Completo (A2)
+Layout (iOS): icono por tipo de documento, `title`, «PDF guardado» o «Abre
+el enlace», y a la derecha «termina en 1:12» con cuenta atrás nativa.
+Dynamic Island compacta: icono y cuenta atrás; mínima: el icono. Colores de
+Comunica copiados **literalmente** dentro del layout (no puede importar).
 
-- **Relanzar rápido**: lista «Recientes» (las 5 últimas) arriba de la hoja con
-  «Volver a llevar» en un toque: mismo documento, horas recalculadas a la
-  próxima sesión de ese grupo si se sabe, o «desde ahora + misma duración».
-- **Recibir el PDF desde WhatsApp sin share extension**:
-  - iOS: añadir `com.adobe.pdf` a `CFBundleDocumentTypes` con
-    `LSHandlerRank: "Alternate"` ⇒ la app aparece en «Abrir con…» / la fila de
-    apps de la hoja de compartir para PDF. `LSSupportsOpeningDocumentsInPlace`
-    ya está a `true`: hay que **copiar el fichero en el acto** (el acceso al
-    original es temporal).
-  - Android: `intentFilters` `VIEW` con `mimeType: application/pdf` (como los
-    `.mcm`). Tocar el PDF en WhatsApp ofrece la app en el selector.
-  - `+native-intent.ts`: hoy `isFileUrl` → cantoral. Separar por extensión /
-    MIME: `.mcm` sigue al cantoral; `.pdf` deja el fichero en un hueco en
-    memoria (patrón `setPendingNativeLink`) y va a `/a-mano/nuevo`.
-  - Una **share extension de verdad** (para «Compartir» con texto/enlace desde
-    cualquier app) sería **otro target** y otra pieza de firma: se deja fuera
-    salvo que el «Abrir con…» se quede corto (🔒 3).
-- **Botón de acción** en Android («Terminar») e iOS 17+ (botón en la
-  actividad con App Intent, si `expo-widgets` lo expone para Live Activities;
-  si no, se omite).
-- **Live Update** en Android 16 (fase opcional, §5 Fase A3).
+**Caducidad**: `staleDate = endsAt` → «Terminada · toca para cerrar». Al
+volver la app a primer plano, si `now > endsAt`, se termina. Una sola
+actividad «a mano» a la vez: la nueva sustituye a la anterior.
 
-### 4.3 Lo que NO hace (a propósito)
+### 4.3 Opción secundaria: el monitor pega su propio enlace
 
-- No sube nada a Comunica ni al Panel: es local del móvil del monitor.
-- No guarda el documento en la nube ni lo comparte con el grupo.
-- El «material asociado a la sesión en Comunica» queda como **evolución**: haría
-  falta un campo `materials` en `SessionSummary`/`Meeting` del contrato y que el
-  servidor (middleware) lo sirva. Si se decide, la hoja solo añade una tercera
-  fuente («Material de la sesión»); el resto del plan no cambia.
+Para quien no tenga coordinación que publique, o para algo suyo: en Más (y en
+la sesión de su grupo en `ComunicaHome`), «Llevar a mano» → hoja con título,
+horas y «Pegar enlace» / «Elegir PDF». Mismo almacén, misma conversión, misma
+actividad; **sin servidor** y solo en su móvil. Comparte todo el código de la
+Fase A1; solo añade la hoja local.
+
+«Recibir el PDF desde WhatsApp con _Abrir con…_» (tipo de documento PDF en
+`app.json`, separar `.pdf` de `.mcm` en `+native-intent.ts`) queda para
+después de ver si hace falta: con la publicación de coordinación, el monitor ya
+no tiene que buscar el PDF.
+
+### 4.4 Lo que NO hace
+
+- No guarda el material en el CRM ni lo enseña a familias.
+- No es un repositorio de materiales: una sesión publicada caduca a los 7 días.
 
 ---
 
-## 5. Uso B — «Horario del evento»
+## 5. Uso B — «Horario del evento» (local, contestado)
 
-### 5.1 Cómo se actualiza: comparación
+### 5.1 Cómo se actualiza
 
-| Vía                                                                                       | Qué necesita                                                                                                                                                                                                                                     | Fiabilidad                                                                                                       | Coste                     |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| **Local** (la app calcula «ahora/siguiente» y hace `update` cuando corre) ⭐               | Nada más que la base.                                                                                                                                                                                                                             | Se actualiza cada vez que se abre la app (en un encuentro, muchas veces al día). Entre aperturas, **no cambia de franja**: se compensa con el diseño (abajo). | Bajo                      |
-| Push por actividad (token de `getPushToken()` → servidor → APNs)                          | Guardar el token de cada móvil, un emisor con clave `.p8` en `functions/`, y mandar un push por franja **y por dispositivo**. Expo Push no lo hace.                                                                                              | Alta                                                                                                             | Alto (servidor, secretos) |
-| Push a un **canal de difusión** (iOS 18+: un push por franja para todos, sin tokens)      | `enablePushNotifications`, canal creado en APNs, emisor en `functions/` con `.p8` y un cron que lea el horario de Firebase. Comprobar que `expo-widgets` lo expone (Voltra sí: `channelId`).                                                     | Alta en iOS 18+; nada en 16-17                                                                                   | Medio                     |
-
-**Recomendación: local.** Y un layout que **no mienta aunque se quede viejo**:
-
-- Siempre con **horas absolutas** («17:00 Eucaristía»), nunca «ahora» a secas
-  sin hora.
-- «Siguiente» con **cuenta atrás nativa** hasta su hora, que avanza sola.
-- `staleDate = next.at`: pasada esa hora, el layout pinta la lista
-  «17:00 Eucaristía · 19:00 Salida» sin la etiqueta «ahora», que sigue siendo
-  verdad.
-- Duración: se arranca por la mañana y caduca a las 8 h (iOS); al abrir la app
-  se renueva. Si eso molesta en la práctica, se pasa al canal de difusión
-  (🔒 4).
+**Local**: la app calcula «ahora/siguiente» y hace `update` cada vez que corre.
+Layout que **no miente aunque se quede viejo**: horas absolutas
+(«17:00 Eucaristía»), cuenta atrás nativa hasta el siguiente, `staleDate =
+next.at` (pasada esa hora, se quita la etiqueta «ahora» y queda la lista con
+horas). Caduca a las 8 h; al abrir la app se renueva. El push por canal de
+difusión (iOS 18+) queda fuera.
 
 ### 5.2 Lógica (solo JS, testeable)
 
-`utils/liveActivity/horarioNowNext.ts`: `(dias, ahora) → { now, next, later[] }`
-
-- Elige el día por `fecha` (hora de Madrid, `utils/comunica/madrid.ts` o el
-  equivalente de `dateUtils`; ojo a eventos fuera de España: el horario está en
-  hora local del evento).
-- Ignora horas no parseables (`"??"`, vacías) para el cálculo, pero no las
-  pierde en `later` si van entre dos válidas.
-- Último del día: `next = null` → «Fin del día · mañana 08:40 …».
-- Recorta textos para cumplir los 4 KB.
+`utils/liveActivity/horarioNowNext.ts`: `(dias, ahora) → { now, next, later[] }`.
+Día por `fecha` (hora local del evento); ignora horas no parseables (`"??"`)
+para el cálculo sin perderlas en `later`; último del día → «Fin del día ·
+mañana 08:40…»; recorte a 4 KB.
 
 ### 5.3 Arranque
 
-- En la pantalla de horario del evento activo: interruptor «Ver en la pantalla
-  de bloqueo» (solo si el evento está en curso, `fecha` de hoy dentro del
-  rango).
-- Opcional: ofrecerlo una vez al abrir la app el primer día del evento.
-- Se para solo al terminar el último día, o con el interruptor.
+Interruptor «Ver en la pantalla de bloqueo» en `HorarioScreen` (solo con el
+evento en curso). Se para al terminar el último día o con el interruptor.
+
+### 5.4 Servidor para push-to-start (escalón b del Uso A)
+
+- **Cliente**: `enablePushNotifications: true` en el plugin; al arrancar, si
+  `isPushToStartEligibleDevice()` (iOS 17.2+), `addPushToStartTokenListener`
+  da el token; se manda al middleware junto al de Expo
+  (`POST /v1/devices { …, liveActivityStartToken }`). El token rota: se vuelve
+  a mandar cuando cambie.
+- **Servidor** (middleware, que es quien sabe a quién va): al publicar, por
+  cada móvil con ese token, `POST https://api.push.apple.com/3/device/<token>`
+  por HTTP/2 con `apns-push-type: liveactivity`,
+  `apns-topic: com.familiaconsolacion.mcmapp.push-type.liveactivity`,
+  `apns-priority: 10` y un JWT ES256 firmado con una **clave `.p8`** del
+  portal de Apple (variable secreta en Vercel). Cuerpo con
+  `event: "start"`, `attributes-type`, `attributes`, `content-state` (las
+  `props` de §3.4) y **`alert` obligatorio** (sin él, Apple tira el arranque).
+  Token que devuelve 410 / `BadDeviceToken` se borra.
+- **Expo Push no sirve** para esto: no manda el tipo `liveactivity`. La push
+  normal (escalón a) sigue saliendo por Expo a todos, también a Android y a
+  iPhone viejos.
+- Al iPhone sin iOS 17.2 o sin token le llega solo el push normal del escalón
+  (a): nunca se queda sin aviso.
+- Detalle de extremo a extremo: blog de Expo «Live Activities with Expo, end
+  to end» (1-oct-2026, en Fuentes).
 
 ---
 
 ## 6. Fases
 
-Cada fase en su commit; todas las que añaden nativo con `[skip-ota]`. El código
-JS que importe `expo-widgets` **debe** comprobar que el módulo nativo existe
-(`requireOptionalNativeModule` o un `try` en el import perezoso) para que una
-OTA a binarios viejos no crashee — aunque al subir la `runtimeVersion` con esta
-build la cadena se corta igual.
+Cada fase en su commit; las que añaden nativo, con `[skip-ota]`. El JS que
+importe `expo-widgets` comprueba que el módulo nativo existe
+(`requireOptionalNativeModule`) para que una OTA a binarios viejos no
+crashee.
 
 ### Fase 0 — Base nativa (iOS + Android)
 
-- **Modelo: Opus.** Es fontanería de Xcode/EAS con dos extensiones conviviendo.
-- **Archivos**:
-  - `mcm-app/package.json` (`npx expo install expo-widgets @expo/ui`).
-  - `mcm-app/app.json`: plugin `["expo-widgets", { "groupIdentifier":
-    "group.com.familiaconsolacion.mcmapp", "enablePushNotifications": false }]`
-    **después** de `./plugins/withNotificationServiceExtension`;
-    `ios.infoPlist.NSSupportsLiveActivities: true`;
-    `extra.eas.build.experimental.ios.appExtensions` + la entrada del target de
-    widgets (`ExpoWidgetsTarget`, bundle `…mcmapp.ExpoWidgetsTarget`) con su
-    entitlement de App Group; `version`/`runtimeVersion` → 2.6.0 cuando toque
-    la build.
-  - `mcm-app/widgets/` (o donde mande la doc): un layout «hola» para probar.
-  - `mcm-app/services/liveActivity/{index,ios,android,index.web}.ts`: API común
-    `start/update/end/getActive/areEnabled` (sin lógica de ningún uso).
-  - Canal Android `a-mano` en el registro de canales que ya crea la app.
-- **Comprobaciones**: `npx expo prebuild -p ios --clean` en el Mac: dos
-  extensiones (NSE + widgets), cada una con su bundle id; el `.entitlements`
-  del target principal **y** del de widgets con el App Group; `Info.plist` con
-  `NSSupportsLiveActivities`. Que el plugin de la NSE siga encontrando
-  `PBXTargetDependency` (lo crea él si falta; con otra extensión puede que ya
-  exista).
-- **Apple Developer**: con `EXPO_NO_CAPABILITY_SYNC=1`, dar de alta a mano el
-  App Group y asignarlo a los dos identificadores; la primera build **pregunta
-  por terminal** el perfil de la extensión nueva (como pasó con la NSE). La
-  lanza el usuario.
-- **Tests**: guardarraíl `__tests__/liveActivityLayouts.test.ts` que lea los
-  ficheros de layout y falle si falta la directiva `'widget'`, si hay `import`
-  o si el cuerpo usa identificadores de módulo (mismo espíritu que
-  `tabsLayoutWebSafety`); test de `services/liveActivity` con el módulo
-  mockeado (web = no-op; sin módulo nativo = `areEnabled() === false`).
-- **Dispositivo**: build de desarrollo en un iPhone real (el simulador muestra
-  Live Activities, pero firma y App Group solo se validan en real); arrancar y
-  terminar la de prueba; la NSE sigue funcionando (mandar un push con imagen).
+- **Modelo: Opus.**
+- **Archivos**: `package.json` (`npx expo install expo-widgets @expo/ui`);
+  `app.json`: plugin `["expo-widgets", { "groupIdentifier":
+"group.com.familiaconsolacion.mcmapp", "enablePushNotifications": false }]`
+  **después** de `./plugins/withNotificationServiceExtension`,
+  `ios.infoPlist.NSSupportsLiveActivities: true`, la extensión en
+  `extra.eas.build.experimental.ios.appExtensions`, `version`/`runtimeVersion`
+  → 2.6.0; `widgets/` con un layout «hola»;
+  `services/liveActivity/{index,ios,android,index.web}.ts` (API común
+  `start/update/end/getActive/areEnabled`); canal Android `a-mano`.
+- **Comprobaciones** (`npx expo prebuild -p ios --clean` en el Mac): dos
+  extensiones (NSE + widgets) con su bundle id; App Group en los dos
+  `.entitlements`; `NSSupportsLiveActivities` en el `Info.plist`; la NSE sigue
+  enlazando. **Espiga**: un layout con `widgetURL` desde `props` y comprobar
+  que el toque abre `mcmapp://a-mano?id=…` desde el bloqueo y desde la Dynamic
+  Island (lo necesitará el escalón b).
+- **Apple Developer**: alta a mano del App Group en los dos identificadores
+  (`EXPO_NO_CAPABILITY_SYNC=1`); la primera build pregunta el perfil de la
+  extensión. La lanza el usuario.
+- **Tests**: guardarraíl `__tests__/liveActivityLayouts.test.ts` (directiva
+  `'widget'`, sin `import`, sin identificadores de módulo); `services/liveActivity`
+  con el módulo mockeado (web = no-op; sin módulo = `areEnabled() === false`).
+- **Dispositivo**: build de desarrollo en un iPhone real; arrancar y terminar
+  la de prueba; la NSE sigue funcionando (push con imagen).
 
-### Fase A1 — Uso A mínimo
+### Fase A0 — Middleware: «sesión de hoy» (`comunicaMiddleware`, otro repo)
+
+- **Modelo: Opus.** Encargo con §3.2 tal cual.
+- Tabla `session_materials` en Supabase, ficheros en Supabase Storage,
+  comprobación de alcance y búsqueda de monitores **reutilizando la de
+  `roll-reminders`**, Expo Push con `data.internalRoute = '/a-mano?id=…'`,
+  límite de repetición, borrado a los 7 días. Tests del middleware.
+- En **este** repo: el contrato en `services/comunica/contract.ts` y el
+  servidor falso (`services/comunica/fake/`) con dos sesiones de ejemplo, para
+  que A1 se haga y se pruebe sin esperar al servidor real.
+
+### Fase A1 — Uso A, escalón (a)
 
 - **Modelo: Sonnet.**
-- **Archivos**: `services/aMano/{store,files}.ts` (+ `.web.ts`),
-  `app/a-mano.tsx`, `components/aMano/NuevaSesionSheet.tsx`, layout
-  `widgets/SesionAMano.tsx`, botón en `components/comunica/pasar-lista/ComunicaHome.tsx`
-  y `components/comunica/coordinacion/MeetingsScreen.tsx`, opción «no borrar»
-  en `FileViewerScreen`, exclusión de la notificación fija en
-  `notifications/usePushNotifications.ts` (que no entre en el buzón),
-  `app/_layout.tsx` (registrar la ruta y el barrido al volver a primer plano),
-  `docs/funcionalidades/SESION_A_MANO.md` nuevo, CHANGELOG.
-- **Tests**: store (crear, terminar, caducar, recientes ≤ 5, borrar copias
-  huérfanas); clasificación de enlaces (Docs/Drive/PDF/otro, solo `https`);
-  `redirectSystemPath('mcmapp://a-mano?id=x')`; barrido «si `now > endsAt`,
-  terminar».
-- **Dispositivo**: iPhone con Dynamic Island y otro sin ella; Android 13+ real.
-  Pantalla bloqueada → tocar → abre el PDF **en modo avión**. Enlace de Google
-  Docs con la app de Google instalada y sin ella. Que la actividad se marque
-  caducada a la hora de fin y desaparezca al abrir la app. Que Ajustes →
-  Live Activities desactivado se refleje en la hoja.
+- **Archivos**: `utils/aMano/pdfUrl.ts` (puro); `services/aMano/{store,files}.ts`
+  (+ `.web.ts`): vigentes, recientes, copias; `components/aMano/PublicarSesionSheet.tsx`
+  y su botón en `SummaryScreen` (y `MeetingsScreen`); `app/a-mano.tsx`;
+  `components/aMano/AManoBackground.tsx` montado en `app/_layout.tsx`;
+  opción «no borrar» en `FileViewerScreen`; exclusión de la notificación fija
+  del buzón en `notifications/usePushNotifications.ts`; layout
+  `widgets/SesionDeHoy.tsx`; **opción secundaria** «Llevar a mano» local en
+  Más y en `ComunicaHome`; entrada escondida tras el **Laboratorio Alpha** la
+  primera build (contestado); `docs/funcionalidades/SESION_DE_HOY.md`;
+  CHANGELOG.
+- **Tests**: `pdfUrl` (Docs, Slides, Sheets, Drive, PDF directo, `http` no,
+  otros); comprobación `%PDF` (una página HTML no se guarda); store (vigente,
+  caducada, quitada no vuelve, recientes ≤ 5, copias huérfanas);
+  `redirectSystemPath('mcmapp://a-mano?id=x')`; la hoja de publicar con el
+  servidor falso (grupos por defecto, aviso de enlace privado, «Le ha llegado
+  a N»); el fondo (arranca una vez, no con la sesión quitada, no sin
+  Laboratorio).
+- **Dispositivo**: iPhone con Dynamic Island y otro sin ella; Android 13+.
+  Coordinación publica → al monitor le llega el push → toca → actividad + PDF.
+  **Modo avión** y tocar la actividad: abre el PDF. Enlace privado: se abre el
+  enlace. Abrir la app sin tocar el push: arranca sola.
 
-### Fase A2 — Uso A completo
+### Fase A2 — Uso A, escalón (b): push-to-start
 
-- **Modelo: Sonnet** (Opus para el cambio de `+native-intent.ts` si se complica
-  la convivencia con `.mcm`).
-- **Archivos**: `app.json` (`CFBundleDocumentTypes` PDF, `intentFilters` PDF
-  Android → nativo), `app/+native-intent.ts`, hook `useIncomingSessionFile.ts`
-  (gemelo de `useIncomingPlaylist`), recientes y «volver a llevar» en la hoja,
-  botón «Terminar» en la notificación Android (categorías de
-  `expo-notifications`).
-- **Tests**: `redirectSystemPath` con `file://…pdf`, `content://…` PDF y
-  `.mcm` (que el cantoral siga igual); recalcular horas al relanzar.
-- **Dispositivo**: desde WhatsApp en iPhone, «Compartir → MCM App» con un PDF; en
-  Android, tocar el PDF y elegir la app. Que un `.mcm` siga abriendo el
-  cantoral.
+- **Modelo: Opus** (APNs y tokens).
+- **App**: `enablePushNotifications: true` (nativo, `[skip-ota]`), registro del
+  token de push-to-start en `POST /v1/devices`, `getInstances()` y el listener
+  de tokens por actividad al arrancar para adoptar las que llegaron por push.
+- **Middleware**: emisor APNs con `.p8` (§5.4), limpieza de tokens muertos.
+- **Apple**: crear (o reutilizar, si se tiene descargada) una clave APNs
+  `.p8` en el portal; guardarla como secreto en Vercel con su Key ID y el Team
+  ID `5P53S6QB23`. Ojo: los tokens dependen del entorno (`development` vs
+  `production`): la build de desarrollo usa el host _sandbox_ de APNs.
+- **Dispositivo**: iPhone con iOS 17.2+ con la app cerrada; publicar; la
+  actividad aparece sola; tocarla abre la sesión. iPhone con iOS < 17.2:
+  llega solo el push normal.
 
-### Fase A3 (opcional) — Live Updates en Android 16
+### Fase A3 (más adelante) — Android: Live Updates y espiga sin app
 
-- **Modelo: Sonnet** (Kotlin pequeño).
-- Módulo local `modules/live-update/` que publique la notificación con
-  `setRequestPromotedOngoing(true)` y `BigText`, más
-  `POST_PROMOTED_NOTIFICATIONS` en el manifiesto; o
-  `@use-voltra/android-client` si se prefiere no tener Kotlin propio (🔒 5).
-  Con eso, además, `timeoutAfter` para que se quite sola a la hora de fin.
-- **Dispositivo**: un Android 16 real (Pixel); comprobar el ajuste por app de
-  Live Updates.
+- Live Updates de Android 16 con un módulo local pequeño (patrón
+  `modules/highlight-menu/`) y la espiga de §3.7. **Más adelante** (contestado).
 
 ### Fase B — Horario del evento
 
-- **Modelo: Sonnet.**
-- **Archivos**: `utils/liveActivity/horarioNowNext.ts`, layout
-  `widgets/HorarioEvento.tsx`, interruptor en `app/screens/HorarioScreen.tsx`,
-  `update` al volver a primer plano y al refrescar `useFirebaseData` del
-  horario, notificación fija Android, sección en
+- **Modelo: Sonnet.** `utils/liveActivity/horarioNowNext.ts`, layout
+  `widgets/HorarioEvento.tsx`, interruptor en `HorarioScreen`, `update` al
+  volver a primer plano, notificación fija Android, sección en
   `docs/funcionalidades/EVENTOS.md`.
 - **Tests**: `horarioNowNext` con el seed del Jubileo (`"??"`, último del día,
-  cambio de día, evento de varios días, fuera de rango), recorte a 4 KB.
-- **Dispositivo**: dejar el móvil bloqueado 2 h con la actividad puesta y ver que
-  la cuenta atrás y el estado caducado dicen la verdad; abrir la app y ver que
-  salta de franja. En Android, la espiga de notificaciones programadas que se
-  sustituyen.
+  cambio de día, fuera de rango), recorte a 4 KB.
+- **Dispositivo**: móvil bloqueado 2 h; la cuenta atrás y el estado caducado
+  dicen la verdad; abrir la app salta de franja.
 
 ### Lo que NO entra
 
-- Widgets de Contigo (aparcados por decisión del usuario). Este plan deja
-  puesto lo que necesitarán: el plugin, el target y el App Group
-  `group.com.familiaconsolacion.mcmapp`. **Cuando se retomen, usar ese mismo
-  App Group y ese mismo plugin** (y actualizar `PLAN_WIDGET_CONTIGO.md`, que
-  todavía habla de `@bacons/apple-targets`).
-- Push de ActivityKit (salvo 🔒 4).
+- Widgets de Contigo (aparcados). Cuando se retomen: **mismo plugin y mismo
+  App Group** (y actualizar `PLAN_WIDGET_CONTIGO.md`, que aún habla de
+  `@bacons/apple-targets`).
+- Share extension para recibir PDFs desde WhatsApp.
 
 ---
 
 ## 7. Build, versión y tiendas
 
-**Todo esto requiere build nativa.** Paquetes nuevos:
+### Estado real de Expo 58 (comprobado el 2026-11-16)
 
-| Paquete                                        | Fase   | Plataforma |
-| ---------------------------------------------- | ------ | ---------- |
-| `expo-widgets ~58.0.28`                        | 0      | iOS        |
-| `@expo/ui ~58.0.28`                            | 0      | iOS        |
-| `CFBundleDocumentTypes`/`intentFilters` PDF    | A2     | ambas (config nativa) |
-| `modules/live-update/` o `@use-voltra/android-client 2.4.0` | A3 (opcional) | Android |
+- `main` está en **Expo 58** (`expo ~58.0.22`, RN 0.88.1) desde la migración
+  del 29-31/10 (CHANGELOG: «Expo 58…» del 29/10 y los arreglos tras la
+  primera build de TestFlight del 31/10).
+- La **2.5.1** (SDK 58) está **compilada y en las tiendas**: el 07/11 se subió
+  la versión mínima a 2.5.1 y la ficha de la App Store ya la sirve
+  (CHANGELOG 2026-11-07 18:00 y 2026-11-08). `runtimeVersion` 2.5.1.
+- `docs/planes/PLAN_EXPO_58.md` **está desactualizado**: dice que falta la
+  build de TestFlight y el merge, pero ya se hizo todo. Por su propia regla
+  debería haberse borrado (y su fila de `docs/planes/README.md`). No se toca
+  desde este plan; queda anotado para quien cierre la tarea.
+- **Qué falta para empezar este plan: nada del SDK.** Solo lo propio: instalar
+  `expo-widgets`/`@expo/ui` (Fase 0), el App Group en el portal de Apple y que
+  esto vaya en la **siguiente build de tienda**, la **2.6.0** con
+  `runtimeVersion` 2.6.0. Lo que no es nativo (la Fase A0 en el middleware, el
+  contrato, el servidor falso, `pdfUrl`, el almacén, la hoja de publicar, la
+  notificación fija de Android y la lógica del Uso B) se puede hacer ya.
 
-Lo de Android de las fases A1 y B (notificación `sticky`) es **solo JS** sobre
+### Paquetes y config nativa nuevos
+
+| Paquete / config                           | Fase | Plataforma |
+| ------------------------------------------ | ---- | ---------- |
+| `expo-widgets ~58.0.28`                    | 0    | iOS        |
+| `@expo/ui ~58.0.28`                        | 0    | iOS        |
+| `enablePushNotifications: true` del plugin | A2   | iOS        |
+| Módulo local de Live Updates               | A3   | Android    |
+
+La notificación fija de Android (A1 y B) es **solo JS** sobre
 `expo-notifications`.
 
-**Orden respecto a otras cosas:**
+### Requisitos de tienda
 
-1. **Primero se cierra `PLAN_EXPO_58.md`**: su build de TestFlight valida el SDK
-   58 en el móvil. Meter un target nuevo en esa misma build mezclaría dos
-   fuentes de fallo (el propio `PLAN_WIDGET_CONTIGO.md` §5 paso 0 ya aplazó el
-   segundo target por lo mismo).
-2. Después, la **siguiente build de tienda** (previsiblemente **2.6.0**, con
-   `runtimeVersion` 2.6.0): Fase 0 + A1 como mínimo; A2 y B pueden ir en la
-   misma si llegan, porque la A2 solo añade config y la B es solo JS encima de
-   la base.
-
-**Requisitos de tienda:**
-
-- iOS: `NSSupportsLiveActivities = YES` en el `Info.plist` **del target
-  principal**; App Group en ambos targets; `aps-environment` ya lo pone
-  `expo-notifications` (solo hace falta para push de ActivityKit). Las Live
-  Activities funcionan desde iOS 16.2; comprobar el `IPHONEOS_DEPLOYMENT_TARGET`
-  del SDK 58 tras el prebuild y, si es menor, proteger con `areEnabled()`. En
-  App Review, una Live Activity tiene que corresponder a algo **con principio y
-  fin** que el usuario ha iniciado: los dos usos lo cumplen. Buena idea añadir
-  una línea a las notas de revisión («el monitor la arranca desde Comunica →
-  Llevar a mano»).
-- Android: `POST_NOTIFICATIONS` ya se pide (Android 13+). Live Updates (A3):
-  `POST_PROMOTED_NOTIFICATIONS`, solo para actividades iniciadas por el usuario
-  y con duración limitada (lo cumplen). Sin servicio en primer plano.
-- Política de privacidad: no cambia (nada sale del móvil).
+- iOS: `NSSupportsLiveActivities = YES` en el target principal; App Group en
+  los dos; `aps-environment` ya lo pone `expo-notifications`. Live Activities
+  desde iOS 16.2 (push-to-start desde 17.2): proteger con `areEnabled()` si el
+  `IPHONEOS_DEPLOYMENT_TARGET` es menor. En App Review, la actividad tiene
+  principio y fin y la arranca el usuario o una acción de coordinación que le
+  afecta: nota de revisión «coordinación publica la sesión del día y los
+  monitores la tienen en la pantalla de bloqueo».
+- Android: `POST_NOTIFICATIONS` ya se pide. Sin servicio en primer plano.
+- Política de privacidad: el material (enlace o PDF de la sesión) pasa por el
+  servidor de Comunica, que ya trata datos de monitores. Añadir una línea si
+  la política enumera los tipos de documentos.
 
 ---
 
 ## 🔒 Decisiones del usuario
 
-1. **¿Para quién y desde dónde se arranca «la sesión a mano»?**
-   Recomiendo: **desde Comunica** (atajo de tu grupo y reuniones, que traen
-   título y horas hechas) **y** una entrada simple en Más para quien no use
-   Comunica. Escondido en el **Laboratorio Alpha** la primera build, como el
-   pañuelo, y fuera cuando lo hayan probado dos o tres monitores.
-2. **¿De dónde sale el documento?**
-   Recomiendo: **enlace pegado + PDF elegido** en la primera versión (sin
-   servidor). «Material asociado a la sesión en Comunica» solo si queréis
-   tocar el middleware y el contrato (añadir `materials` a la sesión): es otra
-   conversación.
-3. **¿Recibir el PDF desde WhatsApp con «Abrir con…» o con share extension?**
-   Recomiendo: **«Abrir con…»** (tipo de documento PDF, sin target nuevo, mismo
-   patrón que los `.mcm`). La share extension solo si en la prueba resulta que
-   WhatsApp de iPhone no ofrece la app.
-4. **Uso B: ¿vale con local o queréis push?**
-   Recomiendo: **local** (horas absolutas + cuenta atrás, se refresca al abrir
-   la app). Push por canal de difusión (iOS 18+, Cloud Function con clave `.p8`)
-   solo si en el primer encuentro se ve que se queda vieja.
-5. **Android 16 Live Updates: ¿Kotlin propio o Voltra?**
-   Recomiendo: **dejarlo para después** de ver A1 en uso; cuando toque,
-   **módulo local** pequeño (como `highlight-menu`) antes que meter Voltra
-   entero solo para eso.
+### Contestadas (2026-11-16)
+
+1. **Desde dónde se arranca**: desde Comunica y desde Más; la primera build,
+   escondido en el **Laboratorio Alpha**. ✅
+2. **De dónde sale el documento**: **coordinación de etapa lo publica** (enlace
+   o documento) y les llega a todos los monitores de sus grupos; la app baja
+   el PDF. Que el monitor pegue el suyo queda como opción secundaria. ✅
+3. **«Abrir con…» / share extension**: queda para después; con la publicación
+   ya no es lo principal. ✅
+4. **Uso B**: local. ✅
+5. **Live Updates de Android 16**: más adelante. ✅
+6. **Push-to-start**: después del escalón (a), si es viable. **Lo es**
+   (`expo-widgets` 58, iOS 17.2+), con emisor APNs propio en el middleware y
+   clave `.p8` en Vercel: es la Fase A2. ✅
+
+### Nuevas (hacen falta antes de la Fase A0)
+
+1. **¿Quién puede publicar la sesión de hoy?** Recomiendo: **los mismos que
+   pueden mandar «Recordar que pasen lista»** (coordinación, sobre los grupos
+   de su alcance). Acompañamiento no, salvo que lo pidáis.
+2. **¿Cuándo llega el aviso?** Recomiendo: **solo al publicar** en la primera
+   versión; el arranque automático al abrir la app cubre al que lo vio tarde.
+   Un segundo aviso programado («empieza en 30 min») pide un cron en el
+   middleware: solo si se echa en falta.
 
 ---
 
 ## Fuentes (consultadas el 2026-11-16)
 
-- `expo-widgets`, referencia SDK 58: <https://docs.expo.dev/versions/v58.0.0/sdk/widgets/> · npm `expo-widgets@58.0.28`, `@expo/ui@58.0.28`.
-- Expo, «Live Activities with Expo: end-to-end client and backend» (1-oct-2026; push directo a APNs con `.p8`, no Expo Push): <https://expo.dev/blog/live-activities-with-expo-end-to-end-client-and-backend>
-- Expo, «Home screen widgets and Live Activities in Expo»: <https://expo.dev/blog/home-screen-widgets-and-live-activities-in-expo>
-- Voltra: <https://www.use-voltra.dev/> · iOS local: <https://www.use-voltra.dev/ios/development/managing-live-activities-locally> · plugin iOS: <https://www.use-voltra.dev/ios/api/plugin-configuration> · Android ongoing: <https://www.use-voltra.dev/android/development/managing-ongoing-notifications> · npm `voltra@2.4.0`.
-- `expo-live-activity` (deprecada, archivada 1-jun-2026): <https://github.com/software-mansion-labs/expo-live-activity>
-- `@bacons/apple-targets@5.0.0`: <https://github.com/EvanBacon/expo-apple-targets>
+- `expo-widgets`, referencia SDK 58 (push-to-start con
+  `addPushToStartTokenListener`, «Remote start requires iOS 17.2 or later»,
+  cabeceras `apns-push-type: liveactivity` y `apns-topic
+<bundle>.push-type.liveactivity`, `enablePushNotifications`; versión
+  recomendada `~58.0.28`): <https://docs.expo.dev/versions/v58.0.0/sdk/widgets/>
+- Expo, «Live Activities with Expo, end to end: client and backend» (1-oct-2026;
+  `isPushToStartEligibleDevice`, JWT ES256 con clave `.p8`, HTTP/2 a
+  `api.push.apple.com`, `alert` obligatorio en el arranque, tokens 410):
+  <https://expo.dev/blog/live-activities-with-expo-end-to-end-client-and-backend>
+- Expo, «Home screen widgets and Live Activities in Expo»:
+  <https://expo.dev/blog/home-screen-widgets-and-live-activities-in-expo>
 - Apple, ActivityKit: <https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities>
-- Android 16, notificaciones de progreso / Live Updates: <https://developer.android.com/about/versions/16/features/progress-centric-notifications>
+- Voltra: <https://www.use-voltra.dev/> · npm `voltra@2.4.0`.
+- `expo-live-activity` (deprecada): <https://github.com/software-mansion-labs/expo-live-activity>
+- `@bacons/apple-targets@5.0.0`: <https://github.com/EvanBacon/expo-apple-targets>
+- Android 16, Live Updates: <https://developer.android.com/about/versions/16/features/progress-centric-notifications>
