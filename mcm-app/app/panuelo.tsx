@@ -58,6 +58,7 @@ import {
   PanueloTutorialPanel,
 } from '@/components/panuelo/PanueloTutorial';
 import { PanueloStageSheet } from '@/components/panuelo/PanueloStageSheet';
+import { PanueloTradeSheet } from '@/components/panuelo/PanueloTradeSheet';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { MaterialIcons } from '@/components/ui/icons';
 import { durations } from '@/constants/animations';
@@ -73,6 +74,7 @@ import { usePanueloAvailable } from '@/hooks/usePanueloAvailable';
 import { usePanueloScarf } from '@/hooks/usePanueloScarf';
 import { usePanueloStage } from '@/hooks/usePanueloStage';
 import { usePanueloTutorial } from '@/hooks/usePanueloTutorial';
+import { usePanueloTrade } from '@/hooks/usePanueloTrade';
 import { usePanueloTutorialStage } from '@/hooks/usePanueloTutorialStage';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import {
@@ -91,6 +93,7 @@ import {
   DEFAULT_PANUELO_COLOR,
   buildCollection,
   buildMemoryCollection,
+  isTradeable,
   memoryToViewerState,
   summarizePanuelo,
   toViewerState,
@@ -136,11 +139,22 @@ function PanueloScreen() {
   }, [headerHeight]);
   const large = useLargeText();
   const { height: windowHeight } = useWindowDimensions();
-  const params = useLocalSearchParams<{ codigo?: string; demo?: string }>();
+  const params = useLocalSearchParams<{
+    codigo?: string;
+    demo?: string;
+    intercambio?: string;
+  }>();
   const { enabled: testerMode } = usePreviewChannel();
   const panuelo = usePanuelo();
   const { catalog, state, unseen, markSeen, history } = panuelo;
   const tutorial = usePanueloTutorial();
+  // El intercambio en curso (hoja, suscripción, recuperación): todo en el hook.
+  const trade = usePanueloTrade({
+    ready: panuelo.ready,
+    catalog,
+    state,
+    applyTradeHalf: panuelo.applyTradeHalf,
+  });
   const scarf = usePanueloScarf();
   const [tutorialStep, setTutorialStep] = useState(0);
 
@@ -232,6 +246,20 @@ function PanueloScreen() {
     else if (demo === 'cero') reset();
   }, [ready, testerMode, demo, catalog, grantDemo, reset]);
 
+  // `/panuelo?intercambio=K7WQ4M` (el QR de un intercambio, leído con la
+  // cámara del sistema): la hoja de contestar con el código puesto. Se enseña
+  // cuando se cierra el tutorial, como la de `?codigo=`.
+  const linkedTrade =
+    typeof params.intercambio === 'string' ? params.intercambio : '';
+  const tradeLinkDone = useRef(false);
+  const { start: startTrade, join: joinTrade } = trade;
+  useEffect(() => {
+    if (!ready || tradeLinkDone.current || !linkedTrade) return;
+    tradeLinkDone.current = true;
+    startTrade({ mode: 'join', code: linkedTrade });
+    void joinTrade(linkedTrade);
+  }, [ready, linkedTrade, startTrade, joinTrade]);
+
   useEffect(() => {
     if (!viewerReady) return;
     const timer = setTimeout(() => setIntroDone(true), INTRO_MS);
@@ -251,7 +279,7 @@ function PanueloScreen() {
     panuelo,
     scarf,
     mode,
-    busy: tutorial.busy || redeemOpen || viewingAt !== null,
+    busy: tutorial.busy || redeemOpen || trade.sheetOpen || viewingAt !== null,
     sendToViewer,
     settle,
   });
@@ -301,6 +329,7 @@ function PanueloScreen() {
       !introDone ||
       mode !== 'view' ||
       redeemOpen ||
+      trade.sheetOpen ||
       viewingAt !== null ||
       tutorial.busy
     ) {
@@ -318,6 +347,7 @@ function PanueloScreen() {
     introDone,
     mode,
     redeemOpen,
+    trade.sheetOpen,
     viewingAt,
     tutorial.busy,
     revealing,
@@ -417,9 +447,21 @@ function PanueloScreen() {
     [layout, panuelo],
   );
 
+  const { start: openTrade } = trade;
   const actions = useMemo<PanueloDetailAction[]>(() => {
     if (!active?.owned) return [];
     const { id, name, origin, look } = active.item;
+    const swap: PanueloDetailAction[] =
+      mode === 'view' && !memory && isTradeable(active.item)
+        ? [
+            {
+              key: 'trade',
+              label: 'Intercambiar',
+              icon: 'swap-horiz',
+              onPress: () => openTrade({ mode: 'offer', itemId: id }),
+            },
+          ]
+        : [];
     if (!active.placed) {
       return [
         {
@@ -428,6 +470,7 @@ function PanueloScreen() {
           icon: 'push-pin',
           onPress: () => placeActive(id),
         },
+        ...swap,
       ];
     }
     const glbUrl = look.kind === 'medalla' ? look.glb : undefined;
@@ -473,6 +516,7 @@ function PanueloScreen() {
     return [
       ...rotate,
       ...closeup,
+      ...swap,
       {
         key: 'unplace',
         label: 'Quitar',
@@ -481,7 +525,15 @@ function PanueloScreen() {
         onPress: () => unplaceActive(id),
       },
     ];
-  }, [active, mode, memory, placeActive, rotateActive, unplaceActive]);
+  }, [
+    active,
+    mode,
+    memory,
+    openTrade,
+    placeActive,
+    rotateActive,
+    unplaceActive,
+  ]);
 
   const sharePhoto = useCallback(() => {
     h.tap();
@@ -649,6 +701,21 @@ function PanueloScreen() {
             <MaterialIcons name="history" size={20} color={t.link} />
           </PressableFeedback>
         ) : null}
+        <PressableFeedback
+          onPress={() => {
+            h.tap();
+            openTrade({ mode: 'offer' });
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Intercambiar una pieza"
+          style={[
+            styles.historyButton,
+            { backgroundColor: t.backgroundSunken },
+          ]}
+        >
+          <PressableFeedback.Highlight />
+          <MaterialIcons name="swap-horiz" size={20} color={t.link} />
+        </PressableFeedback>
         <PressableFeedback
           onPress={() => {
             h.tap();
@@ -841,6 +908,13 @@ function PanueloScreen() {
         initialCode={linkedCode}
         onClose={() => setRedeemOpen(false)}
         onRedeem={panuelo.redeem}
+      />
+      <PanueloTradeSheet
+        visible={trade.sheetOpen && !tutorial.busy}
+        isDark={isDark}
+        catalog={catalog}
+        state={state}
+        trade={trade}
       />
       {stage.target ? (
         <PanueloStageSheet

@@ -128,6 +128,16 @@ jest.mock('@/components/BottomSheet', () => {
 });
 
 jest.mock('@/hooks/useColorScheme', () => ({ useColorScheme: () => 'light' }));
+// La hoja de intercambios (sin sesión enseña el login): solo se mira que abre.
+jest.mock('@/components/SocialLoginSection', () => ({
+  __esModule: true,
+  default: () => null,
+}));
+jest.mock('@/components/playlist/QrScannerModal', () => ({
+  __esModule: true,
+  default: () => null,
+  isQrScanSupported: () => false,
+}));
 jest.mock('@/hooks/useResponsiveLayout', () => ({
   useResponsiveLayout: () => ({ isWide: false }),
 }));
@@ -252,6 +262,7 @@ const mockPanuelo = {
   move: jest.fn(),
   rotate: jest.fn(),
   redeem: jest.fn(),
+  applyTradeHalf: jest.fn(),
   grantDemo: jest.fn(),
   reset: jest.fn(),
 };
@@ -421,6 +432,30 @@ describe('la pantalla del pañuelo', () => {
       (n) => n.props.accessibilityLabel === 'Código de la pieza',
     )[0];
     expect(field.props.value).toBe('CAMINO');
+  });
+
+  it('una pieza intercambiable ofrece «Intercambiar» en su ficha; las demás no', async () => {
+    const { root } = await mount();
+    await press(root, 'Pin uno, pin, sin poner');
+    expect(labelsOf(root)).not.toContain('Intercambiar');
+    await press(root, 'Cerrar la ficha');
+    await press(root, 'Chapa uno, chapa, puesta en el pañuelo');
+    await press(root, 'Intercambiar');
+    const sheet = root.findByType('BottomSheet' as never);
+    expect(sheet.props.title).toBe('Intercambiar');
+  });
+
+  it('el botón de la colección abre la hoja de intercambiar', async () => {
+    const { root } = await mount();
+    await press(root, 'Intercambiar una pieza');
+    expect(root.findAllByType('BottomSheet' as never)).toHaveLength(1);
+  });
+
+  it('con `?intercambio=` abre la hoja de contestar', async () => {
+    mockRouter.params = { intercambio: 'K7WQ4M' };
+    const { root } = await mount();
+    await act(async () => {});
+    expect(root.findAllByType('BottomSheet' as never)).toHaveLength(1);
   });
 
   it('sin `?codigo=` el canje está cerrado y se abre con el botón', async () => {
