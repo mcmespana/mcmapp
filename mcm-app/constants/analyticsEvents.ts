@@ -101,7 +101,16 @@ export interface AnalyticsEvents {
   panuelo_pieza_conseguida: {
     clase:
       'chapa' | 'pin' | 'cinta' | 'parche' | 'medalla' | 'pulsera' | 'troncho';
-    via: 'all' | 'code' | 'manual' | 'demo' | 'trade';
+    via: 'all' | 'code' | 'manual' | 'demo' | 'trade' | 'attendance';
+  };
+
+  /**
+   * Se quita una pieza por asistencia porque se corrigió la lista (ya no la
+   * respalda). Solo la clase.
+   */
+  panuelo_pieza_retirada: {
+    clase:
+      'chapa' | 'pin' | 'cinta' | 'parche' | 'medalla' | 'pulsera' | 'troncho';
   };
 
   /**

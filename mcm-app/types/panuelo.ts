@@ -172,11 +172,34 @@ export type PanueloLook =
  *   guarda el hash, nunca el código.
  * - `manual`: la reparte el Panel escribiendo en el nodo del usuario (por
  *   ejemplo, a todos los inscritos en un evento).
+ * - `attendance`: por haber ido a uno de esos eventos del CRM (te pasan
+ *   lista). La concede el servidor en `/panueloAwards/{personId}` y **sigue
+ *   siempre a la asistencia**, sin plazos: llega cuando se marca y se quita
+ *   si se corrige. Nunca se intercambia. Ver
+ *   `docs/planes/PLAN_PANUELO_ASISTENCIA.md`.
  */
 export type PanueloGrant =
   | { type: 'all'; from?: number; to?: number }
   | { type: 'code'; hash: string; from?: number; to?: number }
-  | { type: 'manual' };
+  | { type: 'manual' }
+  | PanueloAttendanceGrant;
+
+/**
+ * Una marca de asistencia de un día de evento. Las mismas claves que
+ * `MARKS` del contrato de Comunica (`services/comunica/contract.ts`).
+ */
+export type PanueloAttendanceMark =
+  'yes' | 'partial' | 'no_justified' | 'no_unjustified';
+
+export interface PanueloAttendanceGrant {
+  type: 'attendance';
+  /** Ids de evento del CRM (opacos). Con ir a uno basta. */
+  events: string[];
+  /** Qué marcas cuentan. Por defecto, `yes` y `partial`. */
+  marks?: PanueloAttendanceMark[];
+  /** Días con marca de un mismo evento, como mínimo. Por defecto, 1. */
+  minDays?: number;
+}
 
 /** Una pieza del catálogo. */
 export interface PanueloItemDef {
@@ -207,7 +230,23 @@ export interface PanueloItemDef {
 export type PanueloCatalog = Record<string, PanueloItemDef>;
 
 /** Por dónde llegó una pieza. */
-export type PanueloVia = 'all' | 'code' | 'manual' | 'demo' | 'trade';
+export type PanueloVia =
+  'all' | 'code' | 'manual' | 'demo' | 'trade' | 'attendance';
+
+/**
+ * Una pieza concedida por asistencia (`/panueloAwards/{personId}/{itemId}`).
+ * Lo escribe solo el servidor; la app lo refleja en su estado
+ * (`reconcileAwards`). Es la verdad de estas piezas.
+ */
+export interface PanueloAward {
+  /** El primer día con una marca que cuenta (ms). */
+  at: number;
+  via: 'attendance';
+  /** El evento que la respalda. */
+  eventId: string;
+  /** Cuándo la escribió el servidor (ms). */
+  grantedAt: number;
+}
 
 export interface PanueloOwned {
   /** Cuándo se consiguió (ms). */
@@ -284,8 +323,11 @@ export type PanueloCommand =
   | { type: 'mode'; mode: 'view' | 'edit' }
   | { type: 'focus'; id: string }
   | { type: 'blur' }
-  /** Presentación de una pieza recién conseguida. */
-  | { type: 'reveal'; id: string }
+  /**
+   * Presentación de una pieza recién conseguida. Con `still` (reducir
+   * movimiento) aparece sin giro ni chispas.
+   */
+  | { type: 'reveal'; id: string; still?: boolean }
   | { type: 'select'; id: string | null }
   /** Inclinación del móvil, de −1 a 1 en cada eje. */
   | { type: 'tilt'; x: number; y: number }

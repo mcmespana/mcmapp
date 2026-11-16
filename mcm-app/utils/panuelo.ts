@@ -10,8 +10,11 @@
  * Panel: `docs/contratos/PANUELO_CONTRATO.md`.
  */
 import { PANUELO_GLYPHS } from '@/constants/panueloGlyphs';
+import type { PanueloTutorialSection } from '@/constants/panueloTutorial';
 import {
   PANUELO_COLORS,
+  type PanueloAttendanceMark,
+  type PanueloAward,
   type PanueloCatalog,
   type PanueloColor,
   type PanueloGrant,
@@ -90,7 +93,24 @@ const KINDS: readonly PanueloItemKind[] = [
   'troncho',
 ];
 const RARITIES: readonly PanueloRarity[] = ['comun', 'especial', 'unica'];
-const VIAS: readonly PanueloVia[] = ['all', 'code', 'manual', 'demo', 'trade'];
+const VIAS: readonly PanueloVia[] = [
+  'all',
+  'code',
+  'manual',
+  'demo',
+  'trade',
+  'attendance',
+];
+const ATTENDANCE_MARKS: readonly PanueloAttendanceMark[] = [
+  'yes',
+  'partial',
+  'no_justified',
+  'no_unjustified',
+];
+/** Tope de eventos de una pieza por asistencia (contrato). */
+export const MAX_ATTENDANCE_EVENTS = 50;
+/** Un id de pieza: `kebab-case`, de 1 a 64 caracteres (contrato). */
+export const PANUELO_ITEM_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const PARCHE_SHAPES = ['circle', 'shield', 'arrow', 'rect'] as const;
 const METALS = ['oro', 'plata', 'cobre', 'negro'] as const;
 
@@ -227,7 +247,36 @@ function sanitizeGrant(raw: unknown): PanueloGrant | undefined {
       ? { type: 'code', hash, ...window }
       : undefined;
   }
+  if (raw.type === 'attendance') {
+    // Sin `from`/`to`: manda la asistencia. Sin eventos no hay forma de
+    // conseguirla: la concesión se descarta (la pieza queda sin `grant`).
+    const events = [
+      ...new Set(
+        (Array.isArray(raw.events) ? raw.events : [])
+          .map(str)
+          .filter((e): e is string => Boolean(e)),
+      ),
+    ].slice(0, MAX_ATTENDANCE_EVENTS);
+    if (events.length === 0) return undefined;
+    const marks = (Array.isArray(raw.marks) ? raw.marks : []).filter(
+      (m): m is PanueloAttendanceMark =>
+        ATTENDANCE_MARKS.includes(m as PanueloAttendanceMark),
+    );
+    const minDays = num(raw.minDays);
+    return compact({
+      type: 'attendance' as const,
+      events,
+      marks: marks.length > 0 ? [...new Set(marks)] : undefined,
+      minDays:
+        minDays !== undefined && minDays >= 1 ? Math.floor(minDays) : undefined,
+    });
+  }
   return undefined;
+}
+
+/** ¿Se consigue por asistencia? */
+export function isAttendancePiece(item: PanueloItemDef | undefined): boolean {
+  return item?.grant?.type === 'attendance';
 }
 
 /** Quita las claves `undefined`: Firebase las rechaza y ensucian los tests. */
@@ -247,13 +296,14 @@ export function sanitizeCatalog(raw: unknown): PanueloCatalog {
   const out: PanueloCatalog = {};
   if (!isObject(source)) return out;
   for (const [id, value] of Object.entries(source)) {
-    if (!isObject(value) || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(id)) continue;
+    if (!isObject(value) || !PANUELO_ITEM_ID.test(id)) continue;
     const kind = KINDS.find((k) => k === value.kind);
     const name = str(value.name);
     if (!kind || !name) continue;
     const look = sanitizeLook(kind, value.look);
     if (!look) continue;
     const size = num(value.size);
+    const grant = sanitizeGrant(value.grant);
     out[id] = compact<PanueloItemDef>({
       id,
       kind,
@@ -263,11 +313,17 @@ export function sanitizeCatalog(raw: unknown): PanueloCatalog {
       rarity: RARITIES.find((r) => r === value.rarity),
       size: size === undefined ? undefined : Math.min(1.5, Math.max(0.7, size)),
       look: compact(look),
-      grant: sanitizeGrant(value.grant),
+      grant,
       order: num(value.order),
       secret: value.secret === true || undefined,
+      // Una pieza por asistencia nunca se cambia: si se corrige la lista hay
+      // que poder quitarla, y tras un intercambio no tendría arreglo.
       tradeable:
-        typeof value.tradeable === 'boolean' ? value.tradeable : undefined,
+        grant?.type === 'attendance'
+          ? false
+          : typeof value.tradeable === 'boolean'
+            ? value.tradeable
+            : undefined,
     });
   }
   return out;
@@ -558,6 +614,189 @@ export function grantItem(
   return { ...state, items: { ...state.items, [id]: { at: now, via } } };
 }
 
+// ── Piezas por asistencia ─────────────────────────────────────────────────
+
+/**
+ * Lo concedido por asistencia (`/panueloAwards/{personId}`), saneado. Lo que
+ * no tiene fecha o evento se descarta.
+ */
+export function sanitizeAwards(raw: unknown): Record<string, PanueloAward> {
+  const out: Record<string, PanueloAward> = {};
+  if (!isObject(raw)) return out;
+  for (const [id, value] of Object.entries(raw)) {
+    if (!PANUELO_ITEM_ID.test(id) || !isObject(value)) continue;
+    const at = num(value.at);
+    const eventId = str(value.eventId);
+    if (at === undefined || !eventId) continue;
+    out[id] = {
+      at,
+      via: 'attendance',
+      eventId,
+      grantedAt: num(value.grantedAt) ?? at,
+    };
+  }
+  return out;
+}
+
+/**
+ * ¿La gobierna lo concedido por asistencia? Las que llegaron por asistencia
+ * y cualquier pieza `attendance` del catálogo, salvo las de muestra del
+ * Laboratorio (`demo`). Que el reflejo diga «attendance» no basta: tiene que
+ * estar en `awards`.
+ */
+function followsAwards(
+  owned: PanueloOwned,
+  item: PanueloItemDef | undefined,
+): boolean {
+  return (
+    owned.via === 'attendance' ||
+    (isAttendancePiece(item) && owned.via !== 'demo')
+  );
+}
+
+/**
+ * Refleja en el estado de la persona lo que dice el servidor de sus piezas
+ * por asistencia (`PLAN_PANUELO_ASISTENCIA.md` §2.1). La pieza **sigue
+ * siempre a la asistencia**:
+ *
+ * - Lo concedido que no se tenía entra en la colección (`via: attendance`,
+ *   con su fecha) **sin coserse**: espera en la caja a que se desvele.
+ * - Lo que ya no está respaldado sale de la colección y, si estaba cosido,
+ *   **se descose** (las demás piezas no se mueven).
+ * - Si luego vuelve, entra como nueva y otra vez a la caja.
+ *
+ * Quien llama decide qué es «sin poder leer»: entonces NO se llama (sin red
+ * no se quita nada). Devuelve el mismo objeto si no cambia nada.
+ */
+export function reconcileAwards(
+  state: PanueloUserState,
+  awards: Record<string, PanueloAward>,
+  catalog: PanueloCatalog,
+  now: number,
+): { state: PanueloUserState; granted: string[]; revoked: string[] } {
+  const items = { ...state.items };
+  const layout = { ...state.layout };
+  const granted: string[] = [];
+  const revoked: string[] = [];
+  let unsewn = false;
+  for (const [id, owned] of Object.entries(state.items)) {
+    if (awards[id] || !followsAwards(owned, catalog[id])) continue;
+    delete items[id];
+    if (layout[id]) {
+      delete layout[id];
+      unsewn = true;
+    }
+    revoked.push(id);
+  }
+  for (const [id, award] of Object.entries(awards)) {
+    if (items[id] || !isAttendancePiece(catalog[id])) continue;
+    items[id] = { at: award.at, via: 'attendance' };
+    granted.push(id);
+  }
+  if (granted.length === 0 && revoked.length === 0) {
+    return { state, granted, revoked };
+  }
+  return {
+    state: {
+      ...state,
+      items,
+      layout,
+      layoutAt: unsewn ? now : state.layoutAt,
+    },
+    granted: granted.sort(),
+    revoked: revoked.sort(),
+  };
+}
+
+/**
+ * Las piezas que esperan su desvelado: llegaron por asistencia, aún no se
+ * han presentado en este móvil y están en la caja. Por fecha.
+ */
+export function newPiecesQueue(
+  catalog: PanueloCatalog,
+  state: PanueloUserState,
+  unseen: readonly string[],
+): string[] {
+  return unseen.filter(
+    (id) =>
+      catalog[id] && state.items[id]?.via === 'attendance' && !state.layout[id],
+  );
+}
+
+/** El primer color de una pieza: el del confeti cuando se desvela. */
+export function pieceAccent(look: PanueloLook): string | undefined {
+  switch (look.kind) {
+    case 'chapa':
+    case 'parche':
+      return look.bg;
+    case 'pin':
+      return look.enamel;
+    case 'medalla':
+      return look.ribbon[0];
+    case 'cinta':
+    case 'pulsera':
+      return look.colors[0];
+    case 'troncho':
+      return look.leather;
+  }
+}
+
+/** «Por ir a Pascua Joven · Abril 2027.» */
+export function newPieceReason(item: PanueloItemDef): string {
+  if (isAttendancePiece(item)) {
+    return item.origin ? `Por ir a ${item.origin}.` : 'Por ir a una actividad.';
+  }
+  return item.origin ? `${item.origin}.` : 'Una pieza nueva para tu pañuelo.';
+}
+
+/**
+ * Las páginas del desvelado, una por pieza nueva: se pintan con el mismo
+ * componente que el tutorial (`PanueloTutorial`). El visor enseña el pañuelo
+ * de la persona con la pieza presentándose (`example.reveal`); la pieza solo
+ * se cose de mentira mientras dura la página: luego espera en la caja.
+ */
+export function newPiecesSections(
+  catalog: PanueloCatalog,
+  state: PanueloUserState,
+  ids: readonly string[],
+): PanueloTutorialSection[] {
+  const color = state.color ?? DEFAULT_PANUELO_COLOR;
+  return ids
+    .filter((id) => catalog[id] && state.items[id])
+    .map((id, i, list) => {
+      const item = catalog[id];
+      const kind = item.rarity
+        ? `${KIND_LABEL[item.kind]} · ${RARITY_LABEL[item.rarity]}`
+        : KIND_LABEL[item.kind];
+      const last = i === list.length - 1;
+      return {
+        id: `nueva-${id}`,
+        title: item.name,
+        body: newPieceReason(item),
+        rows: [
+          { icon: 'category', title: kind, text: item.description },
+          {
+            icon: 'event',
+            title: `La conseguiste el ${formatOwnedDate(state.items[id].at)}`,
+          },
+          ...(last
+            ? [
+                {
+                  icon: 'inventory-2' as const,
+                  title:
+                    list.length === 1
+                      ? 'Te espera en tu colección'
+                      : 'Te esperan en tu colección',
+                  text: 'Las colocas en tu pañuelo cuando quieras, en «Sin poner».',
+                },
+              ]
+            : []),
+        ],
+        example: { color, pieces: [id], reveal: id },
+      };
+    });
+}
+
 // ── Decorar ────────────────────────────────────────────────────────────────
 
 /** Piezas con sitio propio fuera del triángulo: hoy, solo el troncho. */
@@ -775,13 +1014,17 @@ export function decideScarfStage(
 /**
  * El pañuelo de ejemplo del tutorial: un color y unas piezas del catálogo
  * (cosidas en los primeros huecos). No es de nadie: no se guarda.
+ *
+ * Con `base` (el desvelado) parte del pañuelo de la persona tal como lo
+ * lleva y cose las piezas en los huecos que queden libres.
  */
 export function exampleViewerState(
   catalog: PanueloCatalog,
   color: PanueloColor,
   pieceIds: readonly string[],
+  base?: PanueloUserState,
 ): PanueloViewerState {
-  let s: PanueloUserState = { ...EMPTY_PANUELO, color };
+  let s: PanueloUserState = { ...(base ?? EMPTY_PANUELO), color };
   for (const id of pieceIds) {
     if (!catalog[id]) continue;
     s = placeItem(grantItem(s, id, 'demo', 0), id, 0, catalog);
@@ -985,6 +1228,7 @@ export function formatMonthYear(at: number): string {
  */
 export function isTradeable(item: PanueloItemDef): boolean {
   if (item.kind === 'medalla' || item.kind === 'troncho') return false;
+  if (isAttendancePiece(item)) return false;
   if (item.rarity === 'unica') return false;
   if (item.tradeable !== undefined) return item.tradeable;
   return (
