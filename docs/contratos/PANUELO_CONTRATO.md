@@ -74,7 +74,7 @@ El seed importable es `mcm-app/firebase-seed/panuelo.json` (es el nodo `data`).
 | `size`        | número  | No     | Multiplicador, de 0,7 a 1,5                                                                                                                 |
 | `order`       | número  | No     | Orden en la colección; a igualdad, por nombre                                                                                               |
 | `secret`      | boolean | No     | No se enseña (ni en silueta) hasta que se consigue                                                                                          |
-| `tradeable`   | boolean | No     | Si se puede intercambiar. Ausente: sí las pulseras, no lo demás                                                                             |
+| `tradeable`   | boolean | No     | Si se puede intercambiar. Ausente: sí las pulseras y las chapas comunes, no lo demás. **Medallas y piezas `unica` nunca**, aunque digan `true` |
 | `grant`       | objeto  | No     | Cómo se consigue (abajo). Ausente = solo repartiéndola a mano                                                                               |
 
 **Una pieza mal escrita se descarta entera** (no rompe el resto): `kind`
@@ -183,11 +183,12 @@ En `/profileConfig/data/global/panuelo`: `"off"` · `"alpha"` · `"all"`.
 Ausente = `"alpha"` (solo quien enciende el Laboratorio Alpha). Ver
 [`PANEL_PERFILES.md`](PANEL_PERFILES.md) §1.10-bis.
 
-## 4. `/panueloTrades/{code}` — intercambios (futuro)
+## 4. `/panueloTrades/{code}` — intercambios
 
-Todavía no lo lee ni lo escribe nadie; la forma está decidida para que el
-código de la app no tenga que cambiar cuando se haga (`PanueloTrade` en
-`mcm-app/utils/panueloTrade.ts`).
+Lo escribe y lo lee **solo la app**, con sesión iniciada en los dos móviles
+(`mcm-app/services/panueloTradeService.ts`, siempre el nodo entero con una
+transacción). El Panel no tiene nada que hacer aquí. Forma (`PanueloTrade` en
+`mcm-app/utils/panueloTrade.ts`):
 
 ```json
 {
@@ -195,14 +196,33 @@ código de la app no tenga que cambiar cuando se haga (`PanueloTrade` en
   "status": "proposed",
   "createdAt": 1800000000000,
   "expiresAt": 1800000600000,
-  "offer": { "uid": "<uid>", "name": "Ana", "itemId": "pulsera-amistad" },
-  "answer": { "uid": "<uid>", "name": "Luis", "itemId": "pulsera-encuentro" }
+  "offer": {
+    "uid": "<uid>",
+    "name": "Ana",
+    "itemId": "pulsera-amistad",
+    "have": ["pulsera-encuentro"]
+  },
+  "answer": { "uid": "<uid>", "name": "Luis", "itemId": "pulsera-camino" }
 }
 ```
 
-`status`: `open` → `proposed` → `accepted`, o `cancelled`. `answer.itemId` a
-`null` es un regalo. La propuesta de reglas y los pasos que faltan están en
-`../funcionalidades/PANUELO.md` («Intercambios»).
+- `code`: 6 caracteres de `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (sin 0/O ni
+  1/I/L). Igual que la clave.
+- `status`: `open` → `proposed` → `accepted`, o `cancelled` (desde `open` o
+  `proposed`, cualquiera de las dos partes).
+- `expiresAt`: `createdAt` + 10 min. Un intercambio `accepted` se queda 24 h
+  para que la otra parte se recupere si cerró la app; lo demás se puede
+  borrar al caducar. Cada móvil borra los suyos al abrir el pañuelo.
+- `offer.have` (opcional): ids de las piezas **intercambiables** que ya tiene
+  quien ofrece (no su colección entera), para que la otra persona no le
+  ofrezca algo que no puede recibir.
+- `name`: nombre de pila, opcional.
+- `answer.itemId` ausente (o `null`) es un **regalo**.
+
+Reglas de Firebase: `mcm-app/database.rules.json` (`panueloTrades`), cómo
+desplegarlas en `docs/desarrollo/FIREBASE_REGLAS.md` §8. Cada móvil aplica
+luego su mitad en su propio `/users/{uid}/panuelo` (`items/{dada}` a `null`,
+`gone/{dada}`, `items/{recibida}` con `via: "trade"`, `layout`).
 
 ## 5. Lo que el Panel tendría que ofrecer
 
