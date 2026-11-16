@@ -1045,10 +1045,14 @@ describe('el tutorial (datos)', () => {
     ).toEqual([]);
   });
 
-  it('no promete lo que no existe (los intercambios no tienen pantalla)', () => {
-    const text = PANUELO_TUTORIAL.map((s) => `${s.title} ${s.body}`)
-      .join(' ')
-      .toLowerCase();
-    expect(text).not.toContain('intercambi');
+  it('ahora que hay pantalla de intercambios, el tutorial lo cuenta (en una fila, no en una página)', () => {
+    const rows = PANUELO_TUTORIAL.flatMap((s) => s.rows ?? []);
+    expect(
+      rows.some((r) =>
+        `${r.title} ${r.text}`.toLowerCase().includes('intercambi'),
+      ),
+    ).toBe(true);
+    expect(PANUELO_TUTORIAL.length).toBeLessThanOrEqual(7);
+    expect(PANUELO_TUTORIAL_VERSION).toBeGreaterThanOrEqual(4);
   });
 });

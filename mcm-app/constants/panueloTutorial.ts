@@ -40,7 +40,7 @@ import type { MaterialIcons } from '@/components/ui/icons';
 import type { PanueloColor } from '@/types/panuelo';
 
 /** Se guarda al terminar el tutorial; si es mayor que lo guardado, se vuelve a enseñar. */
-export const PANUELO_TUTORIAL_VERSION = 3;
+export const PANUELO_TUTORIAL_VERSION = 4;
 
 export interface PanueloTutorialExample {
   color: PanueloColor;
@@ -185,6 +185,11 @@ export const PANUELO_TUTORIAL: readonly PanueloTutorialSection[] = [
         icon: 'ios-share',
         title: 'Compartir',
         text: 'El botón de arriba a la derecha hace una foto de tu pañuelo para mandarla.',
+      },
+      {
+        icon: 'swap-horiz',
+        title: 'Intercambiar',
+        text: 'Las pulseras y las chapas comunes se cambian en persona: una enseña su código y la otra lo escribe. Hace falta haber entrado con tu cuenta.',
       },
     ],
     example: { color: 'green', pieces: SIX },

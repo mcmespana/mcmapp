@@ -7,7 +7,13 @@
 > [`../funcionalidades/PANUELO.md`](../funcionalidades/PANUELO.md)
 > («Intercambios»). Aquí: qué falta, en qué orden y cómo se prueba.
 >
-> Fecha: 2026-11-16. Estado: ⏳ sin empezar. Todo es **OTA** (ver §6).
+> Fecha: 2026-11-16. Estado: 🟡 **Fases 0–5 hechas** (2026-11-16) y la 7 en
+> lo que toca al tutorial, `PANUELO.md` y el contrato. **Falta**: probarlo en
+> dos móviles (§7), que el usuario **pegue las reglas** en la consola
+> (`../desarrollo/FIREBASE_REGLAS.md` §8), la Fase 6 (opcional, sin hacer) y
+> el cierre de la 7 (CHANGELOG, `PLAN_PANEL_PANUELO.md` Fase 5, archivar este
+> plan tras probarlo). Decisiones de §8: **contestadas**. Lo que se hizo
+> distinto de lo escrito, en §9. Todo es **OTA** (ver §6).
 
 ---
 
@@ -447,22 +453,54 @@ encendido y **dos cuentas distintas** (idealmente un iPhone y un Android).
 
 ---
 
-## 8. 🔒 Decisiones del usuario
+## 8. ✅ Decisiones del usuario (contestadas el 2026-11-16)
 
-1. **¿Qué piezas se pueden intercambiar?** (Es la decisión 4 de
-   `PLAN_PANEL_PANUELO.md`; aquí deja de ser teórica.) Hoy solo las
-   pulseras. Con una o dos pulseras en el catálogo, la función se queda en
-   casi nada. **Recomendación:** pulseras y chapas comunes
-   (`tradeable: true` en esas chapas); nunca medallas ni piezas `unica`. Es
-   dato del catálogo: cambiarlo no toca código ni pide OTA.
-2. **¿Quién limpia los intercambios viejos?** **Recomendación:** de momento,
-   cada móvil los suyos al abrir (§4.4, sale por OTA); una Cloud Function
-   programada en `mcm-app/functions/` cuando se haga la Integración D, que ya
-   obliga a desplegar funciones. Lo que se acumule mientras tanto son bytes.
-3. **¿Se pueden desplegar las reglas de `panueloTrades` ya?** Sin ellas,
-   intercambiar falla con permiso denegado (salvo que las reglas de producción
-   estén abiertas). Las reglas completas esperan a sembrar `/_config`
-   (`FIREBASE_REGLAS.md` §5), bloqueado por la decisión D2. **Recomendación:**
-   añadir **solo** el bloque `panueloTrades` a las reglas que hay hoy en
-   producción desde la consola (no depende de `/_config`), cuando la Fase 5
-   esté en `preview`. Lo hace el usuario: ningún agente despliega reglas.
+1. **¿Qué piezas se pueden intercambiar?** → **Pulseras y chapas comunes;
+   nunca medallas ni piezas únicas** (las únicas son las de evento). Hecho en
+   código, no solo en el catálogo: `isTradeable` (`utils/panuelo.ts`) da
+   `false` a toda `medalla` y a toda pieza `rarity: 'unica'` aunque el
+   catálogo diga `tradeable: true`; por defecto, pulseras y chapas sin rareza
+   o `comun`.
+2. **¿Quién limpia los intercambios viejos?** → **Cada móvil los suyos al
+   abrir el pañuelo** (§4.4, `usePanueloTrade`). La Cloud Function queda para
+   cuando haya Integración D.
+3. **¿Se pueden desplegar las reglas de `panueloTrades` ya?** → **Las pega el
+   usuario a mano** en la consola. El bloque exacto y el paso a paso, para
+   alguien que no sabe de reglas, están en
+   [`../desarrollo/FIREBASE_REGLAS.md`](../desarrollo/FIREBASE_REGLAS.md) §8.
+   Mientras no estén, la app dice «Los intercambios todavía no están
+   activados en el servidor. Avisa a quien lleva la app.» (motivo `rules` del
+   servicio), no un error crudo.
+
+---
+
+## 9. Diferencias con lo escrito (manda el código)
+
+- **Reglas** (`database.rules.json`): al crear, la caducidad puede llegar a
+  `now + 15 min` (no 11): margen para un móvil con la hora adelantada que aún
+  no ha leído la del servidor. Además, al crear se exige que no haya
+  `answer`. El `.validate` comprueba el código con
+  `$code.length === 6 && $code.matches(/^[A-HJKMNP-Z2-9]+$/)` (sin el
+  cuantificador `{6}`, por si la consola no lo admite) y que `createdAt` y
+  `expiresAt` sean números.
+- **Servicio**: antes de cada transacción se lee el nodo (`get()`): si no
+  existe se devuelve `not-found` sin escribir. La primera vuelta de la
+  transacción con `null` (el SDK aún no lo tenía en caché) devuelve `null` y
+  el servidor la repite con el valor bueno. `applyLocally: false` para que
+  nadie vea un `accepted` sin confirmar. Motivos nuevos: `rules` (permiso
+  denegado), `busy` (tres códigos ocupados) y `error`.
+- **Hook**: hay una fase más, `signin` (sin sesión), y dos acciones más,
+  `start` (abrir la hoja retomando lo que haya) y `restart` (tras un error o
+  un trato cerrado). El aviso de red sale de `useNetworkStatus` y del tope de
+  8 s; no se escucha `.info/connected`. Si Ana acepta y ya no tiene su pieza
+  (`not-owned`), el hook cancela solo. Cerrar la hoja con un intercambio vivo
+  no lo cancela: se sigue escuchando y la hoja vuelve sola si llega algo.
+- **QR**: además de `mcmapp://panuelo?intercambio=…`, el escáner entiende el
+  mismo path en `https://` y los 6 caracteres sueltos.
+- **Tutorial**: el intercambio es una fila más de «Tu colección» y la versión
+  sube a 4 (el test que prohibía «intercambi» ahora exige que se cuente).
+- **No hecho**: la Fase 6 (la pieza que «vuela»); el comentario de
+  `tradeable` en `types/panuelo.ts` sigue diciendo «solo pulseras» (tocarlo
+  obliga a regenerar el visor; la regla buena es `isTradeable`); la entrada
+  del `CHANGELOG.md`, `PLAN_PANEL_PANUELO.md` Fase 5 → ✅ y archivar este plan
+  quedan para el cierre, después de probarlo en dos móviles.
