@@ -238,6 +238,21 @@ export function cancelTrade(trade: PanueloTrade, uid: string): TradeResult {
   return { ok: true, trade: { ...trade, status: 'cancelled' } };
 }
 
+/** Qué da y qué recibe `uid` en un intercambio (o `null` si no participa). */
+export function tradeHalf(
+  trade: PanueloTrade,
+  uid: string,
+): { give: string | null; take: string | null } | null {
+  if (!trade.answer) return null;
+  if (trade.offer.uid === uid) {
+    return { give: trade.offer.itemId, take: trade.answer.itemId };
+  }
+  if (trade.answer.uid === uid) {
+    return { give: trade.answer.itemId, take: trade.offer.itemId };
+  }
+  return null;
+}
+
 /**
  * Paso 4: la mitad de `uid` en un intercambio aceptado. Sale la pieza que da
  * y entra la que recibe, **cosida donde estaba la otra** (un cambio, no un
@@ -249,13 +264,8 @@ export function applyTrade(
   uid: string,
   now: number,
 ): PanueloUserState {
-  if (trade.status !== 'accepted' || !trade.answer) return state;
-  const mine =
-    trade.offer.uid === uid
-      ? { give: trade.offer.itemId, take: trade.answer.itemId }
-      : trade.answer.uid === uid
-        ? { give: trade.answer.itemId, take: trade.offer.itemId }
-        : null;
+  if (trade.status !== 'accepted') return state;
+  const mine = tradeHalf(trade, uid);
   if (!mine) return state;
   const alreadyGave = mine.give === null || !state.items[mine.give];
   const alreadyTook = mine.take === null || Boolean(state.items[mine.take]);

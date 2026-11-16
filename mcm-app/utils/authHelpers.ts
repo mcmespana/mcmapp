@@ -323,6 +323,39 @@ export async function syncPanueloLayout(
   }
 }
 
+/**
+ * Sube la mitad propia de un intercambio aceptado, en UNA escritura
+ * multi-ruta: la pieza dada sale de `items` (si no, se quedaría en la nube con
+ * su fecha vieja), se apunta en `gone`, entra la recibida y se sube la
+ * colocación (la recibida va cosida donde estaba la dada). Todo o nada: no
+ * puede quedar la dada borrada sin la recibida, ni al revés.
+ */
+export async function syncPanueloTradeHalf(
+  uid: string,
+  state: PanueloUserState,
+  half: { give: string | null; take: string | null },
+): Promise<boolean> {
+  const changes: Record<string, unknown> = {
+    layout: state.layout,
+    layoutAt: state.layoutAt,
+  };
+  if (half.give) {
+    changes[`items/${half.give}`] = null;
+    changes[`gone/${half.give}`] = state.gone?.[half.give] ?? Date.now();
+  }
+  const owned = half.take ? state.items[half.take] : undefined;
+  if (half.take && owned) {
+    changes[`items/${half.take}`] = { at: owned.at, via: owned.via };
+  }
+  try {
+    await update(ref(db(), `users/${uid}/panuelo`), changes);
+    return true;
+  } catch (err) {
+    logger.error('[authHelpers] syncPanueloTradeHalf:', err);
+    return false;
+  }
+}
+
 /** Sube UN recuerdo (`history/{at}`). Una clave por recuerdo: cada móvil sube
  *  solo el suyo y no pisa los del otro. */
 export async function syncPanueloMemory(
