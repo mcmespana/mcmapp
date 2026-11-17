@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 06:39 — Arreglo: en iOS los botones de arriba del pañuelo quedaban bajo la cabecera
+
+- **Causa**: la pantalla medía dónde empezaba (`measureInWindow`) solo al maquetarse. Al cerrar el tutorial la cabecera nativa volvía, la pantalla no se re-maquetaba y la medida se quedaba en 0: la pastilla de la etapa, «Decorar» y compartir salían debajo de la cabecera y de la hora.
+- **Arreglo**: sin medir. En iOS la cabecera de `/panuelo` es transparente (`headerTransparent`) y la pantalla reserva `useHeaderHeight()`, igual que Fotos y la lista de canciones seleccionadas. De paso, el botón de atrás ya no dice «(tabs)» (`headerBackButtonDisplayMode: 'minimal'`).
+- Sin probar en dispositivo desde aquí: hay que verlo en el iPhone con la OTA de `preview`.
+
 ## 2026-11-17 19:42 — Tu selección vacía: primero el coro; los cantos del domingo, en un botón
 
 - Se quita la tarjeta «Este domingo» (`SundayPlanCard`) del vacío de Tu selección: estorbaba a lo que hace casi todo el mundo, traerse la playlist del coro. El vacío vuelve a ser el de antes, con **«Traer la playlist de <coro>» como botón principal**, y al final un botón discreto **«Cantos con las lecturas del domingo»** (`SundaySongsButton`) que abre la pantalla de los cantos del domingo.
