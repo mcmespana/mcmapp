@@ -76,7 +76,7 @@ export default function ContigoRecapScreen() {
     { value: formatCount(recap.prayerMinutes), label: 'minutos de oración' },
     { value: formatCount(recap.highlights), label: 'frases subrayadas' },
   ];
-  const levelColor = [W.border, W.accentMid, W.accent, W.accentText];
+  const levelColor = W.recapLevels;
   const firstPhrase = recap.months.flatMap((m) => m.highlights)[0];
 
   return (
@@ -172,9 +172,28 @@ export default function ContigoRecapScreen() {
             </View>
 
             {/* Meses */}
-            <Text style={[styles.section, { color: W.textSec }]}>
-              Mes a mes
-            </Text>
+            <View style={styles.sectionRow}>
+              <Text style={[styles.section, { color: W.textSec }]}>
+                Mes a mes
+              </Text>
+              {/* Qué dice cada color: cuántos de los tres momentos ese día. */}
+              <View
+                style={styles.legend}
+                accessible
+                accessibilityLabel="Más oscuro, más momentos ese día: evangelio, oración y revisión"
+              >
+                <Text style={[styles.legendText, { color: W.textSec }]}>1</Text>
+                {[1, 2, 3].map((lv) => (
+                  <View
+                    key={lv}
+                    style={[styles.cell, { backgroundColor: levelColor[lv] }]}
+                  />
+                ))}
+                <Text style={[styles.legendText, { color: W.textSec }]}>
+                  3 momentos
+                </Text>
+              </View>
+            </View>
             <View style={[styles.card, { backgroundColor: W.bgCard }]}>
               {recap.months.map((mo, i) => {
                 const future =
@@ -209,8 +228,16 @@ export default function ContigoRecapScreen() {
                           {MONTH_NAMES[mo.month]}
                         </Text>
                         <Text style={[styles.monthMeta, { color: W.textSec }]}>
-                          {mo.activeDays > 0 ? `${mo.activeDays} días` : '—'}
-                          {can ? ` · ${mo.highlights.length} frases` : ''}
+                          {mo.activeDays === 0
+                            ? '—'
+                            : mo.activeDays === 1
+                              ? '1 día'
+                              : `${mo.activeDays} días`}
+                          {can
+                            ? mo.highlights.length === 1
+                              ? ' · 1 frase'
+                              : ` · ${mo.highlights.length} frases`
+                            : ''}
                         </Text>
                         {can && (
                           <MaterialIcons
@@ -372,7 +399,15 @@ const styles = StyleSheet.create({
     fontFamily: typography.serif.fontFamily,
     fontVariant: ['tabular-nums'],
   },
-  section: { ...typography.sectionLabel, marginTop: spacing.sm },
+  section: { ...typography.sectionLabel },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
+  },
+  legend: { flexDirection: 'row', alignItems: 'center', gap: CELL_GAP },
+  legendText: { ...typography.footnote, marginHorizontal: 2 },
   month: { padding: spacing.md, gap: spacing.sm },
   monthHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   monthName: { ...typography.title, textTransform: 'capitalize', flex: 1 },

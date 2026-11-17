@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 22:45 — Tu selección vacía más compacta y colores de «Tu año» que se leen
+
+- **Tu selección vacía**: mensaje y botones juntos arriba, en vez de mensaje centrado y botones al fondo (media pantalla vacía y el último botón bajo la barra).
+- **Tu año**: los cuadritos tenían el escalón de «un momento» casi igual que el vacío, así que un mes con 27 días se veía casi en blanco. Escalones nuevos (`recapLevels` en el tema de Contigo) y una leyenda «1 ▢▢▢ 3 momentos». «1 día», «1 frase» en singular.
+
 ## 2026-11-17 22:20 — Editor: tu cambio se ve al momento y la app se pone al día sola
 
 - Al guardar, el cambio se aplica a la caché del catálogo del móvil y se ve ya en todas las pantallas (lista, canción, búsqueda), no solo en la canción. `patchCachedNode` y `revalidateNode` nuevos en `hooks/useFirebaseData.ts`, con aviso a todas las pantallas que pintan ese nodo.

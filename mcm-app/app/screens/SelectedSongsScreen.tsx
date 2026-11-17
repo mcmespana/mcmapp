@@ -1612,7 +1612,7 @@ const SelectedSongsScreen: React.FC = () => {
         <View style={styles.emptyIconContainer}>
           <MaterialIcons
             name="queue-music"
-            size={56}
+            size={40}
             color={themeColors(isDark).textMuted}
           />
         </View>
