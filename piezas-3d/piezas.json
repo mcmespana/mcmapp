@@ -2,7 +2,7 @@
   "_": "Ficha de cada pieza real modelada en 3D. Los nombres y textos son provisionales: se cambian aquí, sin regenerar nada. Ver README.md.",
   "tallas": {
     "pequena": "Pin M+C y chapa del Jubileo",
-    "mediana": "Chapa normal de imperdible (Estoy contigo, Chapa OG, COM sonriente) y el pin de la JMJ",
+    "mediana": "Chapa normal de imperdible (Estoy contigo, Chapa OG, COM sonriente), el pin de la JMJ y el de Carismochito",
     "grande": "Las dos chapas de monitores (M+C y Monitor OG)"
   },
   "piezas": {
@@ -85,6 +85,16 @@
       "talla": "mediana",
       "diametroMm": 38,
       "cierre": "imperdible",
+      "intercambiable": true
+    },
+    "carismochito": {
+      "clase": "pin",
+      "nombre": "Carismochito",
+      "origen": "La mascota del MCM",
+      "descripcion": "El pin de esmalte de Carismochito, con su gorra, su pañuelo y los dedos en «V». Troquelado con su silueta y con su mariposa por detrás.",
+      "talla": "mediana",
+      "altoMm": 26,
+      "cierre": "mariposa",
       "intercambiable": true
     },
     "troncho": {

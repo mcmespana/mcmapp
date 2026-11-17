@@ -811,6 +811,265 @@ def troncho():
     return glb
 
 
+# ───────────────────────── pines troquelados ──────────────────────────────
+
+
+def contorno(m: np.ndarray) -> np.ndarray:
+    """
+    El borde de una mancha (bool, H × W) como polígono de centros de píxel,
+    en orden y sin repetir el primero. Rastreo de Moore, 8-conexo.
+    """
+    m = np.pad(m, 1)
+    ys, xs = np.nonzero(m)
+    i = np.lexsort((xs, ys))[0]
+    s = (int(xs[i]), int(ys[i]))
+    # Vecinos en el sentido de las agujas del reloj (en pantalla, y abajo)
+    D = [(-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1)]
+    c, b = s, (s[0] - 1, s[1])
+    b0 = b
+    pts = [s]
+    for _ in range(m.size):
+        i = D.index((b[0] - c[0], b[1] - c[1]))
+        for k in range(1, 9):
+            j = (i + k) % 8
+            q = (c[0] + D[j][0], c[1] + D[j][1])
+            if m[q[1], q[0]]:
+                pj = D[(j - 1) % 8]
+                b, c = (c[0] + pj[0], c[1] + pj[1]), q
+                break
+        if c == s and b == b0:
+            break
+        pts.append(c)
+    return np.array(pts, float) - 1
+
+
+def cruz(a, b):
+    """Producto vectorial en el plano (un número por pareja)."""
+    return a[..., 0] * b[..., 1] - a[..., 1] * b[..., 0]
+
+
+def simplificar(P: np.ndarray, tol: float) -> np.ndarray:
+    """Douglas-Peucker sobre un polígono cerrado."""
+    def dp(a):
+        if len(a) < 3:
+            return a
+        ab = a[-1] - a[0]
+        L = np.linalg.norm(ab)
+        d = (np.abs(cruz(ab, a - a[0])) / L) if L > 1e-9 else \
+            np.linalg.norm(a - a[0], axis=1)
+        k = int(d.argmax())
+        if d[k] <= tol:
+            return a[[0, -1]]
+        return np.vstack([dp(a[:k + 1])[:-1], dp(a[k:])])
+    # Se parte por el punto más lejano del primero, para cerrar bien
+    k = int(np.linalg.norm(P - P[0], axis=1).argmax())
+    return np.vstack([dp(P[:k + 1])[:-1],
+                      dp(np.vstack([P[k:], P[:1]]))[:-1]])
+
+
+def area2(P):
+    x, y = P[:, 0], P[:, 1]
+    return float((x * np.roll(y, -1) - np.roll(x, -1) * y).sum())
+
+
+def orejas(P: np.ndarray) -> np.ndarray:
+    """Triangula un polígono simple en sentido antihorario (corte de orejas)."""
+    idx = list(range(len(P)))
+    tri = []
+    while len(idx) > 3:
+        n = len(idx)
+        Q = P[idx]
+        a, b, c = np.roll(Q, 1, 0), Q, np.roll(Q, -1, 0)
+        conv = cruz(b - a, c - b)
+        hecho = False
+        for i in np.argsort(-conv):          # las más convexas primero
+            if conv[i] <= 1e-12:
+                break
+            A, B, C = a[i], b[i], c[i]
+            otros = np.delete(Q, [(i - 1) % n, i, (i + 1) % n], 0)
+            d1 = cruz(B - A, otros - A)
+            d2 = cruz(C - B, otros - B)
+            d3 = cruz(A - C, otros - C)
+            if np.any((d1 > -1e-9) & (d2 > -1e-9) & (d3 > -1e-9)):
+                continue
+            tri.append([idx[(i - 1) % n], idx[i], idx[(i + 1) % n]])
+            del idx[i]
+            hecho = True
+            break
+        if not hecho:                        # vértice degenerado: fuera
+            i = int(np.argmin(np.abs(conv)))
+            del idx[i]
+    tri.append(idx)
+    return np.array(tri)
+
+
+def troquel(m: np.ndarray, tol: float) -> np.ndarray:
+    """La silueta de un pin troquelado, en píxeles del lienzo (y abajo)."""
+    P = contorno(m)
+    # Un poco de suavizado: el troquel no tiene escalones de píxel
+    for _ in range(2):
+        P = (np.roll(P, 1, 0) + 2 * P + np.roll(P, -1, 0)) / 4
+    return simplificar(P, tol)
+
+
+def trazado_svg(pid: str) -> str:
+    """El contorno de un pin troquelado en la caja de 100 de las formas del
+    visor (`constants/panueloGlyphs.ts`)."""
+    lab = np.asarray(Image.open(TEX / f'{pid}-tintas.png')) // 40
+    P = troquel(lab > 0, 1.6) * 100 / lab.shape[1]
+    return 'M' + ' L'.join(f'{x:.1f} {y:.1f}' for x, y in P) + ' Z'
+
+
+ORO = '#D6AE52'
+TINTAS_CARISMOCHITO = {          # tinta → (color, rugosidad)
+    1: (ORO, 0.24),               # metal
+    2: ('#21987A', 0.16),         # verde
+    3: ('#E2462C', 0.16),         # rojo
+    4: ('#1B2542', 0.14),         # azul marino
+    5: ('#F6F3EC', 0.18),         # blanco
+    6: ('#151517', 0.12),         # negro
+}
+
+
+def pin_troquelado(pid, alto, tintas, metal_hex=ORO, g=1.8):
+    """
+    Pin de esmalte duro troquelado con la silueta del dibujo: las tintas son
+    planas, separadas por paredes de metal; por detrás, metal rayado con el
+    pincho y la mariposa. `tex/<pid>-tintas.png` dice qué tinta va en cada
+    píxel (0 = fuera, 1 = metal).
+    """
+    lab = np.asarray(Image.open(TEX / f'{pid}-tintas.png')) // 40
+    lado = lab.shape[1]
+    dentro = lab > 0
+    ys, xs = np.nonzero(dentro)
+    k = alto / (ys.max() + 1 - ys.min())          # mm por píxel
+    cx, cy = (xs.min() + xs.max() + 1) / 2, (ys.min() + ys.max() + 1) / 2
+    glb = Glb(pid)
+
+    Ppx = troquel(dentro, 1.0)
+    Ppx = Ppx[::-1] if area2(Ppx * [1, -1]) < 0 else Ppx   # antihorario
+    P = np.stack([(Ppx[:, 0] - cx) * k, (cy - Ppx[:, 1]) * k], 1)
+    T = orejas(P)
+    n = len(P)
+    # Normal hacia fuera en cada vértice (media de sus dos lados)
+    e = np.roll(P, -1, 0) - P
+    ne = np.stack([e[:, 1], -e[:, 0]], 1)
+    ne /= np.maximum(np.linalg.norm(ne, axis=1, keepdims=True), 1e-9)
+    nv = ne + np.roll(ne, 1, 0)
+    nv /= np.maximum(np.linalg.norm(nv, axis=1, keepdims=True), 1e-9)
+
+    def uv_de(Q):
+        return np.stack([(Q[:, 0] / k + cx) / lado, (cy - Q[:, 1] / k) / lado], 1)
+
+    # Cara: el polígono un pelo hacia dentro; el filo baja en chaflán al canto
+    ch = 0.22
+    Pf = P - nv * ch
+    cara_m = Malla()
+    cara_m.add(np.c_[Pf, np.zeros(n)], np.tile([0, 0, 1.0], (n, 1)), uv_de(Pf),
+               T)
+    canto = Malla()
+    anillos = [(Pf, 0.0), (P, -ch), (P, -g + ch), (P - nv * ch, -g)]
+    for (A, za), (B, zb) in zip(anillos, anillos[1:]):
+        d = np.c_[B - A, np.full(n, zb - za)]
+        # normal del tramo: perpendicular al borde y al paso de A a B
+        t = np.c_[np.roll(P, -1, 0) - np.roll(P, 1, 0), np.zeros(n)]
+        nn = np.cross(d, t)
+        nn /= np.maximum(np.linalg.norm(nn, axis=1, keepdims=True), 1e-9)
+        nn *= np.sign((nn[:, :2] * nv).sum(1) + 1e-6)[:, None]
+        Pa, Pb = np.c_[A, np.full(n, za)], np.c_[B, np.full(n, zb)]
+        I = []
+        for i in range(n):
+            j = (i + 1) % n
+            I += [[i, j, n + i], [n + i, j, n + j]]
+        canto.add(np.vstack([Pa, Pb]), np.vstack([nn, nn]),
+                  np.zeros((2 * n, 2)), I)
+    trasera = Malla()
+    Pt = P - nv * ch
+    trasera.add(np.c_[Pt, np.full(n, -g)], np.tile([0, 0, -1.0], (n, 1)),
+                np.stack([Pt[:, 0] / 3.0, 0.5 + 0 * Pt[:, 1]], 1), T)
+
+    # Pincho y mariposa en lo más ancho (lo último que queda al ir comiendo
+    # la silueta por los bordes): así el cierre no asoma por delante.
+    resto = dentro
+    while True:
+        menos = np.asarray(Image.fromarray((resto * 255).astype(np.uint8))
+                           .filter(ImageFilter.MinFilter(9))) > 127
+        if not menos.any():
+            break
+        resto = menos
+    ry, rx = np.nonzero(resto)
+    mx, my = (rx.mean() - cx) * k, (cy - ry.mean()) * k
+    pincho = Malla()
+    tubo(pincho, np.linspace((mx, my, -g), (mx, my, -g - 8.2), 10), 0.5,
+         punta=True)
+    cierre = Malla()
+    mariposa(cierre, -g - 2.6)
+    e = 0.75                     # mariposa pequeña, como la de la foto
+    cierre.mover(np.eye(3) * e, t=(mx, my, (-g - 2.6) * (1 - e)))
+
+    # ── Texturas de la cara
+    def suave(a, r):
+        return np.asarray(Image.fromarray((np.clip(a, 0, 1) * 255)
+                                          .astype(np.uint8))
+                          .filter(ImageFilter.GaussianBlur(r)),
+                          np.float32) / 255
+    metal_m = ((lab == 1) | (lab == 0)).astype(np.float32)
+    col = np.zeros(lab.shape + (3,), np.float32)
+    rug = np.zeros(lab.shape, np.float32)
+    col[:] = [int(metal_hex[i:i + 2], 16) for i in (1, 3, 5)]
+    rug[:] = 0.24
+    for t, (c, r) in tintas.items():
+        rgb = np.array([int(c[i:i + 2], 16) for i in (1, 3, 5)], np.float32)
+        # El visor (ACES + exposición) aclara los tonos medios: más hondos.
+        if t != 1 and 0.3 < rgb.mean() / 255 < 0.85:
+            rgb = 255 * (rgb / 255) ** 1.35
+        col[lab == t] = rgb
+        rug[lab == t] = r
+    col = np.asarray(Image.fromarray(col.astype(np.uint8))
+                     .filter(ImageFilter.GaussianBlur(0.7)), np.float32)
+    orm = np.zeros(lab.shape + (3,), np.float32)
+    orm[..., 0] = 1
+    orm[..., 1] = suave(rug, 0.7)
+    orm[..., 2] = suave(metal_m, 0.7)
+    # Las paredes de metal sobresalen un poco; el esmalte queda liso entre ellas
+    altura = suave(metal_m, 1.2) * 0.6 + suave(1 - metal_m, 4) * 0.25
+    t_col = glb.textura(jpg(Image.fromarray(col.astype(np.uint8)), 92))
+    t_orm = glb.textura(jpg(Image.fromarray((orm * 255).astype(np.uint8)), 88))
+    t_nor = glb.textura(jpg(normal_de_altura(suave(altura, 1.0), 4.0), 92))
+    # Trasera: metal con rayas finas, como el de verdad
+    x = np.arange(512, dtype=np.float32)
+    raya = np.tile((np.sin(x / 512 * 2 * np.pi * 10) * 0.5 + 0.5)[None], (16, 1))
+    t_raya = glb.textura(png(normal_de_altura(raya, 2.5)), envolver=True)
+
+    mat_cara = glb.material({'name': 'esmalte', 'pbrMetallicRoughness': {
+        'baseColorTexture': {'index': t_col},
+        'metallicRoughnessTexture': {'index': t_orm},
+        'metallicFactor': 1.0, 'roughnessFactor': 1.0},
+        'normalTexture': {'index': t_nor, 'scale': 0.8}})
+    mat_metal = glb.material(metal('metal', metal_hex, 0.26))
+    mat_tras = glb.material({'name': 'trasera', 'pbrMetallicRoughness': {
+        'baseColorFactor': hexa(metal_hex), 'metallicFactor': 1.0,
+        'roughnessFactor': 0.34},
+        'normalTexture': {'index': t_raya, 'scale': 0.6}})
+    mat_cierre = glb.material(metal('cierre', *LATON))
+    glb.nodo('pin', [(cara_m, mat_cara), (canto, mat_metal),
+                     (trasera, mat_tras), (pincho, mat_metal)])
+    glb.nodo('cierre', [(cierre, mat_cierre)])
+    return glb
+
+
+def cara_troquelada(pid, tintas, metal_hex=ORO, lado=512) -> Image.Image:
+    """La cara plana que cose el visor (`caras/<pid>.webp`): las tintas en la
+    caja de la forma, con transparencia fuera de la silueta."""
+    lab = np.asarray(Image.open(TEX / f'{pid}-tintas.png')) // 40
+    col = np.zeros(lab.shape + (4,), np.uint8)
+    col[..., :3] = [int(metal_hex[i:i + 2], 16) for i in (1, 3, 5)]
+    for t, (c, _) in tintas.items():
+        col[lab == t, :3] = [int(c[i:i + 2], 16) for i in (1, 3, 5)]
+    col[..., 3] = (lab > 0) * 255
+    return Image.fromarray(col, 'RGBA').resize((lado, lado), Image.LANCZOS)
+
+
 PIEZAS = {
     'estoy-contigo-samuel': lambda: chapa_imperdible(
         'estoy-contigo-samuel', 38.0, cara('estoy-contigo-samuel')),
@@ -827,14 +1086,30 @@ PIEZAS = {
         'monitor-og', 58.0, cara('monitor-og', 1.3, 1.1)),
     'jmj-lisboa-2023': pin_jmj,
     'troncho': troncho,
+    'carismochito': lambda: pin_troquelado(
+        'carismochito', 26.0, TINTAS_CARISMOCHITO),
+}
+
+# Las caras planas que salen del generador (las demás se hicieron a mano).
+CARAS = {
+    'carismochito': lambda: cara_troquelada('carismochito',
+                                            TINTAS_CARISMOCHITO),
 }
 
 
 def main():
+    if sys.argv[1:2] == ['--trazado']:
+        # El contorno de un pin troquelado, para `constants/panueloGlyphs.ts`
+        print(trazado_svg(sys.argv[2]))
+        return
     cuales = sys.argv[1:] or list(PIEZAS)
     for pid in cuales:
         n = PIEZAS[pid]().guardar(SALIDA / f'{pid}.glb')
         print(f'{pid}.glb  {n / 1024:.0f} KB')
+        if pid in CARAS:
+            CARAS[pid]().save(SALIDA / 'caras' / f'{pid}.webp', 'WEBP',
+                              quality=90, method=6)
+            print(f'caras/{pid}.webp')
 
 
 if __name__ == '__main__':

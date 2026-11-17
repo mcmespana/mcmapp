@@ -22,6 +22,7 @@ https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/caras/<id>.webp
 | `jubileo-2025.glb`         | Jubileo 2025          | pequeña | Chapa de imperdible, 25 mm                                      |
 | `chapa-og.glb`             | Chapa OG              | mediana | Disco de plástico amarillo de 38 mm, la del Movimiento Juvenil  |
 | `com-sonriente.glb`        | COM sonriente         | mediana | Chapa de imperdible, 38 mm, logo verde                          |
+| `carismochito.glb`         | Carismochito          | mediana | Pin de esmalte troquelado con su silueta, 26 mm de alto, dorado |
 | `troncho.glb`              | Troncho               | —       | Tubo de cuero de 31 × 22 mm con el logo grabado                 |
 
 Nombres, textos, tallas y medidas están en [`piezas.json`](piezas.json): es la
@@ -37,6 +38,10 @@ ficha de cada pieza y se cambia ahí, sin regenerar el modelo.
 - **Ya están en el pañuelo de pruebas**: son el catálogo de
   `mcm-app/firebase-seed/panuelo.json`. Cosida, cada pieza se pinta con su
   **cara** plana (`caras/<id>.webp`); el `.glb` se abre con «Verla de cerca».
+- **Un pin troquelado** (Carismochito) no es redondo ni rectangular: su
+  silueta es una forma más del visor (`carismochito` en
+  `mcm-app/constants/panueloGlyphs.ts`), sacada del mismo mapa de tintas que
+  el modelo. Si cambia el calco, se regenera el trazado (ver abajo).
 - Cada modelo mira a +Z, con «arriba» en +Y. Las partes van en nodos con
   nombre (`chapa`, `imperdible`, `pin`, `cierre`, `troncho`, `cosido`), por si
   el visor quiere esconder el cierre al coserla.
@@ -64,6 +69,24 @@ python3 piezas-3d/_fuente/generar.py troncho    # solo una
   verde, rojo) calcado de la foto; el metal entre letras lo pone el generador.
 - El grabado del troncho usa el dibujo de la chapa verde
   (`tex/troncho-logo-*.png`): es el mismo logo.
+- **Carismochito** es un pin de esmalte duro troquelado. No sale de la foto
+  del pin sino del dibujo vectorizado de la mascota
+  (`tex/carismochito-dibujo.png`): `_fuente/carismochito_tintas.py` lo pasa
+  a un mapa de tintas (`tex/carismochito-tintas.png`: metal, verde, rojo,
+  azul marino, blanco y negro), como el pin de verdad: sin el pájaro, gorra
+  azul marino, líneas negras convertidas en paredes de metal dorado y los
+  huecos pequeños de la silueta rellenos de metal. De ese mapa salen el
+  modelo (el contorno se rastrea y se extruye), su cara plana
+  `caras/carismochito.webp` y el trazado de su forma:
+
+  ```bash
+  python3 piezas-3d/_fuente/carismochito_tintas.py      # dibujo → tintas
+  python3 piezas-3d/_fuente/generar.py carismochito     # .glb y su cara
+  python3 piezas-3d/_fuente/generar.py --trazado carismochito  # la forma
+  ```
+
+  El trazado se pega en `PANUELO_GLYPHS.carismochito` y luego
+  `npm run build:panuelo` (desde `mcm-app/`).
 
 **Una chapa redonda nueva** es una imagen en `tex/` y una línea en `PIEZAS`
 (con su diámetro). La mejor foto: de frente, sin flash, con luz suave y sin

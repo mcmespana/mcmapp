@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 09:26 — Pañuelo: el pin de Carismochito
+
+- Pieza nueva en el catálogo (`firebase-seed/panuelo.json`): **Carismochito**, el pin de esmalte de la mascota, troquelado con su silueta (talla mediana, `size: 1.5`, especial e intercambiable, `grant: all` como el resto en pruebas).
+- Forma nueva `carismochito` en `constants/panueloGlyphs.ts`: el visor extruye la silueta del muñeco y le pone encima su cara (`piezas-3d/caras/carismochito.webp`). Visor regenerado (`npm run build:panuelo`).
+- `piezas-3d/`: modelo `carismochito.glb` (esmalte duro con paredes de metal dorado, trasera rayada, pincho y mariposa) y su miniatura. Sale del dibujo vectorizado de la mascota: `_fuente/carismochito_tintas.py` hace el mapa de tintas y `generar.py` ahora sabe hacer pines troquelados (rastrea el contorno, lo triangula y lo extruye) y sacar el trazado de su forma (`--trazado`).
+- Sin paquetes nuevos. Probado en navegador (visor y modelo); sin probar en móvil. La cara y el modelo se sirven por jsDelivr desde `main`.
+
 ## 2026-11-17 00:40 — Pañuelo: los pines, por detrás, son metal con su pincho
 
 - Al darle la vuelta a un pin se veía el esmalte (o la foto) del revés. Ahora la trasera es metal liso del color del filo, con el pincho y su cierre (`buildPin` en `panuelo-3d/src/items.ts`). Vale para todos los pines.

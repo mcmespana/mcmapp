@@ -111,7 +111,10 @@ troncho. Sus modelos y sus caras están en `piezas-3d/` (raíz; ver su README).
 
 - Una **chapa** o un **pin** de verdad lleva `image` (su cara, que es lo que se
   cose) y `glb` (su modelo: la ficha ofrece «Verla de cerca», como las
-  medallas). Un pin rectangular usa la forma `card`.
+  medallas). Un pin rectangular usa la forma `card`; un pin **troquelado**
+  con la silueta de un dibujo (Carismochito) tiene su propia forma, sacada
+  del mismo calco que su modelo (`piezas-3d/README.md`), y su cara ocupa la
+  caja de esa forma.
 - **Tres tallas**, con `size`: pequeña ≈ 0,7–0,85 · mediana 1 · grande 1,4.
 - **El troncho** no se cose en el triángulo: va por delante. Con él puesto,
   la tela se recoge en un cabo que baja desde donde se junta el pañuelo

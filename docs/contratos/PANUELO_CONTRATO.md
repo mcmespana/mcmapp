@@ -86,7 +86,8 @@ Los colores son siempre hex (`#rgb` o `#rrggbb`). Las imágenes, URL `https`
 con CORS abierto. `glyph` y `shape` son nombres de forma: `heart`, `star`,
 `cross`, `moon`, `flame`, `drop`, `sun`, `mountain`, `tent`, `shell`, `note`,
 `leaf`, `bolt`, `crown`, `fish`, `circle`, `shield`, `arrow`, `rect`, `card`
-(tarjeta de pie, para un pin rectangular).
+(tarjeta de pie, para un pin rectangular) y `carismochito` (la silueta del pin
+troquelado de la mascota; su `image` es `piezas-3d/caras/carismochito.webp`).
 
 | Clase     | Obligatorio              | Opcional                                                                            |
 | --------- | ------------------------ | ----------------------------------------------------------------------------------- |
