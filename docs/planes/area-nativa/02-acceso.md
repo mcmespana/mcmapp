@@ -8,6 +8,13 @@
 > decisión `dni` («contestar igual»): los textos de este documento que dicen lo contrario están marcados como
 > superados. Lo que hace la app está en «Si el correo no existe» (más abajo).
 
+> ✅ **Rehecho el 14/11/2026 (lanzamiento para todos).** Con cuenta de la app: «Tienes la sesión iniciada con
+> <correo>» y UN botón, «Entrar en Comunica» (`AccountEntry.tsx`); la comprobación (`checkAppAccount`) sale sola al
+> abrir y, al pulsar, entrada animada (`WelcomeOverlay.tsx`) y dentro. Ya **no se entra sin pulsar**, salvo que el
+> servidor haya cerrado una sesión abierta y la persona no saliera a propósito (entonces vuelve sola). Correo que no está →
+> aviso y formulario vacío; código y DNI siempre a mano (`CodeRequestForm.tsx`); en la pantalla del código, «¿No te llega?
+> Entra con el DNI». Textos cortos, sin explicaciones. Tests: `__tests__/comunica/accessAccount.test.tsx`.
+
 ## Para qué y para quién
 
 Para que un monitor entre una vez y no tenga que volver a hacerlo en meses.

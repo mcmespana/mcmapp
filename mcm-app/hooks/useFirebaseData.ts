@@ -39,6 +39,66 @@ const nodeCache = new Map<string, CacheEntry>();
 /** Solo para tests: vacía la caché de módulo para aislar casos. */
 export function __resetNodeCacheForTests() {
   nodeCache.clear();
+  nodeListeners.clear();
+}
+
+// Quién está pintando cada nodo, para avisarle cuando la caché cambia desde
+// fuera de su pantalla (`patchCachedNode`, `revalidateNode`).
+const nodeListeners = new Map<string, Set<() => void>>();
+
+function notifyNode(storageKey: string) {
+  nodeListeners.get(storageKey)?.forEach((l) => l());
+}
+
+/**
+ * Cambia lo que hay en la caché de un nodo YA, sin ir a Firebase, y lo pintan
+ * todas las pantallas que lo usan. Sirve para ver al momento lo que uno mismo
+ * acaba de cambiar (el editor de canciones): el `updatedAt` no se toca, así
+ * que en cuanto Firebase traiga la versión publicada, la sustituye.
+ */
+export async function patchCachedNode(
+  storageKey: string,
+  patch: (parsed: any) => any,
+): Promise<void> {
+  let entry = nodeCache.get(storageKey);
+  if (entry?.parsed === undefined) {
+    const raw = await AsyncStorage.getItem(`${storageKey}_data`).catch(
+      () => null,
+    );
+    if (!raw || raw === 'undefined') return;
+    mergeCacheEntry(storageKey, {
+      parsed: JSON.parse(raw),
+      updatedAt: await AsyncStorage.getItem(`${storageKey}_updatedAt`),
+    });
+    entry = nodeCache.get(storageKey);
+  }
+  const next = patch(entry!.parsed);
+  if (next === undefined) return;
+  mergeCacheEntry(storageKey, { parsed: next });
+  await AsyncStorage.setItem(`${storageKey}_data`, JSON.stringify(next)).catch(
+    () => {},
+  );
+  notifyNode(storageKey);
+}
+
+/**
+ * Pregunta a Firebase si el nodo ha cambiado (vía rápida por `updatedAt`) y,
+ * si sí, lo descarga y lo pintan todas las pantallas. Devuelve si cambió.
+ */
+export async function revalidateNode(
+  path: string,
+  storageKey: string,
+): Promise<boolean> {
+  const before = nodeCache.get(storageKey)?.updatedAt ?? null;
+  try {
+    await refreshRemote(path, storageKey, before !== null, before);
+  } catch {
+    return false;
+  }
+  const after = nodeCache.get(storageKey)?.updatedAt ?? null;
+  if (after === before) return false;
+  notifyNode(storageKey);
+  return true;
 }
 
 function mergeCacheEntry(storageKey: string, patch: Partial<CacheEntry>) {
@@ -379,6 +439,16 @@ export function useFirebaseData<T>(
     // Solo dispara en la TRANSICIÓN sin red → con red: el listener también
     // emite al cambiar de wifi a datos estando ya conectado, y ahí no hay nada
     // que recuperar.
+    // Cambios en la caché hechos desde fuera (`patchCachedNode`,
+    // `revalidateNode`): se vuelven a pintar.
+    const onNodeChange = () => {
+      const fresh = nodeCache.get(storageKey);
+      if (fresh) applyParsed(fresh.parsed, fresh.hidden);
+    };
+    let listeners = nodeListeners.get(storageKey);
+    if (!listeners) nodeListeners.set(storageKey, (listeners = new Set()));
+    listeners.add(onNodeChange);
+
     const subscription = Network.addNetworkStateListener((state) => {
       const connected =
         !!state.isConnected && state.isInternetReachable !== false;
@@ -390,6 +460,7 @@ export function useFirebaseData<T>(
 
     return () => {
       isMounted = false;
+      listeners.delete(onNodeChange);
       subscription.remove();
       refreshRef.current = () => Promise.resolve();
     };

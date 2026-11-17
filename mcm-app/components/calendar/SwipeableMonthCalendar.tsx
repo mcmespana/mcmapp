@@ -15,7 +15,8 @@ import './calendarLocale';
 import colors, { SystemGray, themeColors } from '@/constants/colors';
 import { h } from '@/utils/haptics';
 import { radii } from '@/constants/uiStyles';
-import { springs } from '@/constants/animations';
+import { durations, motionEasings, springs } from '@/constants/animations';
+import { rubberBand, shouldCommitGesture } from '@/utils/gesturePhysics';
 
 interface SwipeableMonthCalendarProps {
   /** Mes visible, en formato `YYYY-MM-DD` (normalmente el día 1). */
@@ -70,12 +71,14 @@ export default function SwipeableMonthCalendar({
   const dx = useSharedValue(0);
 
   // Cambia de mes y hace entrar la rejilla nueva desde el lado contrario.
+  // Con un muelle de token que hereda la velocidad del dedo: si el mes se fue
+  // de un flick rápido, el nuevo llega igual de rápido. El muelle de antes
+  // (stiffness 170, damping 20, mass 0,7) era un literal sin velocidad.
   const commitMonth = useCallback(
-    (dir: number) => {
-      h.select();
+    (dir: number, velocity = 0) => {
       onChangeMonth(dir);
       dx.set(dir * width * EXIT_RATIO);
-      dx.set(withSpring(0, { damping: 20, stiffness: 170, mass: 0.7 }));
+      dx.set(withSpring(0, { ...springs.snap, velocity }));
     },
     [onChangeMonth, dx, width],
   );
@@ -84,11 +87,16 @@ export default function SwipeableMonthCalendar({
   // del header, así que las dos vías se sienten igual.
   const animateChange = useCallback(
     (dir: number) => {
+      h.select();
       dx.set(
-        withTiming(-dir * width * EXIT_RATIO, { duration: 140 }, (finished) => {
-          'worklet';
-          if (finished) scheduleOnRN(commitMonth, dir);
-        }),
+        withTiming(
+          -dir * width * EXIT_RATIO,
+          { duration: durations.quick, easing: motionEasings.out },
+          (finished) => {
+            'worklet';
+            if (finished) scheduleOnRN(commitMonth, dir, 0);
+          },
+        ),
       );
     },
     [dx, width, commitMonth],
@@ -99,22 +107,34 @@ export default function SwipeableMonthCalendar({
     // arrastre vertical: así el ScrollView de la pantalla sigue mandando.
     .activeOffsetX([-14, 14])
     .failOffsetY([-14, 14])
+    // Fase de SEGUIR: 1:1 con el dedo hasta casi el ancho, luego cede
+    // (elástico) en vez de pararse en seco contra un tope invisible.
     .onUpdate((e) => {
-      const max = width * 0.9;
-      dx.set(Math.max(-max, Math.min(max, e.translationX)));
+      dx.set(rubberBand(e.translationX, width * 0.9));
     })
+    // Fase de SOLTAR: distancia o velocidad (y no si se suelta volviendo).
     .onEnd((e) => {
-      const commit =
-        Math.abs(e.translationX) > DRAG_THRESHOLD ||
-        Math.abs(e.velocityX) > VELOCITY_THRESHOLD;
+      const commit = shouldCommitGesture(
+        e.translationX,
+        e.velocityX,
+        DRAG_THRESHOLD,
+        VELOCITY_THRESHOLD,
+      );
       if (commit) {
         const dir = e.translationX < 0 ? 1 : -1;
+        // La háptica, en el instante en que el gesto se compromete, no al
+        // acabar la salida.
+        scheduleOnRN(h.select);
+        // La rejilla sale con un muelle sembrado con la velocidad del dedo
+        // (sin pasarse: fuera de cuadro no hay nada contra lo que rebotar), y
+        // el mes nuevo entra heredándola.
+        const velocity = e.velocityX;
         dx.set(
-          withTiming(
+          withSpring(
             -dir * width * EXIT_RATIO,
-            { duration: 130 },
+            { ...springs.snap, velocity, overshootClamping: true },
             (finished) => {
-              if (finished) scheduleOnRN(commitMonth, dir);
+              if (finished) scheduleOnRN(commitMonth, dir, velocity);
             },
           ),
         );

@@ -119,8 +119,12 @@ export default function AppPrimaryButton({
         <MaterialIcons name={icon} size={18} color={fg} />
       ) : null}
       {/* Mantener el texto visible también en loading para no “saltar” de ancho. */}
-      <View>
-        <Text style={[styles.label, { color: fg }]}>{label}</Text>
+      {/* `flexShrink` + centrado: con la letra del sistema grande la etiqueta
+          parte en dos líneas y, sin esto, se salía por la derecha. */}
+      <View style={{ flexShrink: 1 }}>
+        <Text style={[styles.label, { color: fg, textAlign: 'center' }]}>
+          {label}
+        </Text>
       </View>
       {!loading && icon && iconPosition === 'right' ? (
         <MaterialIcons name={icon} size={18} color={fg} />

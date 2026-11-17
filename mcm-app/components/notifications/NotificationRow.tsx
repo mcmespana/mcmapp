@@ -21,6 +21,7 @@ import {
   type InboxNotification,
 } from '@/utils/notificationsInbox';
 import { formatDate } from './notificationDisplay';
+import useLargeText from '@/hooks/useLargeText';
 
 const ICON_SIZE = 44;
 const DOT_SIZE = 8;
@@ -57,6 +58,9 @@ function NotificationRow({
 }) {
   const roles = themeColors(isDark);
   const unread = !isRead;
+  // Letra del sistema grande: la hora pasa debajo del título y el título
+  // puede ocupar varias líneas (a una sola se veían ~10 caracteres).
+  const large = useLargeText();
   const swipeRef = useRef<SwipeableMethods>(null);
   const category = categoryVisual(notification.category);
 
@@ -92,6 +96,10 @@ function NotificationRow({
         outputRange={[1, 0]}
         property="scale"
         style={styles.actionContent}
+        // Pasado el umbral de la fila (`rightThreshold`), soltar ya marca:
+        // la acción salta y suena un tic.
+        armAt={spacing.xl}
+        onArm={h.select}
       >
         <MaterialIcons
           name={unread ? 'check' : 'markunread'}
@@ -170,13 +178,14 @@ function NotificationRow({
         )}
 
         <View style={styles.content}>
-          <View style={styles.titleRow}>
+          <View style={[styles.titleRow, large && styles.titleRowLarge]}>
             <Text
               style={[
                 styles.title,
                 { color: roles.text, fontWeight: unread ? '700' : '500' },
+                large && styles.titleLarge,
               ]}
-              numberOfLines={1}
+              numberOfLines={large ? 3 : 1}
             >
               {notification.title}
             </Text>
@@ -189,7 +198,7 @@ function NotificationRow({
               styles.body,
               { color: unread ? roles.text : roles.textSecondary },
             ]}
-            numberOfLines={2}
+            numberOfLines={large ? 4 : 2}
           >
             {notification.body}
           </Text>
@@ -240,6 +249,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   title: { ...typography.body, flex: 1 },
+  titleRowLarge: { flexDirection: 'column', alignItems: 'flex-start', gap: 2 },
+  titleLarge: { flex: undefined },
   time: { ...typography.footnote },
   body: { ...typography.subhead, marginTop: spacing.xs },
   chip: { alignSelf: 'flex-start', marginTop: spacing.sm },

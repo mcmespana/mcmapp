@@ -229,17 +229,24 @@ describe('borrador de lista', () => {
 describe('enrutador nativa / legado', () => {
   it('la tabla del plan 10', () => {
     const r = (
-      flag: 'off' | 'alpha' | 'all',
+      flag: 'off' | 'solo-alpha' | 'all',
       alphaEnabled: boolean,
       apiAvailable = true,
     ) => resolveComunicaMode({ flag, alphaEnabled, apiAvailable });
     expect([r('off', false), r('off', true)]).toEqual(['legacy', 'legacy']);
-    expect([r('alpha', false), r('alpha', true)]).toEqual(['legacy', 'native']);
+    expect([r('solo-alpha', false), r('solo-alpha', true)]).toEqual([
+      'legacy',
+      'native',
+    ]);
     expect([r('all', false), r('all', true)]).toEqual(['native', 'native']);
     expect(r('all', true, false)).toBe('legacy');
-    expect(parseComunicaNativaFlag(undefined)).toBe('alpha');
-    expect(parseComunicaNativaFlag('raro')).toBe('alpha');
-    expect(parseComunicaNativaFlag('all')).toBe('all');
+    // Lanzamiento (14/11/2026): la nativa es la de todos, también con el
+    // `alpha` que hay escrito en Firebase desde las pruebas.
+    expect(parseComunicaNativaFlag(undefined)).toBe('all');
+    expect(parseComunicaNativaFlag('alpha')).toBe('all');
+    expect(parseComunicaNativaFlag('raro')).toBe('all');
+    expect(parseComunicaNativaFlag('off')).toBe('off');
+    expect(parseComunicaNativaFlag('solo-alpha')).toBe('solo-alpha');
   });
 });
 

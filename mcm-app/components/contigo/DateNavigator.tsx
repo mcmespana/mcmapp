@@ -17,6 +17,7 @@ import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 import { compositeOver } from '@/utils/tintColors';
 import { h } from '@/utils/haptics';
+import { CHROME_MAX_FONT_SCALE } from '@/hooks/useLargeText';
 
 /**
  * El navegador de días de Contigo: ‹ fecha ›.
@@ -103,9 +104,11 @@ export function DateNavigator({
           {isToday ? null : (
             <MaterialIcons name="undo" size={14} color={W.accentText} />
           )}
+          {/* Va en la cabecera nativa: techo de cromo. */}
           <Text
             style={[styles.headerText, { color: W.text }]}
             numberOfLines={1}
+            maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
           >
             {isToday ? 'Hoy' : label}
           </Text>

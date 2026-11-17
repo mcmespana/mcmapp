@@ -16,6 +16,20 @@ visor en `mcm-app/components/medallas/`.
 | `jubileo-jovenes-2025.glb` | Jubileo de los Jóvenes · Roma 2025      |
 | `visita-papa-2026.glb`     | Visita del Papa 2026 · "Alza la mirada" |
 
+## `thumbs/` — las miniaturas para el pañuelo virtual
+
+El pañuelo virtual (`docs/funcionalidades/PANUELO.md`) cose las medallas como
+una imagen plana y solo abre el `.glb` al pedir «Verla de cerca». Esa imagen
+se sirve también desde aquí:
+
+```
+https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/medallas-3d/thumbs/<id>.webp
+```
+
+Es la misma miniatura de `mcm-app/assets/images/medallas/` (ver «La
+miniatura» abajo). El catálogo la referencia en `look.image`. Mientras el
+archivo no esté en `main`, el pañuelo dibuja una medalla genérica en su lugar.
+
 ## Qué formato descargar de la web que las genera
 
 **GLB.** Es un solo archivo con la geometría y las texturas dentro, y es lo

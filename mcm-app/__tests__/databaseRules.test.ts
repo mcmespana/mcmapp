@@ -55,6 +55,8 @@ describe('app: lecturas públicas', () => {
     ['songs/tags/updatedAt', 'useSongTags'],
     ['albums/data', 'FotosScreen'],
     ['calendars/data', 'useCalendarConfigs'],
+    ['panuelo/data', 'usePanuelo — catálogo de piezas'],
+    ['panuelo/updatedAt', 'useFirebaseData'],
     ['profileConfig/data', 'ProfileConfigContext'],
     ['profileConfig/updatedAt', 'ProfileConfigContext'],
     ['seccion_oracion/lecturas/2026-08-13', 'useDailyReadings'],
@@ -138,6 +140,20 @@ describe('app: escrituras sin login', () => {
 });
 
 describe('app: datos del usuario autenticado', () => {
+  it('el pañuelo de cada persona es suyo y de nadie más', () => {
+    const mine = { auth: { uid: 'u1' } };
+    const other = { auth: { uid: 'u2' } };
+    expect(can('users/u1/panuelo', 'read', mine)).toBe(true);
+    expect(can('users/u1/panuelo/items/pionero-alpha', 'write', mine)).toBe(
+      true,
+    );
+    expect(can('users/u1/panuelo', 'read', other)).toBe(false);
+    expect(can('users/u1/panuelo/items/medalla', 'write', other)).toBe(false);
+    expect(can('users/u1/panuelo/items/medalla', 'write', FLAGS_ON)).toBe(
+      false,
+    );
+  });
+
   it('el dueño lee y escribe su nodo', () => {
     expect(can('users/alice/contigo/habits/2026-08-13', 'read', ALICE)).toBe(
       true,
@@ -274,6 +290,7 @@ describe('banderas apagadas: lo que se cierra', () => {
   it('el contenido deja de ser escribible por cualquiera', () => {
     expect(can('albums', 'write', FLAGS_OFF)).toBe(false);
     expect(can('calendars', 'write', FLAGS_OFF)).toBe(false);
+    expect(can('panuelo', 'write', FLAGS_OFF)).toBe(false);
     expect(can('profileConfig', 'write', FLAGS_OFF)).toBe(false);
     expect(can('songs/data', 'write', FLAGS_OFF)).toBe(false);
     expect(can(`${EV}/horario`, 'write', FLAGS_OFF)).toBe(false);
@@ -341,5 +358,217 @@ describe('sin sembrar /_config', () => {
     expect(can('albums', 'write', NO_CONFIG)).toBe(false);
     expect(can('activities', 'read', NO_CONFIG)).toBe(false);
     expect(can('pushTokens', 'read', NO_CONFIG)).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INTERCAMBIOS DEL PAÑUELO — `panueloTrades/<código>`
+// (PLAN_PANUELO_INTERCAMBIOS.md §4.2; servicio: panueloTradeService.ts, que
+// escribe SIEMPRE el nodo entero con una transacción)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('panueloTrades', () => {
+  const NOW = 1_800_000_000_000;
+  const CODE = 'K7WQ4M';
+  const PATH = `panueloTrades/${CODE}`;
+  const ANA = { uid: 'ana' };
+  const LUIS = { uid: 'luis' };
+  const MARTA = { uid: 'marta' };
+
+  const open = {
+    code: CODE,
+    status: 'open',
+    createdAt: NOW,
+    expiresAt: NOW + 600_000,
+    offer: { uid: 'ana', name: 'Ana', itemId: 'pulsera-amistad' },
+  };
+  const proposed = {
+    ...open,
+    status: 'proposed',
+    answer: { uid: 'luis', name: 'Luis', itemId: 'pulsera-camino' },
+  };
+  const accepted = { ...proposed, status: 'accepted' };
+
+  /** ¿Puede `who` pasar el nodo de `data` a `newData` en el instante `now`? */
+  const write = (
+    who: { uid: string } | null,
+    data: unknown,
+    newData: unknown,
+    now = NOW + 1000,
+    path = PATH,
+  ) =>
+    isAllowed(
+      rules,
+      path,
+      'write',
+      { auth: who, data, newData, now },
+      newData === null,
+    );
+
+  it('la raíz no se lee ni se escribe: no se listan intercambios ajenos', () => {
+    expect(can('panueloTrades', 'read', { ...FLAGS_ON, auth: ANA })).toBe(
+      false,
+    );
+    expect(can('panueloTrades', 'write', { ...FLAGS_ON, auth: ANA })).toBe(
+      false,
+    );
+  });
+
+  it('leer uno: con sesión sí, sin sesión no', () => {
+    expect(can(PATH, 'read', { auth: LUIS })).toBe(true);
+    expect(can(PATH, 'read', { auth: null })).toBe(false);
+  });
+
+  describe('crear', () => {
+    it('quien figura como dueño, sí', () => {
+      expect(write(ANA, null, open, NOW)).toBe(true);
+    });
+    it('a nombre de otra persona, no', () => {
+      expect(write(LUIS, null, open, NOW)).toBe(false);
+    });
+    it('sin sesión, no', () => {
+      expect(write(null, null, open, NOW)).toBe(false);
+    });
+    it('ya contestado, o en otro estado, no', () => {
+      expect(write(ANA, null, proposed, NOW)).toBe(false);
+      expect(write(ANA, null, { ...open, status: 'accepted' }, NOW)).toBe(
+        false,
+      );
+    });
+    it('con una caducidad de horas, no', () => {
+      expect(
+        write(ANA, null, { ...open, expiresAt: NOW + 3_600_000 }, NOW),
+      ).toBe(false);
+    });
+    it('encima de uno vivo, no; de uno abandonado hace más de un día, sí', () => {
+      const marta = { ...open, offer: { uid: 'marta', itemId: 'x' } };
+      expect(write(MARTA, open, marta, NOW + 1000)).toBe(false);
+      const later = NOW + 600_000 + 86_400_000 + 1;
+      expect(
+        write(MARTA, open, { ...marta, expiresAt: later + 600_000 }, later),
+      ).toBe(true);
+    });
+    it('con un código que no es su clave, o con letras prohibidas, no', () => {
+      expect(write(ANA, null, { ...open, code: 'AAAAAA' }, NOW)).toBe(false);
+      const bad = 'K7WQ4O';
+      expect(
+        write(ANA, null, { ...open, code: bad }, NOW, `panueloTrades/${bad}`),
+      ).toBe(false);
+    });
+    it('sin los campos de siempre, no', () => {
+      const rest: Record<string, unknown> = { ...open };
+      delete rest.createdAt;
+      expect(write(ANA, null, rest, NOW)).toBe(false);
+    });
+  });
+
+  describe('contestar', () => {
+    it('otra persona, a tiempo: sí', () => {
+      expect(write(LUIS, open, proposed)).toBe(true);
+    });
+    it('un regalo (sin `answer/itemId`): sí', () => {
+      expect(write(LUIS, open, { ...proposed, answer: { uid: 'luis' } })).toBe(
+        true,
+      );
+    });
+    it('quien lo abrió, no', () => {
+      expect(
+        write(ANA, open, { ...proposed, answer: { uid: 'ana', itemId: 'y' } }),
+      ).toBe(false);
+    });
+    it('a nombre de otro, no', () => {
+      expect(write(MARTA, open, proposed)).toBe(false);
+    });
+    it('tarde, no', () => {
+      expect(write(LUIS, open, proposed, NOW + 600_001)).toBe(false);
+    });
+    it('a uno ya contestado, no', () => {
+      const marta = { ...proposed, answer: { uid: 'marta', itemId: 'z' } };
+      expect(write(MARTA, proposed, marta)).toBe(false);
+    });
+    it('cambiando lo que ofreció Ana o la caducidad, no', () => {
+      expect(
+        write(LUIS, open, {
+          ...proposed,
+          offer: { ...open.offer, itemId: 'medalla-jubileo-2025' },
+        }),
+      ).toBe(false);
+      expect(
+        write(LUIS, open, { ...proposed, expiresAt: NOW + 9_999_999 }),
+      ).toBe(false);
+    });
+  });
+
+  describe('aceptar', () => {
+    it('solo quien lo abrió', () => {
+      expect(write(ANA, proposed, accepted)).toBe(true);
+      expect(write(LUIS, proposed, accepted)).toBe(false);
+      expect(write(MARTA, proposed, accepted)).toBe(false);
+    });
+    it('sin cambiar lo que le ofrecieron', () => {
+      expect(
+        write(ANA, proposed, {
+          ...accepted,
+          answer: { uid: 'luis', itemId: 'otra' },
+        }),
+      ).toBe(false);
+    });
+    it('aunque llegue un poco después de caducar (lo mira el móvil)', () => {
+      expect(write(ANA, proposed, accepted, NOW + 601_000)).toBe(true);
+    });
+    it('uno sin contestar, no', () => {
+      expect(write(ANA, open, { ...open, status: 'accepted' })).toBe(false);
+    });
+  });
+
+  describe('cancelar', () => {
+    const cancelled = { ...proposed, status: 'cancelled' };
+    it('las dos partes, sí', () => {
+      expect(write(ANA, proposed, cancelled)).toBe(true);
+      expect(write(LUIS, proposed, cancelled)).toBe(true);
+      expect(write(ANA, open, { ...open, status: 'cancelled' })).toBe(true);
+    });
+    it('un tercero, no', () => {
+      expect(write(MARTA, proposed, cancelled)).toBe(false);
+      // Ni colándose como respuesta en el mismo paso.
+      expect(
+        write(MARTA, open, {
+          ...open,
+          status: 'cancelled',
+          answer: { uid: 'marta' },
+        }),
+      ).toBe(false);
+    });
+    it('uno ya aceptado, no', () => {
+      expect(write(LUIS, accepted, { ...accepted, status: 'cancelled' })).toBe(
+        false,
+      );
+    });
+  });
+
+  describe('borrar', () => {
+    it('quien lo abrió, sí', () => {
+      expect(write(ANA, accepted, null)).toBe(true);
+    });
+    it('un tercero, solo pasado un día de la caducidad', () => {
+      expect(write(MARTA, open, null)).toBe(false);
+      expect(write(LUIS, accepted, null)).toBe(false);
+      expect(write(MARTA, open, null, NOW + 600_000 + 86_400_001)).toBe(true);
+    });
+    it('sin sesión, nunca', () => {
+      expect(write(null, open, null, NOW + 999_999_999)).toBe(false);
+    });
+  });
+
+  it('no depende de /_config: igual sin sembrarlo', () => {
+    expect(
+      isAllowed(rules, PATH, 'write', {
+        ...NO_CONFIG,
+        auth: ANA,
+        data: null,
+        newData: open,
+        now: NOW,
+      }),
+    ).toBe(true);
   });
 });

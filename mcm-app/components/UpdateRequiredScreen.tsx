@@ -23,6 +23,8 @@ import typography from '@/constants/typography';
 import { radii, shadows } from '@/constants/uiStyles';
 import { durations, motionEasings, reaEasings } from '@/constants/animations';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useLargeText from '@/hooks/useLargeText';
+import ScrollWhenLarge from '@/components/ui/ScrollWhenLarge';
 import { h } from '@/utils/haptics';
 import { openAppStore } from '@/utils/storeLinks';
 
@@ -97,6 +99,10 @@ export default function UpdateRequiredScreen({
     transform: [{ translateY: interpolate(enter.get(), [0, 1], [12, 0]) }],
   }));
 
+  // Con la letra del sistema grande la columna no cabía (y los botones, lo
+  // único que se puede tocar aquí, quedaban fuera): scroll y sin la escena.
+  const large = useLargeText();
+
   const handleGoToStore = () => {
     h.tap();
     openAppStore();
@@ -111,8 +117,12 @@ export default function UpdateRequiredScreen({
       style={[styles.container, { backgroundColor: theme.background }]}
       edges={['top', 'bottom']}
     >
-      <View style={styles.content}>
-        <UpdateScene />
+      <ScrollWhenLarge
+        large={large}
+        style={styles.content}
+        largeStyle={{ paddingVertical: spacing.lg }}
+      >
+        {!large && <UpdateScene />}
 
         <Animated.View style={[styles.copy, enterStyle]}>
           <Text
@@ -161,7 +171,7 @@ export default function UpdateRequiredScreen({
             Tienes la {currentVersion} · mínima {minVersion}
           </Text>
         </Animated.View>
-      </View>
+      </ScrollWhenLarge>
     </SafeAreaView>
   );
 }

@@ -54,14 +54,21 @@ const render = () => {
 };
 
 describe('puerta de Comunica', () => {
-  it('modo normal → el legado', () => {
+  it('modo normal, sin interruptor → la nativa (la de todos desde el 14/11/2026)', () => {
     mockAlpha = false;
     mockFlag = undefined;
-    expect(render()).toBe('LEGADO');
+    expect(render()).toBe('NATIVA');
   });
-  it('modo alpha → la nativa', () => {
+  it('el `alpha` que queda en Firebase de las pruebas → la nativa para todos', () => {
+    mockAlpha = false;
+    mockFlag = 'alpha';
+    expect(render()).toBe('NATIVA');
+  });
+  it('solo-alpha: modo normal → el legado; alpha → la nativa', () => {
+    mockFlag = 'solo-alpha';
+    mockAlpha = false;
+    expect(render()).toBe('LEGADO');
     mockAlpha = true;
-    mockFlag = undefined;
     expect(render()).toBe('NATIVA');
   });
   it('interruptor en off → el legado aunque haya alpha', () => {

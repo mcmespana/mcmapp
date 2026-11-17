@@ -1,7 +1,10 @@
 import { Linking, Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 
-const IOS_APP_ID = '6745557177';
+// El id de App Store Connect con el que se publica (`ascAppId` de eas.json).
+// Hasta 2026-11-07 aquí había 6745557177, que no existe: «Actualizar en la
+// tienda» llevaba a «no disponible en tu país». Lo vigila storeLinks.test.ts.
+const IOS_APP_ID = '6753905393';
 const ANDROID_PACKAGE = 'com.mcmespana.mcmapp';
 
 const STORE_URLS = {

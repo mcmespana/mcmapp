@@ -28,6 +28,7 @@ import { extractYouTubeId } from '@/utils/youtube';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { durations, springs } from '@/constants/animations';
+import { rubberBandClamp } from '@/utils/gesturePhysics';
 
 export interface FloatingMediaSource {
   /** 'youtube' → URL de embed de YouTube · 'drive' → URL de preview de Drive. */
@@ -53,6 +54,8 @@ const VIDEO_HEIGHT = Math.round((PLAYER_WIDTH * 9) / 16);
 // nada".
 const AUDIO_HEIGHT = 116;
 const SIDE_MARGIN = 14;
+/** Aire entre la cabecera y el reproductor cuando se sube del todo. */
+const HEADER_GAP = 8;
 /**
  * Alto de la barra de navegación del sistema, sin contar la barra de estado.
  * Solo es el respaldo para cuando el reproductor se monta fuera de una
@@ -142,6 +145,17 @@ export default function FloatingMediaPlayer({
   // El arrastre va por gesture-handler, así que corre entero en el hilo de UI:
   // el reproductor sigue al dedo aunque JS esté ocupado (que es lo normal, con
   // un WebView reproduciendo al lado).
+  // Hasta dónde se puede llevar (relativo a su sitio de reposo, abajo a la
+  // derecha): dentro de pantalla, con su margen. Se calcula en `onLayout` del
+  // reproductor. Antes no había límites: un arrastre largo lo dejaba medio
+  // fuera de pantalla —o del todo— sin forma de recuperarlo salvo cerrarlo.
+  const minX = useSharedValue(-Infinity);
+  const minY = useSharedValue(-Infinity);
+
+  // Skill `gestures`. SEGUIR: 1:1 con el dedo y, pasado el borde, elástico
+  // (no un tope seco). SOLTAR: si quedó fuera, vuelve dentro con un muelle que
+  // hereda la velocidad del dedo; si quedó dentro, se queda donde lo dejaste
+  // (es un recolocar, no un lanzar: sin inercia).
   const drag = Gesture.Pan()
     .minDistance(4)
     .onStart(() => {
@@ -149,8 +163,20 @@ export default function FloatingMediaPlayer({
       startY.set(panY.get());
     })
     .onUpdate((e) => {
-      panX.set(startX.get() + e.translationX);
-      panY.set(startY.get() + e.translationY);
+      panX.set(rubberBandClamp(startX.get() + e.translationX, minX.get(), 0));
+      panY.set(rubberBandClamp(startY.get() + e.translationY, minY.get(), 0));
+    })
+    .onEnd((e) => {
+      const x = panX.get();
+      const y = panY.get();
+      const cx = Math.min(0, Math.max(minX.get(), x));
+      const cy = Math.min(0, Math.max(minY.get(), y));
+      if (cx !== x) {
+        panX.set(withSpring(cx, { ...springs.snap, velocity: e.velocityX }));
+      }
+      if (cy !== y) {
+        panY.set(withSpring(cy, { ...springs.snap, velocity: e.velocityY }));
+      }
     });
 
   // Fuente nueva → vuelta a "cargando". Se ajusta DURANTE el render (el patrón
@@ -395,6 +421,25 @@ export default function FloatingMediaPlayer({
               pipStyle,
             ],
       ]}
+      // Layout SIN transform: su sitio de reposo. De ahí salen los límites del
+      // arrastre (que no se pueda sacar de pantalla). Por arriba, el tope es
+      // el FINAL DE LA CABECERA (`headerReserve`), no la barra de estado: con
+      // la cabecera transparente, sus botones (atrás, multimedia, opciones)
+      // quedan encima y se comen los toques, así que la barra de arrastre
+      // metida debajo ya no se podía agarrar (2026-11-08).
+      onLayout={
+        fullscreen
+          ? undefined
+          : (e) => {
+              const { x, y } = e.nativeEvent.layout;
+              minX.set(SIDE_MARGIN - x);
+              const top = headerReserve + HEADER_GAP - y;
+              minY.set(top);
+              // Si ya estaba por encima del tope (giro de pantalla, cabecera
+              // que cambia de alto), se recoloca dentro.
+              if (panY.get() < top) panY.set(withSpring(top, springs.snap));
+            }
+      }
     >
       {/* Barra superior — arrastre (solo PiP) + título + acciones */}
       {fullscreen ? (

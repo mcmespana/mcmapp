@@ -164,7 +164,10 @@ export function itemTone(i: Pick<DayItem, 'kind' | 'state'>): Tone {
 export const dotsOf = (items: readonly DayItem[]): Tone[] =>
   items.slice(0, MAX_DOTS).map(itemTone);
 
-/** «Todo el día · Convivencia · Con plaza» o «17:30 · Curso · Asististe». */
+/**
+ * «17:30 · Curso · Asististe» o «Todo el día · Con plaza». El evento solo se dice si no es ya el título de la fila (las bandas, y las
+ * sesiones del curso, que el CRM llama como su evento): repetirlo era leer «COM | Curso 2026-2027 · BU» dos veces seguidas.
+ */
 export function itemLine(i: DayItem): string {
   const what =
     i.kind === 'session'
@@ -172,7 +175,11 @@ export function itemLine(i: DayItem): string {
       : i.kind === 'registered'
         ? 'Con plaza'
         : 'Abierto a inscripción';
-  return `${i.time ?? 'Todo el día'} · ${i.eventName} · ${what}`;
+  const event =
+    i.eventName.trim() && i.eventName.trim() !== i.name.trim()
+      ? ` · ${i.eventName}`
+      : '';
+  return `${i.time ?? 'Todo el día'}${event} · ${what}`;
 }
 
 /** «14 de octubre, 2 actividades» para el lector de pantalla. */
@@ -293,7 +300,7 @@ export function agendaOfMonth(
 }
 
 export interface AgendaItem {
-  kind: 'open' | 'session';
+  kind: 'open';
   id: string;
   eventId: string;
   title: string;
@@ -302,16 +309,21 @@ export interface AgendaItem {
   line: string;
 }
 
-/** Para la portada de familias: primero los abiertos a inscripción (los más cercanos) y luego las próximas sesiones; `n` como mucho. */
+/**
+ * Para la portada de familias: los abiertos a inscripción, los más cercanos primero; `n` como mucho.
+ *
+ * LAS SESIONES NO SALEN (como en la web desde el 24/10/2026): te apuntas al evento, no a sus sesiones, así que listarlas era ruido (las
+ * 22 de un curso semanal) y a un monitor le enseñaba las de los chavales. Para las sesiones y su asistencia está el calendario.
+ */
 export function upcomingAgendaItems(
-  data: Pick<CalendarData, 'sessions' | 'openEvents'>,
+  data: Pick<CalendarData, 'openEvents'>,
   today: string,
   n: number,
-  nowMs: number,
 ): AgendaItem[] {
-  const open: AgendaItem[] = data.openEvents
+  return data.openEvents
     .filter((e) => (e.endDate ?? e.startDate) >= today)
     .sort((a, b) => (a.startDate < b.startDate ? -1 : 1))
+    .slice(0, n)
     .map((e) => ({
       kind: 'open' as const,
       id: e.id,
@@ -320,18 +332,6 @@ export function upcomingAgendaItems(
       day: e.startDate,
       line: `${fullDay(e.startDate)} · Abierto a inscripción`,
     }));
-  const sessions: AgendaItem[] = data.sessions
-    .filter((s) => new Date(s.startsAt).getTime() > nowMs)
-    .sort((a, b) => (a.startsAt < b.startsAt ? -1 : 1))
-    .map((s) => ({
-      kind: 'session' as const,
-      id: s.id,
-      eventId: s.eventId,
-      title: s.name,
-      day: madridDay(new Date(s.startsAt)),
-      line: `${fullDay(madridDay(new Date(s.startsAt)))} · ${timeRange(s)}`,
-    }));
-  return [...open, ...sessions].slice(0, n);
 }
 
 export const CALENDAR_TEXT = {

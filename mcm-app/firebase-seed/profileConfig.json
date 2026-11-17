@@ -8,8 +8,9 @@
     "maintenanceMessage": "",
     "minAppVersion": "0.0.0",
     "appReviewMode": false,
-    "comunicaNativa": "alpha",
+    "comunicaNativa": "all",
     "carismochito": "alpha",
+    "panuelo": "alpha",
     "fotosEnIpad": true
   },
   "profiles": {
@@ -25,7 +26,7 @@
         "cancionero",
         "mas"
       ],
-      "homeButtons": ["fotos", "evangelio", "cancionero"],
+      "homeButtons": ["fotos", "evangelio", "cancionero", "cantos-domingo"],
       "masItems": ["eventos-pasados"],
       "defaultCalendars": ["mcm-europa"],
       "albumTags": ["all"],
@@ -43,7 +44,13 @@
         "cancionero",
         "mas"
       ],
-      "homeButtons": ["fotos", "evangelio", "comunica", "cancionero"],
+      "homeButtons": [
+        "fotos",
+        "evangelio",
+        "comunica",
+        "cancionero",
+        "cantos-domingo"
+      ],
       "masItems": ["comunica-gestion", "eventos-pasados"],
       "defaultCalendars": ["mcm-europa"],
       "albumTags": ["all"],
@@ -61,7 +68,7 @@
         "cancionero",
         "mas"
       ],
-      "homeButtons": ["fotos", "evangelio", "cancionero"],
+      "homeButtons": ["fotos", "evangelio", "cancionero", "cantos-domingo"],
       "masItems": ["comunica-gestion", "eventos-pasados"],
       "defaultCalendars": ["mcm-europa"],
       "albumTags": ["all"],

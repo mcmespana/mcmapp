@@ -32,6 +32,8 @@ import {
 import { LabStatusPanel } from '@/components/preview-channel/LabStatusPanel';
 import { CarismochitoLabPanel } from '@/components/preview-channel/CarismochitoLabPanel';
 import { MedallasLabPanel } from '@/components/preview-channel/MedallasLabPanel';
+import { PanueloLabPanel } from '@/components/preview-channel/PanueloLabPanel';
+import { usePanueloAvailable } from '@/hooks/usePanueloAvailable';
 import { ComunicaLabPanel } from '@/components/preview-channel/ComunicaLabPanel';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
@@ -61,6 +63,7 @@ export function PreviewChannelModal() {
   } = usePreviewChannel();
   const busy = status.kind === 'switching';
   const { huntEnabled } = useCarismochitoHunt();
+  const { available: panueloAvailable } = usePanueloAvailable();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const phase = useSharedValue(0);
@@ -179,6 +182,10 @@ export function PreviewChannelModal() {
               (modo tester encendido y `global.carismochito` en "alpha", o
               "all"). Sin toques escondidos. */}
           {huntEnabled ? <CarismochitoLabPanel /> : null}
+
+          {/* El pañuelo virtual: sale cuando está disponible (modo tester
+              encendido y `global.panuelo` en "alpha", o "all"). */}
+          {panueloAvailable ? <PanueloLabPanel /> : null}
 
           {/* Medallas en 3D: primer paso del sistema de recompensas por ir a
               eventos. Visible para cualquiera que abra el laboratorio. */}

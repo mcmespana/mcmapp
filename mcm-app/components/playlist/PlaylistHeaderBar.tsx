@@ -15,6 +15,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '@/components/ui/icons';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
+import PlaylistDesignTools from '@/components/playlist/PlaylistDesignTools';
 import type { SelectedSongsStyles } from '@/components/playlist/selectedSongsStyles';
 import type { PlaylistLink } from '@/hooks/usePlaylistLink';
 import { formatRelativeDate } from '@/utils/playlistSync';
@@ -32,6 +33,8 @@ export interface PlaylistHeaderBarProps {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   styles: SelectedSongsStyles;
+  /** Abre las lecturas del próximo domingo. */
+  onOpenSunday: () => void;
 }
 
 export const PlaylistHeaderBar = React.memo(function PlaylistHeaderBar({
@@ -43,6 +46,7 @@ export const PlaylistHeaderBar = React.memo(function PlaylistHeaderBar({
   viewMode,
   setViewMode,
   styles,
+  onOpenSunday,
 }: PlaylistHeaderBarProps) {
   const statusLabel = link
     ? isSynced
@@ -103,6 +107,7 @@ export const PlaylistHeaderBar = React.memo(function PlaylistHeaderBar({
           ) : null}
         </TouchableOpacity>
       ) : null}
+      <PlaylistDesignTools onOpenSunday={onOpenSunday} />
       {visibleCount > 1 ? (
         <View style={styles.viewToggleRow}>
           <View style={styles.viewToggle} accessibilityRole="tablist">

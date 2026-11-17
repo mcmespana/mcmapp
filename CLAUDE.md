@@ -21,7 +21,8 @@
 │   └── SEGURIDAD.md        Reglas Firebase RTDB y gestión de credenciales
 ├── scraper-lecturas/       ← Scraper Python de lecturas litúrgicas (corre vía GitHub Action)
 ├── portadas-albumes/       ← Portadas de álbumes: las URLs de Firebase apuntan aquí — NO borrar
-├── medallas-3d/            ← Modelos .glb de las medallas; la app los descarga vía jsDelivr — NO borrar
+├── medallas-3d/            ← Modelos .glb de las medallas (y thumbs/ para el pañuelo); la app los descarga vía jsDelivr — NO borrar
+├── piezas-3d/              ← Modelos .glb de chapas, pin y troncho reales (ficha en piezas.json, generador en _fuente/) — NO borrar
 ├── .agents/skills/         ← Skills de UI para agentes (lockfile: skills-lock.json)
 ├── _para-borrar/           ← Cuarentena de ficheros dudosos; su README dice qué es cada uno
 └── README.md               ← Guía rápida para humanos (setup, builds, releases)
@@ -39,6 +40,7 @@
    - `OTA: ❌ — requiere build nativo (paquetes: [lista]). Commit con [skip-ota].`
    - `OTA: ✅ — solo JS.`
      (detalles del workflow en OTA de `mcm-app/CLAUDE.md`; flujo preview → production y rollback en `docs/desarrollo/OTA.md`)
+7b. **Ritmo de ramas (decisión del usuario, 2026-11-07):** se trabaja y se sube a `main`; lo que hay que probar va a `preview` y reposa; `production` se mueve **por tandas**, solo cuando el usuario lo pide (cada OTA de producción le enseña a todo el mundo la pantalla de actualizar). **Al cerrar cada tarea, di cuántos cambios hay en `preview` pendientes de `production` y recomienda «ya las puedes pasar» o «aguanta».** Detalle en `docs/desarrollo/OTA.md` («Norma de ritmo»).
 8. **Sin acceso a Firebase, usa `mcm-app/firebase-seed/`** como referencia de la estructura real de los nodos (perfiles, encuestas, eventos como el Jubileo 2025) para construir JSONs nuevos
 9. **Antes de retomar o priorizar cualquier plan/tarea de fondo, lee `docs/planes/BACKLOG.md` ENTERO** — es la fuente única de verdad del orden de ejecución, qué está bloqueado por una decisión pendiente del usuario, y el protocolo de trabajo (qué hacer cuando dicen "seguimos" o "me sobran tokens"). No priorices desde cero ni mires un solo `PLAN_*.md` suelto sin pasar antes por ahí.
 10. **Un plan dentro de `docs/planes/archivo/` está HECHO o ANULADO: NO lo re-ejecutes.** El índice de qué sigue vivo es `docs/planes/README.md`. Al terminar un plan, muévelo a `archivo/` **en el mismo commit** que cierra el trabajo — dejarlo en su sitio con una cabecera de "✅ hecho" no basta, ya provocó que dos sesiones ejecutaran los mismos 15 planes en paralelo.
@@ -92,6 +94,9 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Eventos (Jubileo, encuentros, retiros…)                                  | `docs/funcionalidades/EVENTOS.md`                                            |
 | Calendarios ICS y su precacheo (Cloud Function)                          | `docs/funcionalidades/CALENDARIOS.md`                                        |
 | Modo Carismochito y la colección (escondida en el Laboratorio Alpha)     | `docs/funcionalidades/CARISMOCHITO.md`                                       |
+| **Pañuelo virtual en 3D** (piezas, visor, intercambios; en el Laboratorio) | `docs/funcionalidades/PANUELO.md` + `docs/contratos/PANUELO_CONTRATO.md`     |
+| Modelos 3D y caras de las chapas, pines y troncho de verdad             | `piezas-3d/README.md`                                                        |
+| **Editor de canciones** (administradores; sustituye al panel secreto)     | `docs/funcionalidades/EDITOR_CANCIONES.md`                                   |
 | Coros y playlists compartidas                                            | `docs/funcionalidades/COROS.md`                                              |
 | Encuestas/evaluaciones                                                   | `docs/funcionalidades/ENCUESTAS.md` + `docs/contratos/ENCUESTAS_CONTRATO.md` |
 | Sistema de perfiles (App ↔ Panel)                                        | `docs/contratos/PANEL_PERFILES.md`                                           |
@@ -108,6 +113,8 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Build de tienda de agosto 2026 (paso a paso)                             | `docs/desarrollo/BUILD_AGOSTO_2026.md`                                       |
 | Cómo se pinta una canción (hoja, cortes, vista compacta, admin igual)    | `docs/funcionalidades/HOJA_CANCION.md`                                       |
 | Arreglos del cantoral (`{arr:}`)                                         | `docs/funcionalidades/ARREGLOS.md`                                           |
+| Contigo: compartir como imagen, exportar y «Tu año»                     | `docs/funcionalidades/CONTIGO_COMPARTIR.md`                                  |
 | Subrayado de lecturas (Contigo)                                          | `docs/funcionalidades/SUBRAYADO.md`                                          |
 | Afinador de guitarra del cantoral                                        | `docs/funcionalidades/AFINADOR.md`                                           |
+| «Cantos para el domingo» (misa propuesta según el día litúrgico)         | `docs/funcionalidades/CANTOS_DOMINGO.md`                                     |
 | Recordatorios de Contigo (textos editables)                              | `docs/funcionalidades/RECORDATORIOS_CONTIGO.md`                              |

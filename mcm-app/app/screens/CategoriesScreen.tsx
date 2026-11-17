@@ -1,3 +1,4 @@
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 import {
   FlatList,
   Text,
@@ -6,6 +7,7 @@ import {
   Platform,
   RefreshControl,
 } from 'react-native';
+import { Stack } from 'expo-router';
 import { useIsFocused, useNavigation } from 'expo-router/react-navigation';
 import { openCantoral } from '@/utils/cantoralNavigation';
 import {
@@ -22,6 +24,7 @@ import ListSkeleton from '@/components/ListSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useLargeText, { CHROME_MAX_FONT_SCALE } from '@/hooks/useLargeText';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import colors, {
   Colors,
@@ -66,6 +69,10 @@ const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
 const SELECTED_SONGS_CATEGORY_ID = '__SELECTED_SONGS__';
 
+const isIOS = Platform.OS === 'ios';
+/** Respiro tras elegir en el menú nativo, antes de abrir una hoja. */
+const NATIVE_MENU_SETTLE_MS = 300;
+
 export default function CategoriesScreen() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
@@ -79,6 +86,8 @@ export default function CategoriesScreen() {
     [scheme, layout.isWide, layout.contentMaxWidth],
   );
   const isDark = scheme === 'dark';
+  // Letra del sistema grande: nombres de categoría en más de una línea.
+  const large = useLargeText();
   const glyphColor = themeColors(isDark).link;
   const {
     data: songsData,
@@ -229,6 +238,7 @@ export default function CategoriesScreen() {
   // para que iOS 26 les ponga su cápsula liquid-glass (una por lado).
   const { choir: myChoir, isHydrated: choirHydrated } = useMyChoir();
   const [showMenu, setShowMenu] = useState(false);
+  const { isAdmin } = useAdminStatus();
   const hasSongs = sortedCategories.length > 0;
   const headerIconColor = cantoralHeaderTint(isDark);
 
@@ -246,12 +256,13 @@ export default function CategoriesScreen() {
     }
   }, [myChoir, choirHydrated]);
 
-  const menuActions = useMemo<ContextMenuAction[]>(
+  const menuActions = useMemo<(ContextMenuAction & { sfSymbol: string })[]>(
     () => [
       {
         key: 'tuner',
         label: 'Afinador',
         icon: 'graphic-eq',
+        sfSymbol: 'waveform',
         onPress: () => openCantoral('Tuner'),
       },
       ...(hasTags
@@ -260,6 +271,7 @@ export default function CategoriesScreen() {
               key: 'tags',
               label: 'Etiquetas',
               icon: 'sell' as const,
+              sfSymbol: 'tag',
               onPress: () => setShowTags(true),
             },
           ]
@@ -270,6 +282,7 @@ export default function CategoriesScreen() {
               key: 'choir',
               label: `Playlists de ${myChoir.name}`,
               icon: 'groups' as const,
+              sfSymbol: 'person.3',
               onPress: () => openCantoral('SelectedSongs', { hoja: 'coro' }),
             },
           ]
@@ -283,19 +296,79 @@ export default function CategoriesScreen() {
               key: 'suggest',
               label: 'Sugerir una canción',
               icon: 'add-circle-outline' as const,
+              sfSymbol: 'plus.bubble',
               onPress: () => setShowForm(true),
             },
             {
               key: 'help',
               label: 'Cómo ver las canciones',
               icon: 'help-outline' as const,
+              sfSymbol: 'questionmark.circle',
               onPress: openOnboarding,
             },
           ]
         : []),
+      ...(isAdmin
+        ? [
+            {
+              key: 'new-song',
+              label: 'Nueva canción',
+              icon: 'post-add' as const,
+              sfSymbol: 'doc.badge.plus',
+              onPress: () => openCantoral('SongEditor', { nueva: '1' }),
+            },
+            {
+              key: 'reorder-songs',
+              label: 'Ordenar canciones',
+              icon: 'swap-vert' as const,
+              sfSymbol: 'arrow.up.arrow.down',
+              onPress: () => openCantoral('SongReorder'),
+            },
+          ]
+        : []),
     ],
-    [hasTags, hasSongs, myChoir, openOnboarding],
+    [hasTags, hasSongs, myChoir, openOnboarding, isAdmin],
   );
+  // iOS: el «⋯» es el menú NATIVO del sistema (UIMenu). Con la hoja propia,
+  // cada opción que abre OTRA hoja (etiquetas, sugerir, la ayuda) tenía que
+  // esperar a que la primera terminara de irse, y en iOS a veces no llegaba
+  // a abrirse nunca: un Modal no se presenta mientras otro se está quitando.
+  // El menú del sistema no es un Modal, así que no hay nada que esperar.
+  const nativeMenu = isIOS ? (
+    <Stack.Toolbar placement="right">
+      <Stack.Toolbar.Menu
+        icon="ellipsis"
+        tintColor={headerIconColor}
+        accessibilityLabel="Más opciones del cantoral"
+      >
+        {menuActions.map((a) => (
+          <Stack.Toolbar.MenuAction
+            key={a.key}
+            icon={a.sfSymbol as never}
+            onPress={() => {
+              h.tap();
+              // Que el menú termine de cerrarse antes de presentar una hoja.
+              setTimeout(a.onPress, NATIVE_MENU_SETTLE_MS);
+            }}
+          >
+            {a.label}
+          </Stack.Toolbar.MenuAction>
+        ))}
+      </Stack.Toolbar.Menu>
+      <Stack.Toolbar.Button
+        icon="magnifyingglass"
+        tintColor={headerIconColor}
+        accessibilityLabel="Buscar canción"
+        onPress={() =>
+          openCantoral('SongsList', {
+            categoryId: ALL_SONGS_CATEGORY_ID,
+            categoryName: ALL_SONGS_CATEGORY_NAME,
+          })
+        }
+      />
+    </Stack.Toolbar>
+  ) : null;
+
   const menuSheet = (
     <ContextMenuSheet
       visible={showMenu}
@@ -322,40 +395,48 @@ export default function CategoriesScreen() {
           <MaterialIcons name="groups" size={24} color={headerIconColor} />
         </PressableFeedback>
       ),
-      headerRight: () => (
-        <View style={styles.headerActions}>
-          <PressableFeedback
-            onPress={() => {
-              h.tap();
-              setShowMenu(true);
-            }}
-            style={styles.headerNativeButton}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="Más opciones del cantoral"
-          >
-            <MaterialIcons
-              name="more-horiz"
-              size={24}
-              color={headerIconColor}
-            />
-          </PressableFeedback>
-          <PressableFeedback
-            onPress={() =>
-              openCantoral('SongsList', {
-                categoryId: ALL_SONGS_CATEGORY_ID,
-                categoryName: ALL_SONGS_CATEGORY_NAME,
-              })
-            }
-            style={styles.headerNativeButton}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="Buscar canción"
-          >
-            <MaterialIcons name="search" size={24} color={headerIconColor} />
-          </PressableFeedback>
-        </View>
-      ),
+      // En iOS la derecha la pone `Stack.Toolbar` (más abajo), con el menú del
+      // sistema.
+      headerRight: isIOS
+        ? undefined
+        : () => (
+            <View style={styles.headerActions}>
+              <PressableFeedback
+                onPress={() => {
+                  h.tap();
+                  setShowMenu(true);
+                }}
+                style={styles.headerNativeButton}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Más opciones del cantoral"
+              >
+                <MaterialIcons
+                  name="more-horiz"
+                  size={24}
+                  color={headerIconColor}
+                />
+              </PressableFeedback>
+              <PressableFeedback
+                onPress={() =>
+                  openCantoral('SongsList', {
+                    categoryId: ALL_SONGS_CATEGORY_ID,
+                    categoryName: ALL_SONGS_CATEGORY_NAME,
+                  })
+                }
+                style={styles.headerNativeButton}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Buscar canción"
+              >
+                <MaterialIcons
+                  name="search"
+                  size={24}
+                  color={headerIconColor}
+                />
+              </PressableFeedback>
+            </View>
+          ),
     });
   }, [navigation, styles, headerIconColor, onChoirPress, myChoir]);
 
@@ -426,44 +507,46 @@ export default function CategoriesScreen() {
       if (isSpecial) {
         const count = item.songCount;
         return (
-          <PressableFeedback
-            onPress={onPress}
-            style={[styles.row, styles.selectionRow]}
-            accessibilityRole="button"
-            accessibilityLabel={`Tu selección, ${
-              count === 0
-                ? 'vacía'
-                : `${count} ${count === 1 ? 'canción' : 'canciones'}`
-            }`}
-          >
-            <PressableFeedback.Highlight />
-            <View style={[styles.rowIcon, styles.selectionIcon]}>
-              {emoji ? (
-                <Text style={styles.emojiText}>{emoji}</Text>
-              ) : (
-                <MaterialIcons
-                  name="queue-music"
-                  size={22}
-                  color={glyphColor}
-                />
-              )}
-            </View>
-            <View style={styles.selectionContent}>
-              <Text style={[styles.rowTitle, styles.selectionTitle]}>
-                {displayName}
-              </Text>
-              <Text style={styles.selectionSubtitle} numberOfLines={1}>
-                {count === 0
-                  ? 'Vacía · añade canciones desde el cantoral'
-                  : `${count} ${count === 1 ? 'canción' : 'canciones'}`}
-              </Text>
-            </View>
-            <MaterialIcons
-              name="chevron-right"
-              size={20}
-              color={themeColors(isDark).link}
-            />
-          </PressableFeedback>
+          <View>
+            <PressableFeedback
+              onPress={onPress}
+              style={[styles.row, styles.selectionRow]}
+              accessibilityRole="button"
+              accessibilityLabel={`Tu selección, ${
+                count === 0
+                  ? 'vacía'
+                  : `${count} ${count === 1 ? 'canción' : 'canciones'}`
+              }`}
+            >
+              <PressableFeedback.Highlight />
+              <View style={[styles.rowIcon, styles.selectionIcon]}>
+                {emoji ? (
+                  <Text style={styles.emojiText}>{emoji}</Text>
+                ) : (
+                  <MaterialIcons
+                    name="queue-music"
+                    size={22}
+                    color={glyphColor}
+                  />
+                )}
+              </View>
+              <View style={styles.selectionContent}>
+                <Text style={[styles.rowTitle, styles.selectionTitle]}>
+                  {displayName}
+                </Text>
+                <Text style={styles.selectionSubtitle} numberOfLines={1}>
+                  {count === 0
+                    ? 'Vacía · añade canciones desde el cantoral'
+                    : `${count} ${count === 1 ? 'canción' : 'canciones'}`}
+                </Text>
+              </View>
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color={themeColors(isDark).link}
+              />
+            </PressableFeedback>
+          </View>
         );
       }
 
@@ -487,11 +570,17 @@ export default function CategoriesScreen() {
           <PressableFeedback.Highlight />
           {emoji ? (
             <View style={styles.rowIcon}>
-              <Text style={styles.emojiText}>{emoji}</Text>
+              {/* Emoji en un recuadro de 36 px: techo de cromo. */}
+              <Text
+                style={styles.emojiText}
+                maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+              >
+                {emoji}
+              </Text>
             </View>
           ) : null}
           <View style={[styles.rowContent, !isLast && styles.rowDivider]}>
-            <Text style={styles.rowTitle} numberOfLines={1}>
+            <Text style={styles.rowTitle} numberOfLines={large ? 3 : 1}>
               {displayName}
             </Text>
             <Text style={styles.rowCount}>{item.songCount}</Text>
@@ -513,7 +602,7 @@ export default function CategoriesScreen() {
         </View>
       );
     },
-    [isDark, isWideLayout, styles, lastIndex, glyphColor],
+    [isDark, isWideLayout, styles, lastIndex, glyphColor, large],
   );
 
   // ── Hero "Tu selección" para iPad ────────────────────────────────────
@@ -522,30 +611,32 @@ export default function CategoriesScreen() {
     const selectionItem = displayCategories[0];
     if (!selectionItem) return null;
     return (
-      <PressableFeedback
-        onPress={() => openCantoral('SelectedSongs')}
-        style={styles.heroCard}
-      >
-        <PressableFeedback.Highlight />
-        <View style={styles.heroEmojiWrap}>
-          <MaterialIcons name="queue-music" size={30} color={glyphColor} />
-        </View>
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>Tu selección</Text>
-          <Text style={styles.heroSubtitle}>
-            {selectionItem.songCount === 0
-              ? 'Añade canciones para tenerlas a mano'
-              : `${selectionItem.songCount} ${
-                  selectionItem.songCount === 1 ? 'canción' : 'canciones'
-                }`}
-          </Text>
-        </View>
-        <MaterialIcons
-          name="chevron-right"
-          size={24}
-          color={themeColors(isDark).link}
-        />
-      </PressableFeedback>
+      <View>
+        <PressableFeedback
+          onPress={() => openCantoral('SelectedSongs')}
+          style={styles.heroCard}
+        >
+          <PressableFeedback.Highlight />
+          <View style={styles.heroEmojiWrap}>
+            <MaterialIcons name="queue-music" size={30} color={glyphColor} />
+          </View>
+          <View style={styles.heroContent}>
+            <Text style={styles.heroTitle}>Tu selección</Text>
+            <Text style={styles.heroSubtitle}>
+              {selectionItem.songCount === 0
+                ? 'Añade canciones para tenerlas a mano'
+                : `${selectionItem.songCount} ${
+                    selectionItem.songCount === 1 ? 'canción' : 'canciones'
+                  }`}
+            </Text>
+          </View>
+          <MaterialIcons
+            name="chevron-right"
+            size={24}
+            color={themeColors(isDark).link}
+          />
+        </PressableFeedback>
+      </View>
     );
   }, [isWideLayout, displayCategories, isDark, styles, glyphColor]);
 
@@ -664,6 +755,7 @@ export default function CategoriesScreen() {
         tags={tagIndex.tags}
       />
 
+      {nativeMenu}
       {menuSheet}
 
       <SuggestSongModal

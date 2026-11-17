@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@/components/ui/icons';
+import useLargeText from '@/hooks/useLargeText';
+import ScrollWhenLarge from '@/components/ui/ScrollWhenLarge';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -76,28 +78,38 @@ export default function MaintenanceScreen({ message }: Props) {
     transform: [{ scale: interpolate(halo.get(), [0, 1], [0.9, 1.15]) }],
   }));
 
+  // Letra del sistema grande: el texto (que llega del Panel) se puede leer
+  // entero con scroll, y el icono deja el sitio al texto.
+  const large = useLargeText();
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
       edges={['top', 'bottom']}
     >
-      <View style={styles.content}>
-        <View style={styles.hero}>
-          <Animated.View style={[styles.heroHalo, haloStyle]} />
-          <Animated.View
-            style={[
-              styles.iconCircle,
-              { backgroundColor: brand.primary },
-              iconWrapStyle,
-            ]}
-          >
-            <MaterialIcons name="build" size={38} color="#fff" />
-          </Animated.View>
-        </View>
+      <ScrollWhenLarge
+        large={large}
+        style={styles.content}
+        largeStyle={{ paddingVertical: spacing.lg }}
+      >
+        {!large && (
+          <View style={styles.hero}>
+            <Animated.View style={[styles.heroHalo, haloStyle]} />
+            <Animated.View
+              style={[
+                styles.iconCircle,
+                { backgroundColor: brand.primary },
+                iconWrapStyle,
+              ]}
+            >
+              <MaterialIcons name="build" size={38} color="#fff" />
+            </Animated.View>
+          </View>
+        )}
 
         <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
         <Text style={[styles.body, { color: theme.icon }]}>{body}</Text>
-      </View>
+      </ScrollWhenLarge>
     </SafeAreaView>
   );
 }

@@ -222,6 +222,14 @@ describe('gesto de arrastre del BottomSheet', () => {
     expect(shouldCloseOnRelease(-40, -1.5)).toBe(false);
   });
 
+  it('no cierra si, tras bajar mucho, se suelta subiendo rápido (arrepentirse)', () => {
+    expect(shouldCloseOnRelease(160, -1.2)).toBe(false);
+  });
+
+  it('cierra si tras bajar mucho se suelta casi quieta', () => {
+    expect(shouldCloseOnRelease(160, -0.2)).toBe(true);
+  });
+
   it('sigue al dedo 1:1 hacia abajo', () => {
     expect(dragOffsetFor(60)).toBe(60);
   });

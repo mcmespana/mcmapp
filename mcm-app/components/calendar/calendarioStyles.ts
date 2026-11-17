@@ -150,6 +150,16 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       alignItems: 'center',
       gap: 12,
     },
+    // ── Letra del sistema grande (`useLargeText`) ──
+    // La pastilla «Volver a hoy» baja de fila en vez de salirse por la
+    // derecha; el mes deja de exigir 180 px y encoge; la etiqueta del
+    // calendario va debajo del título del evento.
+    eventSectionHeaderLarge: { flexWrap: 'wrap', rowGap: 8 },
+    eventSectionLeftLarge: { flexShrink: 1 },
+    shrink: { flexShrink: 1 },
+    monthLabelLarge: { minWidth: 0, flexShrink: 1 },
+    eventCardTopLarge: { flexDirection: 'column', gap: 6 },
+    eventTitleLarge: { flex: undefined },
     eventSectionDay: {
       fontSize: 34,
       fontWeight: '700',

@@ -1,3 +1,5 @@
+import SungDots from '@/components/playlist/SungDots';
+import { useChoirHistory } from '@/hooks/useChoirHistory';
 import React, {
   useCallback,
   useRef,
@@ -23,6 +25,7 @@ import { PressableFeedback } from 'heroui-native';
 import { h } from '@/utils/haptics';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useLargeText from '@/hooks/useLargeText';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
@@ -76,7 +79,26 @@ interface SongListItemProps {
   hideSeparator?: boolean;
   /** Etiquetas destacadas que lleva la canción: se ven discretas. */
   featuredTags?: ResolvedTag[];
+  /**
+   * Pista de gesto (`useGestureHint`): al montarse, la fila se entreabre sola
+   * un momento y enseña «Añadir», y vuelve. Solo en UNA fila de la lista.
+   */
+  hintSwipe?: boolean;
+  /** La demostración ha arrancado en esta fila (para contarla). */
+  onHintShown?: (filename: string) => void;
+  /** El usuario ha añadido deslizando: ya conoce el gesto. */
+  onSwipeAdd?: () => void;
 }
+
+/** Espera antes de la demostración: que la lista se haya posado. */
+const HINT_DELAY_MS = 900;
+/** Cuánto se queda abierta la fila en la demostración. */
+const HINT_HOLD_MS = 1100;
+/**
+ * Arrastre (px) a partir del cual soltar ya ejecuta la acción: la mitad de
+ * los 100 px de la acción, el umbral por defecto de `ReanimatedSwipeable`.
+ */
+const ARM_AT = 50;
 
 const SongListItem: React.FC<SongListItemProps> = React.memo(
   function SongListItem({
@@ -90,15 +112,64 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     onRemoveSong,
     hideSeparator = false,
     featuredTags,
+    hintSwipe = false,
+    onHintShown,
+    onSwipeAdd,
   }) {
     const { settings } = useSettings();
     const { notation } = settings;
     const scheme = useColorScheme();
+    const sung = useChoirHistory();
     const isDark = scheme === 'dark';
+    // Letra del sistema grande: el título cabía en ~10 caracteres a una
+    // línea; pasa a poder ocupar varias.
+    const large = useLargeText();
     // Estilos de módulo, uno por tema: antes cada fila hacía su propio
     // `StyleSheet.create` de ~45 estilos al montarse.
     const styles = isDark ? stylesDark : stylesLight;
     const swipeableRow = useRef<SwipeableMethods>(null);
+    // Mientras dura la demostración, abrir la fila NO añade la canción, ni
+    // suena la háptica de «armado»: no la ha causado el usuario.
+    const hintingRef = useRef(false);
+    const onArm = useCallback(() => {
+      if (!hintingRef.current) h.select();
+    }, []);
+
+    // Pista de gesto: la fila se entreabre sola (las acciones reales, con su
+    // «Añadir» verde) y se vuelve a cerrar. Si el usuario toca mientras, el
+    // gesto de la fila manda sobre la demostración. Arranca UNA vez por fila
+    // y no se corta aunque la prop cambie después; solo al desmontar.
+    const hintTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+    const hintStarted = useRef(false);
+    useEffect(() => {
+      if (!hintSwipe || hintStarted.current || isSelected || isWeb) return;
+      hintStarted.current = true;
+      const timers = hintTimers.current;
+      timers.push(
+        setTimeout(() => {
+          hintingRef.current = true;
+          onHintShown?.(song.filename);
+          swipeableRow.current?.openRight();
+          timers.push(
+            setTimeout(() => {
+              swipeableRow.current?.close();
+              // Margen para que el cierre acabe antes de volver a armar.
+              timers.push(
+                setTimeout(() => {
+                  hintingRef.current = false;
+                }, HINT_DELAY_MS),
+              );
+            }, HINT_HOLD_MS),
+          );
+        }, HINT_DELAY_MS),
+      );
+      // Solo al recibir la pista: la selección no la relanza.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hintSwipe]);
+    useEffect(() => {
+      const timers = hintTimers.current;
+      return () => timers.forEach(clearTimeout);
+    }, []);
     const backgroundColorAnim = useRef(
       new Animated.Value(isSelected ? 1 : 0),
     ).current;
@@ -161,6 +232,8 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
           outputRange={[0, 100]}
           property="translateX"
           style={styles.actionContent}
+          armAt={ARM_AT}
+          onArm={onArm}
         >
           <IconSymbol name="plus.circle" size={22} color="#fff" />
           <Text style={styles.actionText}>Añadir</Text>
@@ -186,6 +259,8 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
           outputRange={[-100, 0]}
           property="translateX"
           style={styles.actionContent}
+          armAt={ARM_AT}
+          onArm={onArm}
         >
           <IconSymbol name="minus.circle" size={22} color="#fff" />
           <Text style={styles.actionText}>Quitar</Text>
@@ -217,9 +292,12 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         onSwipeableOpen={(direction) => {
           // El lado ABIERTO, no la dirección del dedo (ver `utils/swipeSide`).
           const side = openedActionsSide(direction);
+          // La demostración abre la fila de verdad: eso no es añadir.
+          if (hintingRef.current) return;
           if (side === 'right' && !isSelected) {
             h.add();
             onAddSong(song.filename);
+            onSwipeAdd?.();
             swipeableRow.current?.close();
           } else if (side === 'left' && isSelected) {
             h.remove();
@@ -258,7 +336,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
               <View style={styles.songInfoContainer}>
                 <Text
                   style={styles.songTitle}
-                  numberOfLines={1}
+                  numberOfLines={large ? 3 : 1}
                   ellipsizeMode="tail"
                 >
                   {cleanTitle}
@@ -325,6 +403,9 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                     </View>
                   )}
                 </View>
+                {sung.enabled ? (
+                  <SungDots history={sung.history?.get(song.filename)} />
+                ) : null}
               </View>
             </View>
             <View style={styles.rightSection}>

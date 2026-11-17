@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
-import React, { useState } from 'react';
+import { useToast } from '@/contexts/AppToastContext';
+import React, { useRef, useState } from 'react';
 import {
   Platform,
   ScrollView,
@@ -42,6 +43,8 @@ interface CategoryOption {
   color: string;
   placeholder: string;
   submitText: string;
+  /** El aviso al enviarlo. */
+  thanks: string;
 }
 
 const FEEDBACK_CATEGORIES: CategoryOption[] = [
@@ -53,6 +56,7 @@ const FEEDBACK_CATEGORIES: CategoryOption[] = [
     placeholder:
       'Describe el problema que has encontrado en la aplicación (pantalla, función que no funciona, error...)',
     submitText: 'Reportar fallito',
+    thanks: 'Fallito recibido. Gracias por avisar, lo miramos',
   },
   {
     id: 'suggestion',
@@ -62,6 +66,7 @@ const FEEDBACK_CATEGORIES: CategoryOption[] = [
     placeholder:
       'Cuéntanos tu idea para mejorar la aplicación (nueva función, cambio de diseño...)',
     submitText: 'Enviar sugerencia',
+    thanks: '¡Gracias por la idea! La leemos con calma',
   },
   {
     id: 'congratulations',
@@ -71,6 +76,7 @@ const FEEDBACK_CATEGORIES: CategoryOption[] = [
     placeholder:
       'Comparte tu experiencia positiva. ¡Nos alegra saber qué te gusta de la app!',
     submitText: 'Enviar felicitación',
+    thanks: '¡Qué alegría! Gracias por tu felicitación',
   },
 ];
 
@@ -89,6 +95,8 @@ export default function AppFeedbackModal({
   const [feedbackText, setFeedbackText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const { toast } = useToast();
+  const thanksRef = useRef<string | null>(null);
 
   const handleSubmit = async () => {
     if (!selectedCategory) {
@@ -115,10 +123,14 @@ export default function AppFeedbackModal({
         userDelegation: resolved.delegationLabel || 'Sin delegación',
       });
 
+      // El aviso sale cuando la hoja YA se ha ido: en iOS, mostrado mientras
+      // el Modal se cierra, quedaba debajo y no se veía.
+      thanksRef.current =
+        FEEDBACK_CATEGORIES.find((c) => c.id === selectedCategory)?.thanks ??
+        '¡Gracias! Lo hemos recibido';
       setFeedbackText('');
       setSelectedCategory(null);
       onClose();
-      onSuccess?.();
     } catch (error) {
       logger.error('Error submitting feedback:', error);
       setErrorMsg('No se pudo enviar. Inténtalo de nuevo.');
@@ -162,6 +174,13 @@ export default function AppFeedbackModal({
       onClose={handleClose}
       title="Feedback"
       headerLeft={headerLeft}
+      onCloseComplete={() => {
+        const thanks = thanksRef.current;
+        thanksRef.current = null;
+        if (!thanks) return;
+        toast.show({ variant: 'success', label: thanks });
+        onSuccess?.();
+      }}
       paddingHorizontal={0}
     >
       <ScrollView

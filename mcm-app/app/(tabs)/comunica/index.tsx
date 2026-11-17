@@ -1,17 +1,19 @@
 // app/(tabs)/comunica/index.tsx
 //
 // La puerta de la pestaña Comunica (planes 01 §1, 02 y 10 §1):
-//   1. Modo normal (o interruptor en `off`, o sin servidor) → la WebView de
-//      siempre, que pasa a ser el legado y no cambia en nada.
-//   2. Nativa sin sesión → «Entra en tu área».
-//   3. Nativa con sesión → la portada.
+//   1. Nativa (la de todos desde el 14/11/2026) sin sesión → «Entra en Comunica».
+//   2. Nativa con sesión → la portada.
+//   3. Interruptor en `off` (o `solo-alpha` sin el Laboratorio, o sin
+//      servidor) → la WebView de siempre: el legado, DEPRECADO, solo de
+//      vuelta atrás (`utils/comunica/router.ts`).
 
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import ComunicaScreen from '@/app/screens/ComunicaScreen';
 import AccessScreen from '@/components/comunica/acceso/AccessScreen';
+import WelcomeLayer from '@/components/comunica/acceso/WelcomeLayer';
 import AreaScreen from '@/components/comunica/comun/AreaScreen';
 import { AreaSkeleton } from '@/components/comunica/comun/AreaState';
 import { useArea } from '@/components/comunica/comun/ComunicaAreaProvider';
@@ -35,6 +37,18 @@ export default function ComunicaGate() {
 }
 
 function NativeGate() {
+  // La capa de la entrada va por encima y en el MISMO sitio del árbol pase lo
+  // que pase debajo: así sigue viva cuando el acceso se cambia por la portada
+  // y se abre ya sobre ella (`WelcomeLayer`).
+  return (
+    <View style={styles.gate}>
+      <GateContent />
+      <WelcomeLayer />
+    </View>
+  );
+}
+
+function GateContent() {
   const { session } = useArea();
   useComunicaLinks();
   if (session.status === 'loading') {
@@ -61,13 +75,7 @@ function NativeGate() {
             headerRight: undefined,
           }}
         />
-        <AccessScreen
-          notice={
-            session.reason === 'revoked'
-              ? 'Tu sesión ha terminado. Vuelve a entrar.'
-              : undefined
-          }
-        />
+        <AccessScreen revoked={session.reason === 'revoked'} />
       </>
     );
   }
@@ -102,5 +110,6 @@ function AccountButton() {
 }
 
 const styles = StyleSheet.create({
+  gate: { flex: 1 },
   account: { padding: 4 },
 });

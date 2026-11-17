@@ -12,6 +12,7 @@ import type { CalendarProps } from 'react-native-calendars';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import colors, { themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useLargeText, { CHROME_MAX_FONT_SCALE } from '@/hooks/useLargeText';
 import Animated from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import type { SectionListProps } from 'react-native';
@@ -94,6 +95,7 @@ export function CalendarScreen({
     useTabScroll('calendario');
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const isDark = scheme === 'dark';
+  const large = useLargeText();
   const infoInk = calendarInfoInk(isDark);
   // El color de cada calendario lo decide el Panel (hay pasteles): como
   // relleno, punto o borde va tal cual; como texto, en su variante legible.
@@ -391,10 +393,16 @@ export function CalendarScreen({
         accessibilityLabel={`Ver detalles de ${ev.title}`}
       >
         <View style={styles.eventCardBody}>
-          <View style={styles.eventCardTop}>
+          <View
+            style={[styles.eventCardTop, large && styles.eventCardTopLarge]}
+          >
             <Text
-              style={[styles.eventTitle, isPast && styles.pastText]}
-              numberOfLines={2}
+              style={[
+                styles.eventTitle,
+                isPast && styles.pastText,
+                large && styles.eventTitleLarge,
+              ]}
+              numberOfLines={large ? 4 : 2}
             >
               {ev.title}
             </Text>
@@ -516,14 +524,27 @@ export function CalendarScreen({
               <View style={isLandscapeWide ? styles.monthRightPane : undefined}>
                 {/* Events for selected date */}
                 <View style={styles.eventSection}>
-                  <View style={styles.eventSectionHeader}>
-                    <View style={styles.eventSectionLeft}>
-                      <Text style={styles.eventSectionDay}>
+                  <View
+                    style={[
+                      styles.eventSectionHeader,
+                      large && styles.eventSectionHeaderLarge,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.eventSectionLeft,
+                        large && styles.eventSectionLeftLarge,
+                      ]}
+                    >
+                      <Text
+                        style={styles.eventSectionDay}
+                        maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+                      >
                         {selectedDate === todayStr
                           ? 'Hoy'
                           : formatDateShort(selectedDate).day.toString()}
                       </Text>
-                      <View>
+                      <View style={large ? styles.shrink : undefined}>
                         <Text style={styles.eventSectionWeekday}>
                           {upperFirst(
                             selectedDate === todayStr
@@ -579,7 +600,11 @@ export function CalendarScreen({
               >
                 <MaterialIcons name="chevron-left" size={28} color={infoInk} />
               </TouchableOpacity>
-              <Text style={styles.monthLabel}>{monthLabel}</Text>
+              <Text
+                style={[styles.monthLabel, large && styles.monthLabelLarge]}
+              >
+                {monthLabel}
+              </Text>
               <TouchableOpacity
                 onPress={() => {
                   h.select();

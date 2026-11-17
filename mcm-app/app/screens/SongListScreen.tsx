@@ -1,8 +1,9 @@
 import { logger } from '@/utils/logger';
-import Animated from 'react-native-reanimated';
+import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { useTabListScroll } from '@/components/tabs/useTabScroll';
 import EmptyState from '@/components/ui/EmptyState';
 import { useState, useMemo, useLayoutEffect, useCallback, useRef } from 'react';
+import { useGestureHint } from '@/hooks/useGestureHint';
 import {
   FlatList,
   Text,
@@ -620,6 +621,35 @@ export default function SongsListScreen() {
     [isTagMode, filteredSongs],
   );
 
+  // ── Pista de gesto: «desliza para añadir» ────────────────────────────────
+  // Mucha gente no sabe que una fila se desliza para añadirla a «Tu
+  // selección». Las primeras veces (`useGestureHint`), la PRIMERA canción sin
+  // seleccionar se entreabre sola y enseña su «Añadir». En cuanto el usuario
+  // añade deslizando, no vuelve a salir. Ni en web (allí hay botón) ni con
+  // «reducir movimiento».
+  const swipeAddHint = useGestureHint('cantoral.swipeAdd');
+  const reducedMotion = useReducedMotion();
+  // La fila que hizo la demo queda fijada (si no, al añadir la primera la
+  // pista saltaría a la siguiente y se repetiría).
+  const [hintRow, setHintRow] = useState<string | null>(null);
+  const { due: hintDue, consume: consumeHint } = swipeAddHint;
+  const hintCandidate = useMemo(() => {
+    if (!hintDue || Platform.OS === 'web' || reducedMotion) return null;
+    const first = listRows.find(
+      (row) => row.kind === 'song' && !isSongSelected(row.song.filename),
+    );
+    return first && first.kind === 'song' ? first.song.filename : null;
+  }, [hintDue, reducedMotion, listRows, isSongSelected]);
+  const hintFilename = hintRow ?? hintCandidate;
+  const onHintShown = useCallback(
+    (filename: string) => {
+      setHintRow(filename);
+      consumeHint();
+    },
+    [consumeHint],
+  );
+  const onSwipeAdd = swipeAddHint.markLearned;
+
   const categoryCount = useMemo(
     () =>
       isTagMode ? listRows.filter((row) => row.kind === 'section').length : 0,
@@ -864,6 +894,9 @@ export default function SongsListScreen() {
           onRemoveSong={removeSong}
           hideSeparator={row.last}
           featuredTags={featuredFor(item)}
+          hintSwipe={item.filename === hintFilename}
+          onHintShown={onHintShown}
+          onSwipeAdd={onSwipeAdd}
         />
       );
       // En una etiqueta cada categoría es una tarjeta: las filas de los
@@ -890,6 +923,9 @@ export default function SongsListScreen() {
       getSelectedSong,
       addSong,
       removeSong,
+      hintFilename,
+      onHintShown,
+      onSwipeAdd,
       styles.sectionHeader,
       styles.sectionHeaderEmoji,
       styles.sectionHeaderText,

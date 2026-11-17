@@ -25,6 +25,12 @@
       "skillPath": "skills/fixing-motion-performance/SKILL.md",
       "computedHash": "426dcf33f23419643f2aab71e2253e1a5b5684a808fabb8a4ad135e489ed7a0f"
     },
+    "gestures": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "skillPath": "skills/gestures/SKILL.md",
+      "computedHash": "d89c81c2ddb0ecb44b9f244a69e41073d74277422f80e675fb424f51ffab955b"
+    },
     "improve": {
       "source": "shadcn/improve",
       "sourceType": "github",

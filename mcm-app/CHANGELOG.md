@@ -4,6 +4,355 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 19:55 — Comunica: un monitor ya no ve en su calendario las sesiones de los chavales
+
+- El calendario (`GET /v1/profiles/:pid/calendar`, middleware) deja fuera las sesiones de los eventos que el perfil solo LLEVA (inscripción `organizer` o `equipo`), y la banda si eran de un curso con varias sesiones. Las familias siguen viendo sus sesiones con su asistencia. Era lo que ya hacía la web desde el 24/10.
+- El nombre de una sesión llega sin « | 04/12/2026 17:30h» ni « · lista del 16/10» (middleware), y la fila del día ya no repite el evento cuando es el mismo que el título (`itemLine`: «17:30 · Asististe»).
+- «Próximas actividades» de la portada lista solo los eventos abiertos a inscripción (`upcomingAgendaItems`), como la web: las sesiones están en el calendario.
+
+## 2026-11-17 23:10 — Cantoral: «⋯» nativo en iOS y fotos con la IA en segundo plano
+
+- **«⋯» del cantoral en iOS = menú del sistema** (`Stack.Toolbar.Menu`, UIMenu) con la lupa al lado. Con la hoja propia, Etiquetas, «Cómo ver las canciones» y «Sugerir una canción» abrían OTRA hoja mientras se quitaba la del menú, y iOS a veces no la presentaba nunca. El menú del sistema no es un Modal. Android y web siguen con la hoja.
+- **Foto o enlace leídos con la IA en segundo plano**: el cantoral responde al momento con un trabajo y la app pregunta cada 3 s (`/api/app/job/<id>`). En el iPhone una petición se corta a los 60 s y leer una foto pasa a menudo del minuto, así que fallaba aunque el cantoral la leyera bien. Fotos a 2000 px. Necesita el admin del NAS actualizado.
+
+## 2026-11-17 22:45 — Tu selección vacía más compacta y colores de «Tu año» que se leen
+
+- **Tu selección vacía**: mensaje y botones juntos arriba, en vez de mensaje centrado y botones al fondo (media pantalla vacía y el último botón bajo la barra).
+- **Tu año**: los cuadritos tenían el escalón de «un momento» casi igual que el vacío, así que un mes con 27 días se veía casi en blanco. Escalones nuevos (`recapLevels` en el tema de Contigo) y una leyenda «1 ▢▢▢ 3 momentos». «1 día», «1 frase» en singular.
+
+## 2026-11-17 22:20 — Editor: tu cambio se ve al momento y la app se pone al día sola
+
+- Al guardar, el cambio se aplica a la caché del catálogo del móvil y se ve ya en todas las pantallas (lista, canción, búsqueda), no solo en la canción. `patchCachedNode` y `revalidateNode` nuevos en `hooks/useFirebaseData.ts`, con aviso a todas las pantallas que pintan ese nodo.
+- Durante 6 minutos tras guardar, se mira cada 20 s si el cantoral ya ha publicado (`songs/updatedAt`) y se baja el catálogo nuevo: sin cerrar y abrir la app. También tras canción nueva y ordenar.
+- Fuera `utils/songOverrides.ts` (solo valía para la pantalla de la canción).
+
+## 2026-11-17 21:55 — Editor: el título ya no se guarda con el número del fichero
+
+- El catálogo trae el título con el número delante («03. Parenostre», lo pone el generador del cantoral). El editor lo tomaba como título y al guardar acababa en el `.cho` («03. 03. …» en la app y la canción fuera de su sitio). Ahora el editor lo quita (`stripSongNumber`) y el admin del cantoral también, por si acaso.
+- La OTA de `preview` falló por el trinquete de duraciones a mano (`noLooseMotion`): un `duration: 7000` del aviso de error. Ahora es una constante con nombre.
+
+## 2026-11-17 21:40 — Editor: las fotos del iPhone se mandan en JPEG
+
+- «Nueva canción» → foto fallaba con vibración de error: el iPhone da las fotos en HEIC, que el cantoral no abre, y enteras pesan varios MB. Ahora se pasan siempre a JPEG y se reducen (lado largo 2400 px) antes de enviarlas (`expo-image-manipulator`, ya instalado). El aviso de error dura más para poder leer el porqué.
+
+## 2026-11-17 23:40 — Editor de canciones: NAS puesto en marcha y todo en `main`
+
+- El usuario ha configurado el NAS (`FIREBASE_URL`), `songs/editor/url` y los administradores. Se borra `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (era de un solo uso); lo permanente sigue en `docs/funcionalidades/EDITOR_CANCIONES.md`.
+- `batiburrillo` mergeado a `main` en `mcmapp` y en `mcmapp-cantoral`.
+
+## 2026-11-17 23:20 — Editor: las opciones de foto se ven siempre
+
+- En «Nueva canción», «Hacer una foto» y «Elegir fotos» salían solo si el cantoral contestaba y tenía la IA; sin eso no aparecían y parecía que no existían. Ahora se ven siempre y, si no se pueden usar, salen en gris diciendo por qué.
+
+## 2026-11-17 23:00 — Editor: canción nueva desde un enlace de doceacordes, sin IA
+
+- «Nueva canción» → **Desde un enlace** (o pegando la URL en «Pegar el texto»). Los de doceacordes (`doceacordes.es/cancion/<id>`) los convierte el cantoral con su conversor propio, sin IA. Endpoint nuevo `POST /api/app/song/fetch-url` en `mcmapp-cantoral`.
+
+## 2026-11-17 22:30 — Aviso al enviar feedback y sugerencias de canción
+
+- **Feedback de la app** (Inicio y Más): al enviar sale un aviso según el tipo — fallito, sugerencia o felicitación. Antes, desde Más no salía nada, y desde Inicio podía quedar oculto bajo la hoja que se cerraba.
+- **Sugerir canción**: el «¡Sugerencia enviada!» sale cuando la hoja ya se ha ido (en iOS quedaba debajo).
+
+## 2026-11-17 21:30 — Toasts deslizables, historial en el menú del coro, compartir arriba y «Tu año» por temporadas
+
+- **Toasts**: se quitan deslizándolos a un lado o hacia abajo; mientras el dedo está encima no se van solos (`AppToastContext`).
+- **Historial del coro** también en el «⋯» de Tu selección («Ver lo cantado por el coro»): con la lista vacía no había dónde encenderlo.
+- **Compartir como imagen** también en la cabecera del evangelio del día.
+- **Tu año en Contigo**: enlace discreto al final de Contigo el resto del año; tarjeta dorada animada arriba la semana antes de Adviento y sus dos primeras, y de la última de Adviento al 21 de enero. Se queda quieta tras tres visitas (`utils/contigoRecapSeason.ts`, `hooks/useRecapSeason.ts`, `components/contigo/RecapTeaser.tsx`).
+
+## 2026-11-17 13:00 — Menús de opciones: scroll y hojas encadenadas en el móvil
+
+- `ContextMenuSheet` (el «⋯» del cantoral y los menús de fila): con muchas opciones (administrador + coro + etiquetas) las últimas quedaban fuera de la hoja — no se veía «Ordenar canciones». Ahora la lista hace scroll.
+- La opción que abre otra hoja (p. ej. «Sugerir una canción») espera 250 ms a que la hoja del menú termine de irse en iOS/Android; abrirla en el mismo instante hacía que no apareciera.
+
+## 2026-11-17 12:10 — Editor de canciones: modo texto en colores y con avisos
+
+- El modo **Texto** pinta el ChordPro en colores como el editor del admin del cantoral y marca lo que está mal: corchetes/llaves sin cerrar, estribillos/estrofas sin cerrar o cruzados, corchetes que no son acordes. Lista de avisos con su línea y contador en la pestaña. `utils/chordProLint.ts` (con tests), `components/song-editor/ChordProTextEditor.tsx`, tokens `ChordProColors`.
+
+## 2026-11-17 10:30 — Editor de canciones: todo por el NAS, cola en el móvil, más metadatos y ordenar
+
+- **La app ya no escribe en Firebase al editar**: todo va al admin del cantoral (NAS → commit y push → GitHub Actions → Firebase). Se quita la escritura directa en `songs/data` y la cola `songs/ediciones` desde el editor.
+- **Si el NAS no contesta**, el cambio se guarda en el móvil (`@song_editor_outbox`) y se envía solo; aviso en el editor con «Enviar ahora».
+- **Quien edita ve su cambio al momento** (`utils/songOverrides.ts`, 48 h, aplicado en `useRouteSong`).
+- **Pantalla tras guardar** (`SavedPanel`): «Enviado al cantoral» o «Guardado en este móvil», con qué pasa y cuándo lo ven los demás (al volver a abrir la app).
+- **Datos completos**: Spotify, Drive, otros enlaces y etiquetas, además de lo que ya había.
+- **Ordenar canciones de una categoría** (Cantoral → ⋯ → Ordenar canciones, `SongReorderScreen`; `POST /api/app/category/reorder` en el cantoral).
+- Puesta en marcha del NAS en `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (temporal). Deuda anotada en el BACKLOG §2.D: que no dependa del NAS.
+## 2026-11-17 06:39 — Arreglo: en iOS los botones de arriba del pañuelo quedaban bajo la cabecera
+
+- **Causa**: la pantalla medía dónde empezaba (`measureInWindow`) solo al maquetarse. Al cerrar el tutorial la cabecera nativa volvía, la pantalla no se re-maquetaba y la medida se quedaba en 0: la pastilla de la etapa, «Decorar» y compartir salían debajo de la cabecera y de la hora.
+- **Arreglo**: sin medir. En iOS la cabecera de `/panuelo` es transparente (`headerTransparent`) y la pantalla reserva `useHeaderHeight()`, igual que Fotos y la lista de canciones seleccionadas. De paso, el botón de atrás ya no dice «(tabs)» (`headerBackButtonDisplayMode: 'minimal'`).
+- Sin probar en dispositivo desde aquí: hay que verlo en el iPhone con la OTA de `preview`.
+
+## 2026-11-17 19:42 — Tu selección vacía: primero el coro; los cantos del domingo, en un botón
+
+- Se quita la tarjeta «Este domingo» (`SundayPlanCard`) del vacío de Tu selección: estorbaba a lo que hace casi todo el mundo, traerse la playlist del coro. El vacío vuelve a ser el de antes, con **«Traer la playlist de <coro>» como botón principal**, y al final un botón discreto **«Cantos con las lecturas del domingo»** (`SundaySongsButton`) que abre la pantalla de los cantos del domingo.
+- Esa pantalla gana **«Leer las lecturas»** (con la cita del evangelio) bajo la cabecera. El porqué de cada canto sale igual en todas partes (`candidateWhy`: «Por las lecturas: …»).
+- La fila de Tu selección del cantoral vuelve a «Vacía · añade canciones desde el cantoral».
+
+## 2026-11-17 19:25 — Metrónomo: puede seguir sonando con la hoja cerrada
+
+- Al cerrar la hoja con el metrónomo sonando, pregunta **«¿Dejar el metrónomo sonando?»** (botón «Sí» grande, «No, pararlo» y «No volver a preguntar», que guarda la respuesta; se deshace en la hoja con «Volver a preguntar»).
+- Sonando, sale una **píldora flotante** abajo a la izquierda en todo el cantoral (tempo, punto que late, ■ para parar); tocarla abre la hoja en el metrónomo (`?modo=metronomo`). Mientras suena, la pantalla no se apaga.
+- El estado pasa de un hook de la hoja a `contexts/MetronomeContext.tsx`, montado en el layout del cantoral. Sin paquetes nuevos. Tests: `metronomeContext.test.tsx`.
+
+## 2026-11-17 19:19 — Cantos para el domingo: dentro de Tu selección y según las lecturas
+
+- **Dónde**: sale del cantoral (se quita la fila «Cantos para el domingo» y `SundaySongsRow`) y pasa a **Tu selección vacía** — lo primero al preparar una misa es vaciarla —. Tarjeta nueva «Este domingo» (`components/playlist/SundayPlanCard.tsx`): fecha, fiesta o tiempo con su color y ciclo, **Leer las lecturas** (la hoja de lecturas, solo lecturas y de ESE domingo) y los cantos propuestos momento a momento con su porqué. «Usar estos cantos» llena la selección (con Deshacer); tocar un canto o «Cambiar alguno u otro domingo» abre la pantalla completa de siempre. Con la lista llena, chip «Cantos del domingo» junto a «Lecturas del domingo». La fila de Tu selección en el cantoral dice «Vacía · cantos para este domingo». La tarjeta de Inicio (viernes a domingo) no cambia.
+- **Cómo elige** (`utils/sundaySongs.ts`): ya no es solo «una de la categoría por rotación». Dentro de cada tramo litúrgico (fiesta > tiempo > neutra, igual que antes), van primero las canciones con **palabras en común con las lecturas** de ese domingo (`readingsAffinity`, en `utils/sundayMatch.ts`: sin IA, palabras raras del cantoral pesan más, evangelio y salmo más que las lecturas). El **salmo** se empareja con el salmo del día. La razón sale en la fila («Lecturas: pastor · ovejas»). Sin lecturas (sin red ni caché) se comporta como antes.
+- `useSundaySongs` lee las lecturas con `useDailyReadings` (su caché de siempre). «Pasar a Tu selección» desde la pantalla completa vuelve a la Tu selección de debajo (`router.dismissTo`) en vez de apilar otra.
+- Sin paquetes nuevos. Tests: `sundaySongs.test.ts` (lecturas), `sundayPlanCard.test.tsx` (nuevo).
+
+## 2026-11-17 09:26 — Pañuelo: el pin de Carismochito
+
+- Pieza nueva en el catálogo (`firebase-seed/panuelo.json`): **Carismochito**, el pin de esmalte de la mascota, troquelado con su silueta (talla mediana, `size: 1.5`, especial e intercambiable, `grant: all` como el resto en pruebas).
+- Forma nueva `carismochito` en `constants/panueloGlyphs.ts`: el visor extruye la silueta del muñeco y le pone encima su cara (`piezas-3d/caras/carismochito.webp`). Visor regenerado (`npm run build:panuelo`).
+- `piezas-3d/`: modelo `carismochito.glb` (esmalte duro con paredes de metal dorado, trasera rayada, pincho y mariposa) y su miniatura. Sale del dibujo vectorizado de la mascota: `_fuente/carismochito_tintas.py` hace el mapa de tintas y `generar.py` ahora sabe hacer pines troquelados (rastrea el contorno, lo triangula y lo extruye) y sacar el trazado de su forma (`--trazado`).
+- Sin paquetes nuevos. Probado en navegador (visor y modelo); sin probar en móvil. La cara y el modelo se sirven por jsDelivr desde `main`.
+
+## 2026-11-17 00:40 — Pañuelo: los pines, por detrás, son metal con su pincho
+
+- Al darle la vuelta a un pin se veía el esmalte (o la foto) del revés. Ahora la trasera es metal liso del color del filo, con el pincho y su cierre (`buildPin` en `panuelo-3d/src/items.ts`). Vale para todos los pines.
+
+## 2026-11-17 00:10 — Pañuelo: en pruebas, todas las piezas se dan solas
+
+- Todas las piezas de `firebase-seed/panuelo.json` pasan a `grant: all`: se consiguen al abrir el pañuelo, sin códigos. Es provisional, para probar; el reparto real (por eventos u otra vía) está por decidir.
+
+## 2026-11-16 23:55 — Pañuelo: el catálogo de pruebas son ya las piezas de verdad
+
+- `firebase-seed/panuelo.json` (el catálogo que lleva la app) pasa a tener **solo piezas reales**: Estoy contigo Samuel, Chapa M+C (1.er año, grande), Pin M+C (3.er año, pequeño), Monitor OG (grande), JMJ Lisboa 2023 (pin rectangular), Jubileo 2025, Chapa OG, COM sonriente, las dos medallas y el **troncho**. Las piezas inventadas quedan en `constants/panueloEjemplo.json` para el tutorial y los tests.
+- **Clase nueva `troncho`**: va por delante, sobre el nudo, en sitio fijo; no se arrastra ni se intercambia (`isFixed`, `PanueloViewerState.troncho`, `buildTroncho`).
+- Chapas y pines aceptan `glb` («Verla de cerca» con el modelo de `piezas-3d/`) y los pines `image`; forma nueva `card` para pines rectangulares. La colección pinta la foto de la pieza.
+- `piezas-3d/`: tres modelos nuevos (`mc-congreso-1`, `monitor-og`, `jmj-lisboa-2023`), `pin-mc` pasa a llamarse `mc-congreso-3`, y carpeta `caras/` con la cara plana de cada pieza.
+- Sin paquetes nuevos. Probado en navegador (visor); sin probar en móvil. Las caras se sirven por jsDelivr desde `main`.
+
+## 2026-11-16 23:20 — Pañuelo: modelos 3D de chapas, pin y troncho de verdad
+
+- Carpeta nueva en la raíz, `piezas-3d/`: seis `.glb` hechos a partir de fotos (Estoy contigo Samuel, Pin M+C, Jubileo 2025, Chapa OG, COM sonriente y el troncho), sus miniaturas y la ficha de cada una en `piezas.json` (nombre, talla `pequena`/`mediana`/`grande`). Se generan con `piezas-3d/_fuente/generar.py`.
+- **Todavía no se usan en la app**: no hay cambios de código. El troncho pedirá una clase nueva (va delante, encima del nudo, fijo y no intercambiable). Detalle en `piezas-3d/README.md`.
+
+## 2026-11-16 21:45 — Contigo: compartir el evangelio como imagen, exportar lo tuyo y «Tu año»
+
+- **Compartir como imagen** (enlace al final de las lecturas): tu subrayado del día —o el arranque del evangelio— en una tarjeta con cuatro estilos y dos formatos (historia y cuadrada). `utils/shareCard.ts`, `components/contigo/ShareCardSheet.tsx`. La imagen sale de `react-native-svg` (`toDataURL`), sin capturas ni paquetes nuevos.
+- **Exportar** (icono en la cabecera de Guardados): frases subrayadas y revisiones del día a PDF o texto. `utils/contigoExport.ts`, `services/contigoExport.ts`, `components/contigo/ExportSheet.tsx`.
+- **Tu año en Contigo** (pantalla nueva `/contigo/resumen`, enlace de una línea en la portada): cifras del año, meses con sus días y sus frases subrayadas, y tarjeta para compartir. `utils/contigoRecap.ts`.
+- Sin paquetes nuevos. Sin probar en móvil. Detalle en `docs/funcionalidades/CONTIGO_COMPARTIR.md`.
+
+## 2026-11-16 21:00 — Cantoral: editor de canciones para administradores (adiós al panel secreto)
+
+- **Editor nuevo** (`/cancionero/editar`, `SongEditorScreen`): pestañas Acordes (pastillas que se tocan y **se arrastran** sobre la letra), Texto (ChordPro), Datos (título, autor, tono, cejilla, multimedia) y Vista (la hoja real). Entradas: «Editar canción» en el menú de la canción y «Nueva canción» en el «⋯» del cantoral.
+- **Solo administradores de verdad**: `users/<uid>/isAdmin` (`useAdminStatus`). **Se elimina `SecretPanelModal` y la contraseña `coco`** del cantoral; los arreglos por pulsación larga pasan también a depender de `useAdminStatus`.
+- **Guardado en dos destinos** (`services/songEditorService.ts`): Firebase al momento (`songs/data/...` + `updatedAt`) y el repo del cantoral a través del admin del NAS (`POST /api/app/song/save`, con el pase de Firebase del admin; sin secretos en la app). Si el NAS no contesta, a la cola `songs/ediciones` de siempre.
+- **Canción nueva** por el NAS: de una foto (IA del cantoral), de texto pegado o en blanco.
+- **Firebase**: nodo nuevo de configuración `songs/editor/url` (URL del admin del cantoral; se pone a mano en la consola).
+- **`mcmapp-cantoral`** (rama `batiburrillo`): `/api/app/*` en `scripts/admin/server.py` y `apply_edition` extraído del script de sincronización.
+- Sin paquetes nuevos. Sin probar en móvil ni contra el NAS real. Detalle en `docs/funcionalidades/EDITOR_CANCIONES.md`.
+
+## 2026-11-16 20:15 — Playlist: lecturas del domingo con cantos que encajan, e historial de lo cantado por el coro
+
+- **Dos chips en «Tu selección»** (`PlaylistDesignTools`, también con la lista vacía): «Lecturas del domingo» e «Historial».
+- **Lecturas del domingo** (`SundayReadingsSheet`): las del próximo domingo (de `seccion_oracion/lecturas`, que el scraper trae con 30 días de adelanto), plegables para leerlas, y debajo los cantos del cantoral con palabras en común, con las palabras que coinciden y un «+» para añadirlos. Sin IA ni servidor: `utils/sundayMatch.ts` (sin tildes, sin palabras vacías, plural recortado, pesa más lo raro en el cantoral y el salmo/evangelio; hacen falta dos palabras en común).
+- **Historial del coro** (se enciende y se apaga, se recuerda; solo con coro elegido): en cada fila de la playlist y del cantoral, ocho puntos (las últimas ocho semanas) y «×N» (veces este curso, desde el 1 de septiembre). `utils/choirHistory.ts`, `hooks/useChoirHistory.ts`, `components/playlist/SungDots.tsx`.
+- **Firebase**: cada guardado en el coro apunta además `choirs/{id}/log/{AAAAMMDD}-{código} = { at, code, songs: [ficheros] }` (misma escritura multi-path de `upsertChoirPlaylist`; cabe en las reglas actuales de `/choirs/$choirId`). Las playlists anteriores al registro se cuentan leyendo su contenido una vez (caché en el móvil).
+- Sin paquetes nuevos. Sin probar en móvil.
+
+## 2026-11-16 19:40 — Cantoral: metrónomo en la hoja del afinador
+
+- **Conmutador «Afinador · Metrónomo»** arriba de la hoja del afinador (`TunerScreen`). No tiene entrada propia en ningún menú: se usa menos. Al pasar al metrónomo se suelta el micrófono.
+- **Metrónomo** (`components/tuner/MetronomePanel.tsx`): tempo 40–220 con −/+ (mantener repite) y «Marcar el tempo»; 1, 2, 3, 4 o 6 pulsos por compás con el primero acentuado; puntos que marcan el pulso. Tempo y compás se recuerdan.
+- **Sonido sintetizado** (`services/metronome/engine.ts`, un «toc» de madera, sin ficheros de audio) con el `react-native-audio-api` del afinador, programado sobre el reloj del audio. Lógica pura y tests en `utils/metronome.ts` / `metronome.test.ts`.
+- Sin paquetes nuevos (sale por OTA en la 2.5.1). Probado en web; sin oír en un móvil. Detalle en `docs/funcionalidades/AFINADOR.md`.
+## 2026-11-16 19:21 — Pañuelo: intercambios de piezas (pantalla, servicio y reglas)
+
+- Nueva hoja «Intercambiar» (Laboratorio Alpha): se ofrece una pieza con un código de 6 y su QR, la otra persona lo escribe o lo escanea, elige qué da (o lo regala) y se acepta. Cada móvil aplica su mitad: la pieza recibida queda cosida donde estaba la dada.
+- Se pueden cambiar pulseras y chapas comunes; nunca medallas ni piezas únicas (`isTradeable`). Hace falta sesión y red en los dos móviles.
+- Firebase: nodo nuevo `/panueloTrades/{code}`, escrito siempre con transacciones (`services/panueloTradeService.ts`). Sus reglas están en `database.rules.json` y **hay que pegarlas a mano en la consola** (`docs/desarrollo/FIREBASE_REGLAS.md` §8); hasta entonces la app avisa de que los intercambios no están activados.
+- Recuperación si la app se cierra a mitad (`@panuelo_trade_pending`) y limpieza de los intercambios caducados al abrir el pañuelo (`@panuelo_trade_mine`).
+- Fallo arreglado: recuperar una pieza que ya se había dado ya no la hace desaparecer al juntar el móvil con la nube (`mergePanuelo`).
+- El escáner de QR lee `…/panuelo?intercambio=` y el enlace abre la hoja. Nueva analítica `panuelo_intercambio`. El tutorial pasa a la versión 4.
+- **Sin probar con dos móviles** (lista en `docs/planes/PLAN_PANUELO_INTERCAMBIOS.md` §7).
+
+## 2026-11-16 18:17 — Cantos para el domingo (cantoral + Inicio)
+
+- Pantalla nueva `/cancionero/domingo`: la app propone una misa para el domingo (entrada, salmo, aleluya, ofertorio, santo, comunión, salida) según el día litúrgico. Cambiar, elegir otra o quitar cada momento; lo cambiado se recuerda por fecha en el dispositivo. Entrada: fila «Cantos para el domingo» bajo «Tu selección».
+- «Pasar a Tu selección» reemplaza la selección con 10 s de Deshacer; «Subir a mi coro» abre directamente el paso de guardar de la hoja del coro.
+- Reglas litúrgicas como filtros: sin Aleluya en Cuaresma ni Semana Santa (el momento pasa a «Aclamación»), sin canciones de otro tiempo o fiesta, sin repetir canción en una misma misa. Misma fecha, misma propuesta en todos los móviles (rotación determinista por semana). El tiempo de cada canción sale de sus etiquetas; `liturgicalTime` solo de respaldo.
+- Día litúrgico completo (`utils/liturgicalDay.ts`): domingo N, ciclo A/B/C por año litúrgico (el JSON lo traía mal desde Adviento) y solemnidades fijas que caen en domingo (Todos los Santos, Inmaculada, Asunción…), añadidas al generador del calendario. El badge de Contigo comparte esa lógica.
+- Tarjeta «Cantos para el domingo» en Inicio de viernes a domingo, con el id `cantos-domingo` en `homeButtons` del perfil (apagable por perfil; **hay que añadirlo en `/profileConfig` de Firebase y en el Panel para que salga**).
+- Sin probar: iOS/Android nativo, y con el cantoral real (falta contar qué canciones llevan etiqueta de tiempo litúrgico, Fase 0 del plan).
+- Doc: `docs/funcionalidades/CANTOS_DOMINGO.md`; plan `docs/planes/PLAN_CANTOS_DOMINGO.md` con fases 1-4 hechas (quedan 0, 5 y 6).
+
+## 2026-11-15 22:20 — Comunica: coordinación recuerda a los monitores que pasen lista
+
+- **Campana en la cabecera del Resumen de grupos** (solo coordinación): entra en modo de elegir grupos, con los de la última lista sin pasar ya marcados. Solo se pueden marcar grupos de su alcance y con monitores vinculados. Abajo, «Recordar a N grupos».
+- **Hoja «Recordar que pasen lista»** (`RollReminderSheet`): tono Gracioso/Serio (se queda guardado en el móvil), un mensaje al azar de 100 (50 y 50, en `utils/comunica/rollReminders.ts`), «Otro al azar» y el texto editable a mano (120 caracteres, una línea). Lo que se ve es lo que llega.
+- **Ruta nueva del middleware** `POST /v1/coordination/roll-reminders` (contrato: `RollReminderWrite` / `RollReminderResult`): manda un aviso `rollcall_due` a todos los móviles de los monitores de esos grupos, **sin mirar el interruptor «¿Has pasado lista?»**; al tocarlo abre la última sesión sin lista. Como mucho un aviso cada 10 minutos por grupo. La respuesta dice a cuántos monitores ha llegado («Aviso enviado a 5 de 7 monitores»).
+- No va por la cola (hace falta conexión). Servidor falso incluido. Sin paquetes nuevos. Sin probar en móvil.
+
+## 2026-11-15 11:01 — Pañuelo virtual: el tutorial, rediseñado como una introducción de Apple
+
+- **Una sola acción principal, fija abajo**: «Continuar» y, al final, «Empezar» (≥ 50 pt, sobre el área segura). Fuera «Saltar», «Atrás» y «Siguiente»: se sale con la X de arriba y se vuelve atrás deslizando a la derecha (acción «Paso anterior» para el lector y chevron arriba a la izquierda solo desde el segundo paso).
+- **Indicador de páginas** como `UIPageControl` (puntos, el de ahora alargado), ajustable por el lector («Paso 3 de 7»).
+- **7 pasos en vez de 10**, sin perder información: Recolocar pasa a Decorarlo, Compartir a Tu colección, Mis pañuelos a Cambiar de etapa. Más aire: título grande, frase de entrada y filas con número o icono. `PANUELO_TUTORIAL_VERSION` pasa a 3: se vuelve a enseñar una vez.
+- **Reparto ~45 % visor / ~55 % contenido** y paginado real que sigue al dedo; el visor no se desliza, cambia al asentarse la página. Con «reducir movimiento», «Continuar» salta sin animar. Háptico suave por página y de éxito al empezar.
+- Datos del tutorial: nuevo `rows` (icono + título + descripción) junto a `steps`. No toca `types/panuelo.ts` ni el visor. Sin probar en móvil.
+
+## 2026-11-15 10:46 — Pañuelo virtual: tutorial a pantalla completa, «?» en la cabecera y nuevo texto del cambio de pañuelo
+
+- **Tutorial a pantalla completa y paso a paso**: se oculta la cabecera nativa mientras dura y lleva la suya con una X (44 pt, por debajo del notch). Diez pasos (Tu pañuelo, Las piezas, Verlas de cerca, Decorarlo, Recolocar, Canjear un código, Tu colección, Compartir, Cambiar de etapa, Mis pañuelos), con «cómo se hace» en pasos numerados. `PANUELO_TUTORIAL_VERSION` pasa a 2: se vuelve a enseñar una vez.
+- **Cada paso ilustra lo que cuenta** con el MISMO visor (sin segundo WebView ni `Modal`): modo decorar con una pieza seleccionada, una medalla enfocada, una pieza que se presenta, la tela que pasa de verde a azul… (`usePanueloTutorialStage`; datos en `constants/panueloTutorial.ts`: `mode`, `select`, `focus`, `reveal`, `toColor`, `steps`). En el ejemplo no se toca nada de lo tuyo.
+- **«?» en la cabecera nativa** (iOS `Stack.Toolbar`, Android y web `headerRight`), «Cómo funciona tu pañuelo». Fuera el botón de la esquina del visor.
+- **Hoja de cambio de pañuelo**: «Mantener mis chapas y pines» («Siguen cosidas donde están.»), «Empezar de cero la nueva etapa» («Las conservas, pero quedan sin poner.») y el pie «En cualquier caso, tu pañuelo de ahora se guarda en Mis pañuelos.». Igual en «Tienes pañuelo nuevo».
+- No toca `types/panuelo.ts`, `panueloGlyphs` ni `panueloPlacement`: no hay que regenerar el visor. Sin probar en móvil.
+
+## 2026-11-15 09:11 — Pañuelo virtual: tutorial, «Recolocar», color desde Comunica y fuera los textos sueltos
+
+- **Fuera los textos de explicación sueltos** (pedido del propietario): la pista y el aviso de sesión sobre/bajo el visor, la ayuda del canje, la de «Mis pañuelos», la frase de relleno de la hoja de cambio, «· solo para ver» y los subtítulos de los vacíos. Las ayudas de accesibilidad se quedan.
+- **Tutorial por secciones** (`constants/panueloTutorial.ts`, datos fáciles de ampliar; `PanueloTutorial`): sale solo la primera vez (`@panuelo_tutorial_seen` con versión) y siempre desde el botón de información. El pañuelo de ejemplo es el propio visor con otro estado (un solo WebGL). Va antes que el canje por enlace, las piezas nuevas y el cambio de etapa.
+- **Recolocar** (modo decorar): `autoArrange` reparte las piezas cosidas sin pisarse (las grandes primero, rotación 0), con confirmación.
+- **El color viene de Comunica** (`hooks/usePanueloScarf.ts`, `usePanueloStage.ts`, `decideScarfStage`): `mcm.scarf` de la ficha de la propia persona (no la de una hija), leído solo al abrir el pañuelo con los servicios del área. Si da un color, no se elige a mano; si cambia, se abre la hoja «Tienes pañuelo nuevo» (recuerdo + confeti; «Luego» no cambia nada); la primera vez se asigna sin preguntar. Sin pañuelo de Comunica, todo como antes.
+- No toca `types/panuelo.ts`, `panueloGlyphs` ni `panueloPlacement`: no hay que regenerar el visor por esto. Sin probar en móvil ni contra el Comunica real.
+
+## 2026-11-15 01:40 — Pañuelo virtual: tela simulada, y girarlo ya no vuelve atrás
+
+- **Simulación de tela** (`createClothSim` en `panuelo-3d/src/cloth.ts`): cada vértice de la malla es una partícula con inercia, unida a sus vecinas por hilos que no se estiran (Verlet + restricciones de distancia, ~4.400 partículas). Al girar el pañuelo o inclinar el móvil la tela se retrasa, ondea, hace pliegues y se asienta sola; las piezas cosidas van con ella (`offsetAt`). El cuello y el nudo están fijos y cada punto tiende a su sitio de reposo, que hace de «cuerpo». Cuando se asienta, el visor se duerme. Con «reducir movimiento», quieta.
+- La tela es **lisa**: sin textura de trama.
+- **Más firme, el cuello cede y el nudo se mueve** (11:30): su sitio tira más fuerte de cada punto y el aire la frena antes; el borde del cuello se deja llevar un poco más y, al girar, se queda un pelín atrás (`NECK_LAG`); el nudo sigue a la tela de las esquinas y las dos puntas cuelgan de él y se mecen con un péndulo firme (`withKnot`).
+- **Tela con peso y piezas que pesan** (09:20): la tela acompaña el giro en vez de flotar (`CLOTH_LAG`, `CLOTH_DRAG`, malla más gruesa), y cada pieza cosida añade su peso donde está (`setLoads`, `ITEM_WEIGHT`): una medalla hunde un poco la tela, tarda más en volver y arrastra la de alrededor.
+- **iOS**: en `/panuelo` se desactiva el gesto de «atrás» (`gestureEnabled: false`); girar el pañuelo de izquierda a derecha sacaba de la pantalla.
+
+## 2026-11-15 01:35 — Pañuelo virtual: cambio de etapa con despedida, «Mis pañuelos» y filtro de la colección
+
+- **Cambiar de pañuelo ya no es instantáneo.** Es un cambio de etapa: tocar otro color abre la hoja «¿Cambias de pañuelo?» con «Llevarme las piezas», «Empezar con el pañuelo limpio» (las descose todas; vuelven a la colección, no se pierden) y Cancelar. Al cambiar: el giro del visor, confeti del color del pañuelo nuevo (`CelebrationBurst`), háptico de celebración y anuncio para el lector de pantalla; con «reducir movimiento», sin confeti. Hoja en `PanueloStageSheet`.
+- **Historial «Mis pañuelos».** Antes de cambiar se guarda el pañuelo de antes, solo si llevaba alguna pieza cosida. No es una imagen: `{ color, at, layout }`, y el visor lo vuelve a pintar. Se ve en el visor principal en solo lectura, con un banner «Estás viendo tu pañuelo rojo de 2026 · Volver». La entrada solo sale si hay algún recuerdo. Lógica pura en `utils/panuelo.ts` (`archivePanuelo`, `changeStage`, saneado y fusión que SUMA los recuerdos, tope de 12).
+- **Firebase**: nodo nuevo `users/{uid}/panuelo/history/{at}` (un recuerdo por clave; ver `docs/contratos/PANUELO_CONTRATO.md` §2). `syncPanueloMemory` en `utils/authHelpers.ts`. Las reglas de `users/{uid}` ya lo cubren. `types/panuelo.ts` cambia: **hay que regenerar el visor** (`npm run build:panuelo`) antes de integrar.
+- **Filtro en el cajón de la colección**: Todas · Puestas · Sin poner, con un vacío breve. Se recuerda mientras la pantalla está abierta.
+- Tests nuevos en `panuelo.test.ts`, `usePanuelo.test.tsx` y `panueloScreen.test.tsx`; el de «cambiar de color desde el radio» ahora comprueba que abre la hoja. Sin probar en un móvil.
+
+## 2026-11-15 00:40 — Pañuelo virtual: liso (sin rollo), cabecera de iOS, accesibilidad y bordados
+
+- **El pañuelo ya no va enrollado** (`panuelo-3d/src/cloth.ts`): el cuello era un tubo con surcos que se veía arrugado. Ahora es lo que es de verdad: **un triángulo entero, atado**. Sin dobladillo ni banda arriba, y **una sola malla, sin corte**: la tela de la espalda sigue por los hombros (`sidePoint`) y se va recogiendo, con sus pliegues, hasta el nudo — nunca un cordel. Las puntas del nudo son tela plana en pico y las arrugas del triángulo bajan a menos de la mitad. Referencia: fotos del propietario (2026-11-15).
+- **iOS: los botones de arriba quedaban bajo la cabecera y el notch.** La pantalla mide dónde empieza de verdad y baja lo que la cabecera tape (`useHeaderHeight` + `measureInWindow` en `app/panuelo.tsx`); con cabecera opaca no añade nada.
+- **Accesibilidad de la pantalla**: el visor se describe al lector (color, etapa, cuántas piezas), todo lo que se hace tocando el 3D se puede hacer desde la colección —también mover una pieza, con acciones de accesibilidad—, se anuncian la pieza nueva, el modo decorar y los errores del canje; con letra grande la barra envuelve y el panel hace scroll; los colores llegan a 44 pt. Sin probar con VoiceOver/TalkBack reales.
+- **Parches que se leen como bordado** (ribete de puntadas, fondo de sarga, dibujo en satén con relieve) y **cinta de gros-grain** con caída y un imperdible de verdad.
+- **Móvil nuevo con sesión**: las piezas que ya estaban en la nube se presentaban otra vez como recién conseguidas (la de bienvenida se concedía antes de que contestara la nube). Arreglado en `hooks/usePanuelo.ts`.
+- Tests nuevos: `usePanuelo.test.tsx` (42) y `panueloScreen.test.tsx` (21).
+
+## 2026-11-14 23:32 — Pañuelo virtual: no gasta en reposo, más alto y piezas que no se pisan
+
+- **Batería**: el vaivén en reposo pintaba a 60 fps sin parar. Ahora se mece unos 12 s, se va parando y el visor **se duerme** (deja de pedir fotogramas) hasta que alguien toca, inclina el móvil o llega una orden; mientras solo se mece pinta a la mitad de fotogramas. Al volver a la app se mece otro rato.
+- **El triángulo es más alto** (`FLAP_HEIGHT` 1,75 → 2,25): en un móvil en vertical el pañuelo ocupaba un tercio de la pantalla y las piezas quedaban pequeñas y apretadas. Las colocaciones guardadas (`u`, `v`) siguen valiendo: son proporciones.
+- **Hueco según el tamaño** (`itemReach`, `nextFreeSlot(taken, reach)`): una medalla o una pulsera piden más sitio que un pin, y una pieza grande ya no cae pegada al borde. `placeItem` acepta el catálogo para saberlo. Con el pañuelo lleno, se pisa antes el logo que otra pieza.
+- **Las piezas se asientan sobre la tela**: al coser una, el visor palpa la tela a su alrededor, la inclina con ella y la levanta lo justo. Las pulseras y los parches grandes se hundían en los pliegues.
+- **Pulseras con cuerpo**: cordón trenzado de sección ovalada en vez de una cinta plana.
+
+## 2026-11-14 23:09 — Comunica: la entrada, rehecha (saludo antes de pulsar y transición de marca)
+
+- **«Entra en Comunica» con cuenta de la app** (`AccountEntry`): la comprobación de fondo ya dice quién eres, así que la pantalla saluda antes de pulsar — avatar con el degradado, «Hola, David» y la delegación, la cuenta de la app con su sello y «Entrar en Comunica». Si el correo es de varias fichas, «Tu correo tiene N fichas» y «Elegir quién eres». «¿No eres tú?» con otro correo o el DNI, abajo.
+- **La entrada** (`WelcomeLayer` + `welcome.ts`): un círculo con el degradado crece desde el botón, un anillo blanco se dibuja y cierra con su marca, sube «¡Hola, David!» con la delegación y la capa se abre ya sobre la portada. La capa vive en la puerta (`app/(tabs)/comunica/index.tsx`) para seguir viva cuando el acceso se cambia por la portada; la sesión se guarda cuando la capa avisa de que todo está tapado (con tope por si no avisa) y, como la pila se rehace al entrar, la capa recuerda por dónde iba. Con «Reducir movimiento», sin círculo ni trazo. Es la única pieza fuera de `comun/` con permiso para `BrandGradient` (transición, no bloque).
+- **Formulario del código**: correo y DNI en un conmutador arriba (`SegmentedControl`), en vez de un enlace suelto.
+- Sustituye a `WelcomeOverlay` (el check con «¡Hola!» sobre blanco).
+
+## 2026-11-14 21:43 — Área privada nativa para todos y acceso nuevo («Entra en Comunica»)
+
+- **La nativa es el área de todo el mundo**: `utils/comunica/router.ts` lee `global.comunicaNativa` ausente, `all` o el `alpha` que quedó en Firebase de las pruebas como **nativa para todos**. Vuelta atrás: `off` (la WebView, deprecada, para todos) o `solo-alpha` (solo el Laboratorio Alpha). Llega a todos con la próxima OTA de `production`, sin tocar el panel. Seed a `all`.
+- **Acceso rehecho** (`components/comunica/acceso/`): con cuenta de la app, «Tienes la sesión iniciada con <correo>» y un botón, «Entrar en Comunica» (`AccountEntry`); la comprobación con el middleware sale sola al abrir (`checkAppAccount` en `services/comunica/appAccount.ts`) y al pulsar hay una entrada animada (`WelcomeOverlay`, sin animación con «Reducir movimiento»). Si el correo no está en Comunica, aviso y formulario vacío para otro; el código y el DNI siempre a mano (`CodeRequestForm`). Textos cortos; fuera la línea técnica (`validation · bad_app_token · 422`).
+- **`bad_app_token`**: la app pide un pase nuevo a Firebase y repite una vez; en el middleware, las cuentas de Google Workspace ya entran (ver `comunicaMiddleware:docs/ACCESO-APP.md`).
+- **La sesión no se pierde**: si el servidor cierra la sesión y la persona no había salido a propósito, se vuelve a entrar sola con la cuenta de la app; la OTA espera a que acabe un refresco en vuelo antes de recargar (`settleSession`); el middleware ya no revoca un refresco que se repite porque la app se recargó a mitad. Arreglada la carrera de «Salir» → la puerta entraba sola 46 ms después.
+- **Pantalla del código**: «¿No te llega? Entra con el DNI» vuelve al acceso con el DNI abierto; por DNI dice a qué correo (tapado) se ha mandado.
+- Tests: `__tests__/comunica/accessAccount.test.tsx` (nuevo), puerta y enrutador actualizados.
+
+## 2026-11-13 12:40 — Pañuelo virtual en 3D (en el Laboratorio Alpha)
+
+Funcionalidad nueva, escondida tras `global.panuelo` (ausente = `alpha`: solo con el Laboratorio Alpha encendido). Documentación: `docs/funcionalidades/PANUELO.md`; contrato: `docs/contratos/PANUELO_CONTRATO.md`; lo que queda: `docs/planes/PLAN_PANEL_PANUELO.md`.
+
+- **Pantalla nueva** `/panuelo` («Tu pañuelo»): el pañuelo en 3D en sus cuatro colores, con las piezas que se van consiguiendo. Se gira con el dedo, se acerca con dos y se mueve inclinando el móvil. Tocar una pieza la saca del pañuelo para verla de cerca, con su ficha. Modo «Decorar» para mover, girar y quitar piezas. Canje por código, foto para compartir. Entrada: panel «Pañuelo virtual» del Laboratorio Alpha.
+- **Seis clases de pieza** —chapa, pin esmaltado, cinta, parche bordado, medalla y pulsera de hilo— que se **dibujan a partir de datos** del catálogo (colores, forma, texto): una pieza nueva es JSON, no una imagen ni una versión de la app.
+- **Visor 3D propio** (`panuelo-3d/`, three.js) dentro de un WebView / iframe: sale por OTA y funciona sin red. El pañuelo no es un modelo, se calcula. **Artefacto commiteado**: `panuelo-3d/generated/viewer.bundle.json`, que se regenera con `npm run build:panuelo` (script nuevo). Guardarraíl: `__tests__/panueloViewerBundle.test.ts` reconstruye el bundle y lo compara.
+- **Dependencias nuevas, solo de build**: `three` y `@types/three` en `devDependencies`. No entran en el bundle de Metro ni llevan código nativo.
+- **Firebase**: nodo nuevo `/panuelo` (catálogo, lectura pública, lo escribe el panel; regla añadida a `database.rules.json`, **sin desplegar**) y `users/{uid}/panuelo` (lo de cada persona; lo cubre la regla de `users/$uid`). Seed: `firebase-seed/panuelo.json`, que es también el catálogo que se usa mientras no haya uno remoto. `global.panuelo` añadido al seed de perfiles y al contrato (`PANEL_PERFILES.md` §1.10-bis).
+- **Intercambios**: puesta la base, sin interfaz. `utils/panueloTrade.ts` tiene las reglas de un intercambio cara a cara con código (abrir, contestar, aceptar, aplicar) y el estado apunta lo que se da (`gone`) para que juntar el móvil con la nube no lo resucite.
+- **Analítica**: `panuelo_abierto` y `panuelo_pieza_conseguida`.
+- Tokens nuevos: `PanueloColors` (tela, tinta de la serigrafía y metales) en `constants/colors.ts`.
+- **Sin probar en móvil**: se ha probado en navegador (el visor y la pantalla entera en web). Lista de lo que hay que mirar en un dispositivo, en el plan (Fase 3).
+
+## 2026-11-08 18:39 — Arreglo: deslizar el calendario o el vídeo flotante cerraba la app
+
+- **Causa**: `rubberBand`/`rubberBandClamp` (`utils/gesturePhysics.ts`) tenían `factor = RUBBER_BAND` como valor por defecto. El plugin de worklets mete las constantes de fuera en el cuerpo de la función, y el valor por defecto se evalúa antes: en el hilo de UI `RUBBER_BAND` no existía → `ReferenceError` → crash al arrastrar. Afectaba al calendario mensual, al reproductor flotante y al detalle de canción al tirar más allá de la primera/última. En Jest no se veía (allí el worklet corre como JS normal).
+- **Arreglo**: sin valores por defecto en los parámetros (`factor ?? RUBBER_BAND` dentro del cuerpo).
+- **Guardarraíl**: `__tests__/workletClosures.test.ts` compila cada fichero con worklets con el preset de Expo y falla si alguno usa una variable de fuera en un valor por defecto.
+
+## 2026-11-08 17:25 — Gestos que se descubren solos: pistas de las primeras veces y acciones que se «arman»
+
+- **Pistas de gesto (`hooks/useGestureHint.ts`)**: un gesto escondido no se descubre solo. Las 3 primeras veces (una por sesión como mucho) se DEMUESTRA el gesto sobre el contenido real, y en cuanto el usuario lo usa no vuelve a salir. Recuento en AsyncStorage (`gestureHint:<clave>`). Si el usuario toca durante la demo, su dedo manda.
+  - **Detalle de canción en una lista** (tu selección, una categoría): al entrar, la letra se aparta un poco hacia la canción siguiente, asoma la pastilla «Siguiente · Título» y vuelve. Con «reducir movimiento», la letra no se mueve: solo aparece la pastilla un par de segundos. Clave `cantoral.swipeSong`.
+  - **Lista de canciones**: la primera canción sin seleccionar se entreabre sola y enseña su «Añadir» verde, y se cierra (sin añadir nada). No en web (allí hay botón) ni con «reducir movimiento». Clave `cantoral.swipeAdd`.
+- **Pastillas «Anterior / Siguiente» (`components/SongSwipePeek.tsx`)**: al arrastrar la letra, asoma por el borde a qué canción se va. Van enlazadas al arrastre (sin animación propia) y, al pasar el umbral en el que soltar ya cambia de canción, se «arman»: crecen un poco, la flecha toma el color de acción y suena un tic.
+- **Filas deslizables «armadas»** (cantoral, playlist, notificaciones): al cruzar el punto en el que soltar ya ejecuta la acción, el icono da un pequeño salto y suena un tic (patrón de Mail en iOS). `SwipeActionContent` gana `armAt`/`onArm`.
+
+## 2026-11-08 14:56 — Gestos que siguen al dedo (skill `gestures` de Emil Kowalski)
+
+- **Skill instalada**: `gestures` (`emilkowalski/skills`) en `.agents/skills/gestures`, registrada en `skills-lock.json`.
+- **Nuevo `utils/gesturePhysics.ts`**: `rubberBand`/`rubberBandClamp` (resistencia elástica pasado un tope, en vez de un tope seco), `shouldCommitGesture` (al soltar se compromete por distancia **o** velocidad, y no si se suelta volviendo atrás) y `toCoreSpring` (los muelles de token `springs.*` traducidos para `Animated.spring` de core). Tests en `__tests__/gesturePhysics.test.ts`.
+- **Detalle de canción — swipe entre canciones**: la letra ahora **sigue al dedo** mientras se arrastra (antes no se movía hasta soltar). Basta distancia (80 px) **o** velocidad (500 px/s): antes hacían falta las dos, y un flick corto o un arrastre lento no cambiaban de canción. En la primera/última canción la letra cede elástica. La salida hereda la velocidad del flick. Pasa de `PanGestureHandler` (API vieja) a `Gesture.Pan()`.
+- **BottomSheet (todas las hojas)**: el fondo oscuro se aclara a la par que se arrastra la hoja hacia abajo (valor derivado del arrastre, no animación aparte). Cerrar de un flick hereda la velocidad del dedo (muelle sin rebote) en vez de frenar y arrancar una curva fija. Soltar subiendo con decisión anula el cierre. El muelle de vuelta pasa a `springs.snap`.
+- **Calendario mensual**: el mes sale con un muelle sembrado con la velocidad del flick y el nuevo entra heredándola; tope elástico; háptica en el instante del commit. Fuera el muelle a mano y las dos duraciones a mano.
+- **Reproductor flotante (PiP)**: ya no se puede sacar de pantalla; pasado el borde cede elástico y al soltar vuelve dentro con muelle.
+- Trinquete `noLooseMotion`: acepta `Animated.spring` con `toCoreSpring(springs.…)`; topes bajados a 3 muelles y 50 duraciones.
+
+## 2026-11-08 12:45 — Push: sin red ya no se reporta como error
+
+- Sentry recogía `Error encountered while fetching Expo token: … UnknownHostException: Unable to resolve host "exp.host"`: el móvil abría la app sin conexión y `getExpoPushTokenAsync` no llegaba al servidor de Expo. No es un fallo: el registro se reintenta solo al volver la app al primer plano.
+- Nuevo `utils/networkErrors.ts` (`isOfflineError`, puro y con test): reconoce los mensajes de «sin red» de Android, iOS, React Native y Firebase, también dentro de `error.cause`. `registerAndSaveToken` lo usa para dejar esos casos en `logger.debug` y seguir mandando a Sentry el resto.
+
+## 2026-11-08 09:00 — Login de Android: el `INTERNAL_ERROR` (8) cuenta como fallo de configuración
+
+- Sentry recogió en la 2.5.1 (Pixel 8, canal `preview`) un `AuthError: No se pudo iniciar sesión` cuya causa era `INTERNAL_ERROR`, el código 8 de Google Play Services. `utils/authErrors.ts` no lo conocía y lo daba por «desconocido».
+- Ahora `8` e `INTERNAL_ERROR` van a `MISCONFIGURED`, como el `DEVELOPER_ERROR` (10): mismo mensaje y mismo arreglo, dar de alta las huellas SHA-1 en Firebase (`docs/funcionalidades/LOGIN.md` §4). El código no arregla el login: lo que falta es esa configuración.
+
+## 2026-11-07 18:00 — «Actualizar en la tienda» llevaba a una ficha que no existe en iOS
+
+- `utils/storeLinks.ts` abría `apps.apple.com/app/id6745557177`, un id que no existe en la App Store. Al subir la versión mínima a 2.5.1, el botón de la pantalla de actualizar decía «no disponible en tu país». El id bueno es **6753905393** (el `ascAppId` de `eas.json`, comprobado contra la API de búsqueda de Apple: «MCM App», `com.familiaconsolacion.mcmapp`, 2.5.1).
+- El id roto venía de abril de 2026. Las versiones viejas también lo llevan: la 2.0.0 en `MaintenanceScreen` y la 2.5.0 en `storeLinks`. Para ellas hay ramas de parche con una OTA en su propio `runtimeVersion` (ver `docs/desarrollo/OTA.md`, «OTA a una versión vieja»).
+- Las dos ramas de parche llevan además un cartel «Hay una versión nueva» en Inicio (`components/StoreUpdateBanner.tsx`, solo en esas ramas). Lleva a la tienda, se puede cerrar y vuelve a salir a los 3 días. Publicadas el 2026-11-07 con Actions → OTA Production sobre cada rama. Plan: versión mínima en 2.0.0 (nadie bloqueado) y subirla a 2.5.1 en una semana y pico para los rezagados.
+- Guardarraíl en `__tests__/storeLinks.test.ts`: el id del enlace tiene que ser el `ascAppId` de `eas.json`, y el id viejo no puede volver a aparecer.
+
+## 2026-11-07 17:05 — Comunica: marca menor «Otras patologías» (TEA, TDAH…)
+
+- **Antes**: solo había una marca de salud, «Alergia o tratamiento». Un chaval con solo «otras patologías» (TEA, TDAH…) no llevaba ninguna, y la ficha enseñaba el texto de alergias/intolerancias pero no el de los tratamientos ni el de las patologías.
+- **Contrato**: `badges.healthOther` (opcional) = tiene enfermedades u «otras patologías» (`HEALTH_KINDS_OTHER`). `badges.healthNote` pasa a significar alergias, intolerancias o tratamiento (`HEALTH_KINDS_MAIN`). Pueden ir las dos a la vez. **El servidor real (`mcm-comunica-api`) tiene que mandar `healthOther`**; mientras no lo haga, la app no pinta la marca menor. Detalle en `docs/contratos/COMUNICA_API.md`.
+- **App**: pastilla menor «Otras patologías» (más pequeña, en tono celeste, no de aviso) en listas de grupo, sueltos, índice de grupos y Pasar Lista (icono pequeño), con el mismo gesto que la principal: abre la hoja de salud. Sin decir cuál, tampoco al lector de pantalla.
+- **Ficha del participante («Lo imprescindible»)**: ahora también enseña el **tratamiento** con su texto y las **otras patologías** con su texto (aviso menor).
+- **Servidor falso**: calcula las dos marcas desde la ficha de salud (`utils/comunica/health.ts`) e incluye un caso «TEA y TDAH».
+
+## 2026-11-07 16:55 — Letra grande del sistema en toda la app (segunda tanda) y hoja de canción igual en iOS y Android
+
+Sigue a la entrada de las 14:33. **Con la letra del sistema normal no cambia nada** (salvo la hoja de canción en iOS para quien ya tiene la letra agrandada, ver abajo).
+
+- **Nuevo `components/ui/ScrollWhenLarge.tsx`**: una columna fija y centrada pasa a hacer scroll solo con letra grande (sale del onboarding, que ahora la importa). Se usa en:
+  - **«Hay una versión nueva»** (`UpdateRequiredScreen`): sin la escena de 240 px y con scroll. Antes los botones (lo único que se puede tocar ahí) se salían de la pantalla.
+  - **Mantenimiento** (`MaintenanceScreen`): el texto del Panel se puede leer entero.
+- **Menú de opciones de la canción** (`SongControls`): con letra grande hace scroll dentro de la altura que queda; las opciones de arriba se salían por arriba.
+- **Tamaño de letra de la app × escala del sistema**: `appScaledTextCap()` (`hooks/useLargeText.ts`) pone techo al sistema para que el total ronde ×2 y no llegue a ×4. Se aplica en Inicio. Además, `lineHeight` de la notificación de Inicio ya escala con el tamaño de la app; las líneas se montaban desde ×1.4.
+- **Inicio**, con letra grande:
+  - Accesos rápidos en filas de 3 (antes «Canto/ral» partido).
+  - Recuadro de fecha del evento con techo ×1.3.
+  - El título del evento, el del evento activo, la notificación y el aviso «Evalúa la actividad» pasan a varias líneas (este último con el botón debajo y sin icono).
+- **Más títulos sin cortar con letra grande**: canciones del cantoral (`SongListItem`), categorías, tarjetas de Más, notificaciones (con la hora debajo del título), eventos del calendario (con la etiqueta del calendario debajo).
+- **`SegmentedControl`**: con letra grande, etiqueta en dos líneas y sin icono («Sin leer (N)» perdía el número).
+- **`AppPrimaryButton`**: la etiqueta encoge y se centra si parte en dos líneas; antes se salía por la derecha.
+- **Calendario**: con letra grande, «Volver a hoy» baja de fila y el mes deja de exigir 180 px. El número del día lleva techo ×1.3.
+- **Contigo**: las emociones de Oración envuelven si no caben. Las casillas de hábitos admiten dos líneas. La fecha de la cabecera de Revisión lleva techo de cromo.
+- **Techo ×1.3 o ×1.5** en controles de tamaño fijo: velocidades y nivel de la pantalla completa de la canción, emoji de las categorías y título de `ScreenHero` (×1.5).
+- **Hoja de canción** (`utils/songDocument.ts`, `useSongProcessor`): la escala de letra del sistema la aplica la hoja en su CSS (`html { font-size: N% }`, acotada a 80–200 %) en iOS y Android, y los dos WebViews de la canción van con `textZoom={100}`.
+  - Antes solo Android la respetaba, vía el `textZoom` por defecto del WebView.
+  - Ahora iOS también la sigue: quien tenga la letra de iOS agrandada verá la hoja más grande.
+  - En web no se aplica, y al 100 % la hoja queda igual que antes.
+  - Cierra la decisión pendiente `android-webview-textzoom` de `TODO.md`.
+- **Pasarela de pago de Comunica** (`CardGatewaySheet`): `textZoom={100}`. El formulario del banco se descolocaba al 200 % en Android.
+- Las lecturas de Contigo se quedan como están: son texto de lectura, hacen scroll y no se rompen.
+- Tests: `__tests__/largeText.test.tsx` amplía con el techo combinado y con la escala en el CSS de la hoja.
+
 ## 2026-11-07 14:33 — Letra grande del sistema: cabecera de Inicio y onboarding
 
 Para quien tiene el zoom de letra alto (gente mayor, sobre todo en Android). **Con la letra normal no cambia nada.**

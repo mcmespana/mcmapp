@@ -60,7 +60,7 @@ o borra el bloque: el resto sigue funcionando.
 
 | Sección (path)                       | Lectura | Escritura desde la app                          | Quién escribe de verdad |
 | ------------------------------------ | :-----: | ----------------------------------------------- | ----------------------- |
-| `/songs/data`                        | Pública | **Sí** (panel secreto, contraseña `coco`)       | Admin local             |
+| `/songs/data`                        | Pública | No (el editor de canciones de la app va por el admin del cantoral; ver `funcionalidades/EDITOR_CANCIONES.md`) | CI del cantoral         |
 | `/songs/updatedAt`                   | Pública | Sí (invalidar caché)                            | Admin local             |
 | `/songs/ediciones`                   | Pública | Sí (historial de ediciones)                     | Usuario/Admin           |
 | `/songs/solicitudes`                 | Pública | Sí (sugerir canción)                            | Usuario                 |

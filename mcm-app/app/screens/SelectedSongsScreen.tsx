@@ -15,6 +15,7 @@ import {
   FlatList,
   Platform,
   Modal,
+  ScrollView,
   TouchableOpacity,
   TouchableWithoutFeedback,
 } from 'react-native';
@@ -50,6 +51,10 @@ import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { h } from '@/utils/haptics';
 import PlaylistRow from '@/components/playlist/PlaylistRow';
 import { createStyles } from '@/components/playlist/selectedSongsStyles';
+import SundayReadingsSheet from '@/components/playlist/SundayReadingsSheet';
+import { useChoirHistory } from '@/hooks/useChoirHistory';
+import SundaySongsButton from '@/components/playlist/SundaySongsButton';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import {
   PlaylistHeaderBar,
   type ViewMode,
@@ -138,9 +143,16 @@ const WEB_BASE_URL = 'https://mcm.expo.app';
 const APP_SCHEME = 'mcmapp://';
 
 const SelectedSongsScreen: React.FC = () => {
-  const { selectedSongs, isHydrated, addSong, removeSong, moveSong } =
-    useSelectedSongs();
+  const {
+    selectedSongs,
+    isHydrated,
+    addSong,
+    removeSong,
+    moveSong,
+    isSongSelected,
+  } = useSelectedSongs();
   const choir = useChoirSession();
+  const sung = useChoirHistory();
   // Escalar suelto a propósito: leer `choir.session?.current?.filename` DENTRO
   // de un callback hace que se infiera `choir.session` entera como dependencia,
   // así que el memo se rehace en cada latido del líder aunque la canción en
@@ -1151,6 +1163,11 @@ const SelectedSongsScreen: React.FC = () => {
     } else if (params.hoja === 'coro' && sharing.myChoir) {
       sheetParamHandled.current = true;
       sharing.openSheet('home');
+    } else if (params.hoja === 'guardar-coro' && sharing.myChoir) {
+      // «Subir a mi coro» desde «Cantos para el domingo»: directo al paso de
+      // guardar, con la misa ya puesta como selección.
+      sheetParamHandled.current = true;
+      sharing.openSheet('save');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharing.myChoir]);
@@ -1263,6 +1280,19 @@ const SelectedSongsScreen: React.FC = () => {
           ? [hub, save]
           : [hub];
     if (sharing.myChoir) {
+      // El historial también aquí: en la cabecera de la lista solo se ve con
+      // canciones, y es justo cuando la lista está vacía cuando se monta.
+      coroPlaylists.push({
+        id: 'choir-history',
+        icon: 'history',
+        label: sung.enabled
+          ? 'Ocultar lo cantado'
+          : 'Ver lo cantado por el coro',
+        description: sung.enabled
+          ? 'Quita los puntos de las últimas semanas'
+          : 'Puntos de las últimas 8 semanas y veces del curso en cada canción',
+        onPress: () => sung.setEnabled(!sung.enabled),
+      });
       coroPlaylists.push({
         id: 'share-choir-link',
         icon: 'link',
@@ -1473,6 +1503,7 @@ const SelectedSongsScreen: React.FC = () => {
       { title: 'Archivo', actions: archivo, secondary: true },
     ];
   }, [
+    sung,
     hasSongs,
     handleShareText,
     handleStartExportFile,
@@ -1560,13 +1591,28 @@ const SelectedSongsScreen: React.FC = () => {
     }
   };
 
+  const [showSunday, setShowSunday] = useState(false);
+  const openSunday = useCallback(() => setShowSunday(true), []);
+
+  // Vacía: lo primero, traerse la playlist del coro; debajo, código y archivo,
+  // y al final, para quien elige los cantos, los del domingo. Con scroll por
+  // si la letra es grande.
   const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
+    <ScrollView
+      style={styles.emptyScroll}
+      contentContainerStyle={[
+        styles.emptyContainer,
+        styles.emptyScrollContent,
+        { paddingBottom: tabBarBottom + 20 },
+      ]}
+      contentInsetAdjustmentBehavior="automatic"
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.emptyContent}>
         <View style={styles.emptyIconContainer}>
           <MaterialIcons
             name="queue-music"
-            size={56}
+            size={40}
             color={themeColors(isDark).textMuted}
           />
         </View>
@@ -1577,25 +1623,18 @@ const SelectedSongsScreen: React.FC = () => {
             : 'Desliza una canción hacia la izquierda o usa el + al abrirla.'}
         </Text>
       </View>
-      <View style={{ gap: 10, marginBottom: tabBarBottom }}>
-        {/* Con la lista vacía, lo primero que quiere casi todo el mundo es
-            traerse la del coro: va la primera y sin pedir ningún código. */}
-        <PressableFeedback
-          onPress={() => openChoirSheet()}
-          style={styles.importButton}
-        >
-          <PressableFeedback.Highlight />
-          <MaterialIcons
-            name="groups"
-            size={20}
-            color={themeColors(isDark).link}
-          />
-          <Text style={styles.importButtonText}>
-            {sharing.myChoir
+      <View style={{ gap: 10 }}>
+        {/* Con la lista vacía, lo que quiere casi todo el mundo es traerse la
+            del coro: va la primera, destacada y sin pedir ningún código. */}
+        <AppPrimaryButton
+          icon="groups"
+          label={
+            sharing.myChoir
               ? `Traer la playlist de ${sharing.myChoir.name}`
-              : 'Elegir mi coro e importar'}
-          </Text>
-        </PressableFeedback>
+              : 'Elegir mi coro e importar'
+          }
+          onPress={() => openChoirSheet()}
+        />
         <PressableFeedback
           onPress={() => setCodeDialog({ variant: 'cloud-download' })}
           style={styles.importButton}
@@ -1620,8 +1659,12 @@ const SelectedSongsScreen: React.FC = () => {
           />
           <Text style={styles.importButtonText}>Importar desde archivo</Text>
         </PressableFeedback>
+        {/* Para quien elige los cantos: discreto y al final. */}
+        <View style={styles.emptySunday}>
+          <SundaySongsButton />
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 
   const headerComponent = useMemo(
@@ -1635,9 +1678,11 @@ const SelectedSongsScreen: React.FC = () => {
         viewMode={viewMode}
         setViewMode={setViewMode}
         styles={styles}
+        onOpenSunday={openSunday}
       />
     ),
     [
+      openSunday,
       visibleCount,
       link,
       sharing.isSynced,
@@ -1794,6 +1839,14 @@ const SelectedSongsScreen: React.FC = () => {
         />
       )}
 
+      <SundayReadingsSheet
+        visible={showSunday}
+        onClose={() => setShowSunday(false)}
+        songsData={allSongsData}
+        isSelected={isSongSelected}
+        onAdd={addSong}
+        onRemove={removeSong}
+      />
       <PlaylistActionsBottomSheet
         visible={showActions}
         sections={sheetSections}

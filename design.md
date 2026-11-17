@@ -219,7 +219,10 @@ capes por debajo de ×1.3.
 
 **Letra grande del sistema** (zoom alto, gente mayor): para cambiar la MAQUETA
 (que un bloque fijo pase a hacer scroll, quitar adornos grandes) usa
-`useLargeText()` (`hooks/useLargeText.ts`, se activa desde ×1.2). Con la letra
+`useLargeText()` (`hooks/useLargeText.ts`, se activa desde ×1.2) y, para una
+columna fija centrada, `ScrollWhenLarge` (`components/ui/`). Un texto que ya
+multiplica por el tamaño de letra de la app lleva
+`maxFontSizeMultiplier={appScaledTextCap(fontScale)}`. Con la letra
 normal la pantalla tiene que quedar idéntica. El texto que vive en una barra
 de altura fija (cabecera nativa, pie de botones) lleva
 `maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}` (×1.3); el texto de lectura,
@@ -316,6 +319,16 @@ sueltos **nuevos** están prohibidos (decisión cerrada, `PLAN_UI_NATIVA.md` §4
 `hero 800` loops. Curvas: `motionEasings.out` por defecto, `inOut` para morph,
 `sheet` para sheets. Muelles (`springs`) siempre que haya intervenido un dedo:
 un muelle conserva la velocidad del gesto, una curva la reinicia.
+**Gestos** (skill `gestures`): con el dedo abajo, el elemento ES el dedo
+(1:1, sin curva) y pasado un tope cede elástico (`rubberBand`); al soltar, se
+compromete por distancia **o** velocidad (`shouldCommitGesture`) y termina un
+muelle sembrado con la velocidad. Lo que acompaña (el fondo de una hoja) se
+deriva del arrastre, no se anima aparte. Todo en `utils/gesturePhysics.ts`.
+**Un gesto escondido se enseña, no se explica**: las primeras veces, una
+demostración breve del propio gesto sobre el contenido real
+(`hooks/useGestureHint.ts`), que se apaga en cuanto el usuario lo usa. Nada de
+tutoriales ni carteles fijos. Al cruzar el umbral de una acción deslizable, la
+acción se «arma» (salto + tic): `SwipeActionContent` con `armAt`.
 **Nunca `ease-in` en algo que entra.** Siempre native driver. Bouncy solo para
 celebración. En `Animated` de core, la curva de un sheet es `easings.sheet`
 (la de Reanimated no se puede ejecutar ahí). Hay un trinquete,

@@ -47,8 +47,12 @@
 - **Nada de nombres del CRM** en el contrato (`ajmcm_…`, `stic_…`): el servidor
   traduce, con los nombres de `comunicaAreaPrivada/docs/comunica/CAMPOS.md`.
 - **La salud nunca viaja en una lectura que el móvil guarda**: solo la marca
-  (`badges.healthNote`). El texto, solo en `GET /v1/people/:id/health`, que la
-  app pide con conexión y no guarda.
+  (`badges.healthNote`, `badges.healthOther`). El texto, solo en
+  `GET /v1/people/:id/health`, que la app pide con conexión y no guarda.
+  - `healthNote` = hay texto en alergias, intolerancias o tratamientos.
+  - `healthOther` = hay texto en enfermedades u otras patologías (TEA, TDAH…).
+    Marca menor y aparte; pueden ir las dos. Con «No» al uso de los datos de
+    salud, ninguna de las dos.
 - Todo acotado por **delegación** (`assigned_user_id`, como en el plugin) y
   por los grupos de la persona. Sin paginación: más de 1.000 elementos en una
   respuesta es un fallo de alcance.
@@ -200,6 +204,16 @@ coordinación y acompañamiento vigentes (`alcance-coord`).
 - `POST /v1/meetings` `{ clientId, name (1-120), date, startTime, durationHours
   (1 · 1,5 · 2 · 3 · 4) }` → `WriteResult` + `meeting`. Crea el evento del
   curso si no existe.
+- `POST /v1/coordination/roll-reminders` `{ clientId, groupIds (1-60),
+  message (1-120, una línea) }` → `WriteResult` + `{ monitors, reached,
+  recent }`. Solo coordinación y solo grupos de su alcance (si no, 403).
+  Manda un aviso `rollcall_due` al móvil de cada monitor vigente de esos
+  grupos, con el texto tal cual (el único aviso del área con texto libre) y
+  **sin mirar la preferencia `rollCallDue` del móvil**. `monitors` son los
+  monitores de los grupos avisados y `reached` los que tienen algún móvil
+  registrado; `recent`, los grupos saltados porque ya se les avisó hace menos
+  de 10 minutos. Si Expo falla, 503 `push_failed` (se puede repetir con el
+  mismo `clientId`).
 - `GET /v1/monitors/:id` → la ficha del monitor (sin seguimientos, sin
   familia, sin salud). Coordinación (monitor de su alcance) o acompañamiento;
   si no, 403.

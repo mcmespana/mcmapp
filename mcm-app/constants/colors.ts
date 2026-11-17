@@ -340,6 +340,33 @@ export function tunerColors(isDark: boolean) {
       };
 }
 
+// Resaltado del ChordPro en el editor de texto de canciones
+// (`components/song-editor/ChordProTextEditor.tsx`). Los mismos papeles que el
+// editor del admin del cantoral: acordes en azul, estribillos en ámbar,
+// comentarios en naranja, arreglos en rojo MIC, el resto de directivas en gris
+// y lo que está mal en rojo. Cada modo con su versión legible como texto sobre
+// la superficie hundida del editor.
+export const ChordProColors = {
+  light: {
+    chord: '#0A5FB4',
+    section: '#A15C00',
+    comment: '#B83F00',
+    arr: '#B8323A',
+    directive: '#6E6E73',
+    error: '#D70015',
+    errorBg: 'rgba(215, 0, 21, 0.10)',
+  },
+  dark: {
+    chord: '#7DD3FC',
+    section: '#FCD34D',
+    comment: '#FDBA74',
+    arr: '#F28B8F',
+    directive: '#98989F',
+    error: '#FF8A80',
+    errorBg: 'rgba(255, 138, 128, 0.16)',
+  },
+} as const;
+
 // Estados visuales compartidos (selección, hover, pressed)
 // Usado en SongListItem y futuros componentes con estado seleccionado.
 export const StateColors = {
@@ -543,4 +570,38 @@ export const LiturgicalColors = {
   red: '#C41E3A',
   /** Gaudete y Laetare — el rosa de los dos domingos de alegría. */
   rose: '#D4A0A7',
+  /** Solemnidades y fiestas del Señor y de la Virgen (blanco litúrgico). */
+  white: '#F5F5F5',
+} as const;
+
+/**
+ * El pañuelo virtual (`docs/funcionalidades/PANUELO.md`).
+ *
+ * `cloth` es el color de la TELA de cada pañuelo, sacado de fotos de los de
+ * verdad: no es el punto de color de las listas (ese es
+ * `ComunicaColors.scarf`), es lo que el modelo 3D usa de material. `print` es
+ * la tinta de la serigrafía del logo: blanca en todos menos en el amarillo,
+ * que la lleva azul marino.
+ *
+ * `metal` son los cuatro acabados de pines y medallas.
+ */
+export const PanueloColors = {
+  cloth: {
+    red: '#C21F2B',
+    green: '#178A3A',
+    blue: '#2747A4',
+    yellow: '#F2B91A',
+  },
+  print: {
+    red: '#F4F1EA',
+    green: '#F4F1EA',
+    blue: '#F4F1EA',
+    yellow: '#27307A',
+  },
+  metal: {
+    oro: '#E9B949',
+    plata: '#D5D9DF',
+    cobre: '#C8794A',
+    negro: '#2B2B30',
+  },
 } as const;

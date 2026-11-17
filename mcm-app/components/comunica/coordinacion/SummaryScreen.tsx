@@ -6,6 +6,10 @@
 // por grupo, quién lo lleva, su pastilla y su tira. Con alcance acotado, lo
 // tuyo arriba y «El resto de la delegación» plegado. Al final, los datos por
 // revisar.
+//
+// Coordinación tiene además la campana de la cabecera (15/11/2026): elige
+// grupos suyos (salen marcados los que tienen la última lista sin pasar) y
+// manda a sus monitores un aviso al móvil (`RollReminderSheet`).
 
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -20,9 +24,17 @@ import type {
   CoordinationSummary,
   StageStrip,
 } from '@/services/comunica/contract';
+import { useToast } from '@/contexts/AppToastContext';
 import { useCoordinationSummary } from '@/hooks/comunica/coordination';
 import { useMe } from '@/hooks/comunica/useMe';
 import { h } from '@/utils/haptics';
+import {
+  canRemind,
+  defaultReminderSelection,
+  groupsText,
+  remindableIds,
+  reminderResultText,
+} from '@/utils/comunica/rollReminders';
 import { coordinationAccess, STAGE_TEXT } from '@/utils/comunica/scope';
 import {
   lastSessionStatus,
@@ -35,12 +47,16 @@ import {
   stripFootnote,
   stripRowState,
 } from '@/utils/comunica/summary';
+import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
+import BottomActionBar from '../comun/BottomActionBar';
 import Section from '../comun/Section';
 import StatusChip from '../comun/StatusChip';
 import { STAGE_COLOR } from '../comun/theme';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
+import { useHeaderGlyph } from '../comun/useHeaderGlyph';
+import RollReminderSheet from './RollReminderSheet';
 import RollStrip from './RollStrip';
 
 export default function SummaryScreen() {
@@ -82,8 +98,92 @@ function Summary({
   const cards = data.mine.map((s) => stageCard(s, now));
   const restCount = rowGroupCount(data.rest);
 
+  // Recordar que pasen lista: solo coordinación y solo en lo suyo.
+  const glyph = useHeaderGlyph();
+  const { toast } = useToast();
+  const canSend = access.coordination && remindableIds(data.mine).length > 0;
+  const [picked, setPicked] = useState<readonly string[] | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  // Un grupo que ya no está (cambió la delegación o el alcance) no se manda.
+  const valid = new Set(remindableIds(data.mine));
+  const chosen = (picked ?? []).filter((id) => valid.has(id));
+  const toggle = (id: string) => {
+    h.select();
+    setPicked((p) =>
+      p?.includes(id) ? p.filter((x) => x !== id) : [...(p ?? []), id],
+    );
+  };
+
   return (
-    <AreaScreen onRefresh={refetch}>
+    <AreaScreen
+      onRefresh={refetch}
+      footer={
+        picked ? (
+          <BottomActionBar>
+            <AreaPrimaryButton
+              label={
+                chosen.length
+                  ? `Recordar a ${groupsText(chosen.length)}`
+                  : 'Elige a qué grupos avisar'
+              }
+              icon="bell.fill"
+              disabled={chosen.length === 0}
+              onPress={() => setSheetOpen(true)}
+            />
+          </BottomActionBar>
+        ) : undefined
+      }
+    >
+      <Stack.Screen
+        options={{
+          headerRight: canSend
+            ? () => (
+                <PressableFeedback
+                  onPress={() => {
+                    h.tap();
+                    setPicked((p) =>
+                      p ? null : defaultReminderSelection(data.mine),
+                    );
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    picked
+                      ? 'Cancelar el aviso'
+                      : 'Recordar a los monitores que pasen lista'
+                  }
+                  style={styles.headerButton}
+                >
+                  {picked ? (
+                    <Text style={[styles.link, { color: glyph }]}>
+                      Cancelar
+                    </Text>
+                  ) : (
+                    <IconSymbol name="bell.fill" size={22} color={glyph} />
+                  )}
+                </PressableFeedback>
+              )
+            : undefined,
+        }}
+      />
+      <RollReminderSheet
+        visible={sheetOpen}
+        groupIds={chosen}
+        onClose={() => setSheetOpen(false)}
+        onSent={(result) => {
+          const out = reminderResultText(result);
+          toast.show({
+            label: out.text,
+            variant: out.ok ? 'success' : 'warning',
+          });
+          setSheetOpen(false);
+          setPicked(null);
+        }}
+      />
+      {picked ? (
+        <Text style={[styles.body, { color: t.textSecondary }]}>
+          Marca los grupos a cuyos monitores quieres recordar que pasen lista.
+        </Text>
+      ) : null}
       {cards.length > 0 ? (
         <View style={styles.block}>
           <View style={styles.cards}>
@@ -152,6 +252,7 @@ function Summary({
           key={strip.stage}
           strip={strip}
           canOpenMonitors={access.any}
+          select={picked ? { chosen, toggle } : undefined}
         />
       ))}
 
@@ -202,10 +303,13 @@ function Summary({
 function StageGroups({
   strip,
   canOpenMonitors,
+  select,
 }: {
   strip: StageStrip;
   /** Coordinación (en lo suyo) y acompañamiento: el nombre abre su ficha. */
   canOpenMonitors: boolean;
+  /** Eligiendo a quién avisar: la fila entera marca o desmarca su grupo. */
+  select?: { chosen: readonly string[]; toggle: (id: string) => void };
 }) {
   const t = useComunicaTheme();
   const router = useRouter();
@@ -214,9 +318,19 @@ function StageGroups({
       {strip.rows.map((row) => {
         const state = stripRowState(row);
         const code = row.group.code?.trim() || null;
-        return (
-          <View key={row.group.id} style={styles.groupRow}>
+        const on = !!select?.chosen.includes(row.group.id);
+        const body = (
+          <>
             <View style={styles.groupHead}>
+              {select ? (
+                <IconSymbol
+                  name={on ? 'checkmark.circle.fill' : 'circle'}
+                  size={22}
+                  color={
+                    on ? t.accentText : canRemind(row) ? t.icon : t.textMuted
+                  }
+                />
+              ) : null}
               <View
                 style={[
                   styles.dot,
@@ -233,7 +347,7 @@ function StageGroups({
             </View>
             <Monitors
               row={row}
-              canOpen={canOpenMonitors}
+              canOpen={canOpenMonitors && !select}
               onOpen={(id) =>
                 router.push({
                   pathname: '/comunica/coordinacion/monitor/[id]',
@@ -244,17 +358,42 @@ function StageGroups({
             <RollStrip
               cells={row.cells}
               label={`${code ?? row.group.name}: ${state.note}`}
-              onPress={() =>
-                router.push({
-                  pathname: '/comunica/pasar-lista/[groupId]/historial',
-                  params: { groupId: row.group.id },
-                })
+              onPress={
+                select
+                  ? undefined
+                  : () =>
+                      router.push({
+                        pathname: '/comunica/pasar-lista/[groupId]/historial',
+                        params: { groupId: row.group.id },
+                      })
               }
             />
             <Text style={[styles.small, { color: t.textSecondary }]}>
-              {state.note}
+              {select && !canRemind(row)
+                ? 'Sin monitores vinculados: no hay a quién avisar'
+                : state.note}
             </Text>
-          </View>
+          </>
+        );
+        if (!select) {
+          return (
+            <View key={row.group.id} style={styles.groupRow}>
+              {body}
+            </View>
+          );
+        }
+        return (
+          <PressableFeedback
+            key={row.group.id}
+            onPress={() => select.toggle(row.group.id)}
+            isDisabled={!canRemind(row)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: on, disabled: !canRemind(row) }}
+            accessibilityLabel={`Avisar a ${code ?? row.group.name}`}
+            style={styles.groupRow}
+          >
+            {body}
+          </PressableFeedback>
         );
       })}
     </Section>
@@ -388,4 +527,11 @@ const styles = StyleSheet.create({
   dot: { width: 10, height: 10, borderRadius: radii.pillFull },
   names: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12 },
   nameTarget: { minHeight: 44, justifyContent: 'center' },
+  headerButton: {
+    paddingHorizontal: 8,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

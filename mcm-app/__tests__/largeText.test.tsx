@@ -16,8 +16,13 @@ import HomeBrand from '@/components/home/HomeBrand';
 import {
   CHROME_MAX_FONT_SCALE,
   LARGE_TEXT_FONT_SCALE,
+  appScaledTextCap,
   isLargeText,
 } from '@/hooks/useLargeText';
+import {
+  renderSongDocument,
+  systemFontScalePercent,
+} from '@/utils/songDocument';
 
 jest.mock('@/components/home/HomeLogo', () => () => null);
 
@@ -56,5 +61,42 @@ describe('techo de escala del texto de cromo', () => {
       .find((t) => t.props.children === 'MCM App');
     expect(title).toBeDefined();
     expect(title!.props.maxFontSizeMultiplier).toBe(CHROME_MAX_FONT_SCALE);
+  });
+});
+
+describe('tamaño de letra de la app × escala del sistema', () => {
+  it('con la app al ×1 no capa por debajo de ×2', () => {
+    expect(appScaledTextCap(1)).toBe(2);
+  });
+
+  it('con la app al ×2 el sistema se queda en ×1.3 (nunca menos)', () => {
+    expect(appScaledTextCap(2)).toBe(CHROME_MAX_FONT_SCALE);
+  });
+});
+
+describe('hoja de canción y escala del sistema', () => {
+  it('se acota a [80 %, 200 %] y sin dato queda al 100 %', () => {
+    expect(systemFontScalePercent(undefined)).toBe(100);
+    expect(systemFontScalePercent(1)).toBe(100);
+    expect(systemFontScalePercent(1.3)).toBe(130);
+    expect(systemFontScalePercent(3.1)).toBe(200);
+    expect(systemFontScalePercent(0.5)).toBe(80);
+  });
+
+  it('la hoja lleva la escala en su CSS', () => {
+    const doc = renderSongDocument('{title: Prueba}\n[C]Hola', {
+      style: {
+        fontSize: 1,
+        fontFamily: 'serif',
+        isDark: false,
+        chordsVisible: true,
+        topPadding: 0,
+        bottomPadding: 0,
+      } as never,
+      currentTranspose: 0,
+      notation: 'ES',
+      systemFontScale: 1.5,
+    });
+    expect(doc.html).toContain('html { font-size: 150%; }');
   });
 });

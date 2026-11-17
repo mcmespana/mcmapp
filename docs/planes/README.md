@@ -3,7 +3,7 @@
 > **Lee esto antes de abrir ningún `PLAN_*.md`.** Su único trabajo es que no
 > vuelvas a ejecutar algo que ya está hecho.
 >
-> Última actualización: 2026-10-21.
+> Última actualización: 2026-11-16.
 
 ## La regla, en una línea
 
@@ -24,12 +24,15 @@ El coste de mantener esta tabla al día es mucho menor que el de repetirlo.
 
 | Plan                                             | Estado real                                                                                                                                                                                                                       | Dónde manda el orden                                  |
 | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| [`PLAN_EXPO_58.md`](PLAN_EXPO_58.md)             | 🔴 **Siguiente.** Migrar a Expo 58. Código hecho (pasos 1-9); falta la build de TestFlight y probar en el móvil. Rama `claude/deps-expo-58` (#353). **Se borra al terminar**                                                      | —                                                     |
 | [`PLAN_UI_NATIVA.md`](PLAN_UI_NATIVA.md)         | ⏸️ **En pausa** por decisión del usuario (2026-09-24) — Fase 1 ✅, Fase 2 ~80%. No se retoma hasta que lo diga                                                                                                                    | `BACKLOG.md` §1 fila 4                                |
 | [`PLAN_INTEGRACIONES.md`](PLAN_INTEGRACIONES.md) | 🟡 Solo queda **Integración D** (reglas Firebase). A, B, C, E cerrados el 2026-08-12                                                                                                                                              | `BACKLOG.md` §1 fila 5 — 🔒 bloqueado por decisión D2 |
 | [`TRASPASO_REDISENO_AREA_NATIVA.md`](TRASPASO_REDISENO_AREA_NATIVA.md) | 🟡 **Rediseño del área nativa de Comunica + auditoría de «tics de IA».** Hecho y verificado en iPhone y Android (rama `claudito/area-nativa-estilo-plugin`, sin PR); pendiente: bugs de Android (`REVISION_ANDROID.md`) y resto de la auditoría (`AUDITORIA_TICS_Y_SINERGIA.md`) |
 | [`PLAN_CALIDAD.md`](PLAN_CALIDAD.md)             | 🟡 Parcial — Fase 0 (guardarraíles) ✅. **Fase 1 (trocear gigantes) descartada por decisión del usuario** el 2026-08-15, ver abajo                                                                                                | `BACKLOG.md` §2.A                                     |
 | [`PLAN_DISENO.md`](PLAN_DISENO.md)               | 🟡 En curso — dos pasadas hechas (tokens, tipografía, radios, sombras, responsive, panel) + 3 bugs de contraste arreglados. Lo que queda necesita **dispositivo** o revisión fichero a fichero                                    | `BACKLOG.md` §2.G                                     |
+| [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md) | 🟡 **Pañuelo virtual.** El usuario contó la idea el 2026-11-12 y la primera versión está hecha (Fases 0-2): pañuelo 3D, seis clases de pieza, decorar, canje por código, compartir, todo en el Laboratorio Alpha. Queda lo de la tabla de fases: probar en móvil, sacarlo del laboratorio, intercambios (base puesta) y el Panel. Doc viva: [`PANUELO.md`](../funcionalidades/PANUELO.md) | El propio plan (§ «Fases») |
+| [`PLAN_PANUELO_INTERCAMBIOS.md`](PLAN_PANUELO_INTERCAMBIOS.md) | 🟡 **Fases 0-5 y 7 hechas el 2026-11-16** (detalla la Fase 5 del plan del pañuelo). Quedan: que el usuario pegue las reglas en la consola, probar con dos móviles y la Fase 6 (opcional). Decisiones contestadas | `BACKLOG.md` §2.K |
+| [`PLAN_PANUELO_ASISTENCIA.md`](PLAN_PANUELO_ASISTENCIA.md) | 📝 **Escrito el 2026-11-16, sin empezar.** Piezas por asistencia a eventos y desvelado una a una. Parte en `comunicaMiddleware` y `mcmpanel`. Tiene decisiones 🔒 | `BACKLOG.md` §2.K |
+| [`PLAN_CANTOS_DOMINGO.md`](PLAN_CANTOS_DOMINGO.md) | 🟡 **Fases 1-4 hechas el 2026-11-16** (pantalla, motor y tarjeta de Inicio). **2026-11-17**: la entrada pasa a Tu selección vacía y el orden mira las lecturas del domingo (salmo con salmo). Quedan: Fase 0 (contar etiquetas), probar en móvil, Fase 5 (salmo) y 6 (opcional). Decisiones contestadas | `BACKLOG.md` §2.K |
 | [`PLAN_HOJA_CANCION.md`](PLAN_HOJA_CANCION.md)   | 🟡 Hecho y en `main`: hoja, modo atril, onboarding, 258 canciones repasadas, admin fiel a la app, PDF y pantalla completa web. Queda: aplicar las etiquetas aprobadas, mapa de la canción (opcional) y probar el pedal en un iPad | `BACKLOG.md` §2.H                                     |
 
 ## 🔵 Futuro lejano — no se tocan hasta que el usuario lo pida
@@ -40,7 +43,6 @@ no entran en la bolsa oportunista, y no hace falta preguntar por ellos.
 | Plan                                               | Por qué espera                                                                                                                                      |
 | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`PLAN_WIDGET_CONTIGO.md`](PLAN_WIDGET_CONTIGO.md) | Feature entera + build de tienda dedicada (WidgetKit + App Group). Ampliado el 2026-09-19: son **tres** widgets (hábitos, racha, evangelio del día) |
-| [`PLAN_PANEL_PANUELO.md`](PLAN_PANEL_PANUELO.md)   | ⚠️ **Por definir**: el usuario explicará la idea. Lo que hay escrito es solo una propuesta de Claude (2026-09-26), no un plan decidido              |
 
 ## 🔬 En análisis — todavía no hay plan
 

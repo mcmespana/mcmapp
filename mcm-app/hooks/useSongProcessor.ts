@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Platform } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 import { Notation } from '../utils/chordNotation';
 import type { ChorusStyle } from '../utils/songSheetLayout';
 import {
@@ -157,6 +157,10 @@ export const useSongProcessor = ({
   // Capture latest style in a ref so we can bake current values into HTML
   // whenever structural deps change (without re-running the structural effect
   // on every style change).
+  // Escala de letra del sistema: la hoja la aplica en su CSS (ver
+  // `systemFontScale` en songDocument). Cambiarla en ajustes recompone la hoja.
+  const { fontScale: systemFontScale } = useWindowDimensions();
+
   const styleRef = useRef(styleState);
   styleRef.current = styleState;
 
@@ -190,6 +194,9 @@ export const useSongProcessor = ({
         capo,
         isFullscreen,
         adminMode,
+        // En web no: el navegador ya tiene su propio zoom, y la vista previa
+        // del admin (`mcm-sheet.js`) tiene que pintar el mismo HTML.
+        systemFontScale: Platform.OS === 'web' ? undefined : systemFontScale,
       });
       setSheetInfo(info);
       setSongHtml(html);
@@ -221,6 +228,7 @@ export const useSongProcessor = ({
     capo,
     isFullscreen,
     adminMode,
+    systemFontScale,
   ]);
 
   return { songHtml, isLoadingSong, styleState, songError, sheetInfo };

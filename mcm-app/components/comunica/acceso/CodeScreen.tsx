@@ -14,8 +14,17 @@ import { signIn } from '@/services/comunica/session';
 import { h } from '@/utils/haptics';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import CodeInput from './CodeInput';
-import { accessErrorText, codeRequestProblem, RESEND_AFTER_S } from './copy';
-import { clearAccessHandoffs, putChooseHandoff } from './handoff';
+import {
+  ACCESS_TEXT,
+  accessErrorText,
+  codeRequestProblem,
+  RESEND_AFTER_S,
+} from './copy';
+import {
+  clearAccessHandoffs,
+  putChooseHandoff,
+  requestSwitchToDni,
+} from './handoff';
 
 const LENGTH = 6;
 
@@ -137,11 +146,12 @@ export default function CodeScreen({
             style={[styles.title, { color: t.text }]}
             accessibilityRole="header"
           >
-            Escribe el código
+            {ACCESS_TEXT.code.title}
           </Text>
           <Text style={[styles.body, { color: t.textSecondary }]}>
-            Te lo hemos mandado a{' '}
-            <Text style={{ color: t.text, fontWeight: '600' }}>{sentTo}</Text>.
+            {ACCESS_TEXT.code.sentTo}{' '}
+            <Text style={{ color: t.text, fontWeight: '600' }}>{sentTo}</Text>
+            {via === 'dni' ? ', el correo de tu ficha.' : '.'}
           </Text>
           <CodeInput
             value={code}
@@ -164,7 +174,7 @@ export default function CodeScreen({
             </Text>
           ) : null}
           <Text style={[styles.hint, { color: t.textMuted }]}>
-            Si no te llega, mira en el correo no deseado o pide otro código.
+            {ACCESS_TEXT.code.spam}
           </Text>
           <View style={styles.actions}>
             <PressableFeedback
@@ -192,6 +202,26 @@ export default function CodeScreen({
               </Text>
             </PressableFeedback>
           </View>
+          {via === 'email' ? (
+            // Si el correo no llega (otro correo en la ficha, el filtro de
+            // spam…), el DNI manda el código al correo de la ficha y lo enseña
+            // tapado para reconocerlo.
+            <PressableFeedback
+              onPress={() => {
+                h.select();
+                requestSwitchToDni();
+                router.back();
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={ACCESS_TEXT.code.noMail}
+              hitSlop={8}
+              style={styles.dni}
+            >
+              <Text style={[styles.link, { color: t.accentText }]}>
+                {ACCESS_TEXT.code.noMail}
+              </Text>
+            </PressableFeedback>
+          ) : null}
         </View>
       </PageContainer>
     </ScrollView>
@@ -212,4 +242,5 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   link: { ...typography.button },
+  dni: { alignSelf: 'center', minHeight: 44, justifyContent: 'center' },
 });

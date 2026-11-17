@@ -68,6 +68,11 @@ const CODE_MAP: Record<string, AuthErrorCode> = {
   '10': AUTH_ERROR.MISCONFIGURED, // DEVELOPER_ERROR — huella SHA-1 sin registrar
   DEVELOPER_ERROR: AUTH_ERROR.MISCONFIGURED,
   '12500': AUTH_ERROR.MISCONFIGURED, // SIGN_IN_FAILED
+  // INTERNAL_ERROR: el Google Sign-In antiguo de Android lo devuelve cuando la
+  // pareja paquete + SHA-1 no tiene cliente OAuth (visto en Sentry con la
+  // 2.5.1 en un Pixel 8). En la práctica es el mismo arreglo que el 10.
+  '8': AUTH_ERROR.MISCONFIGURED,
+  INTERNAL_ERROR: AUTH_ERROR.MISCONFIGURED,
   'auth/operation-not-allowed': AUTH_ERROR.MISCONFIGURED,
   'auth/invalid-credential': AUTH_ERROR.MISCONFIGURED,
   'auth/unauthorized-domain': AUTH_ERROR.MISCONFIGURED,

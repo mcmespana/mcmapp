@@ -8,6 +8,8 @@
  *   - Numerador opcional (posición 1, 2, 3...).
  *   - Indicador opcional de "sonando ahora" (modo coro).
  */
+import SungDots from '@/components/playlist/SungDots';
+import { useChoirHistory } from '@/hooks/useChoirHistory';
 import React, { useMemo, useRef } from 'react';
 import {
   View,
@@ -99,6 +101,7 @@ const PlaylistRow: React.FC<Props> = ({
   const { settings } = useSettings();
   const { notation } = settings;
   const swipeableRef = useRef<SwipeableMethods>(null);
+  const sung = useChoirHistory();
 
   // Menú contextual: en nativo el long-press inicia el arrastre, así que solo
   // activamos el clic derecho en web (donde no hay drag & drop).
@@ -125,6 +128,10 @@ const PlaylistRow: React.FC<Props> = ({
         outputRange={[-100, 0]}
         property="translateX"
         style={styles.actionContent}
+        // Mitad de los 100 px de la acción (umbral por defecto del swipe):
+        // pasado ahí, soltar ya quita. Salto + tic para que se sepa.
+        armAt={50}
+        onArm={h.select}
       >
         <IconSymbol name="minus.circle" size={22} color="#fff" />
         <Text style={styles.actionText}>Quitar</Text>
@@ -191,6 +198,9 @@ const PlaylistRow: React.FC<Props> = ({
                 >
                   {song.author}
                 </Text>
+              ) : null}
+              {sung.enabled ? (
+                <SungDots history={sung.history?.get(song.filename)} />
               ) : null}
             </View>
           </View>

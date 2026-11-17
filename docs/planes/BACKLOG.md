@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-10-28 noche (área privada nativa: planes 06 y 07 hechos, 08 y 09 en marcha, sale con la 2.1 en modo alpha, §2.I). 2026-10-28 (paquetes del área privada nativa adelantados a la 2.1, §C.1). 2026-10-21 (área privada nativa: análisis, decisiones tomadas y pasarela sin espejo, §2.I; paquetes nativos a la 2.2, §C-bis). 2026-10-10 (hoja de canción: decisiones confirmadas, pantalla completa y etiquetas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> Última actualización: 2026-11-16 (cuatro planes nuevos escritos, ninguno empezado: intercambios y piezas por asistencia del pañuelo, cantos para el domingo y Live Activities, §2.K; Live Activities en rama aparte; tanda «batiburrillo» mergeada en `main`). 2026-10-28 noche (área privada nativa: planes 06 y 07 hechos, 08 y 09 en marcha, sale con la 2.1 en modo alpha, §2.I). 2026-10-28 (paquetes del área privada nativa adelantados a la 2.1, §C.1). 2026-10-21 (área privada nativa: análisis, decisiones tomadas y pasarela sin espejo, §2.I; paquetes nativos a la 2.2, §C-bis). 2026-10-10 (hoja de canción: decisiones confirmadas, pantalla completa y etiquetas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
 > de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
@@ -41,8 +41,9 @@
 | **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                                                                                                                     |
 | **⚠️ Roto y sin dueño**      | 🚨 **Android no muestra las notificaciones con categoría** desde el 2026-08-03: el Panel manda `channelId` y la app de `production` no tiene esos canales. **Decidido (2026-09-26): no se toca `production`, se arregla con la build 2.1** (`mcm-app/TODO.md`, Notificaciones)       |
 | **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                                                                                               |
+| **Planes nuevos (16/11)** | En `main`: intercambios del pañuelo (hecho, falta pegar reglas y probar), cantos para el domingo (fases 1-4 hechas) y piezas por asistencia (plan). Live Activities, en su rama aparte. Detalle §K |
 | **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                                                                                           |
-| **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio) · Panel Pañuelo (§1 notas)                                                                                                                                                                                                         |
+| **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio)                                                                                                                                                                                                                                   |
 | **Cerrado**                  | Pulido de octubre (12 paquetes, 2026-10-17) · Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                                                                       |
 
 > **Ojo con el orden al publicar**: `production` dispara la OTA sola. No se
@@ -94,15 +95,20 @@
 | 4   | **UI Nativa** — headers nativos + componentes unificados                                                                                                              | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4)                                      | ⏸️ **EN PAUSA** (decisión del usuario, 2026-09-24): no se retoma hasta que lo diga. Fase 1 ✅, Fase 2 ~80% (`AppTextField`/`EmptyState` mayormente hechos, **`SegmentedControl` cerrado el 2026-09-10**, `AppPrimaryButton` parcial, chips sin empezar)                                 | `docs/planes/PLAN_UI_NATIVA.md`                      |
 | 5   | **Integración D** — Seguridad Firebase (+ A2)                                                                                                                         | Opus                                         | **Sí** — D2 + repo `mcmpanel` (ver §4)                                                                       | ⏳ Pendiente, importante pero no urgente. **Es lo único que queda de PLAN_INTEGRACIONES**: el resto (A, B, C, E) se cerró el 2026-08-12                                                                                                                                                 | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" |
 | 6   | **Carismochito** (§1–4)                                                                                                                                               | —                                            | Solo para sacarlo del laboratorio (§4)                                                                       | ✅ **DONE** (2026-09-26). La caza y la colección van **escondidas en el Laboratorio Alpha** por decisión del usuario                                                                                                                                                                    | `docs/funcionalidades/CARISMOCHITO.md`               |
-| 7   | **Editor de canciones en la app** (admin): editar una canción en el sitio y que se escriba DIRECTAMENTE en el repo del cantoral y lance la generación de `songs.json` | Opus                                         | **Sí** — cómo se escribe en el repo sin meter un token en la app (Cloud Function o el Panel hacen el commit) | ⏳ **IMPORTANTE, no tardar** (usuario, 2026-10-31). Sustituye al Panel Secreto (cola `songs/ediciones` que alguien tiene que aplicar a mano). Algo simple primero: editar el ChordPro y guardar                                                                                         | —                                                    |
+| 7   | **Editor de canciones en la app** (admin): editar una canción en el sitio y que llegue al repo del cantoral | Opus | Resuelta: el admin del cantoral en el NAS hace el commit, autenticado con el pase de Firebase del administrador | ✅ **HECHO y en `main`** en `mcmapp` y `mcmapp-cantoral` (2026-11-17). NAS configurado por el usuario (2026-11-17) | `docs/funcionalidades/EDITOR_CANCIONES.md` |
 
 **Fuera de la cola — futuro lejano (decisión del usuario, 2026-08-15):**
-**Widgets de Contigo** (los tres) y **Panel Pañuelo** salen de la Cola Principal. Son dos
-funcionalidades "muy futuras": _ya se hará, no hay prisa_. No las propongas al
-decir "seguimos", no las metas en la bolsa oportunista y **no preguntes por
-ellas** — la decisión de cuándo es del usuario y ya la ha tomado: todavía no.
-Sus planes siguen en `PLAN_WIDGET_CONTIGO.md` y `PLAN_PANEL_PANUELO.md` para
-cuando toque.
+**Widgets de Contigo** (los tres) salen de la Cola Principal. Es una
+funcionalidad "muy futura": _ya se hará, no hay prisa_. No la propongas al
+decir "seguimos", no la metas en la bolsa oportunista y **no preguntes por
+ella** — la decisión de cuándo es del usuario y ya la ha tomado: todavía no.
+Su plan sigue en `PLAN_WIDGET_CONTIGO.md` para cuando toque.
+
+**El Pañuelo ya no está aquí** (2026-11-13): el usuario contó la idea y pidió
+construirlo. La primera versión está hecha y escondida en el Laboratorio
+Alpha; lo que queda (probar en móvil, sacarlo del laboratorio, intercambios,
+el Panel) está en `PLAN_PANEL_PANUELO.md`. Tampoco entra solo en "seguimos":
+se retoma cuando el usuario lo pida.
 
 **Notas de orden:**
 
@@ -333,7 +339,12 @@ usuario el 2026-10-09 («la mejor experiencia para músicos y cantantes»).
 - 📝 Queda, en este orden (§11 del plan): aplicar las etiquetas que el
   usuario apruebe en el repaso → mapa de la canción → pedal en un iPad.
 
-### I. Área privada nativa — en desarrollo en `nuevoComunicaChulo` (sale con la 2.1 en modo alpha)
+### I. Área privada nativa — ✅ la de TODOS desde el 14/11/2026 (sale con la OTA de `production`)
+
+> **14/11/2026**: el enrutador da la nativa a todo el mundo (`all`/`alpha`/ausente) y la WebView del plugin queda
+> deprecada (vuelta atrás: `global.comunicaNativa = "off"`). El plugin es solo para la web. Acceso rehecho («Entrar en
+> Comunica» con la cuenta de la app). Lo de abajo es la historia; el estado vivo, en
+> [`area-nativa/ESTADO.md`](area-nativa/ESTADO.md).
 
 **Documento: [`ANALISIS_AREA_PRIVADA_NATIVA.md`](ANALISIS_AREA_PRIVADA_NATIVA.md).**
 Pedido por el usuario el 2026-10-21: rehacer en nativo el área privada de
@@ -386,7 +397,63 @@ monitores, con un backend nuevo que no sea el plugin.
   (pedir a SinergiaTIC usuario de lectura y `/TEST`, protección de datos,
   equivalencias de delegaciones).
 
+### J. Ideas anotadas para el futuro (usuario, 2026-11-16)
+
+Apuntadas por el usuario junto a la tanda «batiburrillo» de noviembre de 2026.
+**No están planificadas ni entran en «seguimos»**: se retoman cuando lo pida.
+Las dos de Live Activities las llevará Ethan (usuario, 2026-11-16): aquí solo
+queda la idea apuntada, no las empieces.
+
+- **Modo evento sin conexión** — antes de salir de casa, precargar el
+  horario, los materiales, los grupos y los contactos del evento para que
+  todo se abra sin cobertura. (Hoy cada pantalla guarda en caché lo que se ha
+  abierto alguna vez; faltaría un «descargar todo» explícito, con su estado.)
+- **Horario del evento en la pantalla de bloqueo** — Live Activity de iOS con
+  lo que toca ahora y lo siguiente. **Requiere build nativo** (target de
+  ActivityKit, como el NSE).
+- **Live Activity de los sábados para monitores** — la lanza el coordinador
+  desde Comunica: a cada monitor le sale la sesión del sábado con la hora a la
+  que empieza y el Google Docs a mano, para que no se le pase. **Requiere
+  build nativo** y un envío desde el middleware de Comunica (push de
+  ActivityKit). Va de la mano de la anterior: comparten target.
+
+### K. Tanda de planes del 16/11/2026 (pañuelo y cantos para el domingo)
+
+Pedidos por el usuario el 2026-11-16. **No entran en «seguimos»**: cada uno se
+ejecuta cuando el usuario lo pida, y **todos tienen una sección «🔒 Decisiones
+del usuario» al final que hay que preguntar antes de empezar** (cada pregunta
+lleva ya una recomendación).
+
+| Plan | Qué es | OTA | Depende de |
+| --- | --- | --- | --- |
+| [`PLAN_PANUELO_INTERCAMBIOS.md`](PLAN_PANUELO_INTERCAMBIOS.md) | La pantalla de intercambio de piezas (código + QR) sobre las reglas ya hechas en `utils/panueloTrade.ts`. Detalla la Fase 5 de `PLAN_PANEL_PANUELO.md`. Su Fase 0 arregla un fallo: una pieza recuperada en un intercambio desaparece al sincronizar | ✅ | 🟡 **Fases 0-5 y 7 hechas (2026-11-16).** Quedan: pegar el bloque de reglas `panueloTrades` en la consola (usuario, `FIREBASE_REGLAS.md` §8), probar con dos móviles, Fase 6 opcional |
+| [`PLAN_PANUELO_ASISTENCIA.md`](PLAN_PANUELO_ASISTENCIA.md) | Pieza asignada a un evento; se consigue cuando te marcan la asistencia en Comunica; al entrar, desvelado de las piezas nuevas una a una con «Siguiente» y luego «Colocarlas» | ✅ (app) | Endpoint nuevo en `comunicaMiddleware`, Cloud Function y reglas (despliega el usuario); el editor, en `mcmpanel`. El desvelado (F5) se puede hacer antes con datos simulados |
+| [`PLAN_CANTOS_DOMINGO.md`](PLAN_CANTOS_DOMINGO.md) | Sugerir cantos para la misa del domingo por momento, con el tiempo litúrgico y las categorías del cantoral. Su Fase 1 arregla el ciclo A/B/C y las solemnidades de fecha fija del calendario litúrgico | ✅ | 🟡 **Fases 1-4 hechas (2026-11-16); 2026-11-17: en Tu selección vacía y ordenado por las lecturas.** Quedan: Fase 0 (contar etiquetas en el repo del cantoral), añadir `cantos-domingo` a los perfiles en Firebase, probar en móvil, Fases 5-6 |
+
+**Descartado en la misma conversación:** la «Command Palette v2» (solo existe
+en web con teclado). Quitada de `mcm-app/TODO.md`; si hace falta un buscador
+general se plantea de cero para móvil.
+
+**Live Activities, aparte.** Su plan (`PLAN_LIVE_ACTIVITIES.md`: la sesión a
+mano que publica coordinación y el horario del evento) vive en la rama
+`claude/plan-live-activities`, **no en `main`**: se mergea cuando se vaya a
+hacer. Encaja con lo apuntado en §J (las lleva Ethan).
+
+**Cantos para el domingo convive con lo de «batiburrillo»**: la pantalla
+`/cancionero/domingo` propone una misa por momentos (tiempo litúrgico); la hoja
+«Lecturas del domingo» de Tu selección (`utils/sundayMatch.ts`) busca cantos por
+palabras en común con las lecturas. Son dos caminos distintos; el cruce
+temático (Fase 6 del plan) debe reutilizar `sundayMatch`, no hacer otro.
+
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
+
+- **Editor de canciones resistente a la ausencia del NAS** (usuario,
+  2026-11-17). Hoy todo lo que se edita en la app va al admin del cantoral en
+  el NAS; si no contesta, el cambio espera en el móvil de quien edita y se
+  envía solo al volver (`docs/funcionalidades/EDITOR_CANCIONES.md`, «Deuda
+  anotada»). Falta un camino que no dependa del NAS ni de ese móvil: la cola
+  en Firebase aplicada por el workflow del cantoral, o commit directo a GitHub
+  desde una función. Sin NAS tampoco hay foto con IA ni reordenar.
 
 - **Multilenguaje (i18n)** — catalán/portugués/inglés. Por ahora **no**. Si
   algún día se decide, ver `docs/planes/archivo/MEJORAS.md` §10 (razonamiento
@@ -453,7 +520,7 @@ ningún sitio compartido.
 | **⏰ Área nativa: ¿a qué evento van los sábados de los monitores del MIC?** — anotado 2026-10-31, mirar pronto | Lista de monitores y ficha del monitor nativas (`area-nativa/06`) | `docs/planes/area-nativa/06-coordinacion.md` §«Cambios del plugin del 31/10/2026» (punto 1, «Aparte, sin tocar») + en el plugin, `docs/comunica/PASAR-LISTA-ESTADO.md` (fila 🔴 «MIC y COM en eventos separados») | Con MIC y COM en eventos separados, quien coordina toda la delegación marca a los monitores del MIC contra el evento COM. ¿Una lista por etapa (selector MIC/COM) y los del MIC siempre contra el evento MIC? Hay que decidirlo ANTES de portar la lista de monitores y la fila «Sábados» de la ficha. |
 | **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D"                                                                                 | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                                                        |
 | **Carismochito 2027 (25.º aniversario)** — ✅ decidido el 2026-11-06, falta fecha y enlace | Carismochito  | `docs/funcionalidades/CARISMOCHITO.md` («El interruptor» y «Plan para 2027») + `docs/contratos/PANEL_PERFILES.md` §1.10 | Cerrado para todo el mundo con `global.carismochito` (ausente = `"alpha"`, solo probadores); sin toques escondidos. Se abre a todos con `"all"` sin build ni OTA. **Por decidir con Izan**: la fecha de apertura en 2027 y dónde se enlaza la colección (la propuesta era el logo verde de Inicio). |
-| **Pañuelo — por definir**                                                                  | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md`                                                                                                  | Idea parcial contada el 2026-09-29 (medallas 3D por evento, en el pañuelo, pop-up al tocar; prueba ya en el laboratorio). Falta: **cómo se reparten** y cómo es el pañuelo. No propongas la propuesta escrita como si estuviera decidida. **Las medallas se quedan como están por ahora (2026-11-06), pero hay que hacerlas.** |
+| **Pañuelo — dónde vive y cómo se reparte** — primera versión hecha el 2026-11-13 | Sacar el pañuelo del laboratorio | `docs/funcionalidades/PANUELO.md` («Dónde debería vivir») + `docs/planes/PLAN_PANEL_PANUELO.md` §«Decisiones pendientes» | "¿Dónde ponemos el pañuelo: avatar en la cabecera de Inicio que abre «Tu pañuelo», como propone el documento? ¿Y el color lo elige cada persona o viene de su etapa en el área privada?" |
 
 ---
 

@@ -130,7 +130,9 @@ const toggle = async (
     s.props.onValueChange(value);
   });
 };
-const until = async (fn: () => boolean, ms = 3000) => {
+// Margen holgado: en el runner del CI (más lento que un portátil) 3 s no bastaban
+// para el estado «sin conexión».
+const until = async (fn: () => boolean, ms = 10000) => {
   for (let i = 0; i < ms / 25; i++) {
     if (fn()) return;
     await wait(25);

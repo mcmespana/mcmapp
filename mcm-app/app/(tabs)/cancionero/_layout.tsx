@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { Stack, router, useGlobalSearchParams, usePathname } from 'expo-router';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { StatusBar } from 'expo-status-bar';
@@ -7,6 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabReselect } from '@/components/tabs/tabBarController';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SettingsProvider } from '@/contexts/SettingsContext';
+import { MetronomeProvider } from '@/contexts/MetronomeContext';
+import MetronomeFloating from '@/components/tuner/MetronomeFloating';
+import KeepMetronomePrompt from '@/components/tuner/KeepMetronomePrompt';
 import { TabHeaderColors, themeColors } from '@/constants/colors';
 import { cantoralHeaderTint } from '@/utils/cantoralHeader';
 import { radii } from '@/constants/uiStyles';
@@ -71,82 +74,126 @@ export default function CancioneroLayout() {
   return (
     <SettingsProvider>
       {darkStatusIcons ? <StatusBar style="dark" animated /> : null}
-      <Stack
-        screenOptions={{
-          headerStyle: isIOS
-            ? { backgroundColor: 'transparent' }
-            : isWeb
-              ? ({
-                  backgroundColor: TabHeaderColors.cancionero,
-                  borderBottomWidth: StyleSheet.hairlineWidth,
-                  borderBottomColor: 'rgba(0, 0, 0, 0.08)',
-                } as never)
-              : { backgroundColor: TabHeaderColors.cancionero },
-          headerTintColor: cantoralHeaderTint(isDark),
-          headerTitleStyle: {
-            fontWeight: '700' as const,
-            fontSize: 17,
-            color: isIOS ? (isDark ? '#FFFFFF' : '#000000') : '#1a1a1a',
-            letterSpacing: -0.3,
-          } as never,
-          ...(isWeb &&
-            ({ headerStatusBarHeight: webStatusBarHeight } as object)),
-          headerTransparent: isIOS,
-          // iOS 26+ aplica su propio efecto glass via scrollEdgeEffects;
-          // combinarlo con headerBlurEffect provoca solape (warning RNScreens).
-          headerBlurEffect:
-            isIOS && parseInt(String(Platform.Version), 10) < 26
-              ? 'systemChromeMaterial'
-              : undefined,
-          headerShadowVisible: false,
-          headerBackButtonDisplayMode: 'minimal' as const,
-          // Prevents screens from appearing transparent during swipe-back
-          // gestures. headerTransparent:true makes the card itself transparent
-          // so we must set an explicit background on the content area.
-          contentStyle: isIOS
-            ? { backgroundColor: themeColors(isDark).backgroundSunken }
-            : undefined,
-        }}
-      >
-        <Stack.Screen name="index" options={{ title: 'Cantoral' }} />
-        <Stack.Screen
-          name={CANTORAL_SLUGS.SongsList}
-          options={({ route }) => ({
-            title:
-              (route.params as { categoryName?: string } | undefined)
-                ?.categoryName || 'Canciones',
-          })}
-        />
-        <Stack.Screen
-          name={CANTORAL_SLUGS.SongDetail}
-          options={{ title: 'Letra y Acordes' }}
-        />
-        <Stack.Screen
-          name={CANTORAL_SLUGS.SongFullscreen}
-          options={{ headerShown: false, presentation: 'fullScreenModal' }}
-        />
-        <Stack.Screen
-          name={CANTORAL_SLUGS.SelectedSongs}
-          options={{ title: 'Tu selección' }}
-        />
-        {/* El afinador va en hoja: se abre encima de la canción y al
+      {/* El metrónomo vive aquí y no en su hoja: puede seguir sonando al
+          cerrarla, con su botón flotante encima de cualquier pantalla del
+          cantoral (y la pregunta de si dejarlo sonando). */}
+      <MetronomeProvider>
+        <View style={layoutStyles.fill}>
+          <Stack
+            screenOptions={{
+              headerStyle: isIOS
+                ? { backgroundColor: 'transparent' }
+                : isWeb
+                  ? ({
+                      backgroundColor: TabHeaderColors.cancionero,
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+                    } as never)
+                  : { backgroundColor: TabHeaderColors.cancionero },
+              headerTintColor: cantoralHeaderTint(isDark),
+              headerTitleStyle: {
+                fontWeight: '700' as const,
+                fontSize: 17,
+                color: isIOS ? (isDark ? '#FFFFFF' : '#000000') : '#1a1a1a',
+                letterSpacing: -0.3,
+              } as never,
+              ...(isWeb &&
+                ({ headerStatusBarHeight: webStatusBarHeight } as object)),
+              headerTransparent: isIOS,
+              // iOS 26+ aplica su propio efecto glass via scrollEdgeEffects;
+              // combinarlo con headerBlurEffect provoca solape (warning RNScreens).
+              headerBlurEffect:
+                isIOS && parseInt(String(Platform.Version), 10) < 26
+                  ? 'systemChromeMaterial'
+                  : undefined,
+              headerShadowVisible: false,
+              headerBackButtonDisplayMode: 'minimal' as const,
+              // Prevents screens from appearing transparent during swipe-back
+              // gestures. headerTransparent:true makes the card itself transparent
+              // so we must set an explicit background on the content area.
+              contentStyle: isIOS
+                ? { backgroundColor: themeColors(isDark).backgroundSunken }
+                : undefined,
+            }}
+          >
+            <Stack.Screen name="index" options={{ title: 'Cantoral' }} />
+            <Stack.Screen
+              name={CANTORAL_SLUGS.SongsList}
+              options={({ route }) => ({
+                title:
+                  (route.params as { categoryName?: string } | undefined)
+                    ?.categoryName || 'Canciones',
+              })}
+            />
+            <Stack.Screen
+              name={CANTORAL_SLUGS.SongDetail}
+              options={{ title: 'Letra y Acordes' }}
+            />
+            <Stack.Screen
+              name={CANTORAL_SLUGS.SongFullscreen}
+              options={{ headerShown: false, presentation: 'fullScreenModal' }}
+            />
+            <Stack.Screen
+              name={CANTORAL_SLUGS.SelectedSongs}
+              options={{ title: 'Tu selección' }}
+            />
+            <Stack.Screen
+              name={CANTORAL_SLUGS.SundaySongs}
+              options={{ title: 'Cantos del domingo' }}
+            />
+            {/* El afinador va en hoja: se abre encima de la canción y al
             cerrarla sigues donde estabas. */}
-        <Stack.Screen
-          name={CANTORAL_SLUGS.Tuner}
-          options={{
-            title: 'Afinador',
-            presentation: 'formSheet',
-            sheetAllowedDetents: [0.82, 1],
-            sheetGrabberVisible: true,
-            sheetCornerRadius: radii.xl,
-            headerTransparent: false,
-            contentStyle: { backgroundColor: themeColors(isDark).background },
-          }}
-        />
-      </Stack>
+            <Stack.Screen
+              name={CANTORAL_SLUGS.Tuner}
+              options={{
+                title: 'Afinador',
+                presentation: 'formSheet',
+                sheetAllowedDetents: [0.82, 1],
+                sheetGrabberVisible: true,
+                sheetCornerRadius: radii.xl,
+                headerTransparent: false,
+                contentStyle: {
+                  backgroundColor: themeColors(isDark).background,
+                },
+              }}
+            />
+            {/* Editor de canciones (solo administradores): a pantalla completa,
+            con su X y su «Guardar». */}
+            <Stack.Screen
+              name={CANTORAL_SLUGS.SongEditor}
+              options={{
+                title: 'Editar canción',
+                presentation: 'fullScreenModal',
+                headerTransparent: false,
+                headerBackVisible: false,
+                gestureEnabled: false,
+                contentStyle: {
+                  backgroundColor: themeColors(isDark).background,
+                },
+              }}
+            />
+            <Stack.Screen
+              name={CANTORAL_SLUGS.SongReorder}
+              options={{
+                title: 'Ordenar canciones',
+                presentation: 'fullScreenModal',
+                headerTransparent: false,
+                headerBackVisible: false,
+                contentStyle: {
+                  backgroundColor: themeColors(isDark).background,
+                },
+              }}
+            />
+          </Stack>
+          <MetronomeFloating />
+          <KeepMetronomePrompt />
+        </View>
+      </MetronomeProvider>
     </SettingsProvider>
   );
 }
+
+const layoutStyles = StyleSheet.create({ fill: { flex: 1 } });
 
 /**
  * Modo coro - ESCLAVO: cuando el líder cambia la canción, se abre aquí con los

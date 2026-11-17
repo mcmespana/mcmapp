@@ -20,10 +20,12 @@ import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { comunicaNow } from '@/services/comunica';
 import { isComunicaApiError } from '@/services/comunica/client';
-import type {
-  Guardian,
-  Notice,
-  ParticipantProfile,
+import {
+  HEALTH_KINDS_OTHER,
+  type Guardian,
+  type HealthKind,
+  type Notice,
+  type ParticipantProfile,
 } from '@/services/comunica/contract';
 import {
   outboxKeys,
@@ -57,7 +59,11 @@ import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
 import PersonAvatar from '../comun/PersonAvatar';
-import { HEALTH_MARK_A11Y, MARK_TEXT } from '../comun/PersonMarks';
+import {
+  HEALTH_MARK_A11Y,
+  HEALTH_OTHER_A11Y,
+  MARK_TEXT,
+} from '../comun/PersonMarks';
 import SyncBadge from '../comun/SyncBadge';
 import type { UploadState } from '../comun/UploadStatus';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
@@ -183,17 +189,55 @@ function Ficha({
   const hasContactRows =
     !!ownPhone || profile.guardians.length > 0 || !!emergency;
 
-  // Lo imprescindible.
-  const food = (health.data?.items ?? [])
-    .filter((i) => i.kind === 'allergies' || i.kind === 'intolerances')
-    .map((i) => i.text.trim())
-    .filter(Boolean);
-  const essentials: { key: string; text: string; tone: 'warn' | 'danger' }[] =
-    [];
+  // Lo imprescindible. Alergias, intolerancias y tratamiento van como aviso;
+  // las enfermedades y «otras patologías» (TEA, TDAH…), como aviso menor
+  // (`minor`: tono celeste, sin alarma) pero a la vista, no escondidas en la hoja.
+  const healthText = (kinds: readonly HealthKind[]) =>
+    (health.data?.items ?? [])
+      .filter((i) => kinds.includes(i.kind))
+      .map((i) => i.text.trim())
+      .filter(Boolean);
+  const food = healthText(['allergies', 'intolerances']);
+  const treatments = healthText(['treatments']);
+  const other = healthText(HEALTH_KINDS_OTHER);
+  const essentials: {
+    key: string;
+    text: string;
+    tone: 'warn' | 'danger' | 'minor';
+  }[] = [];
   if (food.length) {
     essentials.push({ key: 'food', text: food.join(' · '), tone: 'warn' });
-  } else if (!health.data && profile.badges.healthNote) {
-    essentials.push({ key: 'mark', text: MARK_TEXT.healthNote, tone: 'warn' });
+  }
+  if (treatments.length) {
+    essentials.push({
+      key: 'treatments',
+      text: `Tratamiento: ${treatments.join(' · ')}`,
+      tone: 'warn',
+    });
+  }
+  if (other.length) {
+    essentials.push({
+      key: 'other',
+      text: other.join(' · '),
+      tone: 'minor',
+    });
+  }
+  if (!health.data) {
+    // Sin el texto (sin conexión, sin permiso o cargando): solo las marcas.
+    if (profile.badges.healthNote) {
+      essentials.push({
+        key: 'mark',
+        text: MARK_TEXT.healthNote,
+        tone: 'warn',
+      });
+    }
+    if (profile.badges.healthOther) {
+      essentials.push({
+        key: 'markOther',
+        text: MARK_TEXT.healthOther,
+        tone: 'minor',
+      });
+    }
   }
   if (attendance.streak >= STREAK_THRESHOLD) {
     essentials.push({
@@ -277,14 +321,26 @@ function Ficha({
       {essentials.length > 0 ? (
         <View style={styles.essentials}>
           {essentials.map((e) => {
-            const chip = t.chip(e.tone === 'danger' ? 'negative' : 'warning');
+            const chip = t.chip(
+              e.tone === 'danger'
+                ? 'negative'
+                : e.tone === 'minor'
+                  ? 'info'
+                  : 'warning',
+            );
             return (
               <View
                 key={e.key}
                 style={[styles.essential, { backgroundColor: chip.background }]}
                 accessible
                 accessibilityLabel={
-                  e.key === 'mark' ? HEALTH_MARK_A11Y : e.text
+                  e.key === 'mark'
+                    ? HEALTH_MARK_A11Y
+                    : e.key === 'markOther'
+                      ? HEALTH_OTHER_A11Y
+                      : e.key === 'other'
+                        ? `Otras patologías: ${e.text}`
+                        : e.text
                 }
               >
                 <IconSymbol
@@ -296,7 +352,13 @@ function Ficha({
                         : 'cross.case.fill'
                   }
                   size={14}
-                  color={e.tone === 'danger' ? t.dangerText : t.warningIcon}
+                  color={
+                    e.tone === 'danger'
+                      ? t.dangerText
+                      : e.tone === 'minor'
+                        ? chip.text
+                        : t.warningIcon
+                  }
                 />
                 <Text style={[styles.essentialText, { color: chip.text }]}>
                   {e.text}

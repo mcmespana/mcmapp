@@ -29,6 +29,9 @@ import { HighlightActionBar } from '@/components/contigo/HighlightActionBar';
 import { ReadingCalendarSheet } from '@/components/contigo/ReadingCalendarSheet';
 import { DateNavigator } from '@/components/contigo/DateNavigator';
 import { CreditsSheet } from '@/components/contigo/CreditsSheet';
+import ShareCardSheet from '@/components/contigo/ShareCardSheet';
+import { gospelCardSpec } from '@/utils/shareCard';
+import { sharePhrases, longDateLabel } from '@/utils/contigoExport';
 import ReaderSettingsSheet from '@/components/contigo/ReaderSettingsSheet';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
@@ -118,6 +121,8 @@ export default function EvangelioScreen() {
   const [showCheck, setShowCheck] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [creditsVisible, setCreditsVisible] = useState(false);
+  const [shareVisible, setShareVisible] = useState(false);
+  const [shareIndex, setShareIndex] = useState(0);
   const [highlightMode, setHighlightMode] = useState(false);
   const [calendarVisible, setCalendarVisible] = useState(false);
   // Latch: no consultamos las fechas disponibles hasta abrir el calendario.
@@ -143,6 +148,10 @@ export default function EvangelioScreen() {
     bookmark,
     setHighlights,
   );
+
+  // Lo que se puede compartir como imagen: tus subrayados del día y, si no
+  // hay, el arranque del evangelio.
+  const phrases = sharePhrases(readings, hl.canonical, hl.ranges);
 
   /**
    * "Subrayar" desde el menú NATIVO de selección: subraya YA, con el color de
@@ -273,6 +282,21 @@ export default function EvangelioScreen() {
                   size={21}
                   color={highlightMode ? warm.accent : theme.text}
                 />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setShareIndex(0);
+                  setShareVisible(true);
+                }}
+                disabled={!readings?.evangelio?.texto}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={[
+                  styles.nativeHeaderBtn,
+                  !readings?.evangelio?.texto && { opacity: 0.35 },
+                ]}
+                accessibilityLabel="Compartir como imagen"
+              >
+                <MaterialIcons name="ios-share" size={21} color={theme.text} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={toggleBookmark}
@@ -729,12 +753,33 @@ export default function EvangelioScreen() {
                 </View>
               )}
 
+              {/* Compartir como imagen: discreto, al acabar de leer. */}
+              {!!readings.evangelio?.texto && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setShareIndex(0);
+                    setShareVisible(true);
+                  }}
+                  style={styles.shareLink}
+                  accessibilityRole="button"
+                  accessibilityLabel="Compartir como imagen"
+                >
+                  <MaterialIcons
+                    name="ios-share"
+                    size={18}
+                    color={warm.accent}
+                  />
+                  <Text style={[styles.shareLinkText, { color: warm.accent }]}>
+                    Compartir como imagen
+                  </Text>
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
                 onPress={() => setCreditsVisible(true)}
                 style={{
                   alignItems: 'center',
                   paddingVertical: 24,
-                  marginTop: 10,
                   paddingBottom: 40,
                 }}
               >
@@ -790,6 +835,29 @@ export default function EvangelioScreen() {
         }}
         availableDates={availableDates}
         bookmarks={bookmarks}
+      />
+
+      <ShareCardSheet
+        visible={shareVisible}
+        onClose={() => setShareVisible(false)}
+        title="Compartir"
+        fileName={`evangelio-${selectedDate}.png`}
+        color={phrases[shareIndex % phrases.length]?.color}
+        count={phrases.length}
+        index={shareIndex % Math.max(1, phrases.length)}
+        onIndex={setShareIndex}
+        build={(style, format) => {
+          const ph = phrases[shareIndex % phrases.length];
+          return gospelCardSpec({
+            phrase: ph?.text ?? '',
+            cita: ph?.cita ?? '',
+            kicker: ph?.kicker ?? 'Evangelio',
+            color: ph?.color,
+            dateLabel: longDateLabel(selectedDate),
+            style,
+            format,
+          });
+        }}
       />
 
       {/* Fuentes de los textos */}

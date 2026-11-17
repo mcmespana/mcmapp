@@ -89,7 +89,7 @@ const BUDGET = {
   // a `CarismoColors`, accesos rápidos de la Home y tarjetas de Más con el
   // color de su pestaña, grises de la hoja de medios a roles.
   app: 133,
-  components: 275,
+  components: 255,
 };
 
 describe('no se añaden colores a mano', () => {

@@ -173,23 +173,36 @@ export const createStyles = (
       flex: 1,
       padding: 20,
       backgroundColor: themeColors(isDark).backgroundSunken,
-      justifyContent: 'space-between',
+      // Todo arriba, junto: con el mensaje centrado en el hueco y los botones
+      // al fondo quedaba media pantalla vacía y el último botón bajo la barra.
+      justifyContent: 'flex-start',
+      gap: 28,
       ...(isWide ? { maxWidth, width: '100%', alignSelf: 'center' } : null),
     },
-    emptyContent: {
+    emptyScroll: {
       flex: 1,
-      justifyContent: 'center',
+      backgroundColor: themeColors(isDark).backgroundSunken,
+    },
+    // Dentro del ScrollView: crece hasta llenar (no `flex: 1`, que no deja
+    // hacer scroll con letra grande) y reparte arriba y abajo como antes.
+    emptyScrollContent: {
+      flex: undefined,
+      flexGrow: 1,
+    },
+    emptySunday: { marginTop: 10 },
+    emptyContent: {
       alignItems: 'center',
-      paddingHorizontal: 40,
+      paddingHorizontal: 24,
+      paddingTop: 12,
     },
     emptyIconContainer: {
-      width: 100,
-      height: 100,
+      width: 76,
+      height: 76,
       borderRadius: radii.full,
       backgroundColor: themeColors(isDark).background,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 24,
+      marginBottom: 16,
       ...Platform.select({
         web: {
           boxShadow: isDark

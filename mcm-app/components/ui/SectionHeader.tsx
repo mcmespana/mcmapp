@@ -22,6 +22,8 @@ interface SectionHeaderProps {
   style?: ViewStyle;
   /** Ajuste del texto de la etiqueta (p.ej. escalarlo con `fontScale`). */
   textStyle?: TextStyle;
+  /** Techo de escala de la letra del sistema para la etiqueta. */
+  maxFontSizeMultiplier?: number;
 }
 
 /**
@@ -36,6 +38,7 @@ export default function SectionHeader({
   accentColor,
   style,
   textStyle,
+  maxFontSizeMultiplier,
 }: SectionHeaderProps) {
   const mutedColor = useThemeColor({}, 'icon');
   const labelColor = accentColor ?? mutedColor;
@@ -45,6 +48,7 @@ export default function SectionHeader({
       <Text
         accessibilityRole="header"
         style={[typography.sectionLabel, { color: labelColor }, textStyle]}
+        maxFontSizeMultiplier={maxFontSizeMultiplier}
       >
         {label}
       </Text>

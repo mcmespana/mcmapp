@@ -1,0 +1,235 @@
+{
+  "items": {
+    "com-sonriente": {
+      "id": "com-sonriente",
+      "kind": "chapa",
+      "name": "COM sonriente",
+      "origin": "COM",
+      "description": "El logo de siempre en verde, con el mundo sonriendo.",
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "chapa",
+        "bg": "#F6F3E8",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/caras/com-sonriente.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/com-sonriente.glb"
+      },
+      "order": 10
+    },
+    "troncho": {
+      "id": "troncho",
+      "kind": "troncho",
+      "name": "Troncho",
+      "origin": "COM",
+      "description": "El pasador de cuero con el logo del COM grabado. Va por delante, justo encima del nudo.",
+      "rarity": "especial",
+      "tradeable": false,
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "troncho",
+        "leather": "#9c5527",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/thumbs/troncho.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/troncho.glb"
+      },
+      "order": 20
+    },
+    "carismochito": {
+      "id": "carismochito",
+      "kind": "pin",
+      "name": "Carismochito",
+      "origin": "La mascota del MCM",
+      "description": "El pin de esmalte de Carismochito, con su gorra, su pañuelo y los dedos en «V». Troquelado con su silueta y con su mariposa por detrás.",
+      "size": 1.5,
+      "rarity": "especial",
+      "tradeable": true,
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "pin",
+        "shape": "carismochito",
+        "enamel": "#21987A",
+        "metal": "oro",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/caras/carismochito.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/carismochito.glb"
+      },
+      "order": 25
+    },
+    "estoy-contigo-samuel": {
+      "id": "estoy-contigo-samuel",
+      "kind": "chapa",
+      "name": "Estoy contigo, Samuel",
+      "origin": "Festival vocacional Samuel 2024",
+      "description": "«Estoy contigo. Testigos de la esperanza». La chapa del festival vocacional Samuel.",
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "chapa",
+        "bg": "#3A3486",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/caras/estoy-contigo-samuel.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/estoy-contigo-samuel.glb"
+      },
+      "order": 30
+    },
+    "jubileo-2025": {
+      "id": "jubileo-2025",
+      "kind": "chapa",
+      "name": "Jubileo 2025",
+      "origin": "Jubileo 2025 · Peregrinos de esperanza",
+      "description": "La chapa del Jubileo: «Peregrinos de esperanza».",
+      "size": 0.8,
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "chapa",
+        "bg": "#F7F7F7",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/caras/jubileo-2025.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/jubileo-2025.glb"
+      },
+      "order": 40
+    },
+    "jmj-lisboa-2023": {
+      "id": "jmj-lisboa-2023",
+      "kind": "pin",
+      "name": "JMJ Lisboa 2023",
+      "origin": "JMJ · Lisboa 2023",
+      "description": "El pin esmaltado de la Jornada Mundial de la Juventud de Lisboa.",
+      "size": 1.5,
+      "tradeable": true,
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "pin",
+        "shape": "card",
+        "enamel": "#F4F4F0",
+        "metal": "plata",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/caras/jmj-lisboa-2023.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/jmj-lisboa-2023.glb"
+      },
+      "order": 50
+    },
+    "mc-congreso-1": {
+      "id": "mc-congreso-1",
+      "kind": "chapa",
+      "name": "Chapa M+C",
+      "origin": "Congreso de monitores · 1.er año",
+      "description": "«Yo soy Monitor Consolación». La chapa grande del primer año de congreso de monitores.",
+      "size": 1.4,
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "chapa",
+        "bg": "#EEECE7",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/caras/mc-congreso-1.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/mc-congreso-1.glb"
+      },
+      "order": 60
+    },
+    "mc-congreso-3": {
+      "id": "mc-congreso-3",
+      "kind": "pin",
+      "name": "Pin M+C",
+      "origin": "Congreso de monitores · 3.er año",
+      "description": "El pin pequeño de metal del tercer año de congreso de monitores.",
+      "size": 0.85,
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "pin",
+        "shape": "circle",
+        "enamel": "#C4DCEC",
+        "metal": "plata",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/caras/mc-congreso-3.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/mc-congreso-3.glb"
+      },
+      "order": 70,
+      "tradeable": true
+    },
+    "monitor-og": {
+      "id": "monitor-og",
+      "kind": "chapa",
+      "name": "Monitor OG",
+      "origin": "Monitor Consolación",
+      "description": "«Yo soy Monitor + Consolación», como dibujada a rotulador. La de los monitores de antes.",
+      "size": 1.4,
+      "rarity": "especial",
+      "tradeable": true,
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "chapa",
+        "bg": "#FAFAF6",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/caras/monitor-og.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/monitor-og.glb"
+      },
+      "order": 80
+    },
+    "chapa-og": {
+      "id": "chapa-og",
+      "kind": "chapa",
+      "name": "Chapa OG",
+      "origin": "Movimiento Juvenil Consolación para el Mundo",
+      "description": "La de antes: plástico amarillo estampado en negro. Recuperada de los sótanos del COM.",
+      "rarity": "especial",
+      "tradeable": true,
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "chapa",
+        "bg": "#F6E100",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/caras/chapa-og.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/chapa-og.glb"
+      },
+      "order": 90
+    },
+    "medalla-jubileo-2025": {
+      "id": "medalla-jubileo-2025",
+      "kind": "medalla",
+      "name": "Jubileo de los Jóvenes",
+      "origin": "Roma · 2025",
+      "description": "Peregrinos de esperanza.",
+      "rarity": "unica",
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "medalla",
+        "metal": "oro",
+        "ribbon": ["#FCD200", "#ffffff", "#FCD200"],
+        "glyph": "cross",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/medallas-3d/thumbs/jubileo-jovenes-2025.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/medallas-3d/jubileo-jovenes-2025.glb"
+      },
+      "order": 100
+    },
+    "medalla-visita-papa-2026": {
+      "id": "medalla-visita-papa-2026",
+      "kind": "medalla",
+      "name": "Alza la mirada",
+      "origin": "Visita del Papa · 2026",
+      "rarity": "unica",
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "medalla",
+        "metal": "plata",
+        "ribbon": ["#ffffff", "#FCD200"],
+        "glyph": "star",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/medallas-3d/thumbs/visita-papa-2026.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/medallas-3d/visita-papa-2026.glb"
+      },
+      "order": 110
+    }
+  }
+}

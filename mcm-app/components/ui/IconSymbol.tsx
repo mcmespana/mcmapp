@@ -53,6 +53,7 @@ type IconMapping = {
   magnifyingglass: 'search';
   'phone.fill': 'phone';
   'message.fill': 'chat';
+  'arrow.right': 'arrow-forward';
   'arrow.up.right': 'open-in-new';
   'bell.fill': 'notifications';
   'square.and.pencil': 'edit';
@@ -74,6 +75,7 @@ type IconMapping = {
   gearshape: 'settings';
   // Mis datos de monitor (plan 09)
   'info.circle': 'info-outline';
+  'questionmark.circle': 'help-outline';
   circle: 'radio-button-unchecked';
   'photo.on.rectangle': 'photo-library';
   paperclip: 'attach-file';
@@ -135,6 +137,7 @@ const MAPPING: IconMapping = {
   magnifyingglass: 'search',
   'phone.fill': 'phone',
   'message.fill': 'chat',
+  'arrow.right': 'arrow-forward',
   'arrow.up.right': 'open-in-new',
   'bell.fill': 'notifications',
   'square.and.pencil': 'edit',
@@ -156,6 +159,7 @@ const MAPPING: IconMapping = {
   gearshape: 'settings',
   // Mis datos de monitor (plan 09)
   'info.circle': 'info-outline',
+  'questionmark.circle': 'help-outline',
   circle: 'radio-button-unchecked',
   'photo.on.rectangle': 'photo-library',
   paperclip: 'attach-file',

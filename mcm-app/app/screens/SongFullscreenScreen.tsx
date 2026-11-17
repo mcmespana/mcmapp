@@ -36,6 +36,7 @@ import { trackEvent } from '@/utils/analytics';
 import { hasArrangements } from '../../utils/arrangements';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import { useColorScheme } from '../../hooks/useColorScheme';
+import { CHROME_MAX_FONT_SCALE } from '@/hooks/useLargeText';
 import { Colors } from '../../constants/colors';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import {
@@ -162,7 +163,13 @@ function AutoScrollControls({
         pointerEvents={expanded ? 'auto' : 'none'}
       >
         <TranslucentBg isDark={isDark} style={styles.speedPanelBg} />
-        <Text style={styles.speedHeading} numberOfLines={1}>
+        {/* Controles flotantes de tamaño fijo (círculos de 26 px, insignia
+            de 16): techo de cromo, o los números se salían. */}
+        <Text
+          style={styles.speedHeading}
+          numberOfLines={1}
+          maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+        >
           {currentLabel}
         </Text>
         <View
@@ -190,6 +197,7 @@ function AutoScrollControls({
                     styles.segmentText,
                     selected && styles.segmentTextSelected,
                   ]}
+                  maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
                 >
                   {i + 1}
                 </Text>
@@ -221,7 +229,12 @@ function AutoScrollControls({
         />
         {/* Indicador discreto del nivel actual sobre el botón */}
         <View style={styles.levelBadge} pointerEvents="none">
-          <Text style={styles.levelBadgeText}>{speedIndex + 1}</Text>
+          <Text
+            style={styles.levelBadgeText}
+            maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+          >
+            {speedIndex + 1}
+          </Text>
         </View>
       </PressableFeedback>
     </View>
@@ -682,6 +695,9 @@ function SongFullscreenBody({
             originWhitelist={['about:blank']}
             onShouldStartLoadWithRequest={(req) => req.url === 'about:blank'}
             source={{ html: songHtml }}
+            // La escala de letra del sistema la pone la hoja en su CSS (igual en iOS
+            // y Android); sin esto Android la aplicaba OTRA vez por su cuenta.
+            textZoom={100}
             style={{ flex: 1, backgroundColor: 'transparent' }}
             showsVerticalScrollIndicator={false}
             contentInsetAdjustmentBehavior="never"

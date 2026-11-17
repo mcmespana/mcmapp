@@ -235,15 +235,19 @@ export function usePlaylistSharing(opts: {
         by: identity.name,
         ownerDeviceId: identity.deviceId,
       });
-      await upsertChoirPlaylist(args.choir.id, {
-        code: args.code,
-        name: args.name,
-        createdAt: args.createdAt ?? now,
-        updatedAt: now,
-        songCount: selectedSongs.length,
-        ...(identity.name ? { by: identity.name } : {}),
-        ownerDeviceId: identity.deviceId,
-      });
+      await upsertChoirPlaylist(
+        args.choir.id,
+        {
+          code: args.code,
+          name: args.name,
+          createdAt: args.createdAt ?? now,
+          updatedAt: now,
+          songCount: selectedSongs.length,
+          ...(identity.name ? { by: identity.name } : {}),
+          ownerDeviceId: identity.deviceId,
+        },
+        selectedSongs.map((song) => song.filename),
+      );
       const nextLink: PlaylistLink = {
         code: args.code,
         name: args.name,

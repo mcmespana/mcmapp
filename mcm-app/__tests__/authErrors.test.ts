@@ -46,6 +46,15 @@ describe('authErrorCode', () => {
     expect(authErrorCode(coded('12500'))).toBe(AUTH_ERROR.MISCONFIGURED);
   });
 
+  it('mapea INTERNAL_ERROR (8) de Android a error de configuración', () => {
+    expect(authErrorCode(coded('8', 'INTERNAL_ERROR'))).toBe(
+      AUTH_ERROR.MISCONFIGURED,
+    );
+    expect(authErrorCode(coded('INTERNAL_ERROR'))).toBe(
+      AUTH_ERROR.MISCONFIGURED,
+    );
+  });
+
   it('reconoce Play Services y red', () => {
     expect(authErrorCode(coded('PLAY_SERVICES_NOT_AVAILABLE'))).toBe(
       AUTH_ERROR.PLAY_SERVICES,

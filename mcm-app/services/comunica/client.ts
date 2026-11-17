@@ -32,6 +32,8 @@ import {
   MeetingsResponse,
   type MeetingWrite,
   MeetingWriteResult,
+  RollReminderResult,
+  RollReminderWrite,
   MonitorDetail,
   MonitorsRoll,
   type MonitorsRollKind,
@@ -274,6 +276,8 @@ export interface ComunicaApi {
   ): Promise<MonitorsRollWriteResult>;
   getMeetings(opts?: ReadOptions): Promise<MeetingsResponse>;
   createMeeting(body: MeetingWrite): Promise<MeetingWriteResult>;
+  /** Coordinación recuerda a los monitores de unos grupos que pasen lista. */
+  sendRollReminders(body: RollReminderWrite): Promise<RollReminderResult>;
   getMonitor(monitorId: string, opts?: ReadOptions): Promise<MonitorDetail>;
   /** Nunca se guarda: lo que una persona escribió sobre otra. */
   getFollowUps(monitorId: string): Promise<FollowUpsResponse>;
@@ -743,6 +747,13 @@ export function createHttpClient({
       ),
     createMeeting: (body) =>
       request('POST', '/v1/meetings', MeetingWriteResult, body),
+    sendRollReminders: (body) =>
+      request(
+        'POST',
+        '/v1/coordination/roll-reminders',
+        RollReminderResult,
+        body,
+      ),
     getMonitor: (id, opts) =>
       request(
         'GET',

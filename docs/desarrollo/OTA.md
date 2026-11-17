@@ -45,6 +45,19 @@ PR → main ──merge→ preview ──(se prueba en el iPhone del usuario)─
 git merge preview && git push`. La reciben todos en el siguiente arranque
    (`checkAutomatically: ON_LOAD`) o cada ~15 min con la app abierta.
 
+### Norma de ritmo (decisión del usuario, 2026-11-07)
+
+- **Se trabaja en `main`.** Lo terminado se sube a `main` directamente.
+- **Si hay que probarlo, va a `preview`** y se deja ahí reposando. `preview`
+  puede acumular varias cosas.
+- **`production` se mueve por tandas**, cuando hay un buen número de cosas,
+  no por cada arreglo: cada OTA de `production` hace que a todo el mundo le
+  salga la pantalla de actualizar.
+- **Al cerrar una tarea, el agente dice cuántas cosas hay en `preview` sin
+  sacar a `production`** (`git log --oneline --no-merges origin/production..origin/preview`)
+  y recomienda «ya las puedes pasar» o «aguanta». No promueve a `production`
+  sin que el usuario lo pida.
+
 Cada publicación pasa primero por `verify.yml` (typecheck, typecheck de tests,
 lint y tests): si está en rojo, **no se publica nada**. Los pushes se encolan
 (`concurrency`), no se pisan.
@@ -94,6 +107,25 @@ rollback de abajo es lo primero.
   `runtimeVersion` con ese binario).
 - `workflow_dispatch` manual (pestaña Actions) con `force` salta el guard:
   solo si sabes lo que haces.
+
+## OTA a una versión vieja (parche en otro `runtimeVersion`)
+
+Una OTA solo llega a los binarios con su mismo `runtimeVersion`, que se lee del
+`app.json` del commit desde el que se publica. Para arreglar algo en una
+versión vieja que sigue instalada (p. ej. 2.0.0) sin tocar la actual:
+
+1. Rama `hotfix/ota-rt-<runtime>` desde el **último commit que esa versión
+   recibió** (o, si nunca recibió OTA, uno anterior a cualquier paquete nativo
+   que su binario no lleve). Solo el arreglo mínimo encima.
+2. Actions → **OTA Production** → _Run workflow_ eligiendo **esa rama**. Se usa
+   el workflow de esa rama, que publica al branch `production` de EAS con el
+   runtime viejo: no afecta a los binarios actuales ni mueve la rama git
+   `production`.
+3. El binario viejo la baja al arrancar y la aplica en el siguiente arranque.
+
+Precedente: 2026-11-07, enlace de la App Store roto. `hotfix/ota-rt-2.0.0`
+(desde `ac39be15`, la última OTA de la 2.0.0) y `hotfix/ota-rt-2.5.0` (desde
+`359ef3d1~1`, justo antes del afinador, que es nativo).
 
 ## Rollback: una OTA salió mala
 

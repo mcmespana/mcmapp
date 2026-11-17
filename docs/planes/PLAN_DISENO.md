@@ -221,11 +221,10 @@ Piezas y reglas actuales: `docs/desarrollo/AREA_NATIVA_DISENO.md`.
       poner el `Highlight` el ÚLTIMO hijo de la fila. Falta aplicarlo a
       `PersonRow`, `NavRow`, `EventListRow` y las filas de `SessionPicker`.
 
-- [ ] **Muelles (`springs`) sin adoptar.** `constants/animations.ts` exporta
-      `springs`, el token que `design.md` §6 prescribe para todo lo que mueve un
-      dedo (drag, sheets), pero **ningún componente lo importa todavía**:
-      `PressableScale` y el resto usan `durations`/`motionEasings`. No se borra;
-      hay que usarlo al tocar gestos.
+- [x] **Muelles (`springs`) sin adoptar — hecho el 2026-11-08.** Ya lo usan
+      los gestos (hoja, calendario, swipe de canción, PiP, toast…); el core
+      `Animated` lo recibe traducido con `toCoreSpring` (`utils/gesturePhysics.ts`).
+      Quedan 3 muelles a mano (trinquete `noLooseMotion`).
 - [ ] **H1-ter.** `SegmentedControl` no tiene indicador de foco. Ahí el pulsado
       y el seleccionado ya compiten por el mismo espacio visual: hay que
       pensarlo, no copiar el patrón del botón.
@@ -245,6 +244,14 @@ Piezas y reglas actuales: `docs/desarrollo/AREA_NATIVA_DISENO.md`.
       el tono transpuesto legible en oscuro. Lo que decía esta línea: Es la pantalla más usada y de
       las menos tokenizadas. Al migrarla (A5.5), revisar de paso altura de fila
       y jerarquía título/subtítulo/pill de tono.
+
+- [ ] **P1 — Pañuelo virtual (anotado 2026-11-14, revisión de accesibilidad).**
+      (a) El color amarillo sin seleccionar, en el selector de color de
+      `app/panuelo.tsx`, no llega a 3:1 contra la tarjeta clara: necesita un
+      borde, que es un valor nuevo. (b) El error de `PanueloRedeemSheet` va en
+      `typography.subhead` y es texto que hay que leer: le toca `body`.
+      (c) En un móvil de 320 pt, con letra normal, la barra superior no
+      envuelve.
 
 ---
 

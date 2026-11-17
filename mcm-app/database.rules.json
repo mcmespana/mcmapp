@@ -135,6 +135,18 @@
     },
 
     /* ------------------------------------------------------------------ *
+     *  PAÑUELO VIRTUAL  (/panuelo)  — catálogo de piezas (chapas, pines,
+     *  cintas, parches, medallas, pulseras). Lectura pública: no hay nada
+     *  personal, y de los códigos de canje solo se guarda el hash. Lo escribe
+     *  el panel. Lo que TIENE cada persona vive en /users/$uid/panuelo.
+     *  Ver ../docs/contratos/PANUELO_CONTRATO.md.
+     * ------------------------------------------------------------------ */
+    "panuelo": {
+      ".read": true,
+      ".write": "root.child('_config/legacyPanelWrites').val() === true"
+    },
+
+    /* ------------------------------------------------------------------ *
      *  CALENDARIOS PRECACHEADOS  (/calendarEvents)
      *  Los ICS de /calendars ya descargados y parseados. Lectura pública
      *  (es el mismo contenido público que los .ics). Lo escribe SOLO la
@@ -442,6 +454,39 @@
         "name": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
         }
+      }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  INTERCAMBIOS DEL PAÑUELO  (/panueloTrades/<código>)
+     *  Dos personas con sesión se cambian una pieza en persona: una abre el
+     *  intercambio (código de 6, caduca a los 10 min), la otra lo contesta y
+     *  la primera acepta. Cada móvil aplica luego SU mitad en su propio
+     *  /users/<uid>. Plan: docs/planes/PLAN_PANUELO_INTERCAMBIOS.md §4.2.
+     *
+     *  La raíz no se lee: no se pueden listar intercambios ajenos. El
+     *  `.write` fija las transiciones (la app escribe SIEMPRE el nodo entero
+     *  con una transacción):
+     *    - crear: lo abre quien figura en `offer/uid`, en `open`, sin
+     *      respuesta y caducando como mucho en 15 min (10 + margen de reloj).
+     *      Un código abandonado hace más de 24 h se puede reutilizar.
+     *    - borrar: quien lo abrió, o cualquiera pasadas 24 h de la caducidad.
+     *    - cambiar de estado, sin tocar `offer/uid`, `offer/itemId` ni
+     *      `expiresAt`: open → proposed (otra persona, a tiempo);
+     *      proposed → accepted (solo quien abrió, sin cambiar la respuesta);
+     *      open|proposed → cancelled (cualquiera de las dos partes).
+     *  Aceptar NO mira la caducidad: un «Aceptar» del segundo 599 que llega
+     *  en el 601 no debe fallar (la comprueba el móvil con la hora del
+     *  servidor). Si cambias el `.write`, cambia también su copia en
+     *  __tests__/helpers/rulesEngine.ts (se reconoce por igualdad de texto).
+     * ------------------------------------------------------------------ */
+    "panueloTrades": {
+      ".read": false,
+      ".write": false,
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && (((!data.exists() || data.child('expiresAt').val() + 86400000 < now) && newData.child('offer/uid').val() === auth.uid && newData.child('status').val() === 'open' && !newData.child('answer').exists() && newData.child('expiresAt').val() <= now + 900000) || (data.exists() && !newData.exists() && (data.child('offer/uid').val() === auth.uid || data.child('expiresAt').val() + 86400000 < now)) || (data.exists() && newData.exists() && newData.child('offer/uid').val() === data.child('offer/uid').val() && newData.child('offer/itemId').val() === data.child('offer/itemId').val() && newData.child('expiresAt').val() === data.child('expiresAt').val() && ((data.child('status').val() === 'open' && newData.child('status').val() === 'proposed' && newData.child('answer/uid').val() === auth.uid && auth.uid !== data.child('offer/uid').val() && now < data.child('expiresAt').val()) || (data.child('status').val() === 'proposed' && newData.child('status').val() === 'accepted' && auth.uid === data.child('offer/uid').val() && newData.child('answer/uid').val() === data.child('answer/uid').val() && newData.child('answer/itemId').val() === data.child('answer/itemId').val()) || (newData.child('status').val() === 'cancelled' && (data.child('status').val() === 'open' || data.child('status').val() === 'proposed') && (auth.uid === data.child('offer/uid').val() || auth.uid === data.child('answer/uid').val())))))",
+        ".validate": "$code.length === 6 && $code.matches(/^[A-HJKMNP-Z2-9]+$/) && newData.child('code').val() === $code && newData.hasChildren(['code', 'status', 'createdAt', 'expiresAt', 'offer']) && newData.child('createdAt').isNumber() && newData.child('expiresAt').isNumber()"
       }
     },
 

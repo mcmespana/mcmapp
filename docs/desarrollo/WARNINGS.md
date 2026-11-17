@@ -4,10 +4,10 @@
 > clasificados abajo uno a uno. La mayoría son falsos positivos estructurales:
 > perseguirlos empeora el código.
 >
-> Estado: **36 warnings, 0 errores** (2026-10-31, `npm run lint`). Es el
+> Estado: **35 warnings, 0 errores** (2026-11-17, `npm run lint`). Es el
 > **techo**: es lo que hay y no debe subir. Historial: 111 (2026-08-15) → 51 →
 > 39 (2026-08-19, la migración de `.value` a `.get()`/`.set()` en los shared
-> values de Reanimated se llevó los falsos positivos) → 38.
+> values de Reanimated se llevó los falsos positivos) → 38 → 36 → 35 (2026-11-17).
 
 ## Contexto
 

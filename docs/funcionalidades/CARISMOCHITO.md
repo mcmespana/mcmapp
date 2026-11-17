@@ -85,11 +85,11 @@ Pendiente de definir con Izan — esto es el esqueleto para no perder el hilo:
 2. **Dónde se enlaza la colección** para todo el mundo. Hoy solo se llega desde
    el panel del Laboratorio o, con el modo activo, desde la explicación del
    modo. Propuesta anterior: tocar el logo verde de Inicio. Falta decidirlo.
-3. **Dónde vivirá a la larga**: la idea es una vista de perfil con logros,
-   chapas y Carismochitos — ver `docs/planes/PLAN_PANEL_PANUELO.md`.
-4. **Medallas 3D** (hoy un experimento en el Laboratorio): se dejan como están
-   «por ahora», pero **hay que hacerlas** — está anotado en
-   `docs/planes/BACKLOG.md`.
+3. **Dónde vivirá a la larga**: junto al pañuelo virtual, en la vista de
+   perfil — ver `docs/funcionalidades/PANUELO.md` («Dónde debería vivir»).
+4. **Medallas 3D**: ya son una clase de pieza del pañuelo virtual
+   (`docs/funcionalidades/PANUELO.md`). El experimento «Medallas en 3D» del
+   Laboratorio sigue ahí como visor suelto.
 5. Revisar si hace falta build nativo (iconos del launcher, p. ej.) con
    antelación a la fecha: el icono alternativo solo existe desde la build 2.1.
 

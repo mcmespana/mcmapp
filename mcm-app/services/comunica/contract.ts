@@ -126,8 +126,17 @@ export const Me = z.object({
 export type Me = z.infer<typeof Me>;
 
 export const PersonBadges = z.object({
-  /** Tiene una nota de salud. Solo la marca: el texto nunca viaja aquí. */
+  /**
+   * Tiene alergias, intolerancias o tratamiento (`HEALTH_KINDS_MAIN`). Solo la
+   * marca: el texto nunca viaja aquí.
+   */
   healthNote: z.boolean(),
+  /**
+   * Tiene enfermedades u «otras patologías» (`HEALTH_KINDS_OTHER`: TEA, TDAH…).
+   * Marca MENOR, aparte de `healthNote`: ambas pueden ir a la vez. Opcional
+   * mientras el servidor real no la mande (ausente = no se sabe = sin marca).
+   */
+  healthOther: z.boolean().optional(),
   /** La familia no autoriza fotos. */
   noPhotos: z.boolean(),
   /** No puede irse solo a casa. */
@@ -1696,6 +1705,34 @@ export type MeetingWrite = z.infer<typeof MeetingWrite>;
 export const MeetingWriteResult = WriteResult.extend({ meeting: Meeting });
 export type MeetingWriteResult = z.infer<typeof MeetingWriteResult>;
 
+export const ROLL_REMINDER_MESSAGE_MAX = 120;
+export const ROLL_REMINDER_GROUPS_MAX = 60;
+
+/**
+ * `POST /v1/coordination/roll-reminders` — coordinación recuerda a los
+ * monitores de esos grupos que pasen lista, con un aviso al móvil. El texto
+ * lo elige (o lo escribe) quien lo manda: es lo único del área que lleva
+ * texto libre en un aviso (decisión del propietario, 15/11/2026), una línea
+ * de 120 caracteres como mucho. No mira las preferencias del móvil: llega a
+ * todo monitor con la app y los avisos del sistema permitidos. Un grupo
+ * fuera de tu alcance, 403.
+ */
+export const RollReminderWrite = z.object({
+  clientId: ClientId,
+  groupIds: z.array(Id).min(1).max(ROLL_REMINDER_GROUPS_MAX),
+  message: z.string().trim().min(1).max(ROLL_REMINDER_MESSAGE_MAX),
+});
+export type RollReminderWrite = z.infer<typeof RollReminderWrite>;
+export const RollReminderResult = WriteResult.extend({
+  /** Monitores distintos de los grupos avisados. */
+  monitors: z.number().int().nonnegative(),
+  /** De ellos, los que tienen algún móvil con la app. */
+  reached: z.number().int().nonnegative(),
+  /** Grupos que NO se han avisado: ya se les avisó hace menos de 10 minutos. */
+  recent: z.array(Id),
+});
+export type RollReminderResult = z.infer<typeof RollReminderResult>;
+
 /** Un teléfono ya preparado por el servidor. */
 export const Phone = z.object({
   /** Como está escrito: es lo que se reconoce. */
@@ -2105,6 +2142,15 @@ export const HEALTH_KINDS = [
 export const HealthKind = z.enum(HEALTH_KINDS);
 export type HealthKind = z.infer<typeof HealthKind>;
 
+/** Lo que enciende `badges.healthNote`. */
+export const HEALTH_KINDS_MAIN: readonly HealthKind[] = [
+  'allergies',
+  'intolerances',
+  'treatments',
+];
+/** Lo que enciende `badges.healthOther` (la marca menor). */
+export const HEALTH_KINDS_OTHER: readonly HealthKind[] = ['illnesses', 'other'];
+
 /**
  * `GET /v1/people/:id/health` — solo con `Me.canSeeHealth`, solo con conexión
  * y nunca en el móvil. Solo los campos con texto; vacío = nada que decir.
@@ -2365,6 +2411,12 @@ export const ROUTES = {
     method: 'POST',
     path: '/v1/meetings',
     response: MeetingWriteResult,
+    persist: false,
+  },
+  rollReminders: {
+    method: 'POST',
+    path: '/v1/coordination/roll-reminders',
+    response: RollReminderResult,
     persist: false,
   },
   monitor: {

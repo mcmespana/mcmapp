@@ -4,6 +4,7 @@ import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@/components/ui/icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useLargeText from '@/hooks/useLargeText';
 import colors, { themeColors } from '@/constants/colors';
 import { onColor } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
@@ -73,6 +74,9 @@ export default function SegmentedControl<T extends string>({
   accessibilityLabel,
 }: SegmentedControlProps<T>) {
   const isDark = useColorScheme() === 'dark';
+  // Letra del sistema grande: la etiqueta puede ir en dos líneas y sin icono
+  // (a una línea «Sin leer (3)» perdía el número), con algo de margen lateral.
+  const large = useLargeText();
   const roles = themeColors(isDark);
   // Sobre el relleno del segmento activo manda el contraste, no el modo.
   const activeInk = onColor(accentColor);
@@ -101,13 +105,14 @@ export default function SegmentedControl<T extends string>({
             style={[
               styles.segment,
               compact && styles.segmentCompact,
+              large && styles.segmentLarge,
               active && { backgroundColor: accentColor },
             ]}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             accessibilityLabel={option.label}
           >
-            {option.icon ? (
+            {option.icon && !large ? (
               <MaterialIcons
                 name={option.icon}
                 size={16}
@@ -119,8 +124,9 @@ export default function SegmentedControl<T extends string>({
                 styles.label,
                 compact && styles.labelCompact,
                 { color: active ? activeInk : inactiveInk },
+                large && styles.labelLarge,
               ]}
-              numberOfLines={1}
+              numberOfLines={large ? 2 : 1}
             >
               {option.label}
             </Text>
@@ -158,4 +164,6 @@ const styles = StyleSheet.create({
   labelCompact: {
     ...typography.caption,
   },
+  segmentLarge: { paddingHorizontal: 4 },
+  labelLarge: { textAlign: 'center', flexShrink: 1 },
 });

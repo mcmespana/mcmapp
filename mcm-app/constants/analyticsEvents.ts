@@ -90,6 +90,28 @@ export interface AnalyticsEvents {
     /** Primera vez que esa persona atrapa esa variante. */
     nuevo: boolean;
   };
+
+  /** Se abre la pantalla del pañuelo virtual. */
+  panuelo_abierto: SinPropiedades;
+
+  /**
+   * Se consigue una pieza del pañuelo. La clase y la vía, no la pieza: el
+   * catálogo crece con cada actividad y el gráfico tiene que seguir leyéndose.
+   */
+  panuelo_pieza_conseguida: {
+    clase:
+      'chapa' | 'pin' | 'cinta' | 'parche' | 'medalla' | 'pulsera' | 'troncho';
+    via: 'all' | 'code' | 'manual' | 'demo' | 'trade';
+  };
+
+  /**
+   * Un paso de un intercambio del pañuelo. Sin ids, códigos ni nombres: solo
+   * cuántos se abren, se proponen, se cierran y cuántos son regalos.
+   */
+  panuelo_intercambio: {
+    paso: 'abierto' | 'propuesto' | 'aceptado' | 'cancelado';
+    regalo: boolean;
+  };
 }
 
 export type AnalyticsEventName = keyof AnalyticsEvents;

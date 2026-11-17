@@ -67,7 +67,17 @@ nativo (entró en la #313 el 2026-08-04). Todo NATIVO, nada sale por OTA.
       directos), ~~los tres navegadores de fecha distintos~~ (✅ unificados en
       `DateNavigator` el 2026-10-08) y repasar en dispositivo el evangelio,
       que en web sin datos se queda en «Preparando la Palabra…».
-- [ ] **Command Palette v2: deep-link a contenidos** — el palette actual (`CommandPalette.tsx`) solo navega a tabs/pantallas top-level. Para saltar a una canción concreta o a un punto dentro de los stacks anidados hay que exponer un `navigation ref` (p.ej. `CancioneroNavRefContext`). Después indexar canciones (`songs/data`), reflexiones (`compartiendo/data`) y eventos del calendario.
+
+---
+
+## Planes del 2026-11-16 (pañuelo y cantos para el domingo)
+
+> Orden y dependencias en `docs/planes/BACKLOG.md` §2.K. Live Activities va en la rama `claude/plan-live-activities`, no aquí. Cada plan acaba con
+> sus «🔒 Decisiones del usuario»: se preguntan antes de empezar.
+
+- [ ] **Pañuelo — intercambios: lo que queda** (`docs/planes/PLAN_PANUELO_INTERCAMBIOS.md`; fases 0-5 y 7 hechas el 2026-11-16). (a) Pegar el bloque de reglas `panueloTrades` en la consola de Firebase (`docs/desarrollo/FIREBASE_REGLAS.md` §8): sin eso no funciona; (b) probar con dos móviles (§7 del plan); (c) Fase 6 opcional, la pieza que sale volando (obliga a regenerar el visor).
+- [ ] **Pañuelo — piezas por asistencia y desvelado una a una** (`docs/planes/PLAN_PANUELO_ASISTENCIA.md`). La app, por OTA; necesita un endpoint en `comunicaMiddleware`, una Cloud Function y reglas. El desvelado se puede adelantar con datos simulados.
+- [ ] **Cantoral — cantos para el domingo: lo que queda** (`docs/planes/PLAN_CANTOS_DOMINGO.md`; fases 1-4 hechas el 2026-11-16). (a) Añadir `cantos-domingo` a `homeButtons` en `/profileConfig` de Firebase y en el Panel, o la tarjeta de Inicio no sale; (b) Fase 0: contar en el repo del cantoral qué canciones llevan etiqueta de tiempo litúrgico; (c) probar en móvil; (d) Fase 5, el estribillo del salmo en el scraper.
 
 ---
 
@@ -155,10 +165,6 @@ esto es lo que quedó fuera a propósito. El `id` es el del hallazgo en
       estilos (el Dialog de la paleta ⌘K, por ejemplo). Importarlo en
       `app/_layout.tsx` mete el reset de Tailwind en toda la web: hay que
       decidir y repasar la web entera con él.
-- [ ] **Escala de letra del sistema en la hoja** (`android-webview-textzoom`):
-      hoy solo Android la respeta, vía `textZoom` del WebView. Lo coherente es
-      aplicar `fontScale` a la hoja en las dos plataformas, pero cambia cómo se
-      ve en iOS.
 - [ ] **Hoja de canción**, tres detalles que se hicieron en la versión más
       sobria: el mapa no sale en el PDF de la playlist; el pre-estribillo sale
       como «P»; la pantalla completa del navegador no entra sola (F o botón).

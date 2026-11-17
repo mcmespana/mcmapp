@@ -15,6 +15,7 @@ import { useTabNavigation } from '@/hooks/useTabNavigation';
 import { parseTabPath } from '@/utils/tabNavigation';
 import { AppState, AppStateStatus, Platform } from 'react-native';
 import { logger } from '@/utils/logger';
+import { isOfflineError } from '@/utils/networkErrors';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import {
@@ -434,6 +435,13 @@ async function registerAndSaveToken(
     // 5. Guardar en Firebase
     await saveTokenToFirebase(token, profileMetadata ?? undefined);
   } catch (e) {
+    // Sin red (p. ej. `UnknownHostException` al pedir el token a exp.host) no
+    // es un fallo: se reintenta solo al volver la app al primer plano. No se
+    // manda a Sentry para no tapar los errores de verdad.
+    if (isOfflineError(e)) {
+      logger.debug('[push] registerAndSaveToken sin red, se reintentará:', e);
+      return;
+    }
     // Sin esto, cualquier fallo de permisos/token/escritura era invisible y
     // "no me llegan notificaciones" resultaba indepurable en campo.
     logger.error('[push] registerAndSaveToken:', e);

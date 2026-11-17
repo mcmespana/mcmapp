@@ -59,7 +59,7 @@ import AreaState, { isNetwork, OfflineNotice } from '../comun/AreaState';
 import AreaSwitch from '../comun/AreaSwitch';
 import DelegationSwitcher from '../comun/DelegationSwitcher';
 import FilterChips from '../comun/FilterChips';
-import PersonMarks, { marksA11y } from '../comun/PersonMarks';
+import PersonMarks, { hasHealth, marksA11y } from '../comun/PersonMarks';
 import PersonRow from '../comun/PersonRow';
 import SearchField from '../comun/SearchField';
 import SyncBadge from '../comun/SyncBadge';
@@ -563,7 +563,7 @@ function IndexList({ view, offline }: { view: GruposView; offline: boolean }) {
               onPress={() => openFicha(p)}
               accessibilityHint="Abre su ficha"
               accessibilityActions={[
-                ...(p.badges.healthNote && canSeeHealth
+                ...(hasHealth(p.badges) && canSeeHealth
                   ? [{ name: 'health', label: 'Ver la salud' }]
                   : []),
                 ...(assignable

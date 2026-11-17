@@ -61,3 +61,19 @@ export function getChooseHandoff(k: string | undefined): ChooseHandoff | null {
 export function clearAccessHandoffs(): void {
   store.clear();
 }
+
+/**
+ * «¿No te llega? Entra con el DNI» (pantalla del código): vuelve a «Entra en
+ * Comunica» con el DNI abierto. La pantalla de acceso sigue montada debajo, así
+ * que se le avisa en memoria.
+ */
+const dniListeners = new Set<() => void>();
+export function onSwitchToDni(fn: () => void): () => void {
+  dniListeners.add(fn);
+  return () => {
+    dniListeners.delete(fn);
+  };
+}
+export function requestSwitchToDni(): void {
+  dniListeners.forEach((fn) => fn());
+}

@@ -65,3 +65,12 @@ export function extractTrailingEmoji(text: string): {
   }
   return { emoji: '', cleanText: trimmed };
 }
+
+/**
+ * Quita el número de orden que el generador del cantoral pone delante del
+ * título en el catálogo («03. Parenostre» → «Parenostre»). En el `.cho` el
+ * título va sin número: si se guardara con él, saldría «03. 03. Parenostre».
+ */
+export function stripSongNumber(title: string): string {
+  return title.replace(/^\s*\d+\s*\.\s*/, '').trim();
+}

@@ -23,9 +23,14 @@ jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () => {
   const Row = Local.forwardRef(
     (
       props: { children: unknown; onSwipeableOpen?: (d: string) => void },
-      _ref: unknown,
+      ref: unknown,
     ) => {
       mockOnOpen = props.onSwipeableOpen;
+      // Como la librería: abrir por código también dispara `onSwipeableOpen`.
+      Local.useImperativeHandle(ref, () => ({
+        openRight: () => props.onSwipeableOpen?.('left'),
+        close: () => {},
+      }));
       return Local.createElement(View, null, props.children);
     },
   );
@@ -92,4 +97,35 @@ it('gesture-handler sigue llamando a onSwipeableOpen con la dirección del movim
   expect(src).toMatch(
     /onSwipeableOpen,\s*toValue > 0 \? SwipeDirection\.RIGHT : SwipeDirection\.LEFT/,
   );
+});
+
+describe('pista «desliza para añadir»', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('la demostración abre la fila sin añadir la canción y se cuenta', async () => {
+    const onAddSong = jest.fn();
+    const onHintShown = jest.fn();
+    await render(
+      <SettingsProvider>
+        <SongListItem
+          song={SONG}
+          onPress={jest.fn()}
+          isSelected={false}
+          selectedTranspose={0}
+          onAddSong={onAddSong}
+          onRemoveSong={jest.fn()}
+          hintSwipe
+          onHintShown={onHintShown}
+        />
+      </SettingsProvider>,
+    );
+    jest.advanceTimersByTime(1000);
+    expect(onHintShown).toHaveBeenCalledWith('alzad.cho');
+    expect(onAddSong).not.toHaveBeenCalled();
+    // Acabada la demo, deslizar de verdad sí añade.
+    jest.advanceTimersByTime(5000);
+    mockOnOpen?.('left');
+    expect(onAddSong).toHaveBeenCalledWith('alzad.cho');
+  });
 });
