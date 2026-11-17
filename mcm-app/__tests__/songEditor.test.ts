@@ -140,3 +140,33 @@ describe('songEditor · cabecera y edición', () => {
     ).toEqual({ tagsOld: [], tagsNew: ['adviento', 'misa-joven'] });
   });
 });
+
+describe('songEditor · catálogo en el móvil', () => {
+  const { applyEditToCatalog } = jest.requireActual('@/utils/songEditor');
+  const data = {
+    padrenuestro: {
+      categoryTitle: 'G',
+      songs: [
+        { filename: '03.parenostre.cho', title: '03. Parenostre', key: '' },
+      ],
+    },
+  };
+  it('cambia la canción y conserva el número del título', () => {
+    const out = applyEditToCatalog(data, 'padrenuestro', '03.parenostre.cho', {
+      title: 'Pare nostre',
+      key: 'G',
+    });
+    expect(out.padrenuestro.songs[0]).toEqual({
+      filename: '03.parenostre.cho',
+      title: '03. Pare nostre',
+      key: 'G',
+    });
+    expect(data.padrenuestro.songs[0].title).toBe('03. Parenostre');
+  });
+  it('si no está, no toca nada', () => {
+    expect(
+      applyEditToCatalog(data, 'padrenuestro', 'x.cho', {}),
+    ).toBeUndefined();
+    expect(applyEditToCatalog(data, 'otra', 'x.cho', {})).toBeUndefined();
+  });
+});

@@ -11,7 +11,9 @@
  *   entrado y el NAS comprueba `users/<uid>/isAdmin`.
  * - **Si el NAS no contesta**, el cambio se queda en este móvil (una cola en
  *   AsyncStorage) y se envía solo cuando vuelva (`flushOutbox`).
- * - Quien edita ve su cambio al momento (`utils/songOverrides.ts`).
+ * - Quien edita ve su cambio al momento en todas las pantallas (se cambia la
+ *   caché del catálogo) y, en cuanto el cantoral publica, se baja solo
+ *   (`watchPublish`): no hace falta cerrar y abrir la app.
  *
  * La dirección del NAS vive en Firebase (`songs/editor/url`). Contrato en
  * `mcmapp-cantoral/scripts/admin/README.md` («API para la app»).
@@ -22,8 +24,8 @@ import { get, getDatabase, ref } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import { getFirebaseAuth } from '@/utils/firebaseAuth';
 import { logger } from '@/utils/logger';
-import { setSongOverride } from '@/utils/songOverrides';
-import type { SongSnapshot } from '@/utils/songEditor';
+import { patchCachedNode, revalidateNode } from '@/hooks/useFirebaseData';
+import { applyEditToCatalog, type SongSnapshot } from '@/utils/songEditor';
 
 const TIMEOUT_MS = 25_000;
 const READ_TIMEOUT_MS = 240_000;
@@ -235,6 +237,37 @@ async function sendOrQueue(
   return { where: 'queued', pushed: false };
 }
 
+// ── Esperar a que se publique ──
+
+/** Cada cuánto se mira si el cantoral ha publicado, y hasta cuándo. */
+const PUBLISH_POLL_MS = 20_000;
+const PUBLISH_GIVE_UP_MS = 6 * 60_000;
+let publishWatch: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Tras guardar, el cantoral tarda un par de minutos en publicar (GitHub
+ * Actions). Mientras, se pregunta a Firebase de vez en cuando —solo el
+ * `updatedAt`, que no cuesta nada— y en cuanto cambia se baja el catálogo
+ * nuevo: sin cerrar y abrir la app.
+ */
+export function watchPublish(): void {
+  if (publishWatch) clearInterval(publishWatch);
+  const started = Date.now();
+  publishWatch = setInterval(() => {
+    if (Date.now() - started > PUBLISH_GIVE_UP_MS) {
+      if (publishWatch) clearInterval(publishWatch);
+      publishWatch = null;
+      return;
+    }
+    void revalidateNode('songs', 'songs').then((changed) => {
+      if (changed && publishWatch) {
+        clearInterval(publishWatch);
+        publishWatch = null;
+      }
+    });
+  }, PUBLISH_POLL_MS);
+}
+
 export interface SaveResult {
   /** `sent`: lo tiene el cantoral. `queued`: guardado en este móvil. */
   where: 'sent' | 'queued';
@@ -265,14 +298,12 @@ export async function saveSongEdition(args: {
     // nunca coincide al carácter: manda lo nuevo.
     force: true,
   });
-  setSongOverride(filename, {
-    ...(fields.title !== undefined ? { title: fields.title } : {}),
-    ...(fields.author !== undefined ? { author: fields.author } : {}),
-    ...(fields.key !== undefined ? { key: fields.key } : {}),
-    ...(fields.capo !== undefined ? { capo: fields.capo } : {}),
-    ...(fields.info !== undefined ? { info: fields.info } : {}),
-    ...(fields.content !== undefined ? { content: fields.content } : {}),
-  });
+  // En este móvil se ve ya, en todas las pantallas; y en cuanto el cantoral
+  // publique, se cambia por la versión de verdad.
+  await patchCachedNode('songs', (data) =>
+    applyEditToCatalog(data, category, filename, fields),
+  ).catch((e) => logger.warn('songEditor: caché', e));
+  if (result.where === 'sent') watchPublish();
   return result;
 }
 
@@ -285,7 +316,9 @@ export async function createSong(args: {
   capo?: number;
   content: string;
 }): Promise<SaveResult> {
-  return sendOrQueue('new', args.title, args);
+  const result = await sendOrQueue('new', args.title, args);
+  if (result.where === 'sent') watchPublish();
+  return result;
 }
 
 /** Reordena una categoría (renumera sus canciones). Necesita el cantoral. */
@@ -296,6 +329,7 @@ export async function reorderCategory(
   const res = await call<{ pushed?: boolean }>('/api/app/category/reorder', {
     json: { category, order },
   });
+  watchPublish();
   return { pushed: res.pushed !== false };
 }
 
