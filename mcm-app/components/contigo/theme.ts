@@ -54,6 +54,18 @@ export const WARM_LIGHT = {
    * había derivado a `#FBF7F1` de inicio.
    */
   bgGradient: ['#FAF6F0', '#F0E8D8'] as const,
+  /** La tarjeta de «Tu año» en temporada: dorado de Contigo, con luz. */
+  recapGradient: ['#E8B44A', '#B07D1E'] as const,
+  /**
+   * Cuadritos de «Tu año», de nada a los tres hábitos. Escalones que se
+   * distinguen: antes el de un hábito era casi igual que el vacío.
+   */
+  recapLevels: [
+    'rgba(196,146,42,0.10)',
+    'rgba(196,146,42,0.42)',
+    'rgba(196,146,42,0.75)',
+    '#8A5F12',
+  ] as const,
 } as const;
 
 export const WARM_DARK = {
@@ -79,6 +91,13 @@ export const WARM_DARK = {
   border: 'rgba(218,165,32,0.12)',
   shadow: 'rgba(0,0,0,0.25)',
   bgGradient: ['#1A1712', '#100F0C'] as const,
+  recapGradient: ['#C9962C', '#7A5512'] as const,
+  recapLevels: [
+    'rgba(218,165,32,0.12)',
+    'rgba(218,165,32,0.38)',
+    'rgba(218,165,32,0.68)',
+    '#F0C14B',
+  ] as const,
 } as const;
 
 export type WarmTheme = {
@@ -104,6 +123,8 @@ export type WarmTheme = {
   shadow: string;
   /** Fondo en degradado de las pantallas de Contigo. */
   bgGradient: readonly [string, string];
+  recapGradient: readonly [string, string];
+  recapLevels: readonly [string, string, string, string];
 };
 
 export const warm = (isDark: boolean): WarmTheme =>

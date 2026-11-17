@@ -10,6 +10,80 @@
 - El nombre de una sesión llega sin « | 04/12/2026 17:30h» ni « · lista del 16/10» (middleware), y la fila del día ya no repite el evento cuando es el mismo que el título (`itemLine`: «17:30 · Asististe»).
 - «Próximas actividades» de la portada lista solo los eventos abiertos a inscripción (`upcomingAgendaItems`), como la web: las sesiones están en el calendario.
 
+## 2026-11-17 23:10 — Cantoral: «⋯» nativo en iOS y fotos con la IA en segundo plano
+
+- **«⋯» del cantoral en iOS = menú del sistema** (`Stack.Toolbar.Menu`, UIMenu) con la lupa al lado. Con la hoja propia, Etiquetas, «Cómo ver las canciones» y «Sugerir una canción» abrían OTRA hoja mientras se quitaba la del menú, y iOS a veces no la presentaba nunca. El menú del sistema no es un Modal. Android y web siguen con la hoja.
+- **Foto o enlace leídos con la IA en segundo plano**: el cantoral responde al momento con un trabajo y la app pregunta cada 3 s (`/api/app/job/<id>`). En el iPhone una petición se corta a los 60 s y leer una foto pasa a menudo del minuto, así que fallaba aunque el cantoral la leyera bien. Fotos a 2000 px. Necesita el admin del NAS actualizado.
+
+## 2026-11-17 22:45 — Tu selección vacía más compacta y colores de «Tu año» que se leen
+
+- **Tu selección vacía**: mensaje y botones juntos arriba, en vez de mensaje centrado y botones al fondo (media pantalla vacía y el último botón bajo la barra).
+- **Tu año**: los cuadritos tenían el escalón de «un momento» casi igual que el vacío, así que un mes con 27 días se veía casi en blanco. Escalones nuevos (`recapLevels` en el tema de Contigo) y una leyenda «1 ▢▢▢ 3 momentos». «1 día», «1 frase» en singular.
+
+## 2026-11-17 22:20 — Editor: tu cambio se ve al momento y la app se pone al día sola
+
+- Al guardar, el cambio se aplica a la caché del catálogo del móvil y se ve ya en todas las pantallas (lista, canción, búsqueda), no solo en la canción. `patchCachedNode` y `revalidateNode` nuevos en `hooks/useFirebaseData.ts`, con aviso a todas las pantallas que pintan ese nodo.
+- Durante 6 minutos tras guardar, se mira cada 20 s si el cantoral ya ha publicado (`songs/updatedAt`) y se baja el catálogo nuevo: sin cerrar y abrir la app. También tras canción nueva y ordenar.
+- Fuera `utils/songOverrides.ts` (solo valía para la pantalla de la canción).
+
+## 2026-11-17 21:55 — Editor: el título ya no se guarda con el número del fichero
+
+- El catálogo trae el título con el número delante («03. Parenostre», lo pone el generador del cantoral). El editor lo tomaba como título y al guardar acababa en el `.cho` («03. 03. …» en la app y la canción fuera de su sitio). Ahora el editor lo quita (`stripSongNumber`) y el admin del cantoral también, por si acaso.
+- La OTA de `preview` falló por el trinquete de duraciones a mano (`noLooseMotion`): un `duration: 7000` del aviso de error. Ahora es una constante con nombre.
+
+## 2026-11-17 21:40 — Editor: las fotos del iPhone se mandan en JPEG
+
+- «Nueva canción» → foto fallaba con vibración de error: el iPhone da las fotos en HEIC, que el cantoral no abre, y enteras pesan varios MB. Ahora se pasan siempre a JPEG y se reducen (lado largo 2400 px) antes de enviarlas (`expo-image-manipulator`, ya instalado). El aviso de error dura más para poder leer el porqué.
+
+## 2026-11-17 23:40 — Editor de canciones: NAS puesto en marcha y todo en `main`
+
+- El usuario ha configurado el NAS (`FIREBASE_URL`), `songs/editor/url` y los administradores. Se borra `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (era de un solo uso); lo permanente sigue en `docs/funcionalidades/EDITOR_CANCIONES.md`.
+- `batiburrillo` mergeado a `main` en `mcmapp` y en `mcmapp-cantoral`.
+
+## 2026-11-17 23:20 — Editor: las opciones de foto se ven siempre
+
+- En «Nueva canción», «Hacer una foto» y «Elegir fotos» salían solo si el cantoral contestaba y tenía la IA; sin eso no aparecían y parecía que no existían. Ahora se ven siempre y, si no se pueden usar, salen en gris diciendo por qué.
+
+## 2026-11-17 23:00 — Editor: canción nueva desde un enlace de doceacordes, sin IA
+
+- «Nueva canción» → **Desde un enlace** (o pegando la URL en «Pegar el texto»). Los de doceacordes (`doceacordes.es/cancion/<id>`) los convierte el cantoral con su conversor propio, sin IA. Endpoint nuevo `POST /api/app/song/fetch-url` en `mcmapp-cantoral`.
+
+## 2026-11-17 22:30 — Aviso al enviar feedback y sugerencias de canción
+
+- **Feedback de la app** (Inicio y Más): al enviar sale un aviso según el tipo — fallito, sugerencia o felicitación. Antes, desde Más no salía nada, y desde Inicio podía quedar oculto bajo la hoja que se cerraba.
+- **Sugerir canción**: el «¡Sugerencia enviada!» sale cuando la hoja ya se ha ido (en iOS quedaba debajo).
+
+## 2026-11-17 21:30 — Toasts deslizables, historial en el menú del coro, compartir arriba y «Tu año» por temporadas
+
+- **Toasts**: se quitan deslizándolos a un lado o hacia abajo; mientras el dedo está encima no se van solos (`AppToastContext`).
+- **Historial del coro** también en el «⋯» de Tu selección («Ver lo cantado por el coro»): con la lista vacía no había dónde encenderlo.
+- **Compartir como imagen** también en la cabecera del evangelio del día.
+- **Tu año en Contigo**: enlace discreto al final de Contigo el resto del año; tarjeta dorada animada arriba la semana antes de Adviento y sus dos primeras, y de la última de Adviento al 21 de enero. Se queda quieta tras tres visitas (`utils/contigoRecapSeason.ts`, `hooks/useRecapSeason.ts`, `components/contigo/RecapTeaser.tsx`).
+
+## 2026-11-17 13:00 — Menús de opciones: scroll y hojas encadenadas en el móvil
+
+- `ContextMenuSheet` (el «⋯» del cantoral y los menús de fila): con muchas opciones (administrador + coro + etiquetas) las últimas quedaban fuera de la hoja — no se veía «Ordenar canciones». Ahora la lista hace scroll.
+- La opción que abre otra hoja (p. ej. «Sugerir una canción») espera 250 ms a que la hoja del menú termine de irse en iOS/Android; abrirla en el mismo instante hacía que no apareciera.
+
+## 2026-11-17 12:10 — Editor de canciones: modo texto en colores y con avisos
+
+- El modo **Texto** pinta el ChordPro en colores como el editor del admin del cantoral y marca lo que está mal: corchetes/llaves sin cerrar, estribillos/estrofas sin cerrar o cruzados, corchetes que no son acordes. Lista de avisos con su línea y contador en la pestaña. `utils/chordProLint.ts` (con tests), `components/song-editor/ChordProTextEditor.tsx`, tokens `ChordProColors`.
+
+## 2026-11-17 10:30 — Editor de canciones: todo por el NAS, cola en el móvil, más metadatos y ordenar
+
+- **La app ya no escribe en Firebase al editar**: todo va al admin del cantoral (NAS → commit y push → GitHub Actions → Firebase). Se quita la escritura directa en `songs/data` y la cola `songs/ediciones` desde el editor.
+- **Si el NAS no contesta**, el cambio se guarda en el móvil (`@song_editor_outbox`) y se envía solo; aviso en el editor con «Enviar ahora».
+- **Quien edita ve su cambio al momento** (`utils/songOverrides.ts`, 48 h, aplicado en `useRouteSong`).
+- **Pantalla tras guardar** (`SavedPanel`): «Enviado al cantoral» o «Guardado en este móvil», con qué pasa y cuándo lo ven los demás (al volver a abrir la app).
+- **Datos completos**: Spotify, Drive, otros enlaces y etiquetas, además de lo que ya había.
+- **Ordenar canciones de una categoría** (Cantoral → ⋯ → Ordenar canciones, `SongReorderScreen`; `POST /api/app/category/reorder` en el cantoral).
+- Puesta en marcha del NAS en `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (temporal). Deuda anotada en el BACKLOG §2.D: que no dependa del NAS.
+## 2026-11-17 06:39 — Arreglo: en iOS los botones de arriba del pañuelo quedaban bajo la cabecera
+
+- **Causa**: la pantalla medía dónde empezaba (`measureInWindow`) solo al maquetarse. Al cerrar el tutorial la cabecera nativa volvía, la pantalla no se re-maquetaba y la medida se quedaba en 0: la pastilla de la etapa, «Decorar» y compartir salían debajo de la cabecera y de la hora.
+- **Arreglo**: sin medir. En iOS la cabecera de `/panuelo` es transparente (`headerTransparent`) y la pantalla reserva `useHeaderHeight()`, igual que Fotos y la lista de canciones seleccionadas. De paso, el botón de atrás ya no dice «(tabs)» (`headerBackButtonDisplayMode: 'minimal'`).
+- Sin probar en dispositivo desde aquí: hay que verlo en el iPhone con la OTA de `preview`.
+
 ## 2026-11-17 19:42 — Tu selección vacía: primero el coro; los cantos del domingo, en un botón
 
 - Se quita la tarjeta «Este domingo» (`SundayPlanCard`) del vacío de Tu selección: estorbaba a lo que hace casi todo el mundo, traerse la playlist del coro. El vacío vuelve a ser el de antes, con **«Traer la playlist de <coro>» como botón principal**, y al final un botón discreto **«Cantos con las lecturas del domingo»** (`SundaySongsButton`) que abre la pantalla de los cantos del domingo.

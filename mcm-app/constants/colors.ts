@@ -340,6 +340,33 @@ export function tunerColors(isDark: boolean) {
       };
 }
 
+// Resaltado del ChordPro en el editor de texto de canciones
+// (`components/song-editor/ChordProTextEditor.tsx`). Los mismos papeles que el
+// editor del admin del cantoral: acordes en azul, estribillos en ámbar,
+// comentarios en naranja, arreglos en rojo MIC, el resto de directivas en gris
+// y lo que está mal en rojo. Cada modo con su versión legible como texto sobre
+// la superficie hundida del editor.
+export const ChordProColors = {
+  light: {
+    chord: '#0A5FB4',
+    section: '#A15C00',
+    comment: '#B83F00',
+    arr: '#B8323A',
+    directive: '#6E6E73',
+    error: '#D70015',
+    errorBg: 'rgba(215, 0, 21, 0.10)',
+  },
+  dark: {
+    chord: '#7DD3FC',
+    section: '#FCD34D',
+    comment: '#FDBA74',
+    arr: '#F28B8F',
+    directive: '#98989F',
+    error: '#FF8A80',
+    errorBg: 'rgba(255, 138, 128, 0.16)',
+  },
+} as const;
+
 // Estados visuales compartidos (selección, hover, pressed)
 // Usado en SongListItem y futuros componentes con estado seleccionado.
 export const StateColors = {

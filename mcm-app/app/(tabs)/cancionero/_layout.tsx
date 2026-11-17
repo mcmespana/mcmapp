@@ -172,6 +172,18 @@ export default function CancioneroLayout() {
                 },
               }}
             />
+            <Stack.Screen
+              name={CANTORAL_SLUGS.SongReorder}
+              options={{
+                title: 'Ordenar canciones',
+                presentation: 'fullScreenModal',
+                headerTransparent: false,
+                headerBackVisible: false,
+                contentStyle: {
+                  backgroundColor: themeColors(isDark).background,
+                },
+              }}
+            />
           </Stack>
           <MetronomeFloating />
           <KeepMetronomePrompt />

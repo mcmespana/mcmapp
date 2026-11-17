@@ -26,8 +26,14 @@ completa con su X y su «Guardar».
   a otra fila de la misma línea); tocarla la selecciona y sale una barra para
   moverla letra a letra, cambiarla o quitarla. La letra no se edita aquí, a
   propósito.
-- **Texto** — el ChordPro tal cual, con atajos para estribillo, «repite
-  estribillo» y nota.
+- **Texto** — el ChordPro tal cual, **en colores** como el editor del admin
+  del cantoral (acordes, estribillos, notas, arreglos), con atajos para
+  estribillo, estrofa, «repite estribillo» y nota. Marca en rojo lo que está
+  mal y lo lista con su línea: corchetes o llaves sin cerrar, estribillos o
+  estrofas sin cerrar (o cerrados sin abrir, o cruzados) y corchetes que no
+  parecen un acorde (p. ej. `[Do]`: el cantoral va en cifrado inglés). La
+  pestaña dice cuántos avisos hay («Texto · 2»). No impide guardar.
+  `utils/chordProLint.ts` + `components/song-editor/ChordProTextEditor.tsx`.
 - **Datos** — título, autor, tono, cejilla, nota y la ficha multimedia (álbum,
   ritmo, tiempo litúrgico, fuente, vídeo, más vídeos, audios).
 - **Vista** — la canción pintada con la hoja real del cantoral.
@@ -36,71 +42,77 @@ Los acordes se enseñan en la notación de cada uno (Do Re Mi o C D E) y se
 guardan en cifrado inglés, que es como está el cantoral; al escribir uno vale
 cualquiera de las dos («Sol7», «lam», «G»).
 
-## Dónde se guarda (y por qué así)
+## Qué pasa al guardar
 
 ```
-app ──1──► Firebase  songs/data/<cat>/songs/<i>/<campo> + songs/updatedAt   (se ve YA en todos los móviles)
-    ──2──► admin del cantoral (NAS)  POST /api/app/song/save   → escribe el .cho, commit y push
-                 └─ si no contesta ─► cola  songs/ediciones     → el cantoral la aplica solo (workflow)
+app ──► admin del cantoral (NAS) ──► GitHub (commit + push) ──► GitHub Actions ──► Firebase ──► las apps
+        POST /api/app/*              repo mcmapp-cantoral       genera songs.json   songs/data    al volver a abrir
 ```
 
-1. **Firebase primero**: una urgencia se arregla al momento, con o sin el NAS.
-2. **El repo del cantoral es la fuente de verdad**: la edición se manda al
-   admin del cantoral desplegado en el NAS, que la aplica al `.cho` con la
-   misma lógica de siempre (`apply_edition`), hace commit y push. El CI del
-   cantoral regenera `songs.json`.
-3. **Si el NAS no contesta** (o aún no está configurado), la edición se queda
-   en `songs/ediciones` como hacía el panel secreto, y el workflow del cantoral
-   la recoge. No se pierde nada.
+- **La app no escribe en GitHub ni en Firebase.** Todo se manda al admin del
+  cantoral desplegado en el NAS, que escribe el `.cho`, hace el commit y el
+  push. El workflow del cantoral regenera `songs.json` y lo sube a Firebase.
+  Las apps lo bajan **la próxima vez que se abren** (un par de minutos después
+  del guardado).
+- **Quien edita ve su cambio al momento**, en todas las pantallas: al guardar
+  se cambia la caché del catálogo en su móvil (`patchCachedNode` de
+  `hooks/useFirebaseData.ts`). Y no hace falta cerrar la app: durante unos
+  minutos se pregunta a Firebase cada 20 s si ha cambiado `songs/updatedAt`
+  (`watchPublish`) y, en cuanto el cantoral publica, se baja el catálogo nuevo
+  solo. Los demás lo reciben la próxima vez que abran la app.
+- **Si el NAS no contesta**, el cambio se queda **en el móvil**
+  (`@song_editor_outbox`) y se envía solo al volver a abrir el editor o la app,
+  o con «Enviar ahora» en el aviso del editor. Lo que el cantoral rechaza de
+  verdad (no eres administrador, canción inexistente) no se encola: sale el
+  error.
+- Tras «Guardar» sale una pantalla que lo dice con esas palabras: **Enviado al
+  cantoral** (tú ya lo ves · se está publicando · los demás al abrir la app) o
+  **Guardado en este móvil** (el cantoral no contesta, se enviará solo).
+- **Sin secretos en la app**: al NAS se le manda el pase de Firebase de quien ha
+  entrado (`Authorization: Bearer`) y él comprueba `users/<uid>/isAdmin`. Se
+  descartó el middleware de Comunica (Vercel): no tiene el repo ni la IA.
 
-**Sin secretos en la app**: al NAS se le manda el pase de Firebase de quien ha
-entrado (`Authorization: Bearer`), y él comprueba `users/<uid>/isAdmin` leyendo
-ese nodo con el propio pase. Se descartó el middleware de Comunica (Vercel): no
-tiene un clon del repo ni la IA, y el admin del NAS ya tiene las dos cosas, la
-clave de despliegue y los conversores.
+## Qué se puede hacer
 
-**Canción nueva** solo va por el NAS (`/api/app/song/new`): hace falta el repo
-para darle número y fichero. Aparece en la app cuando el CI publica, en un par
-de minutos. De dónde sale la letra:
+| Acción | Dónde | Sin NAS |
+| ------ | ----- | ------- |
+| Editar letra, acordes y datos | Menú de la canción → Editar canción | Se queda en el móvil y se envía luego |
+| Enlaces y ficha: vídeo, más vídeos, audios, Spotify, Drive, otros enlaces, álbum, ritmo, tiempo litúrgico, fuente, etiquetas | Pestaña Datos | Igual |
+| Canción nueva (foto con IA, texto pegado o en blanco) | Cantoral → ⋯ → Nueva canción | La foto y el texto pegado necesitan el NAS; en blanco se queda en el móvil |
+| **Ordenar las canciones de una categoría** | Cantoral → ⋯ → Ordenar canciones (`SongReorderScreen`) | No: necesita el NAS |
 
-- **Foto** (cámara o galería, hasta cuatro páginas) → `/api/app/song/read`, la
-  misma IA del «✨ Añadir canción» del admin. Solo se ofrece si el NAS dice que
-  la tiene (`/api/app/status → ai`).
-- **Texto pegado** → `/api/app/song/convert` (acordes encima de la letra o
-  ChordPro).
-- **En blanco**.
+Ordenar renumera los ficheros de la categoría (`/api/app/category/reorder`),
+igual que arrastrar en el admin: las playlists guardadas que apunten al nombre
+viejo de un fichero dejan de encontrarlo, como ya pasa hoy desde el admin.
 
-Luego se repasa en el mismo editor y se guarda.
+Lo que solo se hace desde el admin del cantoral: mover de categoría,
+subcategoría, «también en», duración y borrar.
 
-## Puesta en marcha (una vez)
+## Deuda anotada
 
-1. En el NAS: actualizar el admin del cantoral (rama con `/api/app/*`), poner
-   `FIREBASE_URL` en `cantoral-admin.env` y relanzar
-   (`mcmapp-cantoral/deploy/ugreen-nas/README.md`, «Editor de canciones desde
-   la app»).
-2. En Firebase (consola): `songs/editor/url = "https://…ts.net"` (la URL del
-   Funnel). Sin este nodo la app funciona igual, pero todo va por la cola y no
-   hay canciones nuevas ni fotos. Para desarrollo vale
-   `EXPO_PUBLIC_CANTORAL_ADMIN_URL`.
-3. `users/<uid>/isAdmin = true` a quien deba editar.
-
-## Reglas de Firebase
-
-Hoy `songs/data` se escribe con la bandera `legacyPanelWrites`. El día que se
-cierre, hay que dejar escribir `songs/data` y `songs/updatedAt` a los
-administradores (`auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true`)
-o el paso 1 fallará y el editor no guardará. Va con la Integración D.
+El NAS es un punto único: con él apagado no hay canciones nuevas por foto ni
+reordenar, y lo editado espera en UN móvil (si se pierde ese móvil, se pierde).
+Hacerlo resistente (p. ej. que la cola viva en Firebase y la aplique el
+workflow del cantoral, o un segundo camino directo a GitHub) está en
+`docs/planes/BACKLOG.md` §2.D.
 
 ## Piezas
 
 | Archivo | Qué es |
 | ------- | ------ |
 | `utils/songEditor.ts` | Puro y con tests: línea ↔ letra + acordes, mover/añadir/quitar, partir en filas, cabecera ↔ cuerpo, «Sol7» → `G7`, y la edición (`…Old`/`…New`) |
-| `services/songEditorService.ts` | Los dos destinos del guardado y las llamadas al NAS |
-| `components/song-editor/` | `ChordGrid`, `ChordPickerSheet`, `NewSongStart` |
+| `services/songEditorService.ts` | Las llamadas al NAS y la cola en el móvil (`flushOutbox`) |
+| `components/song-editor/` | `ChordGrid`, `ChordPickerSheet`, `NewSongStart`, `LinksField`, `SavedPanel` |
+| `app/screens/SongReorderScreen.tsx` | Ordenar una categoría |
 | `mcmapp-cantoral/scripts/admin/server.py` | `/api/app/*` (contrato en su README) |
 
 ## Pendiente
+
+**Puesta en marcha: hecha (usuario, 2026-11-17).** NAS con `FIREBASE_URL`,
+`songs/editor/url` en Firebase y administradores con `isAdmin`. Si hay que
+rehacerla: `mcmapp-cantoral/deploy/ugreen-nas/README.md` («Editor de canciones
+desde la app»). Tras cada cambio del admin en `main`: `git pull` en el
+contenedor y relanzar.
 
 Sin probar en móvil ni contra el NAS real: el arrastre está comprobado en web.
 El editor de arreglos por pulsación larga sigue igual, ahora para los

@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { PressableFeedback } from 'heroui-native';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
@@ -24,11 +25,53 @@ import { useToast } from '@/contexts/AppToastContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import {
   convertPastedText,
+  fetchSongFromUrl,
+  isSongUrl,
   readSongPhotos,
   type EditorStatus,
 } from '@/services/songEditorService';
 import { h } from '@/utils/haptics';
 import { logger } from '@/utils/logger';
+
+/** Lo que dura el aviso de error: que dé tiempo a leer el porqué. */
+const ERROR_TOAST_MS = 7000;
+
+/** Lado largo máximo de la foto que se manda: de sobra para leer una hoja. */
+const PHOTO_MAX_SIDE = 2000;
+
+/**
+ * La foto, lista para mandarla: en el móvil se pasa SIEMPRE a JPEG y se
+ * reduce. Las del iPhone llegan en HEIC, que el cantoral no sabe abrir, y una
+ * foto entera pesa varios MB que hay que subir por el móvil.
+ */
+async function toUpload(a: ImagePicker.ImagePickerAsset, i: number) {
+  const name = `foto-${i + 1}.jpg`;
+  if (Platform.OS === 'web') {
+    return {
+      uri: a.uri,
+      name: a.fileName ?? name,
+      type: a.mimeType ?? 'image/jpeg',
+      file: a.file as Blob | undefined,
+    };
+  }
+  const long = Math.max(a.width || 0, a.height || 0);
+  const resize =
+    long > PHOTO_MAX_SIDE
+      ? [
+          {
+            resize:
+              (a.width || 0) >= (a.height || 0)
+                ? { width: PHOTO_MAX_SIDE }
+                : { height: PHOTO_MAX_SIDE },
+          },
+        ]
+      : [];
+  const out = await ImageManipulator.manipulateAsync(a.uri, resize, {
+    compress: 0.8,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+  return { uri: out.uri, name, type: 'image/jpeg' };
+}
 
 const MONO = Platform.select({
   ios: 'Menlo',
@@ -47,14 +90,18 @@ export default function NewSongStart({
   const theme = themeColors(isDark);
   const { toast } = useToast();
   const [busy, setBusy] = useState<string | null>(null);
-  const [pasting, setPasting] = useState(false);
+  const [pasting, setPasting] = useState<false | 'text' | 'url'>(false);
   const [text, setText] = useState('');
 
-  const fail = (e: unknown) =>
+  const fail = (e: unknown) => {
+    logger.warn('song editor: foto/enlace', e);
     toast.show({
       variant: 'danger',
       label: e instanceof Error ? e.message : 'No ha salido bien',
+      // Que dé tiempo a leer el porqué.
+      duration: ERROR_TOAST_MS,
     });
+  };
 
   const fromPhoto = async (camera: boolean) => {
     try {
@@ -72,15 +119,9 @@ export default function NewSongStart({
         ? await ImagePicker.launchCameraAsync(opts)
         : await ImagePicker.launchImageLibraryAsync(opts);
       if (res.canceled || !res.assets.length) return;
-      setBusy('Leyendo la foto…');
+      setBusy('Leyendo la foto con la IA… (puede tardar un minuto)');
       const songs = await readSongPhotos(
-        res.assets.map((a, i) => ({
-          uri: a.uri,
-          name: a.fileName ?? `foto-${i + 1}.jpg`,
-          type: a.mimeType ?? 'image/jpeg',
-          file:
-            Platform.OS === 'web' ? (a.file as Blob | undefined) : undefined,
-        })),
+        await Promise.all(res.assets.map((a, i) => toUpload(a, i))),
       );
       const song = songs[0];
       if (!song?.cho)
@@ -97,6 +138,20 @@ export default function NewSongStart({
   };
 
   const fromText = async () => {
+    // Un enlace (doceacordes y compañía): lo trae el cantoral.
+    if (isSongUrl(text)) {
+      try {
+        setBusy('Trayendo la canción…');
+        const song = await fetchSongFromUrl(text.trim());
+        if (!song.cho) throw new Error('No he encontrado la canción');
+        onReady(song.title, song.cho, song.category);
+      } catch (e) {
+        fail(e);
+      } finally {
+        setBusy(null);
+      }
+      return;
+    }
     try {
       setBusy('Convirtiendo…');
       const song = await convertPastedText(text);
@@ -131,10 +186,16 @@ export default function NewSongStart({
         <TextInput
           value={text}
           onChangeText={setText}
-          multiline
+          multiline={pasting !== 'url'}
           autoFocus
           autoCorrect={false}
-          placeholder="Pega aquí la letra, con los acordes encima o en ChordPro"
+          placeholder={
+            pasting === 'url'
+              ? 'https://doceacordes.es/cancion/972'
+              : 'Pega aquí la letra (con los acordes encima o en ChordPro) o un enlace'
+          }
+          autoCapitalize={pasting === 'url' ? 'none' : 'sentences'}
+          keyboardType={pasting === 'url' ? 'url' : 'default'}
           placeholderTextColor={theme.textMuted}
           style={[
             styles.textArea,
@@ -153,32 +214,43 @@ export default function NewSongStart({
     );
   }
 
+  // Las fotos salen siempre: si no se pueden usar ahora, dice por qué.
+  const photoBlock =
+    status === null
+      ? 'Necesita el cantoral conectado (ahora no contesta)'
+      : !status.ai
+        ? 'El cantoral no tiene la IA activada'
+        : null;
   const options = [
-    ...(status?.ai
+    ...(Platform.OS !== 'web'
       ? [
-          ...(Platform.OS !== 'web'
-            ? [
-                {
-                  icon: 'photo-camera' as const,
-                  title: 'Hacer una foto',
-                  sub: 'De un cancionero o una hoja. Luego la repasas.',
-                  onPress: () => void fromPhoto(true),
-                },
-              ]
-            : []),
           {
-            icon: 'photo-library' as const,
-            title: 'Elegir fotos',
-            sub: 'Hasta cuatro páginas seguidas.',
-            onPress: () => void fromPhoto(false),
+            icon: 'photo-camera' as const,
+            title: 'Hacer una foto',
+            sub: photoBlock ?? 'De un cancionero o una hoja. Luego la repasas.',
+            disabled: !!photoBlock,
+            onPress: () => void fromPhoto(true),
           },
         ]
       : []),
     {
+      icon: 'photo-library' as const,
+      title: Platform.OS === 'web' ? 'Subir fotos' : 'Elegir fotos',
+      sub: photoBlock ?? 'Hasta cuatro páginas seguidas.',
+      disabled: !!photoBlock,
+      onPress: () => void fromPhoto(false),
+    },
+    {
       icon: 'content-paste' as const,
       title: 'Pegar el texto',
       sub: 'Con los acordes encima de la letra o en ChordPro.',
-      onPress: () => setPasting(true),
+      onPress: () => setPasting('text'),
+    },
+    {
+      icon: 'link' as const,
+      title: 'Desde un enlace',
+      sub: 'Doceacordes se convierte tal cual, sin IA.',
+      onPress: () => setPasting('url'),
     },
     {
       icon: 'edit-note' as const,
@@ -207,14 +279,17 @@ export default function NewSongStart({
               h.tap();
               o.onPress();
             }}
+            isDisabled={'disabled' in o && !!o.disabled}
             style={[
               styles.option,
+              'disabled' in o && o.disabled && styles.optionOff,
               i > 0 && {
                 borderTopWidth: StyleSheet.hairlineWidth,
                 borderTopColor: theme.separator,
               },
             ]}
             accessibilityRole="button"
+            accessibilityState={{ disabled: 'disabled' in o && !!o.disabled }}
           >
             <MaterialIcons name={o.icon} size={24} color={theme.link} />
             <View style={styles.flex}>
@@ -264,6 +339,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     minHeight: 64,
   },
+  optionOff: { opacity: 0.45 },
   optionTitle: { ...typography.title },
   optionSub: { ...typography.caption, marginTop: 2 },
 });

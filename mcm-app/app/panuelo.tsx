@@ -124,19 +124,15 @@ function PanueloScreen() {
   const t = themeColors(isDark);
   const insets = useSafeAreaInsets();
   const { isWide } = useResponsiveLayout();
-  // En iOS la cabecera puede ser translúcida y la pantalla empieza DEBAJO de
-  // ella (y del notch): los botones de arriba quedaban tapados. Se mide dónde
-  // empieza de verdad la pantalla y se baja solo lo que la cabecera tape; con
-  // una cabecera opaca (Android, web) no se añade nada.
+  // En iOS la cabecera es transparente (`headerTransparent` en `_layout.tsx`):
+  // la pantalla empieza SIEMPRE debajo de ella, en y = 0, y aquí se reserva su
+  // alto. Antes se medía con `measureInWindow` al maquetar, y la medida se
+  // quedaba vieja: al cerrar el tutorial la cabecera volvía, la pantalla no se
+  // re-maquetaba y los botones de arriba quedaban tapados. Es el mismo patrón
+  // que Fotos y la lista de canciones seleccionadas. En Android y web la
+  // cabecera es opaca y no hay nada que reservar.
   const headerHeight = useHeaderHeight();
-  const rootRef = useRef<React.ComponentRef<typeof View>>(null);
-  const [underHeader, setUnderHeader] = useState(0);
-  const measureTop = useCallback(() => {
-    rootRef.current?.measureInWindow((_x, y) => {
-      if (!Number.isFinite(y)) return;
-      setUnderHeader(Math.max(0, Math.round(headerHeight - y)));
-    });
-  }, [headerHeight]);
+  const underHeader = Platform.OS === 'ios' ? headerHeight : 0;
   const large = useLargeText();
   const { height: windowHeight } = useWindowDimensions();
   const params = useLocalSearchParams<{
@@ -825,8 +821,6 @@ function PanueloScreen() {
 
   return (
     <View
-      ref={rootRef}
-      onLayout={measureTop}
       style={[
         styles.root,
         isWide && styles.rootWide,

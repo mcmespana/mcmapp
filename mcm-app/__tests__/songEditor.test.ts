@@ -60,6 +60,16 @@ describe('songEditor · líneas', () => {
   });
 });
 
+describe('songEditor · título', () => {
+  it('quita el número que pone el generador', () => {
+    const { stripSongNumber } = jest.requireActual('@/utils/songUtils');
+    expect(stripSongNumber('03. Parenostre')).toBe('Parenostre');
+    expect(stripSongNumber('Parenostre')).toBe('Parenostre');
+    expect(stripSongNumber('3 . Señor')).toBe('Señor');
+    expect(stripSongNumber('1999 ya')).toBe('1999 ya');
+  });
+});
+
 describe('songEditor · acordes', () => {
   it('lo que se teclea pasa a cifrado inglés', () => {
     expect(chordToEnglish('Sol7')).toBe('G7');
@@ -107,6 +117,10 @@ describe('songEditor · cabecera y edición', () => {
       videoEmbed: '',
       youtubeLinks: [],
       audioLinks: [],
+      spotifyLinks: [],
+      driveLinks: [],
+      otherLinks: [],
+      tags: [],
     };
     expect(buildEdition(base, base).changes).toEqual({});
     const out = buildEdition(base, {
@@ -121,5 +135,38 @@ describe('songEditor · cabecera y edición', () => {
       audioLinksNew: [{ label: 'x', url: 'https://a' }],
     });
     expect(Object.keys(out.fields)).toEqual(['key', 'audioLinks']);
+    expect(
+      buildEdition(base, { ...base, tags: ['Adviento', 'misa joven'] }).changes,
+    ).toEqual({ tagsOld: [], tagsNew: ['adviento', 'misa-joven'] });
+  });
+});
+
+describe('songEditor · catálogo en el móvil', () => {
+  const { applyEditToCatalog } = jest.requireActual('@/utils/songEditor');
+  const data = {
+    padrenuestro: {
+      categoryTitle: 'G',
+      songs: [
+        { filename: '03.parenostre.cho', title: '03. Parenostre', key: '' },
+      ],
+    },
+  };
+  it('cambia la canción y conserva el número del título', () => {
+    const out = applyEditToCatalog(data, 'padrenuestro', '03.parenostre.cho', {
+      title: 'Pare nostre',
+      key: 'G',
+    });
+    expect(out.padrenuestro.songs[0]).toEqual({
+      filename: '03.parenostre.cho',
+      title: '03. Pare nostre',
+      key: 'G',
+    });
+    expect(data.padrenuestro.songs[0].title).toBe('03. Parenostre');
+  });
+  it('si no está, no toca nada', () => {
+    expect(
+      applyEditToCatalog(data, 'padrenuestro', 'x.cho', {}),
+    ).toBeUndefined();
+    expect(applyEditToCatalog(data, 'otra', 'x.cho', {})).toBeUndefined();
   });
 });

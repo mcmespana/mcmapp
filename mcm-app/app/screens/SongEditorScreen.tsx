@@ -24,7 +24,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
@@ -32,8 +31,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableFeedback } from 'heroui-native';
 import SongDisplay from '@/components/SongDisplay';
 import ChordGrid, { type ChordRef } from '@/components/song-editor/ChordGrid';
+import ChordProTextEditor, {
+  ChordProHelpers,
+} from '@/components/song-editor/ChordProTextEditor';
 import ChordPickerSheet from '@/components/song-editor/ChordPickerSheet';
+import LinksField from '@/components/song-editor/LinksField';
 import NewSongStart from '@/components/song-editor/NewSongStart';
+import SavedPanel, {
+  OutboxNotice,
+  useOutboxCount,
+} from '@/components/song-editor/SavedPanel';
 import AppTextField from '@/components/ui/AppTextField';
 import EmptyState from '@/components/ui/EmptyState';
 import SegmentedControl from '@/components/ui/SegmentedControl';
@@ -55,6 +62,7 @@ import {
   fetchEditorStatus,
   saveSongEdition,
   type EditorStatus,
+  type SaveResult,
 } from '@/services/songEditorService';
 import { cantoralHeaderTint } from '@/utils/cantoralHeader';
 import { convertChord } from '@/utils/chordNotation';
@@ -69,6 +77,7 @@ import {
   cleanLinks,
   composeSongContent,
   moveChord,
+  normalizeTags,
   parseEditorLine,
   removeChord,
   renameChord,
@@ -77,7 +86,8 @@ import {
   type MediaLink,
   type SongSnapshot,
 } from '@/utils/songEditor';
-import { cleanSongTitle } from '@/utils/songUtils';
+import { lintChordPro } from '@/utils/chordProLint';
+import { cleanSongTitle, stripSongNumber } from '@/utils/songUtils';
 import { toYouTubeEmbedUrl } from '@/utils/youtube';
 
 type Tab = 'chords' | 'text' | 'data' | 'preview';
@@ -87,12 +97,6 @@ const TABS = [
   { value: 'data' as const, label: 'Datos' },
   { value: 'preview' as const, label: 'Vista' },
 ];
-
-const MONO = Platform.select({
-  ios: 'Menlo',
-  android: 'monospace',
-  default: 'ui-monospace, Menlo, Consolas, monospace',
-});
 
 const EMPTY: SongSnapshot = {
   title: '',
@@ -108,11 +112,22 @@ const EMPTY: SongSnapshot = {
   videoEmbed: '',
   youtubeLinks: [],
   audioLinks: [],
+  spotifyLinks: [],
+  driveLinks: [],
+  otherLinks: [],
+  tags: [],
 };
 
 function snapshotOf(song: SongEntry): SongSnapshot {
+  const raw = song as SongEntry & {
+    spotifyLinks?: MediaLink[];
+    driveLinks?: MediaLink[];
+    otherLinks?: MediaLink[];
+  };
   return {
-    title: song.title ?? '',
+    // En el catálogo el título lleva delante el número del fichero («03.
+    // Parenostre»): lo pone el generador del cantoral, no es parte del título.
+    title: stripSongNumber(song.title ?? ''),
     author: song.author ?? '',
     key: song.key ?? '',
     capo: Number(song.capo) || 0,
@@ -125,6 +140,10 @@ function snapshotOf(song: SongEntry): SongSnapshot {
     videoEmbed: song.videoEmbed ?? '',
     youtubeLinks: cleanLinks(song.youtubeLinks),
     audioLinks: cleanLinks(song.audioLinks),
+    spotifyLinks: cleanLinks(raw.spotifyLinks),
+    driveLinks: cleanLinks(raw.driveLinks),
+    otherLinks: cleanLinks(raw.otherLinks),
+    tags: normalizeTags(song.tags),
   };
 }
 
@@ -174,6 +193,9 @@ export default function SongEditorScreen() {
   >(null);
   const [status, setStatus] = useState<EditorStatus | null>(null);
   const [category, setCategory] = useState<string | null>(null);
+  const [tagsText, setTagsText] = useState<string | null>(null);
+  const [done, setDone] = useState<SaveResult | null>(null);
+  const pending = useOutboxCount();
 
   useEffect(() => {
     if (!admin.isAdmin) return;
@@ -214,6 +236,7 @@ export default function SongEditorScreen() {
     : !!edition && Object.keys(edition.changes).length > 0;
 
   const used = useMemo(() => chordsUsed(body), [body]);
+  const lintCount = useMemo(() => lintChordPro(body).length, [body]);
 
   const save = async () => {
     if (!current || saving) return;
@@ -224,13 +247,14 @@ export default function SongEditorScreen() {
     }
     setSaving(true);
     try {
+      let res: SaveResult;
       if (isNew) {
         if (!category) {
           setTab('data');
           toast.show({ variant: 'danger', label: 'Elige la categoría' });
           return;
         }
-        const res = await createSong({
+        res = await createSong({
           category,
           title: current.title,
           artist: current.author,
@@ -238,31 +262,18 @@ export default function SongEditorScreen() {
           capo: current.capo,
           content: current.content,
         });
-        h.formSuccess();
-        toast.show({
-          variant: 'success',
-          label: res.pushed
-            ? 'Canción creada. Aparecerá en el cantoral en un par de minutos'
-            : 'Canción guardada en el cantoral. Falta subirla desde el admin',
-        });
       } else {
         if (!edition || !params.filename || !params.firebaseCategory) return;
-        const res = await saveSongEdition({
+        res = await saveSongEdition({
           filename: params.filename,
           category: params.firebaseCategory,
+          title: current.title,
           changes: edition.changes,
           fields: edition.fields,
         });
-        h.formSuccess();
-        toast.show({
-          variant: 'success',
-          label:
-            res.where === 'repo'
-              ? 'Guardado en el cantoral'
-              : 'Guardado. Llegará al cantoral en unas horas',
-        });
       }
-      router.back();
+      h.formSuccess();
+      setDone(res);
     } catch (e) {
       logger.error('song editor: save', e);
       toast.show({
@@ -278,7 +289,7 @@ export default function SongEditorScreen() {
   };
 
   const close = async () => {
-    if (dirty) {
+    if (dirty && !done) {
       const ok = await confirmAsync({
         title: '¿Salir sin guardar?',
         message: 'Se perderán los cambios de esta canción.',
@@ -306,7 +317,7 @@ export default function SongEditorScreen() {
         </PressableFeedback>
       ),
       headerRight: () =>
-        saving ? (
+        done ? null : saving ? (
           <ActivityIndicator color={tint} />
         ) : (
           <PressableFeedback
@@ -323,7 +334,17 @@ export default function SongEditorScreen() {
     });
     // `save` y `close` leen el estado de este render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigation, isDark, dirty, saving, isNew, current, edition, category]);
+  }, [
+    navigation,
+    isDark,
+    dirty,
+    saving,
+    isNew,
+    current,
+    edition,
+    category,
+    done,
+  ]);
 
   // ── Acorde seleccionado ──
   const lines = useMemo(() => body.split('\n'), [body]);
@@ -381,6 +402,11 @@ export default function SongEditorScreen() {
         title="Solo para quien cuida el cantoral"
         subtitle="Para editar canciones hace falta una cuenta de administrador."
       />
+    );
+  }
+  if (done) {
+    return (
+      <SavedPanel result={done} isNew={isNew} onClose={() => router.back()} />
     );
   }
   if (!draft) {
@@ -441,7 +467,15 @@ export default function SongEditorScreen() {
     >
       <View style={styles.tabs}>
         <SegmentedControl
-          options={TABS}
+          options={TABS.map((t) =>
+            t.value === 'text' && lintCount > 0
+              ? {
+                  ...t,
+                  label: `Texto · ${lintCount}`,
+                  icon: 'error-outline' as const,
+                }
+              : t,
+          )}
           value={tab}
           onChange={(t) => {
             setSelected(null);
@@ -451,6 +485,8 @@ export default function SongEditorScreen() {
           accessibilityLabel="Qué editar"
         />
       </View>
+
+      <OutboxNotice count={pending} />
 
       {tab === 'preview' ? (
         <SongDisplay
@@ -499,43 +535,12 @@ export default function SongEditorScreen() {
 
           {tab === 'text' && (
             <>
-              <View style={styles.helpers}>
-                <Helper
-                  label="Estribillo"
-                  onPress={() =>
-                    setBody((b) => `${b.trimEnd()}\n\n{soc}\n\n{eoc}\n`)
-                  }
-                />
-                <Helper
-                  label="Repite estribillo"
-                  onPress={() => setBody((b) => `${b.trimEnd()}\n\n{chorus}\n`)}
-                />
-                <Helper
-                  label="Nota"
-                  onPress={() =>
-                    setBody((b) => `${b.trimEnd()}\n{comment: }\n`)
-                  }
-                />
-              </View>
-              <TextInput
-                value={body}
-                onChangeText={setBody}
-                multiline
-                autoCapitalize="sentences"
-                autoCorrect={false}
-                spellCheck={false}
-                scrollEnabled={false}
-                placeholder={'[Do]Letra con los a[Sol]cordes entre corchetes'}
-                placeholderTextColor={theme.textMuted}
-                style={[
-                  styles.textArea,
-                  {
-                    color: theme.text,
-                    backgroundColor: theme.backgroundSunken,
-                  },
-                ]}
-                accessibilityLabel="Letra y acordes en ChordPro"
+              <ChordProHelpers
+                onInsert={(snippet) =>
+                  setBody((b) => `${b.trimEnd()}${snippet}`)
+                }
               />
+              <ChordProTextEditor value={body} onChange={setBody} />
             </>
           )}
 
@@ -686,16 +691,44 @@ export default function SongEditorScreen() {
                       accentColor={theme.link}
                     />
                   </Field>
-                  <Links
+                  <LinksField
                     title="Más vídeos"
                     links={draft.youtubeLinks}
                     onChange={(v) => set('youtubeLinks', v)}
                   />
-                  <Links
+                  <LinksField
                     title="Audios"
                     links={draft.audioLinks}
                     onChange={(v) => set('audioLinks', v)}
                   />
+                  <LinksField
+                    title="Spotify"
+                    links={draft.spotifyLinks}
+                    onChange={(v) => set('spotifyLinks', v)}
+                  />
+                  <LinksField
+                    title="Partituras y documentos (Drive)"
+                    links={draft.driveLinks}
+                    onChange={(v) => set('driveLinks', v)}
+                  />
+                  <LinksField
+                    title="Otros enlaces"
+                    links={draft.otherLinks}
+                    onChange={(v) => set('otherLinks', v)}
+                  />
+                  <Field label="Etiquetas (separadas por comas)">
+                    <AppTextField
+                      value={tagsText ?? draft.tags.join(', ')}
+                      onChangeText={(v) => {
+                        setTagsText(v);
+                        set('tags', normalizeTags(v));
+                      }}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      placeholder="adviento, misa-joven"
+                      accentColor={theme.link}
+                    />
+                  </Field>
                 </>
               )}
             </View>
@@ -841,82 +874,6 @@ function StepBtn({
   );
 }
 
-function Helper({ label, onPress }: { label: string; onPress: () => void }) {
-  const theme = themeColors(useColorScheme() === 'dark');
-  return (
-    <PressableFeedback
-      onPress={() => {
-        h.tap();
-        onPress();
-      }}
-      style={[styles.helper, { backgroundColor: theme.backgroundSunken }]}
-      accessibilityRole="button"
-      accessibilityLabel={`Añadir ${label}`}
-    >
-      <MaterialIcons name="add" size={16} color={theme.link} />
-      <Text style={[styles.helperText, { color: theme.link }]}>{label}</Text>
-    </PressableFeedback>
-  );
-}
-
-function Links({
-  title,
-  links,
-  onChange,
-}: {
-  title: string;
-  links: MediaLink[];
-  onChange: (links: MediaLink[]) => void;
-}) {
-  const theme = themeColors(useColorScheme() === 'dark');
-  const edit = (i: number, patch: Partial<MediaLink>) =>
-    onChange(links.map((l, j) => (j === i ? { ...l, ...patch } : l)));
-  return (
-    <View style={styles.field}>
-      <Text style={[styles.label, { color: theme.textSecondary }]}>
-        {title}
-      </Text>
-      {links.map((l, i) => (
-        <View key={i} style={styles.linkRow}>
-          <View style={styles.linkFields}>
-            <AppTextField
-              value={l.label}
-              onChangeText={(v) => edit(i, { label: v })}
-              placeholder="Nombre"
-              accentColor={theme.link}
-            />
-            <AppTextField
-              value={l.url}
-              onChangeText={(v) => edit(i, { url: v })}
-              placeholder="https://…"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              accentColor={theme.link}
-            />
-          </View>
-          <PressableFeedback
-            onPress={() => onChange(links.filter((_, j) => j !== i))}
-            style={styles.barBtn}
-            accessibilityRole="button"
-            accessibilityLabel={`Quitar ${l.label || 'enlace'}`}
-          >
-            <MaterialIcons
-              name="remove-circle-outline"
-              size={22}
-              color={SwipeColors.remove}
-            />
-          </PressableFeedback>
-        </View>
-      ))}
-      <Helper
-        label="Enlace"
-        onPress={() => onChange([...links, { label: '', url: '' }])}
-      />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: {
@@ -935,26 +892,6 @@ const styles = StyleSheet.create({
   },
   content: { padding: spacing.md, gap: spacing.md },
   hint: { ...typography.caption },
-  helpers: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  helper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    minHeight: 36,
-    paddingHorizontal: spacing.md - spacing.xs,
-    borderRadius: radii.xl,
-    alignSelf: 'flex-start',
-  },
-  helperText: { ...typography.caption, fontWeight: '600' },
-  textArea: {
-    fontFamily: MONO,
-    fontSize: 15,
-    lineHeight: 24,
-    minHeight: 320,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    textAlignVertical: 'top',
-  },
   form: { gap: spacing.md },
   field: { gap: spacing.xs },
   label: { ...typography.caption, fontWeight: '600' },
@@ -982,8 +919,6 @@ const styles = StyleSheet.create({
   },
   catText: { ...typography.caption, fontWeight: '600' },
   section: { ...typography.sectionLabel, marginTop: spacing.md },
-  linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  linkFields: { flex: 1, gap: spacing.xs },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',

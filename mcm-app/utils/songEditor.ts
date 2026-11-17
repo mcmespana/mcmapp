@@ -280,6 +280,13 @@ export interface SongSnapshot extends SongFields {
   videoEmbed: string;
   youtubeLinks: MediaLink[];
   audioLinks: MediaLink[];
+  spotifyLinks: MediaLink[];
+  /** Documentos de Drive (partituras, PDF). */
+  driveLinks: MediaLink[];
+  /** Cualquier otro enlace (una web con la partitura…). */
+  otherLinks: MediaLink[];
+  /** Etiquetas, en slug. */
+  tags: string[];
 }
 
 export const cleanLinks = (links: MediaLink[] | undefined): MediaLink[] =>
@@ -300,7 +307,13 @@ const SCALAR_FIELDS = [
   'liturgicalTime',
   'videoEmbed',
 ] as const;
-const LINK_FIELDS = ['youtubeLinks', 'audioLinks'] as const;
+const LINK_FIELDS = [
+  'youtubeLinks',
+  'audioLinks',
+  'spotifyLinks',
+  'driveLinks',
+  'otherLinks',
+] as const;
 
 export type EditableField =
   (typeof SCALAR_FIELDS)[number] | (typeof LINK_FIELDS)[number];
@@ -335,5 +348,60 @@ export function buildEdition(
       fields[f] = b;
     }
   }
+  const tagsA = normalizeTags(before.tags);
+  const tagsB = normalizeTags(after.tags);
+  if (tagsA.join(',') !== tagsB.join(',')) {
+    changes.tagsOld = tagsA;
+    changes.tagsNew = tagsB;
+    fields.tags = tagsB;
+  }
   return { changes, fields };
+}
+
+/** «Adviento, Misa joven» → ['adviento', 'misa-joven'] (sin repetir). */
+export function normalizeTags(input: string | string[] | undefined): string[] {
+  const parts = Array.isArray(input) ? input : (input ?? '').split(',');
+  const out: string[] = [];
+  for (const part of parts) {
+    const slug = String(part)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    if (slug && !out.includes(slug)) out.push(slug);
+  }
+  return out;
+}
+
+/**
+ * El catálogo (`songs/data`) con una canción ya editada: lo que se pinta en
+ * este móvil nada más guardar, mientras el cantoral publica la versión de
+ * verdad. El título conserva el número de orden que lleva en el catálogo.
+ * Devuelve `undefined` si la canción no está (nada que tocar).
+ */
+export function applyEditToCatalog<
+  T extends Record<string, { songs?: Record<string, unknown>[] } | undefined>,
+>(
+  data: T,
+  category: string,
+  filename: string,
+  fields: Partial<SongSnapshot>,
+): T | undefined {
+  const cat = data?.[category];
+  const songs = Array.isArray(cat?.songs) ? cat.songs : null;
+  if (!songs) return undefined;
+  const index = songs.findIndex((s) => s?.filename === filename);
+  if (index < 0) return undefined;
+  const prev = songs[index];
+  const next: Record<string, unknown> = { ...prev, ...fields };
+  if (fields.title !== undefined) {
+    const prefix = String(prev.title ?? '').match(/^\s*\d+\s*\.\s*/)?.[0];
+    next.title = `${prefix ?? ''}${fields.title}`;
+  }
+  if (fields.author !== undefined) next.author = fields.author;
+  const nextSongs = songs.slice();
+  nextSongs[index] = next;
+  return { ...data, [category]: { ...cat, songs: nextSongs } };
 }

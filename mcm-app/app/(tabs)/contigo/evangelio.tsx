@@ -284,6 +284,21 @@ export default function EvangelioScreen() {
                 />
               </TouchableOpacity>
               <TouchableOpacity
+                onPress={() => {
+                  setShareIndex(0);
+                  setShareVisible(true);
+                }}
+                disabled={!readings?.evangelio?.texto}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={[
+                  styles.nativeHeaderBtn,
+                  !readings?.evangelio?.texto && { opacity: 0.35 },
+                ]}
+                accessibilityLabel="Compartir como imagen"
+              >
+                <MaterialIcons name="ios-share" size={21} color={theme.text} />
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={toggleBookmark}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={styles.nativeHeaderBtn}
