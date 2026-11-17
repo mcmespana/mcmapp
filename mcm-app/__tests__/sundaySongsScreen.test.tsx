@@ -40,8 +40,15 @@ const mockToastShow = jest.fn();
 const mockOpenCantoral = jest.fn();
 const mockPrev = [{ filename: 'vieja', transpose: 0, order: 0, addedAt: 1 }];
 
+const mockDismissTo = jest.fn();
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ fecha: '2026-11-22' }),
+  router: { dismissTo: (...a: unknown[]) => mockDismissTo(...a) },
+}));
+// Sin lecturas: la misa sale solo por tiempo litúrgico (las lecturas tienen
+// sus propios tests en sundaySongs.test.ts).
+jest.mock('@/hooks/useDailyReadings', () => ({
+  useDailyReadings: () => ({ readings: null, isLoading: false, error: null }),
 }));
 jest.mock('@/hooks/useFirebaseData', () => ({
   useFirebaseData: (path: string) => ({
@@ -132,7 +139,10 @@ it('«Pasar a Tu selección» reemplaza la selección en orden de misa, con Desh
   expect(mockToastShow).toHaveBeenCalledWith(
     expect.objectContaining({ actionLabel: 'Deshacer', duration: 10_000 }),
   );
-  expect(mockOpenCantoral).toHaveBeenCalledWith('SelectedSongs');
+  // Vuelve a la Tu selección de debajo, sin apilar otra.
+  expect(mockDismissTo).toHaveBeenCalledWith(
+    expect.objectContaining({ pathname: '/cancionero/seleccion' }),
+  );
 
   // Deshacer devuelve la selección anterior.
   const { onActionPress } = mockToastShow.mock.calls[0][0];

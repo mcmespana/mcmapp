@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 19:19 — Cantos para el domingo: dentro de Tu selección y según las lecturas
+
+- **Dónde**: sale del cantoral (se quita la fila «Cantos para el domingo» y `SundaySongsRow`) y pasa a **Tu selección vacía** — lo primero al preparar una misa es vaciarla —. Tarjeta nueva «Este domingo» (`components/playlist/SundayPlanCard.tsx`): fecha, fiesta o tiempo con su color y ciclo, **Leer las lecturas** (la hoja de lecturas, solo lecturas y de ESE domingo) y los cantos propuestos momento a momento con su porqué. «Usar estos cantos» llena la selección (con Deshacer); tocar un canto o «Cambiar alguno u otro domingo» abre la pantalla completa de siempre. Con la lista llena, chip «Cantos del domingo» junto a «Lecturas del domingo». La fila de Tu selección en el cantoral dice «Vacía · cantos para este domingo». La tarjeta de Inicio (viernes a domingo) no cambia.
+- **Cómo elige** (`utils/sundaySongs.ts`): ya no es solo «una de la categoría por rotación». Dentro de cada tramo litúrgico (fiesta > tiempo > neutra, igual que antes), van primero las canciones con **palabras en común con las lecturas** de ese domingo (`readingsAffinity`, en `utils/sundayMatch.ts`: sin IA, palabras raras del cantoral pesan más, evangelio y salmo más que las lecturas). El **salmo** se empareja con el salmo del día. La razón sale en la fila («Lecturas: pastor · ovejas»). Sin lecturas (sin red ni caché) se comporta como antes.
+- `useSundaySongs` lee las lecturas con `useDailyReadings` (su caché de siempre). «Pasar a Tu selección» desde la pantalla completa vuelve a la Tu selección de debajo (`router.dismissTo`) en vez de apilar otra.
+- Sin paquetes nuevos. Tests: `sundaySongs.test.ts` (lecturas), `sundayPlanCard.test.tsx` (nuevo).
+
 ## 2026-11-17 09:26 — Pañuelo: el pin de Carismochito
 
 - Pieza nueva en el catálogo (`firebase-seed/panuelo.json`): **Carismochito**, el pin de esmalte de la mascota, troquelado con su silueta (talla mediana, `size: 1.5`, especial e intercambiable, `grant: all` como el resto en pruebas).

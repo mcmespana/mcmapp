@@ -36,6 +36,10 @@ interface Props {
   isSelected: (filename: string) => boolean;
   onAdd: (filename: string) => void;
   onRemove: (filename: string) => void;
+  /** Domingo a leer (`YYYY-MM-DD`); por defecto, el próximo. */
+  date?: string;
+  /** Sin la lista de cantos: solo las lecturas (desde «Este domingo»). */
+  readingsOnly?: boolean;
 }
 
 const MONTHS = [
@@ -66,10 +70,17 @@ export default function SundayReadingsSheet(props: Props) {
   );
 }
 
-function Content({ songsData, isSelected, onAdd, onRemove }: Props) {
+function Content({
+  songsData,
+  isSelected,
+  onAdd,
+  onRemove,
+  date: dateProp,
+  readingsOnly,
+}: Props) {
   const isDark = useColorScheme() === 'dark';
   const theme = themeColors(isDark);
-  const date = useMemo(() => nextSundayIso(), []);
+  const date = useMemo(() => dateProp ?? nextSundayIso(), [dateProp]);
   const { readings, isLoading } = useDailyReadings(date);
   const [open, setOpen] = useState<string | null>('evangelio');
 
@@ -101,7 +112,7 @@ function Content({ songsData, isSelected, onAdd, onRemove }: Props) {
   }, [songsData]);
 
   const matches = useMemo(() => {
-    if (!parts.length) return [];
+    if (!parts.length || readingsOnly) return [];
     const weight = (id: string) =>
       id === 'evangelio' ? 1.5 : id === 'salmo' ? 1.3 : 1;
     const found = matchSongs(
@@ -110,7 +121,7 @@ function Content({ songsData, isSelected, onAdd, onRemove }: Props) {
     );
     const byFile = new Map(songs.map((s) => [s.filename, s]));
     return found.map((m) => ({ ...m, song: byFile.get(m.filename)! }));
-  }, [parts, songs]);
+  }, [parts, songs, readingsOnly]);
 
   return (
     <ScrollView
@@ -190,7 +201,7 @@ function Content({ songsData, isSelected, onAdd, onRemove }: Props) {
         </View>
       )}
 
-      {parts.length > 0 && (
+      {parts.length > 0 && !readingsOnly && (
         <>
           <Text style={[styles.section, { color: theme.textSecondary }]}>
             Cantos con palabras en común

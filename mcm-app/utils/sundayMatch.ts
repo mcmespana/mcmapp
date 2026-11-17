@@ -64,21 +64,28 @@ export function keywords(text: string): Map<string, string> {
   return out;
 }
 
-export function matchSongs(
+/**
+ * Afinidad de CADA canción con las lecturas: filename → puntos y palabras en
+ * común. Solo entran las que comparten al menos dos palabras con peso (una
+ * sola es casi siempre casualidad). Base de `matchSongs` y de la misa que
+ * propone «Cantos para el domingo» (`utils/sundaySongs.ts`).
+ */
+export function readingsAffinity(
   sources: MatchSource[],
   songs: MatchSong[],
-  limit = 12,
-): SongMatch[] {
+): Map<string, SongMatch> {
+  const out = new Map<string, SongMatch>();
   // Palabras de las lecturas con su peso (el mayor de donde salgan).
   const wanted = new Map<string, { weight: number; shown: string }>();
   for (const src of sources) {
+    if (!src.text) continue;
     for (const [root, shown] of keywords(src.text)) {
       const prev = wanted.get(root);
       if (!prev || src.weight > prev.weight)
         wanted.set(root, { weight: src.weight, shown: prev?.shown ?? shown });
     }
   }
-  if (!wanted.size || !songs.length) return [];
+  if (!wanted.size || !songs.length) return out;
 
   const songWords = songs.map(
     (s) => new Set(keywords(`${s.title}\n${s.content}`).keys()),
@@ -90,7 +97,6 @@ export function matchSongs(
       if (set.has(root)) df.set(root, (df.get(root) ?? 0) + 1);
 
   const n = songs.length;
-  const out: SongMatch[] = [];
   songs.forEach((song, i) => {
     const hits: { shown: string; value: number }[] = [];
     for (const [root, w] of wanted) {
@@ -98,17 +104,26 @@ export function matchSongs(
       const idf = Math.log(1 + n / (df.get(root) ?? 1));
       hits.push({ shown: w.shown, value: idf * w.weight });
     }
-    // Una sola palabra en común es casi siempre casualidad.
     if (hits.length < 2) return;
     hits.sort((a, b) => b.value - a.value);
     const score = hits.reduce((sum, h) => sum + h.value, 0);
-    out.push({
+    out.set(song.filename, {
       filename: song.filename,
       score,
       words: hits.slice(0, 4).map((h) => h.shown),
     });
   });
-  return out.sort((a, b) => b.score - a.score).slice(0, limit);
+  return out;
+}
+
+export function matchSongs(
+  sources: MatchSource[],
+  songs: MatchSong[],
+  limit = 12,
+): SongMatch[] {
+  return [...readingsAffinity(sources, songs).values()]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
 }
 
 /** El próximo domingo (hoy, si es domingo), como `YYYY-MM-DD` local. */
