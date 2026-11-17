@@ -7,6 +7,8 @@ import {
   beatsUntil,
   clampBpm,
   isBeatsPerBar,
+  isKeepOnClose,
+  onSheetClose,
   tapTempo,
 } from '@/utils/metronome';
 
@@ -107,5 +109,22 @@ describe('metronome · marcar el tempo', () => {
   it('el tempo marcado respeta los topes', () => {
     expect(tapTempo([0], 50).bpm).toBe(MAX_BPM);
     expect(tapTempo([0], 1900).bpm).toBe(MIN_BPM);
+  });
+});
+
+describe('al cerrar la hoja sonando', () => {
+  it('parado no pregunta nada', () => {
+    expect(onSheetClose(false, 'ask')).toBe('nothing');
+    expect(onSheetClose(false, 'keep')).toBe('nothing');
+  });
+  it('sonando hace lo elegido: preguntar, seguir o parar', () => {
+    expect(onSheetClose(true, 'ask')).toBe('ask');
+    expect(onSheetClose(true, 'keep')).toBe('keep');
+    expect(onSheetClose(true, 'stop')).toBe('stop');
+  });
+  it('solo acepta las tres preferencias', () => {
+    expect(isKeepOnClose('keep')).toBe(true);
+    expect(isKeepOnClose('siempre')).toBe(false);
+    expect(isKeepOnClose(undefined)).toBe(false);
   });
 });
