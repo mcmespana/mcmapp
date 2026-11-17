@@ -54,8 +54,12 @@ app ──► admin del cantoral (NAS) ──► GitHub (commit + push) ──�
   push. El workflow del cantoral regenera `songs.json` y lo sube a Firebase.
   Las apps lo bajan **la próxima vez que se abren** (un par de minutos después
   del guardado).
-- **Quien edita ve su cambio al momento** en su móvil: la canción editada se
-  guarda encima de la del catálogo durante 48 h (`utils/songOverrides.ts`).
+- **Quien edita ve su cambio al momento**, en todas las pantallas: al guardar
+  se cambia la caché del catálogo en su móvil (`patchCachedNode` de
+  `hooks/useFirebaseData.ts`). Y no hace falta cerrar la app: durante unos
+  minutos se pregunta a Firebase cada 20 s si ha cambiado `songs/updatedAt`
+  (`watchPublish`) y, en cuanto el cantoral publica, se baja el catálogo nuevo
+  solo. Los demás lo reciben la próxima vez que abran la app.
 - **Si el NAS no contesta**, el cambio se queda **en el móvil**
   (`@song_editor_outbox`) y se envía solo al volver a abrir el editor o la app,
   o con «Enviar ahora» en el aviso del editor. Lo que el cantoral rechaza de
@@ -98,7 +102,6 @@ workflow del cantoral, o un segundo camino directo a GitHub) está en
 | ------- | ------ |
 | `utils/songEditor.ts` | Puro y con tests: línea ↔ letra + acordes, mover/añadir/quitar, partir en filas, cabecera ↔ cuerpo, «Sol7» → `G7`, y la edición (`…Old`/`…New`) |
 | `services/songEditorService.ts` | Las llamadas al NAS y la cola en el móvil (`flushOutbox`) |
-| `utils/songOverrides.ts` | Lo recién editado, visto ya en el móvil de quien edita |
 | `components/song-editor/` | `ChordGrid`, `ChordPickerSheet`, `NewSongStart`, `LinksField`, `SavedPanel` |
 | `app/screens/SongReorderScreen.tsx` | Ordenar una categoría |
 | `mcmapp-cantoral/scripts/admin/server.py` | `/api/app/*` (contrato en su README) |

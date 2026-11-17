@@ -41,13 +41,13 @@ export default function SavedPanel({
           : [
               {
                 icon: 'smartphone' as const,
-                text: 'En este móvil ya ves el cambio.',
+                text: 'En este móvil ya lo ves, en todas las pantallas.',
               },
             ]),
         {
           icon: 'cloud-done',
           text: result.pushed
-            ? 'El cantoral lo ha recibido y lo está publicando (un par de minutos).'
+            ? 'El cantoral lo está publicando. En un par de minutos tu app se pone al día sola, sin cerrarla.'
             : 'El cantoral lo ha guardado, pero aún no ha podido subirlo. Lo reintenta al próximo cambio.',
         },
         {

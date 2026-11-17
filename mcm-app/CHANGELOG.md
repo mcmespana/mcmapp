@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 22:20 — Editor: tu cambio se ve al momento y la app se pone al día sola
+
+- Al guardar, el cambio se aplica a la caché del catálogo del móvil y se ve ya en todas las pantallas (lista, canción, búsqueda), no solo en la canción. `patchCachedNode` y `revalidateNode` nuevos en `hooks/useFirebaseData.ts`, con aviso a todas las pantallas que pintan ese nodo.
+- Durante 6 minutos tras guardar, se mira cada 20 s si el cantoral ya ha publicado (`songs/updatedAt`) y se baja el catálogo nuevo: sin cerrar y abrir la app. También tras canción nueva y ordenar.
+- Fuera `utils/songOverrides.ts` (solo valía para la pantalla de la canción).
+
 ## 2026-11-17 21:55 — Editor: el título ya no se guarda con el número del fichero
 
 - El catálogo trae el título con el número delante («03. Parenostre», lo pone el generador del cantoral). El editor lo tomaba como título y al guardar acababa en el `.cho` («03. 03. …» en la app y la canción fuera de su sitio). Ahora el editor lo quita (`stripSongNumber`) y el admin del cantoral también, por si acaso.
