@@ -60,6 +60,16 @@ describe('songEditor · líneas', () => {
   });
 });
 
+describe('songEditor · título', () => {
+  it('quita el número que pone el generador', () => {
+    const { stripSongNumber } = jest.requireActual('@/utils/songUtils');
+    expect(stripSongNumber('03. Parenostre')).toBe('Parenostre');
+    expect(stripSongNumber('Parenostre')).toBe('Parenostre');
+    expect(stripSongNumber('3 . Señor')).toBe('Señor');
+    expect(stripSongNumber('1999 ya')).toBe('1999 ya');
+  });
+});
+
 describe('songEditor · acordes', () => {
   it('lo que se teclea pasa a cifrado inglés', () => {
     expect(chordToEnglish('Sol7')).toBe('G7');
