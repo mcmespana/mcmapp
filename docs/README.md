@@ -33,6 +33,12 @@ Cómo funciona cada sistema de la app, de principio a fin.
 | [CANTOS_DOMINGO.md](funcionalidades/CANTOS_DOMINGO.md)               | «Cantos para el domingo»: día litúrgico (domingo N, ciclo, fiestas), motor de sugerencia con reglas duras, pantalla del cantoral y lo recordado por fecha |
 | [RECORDATORIOS_CONTIGO.md](funcionalidades/RECORDATORIOS_CONTIGO.md) | Recordatorios de Contigo: qué se configura, dónde se editan los textos y cómo se programan los avisos locales                                               |
 
+## Comunicación y difusión
+
+| Documento | Qué cubre |
+| --- | --- |
+| [VIDEO_PRESENTACION.md](marketing/VIDEO_PRESENTACION.md) | Guion del Reel de presentación de la app (~60 s): bloques, ritmo, textos borrador, de dónde sale cada plano y qué no enseñar |
+
 ## Contratos de datos (App ↔ MCM Panel)
 
 Formatos acordados entre la app y el panel de administración (`mcmpanel`).
