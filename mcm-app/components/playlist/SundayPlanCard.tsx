@@ -32,7 +32,7 @@ import {
   targetSunday,
 } from '@/utils/liturgicalDay';
 import { cleanSongTitle } from '@/utils/songUtils';
-import { massToSelection } from '@/utils/sundaySongs';
+import { massToSelection, type SundayCandidate } from '@/utils/sundaySongs';
 
 /** Cuánto dura el «Deshacer» al pasar los cantos a Tu selección. */
 const UNDO_MS = 10_000;
@@ -40,8 +40,21 @@ const UNDO_MS = 10_000;
 const DOT = 10;
 /** Área táctil mínima (design.md §1). */
 const TOUCH = 44;
-/** Ancho de la columna del momento («Comunión»). */
-const MOMENT_COL = 92;
+
+/**
+ * Por qué sale, en una frase corta: las palabras en común con las lecturas
+ * mandan; si no hay, la fiesta o el tiempo (salvo el Ordinario, que lo dirían
+ * casi todas y no aporta).
+ */
+function whyLine(song: SundayCandidate): string | null {
+  if (song.readingWords.length > 0) {
+    return `Por las lecturas: ${song.readingWords.slice(0, 3).join(', ')}`;
+  }
+  const liturgical = song.reasons.filter(
+    (r) => !r.startsWith('Lecturas:') && r !== 'Tiempo Ordinario',
+  );
+  return liturgical.length > 0 ? liturgical.join(' · ') : null;
+}
 
 export default function SundayPlanCard({
   onOpenReadings,
@@ -187,46 +200,54 @@ export default function SundayPlanCard({
             >
               Cantos que encajan
             </Text>
-            {chosen.map(({ moment, song }) => (
-              <PressableFeedback
-                key={moment.moment}
-                onPress={openFull}
-                style={[styles.songRow, large && styles.songRowLarge]}
-                accessibilityRole="button"
-                accessibilityLabel={`${moment.label}: ${cleanSongTitle(song.title)}. Cambiar`}
-              >
-                <PressableFeedback.Highlight />
-                <Text
+            {chosen.map(({ moment, song }, i) => {
+              const why = whyLine(song);
+              return (
+                <PressableFeedback
+                  key={moment.moment}
+                  onPress={openFull}
                   style={[
-                    typography.caption,
-                    !large && styles.momentCol,
-                    { color: roles.textMuted },
+                    styles.songRow,
+                    i > 0 && styles.separated,
+                    { borderColor: roles.separator },
                   ]}
-                  numberOfLines={1}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${moment.label}: ${cleanSongTitle(song.title)}${why ? `. ${why}` : ''}. Cambiar`}
                 >
-                  {moment.label}
-                </Text>
-                <View style={styles.flex}>
-                  <Text
-                    style={[typography.body, { color: roles.text }]}
-                    numberOfLines={large ? 3 : 1}
-                  >
-                    {cleanSongTitle(song.title)}
-                  </Text>
-                  {song.reasons.length > 0 ? (
+                  <PressableFeedback.Highlight />
+                  <View style={styles.flex}>
                     <Text
-                      style={[
-                        typography.caption,
-                        { color: roles.textSecondary },
-                      ]}
-                      numberOfLines={large ? 3 : 1}
+                      style={[styles.moment, { color: roles.textSecondary }]}
+                      numberOfLines={1}
                     >
-                      {song.reasons.join(' · ')}
+                      {moment.label}
                     </Text>
-                  ) : null}
-                </View>
-              </PressableFeedback>
-            ))}
+                    <Text
+                      style={[typography.title, { color: roles.text }]}
+                      numberOfLines={large ? 4 : 2}
+                    >
+                      {cleanSongTitle(song.title)}
+                    </Text>
+                    {why ? (
+                      <Text
+                        style={[
+                          typography.caption,
+                          { color: roles.textSecondary },
+                        ]}
+                        numberOfLines={large ? 4 : 2}
+                      >
+                        {why}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={20}
+                    color={roles.textMuted}
+                  />
+                </PressableFeedback>
+              );
+            })}
             <View style={styles.actions}>
               <AppPrimaryButton
                 label="Usar estos cantos"
@@ -283,12 +304,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    minHeight: TOUCH,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    minHeight: TOUCH + spacing.md,
+    marginHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  songRowLarge: { flexDirection: 'column', alignItems: 'stretch' },
-  momentCol: { width: MOMENT_COL },
+  moment: { ...typography.caption, fontWeight: '600' },
   actions: { padding: spacing.md, gap: spacing.xs },
   textButton: {
     minHeight: TOUCH,

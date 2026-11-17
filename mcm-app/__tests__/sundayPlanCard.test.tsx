@@ -114,7 +114,7 @@ it('propone los cantos que encajan con las lecturas y dice por qué', async () =
   expect(screen.getByText('Evangelio: Jn 10, 11-18')).toBeTruthy();
   expect(screen.getByText('Pastor entrada')).toBeTruthy();
   expect(screen.queryByText('Canto entrada')).toBeNull();
-  expect(screen.getAllByText(/^Lecturas: /).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/^Por las lecturas: /).length).toBeGreaterThan(0);
 });
 
 it('«Leer las lecturas» abre las de ese domingo', async () => {
