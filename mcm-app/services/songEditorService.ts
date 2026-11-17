@@ -29,6 +29,7 @@ import { applyEditToCatalog, type SongSnapshot } from '@/utils/songEditor';
 
 const TIMEOUT_MS = 25_000;
 const READ_TIMEOUT_MS = 240_000;
+const UPLOAD_TIMEOUT_MS = 60_000;
 const OUTBOX_KEY = '@song_editor_outbox';
 
 export interface EditorCategory {
@@ -360,11 +361,13 @@ export async function convertPastedText(text: string): Promise<ConvertedSong> {
  * con la IA si la tiene.
  */
 export async function fetchSongFromUrl(url: string): Promise<ConvertedSong> {
-  const res = await call<{
-    title?: string;
-    cho?: string;
-    category?: string;
-  }>('/api/app/song/fetch-url', { json: { url }, timeout: READ_TIMEOUT_MS });
+  type Fetched = { title?: string; cho?: string; category?: string };
+  const first = await call<Fetched & { job?: string }>(
+    '/api/app/song/fetch-url',
+    { json: { url, async: true } },
+  );
+  // Doceacordes y las webs conocidas llegan ya; lo que lee la IA, como trabajo.
+  const res = first.job ? await waitForJob<Fetched>(first.job) : first;
   return {
     title: res.title ?? '',
     cho: res.cho ?? '',
@@ -375,6 +378,42 @@ export async function fetchSongFromUrl(url: string): Promise<ConvertedSong> {
 /** ¿Es el texto pegado solo un enlace? */
 export function isSongUrl(text: string): boolean {
   return /^https?:\/\/\S+$/i.test(text.trim());
+}
+
+/** Cada cuánto se pregunta por un trabajo largo, y hasta cuándo. */
+const JOB_POLL_MS = 3000;
+
+/** Espera a que el cantoral acabe un trabajo largo (leer con la IA). */
+async function waitForJob<T>(job: string): Promise<T> {
+  const started = Date.now();
+  let misses = 0;
+  while (Date.now() - started < READ_TIMEOUT_MS) {
+    await new Promise((r) => setTimeout(r, JOB_POLL_MS));
+    let state: {
+      status?: string;
+      result?: T;
+      error?: string;
+      code?: number;
+    };
+    try {
+      state = await call(`/api/app/job/${job}`, { method: 'GET' });
+      misses = 0;
+    } catch (e) {
+      // Un corte de red suelto no echa a perder un minuto de lectura.
+      if (e instanceof EditorApiError && e.unreachable && ++misses < 4) {
+        continue;
+      }
+      throw e;
+    }
+    if (state.status === 'done') return state.result as T;
+    if (state.status === 'error') {
+      throw new EditorApiError(
+        state.error || 'No se ha podido leer',
+        state.code ?? 500,
+      );
+    }
+  }
+  throw new EditorApiError('El cantoral está tardando demasiado', 0);
 }
 
 /** Fotos o PDF de un cancionero → canciones leídas con la IA del cantoral. */
@@ -391,9 +430,16 @@ export async function readSongPhotos(
         type: f.type,
       } as unknown as Blob);
   }
-  const res = await call<{ songs?: unknown[] }>('/api/app/song/read', {
-    form,
-    timeout: READ_TIMEOUT_MS,
-  });
+  // En segundo plano: leer con la IA pasa del minuto a menudo, y en el
+  // iPhone una petición se corta a los 60 s.
+  const first = await call<{ job?: string; songs?: unknown[] }>(
+    '/api/app/song/read?async=1',
+    // Subir unas fotos por datos móviles puede llevar su rato.
+    { form, timeout: UPLOAD_TIMEOUT_MS },
+  );
+  // Un cantoral sin actualizar contesta directamente, sin trabajo.
+  const res = first.job
+    ? await waitForJob<{ songs?: unknown[] }>(first.job)
+    : first;
   return (res.songs ?? []).map(fromImport);
 }
