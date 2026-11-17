@@ -20,6 +20,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import RecapEmblem from '@/components/contigo/RecapEmblem';
 import { warm } from '@/components/contigo/theme';
 import { MaterialIcons } from '@/components/ui/icons';
 import { durations } from '@/constants/animations';
@@ -50,7 +51,7 @@ export function RecapLink({
       accessibilityRole="button"
       accessibilityLabel="Tu año en Contigo"
     >
-      <MaterialIcons name="auto-awesome" size={14} color={W.textSec} />
+      <RecapEmblem size={18} color={W.textSec} />
       <Text style={[styles.linkText, { color: W.textSec }]}>
         Tu año en Contigo
       </Text>
@@ -60,11 +61,14 @@ export function RecapLink({
 
 export function RecapFeatured({
   year,
+  months,
   animate,
   isDark,
   onPress,
 }: {
   year: number;
+  /** Cuánto de cada mes (0–1), para el emblema. */
+  months?: number[];
   animate: boolean;
   isDark: boolean;
   onPress: () => void;
@@ -102,7 +106,7 @@ export function RecapFeatured({
     star.set(
       withRepeat(
         withSequence(
-          withTiming(1.18, { duration: durations.hero }),
+          withTiming(1.08, { duration: durations.hero }),
           withTiming(1, { duration: durations.hero }),
         ),
         -1,
@@ -157,7 +161,7 @@ export function RecapFeatured({
         </Animated.View>
       </View>
       <Animated.View style={[styles.starWrap, starStyle]}>
-        <MaterialIcons name="auto-awesome" size={28} color={ink} />
+        <RecapEmblem size={40} color={ink} months={months} />
       </Animated.View>
       <View style={styles.cardText}>
         <Text style={[styles.kicker, { color: ink }]}>Ya está aquí</Text>
@@ -193,7 +197,7 @@ const styles = StyleSheet.create({
     bottom: -40,
     width: SHINE_W,
   },
-  starWrap: { width: 32, alignItems: 'center' },
+  starWrap: { width: 40, alignItems: 'center' },
   cardText: { flex: 1 },
   kicker: { ...typography.sectionLabel, opacity: 0.85 },
   title: {

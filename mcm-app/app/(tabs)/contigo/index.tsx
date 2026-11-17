@@ -1,6 +1,13 @@
 import { RecapFeatured, RecapLink } from '@/components/contigo/RecapTeaser';
 import { useRecapSeason } from '@/hooks/useRecapSeason';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { buildRecap } from '@/utils/contigoRecap';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   View,
   Text,
@@ -86,6 +93,15 @@ export default function ContigoScreen() {
     reloadRecords,
     isRevisionDone,
   } = useContigoHabits();
+  const recapMonths = useMemo(
+    () =>
+      recap.season
+        ? buildRecap(records, [], recap.season.year).months.map(
+            (m) => m.activeDays / m.days.length,
+          )
+        : undefined,
+    [records, recap.season],
+  );
 
   const { readings } = useDailyReadings(todayStr);
 
@@ -353,6 +369,7 @@ export default function ContigoScreen() {
             <View style={styles.section}>
               <RecapFeatured
                 year={recap.season.year}
+                months={recapMonths}
                 animate={recap.animate}
                 isDark={isDark}
                 onPress={openRecap}
