@@ -65,6 +65,8 @@ export interface SundayCandidate {
   score: number;
   /** Por qué sube («Cuaresma», «Jesucristo, Rey del Universo»). */
   reasons: string[];
+  /** Palabras en común con las lecturas (vacío si no hay). */
+  readingWords: string[];
   song: SongEntry;
 }
 
@@ -356,6 +358,7 @@ export function suggestMass(
         reasons: match
           ? [...reasons, `Lecturas: ${match.words.slice(0, 3).join(' · ')}`]
           : reasons,
+        readingWords: match?.words ?? [],
         song: e.song,
         readingsScore: match
           ? match.score +
