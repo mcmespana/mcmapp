@@ -107,6 +107,10 @@ describe('songEditor · cabecera y edición', () => {
       videoEmbed: '',
       youtubeLinks: [],
       audioLinks: [],
+      spotifyLinks: [],
+      driveLinks: [],
+      otherLinks: [],
+      tags: [],
     };
     expect(buildEdition(base, base).changes).toEqual({});
     const out = buildEdition(base, {
@@ -121,5 +125,8 @@ describe('songEditor · cabecera y edición', () => {
       audioLinksNew: [{ label: 'x', url: 'https://a' }],
     });
     expect(Object.keys(out.fields)).toEqual(['key', 'audioLinks']);
+    expect(
+      buildEdition(base, { ...base, tags: ['Adviento', 'misa joven'] }).changes,
+    ).toEqual({ tagsOld: [], tagsNew: ['adviento', 'misa-joven'] });
   });
 });

@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -21,6 +22,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { rubberBand, shouldCommitGesture } from '@/utils/gesturePhysics';
 import { radii } from '@/constants/uiStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -32,6 +35,14 @@ import {
   reaEasings,
   springs,
 } from '@/constants/animations';
+
+/** Distancia y velocidad (px, px/s) que bastan para quitar el toast. */
+const SWIPE_DISTANCE = 80;
+const SWIPE_VELOCITY = 600;
+/** Hasta dónde se va al quitarlo de lado. */
+const SWIPE_FLY = 420;
+/** Lo que le queda al soltarlo sin quitarlo. */
+const TOAST_RESUME_MS = 2500;
 
 type ToastVariant = 'default' | 'success' | 'danger' | 'warning';
 
@@ -130,6 +141,21 @@ function triggerHaptic(variant: ToastVariant) {
   }
 }
 
+/** Parar y reanudar la cuenta atrás del toast mientras se arrastra. */
+function useToastPause(
+  timerRef: React.RefObject<ReturnType<typeof setTimeout> | null>,
+  hide: () => void,
+) {
+  const pause = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, [timerRef]);
+  const resume = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(hide, TOAST_RESUME_MS);
+  }, [timerRef, hide]);
+  return { pause, resume };
+}
+
 function ToastItem({
   toast: t,
   onHide,
@@ -183,10 +209,83 @@ function ToastItem({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const toastStyle = useAnimatedStyle(() => ({
-    opacity: opacity.get(),
-    transform: [{ translateY: translateY.get() }, { scale: scale.get() }],
-  }));
+  // Deslizar para quitarlo: a los lados o hacia abajo. Mientras el dedo está
+  // encima no se va solo; si se suelta sin llegar, vuelve y sigue su cuenta.
+  const dragX = useSharedValue(0);
+  const dragY = useSharedValue(0);
+  const { pause: pauseTimer, resume: restartTimer } = useToastPause(
+    timerRef,
+    hide,
+  );
+  const dismissBySwipe = useCallback(() => {
+    pauseTimer();
+    h.tap();
+    onHide();
+  }, [onHide, pauseTimer]);
+  const swipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .minDistance(6)
+        .onStart(() => {
+          scheduleOnRN(pauseTimer);
+        })
+        .onUpdate((e) => {
+          dragX.set(e.translationX);
+          // Hacia abajo, 1:1; hacia arriba no hay adónde ir: cede.
+          dragY.set(
+            e.translationY > 0 ? e.translationY : rubberBand(e.translationY),
+          );
+        })
+        .onEnd((e) => {
+          const sideways = Math.abs(e.translationX) > Math.abs(e.translationY);
+          const out = sideways
+            ? shouldCommitGesture(
+                e.translationX,
+                e.velocityX,
+                SWIPE_DISTANCE,
+                SWIPE_VELOCITY,
+              )
+            : e.translationY > 0 &&
+              shouldCommitGesture(
+                e.translationY,
+                e.velocityY,
+                SWIPE_DISTANCE / 2,
+                SWIPE_VELOCITY,
+              );
+          if (out) {
+            const exit = { duration: durations.quick, easing: reaEasings.exit };
+            if (sideways)
+              dragX.set(
+                withTiming(Math.sign(e.translationX) * SWIPE_FLY, exit),
+              );
+            else dragY.set(withTiming(SWIPE_FLY / 3, exit));
+            opacity.set(
+              withTiming(0, exit, () => {
+                'worklet';
+                scheduleOnRN(dismissBySwipe);
+              }),
+            );
+            return;
+          }
+          dragX.set(withSpring(0, { ...springs.snap, velocity: e.velocityX }));
+          dragY.set(withSpring(0, { ...springs.snap, velocity: e.velocityY }));
+          scheduleOnRN(restartTimer);
+        }),
+    [dragX, dragY, opacity, pauseTimer, restartTimer, dismissBySwipe],
+  );
+
+  const toastStyle = useAnimatedStyle(() => {
+    const x = Math.abs(dragX.get());
+    return {
+      // Al irse de lado se va apagando: se ve que se está quitando.
+      opacity: opacity.get() * Math.max(0.2, 1 - x / SWIPE_FLY),
+      transform: [
+        { translateX: dragX.get() },
+        { translateY: translateY.get() + dragY.get() },
+        { scale: scale.get() },
+      ],
+    };
+  });
 
   const v = VARIANT_STYLES[t.variant ?? 'default'];
   // El overlay del toast se pinta por ENCIMA de todo (zIndex alto) anclado a
@@ -208,52 +307,55 @@ function ToastItem({
   const useBlur = Platform.OS === 'ios';
 
   return (
-    <Animated.View
-      style={[styles.toastShadow, { marginBottom: bottomOffset }, toastStyle]}
-    >
-      <View style={styles.toastClip}>
-        {useBlur ? (
-          <BlurView
-            tint="dark"
-            intensity={70}
-            style={[StyleSheet.absoluteFill, { backgroundColor: v.tint }]}
-          />
-        ) : (
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: solidTint(v.tint) },
-            ]}
-          />
-        )}
-        <View style={styles.toastContent}>
-          <View style={[styles.iconBadge, { backgroundColor: v.iconBg }]}>
-            <MaterialIcons name={v.icon} size={18} color={v.iconColor} />
-          </View>
-          <Text style={[styles.label, { color: v.text }]} numberOfLines={3}>
-            {t.label}
-          </Text>
-          {t.actionLabel && (
-            <TouchableOpacity
-              onPress={() => {
-                if (t.onActionPress) {
-                  t.onActionPress({ hide });
-                } else {
-                  hide();
-                }
-              }}
-              style={styles.actionButton}
-              hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.actionText, { color: v.action }]}>
-                {t.actionLabel}
-              </Text>
-            </TouchableOpacity>
+    <GestureDetector gesture={swipe}>
+      <Animated.View
+        style={[styles.toastShadow, { marginBottom: bottomOffset }, toastStyle]}
+        accessibilityHint="Desliza para quitarlo"
+      >
+        <View style={styles.toastClip}>
+          {useBlur ? (
+            <BlurView
+              tint="dark"
+              intensity={70}
+              style={[StyleSheet.absoluteFill, { backgroundColor: v.tint }]}
+            />
+          ) : (
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                { backgroundColor: solidTint(v.tint) },
+              ]}
+            />
           )}
+          <View style={styles.toastContent}>
+            <View style={[styles.iconBadge, { backgroundColor: v.iconBg }]}>
+              <MaterialIcons name={v.icon} size={18} color={v.iconColor} />
+            </View>
+            <Text style={[styles.label, { color: v.text }]} numberOfLines={3}>
+              {t.label}
+            </Text>
+            {t.actionLabel && (
+              <TouchableOpacity
+                onPress={() => {
+                  if (t.onActionPress) {
+                    t.onActionPress({ hide });
+                  } else {
+                    hide();
+                  }
+                }}
+                style={styles.actionButton}
+                hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.actionText, { color: v.action }]}>
+                  {t.actionLabel}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      </View>
-    </Animated.View>
+      </Animated.View>
+    </GestureDetector>
   );
 }
 
