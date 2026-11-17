@@ -470,7 +470,7 @@ export default function CategoriesScreen() {
                 </Text>
                 <Text style={styles.selectionSubtitle} numberOfLines={1}>
                   {count === 0
-                    ? 'Vacía · cantos para este domingo'
+                    ? 'Vacía · añade canciones desde el cantoral'
                     : `${count} ${count === 1 ? 'canción' : 'canciones'}`}
                 </Text>
               </View>
