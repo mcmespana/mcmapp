@@ -101,19 +101,33 @@ desmonta y suelta el micrófono.
 - **Pulsos por compás**: 1 (sin acento), 2, 3, 4 o 6. Una fila de puntos marca
   el pulso que suena; el primero es más grande y suena una quinta más agudo.
 - El tempo y el compás se recuerdan (`@metronome` en AsyncStorage).
-- Suena solo con la hoja delante: al cerrarla o ir a segundo plano, se para.
-  En iOS la sesión de audio va en `playback`, así que suena con el móvil en
-  silencio.
+- **Puede seguir sonando con la hoja cerrada** (2026-11-17), para tocar una
+  canción con él. Al cerrar la hoja sonando sale **«¿Dejar el metrónomo
+  sonando?»** con un «Sí, que siga sonando» grande, «No, pararlo» y la casilla
+  **«No volver a preguntar»**, que guarda la respuesta (`keep` en `@metronome`:
+  `ask` | `keep` | `stop`). Con una respuesta guardada, la hoja del metrónomo
+  dice «Al cerrar, sigue sonando / se para» y «Volver a preguntar».
+- Sonando con la hoja cerrada sale una **píldora flotante abajo a la
+  izquierda** en cualquier pantalla del cantoral (la derecha es del botón de la
+  canción): tempo, un punto que late y ■ para pararlo. Tocarla reabre la hoja
+  directamente en el metrónomo (`/cancionero/afinador?modo=metronomo`). No sale
+  en la pantalla completa (es un modal nativo encima), aunque sigue sonando.
+- Mientras suena, la pantalla no se apaga. A segundo plano (o pantalla
+  bloqueada) se para: no hay audio en segundo plano. En iOS la sesión de audio
+  va en `playback`, así que suena con el móvil en silencio.
+- Al pasar al afinador se para (el micrófono lo oiría).
 
 | Pieza                                 | Qué hace                                                                                                                                                         |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `utils/metronome.ts`                  | Lo que se prueba sin altavoz: topes, pulsos de la próxima ventana (`beatsUntil`) y el tempo marcado con el dedo (`tapTempo`)                                     |
 | `services/metronome/engine.ts`        | El sonido, con `react-native-audio-api` (el mismo código en iOS, Android y web). Cada pulso se **sintetiza** (un «toc» de madera: seno que cae de tono + un parcial agudo brevísimo); no hay ficheros de audio. El ritmo lo lleva el reloj del audio: un temporizador programa los pulsos de la próxima décima de segundo |
-| `hooks/useMetronome.ts`               | Estado, persistencia y ciclo de vida (foco, segundo plano)                                                                                                       |
+| `contexts/MetronomeContext.tsx`       | Estado, persistencia y ciclo de vida (segundo plano, cerrar la hoja). Lo monta el layout del cantoral, por eso sobrevive a la hoja. `hooks/useMetronome.ts` lo reexporta |
+| `components/tuner/MetronomeFloating.tsx` / `KeepMetronomePrompt.tsx` | La píldora flotante y la pregunta al cerrar (pintadas dentro del cantoral, no en un `Modal`, para no chocar con la hoja nativa que se cierra) |
 | `components/tuner/MetronomePanel.tsx` | La pantalla                                                                                                                                                      |
 
 No añade paquetes: usa el `react-native-audio-api` que ya trajo el afinador
-(build 2.5.1), así que **sale por OTA**. Tests: `metronome.test.ts`. Sin probar
+(build 2.5.1), así que **sale por OTA**. Tests: `metronome.test.ts`,
+`metronomeContext.test.tsx`. Sin probar
 en móvil: falta oír el «toc» en un altavoz de teléfono y ajustar volumen y
 timbre si hace falta (`click()` en el motor).
 

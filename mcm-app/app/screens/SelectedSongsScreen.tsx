@@ -15,6 +15,7 @@ import {
   FlatList,
   Platform,
   Modal,
+  ScrollView,
   TouchableOpacity,
   TouchableWithoutFeedback,
 } from 'react-native';
@@ -50,8 +51,9 @@ import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { h } from '@/utils/haptics';
 import PlaylistRow from '@/components/playlist/PlaylistRow';
 import { createStyles } from '@/components/playlist/selectedSongsStyles';
-import PlaylistDesignTools from '@/components/playlist/PlaylistDesignTools';
 import SundayReadingsSheet from '@/components/playlist/SundayReadingsSheet';
+import SundaySongsButton from '@/components/playlist/SundaySongsButton';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import {
   PlaylistHeaderBar,
   type ViewMode,
@@ -1573,8 +1575,23 @@ const SelectedSongsScreen: React.FC = () => {
     }
   };
 
+  const [showSunday, setShowSunday] = useState(false);
+  const openSunday = useCallback(() => setShowSunday(true), []);
+
+  // Vacía: lo primero, traerse la playlist del coro; debajo, código y archivo,
+  // y al final, para quien elige los cantos, los del domingo. Con scroll por
+  // si la letra es grande.
   const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
+    <ScrollView
+      style={styles.emptyScroll}
+      contentContainerStyle={[
+        styles.emptyContainer,
+        styles.emptyScrollContent,
+        { paddingBottom: tabBarBottom + 20 },
+      ]}
+      contentInsetAdjustmentBehavior="automatic"
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.emptyContent}>
         <View style={styles.emptyIconContainer}>
           <MaterialIcons
@@ -1590,26 +1607,18 @@ const SelectedSongsScreen: React.FC = () => {
             : 'Desliza una canción hacia la izquierda o usa el + al abrirla.'}
         </Text>
       </View>
-      <View style={{ gap: 10, marginBottom: tabBarBottom }}>
-        <PlaylistDesignTools onOpenSunday={openSunday} />
-        {/* Con la lista vacía, lo primero que quiere casi todo el mundo es
-            traerse la del coro: va la primera y sin pedir ningún código. */}
-        <PressableFeedback
-          onPress={() => openChoirSheet()}
-          style={styles.importButton}
-        >
-          <PressableFeedback.Highlight />
-          <MaterialIcons
-            name="groups"
-            size={20}
-            color={themeColors(isDark).link}
-          />
-          <Text style={styles.importButtonText}>
-            {sharing.myChoir
+      <View style={{ gap: 10 }}>
+        {/* Con la lista vacía, lo que quiere casi todo el mundo es traerse la
+            del coro: va la primera, destacada y sin pedir ningún código. */}
+        <AppPrimaryButton
+          icon="groups"
+          label={
+            sharing.myChoir
               ? `Traer la playlist de ${sharing.myChoir.name}`
-              : 'Elegir mi coro e importar'}
-          </Text>
-        </PressableFeedback>
+              : 'Elegir mi coro e importar'
+          }
+          onPress={() => openChoirSheet()}
+        />
         <PressableFeedback
           onPress={() => setCodeDialog({ variant: 'cloud-download' })}
           style={styles.importButton}
@@ -1634,12 +1643,13 @@ const SelectedSongsScreen: React.FC = () => {
           />
           <Text style={styles.importButtonText}>Importar desde archivo</Text>
         </PressableFeedback>
+        {/* Para quien elige los cantos: discreto y al final. */}
+        <View style={styles.emptySunday}>
+          <SundaySongsButton />
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
-
-  const [showSunday, setShowSunday] = useState(false);
-  const openSunday = useCallback(() => setShowSunday(true), []);
 
   const headerComponent = useMemo(
     () => (

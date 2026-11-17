@@ -15,7 +15,7 @@ import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
-import type { MomentSuggestion } from '@/utils/sundaySongs';
+import { candidateWhy, type MomentSuggestion } from '@/utils/sundaySongs';
 
 /** Alto máximo de la lista dentro de la hoja. */
 const LIST_MAX_HEIGHT = 420;
@@ -60,6 +60,7 @@ export default function CandidatesSheet({
           {suggestion?.candidates.map((c, i) => {
             const isChosen = i === suggestion.chosenIndex;
             const title = c.title.replace(/^\d+\.\s*/, '');
+            const why = candidateWhy(c);
             return (
               <PressableFeedback
                 key={c.filename}
@@ -67,7 +68,7 @@ export default function CandidatesSheet({
                 accessibilityRole="button"
                 accessibilityState={{ selected: isChosen }}
                 accessibilityLabel={`${title}${
-                  c.reasons.length ? `, ${c.reasons.join(', ')}` : ''
+                  why ? `, ${why}` : ''
                 }${isChosen ? ', elegida' : ''}`}
                 onPress={() => {
                   h.select();
@@ -82,14 +83,12 @@ export default function CandidatesSheet({
                   >
                     {title}
                   </Text>
-                  {c.reasons.length > 0 || c.song.author ? (
+                  {why || c.song.author ? (
                     <Text
                       style={[typography.caption, { color: roles.textMuted }]}
                       numberOfLines={1}
                     >
-                      {[...c.reasons, c.song.author]
-                        .filter(Boolean)
-                        .join(' · ')}
+                      {[why, c.song.author].filter(Boolean).join(' · ')}
                     </Text>
                   ) : null}
                 </View>

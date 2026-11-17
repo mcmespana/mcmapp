@@ -18,7 +18,7 @@ import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
-import type { MomentSuggestion } from '@/utils/sundaySongs';
+import { candidateWhy, type MomentSuggestion } from '@/utils/sundaySongs';
 
 /** Área táctil mínima (design.md §1). */
 const TOUCH = 44;
@@ -175,9 +175,9 @@ function MomentBlock({
               hideSeparator
             />
           </View>
-          {chosen.reasons.length > 0 ? (
+          {candidateWhy(chosen) ? (
             <Text style={[styles.note, { color: roles.textMuted }]}>
-              {chosen.reasons.join(' · ')}
+              {candidateWhy(chosen)}
             </Text>
           ) : null}
         </>

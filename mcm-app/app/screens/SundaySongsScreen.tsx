@@ -11,10 +11,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useTabListScroll } from '@/components/tabs/useTabScroll';
 import CandidatesSheet from '@/components/song-sunday/CandidatesSheet';
+import SundayReadingsSheet from '@/components/playlist/SundayReadingsSheet';
 import MomentBlock from '@/components/song-sunday/MomentBlock';
 import ListSkeleton from '@/components/ListSkeleton';
 import SongListItem from '@/components/SongListItem';
@@ -33,6 +34,7 @@ import { usePlaylistLink } from '@/hooks/usePlaylistLink';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useSundaySongs } from '@/hooks/useSundaySongs';
 import { openCantoral } from '@/utils/cantoralNavigation';
+import { cantoralHref } from '@/utils/eventRoutes';
 import { h } from '@/utils/haptics';
 import {
   addDays,
@@ -80,6 +82,7 @@ export default function SundaySongsScreen() {
   const { choir } = useMyChoir();
   const { link, setLink } = usePlaylistLink();
   const [choosing, setChoosing] = useState<MomentSuggestion | null>(null);
+  const [readingsOpen, setReadingsOpen] = useState(false);
 
   const isSelected = isSongSelected;
   const selectedTranspose = useCallback(
@@ -137,13 +140,18 @@ export default function SundaySongsScreen() {
     return true;
   }, [mass, selectedSongs, link, replaceAll, setLink, toast, fecha]);
 
+  // Se entra casi siempre DESDE Tu selección: `dismissTo` vuelve a ella en vez
+  // de apilar otra; si no está debajo (desde Inicio), la pone en su lugar.
   const onPass = useCallback(() => {
-    if (passToSelection()) openCantoral('SelectedSongs');
+    if (passToSelection())
+      router.dismissTo(cantoralHref('SelectedSongs') as never);
   }, [passToSelection]);
 
   const onUploadToChoir = useCallback(() => {
     if (passToSelection())
-      openCantoral('SelectedSongs', { hoja: 'guardar-coro' });
+      router.dismissTo(
+        cantoralHref('SelectedSongs', { hoja: 'guardar-coro' }) as never,
+      );
   }, [passToSelection]);
 
   const goTo = useCallback((next: string) => {
@@ -213,6 +221,32 @@ export default function SundaySongsScreen() {
           {subtitle}
         </Text>
       </View>
+      <PressableFeedback
+        onPress={() => {
+          h.tap();
+          setReadingsOpen(true);
+        }}
+        style={[styles.readings, { backgroundColor: roles.background }]}
+        accessibilityRole="button"
+        accessibilityLabel="Leer las lecturas de este domingo"
+      >
+        <PressableFeedback.Highlight />
+        <MaterialIcons name="menu-book" size={20} color={roles.link} />
+        <View style={styles.readingsText}>
+          <Text style={[typography.body, { color: roles.link }]}>
+            Leer las lecturas
+          </Text>
+          {sunday.readings?.evangelio?.cita ? (
+            <Text
+              style={[typography.caption, { color: roles.textSecondary }]}
+              numberOfLines={2}
+            >
+              Evangelio: {sunday.readings.evangelio.cita}
+            </Text>
+          ) : null}
+        </View>
+        <MaterialIcons name="chevron-right" size={20} color={roles.textMuted} />
+      </PressableFeedback>
       <View style={styles.dateNav}>
         <PressableFeedback
           onPress={() => goTo(addDays(fecha, -7))}
@@ -331,6 +365,16 @@ export default function SundaySongsScreen() {
           { paddingBottom: contentPaddingBottom },
         ]}
       />
+      <SundayReadingsSheet
+        visible={readingsOpen}
+        onClose={() => setReadingsOpen(false)}
+        date={fecha}
+        readingsOnly
+        songsData={null}
+        isSelected={isSongSelected}
+        onAdd={addSong}
+        onRemove={removeSong}
+      />
       <CandidatesSheet
         suggestion={
           choosing
@@ -364,6 +408,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   subtitle: { ...typography.subhead, flex: 1 },
+  readings: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: TOUCH + spacing.sm,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+  },
+  readingsText: { flex: 1 },
   dateNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',

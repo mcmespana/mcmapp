@@ -8,9 +8,15 @@
 
 ## Qué ve la persona
 
-- **Cantoral → fila «Cantos para el domingo»** (debajo de «Tu selección»): el
-  domingo que toca (hoy, si es domingo; si no, el siguiente), su fiesta o
-  tiempo y un punto del color litúrgico. Solo sale con el cantoral cargado.
+- **Tu selección VACÍA → botón «Cantos con las lecturas del domingo»**
+  (`components/playlist/SundaySongsButton.tsx`): fecha y fiesta o tiempo, con
+  el color litúrgico en el icono. Va **al final y discreto**: en el vacío
+  manda **traer la playlist del coro** (botón principal), luego código/QR y
+  archivo. Elegir cantos lo hace poca gente; traerse la del coro, casi todos
+  (decisión del usuario, 2026-11-17: una tarjeta con la misa entera en el
+  vacío estorbaba). Antes era una fila en la home del cantoral.
+- **Tu selección con canciones**: chip **Cantos del domingo** junto a
+  «Lecturas del domingo» en la cabecera (`PlaylistDesignTools`).
 - **Pantalla** `/cancionero/domingo?fecha=YYYY-MM-DD` (`SundaySongsScreen`):
   cabecera con la fecha, «XXXIV Domingo del Tiempo Ordinario · Jesucristo, Rey
   del Universo · Ciclo A» y ‹ Anterior / Siguiente › para otros domingos. Una
@@ -19,8 +25,11 @@
     predecible). **⋯** (o mantener pulsada la fila): Cambiar, **Elegir otra…**
     (todas las candidatas, con su razón) y **Quitar de la misa** / Volver a
     poner. Tocar la fila abre la canción; deslizar añade a Tu selección.
+  - **Leer las lecturas** (con la cita del evangelio) bajo la cabecera: abre
+    la hoja de lecturas de ESA fecha, solo lecturas.
   - **Pasar a Tu selección**: REEMPLAZA la selección con la misa en orden de
-    misa y deja 10 s de **Deshacer** (restaura también el enlace con la nube).
+    misa, deja 10 s de **Deshacer** (restaura también el enlace con la nube) y
+    vuelve a la Tu selección de debajo (`router.dismissTo`, sin apilar otra).
   - **Subir a <mi coro>** (solo con coro elegido): pasa a Tu selección y abre
     directamente el paso de guardar de la hoja del coro (`?hoja=guardar-coro`).
   - **Volver a la propuesta**: aparece cuando se ha cambiado algo.
@@ -91,10 +100,20 @@ cada uno:
      `settings.hideHiddenTagSongs`, como en las categorías.
 3. **Puntos**: etiqueta de la fiesta del día +5 (la fiesta manda sobre el
    tiempo: Pentecostés > Pascua, Cristo Rey > TO), del tiempo +3, neutra 0.
-4. **Variedad sin historial y sin red**: dentro de cada tramo de puntos, orden
-   por hash estable (canción + momento) **rotado por el número de semana**.
-   Misma fecha → misma propuesta **en todos los móviles**; el domingo
-   siguiente, otra del mismo tramo; vuelve cuando el tramo da la vuelta.
+4. **Lecturas del domingo** (2026-11-17): dentro de cada tramo de puntos van
+   primero las canciones con **palabras en común con las lecturas** de esa
+   fecha, de más a menos afinidad (`readingsAffinity` en `utils/sundayMatch.ts`:
+   sin IA; palabras raras en el cantoral pesan más; evangelio ×1,5, salmo ×1,3;
+   hacen falta dos palabras en común). El **salmo** se compara primero con el
+   salmo del día a solas. La razón sale en la fila con `candidateWhy`
+   («Por las lecturas: pastor, ovejas»; sin lecturas, la fiesta o el tiempo,
+   salvo «Tiempo Ordinario», que no aporta). Las lecturas **no saltan** las reglas duras ni los tramos: una
+   canción del tiempo sigue yendo antes que una neutra que encaja con el
+   evangelio. Sin lecturas (sin red y sin caché), todo como en el punto 5.
+5. **Variedad sin historial y sin red**: el resto del tramo, orden por hash
+   estable (canción + momento) **rotado por el número de semana**. Misma fecha
+   → misma propuesta **en todos los móviles**; el domingo siguiente, otra del
+   mismo tramo; vuelve cuando el tramo da la vuelta.
 
 **Tiempo litúrgico de una canción**: mandan las **etiquetas**
 (`SEASON_TAGS` en `massMoments.ts`); el campo antiguo `liturgicalTime` (texto
@@ -116,6 +135,7 @@ canción, la propuesta no se desplaza sola.
 | ----- | ------- |
 | Día litúrgico, ciclo, domingo N | Siempre (JSON empaquetado) |
 | Sugerencias | Sí, si el cantoral se abrió alguna vez (misma caché que las listas) |
+| Orden por lecturas | Si esas lecturas se abrieron antes (caché de `useDailyReadings`); si no, solo tiempo litúrgico |
 | Lo elegido por fecha | Sí (AsyncStorage) |
 | Pasar a Tu selección | Sí |
 | Subir a mi coro | No (Firebase; el flujo del coro ya avisa) |
@@ -128,7 +148,7 @@ canción, la propuesta no se desplaza sola.
   (`mcmapp-cantoral`, editor del admin).
 - **Ventana del calendario**: la vigila `__tests__/liturgicalWindow.test.ts`.
 - Tests: `liturgicalDay.test.ts`, `sundaySongs.test.ts`,
-  `useSundaySongs.test.tsx`.
+  `useSundaySongs.test.tsx`, `sundaySongsScreen.test.tsx`.
 
 ## Pendiente (ver el plan)
 
@@ -136,5 +156,9 @@ canción, la propuesta no se desplaza sola.
   (sin acceso al repo del cantoral no se ha hecho; si hay menos de ~3 por
   momento y tiempo fuerte, curar en el admin antes de esperar mucho de la
   función).
-- **Fase 5**: estribillo del salmo del scraper para emparejar el salmo del día.
+- **Fase 5**: emparejar el salmo por su estribillo exacto (hoy se compara por
+  palabras con el texto del salmo del día).
+- **IA (a futuro, sin decidir)**: que un modelo lea las lecturas y elija o
+  explique los cantos. Encajaría como una capa más de orden dentro de los
+  tramos, sin tocar las reglas duras.
 - **Fase 6** (opcional): temas de las lecturas ↔ etiquetas de tema.

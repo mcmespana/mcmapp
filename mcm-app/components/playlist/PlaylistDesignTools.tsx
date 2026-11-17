@@ -1,7 +1,8 @@
 /**
- * Dos ayudas para MONTAR la playlist, pequeñas y a mano en «Tu selección»:
- * las lecturas del próximo domingo (con los cantos que encajan) y el
- * historial de lo cantado por el coro, que se enciende y se apaga.
+ * Ayudas para MONTAR la playlist, pequeñas y a mano en «Tu selección» con
+ * canciones: las lecturas del próximo domingo (con los cantos que encajan),
+ * la misa propuesta para ese domingo (con la lista vacía, botón propio en
+ * `SundaySongsButton`) y el historial de lo cantado por el coro.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -15,6 +16,7 @@ import { radii } from '@/constants/uiStyles';
 import { useChoirHistory } from '@/hooks/useChoirHistory';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
+import { openCantoral } from '@/utils/cantoralNavigation';
 
 export default function PlaylistDesignTools({
   onOpenSunday,
@@ -41,6 +43,20 @@ export default function PlaylistDesignTools({
           <MaterialIcons name="menu-book" size={16} color={theme.link} />
           <Text style={[styles.chipText, { color: theme.link }]}>
             Lecturas del domingo
+          </Text>
+        </PressableFeedback>
+        <PressableFeedback
+          onPress={() => {
+            h.tap();
+            openCantoral('SundaySongs');
+          }}
+          style={[styles.chip, { backgroundColor: theme.backgroundSunken }]}
+          accessibilityRole="button"
+          accessibilityLabel="Cantos propuestos para el domingo"
+        >
+          <MaterialIcons name="event" size={16} color={theme.link} />
+          <Text style={[styles.chipText, { color: theme.link }]}>
+            Cantos del domingo
           </Text>
         </PressableFeedback>
         {sung.available ? (

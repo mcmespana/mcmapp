@@ -20,6 +20,11 @@ const mockSongs: SongsData = {
   },
 };
 
+// Sin lecturas: la misa sale solo por tiempo litúrgico (las lecturas tienen
+// sus propios tests en sundaySongs.test.ts).
+jest.mock('@/hooks/useDailyReadings', () => ({
+  useDailyReadings: () => ({ readings: null, isLoading: false, error: null }),
+}));
 jest.mock('@/hooks/useFirebaseData', () => ({
   useFirebaseData: (path: string) => ({
     data: path === 'songs' ? mockSongs : null,

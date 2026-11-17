@@ -47,7 +47,6 @@ import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useSongTagIndex } from '@/hooks/useSongTags';
 import TagCloudSheet from '@/components/song-tags/TagCloudSheet';
 import TagChip from '@/components/song-tags/TagChip';
-import SundaySongsRow from '@/components/song-sunday/SundaySongsRow';
 import CantoralOnboarding from '@/components/song-onboarding/CantoralOnboarding';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
@@ -481,7 +480,6 @@ export default function CategoriesScreen() {
                 color={themeColors(isDark).link}
               />
             </PressableFeedback>
-            <SundaySongsRow />
           </View>
         );
       }
@@ -572,7 +570,6 @@ export default function CategoriesScreen() {
             color={themeColors(isDark).link}
           />
         </PressableFeedback>
-        <SundaySongsRow />
       </View>
     );
   }, [isWideLayout, displayCategories, isDark, styles, glyphColor]);
