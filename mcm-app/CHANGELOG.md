@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 19:55 — Comunica: un monitor ya no ve en su calendario las sesiones de los chavales
+
+- El calendario (`GET /v1/profiles/:pid/calendar`, middleware) deja fuera las sesiones de los eventos que el perfil solo LLEVA (inscripción `organizer` o `equipo`), y la banda si eran de un curso con varias sesiones. Las familias siguen viendo sus sesiones con su asistencia. Era lo que ya hacía la web desde el 24/10.
+- El nombre de una sesión llega sin « | 04/12/2026 17:30h» ni « · lista del 16/10» (middleware), y la fila del día ya no repite el evento cuando es el mismo que el título (`itemLine`: «17:30 · Asististe»).
+- «Próximas actividades» de la portada lista solo los eventos abiertos a inscripción (`upcomingAgendaItems`), como la web: las sesiones están en el calendario.
+
 ## 2026-11-17 19:42 — Tu selección vacía: primero el coro; los cantos del domingo, en un botón
 
 - Se quita la tarjeta «Este domingo» (`SundayPlanCard`) del vacío de Tu selección: estorbaba a lo que hace casi todo el mundo, traerse la playlist del coro. El vacío vuelve a ser el de antes, con **«Traer la playlist de <coro>» como botón principal**, y al final un botón discreto **«Cantos con las lecturas del domingo»** (`SundaySongsButton`) que abre la pantalla de los cantos del domingo.
