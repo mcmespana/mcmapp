@@ -123,3 +123,49 @@ describe('describeMismatch', () => {
     expect(describeMismatch(offline, 'choir')).toMatch(/playlist/i);
   });
 });
+
+describe('el QR de un intercambio del pañuelo', () => {
+  it('lee el enlace de la app y el de la web', () => {
+    expect(parseScannedQr('mcmapp://panuelo?intercambio=K7WQ4M')).toEqual({
+      kind: 'trade',
+      code: 'K7WQ4M',
+    });
+    expect(
+      parseScannedQr('https://mcm.expo.app/panuelo?intercambio=k7wq4m'),
+    ).toEqual({ kind: 'trade', code: 'K7WQ4M' });
+  });
+
+  it('acepta los 6 caracteres sueltos', () => {
+    expect(parseScannedQr('k7wq4m')).toEqual({ kind: 'trade', code: 'K7WQ4M' });
+  });
+
+  it('no se traga lo que no es un intercambio', () => {
+    // Letras prohibidas (0/O, 1/I/L) o un código de pieza.
+    expect(parseScannedQr('K7WQ4O')).toBeNull();
+    expect(parseScannedQr('mcmapp://panuelo?codigo=CAMINO')).toBeNull();
+    expect(parseScannedQr('mcmapp://panuelo?intercambio=ABC')).toBeNull();
+  });
+
+  it('avisa del cruce con playlists y coros, en los dos sentidos', () => {
+    const trade = parseScannedQr('K7WQ4M')!;
+    expect(describeMismatch(trade, 'panuelo')).toBeNull();
+    expect(describeMismatch(trade, 'playlist')).toMatch(/intercambio/);
+    expect(describeMismatch(trade, 'choir')).toMatch(/intercambio/);
+    const playlist = parseScannedQr('https://mcm.expo.app/playlist?p=1234')!;
+    expect(describeMismatch(playlist, 'panuelo')).toMatch(/playlist/);
+    const coro = parseScannedQr('https://mcm.expo.app/coro?c=0704')!;
+    expect(describeMismatch(coro, 'panuelo')).toMatch(/coro/);
+    expect(describeMismatch(parseScannedQr('1234')!, 'panuelo')).toMatch(
+      /intercambio/,
+    );
+  });
+
+  it('los QR de siempre se leen igual', () => {
+    expect(parseScannedQr('1234')).toEqual({
+      kind: 'code',
+      target: null,
+      code: '1234',
+    });
+    expect(describeMismatch(parseScannedQr('1234')!, 'playlist')).toBeNull();
+  });
+});

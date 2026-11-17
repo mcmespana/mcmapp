@@ -176,6 +176,17 @@ export const createStyles = (
       justifyContent: 'space-between',
       ...(isWide ? { maxWidth, width: '100%', alignSelf: 'center' } : null),
     },
+    emptyScroll: {
+      flex: 1,
+      backgroundColor: themeColors(isDark).backgroundSunken,
+    },
+    // Dentro del ScrollView: crece hasta llenar (no `flex: 1`, que no deja
+    // hacer scroll con letra grande) y reparte arriba y abajo como antes.
+    emptyScrollContent: {
+      flex: undefined,
+      flexGrow: 1,
+    },
+    emptySunday: { marginTop: 10 },
     emptyContent: {
       flex: 1,
       justifyContent: 'center',

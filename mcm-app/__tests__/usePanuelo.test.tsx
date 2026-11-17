@@ -20,6 +20,11 @@ import type { PanueloCatalog, PanueloUserState } from '@/types/panuelo';
 import { EMPTY_PANUELO } from '@/utils/panuelo';
 
 const mockAuth: { user: { uid: string } | null } = { user: null };
+// Estos tests usan las piezas de ejemplo (una de cada clase), no el catálogo
+// de verdad, que cambia cada vez que se añade una chapa.
+jest.mock('@/firebase-seed/panuelo.json', () =>
+  jest.requireActual('@/constants/panueloEjemplo.json'),
+);
 jest.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user: mockAuth.user }),
 }));
@@ -38,6 +43,7 @@ jest.mock('@/utils/authHelpers', () => ({
   syncPanueloItem: jest.fn(),
   syncPanueloLayout: jest.fn(),
   syncPanueloMemory: jest.fn(),
+  syncPanueloTradeHalf: jest.fn(),
   clearPanuelo: jest.fn(),
 }));
 
@@ -842,5 +848,56 @@ describe('usePanuelo: recolocar', () => {
       result.current.arrange();
     });
     expect((AsyncStorage.setItem as jest.Mock).mock.calls.length).toBe(writes);
+  });
+});
+
+describe('usePanuelo: la mitad de un intercambio', () => {
+  const trade = {
+    code: 'K7WQ4M',
+    status: 'accepted' as const,
+    createdAt: 1,
+    expiresAt: 2,
+    offer: { uid: 'u1', itemId: AUTO },
+    answer: { uid: 'luis', itemId: 'pulsera-amistad' },
+  };
+
+  it('sale la dada, entra la recibida en su sitio, se presenta y se sube una vez', async () => {
+    mockAuth.user = { uid: 'u1' };
+    fetchPanuelo.mockResolvedValue(state());
+    const { result } = await mount();
+    await act(async () => {
+      result.current.markSeen('pulsera-amistad');
+    });
+    const spot = result.current.state.layout[AUTO];
+    let applied = false;
+    await act(async () => {
+      applied = result.current.applyTradeHalf(trade);
+    });
+    expect(applied).toBe(true);
+    expect(result.current.state.items[AUTO]).toBeUndefined();
+    expect(result.current.state.items['pulsera-amistad'].via).toBe('trade');
+    expect(result.current.state.layout['pulsera-amistad']).toEqual(spot);
+    expect(result.current.unseen).toContain('pulsera-amistad');
+    const sync = helpers.syncPanueloTradeHalf as jest.Mock;
+    expect(sync).toHaveBeenCalledTimes(1);
+    expect(sync.mock.calls[0][2]).toEqual({
+      give: AUTO,
+      take: 'pulsera-amistad',
+    });
+    // La segunda vez no cambia nada.
+    await act(async () => {
+      applied = result.current.applyTradeHalf(trade);
+    });
+    expect(applied).toBe(false);
+    expect(sync).toHaveBeenCalledTimes(1);
+  });
+
+  it('sin sesión no hace nada', async () => {
+    const { result } = await mount();
+    let applied = true;
+    await act(async () => {
+      applied = result.current.applyTradeHalf(trade);
+    });
+    expect(applied).toBe(false);
   });
 });

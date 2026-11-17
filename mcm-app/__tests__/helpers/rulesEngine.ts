@@ -42,6 +42,132 @@ export interface RulesContext {
   config?: Record<string, boolean>;
   /** uids que tienen `users/<uid>/isAdmin === true` en la base de datos. */
   admins?: string[];
+  /**
+   * Para las reglas que miran el dato (`panueloTrades`): lo que hay en el
+   * path escrito (`data`), lo que quedaría (`newData`; `null` = borrar) y la
+   * hora del servidor (`now`).
+   */
+  data?: unknown;
+  newData?: unknown;
+  now?: number;
+}
+
+/**
+ * El `.write` de `panueloTrades/$code`, tal cual está en el fichero. Se
+ * reconoce por igualdad de texto (como el de `isAdmin`) y se evalúa con
+ * `panueloTradeWrite`, su gemela en TS. Si cambias uno, cambia el otro: si
+ * no, el evaluador no la reconoce y el test se pone en rojo.
+ */
+const PANUELO_TRADES_WRITE =
+  'auth != null && (' +
+  "((!data.exists() || data.child('expiresAt').val() + 86400000 < now)" +
+  " && newData.child('offer/uid').val() === auth.uid" +
+  " && newData.child('status').val() === 'open'" +
+  " && !newData.child('answer').exists()" +
+  " && newData.child('expiresAt').val() <= now + 900000)" +
+  ' || (data.exists() && !newData.exists()' +
+  " && (data.child('offer/uid').val() === auth.uid || data.child('expiresAt').val() + 86400000 < now))" +
+  ' || (data.exists() && newData.exists()' +
+  " && newData.child('offer/uid').val() === data.child('offer/uid').val()" +
+  " && newData.child('offer/itemId').val() === data.child('offer/itemId').val()" +
+  " && newData.child('expiresAt').val() === data.child('expiresAt').val()" +
+  ' && (' +
+  "(data.child('status').val() === 'open' && newData.child('status').val() === 'proposed'" +
+  " && newData.child('answer/uid').val() === auth.uid" +
+  " && auth.uid !== data.child('offer/uid').val()" +
+  " && now < data.child('expiresAt').val())" +
+  " || (data.child('status').val() === 'proposed' && newData.child('status').val() === 'accepted'" +
+  " && auth.uid === data.child('offer/uid').val()" +
+  " && newData.child('answer/uid').val() === data.child('answer/uid').val()" +
+  " && newData.child('answer/itemId').val() === data.child('answer/itemId').val())" +
+  " || (newData.child('status').val() === 'cancelled'" +
+  " && (data.child('status').val() === 'open' || data.child('status').val() === 'proposed')" +
+  " && (auth.uid === data.child('offer/uid').val() || auth.uid === data.child('answer/uid').val()))" +
+  ')))';
+
+/** Su `.validate` (forma), también por igualdad de texto. */
+const PANUELO_TRADES_VALIDATE =
+  '$code.length === 6 && $code.matches(/^[A-HJKMNP-Z2-9]+$/)' +
+  " && newData.child('code').val() === $code" +
+  " && newData.hasChildren(['code', 'status', 'createdAt', 'expiresAt', 'offer'])" +
+  " && newData.child('createdAt').isNumber() && newData.child('expiresAt').isNumber()";
+
+/** `snapshot.child('a/b').val()` sobre un objeto plano: `null` si no hay. */
+function childVal(value: unknown, childPath: string): unknown {
+  let cur: unknown = value;
+  for (const key of childPath.split('/')) {
+    if (typeof cur !== 'object' || cur === null) return null;
+    cur = (cur as Record<string, unknown>)[key];
+  }
+  return cur === undefined ? null : cur;
+}
+const exists = (value: unknown) => value !== null && value !== undefined;
+const DAY = 86400000;
+
+/** Gemela en TS de `PANUELO_TRADES_WRITE`, rama a rama. */
+function panueloTradeWrite(ctx: RulesContext): boolean {
+  const uid = ctx.auth?.uid;
+  if (!uid) return false;
+  const now = ctx.now ?? Date.now();
+  const data = ctx.data ?? null;
+  const next = ctx.newData ?? null;
+  const d = (p: string) => childVal(data, p);
+  const n = (p: string) => childVal(next, p);
+  // RTDB: una suma o comparación con `null` es un error, y un error deniega.
+  const num = (x: unknown) => (typeof x === 'number' ? x : NaN);
+
+  const create =
+    (!exists(data) || num(d('expiresAt')) + DAY < now) &&
+    n('offer/uid') === uid &&
+    n('status') === 'open' &&
+    !exists(n('answer')) &&
+    num(n('expiresAt')) <= now + 900000;
+  const erase =
+    exists(data) &&
+    !exists(next) &&
+    (d('offer/uid') === uid || num(d('expiresAt')) + DAY < now);
+  const keepsOffer =
+    exists(data) &&
+    exists(next) &&
+    n('offer/uid') === d('offer/uid') &&
+    n('offer/itemId') === d('offer/itemId') &&
+    n('expiresAt') === d('expiresAt');
+  const propose =
+    d('status') === 'open' &&
+    n('status') === 'proposed' &&
+    n('answer/uid') === uid &&
+    uid !== d('offer/uid') &&
+    now < num(d('expiresAt'));
+  const accept =
+    d('status') === 'proposed' &&
+    n('status') === 'accepted' &&
+    uid === d('offer/uid') &&
+    n('answer/uid') === d('answer/uid') &&
+    n('answer/itemId') === d('answer/itemId');
+  const cancel =
+    n('status') === 'cancelled' &&
+    (d('status') === 'open' || d('status') === 'proposed') &&
+    (uid === d('offer/uid') || uid === d('answer/uid'));
+  return create || erase || (keepsOffer && (propose || accept || cancel));
+}
+
+/** Gemela en TS de `PANUELO_TRADES_VALIDATE`. */
+function panueloTradeValidate(
+  ctx: RulesContext,
+  vars: Record<string, string>,
+): boolean {
+  const code = vars.$code ?? '';
+  const next = ctx.newData ?? null;
+  return (
+    code.length === 6 &&
+    /^[A-HJKMNP-Z2-9]+$/.test(code) &&
+    childVal(next, 'code') === code &&
+    ['code', 'status', 'createdAt', 'expiresAt', 'offer'].every((k) =>
+      exists(childVal(next, k)),
+    ) &&
+    typeof childVal(next, 'createdAt') === 'number' &&
+    typeof childVal(next, 'expiresAt') === 'number'
+  );
 }
 
 /** Lee y parsea `database.rules.json` quitándole los comentarios estilo JS. */
@@ -84,6 +210,13 @@ export function evaluateExpression(
       throw new Error(`Bandera de _config anidada no soportada: ${expr}`);
     }
     return ctx.config?.[key] === true;
+  }
+
+  if (normalized === 'auth != null') return !!ctx.auth;
+
+  if (normalized === PANUELO_TRADES_WRITE) return panueloTradeWrite(ctx);
+  if (normalized === PANUELO_TRADES_VALIDATE) {
+    return panueloTradeValidate(ctx, vars);
   }
 
   if (
@@ -203,5 +336,8 @@ export function isAllowed(
  * o solo la forma del dato? Solo los primeros entran en este modelo.
  */
 function isPermissionExpression(expr: string): boolean {
+  // El de `panueloTrades` es de forma, pero lo modelamos entero: un código
+  // que no coincide con su clave es justo lo que hay que denegar.
+  if (expr.trim() === PANUELO_TRADES_VALIDATE) return true;
   return /\bauth\b|\broot\./.test(expr);
 }

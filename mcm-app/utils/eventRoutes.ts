@@ -133,6 +133,7 @@ export const CANTORAL_SLUGS = {
   Tuner: 'afinador',
   SongEditor: 'editar',
   SongReorder: 'ordenar',
+  SundaySongs: 'domingo',
 } as const;
 
 export type CantoralScreenName = keyof typeof CANTORAL_SLUGS;

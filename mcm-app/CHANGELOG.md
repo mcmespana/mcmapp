@@ -22,6 +22,58 @@
 - **Datos completos**: Spotify, Drive, otros enlaces y etiquetas, además de lo que ya había.
 - **Ordenar canciones de una categoría** (Cantoral → ⋯ → Ordenar canciones, `SongReorderScreen`; `POST /api/app/category/reorder` en el cantoral).
 - Puesta en marcha del NAS en `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (temporal). Deuda anotada en el BACKLOG §2.D: que no dependa del NAS.
+## 2026-11-17 06:39 — Arreglo: en iOS los botones de arriba del pañuelo quedaban bajo la cabecera
+
+- **Causa**: la pantalla medía dónde empezaba (`measureInWindow`) solo al maquetarse. Al cerrar el tutorial la cabecera nativa volvía, la pantalla no se re-maquetaba y la medida se quedaba en 0: la pastilla de la etapa, «Decorar» y compartir salían debajo de la cabecera y de la hora.
+- **Arreglo**: sin medir. En iOS la cabecera de `/panuelo` es transparente (`headerTransparent`) y la pantalla reserva `useHeaderHeight()`, igual que Fotos y la lista de canciones seleccionadas. De paso, el botón de atrás ya no dice «(tabs)» (`headerBackButtonDisplayMode: 'minimal'`).
+- Sin probar en dispositivo desde aquí: hay que verlo en el iPhone con la OTA de `preview`.
+
+## 2026-11-17 19:42 — Tu selección vacía: primero el coro; los cantos del domingo, en un botón
+
+- Se quita la tarjeta «Este domingo» (`SundayPlanCard`) del vacío de Tu selección: estorbaba a lo que hace casi todo el mundo, traerse la playlist del coro. El vacío vuelve a ser el de antes, con **«Traer la playlist de <coro>» como botón principal**, y al final un botón discreto **«Cantos con las lecturas del domingo»** (`SundaySongsButton`) que abre la pantalla de los cantos del domingo.
+- Esa pantalla gana **«Leer las lecturas»** (con la cita del evangelio) bajo la cabecera. El porqué de cada canto sale igual en todas partes (`candidateWhy`: «Por las lecturas: …»).
+- La fila de Tu selección del cantoral vuelve a «Vacía · añade canciones desde el cantoral».
+
+## 2026-11-17 19:25 — Metrónomo: puede seguir sonando con la hoja cerrada
+
+- Al cerrar la hoja con el metrónomo sonando, pregunta **«¿Dejar el metrónomo sonando?»** (botón «Sí» grande, «No, pararlo» y «No volver a preguntar», que guarda la respuesta; se deshace en la hoja con «Volver a preguntar»).
+- Sonando, sale una **píldora flotante** abajo a la izquierda en todo el cantoral (tempo, punto que late, ■ para parar); tocarla abre la hoja en el metrónomo (`?modo=metronomo`). Mientras suena, la pantalla no se apaga.
+- El estado pasa de un hook de la hoja a `contexts/MetronomeContext.tsx`, montado en el layout del cantoral. Sin paquetes nuevos. Tests: `metronomeContext.test.tsx`.
+
+## 2026-11-17 19:19 — Cantos para el domingo: dentro de Tu selección y según las lecturas
+
+- **Dónde**: sale del cantoral (se quita la fila «Cantos para el domingo» y `SundaySongsRow`) y pasa a **Tu selección vacía** — lo primero al preparar una misa es vaciarla —. Tarjeta nueva «Este domingo» (`components/playlist/SundayPlanCard.tsx`): fecha, fiesta o tiempo con su color y ciclo, **Leer las lecturas** (la hoja de lecturas, solo lecturas y de ESE domingo) y los cantos propuestos momento a momento con su porqué. «Usar estos cantos» llena la selección (con Deshacer); tocar un canto o «Cambiar alguno u otro domingo» abre la pantalla completa de siempre. Con la lista llena, chip «Cantos del domingo» junto a «Lecturas del domingo». La fila de Tu selección en el cantoral dice «Vacía · cantos para este domingo». La tarjeta de Inicio (viernes a domingo) no cambia.
+- **Cómo elige** (`utils/sundaySongs.ts`): ya no es solo «una de la categoría por rotación». Dentro de cada tramo litúrgico (fiesta > tiempo > neutra, igual que antes), van primero las canciones con **palabras en común con las lecturas** de ese domingo (`readingsAffinity`, en `utils/sundayMatch.ts`: sin IA, palabras raras del cantoral pesan más, evangelio y salmo más que las lecturas). El **salmo** se empareja con el salmo del día. La razón sale en la fila («Lecturas: pastor · ovejas»). Sin lecturas (sin red ni caché) se comporta como antes.
+- `useSundaySongs` lee las lecturas con `useDailyReadings` (su caché de siempre). «Pasar a Tu selección» desde la pantalla completa vuelve a la Tu selección de debajo (`router.dismissTo`) en vez de apilar otra.
+- Sin paquetes nuevos. Tests: `sundaySongs.test.ts` (lecturas), `sundayPlanCard.test.tsx` (nuevo).
+
+## 2026-11-17 09:26 — Pañuelo: el pin de Carismochito
+
+- Pieza nueva en el catálogo (`firebase-seed/panuelo.json`): **Carismochito**, el pin de esmalte de la mascota, troquelado con su silueta (talla mediana, `size: 1.5`, especial e intercambiable, `grant: all` como el resto en pruebas).
+- Forma nueva `carismochito` en `constants/panueloGlyphs.ts`: el visor extruye la silueta del muñeco y le pone encima su cara (`piezas-3d/caras/carismochito.webp`). Visor regenerado (`npm run build:panuelo`).
+- `piezas-3d/`: modelo `carismochito.glb` (esmalte duro con paredes de metal dorado, trasera rayada, pincho y mariposa) y su miniatura. Sale del dibujo vectorizado de la mascota: `_fuente/carismochito_tintas.py` hace el mapa de tintas y `generar.py` ahora sabe hacer pines troquelados (rastrea el contorno, lo triangula y lo extruye) y sacar el trazado de su forma (`--trazado`).
+- Sin paquetes nuevos. Probado en navegador (visor y modelo); sin probar en móvil. La cara y el modelo se sirven por jsDelivr desde `main`.
+
+## 2026-11-17 00:40 — Pañuelo: los pines, por detrás, son metal con su pincho
+
+- Al darle la vuelta a un pin se veía el esmalte (o la foto) del revés. Ahora la trasera es metal liso del color del filo, con el pincho y su cierre (`buildPin` en `panuelo-3d/src/items.ts`). Vale para todos los pines.
+
+## 2026-11-17 00:10 — Pañuelo: en pruebas, todas las piezas se dan solas
+
+- Todas las piezas de `firebase-seed/panuelo.json` pasan a `grant: all`: se consiguen al abrir el pañuelo, sin códigos. Es provisional, para probar; el reparto real (por eventos u otra vía) está por decidir.
+
+## 2026-11-16 23:55 — Pañuelo: el catálogo de pruebas son ya las piezas de verdad
+
+- `firebase-seed/panuelo.json` (el catálogo que lleva la app) pasa a tener **solo piezas reales**: Estoy contigo Samuel, Chapa M+C (1.er año, grande), Pin M+C (3.er año, pequeño), Monitor OG (grande), JMJ Lisboa 2023 (pin rectangular), Jubileo 2025, Chapa OG, COM sonriente, las dos medallas y el **troncho**. Las piezas inventadas quedan en `constants/panueloEjemplo.json` para el tutorial y los tests.
+- **Clase nueva `troncho`**: va por delante, sobre el nudo, en sitio fijo; no se arrastra ni se intercambia (`isFixed`, `PanueloViewerState.troncho`, `buildTroncho`).
+- Chapas y pines aceptan `glb` («Verla de cerca» con el modelo de `piezas-3d/`) y los pines `image`; forma nueva `card` para pines rectangulares. La colección pinta la foto de la pieza.
+- `piezas-3d/`: tres modelos nuevos (`mc-congreso-1`, `monitor-og`, `jmj-lisboa-2023`), `pin-mc` pasa a llamarse `mc-congreso-3`, y carpeta `caras/` con la cara plana de cada pieza.
+- Sin paquetes nuevos. Probado en navegador (visor); sin probar en móvil. Las caras se sirven por jsDelivr desde `main`.
+
+## 2026-11-16 23:20 — Pañuelo: modelos 3D de chapas, pin y troncho de verdad
+
+- Carpeta nueva en la raíz, `piezas-3d/`: seis `.glb` hechos a partir de fotos (Estoy contigo Samuel, Pin M+C, Jubileo 2025, Chapa OG, COM sonriente y el troncho), sus miniaturas y la ficha de cada una en `piezas.json` (nombre, talla `pequena`/`mediana`/`grande`). Se generan con `piezas-3d/_fuente/generar.py`.
+- **Todavía no se usan en la app**: no hay cambios de código. El troncho pedirá una clase nueva (va delante, encima del nudo, fijo y no intercambiable). Detalle en `piezas-3d/README.md`.
 
 ## 2026-11-16 21:45 — Contigo: compartir el evangelio como imagen, exportar lo tuyo y «Tu año»
 
@@ -54,6 +106,25 @@
 - **Metrónomo** (`components/tuner/MetronomePanel.tsx`): tempo 40–220 con −/+ (mantener repite) y «Marcar el tempo»; 1, 2, 3, 4 o 6 pulsos por compás con el primero acentuado; puntos que marcan el pulso. Tempo y compás se recuerdan.
 - **Sonido sintetizado** (`services/metronome/engine.ts`, un «toc» de madera, sin ficheros de audio) con el `react-native-audio-api` del afinador, programado sobre el reloj del audio. Lógica pura y tests en `utils/metronome.ts` / `metronome.test.ts`.
 - Sin paquetes nuevos (sale por OTA en la 2.5.1). Probado en web; sin oír en un móvil. Detalle en `docs/funcionalidades/AFINADOR.md`.
+## 2026-11-16 19:21 — Pañuelo: intercambios de piezas (pantalla, servicio y reglas)
+
+- Nueva hoja «Intercambiar» (Laboratorio Alpha): se ofrece una pieza con un código de 6 y su QR, la otra persona lo escribe o lo escanea, elige qué da (o lo regala) y se acepta. Cada móvil aplica su mitad: la pieza recibida queda cosida donde estaba la dada.
+- Se pueden cambiar pulseras y chapas comunes; nunca medallas ni piezas únicas (`isTradeable`). Hace falta sesión y red en los dos móviles.
+- Firebase: nodo nuevo `/panueloTrades/{code}`, escrito siempre con transacciones (`services/panueloTradeService.ts`). Sus reglas están en `database.rules.json` y **hay que pegarlas a mano en la consola** (`docs/desarrollo/FIREBASE_REGLAS.md` §8); hasta entonces la app avisa de que los intercambios no están activados.
+- Recuperación si la app se cierra a mitad (`@panuelo_trade_pending`) y limpieza de los intercambios caducados al abrir el pañuelo (`@panuelo_trade_mine`).
+- Fallo arreglado: recuperar una pieza que ya se había dado ya no la hace desaparecer al juntar el móvil con la nube (`mergePanuelo`).
+- El escáner de QR lee `…/panuelo?intercambio=` y el enlace abre la hoja. Nueva analítica `panuelo_intercambio`. El tutorial pasa a la versión 4.
+- **Sin probar con dos móviles** (lista en `docs/planes/PLAN_PANUELO_INTERCAMBIOS.md` §7).
+
+## 2026-11-16 18:17 — Cantos para el domingo (cantoral + Inicio)
+
+- Pantalla nueva `/cancionero/domingo`: la app propone una misa para el domingo (entrada, salmo, aleluya, ofertorio, santo, comunión, salida) según el día litúrgico. Cambiar, elegir otra o quitar cada momento; lo cambiado se recuerda por fecha en el dispositivo. Entrada: fila «Cantos para el domingo» bajo «Tu selección».
+- «Pasar a Tu selección» reemplaza la selección con 10 s de Deshacer; «Subir a mi coro» abre directamente el paso de guardar de la hoja del coro.
+- Reglas litúrgicas como filtros: sin Aleluya en Cuaresma ni Semana Santa (el momento pasa a «Aclamación»), sin canciones de otro tiempo o fiesta, sin repetir canción en una misma misa. Misma fecha, misma propuesta en todos los móviles (rotación determinista por semana). El tiempo de cada canción sale de sus etiquetas; `liturgicalTime` solo de respaldo.
+- Día litúrgico completo (`utils/liturgicalDay.ts`): domingo N, ciclo A/B/C por año litúrgico (el JSON lo traía mal desde Adviento) y solemnidades fijas que caen en domingo (Todos los Santos, Inmaculada, Asunción…), añadidas al generador del calendario. El badge de Contigo comparte esa lógica.
+- Tarjeta «Cantos para el domingo» en Inicio de viernes a domingo, con el id `cantos-domingo` en `homeButtons` del perfil (apagable por perfil; **hay que añadirlo en `/profileConfig` de Firebase y en el Panel para que salga**).
+- Sin probar: iOS/Android nativo, y con el cantoral real (falta contar qué canciones llevan etiqueta de tiempo litúrgico, Fase 0 del plan).
+- Doc: `docs/funcionalidades/CANTOS_DOMINGO.md`; plan `docs/planes/PLAN_CANTOS_DOMINGO.md` con fases 1-4 hechas (quedan 0, 5 y 6).
 
 ## 2026-11-15 22:20 — Comunica: coordinación recuerda a los monitores que pasen lista
 

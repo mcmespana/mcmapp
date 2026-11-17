@@ -19,7 +19,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { router, useNavigation } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import Animated, {
   useAnimatedStyle,
   useReducedMotion,
@@ -30,6 +30,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableFeedback } from 'heroui-native';
 import MetronomePanel from '@/components/tuner/MetronomePanel';
+import { useMetronome } from '@/contexts/MetronomeContext';
 import TunerGauge, { gaugeHeight } from '@/components/tuner/TunerGauge';
 import TunerStrings from '@/components/tuner/TunerStrings';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
@@ -98,7 +99,17 @@ export default function TunerScreen() {
   const isDark = useColorScheme() === 'dark';
   const theme = themeColors(isDark);
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<Mode>('tuner');
+  const params = useLocalSearchParams<{ modo?: string }>();
+  const metronome = useMetronome();
+  // Desde el botón flotante (o con el metrónomo sonando), se abre en él.
+  const [mode, setMode] = useState<Mode>(() =>
+    params.modo === 'metronomo' || metronome.playing ? 'metronome' : 'tuner',
+  );
+
+  // Al cerrar la hoja: si el metrónomo suena, sigue, para o pregunta
+  // (`MetronomeContext.sheetClosed`).
+  const { sheetClosed, stop: stopMetronome } = metronome;
+  useEffect(() => () => sheetClosed(), [sheetClosed]);
 
   // ── Cabecera: título nativo y una X para cerrar la hoja (en iOS también se
   // baja con el dedo). En web no es una hoja: ya está la flecha de volver.
@@ -152,13 +163,21 @@ export default function TunerScreen() {
         />
       </View>
       <View style={styles.panel}>
-        {mode === 'tuner' ? <TunerPanel /> : <MetronomePanel />}
+        {mode === 'tuner' ? (
+          <TunerPanel onMount={stopMetronome} />
+        ) : (
+          <MetronomePanel />
+        )}
       </View>
     </ScrollView>
   );
 }
 
-function TunerPanel() {
+/** `onMount`: el metrónomo se calla, que el micrófono lo oiría. */
+function TunerPanel({ onMount }: { onMount: () => void }) {
+  useEffect(() => {
+    onMount();
+  }, [onMount]);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = themeColors(isDark);

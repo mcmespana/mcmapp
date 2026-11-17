@@ -22,7 +22,7 @@ export const PANUELO_COLORS: readonly PanueloColor[] = [
 
 /** Qué clase de cosa es. Decide cómo se modela en 3D. */
 export type PanueloItemKind =
-  'chapa' | 'pin' | 'cinta' | 'parche' | 'medalla' | 'pulsera';
+  'chapa' | 'pin' | 'cinta' | 'parche' | 'medalla' | 'pulsera' | 'troncho';
 
 export type PanueloRarity = 'comun' | 'especial' | 'unica';
 
@@ -48,7 +48,9 @@ export type PanueloGlyph =
   | 'circle'
   | 'shield'
   | 'arrow'
-  | 'rect';
+  | 'rect'
+  | 'card'
+  | 'carismochito';
 
 /** Chapa de imperdible: redonda, abombada y brillante, con un dibujo impreso. */
 export interface ChapaLook {
@@ -67,6 +69,11 @@ export interface ChapaLook {
   textBottom?: string;
   /** Imagen propia (URL con CORS abierto). Sustituye al dibujo entero. */
   image?: string;
+  /**
+   * Modelo `.glb` de la chapa de verdad (ver `piezas-3d/README.md`). Con él,
+   * la ficha ofrece «Verla de cerca».
+   */
+  glb?: string;
 }
 
 /** Pin esmaltado: metal con la forma recortada y esmalte de color dentro. */
@@ -77,6 +84,13 @@ export interface PinLook {
   /** Segundo color: degradado de arriba abajo. */
   enamel2?: string;
   metal?: PanueloMetal;
+  /**
+   * Imagen de la cara (URL con CORS abierto), cuadrada: ocupa la caja de la
+   * forma. Con ella el pin es una pieza de verdad fotografiada.
+   */
+  image?: string;
+  /** Modelo `.glb` del pin de verdad: la ficha ofrece «Verla de cerca». */
+  glb?: string;
 }
 
 /** Cinta de tela con rayas, colgando de un imperdible. */
@@ -125,8 +139,31 @@ export interface PulseraLook {
   ink?: string;
 }
 
+/**
+ * El troncho: el pasador de cuero con el logo grabado. Es la única pieza que
+ * va por DELANTE del pañuelo, justo encima del nudo, en un sitio fijo: ni se
+ * arrastra ni se intercambia.
+ */
+export interface TronchoLook {
+  kind: 'troncho';
+  /** Color del cuero. Por defecto, avellana. */
+  leather?: string;
+  /** Color del grabado. Por defecto, el del cuero oscurecido. */
+  ink?: string;
+  /** Miniatura para la colección (URL con CORS abierto). */
+  image?: string;
+  /** Modelo `.glb` (ver `piezas-3d/README.md`): «Verlo de cerca». */
+  glb?: string;
+}
+
 export type PanueloLook =
-  ChapaLook | PinLook | CintaLook | ParcheLook | MedallaLook | PulseraLook;
+  | ChapaLook
+  | PinLook
+  | CintaLook
+  | ParcheLook
+  | MedallaLook
+  | PulseraLook
+  | TronchoLook;
 
 /**
  * Cómo se consigue una pieza.
@@ -238,6 +275,8 @@ export interface PanueloViewerItem extends PanueloPlacement {
 export interface PanueloViewerState {
   color: PanueloColor;
   items: PanueloViewerItem[];
+  /** El troncho, si se lleva puesto: va sobre el nudo, no en `items`. */
+  troncho?: TronchoLook;
 }
 
 /** App → visor. */

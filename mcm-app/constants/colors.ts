@@ -570,6 +570,8 @@ export const LiturgicalColors = {
   red: '#C41E3A',
   /** Gaudete y Laetare — el rosa de los dos domingos de alegría. */
   rose: '#D4A0A7',
+  /** Solemnidades y fiestas del Señor y de la Virgen (blanco litúrgico). */
+  white: '#F5F5F5',
 } as const;
 
 /**

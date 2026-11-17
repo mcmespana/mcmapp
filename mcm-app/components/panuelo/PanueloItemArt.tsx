@@ -106,6 +106,35 @@ export function PanueloItemArt({ look, size, silhouette }: Props) {
         </G>
       );
       break;
+    case 'troncho': {
+      const leather = look.leather ?? '#9c5527';
+      art = (
+        <>
+          <Rect
+            x={30}
+            y={14}
+            width={40}
+            height={72}
+            rx={9}
+            fill={paint(leather)}
+          />
+          {silhouette ? null : (
+            <Rect
+              x={30}
+              y={14}
+              width={40}
+              height={72}
+              rx={9}
+              fill="none"
+              stroke="#000000"
+              strokeOpacity={0.25}
+              strokeWidth={3}
+            />
+          )}
+        </>
+      );
+      break;
+    }
     case 'parche': {
       const wide = look.shape === 'arrow' || look.shape === 'rect';
       art = (
@@ -258,17 +287,82 @@ export function PanueloItemArt({ look, size, silhouette }: Props) {
     }
   }
 
+  // Una pieza de verdad trae su foto: va encima del dibujo, que se queda de
+  // fondo mientras carga (y si no hay red).
+  const photo = silhouette ? null : photoFrame(look, size);
+
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} viewBox="0 0 100 100">
         {art}
       </Svg>
-      {look.kind === 'medalla' ? logoOverlay(0.3, 0.68) : logoOverlay(0.5)}
+      {photo ? (
+        <View style={[styles.photo, photo.frame]}>
+          <Image
+            source={{ uri: photo.uri }}
+            style={photo.image}
+            contentFit="cover"
+          />
+        </View>
+      ) : look.kind === 'medalla' ? (
+        logoOverlay(0.3, 0.68)
+      ) : (
+        logoOverlay(0.5)
+      )}
     </View>
   );
 }
 
+/**
+ * Dónde va la foto de una pieza de verdad sobre su dibujo. La cara de una
+ * chapa lleva el dibujo hasta el 86 % del radio (el resto dobla hacia el
+ * canto), así que se amplía y se recorta en círculo; la de un pin ocupa la
+ * caja de su forma; el troncho trae su miniatura entera.
+ */
+function photoFrame(look: PanueloLook, size: number) {
+  if (look.kind === 'chapa' && look.image) {
+    const d = size * 0.92;
+    const inner = d / 0.86;
+    return {
+      uri: look.image,
+      frame: {
+        left: (size - d) / 2,
+        top: (size - d) / 2,
+        width: d,
+        height: d,
+        borderRadius: d / 2,
+      },
+      image: {
+        width: inner,
+        height: inner,
+        marginLeft: (d - inner) / 2,
+        marginTop: (d - inner) / 2,
+      },
+    };
+  }
+  if (look.kind === 'pin' && look.image) {
+    const d = size * 0.84;
+    return {
+      uri: look.image,
+      frame: { left: size * 0.08, top: size * 0.08, width: d, height: d },
+      image: { width: d, height: d },
+    };
+  }
+  if (look.kind === 'troncho' && look.image) {
+    return {
+      uri: look.image,
+      frame: { left: 0, top: 0, width: size, height: size },
+      image: { width: size, height: size },
+    };
+  }
+  return null;
+}
+
 const styles = StyleSheet.create({
+  photo: {
+    position: 'absolute',
+    overflow: 'hidden',
+  },
   logo: {
     position: 'absolute',
   },

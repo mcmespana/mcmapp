@@ -75,8 +75,38 @@ export const __resetMockDb = () => {
   nodes.clear();
   get.mockReset();
   get.mockImplementation(defaultGet);
+  runTransaction.mockReset();
+  runTransaction.mockImplementation(defaultRunTransaction);
 };
 export const set = jest.fn(() => Promise.resolve());
+
+/**
+ * `runTransaction` como el de verdad, pero contra los nodos registrados con
+ * `__setMockNode`: aplica la función al valor que haya en `path` (o `null`),
+ * y si devuelve `undefined` aborta (`committed: false`) sin tocar nada. Como
+ * el SDK, primero llama con `null` si el nodo existe y "no estaba en caché"
+ * NO se simula: se le da el valor de verdad desde la primera vuelta. Una copia
+ * por llamada, para que la función no pueda cambiar el nodo por debajo.
+ */
+const defaultRunTransaction = async (
+  reference: { path?: string } | undefined,
+  apply: (current: any) => any,
+) => {
+  const path = reference?.path ?? '';
+  const { value } = resolvePath(path);
+  const current =
+    value === undefined || value === null
+      ? null
+      : JSON.parse(JSON.stringify(value));
+  const next = apply(current);
+  if (next === undefined) {
+    return { committed: false, snapshot: snapshotFor(value) };
+  }
+  if (next === null) nodes.delete(path);
+  else nodes.set(path, JSON.parse(JSON.stringify(next)));
+  return { committed: true, snapshot: snapshotFor(next) };
+};
+export const runTransaction = jest.fn(defaultRunTransaction);
 export const update = jest.fn(() => Promise.resolve());
 export const remove = jest.fn(() => Promise.resolve());
 export const onValue = jest.fn(() => jest.fn());

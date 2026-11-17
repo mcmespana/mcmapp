@@ -38,6 +38,9 @@ Lo que se puede hacer hoy:
 - **Canjear un código** de una actividad: la pieza nueva se presenta girando,
   con chispas, y cae en su sitio.
 - **Compartir** una foto del pañuelo.
+- **Intercambiar** una pulsera o una chapa común con otra persona, cara a
+  cara, con un código o su QR. Hace falta sesión en los dos móviles. Ver
+  «Intercambios».
 
 Detalles que le dan vida: las medallas y las cintas **cuelgan de verdad** y se
 mecen al girar el pañuelo o inclinar el móvil; en reposo el pañuelo se mece un
@@ -49,8 +52,9 @@ sistema no ve el vaivén.
 
 **Hoy: escondido en el Laboratorio Alpha.** El panel «Pañuelo virtual» del
 laboratorio abre la pantalla `/panuelo`. Tiene tres botones: abrir el pañuelo,
-abrirlo con todas las piezas de muestra, y empezar de cero. Códigos de prueba:
-`CONSOLACION`, `PASCUA27`, `CAMINO`, `VERANO`.
+abrirlo con todas las piezas de muestra, y empezar de cero. **Mientras se
+prueba, todas las piezas del catálogo se dan solas al abrir** (`grant: all`);
+cómo se repartirán de verdad (por eventos, códigos…) está por decidir.
 
 El interruptor es `global.panuelo` en `/profileConfig`, igual que Carismochito
 (`utils/panueloGate.ts`, `hooks/usePanueloAvailable.ts`):
@@ -79,7 +83,7 @@ OTA. Cerrado, la ruta `/panuelo` devuelve a Inicio.
 
 ## Las piezas
 
-Hay seis clases. Todas se **dibujan a partir de datos** (colores, forma,
+Hay siete clases. Todas se **dibujan a partir de datos** (colores, forma,
 texto): una pieza nueva es un trozo de JSON en el catálogo, no una imagen ni
 una versión nueva de la app.
 
@@ -91,12 +95,37 @@ una versión nueva de la app.
 | `parche`  | Parche bordado                                             | forma, fondo, borde, dibujo, texto                     |
 | `medalla` | Medalla de metal colgando de su cinta                      | metal, cinta, dibujo en relieve, imagen, modelo `.glb` |
 | `pulsera` | Pulsera de hilo trenzado: la que se cambia en un encuentro | colores de los hilos, trenzado, texto tejido           |
+| `troncho` | El pasador de cuero con el logo: va delante, sobre el nudo | color del cuero                                        |
 
 Las **formas** (corazón, estrella, cruz, luna, llama, vieira, montaña…) son
 trazados SVG en `constants/panueloGlyphs.ts`. Es una sola fuente para dos
 sitios: el visor 3D las extruye y las pinta, y la app las dibuja en plano en la
 colección (`components/panuelo/PanueloItemArt.tsx`). Añadir una forma es añadir
 un trazado ahí y su nombre a `PanueloGlyph` (`types/panuelo.ts`).
+
+### Las piezas de verdad
+
+El catálogo que va dentro de la app (`firebase-seed/panuelo.json`) **solo
+lleva piezas reales**, fotografiadas: chapas, pines, las dos medallas y el
+troncho. Sus modelos y sus caras están en `piezas-3d/` (raíz; ver su README).
+
+- Una **chapa** o un **pin** de verdad lleva `image` (su cara, que es lo que se
+  cose) y `glb` (su modelo: la ficha ofrece «Verla de cerca», como las
+  medallas). Un pin rectangular usa la forma `card`; un pin **troquelado**
+  con la silueta de un dibujo (Carismochito) tiene su propia forma, sacada
+  del mismo calco que su modelo (`piezas-3d/README.md`), y su cara ocupa la
+  caja de esa forma.
+- **Tres tallas**, con `size`: pequeña ≈ 0,7–0,85 · mediana 1 · grande 1,4.
+- **El troncho** no se cose en el triángulo: va por delante. Con él puesto,
+  la tela se recoge en un cabo que baja desde donde se junta el pañuelo
+  (`Panuelo.strand`), el troncho va ceñido a ese cabo y el nudo y las puntas
+  quedan justo debajo (como el de verdad, según foto del propietario). Se «lleva puesto» (está en `layout`,
+  sin gastar hueco) o no; no se arrastra, no se gira y **no se intercambia**.
+  El visor lo recibe aparte (`PanueloViewerState.troncho`) y hoy no se puede
+  tocar en el 3D: su ficha se abre desde la colección.
+- Las piezas inventadas de antes (una de cada clase) siguen en
+  `constants/panueloEjemplo.json`: las usan el **tutorial** —aún no hay
+  cinta, parche ni pulsera de verdad— y los tests. Nadie puede conseguirlas.
 
 Cada pieza puede llevar además: de dónde viene (`origin`), una descripción,
 rareza (`comun` / `especial` / `unica`), tamaño, si es **secreta** (no sale ni
@@ -139,6 +168,8 @@ components/panuelo/
 ├── PanueloCollectionFilter.tsx     El filtro (Todas · Puestas · Sin poner) y su vacío
 ├── PanueloItemDetail.tsx           La ficha de una pieza
 ├── PanueloRedeemSheet.tsx          Canjear un código
+├── PanueloTradeSheet.tsx           Intercambiar: todos los pasos de las dos partes
+├── PanueloTradeCode.tsx            El código de un intercambio en grande y su QR
 ├── PanueloColorSwatches.tsx        Los cuatro colores (grupo de radio)
 ├── PanueloStageSheet.tsx           La hoja «¿Cambias de pañuelo?»
 ├── PanueloStageBurst.tsx           El confeti del cambio, del color nuevo
@@ -151,15 +182,18 @@ hooks/usePanueloStage.ts            Cambio de etapa: hoja, confeti, detección d
 hooks/usePanueloScarf.ts            Lee `mcm.scarf` de Comunica (fuera del área)
 hooks/usePanueloTutorial.ts         Si el tutorial toca, y que ya se vio
 hooks/usePanueloTutorialStage.ts    Qué hace el visor en cada paso del tutorial
+hooks/usePanueloTrade.ts            El intercambio en curso: pasos, en vivo, recuperación, limpieza
+services/panueloTradeService.ts     panueloTrades/{code} en RTDB, siempre con transacciones
 constants/panueloTutorial.ts        Las secciones del tutorial (datos)
 utils/panuelo.ts                    Lógica pura: sanear, fusionar, conseguir, decorar
 utils/panueloPlacement.ts           Dónde cabe una pieza (lo comparten app y visor)
-utils/panueloTrade.ts               Intercambios: las reglas (sin pantalla todavía)
+utils/panueloTrade.ts               Intercambios: las reglas (puras), saneado y opciones
 utils/panueloShare.ts               Compartir la foto
 utils/sha256.ts                     Hash de los códigos
 types/panuelo.ts                    Tipos y el protocolo app ↔ visor
 constants/panueloGlyphs.ts          Las formas
-firebase-seed/panuelo.json          Catálogo de muestra (y el que se usa sin catálogo remoto)
+firebase-seed/panuelo.json          El catálogo: piezas de verdad (y el que se usa sin catálogo remoto)
+constants/panueloEjemplo.json       Piezas inventadas, una de cada clase: tutorial y tests
 ```
 
 ### El visor: un WebView con three.js dentro
@@ -220,7 +254,10 @@ con el commiteado. `three` es solo una herramienta de build
 ```
 RTDB  /panuelo                          { updatedAt, data: { items: { <id>: pieza } } }
 RTDB  /users/{uid}/panuelo              { color, items, layout, layoutAt, gone?, history? }
+RTDB  /panueloTrades/{code}             Un intercambio en curso (contrato §4)
 AsyncStorage  @panuelo_state            Lo mismo que el nodo del usuario
+AsyncStorage  @panuelo_trade_pending    { code, role }: el intercambio a medias, para recuperarlo
+AsyncStorage  @panuelo_trade_mine       Los códigos que abrió este móvil, para borrarlos al caducar
 AsyncStorage  @panuelo_seen             Ids de las piezas ya presentadas en este móvil
 AsyncStorage  @panuelo_tutorial_seen    Versión del tutorial ya vista en este móvil
 AsyncStorage  panuelo_catalog           Caché del catálogo (useFirebaseData)
@@ -240,7 +277,8 @@ AsyncStorage  panuelo_catalog           Caché del catálogo (useFirebaseData)
   `sanitizeUserState`): una pieza mal escrita se descarta entera en vez de
   tumbar la pantalla; los colores tienen que ser hex; las imágenes, `https`.
 
-Analítica: `panuelo_abierto` y `panuelo_pieza_conseguida { clase, via }`.
+Analítica: `panuelo_abierto`, `panuelo_pieza_conseguida { clase, via }` y
+`panuelo_intercambio { paso: abierto | propuesto | aceptado | cancelado, regalo }`.
 
 ## Cambio de etapa e historial
 
@@ -329,8 +367,8 @@ lo cuenta esto, una vez y a mano cuando se quiera. Las ayudas de accesibilidad
 `steps` un «cómo se hace» numerado y `rows` filas «icono + título +
 descripción». El comentario de arriba del fichero dice cómo añadir una. Es una
 introducción, no un manual: **6–7 pasos como mucho**; lo que va junto a un paso
-se funde en una fila más. Solo se cuenta lo que la app hace hoy (nada de
-intercambios hasta que tengan pantalla): un test lo vigila.
+se funde en una fila más. Solo se cuenta lo que la app hace hoy; los
+intercambios entran como una fila de «Tu colección» (un test lo vigila).
 
 | Paso              | Qué lleva                                                  | Ejemplo en el visor                                |
 | ----------------- | ---------------------------------------------------------- | -------------------------------------------------- |
@@ -338,7 +376,7 @@ intercambios hasta que tengan pantalla): un test lo vigila.
 | Chapas y pines    | Las seis clases · para todos / con código / repartidas     | Las seis cosidas + dibujadas en plano debajo       |
 | Canjear un código | 3 pasos numerados · el enlace con el código escrito        | Una pieza que se presenta (`reveal`)               |
 | Verlas de cerca   | Su ficha · medallas con modelo propio                      | Una medalla enfocada (`focus`)                     |
-| Tu colección      | Filtrar (Todas · Puestas · Sin poner) · **Compartir**      | Pañuelo con piezas                                 |
+| Tu colección      | Filtrar · **Compartir** · **Intercambiar**                 | Pañuelo con piezas                                 |
 | Decorarlo         | 3 pasos numerados · **Recolocar**                          | Modo decorar con una pieza seleccionada (`select`) |
 | Cambiar de etapa  | Tú decides (mantener o empezar de cero) · **Mis pañuelos** | La tela pasa de verde a azul (`toColor`)           |
 
@@ -390,7 +428,7 @@ enfocar o seleccionar se ignoran mientras dura.
 Solo, la primera vez; y siempre desde el «?» de la cabecera nativa
 (`accessibilityLabel` «Cómo funciona tu pañuelo»; en iOS un
 `Stack.Toolbar.Button`, en Android y web un `headerRight`). Se recuerda en
-`@panuelo_tutorial_seen` con la **versión** (`PANUELO_TUTORIAL_VERSION`, hoy 3):
+`@panuelo_tutorial_seen` con la **versión** (`PANUELO_TUTORIAL_VERSION`, hoy 4):
 al subirla —cuando cambia de verdad una función, no por retocar una frase— se
 vuelve a enseñar una vez. Va **primero**: ni el canje de `?codigo=`, ni la
 presentación de una pieza nueva, ni la pregunta de cambio de etapa salen hasta
@@ -446,68 +484,75 @@ la propia persona (`red | green | blue | yellow | cross | none | unknown`).
   vez en el área nativa; si no, no hay nada que leer y el pañuelo se elige a
   mano. Sin probar contra el servidor real (solo contra dobles).
 
-## Intercambios (la base está puesta; falta la pantalla)
+## Intercambios
 
-La idea: dos personas, cara a cara, se cambian una pulsera o una chapa, como se
-hace con las de verdad. **Una enseña un código, la otra lo escribe, cada una
-elige qué da, y se cambian.**
+Dos personas, cara a cara, se cambian una pulsera o una chapa, como se hace con
+las de verdad. **Una enseña un código, la otra lo escribe, cada una elige qué
+da, y se cambian.** El plan con todos los detalles (estados de error, reglas,
+pruebas en dos móviles) es
+[`../planes/PLAN_PANUELO_INTERCAMBIOS.md`](../planes/PLAN_PANUELO_INTERCAMBIOS.md).
 
-Qué piezas se pueden cambiar: las que el catálogo marque con
-`tradeable: true`. Si no dice nada, **solo las pulseras** (`isTradeable`). Una
-medalla se gana por haber estado; no se cambia.
+**Qué piezas** (decisión del propietario, 2026-11-16): **pulseras y chapas
+comunes** (`isTradeable`). **Nunca medallas ni piezas `unica`** (las de un
+evento: se ganan por haber estado), aunque el catálogo diga `tradeable: true`.
+El catálogo puede quitar una pulsera o chapa (`tradeable: false`) o sumar un
+pin o una chapa especial (`tradeable: true`).
 
 ### Cómo va
 
-1. Ana abre una pieza suya intercambiable y pulsa «Intercambiar». Nace un
-   intercambio `open` con un **código de 6 caracteres** (sin 0/O ni 1/I/L: se
-   dicta de viva voz en un patio con ruido) que caduca a los **10 minutos**.
-2. Ana le enseña el código o su QR a Luis. Luis lo escribe, ve la pieza de Ana
-   y elige qué da a cambio — o nada, y entonces es un regalo. Pasa a `proposed`.
-3. Ana ve lo que ofrece Luis y acepta. Pasa a `accepted`.
-4. Cada móvil aplica **su mitad**: sale la pieza que da y entra la que recibe,
-   **cosida en el mismo sitio** del pañuelo (un cambio, no un hueco).
+1. **Ana** toca una pieza suya intercambiable → ficha → **«Intercambiar»**
+   (o el botón ⇄ de la cabecera de la colección, que le deja elegir). Nace un
+   intercambio `open` con un **código de 6** (sin 0/O ni 1/I/L: se dicta en un
+   patio con ruido) que caduca a los **10 minutos**. La hoja lo enseña en
+   grande («K7W Q4M») con su QR (`mcmapp://panuelo?intercambio=K7WQ4M`) y
+   «Caduca en 9 min».
+2. **Luis** escanea el QR con la cámara del sistema (abre la app en la hoja)
+   o, dentro del pañuelo, ⇄ → «Tengo un código» → lo escribe o lo escanea.
+   Ve la pieza de Ana y elige qué da: una de sus intercambiables (las que Ana
+   ya tiene salen deshabilitadas, «Ya la tiene», gracias a `offer.have`) o
+   **nada: un regalo**. Pasa a `proposed`.
+3. A Ana le llega en vivo («Luis te da «Azul» por tu «Roja»») y acepta, o
+   dice «No, gracias». Pasa a `accepted`.
+4. **Cada móvil aplica su mitad** al ver `accepted`: sale la pieza que da y
+   entra la que recibe, **cosida en el mismo sitio** (un cambio, no un hueco),
+   y se sube en una sola escritura (`syncPanueloTradeHalf`: `items/{dada}` a
+   `null`, `gone/{dada}`, la recibida y la colocación). La recibida se
+   **presenta** en el visor como cualquier pieza nueva.
 
-No se puede recibir una pieza que ya se tiene: en el pañuelo cada pieza está
-una vez. Cualquiera de las dos partes puede echarse atrás antes de aceptar.
+No se puede recibir una pieza que ya se tiene. Cualquiera de las dos partes
+puede echarse atrás antes de aceptar. Un intercambio a la vez por móvil:
+mientras hay uno abierto, «Intercambiar» lleva a ese.
 
-### Qué hay hecho
+**Hace falta sesión (Google/Apple) y red en los dos móviles.** Sin sesión la
+hoja enseña el login; sin red, lo dice y no deja seguir.
 
-`utils/panueloTrade.ts`, con sus tests (`__tests__/panueloTrade.test.ts`): las
-reglas enteras como funciones puras — `createTradeOffer`, `answerTrade`,
-`acceptTrade`, `cancelTrade`, `applyTrade`, los códigos y la caducidad.
+### Lo que no se ve
 
-Y la pieza que hace que funcione con la nube: el estado apunta lo que se da
-(`gone: { <id>: cuándo }`). Sin eso, al juntar el móvil con la nube —que SUMAN
-piezas— lo regalado volvería a aparecer. Una pieza se tiene si se consiguió
-**después** de darla.
+- **Todo pasa por transacciones** sobre el nodo entero
+  (`services/panueloTradeService.ts`): si dos personas contestan al mismo
+  código a la vez, una gana y la otra lee «Otra persona ya ha contestado».
+- **Hora del servidor**: la caducidad se mira con `.info/serverTimeOffset`;
+  un móvil con la hora mal no ve caducado un intercambio vivo.
+- **Recuperación**: el código en curso se guarda en `@panuelo_trade_pending`.
+  Si alguien cierra la app justo al aceptar, al volver a abrir el pañuelo se
+  aplica lo que faltaba (o se reabre la hoja, si sigue vivo).
+- **Limpieza** (decisión del propietario): cada móvil borra al abrir el
+  pañuelo los intercambios que abrió y ya caducaron; los aceptados se dejan
+  un día, para la recuperación de la otra parte.
+- **Lo dado no vuelve**: `gone` apunta lo que se dio; al juntar el móvil con
+  la nube, una copia de antes de darla no cuenta. Recuperar luego esa misma
+  pieza en otro intercambio sí cuenta (era un fallo latente, arreglado con su
+  test en `__tests__/panuelo.test.ts`).
 
-### Qué falta
+### Reglas de Firebase
 
-1. **El servicio** (`services/panueloTradeService.ts`): crear, leer y escuchar
-   `panueloTrades/{code}` en RTDB. El patrón es el de `choirSessionService.ts`.
-2. **La pantalla**: botón «Intercambiar» en la ficha (ya sale el chip
-   «Intercambiable»), hoja con el código y su QR
-   (`react-native-qrcode-svg` ya está), hoja para escribirlo o escanearlo
-   (`components/playlist/QrScannerModal.tsx`), elegir qué se da, y la
-   animación: la pieza que sale vuela fuera y la que entra se presenta.
-3. **Subir la mitad de cada uno**: borrar `items/{id}` y escribir `gone/{id}`
-   en `users/{uid}/panuelo` (hoy `syncPanueloItem` solo añade).
-4. **Las reglas de Firebase** de `panueloTrades` (propuesta, sin desplegar):
-
-   ```json
-   "panueloTrades": {
-     "$code": {
-       ".read": "auth != null",
-       ".write": "auth != null && (!data.exists() ? newData.child('offer/uid').val() === auth.uid : (data.child('offer/uid').val() === auth.uid || !data.child('answer').exists() || data.child('answer/uid').val() === auth.uid))",
-       ".validate": "newData.hasChildren(['code', 'status', 'createdAt', 'expiresAt', 'offer'])"
-     }
-   }
-   ```
-
-   Los intercambios **necesitan sesión** en los dos móviles.
-
-5. **Limpieza** de intercambios caducados (una Cloud Function programada, o
-   que cada móvil borre los suyos al abrir).
+Están en `mcm-app/database.rules.json` (`panueloTrades`) con sus pruebas en
+`__tests__/databaseRules.test.ts`. **Se despliegan a mano** (decisión del
+propietario): el bloque exacto y el paso a paso para la consola están en
+[`../desarrollo/FIREBASE_REGLAS.md`](../desarrollo/FIREBASE_REGLAS.md) §8.
+Hasta que estén, intercambiar dice «Los intercambios todavía no están
+activados en el servidor. Avisa a quien lleva la app.» en vez de un error
+crudo.
 
 ### El límite que hay que conocer
 
@@ -537,5 +582,9 @@ transacción y nada de lo demás cambia.
 - **No se ha probado en un móvil de verdad.** Se ha probado en navegador (el
   visor y la pantalla entera en web). Falta ver en iPhone y Android: el WebView
   transparente, el rendimiento con muchas piezas, la inclinación y compartir.
+- **Intercambios sin probar en un móvil.** Falta el ciclo entero con dos
+  móviles y dos cuentas (lista en el plan, §7), y desplegar el bloque de
+  reglas (`FIREBASE_REGLAS.md` §8). La pieza que se da desaparece sin
+  animación (la «vuela» de la Fase 6 del plan no está hecha).
 - **Repartir desde el Panel** necesita que el Panel pueda escribir en
   `/users/{uid}` (hoy no puede sin autenticación real: Integración D).

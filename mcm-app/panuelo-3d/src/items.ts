@@ -22,6 +22,7 @@ import type {
   ParcheLook,
   PinLook,
   PulseraLook,
+  TronchoLook,
 } from '@/types/panuelo';
 
 import {
@@ -33,6 +34,7 @@ import {
   paintMedalFace,
   paintParche,
   paintRibbon,
+  paintTroncho,
 } from './art';
 
 export interface BuiltItem {
@@ -230,7 +232,7 @@ function buildChapa(look: ChapaLook, ctx: BuildContext): BuiltItem {
 
 // ── Pin esmaltado ──────────────────────────────────────────────────────────
 
-function buildPin(look: PinLook): BuiltItem {
+function buildPin(look: PinLook, ctx: BuildContext): BuiltItem {
   const size = 0.25;
   const geometry = extrudeGlyph(look.shape, size, 0.011, 0.01);
   const enamel = new THREE.MeshPhysicalMaterial({
@@ -248,6 +250,53 @@ function buildPin(look: PinLook): BuiltItem {
   const mesh = shadowed(new THREE.Mesh(geometry, [enamel, metal(look.metal)]));
   const group = new THREE.Group();
   group.add(mesh);
+
+  // Por detrás un pin es metal liso, como su filo, con el pincho y su
+  // cierre: sin esto, al darle la vuelta se veía el esmalte del revés.
+  const k = size / GLYPH_BOX;
+  const plate = new THREE.ShapeGeometry(glyphShapes(look.shape), 18);
+  plate.translate(-GLYPH_BOX / 2, -GLYPH_BOX / 2, 0);
+  plate.scale(k * 0.985, -k * 0.985, 1);
+  const backMetal = metal(look.metal).clone();
+  backMetal.side = THREE.DoubleSide;
+  const back = new THREE.Mesh(plate, backMetal);
+  back.position.z = -0.0008;
+  group.add(back);
+  plate.computeBoundingBox();
+  const box = plate.boundingBox!;
+  const cx = (box.min.x + box.max.x) / 2;
+  const cy = (box.min.y + box.max.y) / 2;
+  const post = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.0045, 0.002, 0.03, 10),
+    metal(look.metal),
+  );
+  post.rotation.x = Math.PI / 2;
+  post.position.set(cx, cy, -0.015);
+  group.add(post);
+  const clutch = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.026, 0.03, 0.009, 24),
+    metal(look.metal),
+  );
+  clutch.rotation.x = Math.PI / 2;
+  clutch.position.set(cx, cy, -0.0125);
+  group.add(clutch);
+
+  if (look.image) {
+    // Un pin de verdad: su foto ocupa la caja de la forma (las UV de
+    // `extrudeGlyph` son planas, de 0 a 1 sobre esa caja).
+    loadImage(look.image).then((img) => {
+      if (!img) return;
+      const map = new THREE.Texture(img);
+      map.colorSpace = THREE.SRGBColorSpace;
+      map.anisotropy = 4;
+      map.needsUpdate = true;
+      enamel.map?.dispose();
+      enamel.map = map;
+      enamel.color.set('#ffffff');
+      enamel.needsUpdate = true;
+      ctx.invalidate();
+    });
+  }
   return { group, radius: size * 0.56 };
 }
 
@@ -593,6 +642,75 @@ function buildPulsera(look: PulseraLook): BuiltItem {
   return { group, radius: 0.2 };
 }
 
+// ── Troncho ────────────────────────────────────────────────────────────────
+
+/** Alto y radio del tubo de cuero (el de verdad: 31 × 22 mm). */
+const TRONCHO_H = 0.2;
+const TRONCHO_R = 0.078;
+
+/**
+ * El troncho: un tubo de cuero con el logo grabado. Se construye de pie (eje
+ * Y) con el logo mirando a +Z. No se cose en el triángulo: `main.ts` lo
+ * cuelga del nudo.
+ */
+export function buildTroncho(look: TronchoLook, ctx: BuildContext): BuiltItem {
+  const leather = look.leather ?? '#9c5527';
+  const { map, bump } = paintTroncho(leather, look.ink, ctx.logo);
+  const skin = new THREE.MeshStandardMaterial({
+    map,
+    bumpMap: bump,
+    bumpScale: 1.4,
+    roughness: 0.62,
+    metalness: 0,
+  });
+  // El cilindro de three empieza la textura en −Z: media vuelta y el centro
+  // del dibujo (el logo) queda en +Z.
+  const tube = new THREE.CylinderGeometry(
+    TRONCHO_R,
+    TRONCHO_R,
+    TRONCHO_H,
+    40,
+    1,
+    true,
+    Math.PI,
+  );
+  const group = new THREE.Group();
+  group.add(shadowed(new THREE.Mesh(tube, skin)));
+  const inside = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(leather).multiplyScalar(0.55),
+    roughness: 0.95,
+    side: THREE.BackSide,
+  });
+  group.add(
+    new THREE.Mesh(
+      new THREE.CylinderGeometry(
+        TRONCHO_R * 0.86,
+        TRONCHO_R * 0.86,
+        TRONCHO_H,
+        32,
+        1,
+        true,
+      ),
+      inside,
+    ),
+  );
+  // Los dos cantos: el grosor del cuero.
+  const edge = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(leather).multiplyScalar(0.7),
+    roughness: 0.9,
+  });
+  for (const y of [TRONCHO_H / 2, -TRONCHO_H / 2]) {
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(TRONCHO_R * 0.86, TRONCHO_R, 40),
+      edge,
+    );
+    ring.rotation.x = y > 0 ? -Math.PI / 2 : Math.PI / 2;
+    ring.position.y = y;
+    group.add(ring);
+  }
+  return { group, radius: TRONCHO_R * 1.3 };
+}
+
 // ── Entrada ────────────────────────────────────────────────────────────────
 
 export function buildItem(look: PanueloLook, ctx: BuildContext): BuiltItem {
@@ -600,7 +718,7 @@ export function buildItem(look: PanueloLook, ctx: BuildContext): BuiltItem {
     case 'chapa':
       return buildChapa(look, ctx);
     case 'pin':
-      return buildPin(look);
+      return buildPin(look, ctx);
     case 'parche':
       return buildParche(look);
     case 'cinta':
@@ -609,6 +727,8 @@ export function buildItem(look: PanueloLook, ctx: BuildContext): BuiltItem {
       return buildMedalla(look, ctx);
     case 'pulsera':
       return buildPulsera(look);
+    case 'troncho':
+      return buildTroncho(look, ctx);
     default:
       // Una clase que esta versión del visor no conoce: una chapa lisa, para
       // que la pieza exista aunque no sepamos dibujarla.
