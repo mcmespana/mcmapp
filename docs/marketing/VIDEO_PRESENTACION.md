@@ -80,8 +80,9 @@ estado). 5–8 s por toma, gestos lentos y limpios:
 - **Nada de datos reales en Comunica.** Son fichas de menores y de familias:
   solo el perfil `production-comunica-falso` (servidor falso, nombres
   inventados). Lo mismo para cualquier foto de la galería que salga con caras.
-- **Carismochito no sale**: está cerrado hasta el 25.º aniversario (2027),
-  ni el modo ni su pin del pañuelo (`piezas-3d/carismochito.glb`).
+- **Carismochito no sale** en la versión normal: está cerrado hasta el 25.º
+  aniversario (2027), ni el modo ni su pin del pañuelo
+  (`piezas-3d/carismochito.glb`). Solo asoma en la versión «guiño 2027».
 - **El pañuelo, con sello «Muy pronto»**: hoy solo está en el Laboratorio
   Alpha y el reparto real de piezas está por decidir (`PANUELO.md`). No decir
   cómo se consiguen las piezas más allá de «por participar en las
@@ -90,6 +91,24 @@ estado). 5–8 s por toma, gestos lentos y limpios:
   ese momento; no inventarlo.
 - Las insignias de App Store y Google Play, solo las oficiales y sin
   deformarlas.
+
+## Dos versiones
+
+1. **Normal (la de siempre)**: el guion de arriba, sin Carismochito.
+2. **Con guiño 2027** (decisión del propietario, 17/11/2026): la misma, y tras el
+   cierre, ~3 s más. Primero un momento de calma (fondo quieto, música que se
+   apaga), luego **«2027»** entra en dos golpes, y el **pin de Carismochito**
+   (`piezas-3d/thumbs/carismochito.webp`) se asoma y parpadea un par de veces
+   (como mucho 3 cambios por segundo: no es un flash) con un «Se viene…».
+   Es la **única** excepción a «Carismochito no sale», y solo en esta versión.
+   Se hace a partir de la normal, cuando esté cerrada.
+
+## El vídeo en Motion
+
+Primer montaje (versión normal, 60 s, pantallas dibujadas a partir del código
+de la app): https://claude.ai/artifact/DvdGrkjoHMtehuVoBdQvhZ — las pantallas
+se cambian por las tomas del iPhone del propietario cuando lleguen (en cada
+escena, `W.shot(kit, '<toma>')` dentro de `W.phone`).
 
 ## Siguiente paso
 
