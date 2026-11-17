@@ -24,6 +24,8 @@ import { useToast } from '@/contexts/AppToastContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import {
   convertPastedText,
+  fetchSongFromUrl,
+  isSongUrl,
   readSongPhotos,
   type EditorStatus,
 } from '@/services/songEditorService';
@@ -47,7 +49,7 @@ export default function NewSongStart({
   const theme = themeColors(isDark);
   const { toast } = useToast();
   const [busy, setBusy] = useState<string | null>(null);
-  const [pasting, setPasting] = useState(false);
+  const [pasting, setPasting] = useState<false | 'text' | 'url'>(false);
   const [text, setText] = useState('');
 
   const fail = (e: unknown) =>
@@ -97,6 +99,20 @@ export default function NewSongStart({
   };
 
   const fromText = async () => {
+    // Un enlace (doceacordes y compañía): lo trae el cantoral.
+    if (isSongUrl(text)) {
+      try {
+        setBusy('Trayendo la canción…');
+        const song = await fetchSongFromUrl(text.trim());
+        if (!song.cho) throw new Error('No he encontrado la canción');
+        onReady(song.title, song.cho, song.category);
+      } catch (e) {
+        fail(e);
+      } finally {
+        setBusy(null);
+      }
+      return;
+    }
     try {
       setBusy('Convirtiendo…');
       const song = await convertPastedText(text);
@@ -131,10 +147,16 @@ export default function NewSongStart({
         <TextInput
           value={text}
           onChangeText={setText}
-          multiline
+          multiline={pasting !== 'url'}
           autoFocus
           autoCorrect={false}
-          placeholder="Pega aquí la letra, con los acordes encima o en ChordPro"
+          placeholder={
+            pasting === 'url'
+              ? 'https://doceacordes.es/cancion/972'
+              : 'Pega aquí la letra (con los acordes encima o en ChordPro) o un enlace'
+          }
+          autoCapitalize={pasting === 'url' ? 'none' : 'sentences'}
+          keyboardType={pasting === 'url' ? 'url' : 'default'}
           placeholderTextColor={theme.textMuted}
           style={[
             styles.textArea,
@@ -178,7 +200,13 @@ export default function NewSongStart({
       icon: 'content-paste' as const,
       title: 'Pegar el texto',
       sub: 'Con los acordes encima de la letra o en ChordPro.',
-      onPress: () => setPasting(true),
+      onPress: () => setPasting('text'),
+    },
+    {
+      icon: 'link' as const,
+      title: 'Desde un enlace',
+      sub: 'Doceacordes se convierte tal cual, sin IA.',
+      onPress: () => setPasting('url'),
     },
     {
       icon: 'edit-note' as const,

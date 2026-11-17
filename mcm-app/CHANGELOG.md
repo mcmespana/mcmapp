@@ -4,6 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 23:00 — Editor: canción nueva desde un enlace de doceacordes, sin IA
+
+- «Nueva canción» → **Desde un enlace** (o pegando la URL en «Pegar el texto»). Los de doceacordes (`doceacordes.es/cancion/<id>`) los convierte el cantoral con su conversor propio, sin IA. Endpoint nuevo `POST /api/app/song/fetch-url` en `mcmapp-cantoral`.
+
 ## 2026-11-17 22:30 — Aviso al enviar feedback y sugerencias de canción
 
 - **Feedback de la app** (Inicio y Más): al enviar sale un aviso según el tipo — fallito, sugerencia o felicitación. Antes, desde Más no salía nada, y desde Inicio podía quedar oculto bajo la hoja que se cerraba.

@@ -320,6 +320,29 @@ export async function convertPastedText(text: string): Promise<ConvertedSong> {
   return fromImport(await call('/api/app/song/convert', { json: { text } }));
 }
 
+/**
+ * Un enlace → canción. Los de doceacordes (`doceacordes.es/cancion/<id>`) los
+ * convierte el cantoral con su conversor propio, sin IA; otras webs o fotos,
+ * con la IA si la tiene.
+ */
+export async function fetchSongFromUrl(url: string): Promise<ConvertedSong> {
+  const res = await call<{
+    title?: string;
+    cho?: string;
+    category?: string;
+  }>('/api/app/song/fetch-url', { json: { url }, timeout: READ_TIMEOUT_MS });
+  return {
+    title: res.title ?? '',
+    cho: res.cho ?? '',
+    category: res.category,
+  };
+}
+
+/** ¿Es el texto pegado solo un enlace? */
+export function isSongUrl(text: string): boolean {
+  return /^https?:\/\/\S+$/i.test(text.trim());
+}
+
 /** Fotos o PDF de un cancionero → canciones leídas con la IA del cantoral. */
 export async function readSongPhotos(
   files: { uri: string; name: string; type: string; file?: Blob }[],
