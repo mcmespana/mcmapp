@@ -175,27 +175,32 @@ export default function NewSongStart({
     );
   }
 
+  // Las fotos salen siempre: si no se pueden usar ahora, dice por qué.
+  const photoBlock =
+    status === null
+      ? 'Necesita el cantoral conectado (ahora no contesta)'
+      : !status.ai
+        ? 'El cantoral no tiene la IA activada'
+        : null;
   const options = [
-    ...(status?.ai
+    ...(Platform.OS !== 'web'
       ? [
-          ...(Platform.OS !== 'web'
-            ? [
-                {
-                  icon: 'photo-camera' as const,
-                  title: 'Hacer una foto',
-                  sub: 'De un cancionero o una hoja. Luego la repasas.',
-                  onPress: () => void fromPhoto(true),
-                },
-              ]
-            : []),
           {
-            icon: 'photo-library' as const,
-            title: 'Elegir fotos',
-            sub: 'Hasta cuatro páginas seguidas.',
-            onPress: () => void fromPhoto(false),
+            icon: 'photo-camera' as const,
+            title: 'Hacer una foto',
+            sub: photoBlock ?? 'De un cancionero o una hoja. Luego la repasas.',
+            disabled: !!photoBlock,
+            onPress: () => void fromPhoto(true),
           },
         ]
       : []),
+    {
+      icon: 'photo-library' as const,
+      title: Platform.OS === 'web' ? 'Subir fotos' : 'Elegir fotos',
+      sub: photoBlock ?? 'Hasta cuatro páginas seguidas.',
+      disabled: !!photoBlock,
+      onPress: () => void fromPhoto(false),
+    },
     {
       icon: 'content-paste' as const,
       title: 'Pegar el texto',
@@ -235,14 +240,17 @@ export default function NewSongStart({
               h.tap();
               o.onPress();
             }}
+            isDisabled={'disabled' in o && !!o.disabled}
             style={[
               styles.option,
+              'disabled' in o && o.disabled && styles.optionOff,
               i > 0 && {
                 borderTopWidth: StyleSheet.hairlineWidth,
                 borderTopColor: theme.separator,
               },
             ]}
             accessibilityRole="button"
+            accessibilityState={{ disabled: 'disabled' in o && !!o.disabled }}
           >
             <MaterialIcons name={o.icon} size={24} color={theme.link} />
             <View style={styles.flex}>
@@ -292,6 +300,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     minHeight: 64,
   },
+  optionOff: { opacity: 0.45 },
   optionTitle: { ...typography.title },
   optionSub: { ...typography.caption, marginTop: 2 },
 });

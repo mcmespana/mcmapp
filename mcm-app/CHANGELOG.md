@@ -4,6 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 23:20 — Editor: las opciones de foto se ven siempre
+
+- En «Nueva canción», «Hacer una foto» y «Elegir fotos» salían solo si el cantoral contestaba y tenía la IA; sin eso no aparecían y parecía que no existían. Ahora se ven siempre y, si no se pueden usar, salen en gris diciendo por qué.
+
 ## 2026-11-17 23:00 — Editor: canción nueva desde un enlace de doceacordes, sin IA
 
 - «Nueva canción» → **Desde un enlace** (o pegando la URL en «Pegar el texto»). Los de doceacordes (`doceacordes.es/cancion/<id>`) los convierte el cantoral con su conversor propio, sin IA. Endpoint nuevo `POST /api/app/song/fetch-url` en `mcmapp-cantoral`.
