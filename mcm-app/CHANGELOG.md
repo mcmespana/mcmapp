@@ -4,6 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 21:40 — Editor: las fotos del iPhone se mandan en JPEG
+
+- «Nueva canción» → foto fallaba con vibración de error: el iPhone da las fotos en HEIC, que el cantoral no abre, y enteras pesan varios MB. Ahora se pasan siempre a JPEG y se reducen (lado largo 2400 px) antes de enviarlas (`expo-image-manipulator`, ya instalado). El aviso de error dura más para poder leer el porqué.
+
 ## 2026-11-17 23:40 — Editor de canciones: NAS puesto en marcha y todo en `main`
 
 - El usuario ha configurado el NAS (`FIREBASE_URL`), `songs/editor/url` y los administradores. Se borra `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (era de un solo uso); lo permanente sigue en `docs/funcionalidades/EDITOR_CANCIONES.md`.

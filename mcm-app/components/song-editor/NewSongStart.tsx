@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { PressableFeedback } from 'heroui-native';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
@@ -31,6 +32,43 @@ import {
 } from '@/services/songEditorService';
 import { h } from '@/utils/haptics';
 import { logger } from '@/utils/logger';
+
+/** Lado largo máximo de la foto que se manda: de sobra para leer una hoja. */
+const PHOTO_MAX_SIDE = 2400;
+
+/**
+ * La foto, lista para mandarla: en el móvil se pasa SIEMPRE a JPEG y se
+ * reduce. Las del iPhone llegan en HEIC, que el cantoral no sabe abrir, y una
+ * foto entera pesa varios MB que hay que subir por el móvil.
+ */
+async function toUpload(a: ImagePicker.ImagePickerAsset, i: number) {
+  const name = `foto-${i + 1}.jpg`;
+  if (Platform.OS === 'web') {
+    return {
+      uri: a.uri,
+      name: a.fileName ?? name,
+      type: a.mimeType ?? 'image/jpeg',
+      file: a.file as Blob | undefined,
+    };
+  }
+  const long = Math.max(a.width || 0, a.height || 0);
+  const resize =
+    long > PHOTO_MAX_SIDE
+      ? [
+          {
+            resize:
+              (a.width || 0) >= (a.height || 0)
+                ? { width: PHOTO_MAX_SIDE }
+                : { height: PHOTO_MAX_SIDE },
+          },
+        ]
+      : [];
+  const out = await ImageManipulator.manipulateAsync(a.uri, resize, {
+    compress: 0.8,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+  return { uri: out.uri, name, type: 'image/jpeg' };
+}
 
 const MONO = Platform.select({
   ios: 'Menlo',
@@ -52,11 +90,15 @@ export default function NewSongStart({
   const [pasting, setPasting] = useState<false | 'text' | 'url'>(false);
   const [text, setText] = useState('');
 
-  const fail = (e: unknown) =>
+  const fail = (e: unknown) => {
+    logger.warn('song editor: foto/enlace', e);
     toast.show({
       variant: 'danger',
       label: e instanceof Error ? e.message : 'No ha salido bien',
+      // Que dé tiempo a leer el porqué.
+      duration: 7000,
     });
+  };
 
   const fromPhoto = async (camera: boolean) => {
     try {
@@ -76,13 +118,7 @@ export default function NewSongStart({
       if (res.canceled || !res.assets.length) return;
       setBusy('Leyendo la foto…');
       const songs = await readSongPhotos(
-        res.assets.map((a, i) => ({
-          uri: a.uri,
-          name: a.fileName ?? `foto-${i + 1}.jpg`,
-          type: a.mimeType ?? 'image/jpeg',
-          file:
-            Platform.OS === 'web' ? (a.file as Blob | undefined) : undefined,
-        })),
+        await Promise.all(res.assets.map((a, i) => toUpload(a, i))),
       );
       const song = songs[0];
       if (!song?.cho)
