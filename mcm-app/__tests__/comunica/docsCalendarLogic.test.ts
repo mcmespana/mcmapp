@@ -346,12 +346,28 @@ describe('calendario: bandas, puntitos y día', () => {
       NOW,
     );
     expect(itemLine(m.get('2026-10-25')![0])).toBe('17:30 · Curso · Asististe');
-    expect(itemLine(m.get('2026-11-20')![0])).toBe(
-      'Todo el día · Convivencia · Con plaza',
-    );
+    // En las bandas el evento ya es el título: no se repite.
+    expect(itemLine(m.get('2026-11-20')![0])).toBe('Todo el día · Con plaza');
     expect(itemLine(m.get('2026-12-01')![0])).toBe(
-      'Todo el día · Campamento · Abierto a inscripción',
+      'Todo el día · Abierto a inscripción',
     );
+  });
+  it('la sesión que se llama como su evento (las del curso) no lo repite en la fila', () => {
+    const m = dayItems(
+      {
+        sessions: [
+          {
+            ...session('9', '2026-10-25T16:30:00Z', 'ev1', 'yes'),
+            name: 'COM | Curso 2026-2027 · BU',
+            eventName: 'COM | Curso 2026-2027 · BU',
+          },
+        ],
+        registeredEvents: [],
+        openEvents: [],
+      },
+      NOW,
+    );
+    expect(itemLine(m.get('2026-10-25')![0])).toBe('17:30 · Asististe');
   });
   it('el resumen de un día para el lector de pantalla', () => {
     expect(dayLabel('2026-10-14', 2)).toBe('14 de octubre, 2 actividades');
@@ -432,7 +448,7 @@ describe('calendario: el mes', () => {
     ]);
     expect(agendaOfMonth(m, '2027-03')).toEqual([]);
   });
-  it('para la portada: primero los abiertos y luego las próximas sesiones, `n` como mucho', () => {
+  it('para la portada: solo los abiertos, los más cercanos primero, `n` como mucho (las sesiones, al calendario)', () => {
     const data = {
       openEvents: [
         { id: 'o2', name: 'Abierto 2', startDate: '2026-12-10', endDate: null },
@@ -474,16 +490,12 @@ describe('calendario: el mes', () => {
         },
       ],
     };
-    expect(upcomingAgendaItems(data, TODAY, 5, NOW).map((i) => i.id)).toEqual([
+    expect(upcomingAgendaItems(data, TODAY, 5).map((i) => i.id)).toEqual([
       'o1',
       'o2',
-      's1',
-      's2',
     ]);
-    expect(upcomingAgendaItems(data, TODAY, 3, NOW).map((i) => i.id)).toEqual([
+    expect(upcomingAgendaItems(data, TODAY, 1).map((i) => i.id)).toEqual([
       'o1',
-      'o2',
-      's1',
     ]);
   });
 });

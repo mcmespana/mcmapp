@@ -1,6 +1,6 @@
 // «Próximas actividades» de la portada de familias (plan 11, punto 4): lo más cercano del calendario, entre «Actividades» y «Tu perfil».
-// Solo se pinta si se enseña Calendario y hay algo (sin datos, sin conexión o vacío: nada, para no estropear la portada). Una fila por actividad
-// (los abiertos a inscripción primero, luego las próximas sesiones; `upcomingAgendaItems`) y «Ver calendario» al pie.
+// Solo se pinta si se enseña Calendario y hay algo (sin datos, sin conexión o vacío: nada, para no estropear la portada). Una fila por evento
+// abierto a inscripción (`upcomingAgendaItems`: las sesiones ya no salen, están en el calendario) y «Ver calendario» al pie.
 
 import React from 'react';
 import { useRouter } from 'expo-router';
@@ -26,33 +26,21 @@ export default function UpcomingAgenda() {
   const q = useCalendar(active?.id);
   if (!q.data) return null;
   const now = comunicaNow();
-  const items = upcomingAgendaItems(
-    q.data,
-    madridDay(now),
-    AGENDA_MAX,
-    now.getTime(),
-  );
+  const items = upcomingAgendaItems(q.data, madridDay(now), AGENDA_MAX);
   if (items.length === 0) return null;
 
-  const open = (i: AgendaItem) => {
-    if (i.kind === 'session')
-      router.push({
-        pathname: '/comunica/calendario/sesion/[id]',
-        params: { id: i.id },
-      } as never);
-    else
-      router.push({
-        pathname: '/comunica/actividades/[eventId]',
-        params: { eventId: i.eventId },
-      } as never);
-  };
+  const open = (i: AgendaItem) =>
+    router.push({
+      pathname: '/comunica/actividades/[eventId]',
+      params: { eventId: i.eventId },
+    } as never);
 
   return (
     <Section title="Próximas actividades">
       {items.map((i) => (
         <NavRow
           key={`${i.kind}-${i.id}`}
-          dot={i.kind === 'open' ? toneColor('accent') : toneColor('info')}
+          dot={toneColor('accent')}
           title={i.title}
           subtitle={i.line}
           onPress={() => open(i)}
