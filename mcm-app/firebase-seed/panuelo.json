@@ -36,6 +36,28 @@
       },
       "order": 20
     },
+    "carismochito": {
+      "id": "carismochito",
+      "kind": "pin",
+      "name": "Carismochito",
+      "origin": "La mascota del MCM",
+      "description": "El pin de esmalte de Carismochito, con su gorra, su pañuelo y los dedos en «V». Troquelado con su silueta y con su mariposa por detrás.",
+      "size": 1.5,
+      "rarity": "especial",
+      "tradeable": true,
+      "grant": {
+        "type": "all"
+      },
+      "look": {
+        "kind": "pin",
+        "shape": "carismochito",
+        "enamel": "#21987A",
+        "metal": "oro",
+        "image": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/caras/carismochito.webp",
+        "glb": "https://cdn.jsdelivr.net/gh/mcmespana/mcmapp@main/piezas-3d/carismochito.glb"
+      },
+      "order": 25
+    },
     "estoy-contigo-samuel": {
       "id": "estoy-contigo-samuel",
       "kind": "chapa",

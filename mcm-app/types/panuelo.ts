@@ -49,7 +49,8 @@ export type PanueloGlyph =
   | 'shield'
   | 'arrow'
   | 'rect'
-  | 'card';
+  | 'card'
+  | 'carismochito';
 
 /** Chapa de imperdible: redonda, abombada y brillante, con un dibujo impreso. */
 export interface ChapaLook {
