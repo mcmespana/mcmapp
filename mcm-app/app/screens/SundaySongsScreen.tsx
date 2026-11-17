@@ -11,7 +11,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useTabListScroll } from '@/components/tabs/useTabScroll';
 import CandidatesSheet from '@/components/song-sunday/CandidatesSheet';
@@ -33,6 +33,7 @@ import { usePlaylistLink } from '@/hooks/usePlaylistLink';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useSundaySongs } from '@/hooks/useSundaySongs';
 import { openCantoral } from '@/utils/cantoralNavigation';
+import { cantoralHref } from '@/utils/eventRoutes';
 import { h } from '@/utils/haptics';
 import {
   addDays,
@@ -137,13 +138,18 @@ export default function SundaySongsScreen() {
     return true;
   }, [mass, selectedSongs, link, replaceAll, setLink, toast, fecha]);
 
+  // Se entra casi siempre DESDE Tu selección: `dismissTo` vuelve a ella en vez
+  // de apilar otra; si no está debajo (desde Inicio), la pone en su lugar.
   const onPass = useCallback(() => {
-    if (passToSelection()) openCantoral('SelectedSongs');
+    if (passToSelection())
+      router.dismissTo(cantoralHref('SelectedSongs') as never);
   }, [passToSelection]);
 
   const onUploadToChoir = useCallback(() => {
     if (passToSelection())
-      openCantoral('SelectedSongs', { hoja: 'guardar-coro' });
+      router.dismissTo(
+        cantoralHref('SelectedSongs', { hoja: 'guardar-coro' }) as never,
+      );
   }, [passToSelection]);
 
   const goTo = useCallback((next: string) => {

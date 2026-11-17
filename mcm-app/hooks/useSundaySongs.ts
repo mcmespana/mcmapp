@@ -8,10 +8,15 @@
  * las listas del cantoral (deduplica por clave), así que no hay descarga nueva
  * y, si el cantoral se abrió alguna vez, funciona sin conexión. La lógica está
  * en `utils/sundaySongs.ts` (pura); esto solo la conecta.
+ *
+ * Las lecturas de esa fecha (`useDailyReadings`, con su caché) ordenan las
+ * candidatas: sin ellas (sin red y sin caché) la misa sale igual, solo por
+ * tiempo litúrgico.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useDailyReadings } from '@/hooks/useDailyReadings';
 import { useHiddenTags } from '@/hooks/useHiddenTags';
 import { useSongTagIndex } from '@/hooks/useSongTags';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -28,6 +33,7 @@ import {
   suggestMass,
   withPick,
   type StoredSundayPicks,
+  type SundayReadingTexts,
 } from '@/utils/sundaySongs';
 
 export function useSundaySongs(fecha: string) {
@@ -75,6 +81,19 @@ export function useSundaySongs(fecha: string) {
 
   const day = useMemo(() => liturgicalDayOf(fecha), [fecha]);
   const picks = store[fecha];
+  const { readings, isLoading: readingsLoading } = useDailyReadings(fecha);
+  const readingTexts = useMemo<SundayReadingTexts | undefined>(
+    () =>
+      readings
+        ? {
+            lectura1: readings.lectura1?.texto,
+            salmo: readings.salmo?.texto,
+            lectura2: readings.lectura2?.texto,
+            evangelio: readings.evangelio?.texto,
+          }
+        : undefined,
+    [readings],
+  );
 
   const mass = useMemo(
     () =>
@@ -83,8 +102,10 @@ export function useSundaySongs(fecha: string) {
         hideHiddenTagSongs: settings.hideHiddenTagSongs,
         aliases: tagIndex.aliases,
         picks,
+        readings: readingTexts,
       }),
     [
+      readingTexts,
       day,
       songs,
       hiddenSlugs,
@@ -135,6 +156,9 @@ export function useSundaySongs(fecha: string) {
     day,
     mass,
     songs,
+    /** Las lecturas de esa fecha (null si aún no hay o no se pudieron leer). */
+    readings,
+    readingsLoading,
     hasSongs: !!songs && Object.keys(songs).length > 0,
     loading,
     offline,

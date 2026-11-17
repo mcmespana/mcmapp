@@ -176,35 +176,19 @@ export const createStyles = (
       justifyContent: 'space-between',
       ...(isWide ? { maxWidth, width: '100%', alignSelf: 'center' } : null),
     },
-    emptyContent: {
+    emptyScroll: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: 40,
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
-    emptyIconContainer: {
-      width: 100,
-      height: 100,
-      borderRadius: radii.full,
-      backgroundColor: themeColors(isDark).background,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 24,
-      ...Platform.select({
-        web: {
-          boxShadow: isDark
-            ? '0 2px 8px rgba(0,0,0,0.3)'
-            : '0 2px 8px rgba(0,0,0,0.06)',
-        },
-        default: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDark ? 0.25 : 0.06,
-          shadowRadius: 8,
-          elevation: 2,
-        },
-      }),
+    // El contenedor del vacío, ya dentro del ScrollView: crece (no `flex: 1`,
+    // que no deja hacer scroll) y apila con aire en vez de repartir.
+    emptyScrollContent: {
+      flex: undefined,
+      flexGrow: 1,
+      justifyContent: 'flex-start',
+      gap: 20,
     },
+    emptyIntro: { alignItems: 'center', paddingHorizontal: 20, paddingTop: 8 },
     emptyTitle: {
       ...typography.h3,
       color: themeColors(isDark).text,

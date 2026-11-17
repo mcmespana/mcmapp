@@ -542,3 +542,69 @@ describe('massToSelection', () => {
     expect(massToSelection(suggestMass(REY, null))).toEqual([]);
   });
 });
+
+describe('suggestMass — lecturas del domingo', () => {
+  const READINGS = {
+    lectura1: 'El pastor reunirá a sus ovejas dispersas en el monte.',
+    salmo:
+      'El Señor es mi pastor, nada me falta; en verdes praderas me hace recostar.',
+    evangelio:
+      'Yo soy el buen pastor que da la vida por las ovejas; conozco a mis ovejas.',
+  };
+
+  it('sin lecturas, la propuesta no cambia (rotación de siempre)', () => {
+    expect(chosen(suggestMass(REY, toyData(), { readings: {} }))).toEqual(
+      chosen(suggestMass(REY, toyData())),
+    );
+  });
+
+  it('dentro del mismo tramo, la que comparte palabras con las lecturas va primero y dice por qué', () => {
+    const data = toyData({
+      entrada: [
+        song('entPastor', undefined, {
+          content: 'Tú eres mi pastor, tus ovejas te siguen al monte',
+        }),
+      ],
+    });
+    const entrada = byMoment(
+      suggestMass(REY, data, { readings: READINGS }),
+      'entrada',
+    );
+    const first = entrada.candidates[entrada.chosenIndex];
+    expect(first.filename).toBe('entPastor');
+    expect(first.reasons.join(' ')).toMatch(/^Lecturas: /);
+  });
+
+  it('el salmo se empareja con el salmo del día antes que con el resto', () => {
+    const data = toyData({
+      salmos: [
+        song('salOvejas', undefined, {
+          content: 'Ovejas dispersas en el monte vuelven',
+        }),
+        song('sal23', undefined, {
+          content: 'El Señor es mi pastor, en verdes praderas me hace recostar',
+        }),
+      ],
+    });
+    const salmo = byMoment(
+      suggestMass(REY, data, { readings: READINGS }),
+      'salmo',
+    );
+    expect(salmo.candidates[salmo.chosenIndex].filename).toBe('sal23');
+  });
+
+  it('las lecturas no saltan las reglas litúrgicas: una de Adviento no entra en Cristo Rey', () => {
+    const data = toyData({
+      entrada: [
+        song('entAdv', ['adviento'], {
+          content: 'Pastor de tus ovejas, ven al monte',
+        }),
+      ],
+    });
+    const entrada = byMoment(
+      suggestMass(REY, data, { readings: READINGS }),
+      'entrada',
+    );
+    expect(entrada.candidates.map((c) => c.filename)).not.toContain('entAdv');
+  });
+});

@@ -9,9 +9,11 @@
  *      sin canciones de otro tiempo o de otra fiesta, sin las de etiquetas
  *      ocultas;
  *   3. puntuación: fiesta del día +5, tiempo del día +3, neutra 0;
- *   4. desempate: rotación determinista por semana dentro de cada tramo de
- *      puntos, así que el domingo siguiente sale otra y una canción vuelve
- *      cuando el tramo da la vuelta;
+ *   4. dentro de cada tramo de puntos, primero las que tienen palabras en
+ *      común con las LECTURAS de ese domingo (más afinidad, antes; el salmo se
+ *      compara con el salmo del día) y luego el resto, en rotación
+ *      determinista por semana: el domingo siguiente sale otra y una canción
+ *      vuelve cuando el tramo da la vuelta;
  *   5. sin repetir canción en dos momentos de la misma misa.
  *
  * Una canción SIN etiqueta de tiempo es «neutra» y vale siempre: si el cantoral
@@ -37,10 +39,17 @@ import {
   type SeasonId,
 } from '@/utils/liturgicalDay';
 import { foldForSearch, songTagSlugs } from '@/utils/songTags';
+import {
+  readingsAffinity,
+  type MatchSource,
+  type SongMatch,
+} from '@/utils/sundayMatch';
 
 /** Puntos por coincidir con la fiesta / el tiempo del día. */
 export const FEAST_POINTS = 5;
 export const SEASON_POINTS = 3;
+/** Plus de un salmo que coincide con el salmo del día (sobre la afinidad). */
+const PSALM_BONUS = 100;
 
 /** Valor que se guarda por momento cuando la persona lo quita de la misa. */
 export const REMOVED = 'quitado';
@@ -80,6 +89,33 @@ export interface SuggestOptions {
   aliases?: Record<string, string>;
   /** Lo que la persona cambió o quitó en esta fecha. */
   picks?: MassPicks;
+  /**
+   * Textos de las lecturas de ESE domingo (los que haya). Sin ellos la misa
+   * sale igual, solo por tiempo litúrgico y rotación.
+   */
+  readings?: SundayReadingTexts;
+}
+
+export interface SundayReadingTexts {
+  lectura1?: string;
+  salmo?: string;
+  lectura2?: string;
+  evangelio?: string;
+}
+
+/** Peso de cada lectura al buscar cantos que encajen (el evangelio manda). */
+const READING_WEIGHTS: Record<keyof SundayReadingTexts, number> = {
+  lectura1: 1,
+  salmo: 1.3,
+  lectura2: 1,
+  evangelio: 1.5,
+};
+
+function readingSources(r: SundayReadingTexts | undefined): MatchSource[] {
+  if (!r) return [];
+  return (Object.keys(READING_WEIGHTS) as (keyof SundayReadingTexts)[])
+    .filter((k) => !!r[k]?.trim())
+    .map((k) => ({ text: r[k]!, weight: READING_WEIGHTS[k] }));
 }
 
 const SEASON_LABELS: Record<SeasonId, string> = {
@@ -261,6 +297,18 @@ export function suggestMass(
     }
   }
 
+  // Afinidad con las lecturas, una vez por misa. El salmo se compara además
+  // con el salmo del día a solas: es el emparejamiento que más se nota.
+  const asMatch = entries.map((e) => ({
+    filename: e.song.filename!,
+    title: e.song.title ?? '',
+    content: e.song.content ?? '',
+  }));
+  const affinity = readingsAffinity(readingSources(opts.readings), asMatch);
+  const psalmAffinity = opts.readings?.salmo?.trim()
+    ? readingsAffinity([{ text: opts.readings.salmo, weight: 1 }], asMatch)
+    : new Map<string, SongMatch>();
+
   const taken = new Set<string>();
   const out: MomentSuggestion[] = [];
 
@@ -293,25 +341,54 @@ export function suggestMass(
       return true;
     });
 
-    // 3 y 4. Puntos, y rotación dentro de cada tramo de puntos.
+    // 3 y 4. Puntos; dentro de cada tramo, las que encajan con las lecturas
+    // primero y el resto en rotación.
+    const momentAffinity = moment.id === 'salmo' ? psalmAffinity : affinity;
     const scored = fitting.map((e) => {
       const { score, reasons } = reasonsFor(e.marks, day);
+      const match =
+        momentAffinity.get(e.song.filename!) ?? affinity.get(e.song.filename!);
       return {
         filename: e.song.filename!,
         title: e.song.title,
         categoryKey: e.categoryKey,
         score,
-        reasons,
+        reasons: match
+          ? [...reasons, `Lecturas: ${match.words.slice(0, 3).join(' · ')}`]
+          : reasons,
         song: e.song,
-      } satisfies SundayCandidate;
+        readingsScore: match
+          ? match.score +
+            (momentAffinity === psalmAffinity &&
+            psalmAffinity.has(e.song.filename!)
+              ? PSALM_BONUS
+              : 0)
+          : 0,
+      };
     });
-    const tiers = new Map<number, SundayCandidate[]>();
+    const tiers = new Map<number, typeof scored>();
     for (const c of scored) {
       tiers.set(c.score, [...(tiers.get(c.score) ?? []), c]);
     }
-    const ranked = [...tiers.keys()]
+    const ranked: SundayCandidate[] = [...tiers.keys()]
       .sort((a, b) => b - a)
-      .flatMap((score) => rotate(tiers.get(score)!, moment.id, week));
+      .flatMap((score) => {
+        const tier = tiers.get(score)!;
+        const matched = tier
+          .filter((c) => c.readingsScore > 0)
+          .sort(
+            (a, b) =>
+              b.readingsScore - a.readingsScore ||
+              a.filename.localeCompare(b.filename),
+          );
+        const rest = rotate(
+          tier.filter((c) => c.readingsScore === 0),
+          moment.id,
+          week,
+        );
+        return [...matched, ...rest];
+      })
+      .map(({ readingsScore: _r, ...c }) => c satisfies SundayCandidate);
 
     // 5. Sin repetir con los momentos anteriores.
     const candidates = ranked.filter((c) => !taken.has(c.filename));
