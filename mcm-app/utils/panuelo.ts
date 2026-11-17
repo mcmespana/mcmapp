@@ -58,6 +58,7 @@ export const KIND_LABEL: Record<PanueloItemKind, string> = {
   parche: 'Parche',
   medalla: 'Medalla',
   pulsera: 'Pulsera',
+  troncho: 'Troncho',
 };
 
 export const RARITY_LABEL: Record<PanueloRarity, string> = {
@@ -86,6 +87,7 @@ const KINDS: readonly PanueloItemKind[] = [
   'parche',
   'medalla',
   'pulsera',
+  'troncho',
 ];
 const RARITIES: readonly PanueloRarity[] = ['comun', 'especial', 'unica'];
 const VIAS: readonly PanueloVia[] = ['all', 'code', 'manual', 'demo', 'trade'];
@@ -141,6 +143,7 @@ function sanitizeLook(kind: PanueloItemKind, raw: unknown): PanueloLook | null {
         text: str(raw.text)?.slice(0, 24),
         textBottom: str(raw.textBottom)?.slice(0, 24),
         image: url(raw.image),
+        glb: url(raw.glb),
       };
     }
     case 'pin': {
@@ -153,6 +156,8 @@ function sanitizeLook(kind: PanueloItemKind, raw: unknown): PanueloLook | null {
         enamel,
         enamel2: color(raw.enamel2),
         metal: metal(raw.metal),
+        image: url(raw.image),
+        glb: url(raw.glb),
       };
     }
     case 'cinta': {
@@ -187,6 +192,14 @@ function sanitizeLook(kind: PanueloItemKind, raw: unknown): PanueloLook | null {
         ink: color(raw.ink),
       };
     }
+    case 'troncho':
+      return {
+        kind,
+        leather: color(raw.leather),
+        ink: color(raw.ink),
+        image: url(raw.image),
+        glb: url(raw.glb),
+      };
     case 'medalla': {
       const ribbon = colors(raw.ribbon);
       if (ribbon.length === 0) return null;
@@ -405,9 +418,28 @@ export function mergePanuelo(
   local: PanueloUserState,
   remote: PanueloUserState,
 ): { merged: PanueloUserState; upload: boolean } {
-  const items: Record<string, PanueloOwned> = { ...remote.items };
   let upload = false;
-  for (const [id, mine] of Object.entries(local.items)) {
+  // Lo que cualquiera de los dos lados dio en un intercambio, se queda dado.
+  const gone: Record<string, number> = { ...remote.gone };
+  for (const [id, at] of Object.entries(local.gone ?? {})) {
+    if (!(gone[id] >= at)) {
+      gone[id] = at;
+      upload = true;
+    }
+  }
+  // Una copia de antes de darla ya no vale (`at <= gone`): si no se descarta
+  // antes de elegir la más antigua, recuperar una pieza dada la borraría
+  // (PLAN_PANUELO_INTERCAMBIOS §1.1).
+  const alive = (id: string, owned: PanueloOwned | undefined) =>
+    owned && !(gone[id] >= owned.at) ? owned : undefined;
+  const items: Record<string, PanueloOwned> = {};
+  for (const [id, theirs] of Object.entries(remote.items)) {
+    const kept = alive(id, theirs);
+    if (kept) items[id] = kept;
+  }
+  for (const [id, raw] of Object.entries(local.items)) {
+    const mine = alive(id, raw);
+    if (!mine) continue;
     const theirs = items[id];
     if (!theirs || mine.at < theirs.at) {
       items[id] = mine;
@@ -420,14 +452,6 @@ export function mergePanuelo(
   const layout: Record<string, PanueloPlacement> = {};
   for (const [id, placement] of Object.entries(winner.layout)) {
     if (items[id]) layout[id] = placement;
-  }
-  // Lo que cualquiera de los dos lados dio en un intercambio, se queda dado.
-  const gone: Record<string, number> = { ...remote.gone };
-  for (const [id, at] of Object.entries(local.gone ?? {})) {
-    if (!(gone[id] >= at)) {
-      gone[id] = at;
-      upload = true;
-    }
   }
   const history: Record<string, PanueloMemory> = { ...remote.history };
   for (const [key, memory] of Object.entries(local.history ?? {})) {
@@ -536,6 +560,14 @@ export function grantItem(
 
 // ── Decorar ────────────────────────────────────────────────────────────────
 
+/** Piezas con sitio propio fuera del triángulo: hoy, solo el troncho. */
+export function isFixed(item: PanueloItemDef | undefined): boolean {
+  return item?.kind === 'troncho';
+}
+
+/** Lo que se apunta en `layout` para una pieza de sitio fijo. */
+const FIXED_PLACEMENT: PanueloPlacement = { u: 0, v: 0, rot: 0 };
+
 /**
  * Cose una pieza en el primer hueco libre. Sin tenerla, no se puede. Con el
  * catálogo delante, el hueco se busca sabiendo lo que ocupa cada pieza (una
@@ -552,14 +584,20 @@ export function placeItem(
     const def = catalog?.[itemId];
     return def ? itemReach(def.kind, def.size) : DEFAULT_REACH;
   };
-  const slot = nextFreeSlot(
-    Object.entries(state.layout).map(([itemId, p]) => ({
-      u: p.u,
-      v: p.v,
-      reach: reachOf(itemId),
-    })),
-    reachOf(id),
-  );
+  // El troncho no se cose en el triángulo: va sobre el nudo. Se apunta en
+  // `layout` (para saber que se lleva puesto) sin gastar un hueco.
+  const slot = isFixed(catalog?.[id])
+    ? FIXED_PLACEMENT
+    : nextFreeSlot(
+        Object.entries(state.layout)
+          .filter(([itemId]) => !isFixed(catalog?.[itemId]))
+          .map(([itemId, p]) => ({
+            u: p.u,
+            v: p.v,
+            reach: reachOf(itemId),
+          })),
+        reachOf(id),
+      );
   return {
     ...state,
     layout: { ...state.layout, [id]: slot },
@@ -692,6 +730,10 @@ export function autoArrange(
   const layout: Record<string, PanueloPlacement> = {};
   const taken: { u: number; v: number; reach: number }[] = [];
   for (const id of ids) {
+    if (isFixed(catalog[id])) {
+      layout[id] = FIXED_PLACEMENT;
+      continue;
+    }
     const reach = reachOf(id);
     const slot = nextFreeSlot(taken, reach);
     layout[id] = { u: slot.u, v: slot.v, rot: 0 };
@@ -818,8 +860,13 @@ export function toViewerState(
   catalog: PanueloCatalog,
   state: PanueloUserState,
 ): PanueloViewerState {
-  const items = Object.entries(state.layout)
-    .filter(([id]) => catalog[id] && state.items[id])
+  const worn = Object.entries(state.layout).filter(
+    ([id]) => catalog[id] && state.items[id],
+  );
+  const fixed = worn.find(([id]) => isFixed(catalog[id]));
+  const troncho = fixed ? catalog[fixed[0]].look : undefined;
+  const items = worn
+    .filter(([id]) => !isFixed(catalog[id]))
     // Orden estable: el visor reconstruye lo que cambia de sitio en la lista.
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([id, placement]) => {
@@ -832,7 +879,11 @@ export function toViewerState(
         ...placement,
       });
     });
-  return { color: state.color ?? DEFAULT_PANUELO_COLOR, items };
+  return compact({
+    color: state.color ?? DEFAULT_PANUELO_COLOR,
+    items,
+    troncho: troncho?.kind === 'troncho' ? troncho : undefined,
+  });
 }
 
 /**
@@ -926,9 +977,18 @@ export function formatMonthYear(at: number): string {
 }
 
 /**
- * ¿Se puede intercambiar esta pieza? Lo que diga el catálogo; si no dice
- * nada, solo las pulseras (son las que se cambian de mano en los encuentros).
+ * ¿Se puede intercambiar esta pieza? Decisión del propietario (2026-11-16):
+ * pulseras y chapas comunes, y **nunca** medallas ni piezas únicas (las
+ * únicas son las de un evento: se ganan por haber estado). Lo segundo no lo
+ * cambia el catálogo; lo primero sí (`tradeable: false` para quitar una
+ * pulsera, `tradeable: true` para sumar un pin o una chapa especial).
  */
 export function isTradeable(item: PanueloItemDef): boolean {
-  return item.tradeable ?? item.kind === 'pulsera';
+  if (item.kind === 'medalla' || item.kind === 'troncho') return false;
+  if (item.rarity === 'unica') return false;
+  if (item.tradeable !== undefined) return item.tradeable;
+  return (
+    item.kind === 'pulsera' ||
+    (item.kind === 'chapa' && (item.rarity ?? 'comun') === 'comun')
+  );
 }

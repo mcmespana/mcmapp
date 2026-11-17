@@ -896,6 +896,13 @@ export interface Panuelo {
   flap: THREE.Mesh;
   /** La tela simulada (ver `ClothSim`). */
   cloth: ClothSim;
+  /** El nudo, con su origen en él: de aquí cuelga el troncho. */
+  knot: THREE.Group;
+  /**
+   * El cabo de tela recogida que baja desde donde se junta el pañuelo hasta
+   * el nudo cuando se lleva troncho (el troncho va ceñido a él). Oculto si no.
+   */
+  strand: THREE.Mesh;
   setColor(color: PanueloColor): void;
   setLogo(logo: HTMLImageElement): void;
 }
@@ -971,6 +978,13 @@ export function createPanuelo(
     parent.add(mesh);
   };
   rollMesh(buildKnot(), knotGroup);
+  // El cabo: un cilindro algo estrangulado, de la misma tela.
+  const strandGeometry = new THREE.CylinderGeometry(0.07, 0.058, 0.44, 20, 6);
+  strandGeometry.translate(0, -0.215, 0);
+  const strand = new THREE.Mesh(strandGeometry, rollMaterial);
+  strand.castShadow = true;
+  strand.visible = false;
+  knotGroup.add(strand);
   rollMesh(buildTail(1), tailsGroup);
   rollMesh(buildTail(-1), tailsGroup);
 
@@ -997,6 +1011,8 @@ export function createPanuelo(
   return {
     group,
     flap,
+    knot: knotGroup,
+    strand,
     cloth: withKnot(createClothSim(flap.geometry), knotGroup, tailsGroup),
     setColor(next) {
       current = next;

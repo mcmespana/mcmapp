@@ -4,7 +4,7 @@
  * atrás → atrás.
  *
  * El Cantoral fue la última pestaña en dejar su navegador montado a mano
- * (`docs/planes/PLAN_EXPO_58.md`). Lo que se rompe sin enterarse al pasarlo a
+ * (migración a Expo 58, CHANGELOG del 2026-10-31). Lo que se rompe sin enterarse al pasarlo a
  * rutas de fichero, y por eso se mira aquí:
  *
  *   · que los params de ruta sean TEXTO (una canción entera o la lista por

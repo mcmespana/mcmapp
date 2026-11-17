@@ -1,6 +1,9 @@
 import { createHash } from 'crypto';
 
-import { DEFAULT_PANUELO_CATALOG } from '@/constants/panueloCatalog';
+import {
+  DEFAULT_PANUELO_CATALOG,
+  EXAMPLE_PANUELO_CATALOG,
+} from '@/constants/panueloCatalog';
 import { PANUELO_GLYPHS } from '@/constants/panueloGlyphs';
 import type { PanueloCatalog, PanueloUserState } from '@/types/panuelo';
 import {
@@ -79,30 +82,30 @@ describe('el catálogo de muestra', () => {
     expect(items).toHaveLength(Object.keys(seed.items).length);
   });
 
-  it('tiene una pieza de cada clase', () => {
-    const kinds = new Set(items.map((i) => i.kind));
-    expect([...kinds].sort()).toEqual(
-      ['chapa', 'cinta', 'medalla', 'parche', 'pin', 'pulsera'].sort(),
+  it('solo lleva piezas de verdad: todas traen su foto y su modelo', () => {
+    for (const item of items) {
+      expect('image' in item.look && item.look.image).toMatch(/^https:/);
+      expect('glb' in item.look && item.look.glb).toMatch(/\.glb$/);
+    }
+    expect(new Set(items.map((i) => i.kind))).toEqual(
+      new Set(['chapa', 'pin', 'medalla', 'troncho']),
     );
   });
 
-  it('los códigos que anuncia el Laboratorio abren su pieza', () => {
-    const codes: Record<string, string> = {
-      CONSOLACION: 'corazon-consolacion',
-      PASCUA27: 'parche-pascua',
-      CAMINO: 'vieira-camino',
-      VERANO: 'cinta-campamento',
-    };
-    for (const [code, id] of Object.entries(codes)) {
-      const result = redeemCode(DEFAULT_PANUELO_CATALOG, state(), code, NOW);
-      expect(result).toMatchObject({ ok: true, already: false });
-      expect(result.ok && result.item.id).toBe(id);
-    }
+  it('mientras se prueba, todas las piezas se dan solas al abrir', () => {
+    const pending = pendingAutoGrants(DEFAULT_PANUELO_CATALOG, state(), NOW);
+    expect(pending.map((i) => i.id).sort()).toEqual(
+      items.map((i) => i.id).sort(),
+    );
   });
 
-  it('da la chapa de bienvenida a todo el mundo', () => {
-    const pending = pendingAutoGrants(DEFAULT_PANUELO_CATALOG, state(), NOW);
-    expect(pending.map((i) => i.id)).toEqual(['pionero-alpha']);
+  it('el catálogo de ejemplo tiene una pieza de cada clase cosida', () => {
+    const kinds = new Set(
+      Object.values(EXAMPLE_PANUELO_CATALOG).map((i) => i.kind),
+    );
+    expect([...kinds].sort()).toEqual(
+      ['chapa', 'cinta', 'medalla', 'parche', 'pin', 'pulsera'].sort(),
+    );
   });
 
   it('solo usa formas que existen', () => {
@@ -291,6 +294,42 @@ describe('mergePanuelo', () => {
     const remote = state({ items: { a: { at: 90, via: 'trade' } } });
     expect(mergePanuelo(local, remote).merged.items).toHaveProperty('a');
   });
+
+  // PLAN_PANUELO_INTERCAMBIOS §1.1: Ana dio `a` en t=50 (la nube aún guarda
+  // `a` de t=10) y la recupera en t=90. Quedarse con la fecha más antigua
+  // (10) y luego quitar lo dado antes de 50 la hacía desaparecer.
+  it('recuperar una pieza que se dio no la hace desaparecer (nube con la copia vieja)', () => {
+    const local = state({
+      items: { a: { at: 90, via: 'trade' } },
+      layout: { a: placement },
+      layoutAt: 95,
+      gone: { a: 50 },
+    });
+    const remote = state({
+      items: { a: { at: 10, via: 'manual' } },
+      layoutAt: 20,
+      gone: { a: 50 },
+    });
+    const { merged, upload } = mergePanuelo(local, remote);
+    expect(merged.items.a).toEqual({ at: 90, via: 'trade' });
+    expect(merged.layout).toHaveProperty('a');
+    expect(upload).toBe(true);
+    // Y al revés (un segundo móvil de Ana que aún guarde la copia vieja).
+    const other = mergePanuelo(remote, local).merged;
+    expect(other.items.a).toEqual({ at: 90, via: 'trade' });
+  });
+
+  it('recuperar una pieza que se dio no la hace desaparecer (nube sin la copia vieja)', () => {
+    const local = state({
+      items: { a: { at: 90, via: 'trade' } },
+      gone: { a: 50 },
+    });
+    const remote = state({ gone: { a: 50 } });
+    expect(mergePanuelo(local, remote).merged.items.a).toEqual({
+      at: 90,
+      via: 'trade',
+    });
+  });
 });
 
 describe('códigos', () => {
@@ -445,6 +484,23 @@ describe('lo que se enseña', () => {
     expect(isTradeable(catalog.uno)).toBe(false);
     expect(isTradeable({ ...catalog.uno, tradeable: true })).toBe(true);
     expect(isTradeable({ ...catalog.pulsera, tradeable: false })).toBe(false);
+  });
+
+  it('chapas comunes sí; medallas y piezas únicas nunca, diga lo que diga el catálogo', () => {
+    const chapa = EXAMPLE_PANUELO_CATALOG['chapa-convivencia'];
+    expect(chapa.kind).toBe('chapa');
+    expect(isTradeable(chapa)).toBe(true);
+    expect(isTradeable({ ...chapa, rarity: 'especial' })).toBe(false);
+    expect(isTradeable({ ...chapa, rarity: 'unica', tradeable: true })).toBe(
+      false,
+    );
+    const medalla = EXAMPLE_PANUELO_CATALOG['medalla-jubileo-2025'];
+    expect(
+      isTradeable({ ...medalla, rarity: undefined, tradeable: true }),
+    ).toBe(false);
+    expect(isTradeable(EXAMPLE_PANUELO_CATALOG['chapa-25-aniversario'])).toBe(
+      false,
+    );
   });
 });
 
@@ -970,14 +1026,14 @@ describe('el tutorial (datos)', () => {
   it('sus ejemplos usan piezas que existen en el catálogo de muestra', () => {
     for (const s of PANUELO_TUTORIAL) {
       const used = [...(s.example?.pieces ?? []), ...(s.example?.art ?? [])];
-      for (const id of used) expect(DEFAULT_PANUELO_CATALOG[id]).toBeDefined();
+      for (const id of used) expect(EXAMPLE_PANUELO_CATALOG[id]).toBeDefined();
     }
   });
 
   it('el pañuelo de ejemplo se pinta con piezas cosidas y sin pisarse', () => {
     const section = PANUELO_TUTORIAL.find((s) => s.id === 'las-piezas');
     const viewer = exampleViewerState(
-      DEFAULT_PANUELO_CATALOG,
+      EXAMPLE_PANUELO_CATALOG,
       'green',
       section?.example?.pieces ?? [],
     );
@@ -988,14 +1044,54 @@ describe('el tutorial (datos)', () => {
 
   it('ignora piezas que no existen', () => {
     expect(
-      exampleViewerState(DEFAULT_PANUELO_CATALOG, 'red', ['nada']).items,
+      exampleViewerState(EXAMPLE_PANUELO_CATALOG, 'red', ['nada']).items,
     ).toEqual([]);
   });
 
-  it('no promete lo que no existe (los intercambios no tienen pantalla)', () => {
-    const text = PANUELO_TUTORIAL.map((s) => `${s.title} ${s.body}`)
-      .join(' ')
-      .toLowerCase();
-    expect(text).not.toContain('intercambi');
+  it('ahora que hay pantalla de intercambios, el tutorial lo cuenta (en una fila, no en una página)', () => {
+    const rows = PANUELO_TUTORIAL.flatMap((s) => s.rows ?? []);
+    expect(
+      rows.some((r) =>
+        `${r.title} ${r.text}`.toLowerCase().includes('intercambi'),
+      ),
+    ).toBe(true);
+    expect(PANUELO_TUTORIAL.length).toBeLessThanOrEqual(7);
+    expect(PANUELO_TUTORIAL_VERSION).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('el troncho', () => {
+  const catalog = DEFAULT_PANUELO_CATALOG;
+  const con = (...ids: string[]) =>
+    ids.reduce(
+      (s, id) => placeItem(grantItem(s, id, 'demo', NOW), id, NOW, catalog),
+      state(),
+    );
+
+  it('se lleva puesto sin gastar un hueco del triángulo', () => {
+    const solo = con('com-sonriente');
+    const conTroncho = con('troncho', 'com-sonriente');
+    expect(conTroncho.layout.troncho).toEqual({ u: 0, v: 0, rot: 0 });
+    expect(conTroncho.layout['com-sonriente']).toEqual(
+      solo.layout['com-sonriente'],
+    );
+  });
+
+  it('el visor lo recibe aparte, no entre las piezas cosidas', () => {
+    const viewer = toViewerState(catalog, con('troncho', 'com-sonriente'));
+    expect(viewer.items.map((i) => i.id)).toEqual(['com-sonriente']);
+    expect(viewer.troncho).toMatchObject({ kind: 'troncho' });
+    expect(
+      toViewerState(catalog, con('com-sonriente')).troncho,
+    ).toBeUndefined();
+  });
+
+  it('Recolocar no lo mueve de su sitio', () => {
+    const arranged = autoArrange(con('troncho', 'com-sonriente'), catalog, NOW);
+    expect(arranged.layout.troncho).toEqual({ u: 0, v: 0, rot: 0 });
+  });
+
+  it('no se intercambia, ni aunque el catálogo diga que sí', () => {
+    expect(isTradeable({ ...catalog.troncho, tradeable: true })).toBe(false);
   });
 });

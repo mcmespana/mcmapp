@@ -1,0 +1,102 @@
+{
+  "_": "Ficha de cada pieza real modelada en 3D. Los nombres y textos son provisionales: se cambian aquí, sin regenerar nada. Ver README.md.",
+  "tallas": {
+    "pequena": "Pin M+C y chapa del Jubileo",
+    "mediana": "Chapa normal de imperdible (Estoy contigo, Chapa OG, COM sonriente) y el pin de la JMJ",
+    "grande": "Las dos chapas de monitores (M+C y Monitor OG)"
+  },
+  "piezas": {
+    "estoy-contigo-samuel": {
+      "clase": "chapa",
+      "nombre": "Estoy contigo, Samuel",
+      "origen": "Festival vocacional Samuel 2024",
+      "descripcion": "«Estoy contigo. Testigos de la esperanza». La chapa del festival vocacional Samuel.",
+      "talla": "mediana",
+      "diametroMm": 38,
+      "cierre": "imperdible",
+      "intercambiable": true
+    },
+    "mc-congreso-3": {
+      "clase": "pin",
+      "nombre": "Pin M+C",
+      "origen": "Congreso de monitores · 3.er año",
+      "descripcion": "El pin pequeño de metal del tercer año de congreso de monitores. Se cierra con mariposa.",
+      "talla": "pequena",
+      "diametroMm": 18,
+      "cierre": "mariposa",
+      "intercambiable": true
+    },
+    "mc-congreso-1": {
+      "clase": "chapa",
+      "nombre": "Chapa M+C",
+      "origen": "Congreso de monitores · 1.er año",
+      "descripcion": "«Yo soy Monitor Consolación». La chapa grande del primer año de congreso de monitores.",
+      "talla": "grande",
+      "diametroMm": 58,
+      "cierre": "imperdible",
+      "intercambiable": true
+    },
+    "monitor-og": {
+      "clase": "chapa",
+      "nombre": "Monitor OG",
+      "origen": "Monitor Consolación",
+      "descripcion": "«Yo soy Monitor + Consolación», como dibujada a rotulador. La de los monitores de antes.",
+      "talla": "grande",
+      "diametroMm": 58,
+      "cierre": "imperdible",
+      "intercambiable": true
+    },
+    "jmj-lisboa-2023": {
+      "clase": "pin",
+      "nombre": "JMJ Lisboa 2023",
+      "origen": "JMJ · Lisboa 2023",
+      "descripcion": "El pin esmaltado rectangular de la Jornada Mundial de la Juventud de Lisboa.",
+      "talla": "mediana",
+      "anchoMm": 30,
+      "altoMm": 38,
+      "cierre": "mariposa",
+      "intercambiable": true
+    },
+    "jubileo-2025": {
+      "clase": "chapa",
+      "nombre": "Jubileo 2025",
+      "origen": "Jubileo 2025 · Peregrinos de esperanza",
+      "descripcion": "La chapa del Jubileo: «Peregrinos de esperanza».",
+      "talla": "pequena",
+      "diametroMm": 25,
+      "cierre": "imperdible",
+      "intercambiable": true
+    },
+    "chapa-og": {
+      "clase": "chapa",
+      "nombre": "Chapa OG",
+      "origen": "Movimiento Juvenil Consolación para el Mundo",
+      "descripcion": "La de antes: plástico amarillo estampado en negro. Recuperada de los sótanos del COM.",
+      "talla": "mediana",
+      "diametroMm": 38,
+      "cierre": "alfiler",
+      "intercambiable": true
+    },
+    "com-sonriente": {
+      "clase": "chapa",
+      "nombre": "COM sonriente",
+      "origen": "COM",
+      "descripcion": "El logo de siempre en verde, con el mundo sonriendo.",
+      "talla": "mediana",
+      "diametroMm": 38,
+      "cierre": "imperdible",
+      "intercambiable": true
+    },
+    "troncho": {
+      "clase": "troncho",
+      "nombre": "Troncho",
+      "origen": "COM",
+      "descripcion": "El pasador de cuero con el logo del COM grabado, cosido por detrás.",
+      "altoMm": 31,
+      "diametroMm": 22,
+      "fijo": true,
+      "sitio": "Por delante del pañuelo, justo encima del nudo. Es lo único que va delante.",
+      "intercambiable": false
+    }
+  }
+}

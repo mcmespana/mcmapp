@@ -21,6 +21,7 @@ import type {
   PanueloEvent,
   PanueloViewerItem,
   PanueloViewerState,
+  TronchoLook,
 } from '@/types/panuelo';
 
 import logoUrl from '../assets/logo-com.png';
@@ -31,7 +32,12 @@ import {
   uvToFlap,
   type Panuelo,
 } from './cloth';
-import { buildItem, disposeItem, type BuildContext } from './items';
+import {
+  buildItem,
+  buildTroncho,
+  disposeItem,
+  type BuildContext,
+} from './items';
 import { loadImage } from './art';
 import { clampToFlap, FLAP_HEIGHT, FLAP_WIDTH } from '@/utils/panueloPlacement';
 
@@ -116,7 +122,12 @@ const ITEM_WEIGHT: Record<PanueloViewerItem['kind'], number> = {
   pulsera: 1,
   chapa: 1.3,
   medalla: 2.6,
+  // No va cosido a la tela.
+  troncho: 0,
 };
+/** Dónde va el troncho respecto al nudo, y cuánto baja el nudo al llevarlo. */
+const TRONCHO_Y = -0.14;
+const KNOT_DROP = -0.36;
 /** Péndulo de las piezas que cuelgan: rigidez y freno (ζ ≈ 0,3: se mecen). */
 const SWING_STIFFNESS = 70;
 const SWING_DAMPING = 5;
@@ -154,6 +165,9 @@ class Viewer {
   private focused: Entry | null = null;
   private selected: Entry | null = null;
   private logo: HTMLImageElement | null = null;
+  private troncho: THREE.Group | null = null;
+  private tronchoSignature = '';
+  private tronchoState: TronchoLook | undefined;
   private still = false;
 
   private yaw = 0;
@@ -293,6 +307,8 @@ class Viewer {
     this.mode = init.mode ?? 'view';
     this.still = Boolean(init.still);
     this.syncItems(init.state.items, false);
+    this.syncTroncho(init.state.troncho);
+    this.tronchoState = init.state.troncho;
 
     this.resize();
     window.addEventListener('resize', () => this.resize());
@@ -307,6 +323,9 @@ class Viewer {
       if (!img) return;
       this.logo = img;
       this.panuelo.setLogo(img);
+      // El troncho lleva el logo grabado: se rehace con él.
+      this.tronchoSignature = ' ';
+      this.syncTroncho(this.tronchoState);
       // Las piezas que llevan el logo se rehacen con él.
       for (const entry of [...this.entries.values()]) {
         const look = entry.data.look;
@@ -326,6 +345,8 @@ class Viewer {
       case 'state':
         if (cmd.state.color !== this.color) this.changeColor(cmd.state.color);
         this.syncItems(cmd.state.items, true);
+        this.tronchoState = cmd.state.troncho;
+        this.syncTroncho(cmd.state.troncho);
         break;
       case 'mode':
         this.setMode(cmd.mode);
@@ -364,6 +385,39 @@ class Viewer {
 
   private buildContext(): BuildContext {
     return { logo: this.logo, invalidate: () => this.invalidate() };
+  }
+
+  /**
+   * El troncho no es una pieza cosida: va por delante, justo encima del nudo,
+   * y se mueve con él. Ni se arrastra ni se enfoca.
+   */
+  private syncTroncho(look: TronchoLook | undefined) {
+    const signature = look ? JSON.stringify(look) : '';
+    if (signature === this.tronchoSignature) return;
+    this.tronchoSignature = signature;
+    if (this.troncho) {
+      this.panuelo.knot.remove(this.troncho);
+      disposeItem(this.troncho);
+      this.troncho = null;
+    }
+    if (look) {
+      const { group } = buildTroncho(look, this.buildContext());
+      // El nudo mira a −Z (el frente de quien lleva el pañuelo). El troncho
+      // abraza la tela justo donde se junta, y el nudo queda debajo de él.
+      group.rotation.y = Math.PI;
+      group.position.set(0, TRONCHO_Y, 0);
+      this.panuelo.knot.add(group);
+      this.troncho = group;
+    }
+    // Con troncho, la tela se recoge en un cabo que pasa por dentro del
+    // tubo, y el nudo y las puntas bajan: quedan justo debajo.
+    const { knot, strand } = this.panuelo;
+    strand.visible = Boolean(look);
+    for (const child of knot.children) {
+      if (child === this.troncho || child === strand) continue;
+      child.position.y = look ? KNOT_DROP : 0;
+    }
+    this.invalidate();
   }
 
   private syncItems(items: PanueloViewerItem[], animate: boolean) {

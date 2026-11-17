@@ -16,7 +16,7 @@ export const KNOWN_TABS = [
   'mas',
 ] as const;
 
-/** Botones del grid del Home (`app/(tabs)/(inicio)/index.tsx` → `quickItems`). */
+/** Botones del grid del Home (`app/(tabs)/(inicio)/index.tsx` → `quickItems`) y tarjetas que se encienden por perfil. */
 export const KNOWN_HOME_BUTTONS = [
   'comunica',
   'cancionero',
@@ -24,6 +24,9 @@ export const KNOWN_HOME_BUTTONS = [
   'evangelio',
   'visitapapa',
   'mas',
+  // No es un botón del grid: enciende la tarjeta «Cantos para el domingo» de
+  // Inicio (viernes a domingo, `components/home/SundaySongsCard.tsx`).
+  'cantos-domingo',
 ] as const;
 
 /** Items del menú "Más" (`app/screens/MasHomeScreen.tsx`). */

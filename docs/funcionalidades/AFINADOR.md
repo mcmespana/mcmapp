@@ -89,11 +89,39 @@ cuerda), `tunerDetectPitch` (las seis cuerdas con armónicos, cuerda que se
 apaga), `tunerMicrophoneWeb` (guardarraíl de la trampa 1) y `useTuner`
 (permisos, abrir/soltar el micrófono, audio → lectura → cuerda afinada).
 
+## Metrónomo (en la misma hoja)
+
+Desde el 2026-11-16 la hoja lleva arriba un conmutador **Afinador ·
+Metrónomo**. Se usa menos que el afinador, así que no tiene entrada propia en
+ningún menú: se llega desde el afinador. Al pasar al metrónomo el afinador se
+desmonta y suelta el micrófono.
+
+- El **tempo** en grande (40–220), con − y + (mantener pulsado repite) y
+  «Marcar el tempo» (tocar varias veces al ritmo: media de los últimos toques).
+- **Pulsos por compás**: 1 (sin acento), 2, 3, 4 o 6. Una fila de puntos marca
+  el pulso que suena; el primero es más grande y suena una quinta más agudo.
+- El tempo y el compás se recuerdan (`@metronome` en AsyncStorage).
+- Suena solo con la hoja delante: al cerrarla o ir a segundo plano, se para.
+  En iOS la sesión de audio va en `playback`, así que suena con el móvil en
+  silencio.
+
+| Pieza                                 | Qué hace                                                                                                                                                         |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `utils/metronome.ts`                  | Lo que se prueba sin altavoz: topes, pulsos de la próxima ventana (`beatsUntil`) y el tempo marcado con el dedo (`tapTempo`)                                     |
+| `services/metronome/engine.ts`        | El sonido, con `react-native-audio-api` (el mismo código en iOS, Android y web). Cada pulso se **sintetiza** (un «toc» de madera: seno que cae de tono + un parcial agudo brevísimo); no hay ficheros de audio. El ritmo lo lleva el reloj del audio: un temporizador programa los pulsos de la próxima décima de segundo |
+| `hooks/useMetronome.ts`               | Estado, persistencia y ciclo de vida (foco, segundo plano)                                                                                                       |
+| `components/tuner/MetronomePanel.tsx` | La pantalla                                                                                                                                                      |
+
+No añade paquetes: usa el `react-native-audio-api` que ya trajo el afinador
+(build 2.5.1), así que **sale por OTA**. Tests: `metronome.test.ts`. Sin probar
+en móvil: falta oír el «toc» en un altavoz de teléfono y ajustar volumen y
+timbre si hace falta (`click()` en el motor).
+
 ## Lo que no hace (a propósito)
 
 Otras afinaciones (Drop D, medio tono abajo…), cambiar el La 440, ukelele o
-bajo, metrónomo. Si algún día se quiere, `PitchTracker` ya acepta otra
-`tuning`.
+bajo. Si algún día se quiere, `PitchTracker` ya acepta otra `tuning`. El
+metrónomo no subdivide ni guarda un tempo por canción.
 
 ## Pendiente de verificar en dispositivo
 

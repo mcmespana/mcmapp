@@ -390,6 +390,24 @@ export default function ContigoScreen() {
             </View>
           ) : null}
 
+          {/* Tu año: una línea, sin tarjeta, para no cargar la portada. */}
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/contigo/resumen' as never)}
+            style={[styles.section, styles.yearLink]}
+            accessibilityRole="button"
+            accessibilityLabel="Tu año en Contigo"
+          >
+            <MaterialIcons name="auto-awesome" size={16} color={W.accentText} />
+            <Text style={[styles.yearLinkText, { color: W.accentText }]}>
+              Tu año en Contigo
+            </Text>
+            <MaterialIcons
+              name="chevron-right"
+              size={18}
+              color={W.accentText}
+            />
+          </TouchableOpacity>
+
           {/* ── Calendario completo ────────────────────── */}
           <View style={[styles.section, { paddingTop: 18 }]}>
             <View style={styles.monthHdr}>
@@ -569,6 +587,15 @@ const styles = StyleSheet.create({
     ...typography.sectionLabel,
     marginBottom: 10,
   },
+  yearLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 44,
+    paddingTop: 8,
+  },
+  yearLinkText: { fontSize: 15, fontWeight: '600' },
   statsRow: {
     flexDirection: 'row',
     gap: 10,

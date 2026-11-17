@@ -1,3 +1,4 @@
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 import {
   FlatList,
   Text,
@@ -46,6 +47,7 @@ import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useSongTagIndex } from '@/hooks/useSongTags';
 import TagCloudSheet from '@/components/song-tags/TagCloudSheet';
 import TagChip from '@/components/song-tags/TagChip';
+import SundaySongsRow from '@/components/song-sunday/SundaySongsRow';
 import CantoralOnboarding from '@/components/song-onboarding/CantoralOnboarding';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
@@ -232,6 +234,7 @@ export default function CategoriesScreen() {
   // para que iOS 26 les ponga su cápsula liquid-glass (una por lado).
   const { choir: myChoir, isHydrated: choirHydrated } = useMyChoir();
   const [showMenu, setShowMenu] = useState(false);
+  const { isAdmin } = useAdminStatus();
   const hasSongs = sortedCategories.length > 0;
   const headerIconColor = cantoralHeaderTint(isDark);
 
@@ -296,8 +299,18 @@ export default function CategoriesScreen() {
             },
           ]
         : []),
+      ...(isAdmin
+        ? [
+            {
+              key: 'new-song',
+              label: 'Nueva canción',
+              icon: 'post-add' as const,
+              onPress: () => openCantoral('SongEditor', { nueva: '1' }),
+            },
+          ]
+        : []),
     ],
-    [hasTags, hasSongs, myChoir, openOnboarding],
+    [hasTags, hasSongs, myChoir, openOnboarding, isAdmin],
   );
   const menuSheet = (
     <ContextMenuSheet
@@ -429,44 +442,47 @@ export default function CategoriesScreen() {
       if (isSpecial) {
         const count = item.songCount;
         return (
-          <PressableFeedback
-            onPress={onPress}
-            style={[styles.row, styles.selectionRow]}
-            accessibilityRole="button"
-            accessibilityLabel={`Tu selección, ${
-              count === 0
-                ? 'vacía'
-                : `${count} ${count === 1 ? 'canción' : 'canciones'}`
-            }`}
-          >
-            <PressableFeedback.Highlight />
-            <View style={[styles.rowIcon, styles.selectionIcon]}>
-              {emoji ? (
-                <Text style={styles.emojiText}>{emoji}</Text>
-              ) : (
-                <MaterialIcons
-                  name="queue-music"
-                  size={22}
-                  color={glyphColor}
-                />
-              )}
-            </View>
-            <View style={styles.selectionContent}>
-              <Text style={[styles.rowTitle, styles.selectionTitle]}>
-                {displayName}
-              </Text>
-              <Text style={styles.selectionSubtitle} numberOfLines={1}>
-                {count === 0
-                  ? 'Vacía · añade canciones desde el cantoral'
-                  : `${count} ${count === 1 ? 'canción' : 'canciones'}`}
-              </Text>
-            </View>
-            <MaterialIcons
-              name="chevron-right"
-              size={20}
-              color={themeColors(isDark).link}
-            />
-          </PressableFeedback>
+          <View>
+            <PressableFeedback
+              onPress={onPress}
+              style={[styles.row, styles.selectionRow]}
+              accessibilityRole="button"
+              accessibilityLabel={`Tu selección, ${
+                count === 0
+                  ? 'vacía'
+                  : `${count} ${count === 1 ? 'canción' : 'canciones'}`
+              }`}
+            >
+              <PressableFeedback.Highlight />
+              <View style={[styles.rowIcon, styles.selectionIcon]}>
+                {emoji ? (
+                  <Text style={styles.emojiText}>{emoji}</Text>
+                ) : (
+                  <MaterialIcons
+                    name="queue-music"
+                    size={22}
+                    color={glyphColor}
+                  />
+                )}
+              </View>
+              <View style={styles.selectionContent}>
+                <Text style={[styles.rowTitle, styles.selectionTitle]}>
+                  {displayName}
+                </Text>
+                <Text style={styles.selectionSubtitle} numberOfLines={1}>
+                  {count === 0
+                    ? 'Vacía · añade canciones desde el cantoral'
+                    : `${count} ${count === 1 ? 'canción' : 'canciones'}`}
+                </Text>
+              </View>
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color={themeColors(isDark).link}
+              />
+            </PressableFeedback>
+            <SundaySongsRow />
+          </View>
         );
       }
 
@@ -531,30 +547,33 @@ export default function CategoriesScreen() {
     const selectionItem = displayCategories[0];
     if (!selectionItem) return null;
     return (
-      <PressableFeedback
-        onPress={() => openCantoral('SelectedSongs')}
-        style={styles.heroCard}
-      >
-        <PressableFeedback.Highlight />
-        <View style={styles.heroEmojiWrap}>
-          <MaterialIcons name="queue-music" size={30} color={glyphColor} />
-        </View>
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>Tu selección</Text>
-          <Text style={styles.heroSubtitle}>
-            {selectionItem.songCount === 0
-              ? 'Añade canciones para tenerlas a mano'
-              : `${selectionItem.songCount} ${
-                  selectionItem.songCount === 1 ? 'canción' : 'canciones'
-                }`}
-          </Text>
-        </View>
-        <MaterialIcons
-          name="chevron-right"
-          size={24}
-          color={themeColors(isDark).link}
-        />
-      </PressableFeedback>
+      <View>
+        <PressableFeedback
+          onPress={() => openCantoral('SelectedSongs')}
+          style={styles.heroCard}
+        >
+          <PressableFeedback.Highlight />
+          <View style={styles.heroEmojiWrap}>
+            <MaterialIcons name="queue-music" size={30} color={glyphColor} />
+          </View>
+          <View style={styles.heroContent}>
+            <Text style={styles.heroTitle}>Tu selección</Text>
+            <Text style={styles.heroSubtitle}>
+              {selectionItem.songCount === 0
+                ? 'Añade canciones para tenerlas a mano'
+                : `${selectionItem.songCount} ${
+                    selectionItem.songCount === 1 ? 'canción' : 'canciones'
+                  }`}
+            </Text>
+          </View>
+          <MaterialIcons
+            name="chevron-right"
+            size={24}
+            color={themeColors(isDark).link}
+          />
+        </PressableFeedback>
+        <SundaySongsRow />
+      </View>
     );
   }, [isWideLayout, displayCategories, isDark, styles, glyphColor]);
 

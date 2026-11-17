@@ -14,8 +14,15 @@
  *     createdBy: { deviceId, name? },            ← quién lo creó (para el panel)
  *     playlists: {
  *       "1234": { name, createdAt, updatedAt, songCount, by?, ownerDeviceId? }
+ *     },
+ *     log: {                                     ← lo cantado (historial)
+ *       "20261122-1234": { at, code, songs: ["01.fichero.cho", …] }
  *     }
  *   }
+ *
+ * `log` guarda un apunte por día y playlist cada vez que se sube o se
+ * actualiza una: solo ficheros, sin contenido. De ahí sale el historial de
+ * «cuánto la hemos cantado este curso» (`utils/choirHistory.ts`).
  *
  * El **contenido** de cada playlist NO se duplica aquí: sigue viviendo en
  * `/playlistShares/{code}` (ver `cloudPlaylistService`). Este nodo es solo el
@@ -32,6 +39,7 @@ import {
   makeChoirId,
   normalizeChoirName,
 } from '@/utils/choirIds';
+import { sungLogKey, type SungEntry } from '@/utils/choirHistory';
 import {
   latestChoirPlaylist,
   sortChoirPlaylists,
@@ -57,6 +65,8 @@ export interface Choir {
   createdBy?: ChoirAuthor;
   /** Índice de playlists, indexado por código de 4 dígitos. */
   playlists: Record<string, ChoirPlaylistEntry>;
+  /** Lo cantado: un apunte por día y playlist. */
+  log: SungEntry[];
 }
 
 function choirRef(choirId: string) {
@@ -81,6 +91,13 @@ function hydrate(id: string, raw: any): Choir {
       ...(e?.ownerDeviceId ? { ownerDeviceId: e.ownerDeviceId } : {}),
     };
   }
+  const log: SungEntry[] = [];
+  for (const entry of Object.values(raw?.log ?? {})) {
+    const e = entry as Partial<SungEntry>;
+    if (typeof e?.at === 'number' && e.code && Array.isArray(e.songs)) {
+      log.push({ at: e.at, code: String(e.code), songs: e.songs.map(String) });
+    }
+  }
   return {
     id,
     v: 1,
@@ -90,6 +107,7 @@ function hydrate(id: string, raw: any): Choir {
     updatedAt: raw?.updatedAt ?? raw?.createdAt ?? 0,
     ...(raw?.createdBy ? { createdBy: raw.createdBy as ChoirAuthor } : {}),
     playlists,
+    log,
   };
 }
 
@@ -147,7 +165,7 @@ export async function createChoir(
     },
   };
   await set(choirRef(id), payload);
-  return { ...payload, id, playlists: {} };
+  return { ...payload, id, playlists: {}, log: [] };
 }
 
 /** Renombra un coro (lo usa sobre todo el panel; la app lo deja a mano). */
@@ -176,6 +194,8 @@ export async function deleteChoir(choirId: string): Promise<void> {
 export async function upsertChoirPlaylist(
   choirId: string,
   entry: ChoirPlaylistEntry,
+  /** Ficheros de las canciones: si vienen, se apunta en el historial. */
+  songs?: string[],
 ): Promise<void> {
   const now = Date.now();
   const value = {
@@ -190,6 +210,15 @@ export async function upsertChoirPlaylist(
   // es lo que ordena la lista de coros por actividad en el panel).
   await update(choirRef(choirId), {
     [`playlists/${entry.code}`]: value,
+    ...(songs && songs.length
+      ? {
+          [`log/${sungLogKey(now, entry.code)}`]: {
+            at: now,
+            code: entry.code,
+            songs,
+          },
+        }
+      : {}),
     updatedAt: now,
   });
 }
