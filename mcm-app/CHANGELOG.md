@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 19:42 — Tu selección vacía: primero el coro; los cantos del domingo, en un botón
+
+- Se quita la tarjeta «Este domingo» (`SundayPlanCard`) del vacío de Tu selección: estorbaba a lo que hace casi todo el mundo, traerse la playlist del coro. El vacío vuelve a ser el de antes, con **«Traer la playlist de <coro>» como botón principal**, y al final un botón discreto **«Cantos con las lecturas del domingo»** (`SundaySongsButton`) que abre la pantalla de los cantos del domingo.
+- Esa pantalla gana **«Leer las lecturas»** (con la cita del evangelio) bajo la cabecera. El porqué de cada canto sale igual en todas partes (`candidateWhy`: «Por las lecturas: …»).
+- La fila de Tu selección del cantoral vuelve a «Vacía · añade canciones desde el cantoral».
+
 ## 2026-11-17 19:25 — Metrónomo: puede seguir sonando con la hoja cerrada
 
 - Al cerrar la hoja con el metrónomo sonando, pregunta **«¿Dejar el metrónomo sonando?»** (botón «Sí» grande, «No, pararlo» y «No volver a preguntar», que guarda la respuesta; se deshace en la hoja con «Volver a preguntar»).

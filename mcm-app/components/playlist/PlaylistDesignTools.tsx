@@ -1,8 +1,8 @@
 /**
  * Ayudas para MONTAR la playlist, pequeñas y a mano en «Tu selección» con
  * canciones: las lecturas del próximo domingo (con los cantos que encajan),
- * la misa propuesta para ese domingo (con la lista vacía sale entera, en
- * `SundayPlanCard`) y el historial de lo cantado por el coro.
+ * la misa propuesta para ese domingo (con la lista vacía, botón propio en
+ * `SundaySongsButton`) y el historial de lo cantado por el coro.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';

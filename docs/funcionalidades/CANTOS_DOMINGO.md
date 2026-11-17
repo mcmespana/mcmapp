@@ -8,17 +8,13 @@
 
 ## Qué ve la persona
 
-- **Tu selección VACÍA → tarjeta «Este domingo»**
-  (`components/playlist/SundayPlanCard.tsx`). Va ahí porque lo primero al
-  preparar una misa es vaciar la selección (decisión del usuario, 2026-11-17;
-  antes era una fila en la home del cantoral). Enseña el domingo que toca (hoy,
-  si es domingo; si no, el siguiente) con su fiesta o tiempo, un punto del color
-  litúrgico y el ciclo; **Leer las lecturas** (la hoja de lecturas de ESE
-  domingo, sin su lista de cantos) con la cita del evangelio, y los cantos
-  propuestos momento a momento con su porqué. **Usar estos cantos** llena la
-  selección en orden de misa (10 s de Deshacer); tocar un canto o **Cambiar
-  alguno u otro domingo** abre la pantalla completa. Sin cantoral cacheado, solo
-  sale la fecha y las lecturas.
+- **Tu selección VACÍA → botón «Cantos con las lecturas del domingo»**
+  (`components/playlist/SundaySongsButton.tsx`): fecha y fiesta o tiempo, con
+  el color litúrgico en el icono. Va **al final y discreto**: en el vacío
+  manda **traer la playlist del coro** (botón principal), luego código/QR y
+  archivo. Elegir cantos lo hace poca gente; traerse la del coro, casi todos
+  (decisión del usuario, 2026-11-17: una tarjeta con la misa entera en el
+  vacío estorbaba). Antes era una fila en la home del cantoral.
 - **Tu selección con canciones**: chip **Cantos del domingo** junto a
   «Lecturas del domingo» en la cabecera (`PlaylistDesignTools`).
 - **Pantalla** `/cancionero/domingo?fecha=YYYY-MM-DD` (`SundaySongsScreen`):
@@ -29,6 +25,8 @@
     predecible). **⋯** (o mantener pulsada la fila): Cambiar, **Elegir otra…**
     (todas las candidatas, con su razón) y **Quitar de la misa** / Volver a
     poner. Tocar la fila abre la canción; deslizar añade a Tu selección.
+  - **Leer las lecturas** (con la cita del evangelio) bajo la cabecera: abre
+    la hoja de lecturas de ESA fecha, solo lecturas.
   - **Pasar a Tu selección**: REEMPLAZA la selección con la misa en orden de
     misa, deja 10 s de **Deshacer** (restaura también el enlace con la nube) y
     vuelve a la Tu selección de debajo (`router.dismissTo`, sin apilar otra).
@@ -107,8 +105,9 @@ cada uno:
    fecha, de más a menos afinidad (`readingsAffinity` en `utils/sundayMatch.ts`:
    sin IA; palabras raras en el cantoral pesan más; evangelio ×1,5, salmo ×1,3;
    hacen falta dos palabras en común). El **salmo** se compara primero con el
-   salmo del día a solas. La razón sale en la fila («Lecturas: pastor ·
-   ovejas»). Las lecturas **no saltan** las reglas duras ni los tramos: una
+   salmo del día a solas. La razón sale en la fila con `candidateWhy`
+   («Por las lecturas: pastor, ovejas»; sin lecturas, la fiesta o el tiempo,
+   salvo «Tiempo Ordinario», que no aporta). Las lecturas **no saltan** las reglas duras ni los tramos: una
    canción del tiempo sigue yendo antes que una neutra que encaja con el
    evangelio. Sin lecturas (sin red y sin caché), todo como en el punto 5.
 5. **Variedad sin historial y sin red**: el resto del tramo, orden por hash
@@ -149,8 +148,7 @@ canción, la propuesta no se desplaza sola.
   (`mcmapp-cantoral`, editor del admin).
 - **Ventana del calendario**: la vigila `__tests__/liturgicalWindow.test.ts`.
 - Tests: `liturgicalDay.test.ts`, `sundaySongs.test.ts`,
-  `useSundaySongs.test.tsx`, `sundaySongsScreen.test.tsx`,
-  `sundayPlanCard.test.tsx`.
+  `useSundaySongs.test.tsx`, `sundaySongsScreen.test.tsx`.
 
 ## Pendiente (ver el plan)
 

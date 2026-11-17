@@ -6,6 +6,7 @@
 import { liturgicalDayOf } from '@/utils/liturgicalDay';
 import {
   REMOVED,
+  candidateWhy,
   massToSelection,
   nextCandidate,
   parseSundayPicks,
@@ -606,5 +607,36 @@ describe('suggestMass — lecturas del domingo', () => {
       'entrada',
     );
     expect(entrada.candidates.map((c) => c.filename)).not.toContain('entAdv');
+  });
+});
+
+describe('candidateWhy — el porqué en una frase', () => {
+  const base = {
+    filename: 'x',
+    title: 'X',
+    categoryKey: 'entrada',
+    score: 0,
+    song: { title: 'X', filename: 'x' },
+  };
+  it('las lecturas mandan', () => {
+    expect(
+      candidateWhy({
+        ...base,
+        reasons: ['Cuaresma', 'Lecturas: viña · pastor'],
+        readingWords: ['viña', 'pastor'],
+      }),
+    ).toBe('Por las lecturas: viña, pastor');
+  });
+  it('sin lecturas, la fiesta o el tiempo; el Ordinario no se dice', () => {
+    expect(
+      candidateWhy({ ...base, reasons: ['Cuaresma'], readingWords: [] }),
+    ).toBe('Cuaresma');
+    expect(
+      candidateWhy({
+        ...base,
+        reasons: ['Tiempo Ordinario'],
+        readingWords: [],
+      }),
+    ).toBeNull();
   });
 });

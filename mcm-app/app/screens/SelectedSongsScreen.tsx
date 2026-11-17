@@ -52,7 +52,8 @@ import { h } from '@/utils/haptics';
 import PlaylistRow from '@/components/playlist/PlaylistRow';
 import { createStyles } from '@/components/playlist/selectedSongsStyles';
 import SundayReadingsSheet from '@/components/playlist/SundayReadingsSheet';
-import SundayPlanCard from '@/components/playlist/SundayPlanCard';
+import SundaySongsButton from '@/components/playlist/SundaySongsButton';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import {
   PlaylistHeaderBar,
   type ViewMode,
@@ -1574,22 +1575,12 @@ const SelectedSongsScreen: React.FC = () => {
     }
   };
 
-  // Hoja de lecturas: desde la cabecera (próximo domingo, con los cantos que
-  // tienen palabras en común) o desde «Este domingo» (solo las lecturas: los
-  // cantos ya están en la tarjeta).
-  const [sundaySheet, setSundaySheet] = useState<{
-    date?: string;
-    readingsOnly?: boolean;
-  } | null>(null);
-  const openSunday = useCallback(() => setSundaySheet({}), []);
-  const openSundayReadings = useCallback(
-    (date: string) => setSundaySheet({ date, readingsOnly: true }),
-    [],
-  );
+  const [showSunday, setShowSunday] = useState(false);
+  const openSunday = useCallback(() => setShowSunday(true), []);
 
-  // Vacía es el punto de partida de cada misa (lo primero es vaciarla): se
-  // enseña el domingo que toca con sus lecturas y los cantos que encajan, y
-  // debajo las otras formas de llenarla. Con scroll: no cabe en un móvil.
+  // Vacía: lo primero, traerse la playlist del coro; debajo, código y archivo,
+  // y al final, para quien elige los cantos, los del domingo. Con scroll por
+  // si la letra es grande.
   const renderEmptyState = () => (
     <ScrollView
       style={styles.emptyScroll}
@@ -1601,34 +1592,33 @@ const SelectedSongsScreen: React.FC = () => {
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.emptyIntro}>
-        <Text style={styles.emptyTitle}>Tu selección está vacía</Text>
+      <View style={styles.emptyContent}>
+        <View style={styles.emptyIconContainer}>
+          <MaterialIcons
+            name="queue-music"
+            size={56}
+            color={themeColors(isDark).textMuted}
+          />
+        </View>
+        <Text style={styles.emptyTitle}>Sin canciones seleccionadas</Text>
         <Text style={styles.emptyDescription}>
           {Platform.OS === 'web'
             ? 'Pulsa el + de una canción en el cantoral, o haz clic derecho sobre ella.'
             : 'Desliza una canción hacia la izquierda o usa el + al abrirla.'}
         </Text>
       </View>
-      <SundayPlanCard onOpenReadings={openSundayReadings} />
       <View style={{ gap: 10 }}>
-        {/* Con la lista vacía, lo primero que quiere casi todo el mundo es
-            traerse la del coro: va la primera y sin pedir ningún código. */}
-        <PressableFeedback
-          onPress={() => openChoirSheet()}
-          style={styles.importButton}
-        >
-          <PressableFeedback.Highlight />
-          <MaterialIcons
-            name="groups"
-            size={20}
-            color={themeColors(isDark).link}
-          />
-          <Text style={styles.importButtonText}>
-            {sharing.myChoir
+        {/* Con la lista vacía, lo que quiere casi todo el mundo es traerse la
+            del coro: va la primera, destacada y sin pedir ningún código. */}
+        <AppPrimaryButton
+          icon="groups"
+          label={
+            sharing.myChoir
               ? `Traer la playlist de ${sharing.myChoir.name}`
-              : 'Elegir mi coro e importar'}
-          </Text>
-        </PressableFeedback>
+              : 'Elegir mi coro e importar'
+          }
+          onPress={() => openChoirSheet()}
+        />
         <PressableFeedback
           onPress={() => setCodeDialog({ variant: 'cloud-download' })}
           style={styles.importButton}
@@ -1653,6 +1643,10 @@ const SelectedSongsScreen: React.FC = () => {
           />
           <Text style={styles.importButtonText}>Importar desde archivo</Text>
         </PressableFeedback>
+        {/* Para quien elige los cantos: discreto y al final. */}
+        <View style={styles.emptySunday}>
+          <SundaySongsButton />
+        </View>
       </View>
     </ScrollView>
   );
@@ -1830,10 +1824,8 @@ const SelectedSongsScreen: React.FC = () => {
       )}
 
       <SundayReadingsSheet
-        visible={!!sundaySheet}
-        onClose={() => setSundaySheet(null)}
-        date={sundaySheet?.date}
-        readingsOnly={sundaySheet?.readingsOnly}
+        visible={showSunday}
+        onClose={() => setShowSunday(false)}
         songsData={allSongsData}
         isSelected={isSongSelected}
         onAdd={addSong}

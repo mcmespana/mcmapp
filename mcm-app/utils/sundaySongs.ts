@@ -430,6 +430,21 @@ export function suggestMass(
   return out;
 }
 
+/**
+ * Por qué se propone una canción, en una frase corta para la fila: las
+ * palabras en común con las lecturas mandan; si no hay, la fiesta o el tiempo
+ * (salvo el Ordinario, que lo dirían casi todas y no aporta).
+ */
+export function candidateWhy(c: SundayCandidate): string | null {
+  if (c.readingWords.length > 0) {
+    return `Por las lecturas: ${c.readingWords.slice(0, 3).join(', ')}`;
+  }
+  const liturgical = c.reasons.filter(
+    (r) => !r.startsWith('Lecturas:') && r !== SEASON_LABELS.ordinario,
+  );
+  return liturgical.length > 0 ? liturgical.join(' · ') : null;
+}
+
 /** La canción siguiente del ranking, dando la vuelta («Cambiar»). */
 export function nextCandidate(
   suggestion: MomentSuggestion,
