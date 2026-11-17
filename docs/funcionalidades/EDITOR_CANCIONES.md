@@ -105,7 +105,11 @@ workflow del cantoral, o un segundo camino directo a GitHub) está en
 
 ## Pendiente
 
-Puesta en marcha del NAS: `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (se borra al hacerla).
+**Puesta en marcha: hecha (usuario, 2026-11-17).** NAS con `FIREBASE_URL`,
+`songs/editor/url` en Firebase y administradores con `isAdmin`. Si hay que
+rehacerla: `mcmapp-cantoral/deploy/ugreen-nas/README.md` («Editor de canciones
+desde la app»). Tras cada cambio del admin en `main`: `git pull` en el
+contenedor y relanzar.
 
 Sin probar en móvil ni contra el NAS real: el arrastre está comprobado en web.
 El editor de arreglos por pulsación larga sigue igual, ahora para los

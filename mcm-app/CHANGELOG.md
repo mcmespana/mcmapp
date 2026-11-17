@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 23:40 — Editor de canciones: NAS puesto en marcha y todo en `main`
+
+- El usuario ha configurado el NAS (`FIREBASE_URL`), `songs/editor/url` y los administradores. Se borra `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (era de un solo uso); lo permanente sigue en `docs/funcionalidades/EDITOR_CANCIONES.md`.
+- `batiburrillo` mergeado a `main` en `mcmapp` y en `mcmapp-cantoral`.
+
 ## 2026-11-17 23:20 — Editor: las opciones de foto se ven siempre
 
 - En «Nueva canción», «Hacer una foto» y «Elegir fotos» salían solo si el cantoral contestaba y tenía la IA; sin eso no aparecían y parecía que no existían. Ahora se ven siempre y, si no se pueden usar, salen en gris diciendo por qué.
