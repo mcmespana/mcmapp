@@ -132,6 +132,7 @@ export const CANTORAL_SLUGS = {
   SelectedSongs: 'seleccion',
   Tuner: 'afinador',
   SongEditor: 'editar',
+  SongReorder: 'ordenar',
 } as const;
 
 export type CantoralScreenName = keyof typeof CANTORAL_SLUGS;

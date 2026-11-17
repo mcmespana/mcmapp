@@ -418,6 +418,14 @@ queda la idea apuntada, no las empieces.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
+- **Editor de canciones resistente a la ausencia del NAS** (usuario,
+  2026-11-17). Hoy todo lo que se edita en la app va al admin del cantoral en
+  el NAS; si no contesta, el cambio espera en el móvil de quien edita y se
+  envía solo al volver (`docs/funcionalidades/EDITOR_CANCIONES.md`, «Deuda
+  anotada»). Falta un camino que no dependa del NAS ni de ese móvil: la cola
+  en Firebase aplicada por el workflow del cantoral, o commit directo a GitHub
+  desde una función. Sin NAS tampoco hay foto con IA ni reordenar.
+
 - **Multilenguaje (i18n)** — catalán/portugués/inglés. Por ahora **no**. Si
   algún día se decide, ver `docs/planes/archivo/MEJORAS.md` §10 (razonamiento
   archivado) y usar `i18n-js` + `expo-localization` desde el principio (el

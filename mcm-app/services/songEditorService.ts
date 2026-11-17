@@ -1,34 +1,33 @@
 /**
- * Guardar los cambios del editor de canciones (solo administradores).
+ * Guardar desde el editor de canciones (solo administradores).
  *
- * Dos destinos, en este orden:
+ * Todo va al **admin del cantoral** (el del NAS), que es quien escribe el
+ * `.cho`, hace commit y push; GitHub Actions regenera `songs.json` y lo sube a
+ * Firebase, y la app lo baja la próxima vez que se abre:
  *
- * 1. **Firebase** (`songs/data/<categoría>/songs/<i>/<campo>` + `updatedAt`):
- *    el cambio se ve en todos los móviles al momento. Es lo que hacía el panel
- *    secreto.
- * 2. **El repo del cantoral**, que es la fuente de verdad. Si el admin del
- *    cantoral (el del NAS) está configurado y contesta, se le manda la edición
- *    y él la escribe en el `.cho`, hace commit y push (`/api/app/song/save`).
- *    Si no contesta, la edición se deja en la cola `songs/ediciones`, que el
- *    cantoral aplica solo cada pocas horas. De una forma u otra, no se pierde.
+ *   app ──► NAS (/api/app/*) ──► GitHub ──► Actions ──► Firebase ──► apps
  *
- * La app no guarda ningún secreto: al NAS se le manda el pase de Firebase de
- * quien ha entrado, y él comprueba `users/<uid>/isAdmin`.
+ * - La app no guarda ningún secreto: manda el pase de Firebase de quien ha
+ *   entrado y el NAS comprueba `users/<uid>/isAdmin`.
+ * - **Si el NAS no contesta**, el cambio se queda en este móvil (una cola en
+ *   AsyncStorage) y se envía solo cuando vuelva (`flushOutbox`).
+ * - Quien edita ve su cambio al momento (`utils/songOverrides.ts`).
  *
- * La dirección del NAS vive en Firebase (`songs/editor/url`), para poder
- * cambiarla sin publicar la app. Contrato: `mcmapp-cantoral`,
- * `scripts/admin/README.md` («API para la app»).
+ * La dirección del NAS vive en Firebase (`songs/editor/url`). Contrato en
+ * `mcmapp-cantoral/scripts/admin/README.md` («API para la app»).
  */
 import { Platform } from 'react-native';
-import { get, getDatabase, ref, set } from 'firebase/database';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { get, getDatabase, ref } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import { getFirebaseAuth } from '@/utils/firebaseAuth';
-import { pushWithRetry } from '@/services/firebaseWrites';
 import { logger } from '@/utils/logger';
+import { setSongOverride } from '@/utils/songOverrides';
 import type { SongSnapshot } from '@/utils/songEditor';
 
-const TIMEOUT_MS = 20_000;
+const TIMEOUT_MS = 25_000;
 const READ_TIMEOUT_MS = 240_000;
+const OUTBOX_KEY = '@song_editor_outbox';
 
 export interface EditorCategory {
   letter: string;
@@ -44,11 +43,13 @@ export interface EditorStatus {
 
 export class EditorApiError extends Error {
   status: number;
-  conflict: boolean;
-  constructor(message: string, status: number, conflict = false) {
+  constructor(message: string, status: number) {
     super(message);
     this.status = status;
-    this.conflict = conflict;
+  }
+  /** No ha llegado al cantoral (sin red, NAS apagado o sin configurar). */
+  get unreachable() {
+    return this.status === 0 || this.status >= 500;
   }
 }
 
@@ -106,7 +107,6 @@ async function call<T>(
       throw new EditorApiError(
         typeof data.error === 'string' ? data.error : `Error ${res.status}`,
         res.status,
-        data.conflict === true,
       );
     }
     return data as T;
@@ -131,10 +131,115 @@ export async function fetchEditorStatus(): Promise<EditorStatus | null> {
   }
 }
 
+// ── Cola en el móvil ──
+
+export type OutboxItem =
+  | {
+      id: string;
+      at: number;
+      kind: 'edit';
+      title: string;
+      body: Record<string, unknown>;
+    }
+  | {
+      id: string;
+      at: number;
+      kind: 'new';
+      title: string;
+      body: Record<string, unknown>;
+    };
+
+const outboxListeners = new Set<() => void>();
+let outbox: OutboxItem[] | null = null;
+
+async function loadOutbox(): Promise<OutboxItem[]> {
+  if (outbox) return outbox;
+  try {
+    outbox = JSON.parse((await AsyncStorage.getItem(OUTBOX_KEY)) ?? '[]');
+  } catch {
+    outbox = [];
+  }
+  return outbox as OutboxItem[];
+}
+
+async function storeOutbox(next: OutboxItem[]) {
+  outbox = next;
+  await AsyncStorage.setItem(OUTBOX_KEY, JSON.stringify(next)).catch(() => {});
+  outboxListeners.forEach((l) => l());
+}
+
+export function subscribeOutbox(listener: () => void): () => void {
+  outboxListeners.add(listener);
+  return () => {
+    outboxListeners.delete(listener);
+  };
+}
+
+export async function getOutbox(): Promise<OutboxItem[]> {
+  return [...(await loadOutbox())];
+}
+
+const PATHS = { edit: '/api/app/song/save', new: '/api/app/song/new' };
+let flushing: Promise<number> | null = null;
+
+/**
+ * Envía lo que haya pendiente, en orden. Para en el primero que no llegue.
+ * Lo que el cantoral rechaza de verdad (4xx) se descarta: reintentar no lo
+ * arregla. Devuelve cuántos quedan.
+ */
+export function flushOutbox(): Promise<number> {
+  if (flushing) return flushing;
+  flushing = (async () => {
+    let items = await loadOutbox();
+    while (items.length) {
+      const item = items[0];
+      try {
+        await call(PATHS[item.kind], { json: item.body });
+      } catch (e) {
+        if (e instanceof EditorApiError && e.unreachable) break;
+        logger.warn('songEditor: descartado de la cola', item.title, e);
+      }
+      items = items.slice(1);
+      await storeOutbox(items);
+    }
+    return items.length;
+  })().finally(() => {
+    flushing = null;
+  });
+  return flushing;
+}
+
+async function sendOrQueue(
+  kind: OutboxItem['kind'],
+  title: string,
+  body: Record<string, unknown>,
+): Promise<SaveResult> {
+  // Lo pendiente va primero, para no adelantar un cambio a otro anterior.
+  const pending = await flushOutbox();
+  if (pending === 0) {
+    try {
+      const res = await call<{ pushed?: boolean; warning?: string }>(
+        PATHS[kind],
+        { json: body },
+      );
+      return { where: 'sent', pushed: res.pushed !== false };
+    } catch (e) {
+      if (!(e instanceof EditorApiError) || !e.unreachable) throw e;
+    }
+  }
+  const items = await loadOutbox();
+  await storeOutbox([
+    ...items,
+    { id: `${Date.now()}-${items.length}`, at: Date.now(), kind, title, body },
+  ]);
+  return { where: 'queued', pushed: false };
+}
+
 export interface SaveResult {
-  /** `repo`: ya está en el cantoral. `queue`: se aplicará solo en unas horas. */
-  where: 'repo' | 'queue';
-  warning?: string;
+  /** `sent`: lo tiene el cantoral. `queued`: guardado en este móvil. */
+  where: 'sent' | 'queued';
+  /** El cantoral ya lo ha subido a GitHub. */
+  pushed: boolean;
 }
 
 /**
@@ -144,50 +249,54 @@ export interface SaveResult {
 export async function saveSongEdition(args: {
   filename: string;
   category: string;
+  title: string;
   changes: Record<string, unknown>;
   fields: Partial<SongSnapshot>;
 }): Promise<SaveResult> {
-  const { filename, category, changes, fields } = args;
-  const db = getDatabase(getFirebaseApp());
-
-  // 1) Firebase: se ve ya.
-  const snap = await get(ref(db, `songs/data/${category}/songs`));
-  const songs = snap.val();
-  const index = Array.isArray(songs)
-    ? songs.findIndex((s: any) => s && s.filename === filename)
-    : -1;
-  if (index < 0) throw new Error('No encuentro la canción en el cantoral');
-  await Promise.all(
-    Object.entries(fields).map(([field, value]) =>
-      set(ref(db, `songs/data/${category}/songs/${index}/${field}`), value),
-    ),
-  );
-  await set(ref(db, 'songs/updatedAt'), Date.now().toString());
-
-  const edition = {
+  const { filename, category, title, changes, fields } = args;
+  const result = await sendOrQueue('edit', title, {
     filename,
     category,
-    songIndex: index,
     ...changes,
     editedAt: new Date().toISOString(),
     timestamp: Date.now(),
     platform: Platform.OS,
-  };
+    // La app no ve las directivas multimedia del `.cho`, así que su «antes»
+    // nunca coincide al carácter: manda lo nuevo.
+    force: true,
+  });
+  setSongOverride(filename, {
+    ...(fields.title !== undefined ? { title: fields.title } : {}),
+    ...(fields.author !== undefined ? { author: fields.author } : {}),
+    ...(fields.key !== undefined ? { key: fields.key } : {}),
+    ...(fields.capo !== undefined ? { capo: fields.capo } : {}),
+    ...(fields.info !== undefined ? { info: fields.info } : {}),
+    ...(fields.content !== undefined ? { content: fields.content } : {}),
+  });
+  return result;
+}
 
-  // 2) El repo, por el admin del cantoral; si no, a la cola.
-  try {
-    const res = await call<{ pushed?: boolean; warning?: string }>(
-      '/api/app/song/save',
-      // El contenido que había puede no coincidir al carácter con el `.cho`
-      // (la app no ve las directivas multimedia): manda lo nuevo.
-      { json: { ...edition, force: true } },
-    );
-    return { where: 'repo', warning: res.warning };
-  } catch (e) {
-    logger.info('songEditor: a la cola', (e as Error).message);
-    await pushWithRetry('songs/ediciones', { ...edition, status: 'applied' });
-    return { where: 'queue' };
-  }
+/** Canción nueva: se crea en el repo del cantoral. */
+export async function createSong(args: {
+  category: string;
+  title: string;
+  artist?: string;
+  key?: string;
+  capo?: number;
+  content: string;
+}): Promise<SaveResult> {
+  return sendOrQueue('new', args.title, args);
+}
+
+/** Reordena una categoría (renumera sus canciones). Necesita el cantoral. */
+export async function reorderCategory(
+  category: string,
+  order: string[],
+): Promise<{ pushed: boolean }> {
+  const res = await call<{ pushed?: boolean }>('/api/app/category/reorder', {
+    json: { category, order },
+  });
+  return { pushed: res.pushed !== false };
 }
 
 export interface ConvertedSong {
@@ -230,16 +339,4 @@ export async function readSongPhotos(
     timeout: READ_TIMEOUT_MS,
   });
   return (res.songs ?? []).map(fromImport);
-}
-
-/** Canción nueva: se crea en el repo; aparece en la app en un par de minutos. */
-export async function createSong(args: {
-  category: string;
-  title: string;
-  artist?: string;
-  key?: string;
-  capo?: number;
-  content: string;
-}): Promise<{ filename: string; pushed: boolean; warning?: string }> {
-  return call('/api/app/song/new', { json: args });
 }

@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 10:30 — Editor de canciones: todo por el NAS, cola en el móvil, más metadatos y ordenar
+
+- **La app ya no escribe en Firebase al editar**: todo va al admin del cantoral (NAS → commit y push → GitHub Actions → Firebase). Se quita la escritura directa en `songs/data` y la cola `songs/ediciones` desde el editor.
+- **Si el NAS no contesta**, el cambio se guarda en el móvil (`@song_editor_outbox`) y se envía solo; aviso en el editor con «Enviar ahora».
+- **Quien edita ve su cambio al momento** (`utils/songOverrides.ts`, 48 h, aplicado en `useRouteSong`).
+- **Pantalla tras guardar** (`SavedPanel`): «Enviado al cantoral» o «Guardado en este móvil», con qué pasa y cuándo lo ven los demás (al volver a abrir la app).
+- **Datos completos**: Spotify, Drive, otros enlaces y etiquetas, además de lo que ya había.
+- **Ordenar canciones de una categoría** (Cantoral → ⋯ → Ordenar canciones, `SongReorderScreen`; `POST /api/app/category/reorder` en el cantoral).
+- Puesta en marcha del NAS en `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (temporal). Deuda anotada en el BACKLOG §2.D: que no dependa del NAS.
+
 ## 2026-11-16 21:45 — Contigo: compartir el evangelio como imagen, exportar lo tuyo y «Tu año»
 
 - **Compartir como imagen** (enlace al final de las lecturas): tu subrayado del día —o el arranque del evangelio— en una tarjeta con cuatro estilos y dos formatos (historia y cuadrada). `utils/shareCard.ts`, `components/contigo/ShareCardSheet.tsx`. La imagen sale de `react-native-svg` (`toDataURL`), sin capturas ni paquetes nuevos.
