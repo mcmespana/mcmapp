@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -47,6 +47,7 @@ export default function SuggestSongModal({
   const [pickedCategoria, setCategoria] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const sentRef = useRef(false);
 
   // Mientras el usuario no elija, vale la primera categoría disponible. Es un
   // valor por defecto DERIVADO: antes lo sembraba un efecto, que además volvía
@@ -84,8 +85,9 @@ export default function SuggestSongModal({
       setArtista('');
       setLetra('');
       setErrorMsg('');
+      // El aviso, cuando la hoja ya se ha ido (en iOS no se veía debajo).
+      sentRef.current = true;
       onClose();
-      onSuccess();
     } catch (error) {
       logger.error('Error enviando sugerencia:', error);
       setErrorMsg('No se pudo enviar. Inténtalo de nuevo.');
@@ -116,6 +118,11 @@ export default function SuggestSongModal({
       visible={visible}
       onClose={handleClose}
       title="Sugerir canción"
+      onCloseComplete={() => {
+        if (!sentRef.current) return;
+        sentRef.current = false;
+        onSuccess();
+      }}
       paddingHorizontal={0}
     >
       <ScrollView

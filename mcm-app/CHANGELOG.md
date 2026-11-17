@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 22:30 — Aviso al enviar feedback y sugerencias de canción
+
+- **Feedback de la app** (Inicio y Más): al enviar sale un aviso según el tipo — fallito, sugerencia o felicitación. Antes, desde Más no salía nada, y desde Inicio podía quedar oculto bajo la hoja que se cerraba.
+- **Sugerir canción**: el «¡Sugerencia enviada!» sale cuando la hoja ya se ha ido (en iOS quedaba debajo).
+
 ## 2026-11-17 21:30 — Toasts deslizables, historial en el menú del coro, compartir arriba y «Tu año» por temporadas
 
 - **Toasts**: se quitan deslizándolos a un lado o hacia abajo; mientras el dedo está encima no se van solos (`AppToastContext`).

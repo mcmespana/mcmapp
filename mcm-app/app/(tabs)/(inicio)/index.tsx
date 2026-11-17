@@ -44,7 +44,6 @@ import useLargeText, {
   appScaledTextCap,
 } from '@/hooks/useLargeText';
 import { Skeleton } from 'heroui-native';
-import { useToast } from '@/contexts/AppToastContext';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
@@ -251,7 +250,6 @@ export default function Home() {
   const textCap = appScaledTextCap(fontScale);
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 700;
-  const { toast } = useToast();
   // Modo carismochito: tiñe de verde el icono de la app del header.
   const { isActive: carismoActive, openOnboarding } = useCarismochito();
   const [settingsVisible, setSettingsVisibleRaw] = useState(false);
@@ -771,14 +769,6 @@ export default function Home() {
       <AppFeedbackModal
         visible={feedbackVisible}
         onClose={() => setFeedbackVisible(false)}
-        onSuccess={() =>
-          toast.show({
-            variant: 'success',
-            label: '¡Gracias! Hemos recibido tu comentario 🙌',
-            actionLabel: 'Cerrar',
-            onActionPress: ({ hide }) => hide(),
-          })
-        }
       />
 
       {/* ── Cabecera NATIVA (pila `(inicio)`) ──
