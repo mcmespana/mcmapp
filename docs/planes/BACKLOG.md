@@ -95,7 +95,7 @@
 | 4   | **UI Nativa** — headers nativos + componentes unificados                                                                                                              | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4)                                      | ⏸️ **EN PAUSA** (decisión del usuario, 2026-09-24): no se retoma hasta que lo diga. Fase 1 ✅, Fase 2 ~80% (`AppTextField`/`EmptyState` mayormente hechos, **`SegmentedControl` cerrado el 2026-09-10**, `AppPrimaryButton` parcial, chips sin empezar)                                 | `docs/planes/PLAN_UI_NATIVA.md`                      |
 | 5   | **Integración D** — Seguridad Firebase (+ A2)                                                                                                                         | Opus                                         | **Sí** — D2 + repo `mcmpanel` (ver §4)                                                                       | ⏳ Pendiente, importante pero no urgente. **Es lo único que queda de PLAN_INTEGRACIONES**: el resto (A, B, C, E) se cerró el 2026-08-12                                                                                                                                                 | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" |
 | 6   | **Carismochito** (§1–4)                                                                                                                                               | —                                            | Solo para sacarlo del laboratorio (§4)                                                                       | ✅ **DONE** (2026-09-26). La caza y la colección van **escondidas en el Laboratorio Alpha** por decisión del usuario                                                                                                                                                                    | `docs/funcionalidades/CARISMOCHITO.md`               |
-| 7   | **Editor de canciones en la app** (admin): editar una canción en el sitio y que llegue al repo del cantoral | Opus | Resuelta: el admin del cantoral en el NAS hace el commit, autenticado con el pase de Firebase del administrador | ✅ **HECHO y en `main`** (2026-11-16, desde la rama `batiburrillo`; la parte de `mcmapp-cantoral` sigue en su rama `batiburrillo`). Falta desplegar el admin en el NAS y poner `songs/editor/url`; sin probar en móvil | `docs/funcionalidades/EDITOR_CANCIONES.md` |
+| 7   | **Editor de canciones en la app** (admin): editar una canción en el sitio y que llegue al repo del cantoral | Opus | Resuelta: el admin del cantoral en el NAS hace el commit, autenticado con el pase de Firebase del administrador | ✅ **HECHO y en `main`** (2026-11-16, desde la rama `batiburrillo`; la parte de `mcmapp-cantoral` sigue en su rama `batiburrillo`). NAS configurado por el usuario (2026-11-17); mergeado a `main` el 2026-11-17 | `docs/funcionalidades/EDITOR_CANCIONES.md` |
 
 **Fuera de la cola — futuro lejano (decisión del usuario, 2026-08-15):**
 **Widgets de Contigo** (los tres) salen de la Cola Principal. Es una
@@ -446,6 +446,14 @@ palabras en común con las lecturas. Son dos caminos distintos; el cruce
 temático (Fase 6 del plan) debe reutilizar `sundayMatch`, no hacer otro.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
+
+- **Editor de canciones resistente a la ausencia del NAS** (usuario,
+  2026-11-17). Hoy todo lo que se edita en la app va al admin del cantoral en
+  el NAS; si no contesta, el cambio espera en el móvil de quien edita y se
+  envía solo al volver (`docs/funcionalidades/EDITOR_CANCIONES.md`, «Deuda
+  anotada»). Falta un camino que no dependa del NAS ni de ese móvil: la cola
+  en Firebase aplicada por el workflow del cantoral, o commit directo a GitHub
+  desde una función. Sin NAS tampoco hay foto con IA ni reordenar.
 
 - **Multilenguaje (i18n)** — catalán/portugués/inglés. Por ahora **no**. Si
   algún día se decide, ver `docs/planes/archivo/MEJORAS.md` §10 (razonamiento

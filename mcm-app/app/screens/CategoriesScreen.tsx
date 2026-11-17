@@ -306,6 +306,12 @@ export default function CategoriesScreen() {
               icon: 'post-add' as const,
               onPress: () => openCantoral('SongEditor', { nueva: '1' }),
             },
+            {
+              key: 'reorder-songs',
+              label: 'Ordenar canciones',
+              icon: 'swap-vert' as const,
+              onPress: () => openCantoral('SongReorder'),
+            },
           ]
         : []),
     ],

@@ -52,6 +52,7 @@ import { h } from '@/utils/haptics';
 import PlaylistRow from '@/components/playlist/PlaylistRow';
 import { createStyles } from '@/components/playlist/selectedSongsStyles';
 import SundayReadingsSheet from '@/components/playlist/SundayReadingsSheet';
+import { useChoirHistory } from '@/hooks/useChoirHistory';
 import SundaySongsButton from '@/components/playlist/SundaySongsButton';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import {
@@ -151,6 +152,7 @@ const SelectedSongsScreen: React.FC = () => {
     isSongSelected,
   } = useSelectedSongs();
   const choir = useChoirSession();
+  const sung = useChoirHistory();
   // Escalar suelto a propósito: leer `choir.session?.current?.filename` DENTRO
   // de un callback hace que se infiera `choir.session` entera como dependencia,
   // así que el memo se rehace en cada latido del líder aunque la canción en
@@ -1278,6 +1280,19 @@ const SelectedSongsScreen: React.FC = () => {
           ? [hub, save]
           : [hub];
     if (sharing.myChoir) {
+      // El historial también aquí: en la cabecera de la lista solo se ve con
+      // canciones, y es justo cuando la lista está vacía cuando se monta.
+      coroPlaylists.push({
+        id: 'choir-history',
+        icon: 'history',
+        label: sung.enabled
+          ? 'Ocultar lo cantado'
+          : 'Ver lo cantado por el coro',
+        description: sung.enabled
+          ? 'Quita los puntos de las últimas semanas'
+          : 'Puntos de las últimas 8 semanas y veces del curso en cada canción',
+        onPress: () => sung.setEnabled(!sung.enabled),
+      });
       coroPlaylists.push({
         id: 'share-choir-link',
         icon: 'link',
@@ -1488,6 +1503,7 @@ const SelectedSongsScreen: React.FC = () => {
       { title: 'Archivo', actions: archivo, secondary: true },
     ];
   }, [
+    sung,
     hasSongs,
     handleShareText,
     handleStartExportFile,

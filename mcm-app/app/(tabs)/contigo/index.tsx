@@ -1,4 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { RecapFeatured, RecapLink } from '@/components/contigo/RecapTeaser';
+import { useRecapSeason } from '@/hooks/useRecapSeason';
+import { buildRecap } from '@/utils/contigoRecap';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   View,
   Text,
@@ -54,6 +63,14 @@ export default function ContigoScreen() {
   // Pantalla raíz del tab Contigo.
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const router = useRouter();
+  const recap = useRecapSeason();
+  // Al volver de «Tu año», recontar visitas: a la tercera se apaga el brillo.
+  const refreshRecap = recap.refresh;
+  useFocusEffect(useCallback(() => refreshRecap(), [refreshRecap]));
+  const openRecap = useCallback(
+    () => router.push('/(tabs)/contigo/resumen' as never),
+    [router],
+  );
   const scheme = useColorScheme();
   const { user: authUser } = useAuth();
   const isDark = scheme === 'dark';
@@ -76,6 +93,15 @@ export default function ContigoScreen() {
     reloadRecords,
     isRevisionDone,
   } = useContigoHabits();
+  const recapMonths = useMemo(
+    () =>
+      recap.season
+        ? buildRecap(records, [], recap.season.year).months.map(
+            (m) => m.activeDays / m.days.length,
+          )
+        : undefined,
+    [records, recap.season],
+  );
 
   const { readings } = useDailyReadings(todayStr);
 
@@ -338,6 +364,19 @@ export default function ContigoScreen() {
             />
           </View>
 
+          {/* ── Tu año (solo en Adviento y comienzo de año) ── */}
+          {recap.season ? (
+            <View style={styles.section}>
+              <RecapFeatured
+                year={recap.season.year}
+                months={recapMonths}
+                animate={recap.animate}
+                isDark={isDark}
+                onPress={openRecap}
+              />
+            </View>
+          ) : null}
+
           {/* ── Esta semana ────────────────────────────── */}
           <View style={[styles.section, { paddingTop: 18 }]}>
             <Text style={[styles.smallLabel, { color: W.textSec }]}>
@@ -389,24 +428,6 @@ export default function ContigoScreen() {
               />
             </View>
           ) : null}
-
-          {/* Tu año: una línea, sin tarjeta, para no cargar la portada. */}
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/contigo/resumen' as never)}
-            style={[styles.section, styles.yearLink]}
-            accessibilityRole="button"
-            accessibilityLabel="Tu año en Contigo"
-          >
-            <MaterialIcons name="auto-awesome" size={16} color={W.accentText} />
-            <Text style={[styles.yearLinkText, { color: W.accentText }]}>
-              Tu año en Contigo
-            </Text>
-            <MaterialIcons
-              name="chevron-right"
-              size={18}
-              color={W.accentText}
-            />
-          </TouchableOpacity>
 
           {/* ── Calendario completo ────────────────────── */}
           <View style={[styles.section, { paddingTop: 18 }]}>
@@ -499,6 +520,10 @@ export default function ContigoScreen() {
               />
             </View>
           </View>
+          {/* Tu año, el resto del tiempo: una línea discreta al final. */}
+          {!recap.season ? (
+            <RecapLink isDark={isDark} onPress={openRecap} />
+          ) : null}
         </View>
       </Animated.ScrollView>
 
@@ -587,15 +612,6 @@ const styles = StyleSheet.create({
     ...typography.sectionLabel,
     marginBottom: 10,
   },
-  yearLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    minHeight: 44,
-    paddingTop: 8,
-  },
-  yearLinkText: { fontSize: 15, fontWeight: '600' },
   statsRow: {
     flexDirection: 'row',
     gap: 10,

@@ -4,6 +4,49 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 23:40 — Editor de canciones: NAS puesto en marcha y todo en `main`
+
+- El usuario ha configurado el NAS (`FIREBASE_URL`), `songs/editor/url` y los administradores. Se borra `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (era de un solo uso); lo permanente sigue en `docs/funcionalidades/EDITOR_CANCIONES.md`.
+- `batiburrillo` mergeado a `main` en `mcmapp` y en `mcmapp-cantoral`.
+
+## 2026-11-17 23:20 — Editor: las opciones de foto se ven siempre
+
+- En «Nueva canción», «Hacer una foto» y «Elegir fotos» salían solo si el cantoral contestaba y tenía la IA; sin eso no aparecían y parecía que no existían. Ahora se ven siempre y, si no se pueden usar, salen en gris diciendo por qué.
+
+## 2026-11-17 23:00 — Editor: canción nueva desde un enlace de doceacordes, sin IA
+
+- «Nueva canción» → **Desde un enlace** (o pegando la URL en «Pegar el texto»). Los de doceacordes (`doceacordes.es/cancion/<id>`) los convierte el cantoral con su conversor propio, sin IA. Endpoint nuevo `POST /api/app/song/fetch-url` en `mcmapp-cantoral`.
+
+## 2026-11-17 22:30 — Aviso al enviar feedback y sugerencias de canción
+
+- **Feedback de la app** (Inicio y Más): al enviar sale un aviso según el tipo — fallito, sugerencia o felicitación. Antes, desde Más no salía nada, y desde Inicio podía quedar oculto bajo la hoja que se cerraba.
+- **Sugerir canción**: el «¡Sugerencia enviada!» sale cuando la hoja ya se ha ido (en iOS quedaba debajo).
+
+## 2026-11-17 21:30 — Toasts deslizables, historial en el menú del coro, compartir arriba y «Tu año» por temporadas
+
+- **Toasts**: se quitan deslizándolos a un lado o hacia abajo; mientras el dedo está encima no se van solos (`AppToastContext`).
+- **Historial del coro** también en el «⋯» de Tu selección («Ver lo cantado por el coro»): con la lista vacía no había dónde encenderlo.
+- **Compartir como imagen** también en la cabecera del evangelio del día.
+- **Tu año en Contigo**: enlace discreto al final de Contigo el resto del año; tarjeta dorada animada arriba la semana antes de Adviento y sus dos primeras, y de la última de Adviento al 21 de enero. Se queda quieta tras tres visitas (`utils/contigoRecapSeason.ts`, `hooks/useRecapSeason.ts`, `components/contigo/RecapTeaser.tsx`).
+
+## 2026-11-17 13:00 — Menús de opciones: scroll y hojas encadenadas en el móvil
+
+- `ContextMenuSheet` (el «⋯» del cantoral y los menús de fila): con muchas opciones (administrador + coro + etiquetas) las últimas quedaban fuera de la hoja — no se veía «Ordenar canciones». Ahora la lista hace scroll.
+- La opción que abre otra hoja (p. ej. «Sugerir una canción») espera 250 ms a que la hoja del menú termine de irse en iOS/Android; abrirla en el mismo instante hacía que no apareciera.
+
+## 2026-11-17 12:10 — Editor de canciones: modo texto en colores y con avisos
+
+- El modo **Texto** pinta el ChordPro en colores como el editor del admin del cantoral y marca lo que está mal: corchetes/llaves sin cerrar, estribillos/estrofas sin cerrar o cruzados, corchetes que no son acordes. Lista de avisos con su línea y contador en la pestaña. `utils/chordProLint.ts` (con tests), `components/song-editor/ChordProTextEditor.tsx`, tokens `ChordProColors`.
+
+## 2026-11-17 10:30 — Editor de canciones: todo por el NAS, cola en el móvil, más metadatos y ordenar
+
+- **La app ya no escribe en Firebase al editar**: todo va al admin del cantoral (NAS → commit y push → GitHub Actions → Firebase). Se quita la escritura directa en `songs/data` y la cola `songs/ediciones` desde el editor.
+- **Si el NAS no contesta**, el cambio se guarda en el móvil (`@song_editor_outbox`) y se envía solo; aviso en el editor con «Enviar ahora».
+- **Quien edita ve su cambio al momento** (`utils/songOverrides.ts`, 48 h, aplicado en `useRouteSong`).
+- **Pantalla tras guardar** (`SavedPanel`): «Enviado al cantoral» o «Guardado en este móvil», con qué pasa y cuándo lo ven los demás (al volver a abrir la app).
+- **Datos completos**: Spotify, Drive, otros enlaces y etiquetas, además de lo que ya había.
+- **Ordenar canciones de una categoría** (Cantoral → ⋯ → Ordenar canciones, `SongReorderScreen`; `POST /api/app/category/reorder` en el cantoral).
+- Puesta en marcha del NAS en `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (temporal). Deuda anotada en el BACKLOG §2.D: que no dependa del NAS.
 ## 2026-11-17 06:39 — Arreglo: en iOS los botones de arriba del pañuelo quedaban bajo la cabecera
 
 - **Causa**: la pantalla medía dónde empezaba (`measureInWindow`) solo al maquetarse. Al cerrar el tutorial la cabecera nativa volvía, la pantalla no se re-maquetaba y la medida se quedaba en 0: la pastilla de la etapa, «Decorar» y compartir salían debajo de la cabecera y de la hora.

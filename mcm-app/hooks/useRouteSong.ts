@@ -11,11 +11,15 @@
  *
  * `loading` es «todavía puede aparecer» (el catálogo aún carga en frío).
  */
-import { useMemo } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { filterSongsData, type SongsData } from '@/utils/filterSongsData';
 import { extractSongMedia } from '@/types/songMedia';
+import {
+  subscribeSongOverrides,
+  withSongOverride,
+} from '@/utils/songOverrides';
 import {
   findCatalogSong,
   getSongNavList,
@@ -36,6 +40,12 @@ export interface RouteSong {
   loading: boolean;
 }
 
+let tick = 0;
+subscribeSongOverrides(() => {
+  tick += 1;
+});
+const getOverridesTick = () => tick;
+
 export function useRouteSong(params: Partial<SongRouteParams>): RouteSong {
   const filename = typeof params.filename === 'string' ? params.filename : '';
   const { data, loading } = useFirebaseData<SongsData>(
@@ -46,7 +56,16 @@ export function useRouteSong(params: Partial<SongRouteParams>): RouteSong {
   const choir = useChoirSession();
   const remote = choir.mode === 'slave' ? choir.session?.current : null;
 
+  // Lo que un administrador acaba de editar se ve ya en su móvil.
+  const overridesTick = useSyncExternalStore(
+    subscribeSongOverrides,
+    getOverridesTick,
+    getOverridesTick,
+  );
+
   return useMemo<RouteSong>(() => {
+    // Recalcula cuando cambia lo editado en este móvil.
+    void overridesTick;
     const list = getSongNavList(params.list);
     const wanted = routeIndex(params.currentIndex);
     const inList = songFromList(list, filename, wanted);
@@ -65,6 +84,7 @@ export function useRouteSong(params: Partial<SongRouteParams>): RouteSong {
         media: extractSongMedia(remote) ?? undefined,
       };
     }
+    if (song) song = withSongOverride(song);
     return {
       song,
       list: inList ? list : null,
@@ -76,6 +96,7 @@ export function useRouteSong(params: Partial<SongRouteParams>): RouteSong {
       loading: !song && loading,
     };
   }, [
+    overridesTick,
     data,
     loading,
     filename,

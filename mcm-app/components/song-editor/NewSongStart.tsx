@@ -24,6 +24,8 @@ import { useToast } from '@/contexts/AppToastContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import {
   convertPastedText,
+  fetchSongFromUrl,
+  isSongUrl,
   readSongPhotos,
   type EditorStatus,
 } from '@/services/songEditorService';
@@ -47,7 +49,7 @@ export default function NewSongStart({
   const theme = themeColors(isDark);
   const { toast } = useToast();
   const [busy, setBusy] = useState<string | null>(null);
-  const [pasting, setPasting] = useState(false);
+  const [pasting, setPasting] = useState<false | 'text' | 'url'>(false);
   const [text, setText] = useState('');
 
   const fail = (e: unknown) =>
@@ -97,6 +99,20 @@ export default function NewSongStart({
   };
 
   const fromText = async () => {
+    // Un enlace (doceacordes y compañía): lo trae el cantoral.
+    if (isSongUrl(text)) {
+      try {
+        setBusy('Trayendo la canción…');
+        const song = await fetchSongFromUrl(text.trim());
+        if (!song.cho) throw new Error('No he encontrado la canción');
+        onReady(song.title, song.cho, song.category);
+      } catch (e) {
+        fail(e);
+      } finally {
+        setBusy(null);
+      }
+      return;
+    }
     try {
       setBusy('Convirtiendo…');
       const song = await convertPastedText(text);
@@ -131,10 +147,16 @@ export default function NewSongStart({
         <TextInput
           value={text}
           onChangeText={setText}
-          multiline
+          multiline={pasting !== 'url'}
           autoFocus
           autoCorrect={false}
-          placeholder="Pega aquí la letra, con los acordes encima o en ChordPro"
+          placeholder={
+            pasting === 'url'
+              ? 'https://doceacordes.es/cancion/972'
+              : 'Pega aquí la letra (con los acordes encima o en ChordPro) o un enlace'
+          }
+          autoCapitalize={pasting === 'url' ? 'none' : 'sentences'}
+          keyboardType={pasting === 'url' ? 'url' : 'default'}
           placeholderTextColor={theme.textMuted}
           style={[
             styles.textArea,
@@ -153,32 +175,43 @@ export default function NewSongStart({
     );
   }
 
+  // Las fotos salen siempre: si no se pueden usar ahora, dice por qué.
+  const photoBlock =
+    status === null
+      ? 'Necesita el cantoral conectado (ahora no contesta)'
+      : !status.ai
+        ? 'El cantoral no tiene la IA activada'
+        : null;
   const options = [
-    ...(status?.ai
+    ...(Platform.OS !== 'web'
       ? [
-          ...(Platform.OS !== 'web'
-            ? [
-                {
-                  icon: 'photo-camera' as const,
-                  title: 'Hacer una foto',
-                  sub: 'De un cancionero o una hoja. Luego la repasas.',
-                  onPress: () => void fromPhoto(true),
-                },
-              ]
-            : []),
           {
-            icon: 'photo-library' as const,
-            title: 'Elegir fotos',
-            sub: 'Hasta cuatro páginas seguidas.',
-            onPress: () => void fromPhoto(false),
+            icon: 'photo-camera' as const,
+            title: 'Hacer una foto',
+            sub: photoBlock ?? 'De un cancionero o una hoja. Luego la repasas.',
+            disabled: !!photoBlock,
+            onPress: () => void fromPhoto(true),
           },
         ]
       : []),
     {
+      icon: 'photo-library' as const,
+      title: Platform.OS === 'web' ? 'Subir fotos' : 'Elegir fotos',
+      sub: photoBlock ?? 'Hasta cuatro páginas seguidas.',
+      disabled: !!photoBlock,
+      onPress: () => void fromPhoto(false),
+    },
+    {
       icon: 'content-paste' as const,
       title: 'Pegar el texto',
       sub: 'Con los acordes encima de la letra o en ChordPro.',
-      onPress: () => setPasting(true),
+      onPress: () => setPasting('text'),
+    },
+    {
+      icon: 'link' as const,
+      title: 'Desde un enlace',
+      sub: 'Doceacordes se convierte tal cual, sin IA.',
+      onPress: () => setPasting('url'),
     },
     {
       icon: 'edit-note' as const,
@@ -207,14 +240,17 @@ export default function NewSongStart({
               h.tap();
               o.onPress();
             }}
+            isDisabled={'disabled' in o && !!o.disabled}
             style={[
               styles.option,
+              'disabled' in o && o.disabled && styles.optionOff,
               i > 0 && {
                 borderTopWidth: StyleSheet.hairlineWidth,
                 borderTopColor: theme.separator,
               },
             ]}
             accessibilityRole="button"
+            accessibilityState={{ disabled: 'disabled' in o && !!o.disabled }}
           >
             <MaterialIcons name={o.icon} size={24} color={theme.link} />
             <View style={styles.flex}>
@@ -264,6 +300,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     minHeight: 64,
   },
+  optionOff: { opacity: 0.45 },
   optionTitle: { ...typography.title },
   optionSub: { ...typography.caption, marginTop: 2 },
 });

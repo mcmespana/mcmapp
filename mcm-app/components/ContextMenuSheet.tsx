@@ -1,5 +1,12 @@
 import React, { useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+} from 'react-native';
 import { MaterialIcons } from '@/components/ui/icons';
 import BottomSheet from './BottomSheet';
 import colors, { Colors, themeColors } from '@/constants/colors';
@@ -7,6 +14,9 @@ import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import typography from '@/constants/typography';
+
+/** Respiro entre cerrar esta hoja y abrir lo siguiente (otro Modal). */
+const NEXT_MODAL_DELAY_MS = 250;
 
 export interface ContextMenuAction {
   key: string;
@@ -41,6 +51,7 @@ export default function ContextMenuSheet({
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
   const pending = useRef<(() => void) | null>(null);
+  const { height: windowHeight } = useWindowDimensions();
 
   return (
     <BottomSheet
@@ -49,11 +60,22 @@ export default function ContextMenuSheet({
       onCloseComplete={() => {
         const fn = pending.current;
         pending.current = null;
-        fn?.();
+        if (!fn) return;
+        // Si la acción abre OTRA hoja (sugerir canción, etiquetas…), en el
+        // móvil hay que dejar que el Modal de esta termine de irse: abrirla en
+        // el mismo instante hacía que no apareciera nada.
+        if (Platform.OS === 'web') fn();
+        else setTimeout(fn, NEXT_MODAL_DELAY_MS);
       }}
       title={title}
     >
-      <View style={styles.list}>
+      {/* Con muchas opciones (admin, coro, etiquetas…) no caben: scroll. */}
+      <ScrollView
+        style={{ maxHeight: windowHeight * 0.62 }}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         {actions.map((action) => {
           const color = action.disabled
             ? theme.icon
@@ -84,7 +106,7 @@ export default function ContextMenuSheet({
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
     </BottomSheet>
   );
 }
