@@ -264,10 +264,15 @@ function InnerLayout() {
           name="panuelo"
           // Sin el gesto de «atrás» de iOS: girar el pañuelo o arrastrar una
           // pieza desde el borde se llevaba la pantalla. Se sale con la flecha.
+          // En iOS la cabecera va transparente y la pantalla reserva su alto
+          // (`useHeaderHeight` en app/panuelo.tsx): así se sabe siempre dónde
+          // empieza el contenido, sin medirlo.
           options={{
             headerShown: true,
             title: 'Tu pañuelo',
             gestureEnabled: false,
+            headerTransparent: Platform.OS === 'ios',
+            headerBackButtonDisplayMode: 'minimal',
           }}
         />
         <Stack.Screen
