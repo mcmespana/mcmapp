@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 21:30 — Toasts deslizables, historial en el menú del coro, compartir arriba y «Tu año» por temporadas
+
+- **Toasts**: se quitan deslizándolos a un lado o hacia abajo; mientras el dedo está encima no se van solos (`AppToastContext`).
+- **Historial del coro** también en el «⋯» de Tu selección («Ver lo cantado por el coro»): con la lista vacía no había dónde encenderlo.
+- **Compartir como imagen** también en la cabecera del evangelio del día.
+- **Tu año en Contigo**: enlace discreto al final de Contigo el resto del año; tarjeta dorada animada arriba la semana antes de Adviento y sus dos primeras, y de la última de Adviento al 21 de enero. Se queda quieta tras tres visitas (`utils/contigoRecapSeason.ts`, `hooks/useRecapSeason.ts`, `components/contigo/RecapTeaser.tsx`).
+
 ## 2026-11-17 13:00 — Menús de opciones: scroll y hojas encadenadas en el móvil
 
 - `ContextMenuSheet` (el «⋯» del cantoral y los menús de fila): con muchas opciones (administrador + coro + etiquetas) las últimas quedaban fuera de la hoja — no se veía «Ordenar canciones». Ahora la lista hace scroll.

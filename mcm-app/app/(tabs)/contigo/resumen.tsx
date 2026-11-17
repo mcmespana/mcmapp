@@ -4,7 +4,7 @@
  * en el móvil (`utils/contigoRecap.ts`); no se calcula nada en ningún
  * servidor.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
@@ -31,6 +31,8 @@ import { buildRecap, formatCount, recapYears } from '@/utils/contigoRecap';
 import { h } from '@/utils/haptics';
 import { highlightBg } from '@/utils/highlightRanges';
 import { recapCardSpec } from '@/utils/shareCard';
+import { defaultRecapYear } from '@/utils/contigoRecapSeason';
+import { markRecapOpened } from '@/hooks/useRecapSeason';
 
 const CELL = 9;
 const CELL_GAP = 3;
@@ -51,7 +53,13 @@ export default function ContigoRecapScreen() {
     () => recapYears(records, bookmarks, thisYear),
     [records, bookmarks, thisYear],
   );
-  const [year, setYear] = useState(thisYear);
+  // En enero se abre el año que acaba de terminar.
+  const [year, setYear] = useState(() =>
+    Math.min(thisYear, defaultRecapYear(new Date())),
+  );
+  useEffect(() => {
+    void markRecapOpened();
+  }, []);
   const [open, setOpen] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
 

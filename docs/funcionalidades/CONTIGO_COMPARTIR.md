@@ -5,8 +5,8 @@
 
 ## Compartir el evangelio como imagen
 
-Al final de las lecturas del día, un enlace discreto: **Compartir como
-imagen**. Abre una hoja con la vista previa, cuatro estilos (Papel, Noche,
+En la cabecera del evangelio del día (icono de compartir) y, al final de las
+lecturas, un enlace discreto: **Compartir como imagen**. Abre una hoja con la vista previa, cuatro estilos (Papel, Noche,
 Color, Blanco), dos formatos (Historia 1080×1920, Cuadrada 1080×1080) y un
 botón. La frase es **tu subrayado** de ese día (con flechas si hay varios, de
 cualquier lectura) y lleva su color; sin subrayados, el arranque del evangelio.
@@ -20,12 +20,21 @@ pasa por ningún servidor.
 
 ## Tu año en Contigo
 
-Enlace de una línea en la portada de Contigo → `/contigo/resumen`: el año (con
-flechas si hay más), cuatro cifras (días contigo, días seguidos, minutos de
-oración, frases subrayadas) y los meses, cada uno con sus días en cuadritos
-(más oscuro = más hábitos ese día) y, al abrirlo, las frases subrayadas de ese
-mes (tocar una abre las lecturas de ese día). Abajo, **Compartir mi año**: la
-misma hoja de imagen, con la tarjeta del año.
+Pantalla con el año (con flechas si hay más), cuatro cifras (días contigo,
+días seguidos, minutos de oración, frases subrayadas) y los meses, cada uno con
+sus días en cuadritos y, al abrirlo, sus frases subrayadas (tocar una abre las
+lecturas de ese día). Abajo, **Compartir mi año**.
+
+**Dónde está** (`utils/contigoRecapSeason.ts`):
+
+- **Casi todo el año**: una línea discreta al final de la portada de Contigo.
+- **En temporada**, una tarjeta dorada arriba, bajo el evangelio del día, con
+  un brillo que la recorre y la estrella que respira:
+  - la semana de antes de Adviento y sus dos primeras semanas;
+  - de la última semana de Adviento al 21 de enero (en enero resume el año que
+    acaba de terminar).
+- Tras **tres visitas** a «Tu año» en esa temporada la tarjeta se queda quieta
+  (`@contigo_recap_opens`). Con «reducir movimiento», nunca se anima.
 
 ## Cómo se hace la imagen
 
