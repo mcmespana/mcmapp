@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 19:25 — Metrónomo: puede seguir sonando con la hoja cerrada
+
+- Al cerrar la hoja con el metrónomo sonando, pregunta **«¿Dejar el metrónomo sonando?»** (botón «Sí» grande, «No, pararlo» y «No volver a preguntar», que guarda la respuesta; se deshace en la hoja con «Volver a preguntar»).
+- Sonando, sale una **píldora flotante** abajo a la izquierda en todo el cantoral (tempo, punto que late, ■ para parar); tocarla abre la hoja en el metrónomo (`?modo=metronomo`). Mientras suena, la pantalla no se apaga.
+- El estado pasa de un hook de la hoja a `contexts/MetronomeContext.tsx`, montado en el layout del cantoral. Sin paquetes nuevos. Tests: `metronomeContext.test.tsx`.
+
 ## 2026-11-17 19:19 — Cantos para el domingo: dentro de Tu selección y según las lecturas
 
 - **Dónde**: sale del cantoral (se quita la fila «Cantos para el domingo» y `SundaySongsRow`) y pasa a **Tu selección vacía** — lo primero al preparar una misa es vaciarla —. Tarjeta nueva «Este domingo» (`components/playlist/SundayPlanCard.tsx`): fecha, fiesta o tiempo con su color y ciclo, **Leer las lecturas** (la hoja de lecturas, solo lecturas y de ESE domingo) y los cantos propuestos momento a momento con su porqué. «Usar estos cantos» llena la selección (con Deshacer); tocar un canto o «Cambiar alguno u otro domingo» abre la pantalla completa de siempre. Con la lista llena, chip «Cantos del domingo» junto a «Lecturas del domingo». La fila de Tu selección en el cantoral dice «Vacía · cantos para este domingo». La tarjeta de Inicio (viernes a domingo) no cambia.

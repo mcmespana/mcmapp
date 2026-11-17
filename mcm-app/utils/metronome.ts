@@ -98,3 +98,25 @@ export function tapTempo(
   const avg = span / (kept.length - 1);
   return { taps: kept, bpm: clampBpm(60000 / avg) };
 }
+
+// ── Al cerrar la hoja con el metrónomo sonando ──────────────────────────────
+
+/**
+ * Qué hacer al cerrar la hoja con el metrónomo sonando: preguntar (por
+ * defecto), dejarlo siempre sonando o pararlo siempre («No volver a
+ * preguntar»). Se guarda junto al tempo en `@metronome`.
+ */
+export type KeepOnClose = 'ask' | 'keep' | 'stop';
+
+export function isKeepOnClose(v: unknown): v is KeepOnClose {
+  return v === 'ask' || v === 'keep' || v === 'stop';
+}
+
+/** Lo que pasa al cerrar la hoja. Parado, nada que decidir. */
+export function onSheetClose(
+  playing: boolean,
+  pref: KeepOnClose,
+): 'nothing' | 'ask' | 'keep' | 'stop' {
+  if (!playing) return 'nothing';
+  return pref;
+}

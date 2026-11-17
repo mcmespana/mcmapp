@@ -1,10 +1,12 @@
 /**
  * El metrónomo, al lado del afinador en la misma hoja. Poco y grande: el
  * tempo, los pulsos del compás y un botón. La lógica está en
- * `hooks/useMetronome.ts` y `utils/metronome.ts`; el sonido, en
- * `services/metronome/engine.ts`.
+ * `contexts/MetronomeContext.tsx` y `utils/metronome.ts`; el sonido, en
+ * `services/metronome/engine.ts`. Al cerrar la hoja puede seguir sonando
+ * (ver el contexto); abajo se cambia lo que se eligió con «No volver a
+ * preguntar».
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedReaction,
@@ -43,6 +45,13 @@ export default function MetronomePanel() {
   const reducedMotion = useReducedMotion();
   const m = useMetronome();
   useKeepAwakeWhileFocused('metronome');
+
+  // Con la hoja abierta, el botón flotante se esconde.
+  const { setPanelOpen } = m;
+  useEffect(() => {
+    setPanelOpen(true);
+    return () => setPanelOpen(false);
+  }, [setPanelOpen]);
 
   // El número late con cada pulso, en el hilo de UI.
   const beatScale = useSharedValue(1);
@@ -240,6 +249,30 @@ export default function MetronomePanel() {
         <Text style={[styles.tapText, { color: accent }]}>Marcar el tempo</Text>
       </PressableFeedback>
 
+      {m.keepOnClose !== 'ask' && (
+        <View style={styles.keepRow}>
+          <Text style={[styles.keepText, { color: theme.textSecondary }]}>
+            {m.keepOnClose === 'keep'
+              ? 'Al cerrar, sigue sonando.'
+              : 'Al cerrar, se para.'}
+          </Text>
+          <PressableFeedback
+            onPress={() => {
+              h.tap();
+              m.setKeepOnClose('ask');
+            }}
+            style={styles.keepButton}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel="Volver a preguntar al cerrar"
+          >
+            <Text style={[styles.tapText, { color: accent }]}>
+              Volver a preguntar
+            </Text>
+          </PressableFeedback>
+        </View>
+      )}
+
       {m.failed && (
         <Text style={[styles.failed, { color: theme.textSecondary }]}>
           Este dispositivo no deja reproducir el sonido.
@@ -325,6 +358,21 @@ const styles = StyleSheet.create({
   },
   tapText: {
     ...typography.button,
+  },
+  keepRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    columnGap: spacing.xs,
+  },
+  keepText: {
+    ...typography.caption,
+  },
+  keepButton: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
   },
   failed: {
     ...typography.caption,
