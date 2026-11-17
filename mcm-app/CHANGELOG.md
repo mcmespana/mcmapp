@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 13:00 — Menús de opciones: scroll y hojas encadenadas en el móvil
+
+- `ContextMenuSheet` (el «⋯» del cantoral y los menús de fila): con muchas opciones (administrador + coro + etiquetas) las últimas quedaban fuera de la hoja — no se veía «Ordenar canciones». Ahora la lista hace scroll.
+- La opción que abre otra hoja (p. ej. «Sugerir una canción») espera 250 ms a que la hoja del menú termine de irse en iOS/Android; abrirla en el mismo instante hacía que no apareciera.
+
 ## 2026-11-17 12:10 — Editor de canciones: modo texto en colores y con avisos
 
 - El modo **Texto** pinta el ChordPro en colores como el editor del admin del cantoral y marca lo que está mal: corchetes/llaves sin cerrar, estribillos/estrofas sin cerrar o cruzados, corchetes que no son acordes. Lista de avisos con su línea y contador en la pestaña. `utils/chordProLint.ts` (con tests), `components/song-editor/ChordProTextEditor.tsx`, tokens `ChordProColors`.
