@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 23:10 — Cantoral: «⋯» nativo en iOS y fotos con la IA en segundo plano
+
+- **«⋯» del cantoral en iOS = menú del sistema** (`Stack.Toolbar.Menu`, UIMenu) con la lupa al lado. Con la hoja propia, Etiquetas, «Cómo ver las canciones» y «Sugerir una canción» abrían OTRA hoja mientras se quitaba la del menú, y iOS a veces no la presentaba nunca. El menú del sistema no es un Modal. Android y web siguen con la hoja.
+- **Foto o enlace leídos con la IA en segundo plano**: el cantoral responde al momento con un trabajo y la app pregunta cada 3 s (`/api/app/job/<id>`). En el iPhone una petición se corta a los 60 s y leer una foto pasa a menudo del minuto, así que fallaba aunque el cantoral la leyera bien. Fotos a 2000 px. Necesita el admin del NAS actualizado.
+
 ## 2026-11-17 22:45 — Tu selección vacía más compacta y colores de «Tu año» que se leen
 
 - **Tu selección vacía**: mensaje y botones juntos arriba, en vez de mensaje centrado y botones al fondo (media pantalla vacía y el último botón bajo la barra).

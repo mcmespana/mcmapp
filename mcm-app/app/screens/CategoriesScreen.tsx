@@ -7,6 +7,7 @@ import {
   Platform,
   RefreshControl,
 } from 'react-native';
+import { Stack } from 'expo-router';
 import { useIsFocused, useNavigation } from 'expo-router/react-navigation';
 import { openCantoral } from '@/utils/cantoralNavigation';
 import {
@@ -67,6 +68,10 @@ import spacing from '@/constants/spacing';
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
 const SELECTED_SONGS_CATEGORY_ID = '__SELECTED_SONGS__';
+
+const isIOS = Platform.OS === 'ios';
+/** Respiro tras elegir en el menú nativo, antes de abrir una hoja. */
+const NATIVE_MENU_SETTLE_MS = 300;
 
 export default function CategoriesScreen() {
   const navigation = useNavigation();
@@ -251,12 +256,13 @@ export default function CategoriesScreen() {
     }
   }, [myChoir, choirHydrated]);
 
-  const menuActions = useMemo<ContextMenuAction[]>(
+  const menuActions = useMemo<(ContextMenuAction & { sfSymbol: string })[]>(
     () => [
       {
         key: 'tuner',
         label: 'Afinador',
         icon: 'graphic-eq',
+        sfSymbol: 'waveform',
         onPress: () => openCantoral('Tuner'),
       },
       ...(hasTags
@@ -265,6 +271,7 @@ export default function CategoriesScreen() {
               key: 'tags',
               label: 'Etiquetas',
               icon: 'sell' as const,
+              sfSymbol: 'tag',
               onPress: () => setShowTags(true),
             },
           ]
@@ -275,6 +282,7 @@ export default function CategoriesScreen() {
               key: 'choir',
               label: `Playlists de ${myChoir.name}`,
               icon: 'groups' as const,
+              sfSymbol: 'person.3',
               onPress: () => openCantoral('SelectedSongs', { hoja: 'coro' }),
             },
           ]
@@ -288,12 +296,14 @@ export default function CategoriesScreen() {
               key: 'suggest',
               label: 'Sugerir una canción',
               icon: 'add-circle-outline' as const,
+              sfSymbol: 'plus.bubble',
               onPress: () => setShowForm(true),
             },
             {
               key: 'help',
               label: 'Cómo ver las canciones',
               icon: 'help-outline' as const,
+              sfSymbol: 'questionmark.circle',
               onPress: openOnboarding,
             },
           ]
@@ -304,12 +314,14 @@ export default function CategoriesScreen() {
               key: 'new-song',
               label: 'Nueva canción',
               icon: 'post-add' as const,
+              sfSymbol: 'doc.badge.plus',
               onPress: () => openCantoral('SongEditor', { nueva: '1' }),
             },
             {
               key: 'reorder-songs',
               label: 'Ordenar canciones',
               icon: 'swap-vert' as const,
+              sfSymbol: 'arrow.up.arrow.down',
               onPress: () => openCantoral('SongReorder'),
             },
           ]
@@ -317,6 +329,46 @@ export default function CategoriesScreen() {
     ],
     [hasTags, hasSongs, myChoir, openOnboarding, isAdmin],
   );
+  // iOS: el «⋯» es el menú NATIVO del sistema (UIMenu). Con la hoja propia,
+  // cada opción que abre OTRA hoja (etiquetas, sugerir, la ayuda) tenía que
+  // esperar a que la primera terminara de irse, y en iOS a veces no llegaba
+  // a abrirse nunca: un Modal no se presenta mientras otro se está quitando.
+  // El menú del sistema no es un Modal, así que no hay nada que esperar.
+  const nativeMenu = isIOS ? (
+    <Stack.Toolbar placement="right">
+      <Stack.Toolbar.Menu
+        icon="ellipsis"
+        tintColor={headerIconColor}
+        accessibilityLabel="Más opciones del cantoral"
+      >
+        {menuActions.map((a) => (
+          <Stack.Toolbar.MenuAction
+            key={a.key}
+            icon={a.sfSymbol as never}
+            onPress={() => {
+              h.tap();
+              // Que el menú termine de cerrarse antes de presentar una hoja.
+              setTimeout(a.onPress, NATIVE_MENU_SETTLE_MS);
+            }}
+          >
+            {a.label}
+          </Stack.Toolbar.MenuAction>
+        ))}
+      </Stack.Toolbar.Menu>
+      <Stack.Toolbar.Button
+        icon="magnifyingglass"
+        tintColor={headerIconColor}
+        accessibilityLabel="Buscar canción"
+        onPress={() =>
+          openCantoral('SongsList', {
+            categoryId: ALL_SONGS_CATEGORY_ID,
+            categoryName: ALL_SONGS_CATEGORY_NAME,
+          })
+        }
+      />
+    </Stack.Toolbar>
+  ) : null;
+
   const menuSheet = (
     <ContextMenuSheet
       visible={showMenu}
@@ -343,40 +395,48 @@ export default function CategoriesScreen() {
           <MaterialIcons name="groups" size={24} color={headerIconColor} />
         </PressableFeedback>
       ),
-      headerRight: () => (
-        <View style={styles.headerActions}>
-          <PressableFeedback
-            onPress={() => {
-              h.tap();
-              setShowMenu(true);
-            }}
-            style={styles.headerNativeButton}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="Más opciones del cantoral"
-          >
-            <MaterialIcons
-              name="more-horiz"
-              size={24}
-              color={headerIconColor}
-            />
-          </PressableFeedback>
-          <PressableFeedback
-            onPress={() =>
-              openCantoral('SongsList', {
-                categoryId: ALL_SONGS_CATEGORY_ID,
-                categoryName: ALL_SONGS_CATEGORY_NAME,
-              })
-            }
-            style={styles.headerNativeButton}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="Buscar canción"
-          >
-            <MaterialIcons name="search" size={24} color={headerIconColor} />
-          </PressableFeedback>
-        </View>
-      ),
+      // En iOS la derecha la pone `Stack.Toolbar` (más abajo), con el menú del
+      // sistema.
+      headerRight: isIOS
+        ? undefined
+        : () => (
+            <View style={styles.headerActions}>
+              <PressableFeedback
+                onPress={() => {
+                  h.tap();
+                  setShowMenu(true);
+                }}
+                style={styles.headerNativeButton}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Más opciones del cantoral"
+              >
+                <MaterialIcons
+                  name="more-horiz"
+                  size={24}
+                  color={headerIconColor}
+                />
+              </PressableFeedback>
+              <PressableFeedback
+                onPress={() =>
+                  openCantoral('SongsList', {
+                    categoryId: ALL_SONGS_CATEGORY_ID,
+                    categoryName: ALL_SONGS_CATEGORY_NAME,
+                  })
+                }
+                style={styles.headerNativeButton}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Buscar canción"
+              >
+                <MaterialIcons
+                  name="search"
+                  size={24}
+                  color={headerIconColor}
+                />
+              </PressableFeedback>
+            </View>
+          ),
     });
   }, [navigation, styles, headerIconColor, onChoirPress, myChoir]);
 
@@ -695,6 +755,7 @@ export default function CategoriesScreen() {
         tags={tagIndex.tags}
       />
 
+      {nativeMenu}
       {menuSheet}
 
       <SuggestSongModal

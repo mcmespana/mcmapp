@@ -37,7 +37,7 @@ import { logger } from '@/utils/logger';
 const ERROR_TOAST_MS = 7000;
 
 /** Lado largo máximo de la foto que se manda: de sobra para leer una hoja. */
-const PHOTO_MAX_SIDE = 2400;
+const PHOTO_MAX_SIDE = 2000;
 
 /**
  * La foto, lista para mandarla: en el móvil se pasa SIEMPRE a JPEG y se
@@ -119,7 +119,7 @@ export default function NewSongStart({
         ? await ImagePicker.launchCameraAsync(opts)
         : await ImagePicker.launchImageLibraryAsync(opts);
       if (res.canceled || !res.assets.length) return;
-      setBusy('Leyendo la foto…');
+      setBusy('Leyendo la foto con la IA… (puede tardar un minuto)');
       const songs = await readSongPhotos(
         await Promise.all(res.assets.map((a, i) => toUpload(a, i))),
       );

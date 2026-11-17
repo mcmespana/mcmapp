@@ -96,7 +96,15 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
   Link: ({ children }: { children?: React.ReactNode }) => children ?? null,
   // La bandeja de notificaciones pone su cabecera con `<Stack.Screen options>`.
-  Stack: { Screen: () => null },
+  // El cantoral pone en iOS su «⋯» nativo con `Stack.Toolbar`.
+  Stack: {
+    Screen: () => null,
+    Toolbar: Object.assign(() => null, {
+      Menu: () => null,
+      MenuAction: () => null,
+      Button: () => null,
+    }),
+  },
 }));
 
 jest.mock('expo-router/react-navigation', () => {
