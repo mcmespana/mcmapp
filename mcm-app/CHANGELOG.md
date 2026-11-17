@@ -4,6 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 12:10 — Editor de canciones: modo texto en colores y con avisos
+
+- El modo **Texto** pinta el ChordPro en colores como el editor del admin del cantoral y marca lo que está mal: corchetes/llaves sin cerrar, estribillos/estrofas sin cerrar o cruzados, corchetes que no son acordes. Lista de avisos con su línea y contador en la pestaña. `utils/chordProLint.ts` (con tests), `components/song-editor/ChordProTextEditor.tsx`, tokens `ChordProColors`.
+
 ## 2026-11-17 10:30 — Editor de canciones: todo por el NAS, cola en el móvil, más metadatos y ordenar
 
 - **La app ya no escribe en Firebase al editar**: todo va al admin del cantoral (NAS → commit y push → GitHub Actions → Firebase). Se quita la escritura directa en `songs/data` y la cola `songs/ediciones` desde el editor.

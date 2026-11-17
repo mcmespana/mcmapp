@@ -24,7 +24,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
@@ -32,6 +31,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableFeedback } from 'heroui-native';
 import SongDisplay from '@/components/SongDisplay';
 import ChordGrid, { type ChordRef } from '@/components/song-editor/ChordGrid';
+import ChordProTextEditor, {
+  ChordProHelpers,
+} from '@/components/song-editor/ChordProTextEditor';
 import ChordPickerSheet from '@/components/song-editor/ChordPickerSheet';
 import LinksField from '@/components/song-editor/LinksField';
 import NewSongStart from '@/components/song-editor/NewSongStart';
@@ -84,6 +86,7 @@ import {
   type MediaLink,
   type SongSnapshot,
 } from '@/utils/songEditor';
+import { lintChordPro } from '@/utils/chordProLint';
 import { cleanSongTitle } from '@/utils/songUtils';
 import { toYouTubeEmbedUrl } from '@/utils/youtube';
 
@@ -94,12 +97,6 @@ const TABS = [
   { value: 'data' as const, label: 'Datos' },
   { value: 'preview' as const, label: 'Vista' },
 ];
-
-const MONO = Platform.select({
-  ios: 'Menlo',
-  android: 'monospace',
-  default: 'ui-monospace, Menlo, Consolas, monospace',
-});
 
 const EMPTY: SongSnapshot = {
   title: '',
@@ -237,6 +234,7 @@ export default function SongEditorScreen() {
     : !!edition && Object.keys(edition.changes).length > 0;
 
   const used = useMemo(() => chordsUsed(body), [body]);
+  const lintCount = useMemo(() => lintChordPro(body).length, [body]);
 
   const save = async () => {
     if (!current || saving) return;
@@ -467,7 +465,15 @@ export default function SongEditorScreen() {
     >
       <View style={styles.tabs}>
         <SegmentedControl
-          options={TABS}
+          options={TABS.map((t) =>
+            t.value === 'text' && lintCount > 0
+              ? {
+                  ...t,
+                  label: `Texto · ${lintCount}`,
+                  icon: 'error-outline' as const,
+                }
+              : t,
+          )}
           value={tab}
           onChange={(t) => {
             setSelected(null);
@@ -527,43 +533,12 @@ export default function SongEditorScreen() {
 
           {tab === 'text' && (
             <>
-              <View style={styles.helpers}>
-                <Helper
-                  label="Estribillo"
-                  onPress={() =>
-                    setBody((b) => `${b.trimEnd()}\n\n{soc}\n\n{eoc}\n`)
-                  }
-                />
-                <Helper
-                  label="Repite estribillo"
-                  onPress={() => setBody((b) => `${b.trimEnd()}\n\n{chorus}\n`)}
-                />
-                <Helper
-                  label="Nota"
-                  onPress={() =>
-                    setBody((b) => `${b.trimEnd()}\n{comment: }\n`)
-                  }
-                />
-              </View>
-              <TextInput
-                value={body}
-                onChangeText={setBody}
-                multiline
-                autoCapitalize="sentences"
-                autoCorrect={false}
-                spellCheck={false}
-                scrollEnabled={false}
-                placeholder={'[Do]Letra con los a[Sol]cordes entre corchetes'}
-                placeholderTextColor={theme.textMuted}
-                style={[
-                  styles.textArea,
-                  {
-                    color: theme.text,
-                    backgroundColor: theme.backgroundSunken,
-                  },
-                ]}
-                accessibilityLabel="Letra y acordes en ChordPro"
+              <ChordProHelpers
+                onInsert={(snippet) =>
+                  setBody((b) => `${b.trimEnd()}${snippet}`)
+                }
               />
+              <ChordProTextEditor value={body} onChange={setBody} />
             </>
           )}
 
@@ -897,24 +872,6 @@ function StepBtn({
   );
 }
 
-function Helper({ label, onPress }: { label: string; onPress: () => void }) {
-  const theme = themeColors(useColorScheme() === 'dark');
-  return (
-    <PressableFeedback
-      onPress={() => {
-        h.tap();
-        onPress();
-      }}
-      style={[styles.helper, { backgroundColor: theme.backgroundSunken }]}
-      accessibilityRole="button"
-      accessibilityLabel={`Añadir ${label}`}
-    >
-      <MaterialIcons name="add" size={16} color={theme.link} />
-      <Text style={[styles.helperText, { color: theme.link }]}>{label}</Text>
-    </PressableFeedback>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: {
@@ -933,26 +890,6 @@ const styles = StyleSheet.create({
   },
   content: { padding: spacing.md, gap: spacing.md },
   hint: { ...typography.caption },
-  helpers: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  helper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    minHeight: 36,
-    paddingHorizontal: spacing.md - spacing.xs,
-    borderRadius: radii.xl,
-    alignSelf: 'flex-start',
-  },
-  helperText: { ...typography.caption, fontWeight: '600' },
-  textArea: {
-    fontFamily: MONO,
-    fontSize: 15,
-    lineHeight: 24,
-    minHeight: 320,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    textAlignVertical: 'top',
-  },
   form: { gap: spacing.md },
   field: { gap: spacing.xs },
   label: { ...typography.caption, fontWeight: '600' },

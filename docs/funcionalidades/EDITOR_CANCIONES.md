@@ -26,8 +26,14 @@ completa con su X y su «Guardar».
   a otra fila de la misma línea); tocarla la selecciona y sale una barra para
   moverla letra a letra, cambiarla o quitarla. La letra no se edita aquí, a
   propósito.
-- **Texto** — el ChordPro tal cual, con atajos para estribillo, «repite
-  estribillo» y nota.
+- **Texto** — el ChordPro tal cual, **en colores** como el editor del admin
+  del cantoral (acordes, estribillos, notas, arreglos), con atajos para
+  estribillo, estrofa, «repite estribillo» y nota. Marca en rojo lo que está
+  mal y lo lista con su línea: corchetes o llaves sin cerrar, estribillos o
+  estrofas sin cerrar (o cerrados sin abrir, o cruzados) y corchetes que no
+  parecen un acorde (p. ej. `[Do]`: el cantoral va en cifrado inglés). La
+  pestaña dice cuántos avisos hay («Texto · 2»). No impide guardar.
+  `utils/chordProLint.ts` + `components/song-editor/ChordProTextEditor.tsx`.
 - **Datos** — título, autor, tono, cejilla, nota y la ficha multimedia (álbum,
   ritmo, tiempo litúrgico, fuente, vídeo, más vídeos, audios).
 - **Vista** — la canción pintada con la hoja real del cantoral.
