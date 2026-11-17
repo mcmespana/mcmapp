@@ -33,6 +33,9 @@ import {
 import { h } from '@/utils/haptics';
 import { logger } from '@/utils/logger';
 
+/** Lo que dura el aviso de error: que dé tiempo a leer el porqué. */
+const ERROR_TOAST_MS = 7000;
+
 /** Lado largo máximo de la foto que se manda: de sobra para leer una hoja. */
 const PHOTO_MAX_SIDE = 2400;
 
@@ -96,7 +99,7 @@ export default function NewSongStart({
       variant: 'danger',
       label: e instanceof Error ? e.message : 'No ha salido bien',
       // Que dé tiempo a leer el porqué.
-      duration: 7000,
+      duration: ERROR_TOAST_MS,
     });
   };
 

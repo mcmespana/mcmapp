@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-17 21:55 — Editor: el título ya no se guarda con el número del fichero
+
+- El catálogo trae el título con el número delante («03. Parenostre», lo pone el generador del cantoral). El editor lo tomaba como título y al guardar acababa en el `.cho` («03. 03. …» en la app y la canción fuera de su sitio). Ahora el editor lo quita (`stripSongNumber`) y el admin del cantoral también, por si acaso.
+- La OTA de `preview` falló por el trinquete de duraciones a mano (`noLooseMotion`): un `duration: 7000` del aviso de error. Ahora es una constante con nombre.
+
 ## 2026-11-17 21:40 — Editor: las fotos del iPhone se mandan en JPEG
 
 - «Nueva canción» → foto fallaba con vibración de error: el iPhone da las fotos en HEIC, que el cantoral no abre, y enteras pesan varios MB. Ahora se pasan siempre a JPEG y se reducen (lado largo 2400 px) antes de enviarlas (`expo-image-manipulator`, ya instalado). El aviso de error dura más para poder leer el porqué.

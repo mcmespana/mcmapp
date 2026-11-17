@@ -87,7 +87,7 @@ import {
   type SongSnapshot,
 } from '@/utils/songEditor';
 import { lintChordPro } from '@/utils/chordProLint';
-import { cleanSongTitle } from '@/utils/songUtils';
+import { cleanSongTitle, stripSongNumber } from '@/utils/songUtils';
 import { toYouTubeEmbedUrl } from '@/utils/youtube';
 
 type Tab = 'chords' | 'text' | 'data' | 'preview';
@@ -125,7 +125,9 @@ function snapshotOf(song: SongEntry): SongSnapshot {
     otherLinks?: MediaLink[];
   };
   return {
-    title: song.title ?? '',
+    // En el catálogo el título lleva delante el número del fichero («03.
+    // Parenostre»): lo pone el generador del cantoral, no es parte del título.
+    title: stripSongNumber(song.title ?? ''),
     author: song.author ?? '',
     key: song.key ?? '',
     capo: Number(song.capo) || 0,
