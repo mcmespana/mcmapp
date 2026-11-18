@@ -253,6 +253,21 @@ Piezas y reglas actuales: `docs/desarrollo/AREA_NATIVA_DISENO.md`.
       (c) En un móvil de 320 pt, con letra normal, la barra superior no
       envuelve.
 
+- [ ] **U1 — Mayúsculas con tracking hechas a mano en el cantoral (anotado
+      2026-11-18, pase de `unslop-ui`).** design.md §4/§8: las etiquetas de
+      sección van con `typography.sectionLabel`. Se saltan esa regla:
+      `choirLabel` y `sectionTitle` de `components/playlist/choirSheetStyles.ts`,
+      `label` de `ExportPdfModal`, `secHead` y las claves de la Ficha
+      (`chip.label.toUpperCase()`) de `SongMediaSheet`, `speedHeading` de
+      `SongFullscreenScreen`, `sectionTitle` de `PlaylistActionsBottomSheet` y
+      los «Categorías» de `CategoriesScreen` (van en `overline`).
+- [ ] **U2 — Emojis como icono en el cantoral (decisión del usuario).** El
+      emoji del final de cada `categoryTitle` (Firebase `songs/*`) hace de
+      icono de la categoría, y las etiquetas (`songs/tags`) llevan emoji en
+      `TagChip`, `TagCloudSheet` y la pastilla de `SongListItem`. design.md §8
+      dice «nada de emoji como iconografía»: o se pasan a `IconSymbol` o se
+      deja escrito aquí que son contenido y se quedan.
+
 ---
 
 ## Orden sugerido si hay un hueco
