@@ -267,8 +267,8 @@ function Tree({
           <Text style={[styles.sub, { color: t.textSecondary }]}>
             {data.participantsWithoutGroup === 1
               ? '1 participante sin grupo asignado'
-              : `${data.participantsWithoutGroup} participantes sin grupo asignado`}{' '}
-            · No aparecen en ninguna lista
+              : `${data.participantsWithoutGroup} participantes sin grupo asignado`}
+            : no aparecen en ninguna lista
           </Text>
         ) : null}
         <PressableFeedback

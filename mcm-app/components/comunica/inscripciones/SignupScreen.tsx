@@ -344,6 +344,7 @@ function Form({
           </View>
           <ChoiceGroup
             title="¿Cómo pagas?"
+            showTitle={false}
             options={form.paymentMethods.map((m) => ({
               value: m.key,
               label: m.label,

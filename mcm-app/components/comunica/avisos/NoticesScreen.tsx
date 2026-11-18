@@ -136,7 +136,7 @@ function NativeNotices() {
             <View style={styles.status} accessibilityRole="summary">
               <IconSymbol name="bell.fill" size={20} color={t.accentText} />
               <Text style={[styles.statusText, { color: t.text }]}>
-                Los avisos están activados en este móvil. Elige cuáles quieres.
+                Los avisos están activados en este móvil.
               </Text>
             </View>
           ) : (

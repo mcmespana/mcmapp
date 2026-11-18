@@ -239,7 +239,7 @@ function Message({ text }: { text: string }) {
 export function noticeFor(p: Proposal | null): string | null {
   switch (p?.notice?.kind) {
     case 'not_started':
-      return `Empieza a las ${madridTime(p.notice.startsAt)} — aún no han llegado`;
+      return `Empieza a las ${madridTime(p.notice.startsAt)}: aún no han llegado`;
     case 'days_ago':
       return p.notice.days === 1
         ? 'Es la sesión de ayer'
@@ -393,7 +393,7 @@ function RollEditor({
       : restored && dirty
         ? 'Tienes marcas sin guardar de antes.'
         : dirty && !future && roll.roll
-          ? 'Cambios sin guardar · los datos están solo en tu móvil'
+          ? 'Cambios sin guardar: solo están en tu móvil.'
           : null;
 
   return (
