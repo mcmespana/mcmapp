@@ -31,7 +31,6 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { MaterialIcons } from '@/components/ui/icons';
 import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
@@ -203,17 +202,9 @@ const ExportPdfModal: React.FC<Props> = ({
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
-                <View style={styles.titleRow}>
-                  <MaterialIcons
-                    name="picture-as-pdf"
-                    size={22}
-                    color={isDark ? '#FF8A80' : '#C62828'}
-                  />
-                  <Text style={styles.title}>Exportar a PDF</Text>
-                </View>
+                <Text style={styles.title}>Exportar a PDF</Text>
                 <Text style={styles.subtitle}>
                   {songCount} {songCount === 1 ? 'canción' : 'canciones'}
-                  {'  ·  '}Letra y acordes, listo para imprimir
                 </Text>
 
                 <Text style={styles.label}>Título del PDF</Text>
@@ -244,8 +235,7 @@ const ExportPdfModal: React.FC<Props> = ({
                   <View style={styles.rowText}>
                     <Text style={styles.rowTitle}>Una canción por página</Text>
                     <Text style={styles.rowDesc}>
-                      Si lo desactivas, van seguidas y ocupan menos (nunca se
-                      parte una estrofa ni un estribillo)
+                      Si no, van seguidas sin partir ninguna estrofa
                     </Text>
                   </View>
                   <ToggleSwitch
@@ -259,9 +249,6 @@ const ExportPdfModal: React.FC<Props> = ({
                 <View style={styles.row}>
                   <View style={styles.rowText}>
                     <Text style={styles.rowTitle}>Mostrar acordes</Text>
-                    <Text style={styles.rowDesc}>
-                      Desactívalo para ver sólo la letra, sin acordes
-                    </Text>
                   </View>
                   <ToggleSwitch
                     value={showChords}
@@ -277,8 +264,8 @@ const ExportPdfModal: React.FC<Props> = ({
                       Estribillos repetidos en una línea
                     </Text>
                     <Text style={styles.rowDesc}>
-                      Como la vista compacta: el estribillo entero la primera
-                      vez y luego solo «Estribillo» con su comienzo
+                      Como en la vista compacta: entero la primera vez y luego
+                      solo su comienzo
                     </Text>
                   </View>
                   <ToggleSwitch
@@ -394,11 +381,6 @@ const createStyles = (isDark: boolean) =>
           elevation: 8,
         },
       }),
-    },
-    titleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
     },
     title: {
       ...typography.h3,

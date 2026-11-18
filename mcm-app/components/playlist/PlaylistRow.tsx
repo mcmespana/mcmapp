@@ -269,6 +269,8 @@ const PlaylistRow: React.FC<Props> = ({
               }}
               disabled={!canMoveUp}
               hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={`Subir ${cleanTitle}`}
             >
               <MaterialIcons
                 name="keyboard-arrow-up"
@@ -293,6 +295,8 @@ const PlaylistRow: React.FC<Props> = ({
               }}
               disabled={!canMoveDown}
               hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={`Bajar ${cleanTitle}`}
             >
               <MaterialIcons
                 name="keyboard-arrow-down"

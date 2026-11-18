@@ -158,13 +158,13 @@ const ShareQrModal: React.FC<Props> = ({
                 </View>
               ) : null}
 
-              <Text style={styles.subtitle}>
-                {showUploadPrompt
-                  ? 'Sube la playlist a la nube para compartir un QR con código que se abre por internet'
-                  : effectiveMode === 'offline'
-                    ? 'Funciona sin internet · Escanéalo con la cámara y se abre la app con la playlist ya cargada'
-                    : 'Escanea con la cámara · Se abre en la app si la tienes, o en el navegador si no'}
-              </Text>
+              {showUploadPrompt ? null : (
+                <Text style={styles.subtitle}>
+                  {effectiveMode === 'offline'
+                    ? 'Escanéalo con la cámara del móvil. Abre la playlist en la app sin internet.'
+                    : 'Se abre en la app o, si no la tienes, en el navegador.'}
+                </Text>
+              )}
 
               {showUploadPrompt ? (
                 <View style={styles.uploadPrompt}>
@@ -218,9 +218,7 @@ const ShareQrModal: React.FC<Props> = ({
                     >
                       <MaterialIcons name="link" size={18} color="#fff" />
                       <Text style={styles.btnPrimaryText}>
-                        {copied === 'link'
-                          ? '¡Enlace copiado!'
-                          : 'Copiar enlace'}
+                        {copied === 'link' ? 'Enlace copiado' : 'Copiar enlace'}
                       </Text>
                     </TouchableOpacity>
                     {effectiveMode === 'online' && code ? (
@@ -230,7 +228,7 @@ const ShareQrModal: React.FC<Props> = ({
                       >
                         <Text style={styles.btnSecondaryText}>
                           {copied === 'code'
-                            ? '¡Código copiado!'
+                            ? 'Código copiado'
                             : 'Copiar código'}
                         </Text>
                       </TouchableOpacity>

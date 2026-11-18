@@ -323,7 +323,7 @@ const QrScannerModal: React.FC<Props> = ({
                   entering={ZoomIn.springify()}
                   style={styles.foundText}
                 >
-                  ¡Lo tengo! 🎶
+                  QR leído
                 </Animated.Text>
               ) : hint ? (
                 <Animated.Text
@@ -336,7 +336,7 @@ const QrScannerModal: React.FC<Props> = ({
                 </Animated.Text>
               ) : (
                 <Animated.Text entering={FadeIn.delay(400)} style={styles.help}>
-                  Apunta al QR · se lee solo · está muuy guaaapoooo
+                  Apunta al QR. Se lee solo.
                 </Animated.Text>
               )}
             </View>
@@ -360,9 +360,8 @@ function PermissionDenied({
       <MaterialIcons name="no-photography" size={56} color="#8E8E93" />
       <Text style={styles.deniedTitle}>Sin acceso a la cámara</Text>
       <Text style={styles.deniedText}>
-        Dale permiso a MCM App en los ajustes del móvil para escanear los QR. Si
-        no, siempre puedes teclear el código
-        {expected === 'panuelo' ? '.' : ' de 4 dígitos.'}
+        Dale permiso a MCM App en los ajustes del móvil. También puedes escribir
+        el código{expected === 'panuelo' ? '.' : ' de 4 dígitos.'}
       </Text>
       <TouchableOpacity onPress={onClose} style={styles.deniedBtn}>
         <Text style={styles.deniedBtnText}>Escribir el código</Text>

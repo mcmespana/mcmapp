@@ -206,9 +206,7 @@ export default function SongReorderScreen() {
       </ScrollView>
       {category ? (
         <Text style={[styles.hint, { color: theme.textSecondary }]}>
-          {isWeb
-            ? 'Usa las flechas para mover una canción.'
-            : 'Mantén pulsada una canción y arrástrala, o usa las flechas.'}{' '}
+          {isWeb ? '' : 'Mantén pulsada una canción para arrastrarla. '}
           Al guardar cambian los números de la categoría.
         </Text>
       ) : (
