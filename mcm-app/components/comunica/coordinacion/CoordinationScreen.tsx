@@ -279,7 +279,6 @@ function Coordination({
               <PersonRow
                 key={m.id}
                 person={memberAsPerson(m)}
-                subtitle="Sin grupo asignado"
                 marksLabel=""
                 accessibilityActions={
                   access.coordination

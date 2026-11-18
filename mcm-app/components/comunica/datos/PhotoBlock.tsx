@@ -61,7 +61,8 @@ export default function PhotoBlock({
   );
   // Mientras sube o si falla, la foto elegida (su copia local); subida, la del servidor, que ya viene en `person`.
   const preview = entry && entry.phase !== 'applied' ? entry.file.uri : null;
-  const label = hasPhoto || entry ? C.photo.change : C.photo.add;
+  // Con foto, el botón «Cambiar foto» ya lo dice: sin texto encima.
+  const label = hasPhoto || entry ? null : C.photo.add;
   const button = hasPhoto || entry ? C.photo.buttonChange : C.photo.buttonAdd;
 
   return (
@@ -83,7 +84,9 @@ export default function PhotoBlock({
           <PersonAvatar person={person} size={AVATAR} tone="brand" />
         )}
         <View style={styles.text}>
-          <Text style={[styles.label, { color: t.text }]}>{label}</Text>
+          {label ? (
+            <Text style={[styles.label, { color: t.text }]}>{label}</Text>
+          ) : null}
           <PressableFeedback
             onPress={() => {
               h.tap();

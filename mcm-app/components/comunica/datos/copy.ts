@@ -78,11 +78,10 @@ export const DATOS_COPY = {
     region: 'Comunidad Autónoma',
   },
   photo: {
-    change: 'Cambiar foto de perfil',
     add: 'Sube una foto para conocernos mejor ✨',
     buttonChange: 'Cambiar foto',
     buttonAdd: 'Elegir foto',
-    hint: 'Formatos: jpg o png · Tamaño máximo: 4 MB',
+    hint: 'JPG o PNG de hasta 4 MB.',
     offline: 'Necesitas conexión para cambiar la foto.',
     sheetTitle: 'Foto de perfil',
     camera: 'Hacer una foto',

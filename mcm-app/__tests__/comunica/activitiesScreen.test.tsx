@@ -343,7 +343,7 @@ describe('«Eventos»', () => {
       await again.qc.refetchQueries({ queryKey: ['comunica', 'activities'] });
     });
     await until(() =>
-      texts(again.tree).includes('No hay actividades próximas ahora mismo'),
+      texts(again.tree).includes('No hay actividades próximas'),
     );
     expect(texts(again.tree)).toContain('Ver mis inscripciones');
   });
