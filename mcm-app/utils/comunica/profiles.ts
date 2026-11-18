@@ -181,7 +181,7 @@ export function pickerTexts(purpose: PickerNeeded['purpose']): {
       }
     : {
         title: '¿A quién quieres ver?',
-        body: 'Elige a quién quieres ver. Puedes cambiar desde arriba cuando quieras.',
+        body: 'Puedes cambiar desde arriba cuando quieras.',
       };
 }
 
@@ -281,7 +281,9 @@ export function greetingIntro(
   if (audience === 'guardian') {
     return 'Aquí están tus datos y lo que se cobra de tu cuenta. Para apuntar a alguien o ver sus documentos, elígelo arriba en «Viendo a».';
   }
-  return 'Tu espacio personal. Elige una sección para empezar.';
+  // Sin entradilla: «Tu espacio personal. Elige una sección…» describía lo
+  // que ya se ve (decisión del usuario, 18/11/2026).
+  return '';
 }
 
 // ── Nombres ─────────────────────────────────────────────────────────────────

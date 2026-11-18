@@ -14,6 +14,7 @@ import SwipeableMonthCalendar from '@/components/calendar/SwipeableMonthCalendar
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { PressableFeedback } from 'heroui-native';
 import EmptyState from '@/components/ui/EmptyState';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { comunicaNow } from '@/services/comunica';
@@ -101,7 +102,7 @@ export default function CalendarScreen({
         accessibilityLabel="Mes anterior"
         style={styles.nav}
       >
-        <Text style={[styles.navLabel, { color: t.accentText }]}>‹</Text>
+        <IconSymbol name="chevron.left" size={24} color={t.accentText} />
       </PressableFeedback>
       <Text
         accessibilityRole="header"
@@ -115,7 +116,7 @@ export default function CalendarScreen({
         accessibilityLabel="Mes siguiente"
         style={styles.nav}
       >
-        <Text style={[styles.navLabel, { color: t.accentText }]}>›</Text>
+        <IconSymbol name="chevron.right" size={24} color={t.accentText} />
       </PressableFeedback>
     </View>
   );
@@ -254,6 +255,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  navLabel: { ...typography.h1 },
   sync: { alignItems: 'center' },
 });

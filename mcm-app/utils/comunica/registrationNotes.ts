@@ -76,8 +76,7 @@ export const REGISTRATION_TEXT = {
   titleOwn: 'Mis inscripciones',
   titleOf: (child: string) => `Inscripciones de ${child}`,
   titleOfNoName: 'Inscripciones del participante',
-  intro:
-    'Aquí están las actividades y eventos a los que te has apuntado. Si quieres ver a cuáles puedes apuntarte, mira la sección',
+  intro: 'Para ver a cuáles puedes apuntarte, mira la sección',
   introLink: 'Eventos',
   emptyOwn: 'Todavía no tienes ninguna inscripción',
   emptyOwnBody:

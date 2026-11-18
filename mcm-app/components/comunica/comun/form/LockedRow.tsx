@@ -1,6 +1,7 @@
 // Un dato que aquí no se edita, pintado COMO DATO y no como un control
 // apagado (plugin `design.md` §6.5): «Ya subido», con su marca y, al lado, a
-// dónde ir para verlo («Revisarlo en Documentos →»).
+// dónde ir para verlo («Revisarlo en Documentos ›», con el chevrón como
+// icono y no como carácter: AREA_NATIVA_DISENO §2.5).
 
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -40,9 +41,12 @@ export default function LockedRow({
           accessibilityLabel={action.label}
           style={styles.action}
         >
-          <Text style={[styles.actionText, { color: t.accentText }]}>
-            {action.label}
-          </Text>
+          <View style={styles.actionRow}>
+            <Text style={[styles.actionText, { color: t.accentText }]}>
+              {action.label}
+            </Text>
+            <IconSymbol name="chevron.right" size={14} color={t.accentText} />
+          </View>
         </PressableFeedback>
       ) : null}
     </View>
@@ -59,5 +63,6 @@ const styles = StyleSheet.create({
   value: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   valueText: { ...typography.subhead, fontWeight: '600' },
   action: { minHeight: 44, justifyContent: 'center' },
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   actionText: { ...typography.subhead, fontWeight: '600' },
 });

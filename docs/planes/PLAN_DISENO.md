@@ -268,12 +268,11 @@ Piezas y reglas actuales: `docs/desarrollo/AREA_NATIVA_DISENO.md`.
       design.md §8 diga «nada de emoji como iconografía». Pendiente a futuro,
       sin prisa: valorar pasar categorías y etiquetas a `IconSymbol`. Tampoco
       se tocan las bromas del copy («está muuy guaaapoooo» del escáner de QR).
-- [ ] **U3 — Caracteres usados como icono en Comunica (anotado 2026-11-18,
-      pase de `unslop-ui`).** AREA_NATIVA_DISENO §2.5 pide `IconSymbol`: las
-      flechas ‹ › del mes en `comunica/calendario/CalendarScreen.tsx`, la «✓»
-      de «Ya lo tenemos…» en `comunica/datos/ProfileDataScreen.tsx` y el «→»
-      de «Revisarlo en Documentos →» en `comun/form/FileField.tsx` (el lector
-      de pantalla lee la flecha; `formPieces.test.tsx` fija el texto).
+- [x] **U3 — Caracteres usados como icono en Comunica — hecho el
+      2026-11-18.** Las flechas ‹ › del mes del calendario, la «✓» de «Ya lo
+      tenemos…» (nueva prop `hintIcon` de `FormField`/`FieldHint`) y el «→» de
+      «Revisarlo en Documentos» (`LockedRow` pinta el chevrón) son ya
+      `IconSymbol`.
 
 ---
 

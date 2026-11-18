@@ -249,9 +249,7 @@ describe('la portada', () => {
     expect(greetingIntro('guardian', '')).toMatch(
       /lo que se cobra de tu cuenta/,
     );
-    expect(greetingIntro('member', '')).toBe(
-      'Tu espacio personal. Elige una sección para empezar.',
-    );
+    expect(greetingIntro('member', '')).toBe('');
   });
 });
 

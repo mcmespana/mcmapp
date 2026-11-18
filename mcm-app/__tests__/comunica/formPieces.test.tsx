@@ -272,7 +272,7 @@ describe('LockedRow', () => {
     const tree = mount(
       <LockedRow
         value="Ya subido"
-        action={{ label: 'Revisarlo en Documentos →', onPress }}
+        action={{ label: 'Revisarlo en Documentos', onPress }}
       />,
     );
     expect(
@@ -280,7 +280,7 @@ describe('LockedRow', () => {
         (n) => n.props.accessibilityLabel === 'Ya subido' && n.props.onPress,
       ),
     ).toEqual([]);
-    const link = touchable(tree, 'Revisarlo en Documentos →');
+    const link = touchable(tree, 'Revisarlo en Documentos');
     expect(link.props.accessibilityRole).toBe('link');
     expect(height(link)).toBeGreaterThanOrEqual(44);
   });
@@ -320,7 +320,7 @@ describe('FileField', () => {
     );
     expect(texts(tree)).toContain('Ya subido');
     expect(texts(tree)).toContain(FILE_HINT_REPLACE);
-    expect(touchable(tree, 'Revisarlo en Documentos →')).toBeTruthy();
+    expect(touchable(tree, 'Revisarlo en Documentos')).toBeTruthy();
     expect(touchable(tree, 'Sustituir: Título DAT')).toBeTruthy();
   });
 
