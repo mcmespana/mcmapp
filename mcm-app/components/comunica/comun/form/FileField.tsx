@@ -49,8 +49,7 @@ const SOURCES: {
 
 export const FILE_HINT_EMPTY =
   'Formatos: pdf, jpg, png · Tamaño máximo: 4MB · Puedes subirlo ahora o más adelante.';
-export const FILE_HINT_REPLACE =
-  'Ya tienes un archivo guardado. Sube uno nuevo para sustituirlo.';
+export const FILE_HINT_REPLACE = 'Sube uno nuevo para sustituirlo.';
 export const PAPER_HINT =
   '¿Lo tienes en papel? Escanéalo con Notas o Archivos y elígelo aquí.';
 

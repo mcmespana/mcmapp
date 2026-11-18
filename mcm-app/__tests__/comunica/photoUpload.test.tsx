@@ -406,7 +406,7 @@ describe('«Mis datos»: la foto', () => {
   it('sin foto: «Elegir foto» y la sección del plugin; elegir de la galería sube al momento y la foto nueva sustituye a la de la caché', async () => {
     const { fake, tree, qc } = await screen('family', LUCIA);
     expect(texts(tree)).toContain('Sube una foto para conocernos mejor');
-    expect(texts(tree)).toContain('Formatos: jpg o png · Tamaño máximo: 4 MB');
+    expect(texts(tree)).toContain('JPG o PNG de hasta 4 MB.');
     expect(photoOf(qc, LUCIA)).toBeNull();
     await press(tree, 'Subir una foto de perfil');
     expect(texts(tree)).toContain('Hacer una foto');

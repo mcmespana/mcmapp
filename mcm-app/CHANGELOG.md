@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-18 22:30 — Comunica: copy repasado con `unslop-ui`
+
+- Solo textos (sin lógica ni estilos): explicaciones de cómo funciona por dentro, subtítulos que repetían el título o el botón, cadenas con «·» que unían dos frases y rellenos («ahora mismo», «automáticamente»). Las tres pantallas de pasar lista dicen igual lo pendiente: «Cambios sin guardar: solo están en tu móvil.». «Esta actividad ya no está disponible» queda sin la frase que adivinaba el motivo (detalle, enlace e inscripción).
+- Se quedan, por decisión del usuario: emojis, bromas, chips en mayúsculas del territorio y todo lo de dinero, inscripción y consentimiento. Textos que viven en `utils/comunica/*` (palabras del plugin) no se han tocado.
+
 ## 2026-11-18 21:40 — Cantoral: lo del domingo sale de la cabecera de Tu selección y copy más corto
 
 - **Tu selección con canciones**: fuera la fila de chips «Lecturas del domingo / Cantos del domingo / Historial» (`PlaylistDesignTools`, borrado). Se comía una fila (dos con letra grande) encima de las canciones para algo que usa poca gente. Ahora: menú ⋯ → sección **«Domingo»** («Cantos para el domingo», con fecha y fiesta, y «Lecturas del domingo»); el historial sigue en «Mi coro» → «Ver lo cantado por el coro». Con el historial encendido, la cabecera solo enseña la leyenda de los puntos. Con la lista vacía, el botón del domingo sigue a la vista.

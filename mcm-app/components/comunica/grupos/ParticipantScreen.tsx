@@ -411,7 +411,7 @@ function Ficha({
           </View>
         ) : null}
         {!hasContactRows ? (
-          <Hint text="Esta ficha no tiene familia ni teléfonos que esta pantalla pueda ver. Avisa a coordinación: o faltan en el CRM, o el entorno personal no está asignado a la delegación." />
+          <Hint text="En esta ficha no se ve familia ni teléfonos. Avisa a coordinación: o faltan en el CRM, o el entorno personal no está asignado a la delegación." />
         ) : !tutor ? (
           <Hint text="Nadie de la familia tiene teléfono en el CRM. Avisa a coordinación para que lo completen." />
         ) : null}

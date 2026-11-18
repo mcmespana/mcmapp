@@ -72,12 +72,10 @@ export default function EventDetailScreen({ eventId }: { eventId: string }) {
         <EmptyState
           icon="inbox"
           title="Esta actividad ya no está disponible"
-          subtitle="Es posible que se haya retirado. Consulta el resto de actividades abiertas."
           actionLabel="Ver eventos"
           onAction={toList}
           accentColor={t.accentText}
           titleColor={t.text}
-          subtitleColor={t.textSecondary}
         />
       </AreaScreen>
     );

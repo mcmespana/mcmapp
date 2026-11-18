@@ -30,7 +30,6 @@ export default function ActivityBridgeScreen({ slug }: { slug: string }) {
   const colors = {
     accentColor: t.accentText,
     titleColor: t.text,
-    subtitleColor: t.textSecondary,
   };
   const signedOut = !me.isPending && !me.me;
   if (signedOut) {
@@ -39,7 +38,6 @@ export default function ActivityBridgeScreen({ slug }: { slug: string }) {
         <EmptyState
           icon="lock"
           title="Entra para apuntarte"
-          subtitle="Entra en tu área para ver esta actividad y apuntarte."
           actionLabel="Entrar"
           onAction={() => router.replace('/comunica' as never)}
           {...colors}
@@ -53,7 +51,6 @@ export default function ActivityBridgeScreen({ slug }: { slug: string }) {
         <EmptyState
           icon="inbox"
           title="Esta actividad ya no está disponible"
-          subtitle="Es posible que se haya retirado. Consulta el resto de actividades abiertas."
           actionLabel="Ver eventos"
           onAction={() => router.replace('/comunica/actividades' as never)}
           {...colors}

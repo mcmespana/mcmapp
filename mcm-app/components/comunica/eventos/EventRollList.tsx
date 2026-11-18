@@ -550,7 +550,7 @@ export default function EventRollList({
     : restored && dirty
       ? 'Tienes marcas sin guardar de antes.'
       : dirty && !pick.locked
-        ? 'Cambios sin guardar · los datos están solo en tu móvil'
+        ? 'Cambios sin guardar: solo están en tu móvil.'
         : null;
 
   return (

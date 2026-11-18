@@ -3,7 +3,7 @@
 
 /** l.205: explica el vacío (el genérico solo lo constata). */
 export const CLOSED_SEASON =
-  'Los grupos tienen gente apuntada, pero ningún participante tiene la relación vigente: es lo que pasa cuando el curso anterior se ha cerrado y el nuevo no está abierto todavía. Las relaciones llevan fecha de fin y coordinación las renueva en el CRM. No es un fallo de la aplicación.';
+  'Los grupos tienen gente apuntada, pero ningún participante tiene la relación vigente: pasa cuando el curso anterior se ha cerrado y el nuevo aún no está abierto. Coordinación renueva las relaciones en el CRM.';
 
 export const SEARCH_EMPTY = 'Nada coincide con lo que buscas.';
 
