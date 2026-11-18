@@ -1,6 +1,6 @@
 // «Mis inscripciones» / «Inscripciones de Lucía» (plan 14, `sticpa_registrations_list_html`).
 //
-//   · Arriba la nota «Aquí están las actividades y eventos a los que te has apuntado…» con el enlace a Eventos.
+//   · Arriba la nota «Para ver a cuáles puedes apuntarte, mira la sección Eventos» con el enlace a Eventos.
 //   · Lo abierto por fecha ascendente; luego lo cerrado, del más reciente al más antiguo (`registrationList.ts`). Apagada si pasó o es `danger`.
 //   · «Otros eventos» (los de eventos ocultos): plegado y con su número; abierto si no hay nada más.
 //   · Sin botón en la tarjeta: tocarla abre la ficha. Cambiar de hijo lleva a la lista del otro (una inscripción es personal, FAM-a8).

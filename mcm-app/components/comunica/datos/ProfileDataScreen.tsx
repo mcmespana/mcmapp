@@ -40,7 +40,7 @@ import BottomActionBar from '../comun/BottomActionBar';
 import { confirmAction } from '../comun/confirm';
 import DateTimeField from '../comun/DateTimeField';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
-import { TextFormField } from '../comun/form/FormField';
+import { FieldHint, TextFormField } from '../comun/form/FormField';
 import FormSection, { FormNote } from '../comun/form/FormSection';
 import SelectField from '../comun/form/SelectField';
 import { DATOS_COPY as C, HEALTH_FIELDS } from './copy';
@@ -343,7 +343,8 @@ function DataForm({
           {vis.support ? (
             <TextFormField
               label={C.identity.support}
-              hint={`✓ ${C.identity.have}`}
+              hint={C.identity.have}
+              hintIcon="checkmark"
               value={form.supportNumber}
               onChangeText={(v) => set('supportNumber', v)}
               autoCapitalize="characters"
@@ -358,9 +359,9 @@ function DataForm({
                 value={form.issueDate}
                 onChange={(v) => set('issueDate', v)}
               />
-              <Text style={[styles.hint, { color: t.textSecondary }]}>
-                {`✓ ${C.identity.have}`}
-              </Text>
+              <View style={styles.hintWrap}>
+                <FieldHint hint={C.identity.have} icon="checkmark" />
+              </View>
             </View>
           ) : null}
           <FormNote icon="lock">
@@ -606,7 +607,7 @@ const FIELD_OF_REASON: Record<string, keyof DetailErrors> = {
 const styles = StyleSheet.create({
   strong: { fontWeight: '600' },
   offline: { ...typography.caption, textAlign: 'center' },
-  hint: { ...typography.caption, paddingHorizontal: 16, paddingBottom: 12 },
+  hintWrap: { paddingHorizontal: 16, paddingBottom: 12 },
   hintPlain: { ...typography.caption },
   healthState: { padding: 16, gap: 8 },
   retry: { minHeight: 44, justifyContent: 'center' },

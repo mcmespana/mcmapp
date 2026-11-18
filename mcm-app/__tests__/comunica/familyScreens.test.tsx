@@ -206,9 +206,7 @@ describe('«¿A quién ves?»', () => {
     await until(() => texts(tree).includes('Lucía Messeguer'));
     const t = texts(tree);
     expect(t).toContain('¿A quién quieres ver?');
-    expect(t).toContain(
-      'Elige a quién quieres ver. Puedes cambiar desde arriba cuando quieras.',
-    );
+    expect(t).toContain('Puedes cambiar desde arriba cuando quieras.');
     expect(t).toContain('Participante');
     expect(t.indexOf('Lucía Messeguer')).toBeLessThan(
       t.indexOf('Marta Villarroya'),
@@ -370,7 +368,7 @@ describe('la portada de familia', () => {
       'Mis datos',
     ])
       expect(t).toContain(s);
-    expect(t).toContain('Tu espacio personal. Elige una sección para empezar.');
+    expect(t).not.toContain('Tu espacio personal');
     expect(t).not.toContain('Viendo a');
     expect(t).not.toContain('A quién tienes a tu cargo');
   });

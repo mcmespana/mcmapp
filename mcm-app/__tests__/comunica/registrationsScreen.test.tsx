@@ -520,9 +520,7 @@ describe('«Mis inscripciones»', () => {
       texts(tree).includes('Sesiones semanales MIC 4.º-6.º EP'),
     );
     const t = texts(tree);
-    expect(t).toContain(
-      'Aquí están las actividades y eventos a los que te has apuntado.',
-    );
+    expect(t).toContain('Para ver a cuáles puedes apuntarte, mira la sección');
     expect(t).toContain('Rechazada');
     expect(t).toContain('Curso de Catequesis MIC');
     expect(t.indexOf('Sesiones semanales')).toBeLessThan(

@@ -6,6 +6,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, type TextInputProps } from 'react-native';
 import AppTextField from '@/components/ui/AppTextField';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import typography from '@/constants/typography';
 import { useComunicaTheme } from '../useComunicaTheme';
 import HelpButton from './HelpSheet';
@@ -18,20 +19,26 @@ export interface FieldProps {
   hint?: string;
   /** Si lo hay, sustituye a la pista, en rojo. */
   error?: string;
+  /** Un icono delante de la pista («Ya lo tenemos» lleva su ✓ como icono,
+   *  no como carácter: AREA_NATIVA_DISENO §2.5). */
+  hintIcon?: HintIcon;
 }
+
+type HintIcon = React.ComponentProps<typeof IconSymbol>['name'];
 
 export default function FormField({
   label,
   help,
   hint,
   error,
+  hintIcon,
   children,
 }: FieldProps & { children: React.ReactNode }) {
   return (
     <View style={styles.field}>
       <FieldLabel label={label} help={help} />
       {children}
-      <FieldHint hint={hint} error={error} />
+      <FieldHint hint={hint} error={error} icon={hintIcon} />
     </View>
   );
 }
@@ -46,7 +53,15 @@ export function FieldLabel({ label, help }: { label: string; help?: string }) {
   );
 }
 
-export function FieldHint({ hint, error }: { hint?: string; error?: string }) {
+export function FieldHint({
+  hint,
+  error,
+  icon,
+}: {
+  hint?: string;
+  error?: string;
+  icon?: HintIcon;
+}) {
   const t = useComunicaTheme();
   if (error) {
     return (
@@ -58,9 +73,20 @@ export function FieldHint({ hint, error }: { hint?: string; error?: string }) {
       </Text>
     );
   }
-  return hint ? (
-    <Text style={[styles.hint, { color: t.textSecondary }]}>{hint}</Text>
-  ) : null;
+  if (!hint) return null;
+  const text = (
+    <Text style={[styles.hint, styles.hintText, { color: t.textSecondary }]}>
+      {hint}
+    </Text>
+  );
+  return icon ? (
+    <View style={styles.hintRow}>
+      <IconSymbol name={icon} size={14} color={t.textSecondary} />
+      {text}
+    </View>
+  ) : (
+    text
+  );
 }
 
 /** Un campo de texto: etiqueta arriba y `AppTextField` debajo. */
@@ -69,6 +95,7 @@ export function TextFormField({
   help,
   hint,
   error,
+  hintIcon,
   value,
   onChangeText,
   inline,
@@ -99,12 +126,18 @@ export function TextFormField({
             {...input}
           />
         </View>
-        <FieldHint hint={hint} error={error} />
+        <FieldHint hint={hint} error={error} icon={hintIcon} />
       </View>
     );
   }
   return (
-    <FormField label={label} help={help} hint={hint} error={error}>
+    <FormField
+      label={label}
+      help={help}
+      hint={hint}
+      error={error}
+      hintIcon={hintIcon}
+    >
       <AppTextField
         value={value}
         onChangeText={onChangeText}
@@ -123,6 +156,8 @@ const styles = StyleSheet.create({
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   label: { ...typography.body, flexShrink: 1 },
   hint: { ...typography.caption },
+  hintText: { flexShrink: 1 },
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   inlineField: { paddingHorizontal: 16, paddingVertical: 8, gap: 4 },
   inlineRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   inlineLabel: { flex: 1 },

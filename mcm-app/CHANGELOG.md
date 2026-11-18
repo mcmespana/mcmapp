@@ -7,6 +7,8 @@
 ## 2026-11-18 22:30 — Comunica: copy repasado con `unslop-ui`
 
 - Solo textos (sin lógica ni estilos): explicaciones de cómo funciona por dentro, subtítulos que repetían el título o el botón, cadenas con «·» que unían dos frases y rellenos («ahora mismo», «automáticamente»). Las tres pantallas de pasar lista dicen igual lo pendiente: «Cambios sin guardar: solo están en tu móvil.». «Esta actividad ya no está disponible» queda sin la frase que adivinaba el motivo (detalle, enlace e inscripción).
+- Fuera tres entradillas que narraban la pantalla: la portada de socio («Tu espacio personal. Elige una sección…»), el «Elige a quién quieres ver.» del selector de persona y el «Aquí están las actividades…» de inscripciones (queda «Para ver a cuáles puedes apuntarte, mira la sección Eventos»).
+- Caracteres que hacían de icono, ahora `IconSymbol`: ‹ › del mes en el calendario, «✓» de «Ya lo tenemos» en Mis datos (prop nueva `hintIcon` en `FormField`) y «→» de «Revisarlo en Documentos» (`LockedRow`).
 - Se quedan, por decisión del usuario: emojis, bromas, chips en mayúsculas del territorio y todo lo de dinero, inscripción y consentimiento. Textos que viven en `utils/comunica/*` (palabras del plugin) no se han tocado.
 
 ## 2026-11-18 21:40 — Cantoral: lo del domingo sale de la cabecera de Tu selección y copy más corto
