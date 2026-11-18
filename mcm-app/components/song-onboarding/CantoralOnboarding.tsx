@@ -196,7 +196,7 @@ export default function CantoralOnboarding({
         ) : index === 0 || isLast ? (
           <Text style={[styles.footnote, { color: t.textMuted }]}>
             Todo se cambia cuando quieras: en cada canción, en opciones → «Letra
-            y vista», o con el ? de arriba del cantoral.
+            y vista», o en el menú del cantoral → «Cómo ver las canciones».
           </Text>
         ) : null}
       </Animated.View>

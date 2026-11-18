@@ -99,7 +99,7 @@ export default function TransposeBottomSheet({
   const originalKey = keyAt(0);
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} title="Ajustes de canción">
+    <BottomSheet visible={visible} onClose={onClose} title="Tono y cejilla">
       <View style={styles.container}>
         {/* ━━━━━━━━━━━━━━ TONO ━━━━━━━━━━━━━━ */}
         <SheetCard

@@ -88,7 +88,7 @@ export default function ReportBugsModal({
     <BottomSheet
       visible={visible}
       onClose={handleClose}
-      title="Reportar fallitos 🐛"
+      title="Reportar fallitos"
       paddingHorizontal={0}
     >
       <ScrollView
@@ -121,7 +121,7 @@ export default function ReportBugsModal({
         <AppTextField
           accentWhenFilled
           style={styles.textArea}
-          placeholder="Describe los fallos que has encontrado..."
+          accessibilityLabel="¿Qué falla?"
           value={bugDescription}
           onChangeText={setBugDescription}
           maxLength={500}
@@ -136,7 +136,7 @@ export default function ReportBugsModal({
 
         {/* Botón principal */}
         <AppPrimaryButton
-          label={isSubmitting ? 'Enviando...' : 'Notificar fallitos'}
+          label={isSubmitting ? 'Enviando...' : 'Enviar'}
           icon="bug-report"
           color="#FF3B30"
           onPress={handleSubmit}
@@ -144,27 +144,6 @@ export default function ReportBugsModal({
           loading={isSubmitting}
           style={styles.submitBtn}
         />
-
-        {/* Divisor */}
-        <View style={styles.divider}>
-          <View
-            style={[
-              styles.dividerLine,
-              { backgroundColor: themeColors(isDark).separator },
-            ]}
-          />
-          <Text style={[styles.dividerLabel, { color: theme.icon }]}>o</Text>
-          <View
-            style={[
-              styles.dividerLine,
-              { backgroundColor: themeColors(isDark).separator },
-            ]}
-          />
-        </View>
-
-        <Text style={[styles.disclaimer, { color: theme.icon }]}>
-          Con tus avisos nos ayudas a mejorar la calidad del cantoral.
-        </Text>
       </ScrollView>
     </BottomSheet>
   );
@@ -212,38 +191,5 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     marginBottom: 4,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-    gap: 12,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerLabel: {
-    ...typography.caption,
-    fontWeight: '500',
-  },
-  secretBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 13,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-    marginBottom: 20,
-  },
-  secretBtnText: {
-    ...typography.button,
-    fontWeight: '600',
-  },
-  disclaimer: {
-    ...typography.footnote,
-    lineHeight: 18,
-    textAlign: 'center',
   },
 });
