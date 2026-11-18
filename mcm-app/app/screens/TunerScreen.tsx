@@ -423,10 +423,10 @@ function TunerPanel({ onMount }: { onMount: () => void }) {
           />
           <Text style={[styles.mode, { color: theme.textMuted }]}>
             {tuner.lockedString !== null
-              ? `Solo la ${STANDARD_TUNING[tuner.lockedString].number}.ª · tócala otra vez para soltarla`
+              ? `Solo la ${STANDARD_TUNING[tuner.lockedString].number}.ª cuerda. Tócala otra vez para soltarla.`
               : tuned.size === STANDARD_TUNING.length
                 ? 'Las seis afinadas'
-                : 'Estándar · La 440 · reconoce la cuerda sola'}
+                : 'Afinación estándar, La 440. Reconoce la cuerda sola.'}
           </Text>
         </View>
       )}

@@ -156,7 +156,7 @@ export default function ChordProTextEditor({ value, onChange }: Props) {
             color={theme.textSecondary}
           />
           <Text style={[styles.okText, { color: theme.textSecondary }]}>
-            Todo cerrado y en su sitio
+            Sin errores
           </Text>
         </View>
       ) : null}
