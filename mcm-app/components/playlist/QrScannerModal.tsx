@@ -323,7 +323,7 @@ const QrScannerModal: React.FC<Props> = ({
                   entering={ZoomIn.springify()}
                   style={styles.foundText}
                 >
-                  QR leído
+                  ¡Lo tengo! 🎶
                 </Animated.Text>
               ) : hint ? (
                 <Animated.Text
@@ -336,7 +336,7 @@ const QrScannerModal: React.FC<Props> = ({
                 </Animated.Text>
               ) : (
                 <Animated.Text entering={FadeIn.delay(400)} style={styles.help}>
-                  Apunta al QR. Se lee solo.
+                  Apunta al QR · se lee solo · está muuy guaaapoooo
                 </Animated.Text>
               )}
             </View>

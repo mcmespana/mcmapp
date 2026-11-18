@@ -910,7 +910,7 @@ const SelectedSongsScreen: React.FC = () => {
 
   const showChoirSuccess = useCallback((code: string) => {
     setQrModal({
-      title: `Coro en vivo con el código ${code}`,
+      title: `Sesión coro con el código ${code}`,
       url: `${WEB_BASE_URL}/coro?c=${code}`,
       code,
     });
@@ -1889,8 +1889,8 @@ const SelectedSongsScreen: React.FC = () => {
         title={
           choir.mode !== 'off'
             ? choir.mode === 'master'
-              ? 'Diriges en vivo'
-              : 'Sigues en vivo'
+              ? 'Diriges sesión coro'
+              : 'Sigues sesión coro'
             : 'Acciones'
         }
       />

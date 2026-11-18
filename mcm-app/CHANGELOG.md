@@ -7,7 +7,7 @@
 ## 2026-11-18 21:40 — Cantoral: lo del domingo sale de la cabecera de Tu selección y copy más corto
 
 - **Tu selección con canciones**: fuera la fila de chips «Lecturas del domingo / Cantos del domingo / Historial» (`PlaylistDesignTools`, borrado). Se comía una fila (dos con letra grande) encima de las canciones para algo que usa poca gente. Ahora: menú ⋯ → sección **«Domingo»** («Cantos para el domingo», con fecha y fiesta, y «Lecturas del domingo»); el historial sigue en «Mi coro» → «Ver lo cantado por el coro». Con el historial encendido, la cabecera solo enseña la leyenda de los puntos. Con la lista vacía, el botón del domingo sigue a la vista.
-- **Copy del cantoral repasado con la skill `unslop-ui`** (solo textos, sin tocar lógica ni estilos): fuera emojis en botones y títulos («✍️ Añadir arreglo», «Reportar fallitos 🐛», «¡Lo tengo! 🎶»), exclamaciones en toasts, cadenas con «·», la etiqueta «FLOTANTE» y las pistas de la hoja de multimedia, descripciones que repetían el título de la opción y explicaciones de cómo funciona por dentro. El título del ⋯ en coro en vivo dice «Diriges en vivo» / «Sigues en vivo» (antes «Coro <id> · Maestro/Esclavo»). Se añaden `accessibilityLabel` en los botones de icono del banner del coro y las flechas de reordenar.
+- **Copy del cantoral repasado con la skill `unslop-ui`** (solo textos, sin tocar lógica ni estilos): fuera exclamaciones en toasts, cadenas con «·», la etiqueta «FLOTANTE» y las pistas de la hoja de multimedia, descripciones que repetían el título de la opción y explicaciones de cómo funciona por dentro. El título del ⋯ en coro en vivo dice «Diriges sesión coro» / «Sigues sesión coro» (antes «Coro <id> · Maestro/Esclavo»). Se añaden `accessibilityLabel` en los botones de icono del banner del coro y las flechas de reordenar.
 
 ## 2026-11-17 19:55 — Comunica: un monitor ya no ve en su calendario las sesiones de los chavales
 
@@ -83,6 +83,7 @@
 - **Datos completos**: Spotify, Drive, otros enlaces y etiquetas, además de lo que ya había.
 - **Ordenar canciones de una categoría** (Cantoral → ⋯ → Ordenar canciones, `SongReorderScreen`; `POST /api/app/category/reorder` en el cantoral).
 - Puesta en marcha del NAS en `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (temporal). Deuda anotada en el BACKLOG §2.D: que no dependa del NAS.
+
 ## 2026-11-17 06:39 — Arreglo: en iOS los botones de arriba del pañuelo quedaban bajo la cabecera
 
 - **Causa**: la pantalla medía dónde empezaba (`measureInWindow`) solo al maquetarse. Al cerrar el tutorial la cabecera nativa volvía, la pantalla no se re-maquetaba y la medida se quedaba en 0: la pastilla de la etapa, «Decorar» y compartir salían debajo de la cabecera y de la hora.
@@ -167,6 +168,7 @@
 - **Metrónomo** (`components/tuner/MetronomePanel.tsx`): tempo 40–220 con −/+ (mantener repite) y «Marcar el tempo»; 1, 2, 3, 4 o 6 pulsos por compás con el primero acentuado; puntos que marcan el pulso. Tempo y compás se recuerdan.
 - **Sonido sintetizado** (`services/metronome/engine.ts`, un «toc» de madera, sin ficheros de audio) con el `react-native-audio-api` del afinador, programado sobre el reloj del audio. Lógica pura y tests en `utils/metronome.ts` / `metronome.test.ts`.
 - Sin paquetes nuevos (sale por OTA en la 2.5.1). Probado en web; sin oír en un móvil. Detalle en `docs/funcionalidades/AFINADOR.md`.
+
 ## 2026-11-16 19:21 — Pañuelo: intercambios de piezas (pantalla, servicio y reglas)
 
 - Nueva hoja «Intercambiar» (Laboratorio Alpha): se ofrece una pieza con un código de 6 y su QR, la otra persona lo escribe o lo escanea, elige qué da (o lo regala) y se acepta. Cada móvil aplica su mitad: la pieza recibida queda cosida donde estaba la dada.

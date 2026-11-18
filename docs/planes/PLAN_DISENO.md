@@ -261,12 +261,13 @@ Piezas y reglas actuales: `docs/desarrollo/AREA_NATIVA_DISENO.md`.
       (`chip.label.toUpperCase()`) de `SongMediaSheet`, `speedHeading` de
       `SongFullscreenScreen`, `sectionTitle` de `PlaylistActionsBottomSheet` y
       los «Categorías» de `CategoriesScreen` (van en `overline`).
-- [ ] **U2 — Emojis como icono en el cantoral (decisión del usuario).** El
-      emoji del final de cada `categoryTitle` (Firebase `songs/*`) hace de
-      icono de la categoría, y las etiquetas (`songs/tags`) llevan emoji en
-      `TagChip`, `TagCloudSheet` y la pastilla de `SongListItem`. design.md §8
-      dice «nada de emoji como iconografía»: o se pasan a `IconSymbol` o se
-      deja escrito aquí que son contenido y se quedan.
+- [ ] **U2 — Emojis del cantoral: SE QUEDAN (decisión del usuario,
+      2026-11-18).** El emoji del final de cada `categoryTitle` (Firebase
+      `songs/*`), los de las etiquetas (`songs/tags`) y los de títulos como
+      «✍️ Añadir arreglo» o «Reportar fallitos 🐛» no se quitan, aunque
+      design.md §8 diga «nada de emoji como iconografía». Pendiente a futuro,
+      sin prisa: valorar pasar categorías y etiquetas a `IconSymbol`. Tampoco
+      se tocan las bromas del copy («está muuy guaaapoooo» del escáner de QR).
 
 ---
 
