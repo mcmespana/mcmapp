@@ -3,6 +3,11 @@
  * canciones, **estado de sincronización con el coro** y el conmutador
  * «Por categoría / Orden ajustado».
  *
+ * Lo del domingo (lecturas, cantos propuestos) y el historial del coro NO van
+ * aquí: se comían una fila entera encima de las canciones y los usa poca
+ * gente. Viven en el menú ⋯ (sección «Domingo» y «Mi coro»); aquí solo queda
+ * la leyenda de los puntos cuando el historial está encendido.
+ *
  * El estado es la parte nueva y la que más preguntas quita de encima: dice si
  * lo que ves es lo que hay subido («guardada en X») o si has tocado algo desde
  * entonces («cambios sin guardar»), y al tocarlo lleva directo a guardar. Antes
@@ -15,7 +20,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '@/components/ui/icons';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
-import PlaylistDesignTools from '@/components/playlist/PlaylistDesignTools';
+import { SungLegend } from '@/components/playlist/SungDots';
 import type { SelectedSongsStyles } from '@/components/playlist/selectedSongsStyles';
 import type { PlaylistLink } from '@/hooks/usePlaylistLink';
 import { formatRelativeDate } from '@/utils/playlistSync';
@@ -33,8 +38,8 @@ export interface PlaylistHeaderBarProps {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   styles: SelectedSongsStyles;
-  /** Abre las lecturas del próximo domingo. */
-  onOpenSunday: () => void;
+  /** Historial del coro encendido: los puntos necesitan su leyenda. */
+  showSungLegend: boolean;
 }
 
 export const PlaylistHeaderBar = React.memo(function PlaylistHeaderBar({
@@ -46,7 +51,7 @@ export const PlaylistHeaderBar = React.memo(function PlaylistHeaderBar({
   viewMode,
   setViewMode,
   styles,
-  onOpenSunday,
+  showSungLegend,
 }: PlaylistHeaderBarProps) {
   const statusLabel = link
     ? isSynced
@@ -107,7 +112,11 @@ export const PlaylistHeaderBar = React.memo(function PlaylistHeaderBar({
           ) : null}
         </TouchableOpacity>
       ) : null}
-      <PlaylistDesignTools onOpenSunday={onOpenSunday} />
+      {showSungLegend ? (
+        <View style={styles.statusRow}>
+          <SungLegend />
+        </View>
+      ) : null}
       {visibleCount > 1 ? (
         <View style={styles.viewToggleRow}>
           <View style={styles.viewToggle} accessibilityRole="tablist">

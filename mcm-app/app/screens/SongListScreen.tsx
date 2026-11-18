@@ -650,12 +650,6 @@ export default function SongsListScreen() {
   );
   const onSwipeAdd = swipeAddHint.markLearned;
 
-  const categoryCount = useMemo(
-    () =>
-      isTagMode ? listRows.filter((row) => row.kind === 'section').length : 0,
-    [isTagMode, listRows],
-  );
-
   // ¿Alguna canción de la lista tiene vídeo o audio? La leyenda explica esos
   // dos puntitos, así que se mira eso y no la ficha entera (que ahora también
   // incluye las etiquetas).
@@ -700,7 +694,7 @@ export default function SongsListScreen() {
     if (!menuSong) return;
     const cleanTitle = menuSong.title.replace(/^\d+\.\s*/, '');
     pendingShareRef.current = menuSong.author
-      ? `${cleanTitle} — ${menuSong.author}`
+      ? `${cleanTitle}, ${menuSong.author}`
       : cleanTitle;
     setMenuSong(null);
   }, [menuSong]);
@@ -806,11 +800,6 @@ export default function SongsListScreen() {
             {filteredSongs.length}{' '}
             {filteredSongs.length === 1 ? 'canción' : 'canciones'}
             {search.length > 0 ? ' encontradas' : ''}
-            {isTagMode && categoryCount > 0
-              ? ` · ${categoryCount} ${
-                  categoryCount === 1 ? 'categoría' : 'categorías'
-                }`
-              : ''}
           </Text>
           <HiddenSongsNote count={hiddenCount} onReveal={revealHidden} />
           {hasAnyMedia && (
@@ -845,7 +834,6 @@ export default function SongsListScreen() {
       setSearch,
       isDark,
       isTagMode,
-      categoryCount,
       activeTags,
       candidateTags,
       handleAddTag,

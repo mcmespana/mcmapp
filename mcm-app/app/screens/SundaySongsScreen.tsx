@@ -332,7 +332,7 @@ export default function SundaySongsScreen() {
         <EmptyState
           icon={sunday.offline ? 'cloud-off' : 'library-music'}
           title={sunday.offline ? 'Sin conexión' : 'No hay canciones'}
-          subtitle="Los cantos se proponen con el cantoral. Se descarga la primera vez que hay internet y luego funciona sin conexión."
+          subtitle="El cantoral se descarga la primera vez que hay internet. Después funciona sin conexión."
           actionLabel={sunday.offline ? undefined : 'Reintentar'}
           onAction={sunday.offline ? undefined : () => void sunday.refresh()}
         />

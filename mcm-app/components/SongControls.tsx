@@ -344,7 +344,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   const handleReportSuccess = () => {
     toast.show({
       variant: 'success',
-      label: '¡Gracias por tu aviso! Lo revisaremos pronto',
+      label: 'Gracias por tu aviso. Lo revisaremos pronto',
       actionLabel: 'OK',
       onActionPress: ({ hide }) => hide(),
     });

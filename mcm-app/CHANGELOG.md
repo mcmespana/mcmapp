@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-18 21:40 — Cantoral: lo del domingo sale de la cabecera de Tu selección y copy más corto
+
+- **Tu selección con canciones**: fuera la fila de chips «Lecturas del domingo / Cantos del domingo / Historial» (`PlaylistDesignTools`, borrado). Se comía una fila (dos con letra grande) encima de las canciones para algo que usa poca gente. Ahora: menú ⋯ → sección **«Domingo»** («Cantos para el domingo», con fecha y fiesta, y «Lecturas del domingo»); el historial sigue en «Mi coro» → «Ver lo cantado por el coro». Con el historial encendido, la cabecera solo enseña la leyenda de los puntos. Con la lista vacía, el botón del domingo sigue a la vista.
+- **Copy del cantoral repasado con la skill `unslop-ui`** (solo textos, sin tocar lógica ni estilos): fuera emojis en botones y títulos («✍️ Añadir arreglo», «Reportar fallitos 🐛», «¡Lo tengo! 🎶»), exclamaciones en toasts, cadenas con «·», la etiqueta «FLOTANTE» y las pistas de la hoja de multimedia, descripciones que repetían el título de la opción y explicaciones de cómo funciona por dentro. El título del ⋯ en coro en vivo dice «Diriges en vivo» / «Sigues en vivo» (antes «Coro <id> · Maestro/Esclavo»). Se añaden `accessibilityLabel` en los botones de icono del banner del coro y las flechas de reordenar.
+
 ## 2026-11-17 19:55 — Comunica: un monitor ya no ve en su calendario las sesiones de los chavales
 
 - El calendario (`GET /v1/profiles/:pid/calendar`, middleware) deja fuera las sesiones de los eventos que el perfil solo LLEVA (inscripción `organizer` o `equipo`), y la banda si eran de un curso con varias sesiones. Las familias siguen viendo sus sesiones con su asistencia. Era lo que ya hacía la web desde el 24/10.

@@ -73,7 +73,7 @@ interface Props {
 
 interface VariantCopy {
   title: string;
-  description: string;
+  description?: string;
   primaryLabel: string;
   showSuggestButtons: boolean;
   askForName?: boolean;
@@ -88,16 +88,13 @@ interface VariantCopy {
 const COPY: Record<CodeDialogVariant, VariantCopy> = {
   'cloud-upload': {
     title: 'Subir playlist a la nube',
-    description:
-      'Dale un nombre (opcional) y elige un código de 4 dígitos. Cualquiera con el código podrá importar tu playlist.',
+    description: 'Cualquiera con el código podrá importar tu playlist.',
     primaryLabel: 'Subir',
     showSuggestButtons: true,
     askForName: true,
   },
   'cloud-download': {
     title: 'Descargar playlist',
-    description:
-      'Escanea el QR que te han compartido o introduce el código de 4 dígitos.',
     primaryLabel: 'Descargar',
     showSuggestButtons: false,
     scanTarget: 'playlist',
@@ -111,15 +108,13 @@ const COPY: Record<CodeDialogVariant, VariantCopy> = {
   },
   'choir-join': {
     title: 'Unirse al coro',
-    description:
-      'Escanea el QR del coro o introduce el código para seguir las canciones automáticamente.',
+    description: 'Verás las canciones que abra quien dirige.',
     primaryLabel: 'Unirse',
     showSuggestButtons: false,
     scanTarget: 'choir',
   },
   'change-code': {
     title: 'Cambiar código',
-    description: 'Elige un nuevo código para esta sesión.',
     primaryLabel: 'Cambiar',
     showSuggestButtons: true,
   },
@@ -215,7 +210,7 @@ const CodeInputModal: React.FC<Props> = ({
     try {
       await onSubmit(value, name.trim() || undefined);
     } catch (e: any) {
-      setError(e?.message ?? 'Algo salió mal');
+      setError(e?.message ?? 'No ha funcionado. Inténtalo de nuevo.');
       setSubmitting(false);
     }
   };
@@ -263,11 +258,13 @@ const CodeInputModal: React.FC<Props> = ({
         title={copy.title}
       >
         <View style={styles.container}>
-          <Text style={styles.description}>{copy.description}</Text>
+          {copy.description ? (
+            <Text style={styles.description}>{copy.description}</Text>
+          ) : null}
 
           {copy.askForName && (
             <View style={styles.nameRow}>
-              <Text style={styles.inputLabel}>Nombre</Text>
+              <Text style={styles.inputLabel}>Nombre (opcional)</Text>
               <AppTextField
                 value={name}
                 onChangeText={setName}

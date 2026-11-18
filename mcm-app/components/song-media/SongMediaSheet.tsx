@@ -87,15 +87,15 @@ const LINK_KIND_META: Record<
 > = {
   spotify: {
     icon: 'library-music',
-    meta: 'Spotify · abre la app',
+    meta: 'Spotify',
     tint: SPOTIFY_GREEN,
   },
   drive: {
     icon: 'description',
-    meta: 'Partitura · pantalla completa',
+    meta: 'Partitura',
     tint: '',
   },
-  otro: { icon: 'link', meta: 'Enlace · pantalla completa', tint: '' },
+  otro: { icon: 'link', meta: 'Enlace', tint: '' },
 };
 
 export default function SongMediaSheet({
@@ -187,12 +187,7 @@ export default function SongMediaSheet({
     });
   };
 
-  const renderVideoRow = (
-    embedUrl: string,
-    label: string,
-    isMain: boolean,
-    key: string,
-  ) => (
+  const renderVideoRow = (embedUrl: string, label: string, key: string) => (
     <TouchableOpacity
       key={key}
       style={styles.mRow}
@@ -208,11 +203,6 @@ export default function SongMediaSheet({
         </Text>
         <Text style={styles.mMeta}>YouTube</Text>
       </View>
-      {isMain && (
-        <View style={styles.floatTag}>
-          <Text style={styles.floatTagText}>FLOTANTE</Text>
-        </View>
-      )}
       <View style={styles.mGo}>
         <MaterialIcons name="play-arrow" size={20} color={brand.primary} />
       </View>
@@ -332,23 +322,15 @@ export default function SongMediaSheet({
         {/* ── VÍDEOS ── */}
         {hasVideos && (
           <View style={styles.section}>
-            <View style={styles.secHead}>
-              <MaterialIcons
-                name="smart-display"
-                size={15}
-                color={themeColors(isDark).textMuted}
-              />
-              <Text style={styles.secHeadText}>Vídeos</Text>
-            </View>
+            <Text style={styles.secHead}>Vídeos</Text>
             {media.videoEmbed &&
               renderVideoRow(
                 media.videoEmbed,
                 songTitle || 'Vídeo principal',
-                true,
                 'main-video',
               )}
             {media.youtubeLinks?.map((link, i) =>
-              renderVideoRow(link.url, link.label || 'Vídeo', false, `yt-${i}`),
+              renderVideoRow(link.url, link.label || 'Vídeo', `yt-${i}`),
             )}
           </View>
         )}
@@ -356,15 +338,7 @@ export default function SongMediaSheet({
         {/* ── AUDIOS ── */}
         {hasAudios && (
           <View style={styles.section}>
-            <View style={styles.secHead}>
-              <MaterialIcons
-                name="headphones"
-                size={15}
-                color={themeColors(isDark).textMuted}
-              />
-              <Text style={styles.secHeadText}>Audios</Text>
-              <Text style={styles.secHint}>reproductor flotante</Text>
-            </View>
+            <Text style={styles.secHead}>Audios</Text>
             {media.audioLinks?.map(renderAudioRow)}
           </View>
         )}
@@ -372,15 +346,7 @@ export default function SongMediaSheet({
         {/* ── ENLACES (Spotify · partituras · otras webs) ── */}
         {extraLinks.length > 0 && (
           <View style={styles.section}>
-            <View style={styles.secHead}>
-              <MaterialIcons name="link" size={15} color="#8E8E93" />
-              <Text style={styles.secHeadText}>Enlaces</Text>
-              <Text style={styles.secHint}>
-                {extraLinks.every((e) => e.external)
-                  ? 'salen de la app'
-                  : 'pantalla completa'}
-              </Text>
-            </View>
+            <Text style={styles.secHead}>Enlaces</Text>
             {extraLinks.map(renderLinkRow)}
           </View>
         )}
@@ -388,14 +354,7 @@ export default function SongMediaSheet({
         {/* ── FICHA ── */}
         {hasFicha && (
           <View style={styles.section}>
-            <View style={styles.secHead}>
-              <MaterialIcons
-                name="info-outline"
-                size={15}
-                color={themeColors(isDark).textMuted}
-              />
-              <Text style={styles.secHeadText}>Ficha</Text>
-            </View>
+            <Text style={styles.secHead}>Ficha</Text>
 
             {fichaChips.length > 0 && (
               <View style={styles.fichaGrid}>
@@ -483,26 +442,14 @@ const createStyles = (isDark: boolean) =>
       marginBottom: 18,
     },
     secHead: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
       marginTop: 6,
       marginBottom: 9,
       paddingHorizontal: 4,
-    },
-    secHeadText: {
       ...typography.micro,
       fontWeight: '800',
       letterSpacing: 0.9,
       textTransform: 'uppercase',
       color: themeColors(isDark).textSecondary,
-    },
-    secHint: {
-      marginLeft: 'auto',
-      ...typography.overline,
-      fontWeight: '600',
-      fontStyle: 'italic',
-      color: themeColors(isDark).textMuted,
     },
     // ── media rows ──
     mRow: {
@@ -551,18 +498,6 @@ const createStyles = (isDark: boolean) =>
       ...typography.micro,
       color: themeColors(isDark).textSecondary,
       marginTop: 1,
-    },
-    floatTag: {
-      backgroundColor: 'rgba(244,193,30,0.28)',
-      paddingVertical: 3,
-      paddingHorizontal: 7,
-      borderRadius: radii.sm,
-    },
-    floatTagText: {
-      fontSize: 9.5,
-      fontWeight: '800',
-      letterSpacing: 0.4,
-      color: '#9a7400',
     },
     mGo: {
       width: 26,

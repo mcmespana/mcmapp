@@ -217,7 +217,7 @@ export default function NewSongStart({
   // Las fotos salen siempre: si no se pueden usar ahora, dice por qué.
   const photoBlock =
     status === null
-      ? 'Necesita el cantoral conectado (ahora no contesta)'
+      ? 'Sin conexión con el cantoral'
       : !status.ai
         ? 'El cantoral no tiene la IA activada'
         : null;
@@ -227,7 +227,7 @@ export default function NewSongStart({
           {
             icon: 'photo-camera' as const,
             title: 'Hacer una foto',
-            sub: photoBlock ?? 'De un cancionero o una hoja. Luego la repasas.',
+            sub: photoBlock,
             disabled: !!photoBlock,
             onPress: () => void fromPhoto(true),
           },
@@ -255,7 +255,6 @@ export default function NewSongStart({
     {
       icon: 'edit-note' as const,
       title: 'Empezar en blanco',
-      sub: 'Escribir letra y acordes a mano.',
       onPress: () => onReady('', ''),
     },
   ];
@@ -296,9 +295,13 @@ export default function NewSongStart({
               <Text style={[styles.optionTitle, { color: theme.text }]}>
                 {o.title}
               </Text>
-              <Text style={[styles.optionSub, { color: theme.textSecondary }]}>
-                {o.sub}
-              </Text>
+              {'sub' in o && o.sub ? (
+                <Text
+                  style={[styles.optionSub, { color: theme.textSecondary }]}
+                >
+                  {o.sub}
+                </Text>
+              ) : null}
             </View>
             <MaterialIcons
               name="chevron-right"

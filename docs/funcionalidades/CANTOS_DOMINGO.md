@@ -15,8 +15,10 @@
   archivo. Elegir cantos lo hace poca gente; traerse la del coro, casi todos
   (decisión del usuario, 2026-11-17: una tarjeta con la misa entera en el
   vacío estorbaba). Antes era una fila en la home del cantoral.
-- **Tu selección con canciones**: chip **Cantos del domingo** junto a
-  «Lecturas del domingo» en la cabecera (`PlaylistDesignTools`).
+- **Tu selección con canciones**: menú ⋯ → sección **Domingo**, con «Cantos
+  para el domingo» (fecha y fiesta debajo) y «Lecturas del domingo». Fueron
+  chips en la cabecera hasta el 18/11/2026: se comían una fila encima de las
+  canciones (decisión del usuario).
 - **Pantalla** `/cancionero/domingo?fecha=YYYY-MM-DD` (`SundaySongsScreen`):
   cabecera con la fecha, «XXXIV Domingo del Tiempo Ordinario · Jesucristo, Rey
   del Universo · Ciclo A» y ‹ Anterior / Siguiente › para otros domingos. Una
@@ -131,14 +133,14 @@ canción, la propuesta no se desplaza sola.
 
 ## Sin red
 
-| Pieza | Sin red |
-| ----- | ------- |
-| Día litúrgico, ciclo, domingo N | Siempre (JSON empaquetado) |
-| Sugerencias | Sí, si el cantoral se abrió alguna vez (misma caché que las listas) |
-| Orden por lecturas | Si esas lecturas se abrieron antes (caché de `useDailyReadings`); si no, solo tiempo litúrgico |
-| Lo elegido por fecha | Sí (AsyncStorage) |
-| Pasar a Tu selección | Sí |
-| Subir a mi coro | No (Firebase; el flujo del coro ya avisa) |
+| Pieza                           | Sin red                                                                                        |
+| ------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Día litúrgico, ciclo, domingo N | Siempre (JSON empaquetado)                                                                     |
+| Sugerencias                     | Sí, si el cantoral se abrió alguna vez (misma caché que las listas)                            |
+| Orden por lecturas              | Si esas lecturas se abrieron antes (caché de `useDailyReadings`); si no, solo tiempo litúrgico |
+| Lo elegido por fecha            | Sí (AsyncStorage)                                                                              |
+| Pasar a Tu selección            | Sí                                                                                             |
+| Subir a mi coro                 | No (Firebase; el flujo del coro ya avisa)                                                      |
 
 ## Mantener
 

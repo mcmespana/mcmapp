@@ -59,7 +59,7 @@ const ChoirSessionBanner: React.FC<Props> = ({ floating, topOffset = 0 }) => {
       Platform.OS === 'macos';
     if (desktopLike) {
       void Clipboard.setStringAsync(url);
-      toast.show({ label: 'Enlace copiado al portapapeles' });
+      toast.show({ label: 'Enlace copiado' });
     } else {
       Share.share({ message: `Únete al coro con este enlace:\n${url}` }).catch(
         () => {},
@@ -130,6 +130,7 @@ const ChoirSessionBanner: React.FC<Props> = ({ floating, topOffset = 0 }) => {
             style={styles.leaveBtn}
             onPress={handleShare}
             hitSlop={6}
+            accessibilityLabel="Compartir enlace del coro"
           >
             <MaterialIcons name="share" size={16} color="#fff" />
           </TouchableOpacity>
@@ -156,6 +157,7 @@ const ChoirSessionBanner: React.FC<Props> = ({ floating, topOffset = 0 }) => {
             style={styles.leaveBtn}
             onPress={() => leave()}
             hitSlop={6}
+            accessibilityLabel="Salir del coro"
           >
             <MaterialIcons name="close" size={18} color="#fff" />
           </TouchableOpacity>
@@ -164,7 +166,7 @@ const ChoirSessionBanner: React.FC<Props> = ({ floating, topOffset = 0 }) => {
 
       <ShareQrModal
         visible={showQr}
-        title={`Coro · Código ${code}`}
+        title="QR del coro"
         url={`https://mcm.expo.app/coro?c=${code}`}
         code={code}
         onClose={() => setShowQr(false)}
