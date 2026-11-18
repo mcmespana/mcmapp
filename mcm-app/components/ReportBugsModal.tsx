@@ -88,7 +88,7 @@ export default function ReportBugsModal({
     <BottomSheet
       visible={visible}
       onClose={handleClose}
-      title="Reportar fallitos"
+      title="Reportar fallitos 🐛"
       paddingHorizontal={0}
     >
       <ScrollView

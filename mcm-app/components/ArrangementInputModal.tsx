@@ -64,7 +64,7 @@ export default function ArrangementInputModal({
   const canSave = text.trim().length > 0 && !saving;
 
   return (
-    <BottomSheet visible={visible} onClose={onCancel} title="Añadir arreglo">
+    <BottomSheet visible={visible} onClose={onCancel} title="✍️ Añadir arreglo">
       <View style={styles.container}>
         <Text style={[styles.hint, { color: theme.icon }]}>
           Se insertará una línea de arreglo{' '}
