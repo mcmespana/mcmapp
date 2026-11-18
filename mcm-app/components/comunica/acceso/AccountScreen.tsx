@@ -109,7 +109,7 @@ export default function AccountScreen() {
           subtitle={
             me.roles.some((r) => TEAM_ROLES.includes(r))
               ? 'Pasar lista, listas sin subir y novedades'
-              : 'Novedades de Comunica en este móvil'
+              : 'Novedades de Comunica'
           }
           onPress={() => router.push('/comunica/yo/avisos')}
         />

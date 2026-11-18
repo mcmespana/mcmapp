@@ -100,7 +100,7 @@ export default function ComunicaGestionScreen() {
   const onError = useCallback(() => {
     toast.show({
       variant: 'danger',
-      label: 'Error al cargar el contenido. Verifica tu conexión a internet.',
+      label: 'No se ha podido cargar. Revisa tu conexión.',
       actionLabel: 'Cerrar',
       onActionPress: ({ hide }) => hide(),
     });
