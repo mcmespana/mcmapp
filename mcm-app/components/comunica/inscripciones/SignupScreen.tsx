@@ -68,7 +68,6 @@ export default function SignupScreen({ eventId }: { eventId: string }) {
         <EmptyState
           icon="lock"
           title="Esta actividad ya no está disponible"
-          subtitle="Es posible que se haya retirado. Consulta el resto de actividades abiertas."
           actionLabel="Ver eventos"
           onAction={() => router.replace('/comunica/actividades' as never)}
           {...colors}
