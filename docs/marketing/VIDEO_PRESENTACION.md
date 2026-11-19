@@ -130,6 +130,44 @@ La ficha de un grupo se dejó fuera aunque sea inventada: enseña avisos de
 alergias de menores. «Cantos para el domingo» y «Lecturas del domingo» no
 salen (decisión del propietario: lo que luce es crear y compartir la playlist).
 
+## Tercera vuelta (19/11/2026): capturas nativas, gancho y sonido
+
+- **Gancho nuevo (4 s)**: cuatro golpes a tiempo, uno cada medio segundo:
+  «Canta.» (cantoral) · «Reza.» (Contigo) · «Apúntate.» (Comunica) ·
+  «Colecciona.» (la medalla en 3D), y a los 2 s la M con «Todo el MCM. En tu
+  bolsillo.». Inicio baja a 2,5 s.
+- **Sonido: solo efectos.** La música va aparte, en el editor. Todos los cortes
+  caen en una rejilla de 120 BPM (medio segundo): vale cualquier música a
+  120 (o 60/240) que empiece en 0:00.
+- **Las pantallas pasan a capturas nativas del iPhone** (las de la web quedan
+  como reserva). Lista, con la numeración con la que se mandan:
+
+| N.º | Escena | Captura (iPhone, modo claro, «No molestar») |
+|---|---|---|
+| 1 | Inicio | Inicio, arriba del todo |
+| 2 | Cantoral | Pantalla principal del Cantoral («Tu selección» vacía + categorías) |
+| 3 | Cantoral | «Sois la sal» (Comunión) en MI, sin menús |
+| 4 | Cantoral | La misma con «Tono y cejilla» abierta, ya subida a SOL (+3) |
+| 5 | Cantoral | La misma en SOL, con la hoja cerrada |
+| 6 | Cantoral | Afinador, sin tocar nada |
+| 7 | Coros | Lista de Comunión arriba del todo, sin nada añadido |
+| 8 | Coros | La misma tras añadir 3 de las canciones que se ven |
+| 9 | Coros | «Tu selección» con esas canciones (3 o 4) |
+| 10 | Coros | La hoja del coro abierta, con el coro elegido |
+| 11 | Coros | Compartir → «Código QR» |
+| 12 | Contigo | Pantalla principal de Contigo |
+| 13 | Contigo | Evangelio del día, arriba |
+| 14 | Contigo | Más abajo: «Todas las lecturas del día» con la Primera lectura abierta |
+| 15 | Fechas | Calendario con un día con evento tocado |
+| 16 | Fotos | Galería, arriba |
+| 17 | Evento | Visita del Papa (Más → Eventos pasados), portada |
+| 18 | Evento | La misma, un poco más abajo |
+| 19-31 | Comunica | **Solo con la build `production-comunica-falso`** (datos inventados; cuentas `familia@ejemplo.org` / `monitor@ejemplo.org`, código `123456`): acceso, código, portada de la familia viendo a Lucía, evento «Merienda de bienvenida», inscripción, plaza confirmada, Pagos, Pagar con tarjeta, Pago hecho, portada del monitor, Grupos y fichas, Pasar lista sin marcar, Pasar lista con 4 marcados. **Nunca con una cuenta real.** Sin esa build, se quedan las capturas de la app local. |
+
+Una captura nativa entra a pantalla completa en el iPhone del vídeo (con su
+propia barra de estado: la dibujada se esconde sola, `W.real` con la marca
+`native` en la capa).
+
 ## Siguiente paso
 
 1. El propietario retoca los textos de la tabla y graba las tomas de la lista.
