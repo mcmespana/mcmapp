@@ -105,10 +105,30 @@ estado). 5–8 s por toma, gestos lentos y limpios:
 
 ## El vídeo en Motion
 
-Primer montaje (versión normal, 60 s, pantallas dibujadas a partir del código
-de la app): https://claude.ai/artifact/DvdGrkjoHMtehuVoBdQvhZ — las pantallas
-se cambian por las tomas del iPhone del propietario cuando lleguen (en cada
-escena, `W.shot(kit, '<toma>')` dentro de `W.phone`).
+Montaje (versión normal, 60 s): https://claude.ai/artifact/DvdGrkjoHMtehuVoBdQvhZ
+
+**Segunda versión (19/11/2026), tras la revisión del propietario**: nada de
+pantallas dibujadas. Todas son **capturas reales** de la app (la web publicada
+y, para Comunica, una exportación local con el servidor de datos inventados) y
+las piezas son **renders reales de los modelos 3D** girando. Cómo se hizo, en
+[`video-herramientas/`](video-herramientas/README.md). Orden y textos:
+
+| Escena | s | Texto | Pantallas reales |
+|---|---|---|---|
+| Gancho | 3 | Todo el MCM. En tu bolsillo. | logo |
+| Inicio | 3,5 | Una app. Todo lo que vivimos, junto. | Inicio |
+| Cantoral | 6,5 | Más de 250 canciones, con sus acordes. / En tu tono, con un toque. Y con afinador. | categorías → «Sois la sal» en MI → Tono y cejilla → en SOL; tarjeta del afinador |
+| Coros | 6 | Haz tu playlist y compártela con tu coro. / Tu coro, al día. | añadir a Tu selección → selección → hoja del coro → QR |
+| Contigo | 7 | Cada día, el Evangelio y todas las lecturas. | Contigo → Evangelio → lecturas del día |
+| Fechas y fotos | 5 | Todas las fechas y las fotos de cada encuentro. | calendario → fotos |
+| Eventos | 4 | Cada encuentro, con su propia guía. | Visita del Papa León XIV 2026 |
+| Comunica | 12 | Accede directamente a la Plataforma Comunica MCM. / Inscríbete a eventos en segundos. / Y paga desde la app. / Monitores: gestiona tus grupos y pasa lista. | acceso → código → portada familia → evento → inscripción → plaza confirmada → pagos → pagar → pago hecho → portada monitor → grupos → pasar lista |
+| Colecciona | 9 | (Muy pronto) Colecciona insignias, chapas y mucho más. / También en la App. | 11 piezas 3D girando |
+| Cierre | 4 | MCM App. Descárgala gratis. | insignias oficiales de las tiendas |
+
+La ficha de un grupo se dejó fuera aunque sea inventada: enseña avisos de
+alergias de menores. «Cantos para el domingo» y «Lecturas del domingo» no
+salen (decisión del propietario: lo que luce es crear y compartir la playlist).
 
 ## Siguiente paso
 

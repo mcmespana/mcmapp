@@ -1,0 +1,50 @@
+<!doctype html><html><head><meta charset="utf-8">
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body style="margin:0;background:transparent">
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const S = 360;
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(S, S);
+renderer.setClearColor(0x000000, 0);
+renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = 1.0;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.03).texture;
+scene.environmentIntensity = 0.8;
+const key = new THREE.DirectionalLight(0xffffff, 1.9); key.position.set(-3.6, 4.4, 4.8); scene.add(key);
+const fill = new THREE.DirectionalLight(0xffffff, 0.5); fill.position.set(3, 0.5, 4); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xffffff, 0.6); rim.position.set(0, 2, -5); scene.add(rim);
+const camera = new THREE.PerspectiveCamera(28, 1, 0.01, 100);
+const loader = new GLTFLoader();
+const draco = new DRACOLoader(); draco.setDecoderPath('./node_modules/three/examples/jsm/libs/draco/gltf/'); loader.setDRACOLoader(draco);
+window.renderSheet = async (name, frames, cols, tiltDeg) => {
+  const gltf = await loader.loadAsync('./models/' + name + '.glb');
+  const obj = gltf.scene;
+  const box = new THREE.Box3().setFromObject(obj);
+  const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
+  obj.position.sub(c);
+  const pivot = new THREE.Group(); pivot.add(obj);
+  const tilt = new THREE.Group(); tilt.add(pivot); tilt.rotation.x = THREE.MathUtils.degToRad(tiltDeg || 0);
+  scene.add(tilt);
+  const r = Math.max(sz.x, sz.y, sz.z) * 0.5 * 1.18;
+  const dist = r / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2));
+  camera.position.set(0, 0, dist); camera.lookAt(0, 0, 0); camera.near = dist / 100; camera.far = dist * 10; camera.updateProjectionMatrix();
+  const rows = Math.ceil(frames / cols);
+  const sheet = document.createElement('canvas'); sheet.width = cols * S; sheet.height = rows * S;
+  const g = sheet.getContext('2d');
+  for (let i = 0; i < frames; i++) {
+    pivot.rotation.y = (i / frames) * Math.PI * 2;
+    renderer.render(scene, camera);
+    g.drawImage(renderer.domElement, (i % cols) * S, Math.floor(i / cols) * S);
+  }
+  scene.remove(tilt);
+  return { url: sheet.toDataURL('image/png'), size: [sz.x, sz.y, sz.z] };
+};
+window.ready = true;
+</script></body></html>
