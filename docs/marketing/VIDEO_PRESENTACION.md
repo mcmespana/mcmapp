@@ -168,6 +168,17 @@ Una captura nativa entra a pantalla completa en el iPhone del vídeo (con su
 propia barra de estado: la dibujada se esconde sola, `W.real` con la marca
 `native` en la capa).
 
+### Música: «Fresh Start» (propia, 19/11/2026)
+
+Instrumental hecha para el vídeo (60,6 s, ~122,7 BPM). Motion no mete archivos
+de audio en la animación, así que va aparte: el vídeo exportado lleva solo los
+efectos y la música se pone debajo en el editor (o se mezcla con ffmpeg).
+Preparación (ffmpeg): `atempo=0.977836` (122,7 → 120 BPM, para que el pulso
+caiga cada 0,5 s, como los cortes), recortada desde el **4,18 s** (donde entra
+el bajo), rellenada a 60 s, fundido final desde el 57 s y `loudnorm` a −14 LUFS.
+Resultado: el bajo entra con «Canta.» (0 s), el pulso cae en la rejilla de los
+cortes (desfase medido: −10 ms) y la canción termina justo en el cierre (56 s).
+
 ## Siguiente paso
 
 1. El propietario retoca los textos de la tabla y graba las tomas de la lista.
