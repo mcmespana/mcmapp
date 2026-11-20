@@ -65,8 +65,7 @@ export default function ComidaWebScreen() {
   const onError = () => {
     toast.show({
       variant: 'danger',
-      label:
-        'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+      label: 'No se ha podido cargar. Revisa tu conexión.',
       actionLabel: 'Cerrar',
       onActionPress: ({ hide }) => hide(),
     });

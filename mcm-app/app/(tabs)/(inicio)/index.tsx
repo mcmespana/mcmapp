@@ -998,7 +998,7 @@ export default function Home() {
                     style={styles.evalCtaBody}
                     numberOfLines={large ? undefined : 2}
                   >
-                    ¿Qué tal ha ido? Tu opinión nos ayuda — solo 2 minutos.
+                    ¿Qué tal ha ido? Tu opinión nos ayuda. Son solo 2 minutos.
                   </Text>
                 </View>
                 <View style={styles.evalCtaBtn}>

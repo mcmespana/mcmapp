@@ -574,11 +574,7 @@ export function CalendarScreen({
                       renderEventCard(ev, i, selectedDate < todayStr),
                     )
                   ) : (
-                    <EmptyState
-                      icon="event-available"
-                      title="Sin eventos"
-                      subtitle="No hay eventos programados para este día"
-                    />
+                    <EmptyState icon="event-available" title="Sin eventos" />
                   )}
                 </View>
               </View>
@@ -709,7 +705,7 @@ export function CalendarScreen({
                     subtitle={
                       allCalendarsHidden
                         ? 'Activa algún calendario desde los filtros de arriba'
-                        : 'No hay eventos programados para ' + monthLabel
+                        : undefined
                     }
                   />
                 }

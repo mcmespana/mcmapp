@@ -172,7 +172,6 @@ export default function NotificationsScreen() {
             <EmptyState
               icon="notifications-none"
               title="No hay notificaciones"
-              subtitle="Aquí aparecerán tus notificaciones cuando las tengas."
             />
           }
           contentInsetAdjustmentBehavior="automatic"
