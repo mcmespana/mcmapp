@@ -1,6 +1,6 @@
 // El aviso del certificado en la portada «Hoy» (plan 09, regla 7): solo para
-// quien tiene papel de monitor, con «Subir certificado» hacia «Mis datos de
-// monitor». Cuesta una lectura más (`/v1/me/monitor`), que se guarda en el
+// quien tiene la relación de monitor (aunque no sea del equipo), con «Subir
+// certificado» hacia «Monitor/a». Cuesta una lectura más (`/v1/me/monitor`), que se guarda en el
 // móvil; lo que espera en la cola (un cambio de modo) y lo que está subiendo
 // cuentan, como en la pantalla.
 
@@ -13,11 +13,12 @@ import {
 } from '@/hooks/comunica/useMonitorProfile';
 import { useUploadPhase } from '@/hooks/comunica/useDocumentUpload';
 import { isCertificatePending } from '@/utils/comunica/monitorProfile';
+import { hasMonitorData } from '@/utils/comunica/profiles';
 import CertificatePendingAlert from './CertificatePendingAlert';
 
 export default function HomeCertificateAlert({ me }: { me: Me | null }) {
   const router = useRouter();
-  const isMonitor = !!me?.roles.includes('monitor');
+  const isMonitor = !!me && hasMonitorData(me);
   const q = useMyMonitorProfile(isMonitor);
   const { changes } = usePendingMonitorChanges();
   const phase = useUploadPhase('sex_offence_certificate');

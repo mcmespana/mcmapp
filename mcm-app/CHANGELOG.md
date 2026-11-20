@@ -6,9 +6,9 @@
 
 ## 2026-11-20 16:00 — Monitor solo de grupos que no pasan lista: ya no es monitor
 
-- Quien tiene la relación de monitor pero **todas** sus relaciones vigentes cuelgan de grupos sin la casilla «entra en Pasar Lista» (adultos como Comser, Apoyo para el seguro, gente en formación) deja de recibir el papel `monitor`: no ve fichas de chavales, grupos, listas ni asistencias, no recibe los avisos de «pasa lista» ni «Mis datos de monitor». Coordinación y acompañamiento no cambian.
-- **No hay código nuevo en la app**: lo decide el middleware (`computePrincipal`) y la app ya lee los papeles de `/v1/me`, así que lo ve al abrirla. La misma regla está en el plugin web (`sticpa_pl_monitor_fuera_de_pasar_lista()`).
-- Ante la duda no se quita nada: sin ningún grupo marcado en la delegación (casi todas hoy), relación sin grupo o con el comodín «POR DEFINIR», o solo la marca de la ficha.
+- Quien tiene la relación de monitor pero **todas** sus relaciones vigentes cuelgan de grupos sin la casilla «entra en Pasar Lista» (adultos como Comser, Apoyo para el seguro, gente en formación, o el comodín «POR DEFINIR») deja de recibir el papel `monitor`: no ve fichas de chavales, grupos, listas ni asistencias, ni recibe los avisos de «pasa lista». Coordinación y acompañamiento no cambian. Lo decide el middleware (`computePrincipal`); la misma regla está en el plugin web.
+- **Cambio en la app**: esas personas **conservan «Monitor/a»** (antes «Mis datos de monitor») **y el aviso del certificado de delitos sexuales**. `Me.monitorData` (opcional; un servidor viejo no lo manda) y `hasMonitorData()` en `utils/comunica/profiles.ts`. Solo `preview`.
+- Ante la duda no se quita nada: sin ningún grupo marcado en la delegación, relación sin enlace a grupo, o solo la marca de la ficha.
 - Decisión del propietario (20/11/2026). Detalle en `comunicaAreaPrivada:docs/comunica/PASAR-LISTA-COORDINACION.md` §2.
 
 ## 2026-11-20 12:00 — Contigo y el resto de la app: copy repasado con `unslop-ui`

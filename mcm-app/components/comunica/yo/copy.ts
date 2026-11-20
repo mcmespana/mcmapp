@@ -4,7 +4,7 @@
 // «Si no puedes completar esta parte…» es de tono y se queda (plan 09).
 
 export const MONITOR_COPY = {
-  title: 'Mis datos de monitor',
+  title: 'Monitor/a',
   intro: 'Nada es obligatorio: rellena lo que sepas y guarda.',
   sections: {
     path: 'Trayectoria',

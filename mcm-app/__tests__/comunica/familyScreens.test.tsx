@@ -384,9 +384,9 @@ describe('la portada de familia', () => {
     expect(t).not.toContain('Mis inscripciones');
   });
 
-  it('la monitora con una hija: «Mis datos de monitor» viéndose a sí misma, y debajo de lo del equipo no sale el saludo', async () => {
+  it('la monitora con una hija: «Monitor/a» viéndose a sí misma, y debajo de lo del equipo no sale el saludo', async () => {
     const { tree } = await setup('monitorMom', <MemberHome />);
-    await until(() => texts(tree).includes('Mis datos de monitor'));
+    await until(() => texts(tree).includes('Monitor/a'));
     const emb = await mount(<MemberHome embedded />);
     await until(() => texts(emb.tree).includes('Actividades'));
     expect(texts(emb.tree)).not.toContain('Hola, Laura');
