@@ -1,5 +1,6 @@
 .expo/
-.claude/
+.claude/*
+!.claude/skills
 node_modules/
 AGENTS.md
 

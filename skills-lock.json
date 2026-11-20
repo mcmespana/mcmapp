@@ -1,53 +1,77 @@
 {
-  "version": 1,
+  "version": 2,
   "skills": {
     "baseline-ui": {
       "source": "ibelick/ui-skills",
       "sourceType": "github",
       "skillPath": "skills/baseline-ui/SKILL.md",
-      "computedHash": "dfcb3e778b57ad1cba92375689bb8265fa5aef78fba523a744f5220b3c619901"
+      "computedHash": "a7336b9eab7479fb012abc59030fcd9736a31fc6c7cffc0dd9f90b36e34861aa"
     },
     "fixing-accessibility": {
       "source": "ibelick/ui-skills",
       "sourceType": "github",
       "skillPath": "skills/fixing-accessibility/SKILL.md",
-      "computedHash": "4fa8f5a772b4eef3d28a54c136b507d070e54e2c326578f65eaf5e5a0118b38a"
+      "computedHash": "50fe52aae0661c5aef2d1ed868bbfcda877ce96a6ec16ffa1c8a77dc83ea9695"
     },
     "fixing-metadata": {
       "source": "ibelick/ui-skills",
       "sourceType": "github",
       "skillPath": "skills/fixing-metadata/SKILL.md",
-      "computedHash": "699e13890fb50acffa02dfd2d5b0e719bd916a9e2b7e6035bdc4513fc73d9174"
+      "computedHash": "b71eee5b670eb1b55ff5f62d65a3e6eed642faf1ade02fb79c2d6c03b36938e2"
     },
     "fixing-motion-performance": {
       "source": "ibelick/ui-skills",
       "sourceType": "github",
       "skillPath": "skills/fixing-motion-performance/SKILL.md",
-      "computedHash": "426dcf33f23419643f2aab71e2253e1a5b5684a808fabb8a4ad135e489ed7a0f"
+      "computedHash": "f9d9c68f117fdf33701fc8b103bfefda48903aa68bef70e157ae8f455c954daa"
     },
     "gestures": {
       "source": "emilkowalski/skills",
       "sourceType": "github",
       "skillPath": "skills/gestures/SKILL.md",
-      "computedHash": "d89c81c2ddb0ecb44b9f244a69e41073d74277422f80e675fb424f51ffab955b"
+      "computedHash": "aa2f387479e32471d04dc7bbe6aa40cd69b299a61a05d4353989e1d70da2406e"
+    },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "commit": "b49177d32788f2dc585c42831d845dacf1ebed2c",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "08bd5bf141cb507f46bd8347890cd985865606f15adf88295ed3a73bc9ad5d96",
+      "installMode": "copy"
     },
     "improve": {
       "source": "shadcn/improve",
       "sourceType": "github",
       "skillPath": "skills/improve/SKILL.md",
-      "computedHash": "39a9358732dcff385e9e4d3e60b4547856f834e54a58b35e455aa9bd49928c13"
+      "computedHash": "9e8fe9ea4f9a0e4155801d1624e38ca23798467bb88b447efaa5120f7b1fe802"
     },
     "improve-ui": {
       "source": "ibelick/ui-skills",
       "sourceType": "github",
       "skillPath": "skills/improve-ui/SKILL.md",
-      "computedHash": "5bd7689c5508c6bd8166f796b3d1bd32255077447595b14b60fac9847dce63f1"
+      "computedHash": "7f913010ca7e6b5c224d928d4f2500438d7daacebb25f00e2f4df3bed513d51d"
+    },
+    "make-interfaces-feel-better": {
+      "source": "jakubkrehel/make-interfaces-feel-better",
+      "commit": "6d9f2f1df10e8ce2ae1708598a73b0506fb98794",
+      "sourceType": "github",
+      "skillPath": "skills/make-interfaces-feel-better/SKILL.md",
+      "computedHash": "076aa566b86b44e1691a4167ea88a85d6853c5f2eb00c39cc719ce5fa21d0731",
+      "installMode": "copy"
     },
     "ui-skills-root": {
       "source": "ibelick/ui-skills",
       "sourceType": "github",
       "skillPath": "skills/ui-skills-root/SKILL.md",
-      "computedHash": "e3120361faa5a0ef5fba9b67d91e00c90002f3c9ca092c5325d2391dab8c619e"
+      "computedHash": "1eb4241459d13315bb10930554de1ad20bf74568bd5d0f10f4cc0edee1b72439"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "commit": "2de1134dc4d1cfe112934611ae5803ae17a1bd7e",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "605686282fb6812d8e3f4b1a06c9fb8ba7be4d7395090f41f221a9ba5a3dbe6b",
+      "installMode": "copy"
     }
   }
 }

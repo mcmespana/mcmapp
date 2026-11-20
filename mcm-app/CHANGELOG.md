@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-20 22:45 — Tres skills de diseño nuevas para los agentes
+
+- Instaladas con el CLI `skills` en `.agents/skills/` y registradas en `skills-lock.json` (que pasa al formato v2 del CLI): **`impeccable`** (`pbakaus/impeccable`: auditar, criticar, pulir, animar; trae referencias para iOS/Android nativo), **`make-interfaces-feel-better`** (`jakubkrehel/…`: detalles de pulido) y **`ui-ux-pro-max`** (`nextlevelbuilder/ui-ux-pro-max-skill`: base de datos buscable de guías, con una de React Native: `python3 .agents/skills/ui-ux-pro-max/scripts/search.py "<consulta>" --stack react-native`).
+- Descartada `taste-skill` (`Leonxlnx/taste-skill`): es para webs de empresa y landings (shaders, fotos de stock, 38 MB de recursos), no para una app nativa.
+- `.claude/skills` es ahora un enlace a `.agents/skills` y `.gitignore` lo deja pasar (`.claude/*` + `!.claude/skills`): antes Claude Code no cargaba ninguna de estas skills porque `.claude/` entero estaba ignorado.
+- Regla en `CLAUDE.md` (regla 12): las skills aconsejan; si chocan con `design.md` o con los tokens, mandan estos.
+
 ## 2026-11-20 22:10 — Cada horario de un evento con su color
 
 - Con varios horarios, cada uno lleva su color y al cambiar de segmento cambian el segmento activo y todos los acentos de la pantalla (día elegido, cabecera del día, horas). El primero es el color del evento; el resto, colores que lo complementan, calculados en **OKLCH** (`utils/colorHarmony.ts`): complementario con 2, complementario dividido con 3 (±150°), repartidos por la rueda con más. Al girar el tono se conserva la luminosidad percibida, así que no salen chillones. Congreso M+C: naranja · verde azulado · azul.

@@ -23,7 +23,7 @@
 ├── portadas-albumes/       ← Portadas de álbumes: las URLs de Firebase apuntan aquí — NO borrar
 ├── medallas-3d/            ← Modelos .glb de las medallas (y thumbs/ para el pañuelo); la app los descarga vía jsDelivr — NO borrar
 ├── piezas-3d/              ← Modelos .glb de chapas, pin y troncho reales (ficha en piezas.json, generador en _fuente/) — NO borrar
-├── .agents/skills/         ← Skills de UI para agentes (lockfile: skills-lock.json)
+├── .agents/skills/         ← Skills de UI para agentes (lockfile: skills-lock.json); `.claude/skills` es un enlace aquí
 ├── _para-borrar/           ← Cuarentena de ficheros dudosos; su README dice qué es cada uno
 └── README.md               ← Guía rápida para humanos (setup, builds, releases)
 ```
@@ -53,6 +53,11 @@
     los tokens del código (`mcm-app/constants/*.ts`) mandan sobre ambos. Las
     incoherencias de diseño ya detectadas, con su destino decidido, están en
     `docs/planes/PLAN_DISENO.md` — no las arregles de paso: anótalas ahí.
+    Las skills de diseño de `.agents/skills/` (`impeccable`,
+    `make-interfaces-feel-better`, `ui-ux-pro-max`, `baseline-ui`…) son
+    **asesoras**: si una choca con `design.md` o con los tokens, mandan
+    `design.md` y los tokens. Muchas piensan en web (CSS, Tailwind, hover):
+    traduce la idea a React Native, no copies el código.
 13. **Los archivos gigantes se quedan gigantes** (decisión del usuario, 2026-08-15). No trocees por tamaño; trocea solo por testabilidad. Razonamiento en `docs/planes/PLAN_CALIDAD.md` §0.
 
 ## Comandos rápidos (desde mcm-app/)
