@@ -179,6 +179,24 @@ el bajo), rellenada a 60 s, fundido final desde el 57 s y `loudnorm` a −14 LUF
 Resultado: el bajo entra con «Canta.» (0 s), el pulso cae en la rejilla de los
 cortes (desfase medido: −10 ms) y la canción termina justo en el cierre (56 s).
 
+### Música definitiva: «Wild Heart (instrumental)» (propia, 20/11/2026)
+
+Sustituye a «Fresh Start» (aquella pista ya no cuadra con los tiempos nuevos).
+136 BPM, 2:33. **No se le cambia el tempo: el vídeo se adapta a ella.**
+
+- Trozo: desde el pulso 196 (**86,85 s** de la original, 4 pulsos antes del
+  segundo estribillo) hasta el final, sin cortes internos; 61,76 s, fundido
+  desde 60,3 s y `loudnorm` a −14 LUFS.
+- Encaje: las cuatro palabras del gancho van en esos 4 pulsos; el estribillo
+  entra con la M (1,76 s) y el golpe final de la canción cae en el cierre
+  (58,24 s). Desfase medido: 1 ms.
+- En la película: `W.TS = 136/120` en `shared.js`; cada escena hace
+  `t *= W.TS` y cuenta en «segundos de guion» (2 por pulso), y `scenes.json`
+  guarda los reales (guion × 120/136). Escenas en segundos de guion: gancho 4,
+  Inicio 2, Cantoral 8, Coros 8, Contigo 8, Fechas 6, Eventos 4, Comunica 14,
+  Colecciona 12, cierre 4 = 70 (61,76 s reales). Todos los cortes caen en
+  pulso y casi todos en compás.
+
 ## Siguiente paso
 
 1. El propietario retoca los textos de la tabla y graba las tomas de la lista.
