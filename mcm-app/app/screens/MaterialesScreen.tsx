@@ -14,6 +14,7 @@ import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import DateSelector from '@/components/DateSelector';
+import { eventAccentColors } from '@/utils/tintInk';
 import { useLocalSearchParams } from 'expo-router';
 import { useSuppressCarismochito } from '@/hooks/useSuppressCarismochito';
 
@@ -179,6 +180,7 @@ export default function MaterialesScreen() {
           dates={fechas}
           selectedDate={dia.fecha}
           onSelectDate={(_, i) => setIndex(i)}
+          accentColor={eventAccentColors(event.tintColor, '#FFFFFF').fill}
         />
       </View>
       <PageContainer>

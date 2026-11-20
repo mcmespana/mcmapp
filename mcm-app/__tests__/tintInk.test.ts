@@ -71,3 +71,39 @@ describe('lema de los eventos', () => {
     expect(JUBILEO.motto).toBeUndefined();
   });
 });
+
+describe('eventAccentColors (acentos de las pantallas de un evento)', () => {
+  const { eventAccentColors } = jest.requireActual('@/utils/tintInk');
+  const { contrastRatio } = jest.requireActual('@/utils/colorUtils');
+  const PAGE_LIGHT = '#F8F9FA';
+  const PAGE_DARK = '#000000';
+
+  it.each([
+    ['naranja (Congreso M+C)', '#F07C2B'],
+    ['amarillo (Visita Papa)', '#FCD200'],
+    ['verde (Jubileo)', '#A3BD31'],
+    ['azul MCM', '#253883'],
+    ['rojo MIC', '#E15C62'],
+  ])(
+    '%s: el blanco se lee sobre el relleno y el texto sobre la página',
+    (_n, tint) => {
+      const light = eventAccentColors(tint, PAGE_LIGHT);
+      expect(contrastRatio('#FFFFFF', light.fill)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(light.text, PAGE_LIGHT)).toBeGreaterThanOrEqual(4.5);
+      const dark = eventAccentColors(tint, PAGE_DARK);
+      expect(contrastRatio(dark.text, PAGE_DARK)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it('un tinte que ya es oscuro no se toca', () => {
+    expect(eventAccentColors('#253883', PAGE_LIGHT).fill.toUpperCase()).toBe(
+      '#253883',
+    );
+  });
+
+  it('el naranja se oscurece lo justo, sin irse a negro', () => {
+    const { fill } = eventAccentColors('#F07C2B', PAGE_LIGHT);
+    expect(fill).not.toBe('#000000');
+    expect(contrastRatio('#FFFFFF', fill)).toBeLessThan(6);
+  });
+});
