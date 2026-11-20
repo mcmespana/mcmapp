@@ -31,6 +31,17 @@ import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
 
 /**
+ * Contenedor del conmutador de horarios. Tiene que ser una FILA: el `track` del
+ * `SegmentedControl` es `flex: 1`, y en una columna sin alto fijo ese flex colapsa
+ * su altura a ~0 (se veía solo una tira gris y la píldora, con las etiquetas
+ * tapadas por el selector de días). En fila, el flex es a lo ancho.
+ */
+const selectorRow = {
+  flexDirection: 'row' as const,
+  paddingHorizontal: spacing.lg,
+};
+
+/**
  * Un horario (la lista de días). `firebaseKey` es el nodo bajo el evento
  * (`horario`, `horario1`…); `null` = todavía averiguando cuál toca. `selector`
  * es el conmutador entre horarios, si el evento tiene varios.
@@ -193,9 +204,7 @@ function HorarioSheetView({
       >
         <ScreenHero title="Horario" hideOnWeb floatingHeaderInset />
         {selector ? (
-          <View
-            style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}
-          >
+          <View style={[selectorRow, { paddingTop: spacing.md }]}>
             {selector}
           </View>
         ) : null}
@@ -227,9 +236,7 @@ function HorarioSheetView({
       <ScreenHero title="Horario" hideOnWeb floatingHeaderInset />
       <View style={styles.headerSection}>
         {selector ? (
-          <View
-            style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.sm }}
-          >
+          <View style={[selectorRow, { paddingBottom: spacing.sm }]}>
             {selector}
           </View>
         ) : null}
