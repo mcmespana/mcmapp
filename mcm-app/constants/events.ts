@@ -291,74 +291,16 @@ export const VISITAPAPA: EventConfig = {
 };
 
 /**
- * Secciones del fin de semana M+C (27–29 de noviembre de 2026). Las dos
- * actividades —Curso Despierta y Pre-monitores— llevan las mismas secciones,
- * cada una con SU horario y sus datos (`activities/<id>/…`).
- */
-const seccionesCongreso = (horarioSubtitle: string): EventSection[] => [
-  {
-    label: 'Horario',
-    subtitle: horarioSubtitle,
-    emoji: '⏰',
-    materialIcon: 'schedule',
-    target: 'Horario',
-    tintColor: '#FF8A65',
-    firebaseKey: 'horario',
-  },
-  {
-    label: 'Materiales',
-    subtitle: 'Recursos y dinámicas',
-    emoji: '📦',
-    materialIcon: 'inventory-2',
-    target: 'Materiales',
-    tintColor: '#4FC3F7',
-    firebaseKey: 'materiales',
-  },
-  {
-    label: 'Profundiza',
-    subtitle: 'Reflexión y textos',
-    emoji: '📖',
-    materialIcon: 'menu-book',
-    target: 'Profundiza',
-    tintColor: '#BA68C8',
-    firebaseKey: 'profundiza',
-  },
-  {
-    label: 'Grupos',
-    subtitle: 'Tu grupo y su equipo',
-    emoji: '👥',
-    materialIcon: 'groups',
-    target: 'Grupos',
-    tintColor: '#FFD54F',
-    firebaseKey: 'grupos',
-  },
-  {
-    label: 'Contactos',
-    subtitle: 'Por si te hacen falta',
-    emoji: '☎️',
-    materialIcon: 'contact-phone',
-    target: 'Contactos',
-    tintColor: '#9FA8DA',
-    firebaseKey: 'contactos',
-  },
-  {
-    label: 'Apps',
-    subtitle: 'Herramientas MCM',
-    emoji: '📲',
-    materialIcon: 'apps',
-    target: 'Apps',
-    tintColor: '#FFB74D',
-    firebaseKey: 'apps',
-  },
-];
-
-/**
  * Congreso M+C — Curso Despierta (naranja), 27–29 de noviembre de 2026.
  *
  * Datos en `activities/congresomc26/` (creado desde el panel MCM). Todavía no
  * es el evento activo: se destaca cuando el panel pone
  * `activities/_meta.activeEventId = 'congresomc26'`. Hasta entonces no sale en
  * ningún sitio (no está archivado, así que tampoco en «Eventos pasados»).
+ *
+ * Tiene VARIOS horarios (`horario1` Curso Despierta, `horario2` y `horario3`
+ * las dos formaciones de Pre-monitores): la tarjeta «Horario» abre un selector
+ * con ellos, cada uno con su `meta.nombre` (ver `utils/eventHorarios.ts`).
  *
  * `tabId: 'visitapapa'` — el tab del evento en curso es ese hueco de la barra
  * (su layout resuelve el `eventId` del evento activo). Para que lo vean, el
@@ -372,22 +314,64 @@ export const CONGRESO_MC: EventConfig = {
   bannerText: 'Curso Despierta: Despertando Evangelizadores',
   motto: 'Despertando evangelizadores',
   tabId: 'visitapapa',
-  sections: seccionesCongreso('Viernes 27, sábado 28 y domingo 29'),
-};
-
-/**
- * Congreso M+C — Pre-monitores (azul): mismo fin de semana que el Curso
- * Despierta pero con horario y plan propios. Datos en
- * `activities/congresomc26-premonis/`. Mismo hueco de tab que el resto.
- */
-export const CONGRESO_PREMONIS: EventConfig = {
-  id: 'congresomc26-premonis',
-  title: 'Pre-monitores M+C',
-  tintColor: '#2F80ED',
-  firebasePrefix: 'activities/congresomc26-premonis',
-  bannerText: '27–29 de noviembre de 2026',
-  tabId: 'visitapapa',
-  sections: seccionesCongreso('Sábado 28 y domingo 29'),
+  sections: [
+    {
+      label: 'Horario',
+      subtitle: 'Despierta y Pre-monitores',
+      emoji: '⏰',
+      materialIcon: 'schedule',
+      target: 'Horario',
+      tintColor: '#FF8A65',
+      // El hub mira este nodo para saber si la tarjeta se enseña; la pantalla
+      // descubre sola el resto (`horario2`, `horario3`…).
+      firebaseKey: 'horario1',
+    },
+    {
+      label: 'Materiales',
+      subtitle: 'Recursos y dinámicas',
+      emoji: '📦',
+      materialIcon: 'inventory-2',
+      target: 'Materiales',
+      tintColor: '#4FC3F7',
+      firebaseKey: 'materiales',
+    },
+    {
+      label: 'Profundiza',
+      subtitle: 'Reflexión y textos',
+      emoji: '📖',
+      materialIcon: 'menu-book',
+      target: 'Profundiza',
+      tintColor: '#BA68C8',
+      firebaseKey: 'profundiza',
+    },
+    {
+      label: 'Grupos',
+      subtitle: 'Tu grupo y su equipo',
+      emoji: '👥',
+      materialIcon: 'groups',
+      target: 'Grupos',
+      tintColor: '#FFD54F',
+      firebaseKey: 'grupos',
+    },
+    {
+      label: 'Contactos',
+      subtitle: 'Por si te hacen falta',
+      emoji: '☎️',
+      materialIcon: 'contact-phone',
+      target: 'Contactos',
+      tintColor: '#9FA8DA',
+      firebaseKey: 'contactos',
+    },
+    {
+      label: 'Apps',
+      subtitle: 'Herramientas MCM',
+      emoji: '📲',
+      materialIcon: 'apps',
+      target: 'Apps',
+      tintColor: '#FFB74D',
+      firebaseKey: 'apps',
+    },
+  ],
 };
 
 // ─── Registry ────────────────────────────────────────────────────────
@@ -396,7 +380,6 @@ export const EVENTS: Record<string, EventConfig> = {
   [JUBILEO.id]: JUBILEO,
   [VISITAPAPA.id]: VISITAPAPA,
   [CONGRESO_MC.id]: CONGRESO_MC,
-  [CONGRESO_PREMONIS.id]: CONGRESO_PREMONIS,
 };
 
 /**

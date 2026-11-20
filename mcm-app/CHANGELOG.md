@@ -4,11 +4,19 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-20 18:40 — Varios horarios en un evento (Congreso M+C: Despierta y Pre-monitores)
+
+- **Un evento puede tener varios horarios**: nodos `activities/<evento>/horario1`, `horario2`… (hasta 8), cada uno `{ updatedAt, data: [días], meta: { nombre }, hidden? }`. La pantalla de Horario los descubre sola (`hooks/useEventHorarios.ts`, `utils/eventHorarios.ts`), enseña un conmutador con los nombres y recuerda el último que eligió la persona. Un horario con `hidden: true` no sale. **Sin `horario1`, todo sigue como antes** (`horario` único: Jubileo, Visita del Papa).
+- **Congreso M+C** pasa a ser un solo evento con tres horarios: Curso Despierta (vie 27 – dom 29), Pre-monitores 1 y Pre-monitores 2 (sáb 28 y dom 29). Cargados en Firebase desde el guión del congreso y las credenciales.
+- **Se retira `congresomc26-premonis`** (evento duplicado, sin datos): la solución de los dos horarios es esta, no dos eventos activos a la vez.
+- El panel MCM gestiona los horarios numerados desde Actividades (repo `mcmpanel`).
+- Reglas de RTDB: sin cambios (`$section` ya es de lectura pública); el test de reglas cubre ahora `horarioN/{data,meta,updatedAt}`.
+
 ## 2026-11-20 18:05 — Congreso M+C: dos actividades, Curso Despierta (naranja) y Pre-monitores (azul)
 
 - **`congresomc26` pasa a ser el Curso Despierta**: naranja `#F07C2B`, subtítulo «Curso Despierta: Despertando Evangelizadores», lema «Despertando evangelizadores» al pie del hub. Horario de viernes 27 a domingo 29.
 - **Evento nuevo `congresomc26-premonis`** (`CONGRESO_PREMONIS`): azul `#2F80ED`, horario y plan propios del sábado 28 y domingo 29, datos en `activities/congresomc26-premonis/` (ya creado en Firebase). Las secciones se comparten por código (`seccionesCongreso`), los datos no.
-- ⚠️ **Solo puede haber UN evento activo a la vez** (`activities/_meta.activeEventId` es un solo id y hay un solo hueco de tab). Activar uno deja el otro sin ningún acceso en la app. Pendiente de decidir cómo se muestran dos a la vez.
+- ~~⚠️ **Solo puede haber UN evento activo a la vez** (`activities/_meta.activeEventId` es un solo id y hay un solo hueco de tab). Activar uno deja el otro sin ningún acceso en la app. Pendiente de decidir cómo se muestran dos a la vez.
 
 ## 2026-11-20 17:50 — Congreso M+C (27–29 nov) registrado, listo para activar
 
