@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-20 18:05 — Congreso M+C: dos actividades, Curso Despierta (naranja) y Pre-monitores (azul)
+
+- **`congresomc26` pasa a ser el Curso Despierta**: naranja `#F07C2B`, subtítulo «Curso Despierta: Despertando Evangelizadores», lema «Despertando evangelizadores» al pie del hub. Horario de viernes 27 a domingo 29.
+- **Evento nuevo `congresomc26-premonis`** (`CONGRESO_PREMONIS`): azul `#2F80ED`, horario y plan propios del sábado 28 y domingo 29, datos en `activities/congresomc26-premonis/` (ya creado en Firebase). Las secciones se comparten por código (`seccionesCongreso`), los datos no.
+- ⚠️ **Solo puede haber UN evento activo a la vez** (`activities/_meta.activeEventId` es un solo id y hay un solo hueco de tab). Activar uno deja el otro sin ningún acceso en la app. Pendiente de decidir cómo se muestran dos a la vez.
+
 ## 2026-11-20 17:50 — Congreso M+C (27–29 nov) registrado, listo para activar
 
 - **Evento nuevo `congresomc26`** en el registry (`CONGRESO_MC`, `constants/events.ts`): azul `#2F80ED`, datos en `activities/congresomc26/` (ya creado en Firebase desde el panel), secciones Horario, Materiales, Profundiza, Grupos, Contactos y Apps. No lleva Evaluación todavía.

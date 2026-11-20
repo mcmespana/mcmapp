@@ -1,5 +1,6 @@
 import {
   CONGRESO_MC,
+  CONGRESO_PREMONIS,
   EVENTS,
   getEvent,
   getEventFirebasePath,
@@ -44,6 +45,31 @@ describe('registry de eventos', () => {
       const keys = CONGRESO_MC.sections.map((s) => s.firebaseKey);
       expect(keys.every(Boolean)).toBe(true);
       expect(new Set(keys).size).toBe(keys.length);
+    });
+  });
+
+  describe('Congreso M+C: dos actividades el mismo fin de semana', () => {
+    it('Despierta es naranja y Pre-monitores azul, con su texto', () => {
+      expect(CONGRESO_MC.tintColor).toBe('#F07C2B');
+      expect(CONGRESO_MC.bannerText).toBe(
+        'Curso Despierta: Despertando Evangelizadores',
+      );
+      expect(CONGRESO_PREMONIS.tintColor).toBe('#2F80ED');
+      expect(getEvent('congresomc26-premonis')).toBe(CONGRESO_PREMONIS);
+    });
+
+    it('cada una lee su horario de su propio nodo', () => {
+      expect(getEventFirebasePath(CONGRESO_PREMONIS, 'horario')).toBe(
+        'activities/congresomc26-premonis/horario',
+      );
+      expect(getEventFirebasePath(CONGRESO_MC, 'horario')).not.toBe(
+        getEventFirebasePath(CONGRESO_PREMONIS, 'horario'),
+      );
+    });
+
+    it('no se pisan: ids y colores distintos', () => {
+      expect(CONGRESO_MC.id).not.toBe(CONGRESO_PREMONIS.id);
+      expect(CONGRESO_MC.tintColor).not.toBe(CONGRESO_PREMONIS.tintColor);
     });
   });
 });

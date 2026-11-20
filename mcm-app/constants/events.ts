@@ -291,7 +291,69 @@ export const VISITAPAPA: EventConfig = {
 };
 
 /**
- * Congreso M+C, 27–29 de noviembre de 2026.
+ * Secciones del fin de semana M+C (27–29 de noviembre de 2026). Las dos
+ * actividades —Curso Despierta y Pre-monitores— llevan las mismas secciones,
+ * cada una con SU horario y sus datos (`activities/<id>/…`).
+ */
+const seccionesCongreso = (horarioSubtitle: string): EventSection[] => [
+  {
+    label: 'Horario',
+    subtitle: horarioSubtitle,
+    emoji: '⏰',
+    materialIcon: 'schedule',
+    target: 'Horario',
+    tintColor: '#FF8A65',
+    firebaseKey: 'horario',
+  },
+  {
+    label: 'Materiales',
+    subtitle: 'Recursos y dinámicas',
+    emoji: '📦',
+    materialIcon: 'inventory-2',
+    target: 'Materiales',
+    tintColor: '#4FC3F7',
+    firebaseKey: 'materiales',
+  },
+  {
+    label: 'Profundiza',
+    subtitle: 'Reflexión y textos',
+    emoji: '📖',
+    materialIcon: 'menu-book',
+    target: 'Profundiza',
+    tintColor: '#BA68C8',
+    firebaseKey: 'profundiza',
+  },
+  {
+    label: 'Grupos',
+    subtitle: 'Tu grupo y su equipo',
+    emoji: '👥',
+    materialIcon: 'groups',
+    target: 'Grupos',
+    tintColor: '#FFD54F',
+    firebaseKey: 'grupos',
+  },
+  {
+    label: 'Contactos',
+    subtitle: 'Por si te hacen falta',
+    emoji: '☎️',
+    materialIcon: 'contact-phone',
+    target: 'Contactos',
+    tintColor: '#9FA8DA',
+    firebaseKey: 'contactos',
+  },
+  {
+    label: 'Apps',
+    subtitle: 'Herramientas MCM',
+    emoji: '📲',
+    materialIcon: 'apps',
+    target: 'Apps',
+    tintColor: '#FFB74D',
+    firebaseKey: 'apps',
+  },
+];
+
+/**
+ * Congreso M+C — Curso Despierta (naranja), 27–29 de noviembre de 2026.
  *
  * Datos en `activities/congresomc26/` (creado desde el panel MCM). Todavía no
  * es el evento activo: se destaca cuando el panel pone
@@ -305,66 +367,27 @@ export const VISITAPAPA: EventConfig = {
 export const CONGRESO_MC: EventConfig = {
   id: 'congresomc26',
   title: 'Congreso M+C',
-  tintColor: '#2F80ED',
+  tintColor: '#F07C2B',
   firebasePrefix: 'activities/congresomc26',
+  bannerText: 'Curso Despierta: Despertando Evangelizadores',
+  motto: 'Despertando evangelizadores',
+  tabId: 'visitapapa',
+  sections: seccionesCongreso('Viernes 27, sábado 28 y domingo 29'),
+};
+
+/**
+ * Congreso M+C — Pre-monitores (azul): mismo fin de semana que el Curso
+ * Despierta pero con horario y plan propios. Datos en
+ * `activities/congresomc26-premonis/`. Mismo hueco de tab que el resto.
+ */
+export const CONGRESO_PREMONIS: EventConfig = {
+  id: 'congresomc26-premonis',
+  title: 'Pre-monitores M+C',
+  tintColor: '#2F80ED',
+  firebasePrefix: 'activities/congresomc26-premonis',
   bannerText: '27–29 de noviembre de 2026',
   tabId: 'visitapapa',
-  sections: [
-    {
-      label: 'Horario',
-      subtitle: 'Sábado 28 y domingo 29',
-      emoji: '⏰',
-      materialIcon: 'schedule',
-      target: 'Horario',
-      tintColor: '#FF8A65',
-      firebaseKey: 'horario',
-    },
-    {
-      label: 'Materiales',
-      subtitle: 'Recursos y dinámicas',
-      emoji: '📦',
-      materialIcon: 'inventory-2',
-      target: 'Materiales',
-      tintColor: '#4FC3F7',
-      firebaseKey: 'materiales',
-    },
-    {
-      label: 'Profundiza',
-      subtitle: 'Reflexión y textos',
-      emoji: '📖',
-      materialIcon: 'menu-book',
-      target: 'Profundiza',
-      tintColor: '#BA68C8',
-      firebaseKey: 'profundiza',
-    },
-    {
-      label: 'Grupos',
-      subtitle: 'Tu grupo y su equipo',
-      emoji: '👥',
-      materialIcon: 'groups',
-      target: 'Grupos',
-      tintColor: '#FFD54F',
-      firebaseKey: 'grupos',
-    },
-    {
-      label: 'Contactos',
-      subtitle: 'Por si te hacen falta',
-      emoji: '☎️',
-      materialIcon: 'contact-phone',
-      target: 'Contactos',
-      tintColor: '#9FA8DA',
-      firebaseKey: 'contactos',
-    },
-    {
-      label: 'Apps',
-      subtitle: 'Herramientas MCM',
-      emoji: '📲',
-      materialIcon: 'apps',
-      target: 'Apps',
-      tintColor: '#FFB74D',
-      firebaseKey: 'apps',
-    },
-  ],
+  sections: seccionesCongreso('Sábado 28 y domingo 29'),
 };
 
 // ─── Registry ────────────────────────────────────────────────────────
@@ -373,6 +396,7 @@ export const EVENTS: Record<string, EventConfig> = {
   [JUBILEO.id]: JUBILEO,
   [VISITAPAPA.id]: VISITAPAPA,
   [CONGRESO_MC.id]: CONGRESO_MC,
+  [CONGRESO_PREMONIS.id]: CONGRESO_PREMONIS,
 };
 
 /**
