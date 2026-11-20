@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-20 12:00 — Contigo y el resto de la app: copy repasado con `unslop-ui`
+
+- Solo textos: rayas, subtítulos que repetían el título (Recordatorios, calendario, notificaciones vacías), pistas que contaban cómo funciona por dentro («Se guarda solo», «avisos en tiempo real», «modal»), etiquetas encima de títulos que ya lo decían (bienvenida del onboarding, paneles del Laboratorio) y mayúsculas de título («Mi rato de oración», «Primera lectura»). Errores de carga de Comida, Panel y portal de Comunica con el mismo texto: «No se ha podido cargar. Revisa tu conexión.».
+- Caracteres que hacían de icono en Contigo, ahora iconos: «Leer evangelio ›», «✓ Leído», las ✦ de la referencia de la lectura, de los agradecimientos y del día con los 3 momentos.
+- Se quedan emojis, bromas, el tono cálido de Contigo, las lecturas y todo lo que viene de Firebase. Wordle no se toca.
+
 ## 2026-11-18 22:30 — Comunica: copy repasado con `unslop-ui`
 
 - Solo textos (sin lógica ni estilos): explicaciones de cómo funciona por dentro, subtítulos que repetían el título o el botón, cadenas con «·» que unían dos frases y rellenos («ahora mismo», «automáticamente»). Las tres pantallas de pasar lista dicen igual lo pendiente: «Cambios sin guardar: solo están en tu móvil.». «Esta actividad ya no está disponible» queda sin la frase que adivinaba el motivo (detalle, enlace e inscripción).
