@@ -1,6 +1,5 @@
 import {
   CONGRESO_MC,
-  CONGRESO_PREMONIS,
   EVENTS,
   getEvent,
   getEventFirebasePath,
@@ -48,28 +47,21 @@ describe('registry de eventos', () => {
     });
   });
 
-  describe('Congreso M+C: dos actividades el mismo fin de semana', () => {
-    it('Despierta es naranja y Pre-monitores azul, con su texto', () => {
+  describe('Congreso M+C: varios horarios en un evento', () => {
+    it('es naranja y lleva el texto del Curso Despierta', () => {
       expect(CONGRESO_MC.tintColor).toBe('#F07C2B');
       expect(CONGRESO_MC.bannerText).toBe(
         'Curso Despierta: Despertando Evangelizadores',
       );
-      expect(CONGRESO_PREMONIS.tintColor).toBe('#2F80ED');
-      expect(getEvent('congresomc26-premonis')).toBe(CONGRESO_PREMONIS);
     });
 
-    it('cada una lee su horario de su propio nodo', () => {
-      expect(getEventFirebasePath(CONGRESO_PREMONIS, 'horario')).toBe(
-        'activities/congresomc26-premonis/horario',
-      );
-      expect(getEventFirebasePath(CONGRESO_MC, 'horario')).not.toBe(
-        getEventFirebasePath(CONGRESO_PREMONIS, 'horario'),
-      );
+    it('la tarjeta Horario apunta a horario1; el resto lo descubre la pantalla', () => {
+      const horario = CONGRESO_MC.sections.find((s) => s.target === 'Horario');
+      expect(horario?.firebaseKey).toBe('horario1');
     });
 
-    it('no se pisan: ids y colores distintos', () => {
-      expect(CONGRESO_MC.id).not.toBe(CONGRESO_PREMONIS.id);
-      expect(CONGRESO_MC.tintColor).not.toBe(CONGRESO_PREMONIS.tintColor);
+    it('no hay un segundo evento para los pre-monitores', () => {
+      expect(Object.keys(EVENTS)).not.toContain('congresomc26-premonis');
     });
   });
 });

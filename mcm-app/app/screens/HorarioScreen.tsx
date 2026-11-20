@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { Skeleton } from 'heroui-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
@@ -20,13 +21,27 @@ import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
+import { useEventHorarios } from '@/hooks/useEventHorarios';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
+import { chooseHorarioKey } from '@/utils/eventHorarios';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import { getClosestDateIndex } from '@/utils/dateUtils';
 import DateSelector from '@/components/DateSelector';
 import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
 
-export default function HorarioScreen() {
+/**
+ * Un horario (la lista de días). `firebaseKey` es el nodo bajo el evento
+ * (`horario`, `horario1`…); `null` = todavía averiguando cuál toca. `selector`
+ * es el conmutador entre horarios, si el evento tiene varios.
+ */
+function HorarioSheetView({
+  firebaseKey,
+  selector,
+}: {
+  firebaseKey: string | null;
+  selector?: React.ReactNode;
+}) {
   const { open } = useEventNavigation();
   const scheme = useColorScheme();
   const fontScale = useFontScale();
@@ -36,10 +51,11 @@ export default function HorarioScreen() {
     [scheme, fontScale],
   );
   const event = useCurrentEvent();
-  const { data: horarioData, loading } = useFirebaseData<any[]>(
-    getEventFirebasePath(event, 'horario'),
-    getEventCacheKey(event, 'horario'),
+  const { data: horarioData, loading: loadingData } = useFirebaseData<any[]>(
+    firebaseKey ? getEventFirebasePath(event, firebaseKey) : null,
+    getEventCacheKey(event, firebaseKey ?? 'horario'),
   );
+  const loading = loadingData || firebaseKey === null;
 
   // Se abre por el día más cercano a hoy; en cuanto el usuario elige otro,
   // manda su elección. Derivarlo (en vez de sincronizarlo con un efecto) evita
@@ -176,6 +192,13 @@ export default function HorarioScreen() {
         }}
       >
         <ScreenHero title="Horario" hideOnWeb floatingHeaderInset />
+        {selector ? (
+          <View
+            style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}
+          >
+            {selector}
+          </View>
+        ) : null}
         {empty ? (
           <ComingSoon accentColor={event.tintColor} />
         ) : (
@@ -203,6 +226,13 @@ export default function HorarioScreen() {
     <View style={styles.container}>
       <ScreenHero title="Horario" hideOnWeb floatingHeaderInset />
       <View style={styles.headerSection}>
+        {selector ? (
+          <View
+            style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.sm }}
+          >
+            {selector}
+          </View>
+        ) : null}
         <DateSelector
           dates={fechas}
           selectedDate={dia.fecha}
@@ -245,6 +275,57 @@ export default function HorarioScreen() {
         </ScrollView>
       </PageContainer>
     </View>
+  );
+}
+
+/**
+ * Pantalla de horario de un evento. Si el evento tiene varios horarios
+ * (`horario1`, `horario2`… con `meta.nombre`, ver `utils/eventHorarios.ts`) se
+ * enseña un selector arriba y se recuerda el último que eligió la persona; si
+ * no, es el horario único de siempre.
+ */
+export default function HorarioScreen() {
+  const event = useCurrentEvent();
+  const { sheets, ready } = useEventHorarios(event);
+  const selKey = `horarioSel_${event.id}`;
+  const [picked, setPicked] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    AsyncStorage.getItem(selKey)
+      .then((v) => {
+        if (alive && v) setPicked((cur) => cur ?? v);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [selKey]);
+
+  const activeKey = ready ? chooseHorarioKey(sheets, picked) : null;
+
+  const selector =
+    sheets.length > 1 && activeKey ? (
+      <SegmentedControl
+        options={sheets.map((s) => ({ value: s.key, label: s.nombre }))}
+        value={activeKey}
+        onChange={(key) => {
+          setPicked(key);
+          AsyncStorage.setItem(selKey, key).catch(() => {});
+        }}
+        accentColor={event.tintColor}
+        accessibilityLabel="Horario"
+      />
+    ) : undefined;
+
+  // `key`: al cambiar de horario se monta una vista nueva, sin arrastrar el día
+  // elegido ni los datos del anterior.
+  return (
+    <HorarioSheetView
+      key={activeKey ?? 'loading'}
+      firebaseKey={activeKey}
+      selector={selector}
+    />
   );
 }
 
