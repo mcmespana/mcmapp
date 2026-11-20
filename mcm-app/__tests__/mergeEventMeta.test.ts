@@ -70,4 +70,30 @@ describe('mergeEventMeta', () => {
     mergeEventMeta(base, { title: 'Otro' });
     expect(base).toEqual(snapshot);
   });
+
+  describe('logo del evento (heroImageUrl)', () => {
+    const url =
+      'https://firebasestorage.googleapis.com/v0/b/x/o/logo.webp?alt=media';
+
+    it('una URL https se convierte en la imagen del hub', () => {
+      const merged = mergeEventMeta(base, { heroImageUrl: `  ${url}  ` });
+      expect(merged.heroImage).toEqual({ uri: url });
+    });
+
+    it('sin logo remoto conserva el heroImage del registry', () => {
+      const withLogo = { ...base, heroImage: 4 } as unknown as EventConfig;
+      expect(mergeEventMeta(withLogo, { title: 'X' }).heroImage).toBe(4);
+    });
+
+    it.each([
+      ['http sin cifrar', 'http://example.com/logo.png'],
+      ['otro esquema', 'javascript:alert(1)'],
+      ['texto suelto', 'logo.png'],
+      ['vacío', '   '],
+      ['no es texto', 42],
+    ])('ignora un valor inválido: %s', (_n, value) => {
+      const merged = mergeEventMeta(base, { heroImageUrl: value as never });
+      expect(merged.heroImage).toBeUndefined();
+    });
+  });
 });

@@ -65,6 +65,13 @@ eventos NO activos siguen tomando `status` del registry (la lista "Eventos
 pasados" no refleja aún un `archived` puesto desde el panel a un evento no
 activo). Ver `docs/planes/PLAN_INTEGRACIONES.md`, Integración B.
 
+**Logo del hub** (`activities/<evento>/_meta.heroImageUrl`): URL `https://` de
+una imagen PNG/WebP/JPG (SVG no). La app la pinta en la cabecera del hub en
+lugar del emblema de estrellitas; un valor que no sea `https://` se ignora. Se
+sube desde el panel (Actividades → metadatos del evento → «Logo del evento»,
+a Firebase Storage). Se pinta sobre el color del evento: usar una versión del
+logo que se lea sobre él.
+
 **Qué hace `status: 'archived'` en la app** (desde 2026-07-29): archivar el
 evento activo lo saca de todos los sitios donde estaba destacado y lo deja sólo
 en "Más > Eventos pasados":

@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-20 20:30 — Arreglo del selector de horarios y logo por evento desde el panel
+
+- **Fix**: el conmutador de horarios no se leía en iOS (solo asomaba una tira gris y la píldora): su `track` es `flex: 1` y dentro de una columna sin alto fijo colapsaba. Ahora va en una fila.
+- **Logo del evento configurable**: `activities/<id>/_meta.heroImageUrl` (URL https, PNG/WebP/JPG) sustituye al emblema de estrellitas del hub, sin publicar app. Lo sube el panel desde los metadatos del evento (Firebase Storage, `eventLogos/<id>`). `mergeEventMeta` solo acepta `https://`; un valor inválido se ignora y queda el heroImage del registry o el emblema. SVG no: la `Image` de RN no lo pinta.
+
 ## 2026-11-20 18:40 — Varios horarios en un evento (Congreso M+C: Despierta y Pre-monitores)
 
 - **Un evento puede tener varios horarios**: nodos `activities/<evento>/horario1`, `horario2`… (hasta 8), cada uno `{ updatedAt, data: [días], meta: { nombre }, hidden? }`. La pantalla de Horario los descubre sola (`hooks/useEventHorarios.ts`, `utils/eventHorarios.ts`), enseña un conmutador con los nombres y recuerda el último que eligió la persona. Un horario con `hidden: true` no sale. **Sin `horario1`, todo sigue como antes** (`horario` único: Jubileo, Visita del Papa).

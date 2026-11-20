@@ -22,8 +22,17 @@ export interface RemoteEventMeta {
   title?: string;
   tintColor?: string;
   bannerText?: string;
+  /**
+   * Logo del evento (URL https de una imagen PNG/JPG/WebP; SVG no: la `Image`
+   * de RN no lo pinta). Sustituye al emblema de estrellitas del hub. Lo sube el
+   * panel (Actividades → metadatos del evento) a Firebase Storage.
+   */
+  heroImageUrl?: string;
   updatedAt?: string;
 }
+
+const isHttpsUrl = (v: unknown): v is string =>
+  typeof v === 'string' && /^https:\/\/\S+$/.test(v.trim());
 
 const isNonEmptyString = (v: unknown): v is string =>
   typeof v === 'string' && v.trim().length > 0;
@@ -37,6 +46,7 @@ const isHexColor = (v: unknown): v is string =>
  *
  * - `title` / `bannerText`: string no vacío.
  * - `tintColor`: hex `#RRGGBB` válido (un color inválido rompería la UI).
+ * - `heroImageUrl`: URL `https://…` (otro esquema o texto suelto se ignora).
  * - `status`: solo `'active'` o `'archived'`.
  */
 export function mergeEventMeta(
@@ -52,6 +62,9 @@ export function mergeEventMeta(
     merged.bannerText = meta.bannerText.trim();
   }
   if (isHexColor(meta.tintColor)) merged.tintColor = meta.tintColor.trim();
+  if (isHttpsUrl(meta.heroImageUrl)) {
+    merged.heroImage = { uri: meta.heroImageUrl.trim() };
+  }
   if (meta.status === 'active' || meta.status === 'archived') {
     merged.status = meta.status;
   }
