@@ -225,6 +225,23 @@ Capturas fijas: 5 (canción en DO, gancho), 12 subrayado (gancho), 7 comunión,
 hoja de coro y 11 compartir playlist (de momento, las de la web). Comunica
 sigue con las capturas de la app local con datos inventados.
 
+### Cuarta vuelta (20/11/2026)
+
+- Coros: la hoja del coro y el QR ya son nativos (`10 hoja de coro`, `11 compartir playlist`).
+- Afinador: tarjeta abajo a la izquierda, solo el afinador (sin el selector
+  Afinador | Metrónomo) y con aire abajo: `crop=1240:1360:40:1130` de
+  «6 abrir y afinar 2 cuerdas», 9,2–11,6 s.
+- Calendario: primero la captura fija del día con evento y luego solo el trozo
+  de «Calendarios activos» (15 calendario cambiar, 3,6–5,95 s).
+- Comunica: el evento es «Acampada Inicial», del 15 al 17 de octubre de 2027,
+  en el «Albergue de la Piruleta», con descripción e iconos; pagos: «Actividad
+  de inicio de curso», «Campamento de Verano», «Pascua de Encuentro» y
+  «Camiseta muuuuy especial». Para capturarlo se cambiaron **solo en local**
+  `services/comunica/fake/profileEvents.ts` y `profilePayments.ts` (evento
+  `pev-sinc` a 329 días; `pay-rejected` pasado a pendiente) y se revirtieron
+  después: el repo no lleva esos cambios.
+- Sonido: de 8 «sparkle» quedan 2; el resto, variado y alternando izquierda y derecha.
+
 ## Siguiente paso
 
 1. El propietario retoca los textos de la tabla y graba las tomas de la lista.
