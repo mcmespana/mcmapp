@@ -74,7 +74,6 @@ export function ComunicaLabPanel() {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.eyebrow}>área nativa · datos inventados</Text>
       <Text style={styles.title}>Comunica nueva</Text>
       <Text style={styles.body}>
         Con el laboratorio encendido, la pestaña Comunica enseña el área nativa.
@@ -265,11 +264,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(230, 140, 205, 0.55)',
     gap: spacing.sm,
-  },
-  eyebrow: {
-    ...typography.overline,
-    color: 'rgba(240, 170, 220, 0.95)',
-    letterSpacing: 2,
   },
   title: { ...typography.h3, color: '#fff' },
   body: { ...typography.subhead, color: 'rgba(255,255,255,0.9)' },

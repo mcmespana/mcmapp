@@ -244,9 +244,18 @@ export default function BookmarksScreen() {
                         },
                       ]}
                     >
-                      <Text style={[styles.openText, { color: W.accentText }]}>
-                        Leer evangelio →
-                      </Text>
+                      <View style={styles.openRow}>
+                        <Text
+                          style={[styles.openText, { color: W.accentText }]}
+                        >
+                          Leer evangelio
+                        </Text>
+                        <MaterialIcons
+                          name="chevron-right"
+                          size={14}
+                          color={W.accentText}
+                        />
+                      </View>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -346,5 +355,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
+  openRow: { flexDirection: 'row', alignItems: 'center' },
   openText: { fontSize: 11, fontWeight: '700' },
 });

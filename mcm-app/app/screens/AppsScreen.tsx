@@ -119,7 +119,7 @@ export default function AppsScreen() {
             >
               <ScreenHero
                 title="Apps"
-                subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el evento."
+                subtitle="Para el evento: algunas necesarias 🌟, otras opcionales ℹ️."
                 hideOnWeb
               />
               <View style={{ gap: spacing.sm }}>
@@ -153,14 +153,14 @@ export default function AppsScreen() {
         >
           <ScreenHero
             title="Apps"
-            subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el Jubileo."
+            subtitle="Para el Jubileo: algunas necesarias 🌟, otras opcionales ℹ️."
             hideOnWeb
           />
           <View style={styles.introContainer}>
             <Text style={styles.introSubtext}>
               {Platform.OS === 'web'
-                ? 'Si tocas el icono de la app te la abrirá directamente. En el modal puedes elegir entre iOS y Android ✨'
-                : 'Si tocas el icono de la app te la abrirá directamente o te llevará a la tienda de tu plataforma ✨'}
+                ? 'Toca una app para abrirla, o el botón de al lado para elegir iOS o Android ✨'
+                : 'Toca una app para abrirla o ir a su tienda ✨'}
             </Text>
           </View>
 
@@ -196,6 +196,7 @@ export default function AppsScreen() {
                     size="sm"
                     isIconOnly
                     onPress={() => setSelected(app)}
+                    accessibilityLabel={`Descargar ${app.nombre}`}
                   >
                     <MaterialIcons
                       name="add-circle-outline"

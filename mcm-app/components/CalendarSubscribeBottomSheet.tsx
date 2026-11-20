@@ -154,7 +154,7 @@ export default function CalendarSubscribeBottomSheet({
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.subtitle, { color: theme.icon }]}>
-          Recibe los eventos en tu app de calendario favorita
+          Recibe los eventos en tu app de calendario.
         </Text>
 
         {/* Calendar cards */}
@@ -248,7 +248,7 @@ export default function CalendarSubscribeBottomSheet({
                   color={theme.icon}
                 />
                 <Text style={[styles.copyLabel, { color: theme.icon }]}>
-                  Copiar enlace ICS
+                  Copiar enlace
                 </Text>
               </TouchableOpacity>
             </View>
@@ -323,8 +323,8 @@ export default function CalendarSubscribeBottomSheet({
         </View>
 
         <Text style={[styles.footer, { color: theme.icon }]}>
-          Los eventos se actualizan automáticamente cada pocas horas, según tu
-          app de calendario.
+          Los eventos se actualizan cada pocas horas, según tu app de
+          calendario.
         </Text>
       </ScrollView>
     </BottomSheet>

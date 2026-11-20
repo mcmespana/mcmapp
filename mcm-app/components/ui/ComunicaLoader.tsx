@@ -233,7 +233,9 @@ export default function ComunicaLoader({
       // abajo salvo al botón de reintentar (que sí es un hijo pulsable).
       accessibilityRole="progressbar"
       accessibilityLabel={
-        error ? 'Error al cargar Comunica' : 'Cargando Comunica'
+        error
+          ? 'No se ha podido cargar Comunica. Revisa tu conexión.'
+          : 'Cargando Comunica'
       }
     >
       <LinearGradient
@@ -280,7 +282,7 @@ export default function ComunicaLoader({
           <Text style={[styles.title, { color: palette.title }]}>Comunica</Text>
           <Text style={[styles.subtitle, { color: palette.subtitle }]}>
             {error
-              ? 'No hemos podido conectar con el portal'
+              ? 'No se ha podido cargar. Revisa tu conexión.'
               : 'Preparando el portal…'}
           </Text>
 

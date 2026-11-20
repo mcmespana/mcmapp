@@ -507,16 +507,6 @@ function WelcomeScreen({
           style={welcomeStyles.center}
           largeStyle={{ paddingVertical: 24 }}
         >
-          <Animated.View
-            entering={FadeInDown.delay(60)
-              .duration(420)
-              .easing(Easing.bezier(0.22, 1, 0.36, 1))}
-            style={welcomeStyles.badge}
-          >
-            <MaterialIcons name="favorite" size={12} color="#FCD200" />
-            <Text style={welcomeStyles.badgeText}>Te damos la bienvenida</Text>
-          </Animated.View>
-
           {/* Con letra grande el logo (130 px) se quita: el espacio es
               para el texto. */}
           {!large && (
@@ -588,24 +578,6 @@ const welcomeStyles = StyleSheet.create({
   root: { flex: 1, position: 'relative', overflow: 'hidden' } as ViewStyle,
   safeContent: { flex: 1 } as ViewStyle,
   deco: { position: 'absolute', borderRadius: radii.pillFull } as ViewStyle,
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radii.pillFull,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-    marginBottom: 18,
-  } as ViewStyle,
-  badgeText: {
-    color: '#ffffff',
-    ...typography.footnote,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  } as TextStyle,
   center: {
     flex: 1,
     alignItems: 'center',
@@ -1523,7 +1495,7 @@ function LoginOnboardingScreen({
         >
           {user
             ? 'Tienes la sesión iniciada, de forma que si cambias de dispositivo guardaremos la información'
-            : 'Si quieres, puedes iniciar sesión para guardar tus reflexiones, momentos de oración y canciones, así no perderás nada (1 minuto más!)'}
+            : 'Si quieres, puedes iniciar sesión para guardar tus reflexiones, momentos de oración y canciones, así no perderás nada (¡1 minuto más!)'}
         </Animated.Text>
 
         {/* Login buttons / authenticated card */}

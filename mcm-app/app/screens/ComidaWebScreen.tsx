@@ -65,8 +65,7 @@ export default function ComidaWebScreen() {
   const onError = () => {
     toast.show({
       variant: 'danger',
-      label:
-        'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+      label: 'No se ha podido cargar. Revisa tu conexión.',
       actionLabel: 'Cerrar',
       onActionPress: ({ hide }) => hide(),
     });
@@ -81,7 +80,7 @@ export default function ComidaWebScreen() {
           <MaterialIcons name="open-in-new" size={64} color="#2196F3" />
           <Text style={styles.redirectTitle}>{title}</Text>
           <Text style={styles.redirectSubtitle}>
-            Esta página se verá más linda en una pestaña
+            Esta página se verá mejor en una pestaña
           </Text>
           <Button
             variant="primary"

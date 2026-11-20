@@ -467,7 +467,7 @@ export default function OracionScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          headerTitle: 'Mi Rato de Oración',
+          headerTitle: 'Mi rato de oración',
           headerTransparent: true,
           headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: false,
@@ -546,7 +546,7 @@ export default function OracionScreen() {
                 { color: isDark ? colors.green : WARM_LIGHT.green },
               ]}
             >
-              Día completado — puedes modificar tu registro
+              Día completado. Puedes modificar tu registro.
             </Text>
           </View>
         )}
@@ -683,9 +683,6 @@ export default function OracionScreen() {
                   },
                 ]}
               >
-                <Text style={[styles.customLabel, { color: warm.warmGray }]}>
-                  MINUTOS
-                </Text>
                 <View style={styles.stepperRow}>
                   <StepperButton
                     icon="remove"
@@ -804,40 +801,35 @@ export default function OracionScreen() {
           >
             {/* Calendar header */}
             <View style={styles.calHeader}>
-              <View>
-                <Text style={[styles.sectionLabel, { color: warm.warmGray }]}>
-                  TU MES
+              <View style={styles.calMonthNav}>
+                <TouchableOpacity
+                  onPress={() => changeCalMonth(-1)}
+                  hitSlop={10}
+                  accessibilityLabel="Mes anterior"
+                >
+                  <MaterialIcons
+                    name="chevron-left"
+                    size={24}
+                    color={warm.title}
+                  />
+                </TouchableOpacity>
+                <Text style={[styles.calMonthTitle, { color: warm.title }]}>
+                  {MONTHS_CAP[month - 1]} {year}
                 </Text>
-                <View style={styles.calMonthNav}>
-                  <TouchableOpacity
-                    onPress={() => changeCalMonth(-1)}
-                    hitSlop={10}
-                    accessibilityLabel="Mes anterior"
-                  >
-                    <MaterialIcons
-                      name="chevron-left"
-                      size={24}
-                      color={warm.title}
-                    />
-                  </TouchableOpacity>
-                  <Text style={[styles.calMonthTitle, { color: warm.title }]}>
-                    {MONTHS_CAP[month - 1]} {year}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => changeCalMonth(1)}
-                    disabled={!canGoNextMonth}
-                    hitSlop={10}
-                    style={{ opacity: canGoNextMonth ? 1 : 0.25 }}
-                    accessibilityLabel="Mes siguiente"
-                    accessibilityState={{ disabled: !canGoNextMonth }}
-                  >
-                    <MaterialIcons
-                      name="chevron-right"
-                      size={24}
-                      color={warm.title}
-                    />
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                  onPress={() => changeCalMonth(1)}
+                  disabled={!canGoNextMonth}
+                  hitSlop={10}
+                  style={{ opacity: canGoNextMonth ? 1 : 0.25 }}
+                  accessibilityLabel="Mes siguiente"
+                  accessibilityState={{ disabled: !canGoNextMonth }}
+                >
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={24}
+                    color={warm.title}
+                  />
+                </TouchableOpacity>
               </View>
               <View
                 style={[

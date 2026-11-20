@@ -131,11 +131,6 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 14,
     gap: 10,
   },
-  gratStar: {
-    ...typography.caption,
-    fontWeight: '800',
-    includeFontPadding: false,
-  },
   gratInput: {
     flex: 1,
     ...WRITING_FONT,
