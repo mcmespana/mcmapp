@@ -4,6 +4,18 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-20 23:30 — Inicio: lo de hoy primero y «Evalúa la app» se puede cerrar
+
+Crítica de la Home con la skill `impeccable` (27/40) y arreglo de sus cinco problemas:
+
+- **Orden nuevo**: evento → evaluar el evento → novedad → «Evalúa la app» → encuestas → completar perfil → permisos → **accesos rápidos** → «Cantos para el domingo» → próximos eventos. Antes «Evalúa la app» iba encima de la novedad del día y los accesos rápidos quedaban debajo de todo.
+- **«Evalúa la app» lleva una X**. Se guarda la firma de la campaña (`opensAt`/`closesAt`/título) en `home_app_eval_dismissed`: si el panel abre otra, vuelve a salir.
+- **Punto de «sin leer»** (Android y web) en rojo MIC: el azul marino no se veía sobre el cristal oscuro. Late 3 veces y se queda quieto, en vez de en bucle.
+- **Letra**: título del evento a `body`, «● Calendario · Lugar» a `caption` (antes, chip de 8 px en mayúsculas y lugar a 11 px), mes y «NUEVO» con `overline`, textos de los avisos a `subhead`.
+- **Un solo botón al calendario**: con «Activa algún calendario» ya no sale además «Ver calendario». Estados vacíos compactos en la Home.
+- **Una sola receta de tarjeta** (la de «Cantos para el domingo»: radio `lg`, relleno `md`, sombra `card`, sin borde) y espacios dentro de la escala. Fuera la flecha suelta de la novedad que parecía un botón.
+- Tope de `fontSize` a mano en `components/` bajado a 161.
+
 ## 2026-11-20 22:45 — Tres skills de diseño nuevas para los agentes
 
 - Instaladas con el CLI `skills` en `.agents/skills/` y registradas en `skills-lock.json` (que pasa al formato v2 del CLI): **`impeccable`** (`pbakaus/impeccable`: auditar, criticar, pulir, animar; trae referencias para iOS/Android nativo), **`make-interfaces-feel-better`** (`jakubkrehel/…`: detalles de pulido) y **`ui-ux-pro-max`** (`nextlevelbuilder/ui-ux-pro-max-skill`: base de datos buscable de guías, con una de React Native: `python3 .agents/skills/ui-ux-pro-max/scripts/search.py "<consulta>" --stack react-native`).

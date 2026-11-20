@@ -209,6 +209,19 @@ const EVAL_ACCENT_FILL = readableOn(colors.accent, colors.white);
 // Tamaños base de la escala, para multiplicarlos por `fontScale`.
 const FOOTNOTE_SIZE = typography.footnote.fontSize as number;
 const SECTION_LABEL_SIZE = typography.sectionLabel.fontSize as number;
+const BODY_SIZE = typography.body.fontSize as number;
+const CAPTION_SIZE = typography.caption.fontSize as number;
+
+/** Veces que late el punto de «sin leer» al entrar en la Home. */
+const PING_REPEATS = 3;
+
+/**
+ * «Evalúa la app» se puede cerrar. Se guarda la FIRMA de la campaña (ventana
+ * `opensAt`/`closesAt` y título): si el panel abre otra, vuelve a salir.
+ */
+const APP_EVAL_DISMISSED_KEY = 'home_app_eval_dismissed';
+const appEvalSignature = (c: EvaluationConfig): string =>
+  [c.opensAt ?? '', c.closesAt ?? '', c.title ?? ''].join('|');
 
 /** Opacidad de la pastilla de un acceso rápido (el color de su pestaña). */
 const QUICK_FILL_LIGHT = '1F';
@@ -298,9 +311,12 @@ export default function Home() {
     'app/evaluationConfig',
     'app_evaluation_config',
   );
-  const appEvalOpen = isEvaluationOpen(
-    mergeEvaluationConfig(DEFAULT_APP_EVALUATION, appEvalConfig),
+  const appEvalMerged = mergeEvaluationConfig(
+    DEFAULT_APP_EVALUATION,
+    appEvalConfig,
   );
+  const appEvalOpen = isEvaluationOpen(appEvalMerged);
+  const appEvalSig = appEvalSignature(appEvalMerged);
   const [evalDone, setEvalDone] = useState(false);
   useFocusEffect(
     useCallback(() => {
@@ -329,7 +345,28 @@ export default function Home() {
       };
     }, []),
   );
-  const showAppEvalBanner = appEvalOpen && !appEvalDone;
+  // Firma de la campaña que se cerró con la X (null = no se ha cerrado).
+  const [appEvalDismissedSig, setAppEvalDismissedSig] = useState<string | null>(
+    null,
+  );
+  useEffect(() => {
+    let active = true;
+    AsyncStorage.getItem(APP_EVAL_DISMISSED_KEY).then((v) => {
+      if (active) setAppEvalDismissedSig(v);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  const dismissAppEval = () => {
+    h.tap();
+    setAppEvalDismissedSig(appEvalSig);
+    AsyncStorage.setItem(APP_EVAL_DISMISSED_KEY, appEvalSig).catch((e) =>
+      logger.error(e),
+    );
+  };
+  const showAppEvalBanner =
+    appEvalOpen && !appEvalDone && appEvalDismissedSig !== appEvalSig;
 
   // Encuestas genéricas con placement "home-banner" para el perfil actual.
   const homeSurveys = useActiveSurveys('home-banner');
@@ -403,42 +440,43 @@ export default function Home() {
       ? crossCheck.unread
       : false;
 
-  // Ping animation for the notification badge (Reanimated 3). Solo late
-  // mientras la Home está en pantalla: las pestañas de Android y web mantienen
-  // las pantallas montadas, y un bucle infinito en segundo plano mantiene a la
-  // plataforma produciendo fotogramas (batería, y en web el hilo principal).
+  // Latido del punto de «sin leer» (Android y web; iOS usa el contador
+  // nativo). Late PING_REPEATS veces al entrar en la Home y se queda quieto:
+  // el punto ya avisa sin moverse, y un bucle infinito en la portada pide
+  // atención cada segundo (y mantiene a la plataforma pintando fotogramas).
   const pingScale = useSharedValue(1);
-  const pingOpacity = useSharedValue(0.6);
+  const pingOpacity = useSharedValue(0);
   useFocusEffect(
     useCallback(() => {
       if (unreadCount === 0) {
         pingScale.set(1);
-        pingOpacity.set(0.6);
+        pingOpacity.set(0);
         return;
       }
       pingScale.set(
         withRepeat(
           withSequence(
-            withTiming(1.8, { duration: 800, easing: motionEasings.out }),
             withTiming(1, { duration: 0 }),
+            withTiming(1.8, { duration: 800, easing: motionEasings.out }),
           ),
-          -1,
+          PING_REPEATS,
         ),
       );
+      // Acaba en 0: al terminar, el anillo desaparece y queda el punto solo.
       pingOpacity.set(
         withRepeat(
           withSequence(
-            withTiming(0, { duration: 800 }),
             withTiming(0.6, { duration: 0 }),
+            withTiming(0, { duration: 800 }),
           ),
-          -1,
+          PING_REPEATS,
         ),
       );
       return () => {
         cancelAnimation(pingScale);
         cancelAnimation(pingOpacity);
         pingScale.set(1);
-        pingOpacity.set(0.6);
+        pingOpacity.set(0);
       };
     }, [unreadCount, pingScale, pingOpacity]),
   );
@@ -458,6 +496,9 @@ export default function Home() {
 
   const hasAnyVisibleCalendar =
     calendarConfigs.length > 0 && visibleCalendars.some(Boolean);
+  // Hay calendarios pero el usuario los tiene todos ocultos.
+  const calendarsAllHidden =
+    !hasAnyVisibleCalendar && calendarConfigs.length > 0;
   const hasUpcomingEvents = upcomingEventGroups.some(
     (g) => g.events.length > 0,
   );
@@ -610,7 +651,6 @@ export default function Home() {
       ROUTE_LABELS[latestNotification.internalRoute] ??
       null)
     : null;
-  const internalRouteLabel = internalRouteInfo?.label ?? null;
 
   const handleActionButton = () => {
     const btn = latestNotification?.actionButton;
@@ -674,19 +714,12 @@ export default function Home() {
             color={accentColor}
           />
         </Pressable>
-      ) : !internalRouteLabel ? (
-        /* Flecha genérica solo si no hay ningún indicador */
-        <View
-          style={[
-            styles.arrowPill,
-            { backgroundColor: hexAlpha(accentColor, '10') },
-          ]}
-        >
-          <MaterialIcons name="east" size={14} color={accentColor} />
-        </View>
       ) : null}
     </View>
   );
+  // Sin destino ni acción la fila no se pinta: la flecha suelta que iba aquí
+  // parecía un botón y no lo era (el botón es la tarjeta entera).
+  const showNotifCtaRow = !!internalRouteInfo || hasNotifAction;
 
   const brand = (
     <HomeBrand
@@ -866,49 +899,6 @@ export default function Home() {
         <View style={isWide ? styles.wideRow : undefined}>
           {/* ── Left column (or full-width on mobile) ── */}
           <View style={isWide ? styles.wideColLeft : undefined}>
-            {/* ── Banner de personalización (solo si saltó el onboarding) ── */}
-            {profile.profileType && !profile.onboardingCompleted && (
-              <TouchableOpacity
-                style={[
-                  styles.onboardingBanner,
-                  {
-                    backgroundColor: hexAlpha(accentColor, '12'),
-                    borderColor: hexAlpha(accentColor, '30'),
-                  },
-                ]}
-                onPress={() => router.push('/onboarding' as any)}
-                accessibilityRole="button"
-                accessibilityLabel="Completa tu perfil"
-              >
-                <MaterialIcons name="tune" size={20} color={accentColor} />
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      styles.onboardingBannerTitle,
-                      { color: theme.text },
-                    ]}
-                  >
-                    En solo 1 minuto
-                  </Text>
-                  <Text
-                    style={[styles.onboardingBannerBody, { color: theme.icon }]}
-                    numberOfLines={2}
-                  >
-                    Dinos a qué localidad perteneces y te mostraremos las
-                    secciones más importantes.
-                  </Text>
-                </View>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={20}
-                  color={accentColor}
-                />
-              </TouchableOpacity>
-            )}
-
-            {/* ── Banner de permisos de notificaciones (denied / undetermined) ── */}
-            <NotificationPermissionBanner placement="home" />
-
             {/* ── Banner del evento activo (modo evento) ── */}
             {showEventBanner && (
               <TouchableOpacity
@@ -1026,60 +1016,6 @@ export default function Home() {
               </TouchableOpacity>
             )}
 
-            {/* ── CTA "Evalúa la app": una fila tranquila, no un bloque de color ── */}
-            {showAppEvalBanner && (
-              <TouchableOpacity
-                style={[
-                  styles.onboardingBanner,
-                  {
-                    backgroundColor: theme.card,
-                    borderColor:
-                      scheme === 'dark'
-                        ? 'rgba(255,255,255,0.09)'
-                        : 'rgba(0,0,0,0.07)',
-                  },
-                ]}
-                onPress={() => {
-                  h.tap();
-                  router.push('/evaluacion-app');
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Evalúa la app"
-              >
-                <MaterialIcons
-                  name="rate-review"
-                  size={20}
-                  color={theme.icon}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      styles.onboardingBannerTitle,
-                      { color: theme.text },
-                    ]}
-                  >
-                    {DEFAULT_APP_EVALUATION.title || 'Evalúa la app'}
-                  </Text>
-                  <Text
-                    style={[styles.onboardingBannerBody, { color: theme.icon }]}
-                    numberOfLines={2}
-                  >
-                    ¿Errores o ideas? Ayúdanos a mejorar la app.
-                  </Text>
-                </View>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={20}
-                  color={theme.icon}
-                />
-              </TouchableOpacity>
-            )}
-
-            {/* ── Encuestas activas (banner automático por placement) ── */}
-            {homeSurveys.map((s) => (
-              <SurveyBanner key={s.id} entry={s} />
-            ))}
-
             {/* ── Novedades: solo con una notificación real (antes, sin ninguna,
                 salía una tarjeta de bienvenida con texto de relleno) ── */}
             {latestNotification ? (
@@ -1092,13 +1028,7 @@ export default function Home() {
                 <View
                   style={StyleSheet.flatten([
                     styles.notifCard,
-                    {
-                      backgroundColor: theme.card,
-                      borderColor:
-                        scheme === 'dark'
-                          ? 'rgba(255,255,255,0.09)'
-                          : 'rgba(0,0,0,0.07)',
-                    },
+                    { backgroundColor: theme.card },
                   ])}
                 >
                   <TouchableOpacity
@@ -1185,15 +1115,111 @@ export default function Home() {
                       </View>
                     </View>
 
-                    {hasNotifAction ? null : notifCtaRow}
+                    {!hasNotifAction && showNotifCtaRow ? notifCtaRow : null}
                   </TouchableOpacity>
                   {hasNotifAction ? notifCtaRow : null}
                 </View>
               </View>
             ) : null}
 
-            {/* ── Cantos para el domingo (vie-dom, si el perfil lo enciende) ── */}
-            <SundaySongsCard />
+            {/* ── «Evalúa la app»: debajo de la novedad (lo de hoy va primero) y con
+                X para cerrarla. La X es HERMANA de la zona pulsable. ── */}
+            {showAppEvalBanner && (
+              <View
+                style={[styles.appEvalCard, { backgroundColor: theme.card }]}
+              >
+                <TouchableOpacity
+                  style={styles.appEvalMain}
+                  onPress={() => {
+                    h.tap();
+                    router.push('/evaluacion-app');
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Evalúa la app"
+                >
+                  <MaterialIcons
+                    name="rate-review"
+                    size={22}
+                    color={theme.icon}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        styles.onboardingBannerTitle,
+                        { color: theme.text },
+                      ]}
+                    >
+                      {DEFAULT_APP_EVALUATION.title || 'Evalúa la app'}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.onboardingBannerBody,
+                        { color: theme.icon },
+                      ]}
+                      numberOfLines={large ? undefined : 2}
+                    >
+                      ¿Errores o ideas? Ayúdanos a mejorar la app.
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <Pressable
+                  onPress={dismissAppEval}
+                  style={styles.appEvalClose}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ocultar «Evalúa la app»"
+                >
+                  <MaterialIcons name="close" size={20} color={theme.icon} />
+                </Pressable>
+              </View>
+            )}
+
+            {/* ── Encuestas activas (banner automático por placement) ── */}
+            {homeSurveys.map((s) => (
+              <SurveyBanner key={s.id} entry={s} />
+            ))}
+
+            {/* ── Banner de personalización (solo si saltó el onboarding) ── */}
+            {profile.profileType && !profile.onboardingCompleted && (
+              <TouchableOpacity
+                style={[
+                  styles.onboardingBanner,
+                  {
+                    backgroundColor: hexAlpha(accentColor, '12'),
+                    borderColor: hexAlpha(accentColor, '30'),
+                  },
+                ]}
+                onPress={() => router.push('/onboarding' as any)}
+                accessibilityRole="button"
+                accessibilityLabel="Completa tu perfil"
+              >
+                <MaterialIcons name="tune" size={20} color={accentColor} />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.onboardingBannerTitle,
+                      { color: theme.text },
+                    ]}
+                  >
+                    En solo 1 minuto
+                  </Text>
+                  <Text
+                    style={[styles.onboardingBannerBody, { color: theme.icon }]}
+                    numberOfLines={2}
+                  >
+                    Dinos a qué localidad perteneces y te mostraremos las
+                    secciones más importantes.
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={accentColor}
+                />
+              </TouchableOpacity>
+            )}
+
+            {/* ── Banner de permisos de notificaciones (denied / undetermined) ── */}
+            <NotificationPermissionBanner placement="home" />
 
             {/* ── Accesos rápidos ── */}
             <View style={styles.section}>
@@ -1257,6 +1283,8 @@ export default function Home() {
                 ))}
               </View>
             </View>
+            {/* ── Cantos para el domingo (vie-dom, si el perfil lo enciende) ── */}
+            <SundaySongsCard />
           </View>
           {/* end left column */}
 
@@ -1273,9 +1301,10 @@ export default function Home() {
                 maxFontSizeMultiplier={textCap}
               />
 
-              {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (
+              {calendarsAllHidden ? (
                 /* User has calendars but all hidden */
                 <EmptyState
+                  compact
                   icon="event-note"
                   title="Activa algún calendario"
                   subtitle="Selecciona un calendario para ver los próximos eventos aquí."
@@ -1315,17 +1344,11 @@ export default function Home() {
                           key={`${evt.title}|${evt.startDate}|${idx}`}
                           style={StyleSheet.flatten([
                             styles.eventCard,
-                            {
-                              backgroundColor: theme.card,
-                              borderColor:
-                                scheme === 'dark'
-                                  ? 'rgba(255,255,255,0.09)'
-                                  : 'rgba(0,0,0,0.06)',
-                            },
+                            { backgroundColor: theme.card },
                           ])}
                           onPress={() => navigateToCalendar(evt.startDate)}
                           accessibilityRole="button"
-                          accessibilityLabel={`Evento: ${evt.title}`}
+                          accessibilityLabel={`Evento: ${evt.title}${calName ? `, ${calName}` : ''}${evt.location ? `, en ${evt.location}` : ''}. ${evtDate.getDate()} de ${MONTHS_SHORT[evtDate.getMonth()]}`}
                         >
                           <View
                             style={[
@@ -1355,7 +1378,7 @@ export default function Home() {
                                 styles.eventTitle,
                                 {
                                   color: theme.text,
-                                  fontSize: 13 * fontScale,
+                                  fontSize: BODY_SIZE * fontScale,
                                 },
                               ]}
                               numberOfLines={large ? 3 : 1}
@@ -1363,43 +1386,31 @@ export default function Home() {
                             >
                               {evt.title}
                             </Text>
-                            {calName && (
-                              <View
-                                style={[
-                                  styles.calBadge,
-                                  { backgroundColor: hexAlpha(calColor, '18') },
-                                ]}
-                              >
-                                <Text
-                                  style={[
-                                    styles.calBadgeText,
-                                    { color: calColor },
-                                  ]}
-                                  numberOfLines={1}
-                                >
-                                  {calName}
-                                </Text>
-                              </View>
-                            )}
-                            {evt.location ? (
+                            {/* «● Calendario · Lugar» en una línea legible
+                                (antes: chip de 8 px en mayúsculas y el lugar a
+                                11 px). El color del calendario va en el punto. */}
+                            {calName || evt.location ? (
                               <View style={styles.eventMeta}>
-                                <MaterialIcons
-                                  name="place"
-                                  size={12}
-                                  color={theme.icon}
+                                <View
+                                  style={[
+                                    styles.calDot,
+                                    { backgroundColor: calColor },
+                                  ]}
                                 />
                                 <Text
                                   style={[
                                     styles.eventMetaText,
                                     {
                                       color: theme.icon,
-                                      fontSize: 11 * fontScale,
+                                      fontSize: CAPTION_SIZE * fontScale,
                                     },
                                   ]}
-                                  numberOfLines={large ? 2 : 1}
+                                  numberOfLines={large ? 3 : 1}
                                   maxFontSizeMultiplier={textCap}
                                 >
-                                  {evt.location}
+                                  {[calName, evt.location]
+                                    .filter(Boolean)
+                                    .join(' · ')}
                                 </Text>
                               </View>
                             ) : null}
@@ -1419,30 +1430,36 @@ export default function Home() {
               ) : (
                 /* No upcoming events */
                 <EmptyState
+                  compact
                   icon="event-busy"
                   title="Sin próximos eventos"
                   accentColor={accentColor}
                 />
               )}
 
-              <TouchableOpacity
-                style={StyleSheet.flatten([
-                  styles.calendarButton,
-                  { borderColor: hexAlpha(accentColor, '30') },
-                ])}
-                onPress={() => navigateToCalendar()}
-                accessibilityRole="button"
-              >
-                <Text
-                  style={[
-                    styles.calendarButtonText,
-                    { color: accentColor, fontSize: 14 * fontScale },
-                  ]}
-                  maxFontSizeMultiplier={textCap}
+              {/* Con «Activa algún calendario» el estado vacío ya trae su
+                  botón al calendario: no se pinta un segundo. */}
+              {!calendarsAllHidden && (
+                <TouchableOpacity
+                  style={StyleSheet.flatten([
+                    styles.calendarButton,
+                    { borderColor: hexAlpha(accentColor, '30') },
+                  ])}
+                  onPress={() => navigateToCalendar()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ver calendario"
                 >
-                  Ver calendario
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={[
+                      styles.calendarButtonText,
+                      { color: accentColor, fontSize: 14 * fontScale },
+                    ]}
+                    maxFontSizeMultiplier={textCap}
+                  >
+                    Ver calendario
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
           {/* end right column */}

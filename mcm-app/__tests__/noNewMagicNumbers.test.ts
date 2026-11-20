@@ -135,7 +135,7 @@ describe('no se añaden colores a mano', () => {
  */
 const FONT_SIZE_BUDGET = {
   app: 77,
-  components: 164,
+  components: 161,
 };
 
 const INLINE_FONT_SIZE = /fontSize: \d+/g;

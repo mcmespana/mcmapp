@@ -45,18 +45,20 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
+  // Rojo MIC: el azul marino de antes se perdía sobre el cristal oscuro de la
+  // cabecera (~1,5:1). El rojo pasa de 3:1 en los dos modos.
   dotPing: {
     position: 'absolute',
     width: 12,
     height: 12,
     borderRadius: radii.pillFull,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
   } as ViewStyle,
   dot: {
     width: 9,
     height: 9,
-    borderRadius: radii.xs,
-    backgroundColor: colors.primary,
+    borderRadius: radii.pillFull,
+    backgroundColor: colors.accent,
   } as ViewStyle,
 
   // ── ScrollView ──
@@ -84,7 +86,7 @@ export const styles = StyleSheet.create({
     flex: 1,
   } as ViewStyle,
 
-  section: { marginBottom: spacing.lg + 4 } as ViewStyle,
+  section: { marginBottom: spacing.lg } as ViewStyle,
   // `SectionHeader` trae su propio padding lateral (20) y margen superior:
   // en la Home la sección ya va dentro del padding de página.
   sectionHeader: {
@@ -93,31 +95,31 @@ export const styles = StyleSheet.create({
   } as ViewStyle,
 
   // ── Notification card ──
+  // La tarjeta de la Home es UNA: la de «Cantos para el domingo» (radio lg,
+  // relleno md, sombra `card`, sin borde). Antes había tres recetas seguidas.
   notifCard: {
     borderRadius: radii.lg,
-    borderWidth: 1,
-    padding: spacing.md + 2,
-    ...shadows.raised,
+    padding: spacing.md,
+    ...shadows.card,
   } as ViewStyle,
   notifRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.sm + 2,
+    gap: spacing.md,
   } as ViewStyle,
   notifContent: {
     flex: 1,
-    gap: 5,
+    gap: spacing.xs,
   } as ViewStyle,
   newBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.xs,
     alignSelf: 'flex-start',
   } as ViewStyle,
   newBadgeText: {
-    fontSize: 9,
+    ...typography.overline,
     fontWeight: '800',
-    letterSpacing: 0.8,
   } as TextStyle,
   notifTitle: {
     fontWeight: '700',
@@ -138,8 +140,8 @@ export const styles = StyleSheet.create({
   notifCtaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: spacing.sm + 2,
+    gap: spacing.sm,
+    marginTop: spacing.sm,
     flexWrap: 'wrap',
   } as ViewStyle,
   destinationChip: {
@@ -167,13 +169,6 @@ export const styles = StyleSheet.create({
     ...typography.footnote,
     fontWeight: '700',
   } as TextStyle,
-  arrowPill: {
-    width: 30,
-    height: 30,
-    borderRadius: radii.pillFull,
-    justifyContent: 'center',
-    alignItems: 'center',
-  } as ViewStyle,
 
   // ── Quick grid ──
   quickGrid: {
@@ -189,7 +184,7 @@ export const styles = StyleSheet.create({
   } as ViewStyle,
   quickItem: {
     alignItems: 'center',
-    gap: 7,
+    gap: spacing.sm,
     width: 70,
   } as ViewStyle,
   // Letra del sistema grande: en 70 px las etiquetas se partían a media
@@ -218,8 +213,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: radii.lg,
-    borderWidth: 1,
-    padding: spacing.sm + 4,
+    padding: spacing.md,
     marginBottom: spacing.sm,
     ...shadows.card,
   } as ViewStyle,
@@ -233,9 +227,8 @@ export const styles = StyleSheet.create({
     flexShrink: 0,
   } as ViewStyle,
   eventMonth: {
-    fontSize: 9,
+    ...typography.overline,
     fontWeight: '800',
-    letterSpacing: 0.3,
   } as TextStyle,
   eventDay: {
     ...typography.body,
@@ -246,28 +239,22 @@ export const styles = StyleSheet.create({
   eventInfo: {
     flex: 1,
     overflow: 'hidden',
-    gap: 3,
+    gap: spacing.xs,
   } as ViewStyle,
   eventTitle: {
-    fontWeight: '700',
+    fontWeight: '600',
   } as TextStyle,
-  calBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: radii.xs,
-    alignSelf: 'flex-start',
-    maxWidth: 110,
+  /** Punto del color del calendario, delante de «Calendario · Lugar». */
+  calDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radii.pillFull,
+    flexShrink: 0,
   } as ViewStyle,
-  calBadgeText: {
-    fontSize: 8,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.2,
-  } as TextStyle,
   eventMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: spacing.sm,
   } as ViewStyle,
   eventMetaText: { flex: 1 } as TextStyle,
   eventsSkeletonWrap: {
@@ -281,7 +268,7 @@ export const styles = StyleSheet.create({
   weekSeparator: {
     ...typography.footnote,
     fontWeight: '600',
-    marginTop: spacing.sm + 2,
+    marginTop: spacing.sm,
     marginBottom: spacing.xs,
     marginLeft: spacing.xs,
   } as TextStyle,
@@ -301,30 +288,56 @@ export const styles = StyleSheet.create({
   onboardingBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.sm + 4,
+    gap: spacing.md,
+    padding: spacing.md,
     borderRadius: radii.lg,
     borderWidth: 1,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   } as ViewStyle,
   onboardingBannerTitle: {
-    ...typography.caption,
-    fontWeight: '700',
+    ...typography.body,
+    fontWeight: '600',
   } as TextStyle,
   onboardingBannerBody: {
-    ...typography.micro,
+    ...typography.subhead,
     marginTop: 2,
-    lineHeight: 15,
   } as TextStyle,
+  /**
+   * «Evalúa la app»: la fila es una tarjeta normal (sin borde) y lleva una X
+   * HERMANA de la zona pulsable, no hija (un botón dentro de otro es HTML
+   * inválido en web y el lector de pantalla los lee como uno).
+   */
+  appEvalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: radii.lg,
+    marginBottom: spacing.lg,
+    ...shadows.card,
+  } as ViewStyle,
+  appEvalMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    paddingRight: 0,
+  } as ViewStyle,
+  appEvalClose: {
+    width: 44,
+    height: 44,
+    marginRight: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
 
   // ── CTA "Evalúa la actividad" (destacado) ──
   evalCta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm + 2,
+    gap: spacing.md,
     padding: spacing.md,
     borderRadius: radii.xl,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
     ...shadows.raised,
   } as ViewStyle,
   evalCtaIcon: {
@@ -372,11 +385,11 @@ export const styles = StyleSheet.create({
   eventBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.sm + 4,
+    gap: spacing.md,
+    padding: spacing.md,
     borderRadius: radii.lg,
     borderWidth: 1,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   } as ViewStyle,
   eventBannerIcon: {
     width: 40,
@@ -387,13 +400,12 @@ export const styles = StyleSheet.create({
     flexShrink: 0,
   } as ViewStyle,
   eventBannerTitle: {
-    ...typography.subhead,
-    fontWeight: '700',
+    ...typography.body,
+    fontWeight: '600',
   } as TextStyle,
   eventBannerBody: {
-    ...typography.micro,
+    ...typography.subhead,
     marginTop: 2,
-    lineHeight: 15,
   } as TextStyle,
 
   // ── Footer ──
