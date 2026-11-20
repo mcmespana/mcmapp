@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import { hexAlpha } from '@/utils/colorUtils';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
@@ -48,16 +49,26 @@ interface Props {
   dates: DateOption[];
   selectedDate: string;
   onSelectDate: (date: string, index: number) => void;
+  /**
+   * Relleno del día elegido (con texto blanco encima). En las pantallas de un
+   * evento es el acento del evento (`eventAccentColors(tint).fill`). Por
+   * defecto, el rojo MIC de siempre.
+   */
+  accentColor?: string;
 }
 
 export default function DateSelector({
   dates,
   selectedDate,
   onSelectDate,
+  accentColor = colors.accent,
 }: Props) {
   const scheme = useColorScheme();
   const { width } = useWindowDimensions();
-  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const styles = React.useMemo(
+    () => createStyles(scheme, accentColor),
+    [scheme, accentColor],
+  );
 
   const renderItem = ({ item, index }: { item: DateOption; index: number }) => {
     const date = parseHorarioDate(item.fecha);
@@ -113,7 +124,7 @@ export default function DateSelector({
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark') => {
+const createStyles = (scheme: 'light' | 'dark', accent: string) => {
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
@@ -138,15 +149,15 @@ const createStyles = (scheme: 'light' | 'dark') => {
       borderColor: isDark ? '#3A3A3C' : '#E6E7EA',
     },
     itemSelected: {
-      backgroundColor: colors.accent,
-      borderColor: colors.accent,
+      backgroundColor: accent,
+      borderColor: accent,
       ...Platform.select({
         web: {
           // @ts-ignore
-          boxShadow: '0 6px 16px rgba(225,92,98,0.35)',
+          boxShadow: `0 6px 16px ${hexAlpha(accent, '59')}`,
         },
         default: {
-          shadowColor: colors.accent,
+          shadowColor: accent,
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.35,
           shadowRadius: 8,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -24,6 +24,7 @@ import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
 import { useEventHorarios } from '@/hooks/useEventHorarios';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import { chooseHorarioKey } from '@/utils/eventHorarios';
+import { eventAccentColors } from '@/utils/tintInk';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import { getClosestDateIndex } from '@/utils/dateUtils';
 import DateSelector from '@/components/DateSelector';
@@ -36,6 +37,9 @@ import { ThemedText } from '@/components/ThemedText';
  * su altura a ~0 (se veía solo una tira gris y la píldora, con las etiquetas
  * tapadas por el selector de días). En fila, el flex es a lo ancho.
  */
+/** Fondo de la pantalla en claro (el de `styles.container`). */
+const PAGE_LIGHT = '#F8F9FA';
+
 const selectorRow = {
   flexDirection: 'row' as const,
   paddingHorizontal: spacing.lg,
@@ -91,25 +95,6 @@ function HorarioSheetView({
     ? horarioData.map((d) => ({ fecha: d.fecha, titulo: d.titulo }))
     : [];
   const dia = horarioData ? horarioData[index] : null;
-
-  // Calculate progressive green color based on day index
-  const getProgressiveGreenColor = (dayIndex: number, totalDays: number) => {
-    if (totalDays <= 1) return colors.green;
-
-    // Base green color: #A3BD31
-    const baseR = 163;
-    const baseG = 189;
-    const baseB = 49;
-
-    // Calculate darkness factor (0 to 0.6, so it gets darker but not black)
-    const darknessFactor = (dayIndex / (totalDays - 1)) * 0.6;
-
-    const newR = Math.round(baseR * (1 - darknessFactor));
-    const newG = Math.round(baseG * (1 - darknessFactor));
-    const newB = Math.round(baseB * (1 - darknessFactor));
-
-    return `rgb(${newR}, ${newG}, ${newB})`;
-  };
 
   // Check if current day is the last day (has "Despedida" event)
   const isLastDay =
@@ -170,9 +155,18 @@ function HorarioSheetView({
     }
   }, [isLastDay, shakeAnim, fadeAnim]);
 
-  const currentColor = horarioData
-    ? getProgressiveGreenColor(index, horarioData.length)
-    : colors.green;
+  // Todo el acento sale del color del evento (design.md §2, territorio
+  // Evento): antes el día elegido era rojo MIC y la cabecera y las horas un
+  // verde fijo de la época del Jubileo, mezclados con el color del evento.
+  const accents = React.useMemo(
+    () =>
+      eventAccentColors(
+        event.tintColor,
+        scheme === 'dark' ? Colors.dark.background : PAGE_LIGHT,
+      ),
+    [event.tintColor, scheme],
+  );
+  const currentColor = accents.text;
 
   // Handle navigation to materials with specific day
   const handleNavigateToMateriales = (dayIndex: number) => {
@@ -183,8 +177,8 @@ function HorarioSheetView({
   };
 
   const dynamicStyles = React.useMemo(
-    () => createDynamicStyles(scheme, fontScale, currentColor, isLastDay),
-    [scheme, fontScale, currentColor, isLastDay],
+    () => createDynamicStyles(accents, isLastDay),
+    [accents, isLastDay],
   );
 
   // El último día llama la atención con un temblor y un latido suaves.
@@ -244,6 +238,7 @@ function HorarioSheetView({
           dates={fechas}
           selectedDate={dia.fecha}
           onSelectDate={(_, i) => setIndex(i)}
+          accentColor={accents.fill}
         />
       </View>
       <PageContainer>
@@ -257,7 +252,10 @@ function HorarioSheetView({
           <Animated.View
             style={[dynamicStyles.titleWrapper, isLastDay && attentionStyle]}
           >
-            <ThemedText style={styles.titleText} selectable>
+            <ThemedText
+              style={[styles.titleText, { color: accents.text }]}
+              selectable
+            >
               {dia.titulo}
             </ThemedText>
             {isLastDay && (
@@ -293,6 +291,15 @@ function HorarioSheetView({
  */
 export default function HorarioScreen() {
   const event = useCurrentEvent();
+  const scheme = useColorScheme();
+  const fill = React.useMemo(
+    () =>
+      eventAccentColors(
+        event.tintColor,
+        scheme === 'dark' ? Colors.dark.background : PAGE_LIGHT,
+      ).fill,
+    [event.tintColor, scheme],
+  );
   const { sheets, ready } = useEventHorarios(event);
   const selKey = `horarioSel_${event.id}`;
   const [picked, setPicked] = useState<string | null>(null);
@@ -320,7 +327,7 @@ export default function HorarioScreen() {
           setPicked(key);
           AsyncStorage.setItem(selKey, key).catch(() => {});
         }}
-        accentColor={event.tintColor}
+        accentColor={fill}
         accessibilityLabel="Horario"
       />
     ) : undefined;
@@ -342,7 +349,7 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? theme.background : '#F8F9FA',
+      backgroundColor: isDark ? theme.background : PAGE_LIGHT,
     },
     headerSection: {
       backgroundColor: theme.background,
@@ -379,35 +386,20 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   });
 };
 
-const createDynamicStyles = (
-  scheme: 'light' | 'dark',
-  scale: number,
-  currentColor: string,
-  isLastDay: boolean,
-) => {
+const createDynamicStyles = (accents: { soft: string }, isLastDay: boolean) => {
   return StyleSheet.create({
+    // Cabecera del día: fondo suave del color del evento y el título en su
+    // tinta. Antes era un bloque macizo con sombra que competía con el día
+    // elegido del selector de fechas.
     titleWrapper: {
-      backgroundColor: currentColor,
-      padding: spacing.md,
-      borderRadius: radii.xl,
+      backgroundColor: accents.soft,
+      paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.md,
+      borderRadius: radii.lg,
       marginBottom: spacing.xs,
-      ...Platform.select({
-        web: {
-          // @ts-ignore
-          boxShadow: `0 6px 18px ${currentColor}55`,
-        },
-        default: {
-          shadowColor: currentColor,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 6,
-        },
-      }),
-      // Add extra styling for last day
       ...(isLastDay && {
-        borderWidth: 2,
-        borderColor: '#FF6B6B', // Subtle red border for sadness
+        borderWidth: 1.5,
+        borderColor: '#FF6B6B',
       }),
     },
   });
