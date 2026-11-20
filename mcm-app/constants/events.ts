@@ -290,11 +290,89 @@ export const VISITAPAPA: EventConfig = {
   ],
 };
 
+/**
+ * Congreso M+C, 27–29 de noviembre de 2026.
+ *
+ * Datos en `activities/congresomc26/` (creado desde el panel MCM). Todavía no
+ * es el evento activo: se destaca cuando el panel pone
+ * `activities/_meta.activeEventId = 'congresomc26'`. Hasta entonces no sale en
+ * ningún sitio (no está archivado, así que tampoco en «Eventos pasados»).
+ *
+ * `tabId: 'visitapapa'` — el tab del evento en curso es ese hueco de la barra
+ * (su layout resuelve el `eventId` del evento activo). Para que lo vean, el
+ * perfil tiene que llevar `visitapapa` en `tabs` o `homeButtons`.
+ */
+export const CONGRESO_MC: EventConfig = {
+  id: 'congresomc26',
+  title: 'Congreso M+C',
+  tintColor: '#2F80ED',
+  firebasePrefix: 'activities/congresomc26',
+  bannerText: '27–29 de noviembre de 2026',
+  tabId: 'visitapapa',
+  sections: [
+    {
+      label: 'Horario',
+      subtitle: 'Sábado 28 y domingo 29',
+      emoji: '⏰',
+      materialIcon: 'schedule',
+      target: 'Horario',
+      tintColor: '#FF8A65',
+      firebaseKey: 'horario',
+    },
+    {
+      label: 'Materiales',
+      subtitle: 'Recursos y dinámicas',
+      emoji: '📦',
+      materialIcon: 'inventory-2',
+      target: 'Materiales',
+      tintColor: '#4FC3F7',
+      firebaseKey: 'materiales',
+    },
+    {
+      label: 'Profundiza',
+      subtitle: 'Reflexión y textos',
+      emoji: '📖',
+      materialIcon: 'menu-book',
+      target: 'Profundiza',
+      tintColor: '#BA68C8',
+      firebaseKey: 'profundiza',
+    },
+    {
+      label: 'Grupos',
+      subtitle: 'Tu grupo y su equipo',
+      emoji: '👥',
+      materialIcon: 'groups',
+      target: 'Grupos',
+      tintColor: '#FFD54F',
+      firebaseKey: 'grupos',
+    },
+    {
+      label: 'Contactos',
+      subtitle: 'Por si te hacen falta',
+      emoji: '☎️',
+      materialIcon: 'contact-phone',
+      target: 'Contactos',
+      tintColor: '#9FA8DA',
+      firebaseKey: 'contactos',
+    },
+    {
+      label: 'Apps',
+      subtitle: 'Herramientas MCM',
+      emoji: '📲',
+      materialIcon: 'apps',
+      target: 'Apps',
+      tintColor: '#FFB74D',
+      firebaseKey: 'apps',
+    },
+  ],
+};
+
 // ─── Registry ────────────────────────────────────────────────────────
 
 export const EVENTS: Record<string, EventConfig> = {
   [JUBILEO.id]: JUBILEO,
   [VISITAPAPA.id]: VISITAPAPA,
+  [CONGRESO_MC.id]: CONGRESO_MC,
 };
 
 /**

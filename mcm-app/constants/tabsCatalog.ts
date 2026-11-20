@@ -78,9 +78,11 @@ export const TABS_CONFIG: TabConfig[] = [
     headerShown: false,
   },
   {
+    // Hueco del evento en curso (la carpeta se llama así por historia): hoy la
+    // Visita del Papa o el Congreso M+C. Etiqueta neutra: sirve para cualquiera.
     name: 'visitapapa',
-    label: 'Visita Papa',
-    subtitle: 'Visita del Papa León XIV 2026',
+    label: 'Evento',
+    subtitle: 'El evento en curso',
     emoji: '🕊️',
     iosIcon: { default: 'building.columns', selected: 'building.columns.fill' },
     androidIcon: 'church',

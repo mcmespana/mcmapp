@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-20 17:50 — Congreso M+C (27–29 nov) registrado, listo para activar
+
+- **Evento nuevo `congresomc26`** en el registry (`CONGRESO_MC`, `constants/events.ts`): azul `#2F80ED`, datos en `activities/congresomc26/` (ya creado en Firebase desde el panel), secciones Horario, Materiales, Profundiza, Grupos, Contactos y Apps. No lleva Evaluación todavía.
+- **Todavía no se ve en ningún sitio.** Se destaca cuando el panel pone `activities/_meta.activeEventId = "congresomc26"` (Actividades → «Modo evento global»); hasta entonces ni tab, ni banner, ni botón, ni «Eventos pasados» (no está archivado). Para verlo, el perfil tiene que llevar `visitapapa` en `tabs` o `homeButtons` (como con la Visita del Papa).
+- **El hueco `visitapapa` es ahora «el tab del evento en curso»**: su layout ya no tiene `visitapapa26` fijo, resuelve el `eventId` del evento activo. Si no, activar el Congreso habría abierto la Visita del Papa. La etiqueta del tab pasa a «Evento» y el botón de la Home toma el nombre y el color del evento activo (la Visita del Papa conserva «Visita Papa» y su amarillo).
+- Al terminar el congreso: archivarlo desde el panel (`activities/congresomc26/_meta.status = archived`) o cambiar el evento activo.
+
 ## 2026-11-20 16:00 — Monitor solo de grupos que no pasan lista: ya no es monitor
 
 - Quien tiene la relación de monitor pero **todas** sus relaciones vigentes cuelgan de grupos sin la casilla «entra en Pasar Lista» (adultos como Comser, Apoyo para el seguro, gente en formación, o el comodín «POR DEFINIR») deja de recibir el papel `monitor`: no ve fichas de chavales, grupos, listas ni asistencias, ni recibe los avisos de «pasa lista». Coordinación y acompañamiento no cambian. Lo decide el middleware (`computePrincipal`); la misma regla está en el plugin web.
