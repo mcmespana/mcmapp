@@ -197,6 +197,34 @@ Sustituye a «Fresh Start» (aquella pista ya no cuadra con los tiempos nuevos).
   Colecciona 12, cierre 4 = 70 (61,76 s reales). Todos los cortes caen en
   pulso y casi todos en compás.
 
+### Tomas nativas (20/11/2026)
+
+El propietario grabó y capturó la app en su iPhone (1320 × 2868, 60 fps).
+Recortes (ffmpeg: H.264, 640 px de ancho, 60 fps, el punto rojo de la
+grabación tapado con `drawbox=x=418:y=68:w=58:h=58`, y en la película la isla
+dibujada al tamaño de la de grabación):
+
+| Recurso | Origen | Tramo | Escena |
+|---|---|---|---|
+| `n-inicio.mp4` | 1 intro scroll | 0,15–2,35 s | Inicio |
+| `n-cant-cat.mp4` | 2 cantoral video deslizar | 0,3–1,6 | Cantoral |
+| `n-cant-scroll.mp4` | 7 comunion scroll express | 0,35–4,45 | Cantoral |
+| `n-tono.mp4` | 4 sois la sal cambiando (MI → DO, −4) | 0–6,2 | Cantoral |
+| `n-afinador.mp4` | 6 abrir y afinar 2 cuerdas (recorte del afinador) | 9,2–11,6 | Cantoral (tarjeta) |
+| `n-anadir.mp4` | 7 comunion añadiendo canciones | 0,2–4,15 | Coros |
+| `n-lista-scroll.mp4` | 9 scroll de la lista | 0–1,48 | Coros |
+| `n-contigo.mp4` | 12 contigo scroll | 0,05–2,05 | Contigo |
+| `n-subrayar.mp4` | 12 contigo subrayar | 1,2–6,0 | Contigo |
+| `n-lecturas.mp4` | 13 evangelio y scroll 2 | 0,9–4,05 | Contigo |
+| `n-calendario.mp4` | 15 calendario cambiar | 0,3–6,0 | Fechas y fotos |
+| `n-fotos.mp4` | 16 fotos navegar | 6,2–8,1 | Fechas y fotos |
+| `n-evento.mp4` | 17 video (Visita del Papa + aviso) | 0–3,05 | Eventos |
+
+Capturas fijas: 5 (canción en DO, gancho), 12 subrayado (gancho), 7 comunión,
+9 selección con cambios de tono, 16 fotos arriba. Pendientes como archivo: 10
+hoja de coro y 11 compartir playlist (de momento, las de la web). Comunica
+sigue con las capturas de la app local con datos inventados.
+
 ## Siguiente paso
 
 1. El propietario retoca los textos de la tabla y graba las tomas de la lista.
