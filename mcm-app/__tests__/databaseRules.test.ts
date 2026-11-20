@@ -65,7 +65,7 @@ describe('app: lecturas públicas', () => {
     [`${EV}/_meta`, 'useEventsMeta'],
     [`${EV}/horario/data`, 'HorarioScreen'],
     [`${EV}/horario2/data`, 'HorarioScreen (varios horarios)'],
-    [`${EV}/horario2/meta/nombre`, 'useEventHorarios — nombre del horario'],
+    [`${EV}/horario2/meta`, 'useEventHorarios — nombre y color del horario'],
     [`${EV}/horario2/updatedAt`, 'useEventHorarios — sondeo'],
     [`${EV}/compartiendo/data`, 'ReflexionesScreen'],
     [`${EV}/evaluacion/data`, 'EvaluacionScreen'],

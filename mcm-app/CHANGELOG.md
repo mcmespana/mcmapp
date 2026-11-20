@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-20 22:10 — Cada horario de un evento con su color
+
+- Con varios horarios, cada uno lleva su color y al cambiar de segmento cambian el segmento activo y todos los acentos de la pantalla (día elegido, cabecera del día, horas). El primero es el color del evento; el resto, colores que lo complementan, calculados en **OKLCH** (`utils/colorHarmony.ts`): complementario con 2, complementario dividido con 3 (±150°), repartidos por la rueda con más. Al girar el tono se conserva la luminosidad percibida, así que no salen chillones. Congreso M+C: naranja · verde azulado · azul.
+- `meta.color` (#RRGGBB) en un `horarioN` fija su color a mano; el panel tiene el campo (vacío = automático). El sondeo lee ahora `meta` entero (nombre y color).
+
 ## 2026-11-20 21:40 — El Horario de un evento usa el color del evento
 
 - El Horario mezclaba cuatro colores sin relación con el evento: el día elegido en rojo MIC (fijo en `DateSelector`), la cabecera del día y las horas en un verde «progresivo» de la época del Jubileo, y el selector de horarios con el naranja del evento y texto negro. Ahora todo sale del `tintColor` del evento (design.md §2, territorio Evento) con `eventAccentColors` (`utils/tintInk.ts`): un relleno del tinte oscurecido lo justo para que el blanco se lea (4,5:1) en el selector y el día elegido; el texto del acento (horas) a 4,5:1 sobre la página, en claro y en oscuro; y la cabecera del día pasa de bloque macizo con sombra a fondo suave del tinte.
