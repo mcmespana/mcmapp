@@ -180,6 +180,20 @@ items.push({
 
 Listo. No hay que tocar ninguna sub-pantalla ni el stack de navegación.
 
+## Evento en curso: el tab y la Home
+
+Un evento solo se **destaca** (tab, botón de la Home, banner) si es el evento
+activo (`activities/_meta.activeEventId`) y declara `tabId`. Todos los eventos
+con tab usan el mismo hueco, `tabId: 'visitapapa'` (la carpeta
+`app/(tabs)/visitapapa/` se llama así por historia): su layout resuelve el
+`eventId` del evento activo, así que **no hay que duplicar la carpeta** para un
+evento nuevo. Basta con registrarlo en `events.ts` con `tabId: 'visitapapa'` y
+poner su id en `activeEventId` desde el panel. El perfil tiene que llevar
+`visitapapa` en `tabs` o `homeButtons`. Sin `tabId`, el evento solo es
+accesible desde «Más».
+
+Ejemplo: `CONGRESO_MC` (Congreso M+C, 27–29 nov 2026).
+
 ## Ocultar secciones
 
 Dos formas, ambas respetadas por el hub:

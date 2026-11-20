@@ -7,6 +7,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import EventActionButtons from '@/components/EventActionButtons';
 import { EventBaseContext, EventIdContext } from '@/hooks/useCurrentEvent';
+import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { takePendingEventScreen } from '@/utils/eventNavigation';
 import {
   EVENT_SUB_SLUGS,
@@ -21,21 +22,21 @@ import {
   renderEventScreens,
 } from '@/app/screens/eventStackScreens';
 
-const EVENT_ID = 'visitapapa26';
-
 // expo-router 58: el arranque del stack se declara así, no con `initialRouteName`.
 export const unstable_settings = { anchor: 'index' };
 
 /**
- * Tab del evento activo "Visita Papa León XIV 2026" (modo evento).
+ * Tab del evento EN CURSO (modo evento). La carpeta se llama `visitapapa` por
+ * historia: es el hueco de la barra que ocupa el evento activo, sea cual sea
+ * (`activities/_meta.activeEventId`). Hoy la Visita del Papa (archivada) y el
+ * Congreso M+C; los dos declaran `tabId: 'visitapapa'` en `constants/events.ts`.
  *
  * Reusa las mismas pantallas de evento que el tab "Más" (Jubileo), cada una un
- * fichero de esta carpeta, pero con su propio header y `eventId` fijo
- * (`visitapapa26`) inyectado vía `EventIdContext`. Para crear otra
- * actividad-tab basta con duplicar esta carpeta cambiando el `eventId` +
- * registrar el tab en los catálogos.
+ * fichero de esta carpeta, pero con su propio header y el `eventId` del evento
+ * activo inyectado vía `EventIdContext`.
  */
 export default function VisitaPapaLayout() {
+  const { activeEventId: EVENT_ID } = useActiveMeta();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const wasBlurredRef = useRef(false);
   const insets = useSafeAreaInsets();

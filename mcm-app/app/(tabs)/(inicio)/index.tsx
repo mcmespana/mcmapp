@@ -80,6 +80,7 @@ import {
   getEventCacheKey,
   getEventFirebasePath,
   isEventArchived,
+  VISITAPAPA,
 } from '@/constants/events';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
@@ -276,6 +277,11 @@ export default function Home() {
     (resolved.tabs.includes(activeTabId) ||
       resolved.homeButtons.includes(activeTabId));
   const showEventBanner = hasEventAccess;
+  // Botón del evento en la grid: color propio y nombre corto (el título de la
+  // Visita del Papa es largo para un botón; el resto de eventos caben).
+  const activeEventTint = activeEvent.tintColor;
+  const activeEventLabel =
+    activeEvent.id === VISITAPAPA.id ? 'Visita Papa' : activeEvent.title;
 
   // CTA "Evalúa la actividad": el estado abierto/cerrado se lee de Firebase
   // (config en `activities/<evento>/evaluacion/data`) con fallback al código,
@@ -470,7 +476,9 @@ export default function Home() {
       );
     const comunicaColors = tinted(colors.purple);
     const cancioneroColors = tinted(TabHeaderColors.cancionero);
-    const visitapapaColors = tinted(TabHeaderColors.visitapapa);
+    // El botón es el del evento en curso: lleva SU color (el amarillo de la
+    // Visita del Papa es el mismo que `TabHeaderColors.visitapapa`).
+    const visitapapaColors = tinted(activeEventTint);
     const fotosColors = tinted(TabHeaderColors.fotos);
     const evangelioColors = tinted(TabHeaderColors.contigo);
     const catalog: Record<string, QuickItem> = {
@@ -492,7 +500,7 @@ export default function Home() {
       },
       visitapapa: {
         key: 'visitapapa',
-        label: 'Visita Papa',
+        label: activeEventLabel,
         icon: 'church',
         iconBg: visitapapaColors.fill,
         iconColor: visitapapaColors.glyph,
@@ -537,6 +545,8 @@ export default function Home() {
     theme.icon,
     eventArchived,
     activeTabId,
+    activeEventTint,
+    activeEventLabel,
   ]);
 
   // Notification card content
