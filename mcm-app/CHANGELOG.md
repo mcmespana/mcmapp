@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-20 21:15 — Títulos de Apps, Profundiza y Grupos tapados + logo SVG por evento
+
+- **Fix (iOS)**: el título de **Apps**, **Profundiza** y los dos detalles de **Grupos** (categoría y grupo) se pintaba debajo del header transparente nativo, pisado por la hora y la isla dinámica. Les faltaba `floatingHeaderInset` (Materiales, Contactos, Visitas, Horario y Reflexiones ya lo llevaban). Nuevo test guardarraíl `eventScreensHeroInset`: todo `<ScreenHero>` de una pantalla de evento tiene que llevarlo.
+- **Logo SVG por evento**: `activities/<id>/_meta.heroSvg` (SVG como texto en Firebase) se pinta en el hub con `react-native-svg` (ya está en el binario). `currentColor` se pinta con la tinta del hero, así un mismo SVG se lee sobre cualquier color. Solo se admite SVG «seguro» (`utils/eventHeroSvg.ts`: sin script/image/use/style/href/on…=/data:, máx. 24 000 car.); si no se puede interpretar, sale el emblema de siempre. Prioridad: imagen subida (`heroImageUrl`) > SVG > `heroImage` del registry > estrellitas.
+- El panel tiene el campo «Logo dibujado con código (SVG)» con vista previa y aviso si la app no lo aceptaría.
+- Congreso M+C: logo de un amanecer abstracto («Despierta») ya cargado.
+
 ## 2026-11-20 20:30 — Arreglo del selector de horarios y logo por evento desde el panel
 
 - **Fix**: el conmutador de horarios no se leía en iOS (solo asomaba una tira gris y la píldora): su `track` es `flex: 1` y dentro de una columna sin alto fijo colapsaba. Ahora va en una fila.

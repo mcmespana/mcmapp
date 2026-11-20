@@ -320,6 +320,7 @@ export default function GruposScreen() {
           <ScreenHero
             title={grupo.nombre}
             kicker={categoria ?? undefined}
+            floatingHeaderInset
             left={
               <Pressable
                 onPress={goBackFromGroup}
@@ -370,6 +371,7 @@ export default function GruposScreen() {
         <View style={styles.container}>
           <ScreenHero
             title={categoria}
+            floatingHeaderInset
             left={
               <Pressable
                 onPress={() => setCategoria(null)}

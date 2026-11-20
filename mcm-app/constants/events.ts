@@ -70,6 +70,12 @@ export interface EventConfig {
    */
   heroImage?: ImageSourcePropType;
   /**
+   * Logo dibujado con código (SVG como texto), alternativa a `heroImage` para
+   * eventos sin logo de verdad. Normalmente llega de `_meta.heroSvg` en Firebase.
+   * `currentColor` se pinta con la tinta del hero. Ver `utils/eventHeroSvg.ts`.
+   */
+  heroSvg?: string;
+  /**
    * Prefijo de Firebase Realtime Database para todas las secciones.
    * · Jubileo: `jubileo` (raíz).
    * · Eventos del panel MCM: `activities/<nombre>` (ej.
