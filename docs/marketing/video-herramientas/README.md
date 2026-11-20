@@ -35,3 +35,21 @@ entera (48 vistas, hoja de 8 × 6, fondo transparente) con la misma luz que el
 visor del pañuelo. Las medallas van comprimidas con Draco: la página ya
 carga el decodificador. Necesita `three@0.180.0` junto a la página y un
 servidor local en el puerto 8765 con los modelos en `models/`.
+
+## Grabaciones de pantalla → imágenes (`coser-capturas-largas.py`)
+
+**Los vídeos no se ven dentro del reproductor de Motion** (los pide por su
+URL y no llegan a cargar; las imágenes sí, porque van incrustadas). Por eso
+cada grabación del iPhone se convierte en imágenes:
+
+- **Si desliza**: fotogramas a 30 fps reducidos a 640 px →
+  `coser-capturas-largas.py` registra cuánto se ha movido el contenido entre
+  fotogramas y cose una **captura larga** (cabecera fija + contenido + la barra
+  de pestañas recortada con su forma). Guarda los desplazamientos por fotograma
+  (`off`) para reproducir el movimiento exacto.
+- **Si cambia de estado**: fotogramas a 15 fps; se guarda uno cuando la pantalla
+  cambia de verdad (diferencia media > umbral) y siempre el primero de cada tramo
+  quieto. Van juntos en una hoja de 4 columnas con su segundo (`times`).
+
+En la película: `W.strip` / `W.keys` en `shared.js`, y `W.play` los mueve
+igual que movía los vídeos.

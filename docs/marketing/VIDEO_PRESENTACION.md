@@ -242,6 +242,15 @@ sigue con las capturas de la app local con datos inventados.
   después: el repo no lleva esos cambios.
 - Sonido: de 8 «sparkle» quedan 2; el resto, variado y alternando izquierda y derecha.
 
+### Los vídeos se ven en blanco → imágenes (20/11/2026)
+
+El reproductor no cargaba los `.mp4` (salían en blanco); las imágenes sí. Todas
+las grabaciones pasaron a capturas largas cosidas (Inicio, categorías,
+Comunión, Tu selección, Contigo, lecturas, fotos) y hojas de fotogramas clave
+(tono MI → DO, añadir canciones, subrayado, calendarios activos, aviso del
+evento, afinador). Cómo, en `video-herramientas/README.md`. **No volver a usar
+vídeos en la película.**
+
 ## Siguiente paso
 
 1. El propietario retoca los textos de la tabla y graba las tomas de la lista.
