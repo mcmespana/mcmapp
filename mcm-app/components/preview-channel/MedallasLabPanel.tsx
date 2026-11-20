@@ -29,10 +29,7 @@ export function MedallasLabPanel() {
 
   return (
     <View style={styles.card}>
-      <View>
-        <Text style={styles.eyebrow}>experimento</Text>
-        <Text style={styles.title}>Medallas en 3D</Text>
-      </View>
+      <Text style={styles.title}>Medallas en 3D</Text>
 
       <Text style={styles.body}>
         Toca una medalla para verla de cerca y girarla con el dedo. Necesita
@@ -79,12 +76,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(245, 200, 90, 0.55)',
     gap: spacing.md,
-  },
-  eyebrow: {
-    ...typography.overline,
-    color: 'rgba(245, 200, 90, 0.95)',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
   },
   title: {
     ...typography.h3,

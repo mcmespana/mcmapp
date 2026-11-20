@@ -173,7 +173,7 @@ export default function SuggestSongModal({
         </Text>
         <AppTextField
           accentWhenFilled
-          placeholder="Opcional — cualquier información que nos ayude a añadirla bien"
+          placeholder="Opcional"
           value={letra}
           onChangeText={setLetra}
           maxLength={10000}
