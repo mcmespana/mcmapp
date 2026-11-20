@@ -14,6 +14,7 @@ import { signOut } from '@/services/comunica/session';
 import { useMe } from '@/hooks/comunica/useMe';
 import { useOpenLegacy } from '@/hooks/comunica/useOpenLegacy';
 import { useOutbox } from '@/hooks/comunica/useOutbox';
+import { hasMonitorData } from '@/utils/comunica/profiles';
 import { h } from '@/utils/haptics';
 import AreaScreen from '../comun/AreaScreen';
 import NavRow from '../comun/NavRow';
@@ -116,10 +117,10 @@ export default function AccountScreen() {
       </Section>
 
       <Section>
-        {me.roles.includes('monitor') ? (
+        {hasMonitorData(me) ? (
           <NavRow
             icon="graduationcap"
-            title="Mis datos de monitor"
+            title="Monitor/a"
             // Plan 09: trayectoria, formación, certificado y títulos.
             onPress={() => router.push('/comunica/yo/monitor')}
           />

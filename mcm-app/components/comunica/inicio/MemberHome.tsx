@@ -5,7 +5,7 @@
 //   3. «A quién tienes a cargo» (solo el familiar a secas): las mismas tarjetas de «¿A quién ves?» con «Ver su ficha».
 //   4. «Actividades» (o «Tus pagos» para el familiar a secas), con la descripción de cada sección.
 //   4b. «Próximas actividades» (si hay Calendario y algo cerca) y «Ver calendario».
-//   5. «Tu perfil»: «Mis datos» o «Datos de Lucía» y, a un monitor viéndose a sí mismo, «Mis datos de monitor».
+//   5. «Tu perfil»: «Mis datos» o «Datos de Lucía» y, a un monitor viéndose a sí mismo, «Monitor/a».
 //
 // La portada no conoce las rutas de los otros planes: abre DESTINOS DEL PLUGIN (`SECTION_PAGE`) con `nativeHrefFor` y, si aún no hay pantalla nativa
 // (planes 12-16), la web con la sesión puesta y, viendo a un hijo, con él ya elegido. «Próximas actividades» (`UpcomingAgenda`) sale del calendario (plan 16), si se enseña Calendario y hay algo.
@@ -25,6 +25,7 @@ import {
   firstNameOf,
   greeting,
   greetingIntro,
+  hasMonitorData,
   homeSections,
   SECTION_PAGE,
   type FamilySection,
@@ -163,10 +164,10 @@ function Content({ embedded }: { embedded: boolean }) {
             }
             onPress={() => openSection('profile', dataTitle(active, isSelf))}
           />
-          {isSelf && me.roles.includes('monitor') ? (
+          {isSelf && hasMonitorData(me) ? (
             <NavRow
               icon="graduationcap"
-              title="Mis datos de monitor"
+              title="Monitor/a"
               subtitle="Tu trayectoria, formación y certificado de delitos sexuales."
               onPress={() => router.push('/comunica/yo/monitor')}
             />

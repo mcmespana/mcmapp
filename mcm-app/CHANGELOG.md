@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-20 16:00 — Monitor solo de grupos que no pasan lista: ya no es monitor
+
+- Quien tiene la relación de monitor pero **todas** sus relaciones vigentes cuelgan de grupos sin la casilla «entra en Pasar Lista» (adultos como Comser, Apoyo para el seguro, gente en formación, o el comodín «POR DEFINIR») deja de recibir el papel `monitor`: no ve fichas de chavales, grupos, listas ni asistencias, ni recibe los avisos de «pasa lista». Coordinación y acompañamiento no cambian. Lo decide el middleware (`computePrincipal`); la misma regla está en el plugin web.
+- **Cambio en la app**: esas personas **conservan «Monitor/a»** (antes «Mis datos de monitor») **y el aviso del certificado de delitos sexuales**. `Me.monitorData` (opcional; un servidor viejo no lo manda) y `hasMonitorData()` en `utils/comunica/profiles.ts`. Solo `preview`.
+- Ante la duda no se quita nada: sin ningún grupo marcado en la delegación, relación sin enlace a grupo, o solo la marca de la ficha.
+- Decisión del propietario (20/11/2026). Detalle en `comunicaAreaPrivada:docs/comunica/PASAR-LISTA-COORDINACION.md` §2.
+
 ## 2026-11-20 12:00 — Contigo y el resto de la app: copy repasado con `unslop-ui`
 
 - Solo textos: rayas, subtítulos que repetían el título (Recordatorios, calendario, notificaciones vacías), pistas que contaban cómo funciona por dentro («Se guarda solo», «avisos en tiempo real», «modal»), etiquetas encima de títulos que ya lo decían (bienvenida del onboarding, paneles del Laboratorio) y mayúsculas de título («Mi rato de oración», «Primera lectura»). Errores de carga de Comida, Panel y portal de Comunica con el mismo texto: «No se ha podido cargar. Revisa tu conexión.».
