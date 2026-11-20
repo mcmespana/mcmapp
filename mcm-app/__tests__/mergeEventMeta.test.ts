@@ -96,4 +96,38 @@ describe('mergeEventMeta', () => {
       expect(merged.heroImage).toBeUndefined();
     });
   });
+
+  describe('logo SVG (heroSvg)', () => {
+    const svg =
+      '<svg viewBox="0 0 10 10"><circle r="4" fill="currentColor"/></svg>';
+    const url = 'https://example.com/logo.webp';
+
+    it('un SVG seguro se aplica como logo del evento', () => {
+      const merged = mergeEventMeta(base, { heroSvg: `  ${svg}  ` });
+      expect(merged.heroSvg).toBe(svg);
+      expect(merged.heroImage).toBeUndefined();
+    });
+
+    it('la imagen subida manda sobre el SVG', () => {
+      const merged = mergeEventMeta(base, { heroImageUrl: url, heroSvg: svg });
+      expect(merged.heroImage).toEqual({ uri: url });
+      expect(merged.heroSvg).toBeUndefined();
+    });
+
+    it('un SVG remoto sustituye al heroImage del registry', () => {
+      const withLogo = { ...base, heroImage: 4 } as unknown as EventConfig;
+      const merged = mergeEventMeta(withLogo, { heroSvg: svg });
+      expect(merged.heroImage).toBeUndefined();
+      expect(merged.heroSvg).toBe(svg);
+    });
+
+    it('un SVG peligroso se ignora y se conserva lo que había', () => {
+      const withLogo = { ...base, heroImage: 4 } as unknown as EventConfig;
+      const merged = mergeEventMeta(withLogo, {
+        heroSvg: '<svg><script>x()</script></svg>',
+      });
+      expect(merged.heroImage).toBe(4);
+      expect(merged.heroSvg).toBeUndefined();
+    });
+  });
 });

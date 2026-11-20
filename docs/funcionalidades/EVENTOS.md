@@ -72,6 +72,15 @@ sube desde el panel (Actividades → metadatos del evento → «Logo del evento�
 a Firebase Storage). Se pinta sobre el color del evento: usar una versión del
 logo que se lea sobre él.
 
+**Logo dibujado con código** (`activities/<evento>/_meta.heroSvg`): alternativa
+al logo subido, para eventos sin logo de verdad. Es el SVG como TEXTO, que la
+app pinta con `react-native-svg`; `currentColor` se sustituye por la tinta del
+hero. Solo se admite SVG de formas y degradados: sin `script`, `image`, `use`,
+`style`, `href`, `on…=` ni `data:`, y de 24 000 caracteres como máximo
+(`utils/eventHeroSvg.ts`; el panel avisa si no lo cumple). Prioridad de logo:
+`heroImageUrl` (imagen subida) > `heroSvg` > `heroImage` del registry > emblema
+de estrellitas.
+
 **Qué hace `status: 'archived'` en la app** (desde 2026-07-29): archivar el
 evento activo lo saca de todos los sitios donde estaba destacado y lo deja sólo
 en "Más > Eventos pasados":

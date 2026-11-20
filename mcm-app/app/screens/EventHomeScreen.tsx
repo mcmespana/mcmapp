@@ -20,6 +20,8 @@ import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useNavigation } from 'expo-router/react-navigation';
 import { MaterialIcons } from '@/components/ui/icons';
+import { SvgXml } from 'react-native-svg';
+import { paintHeroSvg } from '@/utils/eventHeroSvg';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha, darkenHex, readableOn } from '@/utils/colorUtils';
@@ -169,6 +171,12 @@ export default function EventHomeScreen() {
   // Tinta del hero por contraste real con el tinte (onColor), no por un
   // umbral de brillo: con el verde del Jubileo, el umbral elegía blanco (2,1:1).
   const { fg: heroFg, muted: heroMuted, emblemBg } = eventHeroColors(tint);
+  // Emblema por defecto del hero, para eventos sin logo (ni imagen ni SVG).
+  const emblem = (
+    <View style={[styles.heroEmblem, { backgroundColor: emblemBg }]}>
+      <MaterialIcons name="auto-awesome" size={26} color={heroFg} />
+    </View>
+  );
 
   // La campana de suscripción va SIEMPRE en el hero, para que todos los eventos
   // se vean igual tanto si se abren como tab propio (Visita Papa) como apilados
@@ -210,10 +218,10 @@ export default function EventHomeScreen() {
               resizeMode="contain"
               accessibilityIgnoresInvertColors
             />
+          ) : event.heroSvg ? (
+            <HeroSvg svg={event.heroSvg} color={heroFg} fallback={emblem} />
           ) : (
-            <View style={[styles.heroEmblem, { backgroundColor: emblemBg }]}>
-              <MaterialIcons name="auto-awesome" size={26} color={heroFg} />
-            </View>
+            emblem
           )}
           <Text style={[styles.heroTitle, { color: heroFg }]}>
             {event.title}
@@ -427,6 +435,38 @@ function SectionCard({
     </PressableFeedback>
   );
 }
+
+/**
+ * Logo dibujado con código (`event.heroSvg`). Si el SVG no se puede interpretar
+ * se enseña el emblema por defecto, nunca una pantalla rota.
+ */
+function HeroSvg({
+  svg,
+  color,
+  fallback,
+}: {
+  svg: string;
+  color: string;
+  fallback: React.ReactElement;
+}) {
+  const [failed, setFailed] = React.useState(false);
+  const xml = React.useMemo(() => paintHeroSvg(svg, color), [svg, color]);
+  if (failed) return fallback;
+  return (
+    <SvgXml
+      xml={xml}
+      width={HERO_MARK_SIZE}
+      height={HERO_MARK_SIZE}
+      style={{ alignSelf: 'flex-start', marginBottom: spacing.md }}
+      onError={() => setFailed(true)}
+      fallback={fallback}
+      accessibilityElementsHidden
+    />
+  );
+}
+
+/** Lado del logo del hero (el mismo que `heroImage`). */
+const HERO_MARK_SIZE = 132;
 
 type Styles = {
   container: ViewStyle;
