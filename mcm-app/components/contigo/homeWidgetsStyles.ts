@@ -217,6 +217,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  teaserCtaRow: { flexDirection: 'row', alignItems: 'center' },
   teaserCtaText: { fontSize: 12, fontWeight: '700' },
   teaserDone: {
     flexDirection: 'row',
@@ -257,7 +258,6 @@ export const styles = StyleSheet.create({
   },
   weekLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   weekLegendDot: { width: 8, height: 8, borderRadius: 2 },
-  weekLegendStar: { fontSize: 10 },
   weekLegendText: { fontSize: 10, fontWeight: '500' },
 
   // Stat

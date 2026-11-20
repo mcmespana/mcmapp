@@ -261,7 +261,6 @@ export default function ReminderCard({
                   </Text>
                   <Text style={[styles.notifMeta, { color: W.textSec }]}>
                     {t}
-                    {i > 0 ? ' · solo si no lo has hecho' : ''}
                   </Text>
                 </View>
               );

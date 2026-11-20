@@ -107,7 +107,7 @@ export default function SurveyBanner({
           {entry.title}
         </Text>
         <Text style={styles.ctaBody} numberOfLines={2}>
-          {entry.intro || 'Tu opinión nos ayuda — solo un momento.'}
+          {entry.intro || 'Tu opinión nos ayuda. Es solo un momento.'}
         </Text>
       </View>
       <View style={styles.ctaBtn}>
