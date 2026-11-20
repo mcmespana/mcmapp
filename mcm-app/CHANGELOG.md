@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-20 16:00 — Monitor solo de grupos que no pasan lista: ya no es monitor
+
+- Quien tiene la relación de monitor pero **todas** sus relaciones vigentes cuelgan de grupos sin la casilla «entra en Pasar Lista» (adultos como Comser, Apoyo para el seguro, gente en formación) deja de recibir el papel `monitor`: no ve fichas de chavales, grupos, listas ni asistencias, no recibe los avisos de «pasa lista» ni «Mis datos de monitor». Coordinación y acompañamiento no cambian.
+- **No hay código nuevo en la app**: lo decide el middleware (`computePrincipal`) y la app ya lee los papeles de `/v1/me`, así que lo ve al abrirla. La misma regla está en el plugin web (`sticpa_pl_monitor_fuera_de_pasar_lista()`).
+- Ante la duda no se quita nada: sin ningún grupo marcado en la delegación (casi todas hoy), relación sin grupo o con el comodín «POR DEFINIR», o solo la marca de la ficha.
+- Decisión del propietario (20/11/2026). Detalle en `comunicaAreaPrivada:docs/comunica/PASAR-LISTA-COORDINACION.md` §2.
+
 ## 2026-11-20 12:00 — Contigo y el resto de la app: copy repasado con `unslop-ui`
 
 - Solo textos: rayas, subtítulos que repetían el título (Recordatorios, calendario, notificaciones vacías), pistas que contaban cómo funciona por dentro («Se guarda solo», «avisos en tiempo real», «modal»), etiquetas encima de títulos que ya lo decían (bienvenida del onboarding, paneles del Laboratorio) y mayúsculas de título («Mi rato de oración», «Primera lectura»). Errores de carga de Comida, Panel y portal de Comunica con el mismo texto: «No se ha podido cargar. Revisa tu conexión.».
