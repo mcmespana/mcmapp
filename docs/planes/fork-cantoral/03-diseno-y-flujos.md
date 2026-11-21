@@ -311,6 +311,12 @@ acciones se reparten entre la barra inferior y el menú ⋯.
    Navidad), Atril, Atril en directo (seguidor con aviso), Consola del
    maestro, Repertorio, Equipo base— en las direcciones A y B, como artefacto
    de diseño compartible con **Izan**, que cierra el estilo (D-05).
+   **Hecha el 21/11/2026**: <https://claude.ai/artifact/TBGfc98GLHTma1vhY1wqHa>
+   (lienzo con las dos filas, A arriba y B abajo: Inicio en modo Navidad,
+   Atril siguiendo al maestro, maestro en el móvil —avisos en A, «ahora
+   hacemos…» en B— y consola del maestro en iPad; cada pantalla tiene un
+   ajuste de color de acento para probar variantes). Para que la vea Izan,
+   hay que compartirla desde su menú «Compartir».
 2. Se escribe el **`design.md` del fork** (prescriptivo, corto, como el del
    monorepo pero con sus propias reglas) y `constants/theme.ts`.
 3. Guardarraíles: contraste de tokens, trinquete de números mágicos, sin

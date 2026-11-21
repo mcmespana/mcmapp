@@ -2,8 +2,9 @@
 
 > **Estado:** 📝 plan cerrado el 21/11/2026 con **todas las decisiones
 > contestadas** (§4) y mergeado en `main` de `mcmapp`. **Sin empezar.**
-> Siguiente: la **maqueta A/B** para elegir estilo (`03` §8) y **el fork en la
-> cuenta de GitHub de Izan** (`01` §0). Los bugs de MCM App quedan
+> **Maqueta A/B hecha** (21/11): <https://claude.ai/artifact/TBGfc98GLHTma1vhY1wqHa>
+> — elegir dirección e Izan cierra el estilo (`03` §8). Siguiente: **el fork
+> en la cuenta de GitHub de Izan** (`01` §0). Los bugs de MCM App quedan
 > **documentados, sin hacer** (`mcm-app/TODO.md`, «Cantoral — bugs y
 > Navidad»).
 > **Respuestas originales:** página
