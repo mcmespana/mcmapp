@@ -28,7 +28,7 @@
 
 | Semana | App (Claude) | Fuera del código (usuario, Izan) |
 | ------ | ------------ | -------------------------------- |
-| **S0 · 21-23 nov** | Plan mergeado en `main`. **Maqueta A/B**. **Fase 0**: spike de wifi local el primer día, poda, app a la raíz | **Fork en la cuenta de Izan** (`mcmcantoral`) y darle acceso a Claude. Empezar a importar villancicos |
+| **S0 · 21-23 nov** | Plan mergeado en `main`. **Maqueta A/B**. **Fase 0**: spike de wifi local el primer día, poda, app a la raíz | **Repo `mcmespana/mcmcantoral`** y darle acceso a Claude. Empezar a importar villancicos |
 | **S1 · 24-30 nov** | Fase 0 cerrada → **TestFlight + prueba interna de Play**. **Fase 1** (catálogo, bloques, modo Navidad). Maqueta A/B | Izan mira la maqueta y cierra estilo. Icono en Canva. Fichas de tienda y privacidad |
 | **S2 · 1-7 dic** | **Fase 2** con el estilo de Izan. **Fase 3**: protocolo, nube, **wifi local** con equipo base y relevo, pasar el cantoral | Villancicos revisados, bloques 2026 enlazados y publicados |
 | **S3 · 8-13 dic** | Fase 3: avisos, reacciones, pedal y volumen, cuenta atrás, resumen, seguir por sección. **Enviar a revisión ~9 dic** | **Ensayo con el router del evento** y 10+ móviles |
