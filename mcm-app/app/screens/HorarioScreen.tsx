@@ -23,7 +23,7 @@ import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
 import { useEventHorarios } from '@/hooks/useEventHorarios';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
-import { chooseHorarioKey } from '@/utils/eventHorarios';
+import { chooseHorarioKey, horarioTints } from '@/utils/eventHorarios';
 import { eventAccentColors } from '@/utils/tintInk';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import { getClosestDateIndex } from '@/utils/dateUtils';
@@ -53,9 +53,12 @@ const selectorRow = {
 function HorarioSheetView({
   firebaseKey,
   selector,
+  tint,
 }: {
   firebaseKey: string | null;
   selector?: React.ReactNode;
+  /** Color de ESTE horario (el del evento si solo hay uno). */
+  tint: string;
 }) {
   const { open } = useEventNavigation();
   const scheme = useColorScheme();
@@ -161,10 +164,10 @@ function HorarioSheetView({
   const accents = React.useMemo(
     () =>
       eventAccentColors(
-        event.tintColor,
+        tint,
         scheme === 'dark' ? Colors.dark.background : PAGE_LIGHT,
       ),
-    [event.tintColor, scheme],
+    [tint, scheme],
   );
   const currentColor = accents.text;
 
@@ -203,7 +206,7 @@ function HorarioSheetView({
           </View>
         ) : null}
         {empty ? (
-          <ComingSoon accentColor={event.tintColor} />
+          <ComingSoon accentColor={tint} />
         ) : (
           <View
             style={{
@@ -292,14 +295,6 @@ function HorarioSheetView({
 export default function HorarioScreen() {
   const event = useCurrentEvent();
   const scheme = useColorScheme();
-  const fill = React.useMemo(
-    () =>
-      eventAccentColors(
-        event.tintColor,
-        scheme === 'dark' ? Colors.dark.background : PAGE_LIGHT,
-      ).fill,
-    [event.tintColor, scheme],
-  );
   const { sheets, ready } = useEventHorarios(event);
   const selKey = `horarioSel_${event.id}`;
   const [picked, setPicked] = useState<string | null>(null);
@@ -317,6 +312,24 @@ export default function HorarioScreen() {
   }, [selKey]);
 
   const activeKey = ready ? chooseHorarioKey(sheets, picked) : null;
+
+  // Cada horario con su color (el primero, el del evento; el resto, colores
+  // que lo complementan): al cambiar de horario cambian el segmento activo y
+  // los acentos de toda la pantalla.
+  const tints = React.useMemo(
+    () => horarioTints(event.tintColor, sheets),
+    [event.tintColor, sheets],
+  );
+  const activeIndex = sheets.findIndex((s) => s.key === activeKey);
+  const tint = activeIndex >= 0 ? tints[activeIndex] : event.tintColor;
+  const fill = React.useMemo(
+    () =>
+      eventAccentColors(
+        tint,
+        scheme === 'dark' ? Colors.dark.background : PAGE_LIGHT,
+      ).fill,
+    [tint, scheme],
+  );
 
   const selector =
     sheets.length > 1 && activeKey ? (
@@ -339,6 +352,7 @@ export default function HorarioScreen() {
       key={activeKey ?? 'loading'}
       firebaseKey={activeKey}
       selector={selector}
+      tint={tint}
     />
   );
 }

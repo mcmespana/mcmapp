@@ -43,7 +43,7 @@ WhatsApp una lista suelta.
   choirId?, choirName?
   playlist: [...], current: {...} | null
   createdAt, startedAt, updatedAt, lastActivity
-  expiresAt = startedAt + 24 h          ← NO se estira al publicar
+  expiresAt = startedAt + 12 h          ← +12 h si el líder publica en las 2 h antes de caducar
 ```
 
 **El contenido no se duplica**: `/choirs` es solo un índice para poder pintar
@@ -164,9 +164,14 @@ En la hoja del coro, un coro **sin playlists** ya no enseña «Importar la
 ### Coro en vivo
 
 - Se entra por el coro: **Dirigir yo** / **Unirme · dirige Juan**.
-- La sesión **se cierra sola 24 h después de empezar**. Publicar canciones no
-  estira ese plazo.
-- Tomar el mando reinicia el contador (empiezan otras 24 h) y la playlist del
+- La sesión **se cierra sola 12 h después de empezar**. Si el líder publica
+  algo (canción o playlist) en las **2 h antes de caducar**, se alarga **12 h
+  más** desde ese momento: una celebración larga no se corta a media canción,
+  y una sesión olvidada caduca igual a las 12 h (`shouldRenewChoirSession` /
+  `extendChoirSession` en `services/choirSessionService.ts`).
+  ⚠️ Los textos de la app aún dicen «24 h» (`ChoirSheet`, `usePlaylistSharing`):
+  apuntado en `mcm-app/TODO.md`.
+- Tomar el mando reinicia el contador (empiezan otras 12 h) y la playlist del
   nuevo líder pasa a ser la de la sesión.
 - Unirse reemplaza tu lista por la del líder, con los mismos 10 s de deshacer.
 
@@ -250,7 +255,7 @@ login, grupo pequeño y conocido. Ver `docs/SEGURIDAD.md`.
 | `utils/playlistSync.ts`                            | Firma de la playlist, orden del histórico, fechas relativas         |
 | `services/choirDirectoryService.ts`                | CRUD de `/choirs` y su índice de playlists                          |
 | `services/cloudPlaylistService.ts`                 | Contenido en `/playlistShares` + `allocateFreeCode`                 |
-| `services/choirSessionService.ts`                  | Sesión en vivo, caducidad de 24 h, identidad del líder              |
+| `services/choirSessionService.ts`                  | Sesión en vivo, caducidad (12 h + 12 h con actividad), identidad del líder |
 | `hooks/usePlaylistSharing.ts`                      | Todos los flujos (importar, guardar, dirigir, deshacer, contraseña) |
 | `hooks/useMyChoir.ts` / `hooks/usePlaylistLink.ts` | Estado persistido                                                   |
 | `components/playlist/ChoirSheet.tsx`               | La hoja de coro con sus pasos                                       |

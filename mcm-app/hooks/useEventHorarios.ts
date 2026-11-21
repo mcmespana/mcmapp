@@ -18,16 +18,18 @@ import {
 async function probeHorario(base: string, n: number): Promise<HorarioProbe> {
   const db = getDatabase(getFirebaseApp());
   const key = horarioKey(n);
-  const [updatedAt, hidden, nombre] = await Promise.all([
+  const [updatedAt, hidden, metaSnap] = await Promise.all([
     get(ref(db, `${base}/${key}/updatedAt`)),
     get(ref(db, `${base}/${key}/hidden`)),
-    get(ref(db, `${base}/${key}/meta/nombre`)),
+    get(ref(db, `${base}/${key}/meta`)),
   ]);
+  const meta = metaSnap.val();
   return {
     n,
     exists: updatedAt.exists(),
     hidden: hidden.val() === true,
-    nombre: nombre.val(),
+    nombre: meta && typeof meta === 'object' ? meta.nombre : undefined,
+    color: meta && typeof meta === 'object' ? meta.color : undefined,
   };
 }
 

@@ -3,6 +3,7 @@ import {
   chooseHorarioKey,
   horarioKey,
   horarioNombre,
+  horarioTints,
   parseCachedSheets,
   sheetsFromProbes,
 } from '@/utils/eventHorarios';
@@ -104,6 +105,45 @@ describe('horarios múltiples de un evento', () => {
     });
     it('una lista vacía es válida (evento de horario único)', () => {
       expect(parseCachedSheets('[]')).toEqual([]);
+    });
+  });
+
+  describe('color de cada horario', () => {
+    it('sheetsFromProbes recoge meta.color solo si es #RRGGBB', () => {
+      const sheets = sheetsFromProbes([
+        probe(1, { color: '#0f7f85' }),
+        probe(2, { color: 'rojo' }),
+        probe(3),
+      ]);
+      expect(sheets[0].color).toBe('#0F7F85');
+      expect(sheets[1].color).toBeUndefined();
+      expect(sheets[2].color).toBeUndefined();
+    });
+
+    it('horarioTints: el primero es el del evento y el resto combinan', () => {
+      const sheets = sheetsFromProbes([probe(1), probe(2), probe(3)]);
+      const tints = horarioTints('#F07C2B', sheets);
+      expect(tints[0]).toBe('#F07C2B');
+      expect(new Set(tints).size).toBe(3);
+    });
+
+    it('horarioTints respeta el color puesto a mano', () => {
+      const sheets = sheetsFromProbes([
+        probe(1),
+        probe(2, { color: '#123456' }),
+      ]);
+      expect(horarioTints('#F07C2B', sheets)[1]).toBe('#123456');
+    });
+
+    it('la caché admite el color y rechaza uno mal formado', () => {
+      expect(
+        parseCachedSheets(
+          '[{"key":"horario1","nombre":"A","color":"#ABCDEF"}]',
+        ),
+      ).toEqual([{ key: 'horario1', nombre: 'A', color: '#ABCDEF' }]);
+      expect(
+        parseCachedSheets('[{"key":"horario1","nombre":"A","color":"azul"}]'),
+      ).toBeNull();
     });
   });
 });

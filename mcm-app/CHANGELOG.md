@@ -4,6 +4,18 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-21 18:50 — Cantoral: bugs previos al fork MCM Cantoral
+
+- **Sugerir una canción ya no obliga a todos a re-bajar el cantoral.** `SuggestSongModal` escribía `songs/updatedAt` (en ms, cuando el CI escribe segundos) tras guardar la solicitud: cada móvil bajaba `songs/data` entero. Fuera; test guardarraíl `songsUpdatedAtGuard`: ningún fichero de la app escribe esa marca.
+- **`useFirebaseData` compara `updatedAt` como fecha, no como texto** (`utils/updatedAt.ts`): solo descarga si el remoto es **más nuevo**. Normaliza segundos, milisegundos (número o texto) e ISO; con un formato que no entiende vuelve a «distinto = nuevo». Afecta a todos los nodos `{ updatedAt, data }`.
+- **Coro en vivo: cambiar de tono o de cejilla ya no deja sin letra a los oyentes.** El detalle publicaba `{filename, transpose, screen}` y el servicio reemplaza `current` entero: el oyente en pantalla completa dejaba de seguir y quien se unía después recibía la canción vacía (el de tono, además, perdía la cejilla). Ahora todo pasa por `choirCurrentForSong` con letra y metadatos.
+- Textos del coro en vivo: dura **12 h y se alarga sola** si el líder sigue (decían 24 h), también en el comentario de `database.rules.json`.
+
+## 2026-11-20 22:10 — Cada horario de un evento con su color
+
+- Con varios horarios, cada uno lleva su color y al cambiar de segmento cambian el segmento activo y todos los acentos de la pantalla (día elegido, cabecera del día, horas). El primero es el color del evento; el resto, colores que lo complementan, calculados en **OKLCH** (`utils/colorHarmony.ts`): complementario con 2, complementario dividido con 3 (±150°), repartidos por la rueda con más. Al girar el tono se conserva la luminosidad percibida, así que no salen chillones. Congreso M+C: naranja · verde azulado · azul.
+- `meta.color` (#RRGGBB) en un `horarioN` fija su color a mano; el panel tiene el campo (vacío = automático). El sondeo lee ahora `meta` entero (nombre y color).
+
 ## 2026-11-20 21:40 — El Horario de un evento usa el color del evento
 
 - El Horario mezclaba cuatro colores sin relación con el evento: el día elegido en rojo MIC (fijo en `DateSelector`), la cabecera del día y las horas en un verde «progresivo» de la época del Jubileo, y el selector de horarios con el naranja del evento y texto negro. Ahora todo sale del `tintColor` del evento (design.md §2, territorio Evento) con `eventAccentColors` (`utils/tintInk.ts`): un relleno del tinte oscurecido lo justo para que el blanco se lea (4,5:1) en el selector y el día elegido; el texto del acento (horas) a 4,5:1 sobre la página, en claro y en oscuro; y la cabecera del día pasa de bloque macizo con sombra a fondo suave del tinte.

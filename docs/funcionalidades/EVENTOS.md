@@ -217,7 +217,7 @@ Curso Despierta y dos formaciones de Pre-monitores), no se hacen varios eventos:
 se cargan varios horarios en el mismo.
 
 ```
-activities/<evento>/horario1   { updatedAt, data: [días], meta: { nombre: "Curso Despierta" } }
+activities/<evento>/horario1   { updatedAt, data: [días], meta: { nombre: "Curso Despierta", color?: "#RRGGBB" } }
 activities/<evento>/horario2   { updatedAt, data: [días], meta: { nombre: "Pre-monitores 1" } }
 …                              (hasta 8; `hidden: true` lo oculta del selector)
 ```
@@ -227,6 +227,10 @@ activities/<evento>/horario2   { updatedAt, data: [días], meta: { nombre: "Pre-
 - La pantalla de Horario prueba `horario1`, `horario2`… (`useEventHorarios`) y,
   si hay más de uno, enseña un conmutador arriba y recuerda el último elegido
   en el móvil. Con uno solo no enseña conmutador.
+- **Color de cada horario**: `meta.color` (`#RRGGBB`) si se pone a mano; si no,
+  el primero lleva el color del evento y el resto, colores que lo complementan
+  (`utils/colorHarmony.ts`, en OKLCH). Al cambiar de horario, el segmento activo
+  y los acentos de la pantalla toman su color.
 - La tarjeta del hub se declara con `firebaseKey: 'horario1'` en `events.ts`.
 - Sin `horario1` el evento usa el `horario` único de siempre; no hay que migrar
   nada (Jubileo y la Visita del Papa siguen igual).

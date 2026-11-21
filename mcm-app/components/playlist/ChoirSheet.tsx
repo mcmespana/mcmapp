@@ -468,7 +468,7 @@ const ChoirSheet: React.FC<Props> = ({
             renderRow(
               'campaign',
               'Dirigir yo',
-              'Quien se una a este coro seguirá tus canciones (24 h)',
+              'Quien se una a este coro seguirá tus canciones (12 h, se alarga sola si sigues)',
               () => {
                 if (!myChoir) return;
                 close(() => onLead(myChoir, null));
