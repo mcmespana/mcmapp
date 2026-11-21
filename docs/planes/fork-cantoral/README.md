@@ -3,8 +3,10 @@
 > **Estado:** 📝 plan cerrado el 21/11/2026 con **todas las decisiones
 > contestadas** (§4) y mergeado en `main` de `mcmapp`. **Sin empezar.**
 > **Maqueta A/B hecha** (21/11): <https://claude.ai/artifact/TBGfc98GLHTma1vhY1wqHa>
-> — elegir dirección e Izan cierra el estilo (`03` §8). Siguiente: **el repo
-> `mcmespana/mcmcantoral`** (copia con historia, no fork de GitHub: `01` §0). Los bugs del cantoral de MCM App
+> — elegir dirección e Izan cierra el estilo (`03` §8). **Repo
+> `mcmespana/mcmcantoral` creado el 21/11** (copia con toda la historia de
+> `main` @ `d4338986`, no fork de GitHub: `01` §0). **La copia viva de este
+> plan está allí**; siguiente: Fase 0 allí. Los bugs del cantoral de MCM App
 > (§3, 4-5, y los dos menores) **ya están arreglados en `main`** (21/11);
 > la Fase 1 de Navidad sigue sin hacer (`mcm-app/TODO.md`).
 > **Respuestas originales:** página
