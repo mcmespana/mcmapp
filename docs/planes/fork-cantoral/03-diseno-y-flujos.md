@@ -181,8 +181,9 @@ Bocetos de intención, no de píxeles. Los píxeles se deciden en la maqueta
 ### 4.4 Directo — quien dirige
 
 - Al pulsar «Dirigir»: una hoja con el PIN de 4 cifras y **por dónde va el
-  directo** — *Los dos* (marcado de serie) · *Solo wifi del coro* · *Solo
-  internet* (`04` §2 bis). Un toque más y empieza.
+  directo** — *Los dos* · *Solo wifi del coro* · *Solo internet*, con la que
+  encaja con tu conexión ya marcada (con datos y sin wifi, *Solo internet*)
+  (`04` §2 bis). Un toque más y empieza.
 
 - En móvil: el mismo Atril con la barra del maestro: **‹ ›** grandes,
   **📣 Avisos** (rejilla de avisos predefinidos, 1 toque = enviado),

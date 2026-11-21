@@ -119,7 +119,7 @@ Comprobado en el código de `mcmapp` (`main`, `257f5f4`) y del repo
 | D-20 | Seguir por sección | **Sí, «muy bueno»**, para el evento. Y que el maestro pueda decir **«ahora hacemos esta estrofa / este puente»** | Fase 3, después de lo básico (`04` §10) |
 | D-21 | Congelar el cantoral en directo | **No**: se actualiza en cuanto hay algo nuevo | `02` §3.3: se aplica al momento, sin saltar de canción ni de posición |
 | D-22 | Cantoral de MCM App | **Se queda** (y solo crece) | — |
-| D-23 | Por dónde va un directo (propuesta del usuario, 21/11) | Al abrirlo se elige **wifi del coro, internet o los dos**; **los dos** por defecto; solo elige quien dirige y se puede cambiar en pleno directo | `04` §2 bis |
+| D-23 | Por dónde va un directo (propuesta del usuario, 21/11) | Al abrirlo se elige **wifi del coro, internet o los dos**; viene marcado lo que encaja con la conexión de quien dirige (con datos y sin wifi, *Solo internet*); solo elige quien dirige y se puede cambiar en pleno directo | `04` §2 bis |
 
 **Aclaraciones**
 

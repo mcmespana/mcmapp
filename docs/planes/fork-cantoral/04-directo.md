@@ -58,10 +58,16 @@ Al abrir un directo («Dirigir»), un control segmentado con tres opciones:
 
 | Opción | Cuándo | Qué pasa |
 | ------ | ------ | -------- |
-| **Los dos** (por defecto, recomendado) | Casi siempre; Villancicos | Se publica por la wifi del coro **y** por internet. El seguidor usa el que llegue primero; si uno cae, sigue el otro sin cortes |
+| **Los dos** (recomendado si hay wifi con internet) | Casi siempre; Villancicos | Se publica por la wifi del coro **y** por internet. El seguidor usa el que llegue primero; si uno cae, sigue el otro sin cortes |
 | **Solo wifi del coro** | Sin internet en el sitio, o no se quieren gastar datos | Solo servidor local + Bonjour. No escribe en Firebase. Quien no esté en esa wifi no puede seguir (ni la web ni MCM App) |
 | **Solo internet** | No hay wifi común: gente repartida, seguidores con MCM App o desde la web | Solo `/choirSessions`. No abre servidor local ni pide el permiso de red local |
 
+- **Lo marcado de serie se adapta a la conexión del móvil de quien dirige**
+  (`expo-network`: tipo de red y si llega a internet): con **datos y sin
+  wifi** → *Solo internet* (p. ej. un ensayo cualquiera fuera de Navidad,
+  todos por datos: ni servidor local ni aviso de «red local»); en una **wifi
+  sin internet** (el router de la calle) → *Solo wifi del coro*; en una
+  **wifi con internet** → *Los dos*. Siempre se puede cambiar.
 - **Solo elige quien dirige.** Quien sigue no elige nada: se conecta por
   donde pueda y la píldora dice cómo («wifi del coro», «internet», «los
   dos»).
