@@ -3,7 +3,7 @@
 > **Lee esto antes de abrir ningún `PLAN_*.md`.** Su único trabajo es que no
 > vuelvas a ejecutar algo que ya está hecho.
 >
-> Última actualización: 2026-11-16.
+> Última actualización: 2026-11-21.
 
 ## La regla, en una línea
 
@@ -33,6 +33,7 @@ El coste de mantener esta tabla al día es mucho menor que el de repetirlo.
 | [`PLAN_PANUELO_INTERCAMBIOS.md`](PLAN_PANUELO_INTERCAMBIOS.md) | 🟡 **Fases 0-5 y 7 hechas el 2026-11-16** (detalla la Fase 5 del plan del pañuelo). Quedan: que el usuario pegue las reglas en la consola, probar con dos móviles y la Fase 6 (opcional). Decisiones contestadas | `BACKLOG.md` §2.K |
 | [`PLAN_PANUELO_ASISTENCIA.md`](PLAN_PANUELO_ASISTENCIA.md) | 📝 **Escrito el 2026-11-16, sin empezar.** Piezas por asistencia a eventos y desvelado una a una. Parte en `comunicaMiddleware` y `mcmpanel`. Tiene decisiones 🔒 | `BACKLOG.md` §2.K |
 | [`PLAN_CANTOS_DOMINGO.md`](PLAN_CANTOS_DOMINGO.md) | 🟡 **Fases 1-4 hechas el 2026-11-16** (pantalla, motor y tarjeta de Inicio). **2026-11-17**: la entrada pasa a Tu selección vacía y el orden mira las lecturas del domingo (salmo con salmo). Quedan: Fase 0 (contar etiquetas), probar en móvil, Fase 5 (salmo) y 6 (opcional). Decisiones contestadas | `BACKLOG.md` §2.K |
+| [`fork-cantoral/`](fork-cantoral/README.md) | 📝 **Escrito el 2026-11-21, sin empezar.** Fork MCM Cantoral (app aparte solo con el cantoral, modo Navidad para Villancicos Solidarios). Bloqueado por las decisiones D-01…D-22 y por crear el repo. Lo de este repo es el «Pre-fork» | `BACKLOG.md` §2.L |
 | [`PLAN_HOJA_CANCION.md`](PLAN_HOJA_CANCION.md)   | 🟡 Hecho y en `main`: hoja, modo atril, onboarding, 258 canciones repasadas, admin fiel a la app, PDF y pantalla completa web. Queda: aplicar las etiquetas aprobadas, mapa de la canción (opcional) y probar el pedal en un iPad | `BACKLOG.md` §2.H                                     |
 
 ## 🔵 Futuro lejano — no se tocan hasta que el usuario lo pida
