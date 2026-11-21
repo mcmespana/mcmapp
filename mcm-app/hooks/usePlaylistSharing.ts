@@ -361,7 +361,7 @@ export function usePlaylistSharing(opts: {
           });
           toast.show({
             variant: 'success',
-            label: `Diriges ${choir.name}. La sesión se cierra sola en 24 h.`,
+            label: `Diriges ${choir.name}. La sesión dura 12 h y se alarga sola si sigues dirigiendo.`,
           });
         } catch (e: any) {
           logger.error('lead error', e);

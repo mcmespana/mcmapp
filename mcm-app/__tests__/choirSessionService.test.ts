@@ -268,7 +268,7 @@ describe('subscribeChoirSession — sesiones caducadas', () => {
     onErr(err);
   };
 
-  it('una sesión caducada llega como null: el oyente sale solo a las 24 h', () => {
+  it('una sesión caducada llega como null: el oyente sale solo al caducar', () => {
     const onChange = jest.fn();
     subscribeChoirSession(VALID, onChange);
     emit({ v: 1, expiresAt: Date.now() - 1 });

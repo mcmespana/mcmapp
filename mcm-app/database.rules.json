@@ -420,7 +420,8 @@
      *  Misma lógica que playlistShares (sincronización en tiempo real).
      *  La <clave> es el id de un coro (`consolacion-castellon-4f2a`) o, en las
      *  sesiones sueltas, un código de 4 dígitos. La sesión caduca sola a las
-     *  24 h (`expiresAt`); el cliente ignora las caducadas.
+     *  12 h (`expiresAt`), +12 h si el líder publica en las 2 h previas; el
+     *  cliente ignora las caducadas.
      * ------------------------------------------------------------------ */
     "choirSessions": {
       ".read": false,

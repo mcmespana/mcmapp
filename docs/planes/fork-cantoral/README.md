@@ -4,9 +4,9 @@
 > contestadas** (§4) y mergeado en `main` de `mcmapp`. **Sin empezar.**
 > **Maqueta A/B hecha** (21/11): <https://claude.ai/artifact/TBGfc98GLHTma1vhY1wqHa>
 > — elegir dirección e Izan cierra el estilo (`03` §8). Siguiente: **el fork
-> en la cuenta de GitHub de Izan** (`01` §0). Los bugs de MCM App quedan
-> **documentados, sin hacer** (`mcm-app/TODO.md`, «Cantoral — bugs y
-> Navidad»).
+> en la cuenta de GitHub de Izan** (`01` §0). Los bugs del cantoral de MCM App
+> (§3, 4-5, y los dos menores) **ya están arreglados en `main`** (21/11);
+> la Fase 1 de Navidad sigue sin hacer (`mcm-app/TODO.md`).
 > **Respuestas originales:** página
 > <https://claude.ai/artifact/KDnnYJnwrYgxQB5zSPcakn> (colección `decisiones`).
 > **Dónde vivirá:** al crear el fork, esta carpeta se copia entera a
@@ -72,9 +72,9 @@ Comprobado en el código de `mcmapp` (`main`, `257f5f4`) y del repo
 3. **No hay canciones empaquetadas**: la primera vez sin internet el cantoral
    sale vacío. El fork lleva una semilla en el binario (`02` §3).
 4. 🐞 **Sugerir una canción obliga a todos a re-bajar el cantoral**
-   (`SuggestSongModal` escribe `songs/updatedAt`). Bug de MCM App.
+   (`SuggestSongModal` escribe `songs/updatedAt`). Bug de MCM App, **arreglado el 21/11**.
 5. 🐞 **En el coro en vivo, cambiar de tono borra la letra a los
-   seguidores** (`current` se reemplaza entero). Bug de MCM App.
+   seguidores** (`current` se reemplaza entero). Bug de MCM App, **arreglado el 21/11**.
 6. **El pedal Bluetooth solo funciona de verdad en la web** (`04` §8).
 7. MCM App tiene **una sola lista**: el fork necesita varios repertorios.
 8. La **versión mínima** de MCM App **bloquearía** al fork si la leyera.
@@ -144,7 +144,7 @@ proyección para la misa. **No**: I-03 pulso compartido, I-05 comprar router
 
 | Fase | Qué | Dónde | Documento | Antes del 19/12 |
 | ---- | --- | ----- | --------- | --------------- |
-| **Paquete MCM App** | Bugs 4 y 5 de §3 + comparación numérica de `updatedAt` + textos «24 h» del coro + **Fase 1 de Navidad**. **Documentado, sin hacer** (`mcm-app/TODO.md`). Se hace donde llegue antes —MCM App o el fork— y se lleva al otro con un parche | `mcmapp` y/o fork | [`02`](02-datos-offline.md) §8-§9 | ✅ (Navidad en MCM App es el plan B) |
+| **Paquete MCM App** | Bugs 4 y 5 de §3 + comparación numérica de `updatedAt` + textos «24 h» del coro + **Fase 1 de Navidad**. **Bugs y textos: ✅ hechos en `main` (21/11).** Fase 1 de Navidad: sin hacer (`mcm-app/TODO.md`). Se hace donde llegue antes —MCM App o el fork— y se lleva al otro con un parche | `mcmapp` y/o fork | [`02`](02-datos-offline.md) §8-§9 | ✅ (Navidad en MCM App es el plan B) |
 | **0** | Repo, identidad, poda, **app en la raíz y limpieza**, shell sin pestañas, CI, **spike de wifi local**, TestFlight/Play interna | fork | [`01`](01-arranque-y-poda.md) | ✅ |
 | **1** | Catálogo offline (semilla, ficheros, atómico, nunca re-bajar), repertorios múltiples, bloques, modo Navidad | fork + cantoral | [`02`](02-datos-offline.md) | ✅ |
 | **2** | Diseño: estilo elegido sobre la maqueta (Izan) → `design.md` → tokens → Inicio, Atril, Repertorio, iPad | fork | [`03`](03-diseno-y-flujos.md) | ✅ |

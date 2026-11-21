@@ -1,4 +1,5 @@
 import { logger } from '@/utils/logger';
+import { isRemoteUpdatedAtNewer } from '@/utils/updatedAt';
 import {
   isPermissionDenied,
   reportIfPermissionDenied,
@@ -217,11 +218,12 @@ function refreshRemote(
     );
     mergeCacheEntry(storageKey, { hidden: remoteHidden });
 
-    // Con caché válida basta el metadato: si `updatedAt` no cambió (o el nodo
-    // ni siquiera lo tiene) no hay nada que descargar.
+    // Con caché válida basta el metadato: si el `updatedAt` remoto no es MÁS
+    // NUEVO que el local (o el nodo ni siquiera lo tiene) no hay nada que
+    // descargar. Se compara como fecha, no como texto: ver `utils/updatedAt`.
     if (hasLocalCache && localUpdatedAt) {
       if (!metaSnap.exists()) return;
-      if (localUpdatedAt === String(metaSnap.val() ?? '0')) return;
+      if (!isRemoteUpdatedAtNewer(localUpdatedAt, metaSnap.val())) return;
     }
 
     const remoteUpdatedAt = String(metaSnap.val() ?? '0');

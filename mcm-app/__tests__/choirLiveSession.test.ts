@@ -3,12 +3,14 @@
  *
  *  - la sesión cuelga del **coro** (la clave del nodo es el id del coro), pero
  *    se siguen aceptando códigos sueltos de 4 dígitos;
- *  - **caduca 24 h después de empezar** y no se estira publicando;
+ *  - **caduca 12 h después de empezar**; solo se alarga (+12 h) si el líder
+ *    publica en las 2 h previas a la caducidad;
  *  - **el mismo usuario puede tomar el mando desde otro dispositivo** sin
  *    contraseña; cualquier otra persona sí la necesita.
  */
 import {
   CHOIR_SESSION_TTL_MS,
+  choirCurrentForSong,
   isSameLeader,
   isSessionKey,
   isSessionLive,
@@ -42,12 +44,12 @@ describe('isSessionKey', () => {
   });
 });
 
-describe('caducidad a las 24 h', () => {
-  it('viva justo antes de las 24 h', () => {
+describe('caducidad a las 12 h', () => {
+  it('viva justo antes de las 12 h', () => {
     expect(isSessionLive(baseSession(), CHOIR_SESSION_TTL_MS - 1)).toBe(true);
   });
 
-  it('muerta justo en las 24 h', () => {
+  it('muerta justo en las 12 h', () => {
     expect(isSessionLive(baseSession(), CHOIR_SESSION_TTL_MS)).toBe(false);
   });
 
@@ -91,5 +93,39 @@ describe('quién puede tomar el mando sin contraseña', () => {
 
   it('si no hay sesión, no hay a quién quitarle el mando', () => {
     expect(isSameLeader(null, { deviceId: 'quien-sea' })).toBe(true);
+  });
+});
+
+describe('choirCurrentForSong', () => {
+  const song = {
+    filename: 'a.cho',
+    title: 'Canción',
+    author: 'Autor',
+    songKey: 'G',
+    capo: 2,
+    content: '{title: Canción}\n[G]Letra',
+    firebaseCategory: 'A',
+  };
+
+  it('un cambio de tono vuelve a mandar la letra y los metadatos', () => {
+    // `publishChoirCurrent` reemplaza `current` entero: sin `content` el
+    // oyente se quedaba sin letra al cambiar el líder de tono o de cejilla.
+    const current = choirCurrentForSong(song, {
+      transpose: 3,
+      capoOverride: 1,
+      screen: 'detail',
+    });
+    expect(current).toEqual({
+      ...song,
+      transpose: 3,
+      capoOverride: 1,
+      screen: 'detail',
+    });
+  });
+
+  it('el estado manda sobre los metadatos', () => {
+    const current = choirCurrentForSong(song, { transpose: -2 });
+    expect(current.transpose).toBe(-2);
+    expect(current.content).toBe(song.content);
   });
 });

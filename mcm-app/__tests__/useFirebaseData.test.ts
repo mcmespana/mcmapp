@@ -408,6 +408,37 @@ describe('useFirebaseData — refresh (pull-to-refresh)', () => {
     expect(result.current.data).toBe(sameData);
   });
 
+  it('un updatedAt remoto MÁS VIEJO no vuelve a descargar `data`', async () => {
+    __setMockNode('songs', { updatedAt: '1700000000', data: { v: 1 } });
+    const { result } = await renderHook(() =>
+      useFirebaseData<{ v: number }>('songs', 'refresh_older'),
+    );
+    await waitFor(() => expect(result.current.data).toEqual({ v: 1 }));
+    const before = dataFetches();
+
+    __setMockNode('songs', { updatedAt: '1600000000', data: { v: 0 } });
+    await act(async () => {
+      await result.current.refresh();
+    });
+    expect(dataFetches()).toBe(before);
+    expect(result.current.data).toEqual({ v: 1 });
+  });
+
+  it('el mismo instante en segundos y en milisegundos no es «nuevo»', async () => {
+    __setMockNode('songs', { updatedAt: '1700000000000', data: { v: 1 } });
+    const { result } = await renderHook(() =>
+      useFirebaseData<{ v: number }>('songs', 'refresh_units'),
+    );
+    await waitFor(() => expect(result.current.data).toEqual({ v: 1 }));
+    const before = dataFetches();
+
+    __setMockNode('songs', { updatedAt: 1700000000, data: { v: 1 } });
+    await act(async () => {
+      await result.current.refresh();
+    });
+    expect(dataFetches()).toBe(before);
+  });
+
   it('un fallo de red no rechaza y deja los datos que había', async () => {
     __setMockNode('songs', { updatedAt: '1', data: { v: 1 } });
     const { result } = await renderHook(() =>

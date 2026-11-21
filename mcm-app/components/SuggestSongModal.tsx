@@ -14,7 +14,7 @@ import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import { MaterialIcons } from '@/components/ui/icons';
 import { Colors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { pushWithRetry, setWithRetry } from '@/services/firebaseWrites';
+import { pushWithRetry } from '@/services/firebaseWrites';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import typography from '@/constants/typography';
@@ -79,7 +79,8 @@ export default function SuggestSongModal({
         userDelegation: resolved.delegationLabel || 'Sin delegación',
       });
 
-      await setWithRetry('songs/updatedAt', Date.now().toString());
+      // Sin tocar `songs/updatedAt`: una solicitud no cambia el catálogo, y
+      // moverlo obligaba a todos los móviles a re-bajar el cantoral entero.
 
       setTitulo('');
       setArtista('');

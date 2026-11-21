@@ -237,9 +237,12 @@ Trabajo en el repo del cantoral (no en la app):
 | Publicar `current` del coro por campos, no entero | El cambio de tono borra la letra a los seguidores (ver `04`) | `SongDetailScreen.tsx:661-666, 703-707` |
 | Documentar la caducidad real (12 h + 12 h) | `COROS.md` dice 24 h | `docs/funcionalidades/COROS.md` |
 
-Son bugs de MCM App. **Documentados el 21/11/2026, sin hacer** (el usuario
-pidió no arreglarlos todavía): están en `mcm-app/TODO.md`, sección
-«Cantoral — bugs y Navidad», con fichero, línea, arreglo y test. Junto con
+Son bugs de MCM App. **✅ Arreglados en `main` el 21/11/2026** (antes del
+fork, así que el fork ya nace con ellos): `SuggestSongModal` ya no toca
+`songs/updatedAt` (test guardarraíl `songsUpdatedAtGuard`), `updatedAt` se
+compara como fecha normalizando s/ms/ISO (`utils/updatedAt.ts`), el líder
+publica siempre el `current` completo (`choirCurrentForSong`) y los textos
+dicen 12 h. Junto con
 los textos «24 h» del coro (dura 12 h + 12 h con actividad; `COROS.md` ya
 corregido) y la Fase 1 de Navidad (§4), forman el **Paquete MCM App**.
 
