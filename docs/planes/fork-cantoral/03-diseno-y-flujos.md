@@ -180,6 +180,10 @@ Bocetos de intención, no de píxeles. Los píxeles se deciden en la maqueta
 
 ### 4.4 Directo — quien dirige
 
+- Al pulsar «Dirigir»: una hoja con el PIN de 4 cifras y **por dónde va el
+  directo** — *Los dos* (marcado de serie) · *Solo wifi del coro* · *Solo
+  internet* (`04` §2 bis). Un toque más y empieza.
+
 - En móvil: el mismo Atril con la barra del maestro: **‹ ›** grandes,
   **📣 Avisos** (rejilla de avisos predefinidos, 1 toque = enviado),
   **👥 14** (quién sigue, con su instrumento), menú con «Ceder/compartir el
@@ -234,7 +238,7 @@ pensada para mirarla de lejos desde la mesa de sonido:
 | «Ahora hacemos el puente» (maestro) | ¶ → «Puente» | **2** |
 | Encontrar una canción | Barra → escribir 3 letras → tocar | 1 + texto |
 | Importar la última de mi coro | Inicio → Repertorios → «Traer la última» | 2 |
-| Montar y dirigir la misa | Repertorio → 📡 Dirigir | 1 desde el repertorio |
+| Montar y dirigir la misa | Repertorio → 📡 Dirigir → Empezar (PIN y «los dos» ya puestos) | 2 desde el repertorio |
 | Apuntar «entra el bajo aquí» | Toque largo en la línea → escribir → capa | 2 + texto |
 
 Un flujo nuevo no entra si su camino crítico pasa de estos números sin

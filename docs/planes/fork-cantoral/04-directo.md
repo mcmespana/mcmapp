@@ -52,6 +52,30 @@
    maestro del fork (canción a canción, sin avisos) porque lo nuevo es
    **aditivo** sobre `/choirSessions`.
 
+## 2 bis. Por dónde va el directo: lo elige quien lo abre (D-23)
+
+Al abrir un directo («Dirigir»), un control segmentado con tres opciones:
+
+| Opción | Cuándo | Qué pasa |
+| ------ | ------ | -------- |
+| **Los dos** (por defecto, recomendado) | Casi siempre; Villancicos | Se publica por la wifi del coro **y** por internet. El seguidor usa el que llegue primero; si uno cae, sigue el otro sin cortes |
+| **Solo wifi del coro** | Sin internet en el sitio, o no se quieren gastar datos | Solo servidor local + Bonjour. No escribe en Firebase. Quien no esté en esa wifi no puede seguir (ni la web ni MCM App) |
+| **Solo internet** | No hay wifi común: gente repartida, seguidores con MCM App o desde la web | Solo `/choirSessions`. No abre servidor local ni pide el permiso de red local |
+
+- **Solo elige quien dirige.** Quien sigue no elige nada: se conecta por
+  donde pueda y la píldora dice cómo («wifi del coro», «internet», «los
+  dos»).
+- **Se puede cambiar en pleno directo** (añadir o quitar un camino) sin
+  cortar a nadie: el estado y el `seq` son los mismos.
+- Avisos honestos: con «Solo wifi» y el maestro fuera de una wifi →
+  «Conéctate a la wifi del coro»; con «Los dos» y sin internet → sigue
+  solo por wifi y la píldora lo dice («Solo wifi · sin internet»).
+- Para un evento, el valor por defecto sale de `cantoralConfig.event`
+  (`liveTransport: "both" | "local" | "cloud"`).
+- En el estado: `transports: ('local' | 'cloud')[]`, para que los
+  seguidores sepan qué esperar y el relevo (§5.2) abra solo los caminos
+  elegidos.
+
 ## 3. Protocolo (independiente del camino)
 
 Todo el directo es un **estado** del maestro más **eventos** sueltos. Un
@@ -71,6 +95,7 @@ type LiveState = {
   sectionCue?: { section: number; label: string; at: number };  // «ahora hacemos…»
   by: { deviceId: string; name?: string };
   catalogUpdatedAt: number;      // versión del cantoral del maestro
+  transports: ('local' | 'cloud')[];  // por dónde va (D-23, §2 bis)
   at: number;
 };
 
