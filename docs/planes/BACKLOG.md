@@ -41,7 +41,7 @@
 | **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                                                                                                                     |
 | **⚠️ Roto y sin dueño**      | 🚨 **Android no muestra las notificaciones con categoría** desde el 2026-08-03: el Panel manda `channelId` y la app de `production` no tiene esos canales. **Decidido (2026-09-26): no se toca `production`, se arregla con la build 2.1** (`mcm-app/TODO.md`, Notificaciones)       |
 | **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                                                                                               |
-| **Fork MCM Cantoral (21/11)** | 🆕 Plan escrito, sin empezar: app aparte solo con el cantoral, sale en modo Navidad para Villancicos Solidarios (¿19/12?). **Bloqueado por las decisiones D-01…D-22** (página <https://claude.ai/artifact/KDnnYJnwrYgxQB5zSPcakn>) y por que el usuario cree el repo. Lo que toca en `mcmapp` antes («Pre-fork»): bugs del cantoral + Fase 1 de Navidad. Detalle §L |
+| **Fork MCM Cantoral (21/11)** | 🆕 Plan cerrado, **todas las decisiones contestadas** (página <https://claude.ai/artifact/KDnnYJnwrYgxQB5zSPcakn>). Sale en modo Navidad para Villancicos Solidarios (**sáb 19/12, Cuatro Esquinas**), **con wifi local** (hay router). Siguiente: «Pre-fork» en este repo (bugs del cantoral + Fase 1 de Navidad) y que el usuario cree `mcmespana/mcmcantoral`. Detalle §L |
 | **Planes nuevos (16/11)** | En `main`: intercambios del pañuelo (hecho, falta pegar reglas y probar), cantos para el domingo (fases 1-4 hechas) y piezas por asistencia (plan). Live Activities, en su rama aparte. Detalle §K |
 | **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                                                                                           |
 | **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio)                                                                                                                                                                                                                                   |
@@ -455,10 +455,15 @@ diseño propio sin pestañas ni FAB, y **modo Navidad** para Villancicos
 Solidarios. Lo crítico es el **directo** (seguir al maestro, avisos, varios
 maestros, pedal).
 
-- 🔒 **Decisiones D-01…D-22 y aclaraciones A-01…A-08** en la página
-  <https://claude.ai/artifact/KDnnYJnwrYgxQB5zSPcakn> (colección
-  `decisiones`); cada una lleva recomendación. No se ejecuta nada que dependa
-  de una sin contestar.
+- ✅ **Decisiones D-01…D-22 y aclaraciones A-01…A-08 contestadas** el
+  21/11/2026 (página <https://claude.ai/artifact/KDnnYJnwrYgxQB5zSPcakn>,
+  resumen en `fork-cantoral/README.md` §4). Las que más cambian: **wifi local
+  para el evento** (hay router de la mesa de sonido), app **en la raíz** del
+  repo nuevo, maqueta A/B y **Izan** cierra el estilo, el cantoral **no** se
+  congela en directo, botones de volumen en las dos plataformas, y el
+  cantoral de MCM App **solo crece**.
+- **Orden pedido por el usuario**: primero cerrar el plan (hecho), luego los
+  bugs de MCM App, luego el fork.
 - **Pre-fork, en este repo** (`fork-cantoral/02-datos-offline.md` §8-§9):
   quitar la escritura de `songs/updatedAt` de `SuggestSongModal` (obliga a
   todos a re-bajar el cantoral), comparar `updatedAt` numéricamente, publicar

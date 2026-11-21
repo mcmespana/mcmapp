@@ -42,9 +42,9 @@ realidad mínima:
 | `songs/packs/*` (nuevo, lo publica el cantoral) | ✅ | — | Bloques de villancicos |
 | `songs/cantoralConfig/*` (nuevo, lo publica el cantoral) | ✅ | — | Modo Navidad, evento, avisos predefinidos |
 | `songs/meta` (nuevo, opcional) | ✅ | — | Huella del catálogo (§3.4) |
-| `songs/editor/url`, `users/<uid>/isAdmin` | ✅ | — | Solo admin (Fase 5, ver `06`) |
-| `seccion_oracion/lecturas/<fecha>` | ✅ | — | «Lecturas del domingo» al montar el repertorio (opcional, D-14). Es el único nodo fuera de `songs` que lee el cantoral de hoy |
-| `songs/fallitos`, `songs/solicitudes` | — | ✅ (push) | «Informar de un fallito» / «Sugerir canción» (decisión D-14) |
+| `songs/editor/url`, `users/<uid>/isAdmin` | ✅ | — | Solo admin (admin por código, ver `06`) |
+| `seccion_oracion/lecturas/<fecha>` | ✅ | — | «Lecturas del domingo» al montar el repertorio (se queda, D-14). Es el único nodo fuera de `songs` que lee el cantoral de hoy |
+| `songs/fallitos`, `songs/solicitudes` | — | ✅ (push) | «Informar de un fallito» / «Sugerir canción» (se quedan, D-14) |
 | `choirSessions/<clave>` | ✅ | ✅ | Directo por la nube (`04`) |
 | `choirs`, `playlistShares/<código>` | ✅ | ✅ | Coros y repertorios compartidos (como MCM App) |
 
@@ -89,10 +89,13 @@ Un guardarraíl en el fork lo hace cumplir: **un test que falla si aparece un
 2. Se lee **solo** `songs/updatedAt` (bytes). Comparación **numérica**:
    solo si `remoto > local` se baja `songs/data`. Igual o menor → nada.
    (Hoy es «distinto», y por eso el bug de §1 obliga a re-bajar.)
-3. **Nunca durante un directo**: si estás en uno, se apunta «hay
-   actualización» y se aplica al salir. Que una canción cambie a mitad de
-   la misa o de los villancicos es peor que tener una versión de hace una
-   hora. (Excepción: si el maestro tiene una versión más nueva, ver `04`.)
+3. **También durante un directo** (decisión D-21: no se congela): si llega
+   un cantoral nuevo, se aplica al momento. La canción que se está viendo
+   se repinta **en el mismo sitio** (misma canción, posición y tono) con un
+   aviso discreto «Canción actualizada»; nunca se salta de canción ni se
+   pierde el repertorio. Así se puede corregir un acorde desde el admin a
+   mitad de los villancicos y llega a todos. (Sin internet, el cantoral nuevo
+   llega desde el equipo base o el maestro por la wifi local, ver `04` §5.6.)
 4. Descarga con **tiempo máximo** (20 s), **reintentos con espera
    creciente** (1, 3, 9 s…) y, si se baja por REST, **progreso**.
 5. Validación antes de aceptar: JSON correcto, categorías con canciones,
@@ -102,8 +105,9 @@ Un guardarraíl en el fork lo hace cumplir: **un test que falla si aparece un
    la lista (diferencia calculada contra la anterior).
 
 Tests (puros, con el reloj y la red inyectados): no baja si es igual; no baja
-si es menor; baja si es mayor; no aplica en directo; corte a mitad deja la
-anterior; validación rechaza un catálogo vacío.
+si es menor; baja si es mayor; en directo aplica sin cambiar la canción
+actual ni su posición; corte a mitad deja la anterior; validación rechaza un
+catálogo vacío.
 
 ### 3.4 Petición al repo del cantoral (pequeña)
 
@@ -233,17 +237,19 @@ Trabajo en el repo del cantoral (no en la app):
 | Publicar `current` del coro por campos, no entero | El cambio de tono borra la letra a los seguidores (ver `04`) | `SongDetailScreen.tsx:661-666, 703-707` |
 | Documentar la caducidad real (12 h + 12 h) | `COROS.md` dice 24 h | `docs/funcionalidades/COROS.md` |
 
-Son bugs de MCM App: se arreglan en `mcmapp` (Sonnet, una sesión) **sin
-esperar al fork**, y el fork nace con ellos arreglados si se hace antes.
+Son bugs de MCM App: se arreglan en `mcmapp` (Sonnet, una sesión) **antes
+de crear el fork** (D-02, después de cerrar este plan), y el fork nace con
+ellos arreglados. Junto con la Fase 1 de Navidad (§4), son el «Pre-fork»: si
+la tienda tardara, MCM App enseñaría bien los villancicos el 19/12 (D-01).
 
 ## 9. Tareas
 
 | # | Tarea | Repo | Modelo |
 | - | ----- | ---- | ------ |
 | 2.0 | Arreglos de §8 | mcmapp | Sonnet |
-| 2.1 | Fase 1 de `PROMPT_APP_NAVIDAD` (subcategorías, alsoIn, marcado, duración) — lógica pura y hoja; UI mínima en MCM App | mcmapp (D-02) | Opus |
+| 2.1 | Fase 1 de `PROMPT_APP_NAVIDAD` (subcategorías, alsoIn, marcado, duración) — lógica pura y hoja; UI en MCM App | mcmapp (D-02) | Opus |
 | 2.2 | `songs/meta` + `order` en el generador; `packs.py publish` + workflow; `config/cantoral.json` publicado | mcmapp-cantoral | Sonnet |
-| 2.3 | `CatalogStore` (semilla, ficheros, atómico, comparación numérica, congelado en directo) + tests | fork | Opus |
+| 2.3 | `CatalogStore` (semilla, ficheros, atómico, comparación numérica, se aplica en directo sin mover la canción) + tests | fork | Opus |
 | 2.4 | `snapshot-cantoral.mjs` en el build y su test | fork | Sonnet |
 | 2.5 | Repertorios múltiples + compartir v3 compatible + `.mcm` v3 | fork | Opus |
 | 2.6 | Bloques (`songs/packs`) como repertorios de solo lectura | fork | Sonnet |

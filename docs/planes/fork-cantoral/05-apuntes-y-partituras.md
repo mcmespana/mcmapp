@@ -92,7 +92,22 @@ d2 dB c2 cA | B4 G4 |]
   Por defecto baja los sonidos de GitHub: **empaquetar una soundfont** y
   pasar `soundFontUrl` para que funcione sin red. El audio arranca con un
   toque (norma de los navegadores).
-- **Escribir sin saber ABC** (lo normal):
+- **Dónde se escribe primero** (decisión D-16: «más importante que la IA
+  es poderlo escribir en la web del admin del cantoral de forma sencilla»):
+  **en el admin del cantoral** (`mcmapp-cantoral/scripts/admin`). Un bloque
+  «🎺 Riff / melodía» en el editor de la canción, con el teclado de piano de
+  abajo y la **vista previa con abcjs** al lado (el admin ya pinta con la hoja
+  de la app, `mcm-sheet.js`). Se guarda en el `.cho` como
+  `{start_of_abc: Trompeta}` … `{end_of_abc}`, y así lo ve **todo el
+  mundo, en las dos apps**. Los riffs personales en la app (capa de
+  apuntes) vienen después.
+- **Dependencia entre apps** (igual que el marcado): el generador
+  (`crear_songs_json.py`) tiene que **dejar pasar** el bloque ABC en
+  `content`, y eso solo se activa (`APP_ABC = True`, como `APP_MARKUP`)
+  cuando **MCM App y el fork** lo pinten; si no, MCM App enseñaría el ABC en
+  crudo. El cantoral de MCM App solo crece (T-07): la hoja con ABC es zona
+  espejo y va a las dos.
+- **Escribir sin saber ABC** (lo normal), en el admin y luego en la app:
   1. **Teclado de piano** en una hoja: tocas notas, eliges duración
      (𝅝 𝅗𝅥 ♩ ♪), silencio, ligadura; se ve el pentagrama mientras escribes y
      se guarda ABC. Es lo más rápido para «la trompeta hace esto».
@@ -153,8 +168,9 @@ catálogo, ver `02`), índice en memoria. Exportable dentro del `.mcm`.
 | 5.2 | Capas en el Atril (pintar dentro del WebView, por encima de la hoja) y toque largo para crear | Opus |
 | 5.3 | Instrumento(s) en Ajustes y al unirse a un directo | Sonnet |
 | 5.4 | Apuntes dentro del repertorio (subir/importar) | Sonnet |
-| 5.5 | ABC: pintar con abcjs en la hoja + ▶ escuchar | Opus |
-| 5.6 | Teclado de piano → ABC | Opus |
+| 5.5 | ABC: pintar con abcjs en la hoja (zona espejo: fork **y** MCM App) + ▶ escuchar con soundfont empaquetada | Opus |
+| 5.5b | **Admin del cantoral**: bloque «Riff / melodía» con teclado de piano y vista previa abcjs; generador con `APP_ABC` | Opus (repo `mcmapp-cantoral`) |
+| 5.6 | Teclado de piano → ABC en la app (riffs personales) | Opus |
 | 5.7 | Apuntes en directo (maestro → capa) | Opus |
 | 5.8 | Tararear/tocar → ABC con el seguidor de tono del afinador | Opus |
 | 5.9 | IA (Basic Pitch y/o modelo de lenguaje vía NAS) | Opus, tras D-16 |

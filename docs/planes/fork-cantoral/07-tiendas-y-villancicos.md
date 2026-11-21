@@ -1,73 +1,65 @@
 # 07 · Tiendas, calendario y Villancicos Solidarios
 
 > Parte del plan [`README.md`](README.md). La app **sale en modo Navidad** y
-> tiene que ser la herramienta de la jornada de Villancicos Solidarios: ~8
-> horas cantando en la calle, ~60 canciones en bloques de una hora, 1-3
-> maestros pasando canciones y mandando avisos. **Esto fija el calendario.**
+> tiene que ser la herramienta de la jornada de Villancicos Solidarios:
+> **sábado 19/12/2026, Cuatro Esquinas**, ~8 horas cantando en la calle,
+> ~60 canciones en bloques de una hora, **3-4 maestros** pasando canciones y
+> mandando avisos, **por la wifi local del router de la mesa de sonido**.
+> Esto fija el calendario.
 
 ---
 
-## 1. La fecha manda (y está muy cerca)
+## 1. Lo que hay que tener el 19/12
 
-Hoy es **sábado 21/11/2026**. La edición de 2025 fue el sábado 20/12/2025
-(Edificio Hucha). Si la de 2026 es el **sábado 19/12/2026** (por confirmar,
-D-01), quedan **4 semanas**, y en ellas caben la app, la revisión de las
-tiendas y **meter el repertorio de villancicos, que hoy no está**:
+- **App**: catálogo offline, Navidad con subcategorías, bloques del evento,
+  modo Navidad, directo por wifi local (con equipo base y relevo) y por la
+  nube, avisos, reacciones, pedal/volumen. Si da tiempo: seguir por sección
+  y el admin.
+- **Repertorio**: la categoría *N. Navidad* del repo del cantoral **hoy está
+  vacía** y los bloques de 2025 sin enlazar. Lo meten ellos con los
+  importadores del admin (A-04).
+- **Router**: configurado según `04` §5.3 y probado en el ensayo.
+- **Plan B si la tienda no llega**: ver las canciones en **MCM App**, que
+  para entonces ya pinta Navidad con subcategorías (Pre-fork, D-01). Y la web
+  del fork (`mcm-cantoral.expo.app`) para seguir el directo por la nube.
 
-- La categoría **N. Navidad del repo del cantoral está vacía** (0 `.cho`).
-- Los 11 bloques de 2025 (`packs/hucha-2025-*.json`) tienen **todas las
-  canciones sin enlazar** (`"song": null`), precisamente porque no existen.
-- El importador del Word (canciones nuevas 19-66) y el lector con IA del
-  cantoral de 2008 (28 páginas) **ya están hechos** en el admin del cantoral
-  (`mcmapp-cantoral/docs/VILLANCICOS_SOLIDARIOS.md`). Falta usarlos y revisar
-  ~85 canciones.
+## 2. Calendario
 
-**El repertorio es ruta crítica igual que la app.** Sin canciones, el mejor
-directo del mundo no sirve.
-
-## 2. Calendario propuesto (si el evento es el 19/12)
-
-| Semana | App (Claude) | Contenido y tiendas (usuario, con ayuda) |
-| ------ | ------------ | ---------------------------------------- |
-| **S0 · 21-23 nov** | Arreglos pre-fork en MCM App (bugs + Fase 1 de Navidad, D-02). Crear repo (usuario) y **Fase 0** | Contestar decisiones. Empezar a importar villancicos en el admin |
-| **S1 · 24-30 nov** | Fase 0 cerrada → **TestFlight + prueba interna de Play** con el nombre nuevo. **Fase 1** (catálogo offline, bloques, modo Navidad). Maqueta de diseño (A/B) | Fichas de las tiendas, política de privacidad, icono. Importar + revisar villancicos. Listado de bloques 2026 |
-| **S2 · 1-7 dic** | **Fase 2** núcleo (Inicio, Atril, Repertorio, iPad) y **Fase 3** directo por la nube (protocolo, maestro, seguidor) | Enlazar bloques, tono/cejilla del día, `packs.py publish` |
-| **S3 · 8-13 dic** | Fase 3: avisos, reacciones, presencia, pedal. **Enviar a revisión ~10 dic**. **Ensayo general** con 10+ móviles el fin de semana 12-13 dic | Ensayo con el coro de verdad, en la calle si se puede |
-| **S4 · 14-18 dic** | Arreglos del ensayo por OTA. Publicar. Activar `cantoralConfig` Navidad | Todo el mundo instala y abre la app con wifi (catálogo al día) |
-| **19 dic** | Guardia el día del evento | 🎄 |
-| **Enero** | **Fase 5**: wifi local, apuntes, partituras, admin por código | — |
-
-Si la fecha es otra, se corre la tabla; lo que no se mueve es el orden.
+| Semana | App (Claude) | Fuera del código (usuario, Izan) |
+| ------ | ------------ | -------------------------------- |
+| **S0 · 21-23 nov** | Pre-fork en MCM App (bugs + Fase 1 de Navidad) → OTA. **Fase 0**: spike de wifi local el primer día, poda, app a la raíz | Crear `mcmespana/mcmcantoral`. Empezar a importar villancicos |
+| **S1 · 24-30 nov** | Fase 0 cerrada → **TestFlight + prueba interna de Play**. **Fase 1** (catálogo, bloques, modo Navidad). Maqueta A/B | Izan mira la maqueta y cierra estilo. Icono en Canva. Fichas de tienda y privacidad |
+| **S2 · 1-7 dic** | **Fase 2** con el estilo de Izan. **Fase 3**: protocolo, nube, **wifi local** con equipo base y relevo, pasar el cantoral | Villancicos revisados, bloques 2026 enlazados y publicados |
+| **S3 · 8-13 dic** | Fase 3: avisos, reacciones, pedal y volumen, cuenta atrás, resumen, seguir por sección. **Enviar a revisión ~9 dic** | **Ensayo con el router del evento** y 10+ móviles |
+| **S4 · 14-18 dic** | Arreglos del ensayo por OTA. Publicar. Modo Navidad encendido. Admin por código si da tiempo | Todo el mundo instala, abre con wifi y prueba «Probar la conexión del coro» |
+| **19 dic** | Guardia (OTA de urgencia si hace falta) | 🎄 |
+| **Enero** | Fase 5: apuntes, partituras (admin del cantoral primero), analítica, ideas «luego» | — |
 
 ## 3. Tiendas
 
-### 3.1 Lo que hay que preparar (no es código)
+Sin dramas (el usuario: «nos aprobarán, no hay miedo»; la cuenta de Play es
+de organización y con MCM App fue bien). Lo que hay que preparar:
 
-- **App Store Connect**: app nueva «MCM Cantoral» (comprobar que el nombre
-  está libre), bundle `com.familiaconsolacion.mcmcantoral`, categoría
-  Música, capturas iPhone 6,9" y iPad 13", texto, palabras clave, edad,
-  **etiquetas de privacidad** (identificador aleatorio de dispositivo,
-  nombre opcional en el coro, diagnósticos de Sentry; sin cuentas ni
-  rastreo).
-- **Google Play Console**: app nueva `com.mcmespana.mcmcantoral`, ficha,
-  **seguridad de los datos**, clasificación de contenido, público objetivo.
-- **Política de privacidad**: la de MCM adaptada (o una sección de
-  cantoral), con URL pública.
-- **Icono** y nombre corto (D-06).
-
-### 3.2 Riesgos y cómo se esquivan
-
-| Riesgo | Mitigación |
-| ------ | ---------- |
-| **Apple 4.3 (apps duplicadas)**: es una segunda app del mismo desarrollador con algo que la primera ya hace (el cantoral) | Que **no sea una copia**: el directo con avisos y varios maestros, el modo villancicos, la wifi local, los apuntes… son funciones que MCM App no tiene. Nota a la revisión explicándolo («herramienta para coros y músicos en directo; MCM App es la app de la comunidad») y capturas que lo enseñen. Sin login no hay pantalla de cuentas que revisar |
-| **Apple 4.2 (funcionalidad mínima)** | No aplica si el directo y el offline están; por eso no se envía la Fase 0 a revisión pública, solo a TestFlight |
-| **Google: 12 probadores durante 14 días** antes de producción | Aplica a **cuentas personales creadas después del 13/11/2023**, y según guías de terceros, a **cada app nueva** de esa cuenta aunque ya tenga otras publicadas. Las cuentas de **organización** (con D-U-N-S) quedan fuera (aclaración A-02). Si aplica, hay que abrir la prueba cerrada en S1 sin falta: 14 días desde el 25/11 llegan justo al 9/12 |
-| **Revisión lenta o rechazo justo antes** | **Plan B**: TestFlight con **enlace público** (necesita una revisión beta, normalmente ~1 día) y prueba interna/cerrada de Play. **Plan C**: la **web** del fork (seguir el directo desde el navegador, sin instalar) |
-| **Conflicto de enlaces con MCM App** | Dominio propio; el escáner del fork entiende también los QR de MCM App (`01` §2.1) |
+- **App Store Connect**: app «MCM Cantoral», bundle
+  `com.familiaconsolacion.mcmcantoral`, categoría Música, capturas iPhone
+  6,9" e iPad 13", texto y palabras clave, edad, **etiquetas de privacidad**
+  (identificador aleatorio de instalación, nombre opcional en el coro; sin
+  cuentas ni rastreo; diagnósticos cuando se encienda Sentry).
+- **Google Play Console**: app `com.mcmespana.mcmcantoral`, ficha,
+  seguridad de los datos, clasificación, público objetivo.
+- **Política de privacidad** con URL pública (la de MCM con una sección del
+  cantoral).
+- **Nota para la revisión de Apple** (por si acaso, cuesta nada): que es la
+  herramienta de coros y músicos en directo (wifi local, avisos de los
+  maestros, varios maestros, modo villancicos) y MCM App es la app de la
+  comunidad. Explicar el permiso de red local («para seguir al maestro por
+  la wifi del coro») y el de micrófono (afinador).
+- Si hiciera falta antes de la aprobación: TestFlight con enlace público y
+  prueba interna de Play para el ensayo.
 
 ## 4. Villancicos: qué tiene que estar listo
 
-### 4.1 En la app (mínimo para el evento)
+### 4.1 En la app
 
 - [ ] Cantoral completo **offline** con semilla empaquetada (`02` §3).
 - [ ] Categoría Navidad con **subcategorías** y canciones prestadas
@@ -75,65 +67,91 @@ Si la fecha es otra, se corre la tabla; lo que no se mueve es el orden.
 - [ ] **Bloques** del evento como repertorios, con tono/cejilla/notas del día
       y pausas (`02` §6).
 - [ ] **Modo Navidad**: tarjeta del evento en Inicio, «Unirme al directo»
-      en 1 toque (`02` §7, `03` §4.1).
-- [ ] **Directo por la nube**: varios maestros con PIN, seguir en 0 toques,
-      avisos (cinta y destello) con los predefinidos de villancicos,
-      reacciones, presencia (`04` §4, §6, §7).
+      en 1 toque, «Probar la conexión del coro» (`02` §7, `03` §4.1).
+- [ ] **Directo por wifi local** con **equipo base** y **relevo** entre
+      maestros, y **por la nube** en paralelo (`04` §4-§5).
+- [ ] **Pasar el cantoral** desde el equipo base a quien lo tenga viejo
+      (`04` §5.6).
+- [ ] Maestros con **PIN de 4 cifras**, avisos (cinta y destello) con los
+      predefinidos de villancicos, reacciones, presencia (`04` §4, §6, §7).
+- [ ] Pedal Bluetooth y **botones de volumen** (`04` §8).
+- [ ] **Cuenta atrás** al cambio de bloque y **resumen** al acabar
+      (`04` §10).
 - [ ] Atril legible al sol y de noche, controles de 56 pt (`03`).
-- [ ] Pedal Bluetooth probado si algún maestro lo va a usar (`04` §8).
-- [ ] Web del fork desplegada (plan C).
+- [ ] Web del fork desplegada.
+- [ ] Si da tiempo: seguir por sección (`04` §10) y admin por código (`06`).
 
-**No hace falta para el evento**: wifi local, apuntes, partituras, admin por
-código, editor. (Salvo que D-07 adelante la wifi local.)
+### 4.2 En el repo del cantoral (usuario, con ayuda de Claude si la quiere)
 
-### 4.2 En el repo del cantoral
-
-- [ ] Importar las canciones nuevas (19-66) del Word y revisarlas (avisos ⚠,
-      acordes en su sílaba, estribillos, cursivas = 2ª voz).
+- [ ] Importar las canciones nuevas (19-66) del Word y revisarlas.
 - [ ] Leer con IA las del cantoral de 2008 y revisarlas; «↪ Traer a
       Navidad» las que ya están en el cantoral normal.
 - [ ] Subcategoría de cada una.
 - [ ] Listado de bloques 2026 (`packs.py importar-listado`) y enlazar.
 - [ ] `packs.py publish` + workflow → `songs/packs` (`02` §6).
-- [ ] `config/cantoral.json` con el evento y los avisos → `songs/cantoralConfig`.
-- [ ] `APP_MARKUP = True` **solo** cuando MCM App pinte el marcado en
-      producción (si no, dejarlo en `False` para el evento: se pierde la
-      cursiva de la 2ª voz, nada más).
+- [ ] `config/cantoral.json` con el evento (19/12, Cuatro Esquinas, bloques,
+      `liveKey`), los avisos predefinidos y `volumeButtons` →
+      `songs/cantoralConfig`.
+- [ ] `APP_MARKUP = True` cuando MCM App (por OTA, Pre-fork) y el fork pinten
+      el marcado.
 
-### 4.3 Guion del día
+### 4.3 El router (resumen de `04` §5.3)
 
-**La víspera**: todo el mundo abre la app con wifi (catálogo al día) y
-comprueba que ve Navidad y los bloques. Maestros: móviles cargados, batería
-externa, PIN del directo apuntado, y probado el directo entre ellos.
+- Una sola red para todos; si hay 2-3 routers, uno con DHCP y los demás en
+  **modo punto de acceso** en la misma red.
+- **Sin aislamiento de clientes**; multicast/mDNS permitido.
+- DHCP para ~100 dispositivos; 2,4 y 5 GHz.
+- Nombre y contraseña de la wifi **impresos** junto al **QR del directo**
+  (que lleva también la IP del equipo base).
+- El **equipo base** enchufado al lado del router.
+- Todo esto, **probado en el ensayo** con el mismo router.
+
+### 4.4 Guion del día
+
+**La víspera**: todo el mundo abre la app con wifi (catálogo al día) y pasa
+«Probar la conexión del coro» (así el aviso de red local de iOS sale en
+casa). Maestros: móviles cargados, batería externa, el PIN sabido.
+
+**Al llegar**:
+
+1. Encender el router; enchufar el **equipo base** y ponerlo en modo
+   «Equipo base» con el directo del evento.
+2. Los 3-4 maestros entran con el PIN.
+3. La gente se conecta a la wifi y pulsa «Unirme» (o escanea el QR).
+   El equipo base enseña cuántos están conectados.
 
 **Durante**:
 
-1. Un maestro abre el directo del evento (clave fija en
-   `cantoralConfig.event.liveKey`); los otros entran con el PIN.
-2. La gente pulsa «Unirme» en la tarjeta del evento.
-3. Cada hora, el maestro carga el bloque siguiente en el directo (1 toque) y
-   lo anuncia con «Cambio de bloque».
-4. Si alguien pierde la conexión: sigue viendo la última canción y puede
-   abrir el bloque a mano (está offline). Al volver la red se pone al día
-   solo.
+- Cada hora, un maestro carga el bloque siguiente (1 toque); la cuenta atrás
+  avisa del cambio.
+- Si se va la luz del equipo base o se apaga: un maestro releva solo; la
+  gente sigue sin hacer nada.
+- Si alguien pierde la wifi: sigue viendo la última canción y puede abrir el
+  bloque a mano (está offline); si tiene datos, se va por la nube.
+- Si hay que corregir un acorde: desde el admin del cantoral; llega a todos
+  al momento (D-21) por la nube o desde el equipo base.
 
-**Si todo falla**: el admin del cantoral ya imprime cada bloque como
-cancionero con acordes en el tono del día (🖨 Cancionero). Llevar 3-4 copias
-en papel.
+**Al acabar**: cerrar el directo → resumen (canciones y duración real de cada
+bloque) → guardarlo como repertorio «Villancicos 2026».
 
-### 4.4 Después del evento
+**Si todo falla**: el admin del cantoral imprime cada bloque como cancionero
+con acordes en el tono del día (🖨 Cancionero). Llevar 3-4 copias. Y MCM App
+enseña las canciones.
 
-- Mirar Sentry y lo que haya fallado; apuntarlo en el plan.
-- `cantoralConfig` vuelve sola a `normal` el `to` configurado.
-- Retrospectiva corta en este documento: qué se usó, qué no, qué pedir.
+### 4.5 Después del evento
+
+- Retrospectiva corta en este documento: qué se usó, qué falló, qué pedir.
+- `cantoralConfig` vuelve sola a `normal` en la fecha `to`.
+- Fase 5 en enero.
 
 ## 5. Tareas
 
 | # | Tarea | Quién |
 | - | ----- | ----- |
-| 7.1 | Fichas, capturas, privacidad, icono | Usuario (Claude prepara textos y capturas) |
-| 7.2 | Builds y envío (`npm run eas:build:* -- --profile production`, `eas submit`) | Claude + usuario |
-| 7.3 | Importar y revisar villancicos | Usuario con el admin (Claude puede ayudar en el repo del cantoral) |
-| 7.4 | Bloques 2026 + publicar | Usuario + Claude (script) |
-| 7.5 | Ensayo general y lista de fallos | Usuario y coro |
-| 7.6 | Guardia del día | Claude disponible para OTA de urgencia |
+| 7.1 | Fichas, capturas, privacidad, nota de revisión | Claude prepara textos y capturas; usuario sube |
+| 7.2 | Icono en Canva | Claude propone, Izan y usuario cierran |
+| 7.3 | Builds y envío (`npm run eas:build:* -- --profile production`, `eas submit`) | Claude + usuario |
+| 7.4 | Importar y revisar villancicos; bloques 2026 | Usuario |
+| 7.5 | `packs.py publish`, workflow y `config/cantoral.json` | Claude (repo del cantoral) |
+| 7.6 | Configurar el router y ensayo con 10+ móviles | Usuario y coro |
+| 7.7 | Guardia del día | Claude disponible para OTA de urgencia |

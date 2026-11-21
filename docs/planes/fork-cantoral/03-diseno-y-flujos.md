@@ -82,11 +82,13 @@ Hojas a un toque desde donde haga falta: Afinador/Metrónomo · Tono · Apuntes 
 Avisos (maestro) · Unirse a un directo (QR / cerca de ti / código)
 ```
 
-**Vocabulario de la interfaz** (propuesta, ver decisiones): *Cantoral*,
-*Repertorio* (lo que en MCM App es «Tu selección»/playlist; en datos sigue
-siendo `playlist`), *Bloque* (un pack de villancicos dentro de un evento),
-*Directo*, *Dirige / Maestro*, *Sigue*, *Aviso*, *Apunte*, *Arreglo* (el
-`{arr:}` oficial de la canción, como en MCM App).
+**Vocabulario de la interfaz** (decisión D-12): *Cantoral*, *Repertorio*
+(lo que en MCM App es «Tu selección»/playlist; en datos sigue siendo
+`playlist`), *Directo*, *Dirige / Maestro*, *Sigue*, *Aviso*, *Apunte*,
+*Arreglo* (el `{arr:}` oficial de la canción, como en MCM App). *Bloque*
+solo aparece **dentro de un evento** (los packs de villancicos). Todo tiene
+que tener sentido en el **modo normal**, después de Navidad: la app es para
+todo el año y el modo Navidad es una capa encima, no el centro.
 
 ---
 
@@ -204,11 +206,24 @@ Bocetos de intención, no de píxeles. Los píxeles se deciden en la maqueta
 
 ---
 
+### 4.6 Equipo base (el servidor del directo por wifi local)
+
+Un móvil o tablet enchufado junto al router (ver `04` §5.2). Pantalla
+pensada para mirarla de lejos desde la mesa de sonido:
+
+- Arriba, grande: **canción actual** y la siguiente, con su tono.
+- Bloque en curso, hora prevista frente a la real, cuenta atrás al cambio.
+- **Conectados**: cuántos por wifi y cuántos por la nube, y qué maestros.
+- Estado del router (red, IP) y el **QR del directo** para quien llegue.
+- Brillo bajo y pantalla siempre encendida; un toque largo para salir (que
+  nadie lo cierre sin querer).
+
 ## 5. Flujos (con el número de toques como métrica)
 
 | Flujo | Camino | Toques objetivo |
 | ----- | ------ | --------------- |
-| Unirme al directo de mi coro | Abrir app → **Unirme** | **1** |
+| Unirme al directo de mi coro (o del evento) | Abrir app → **Unirme** | **1** |
+| Montar el equipo base | (+) → Directo → «Este dispositivo es el equipo base» | 3, una vez |
 | Unirme a un directo por QR | Abrir app → (+) → Escanear → apuntar | 2 + apuntar |
 | Pasar canción (maestro) | **›** o pedal | **1** (0 con pedal al final de página) |
 | Pasar canción (seguidor) | — | **0** |
@@ -223,7 +238,18 @@ justificarlo en `DIVERGENCIAS.md`.
 
 ---
 
-## 6. Identidad visual — tres direcciones (decide el usuario)
+## 6. Identidad visual — maqueta con A y B; el estilo lo cierra Izan
+
+**Decisión D-05**: se hace la maqueta con las direcciones **A y B** y se
+decide sobre ella. **Izan acabará de decidir el estilo**; lo que se haga
+aquí es la base. Y **aprovechar lo nativo** (Liquid Glass, materiales,
+controles y menús del sistema): cuanto más nativo, menos estilo propio hay
+que mantener.
+
+Consecuencia técnica: el tema vive **entero en tokens**
+(`constants/theme.ts`: colores por rol en claro, oscuro, Escenario y Sol;
+radios; tipografía de la hoja), y las pantallas solo usan roles. Así el
+estilo final de Izan entra cambiando tokens, sin tocar pantallas.
 
 Ninguna usa el azul MCM ni la paleta por secciones. Las tres comparten
 tipografía del sistema para la interfaz (nativo) y la hoja de canción con su
@@ -237,9 +263,10 @@ letra elegible.
 | Fuerte en | Directo en penumbra, calle de noche, batería OLED | Estudiar, imprimir, aire «de cantoral» | Coste cero, se ve «de Apple/Google» |
 | Débil en | Al sol necesita el tema «Sol» | El rojo recuerda al acento de MCM App | Poca personalidad: «otra app más» |
 
-**Recomendación: A**, porque el caso crítico (directo) es de penumbra y de
-calle, y porque marca a la primera que «esto no es MCM App». En directo el
-Atril pasa a «Escenario» solo (negro real), y «Sol» queda a un toque.
+Recomendación de partida para la maqueta: **A**, porque el caso crítico
+(directo) es de penumbra y de calle. En directo el Atril pasa a
+«Escenario» solo (negro real), y «Sol» queda a un toque — eso se mantiene
+gane la dirección que gane.
 
 Reglas que se mantienen con cualquier dirección:
 
@@ -248,8 +275,10 @@ Reglas que se mantienen con cualquier dirección:
 - Tokens en `constants/theme.ts` del fork, con su test de contraste y el
   trinquete de números mágicos heredado (se reescriben los valores, se
   conserva el mecanismo).
-- El icono y el nombre en tienda los decide el usuario (ver decisiones);
-  se proponen 3 iconos con la dirección elegida.
+- **Icono** (D-06): Claude propone opciones **en Canva** (hay conector) con
+  la dirección elegida, y se termina allí con Izan; se exporta a 1024 px y
+  se generan los tamaños con el script de iconos. Nombre en tienda:
+  **MCM Cantoral**.
 
 ---
 
@@ -274,9 +303,10 @@ acciones se reparten entre la barra inferior y el menú ⋯.
 
 ## 8. Proceso de diseño (antes de programar pantallas)
 
-1. **Maqueta** de 5 pantallas en móvil y iPad —Inicio, Atril, Atril en
-   directo (seguidor), Consola del maestro, Repertorio— en las direcciones A y
-   B, como artefacto de diseño. El usuario elige (decisión D-05).
+1. **Maqueta** de 6 pantallas en móvil y iPad —Inicio (normal y modo
+   Navidad), Atril, Atril en directo (seguidor con aviso), Consola del
+   maestro, Repertorio, Equipo base— en las direcciones A y B, como artefacto
+   de diseño compartible con **Izan**, que cierra el estilo (D-05).
 2. Se escribe el **`design.md` del fork** (prescriptivo, corto, como el del
    monorepo pero con sus propias reglas) y `constants/theme.ts`.
 3. Guardarraíles: contraste de tokens, trinquete de números mágicos, sin

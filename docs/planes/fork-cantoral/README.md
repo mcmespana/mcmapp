@@ -1,9 +1,10 @@
 # Plan — MCM Cantoral (fork de MCM App solo con el cantoral)
 
-> **Estado:** 📝 escrito el 21/11/2026, **sin empezar**. Pendiente de que el
-> usuario conteste las decisiones y cree el repo del fork.
-> **Decisiones:** se contestan en la página
-> <https://claude.ai/artifact/KDnnYJnwrYgxQB5zSPcakn> (colección `decisiones`); el resumen está en §4.
+> **Estado:** 📝 plan cerrado el 21/11/2026 con **todas las decisiones
+> contestadas** (§4). **Sin empezar**: falta que el usuario cree el repo
+> (nombre recomendado: `mcmespana/mcmcantoral`, §4 A-03).
+> **Respuestas originales:** página
+> <https://claude.ai/artifact/KDnnYJnwrYgxQB5zSPcakn> (colección `decisiones`).
 > **Dónde vivirá:** al crear el fork, esta carpeta se copia entera a
 > `docs/planes/` del repo nuevo y allí sigue viva. En `mcmapp` se queda como
 > registro de por qué existe el fork y de lo que hay que hacer **aquí** antes
@@ -17,7 +18,8 @@ Una app **standalone** que solo tiene el cantoral —con todas sus
 funciones— pensada para **estudiar, preparar, ensayar y sobre todo actuar en
 directo**, que se publica en las tiendas como **MCM Cantoral**, lee la misma
 base de datos que MCM App y **sale en modo Navidad** para ser la herramienta
-de los **Villancicos Solidarios**.
+de los **Villancicos Solidarios** (sábado **19/12/2026**, Cuatro Esquinas,
+3-4 maestros).
 
 Para qué la quiere el usuario, en su orden:
 
@@ -30,10 +32,11 @@ Para qué la quiere el usuario, en su orden:
    iPad, fácil de importar y de seguir, con mis apuntes a la vista.
 5. Administrar: editar canciones.
 6. **Villancicos Solidarios**: un recital de ~8 h en la calle, ~60
-   canciones en bloques de una hora ya preparados, 1-3 maestros pasando
-   canciones y mandando avisos («¡cantamos más fuerte!»).
+   canciones en bloques de una hora ya preparados, 3-4 maestros pasando
+   canciones y mandando avisos («¡cantamos más fuerte!»). **Por la wifi
+   local** del router que ya se lleva para la mesa de sonido.
 
-## 2. Decisiones ya tomadas (usuario, 21/11/2026)
+## 2. Lo que pidió el usuario de entrada (21/11/2026)
 
 | # | Decisión |
 | - | -------- |
@@ -43,150 +46,168 @@ Para qué la quiere el usuario, en su orden:
 | T-04 | **Estilo visual distinto** para que se note que es otra app; las reglas de colores por secciones y territorios de MCM App **no aplican**; se busca el mejor diseño posible manteniendo las funcionalidades |
 | T-05 | **Sin barra de pestañas y sin FAB**: botones abajo, en la línea del menú de vidrio actual |
 | T-06 | **Nativo siempre** |
-| T-07 | **Documento de trazabilidad** breve con las divergencias: el fork tiene vida propia, y lo que se pueda llevar a MCM App se lleva **sin prisa**, cuando haya tiempo y tokens ([`DIVERGENCIAS.md`](DIVERGENCIAS.md)) |
+| T-07 | **Documento de trazabilidad** breve con las divergencias: el fork tiene vida propia, y lo que se pueda llevar a MCM App se lleva **sin prisa** ([`DIVERGENCIAS.md`](DIVERGENCIAS.md)). **El cantoral de MCM App solo puede crecer, nunca decrecer** |
 | T-08 | Sale en **modo Navidad funcional** (no estético) para Villancicos Solidarios |
 | T-09 | Repensar flujos y diseño a fondo; se pueden usar skills de diseño |
-| T-10 | Specs pedidas: wifi local para pasar canciones · todo el cantoral offline · el maestro ofrece su cantoral más nuevo por wifi · apuntes por perfil de instrumento · avisos de maestros estilo ProPresenter · pedal Bluetooth · emojis y reacciones · afinador · subcategorías fáciles en `songs.json` · nunca re-descargar si ya está en local y primera descarga a prueba de fallos · notación de partituras (riffs, melodías), con IA si ayuda |
+| T-10 | Specs: wifi local para pasar canciones · todo el cantoral offline · el maestro ofrece su cantoral más nuevo por wifi · apuntes por perfil de instrumento · avisos de maestros estilo ProPresenter · pedal Bluetooth · emojis y reacciones · afinador · subcategorías fáciles en `songs.json` · nunca re-descargar si ya está en local y primera descarga a prueba de fallos · notación de partituras (riffs, melodías), con IA si ayuda |
 
 ## 3. Lo que salió al planificar (y cambia cosas)
 
 Comprobado en el código de `mcmapp` (`main`, `257f5f4`) y del repo
 `mcmapp-cantoral`:
 
-1. 🚨 **El repertorio de villancicos no está en el cantoral.** La categoría
+1. **El repertorio de villancicos no está en el cantoral.** La categoría
    *N. Navidad* está **vacía** y los 11 bloques de 2025 tienen todas las
-   canciones sin enlazar. Los importadores (Word e IA para el PDF de 2008)
-   ya están hechos en el admin del cantoral; falta usarlos y revisar ~85
-   canciones. **Es ruta crítica igual que la app** (`07`).
-2. **Las subcategorías ya existen en los datos** (el generador publica
-   `subcategories`, `subcategory`, `alsoIn`, `duration`) pero **ninguna app
-   las usa**: la «Fase 1» de `mcmapp-cantoral/docs/PROMPT_APP_NAVIDAD.md`
-   está escrita y sin ejecutar. El marcado (`<i>` 2ª voz…) afecta a **las
-   dos apps** a la vez (`02` §4).
+   canciones sin enlazar. Los importadores ya están en el admin del
+   cantoral. Lo hace el usuario («no te preocupes, lo haremos»).
+2. **Las subcategorías ya existen en los datos** pero **ninguna app las
+   usa**: la «Fase 1» de `mcmapp-cantoral/docs/PROMPT_APP_NAVIDAD.md` está
+   sin ejecutar. El marcado (`<i>` 2ª voz…) afecta a **las dos apps**. Y si
+   la tienda tarda, el plan B es ver las canciones en MCM App: **MCM App
+   tiene que tener Navidad bien antes del 19/12** (Pre-fork).
 3. **No hay canciones empaquetadas**: la primera vez sin internet el cantoral
    sale vacío. El fork lleva una semilla en el binario (`02` §3).
-4. 🐞 **Sugerir una canción obliga a todos los móviles a re-bajar el
-   cantoral** (`SuggestSongModal` escribe `songs/updatedAt`). Bug de MCM App.
+4. 🐞 **Sugerir una canción obliga a todos a re-bajar el cantoral**
+   (`SuggestSongModal` escribe `songs/updatedAt`). Bug de MCM App.
 5. 🐞 **En el coro en vivo, cambiar de tono borra la letra a los
-   seguidores** (`current` se reemplaza entero). Bug de MCM App (`04` §1).
-6. **El pedal Bluetooth solo funciona de verdad en la web**: en iOS/Android
-   no hay captura nativa de teclas (`04` §8).
-7. MCM App tiene **una sola lista** («Tu selección»): el fork necesita
-   varios repertorios (`02` §5).
-8. La **versión mínima** de MCM App (`/profileConfig`) **bloquearía** al fork
-   si la leyera: el fork tiene su propia configuración (`01` §2.1).
-9. Enlaces (`mcm.expo.app/coro`…) y el tipo de fichero `.mcm` **chocarían**
-   entre las dos apps: dominio y tipo propios, y se entienden los de la otra.
-10. Multipeer (iOS) y Nearby (Android) **no hablan entre sí**; el punto de
-    acceso del iPhone **no es fiable desde iOS 18**. Wifi local = TCP +
-    Bonjour + router de viaje si no hay wifi (`04` §5).
-11. GitHub **normalmente no deja forkear dentro del mismo propietario**:
-    repo nuevo con la historia empujada (`01` §0).
-12. Los trinquetes de diseño (`noNewMagicNumbers`, `noLooseMotion`) tienen
-    **cota inferior**: al borrar media app hay que bajar los topes en el
-    mismo commit (`01` §2.7).
-13. **ChordSheetJS (la que parsea el ChordPro) es GPL-2.0** y el repo no
-    tiene licencia. MCM App ya la usa; con una segunda app en tiendas
-    conviene mirarlo (aclaración A-06).
+   seguidores** (`current` se reemplaza entero). Bug de MCM App.
+6. **El pedal Bluetooth solo funciona de verdad en la web** (`04` §8).
+7. MCM App tiene **una sola lista**: el fork necesita varios repertorios.
+8. La **versión mínima** de MCM App **bloquearía** al fork si la leyera.
+9. Enlaces y el tipo de fichero `.mcm` **chocarían** entre las dos apps.
+10. Multipeer (iOS) y Nearby (Android) **no hablan entre sí**: la wifi local
+    es TCP + Bonjour, sobre **el router del evento** (`04` §5).
+11. En iOS, **una app en segundo plano no puede servir**: el móvil del
+    maestro no puede ser el único servidor. Por eso hay un **equipo base**
+    enchufado junto al router y relevo automático (`04` §5.2).
+12. GitHub normalmente no deja forkear dentro del mismo propietario: repo
+    nuevo con la historia empujada (`01` §0).
+13. **Las reglas de Firebase y las Cloud Functions son de `mcmapp`**: el fork
+    no despliega reglas, y su función va en un *codebase* propio para no
+    borrar las de MCM App (`01` §2.9, `06`).
+14. **ChordSheetJS es GPL-2.0** y el repo no tiene licencia. Se acepta así y
+    se mira más adelante (A-06).
 
-## 4. Decisiones pendientes (resumen; se contestan en la página)
+## 4. Decisiones contestadas (21/11/2026)
 
-| ID | Pregunta | Recomendación |
-| -- | -------- | ------------- |
-| D-01 | Fecha del evento y meta | Sábado 19/12 (por confirmar); tiendas como objetivo, TestFlight público + web como plan B |
-| D-02 | ¿Arreglos y Fase 1 de Navidad en MCM App **antes** de forkear? | **Sí**: una sesión, sale por OTA, y el fork nace con ello |
-| D-03 | Identificadores | `com.familiaconsolacion.mcmcantoral` / `com.mcmespana.mcmcantoral`, esquema `mcmcantoral` |
-| D-04 | ¿Mantener la carpeta `mcm-app/`? | **Sí**: mismas rutas = portar sin dolor |
-| D-05 | Dirección visual | **A · Escenario** (oscuro con luz ámbar), confirmada con una maqueta |
-| D-06 | Icono | Claude propone 3 con la dirección elegida |
-| D-07 | ¿Wifi local ya para Villancicos? | **No**: nube + offline para el evento; wifi local en enero |
-| D-08 | ¿Cómo se es maestro de un directo? | PIN/QR que enseña quien lo crea |
-| D-09 | Admin por código | Auth anónimo invisible + Cloud Function (el NAS no cambia) |
-| D-10 | Directo en la nube | Reutilizar `/choirSessions` con campos nuevos (compatible con MCM App) |
-| D-11 | Apuntes compartidos | Dentro del repertorio primero; por coro después |
-| D-12 | Palabras de la interfaz | Repertorio · Bloque · Directo · Maestro · Apunte |
-| D-13 | Web del fork | Sí, en `mcm-cantoral.expo.app` |
-| D-14 | Qué satélites del cantoral se quedan | Todos (domingo, lecturas, lo cantado por el coro, sugerir/fallitos, PDF, metrónomo) |
-| D-15 | Analítica | Sentry y Aptabase, como MCM App |
-| D-16 | IA para partituras | Primero «tararéalo» sin IA; IA después vía NAS |
-| D-17 | Botones de volumen como pedal | Solo Android y opcional (en iOS lo prohíbe Apple) |
-| D-18 | Reacciones | Para todos, silenciables, el maestro puede apagarlas |
-| D-19 | Quién configura el modo Navidad | Fichero en el repo del cantoral, publicado por su workflow |
-| D-20 | ¿Seguir por sección (estribillo…) ya? | Después del evento |
-| D-21 | ¿Congelar el cantoral durante un directo? | Sí |
-| D-22 | ¿Qué pasa con el cantoral de MCM App? | Se queda como está |
+| ID | Decisión | Respuesta | Cómo queda en el plan |
+| -- | -------- | --------- | --------------------- |
+| D-01 | Fecha y meta | **19/12**, tiendas como objetivo. «No hay miedo»; si no llega, se ven las canciones en MCM App | Calendario de `07`; Pre-fork deja Navidad bien en MCM App |
+| D-02 | Arreglos y Fase 1 de Navidad en MCM App primero | **Sí**. Orden pedido el 21/11: **primero terminar el plan**, luego los bugs | §5 Pre-fork, justo antes de la Fase 0 |
+| D-03 | Identificadores | **Los propuestos** (`com.familiaconsolacion.mcmcantoral`, `com.mcmespana.mcmcantoral`, `mcmcantoral`) | `01` §2.1 |
+| D-04 | Carpeta `mcm-app/` | **No: la app en la raíz del repo, y limpiar** («hay mucha mierda») | `01` §2.8; portar con `--relative`/`--directory` (`DIVERGENCIAS.md` §4) |
+| D-05 | Dirección visual | **Maqueta con A y B y se decide allí.** Aprovechar lo nativo. **Izan acabará de decidir el estilo** | `03` §6 y §8: maqueta para Izan; tema por tokens para que su estilo entre sin tocar pantallas |
+| D-06 | Icono | **Claude propone; se empieza y se acaba en Canva** | `03` §6 |
+| D-07 | Wifi local para el evento | **Sí, tiene que entrar.** Hay router (dos o tres) para la mesa de sonido | Fase 3 del evento; equipo base + relevo; lista del router (`04` §5, `07` §4) |
+| D-08 | Maestros | **PIN de 4 dígitos** muy fácil | `04` §4 |
+| D-09 | Admin por código | **Sesión anónima + función** (explicado en `06` §2 en sencillo) | `06` |
+| D-10 | Directo en la nube | **Reutilizar `/choirSessions`** con campos nuevos | `04` §4 |
+| D-11 | Apuntes compartidos | **Dentro del repertorio primero**; por coro después | `05` §6 |
+| D-12 | Palabras | **Repertorio · Directo · Maestro · Apunte**; «Bloque» solo dentro de un evento. Pensado también para el modo normal tras Navidad | `03` §3 |
+| D-13 | Web | **`mcm-cantoral.expo.app`** | `01` §2.1 |
+| D-14 | Satélites | **Todos** | `01` §1 |
+| D-15 | Analítica | Sentry + Aptabase, **en una segunda fase**: ahora no | Se quedan instalados y **apagados** (sin claves); se encienden en la Fase 5 |
+| D-16 | IA para partituras | Tararear primero, IA después. **Más importante: poder escribir el riff en la web del admin del cantoral** de forma sencilla | `05` §5: editor ABC en el admin del cantoral primero |
+| D-17 | Botones de volumen | **En las dos plataformas**, con un interruptor remoto por si Apple se queja | `04` §8 |
+| D-18 | Reacciones | Para todos; **lo importante son los avisos de los maestros** | `04` §6-§7 |
+| D-19 | Configuración del modo Navidad | **Fichero en el repo del cantoral** (por ahora) | `02` §7 |
+| D-20 | Seguir por sección | **Para el evento** («si mola») | Fase 3, después de lo básico (`04` §10) |
+| D-21 | Congelar el cantoral en directo | **No**: se actualiza en cuanto hay algo nuevo | `02` §3.3: se aplica al momento, sin saltar de canción ni de posición |
+| D-22 | Cantoral de MCM App | **Se queda** (y solo crece) | — |
 
-Aclaraciones (A-01…A-08) e ideas sueltas: en la página.
+**Aclaraciones**
+
+| ID | Respuesta |
+| -- | --------- |
+| A-01 | 19/12/2026, **Cuatro Esquinas**, **3-4 maestros** como mucho |
+| A-02 | Cuenta de Play «de organización, creo»; con MCM App fue bien → sin prueba de 12 personas |
+| A-03 | Repo: lo decide Claude → **`mcmespana/mcmcantoral`** (sigue la costumbre `mcmapp`, `mcmpanel`, `mcmbank`). `mcmapp-cantoral` se queda como está: son las canciones de las dos apps |
+| A-04 | El repertorio de villancicos lo meten ellos |
+| A-05 | No hay pedal ni iPad para probar ahora; ya se verá |
+| A-06 | Licencia: se acepta así, más adelante |
+| A-07 | Editor antes de enero: **sí, si no cuesta mucho** → al final de la Fase 4, si da tiempo |
+| A-08 | Ensayo general: sí, sin agobios |
+
+**Ideas sueltas**: **sí** a I-06 (cuenta atrás al cambio de bloque) e I-07
+(resumen al acabar) → entran en la Fase 3. **Luego**: I-01 «Canta con
+nosotros», I-02 pantalla grande, I-04 aviso push de directo, I-08 modo
+proyección para la misa. **No**: I-03 pulso compartido, I-05 comprar router
+(ya hay).
 
 ## 5. Fases y orden
 
-| Fase | Qué | Dónde | Documento | Para Villancicos |
-| ---- | --- | ----- | --------- | ---------------- |
-| **Pre-fork** | Bugs de §3 (4, 5) + comparación numérica de `updatedAt` + **Fase 1 de Navidad** (subcategorías, alsoIn, marcado, duración) en código compartido y UI mínima | `mcmapp` (rama de esta sesión → `main`) | [`02`](02-datos-offline.md) §8-§9 | ✅ |
-| **0** | Crear el fork, identidad nueva, poda, shell sin pestañas, CI, TestFlight/Play interna | fork | [`01`](01-arranque-y-poda.md) | ✅ |
+| Fase | Qué | Dónde | Documento | Antes del 19/12 |
+| ---- | --- | ----- | --------- | --------------- |
+| **Pre-fork** | Bugs 4 y 5 de §3 + comparación numérica de `updatedAt` + **Fase 1 de Navidad** (subcategorías, alsoIn, marcado, duración) en código compartido y UI de MCM App | `mcmapp` → OTA | [`02`](02-datos-offline.md) §8-§9 | ✅ |
+| **0** | Repo, identidad, poda, **app en la raíz y limpieza**, shell sin pestañas, CI, **spike de wifi local**, TestFlight/Play interna | fork | [`01`](01-arranque-y-poda.md) | ✅ |
 | **1** | Catálogo offline (semilla, ficheros, atómico, nunca re-bajar), repertorios múltiples, bloques, modo Navidad | fork + cantoral | [`02`](02-datos-offline.md) | ✅ |
-| **2** | Diseño: maqueta → `design.md` del fork → tokens → Inicio, Atril, Repertorio, iPad | fork | [`03`](03-diseno-y-flujos.md) | ✅ |
-| **3** | Directo por la nube (protocolo, varios maestros, avisos, reacciones, presencia) + pedal | fork | [`04`](04-directo.md) | ✅ |
-| **4** | Tiendas, ensayo general, evento | fork + usuario | [`07`](07-tiendas-y-villancicos.md) | ✅ |
-| **5** | Wifi local + pasar el cantoral, apuntes por capas, partituras ABC, admin por código + editor | fork | [`04`](04-directo.md) §5, [`05`](05-apuntes-y-partituras.md), [`06`](06-administracion.md) | ❌ (enero) |
+| **2** | Diseño: maqueta A/B para Izan → `design.md` → tokens → Inicio, Atril, Repertorio, iPad | fork | [`03`](03-diseno-y-flujos.md) | ✅ |
+| **3** | **Directo**: protocolo → nube → **wifi local** (equipo base, relevo, pasar el cantoral) → avisos, reacciones, presencia → pedal y volumen → seguir por sección, cuenta atrás de bloque, resumen | fork | [`04`](04-directo.md) | ✅ |
+| **4** | Tiendas, ensayo con el router, evento. Si da tiempo: admin por código + editor | fork + usuario | [`07`](07-tiendas-y-villancicos.md), [`06`](06-administracion.md) | ✅ (admin, si da tiempo) |
+| **5** | Apuntes por capas, partituras (editor ABC en el admin del cantoral primero), analítica encendida, ideas «luego» | fork + cantoral | [`05`](05-apuntes-y-partituras.md) | ❌ (enero) |
 | **6** | Llevar a MCM App lo importable, sin prisa | `mcmapp` | [`DIVERGENCIAS.md`](DIVERGENCIAS.md) | ❌ |
 
-**En paralelo y fuera del código**: contenido de villancicos en el repo del
-cantoral (usuario, con el admin) y burocracia de las tiendas (`07` §3).
+**En paralelo y fuera del código**: villancicos en el repo del cantoral
+(usuario) e icono y fichas de tienda (Canva + Claude).
 
-**Calendario** (si el evento es el 19/12): S0 21-23 nov pre-fork + Fase 0 ·
-S1 24-30 nov Fase 0 cerrada + Fase 1 + maqueta · S2 1-7 dic Fases 2 y 3 ·
-S3 8-13 dic Fase 3 + envío a revisión + **ensayo general** · S4 14-18 dic
-arreglos y publicar · 19 dic evento. Detalle en `07` §2.
+**Calendario**
+
+| Semana | Qué |
+| ------ | --- |
+| S0 · 21-23 nov | Pre-fork en MCM App · crear repo · Fase 0 (con el spike de wifi local el primer día) |
+| S1 · 24-30 nov | Fase 0 cerrada → TestFlight + Play interna · Fase 1 · maqueta A/B para Izan · icono en Canva |
+| S2 · 1-7 dic | Fase 2 (con el estilo de Izan) · Fase 3: protocolo, nube y **wifi local** |
+| S3 · 8-13 dic | Fase 3: avisos, reacciones, pedal/volumen, sección, cuenta atrás, resumen · **enviar a revisión ~9 dic** · ensayo con el router del evento |
+| S4 · 14-18 dic | Arreglos del ensayo por OTA · publicar · modo Navidad encendido · admin si da tiempo |
+| 19 dic | 🎄 Cuatro Esquinas |
 
 ## 6. Cómo se ejecuta este plan
 
 1. **Una fase por sesión** (o dos si son cortas), en el orden de §5. Antes de
-   empezar una fase, leer su documento entero y las decisiones contestadas.
-2. Lo que tenga una decisión sin contestar **no se ejecuta**: se pregunta.
+   empezar una fase, leer su documento entero.
+2. Todo está decidido. Si al ejecutar sale algo nuevo de verdad, se pregunta
+   agrupado, con recomendación.
 3. En el fork, cada fase cierra con: tests en verde, entrada en el
    `CHANGELOG.md` del fork (fecha y hora), fila de `DIVERGENCIAS.md` si
    aplica, y la línea de OTA (`OTA: ✅ — solo JS.` / `OTA: ❌ — requiere
    build nativo…`).
-4. Modelo: **Opus** para lo que decide (protocolo de directo, catálogo,
-   identidad, diseño); **Sonnet** para lo mecánico (borrar áreas, tests,
-   textos). Está marcado en cada tabla de tareas.
-5. Este README se actualiza al cerrar cada fase (columna de estado de §5).
+4. Modelo: **Opus** para lo que decide (protocolo de directo, wifi local,
+   catálogo, identidad, diseño); **Sonnet** para lo mecánico (borrar áreas,
+   tests, textos). Está marcado en cada tabla de tareas.
+5. Este README se actualiza al cerrar cada fase.
 
 ## 7. Investigación (21/11/2026, resumen)
 
 | Tema | Elegido | Plan B | Notas |
 | ---- | ------- | ------ | ----- |
-| Wifi local | `react-native-tcp-socket` 6.4 + `react-native-zeroconf` 1.0-rc | Módulo Expo propio (Network.framework / NsdManager) | tcp-socket va por la capa de compatibilidad: probar el día 1. Permisos: TN3179 (iOS), `ACCESS_LOCAL_NETWORK` (Android 17) |
+| Wifi local | `react-native-tcp-socket` 6.4 + `react-native-zeroconf` 1.0-rc | Módulo Expo propio (Network.framework / NsdManager) | tcp-socket va por la capa de compatibilidad de la Nueva Arquitectura: **spike el día 1**. Permisos: TN3179 (iOS), `ACCESS_LOCAL_NETWORK` (Android 17) |
 | Pedal | `expo-key-event` 1.9 | Módulo propio con `UIKeyCommand` + `wantsPriorityOverSystemBehavior` | El foco se pierde con modales: re-escuchar. iOS esconde el teclado con un pedal conectado |
-| Volumen como pedal | Solo Android, opcional | — | Norma 2.5.9 de Apple |
+| Volumen como pedal | `react-native-volume-manager` 2.2 | — | iOS: norma 2.5.9; interruptor remoto en `cantoralConfig` |
 | Afinador | El de hoy (`react-native-audio-api` + `pitchy`) | `react-native-pitchy` (C++) | Añadir calibración de La |
-| Partituras | ABC + `abcjs` 6.7 en el WebView | — | ChordSheetJS 18 deja pasar `{start_of_abc}` con `delegates`; soundfont empaquetada para escuchar sin red |
-| Brillo / pantalla | `expo-keep-awake` (ya), `expo-brightness` con restaurar | — | SDK 58: iPad siempre redimensionable, no bloquear orientación |
-| Skills de diseño | `expo/skills` (`expo-native-ui`, `expo-ui`, `expo-design-system`…), Callstack, Software Mansion, Vercel | — | Instalación en `03` §8 |
-| Tiendas | — | — | Apple 4.3 (duplicadas) y 4.2; Google 12 probadores/14 días si la cuenta es personal y posterior al 13/11/2023 |
+| Partituras | ABC + `abcjs` 6.7 (en el WebView de la app y en el admin del cantoral) | — | ChordSheetJS 18 deja pasar `{start_of_abc}` con `delegates`; soundfont empaquetada para escuchar sin red |
+| Brillo / pantalla | `expo-keep-awake` (ya), `expo-brightness` con restaurar | — | SDK 58: iPad siempre redimensionable |
+| Skills | `expo/skills` (`expo-native-ui`, `expo-ui`, `expo-design-system`, `expo-module`…), Callstack, Software Mansion, Vercel | — | Instalación en `03` §8 |
 
 ## 8. Riesgos
 
 | Riesgo | Prob. | Impacto | Qué se hace |
 | ------ | ----- | ------- | ----------- |
-| No llegar al 19/12 con todo | Media | Alto | Orden de §5 estricto; lo de la Fase 5 no entra; plan B TestFlight + web |
-| Repertorio de villancicos sin importar a tiempo | **Alta** | **Muy alto** | Empezar ya (S0); Claude puede ayudar en el repo del cantoral |
-| Rechazo 4.3 de Apple | Media | Alto | Diferenciación clara + nota a la revisión; TestFlight público |
-| Google exige 12 probadores × 14 días | ? | Alto | Mirar la cuenta hoy (A-02); abrir la prueba cerrada en S1 |
-| La nube falla en la calle | Baja | Alto | Bloques offline en cada móvil; papel de respaldo |
-| `react-native-tcp-socket` no va en SDK 58 | Media | Medio | Plan B módulo propio; no afecta al evento |
-| El pedal pierde el foco | Media | Medio | Hook que re-escucha; plan B `UIKeyCommand`; prueba con pedal real |
+| No llegar al 19/12 con todo | Media | Alto | Orden de §5 estricto; seguir por sección y admin son lo primero que cae; MCM App como plan B para ver canciones |
+| Wifi local: `react-native-tcp-socket` no va en SDK 58 | Media | Alto | Spike el día 1 de la Fase 0; si falla, módulo propio desde ese día |
+| Wifi local: el router aísla clientes o no deja pasar Bonjour | Media | Alto | Lista del router (`07` §4.3) y prueba en el ensayo; QR con IP como respaldo; nube en paralelo si el router tiene internet |
+| El móvil del maestro se bloquea y deja de servir | Alta (iOS) | Alto | Equipo base enchufado + relevo automático entre maestros (`04` §5.2) |
+| Repertorio sin meter a tiempo | Media | Muy alto | Lo llevan ellos; MCM App lo enseña igual |
+| El pedal pierde el foco | Media | Medio | Hook que re-escucha; plan B `UIKeyCommand`; botones de volumen |
 
 ## 9. Documentos de este plan
 
 | Documento | Qué |
 | --------- | --- |
-| [`01-arranque-y-poda.md`](01-arranque-y-poda.md) | Fase 0: repo, identidad, qué se borra y en qué orden, shell sin pestañas, tests, CI |
+| [`01-arranque-y-poda.md`](01-arranque-y-poda.md) | Fase 0: repo, identidad, qué se borra, app en la raíz, shell sin pestañas, tests, CI, spike |
 | [`02-datos-offline.md`](02-datos-offline.md) | Catálogo offline, nodos que se leen, subcategorías, repertorios, bloques, modo Navidad, bugs de MCM App |
 | [`03-diseno-y-flujos.md`](03-diseno-y-flujos.md) | Situaciones de uso, principios, arquitectura, pantallas, flujos con toques, identidad visual, nativo, skills |
-| [`04-directo.md`](04-directo.md) | Protocolo, nube, maestros, avisos, reacciones, wifi local, pedal, pantalla |
-| [`05-apuntes-y-partituras.md`](05-apuntes-y-partituras.md) | Capas de apuntes, anclaje, ABC, teclado de piano, tararear, IA |
-| [`06-administracion.md`](06-administracion.md) | Admin por código sin usuarios; maestro ≠ admin |
-| [`07-tiendas-y-villancicos.md`](07-tiendas-y-villancicos.md) | Calendario, tiendas, contenido, guion del día |
+| [`04-directo.md`](04-directo.md) | Protocolo, nube, wifi local con equipo base, maestros, avisos, reacciones, pedal y volumen, sección, cuenta atrás, resumen |
+| [`05-apuntes-y-partituras.md`](05-apuntes-y-partituras.md) | Capas de apuntes, anclaje, ABC en el admin y en la app, teclado de piano, tararear, IA |
+| [`06-administracion.md`](06-administracion.md) | Admin por código sin usuarios (explicado en sencillo); maestro ≠ admin |
+| [`07-tiendas-y-villancicos.md`](07-tiendas-y-villancicos.md) | Calendario, tiendas, contenido, router, guion del día |
 | [`DIVERGENCIAS.md`](DIVERGENCIAS.md) | Plantilla del documento de trazabilidad del fork |
