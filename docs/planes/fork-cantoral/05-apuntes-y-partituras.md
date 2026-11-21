@@ -139,7 +139,7 @@ d2 dB c2 cA | B4 G4 |]
 - **Por coro** (más adelante): `/choirs/{id}/apuntes/{songKey}` para que los
   apuntes del coro estén en cualquier repertorio. Necesita regla nueva y
   contraseña del coro para escribir (el mismo modelo `coco` de COROS.md).
-  Decisión D-11.
+  Decidido (D-11): primero dentro del repertorio; por coro, después.
 - **En directo**: el maestro los manda por el canal de directo (`04`).
 
 ## 7. Datos (borrador)

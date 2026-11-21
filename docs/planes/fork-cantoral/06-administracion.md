@@ -23,7 +23,11 @@
 El fork **no tiene inicio de sesión**, así que no hay pase de Firebase… salvo
 que lo haya sin que la persona lo note.
 
-## 2. Lo elegido (D-09): sesión anónima invisible + código
+## 2. Lo elegido (D-09): «una especie de contraseña y ya»
+
+Para quien lo usa **es una contraseña**: la escribe en Ajustes y ya es
+administrador en ese móvil. Nada más que ver ni que configurar. Lo de abajo
+es cómo se hace para que esa contraseña no se pueda sacar de la app.
 
 ### En sencillo
 

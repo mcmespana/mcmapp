@@ -188,6 +188,9 @@ Bocetos de intención, no de píxeles. Los píxeles se deciden en la maqueta
   izquierda (tocar = mandar esa canción), atril a la derecha, avisos abajo.
 - El pedal pasa página y, al final de la canción, pasa de canción (ya
   existe en el modo atril de pantalla completa).
+- **Secciones**: un toque en un trozo de la letra = «estamos aquí»; el
+  botón ¶ abre la lista de secciones de la canción para anunciar «ahora
+  hacemos esta estrofa / este puente» (`04` §10).
 
 ### 4.5 Directo — quien sigue
 
@@ -228,6 +231,7 @@ pensada para mirarla de lejos desde la mesa de sonido:
 | Pasar canción (maestro) | **›** o pedal | **1** (0 con pedal al final de página) |
 | Pasar canción (seguidor) | — | **0** |
 | Mandar «¡Más fuerte!» | 📣 → «Más fuerte» | **2** |
+| «Ahora hacemos el puente» (maestro) | ¶ → «Puente» | **2** |
 | Encontrar una canción | Barra → escribir 3 letras → tocar | 1 + texto |
 | Importar la última de mi coro | Inicio → Repertorios → «Traer la última» | 2 |
 | Montar y dirigir la misa | Repertorio → 📡 Dirigir | 1 desde el repertorio |
@@ -255,7 +259,7 @@ Ninguna usa el azul MCM ni la paleta por secciones. Las tres comparten
 tipografía del sistema para la interfaz (nativo) y la hoja de canción con su
 letra elegible.
 
-| | **A · Escenario** (recomendada) | **B · Rúbrica** | **C · Nativo puro** |
+| | **A · Escenario** (en la maqueta) | **B · Rúbrica** (en la maqueta) | **C · Nativo puro** (descartada como dirección; sus piezas nativas se usan en las dos) |
 | - | ------------------------------- | --------------- | ------------------- |
 | Idea | El atril de noche: tinta casi negra y una luz cálida de vela | El libro de cantos: papel, tinta y el rojo de las rúbricas del misal | Colores del sistema con un solo acento |
 | Modo por defecto | Oscuro primero (claro bien hecho también) | Claro primero | El del sistema |

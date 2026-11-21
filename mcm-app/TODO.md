@@ -70,6 +70,58 @@ nativo (entró en la #313 el 2026-08-04). Todo NATIVO, nada sale por OTA.
 
 ---
 
+## Cantoral — bugs y Navidad (documentado el 2026-11-21, sin hacer)
+
+Encontrados al planificar el fork MCM Cantoral
+(`docs/planes/fork-cantoral/`). **El usuario pidió documentarlos, no
+arreglarlos todavía.** El fork hereda el mismo código: si se arreglan allí
+antes, se traen aquí con un parche (`docs/planes/fork-cantoral/DIVERGENCIAS.md`
+§4) y se borran de esta lista.
+
+### Bugs
+
+- [ ] **Sugerir una canción obliga a todos los móviles a re-bajar el
+      cantoral.** `components/SuggestSongModal.tsx:82` hace
+      `setWithRetry('songs/updatedAt', Date.now().toString())` después de
+      guardar la sugerencia. Cambia la versión del catálogo (y en
+      milisegundos, cuando el CI del cantoral escribe segundos), así que
+      cada móvil baja `songs/data` entero al abrir el cantoral. Además, si
+      las reglas lo niegan, la persona ve un error aunque la sugerencia ya se
+      guardó. **Arreglo**: quitar esa escritura (las solicitudes no son parte
+      del catálogo). **Test**: el modal no escribe en `songs/updatedAt`.
+- [ ] **`useFirebaseData` compara `updatedAt` como texto.**
+      `hooks/useFirebaseData.ts:224` (`localUpdatedAt === String(…)`):
+      cualquier diferencia, también un valor más viejo, baja el nodo entero.
+      **Arreglo**: comparar como número y bajar solo si el remoto es mayor,
+      normalizando segundos/milisegundos. Afecta a todos los nodos: tests en
+      `__tests__/useFirebaseData*.test.ts`.
+- [ ] **Coro en vivo: cambiar de tono o de cejilla deja sin letra a los
+      seguidores.** `app/screens/SongDetailScreen.tsx:661-666` (cejilla) y
+      `:703-707` (tono) publican `{filename, transpose, screen}` sin
+      `content`, `title` ni `firebaseCategory`, y el servicio hace
+      `update({current: …})`, que **reemplaza** `current` entero. En pantalla
+      completa el seguidor deja de seguir (necesita `content`) y quien se une
+      después recibe la letra vacía. **Arreglo**: publicar el `current`
+      completo (lo mismo que al abrir la canción, líneas ~631-648) o
+      actualizar por campos (`current/transpose`, `current/capoOverride`).
+      **Test** en `__tests__/choirLiveSession.test.ts`.
+- [ ] **El coro en vivo dice «24 h» y dura 12 h (+12 h si hay actividad).**
+      Textos en `components/playlist/ChoirSheet.tsx:471` y
+      `hooks/usePlaylistSharing.ts:364`, y el comentario de
+      `database.rules.json` (~línea 423). `COROS.md` ya está corregido
+      (2026-11-21). **Arreglo**: textos tipo «hasta 12 h; se alarga sola si
+      sigues dirigiendo».
+
+### Navidad (plan B de Villancicos Solidarios, sábado 19/12)
+
+- [ ] **Fase 1 de `mcmapp-cantoral/docs/PROMPT_APP_NAVIDAD.md`**:
+      subcategorías, «también en» (`alsoIn`), marcado `<i>`/`<u>`/`<b>` y
+      anotaciones `[*CLAP]`, duración. El cantoral ya publica esos campos y
+      la app los ignora. Si la tienda tarda con MCM Cantoral, los villancicos
+      se verán en MCM App: conviene tenerlo antes del 19/12. Detalle:
+      `docs/planes/fork-cantoral/02-datos-offline.md` §4. Al terminar, avisar
+      para poner `APP_MARKUP = True` en el repo del cantoral.
+
 ## Planes del 2026-11-16 (pañuelo y cantos para el domingo)
 
 > Orden y dependencias en `docs/planes/BACKLOG.md` §2.K. Live Activities va en la rama `claude/plan-live-activities`, no aquí. Cada plan acaba con

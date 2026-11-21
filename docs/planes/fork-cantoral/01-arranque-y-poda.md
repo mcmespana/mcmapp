@@ -13,21 +13,26 @@
 
 ## 0. Antes de empezar (lo hace el usuario)
 
-1. **Crear el repo `mcmespana/mcmcantoral`** (nombre decidido, A-03).
-   GitHub normalmente **no deja forkear un repo dentro del mismo
-   propietario** (`mcmespana` → `mcmespana`). Si no deja, se crea el repo
-   vacío y se empuja la historia de `mcmapp` para que la comparta (así
-   `diff` y los parches con upstream funcionan):
-
-   ```bash
-   git clone --bare https://github.com/mcmespana/mcmapp mcmapp.git
-   cd mcmapp.git && git push --mirror https://github.com/mcmespana/mcmcantoral
-   ```
-
-   (o solo `main`: `git push https://github.com/mcmespana/mcmcantoral main`).
-2. Añadir el repo a la sesión de Claude (con permiso de escritura).
-3. Tener a mano: cuenta de Expo (la misma), Apple Developer (equipo
-   `5P53S6QB23`) y Google Play Console (de organización, A-02).
+1. **Comprobar que el plan está en `main` de `mcmapp`** (un fork de GitHub
+   solo copia la rama principal; mergeado el 21/11/2026).
+2. **Crear el fork en la cuenta de GitHub de Izan** (decisión del usuario):
+   GitHub → `mcmespana/mcmapp` → *Fork* → propietario: la cuenta de Izan →
+   nombre **`mcmcantoral`** → «Copy the main branch only». Un fork de GitHub
+   conserva la relación con el original (`upstream`), lo que viene bien para
+   comparar y traer cambios. (GitHub no deja forkear dentro de `mcmespana`,
+   que es el dueño del original.)
+   - Un fork de un repo público es público; no se puede hacer privado sin
+     desligarlo. Está bien así (MCM App también es público).
+   - Más adelante se puede **transferir** a `mcmespana` (Settings →
+     Transfer) sin perder nada.
+   - Alternativa si algún día hiciera falta un repo sin relación de fork:
+     repo vacío + `git push` de la historia de `mcmapp`.
+3. **Dar acceso a Claude**: instalar la app de GitHub de Claude en la cuenta
+   de Izan para ese repo (<https://github.com/apps/claude/installations/select_target>)
+   y añadirlo a la sesión (`add_repo`, con permiso de escritura).
+4. Tener a mano: cuenta de Expo (la misma de MCM), Apple Developer (equipo
+   `5P53S6QB23`) y Google Play Console (de organización, A-02). Las tiendas y
+   Expo son de MCM aunque el código esté en la cuenta de Izan.
 
 ## 1. Lo que se queda y lo que se va (resumen del mapa)
 
@@ -57,7 +62,7 @@
 
 ### 2.1 Identidad nueva
 
-| Qué | Hoy (MCM App) | Fork (propuesta, D-03) |
+| Qué | Hoy (MCM App) | Fork (decidido, D-03) |
 | --- | ------------- | ---------------------- |
 | Nombre | MCM App | **MCM Cantoral** |
 | `slug` / `scheme` | `mcm-app` / `mcmapp` | `mcm-cantoral` / `mcmcantoral` |
@@ -66,7 +71,7 @@
 | EAS project | `aa9f2d3a-…` | **nuevo** (`eas init`), y su `updates.url` |
 | `ascAppId` (eas.json) | `6753905393` | el de la app nueva en App Store Connect |
 | Versión / runtime | 2.5.1 | **1.0.0** |
-| Web | `mcm.expo.app` | dominio propio (D-13), p. ej. `mcm-cantoral.expo.app` |
+| Web | `mcm.expo.app` | **`mcm-cantoral.expo.app`** (D-13) |
 | Universal links | `applinks:mcm.expo.app` (`/playlist`, `/coro`) | los del dominio nuevo |
 | Tipo de fichero `.mcm` | UTI `com.mcmespana.mcmapp.playlist` (dueña) | UTI propia como dueña **y** la de MCM App como *importada*: las dos apps abren los `.mcm` de la otra sin chocar |
 | Sentry / Aptabase | proyecto de MCM App | **instalados y apagados** (sin claves) hasta la Fase 5 (D-15: «segunda fase»); se encienden con una variable, sin build |
@@ -77,7 +82,8 @@ Ficheros: `app.json`, `app.config.ts`, `eas.json`, `utils/storeLinks.ts`,
 ~532), `ChoirSessionBanner.tsx:55,170`, `utils/qrScan.ts` (que **siga
 reconociendo** los enlaces y QR de `mcm.expo.app` además de los nuevos),
 `+html.tsx`, `public/manifest.json`, `public/icons/*`,
-`utils/documentTitle.ts`, `assets/images/*` (icono provisional hasta D-06).
+`utils/documentTitle.ts`, `assets/images/*` (icono provisional hasta tener
+el de Canva, D-06).
 Textos de permisos reescritos: micrófono (afinador), cámara (QR; hoy habla
 de «área privada»), fotos (editor).
 
@@ -134,7 +140,7 @@ Se quedan `useIncomingPlaylist`, `useScreenTracking` (sin perfil),
 | `ReportBugsModal`, `SuggestSongModal`, `ChoirStep`, `usePlaylistSharing` leen `useUserProfile().profile.name` (y perfil/delegación) | Un **nombre local** opcional en Ajustes («¿Cómo te llamas en el coro?»); sin perfil ni delegación |
 | `utils/qrScan.ts` importa `isTradeCode` de `panueloTrade` | Quitar esa rama |
 | `constants/analyticsEvents.ts` → `types/notifications.ts` | Quitar los tipos de notificaciones |
-| `useDailyReadings` lee `seccion_oracion/lecturas/<fecha>` y `@contigo_bookmarks` | Se queda la lectura del nodo si D-14 mantiene «Lecturas del domingo»; fuera lo de marcadores |
+| `useDailyReadings` lee `seccion_oracion/lecturas/<fecha>` y `@contigo_bookmarks` | Se queda la lectura del nodo («Lecturas del domingo» se queda, D-14); fuera lo de marcadores |
 | `SuggestSongModal` escribe `songs/updatedAt` | **Quitar** (bug, ver `02` §1) |
 
 ### 2.5 Borrar las áreas

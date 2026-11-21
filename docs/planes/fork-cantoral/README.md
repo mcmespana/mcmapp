@@ -1,14 +1,17 @@
 # Plan — MCM Cantoral (fork de MCM App solo con el cantoral)
 
 > **Estado:** 📝 plan cerrado el 21/11/2026 con **todas las decisiones
-> contestadas** (§4). **Sin empezar**: falta que el usuario cree el repo
-> (nombre recomendado: `mcmespana/mcmcantoral`, §4 A-03).
+> contestadas** (§4) y mergeado en `main` de `mcmapp`. **Sin empezar.**
+> Siguiente: la **maqueta A/B** para elegir estilo (`03` §8) y **el fork en la
+> cuenta de GitHub de Izan** (`01` §0). Los bugs de MCM App quedan
+> **documentados, sin hacer** (`mcm-app/TODO.md`, «Cantoral — bugs y
+> Navidad»).
 > **Respuestas originales:** página
 > <https://claude.ai/artifact/KDnnYJnwrYgxQB5zSPcakn> (colección `decisiones`).
 > **Dónde vivirá:** al crear el fork, esta carpeta se copia entera a
 > `docs/planes/` del repo nuevo y allí sigue viva. En `mcmapp` se queda como
-> registro de por qué existe el fork y de lo que hay que hacer **aquí** antes
-> (§5, «Pre-fork»).
+> registro de por qué existe el fork y del **Paquete MCM App** (§5): lo que
+> hay que hacer **aquí**.
 
 ---
 
@@ -64,7 +67,7 @@ Comprobado en el código de `mcmapp` (`main`, `257f5f4`) y del repo
    usa**: la «Fase 1» de `mcmapp-cantoral/docs/PROMPT_APP_NAVIDAD.md` está
    sin ejecutar. El marcado (`<i>` 2ª voz…) afecta a **las dos apps**. Y si
    la tienda tarda, el plan B es ver las canciones en MCM App: **MCM App
-   tiene que tener Navidad bien antes del 19/12** (Pre-fork).
+   tiene que tener Navidad bien antes del 19/12** (Paquete MCM App, §5).
 3. **No hay canciones empaquetadas**: la primera vez sin internet el cantoral
    sale vacío. El fork lleva una semilla en el binario (`02` §3).
 4. 🐞 **Sugerir una canción obliga a todos a re-bajar el cantoral**
@@ -80,8 +83,9 @@ Comprobado en el código de `mcmapp` (`main`, `257f5f4`) y del repo
 11. En iOS, **una app en segundo plano no puede servir**: el móvil del
     maestro no puede ser el único servidor. Por eso hay un **equipo base**
     enchufado junto al router y relevo automático (`04` §5.2).
-12. GitHub normalmente no deja forkear dentro del mismo propietario: repo
-    nuevo con la historia empujada (`01` §0).
+12. GitHub no deja forkear dentro del mismo propietario (`mcmespana`): el
+    fork se hace **en la cuenta de Izan** (fork normal de GitHub, solo copia
+    `main`; por eso todo se mergea a `main` antes) (`01` §0).
 13. **Las reglas de Firebase y las Cloud Functions son de `mcmapp`**: el fork
     no despliega reglas, y su función va en un *codebase* propio para no
     borrar las de MCM App (`01` §2.9, `06`).
@@ -92,15 +96,15 @@ Comprobado en el código de `mcmapp` (`main`, `257f5f4`) y del repo
 
 | ID | Decisión | Respuesta | Cómo queda en el plan |
 | -- | -------- | --------- | --------------------- |
-| D-01 | Fecha y meta | **19/12**, tiendas como objetivo. «No hay miedo»; si no llega, se ven las canciones en MCM App | Calendario de `07`; Pre-fork deja Navidad bien en MCM App |
-| D-02 | Arreglos y Fase 1 de Navidad en MCM App primero | **Sí**. Orden pedido el 21/11: **primero terminar el plan**, luego los bugs | §5 Pre-fork, justo antes de la Fase 0 |
+| D-01 | Fecha y meta | **19/12**, tiendas como objetivo. «No hay miedo»; si no llega, se ven las canciones en MCM App | Calendario de `07`; el Paquete MCM App deja Navidad bien en MCM App |
+| D-02 | Arreglos y Fase 1 de Navidad en MCM App primero | **Sí, pero después**: el 21/11 el usuario pidió **solo documentarlos** y no esperar a ellos para el fork | Documentados en `mcm-app/TODO.md`; se hacen donde llegue antes (MCM App o el fork) y se llevan al otro con un parche (§5) |
 | D-03 | Identificadores | **Los propuestos** (`com.familiaconsolacion.mcmcantoral`, `com.mcmespana.mcmcantoral`, `mcmcantoral`) | `01` §2.1 |
 | D-04 | Carpeta `mcm-app/` | **No: la app en la raíz del repo, y limpiar** («hay mucha mierda») | `01` §2.8; portar con `--relative`/`--directory` (`DIVERGENCIAS.md` §4) |
 | D-05 | Dirección visual | **Maqueta con A y B y se decide allí.** Aprovechar lo nativo. **Izan acabará de decidir el estilo** | `03` §6 y §8: maqueta para Izan; tema por tokens para que su estilo entre sin tocar pantallas |
 | D-06 | Icono | **Claude propone; se empieza y se acaba en Canva** | `03` §6 |
 | D-07 | Wifi local para el evento | **Sí, tiene que entrar.** Hay router (dos o tres) para la mesa de sonido | Fase 3 del evento; equipo base + relevo; lista del router (`04` §5, `07` §4) |
 | D-08 | Maestros | **PIN de 4 dígitos** muy fácil | `04` §4 |
-| D-09 | Admin por código | **Sesión anónima + función** (explicado en `06` §2 en sencillo) | `06` |
+| D-09 | Admin por código | **«Una especie de contraseña y ya»**: quien la sabe, es admin. Por dentro, sesión anónima + función (invisible) | `06` |
 | D-10 | Directo en la nube | **Reutilizar `/choirSessions`** con campos nuevos | `04` §4 |
 | D-11 | Apuntes compartidos | **Dentro del repertorio primero**; por coro después | `05` §6 |
 | D-12 | Palabras | **Repertorio · Directo · Maestro · Apunte**; «Bloque» solo dentro de un evento. Pensado también para el modo normal tras Navidad | `03` §3 |
@@ -111,7 +115,7 @@ Comprobado en el código de `mcmapp` (`main`, `257f5f4`) y del repo
 | D-17 | Botones de volumen | **En las dos plataformas**, con un interruptor remoto por si Apple se queja | `04` §8 |
 | D-18 | Reacciones | Para todos; **lo importante son los avisos de los maestros** | `04` §6-§7 |
 | D-19 | Configuración del modo Navidad | **Fichero en el repo del cantoral** (por ahora) | `02` §7 |
-| D-20 | Seguir por sección | **Para el evento** («si mola») | Fase 3, después de lo básico (`04` §10) |
+| D-20 | Seguir por sección | **Sí, «muy bueno»**, para el evento. Y que el maestro pueda decir **«ahora hacemos esta estrofa / este puente»** | Fase 3, después de lo básico (`04` §10) |
 | D-21 | Congelar el cantoral en directo | **No**: se actualiza en cuanto hay algo nuevo | `02` §3.3: se aplica al momento, sin saltar de canción ni de posición |
 | D-22 | Cantoral de MCM App | **Se queda** (y solo crece) | — |
 
@@ -121,7 +125,7 @@ Comprobado en el código de `mcmapp` (`main`, `257f5f4`) y del repo
 | -- | --------- |
 | A-01 | 19/12/2026, **Cuatro Esquinas**, **3-4 maestros** como mucho |
 | A-02 | Cuenta de Play «de organización, creo»; con MCM App fue bien → sin prueba de 12 personas |
-| A-03 | Repo: lo decide Claude → **`mcmespana/mcmcantoral`** (sigue la costumbre `mcmapp`, `mcmpanel`, `mcmbank`). `mcmapp-cantoral` se queda como está: son las canciones de las dos apps |
+| A-03 | Repo: **fork en la cuenta de GitHub de Izan**, nombre **`mcmcantoral`** (sigue la costumbre `mcmapp`, `mcmpanel`, `mcmbank`). Se puede transferir a `mcmespana` más adelante. `mcmapp-cantoral` se queda como está: son las canciones de las dos apps |
 | A-04 | El repertorio de villancicos lo meten ellos |
 | A-05 | No hay pedal ni iPad para probar ahora; ya se verá |
 | A-06 | Licencia: se acepta así, más adelante |
@@ -138,24 +142,25 @@ proyección para la misa. **No**: I-03 pulso compartido, I-05 comprar router
 
 | Fase | Qué | Dónde | Documento | Antes del 19/12 |
 | ---- | --- | ----- | --------- | --------------- |
-| **Pre-fork** | Bugs 4 y 5 de §3 + comparación numérica de `updatedAt` + **Fase 1 de Navidad** (subcategorías, alsoIn, marcado, duración) en código compartido y UI de MCM App | `mcmapp` → OTA | [`02`](02-datos-offline.md) §8-§9 | ✅ |
+| **Paquete MCM App** | Bugs 4 y 5 de §3 + comparación numérica de `updatedAt` + textos «24 h» del coro + **Fase 1 de Navidad**. **Documentado, sin hacer** (`mcm-app/TODO.md`). Se hace donde llegue antes —MCM App o el fork— y se lleva al otro con un parche | `mcmapp` y/o fork | [`02`](02-datos-offline.md) §8-§9 | ✅ (Navidad en MCM App es el plan B) |
 | **0** | Repo, identidad, poda, **app en la raíz y limpieza**, shell sin pestañas, CI, **spike de wifi local**, TestFlight/Play interna | fork | [`01`](01-arranque-y-poda.md) | ✅ |
 | **1** | Catálogo offline (semilla, ficheros, atómico, nunca re-bajar), repertorios múltiples, bloques, modo Navidad | fork + cantoral | [`02`](02-datos-offline.md) | ✅ |
-| **2** | Diseño: maqueta A/B para Izan → `design.md` → tokens → Inicio, Atril, Repertorio, iPad | fork | [`03`](03-diseno-y-flujos.md) | ✅ |
+| **2** | Diseño: estilo elegido sobre la maqueta (Izan) → `design.md` → tokens → Inicio, Atril, Repertorio, iPad | fork | [`03`](03-diseno-y-flujos.md) | ✅ |
 | **3** | **Directo**: protocolo → nube → **wifi local** (equipo base, relevo, pasar el cantoral) → avisos, reacciones, presencia → pedal y volumen → seguir por sección, cuenta atrás de bloque, resumen | fork | [`04`](04-directo.md) | ✅ |
 | **4** | Tiendas, ensayo con el router, evento. Si da tiempo: admin por código + editor | fork + usuario | [`07`](07-tiendas-y-villancicos.md), [`06`](06-administracion.md) | ✅ (admin, si da tiempo) |
 | **5** | Apuntes por capas, partituras (editor ABC en el admin del cantoral primero), analítica encendida, ideas «luego» | fork + cantoral | [`05`](05-apuntes-y-partituras.md) | ❌ (enero) |
 | **6** | Llevar a MCM App lo importable, sin prisa | `mcmapp` | [`DIVERGENCIAS.md`](DIVERGENCIAS.md) | ❌ |
 
 **En paralelo y fuera del código**: villancicos en el repo del cantoral
-(usuario) e icono y fichas de tienda (Canva + Claude).
+(usuario), estilo final (Izan, sobre la maqueta) e icono y fichas de tienda
+(Canva + Claude). El **Paquete MCM App** se hace cuando el usuario lo pida.
 
 **Calendario**
 
 | Semana | Qué |
 | ------ | --- |
-| S0 · 21-23 nov | Pre-fork en MCM App · crear repo · Fase 0 (con el spike de wifi local el primer día) |
-| S1 · 24-30 nov | Fase 0 cerrada → TestFlight + Play interna · Fase 1 · maqueta A/B para Izan · icono en Canva |
+| S0 · 21-23 nov | Plan mergeado en `main` · **maqueta A/B** · fork en la cuenta de Izan · Fase 0 (con el spike de wifi local el primer día) |
+| S1 · 24-30 nov | Fase 0 cerrada → TestFlight + Play interna · Fase 1 · Izan cierra el estilo sobre la maqueta · icono en Canva |
 | S2 · 1-7 dic | Fase 2 (con el estilo de Izan) · Fase 3: protocolo, nube y **wifi local** |
 | S3 · 8-13 dic | Fase 3: avisos, reacciones, pedal/volumen, sección, cuenta atrás, resumen · **enviar a revisión ~9 dic** · ensayo con el router del evento |
 | S4 · 14-18 dic | Arreglos del ensayo por OTA · publicar · modo Navidad encendido · admin si da tiempo |

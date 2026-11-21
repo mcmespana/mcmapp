@@ -68,6 +68,7 @@ type LiveState = {
   song: { category: string; filename: string; contentHash: string;
           transpose?: number; capo?: number };
   section?: number;              // estrofa/estribillo actual (seguir por sección, §10)
+  sectionCue?: { section: number; label: string; at: number };  // «ahora hacemos…»
   by: { deviceId: string; name?: string };
   catalogUpdatedAt: number;      // versión del cantoral del maestro
   at: number;
@@ -354,12 +355,21 @@ Plan:
 
 En este orden; si el tiempo aprieta, caen por el final.
 
-1. **Seguir por sección** (D-20, «si mola»): el maestro toca el bloque de la
-   canción que se está cantando (estrofa 2, estribillo…) o pasa con el pedal
-   de sección en sección, y a los seguidores **se les desplaza y resalta**
-   ese trozo. Va en `state.section` (índice de sección de `buildSheet`) y la
-   hoja ya sabe hacer `scrollTo`. Si el seguidor está desplazando a mano, no
-   se le mueve (solo se resalta).
+1. **Seguir por sección** (D-20: «muy bueno»). Dos gestos del maestro:
+   - **«Estamos aquí»**: toca el trozo que se está cantando (estrofa 2,
+     estribillo…) o pasa de sección en sección con el pedal, y a los
+     seguidores **se les desplaza y resalta** ese trozo.
+   - **«Ahora hacemos esta estrofa / este puente»** (lo pidió el usuario):
+     el maestro elige en la lista de secciones de la canción (Estrofa 1,
+     Estribillo, Puente…) la que viene **aunque no toque por orden**
+     —repetir el estribillo, saltarse la estrofa 3, volver al puente— y a
+     todos les sale la cinta «Ahora: Puente», con ese trozo resaltado y la
+     pantalla llevada hasta él. Así el orden lo decide quien dirige en el
+     momento, no el papel.
+   Va en `state.section` (índice de sección de `buildSheet`, que ya sabe
+   qué es estrofa, estribillo y puente) más `state.sectionCue` para el
+   anuncio. La hoja ya hace `scrollTo`. Si el seguidor está desplazando a
+   mano, no se le mueve (solo se resalta y sale la cinta).
 2. **Cuenta atrás al cambio de bloque** (idea I-06, sí): el maestro (o el
    bloque, por su hora) lanza «Cambio de bloque en 2:00» y sale como cinta
    con cuenta atrás en todas las pantallas.
@@ -385,7 +395,7 @@ En este orden; si el tiempo aprieta, caen por el final.
 
 | # | Tarea | Fase | Modelo |
 | - | ----- | ---- | ------ |
-| 4.0 | Arreglo del bug de `current` y caducidad documentada en MCM App | Pre-fork | Sonnet |
+| 4.0 | Bug de `current` (documentado en `mcm-app/TODO.md`): en el fork se arregla con 4.2 y se lleva a MCM App con un parche | 3 | Sonnet |
 | 4.S | **Spike**: `react-native-tcp-socket` + `react-native-zeroconf` en una build de desarrollo SDK 58, dos móviles (iOS y Android) en la misma wifi: anunciar, descubrir, conectar, mandar 1.000 mensajes | 0 (día 1) | Opus |
 | 4.1 | `liveReducer` + tipos + tests (orden por `seq`, duplicados, canción sin hash, repertorio vivo, relevo) | 3 | Opus |
 | 4.2 | Camino nube: `state`, `masters`, PIN, transacción de avance, presencia con `onDisconnect`, suscripciones separadas, compatibilidad `current` | 3 | Opus |

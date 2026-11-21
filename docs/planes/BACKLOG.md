@@ -41,7 +41,7 @@
 | **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                                                                                                                     |
 | **⚠️ Roto y sin dueño**      | 🚨 **Android no muestra las notificaciones con categoría** desde el 2026-08-03: el Panel manda `channelId` y la app de `production` no tiene esos canales. **Decidido (2026-09-26): no se toca `production`, se arregla con la build 2.1** (`mcm-app/TODO.md`, Notificaciones)       |
 | **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                                                                                               |
-| **Fork MCM Cantoral (21/11)** | 🆕 Plan cerrado, **todas las decisiones contestadas** (página <https://claude.ai/artifact/KDnnYJnwrYgxQB5zSPcakn>). Sale en modo Navidad para Villancicos Solidarios (**sáb 19/12, Cuatro Esquinas**), **con wifi local** (hay router). Siguiente: «Pre-fork» en este repo (bugs del cantoral + Fase 1 de Navidad) y que el usuario cree `mcmespana/mcmcantoral`. Detalle §L |
+| **Fork MCM Cantoral (21/11)** | 🆕 Plan cerrado, **todas las decisiones contestadas**, en `main`. Sale en modo Navidad para Villancicos Solidarios (**sáb 19/12, Cuatro Esquinas**), **con wifi local** (hay router). Siguiente: **maqueta A/B** y **fork en la cuenta de Izan**. Bugs del cantoral de MCM App **documentados, sin hacer** (`mcm-app/TODO.md`). Detalle §L |
 | **Planes nuevos (16/11)** | En `main`: intercambios del pañuelo (hecho, falta pegar reglas y probar), cantos para el domingo (fases 1-4 hechas) y piezas por asistencia (plan). Live Activities, en su rama aparte. Detalle §K |
 | **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                                                                                           |
 | **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio)                                                                                                                                                                                                                                   |
@@ -462,15 +462,17 @@ maestros, pedal).
   repo nuevo, maqueta A/B y **Izan** cierra el estilo, el cantoral **no** se
   congela en directo, botones de volumen en las dos plataformas, y el
   cantoral de MCM App **solo crece**.
-- **Orden pedido por el usuario**: primero cerrar el plan (hecho), luego los
-  bugs de MCM App, luego el fork.
-- **Pre-fork, en este repo** (`fork-cantoral/02-datos-offline.md` §8-§9):
-  quitar la escritura de `songs/updatedAt` de `SuggestSongModal` (obliga a
-  todos a re-bajar el cantoral), comparar `updatedAt` numéricamente, publicar
-  `current` del coro campo a campo (cambiar de tono borra la letra a los
-  seguidores), documentar la caducidad real del coro, y la **Fase 1 de
-  `mcmapp-cantoral/docs/PROMPT_APP_NAVIDAD.md`** (subcategorías, `alsoIn`,
-  marcado, duración) si D-02 = sí. Sale por OTA.
+- **Orden pedido por el usuario** (21/11): plan mergeado en `main` →
+  **maqueta A/B** para elegir estilo → **fork en la cuenta de GitHub de
+  Izan** (`mcmcantoral`) → Fase 0. Los bugs **no se arreglan ahora**.
+- **Paquete MCM App — documentado, sin hacer** (`mcm-app/TODO.md`, sección
+  «Cantoral — bugs y Navidad»): `SuggestSongModal` escribe `songs/updatedAt`
+  (todos re-bajan el cantoral), `useFirebaseData` compara `updatedAt` como
+  texto, cambiar de tono en el coro en vivo borra la letra a los seguidores,
+  textos «24 h» del coro (dura 12 h + 12 h; `COROS.md` ya corregido) y la
+  **Fase 1 de `mcmapp-cantoral/docs/PROMPT_APP_NAVIDAD.md`** (subcategorías,
+  `alsoIn`, marcado, duración: plan B del 19/12). Se hacen donde llegue
+  antes (aquí o en el fork) y se llevan al otro con un parche.
 - **Ruta crítica fuera del código**: la categoría Navidad del repo del
   cantoral está vacía y los bloques de 2025 sin enlazar (`fork-cantoral/07`).
 - Cuando exista el repo del fork, esta carpeta se copia allí y el estado vivo

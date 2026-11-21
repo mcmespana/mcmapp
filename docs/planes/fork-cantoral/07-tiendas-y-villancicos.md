@@ -20,14 +20,15 @@
   importadores del admin (A-04).
 - **Router**: configurado según `04` §5.3 y probado en el ensayo.
 - **Plan B si la tienda no llega**: ver las canciones en **MCM App**, que
-  para entonces ya pinta Navidad con subcategorías (Pre-fork, D-01). Y la web
+  para entonces debe pintar Navidad con subcategorías (Paquete MCM App,
+  documentado en `mcm-app/TODO.md`; D-01). Y la web
   del fork (`mcm-cantoral.expo.app`) para seguir el directo por la nube.
 
 ## 2. Calendario
 
 | Semana | App (Claude) | Fuera del código (usuario, Izan) |
 | ------ | ------------ | -------------------------------- |
-| **S0 · 21-23 nov** | Pre-fork en MCM App (bugs + Fase 1 de Navidad) → OTA. **Fase 0**: spike de wifi local el primer día, poda, app a la raíz | Crear `mcmespana/mcmcantoral`. Empezar a importar villancicos |
+| **S0 · 21-23 nov** | Plan mergeado en `main`. **Maqueta A/B**. **Fase 0**: spike de wifi local el primer día, poda, app a la raíz | **Fork en la cuenta de Izan** (`mcmcantoral`) y darle acceso a Claude. Empezar a importar villancicos |
 | **S1 · 24-30 nov** | Fase 0 cerrada → **TestFlight + prueba interna de Play**. **Fase 1** (catálogo, bloques, modo Navidad). Maqueta A/B | Izan mira la maqueta y cierra estilo. Icono en Canva. Fichas de tienda y privacidad |
 | **S2 · 1-7 dic** | **Fase 2** con el estilo de Izan. **Fase 3**: protocolo, nube, **wifi local** con equipo base y relevo, pasar el cantoral | Villancicos revisados, bloques 2026 enlazados y publicados |
 | **S3 · 8-13 dic** | Fase 3: avisos, reacciones, pedal y volumen, cuenta atrás, resumen, seguir por sección. **Enviar a revisión ~9 dic** | **Ensayo con el router del evento** y 10+ móviles |
@@ -92,7 +93,7 @@ de organización y con MCM App fue bien). Lo que hay que preparar:
 - [ ] `config/cantoral.json` con el evento (19/12, Cuatro Esquinas, bloques,
       `liveKey`), los avisos predefinidos y `volumeButtons` →
       `songs/cantoralConfig`.
-- [ ] `APP_MARKUP = True` cuando MCM App (por OTA, Pre-fork) y el fork pinten
+- [ ] `APP_MARKUP = True` cuando MCM App (por OTA, Paquete MCM App) y el fork pinten
       el marcado.
 
 ### 4.3 El router (resumen de `04` §5.3)

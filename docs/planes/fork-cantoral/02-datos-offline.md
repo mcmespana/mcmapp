@@ -141,9 +141,9 @@ crear»): ya es fácil en el repo del cantoral — una entrada en
 
 ⚠️ **Dependencia entre apps**: `APP_MARKUP = True` en el cantoral manda las
 etiquetas a **las dos apps** (mismo `songs/data`). Si MCM App no las sabe
-pintar, verá «&lt;i&gt;» literal. Por eso **el marcado tiene que estar en MCM
-App (por OTA) antes de activar el flag**. Es el principal motivo de la
-decisión D-02 (hacer esta fase en MCM App antes de forkear).
+pintar, verá «&lt;i&gt;» literal. Por eso **el marcado tiene que estar en
+MCM App (por OTA) antes de activar el flag**: está en el Paquete MCM App
+(`mcm-app/TODO.md`).
 
 ## 5. Repertorios (lo que en MCM App es «Tu selección»)
 
@@ -237,17 +237,25 @@ Trabajo en el repo del cantoral (no en la app):
 | Publicar `current` del coro por campos, no entero | El cambio de tono borra la letra a los seguidores (ver `04`) | `SongDetailScreen.tsx:661-666, 703-707` |
 | Documentar la caducidad real (12 h + 12 h) | `COROS.md` dice 24 h | `docs/funcionalidades/COROS.md` |
 
-Son bugs de MCM App: se arreglan en `mcmapp` (Sonnet, una sesión) **antes
-de crear el fork** (D-02, después de cerrar este plan), y el fork nace con
-ellos arreglados. Junto con la Fase 1 de Navidad (§4), son el «Pre-fork»: si
-la tienda tardara, MCM App enseñaría bien los villancicos el 19/12 (D-01).
+Son bugs de MCM App. **Documentados el 21/11/2026, sin hacer** (el usuario
+pidió no arreglarlos todavía): están en `mcm-app/TODO.md`, sección
+«Cantoral — bugs y Navidad», con fichero, línea, arreglo y test. Junto con
+los textos «24 h» del coro (dura 12 h + 12 h con actividad; `COROS.md` ya
+corregido) y la Fase 1 de Navidad (§4), forman el **Paquete MCM App**.
+
+Como el fork nace con el mismo código, **se arreglan donde se llegue
+antes** y se llevan al otro repo con un parche (`DIVERGENCIAS.md` §4): en el
+fork, el de `SuggestSongModal` cae en la Fase 0 y el de `current` en la
+Fase 3. La Fase 1 de Navidad en MCM App es el plan B del 19/12 (si la tienda
+tardara, los villancicos se ven en MCM App), así que conviene hacerla allí
+antes del evento.
 
 ## 9. Tareas
 
 | # | Tarea | Repo | Modelo |
 | - | ----- | ---- | ------ |
-| 2.0 | Arreglos de §8 | mcmapp | Sonnet |
-| 2.1 | Fase 1 de `PROMPT_APP_NAVIDAD` (subcategorías, alsoIn, marcado, duración) — lógica pura y hoja; UI en MCM App | mcmapp (D-02) | Opus |
+| 2.0 | Arreglos de §8 (documentados en `mcm-app/TODO.md`) | donde llegue antes; parche al otro | Sonnet |
+| 2.1 | Fase 1 de `PROMPT_APP_NAVIDAD` (subcategorías, alsoIn, marcado, duración) — lógica pura y hoja (zona espejo) + UI en cada app | las dos (en MCM App, antes del 19/12) | Opus |
 | 2.2 | `songs/meta` + `order` en el generador; `packs.py publish` + workflow; `config/cantoral.json` publicado | mcmapp-cantoral | Sonnet |
 | 2.3 | `CatalogStore` (semilla, ficheros, atómico, comparación numérica, se aplica en directo sin mover la canción) + tests | fork | Opus |
 | 2.4 | `snapshot-cantoral.mjs` en el build y su test | fork | Sonnet |
