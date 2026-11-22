@@ -9,6 +9,8 @@
 //   · update listo en los primeros segundos de una sesión → se aplica ya;
 //   · update que llega más tarde (la comprobación de cada 15 min) → espera a
 //     que la persona vuelva a la app desde el fondo;
+//   · mientras alguien está a mitad del onboarding, nada: la recarga le
+//     borraría lo elegido. Se aplica al terminarlo o saltarlo («released»);
 //   · y siempre con un cortafuegos: si ya se aplicó una hace nada y seguimos
 //     aquí, algo falla — no se entra en bucle de recargas.
 
@@ -25,7 +27,12 @@ export type AutoApplyTrigger =
   /** El update acaba de quedar listo. */
   | 'ready'
   /** La app vuelve del segundo plano con un update ya listo. */
-  | 'foreground';
+  | 'foreground'
+  /**
+   * Se acaba de soltar una retención (`useHoldOTAAutoApply`, p. ej. al salir
+   * del onboarding) y había un update esperando.
+   */
+  | 'released';
 
 interface Context {
   trigger: AutoApplyTrigger;
@@ -34,6 +41,8 @@ interface Context {
   activeSince: number;
   /** Marca de la última aplicación automática, o `null` si nunca. */
   lastAutoApplyAt: number | null;
+  /** Alguna pantalla pide que no se recargue ahora (el onboarding). */
+  held?: boolean;
 }
 
 export function shouldAutoApply({
@@ -41,14 +50,16 @@ export function shouldAutoApply({
   now,
   activeSince,
   lastAutoApplyAt,
+  held = false,
 }: Context): boolean {
+  if (held) return false;
   if (
     lastAutoApplyAt !== null &&
     now - lastAutoApplyAt < AUTO_APPLY_COOLDOWN_MS
   ) {
     return false;
   }
-  // Al volver del fondo no hay nada a medias: se aplica.
-  if (trigger === 'foreground') return true;
+  // Al volver del fondo, o al terminar lo que retenía, no hay nada a medias.
+  if (trigger === 'foreground' || trigger === 'released') return true;
   return now - activeSince <= FRESH_WINDOW_MS;
 }

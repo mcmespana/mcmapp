@@ -33,6 +33,12 @@ interface OTAContextValue {
    * con la insignia de Home.
    */
   dismissApplying: () => void;
+  /**
+   * Pide que NO se aplique ninguna OTA sola hasta soltarla (devuelve la función
+   * que suelta). Si mientras tanto quedó un update listo, se aplica al soltar.
+   * Úsalo con `useHoldOTAAutoApply`.
+   */
+  holdAutoApply: () => () => void;
 }
 
 const OTAContext = createContext<OTAContextValue>({
@@ -42,6 +48,7 @@ const OTAContext = createContext<OTAContextValue>({
   applyUpdate: async () => {},
   applying: false,
   dismissApplying: () => {},
+  holdAutoApply: () => () => {},
 });
 
 /**
@@ -90,6 +97,10 @@ export function OTAProvider({ children }: { children: React.ReactNode }) {
   );
 
   const { isReady, applyUpdate: applyOta } = ota;
+  // Retenciones activas (p. ej. alguien a mitad del onboarding) y si alguna
+  // dejó un update esperando.
+  const holdsRef = useRef(0);
+  const deferredRef = useRef(false);
 
   const applyUpdate = useCallback(async () => {
     if (applyingRef.current) {
@@ -122,6 +133,10 @@ export function OTAProvider({ children }: { children: React.ReactNode }) {
   const tryAutoApply = useCallback(
     async (trigger: AutoApplyTrigger) => {
       if (applyingRef.current) return;
+      if (holdsRef.current > 0) {
+        deferredRef.current = true;
+        return;
+      }
       const lastAutoApplyAt = await readLastAutoApply();
       const now = Date.now();
       if (
@@ -145,6 +160,28 @@ export function OTAProvider({ children }: { children: React.ReactNode }) {
     },
     [applyUpdate],
   );
+
+  // Lo último de `tryAutoApply` e `isReady`, para que `holdAutoApply` sea
+  // estable (si cambiara, el efecto que retiene soltaría y volvería a retener).
+  const tryAutoApplyRef = useRef(tryAutoApply);
+  const isReadyRef = useRef(isReady);
+  useEffect(() => {
+    tryAutoApplyRef.current = tryAutoApply;
+    isReadyRef.current = isReady;
+  }, [tryAutoApply, isReady]);
+
+  const holdAutoApply = useCallback(() => {
+    holdsRef.current += 1;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      holdsRef.current = Math.max(0, holdsRef.current - 1);
+      if (holdsRef.current > 0 || !deferredRef.current) return;
+      deferredRef.current = false;
+      if (isReadyRef.current) void tryAutoApplyRef.current('released');
+    };
+  }, []);
 
   useEffect(() => {
     activeSinceRef.current ??= Date.now();
@@ -178,6 +215,7 @@ export function OTAProvider({ children }: { children: React.ReactNode }) {
         applyUpdate,
         applying,
         dismissApplying,
+        holdAutoApply,
       }}
     >
       {children}
@@ -190,4 +228,17 @@ export function OTAProvider({ children }: { children: React.ReactNode }) {
 
 export function useOTAContext(): OTAContextValue {
   return useContext(OTAContext);
+}
+
+/**
+ * Mientras `active` sea true, ninguna OTA se aplica sola (la recarga borraría
+ * lo que la persona lleva a medias). Al pasar a false o desmontar, si había un
+ * update esperando, se aplica entonces con la pantalla de «un momentín».
+ */
+export function useHoldOTAAutoApply(active: boolean): void {
+  const { holdAutoApply } = useOTAContext();
+  useEffect(() => {
+    if (!active) return;
+    return holdAutoApply();
+  }, [active, holdAutoApply]);
 }
