@@ -94,7 +94,7 @@ export default function AreaState<T>({
       <EmptyState
         icon="cloud-off"
         title="Comunica no responde ahora mismo"
-        subtitle="No es tu conexión. Suele arreglarse solo en unos minutos: vuelve a probar en un rato."
+        subtitle="No es tu conexión. Vuelve a probar en un rato."
         actionLabel="Reintentar"
         onAction={() => refetch()}
         accentColor={t.accentText}

@@ -61,6 +61,7 @@ import {
 import EmptyState from '@/components/ui/EmptyState';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
+import { choirCurrentForSong } from '@/services/choirSessionService';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { SONG_FONTS, useSettings } from '@/contexts/SettingsContext';
 import { hasArrangements, insertArrangementAtLine } from '@/utils/arrangements';
@@ -628,20 +629,30 @@ function SongDetailBody({
   // Modo coro - MAESTRO: cuando entro a una canción, lo publico para los
   // esclavos junto con todos los metadatos para que la puedan renderizar
   // sin tener que buscarla en su cantoral local.
+  // Siempre el `current` COMPLETO (letra incluida): el servicio lo reemplaza
+  // entero, y un cambio de tono sin `content` dejaba sin letra a los oyentes.
+  const publishToChoir = (
+    transpose: number,
+    capoOverride: number | null | undefined,
+  ) =>
+    choir.publishCurrent(
+      choirCurrentForSong(
+        {
+          filename,
+          title: _navScreenTitle,
+          author,
+          songKey: key,
+          capo,
+          content,
+          firebaseCategory,
+        },
+        { transpose, capoOverride, screen: 'detail' },
+      ),
+    );
+
   useEffect(() => {
     if (choir.mode !== 'master' || !filename) return;
-    void choir.publishCurrent({
-      filename,
-      transpose: currentTranspose,
-      capoOverride: currentCapoOverride,
-      screen: 'detail',
-      title: _navScreenTitle,
-      author,
-      songKey: key,
-      capo,
-      content,
-      firebaseCategory,
-    });
+    void publishToChoir(currentTranspose, currentCapoOverride);
     // Solo al montar / cambiar de canción, no en cada cambio de transpose
     // (eso lo hace explícitamente handleSetTranspose).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -658,12 +669,7 @@ function SongDetailBody({
     }
     // Si soy maestro, publico el cambio.
     if (choir.mode === 'master') {
-      void choir.publishCurrent({
-        filename,
-        transpose: currentTranspose,
-        capoOverride: newCapo,
-        screen: 'detail',
-      });
+      void publishToChoir(currentTranspose, newCapo);
     }
   };
 
@@ -700,11 +706,7 @@ function SongDetailBody({
     // Si soy maestro, publico el cambio aunque la canción no esté seleccionada
     // (el maestro puede abrir cualquier canción del cantoral).
     if (choir.mode === 'master') {
-      void choir.publishCurrent({
-        filename,
-        transpose: newTranspose,
-        screen: 'detail',
-      });
+      void publishToChoir(newTranspose, currentCapoOverride);
     }
   };
   const handleSetFontSize = (newSizeEm: number) =>

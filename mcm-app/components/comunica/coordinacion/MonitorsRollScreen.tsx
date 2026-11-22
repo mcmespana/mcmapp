@@ -505,7 +505,7 @@ function Editor({
       : restored && dirty
         ? 'Tienes marcas sin guardar de antes.'
         : dirty && editable
-          ? 'Cambios sin guardar · los datos están solo en tu móvil'
+          ? 'Cambios sin guardar: solo están en tu móvil.'
           : null;
   const stageSections = sections.filter((s) => !s.optional);
   const showHeaders = stageSections.length > 1;

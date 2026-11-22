@@ -100,7 +100,6 @@ export default function NotificationDetailScreen() {
         <EmptyState
           icon="notifications-off"
           title="Esta notificación ya no está"
-          subtitle="Puede que ya no esté disponible."
           actionLabel="Volver"
           onAction={() => router.back()}
         />

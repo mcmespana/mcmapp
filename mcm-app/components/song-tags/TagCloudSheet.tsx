@@ -82,7 +82,7 @@ export default function TagCloudSheet({
 
   const subtitle = editing
     ? editMode === 'hide'
-      ? 'Toca «−» para ocultar las que no van contigo, como las de otro carisma.'
+      ? 'Oculta las que no van contigo, como las de otro carisma.'
       : 'Las destacadas (★) salen arriba del cantoral y, discretas, en las listas.'
     : shown.length === 0
       ? 'Has ocultado todas las etiquetas. Toca «Editar» para recuperarlas.'

@@ -370,14 +370,11 @@ export default function EvangelioScreen() {
             >
               {isDone ? (
                 <>
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      color: isDark ? colors.green : WARM_LIGHT.green,
-                    }}
-                  >
-                    ✓
-                  </Text>
+                  <MaterialIcons
+                    name="check"
+                    size={12}
+                    color={isDark ? colors.green : WARM_LIGHT.green}
+                  />
                   <Text
                     style={[
                       styles.statusChipText,
@@ -475,16 +472,12 @@ export default function EvangelioScreen() {
                               { backgroundColor: hexAlpha(warm.accent, '12') },
                             ]}
                           >
-                            <Text
-                              style={{
-                                ...typography.caption,
-                                color: warm.accentText,
-                                marginRight: 6,
-                                lineHeight: 16,
-                              }}
-                            >
-                              ✦
-                            </Text>
+                            <MaterialIcons
+                              name="auto-awesome"
+                              size={12}
+                              color={warm.accentText}
+                              style={{ marginRight: 6 }}
+                            />
                             <Text
                               style={[
                                 styles.citaText,
@@ -534,7 +527,7 @@ export default function EvangelioScreen() {
                                 { color: warm.warmGray },
                               ]}
                             >
-                              — {readings.evangelio.comentarista}
+                              {readings.evangelio.comentarista}
                             </Text>
                           ) : null}
 
@@ -577,16 +570,12 @@ export default function EvangelioScreen() {
                         { backgroundColor: hexAlpha(warm.accent, '12') },
                       ]}
                     >
-                      <Text
-                        style={{
-                          ...typography.caption,
-                          color: warm.accentText,
-                          marginRight: 6,
-                          lineHeight: 16,
-                        }}
-                      >
-                        ✦
-                      </Text>
+                      <MaterialIcons
+                        name="auto-awesome"
+                        size={12}
+                        color={warm.accentText}
+                        style={{ marginRight: 6 }}
+                      />
                       <Text
                         style={[styles.citaText, { color: warm.accentText }]}
                       >
@@ -711,7 +700,7 @@ export default function EvangelioScreen() {
 
                   {readings.lectura1 && (
                     <ReadingCard
-                      title="Primera Lectura"
+                      title="Primera lectura"
                       cita={readings.lectura1.cita}
                       texto={hl.canonical.lectura1}
                       scale={fontScale}
@@ -739,7 +728,7 @@ export default function EvangelioScreen() {
 
                   {readings.lectura2 && (
                     <ReadingCard
-                      title="Segunda Lectura"
+                      title="Segunda lectura"
                       cita={readings.lectura2.cita}
                       texto={hl.canonical.lectura2}
                       scale={fontScale}

@@ -190,10 +190,6 @@ export default function AppFeedbackModal({
         overScrollMode="never"
         contentContainerStyle={styles.content}
       >
-        <Text style={[styles.subtitle, { color: theme.icon }]}>
-          Tu opinión nos ayuda a mejorar la app
-        </Text>
-
         {!selectedCategory ? (
           <>
             <SectionHeader label="¿Qué quieres contarnos?" />
@@ -308,11 +304,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 48,
-  },
-  subtitle: {
-    ...typography.subhead,
-    textAlign: 'center',
-    marginBottom: 24,
   },
   categoryBtn: {
     flexDirection: 'row',

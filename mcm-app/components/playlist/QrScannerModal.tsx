@@ -360,9 +360,8 @@ function PermissionDenied({
       <MaterialIcons name="no-photography" size={56} color="#8E8E93" />
       <Text style={styles.deniedTitle}>Sin acceso a la cámara</Text>
       <Text style={styles.deniedText}>
-        Dale permiso a MCM App en los ajustes del móvil para escanear los QR. Si
-        no, siempre puedes teclear el código
-        {expected === 'panuelo' ? '.' : ' de 4 dígitos.'}
+        Dale permiso a MCM App en los ajustes del móvil. También puedes escribir
+        el código{expected === 'panuelo' ? '.' : ' de 4 dígitos.'}
       </Text>
       <TouchableOpacity onPress={onClose} style={styles.deniedBtn}>
         <Text style={styles.deniedBtnText}>Escribir el código</Text>

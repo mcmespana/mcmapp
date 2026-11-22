@@ -253,6 +253,27 @@ Piezas y reglas actuales: `docs/desarrollo/AREA_NATIVA_DISENO.md`.
       (c) En un móvil de 320 pt, con letra normal, la barra superior no
       envuelve.
 
+- [ ] **U1 — Mayúsculas con tracking hechas a mano en el cantoral (anotado
+      2026-11-18, pase de `unslop-ui`).** design.md §4/§8: las etiquetas de
+      sección van con `typography.sectionLabel`. Se saltan esa regla:
+      `choirLabel` y `sectionTitle` de `components/playlist/choirSheetStyles.ts`,
+      `label` de `ExportPdfModal`, `secHead` y las claves de la Ficha
+      (`chip.label.toUpperCase()`) de `SongMediaSheet`, `speedHeading` de
+      `SongFullscreenScreen`, `sectionTitle` de `PlaylistActionsBottomSheet` y
+      los «Categorías» de `CategoriesScreen` (van en `overline`).
+- [ ] **U2 — Emojis del cantoral: SE QUEDAN (decisión del usuario,
+      2026-11-18).** El emoji del final de cada `categoryTitle` (Firebase
+      `songs/*`), los de las etiquetas (`songs/tags`) y los de títulos como
+      «✍️ Añadir arreglo» o «Reportar fallitos 🐛» no se quitan, aunque
+      design.md §8 diga «nada de emoji como iconografía». Pendiente a futuro,
+      sin prisa: valorar pasar categorías y etiquetas a `IconSymbol`. Tampoco
+      se tocan las bromas del copy («está muuy guaaapoooo» del escáner de QR).
+- [x] **U3 — Caracteres usados como icono en Comunica — hecho el
+      2026-11-18.** Las flechas ‹ › del mes del calendario, la «✓» de «Ya lo
+      tenemos…» (nueva prop `hintIcon` de `FormField`/`FieldHint`) y el «→» de
+      «Revisarlo en Documentos» (`LockedRow` pinta el chevrón) son ya
+      `IconSymbol`.
+
 ---
 
 ## Orden sugerido si hay un hueco

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { Skeleton } from 'heroui-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
@@ -20,13 +21,45 @@ import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
+import { useEventHorarios } from '@/hooks/useEventHorarios';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
+import { chooseHorarioKey, horarioTints } from '@/utils/eventHorarios';
+import { eventAccentColors } from '@/utils/tintInk';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import { getClosestDateIndex } from '@/utils/dateUtils';
 import DateSelector from '@/components/DateSelector';
 import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
 
-export default function HorarioScreen() {
+/**
+ * Contenedor del conmutador de horarios. Tiene que ser una FILA: el `track` del
+ * `SegmentedControl` es `flex: 1`, y en una columna sin alto fijo ese flex colapsa
+ * su altura a ~0 (se veía solo una tira gris y la píldora, con las etiquetas
+ * tapadas por el selector de días). En fila, el flex es a lo ancho.
+ */
+/** Fondo de la pantalla en claro (el de `styles.container`). */
+const PAGE_LIGHT = '#F8F9FA';
+
+const selectorRow = {
+  flexDirection: 'row' as const,
+  paddingHorizontal: spacing.lg,
+};
+
+/**
+ * Un horario (la lista de días). `firebaseKey` es el nodo bajo el evento
+ * (`horario`, `horario1`…); `null` = todavía averiguando cuál toca. `selector`
+ * es el conmutador entre horarios, si el evento tiene varios.
+ */
+function HorarioSheetView({
+  firebaseKey,
+  selector,
+  tint,
+}: {
+  firebaseKey: string | null;
+  selector?: React.ReactNode;
+  /** Color de ESTE horario (el del evento si solo hay uno). */
+  tint: string;
+}) {
   const { open } = useEventNavigation();
   const scheme = useColorScheme();
   const fontScale = useFontScale();
@@ -36,10 +69,11 @@ export default function HorarioScreen() {
     [scheme, fontScale],
   );
   const event = useCurrentEvent();
-  const { data: horarioData, loading } = useFirebaseData<any[]>(
-    getEventFirebasePath(event, 'horario'),
-    getEventCacheKey(event, 'horario'),
+  const { data: horarioData, loading: loadingData } = useFirebaseData<any[]>(
+    firebaseKey ? getEventFirebasePath(event, firebaseKey) : null,
+    getEventCacheKey(event, firebaseKey ?? 'horario'),
   );
+  const loading = loadingData || firebaseKey === null;
 
   // Se abre por el día más cercano a hoy; en cuanto el usuario elige otro,
   // manda su elección. Derivarlo (en vez de sincronizarlo con un efecto) evita
@@ -64,25 +98,6 @@ export default function HorarioScreen() {
     ? horarioData.map((d) => ({ fecha: d.fecha, titulo: d.titulo }))
     : [];
   const dia = horarioData ? horarioData[index] : null;
-
-  // Calculate progressive green color based on day index
-  const getProgressiveGreenColor = (dayIndex: number, totalDays: number) => {
-    if (totalDays <= 1) return colors.green;
-
-    // Base green color: #A3BD31
-    const baseR = 163;
-    const baseG = 189;
-    const baseB = 49;
-
-    // Calculate darkness factor (0 to 0.6, so it gets darker but not black)
-    const darknessFactor = (dayIndex / (totalDays - 1)) * 0.6;
-
-    const newR = Math.round(baseR * (1 - darknessFactor));
-    const newG = Math.round(baseG * (1 - darknessFactor));
-    const newB = Math.round(baseB * (1 - darknessFactor));
-
-    return `rgb(${newR}, ${newG}, ${newB})`;
-  };
 
   // Check if current day is the last day (has "Despedida" event)
   const isLastDay =
@@ -143,9 +158,18 @@ export default function HorarioScreen() {
     }
   }, [isLastDay, shakeAnim, fadeAnim]);
 
-  const currentColor = horarioData
-    ? getProgressiveGreenColor(index, horarioData.length)
-    : colors.green;
+  // Todo el acento sale del color del evento (design.md §2, territorio
+  // Evento): antes el día elegido era rojo MIC y la cabecera y las horas un
+  // verde fijo de la época del Jubileo, mezclados con el color del evento.
+  const accents = React.useMemo(
+    () =>
+      eventAccentColors(
+        tint,
+        scheme === 'dark' ? Colors.dark.background : PAGE_LIGHT,
+      ),
+    [tint, scheme],
+  );
+  const currentColor = accents.text;
 
   // Handle navigation to materials with specific day
   const handleNavigateToMateriales = (dayIndex: number) => {
@@ -156,8 +180,8 @@ export default function HorarioScreen() {
   };
 
   const dynamicStyles = React.useMemo(
-    () => createDynamicStyles(scheme, fontScale, currentColor, isLastDay),
-    [scheme, fontScale, currentColor, isLastDay],
+    () => createDynamicStyles(accents, isLastDay),
+    [accents, isLastDay],
   );
 
   // El último día llama la atención con un temblor y un latido suaves.
@@ -176,8 +200,13 @@ export default function HorarioScreen() {
         }}
       >
         <ScreenHero title="Horario" hideOnWeb floatingHeaderInset />
+        {selector ? (
+          <View style={[selectorRow, { paddingTop: spacing.md }]}>
+            {selector}
+          </View>
+        ) : null}
         {empty ? (
-          <ComingSoon accentColor={event.tintColor} />
+          <ComingSoon accentColor={tint} />
         ) : (
           <View
             style={{
@@ -203,10 +232,16 @@ export default function HorarioScreen() {
     <View style={styles.container}>
       <ScreenHero title="Horario" hideOnWeb floatingHeaderInset />
       <View style={styles.headerSection}>
+        {selector ? (
+          <View style={[selectorRow, { paddingBottom: spacing.sm }]}>
+            {selector}
+          </View>
+        ) : null}
         <DateSelector
           dates={fechas}
           selectedDate={dia.fecha}
           onSelectDate={(_, i) => setIndex(i)}
+          accentColor={accents.fill}
         />
       </View>
       <PageContainer>
@@ -220,7 +255,10 @@ export default function HorarioScreen() {
           <Animated.View
             style={[dynamicStyles.titleWrapper, isLastDay && attentionStyle]}
           >
-            <ThemedText style={styles.titleText} selectable>
+            <ThemedText
+              style={[styles.titleText, { color: accents.text }]}
+              selectable
+            >
               {dia.titulo}
             </ThemedText>
             {isLastDay && (
@@ -248,13 +286,84 @@ export default function HorarioScreen() {
   );
 }
 
+/**
+ * Pantalla de horario de un evento. Si el evento tiene varios horarios
+ * (`horario1`, `horario2`… con `meta.nombre`, ver `utils/eventHorarios.ts`) se
+ * enseña un selector arriba y se recuerda el último que eligió la persona; si
+ * no, es el horario único de siempre.
+ */
+export default function HorarioScreen() {
+  const event = useCurrentEvent();
+  const scheme = useColorScheme();
+  const { sheets, ready } = useEventHorarios(event);
+  const selKey = `horarioSel_${event.id}`;
+  const [picked, setPicked] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    AsyncStorage.getItem(selKey)
+      .then((v) => {
+        if (alive && v) setPicked((cur) => cur ?? v);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [selKey]);
+
+  const activeKey = ready ? chooseHorarioKey(sheets, picked) : null;
+
+  // Cada horario con su color (el primero, el del evento; el resto, colores
+  // que lo complementan): al cambiar de horario cambian el segmento activo y
+  // los acentos de toda la pantalla.
+  const tints = React.useMemo(
+    () => horarioTints(event.tintColor, sheets),
+    [event.tintColor, sheets],
+  );
+  const activeIndex = sheets.findIndex((s) => s.key === activeKey);
+  const tint = activeIndex >= 0 ? tints[activeIndex] : event.tintColor;
+  const fill = React.useMemo(
+    () =>
+      eventAccentColors(
+        tint,
+        scheme === 'dark' ? Colors.dark.background : PAGE_LIGHT,
+      ).fill,
+    [tint, scheme],
+  );
+
+  const selector =
+    sheets.length > 1 && activeKey ? (
+      <SegmentedControl
+        options={sheets.map((s) => ({ value: s.key, label: s.nombre }))}
+        value={activeKey}
+        onChange={(key) => {
+          setPicked(key);
+          AsyncStorage.setItem(selKey, key).catch(() => {});
+        }}
+        accentColor={fill}
+        accessibilityLabel="Horario"
+      />
+    ) : undefined;
+
+  // `key`: al cambiar de horario se monta una vista nueva, sin arrastrar el día
+  // elegido ni los datos del anterior.
+  return (
+    <HorarioSheetView
+      key={activeKey ?? 'loading'}
+      firebaseKey={activeKey}
+      selector={selector}
+      tint={tint}
+    />
+  );
+}
+
 const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   const theme = Colors[scheme ?? 'light'];
   const isDark = scheme === 'dark';
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? theme.background : '#F8F9FA',
+      backgroundColor: isDark ? theme.background : PAGE_LIGHT,
     },
     headerSection: {
       backgroundColor: theme.background,
@@ -291,35 +400,20 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   });
 };
 
-const createDynamicStyles = (
-  scheme: 'light' | 'dark',
-  scale: number,
-  currentColor: string,
-  isLastDay: boolean,
-) => {
+const createDynamicStyles = (accents: { soft: string }, isLastDay: boolean) => {
   return StyleSheet.create({
+    // Cabecera del día: fondo suave del color del evento y el título en su
+    // tinta. Antes era un bloque macizo con sombra que competía con el día
+    // elegido del selector de fechas.
     titleWrapper: {
-      backgroundColor: currentColor,
-      padding: spacing.md,
-      borderRadius: radii.xl,
+      backgroundColor: accents.soft,
+      paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.md,
+      borderRadius: radii.lg,
       marginBottom: spacing.xs,
-      ...Platform.select({
-        web: {
-          // @ts-ignore
-          boxShadow: `0 6px 18px ${currentColor}55`,
-        },
-        default: {
-          shadowColor: currentColor,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 6,
-        },
-      }),
-      // Add extra styling for last day
       ...(isLastDay && {
-        borderWidth: 2,
-        borderColor: '#FF6B6B', // Subtle red border for sadness
+        borderWidth: 1.5,
+        borderColor: '#FF6B6B',
       }),
     },
   });

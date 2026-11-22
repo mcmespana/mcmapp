@@ -124,11 +124,11 @@ export function HeroCard({
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.heroTitle}>{motiv}</Text>
-              <Text style={styles.heroSubtitle}>
-                {doneCount < 3
-                  ? `${3 - doneCount} momento${3 - doneCount > 1 ? 's' : ''} que puedes hacer`
-                  : '¡Todo completado por hoy!'}
-              </Text>
+              {doneCount < 3 ? (
+                <Text style={styles.heroSubtitle}>
+                  {`${3 - doneCount} momento${3 - doneCount > 1 ? 's' : ''} que puedes hacer`}
+                </Text>
+              ) : null}
               {/* La racha solo se enseña cuando existe: «0 días» no dice nada. */}
               {prayStreak >= 1 ? (
                 <View style={styles.heroChips}>
@@ -357,9 +357,16 @@ export function EvangelioTeaserCard({
                 },
               ]}
             >
-              <Text style={[styles.teaserCtaText, { color: W.accentText }]}>
-                Leer evangelio →
-              </Text>
+              <View style={styles.teaserCtaRow}>
+                <Text style={[styles.teaserCtaText, { color: W.accentText }]}>
+                  Leer evangelio
+                </Text>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={16}
+                  color={W.accentText}
+                />
+              </View>
             </TouchableOpacity>
             {readingDone ? (
               <View
@@ -466,7 +473,11 @@ export function WeekStrip({
                 ]}
               >
                 {!isFuture && all ? (
-                  <Text style={{ fontSize: 13 }}>✦</Text>
+                  <MaterialIcons
+                    name="auto-awesome"
+                    size={13}
+                    color={W.green}
+                  />
                 ) : null}
               </View>
               <Text
@@ -546,7 +557,7 @@ export function WeekStrip({
           </View>
         ))}
         <View style={styles.weekLegendItem}>
-          <Text style={[styles.weekLegendStar, { color: W.green }]}>✦</Text>
+          <MaterialIcons name="auto-awesome" size={10} color={W.green} />
           <Text style={[styles.weekLegendText, { color: W.textSec }]}>
             Los 3
           </Text>

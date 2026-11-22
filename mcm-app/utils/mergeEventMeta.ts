@@ -12,6 +12,7 @@
 // requiriendo registrarlo en `events.ts` (las `sections` y pantallas son código).
 
 import type { EventConfig } from '@/constants/events';
+import { isSafeHeroSvg } from '@/utils/eventHeroSvg';
 
 /**
  * Forma del nodo `activities/<id>/_meta` tal cual lo escribe el panel (plano,
@@ -22,8 +23,22 @@ export interface RemoteEventMeta {
   title?: string;
   tintColor?: string;
   bannerText?: string;
+  /**
+   * Logo del evento (URL https de una imagen PNG/JPG/WebP; SVG no: la `Image`
+   * de RN no lo pinta). Sustituye al emblema de estrellitas del hub. Lo sube el
+   * panel (Actividades → metadatos del evento) a Firebase Storage.
+   */
+  heroImageUrl?: string;
+  /**
+   * Logo dibujado con código (SVG como texto). Se usa si no hay `heroImageUrl`.
+   * Solo se admite SVG «seguro» (`utils/eventHeroSvg.ts`).
+   */
+  heroSvg?: string;
   updatedAt?: string;
 }
+
+const isHttpsUrl = (v: unknown): v is string =>
+  typeof v === 'string' && /^https:\/\/\S+$/.test(v.trim());
 
 const isNonEmptyString = (v: unknown): v is string =>
   typeof v === 'string' && v.trim().length > 0;
@@ -37,6 +52,8 @@ const isHexColor = (v: unknown): v is string =>
  *
  * - `title` / `bannerText`: string no vacío.
  * - `tintColor`: hex `#RRGGBB` válido (un color inválido rompería la UI).
+ * - `heroImageUrl`: URL `https://…` (otro esquema o texto suelto se ignora).
+ * - `heroSvg`: SVG seguro; la imagen subida tiene prioridad sobre él.
  * - `status`: solo `'active'` o `'archived'`.
  */
 export function mergeEventMeta(
@@ -52,6 +69,16 @@ export function mergeEventMeta(
     merged.bannerText = meta.bannerText.trim();
   }
   if (isHexColor(meta.tintColor)) merged.tintColor = meta.tintColor.trim();
+  // Logo remoto: la imagen subida manda sobre el SVG, y los dos sobre el
+  // `heroImage` del registry (si no, un evento con logo en el código no podría
+  // cambiarse desde el panel).
+  if (isHttpsUrl(meta.heroImageUrl)) {
+    merged.heroImage = { uri: meta.heroImageUrl.trim() };
+    merged.heroSvg = undefined;
+  } else if (isSafeHeroSvg(meta.heroSvg)) {
+    merged.heroSvg = meta.heroSvg.trim();
+    merged.heroImage = undefined;
+  }
   if (meta.status === 'active' || meta.status === 'archived') {
     merged.status = meta.status;
   }

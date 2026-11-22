@@ -19,6 +19,13 @@ export type Audience = 'member' | 'guardian' | 'child';
 /** Lo que de `Me` hace falta aquí (así se prueba sin montar un `Me` entero). */
 export type MeLike = Pick<Me, 'personId' | 'roles'>;
 
+/** «Monitor/a» (sus datos) y el aviso del certificado: el papel `monitor`, o la relación aunque solo sea de grupos que no pasan lista. */
+export function hasMonitorData(
+  me: Pick<Me, 'roles'> & { monitorData?: boolean },
+): boolean {
+  return me.roles.includes('monitor') || !!me.monitorData;
+}
+
 /** `member` ⇔ papel `member` o de equipo (el servidor ya devuelve `member` también a un monitor; el falso antiguo, no). */
 export function isMember(me: MeLike): boolean {
   return me.roles.some((r) => r === 'member' || TEAM_ROLES.includes(r as Role));
@@ -181,7 +188,7 @@ export function pickerTexts(purpose: PickerNeeded['purpose']): {
       }
     : {
         title: '¿A quién quieres ver?',
-        body: 'Elige a quién quieres ver. Puedes cambiar desde arriba cuando quieras.',
+        body: 'Puedes cambiar desde arriba cuando quieras.',
       };
 }
 
@@ -281,7 +288,9 @@ export function greetingIntro(
   if (audience === 'guardian') {
     return 'Aquí están tus datos y lo que se cobra de tu cuenta. Para apuntar a alguien o ver sus documentos, elígelo arriba en «Viendo a».';
   }
-  return 'Tu espacio personal. Elige una sección para empezar.';
+  // Sin entradilla: «Tu espacio personal. Elige una sección…» describía lo
+  // que ya se ve (decisión del usuario, 18/11/2026).
+  return '';
 }
 
 // ── Nombres ─────────────────────────────────────────────────────────────────

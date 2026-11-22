@@ -66,7 +66,7 @@ import typography from '@/constants/typography';
 import spacing from '@/constants/spacing';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
-const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
+const ALL_SONGS_CATEGORY_NAME = 'Buscar una canción';
 const SELECTED_SONGS_CATEGORY_ID = '__SELECTED_SONGS__';
 
 const isIOS = Platform.OS === 'ios';
@@ -205,7 +205,7 @@ export default function CategoriesScreen() {
   );
 
   const handleSuccessSubmit = () => {
-    toast.show({ variant: 'success', label: '¡Sugerencia enviada!' });
+    toast.show({ variant: 'success', label: 'Sugerencia enviada' });
   };
 
   // Deep link: si llegamos con algo pendiente de la nube (de /playlist?p=1234,
@@ -536,7 +536,7 @@ export default function CategoriesScreen() {
                 </Text>
                 <Text style={styles.selectionSubtitle} numberOfLines={1}>
                   {count === 0
-                    ? 'Vacía · añade canciones desde el cantoral'
+                    ? 'Añade canciones desde el cantoral'
                     : `${count} ${count === 1 ? 'canción' : 'canciones'}`}
                 </Text>
               </View>
@@ -642,12 +642,8 @@ export default function CategoriesScreen() {
 
   const sectionLabel = useCallback(() => {
     if (!isWideLayout) return null;
-    return (
-      <Text style={styles.sectionLabel}>
-        CATEGORÍAS · {displayCategories.length - 1}
-      </Text>
-    );
-  }, [isWideLayout, displayCategories.length, styles]);
+    return <Text style={styles.sectionLabel}>Categorías</Text>;
+  }, [isWideLayout, styles]);
 
   const listHeader = useMemo(
     () => (

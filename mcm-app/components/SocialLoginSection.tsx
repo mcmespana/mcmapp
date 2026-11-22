@@ -344,7 +344,7 @@ export default function SocialLoginSection({
                 },
               ]}
             >
-              · via {providerLabel} ·
+              Con {providerLabel}
             </Text>
           </View>
           <TouchableOpacity

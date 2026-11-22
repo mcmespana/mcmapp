@@ -36,6 +36,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHoldOTAAutoApply } from '@/contexts/OTAContext';
 import SocialLoginSection from '@/components/SocialLoginSection';
 import {
   DEFAULT_DELEGATION_ID,
@@ -45,6 +46,8 @@ import type { ProfileType } from '@/types/profileConfig';
 import { setAnalyticsProfile, trackEvent } from '@/utils/analytics';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
+import spacing from '@/constants/spacing';
+import PressableScale from '@/components/ui/PressableScale';
 import useLargeText, { CHROME_MAX_FONT_SCALE } from '@/hooks/useLargeText';
 import ScrollWhenLarge from '@/components/ui/ScrollWhenLarge';
 
@@ -375,9 +378,12 @@ const skipBtnStyles = StyleSheet.create({
 
 function WelcomeScreen({
   onStart,
+  onSkip,
   applySafeArea,
 }: {
   onStart: () => void;
+  /** Entrar sin configurar nada (perfil general; se cambia luego en Ajustes). */
+  onSkip: () => void;
   applySafeArea: boolean;
 }) {
   const insets = useSafeAreaInsets();
@@ -507,16 +513,6 @@ function WelcomeScreen({
           style={welcomeStyles.center}
           largeStyle={{ paddingVertical: 24 }}
         >
-          <Animated.View
-            entering={FadeInDown.delay(60)
-              .duration(420)
-              .easing(Easing.bezier(0.22, 1, 0.36, 1))}
-            style={welcomeStyles.badge}
-          >
-            <MaterialIcons name="favorite" size={12} color="#FCD200" />
-            <Text style={welcomeStyles.badgeText}>Te damos la bienvenida</Text>
-          </Animated.View>
-
           {/* Con letra grande el logo (130 px) se quita: el espacio es
               para el texto. */}
           {!large && (
@@ -578,6 +574,22 @@ function WelcomeScreen({
             textColor={T.primary}
             shimmer
           />
+          {/* Quien no quiere configurar nada entra ya, sin pasar por los pasos.
+              Es lo mismo que «Saltar» en perfil y localidad. */}
+          <PressableScale
+            onPress={onSkip}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Saltar y entrar en la app"
+            style={welcomeStyles.skip}
+          >
+            <Text
+              style={welcomeStyles.skipText}
+              maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+            >
+              Ahora no, entrar directamente
+            </Text>
+          </PressableScale>
         </Animated.View>
       </View>
     </Animated.View>
@@ -588,24 +600,6 @@ const welcomeStyles = StyleSheet.create({
   root: { flex: 1, position: 'relative', overflow: 'hidden' } as ViewStyle,
   safeContent: { flex: 1 } as ViewStyle,
   deco: { position: 'absolute', borderRadius: radii.pillFull } as ViewStyle,
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radii.pillFull,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-    marginBottom: 18,
-  } as ViewStyle,
-  badgeText: {
-    color: '#ffffff',
-    ...typography.footnote,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  } as TextStyle,
   center: {
     flex: 1,
     alignItems: 'center',
@@ -675,6 +669,18 @@ const welcomeStyles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 24,
   } as ViewStyle,
+  skip: {
+    alignSelf: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
+  } as ViewStyle,
+  skipText: {
+    ...typography.subhead,
+    fontWeight: '600',
+    color: '#ffffff',
+  } as TextStyle,
 });
 
 /* ─────────────────────────────────────
@@ -1523,7 +1529,7 @@ function LoginOnboardingScreen({
         >
           {user
             ? 'Tienes la sesión iniciada, de forma que si cambias de dispositivo guardaremos la información'
-            : 'Si quieres, puedes iniciar sesión para guardar tus reflexiones, momentos de oración y canciones, así no perderás nada (1 minuto más!)'}
+            : 'Si quieres, puedes iniciar sesión para guardar tus reflexiones, momentos de oración y canciones, así no perderás nada (¡1 minuto más!)'}
         </Animated.Text>
 
         {/* Login buttons / authenticated card */}
@@ -1753,6 +1759,11 @@ export default function OnboardingScreen() {
   );
   const [delegationId, setDelegationId] = useState<string | null>(null);
   const finishedRef = useRef(false);
+  // En cuanto se pasa de la bienvenida, una OTA que llegue NO recarga la app
+  // (le borraría lo elegido): espera a que termine o salte el onboarding y se
+  // aplica entonces. En la bienvenida no hay nada que perder.
+  const [started, setStarted] = useState(false);
+  useHoldOTAAutoApply(started);
 
   const profileEntries = useMemo<
     { id: OnboardingProfileId; label: string; description: string }[]
@@ -1795,6 +1806,7 @@ export default function OnboardingScreen() {
   );
 
   const go = (next: Step, dir: 'forward' | 'back' = 'forward') => {
+    if (next !== 'welcome') setStarted(true);
     setAnimDir(dir);
     setStep(next);
   };
@@ -1963,6 +1975,7 @@ export default function OnboardingScreen() {
         {step === 'welcome' && (
           <WelcomeScreen
             onStart={() => go('profile')}
+            onSkip={handleSkip}
             applySafeArea={applySafeArea}
           />
         )}

@@ -50,7 +50,7 @@ const dismissKey = (placement: Placement) =>
 const COPY: Record<'default' | 'comunica', { title: string; body: string }> = {
   default: {
     title: 'Activa las notificaciones',
-    body: 'No te pierdas nada. La app funciona mejor con avisos en tiempo real.',
+    body: 'No te pierdas nada.',
   },
   comunica: {
     title: 'Activa los avisos',

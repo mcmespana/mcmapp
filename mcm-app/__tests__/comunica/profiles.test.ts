@@ -1,4 +1,5 @@
 import {
+  hasMonitorData,
   audienceFor,
   dataTitle,
   firstNameOf,
@@ -249,9 +250,7 @@ describe('la portada', () => {
     expect(greetingIntro('guardian', '')).toMatch(
       /lo que se cobra de tu cuenta/,
     );
-    expect(greetingIntro('member', '')).toBe(
-      'Tu espacio personal. Elige una sección para empezar.',
-    );
+    expect(greetingIntro('member', '')).toBe('');
   });
 });
 
@@ -289,5 +288,17 @@ describe('nombres', () => {
     expect(dataTitle({ firstName: null }, false)).toBe(
       'Datos del participante',
     );
+  });
+});
+
+describe('hasMonitorData: «Monitor/a» y el certificado (20/11/2026)', () => {
+  it('el papel de monitor, o la relación aunque solo sea de grupos que no pasan lista', () => {
+    expect(hasMonitorData({ roles: ['monitor'] })).toBe(true);
+    // Sin el papel (adultos, Apoyo, formación) pero con la relación: el servidor manda `monitorData`.
+    expect(hasMonitorData({ roles: ['member'], monitorData: true })).toBe(true);
+  });
+  it('coordinación a secas, o un servidor viejo sin el campo, no', () => {
+    expect(hasMonitorData({ roles: ['coordination'] })).toBe(false);
+    expect(hasMonitorData({ roles: ['member', 'guardian'] })).toBe(false);
   });
 });

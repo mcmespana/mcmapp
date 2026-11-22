@@ -78,14 +78,9 @@ export default function RecordatoriosScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.content, isWide ? styles.wide : undefined]}>
-          <View style={styles.hero}>
-            <Text style={[styles.title, { color: W.text }]}>
-              Tus recordatorios
-            </Text>
-            <Text style={[styles.lead, { color: W.textSec }]}>
-              Un toquecito con cariño cuando se te pase.
-            </Text>
-          </View>
+          <Text style={[styles.lead, { color: W.textSec }]}>
+            Un toquecito con cariño cuando se te pase.
+          </Text>
 
           {!reminderNoticesAvailable ? (
             <Text style={[styles.note, { color: W.textSec }]}>
@@ -141,9 +136,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { paddingHorizontal: spacing.md, gap: spacing.md },
   wide: { width: '100%', maxWidth: 720, alignSelf: 'center' },
-  hero: { gap: spacing.xs, paddingVertical: spacing.sm },
-  title: { ...typography.h1 },
-  lead: { ...typography.body },
+  lead: { ...typography.body, paddingVertical: spacing.sm },
   note: { ...typography.subhead },
   banner: {
     flexDirection: 'row',

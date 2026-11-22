@@ -70,4 +70,64 @@ describe('mergeEventMeta', () => {
     mergeEventMeta(base, { title: 'Otro' });
     expect(base).toEqual(snapshot);
   });
+
+  describe('logo del evento (heroImageUrl)', () => {
+    const url =
+      'https://firebasestorage.googleapis.com/v0/b/x/o/logo.webp?alt=media';
+
+    it('una URL https se convierte en la imagen del hub', () => {
+      const merged = mergeEventMeta(base, { heroImageUrl: `  ${url}  ` });
+      expect(merged.heroImage).toEqual({ uri: url });
+    });
+
+    it('sin logo remoto conserva el heroImage del registry', () => {
+      const withLogo = { ...base, heroImage: 4 } as unknown as EventConfig;
+      expect(mergeEventMeta(withLogo, { title: 'X' }).heroImage).toBe(4);
+    });
+
+    it.each([
+      ['http sin cifrar', 'http://example.com/logo.png'],
+      ['otro esquema', 'javascript:alert(1)'],
+      ['texto suelto', 'logo.png'],
+      ['vacío', '   '],
+      ['no es texto', 42],
+    ])('ignora un valor inválido: %s', (_n, value) => {
+      const merged = mergeEventMeta(base, { heroImageUrl: value as never });
+      expect(merged.heroImage).toBeUndefined();
+    });
+  });
+
+  describe('logo SVG (heroSvg)', () => {
+    const svg =
+      '<svg viewBox="0 0 10 10"><circle r="4" fill="currentColor"/></svg>';
+    const url = 'https://example.com/logo.webp';
+
+    it('un SVG seguro se aplica como logo del evento', () => {
+      const merged = mergeEventMeta(base, { heroSvg: `  ${svg}  ` });
+      expect(merged.heroSvg).toBe(svg);
+      expect(merged.heroImage).toBeUndefined();
+    });
+
+    it('la imagen subida manda sobre el SVG', () => {
+      const merged = mergeEventMeta(base, { heroImageUrl: url, heroSvg: svg });
+      expect(merged.heroImage).toEqual({ uri: url });
+      expect(merged.heroSvg).toBeUndefined();
+    });
+
+    it('un SVG remoto sustituye al heroImage del registry', () => {
+      const withLogo = { ...base, heroImage: 4 } as unknown as EventConfig;
+      const merged = mergeEventMeta(withLogo, { heroSvg: svg });
+      expect(merged.heroImage).toBeUndefined();
+      expect(merged.heroSvg).toBe(svg);
+    });
+
+    it('un SVG peligroso se ignora y se conserva lo que había', () => {
+      const withLogo = { ...base, heroImage: 4 } as unknown as EventConfig;
+      const merged = mergeEventMeta(withLogo, {
+        heroSvg: '<svg><script>x()</script></svg>',
+      });
+      expect(merged.heroImage).toBe(4);
+      expect(merged.heroSvg).toBeUndefined();
+    });
+  });
 });

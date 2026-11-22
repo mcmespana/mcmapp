@@ -16,7 +16,7 @@ export default function AccessExpired() {
       <EmptyState
         icon="lock"
         title="Vuelve a pedir el código"
-        subtitle="Por seguridad, esta pantalla no se guarda. Empieza otra vez desde «Entra en tu área»."
+        subtitle="Por seguridad, esta pantalla no se guarda."
         actionLabel="Volver a empezar"
         onAction={() => router.dismissAll()}
         accentColor={t.accentText}

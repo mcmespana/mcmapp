@@ -69,7 +69,6 @@ export function CarismochitoLabPanel() {
       <View style={styles.header}>
         <CarismochitoMascot size={56} dance={1} />
         <View style={styles.headerText}>
-          <Text style={styles.eyebrow}>experimento</Text>
           <Text style={styles.title}>Caza de Carismochitos</Text>
         </View>
       </View>
@@ -152,12 +151,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   headerText: { flex: 1 },
-  eyebrow: {
-    ...typography.overline,
-    color: 'rgba(157, 232, 107, 0.95)',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
   title: {
     ...typography.h3,
     color: '#fff',

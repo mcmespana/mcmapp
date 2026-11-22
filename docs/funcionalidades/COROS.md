@@ -43,7 +43,7 @@ WhatsApp una lista suelta.
   choirId?, choirName?
   playlist: [...], current: {...} | null
   createdAt, startedAt, updatedAt, lastActivity
-  expiresAt = startedAt + 24 h          ← NO se estira al publicar
+  expiresAt = startedAt + 12 h          ← +12 h si el líder publica en las 2 h antes de caducar
 ```
 
 **El contenido no se duplica**: `/choirs` es solo un índice para poder pintar
@@ -79,13 +79,13 @@ en «⋯ → Playlists de <coro>» (`seleccion?hoja=coro`).
 > `components/song-onboarding/ChoirStep.tsx`): usa el mismo `useMyChoir` y
 > `createChoir`, así que la hoja lo encuentra ya elegido.
 
-| Paso     | Qué hace |
-| -------- | -------- |
-| `choose` | Lista de coros existentes + «Crear un coro nuevo» |
-| `create` | Nombre del coro (avisa si ya existe uno igual, ignorando acentos) |
+| Paso     | Qué hace                                                                                        |
+| -------- | ----------------------------------------------------------------------------------------------- |
+| `choose` | Lista de coros existentes + «Crear un coro nuevo»                                               |
+| `create` | Nombre del coro (avisa si ya existe uno igual, ignorando acentos)                               |
 | `home`   | **Importar la última** (acción destacada), ver histórico, guardar, y el estado del coro en vivo |
-| `browse` | Histórico: nombre, fecha relativa, nº de canciones y el código en pequeñito |
-| `save`   | **Actualizar «X»** vs **subir como nueva** |
+| `browse` | Histórico: nombre, fecha relativa, nº de canciones y el código en pequeñito                     |
+| `save`   | **Actualizar «X»** vs **subir como nueva**                                                      |
 
 ### Importar
 
@@ -116,15 +116,15 @@ de la lista (`playlistSignature`). Con eso:
 
 Una sola contraseña para todo lo que sea machacar algo de otra persona:
 
-| Situación | ¿Pide contraseña? |
-| --------- | ----------------- |
-| Actualizar una playlist que subiste **desde este dispositivo** | No |
-| Actualizar la playlist de otra persona (o la tuya desde otro móvil) | **Sí** |
-| Subir sobre un código ocupado | **Sí** |
-| Tomar el mando del coro en vivo siendo **el mismo usuario** (mismo `deviceId`, o mismo nombre de perfil desde otro dispositivo) | No |
-| Tomar el mando a **otra persona** | **Sí** |
+| Situación                                                                                                                       | ¿Pide contraseña? |
+| ------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Actualizar una playlist que subiste **desde este dispositivo**                                                                  | No                |
+| Actualizar la playlist de otra persona (o la tuya desde otro móvil)                                                             | **Sí**            |
+| Subir sobre un código ocupado                                                                                                   | **Sí**            |
+| Tomar el mando del coro en vivo siendo **el mismo usuario** (mismo `deviceId`, o mismo nombre de perfil desde otro dispositivo) | No                |
+| Tomar el mando a **otra persona**                                                                                               | **Sí**            |
 
-La regla es la que pidió el usuario: *cualquiera* puede machacar o modificar
+La regla es la que pidió el usuario: _cualquiera_ puede machacar o modificar
 si sabe la contraseña. Lo que antes no se podía hacer de ninguna manera (subir
 desde el ordenador e ir a actualizarlo desde el móvil) ahora se puede.
 
@@ -139,14 +139,14 @@ Reordenado en octubre de 2026. Había llegado a 16 opciones mezclando el modelo
 nuevo (coro) con el antiguo (códigos sueltos), con dos entradas que abrían la
 misma hoja. Ahora:
 
-| Sección | Qué lleva | Visible |
-| ------- | --------- | ------- |
-| **Coro en vivo** | QR de la sesión, cambiar su código, cerrar/salir | Solo con una sesión abierta (arriba del todo) |
-| **Mi coro** | Guardar en el coro (primero si hay cambios sin subir) · Abrir el coro · Enlace del coro | Siempre |
-| **Compartir** | Mensaje para WhatsApp · PDF · Código QR | Con canciones |
-| **Con código** | Importar con código · Subir con código · Dirigir/seguir en vivo con código | Plegado |
-| **En la nube · #código** | Cambiar el código · Borrar de la nube | Plegado, solo si la subiste tú |
-| **Archivo** | Exportar/importar `.mcm` | Plegado |
+| Sección                  | Qué lleva                                                                               | Visible                                       |
+| ------------------------ | --------------------------------------------------------------------------------------- | --------------------------------------------- |
+| **Coro en vivo**         | QR de la sesión, cambiar su código, cerrar/salir                                        | Solo con una sesión abierta (arriba del todo) |
+| **Mi coro**              | Guardar en el coro (primero si hay cambios sin subir) · Abrir el coro · Enlace del coro | Siempre                                       |
+| **Compartir**            | Mensaje para WhatsApp · PDF · Código QR                                                 | Con canciones                                 |
+| **Con código**           | Importar con código · Subir con código · Dirigir/seguir en vivo con código              | Plegado                                       |
+| **En la nube · #código** | Cambiar el código · Borrar de la nube                                                   | Plegado, solo si la subiste tú                |
+| **Archivo**              | Exportar/importar `.mcm`                                                                | Plegado                                       |
 
 Las secciones marcadas `secondary` se esconden tras **«Más opciones»** cuando
 el menú pasa de 8 acciones (`PlaylistActionsBottomSheet`); con menos, todo se
@@ -164,9 +164,14 @@ En la hoja del coro, un coro **sin playlists** ya no enseña «Importar la
 ### Coro en vivo
 
 - Se entra por el coro: **Dirigir yo** / **Unirme · dirige Juan**.
-- La sesión **se cierra sola 24 h después de empezar**. Publicar canciones no
-  estira ese plazo.
-- Tomar el mando reinicia el contador (empiezan otras 24 h) y la playlist del
+- La sesión **se cierra sola 12 h después de empezar**. Si el líder publica
+  algo (canción o playlist) en las **2 h antes de caducar**, se alarga **12 h
+  más** desde ese momento: una celebración larga no se corta a media canción,
+  y una sesión olvidada caduca igual a las 12 h (`shouldRenewChoirSession` /
+  `extendChoirSession` en `services/choirSessionService.ts`).
+  ⚠️ Los textos de la app aún dicen «24 h» (`ChoirSheet`, `usePlaylistSharing`):
+  apuntado en `mcm-app/TODO.md`.
+- Tomar el mando reinicia el contador (empiezan otras 12 h) y la playlist del
   nuevo líder pasa a ser la de la sesión.
 - Unirse reemplaza tu lista por la del líder, con los mismos 10 s de deshacer.
 
@@ -174,13 +179,13 @@ En la hoja del coro, un coro **sin playlists** ya no enseña «Importar la
 
 ## Enlaces y QR
 
-| URL | Qué hace |
-| --- | -------- |
-| `https://mcm.expo.app/playlist?p=1234` | Importa esa playlist concreta |
+| URL                                            | Qué hace                                                                                                      |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `https://mcm.expo.app/playlist?p=1234`         | Importa esa playlist concreta                                                                                 |
 | `https://mcm.expo.app/playlist?coro=<choirId>` | Importa **la última** playlist del coro. No caduca: el mismo QR pegado en la carpeta sirve todos los domingos |
-| `https://mcm.expo.app/coro?coro=<choirId>` | Se une a la sesión en vivo de ese coro |
-| `https://mcm.expo.app/coro?c=1234` | Sesión suelta por código (formato antiguo, sigue valiendo) |
-| `mcmapp://playlist?d=<payload>` | Playlist offline embebida en el propio QR |
+| `https://mcm.expo.app/coro?coro=<choirId>`     | Se une a la sesión en vivo de ese coro                                                                        |
+| `https://mcm.expo.app/coro?c=1234`             | Sesión suelta por código (formato antiguo, sigue valiendo)                                                    |
+| `mcmapp://playlist?d=<payload>`                | Playlist offline embebida en el propio QR                                                                     |
 
 El escáner (`utils/qrScan.ts`) reconoce los cinco y avisa cuando enseñas el QR
 del flujo equivocado.
@@ -189,13 +194,17 @@ del flujo equivocado.
 
 ## Ayudas para montar la playlist (noviembre de 2026)
 
-Dos chips en «Tu selección» (`components/playlist/PlaylistDesignTools.tsx`):
+En el menú ⋯ de «Tu selección». Hasta el 18/11/2026 eran chips en la cabecera
+de la lista, pero se comían una fila (dos con letra grande) encima de las
+canciones para algo que usa poca gente:
 
-- **Lecturas del domingo** — hoja con las lecturas del próximo domingo y los
+- **Lecturas del domingo** (sección «Domingo», junto a «Cantos para el
+  domingo») — hoja con las lecturas del próximo domingo y los
   cantos del cantoral cuya letra comparte palabras con ellas
   (`SundayReadingsSheet` + `utils/sundayMatch.ts`). Es una pista, no un
   veredicto: por eso se enseñan las palabras que coinciden. No hay IA.
-- **Historial** — interruptor. Encendido, cada canción (en la playlist y en
+- **Ver lo cantado por el coro** (sección «Mi coro», solo con coro elegido) —
+  interruptor. Encendido, la cabecera enseña la leyenda de los puntos y cada canción (en la playlist y en
   las listas del cantoral) lleva ocho puntos —las últimas ocho semanas, la de
   ahora a la derecha— y «×N», las veces de este curso (desde el 1 de
   septiembre). Sale de `/choirs/{id}/log`:
@@ -204,12 +213,12 @@ Dos chips en «Tu selección» (`components/playlist/PlaylistDesignTools.tsx`):
 /choirs/{choirId}/log/{AAAAMMDD}-{code} = { at, code, songs: ["01.fichero.cho", …] }
 ```
 
-  Se apunta en cada guardado en el coro (subir o actualizar): un apunte por
-  día y playlist, así que actualizar la misma playlist cada domingo también
-  deja rastro. Lo anterior al registro se reconstruye del índice de playlists
-  leyendo su contenido una vez por playlist (`hooks/useChoirHistory.ts`). Una
-  canción cuenta una vez por día. El panel puede borrar apuntes viejos de
-  `log` sin romper nada.
+Se apunta en cada guardado en el coro (subir o actualizar): un apunte por
+día y playlist, así que actualizar la misma playlist cada domingo también
+deja rastro. Lo anterior al registro se reconstruye del índice de playlists
+leyendo su contenido una vez por playlist (`hooks/useChoirHistory.ts`). Una
+canción cuenta una vez por día. El panel puede borrar apuntes viejos de
+`log` sin romper nada.
 
 ## Panel de administración (lo que falta fuera de este repo)
 
@@ -240,14 +249,14 @@ login, grupo pequeño y conocido. Ver `docs/SEGURIDAD.md`.
 
 ## Archivos principales
 
-| Archivo | Qué es |
-| ------- | ------ |
-| `utils/choirIds.ts` | Id/slug/nombre de un coro (lógica pura) |
-| `utils/playlistSync.ts` | Firma de la playlist, orden del histórico, fechas relativas |
-| `services/choirDirectoryService.ts` | CRUD de `/choirs` y su índice de playlists |
-| `services/cloudPlaylistService.ts` | Contenido en `/playlistShares` + `allocateFreeCode` |
-| `services/choirSessionService.ts` | Sesión en vivo, caducidad de 24 h, identidad del líder |
-| `hooks/usePlaylistSharing.ts` | Todos los flujos (importar, guardar, dirigir, deshacer, contraseña) |
-| `hooks/useMyChoir.ts` / `hooks/usePlaylistLink.ts` | Estado persistido |
-| `components/playlist/ChoirSheet.tsx` | La hoja de coro con sus pasos |
-| `app/playlist.tsx` / `app/coro.tsx` | Pantallas puente de los deep links |
+| Archivo                                            | Qué es                                                              |
+| -------------------------------------------------- | ------------------------------------------------------------------- |
+| `utils/choirIds.ts`                                | Id/slug/nombre de un coro (lógica pura)                             |
+| `utils/playlistSync.ts`                            | Firma de la playlist, orden del histórico, fechas relativas         |
+| `services/choirDirectoryService.ts`                | CRUD de `/choirs` y su índice de playlists                          |
+| `services/cloudPlaylistService.ts`                 | Contenido en `/playlistShares` + `allocateFreeCode`                 |
+| `services/choirSessionService.ts`                  | Sesión en vivo, caducidad (12 h + 12 h con actividad), identidad del líder |
+| `hooks/usePlaylistSharing.ts`                      | Todos los flujos (importar, guardar, dirigir, deshacer, contraseña) |
+| `hooks/useMyChoir.ts` / `hooks/usePlaylistLink.ts` | Estado persistido                                                   |
+| `components/playlist/ChoirSheet.tsx`               | La hoja de coro con sus pasos                                       |
+| `app/playlist.tsx` / `app/coro.tsx`                | Pantallas puente de los deep links                                  |

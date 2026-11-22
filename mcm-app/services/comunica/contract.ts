@@ -122,6 +122,12 @@ export const Me = z.object({
     }),
   ]),
   canSeeHealth: z.boolean(),
+  /**
+   * `true` si NO es `monitor` en `roles` (solo lleva grupos que no pasan lista: adultos, Apoyo, formación) pero tiene la
+   * relación: le quedan «Monitor/a» (sus datos) y el aviso del certificado, no las herramientas de equipo. Ausente = como
+   * siempre. Un servidor viejo no lo manda: entonces vale el papel `monitor`.
+   */
+  monitorData: z.boolean().optional(),
 });
 export type Me = z.infer<typeof Me>;
 

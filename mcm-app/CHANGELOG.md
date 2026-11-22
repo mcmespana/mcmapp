@@ -4,6 +4,88 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-22 09:16 — Onboarding: se puede saltar desde la bienvenida y la OTA ya no lo interrumpe
+
+- **La OTA espera al onboarding.** Una actualización que quedaba lista con alguien a mitad del onboarding recargaba la app con el «un momentín» y le borraba lo elegido (perfil, localidad): volvía a la bienvenida. Ahora `OTAContext` admite retenciones (`holdAutoApply` / hook `useHoldOTAAutoApply`): el onboarding retiene en cuanto se pasa de la bienvenida, y al terminarlo o saltarlo la OTA pendiente se aplica (`trigger: 'released'` en `utils/otaAutoApply.ts`, aunque ya no esté «recién abierta»; el cortafuegos anti-bucle sigue). En la bienvenida no se retiene: no hay nada que perder. **Ojo:** el primer arranque tras instalar ejecuta el JS de la build de tienda, así que esto solo cubre ese caso a partir de la **próxima build nativa**.
+- **«Ahora no, entrar directamente» en la bienvenida.** Hasta ahora solo había «Saltar» en perfil y localidad. Hace lo mismo: perfil `miembro`, localidad General, `onboardingCompleted: false`.
+- **El banner «En solo 1 minuto» de Inicio se puede cerrar** con una ✕ y no vuelve (`homeProfileBannerClosed` en AsyncStorage). El perfil y la localidad se siguen cambiando desde Ajustes.
+- Tests: `otaAutoApply` (retenido / `released`) y `otaContext` (retener y soltar).
+
+## 2026-11-21 18:50 — Cantoral: bugs previos al fork MCM Cantoral
+
+- **Sugerir una canción ya no obliga a todos a re-bajar el cantoral.** `SuggestSongModal` escribía `songs/updatedAt` (en ms, cuando el CI escribe segundos) tras guardar la solicitud: cada móvil bajaba `songs/data` entero. Fuera; test guardarraíl `songsUpdatedAtGuard`: ningún fichero de la app escribe esa marca.
+- **`useFirebaseData` compara `updatedAt` como fecha, no como texto** (`utils/updatedAt.ts`): solo descarga si el remoto es **más nuevo**. Normaliza segundos, milisegundos (número o texto) e ISO; con un formato que no entiende vuelve a «distinto = nuevo». Afecta a todos los nodos `{ updatedAt, data }`.
+- **Coro en vivo: cambiar de tono o de cejilla ya no deja sin letra a los oyentes.** El detalle publicaba `{filename, transpose, screen}` y el servicio reemplaza `current` entero: el oyente en pantalla completa dejaba de seguir y quien se unía después recibía la canción vacía (el de tono, además, perdía la cejilla). Ahora todo pasa por `choirCurrentForSong` con letra y metadatos.
+- Textos del coro en vivo: dura **12 h y se alarga sola** si el líder sigue (decían 24 h), también en el comentario de `database.rules.json`.
+
+## 2026-11-20 22:10 — Cada horario de un evento con su color
+
+- Con varios horarios, cada uno lleva su color y al cambiar de segmento cambian el segmento activo y todos los acentos de la pantalla (día elegido, cabecera del día, horas). El primero es el color del evento; el resto, colores que lo complementan, calculados en **OKLCH** (`utils/colorHarmony.ts`): complementario con 2, complementario dividido con 3 (±150°), repartidos por la rueda con más. Al girar el tono se conserva la luminosidad percibida, así que no salen chillones. Congreso M+C: naranja · verde azulado · azul.
+- `meta.color` (#RRGGBB) en un `horarioN` fija su color a mano; el panel tiene el campo (vacío = automático). El sondeo lee ahora `meta` entero (nombre y color).
+
+## 2026-11-20 21:40 — El Horario de un evento usa el color del evento
+
+- El Horario mezclaba cuatro colores sin relación con el evento: el día elegido en rojo MIC (fijo en `DateSelector`), la cabecera del día y las horas en un verde «progresivo» de la época del Jubileo, y el selector de horarios con el naranja del evento y texto negro. Ahora todo sale del `tintColor` del evento (design.md §2, territorio Evento) con `eventAccentColors` (`utils/tintInk.ts`): un relleno del tinte oscurecido lo justo para que el blanco se lea (4,5:1) en el selector y el día elegido; el texto del acento (horas) a 4,5:1 sobre la página, en claro y en oscuro; y la cabecera del día pasa de bloque macizo con sombra a fondo suave del tinte.
+- `DateSelector` acepta `accentColor` (por defecto, el rojo de siempre); Materiales también lo usa con el color del evento.
+
+## 2026-11-20 21:15 — Títulos de Apps, Profundiza y Grupos tapados + logo SVG por evento
+
+- **Fix (iOS)**: el título de **Apps**, **Profundiza** y los dos detalles de **Grupos** (categoría y grupo) se pintaba debajo del header transparente nativo, pisado por la hora y la isla dinámica. Les faltaba `floatingHeaderInset` (Materiales, Contactos, Visitas, Horario y Reflexiones ya lo llevaban). Nuevo test guardarraíl `eventScreensHeroInset`: todo `<ScreenHero>` de una pantalla de evento tiene que llevarlo.
+- **Logo SVG por evento**: `activities/<id>/_meta.heroSvg` (SVG como texto en Firebase) se pinta en el hub con `react-native-svg` (ya está en el binario). `currentColor` se pinta con la tinta del hero, así un mismo SVG se lee sobre cualquier color. Solo se admite SVG «seguro» (`utils/eventHeroSvg.ts`: sin script/image/use/style/href/on…=/data:, máx. 24 000 car.); si no se puede interpretar, sale el emblema de siempre. Prioridad: imagen subida (`heroImageUrl`) > SVG > `heroImage` del registry > estrellitas.
+- El panel tiene el campo «Logo dibujado con código (SVG)» con vista previa y aviso si la app no lo aceptaría.
+- Congreso M+C: logo de un amanecer abstracto («Despierta») ya cargado.
+
+## 2026-11-20 20:30 — Arreglo del selector de horarios y logo por evento desde el panel
+
+- **Fix**: el conmutador de horarios no se leía en iOS (solo asomaba una tira gris y la píldora): su `track` es `flex: 1` y dentro de una columna sin alto fijo colapsaba. Ahora va en una fila.
+- **Logo del evento configurable**: `activities/<id>/_meta.heroImageUrl` (URL https, PNG/WebP/JPG) sustituye al emblema de estrellitas del hub, sin publicar app. Lo sube el panel desde los metadatos del evento (Firebase Storage, `eventLogos/<id>`). `mergeEventMeta` solo acepta `https://`; un valor inválido se ignora y queda el heroImage del registry o el emblema. SVG no: la `Image` de RN no lo pinta.
+
+## 2026-11-20 18:40 — Varios horarios en un evento (Congreso M+C: Despierta y Pre-monitores)
+
+- **Un evento puede tener varios horarios**: nodos `activities/<evento>/horario1`, `horario2`… (hasta 8), cada uno `{ updatedAt, data: [días], meta: { nombre }, hidden? }`. La pantalla de Horario los descubre sola (`hooks/useEventHorarios.ts`, `utils/eventHorarios.ts`), enseña un conmutador con los nombres y recuerda el último que eligió la persona. Un horario con `hidden: true` no sale. **Sin `horario1`, todo sigue como antes** (`horario` único: Jubileo, Visita del Papa).
+- **Congreso M+C** pasa a ser un solo evento con tres horarios: Curso Despierta (vie 27 – dom 29), Pre-monitores 1 y Pre-monitores 2 (sáb 28 y dom 29). Cargados en Firebase desde el guión del congreso y las credenciales.
+- **Se retira `congresomc26-premonis`** (evento duplicado, sin datos): la solución de los dos horarios es esta, no dos eventos activos a la vez.
+- El panel MCM gestiona los horarios numerados desde Actividades (repo `mcmpanel`).
+- Reglas de RTDB: sin cambios (`$section` ya es de lectura pública); el test de reglas cubre ahora `horarioN/{data,meta,updatedAt}`.
+
+## 2026-11-20 18:05 — Congreso M+C: dos actividades, Curso Despierta (naranja) y Pre-monitores (azul)
+
+- **`congresomc26` pasa a ser el Curso Despierta**: naranja `#F07C2B`, subtítulo «Curso Despierta: Despertando Evangelizadores», lema «Despertando evangelizadores» al pie del hub. Horario de viernes 27 a domingo 29.
+- **Evento nuevo `congresomc26-premonis`** (`CONGRESO_PREMONIS`): azul `#2F80ED`, horario y plan propios del sábado 28 y domingo 29, datos en `activities/congresomc26-premonis/` (ya creado en Firebase). Las secciones se comparten por código (`seccionesCongreso`), los datos no.
+- ~~⚠️ **Solo puede haber UN evento activo a la vez** (`activities/_meta.activeEventId` es un solo id y hay un solo hueco de tab). Activar uno deja el otro sin ningún acceso en la app. Pendiente de decidir cómo se muestran dos a la vez.
+
+## 2026-11-20 17:50 — Congreso M+C (27–29 nov) registrado, listo para activar
+
+- **Evento nuevo `congresomc26`** en el registry (`CONGRESO_MC`, `constants/events.ts`): azul `#2F80ED`, datos en `activities/congresomc26/` (ya creado en Firebase desde el panel), secciones Horario, Materiales, Profundiza, Grupos, Contactos y Apps. No lleva Evaluación todavía.
+- **Todavía no se ve en ningún sitio.** Se destaca cuando el panel pone `activities/_meta.activeEventId = "congresomc26"` (Actividades → «Modo evento global»); hasta entonces ni tab, ni banner, ni botón, ni «Eventos pasados» (no está archivado). Para verlo, el perfil tiene que llevar `visitapapa` en `tabs` o `homeButtons` (como con la Visita del Papa).
+- **El hueco `visitapapa` es ahora «el tab del evento en curso»**: su layout ya no tiene `visitapapa26` fijo, resuelve el `eventId` del evento activo. Si no, activar el Congreso habría abierto la Visita del Papa. La etiqueta del tab pasa a «Evento» y el botón de la Home toma el nombre y el color del evento activo (la Visita del Papa conserva «Visita Papa» y su amarillo).
+- Al terminar el congreso: archivarlo desde el panel (`activities/congresomc26/_meta.status = archived`) o cambiar el evento activo.
+
+## 2026-11-20 16:00 — Monitor solo de grupos que no pasan lista: ya no es monitor
+
+- Quien tiene la relación de monitor pero **todas** sus relaciones vigentes cuelgan de grupos sin la casilla «entra en Pasar Lista» (adultos como Comser, Apoyo para el seguro, gente en formación, o el comodín «POR DEFINIR») deja de recibir el papel `monitor`: no ve fichas de chavales, grupos, listas ni asistencias, ni recibe los avisos de «pasa lista». Coordinación y acompañamiento no cambian. Lo decide el middleware (`computePrincipal`); la misma regla está en el plugin web.
+- **Cambio en la app**: esas personas **conservan «Monitor/a»** (antes «Mis datos de monitor») **y el aviso del certificado de delitos sexuales**. `Me.monitorData` (opcional; un servidor viejo no lo manda) y `hasMonitorData()` en `utils/comunica/profiles.ts`. Solo `preview`.
+- Ante la duda no se quita nada: sin ningún grupo marcado en la delegación, relación sin enlace a grupo, o solo la marca de la ficha.
+- Decisión del propietario (20/11/2026). Detalle en `comunicaAreaPrivada:docs/comunica/PASAR-LISTA-COORDINACION.md` §2.
+
+## 2026-11-20 12:00 — Contigo y el resto de la app: copy repasado con `unslop-ui`
+
+- Solo textos: rayas, subtítulos que repetían el título (Recordatorios, calendario, notificaciones vacías), pistas que contaban cómo funciona por dentro («Se guarda solo», «avisos en tiempo real», «modal»), etiquetas encima de títulos que ya lo decían (bienvenida del onboarding, paneles del Laboratorio) y mayúsculas de título («Mi rato de oración», «Primera lectura»). Errores de carga de Comida, Panel y portal de Comunica con el mismo texto: «No se ha podido cargar. Revisa tu conexión.».
+- Caracteres que hacían de icono en Contigo, ahora iconos: «Leer evangelio ›», «✓ Leído», las ✦ de la referencia de la lectura, de los agradecimientos y del día con los 3 momentos.
+- Se quedan emojis, bromas, el tono cálido de Contigo, las lecturas y todo lo que viene de Firebase. Wordle no se toca.
+
+## 2026-11-18 22:30 — Comunica: copy repasado con `unslop-ui`
+
+- Solo textos (sin lógica ni estilos): explicaciones de cómo funciona por dentro, subtítulos que repetían el título o el botón, cadenas con «·» que unían dos frases y rellenos («ahora mismo», «automáticamente»). Las tres pantallas de pasar lista dicen igual lo pendiente: «Cambios sin guardar: solo están en tu móvil.». «Esta actividad ya no está disponible» queda sin la frase que adivinaba el motivo (detalle, enlace e inscripción).
+- Fuera tres entradillas que narraban la pantalla: la portada de socio («Tu espacio personal. Elige una sección…»), el «Elige a quién quieres ver.» del selector de persona y el «Aquí están las actividades…» de inscripciones (queda «Para ver a cuáles puedes apuntarte, mira la sección Eventos»).
+- Caracteres que hacían de icono, ahora `IconSymbol`: ‹ › del mes en el calendario, «✓» de «Ya lo tenemos» en Mis datos (prop nueva `hintIcon` en `FormField`) y «→» de «Revisarlo en Documentos» (`LockedRow`).
+- Se quedan, por decisión del usuario: emojis, bromas, chips en mayúsculas del territorio y todo lo de dinero, inscripción y consentimiento. Textos que viven en `utils/comunica/*` (palabras del plugin) no se han tocado.
+
+## 2026-11-18 21:40 — Cantoral: lo del domingo sale de la cabecera de Tu selección y copy más corto
+
+- **Tu selección con canciones**: fuera la fila de chips «Lecturas del domingo / Cantos del domingo / Historial» (`PlaylistDesignTools`, borrado). Se comía una fila (dos con letra grande) encima de las canciones para algo que usa poca gente. Ahora: menú ⋯ → sección **«Domingo»** («Cantos para el domingo», con fecha y fiesta, y «Lecturas del domingo»); el historial sigue en «Mi coro» → «Ver lo cantado por el coro». Con el historial encendido, la cabecera solo enseña la leyenda de los puntos. Con la lista vacía, el botón del domingo sigue a la vista.
+- **Copy del cantoral repasado con la skill `unslop-ui`** (solo textos, sin tocar lógica ni estilos): fuera exclamaciones en toasts, cadenas con «·», la etiqueta «FLOTANTE» y las pistas de la hoja de multimedia, descripciones que repetían el título de la opción y explicaciones de cómo funciona por dentro. El título del ⋯ en coro en vivo dice «Diriges sesión coro» / «Sigues sesión coro» (antes «Coro <id> · Maestro/Esclavo»). Se añaden `accessibilityLabel` en los botones de icono del banner del coro y las flechas de reordenar.
+
 ## 2026-11-17 19:55 — Comunica: un monitor ya no ve en su calendario las sesiones de los chavales
 
 - El calendario (`GET /v1/profiles/:pid/calendar`, middleware) deja fuera las sesiones de los eventos que el perfil solo LLEVA (inscripción `organizer` o `equipo`), y la banda si eran de un curso con varias sesiones. Las familias siguen viendo sus sesiones con su asistencia. Era lo que ya hacía la web desde el 24/10.
@@ -78,6 +160,7 @@
 - **Datos completos**: Spotify, Drive, otros enlaces y etiquetas, además de lo que ya había.
 - **Ordenar canciones de una categoría** (Cantoral → ⋯ → Ordenar canciones, `SongReorderScreen`; `POST /api/app/category/reorder` en el cantoral).
 - Puesta en marcha del NAS en `docs/NAS_EDITOR_PUESTA_EN_MARCHA.md` (temporal). Deuda anotada en el BACKLOG §2.D: que no dependa del NAS.
+
 ## 2026-11-17 06:39 — Arreglo: en iOS los botones de arriba del pañuelo quedaban bajo la cabecera
 
 - **Causa**: la pantalla medía dónde empezaba (`measureInWindow`) solo al maquetarse. Al cerrar el tutorial la cabecera nativa volvía, la pantalla no se re-maquetaba y la medida se quedaba en 0: la pastilla de la etapa, «Decorar» y compartir salían debajo de la cabecera y de la hora.
@@ -162,6 +245,7 @@
 - **Metrónomo** (`components/tuner/MetronomePanel.tsx`): tempo 40–220 con −/+ (mantener repite) y «Marcar el tempo»; 1, 2, 3, 4 o 6 pulsos por compás con el primero acentuado; puntos que marcan el pulso. Tempo y compás se recuerdan.
 - **Sonido sintetizado** (`services/metronome/engine.ts`, un «toc» de madera, sin ficheros de audio) con el `react-native-audio-api` del afinador, programado sobre el reloj del audio. Lógica pura y tests en `utils/metronome.ts` / `metronome.test.ts`.
 - Sin paquetes nuevos (sale por OTA en la 2.5.1). Probado en web; sin oír en un móvil. Detalle en `docs/funcionalidades/AFINADOR.md`.
+
 ## 2026-11-16 19:21 — Pañuelo: intercambios de piezas (pantalla, servicio y reglas)
 
 - Nueva hoja «Intercambiar» (Laboratorio Alpha): se ofrece una pieza con un código de 6 y su QR, la otra persona lo escribe o lo escanea, elige qué da (o lo regala) y se acepta. Cada móvil aplica su mitad: la pieza recibida queda cosida donde estaba la dada.

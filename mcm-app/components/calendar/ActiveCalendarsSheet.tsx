@@ -51,10 +51,6 @@ export default function ActiveCalendarsSheet({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.subtitle, { color: roles.textSecondary }]}>
-          Elige los calendarios que quieres ver. Se guarda solo.
-        </Text>
-
         <View
           style={[
             styles.list,
@@ -129,7 +125,6 @@ export default function ActiveCalendarsSheet({
 const styles = StyleSheet.create({
   scroll: { flexGrow: 0 },
   content: { padding: spacing.md, paddingBottom: spacing.lg },
-  subtitle: { ...typography.subhead, marginBottom: spacing.md },
   list: {
     borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth,

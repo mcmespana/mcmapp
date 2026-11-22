@@ -320,6 +320,7 @@ export default function GruposScreen() {
           <ScreenHero
             title={grupo.nombre}
             kicker={categoria ?? undefined}
+            floatingHeaderInset
             left={
               <Pressable
                 onPress={goBackFromGroup}
@@ -370,6 +371,7 @@ export default function GruposScreen() {
         <View style={styles.container}>
           <ScreenHero
             title={categoria}
+            floatingHeaderInset
             left={
               <Pressable
                 onPress={() => setCategoria(null)}
@@ -452,11 +454,9 @@ export default function GruposScreen() {
           </Pressable>
         ) : null}
       </View>
-      {isSearching ? (
+      {isSearching && totalSearchHits > 0 ? (
         <Text style={styles.resultsMeta}>
-          {totalSearchHits === 0
-            ? 'Sin resultados'
-            : `${totalSearchHits} resultado${totalSearchHits === 1 ? '' : 's'}`}
+          {`${totalSearchHits} resultado${totalSearchHits === 1 ? '' : 's'}`}
         </Text>
       ) : null}
     </View>

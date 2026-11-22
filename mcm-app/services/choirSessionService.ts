@@ -251,6 +251,30 @@ export async function publishChoirPlaylist(
   await update(getRef(key), JSON.parse(JSON.stringify(updatePayload)));
 }
 
+/** Lo que el líder sabe de la canción abierta, sin el estado de tono/cejilla. */
+export type ChoirSongMeta = Omit<
+  ChoirCurrentSong,
+  'updatedAt' | 'transpose' | 'capoOverride' | 'screen'
+>;
+
+/**
+ * El `current` COMPLETO que publica el líder. `publishChoirCurrent` reemplaza
+ * `current` entero, así que cambiar de tono o de cejilla tiene que volver a
+ * mandar la letra y los metadatos: si no, el oyente en pantalla completa se
+ * queda sin `content` (deja de seguir) y quien se une después recibe la
+ * canción vacía. Toda publicación desde el detalle pasa por aquí.
+ */
+export function choirCurrentForSong(
+  song: ChoirSongMeta,
+  state: {
+    transpose: number;
+    capoOverride?: number | null;
+    screen?: ChoirCurrentSong['screen'];
+  },
+): Omit<ChoirCurrentSong, 'updatedAt'> {
+  return { ...song, ...state };
+}
+
 /** Cambia la "canción actual" que el líder está mostrando. */
 export async function publishChoirCurrent(
   key: string,

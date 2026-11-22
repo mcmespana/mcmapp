@@ -70,6 +70,25 @@ nativo (entró en la #313 el 2026-08-04). Todo NATIVO, nada sale por OTA.
 
 ---
 
+## Cantoral — Navidad (documentado el 2026-11-21, sin hacer)
+
+Encontrado al planificar el fork MCM Cantoral (`docs/planes/fork-cantoral/`).
+Los cuatro bugs del cantoral que salieron entonces (re-descarga al sugerir
+canción, `updatedAt` comparado como texto, letra borrada en el coro al cambiar
+de tono, textos de «24 h») **se arreglaron el 2026-11-21** (CHANGELOG). Si el
+fork se crea desde un `main` anterior, se traen con un parche
+(`docs/planes/fork-cantoral/DIVERGENCIAS.md` §4).
+
+### Navidad (plan B de Villancicos Solidarios, sábado 19/12)
+
+- [ ] **Fase 1 de `mcmapp-cantoral/docs/PROMPT_APP_NAVIDAD.md`**:
+      subcategorías, «también en» (`alsoIn`), marcado `<i>`/`<u>`/`<b>` y
+      anotaciones `[*CLAP]`, duración. El cantoral ya publica esos campos y
+      la app los ignora. Si la tienda tarda con MCM Cantoral, los villancicos
+      se verán en MCM App: conviene tenerlo antes del 19/12. Detalle:
+      `docs/planes/fork-cantoral/02-datos-offline.md` §4. Al terminar, avisar
+      para poner `APP_MARKUP = True` en el repo del cantoral.
+
 ## Planes del 2026-11-16 (pañuelo y cantos para el domingo)
 
 > Orden y dependencias en `docs/planes/BACKLOG.md` §2.K. Live Activities va en la rama `claude/plan-live-activities`, no aquí. Cada plan acaba con

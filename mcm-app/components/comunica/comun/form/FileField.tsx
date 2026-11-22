@@ -1,7 +1,7 @@
 // Un archivo para subir (plan 09, reglas 8-10): el título o el certificado.
 //
 //   · Con archivo ya en el CRM: «Ya subido» como dato y «Revisarlo en
-//     Documentos →»; la pista invita a sustituirlo.
+//     Documentos ›»; la pista invita a sustituirlo.
 //   · «Elegir archivo» abre una hoja: hacer una foto, elegir de la galería o
 //     un archivo (`fotos-documentos` = sí). En web, sin cámara.
 //   · Lo elegido se comprueba ANTES de subir (PDF, JPG o PNG, 4 MB) y se sube
@@ -49,8 +49,7 @@ const SOURCES: {
 
 export const FILE_HINT_EMPTY =
   'Formatos: pdf, jpg, png · Tamaño máximo: 4MB · Puedes subirlo ahora o más adelante.';
-export const FILE_HINT_REPLACE =
-  'Ya tienes un archivo guardado. Sube uno nuevo para sustituirlo.';
+export const FILE_HINT_REPLACE = 'Sube uno nuevo para sustituirlo.';
 export const PAPER_HINT =
   '¿Lo tienes en papel? Escanéalo con Notas o Archivos y elígelo aquí.';
 
@@ -79,7 +78,7 @@ export default function FileField({
   showHints?: boolean;
   onChoose: (source: FileSource) => void;
   onRetry?: () => void;
-  /** «Revisarlo en Documentos →». */
+  /** «Revisarlo en Documentos ›». */
   onReview?: () => void;
   /** Lo que va debajo (el enlace al trámite del Ministerio). */
   children?: React.ReactNode;
@@ -101,7 +100,7 @@ export default function FileField({
               value="Ya subido"
               action={
                 onReview
-                  ? { label: 'Revisarlo en Documentos →', onPress: onReview }
+                  ? { label: 'Revisarlo en Documentos', onPress: onReview }
                   : undefined
               }
             />

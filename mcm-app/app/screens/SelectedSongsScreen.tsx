@@ -45,6 +45,12 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import { openCantoral } from '@/utils/cantoralNavigation';
+import {
+  isoDateLocal,
+  liturgicalDayOf,
+  shortDateEs,
+  targetSunday,
+} from '@/utils/liturgicalDay';
 import { songRouteParams } from '@/utils/songNavList';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 
@@ -886,8 +892,8 @@ const SelectedSongsScreen: React.FC = () => {
     (code: string, name?: string) => {
       setQrModal({
         title: name
-          ? `¡${name} subida! Código ${code}`
-          : `¡Subida! Código ${code}`,
+          ? `«${name}» subida con el código ${code}`
+          : `Subida con el código ${code}`,
         url: `${WEB_BASE_URL}/playlist?p=${code}`,
         code,
         offlineUrl,
@@ -904,7 +910,7 @@ const SelectedSongsScreen: React.FC = () => {
 
   const showChoirSuccess = useCallback((code: string) => {
     setQrModal({
-      title: `¡Coro iniciado! Código ${code}`,
+      title: `Sesión coro con el código ${code}`,
       url: `${WEB_BASE_URL}/coro?c=${code}`,
       code,
     });
@@ -1237,6 +1243,12 @@ const SelectedSongsScreen: React.FC = () => {
    * «Más opciones» cuando el menú es largo. Nada se ha quitado: lo que sobra
    * está a un toque más.
    */
+  const [showSunday, setShowSunday] = useState(false);
+  const openSunday = useCallback(() => setShowSunday(true), []);
+  // Fuera del memo y como texto: la pestaña puede quedarse montada días y el
+  // domingo cambia.
+  const sunday = targetSunday(isoDateLocal());
+
   const sheetSections = useMemo<PlaylistActionSection[]>(() => {
     const desktopLike =
       Platform.OS === 'web' ||
@@ -1323,7 +1335,6 @@ const SelectedSongsScreen: React.FC = () => {
             id: 'export-pdf',
             icon: 'picture-as-pdf',
             label: 'PDF con letra y acordes',
-            description: 'Listo para imprimir o mandar',
             onPress: handleStartExportPdf,
           },
         ]
@@ -1487,6 +1498,30 @@ const SelectedSongsScreen: React.FC = () => {
       onPress: handleImportFile,
     });
 
+    // --- Para quien elige los cantos -------------------------------------
+    // Vivían como chips en la cabecera de la lista y se comían una fila (dos
+    // con letra grande) que hace falta para ver canciones; los usa poca gente.
+    // Con la lista vacía siguen a la vista (`SundaySongsButton`).
+    const sundayDay = liturgicalDayOf(sunday);
+    const domingo: PlaylistAction[] = [
+      {
+        id: 'sunday-songs',
+        icon: 'event',
+        label: 'Cantos para el domingo',
+        description: `${shortDateEs(sunday)} · ${
+          sundayDay.feastName ?? sundayDay.name
+        }`,
+        onPress: () => openCantoral('SundaySongs', { fecha: sunday }),
+      },
+      {
+        id: 'sunday-readings',
+        icon: 'menu-book',
+        label: 'Lecturas del domingo',
+        description: 'Con los cantos que comparten palabras',
+        onPress: openSunday,
+      },
+    ];
+
     // Orden por frecuencia de uso real: una sesión en vivo abierta es lo más
     // urgente; traer/guardar la del coro es lo de cada semana; el mensaje de
     // WhatsApp y el PDF, casi igual de a menudo. Lo demás es trastienda.
@@ -1494,6 +1529,7 @@ const SelectedSongsScreen: React.FC = () => {
       { title: 'Coro en vivo', actions: enVivo },
       { title: 'Mi coro', actions: coroPlaylists },
       { title: 'Compartir', actions: compartir },
+      { title: 'Domingo', actions: domingo },
       { title: 'Con código', actions: conCodigo, secondary: true },
       {
         title: link ? `En la nube · #${link.code}` : 'En la nube',
@@ -1515,6 +1551,8 @@ const SelectedSongsScreen: React.FC = () => {
     offlineUrl,
     choir,
     handleDeleteFromCloud,
+    openSunday,
+    sunday,
   ]);
 
   // --- Header ---------------------------------------------------------------
@@ -1590,9 +1628,6 @@ const SelectedSongsScreen: React.FC = () => {
             : async () => {};
     }
   };
-
-  const [showSunday, setShowSunday] = useState(false);
-  const openSunday = useCallback(() => setShowSunday(true), []);
 
   // Vacía: lo primero, traerse la playlist del coro; debajo, código y archivo,
   // y al final, para quien elige los cantos, los del domingo. Con scroll por
@@ -1678,11 +1713,11 @@ const SelectedSongsScreen: React.FC = () => {
         viewMode={viewMode}
         setViewMode={setViewMode}
         styles={styles}
-        onOpenSunday={openSunday}
+        showSungLegend={sung.enabled}
       />
     ),
     [
-      openSunday,
+      sung.enabled,
       visibleCount,
       link,
       sharing.isSynced,
@@ -1853,7 +1888,9 @@ const SelectedSongsScreen: React.FC = () => {
         onClose={() => setShowActions(false)}
         title={
           choir.mode !== 'off'
-            ? `Coro ${choir.code} · ${choir.mode === 'master' ? 'Maestro' : 'Esclavo'}`
+            ? choir.mode === 'master'
+              ? 'Diriges sesión coro'
+              : 'Sigues sesión coro'
             : 'Acciones'
         }
       />

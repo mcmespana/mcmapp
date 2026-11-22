@@ -72,7 +72,7 @@ export default function ProfilesScreen() {
               </Text>
               <Text style={[styles.body, { color: t.textSecondary }]}>
                 {data.children.length === 0
-                  ? 'Todavía no tienes participantes vinculados. Cuando la organización vincule a tus participantes, aparecerán aquí automáticamente. Si crees que falta alguien, contacta con tu referente.'
+                  ? 'Todavía no tienes participantes vinculados: saldrán aquí cuando la organización los vincule. Si crees que falta alguien, contacta con tu referente.'
                   : texts.body}
               </Text>
             </View>

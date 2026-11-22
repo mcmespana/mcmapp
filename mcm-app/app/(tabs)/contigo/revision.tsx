@@ -381,7 +381,7 @@ export default function RevisionScreen() {
               >
                 <MaterialIcons name="check-circle" size={16} color={W.green} />
                 <Text style={[styles.entryBannerText, { color: W.green }]}>
-                  Ya hiciste el examen de este día — puedes modificarlo
+                  Ya hiciste el examen de este día. Puedes modificarlo.
                 </Text>
               </View>
             ) : null}
@@ -592,14 +592,11 @@ function GratefulStep({
                   },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.gratStar,
-                    { color: filled ? purple : W.textMuted },
-                  ]}
-                >
-                  ✦
-                </Text>
+                <MaterialIcons
+                  name="auto-awesome"
+                  size={14}
+                  color={filled ? purple : W.textMuted}
+                />
                 <TextInput
                   value={g}
                   onChangeText={(v) => {

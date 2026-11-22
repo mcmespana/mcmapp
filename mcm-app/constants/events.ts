@@ -70,6 +70,12 @@ export interface EventConfig {
    */
   heroImage?: ImageSourcePropType;
   /**
+   * Logo dibujado con código (SVG como texto), alternativa a `heroImage` para
+   * eventos sin logo de verdad. Normalmente llega de `_meta.heroSvg` en Firebase.
+   * `currentColor` se pinta con la tinta del hero. Ver `utils/eventHeroSvg.ts`.
+   */
+  heroSvg?: string;
+  /**
    * Prefijo de Firebase Realtime Database para todas las secciones.
    * · Jubileo: `jubileo` (raíz).
    * · Eventos del panel MCM: `activities/<nombre>` (ej.
@@ -290,11 +296,96 @@ export const VISITAPAPA: EventConfig = {
   ],
 };
 
+/**
+ * Congreso M+C — Curso Despierta (naranja), 27–29 de noviembre de 2026.
+ *
+ * Datos en `activities/congresomc26/` (creado desde el panel MCM). Todavía no
+ * es el evento activo: se destaca cuando el panel pone
+ * `activities/_meta.activeEventId = 'congresomc26'`. Hasta entonces no sale en
+ * ningún sitio (no está archivado, así que tampoco en «Eventos pasados»).
+ *
+ * Tiene VARIOS horarios (`horario1` Curso Despierta, `horario2` y `horario3`
+ * las dos formaciones de Pre-monitores): la tarjeta «Horario» abre un selector
+ * con ellos, cada uno con su `meta.nombre` (ver `utils/eventHorarios.ts`).
+ *
+ * `tabId: 'visitapapa'` — el tab del evento en curso es ese hueco de la barra
+ * (su layout resuelve el `eventId` del evento activo). Para que lo vean, el
+ * perfil tiene que llevar `visitapapa` en `tabs` o `homeButtons`.
+ */
+export const CONGRESO_MC: EventConfig = {
+  id: 'congresomc26',
+  title: 'Congreso M+C',
+  tintColor: '#F07C2B',
+  firebasePrefix: 'activities/congresomc26',
+  bannerText: 'Curso Despierta: Despertando Evangelizadores',
+  motto: 'Despertando evangelizadores',
+  tabId: 'visitapapa',
+  sections: [
+    {
+      label: 'Horario',
+      subtitle: 'Despierta y Pre-monitores',
+      emoji: '⏰',
+      materialIcon: 'schedule',
+      target: 'Horario',
+      tintColor: '#FF8A65',
+      // El hub mira este nodo para saber si la tarjeta se enseña; la pantalla
+      // descubre sola el resto (`horario2`, `horario3`…).
+      firebaseKey: 'horario1',
+    },
+    {
+      label: 'Materiales',
+      subtitle: 'Recursos y dinámicas',
+      emoji: '📦',
+      materialIcon: 'inventory-2',
+      target: 'Materiales',
+      tintColor: '#4FC3F7',
+      firebaseKey: 'materiales',
+    },
+    {
+      label: 'Profundiza',
+      subtitle: 'Reflexión y textos',
+      emoji: '📖',
+      materialIcon: 'menu-book',
+      target: 'Profundiza',
+      tintColor: '#BA68C8',
+      firebaseKey: 'profundiza',
+    },
+    {
+      label: 'Grupos',
+      subtitle: 'Tu grupo y su equipo',
+      emoji: '👥',
+      materialIcon: 'groups',
+      target: 'Grupos',
+      tintColor: '#FFD54F',
+      firebaseKey: 'grupos',
+    },
+    {
+      label: 'Contactos',
+      subtitle: 'Por si te hacen falta',
+      emoji: '☎️',
+      materialIcon: 'contact-phone',
+      target: 'Contactos',
+      tintColor: '#9FA8DA',
+      firebaseKey: 'contactos',
+    },
+    {
+      label: 'Apps',
+      subtitle: 'Herramientas MCM',
+      emoji: '📲',
+      materialIcon: 'apps',
+      target: 'Apps',
+      tintColor: '#FFB74D',
+      firebaseKey: 'apps',
+    },
+  ],
+};
+
 // ─── Registry ────────────────────────────────────────────────────────
 
 export const EVENTS: Record<string, EventConfig> = {
   [JUBILEO.id]: JUBILEO,
   [VISITAPAPA.id]: VISITAPAPA,
+  [CONGRESO_MC.id]: CONGRESO_MC,
 };
 
 /**

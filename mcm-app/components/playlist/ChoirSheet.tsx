@@ -308,10 +308,6 @@ const ChoirSheet: React.FC<Props> = ({
   /* --- Paso: elegir coro -------------------------------------------- */
   const renderChoose = () => (
     <>
-      <Text style={styles.description}>
-        Las playlists cuelgan del coro. Elige el tuyo una vez y luego importar
-        la del domingo es un toque.
-      </Text>
       {loading ? (
         <ActivityIndicator style={styles.loading} color={accent(isDark)} />
       ) : (
@@ -351,15 +347,10 @@ const ChoirSheet: React.FC<Props> = ({
         </ScrollView>
       )}
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {renderRow(
-        'add-circle-outline',
-        'Crear un coro nuevo',
-        'Por ejemplo «Coro Consolación Castellón»',
-        () => {
-          setError(null);
-          setStep('create');
-        },
-      )}
+      {renderRow('add-circle-outline', 'Crear un coro nuevo', undefined, () => {
+        setError(null);
+        setStep('create');
+      })}
     </>
   );
 
@@ -380,8 +371,8 @@ const ChoirSheet: React.FC<Props> = ({
         />
       </View>
       <Text style={styles.description}>
-        Cualquiera podrá elegirlo y subirle playlists, así que ponle el nombre
-        por el que lo conoce la gente.
+        Cualquiera podrá elegirlo y subirle playlists. Usa el nombre por el que
+        lo conoce la gente.
       </Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <View style={styles.buttons}>
@@ -453,7 +444,7 @@ const ChoirSheet: React.FC<Props> = ({
             <>
               {renderRow(
                 'headphones',
-                `Unirme · dirige ${leaderName || 'alguien'}`,
+                leaderName ? `Seguir a ${leaderName}` : 'Unirme',
                 'Verás su canción y su tono en tiempo real',
                 () => {
                   if (!myChoir) return;
@@ -477,7 +468,7 @@ const ChoirSheet: React.FC<Props> = ({
             renderRow(
               'campaign',
               'Dirigir yo',
-              'Quien se una a este coro seguirá tus canciones (24 h)',
+              'Quien se una a este coro seguirá tus canciones (12 h, se alarga sola si sigues)',
               () => {
                 if (!myChoir) return;
                 close(() => onLead(myChoir, null));
@@ -512,7 +503,7 @@ const ChoirSheet: React.FC<Props> = ({
               <Text style={styles.heroSubtitle}>
                 {songCount === 0
                   ? 'Este coro aún no tiene playlists. Añade canciones a tu selección y súbela desde aquí'
-                  : `${songCount} ${songCount === 1 ? 'canción' : 'canciones'}. A partir de ahí, el resto del coro la importa con un toque`}
+                  : `${songCount} ${songCount === 1 ? 'canción' : 'canciones'}`}
               </Text>
             </View>
           </TouchableOpacity>
@@ -541,7 +532,7 @@ const ChoirSheet: React.FC<Props> = ({
             <Text style={styles.heroTitle}>Importar la última</Text>
             <Text style={styles.heroSubtitle}>
               {latest
-                ? `${latest.name} · ${entryMeta(latest)}`
+                ? `${latest.name} · ${formatRelativeDate(latest.updatedAt)}`
                 : loading
                   ? 'Cargando…'
                   : 'Este coro aún no tiene playlists'}
@@ -630,7 +621,7 @@ const ChoirSheet: React.FC<Props> = ({
           {renderRow(
             'sync',
             `Actualizar «${linkedEntry.name}»`,
-            `Machaca la del coro · ${formatRelativeDate(linkedEntry.updatedAt)} · #${linkedEntry.code}`,
+            `Sustituye la del coro, subida ${formatRelativeDate(linkedEntry.updatedAt)}`,
             () => {
               if (!myChoir) return;
               close(() => onSaveUpdate(linkedEntry, myChoir));
@@ -654,8 +645,7 @@ const ChoirSheet: React.FC<Props> = ({
       </View>
       <Text style={styles.description}>
         Se sube a {choir?.name ?? 'tu coro'} con {songCount}{' '}
-        {songCount === 1 ? 'canción' : 'canciones'}. El código para compartirla
-        suelta se genera solo.
+        {songCount === 1 ? 'canción' : 'canciones'}.
       </Text>
       <View style={styles.buttons}>
         <TouchableOpacity

@@ -65,6 +65,22 @@ eventos NO activos siguen tomando `status` del registry (la lista "Eventos
 pasados" no refleja aún un `archived` puesto desde el panel a un evento no
 activo). Ver `docs/planes/PLAN_INTEGRACIONES.md`, Integración B.
 
+**Logo del hub** (`activities/<evento>/_meta.heroImageUrl`): URL `https://` de
+una imagen PNG/WebP/JPG (SVG no). La app la pinta en la cabecera del hub en
+lugar del emblema de estrellitas; un valor que no sea `https://` se ignora. Se
+sube desde el panel (Actividades → metadatos del evento → «Logo del evento»,
+a Firebase Storage). Se pinta sobre el color del evento: usar una versión del
+logo que se lea sobre él.
+
+**Logo dibujado con código** (`activities/<evento>/_meta.heroSvg`): alternativa
+al logo subido, para eventos sin logo de verdad. Es el SVG como TEXTO, que la
+app pinta con `react-native-svg`; `currentColor` se sustituye por la tinta del
+hero. Solo se admite SVG de formas y degradados: sin `script`, `image`, `use`,
+`style`, `href`, `on…=` ni `data:`, y de 24 000 caracteres como máximo
+(`utils/eventHeroSvg.ts`; el panel avisa si no lo cumple). Prioridad de logo:
+`heroImageUrl` (imagen subida) > `heroSvg` > `heroImage` del registry > emblema
+de estrellitas.
+
 **Qué hace `status: 'archived'` en la app** (desde 2026-07-29): archivar el
 evento activo lo saca de todos los sitios donde estaba destacado y lo deja sólo
 en "Más > Eventos pasados":
@@ -179,6 +195,45 @@ items.push({
 ```
 
 Listo. No hay que tocar ninguna sub-pantalla ni el stack de navegación.
+
+## Evento en curso: el tab y la Home
+
+Un evento solo se **destaca** (tab, botón de la Home, banner) si es el evento
+activo (`activities/_meta.activeEventId`) y declara `tabId`. Todos los eventos
+con tab usan el mismo hueco, `tabId: 'visitapapa'` (la carpeta
+`app/(tabs)/visitapapa/` se llama así por historia): su layout resuelve el
+`eventId` del evento activo, así que **no hay que duplicar la carpeta** para un
+evento nuevo. Basta con registrarlo en `events.ts` con `tabId: 'visitapapa'` y
+poner su id en `activeEventId` desde el panel. El perfil tiene que llevar
+`visitapapa` en `tabs` o `homeButtons`. Sin `tabId`, el evento solo es
+accesible desde «Más».
+
+Ejemplo: `CONGRESO_MC` (Congreso M+C, 27–29 nov 2026).
+
+## Varios horarios en un evento
+
+Si un evento tiene programas distintos el mismo fin de semana (Congreso M+C:
+Curso Despierta y dos formaciones de Pre-monitores), no se hacen varios eventos:
+se cargan varios horarios en el mismo.
+
+```
+activities/<evento>/horario1   { updatedAt, data: [días], meta: { nombre: "Curso Despierta", color?: "#RRGGBB" } }
+activities/<evento>/horario2   { updatedAt, data: [días], meta: { nombre: "Pre-monitores 1" } }
+…                              (hasta 8; `hidden: true` lo oculta del selector)
+```
+
+- `data` tiene la forma de siempre (`[{ fecha, titulo, eventos: [...] }]`);
+  `meta.nombre` es lo que se lee en el selector (sin él, «Horario N»).
+- La pantalla de Horario prueba `horario1`, `horario2`… (`useEventHorarios`) y,
+  si hay más de uno, enseña un conmutador arriba y recuerda el último elegido
+  en el móvil. Con uno solo no enseña conmutador.
+- **Color de cada horario**: `meta.color` (`#RRGGBB`) si se pone a mano; si no,
+  el primero lleva el color del evento y el resto, colores que lo complementan
+  (`utils/colorHarmony.ts`, en OKLCH). Al cambiar de horario, el segmento activo
+  y los acentos de la pantalla toman su color.
+- La tarjeta del hub se declara con `firebaseKey: 'horario1'` en `events.ts`.
+- Sin `horario1` el evento usa el `horario` único de siempre; no hay que migrar
+  nada (Jubileo y la Visita del Papa siguen igual).
 
 ## Ocultar secciones
 

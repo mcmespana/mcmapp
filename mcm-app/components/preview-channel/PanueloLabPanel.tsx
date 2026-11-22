@@ -55,10 +55,7 @@ export function PanueloLabPanel() {
 
   return (
     <View style={styles.card}>
-      <View>
-        <Text style={styles.eyebrow}>experimento</Text>
-        <Text style={styles.title}>Pañuelo virtual</Text>
-      </View>
+      <Text style={styles.title}>Pañuelo virtual</Text>
 
       <View style={styles.showcase}>
         {SHOWCASE.map((item) => (
@@ -117,12 +114,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(149, 210, 242, 0.55)',
     gap: spacing.md,
-  },
-  eyebrow: {
-    ...typography.overline,
-    color: 'rgba(149, 210, 242, 0.95)',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
   },
   title: {
     ...typography.h3,

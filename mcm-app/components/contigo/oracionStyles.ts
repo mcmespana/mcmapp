@@ -149,12 +149,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
   },
-  customLabel: {
-    ...typography.micro,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: 18,
-  },
   stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',

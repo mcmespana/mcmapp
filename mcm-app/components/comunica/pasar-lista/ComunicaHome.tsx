@@ -456,8 +456,8 @@ function HomeContent({
 
       {groups.myGroupIds.length === 0 ? (
         <Text style={[styles.body, { color: t.textSecondary }]}>
-          No tienes ningún grupo asignado como monitor/a, así que no hay atajo.
-          Puedes pasar lista de cualquier grupo desde la lista de abajo.
+          No tienes ningún grupo asignado como monitor/a. Puedes pasar lista de
+          cualquier grupo desde la lista de abajo.
         </Text>
       ) : null}
 

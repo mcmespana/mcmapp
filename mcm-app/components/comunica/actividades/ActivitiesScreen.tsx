@@ -92,7 +92,7 @@ export default function ActivitiesScreen() {
             return (
               <EmptyState
                 icon="inbox"
-                title="No hay actividades próximas ahora mismo"
+                title="No hay actividades próximas"
                 subtitle="Cuando se abra la inscripción de una actividad, aparecerá aquí. Las que ya pasaron están en “Inscripciones”."
                 actionLabel="Ver mis inscripciones"
                 onAction={() => links.list()}
