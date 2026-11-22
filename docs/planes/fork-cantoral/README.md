@@ -3,8 +3,10 @@
 > **Estado:** 📝 plan cerrado el 21/11/2026 con **todas las decisiones
 > contestadas** (§4) y mergeado en `main` de `mcmapp`. **Sin empezar.**
 > **Maqueta A/B hecha** (21/11): <https://claude.ai/artifact/TBGfc98GLHTma1vhY1wqHa>
-> — elegir dirección e Izan cierra el estilo (`03` §8). Siguiente: **el fork
-> en la cuenta de GitHub de Izan** (`01` §0). Los bugs del cantoral de MCM App
+> — elegir dirección e Izan cierra el estilo (`03` §8). **Repo
+> `mcmespana/mcmcantoral` creado el 21/11** (copia con toda la historia de
+> `main` @ `d4338986`, no fork de GitHub: `01` §0). **La copia viva de este
+> plan está allí**; siguiente: Fase 0 allí. Los bugs del cantoral de MCM App
 > (§3, 4-5, y los dos menores) **ya están arreglados en `main`** (21/11);
 > la Fase 1 de Navidad sigue sin hacer (`mcm-app/TODO.md`).
 > **Respuestas originales:** página
@@ -84,9 +86,10 @@ Comprobado en el código de `mcmapp` (`main`, `257f5f4`) y del repo
 11. En iOS, **una app en segundo plano no puede servir**: el móvil del
     maestro no puede ser el único servidor. Por eso hay un **equipo base**
     enchufado junto al router y relevo automático (`04` §5.2).
-12. GitHub no deja forkear dentro del mismo propietario (`mcmespana`): el
-    fork se hace **en la cuenta de Izan** (fork normal de GitHub, solo copia
-    `main`; por eso todo se mergea a `main` antes) (`01` §0).
+12. GitHub no deja forkear dentro del mismo propietario (`mcmespana`) y el
+    usuario quiere el repo en `mcmespana`: es **una copia con toda la
+    historia** de `main` en `mcmespana/mcmcantoral` (repo vacío + push), no
+    un fork de GitHub. Por eso todo se mergea a `main` antes (`01` §0).
 13. **Las reglas de Firebase y las Cloud Functions son de `mcmapp`**: el fork
     no despliega reglas, y su función va en un *codebase* propio para no
     borrar las de MCM App (`01` §2.9, `06`).
@@ -127,7 +130,7 @@ Comprobado en el código de `mcmapp` (`main`, `257f5f4`) y del repo
 | -- | --------- |
 | A-01 | 19/12/2026, **Cuatro Esquinas**, **3-4 maestros** como mucho |
 | A-02 | Cuenta de Play «de organización, creo»; con MCM App fue bien → sin prueba de 12 personas |
-| A-03 | Repo: **fork en la cuenta de GitHub de Izan**, nombre **`mcmcantoral`** (sigue la costumbre `mcmapp`, `mcmpanel`, `mcmbank`). Se puede transferir a `mcmespana` más adelante. `mcmapp-cantoral` se queda como está: son las canciones de las dos apps |
+| A-03 | Repo: **`mcmespana/mcmcantoral`** (sigue la costumbre `mcmapp`, `mcmpanel`, `mcmbank`). Copia con toda la historia de `main`, no fork de GitHub (no se puede dentro del mismo propietario); Izan, como colaborador. `mcmapp-cantoral` se queda como está: son las canciones de las dos apps |
 | A-04 | El repertorio de villancicos lo meten ellos |
 | A-05 | No hay pedal ni iPad para probar ahora; ya se verá |
 | A-06 | Licencia: se acepta así, más adelante |
@@ -161,7 +164,7 @@ proyección para la misa. **No**: I-03 pulso compartido, I-05 comprar router
 
 | Semana | Qué |
 | ------ | --- |
-| S0 · 21-23 nov | Plan mergeado en `main` · **maqueta A/B** · fork en la cuenta de Izan · Fase 0 (con el spike de wifi local el primer día) |
+| S0 · 21-23 nov | Plan mergeado en `main` · **maqueta A/B** · repo `mcmespana/mcmcantoral` · Fase 0 (con el spike de wifi local el primer día) |
 | S1 · 24-30 nov | Fase 0 cerrada → TestFlight + Play interna · Fase 1 · Izan cierra el estilo sobre la maqueta · icono en Canva |
 | S2 · 1-7 dic | Fase 2 (con el estilo de Izan) · Fase 3: protocolo, nube y **wifi local** |
 | S3 · 8-13 dic | Fase 3: avisos, reacciones, pedal/volumen, sección, cuenta atrás, resumen · **enviar a revisión ~9 dic** · ensayo con el router del evento |

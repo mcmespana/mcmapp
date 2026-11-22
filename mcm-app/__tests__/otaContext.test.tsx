@@ -17,6 +17,7 @@ import { renderHook, act } from '@testing-library/react-native';
 import {
   OTAProvider,
   useOTAContext,
+  useHoldOTAAutoApply,
   MIN_OVERLAY_MS,
   RELOAD_GRACE_MS,
 } from '@/contexts/OTAContext';
@@ -268,5 +269,50 @@ describe('OTAProvider — «cerrar y hacer más tarde»', () => {
     expect(shouldReload?.()).toBe(true);
     // Y no se ha lanzado un segundo flujo.
     expect(mockOta.applyUpdate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('OTAProvider — retenido mientras el onboarding está a medias', () => {
+  const useHeld = (active: boolean) => {
+    useHoldOTAAutoApply(active);
+    return useOTAContext();
+  };
+
+  it('un update listo a mitad del onboarding NO recarga; se aplica al terminarlo', async () => {
+    const { result, rerender } = await renderHook(
+      ({ active }: { active: boolean }) => useHeld(active),
+      { wrapper, initialProps: { active: true } },
+    );
+    mockOta.isReady = true;
+    await rerender({ active: true });
+    await advance(MIN_OVERLAY_MS + 100);
+    expect(result.current.applying).toBe(false);
+    expect(mockOta.applyUpdate).not.toHaveBeenCalled();
+
+    // Pasado el «recién abierta»: aun así se aplica al soltar.
+    await advance(FRESH_WINDOW_MS);
+    await rerender({ active: false });
+    await advance(0);
+    expect(result.current.applying).toBe(true);
+    await advance(MIN_OVERLAY_MS);
+    expect(mockOta.applyUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('soltar sin update esperando no hace nada', async () => {
+    const { result, rerender } = await renderHook(
+      ({ active }: { active: boolean }) => useHeld(active),
+      { wrapper, initialProps: { active: true } },
+    );
+    await rerender({ active: false });
+    await advance(MIN_OVERLAY_MS + 100);
+    expect(result.current.applying).toBe(false);
+    expect(mockOta.applyUpdate).not.toHaveBeenCalled();
+  });
+
+  it('sin retener (bienvenida), el update se aplica como siempre', async () => {
+    mockOta.isReady = true;
+    const { result } = await renderHook(() => useHeld(false), { wrapper });
+    await advance(0);
+    expect(result.current.applying).toBe(true);
   });
 });

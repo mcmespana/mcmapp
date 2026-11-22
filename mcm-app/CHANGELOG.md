@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-22 09:16 — Onboarding: se puede saltar desde la bienvenida y la OTA ya no lo interrumpe
+
+- **La OTA espera al onboarding.** Una actualización que quedaba lista con alguien a mitad del onboarding recargaba la app con el «un momentín» y le borraba lo elegido (perfil, localidad): volvía a la bienvenida. Ahora `OTAContext` admite retenciones (`holdAutoApply` / hook `useHoldOTAAutoApply`): el onboarding retiene en cuanto se pasa de la bienvenida, y al terminarlo o saltarlo la OTA pendiente se aplica (`trigger: 'released'` en `utils/otaAutoApply.ts`, aunque ya no esté «recién abierta»; el cortafuegos anti-bucle sigue). En la bienvenida no se retiene: no hay nada que perder. **Ojo:** el primer arranque tras instalar ejecuta el JS de la build de tienda, así que esto solo cubre ese caso a partir de la **próxima build nativa**.
+- **«Ahora no, entrar directamente» en la bienvenida.** Hasta ahora solo había «Saltar» en perfil y localidad. Hace lo mismo: perfil `miembro`, localidad General, `onboardingCompleted: false`.
+- **El banner «En solo 1 minuto» de Inicio se puede cerrar** con una ✕ y no vuelve (`homeProfileBannerClosed` en AsyncStorage). El perfil y la localidad se siguen cambiando desde Ajustes.
+- Tests: `otaAutoApply` (retenido / `released`) y `otaContext` (retener y soltar).
+
 ## 2026-11-21 18:50 — Cantoral: bugs previos al fork MCM Cantoral
 
 - **Sugerir una canción ya no obliga a todos a re-bajar el cantoral.** `SuggestSongModal` escribía `songs/updatedAt` (en ms, cuando el CI escribe segundos) tras guardar la solicitud: cada móvil bajaba `songs/data` entero. Fuera; test guardarraíl `songsUpdatedAtGuard`: ningún fichero de la app escribe esa marca.

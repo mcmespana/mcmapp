@@ -54,3 +54,31 @@ describe('shouldAutoApply', () => {
     ).toBe(true);
   });
 });
+
+describe('shouldAutoApply — retenido (onboarding a medias)', () => {
+  it('retenido: no se aplica nunca, ni recién abierta ni al volver del fondo', () => {
+    expect(shouldAutoApply(ctx({ held: true }))).toBe(false);
+    expect(shouldAutoApply(ctx({ trigger: 'foreground', held: true }))).toBe(
+      false,
+    );
+  });
+
+  it('al soltar la retención se aplica aunque ya no esté «recién abierta»', () => {
+    expect(
+      shouldAutoApply(
+        ctx({ trigger: 'released', activeSince: NOW - 3_600_000 }),
+      ),
+    ).toBe(true);
+  });
+
+  it('al soltar también respeta el cortafuegos anti-bucle', () => {
+    expect(
+      shouldAutoApply(
+        ctx({
+          trigger: 'released',
+          lastAutoApplyAt: NOW - AUTO_APPLY_COOLDOWN_MS + 1,
+        }),
+      ),
+    ).toBe(false);
+  });
+});

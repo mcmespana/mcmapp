@@ -95,6 +95,9 @@ import useCalendarEvents from '@/hooks/useCalendarEvents';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { styles } from '@/components/home/homeStyles';
 
+/** AsyncStorage: la persona cerró el banner de «completa tu perfil». */
+const PROFILE_BANNER_CLOSED_KEY = 'homeProfileBannerClosed';
+
 const MONTHS_SHORT = [
   'Ene',
   'Feb',
@@ -301,6 +304,31 @@ export default function Home() {
   const appEvalOpen = isEvaluationOpen(
     mergeEvaluationConfig(DEFAULT_APP_EVALUATION, appEvalConfig),
   );
+  // Banner «En solo 1 minuto» (para quien saltó el onboarding): se puede
+  // cerrar con la ✕ y no vuelve. El perfil se sigue cambiando desde Ajustes.
+  // `null` = aún no se sabe; no se pinta, para que no parpadee al cargar.
+  const [profileBannerClosed, setProfileBannerClosed] = useState<
+    boolean | null
+  >(null);
+  useEffect(() => {
+    let active = true;
+    AsyncStorage.getItem(PROFILE_BANNER_CLOSED_KEY)
+      .then((v) => {
+        if (active) setProfileBannerClosed(v === '1');
+      })
+      .catch(() => {
+        if (active) setProfileBannerClosed(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+  const closeProfileBanner = useCallback(() => {
+    h.tap();
+    setProfileBannerClosed(true);
+    AsyncStorage.setItem(PROFILE_BANNER_CLOSED_KEY, '1').catch(() => {});
+  }, []);
+
   const [evalDone, setEvalDone] = useState(false);
   useFocusEffect(
     useCallback(() => {
@@ -867,44 +895,52 @@ export default function Home() {
           {/* ── Left column (or full-width on mobile) ── */}
           <View style={isWide ? styles.wideColLeft : undefined}>
             {/* ── Banner de personalización (solo si saltó el onboarding) ── */}
-            {profile.profileType && !profile.onboardingCompleted && (
-              <TouchableOpacity
-                style={[
-                  styles.onboardingBanner,
-                  {
-                    backgroundColor: hexAlpha(accentColor, '12'),
-                    borderColor: hexAlpha(accentColor, '30'),
-                  },
-                ]}
-                onPress={() => router.push('/onboarding' as any)}
-                accessibilityRole="button"
-                accessibilityLabel="Completa tu perfil"
-              >
-                <MaterialIcons name="tune" size={20} color={accentColor} />
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      styles.onboardingBannerTitle,
-                      { color: theme.text },
-                    ]}
+            {profile.profileType &&
+              !profile.onboardingCompleted &&
+              profileBannerClosed === false && (
+                <TouchableOpacity
+                  style={[
+                    styles.onboardingBanner,
+                    {
+                      backgroundColor: hexAlpha(accentColor, '12'),
+                      borderColor: hexAlpha(accentColor, '30'),
+                    },
+                  ]}
+                  onPress={() => router.push('/onboarding' as any)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Completa tu perfil"
+                >
+                  <MaterialIcons name="tune" size={20} color={accentColor} />
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        styles.onboardingBannerTitle,
+                        { color: theme.text },
+                      ]}
+                    >
+                      En solo 1 minuto
+                    </Text>
+                    <Text
+                      style={[
+                        styles.onboardingBannerBody,
+                        { color: theme.icon },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      Dinos a qué localidad perteneces y te mostraremos las
+                      secciones más importantes.
+                    </Text>
+                  </View>
+                  <PressableScale
+                    onPress={closeProfileBanner}
+                    hitSlop={12}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cerrar este aviso"
                   >
-                    En solo 1 minuto
-                  </Text>
-                  <Text
-                    style={[styles.onboardingBannerBody, { color: theme.icon }]}
-                    numberOfLines={2}
-                  >
-                    Dinos a qué localidad perteneces y te mostraremos las
-                    secciones más importantes.
-                  </Text>
-                </View>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={20}
-                  color={accentColor}
-                />
-              </TouchableOpacity>
-            )}
+                    <MaterialIcons name="close" size={20} color={theme.icon} />
+                  </PressableScale>
+                </TouchableOpacity>
+              )}
 
             {/* ── Banner de permisos de notificaciones (denied / undetermined) ── */}
             <NotificationPermissionBanner placement="home" />

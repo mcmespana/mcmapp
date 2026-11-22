@@ -15,24 +15,28 @@
 
 1. **Comprobar que el plan está en `main` de `mcmapp`** (un fork de GitHub
    solo copia la rama principal; mergeado el 21/11/2026).
-2. **Crear el fork en la cuenta de GitHub de Izan** (decisión del usuario):
-   GitHub → `mcmespana/mcmapp` → *Fork* → propietario: la cuenta de Izan →
-   nombre **`mcmcantoral`** → «Copy the main branch only». Un fork de GitHub
-   conserva la relación con el original (`upstream`), lo que viene bien para
-   comparar y traer cambios. (GitHub no deja forkear dentro de `mcmespana`,
-   que es el dueño del original.)
-   - Un fork de un repo público es público; no se puede hacer privado sin
-     desligarlo. Está bien así (MCM App también es público).
-   - Más adelante se puede **transferir** a `mcmespana` (Settings →
-     Transfer) sin perder nada.
-   - Alternativa si algún día hiciera falta un repo sin relación de fork:
-     repo vacío + `git push` de la historia de `mcmapp`.
-3. **Dar acceso a Claude**: instalar la app de GitHub de Claude en la cuenta
-   de Izan para ese repo (<https://github.com/apps/claude/installations/select_target>)
-   y añadirlo a la sesión (`add_repo`, con permiso de escritura).
+2. **Crear el repo en `mcmespana`** (decisión del usuario, 21/11/2026:
+   «quiero que esté en la cuenta de mcmespana»). GitHub **no deja hacer
+   Fork dentro del mismo propietario** (el botón sale gris), así que es una
+   **copia con toda la historia**, no un fork de GitHub:
+   - El usuario crea **`mcmespana/mcmcantoral`** vacío (sin README, sin
+     `.gitignore`, sin licencia), público como MCM App.
+   - Claude empuja `main` de `mcmapp` con toda su historia
+     (`git push mcmcantoral main`). Al compartir historia, `git merge-base`
+     y `cherry-pick` funcionan igual que en un fork; lo único que se pierde
+     es la etiqueta «forked from» y el botón de *Sync fork*, que aquí no
+     servían (la app se mueve a la raíz: los cambios se portan con parche,
+     `DIVERGENCIAS.md` §4).
+   - En el clon del fork: `git remote add upstream
+     https://github.com/mcmespana/mcmapp` para comparar y traer cambios.
+3. **Dar acceso a Claude**: la app de GitHub de Claude ya está en
+   `mcmespana`; si está limitada a repos concretos, añadir `mcmcantoral`
+   (<https://github.com/apps/claude/installations/select_target>) y añadirlo
+   a la sesión (`add_repo`, con permiso de escritura). Izan entra como
+   colaborador.
 4. Tener a mano: cuenta de Expo (la misma de MCM), Apple Developer (equipo
    `5P53S6QB23`) y Google Play Console (de organización, A-02). Las tiendas y
-   Expo son de MCM aunque el código esté en la cuenta de Izan.
+   Expo son de MCM, como el repo.
 
 ## 1. Lo que se queda y lo que se va (resumen del mapa)
 
