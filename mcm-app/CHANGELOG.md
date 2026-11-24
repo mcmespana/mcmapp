@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-25 00:50 — Versión 2.6.0: dependencias al día, build de tienda y onboarding
+
+- **`version` y `runtimeVersion` a 2.6.0** (`app.json`). Cambian módulos nativos, así que es build de tienda: las 2.5.x dejan de recibir OTA. Cuando la 2.6.0 esté aprobada en App Store y Play, subir la **versión mínima** del Panel a `2.6.0`. Commit con `[skip-ota]`.
+- **Dependencias:** todos los paquetes de Expo a lo último del SDK 58 (`expo` 58.0.26, `expo-router` 58.0.32, `expo-notifications` 58.1.9, `expo-web-browser` 58.1.0…), `react-native-safe-area-context` 5.11.1, `firebase` 13.4, `@tanstack/react-query` 5.108, `react-native-audio-api` 1.0.1, `react-native-nfc-manager` 4.3, `react-native-qrcode-svg`, `react-native-reorderable-list`, `tailwindcss` 4.3.5, `prettier` 3.10. **Se quedan a propósito:** `heroui-native` en 1.0.11 (la 1.1 rehace `BottomSheet` sobre un módulo nativo nuevo, `@lodev09/react-native-true-sheet`, y quita `Portal`/`Overlay`: son 10 pantallas que hay que migrar y probar en el móvil), y las mayores que el SDK 58 no admite o cambian la API (Google Sign-In 17, AsyncStorage 3, `expo-alternate-app-icons` 11, ESLint 10, Reanimated 4.8 / Worklets 0.14).
+- **Onboarding:**
+  - **«No soy del MCM»** en vez de «Otros» en «¿Quién eres?», con «Vienes a un encuentro, eres amigo del movimiento o solo quieres echar un vistazo»; el subtítulo dice «No hace falta ser del MCM». Por dentro sigue siendo `miembro` + `mcm-espana`.
+  - En teléfonos pequeños la **bienvenida cortaba el logo arriba** y en el paso de iniciar sesión **«Entrar sin iniciar sesión» se montaba sobre el botón de Apple**: las dos columnas hacen scroll si no caben (si caben, quedan igual).
+  - El «Continuar» de la localidad era rojo MIC con texto blanco (3,55:1, no llega a AA): ahora azul, como el resto de pasos.
+  - En web, el aviso «Añade esta app a tu pantalla de inicio» ya no sale durante el onboarding (tapaba el «Continuar»).
+
 ## 2026-11-25 00:14 — Pantallas de evento: nada tapado arriba y repaso de accesibilidad
 
 - **iOS: Material, Comida y el visor web de Comida ya no salen cortados arriba.** El stack del evento pone `headerTransparent` en iOS (lo necesitan las pantallas con hero propio), y estas tres usan la barra de color con título sin reservar su altura: el título de cada página de Material quedaba debajo de la barra. La rama con título de `eventScreenOptions` fuerza `headerTransparent: false` en iOS. Su texto, además, sigue el tema (era `#1a1a1a` fijo: invisible en modo oscuro).

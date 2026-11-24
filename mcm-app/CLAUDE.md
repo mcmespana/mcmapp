@@ -413,8 +413,8 @@ Documentar NO:
 - **Android Package**: `com.mcmespana.mcmapp`
 - **Apple Team ID**: `5P53S6QB23`
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
-- **App version**: 2.5.1 (la de `app.json`; 2.5.0 fue la primera build de la serie 2.5 y no lleva `react-native-audio-api`, así que no tiene el afinador)
-- **Runtime version**: 2.5.1 (SDK 58; subida a la vez que la versión al añadir `react-native-audio-api`: las builds 2.5.0 dejan de recibir OTAs nuevas)
+- **App version**: 2.6.0 (la de `app.json`; build de tienda del 2026-11-25 con todo `main` y las dependencias al día)
+- **Runtime version**: 2.6.0 (SDK 58; sube con la versión porque cambian módulos nativos — parches de Expo, `react-native-safe-area-context` 5.11, `react-native-audio-api`, `react-native-nfc-manager`: las builds 2.5.x dejan de recibir OTAs nuevas)
 
 ## HeroUI Native — UI Library
 
