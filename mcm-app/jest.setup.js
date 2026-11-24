@@ -117,6 +117,18 @@ jest.mock('@sentry/react-native', () => ({
   mobileReplayIntegration: jest.fn(() => ({})),
 }));
 
+// BottomSheet de heroui-native ≥ 1.1: es TrueSheet, un módulo nativo que no
+// existe bajo Jest. heroui lo carga con un `require` opcional y, sin él, la
+// hoja revienta al montar («BottomSheet requires @lodev09/react-native-true-sheet»).
+// Se usan los mocks oficiales de la librería (pinta el contenido tal cual y
+// `present`/`dismiss` son `jest.fn`).
+jest.mock('@lodev09/react-native-true-sheet', () =>
+  require('@lodev09/react-native-true-sheet/mock'),
+);
+jest.mock('@lodev09/react-native-true-sheet/reanimated', () =>
+  require('@lodev09/react-native-true-sheet/reanimated/mock'),
+);
+
 // Registro de assets: `expo-asset` lee `AssetRegistry` de 'react-native', que en
 // RN 0.88 sale de `src/private/assets/AssetRegistry`; el mock de `jest-expo`
 // apunta a `react-native/asset-registry`, otro módulo. Con el registro real

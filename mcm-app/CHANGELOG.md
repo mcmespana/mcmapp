@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-24 23:53 — heroui-native 1.1: el BottomSheet pasa a ser nativo (TrueSheet)
+
+> En la rama `claude/dazzling-lamport-xv7cj8`, **sin fusionar**: pendiente de decidir si entra en la próxima build nativa. Lleva un módulo nativo nuevo: commit con `[skip-ota]` y **no** sube `runtimeVersion` (si entra después de la build 2.6.0, habrá que subirla con esa build).
+
+- **`heroui-native` 1.0.11 → 1.1.1** y **`@lodev09/react-native-true-sheet` 4.1** (módulo nativo, peer de heroui). Para web, `@radix-ui/react-dialog` y `@radix-ui/react-presence` (peers opcionales de TrueSheet, solo JS). Fuera `@gorhom/bottom-sheet`: solo lo usaba el `BottomSheet` antiguo de heroui.
+- **Único uso real del `BottomSheet` de heroui: el formulario de Reflexiones** (`app/screens/ReflexionesScreen.tsx`). El resto de hojas de la app son `components/BottomSheet.tsx` (propio) y no cambian. La 1.1 quita `isOpen`/`onOpenChange`, `Portal` y `Overlay`: la hoja se abre y cierra por ref (`present()`/`dismiss()`); `showForm` sigue mandando y `onDidDismiss` lo devuelve a `false` al cerrarla arrastrando. El `ScrollView` del formulario va como `scrollableRef`. El padding se pone en el `ScrollView` y no en `BottomSheet.Content`, porque en web la clase de Uniwind de heroui no se aplica.
+- **Arreglo: el «+» de Compartiendo no abría el formulario.** Hacía `router.push` a la misma pantalla, y expo-router 58 apila otra Reflexiones que nace con ese nonce como «ya visto». Ahora `router.navigate` (`app/(tabs)/mas/_layout.tsx`, `app/(tabs)/visitapapa/_layout.tsx`).
+- **Parche `patches/heroui-native+1.1.1.patch`:** heroui 1.1.1 lee `Platform.constants.reactNativeVersion` al cargar (`ScrollShadow`) y en react-native-web `Platform.constants` no existe: **toda la web se caía** en el render de servidor. Guardarraíl: `__tests__/herouiWebPlatformConstants.test.ts`.
+- Jest: mocks oficiales de TrueSheet en `jest.setup.js` y `@lodev09/react-native-true-sheet` en `transformIgnorePatterns`.
+
 ## 2026-11-25 00:50 — Versión 2.6.0: dependencias al día, build de tienda y onboarding
 
 - **`version` y `runtimeVersion` a 2.6.0** (`app.json`). Cambian módulos nativos, así que es build de tienda: las 2.5.x dejan de recibir OTA. Cuando la 2.6.0 esté aprobada en App Store y Play, subir la **versión mínima** del Panel a `2.6.0`. Commit con `[skip-ota]`.
