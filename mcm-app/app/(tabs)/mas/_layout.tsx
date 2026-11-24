@@ -10,7 +10,7 @@ import { fotosHeaderOptions } from '@/app/screens/FotosScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import EventActionButtons from '@/components/EventActionButtons';
 import {
-  EVENT_SUB_SLUGS,
+  EVENT_ACTION_SLUGS,
   EVENT_SLUGS,
   MAS_BASE,
   eventHref,
@@ -142,11 +142,27 @@ export default function MasLayout() {
             title: 'Eventos pasados',
             // No es una pantalla de evento: sin botones settings/reflexiones.
             headerRight: () => null,
+            // La misma cabecera que «Más», de la que cuelga (antes heredaba la
+            // barra gris #78909C del stack en Android y web, la única así).
+            ...transparentHeaderOptions(),
+            ...(Platform.OS === 'ios'
+              ? {}
+              : {
+                  headerStyle: {
+                    backgroundColor: themeColors(isDark).backgroundSunken,
+                  },
+                }),
+            headerTintColor: themeColors(isDark).headerTint,
+            headerTitleStyle: {
+              fontWeight: '700' as const,
+              fontSize: 17,
+              color: themeColors(isDark).headerTint,
+            },
           }}
         />
         {renderEventScreens({ includeHub: true, includeExtras: true })}
       </Stack>
-      {EVENT_SUB_SLUGS.includes(activeSlug) && (
+      {EVENT_ACTION_SLUGS.includes(activeSlug) && (
         <EventActionButtons
           onSettings={() => setSettingsVisible(true)}
           onCompartiendo={() =>

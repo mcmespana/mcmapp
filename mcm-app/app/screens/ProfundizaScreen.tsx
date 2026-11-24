@@ -81,6 +81,7 @@ function AccordionSection({
               ]}
               accessibilityRole="button"
               accessibilityLabel={p.titulo}
+              accessibilityState={{ expanded: open }}
             >
               <PressableFeedback.Highlight />
               <Text style={styles.accordionTitle}>{p.titulo}</Text>

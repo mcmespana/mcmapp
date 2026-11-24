@@ -115,6 +115,7 @@ jest.mock('expo-router/react-navigation', () => {
   return {
     useRoute: () => ({ key: 'test', name: 'test', params: {} }),
     useHeaderHeight: () => 96,
+    usePreventRemove: () => {},
     useNavigation: () => ({
       navigate: jest.fn(),
       setOptions: jest.fn(),

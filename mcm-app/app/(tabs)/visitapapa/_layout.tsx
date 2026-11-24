@@ -10,7 +10,7 @@ import { EventBaseContext, EventIdContext } from '@/hooks/useCurrentEvent';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { takePendingEventScreen } from '@/utils/eventNavigation';
 import {
-  EVENT_SUB_SLUGS,
+  EVENT_ACTION_SLUGS,
   EVENT_SLUGS,
   VISITAPAPA_BASE,
   eventHref,
@@ -126,7 +126,7 @@ export default function VisitaPapaLayout() {
           </Stack>
         </EventBaseContext.Provider>
       </EventIdContext.Provider>
-      {EVENT_SUB_SLUGS.includes(activeSlug) && (
+      {EVENT_ACTION_SLUGS.includes(activeSlug) && (
         <EventActionButtons
           onSettings={() => setSettingsVisible(true)}
           onCompartiendo={() =>

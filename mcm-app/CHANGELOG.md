@@ -4,6 +4,19 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-25 00:14 — Pantallas de evento: nada tapado arriba y repaso de accesibilidad
+
+- **iOS: Material, Comida y el visor web de Comida ya no salen cortados arriba.** El stack del evento pone `headerTransparent` en iOS (lo necesitan las pantallas con hero propio), y estas tres usan la barra de color con título sin reservar su altura: el título de cada página de Material quedaba debajo de la barra. La rama con título de `eventScreenOptions` fuerza `headerTransparent: false` en iOS. Su texto, además, sigue el tema (era `#1a1a1a` fijo: invisible en modo oscuro).
+- **iOS: el hub del evento abierto desde «Más» o «Eventos pasados»** reserva la altura de la cabecera transparente (`useHeaderHeight`): el logo y la campana quedaban bajo la barra.
+- **Los botones flotantes del evento (Compartiendo + Ajustes) ya no tapan la ✕ de la Evaluación** ni el «abrir fuera» del visor web: los layouts usan `EVENT_ACTION_SLUGS` (`utils/eventRoutes.ts`) en vez de todas las sub-pantallas. El icono «abrir fuera» era blanco fijo (invisible en iOS claro).
+- **Grupos: el «Atrás» del sistema sube un nivel** (grupo → categoría → Grupos) en vez de sacarte de la pantalla (`usePreventRemove`).
+- **Apps:** decía «Para el Jubileo» en cualquier evento; la fila era un botón con otro botón dentro (HTML inválido en web, error en rojo); la última app quedaba bajo la barra de pestañas.
+- **Contactos:** la caja de búsqueda es la de Grupos (`components/grupos/SearchBar`); el `SearchField` de heroui salía sin caja en web.
+- **Eventos pasados:** la cabecera es la de «Más» (heredaba la barra gris `#78909C` en Android y web) y el final del scroll respeta la barra flotante.
+- Hub: las tarjetas llevan un chevron (o «abrir fuera» si son un enlace) en vez de repetir su icono en pequeño; iconos de sección con `tintedGlyph`; campana de 44 pt con `PressableFeedback`.
+- Accesibilidad (pasada con las skills de `.agents/skills`): días del `DateSelector` con nombre y estado elegido, acordeón de Profundiza con `expanded`, botones de mapa de Visitas con rol; el temblor/latido del último día del Horario se para con «reducir movimiento» y cuando la pantalla no está a la vista.
+- Test guardarraíl: `__tests__/eventHeaderOverlap.test.ts`.
+
 ## 2026-11-22 09:16 — Onboarding: se puede saltar desde la bienvenida y la OTA ya no lo interrumpe
 
 - **La OTA espera al onboarding.** Una actualización que quedaba lista con alguien a mitad del onboarding recargaba la app con el «un momentín» y le borraba lo elegido (perfil, localidad): volvía a la bienvenida. Ahora `OTAContext` admite retenciones (`holdAutoApply` / hook `useHoldOTAAutoApply`): el onboarding retiene en cuanto se pasa de la bienvenida, y al terminarlo o saltarlo la OTA pendiente se aplica (`trigger: 'released'` en `utils/otaAutoApply.ts`, aunque ya no esté «recién abierta»; el cortafuegos anti-bucle sigue). En la bienvenida no se retiene: no hay nada que perder. **Ojo:** el primer arranque tras instalar ejecuta el JS de la build de tienda, así que esto solo cubre ese caso a partir de la **próxima build nativa**.

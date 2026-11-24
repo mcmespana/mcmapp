@@ -182,7 +182,8 @@ export default function VisitasScreen() {
                     }}
                     hitSlop={10}
                     style={styles.mapBtn}
-                    accessibilityLabel="Abrir en el mapa"
+                    accessibilityRole="link"
+                    accessibilityLabel={`Ver ${v.titulo} en el mapa`}
                   >
                     <MaterialIcons
                       name="map"
@@ -220,6 +221,7 @@ export default function VisitasScreen() {
                   style={styles.modalClose}
                   onPress={() => setSelected(null)}
                   hitSlop={10}
+                  accessibilityRole="button"
                   accessibilityLabel="Cerrar"
                 >
                   <MaterialIcons name="close" size={22} color="#FFFFFF" />
@@ -264,6 +266,7 @@ export default function VisitasScreen() {
                               : '#E8F0FE',
                           },
                         ]}
+                        accessibilityRole="link"
                         onPress={() => {
                           const url = selected.mapa;
                           setSelected(null);

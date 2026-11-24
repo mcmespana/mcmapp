@@ -10,7 +10,6 @@ import {
   Linking,
   Image,
   ImageStyle,
-  TouchableOpacity,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { trackEvent } from '@/utils/analytics';
@@ -18,7 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
-import { useNavigation } from 'expo-router/react-navigation';
+import { useHeaderHeight, useNavigation } from 'expo-router/react-navigation';
 import { MaterialIcons } from '@/components/ui/icons';
 import { SvgXml } from 'react-native-svg';
 import { paintHeroSvg } from '@/utils/eventHeroSvg';
@@ -26,6 +25,7 @@ import { paintHeroSvg } from '@/utils/eventHeroSvg';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha, darkenHex, readableOn } from '@/utils/colorUtils';
 import { eventHeroColors } from '@/utils/tintInk';
+import { tintedGlyph } from '@/utils/tintColors';
 import { radii, shadows } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -160,6 +160,12 @@ export default function EventHomeScreen() {
   const stackIndex =
     (navigation.getState?.() as { index?: number } | undefined)?.index ?? 0;
   const isPushed = stackIndex > 0;
+  // Apilado (desde «Más» o «Eventos pasados») el header de iOS es TRANSPARENTE:
+  // el scroll empieza debajo de él y el hero quedaba tapado por la barra (el
+  // logo y la campana, cortados arriba). Se reserva su altura a mano. En
+  // Android y web el header es opaco y ya ocupa su sitio.
+  const headerHeight = useHeaderHeight();
+  const topInset = isPushed && Platform.OS === 'ios' ? headerHeight : 0;
   // Esta pantalla es el tab "Visita Papa" cuando se abre como tab, pero
   // también se apila desde Más (Jubileo). Apilada NO se registra como scroller
   // del tab: el del tab es el de MasHomeScreen.
@@ -192,6 +198,7 @@ export default function EventHomeScreen() {
           styles.scrollContent,
           {
             padding: containerPadding,
+            paddingTop: containerPadding + topInset,
             rowGap: gap,
             paddingBottom: contentPaddingBottom,
           },
@@ -233,7 +240,7 @@ export default function EventHomeScreen() {
           ) : null}
 
           {/* Campana de suscripción (opt-in) — siempre en el hero. */}
-          <TouchableOpacity
+          <PressableFeedback
             style={[styles.bellButton, { backgroundColor: emblemBg }]}
             onPress={handleToggleSubscription}
             accessibilityRole="switch"
@@ -243,14 +250,14 @@ export default function EventHomeScreen() {
                 ? `Dejar de recibir avisos de ${event.title}`
                 : `Recibir avisos de ${event.title}`
             }
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
+            <PressableFeedback.Highlight />
             <MaterialIcons
               name={subscribed ? 'notifications-active' : 'notifications-none'}
               size={22}
               color={heroFg}
             />
-          </TouchableOpacity>
+          </PressableFeedback>
         </LinearGradient>
 
         {/* ── Encuestas activas del evento (banner automático) ── */}
@@ -336,6 +343,13 @@ function SectionCard({
   onPress: () => void;
 }) {
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
+  // Glifo legible sobre su pastilla teñida (design.md §5): el celeste de
+  // Materiales o el amarillo de un evento, a su color puro, no se leían.
+  const glyph = tintedGlyph(
+    section.tintColor,
+    themeColors(isDark).background,
+    '18',
+  );
   const sectionSlug = section.firebaseKey ?? section.target ?? section.label;
   // Sin `firebaseKey` esta sección no vive en Firebase: no hay nada que mirar
   // y `hidden` es siempre false. Se pasa `null` en vez de un path inventado.
@@ -381,17 +395,12 @@ function SectionCard({
       <PressableFeedback.Highlight />
 
       <View style={styles.cardBody}>
-        <View
-          style={[
-            styles.iconCircle,
-            { backgroundColor: hexAlpha(section.tintColor, '18') },
-          ]}
-        >
+        <View style={[styles.iconCircle, { backgroundColor: glyph.fill }]}>
           {section.materialIcon ? (
             <MaterialIcons
               name={section.materialIcon}
               size={26}
-              color={section.tintColor}
+              color={glyph.glyph}
             />
           ) : (
             <Text style={styles.emoji}>{section.emoji}</Text>
@@ -409,7 +418,7 @@ function SectionCard({
           <Text
             style={[
               styles.cardSubtitle,
-              { color: isDark ? '#8E8E93' : '#6B7280' },
+              { color: themeColors(isDark).textSecondary },
             ]}
             numberOfLines={2}
           >
@@ -417,20 +426,16 @@ function SectionCard({
           </Text>
         )}
 
-        {section.materialIcon && (
-          <View
-            style={[
-              styles.arrowPill,
-              { backgroundColor: hexAlpha(section.tintColor, '15') },
-            ]}
-          >
-            <MaterialIcons
-              name={section.materialIcon}
-              size={14}
-              color={section.tintColor}
-            />
-          </View>
-        )}
+        {/* Indica que la tarjeta lleva a otro sitio: chevron si abre una
+            sección, flecha de salida si es un enlace externo (antes repetía
+            en pequeño el mismo icono de la sección, que no decía nada). */}
+        <View style={styles.arrowPill}>
+          <MaterialIcons
+            name={section.url ? 'open-in-new' : 'chevron-right'}
+            size={section.url ? 16 : 20}
+            color={themeColors(isDark).textMuted}
+          />
+        </View>
       </View>
     </PressableFeedback>
   );
@@ -557,9 +562,10 @@ const createStyles = (isDark: boolean) =>
       position: 'absolute',
       top: spacing.md,
       right: spacing.md,
-      width: 40,
-      height: 40,
+      width: 44,
+      height: 44,
       borderRadius: radii.xl,
+      overflow: 'hidden',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -644,7 +650,7 @@ const createStyles = (isDark: boolean) =>
       maxWidth: 1100,
     },
     card: {
-      borderRadius: radii.xl,
+      borderRadius: radii.lg,
       overflow: 'hidden',
     },
     cardBody: {

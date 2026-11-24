@@ -77,7 +77,16 @@ export default function DateSelector({
     const weekday = date ? WEEKDAYS[date.getDay()] : '';
     const selected = item.fecha === selectedDate;
     return (
-      <PressableFeedback onPress={() => onSelectDate(item.fecha, index)}>
+      <PressableFeedback
+        onPress={() => onSelectDate(item.fecha, index)}
+        // Sin nombre ni estado, el lector de pantalla leía tres textos
+        // sueltos («7», «junio», «domingo») y no decía cuál está elegido.
+        accessibilityRole="button"
+        accessibilityLabel={
+          date ? `${weekday} ${dayNum} de ${month}` : String(item.fecha)
+        }
+        accessibilityState={{ selected }}
+      >
         <PressableFeedback.Scale />
         <View style={[styles.item, selected && styles.itemSelected]}>
           <Text

@@ -210,10 +210,19 @@ export const eventScreenOptions =
           : { headerBackButtonDisplayMode: 'minimal' as const }),
       };
     }
+    // iOS: la barra es de cristal y se adapta al tema, así que el texto va con
+    // el rol del tema (antes era #1a1a1a fijo: invisible en modo oscuro).
+    const barText = isIOS ? themeColors(!!theme?.dark).headerTint : textColor;
     return {
       title,
       headerStyle: getHeaderStyle(tint),
-      headerTintColor: textColor,
+      headerTintColor: barText,
+      // El stack pone `headerTransparent` en iOS (para las pantallas con hero
+      // propio). Estas pantallas NO reservan la altura de la barra (Material,
+      // Comida, el visor web…): con la barra transparente su contenido
+      // empezaba debajo de ella y salía cortado arriba. Barra de cristal, pero
+      // ocupando su sitio.
+      ...(isIOS ? { headerTransparent: false } : {}),
       // Quita la sombra pesada bajo la barra de color (coherente con el
       // cantoral). En web/android `shadowOpacity`/`elevation` del headerStyle
       // no bastan: la sombra se controla con esta prop.
@@ -221,7 +230,7 @@ export const eventScreenOptions =
       headerTitleStyle: {
         fontWeight: '700' as const,
         fontSize: 18,
-        color: textColor,
+        color: barText,
       },
       headerBackground: () =>
         isIOS ? <GlassHeader tintColor={tint} /> : undefined,
