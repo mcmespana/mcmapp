@@ -138,8 +138,12 @@ export default function VisitaPapaLayout() {
           }
           showCompartiendo={activeSlug !== EVENT_SLUGS.Reflexiones}
           showAdd={activeSlug === EVENT_SLUGS.Reflexiones}
+          // `navigate`, no `push`: el «+» solo sale ya en Reflexiones y
+          // `push` apilaría OTRA Reflexiones que nace con ese nonce como
+          // «ya visto» y no abre el formulario. `navigate` le cambia el
+          // parámetro a la que está abierta.
           onAdd={() =>
-            router.push(
+            router.navigate(
               eventHref(VISITAPAPA_BASE, 'Reflexiones', {
                 eventId: EVENT_ID,
                 openFormNonce: Date.now(),

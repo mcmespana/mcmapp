@@ -418,7 +418,7 @@ Documentar NO:
 
 ## HeroUI Native — UI Library
 
-La app usa **heroui-native v1.0.x** (ver `package.json`) (reemplaza react-native-paper desde marzo 2026). Es una biblioteca de componentes React Native construida sobre **Uniwind** (Tailwind CSS v4 para RN).
+La app usa **heroui-native v1.1.x** (ver `package.json`) (reemplaza react-native-paper desde marzo 2026). Es una biblioteca de componentes React Native construida sobre **Uniwind** (Tailwind CSS v4 para RN).
 
 > Para consultar la API de un componente de HeroUI Native, usa el servidor MCP
 > `heroui-native` (ver «MCP Server» más abajo). No hay docs locales versionadas
@@ -499,6 +499,23 @@ toast.show({
   <TextField.Description>Ayuda</TextField.Description>
 </TextField>
 ```
+
+**BottomSheet** (desde la 1.1 es nativo: `@lodev09/react-native-true-sheet`,
+se maneja por ref; ya no hay `isOpen`, `Portal` ni `Overlay`). Solo lo usa
+`ReflexionesScreen`; el resto de hojas son `components/BottomSheet.tsx`:
+
+```tsx
+const sheetRef = useRef<BottomSheetRef>(null);
+sheetRef.current?.present(); // y .dismiss()
+<BottomSheet ref={sheetRef} onDidDismiss={...}>
+  <BottomSheet.Content>…</BottomSheet.Content>
+</BottomSheet>
+```
+
+> ⚠️ En web las clases BEM de heroui (`bottom-sheet__content`…) no llegan a
+> aplicarse: el padding de la hoja va por `style`. Y heroui 1.1.1 necesita
+> `patches/heroui-native+1.1.1.patch` para no tumbar la web (ver el test
+> `herouiWebPlatformConstants`).
 
 **Accordion** (custom en esta app — ver ProfundizaScreen.tsx):
 

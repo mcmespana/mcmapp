@@ -174,8 +174,12 @@ export default function MasLayout() {
           }
           showCompartiendo={activeSlug !== EVENT_SLUGS.Reflexiones}
           showAdd={activeSlug === EVENT_SLUGS.Reflexiones}
+          // `navigate`, no `push`: el «+» solo sale ya en Reflexiones y
+          // `push` apilaría OTRA Reflexiones que nace con ese nonce como
+          // «ya visto» y no abre el formulario. `navigate` le cambia el
+          // parámetro a la que está abierta.
           onAdd={() =>
-            router.push(
+            router.navigate(
               eventHref(MAS_BASE, 'Reflexiones', {
                 eventId: activeEventId,
                 openFormNonce: Date.now(),

@@ -49,7 +49,6 @@ jest.mock('@expo/vector-icons/MaterialIcons', () => {
   C.displayName = 'MaterialIcons';
   return { __esModule: true, default: C };
 });
-jest.mock('@gorhom/bottom-sheet', () => require('@gorhom/bottom-sheet/mock'));
 // Las filas deslizables de gesture-handler 3 no arrancan con el mock de
 // worklets de Jest (`sharedValue.addListener is not a function` en su
 // `useJSResponderHandler`). Aquí se prueba la navegación, no el gesto: la

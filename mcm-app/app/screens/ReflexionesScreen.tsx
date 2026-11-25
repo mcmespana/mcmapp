@@ -1,9 +1,16 @@
 import { logger } from '@/utils/logger';
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
+  type ScrollViewInstance,
   FlatList,
   Platform,
   Text,
@@ -14,7 +21,7 @@ import * as Clipboard from 'expo-clipboard';
 import { MaterialIcons } from '@/components/ui/icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, RouteProp } from 'expo-router/react-navigation';
-import { Spinner, BottomSheet } from 'heroui-native';
+import { Spinner, BottomSheet, type BottomSheetRef } from 'heroui-native';
 // Toast de la app (mismo API que el de heroui) — el resto del repo usa este.
 import { useToast } from '@/contexts/AppToastContext';
 import { shareText } from '@/utils/shareText';
@@ -184,6 +191,23 @@ export default function ReflexionesScreen() {
   }, [justPublished, remoteList]);
 
   const [showForm, setShowForm] = useState(false);
+  // Desde heroui-native 1.1 el BottomSheet es nativo (TrueSheet) y se maneja
+  // por ref (`present()` / `dismiss()`), no con `isOpen`. `showForm` sigue
+  // siendo la fuente de verdad; este efecto la traslada a la hoja y
+  // `onDidDismiss` la devuelve cuando la cierran arrastrando o tocando fuera.
+  const formSheetRef = useRef<BottomSheetRef>(null);
+  const formScrollRef = useRef<ScrollViewInstance>(null);
+  // Si la hoja está presentada (lo marca `present()` y lo borra `onDidDismiss`),
+  // para no llamar a `dismiss()` sobre una hoja cerrada (TrueSheet avisa).
+  const formSheetOpenRef = useRef(false);
+  useEffect(() => {
+    const sheet = formSheetRef.current;
+    if (!sheet || showForm === formSheetOpenRef.current) return;
+    formSheetOpenRef.current = showForm;
+    (showForm ? sheet.present() : sheet.dismiss()).catch((e) =>
+      logger.warn('Hoja de reflexión: no se pudo abrir/cerrar', e),
+    );
+  }, [showForm]);
   const [titulo, setTitulo] = useState('');
   const [contenido, setContenido] = useState('');
   const [fecha, setFecha] = useState(new Date());
@@ -435,118 +459,112 @@ export default function ReflexionesScreen() {
 
       {/* Form bottom sheet */}
       <BottomSheet
-        isOpen={showForm}
-        onOpenChange={(open) => {
-          if (!open) setShowForm(false);
+        ref={formSheetRef}
+        scrollableRef={formScrollRef}
+        onDidDismiss={() => {
+          formSheetOpenRef.current = false;
+          setShowForm(false);
         }}
       >
-        <BottomSheet.Portal>
-          <BottomSheet.Overlay />
-          <BottomSheet.Content>
-            {/* Todo el contenido vive dentro de un único ScrollView con
-                padding en contentContainerStyle — patrón que sí funciona con
-                el BottomSheet de heroui (ver app/notifications.tsx). El
-                BottomSheet.Content no aplica padding propio. */}
-            <ScrollView
-              contentContainerStyle={styles.sheetScroll}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              <View style={styles.sheetHeader}>
-                <View style={styles.sheetIcon}>
-                  <MaterialIcons
-                    name="auto-stories"
-                    size={20}
-                    color={greenInk}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <BottomSheet.Title>Compartir reflexión</BottomSheet.Title>
-                  <Text style={styles.sheetSubtitle}>
-                    La tuya o la de tu grupo
-                  </Text>
-                </View>
+        <BottomSheet.Content style={styles.sheetContent}>
+          {/* Todo el contenido vive dentro de un único ScrollView, que se
+              pasa como `scrollableRef` para que la hoja coordine el scroll
+              con el arrastre y el teclado. El padding va en el ScrollView
+              (ver `sheetScroll`), no en BottomSheet.Content. */}
+          <ScrollView
+            ref={formScrollRef}
+            contentContainerStyle={styles.sheetScroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.sheetHeader}>
+              <View style={styles.sheetIcon}>
+                <MaterialIcons name="auto-stories" size={20} color={greenInk} />
               </View>
-
-              <View style={styles.field}>
-                <Text style={styles.inputLabel}>Título (opcional)</Text>
-                <AppTextField
-                  value={titulo}
-                  onChangeText={setTitulo}
-                  placeholder="Un título breve"
-                  accentColor={colors.green}
-                  accentWhenFilled
-                />
-              </View>
-
-              <View style={styles.field}>
-                <Text style={styles.inputLabel}>Compartiendo…</Text>
-                <AppTextField
-                  value={contenido}
-                  onChangeText={setContenido}
-                  placeholder="Escribe aquí lo que quieras"
-                  multiline
-                  accentColor={colors.green}
-                  accentWhenFilled
-                />
-              </View>
-
-              <Pressable
-                onPress={showDatePicker}
-                style={({ pressed }) => [
-                  styles.dateField,
-                  pressed && styles.pressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel="Elegir fecha"
-              >
-                <MaterialIcons name="event" size={20} color={greenInk} />
-                <Text style={styles.dateFieldLabel}>Fecha</Text>
-                <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={20}
-                  color={theme.icon}
-                />
-              </Pressable>
-
-              <View style={styles.field}>
-                <Text style={styles.inputLabel}>
-                  ¿Quién la envía? (opcional)
+              <View style={{ flex: 1 }}>
+                <BottomSheet.Title>Compartir reflexión</BottomSheet.Title>
+                <Text style={styles.sheetSubtitle}>
+                  La tuya o la de tu grupo
                 </Text>
-                <AppTextField
-                  value={autor}
-                  onChangeText={setAutor}
-                  placeholder="Cómo quieres firmar"
-                  accentColor={colors.green}
-                  accentWhenFilled
-                />
               </View>
+            </View>
 
-              <Pressable
-                onPress={addReflexion}
-                accessibilityRole="button"
-                accessibilityLabel="Guardar reflexión"
-                style={({ pressed }) => [
-                  styles.saveBtn,
-                  pressed && { opacity: 0.85 },
-                ]}
-              >
-                <MaterialIcons
-                  name="send"
-                  size={18}
-                  color={onColor(colors.green)}
-                />
-                <Text style={styles.saveBtnLabel}>Compartir</Text>
-              </Pressable>
-            </ScrollView>
-          </BottomSheet.Content>
-        </BottomSheet.Portal>
+            <View style={styles.field}>
+              <Text style={styles.inputLabel}>Título (opcional)</Text>
+              <AppTextField
+                value={titulo}
+                onChangeText={setTitulo}
+                placeholder="Un título breve"
+                accentColor={colors.green}
+                accentWhenFilled
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.inputLabel}>Compartiendo…</Text>
+              <AppTextField
+                value={contenido}
+                onChangeText={setContenido}
+                placeholder="Escribe aquí lo que quieras"
+                multiline
+                accentColor={colors.green}
+                accentWhenFilled
+              />
+            </View>
+
+            <Pressable
+              onPress={showDatePicker}
+              style={({ pressed }) => [
+                styles.dateField,
+                pressed && styles.pressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Elegir fecha"
+            >
+              <MaterialIcons name="event" size={20} color={greenInk} />
+              <Text style={styles.dateFieldLabel}>Fecha</Text>
+              <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color={theme.icon}
+              />
+            </Pressable>
+
+            <View style={styles.field}>
+              <Text style={styles.inputLabel}>¿Quién la envía? (opcional)</Text>
+              <AppTextField
+                value={autor}
+                onChangeText={setAutor}
+                placeholder="Cómo quieres firmar"
+                accentColor={colors.green}
+                accentWhenFilled
+              />
+            </View>
+
+            <Pressable
+              onPress={addReflexion}
+              accessibilityRole="button"
+              accessibilityLabel="Guardar reflexión"
+              style={({ pressed }) => [
+                styles.saveBtn,
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <MaterialIcons
+                name="send"
+                size={18}
+                color={onColor(colors.green)}
+              />
+              <Text style={styles.saveBtnLabel}>Compartir</Text>
+            </Pressable>
+          </ScrollView>
+        </BottomSheet.Content>
       </BottomSheet>
 
       {/* Date selector — modal centrado que aparece por encima de todo
           (incluido el bottom sheet). Antes se usaba el Dialog de heroui, que
-          al anidarse con el portal del BottomSheet dejaba escapar el spinner
+          al anidarse con el portal del antiguo BottomSheet dejaba escapar el spinner
           nativo a la esquina superior. Un Modal nativo de RN se presenta de
           forma fiable centrado sobre el resto de la UI. */}
       <Modal
@@ -641,12 +659,15 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   const onGreen = onColor(colors.green);
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    // El padding del contenido del bottom sheet va aquí (en el ScrollView),
-    // no en BottomSheet.Content — que no aplica padding propio. Sin esto las
-    // etiquetas se recortaban por la izquierda.
+    // El padding de la hoja va aquí y no en BottomSheet.Content: el de heroui
+    // es una clase de Uniwind que en web no llega a aplicarse (la hoja salía
+    // pegada a los bordes), así que se anula y se pone a mano para que se vea
+    // igual en todas partes. Arriba deja sitio al tirador, que en Android se
+    // pinta ENCIMA del contenido (heroui reserva 32 px ahí y 20 en el resto).
+    sheetContent: { padding: 0 },
     sheetScroll: {
       paddingHorizontal: spacing.lg,
-      paddingTop: spacing.sm,
+      paddingTop: Platform.OS === 'android' ? 32 : 20,
       paddingBottom: spacing.xl,
     },
     list: { padding: spacing.md, paddingTop: spacing.sm },

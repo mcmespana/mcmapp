@@ -1,0 +1,26 @@
+diff --git a/node_modules/heroui-native/lib/module/components/scroll-shadow/scroll-shadow.constants.js b/node_modules/heroui-native/lib/module/components/scroll-shadow/scroll-shadow.constants.js
+index 4f47a82..68b28e8 100644
+--- a/node_modules/heroui-native/lib/module/components/scroll-shadow/scroll-shadow.constants.js
++++ b/node_modules/heroui-native/lib/module/components/scroll-shadow/scroll-shadow.constants.js
+@@ -36,6 +36,6 @@ export const DEFAULT_SCROLL_EVENT_THROTTLE = 16;
+ const {
+   major: RN_MAJOR = 0,
+   minor: RN_MINOR = 0
+-} = Platform.constants.reactNativeVersion ?? {};
++} = Platform.constants?.reactNativeVersion ?? {};
+ export const BACKGROUND_IMAGE_STYLE_KEY = RN_MAJOR > 0 || RN_MINOR >= 87 ? 'backgroundImage' : 'experimental_backgroundImage';
+ //# sourceMappingURL=scroll-shadow.constants.js.map
+\ No newline at end of file
+diff --git a/node_modules/heroui-native/src/components/scroll-shadow/scroll-shadow.constants.ts b/node_modules/heroui-native/src/components/scroll-shadow/scroll-shadow.constants.ts
+index ddbeb76..2492cec 100644
+--- a/node_modules/heroui-native/src/components/scroll-shadow/scroll-shadow.constants.ts
++++ b/node_modules/heroui-native/src/components/scroll-shadow/scroll-shadow.constants.ts
+@@ -32,7 +32,7 @@ export const DEFAULT_SCROLL_EVENT_THROTTLE = 16;
+  * @see https://reactnative.dev/docs/view-style-props#backgroundimage
+  */
+ const { major: RN_MAJOR = 0, minor: RN_MINOR = 0 } =
+-  Platform.constants.reactNativeVersion ?? {};
++  Platform.constants?.reactNativeVersion ?? {};
+ 
+ export const BACKGROUND_IMAGE_STYLE_KEY =
+   RN_MAJOR > 0 || RN_MINOR >= 87

@@ -39,10 +39,6 @@ jest.mock('@expo/vector-icons/MaterialIcons', () => {
   return { __esModule: true, default: C };
 });
 jest.mock('../../styles/comunica.module.css', () => ({}));
-// La hoja de Reflexiones (heroui → `@gorhom/bottom-sheet`) no cabe en el mock de
-// Reanimated (`layoutState.get is not a function`): se usa el mock oficial de
-// la librería. No es lo que se prueba aquí.
-jest.mock('@gorhom/bottom-sheet', () => require('@gorhom/bottom-sheet/mock'));
 jest.mock('react-native-webview', () => {
   const Local = require('react');
   return {
