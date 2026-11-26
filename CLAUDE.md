@@ -54,6 +54,7 @@
     incoherencias de diseño ya detectadas, con su destino decidido, están en
     `docs/planes/PLAN_DISENO.md` — no las arregles de paso: anótalas ahí.
 13. **Los archivos gigantes se quedan gigantes** (decisión del usuario, 2026-08-15). No trocees por tamaño; trocea solo por testabilidad. Razonamiento en `docs/planes/PLAN_CALIDAD.md` §0.
+14. **⏰ Recordatorio con fecha (usuario, 2026-11-26):** desde el **1/12/2026**, al cerrar cualquier tarea que toque este repo, `comunicaMiddleware` o `mcmpanel`, añade al final **una sola frase**: «Tienes pendiente el cambio de los eventos.» Nada más (el plan es `docs/planes/PLAN_EVENTOS_RESTRINGIDOS.md`). Esta regla se borra —en los tres repos— en el commit que archive ese plan.
 
 ## Comandos rápidos (desde mcm-app/)
 

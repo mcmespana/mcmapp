@@ -196,6 +196,12 @@ items.push({
 
 Listo. No hay que tocar ninguna sub-pantalla ni el stack de navegación.
 
+> **Próximamente — eventos restringidos a los inscritos.** Hoy cualquier perfil
+> con el hueco `visitapapa` ve el evento activo. El plan para que solo lo vean (o
+> solo lo abran) los inscritos, con `_meta.access`, está en
+> [`../planes/PLAN_EVENTOS_RESTRINGIDOS.md`](../planes/PLAN_EVENTOS_RESTRINGIDOS.md),
+> sin empezar.
+
 ## Evento en curso: el tab y la Home
 
 Un evento solo se **destaca** (tab, botón de la Home, banner) si es el evento
