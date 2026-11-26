@@ -107,6 +107,7 @@ export default function EvaluacionScreen() {
       doneKey={evaluationDoneKey(event.id)}
       onSubmit={handleSubmit}
       checkSubmitted={checkSubmitted}
+      underTabBar
     />
   );
 }

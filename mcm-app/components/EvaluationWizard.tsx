@@ -28,6 +28,7 @@ import { readableOn } from '@/utils/colorUtils';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { h } from '@/utils/haptics';
 import type { EvaluationConfig } from '@/constants/evaluation';
 import WelcomePhase from '@/components/evaluation/WelcomePhase';
@@ -52,6 +53,12 @@ interface EvaluationWizardProps {
    * devuelve true, se bloquea el reenvío. Debe ser estable (useCallback).
    */
   checkSubmitted?: () => Promise<boolean>;
+  /**
+   * La pantalla vive dentro de un tab (evaluación del evento): la barra
+   * flotante tapa el pie, así que el botón se sube lo que ocupa la barra. Las
+   * pantallas de ruta raíz (app, encuestas) no llevan barra y no lo pasan.
+   */
+  underTabBar?: boolean;
 }
 
 /**
@@ -66,9 +73,11 @@ export default function EvaluationWizard({
   doneKey,
   onSubmit,
   checkSubmitted,
+  underTabBar = false,
 }: EvaluationWizardProps) {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const tabBarClearance = useTabBarClearance();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
@@ -368,7 +377,14 @@ export default function EvaluationWizard({
         <View
           style={[
             styles.footer,
-            { paddingBottom: (keyboardVisible ? 0 : insets.bottom) + 14 },
+            {
+              paddingBottom:
+                (keyboardVisible
+                  ? 0
+                  : underTabBar
+                    ? Math.max(tabBarClearance, insets.bottom)
+                    : insets.bottom) + 14,
+            },
           ]}
         >
           {step < 0 ? (
