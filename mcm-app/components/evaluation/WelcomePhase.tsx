@@ -19,7 +19,8 @@ export default function WelcomePhase({
 }: {
   title?: string;
   intro?: string;
-  total: number;
+  /** Sin total (encuesta con rutas), solo se anuncia la duración. */
+  total?: number;
   accent: string;
   theme: (typeof Colors)['light'];
 }) {
@@ -58,7 +59,9 @@ export default function WelcomePhase({
         entering={FadeInUp.delay(280).duration(420)}
         style={[welcomeStyles.welcomeMeta, { color: theme.icon }]}
       >
-        {total} {total === 1 ? 'pregunta' : 'preguntas'} · 2 min
+        {total === undefined
+          ? 'Un par de minutos'
+          : `${total} ${total === 1 ? 'pregunta' : 'preguntas'} · 2 min`}
       </Animated.Text>
     </Animated.View>
   );

@@ -8,9 +8,9 @@ import EvaluationWizard, {
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import {
-  DEFAULT_EVENT_EVALUATION,
   EvaluationConfig,
   evaluationDoneKey,
+  getEventEvaluationDefault,
   mergeEvaluationConfig,
 } from '@/constants/evaluation';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -49,7 +49,10 @@ export default function EvaluacionScreen() {
     path,
     cacheKey,
   );
-  const config = mergeEvaluationConfig(DEFAULT_EVENT_EVALUATION, remoteConfig);
+  const config = mergeEvaluationConfig(
+    getEventEvaluationDefault(event.id),
+    remoteConfig,
+  );
 
   // El uid se saca a una variable ANTES de los callbacks a propósito: si se
   // usa `user?.uid` dentro, el React Compiler infiere `user` entero como
@@ -107,6 +110,7 @@ export default function EvaluacionScreen() {
       doneKey={evaluationDoneKey(event.id)}
       onSubmit={handleSubmit}
       checkSubmitted={checkSubmitted}
+      underTabBar
     />
   );
 }

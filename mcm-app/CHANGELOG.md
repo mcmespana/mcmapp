@@ -10,6 +10,21 @@
 - **Pantallas nuevas**: `comunica/gestion` (lista: hoy, próximos y pasados con «llegados/inscritos»), `comunica/gestion/[eventId]` (cifra grande con barra, buscador sin tildes y por trozos, agrupar por nombre, delegación, curso, papel o habitación, chips Todos/Faltan/Están/No vienen/Con nota, «Llega» con deshacer, marcar a varios) y `comunica/gestion/[eventId]/persona/[personId]` (llegada, nota, salud aparte, contacto de la persona y su familia, autorizaciones).
 - **Datos**: contrato copiado del middleware (`managedEvents`, `managedEvent`, `managedCheckins`, `managedCheckin`, `managedNote`, `managedPerson`, `managedHealth`); el evento y la ficha se guardan en el móvil, la salud nunca. Marcar y anotar van por la **cola** (kinds `checkin` y `checkin-note`, con la hora en que se marcó); con la pantalla abierta y la app delante, **sondeo cada 4,5 s** de `checkins?since=` para ver lo que marcan otros. Estas rutas no llevan la delegación de trabajo.
 - Servidor falso con un encuentro de ECE de ejemplo (gestionan `coordination` y `memberNoKids`) y mando `othersCheckIn`. La hoja de salud admite `eventId`. Iconos nuevos en `IconSymbol` (deshacer, nota, habitación, lista, check-in).
+## 2026-11-26 13:00 — Evaluación del Congreso M+C con dos rutas (Pre-monitores / Despierta)
+
+- **Evaluación propia del Congreso** (`CONGRESO_MC_EVALUATION`): 14 preguntas, cada persona ve 8 según conteste «¿En qué parte del Congreso has participado?». Pre-monitores: valoración 1-8, «con qué te quedas», «qué te ha faltado», formato preferido y MAT Consolación (verano de 2027). Despierta: expectativas 1-8, «¿valió la pena?» y hasta 3 momentos favoritos del horario. Las dos: aspectos prácticos y cierre opcional. Título «Evalúa el Congreso M+C».
+- **Wizard con tipos nuevos** (`EvalQuestion`): `showIf` (rutas condicionales), `section` (rótulo del bloque), `maxSelect` (tope en `multi`) y el tipo `ratings` (varias valoraciones de 1-5 estrellas en una pantalla, respuesta = objeto). Lógica pura y testeada en `constants/evaluation.ts` (`visibleQuestions`, `isQuestionAnswered`, `cleanAnswers`); también sirve a las encuestas genéricas. Contrato para el panel actualizado en `ENCUESTAS_CONTRATO.md` y copia de referencia en `firebase-seed/eventos/congresomc26-evaluacion.json`.
+- **Por evento:** `getEventEvaluationDefault(event.id)` (Home y pantalla); el resto de eventos conservan la genérica.
+- **Firebase:** `activities/congresomc26/evaluacion/data` lleva solo la programación (abre dom 29-nov 10:00, cierra mar 1-dic 00:00). Las preguntas salen del código: **necesita OTA a `production` antes del domingo 10:00.** Solo JS.
+
+## 2026-11-26 11:00 — Evaluación del Congreso: programada y solo para quien tiene la campanita
+
+- `DEFAULT_EVENT_EVALUATION` pasa a `status: 'scheduled'` con ventana: abre el dom 29-nov-2026 a las 10:00 y se oculta desde el mar 1-dic a las 00:00 (hora de Madrid). Lo que haya en `activities/<evento>/evaluacion/data` sigue mandando sobre esto.
+- El banner «Evalúa la actividad» de la Home solo sale si el evento tiene la campanita activa (`useEventSubscriptions().isSubscribed`). Entrar al evento la activa sola; quien la apaga no lo ve.
+
+## 2026-11-26 10:00 — Evaluación del evento: el botón ya no queda tapado por la barra
+
+- `EvaluationWizard` acepta `underTabBar`: la evaluación del evento (`EvaluacionScreen`, que vive dentro de un tab) sube el pie lo que ocupa la barra flotante. La evaluación de la app y las encuestas (ruta raíz, sin barra) no cambian. Solo JS.
 
 ## 2026-11-25 00:50 — Versión 2.6.0: dependencias al día, build de tienda y onboarding
 

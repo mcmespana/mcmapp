@@ -153,13 +153,17 @@ Tipo: `EvalQuestion` (`constants/evaluation.ts`).
 | Campo         | Tipo                      | Aplica a        | Notas |
 | ------------- | ------------------------- | --------------- | ----- |
 | `id`          | string                    | todas           | **Clave estable** en `answers`. No la cambies tras recibir respuestas. |
-| `type`        | string                    | todas           | `stars`\|`text`\|`yesno`\|`scale`\|`single`\|`multi` |
+| `type`        | string                    | todas           | `stars`\|`text`\|`yesno`\|`scale`\|`single`\|`multi`\|`ratings` |
 | `label`       | string                    | todas           | Enunciado. |
 | `optional`    | boolean                   | todas           | Falta o `false` = **obligatoria**. |
 | `placeholder` | string                    | `text`          | Texto guía del textarea. |
 | `min` / `max` | number                    | `scale`         | Por defecto 0 y 10. |
 | `minLabel` / `maxLabel` | string          | `scale`         | Etiquetas de los extremos. |
 | `options`     | `{value,label}[]`         | `single`,`multi`| **Obligatorio** para esos tipos. `value` es lo que se guarda. |
+| `maxSelect`   | number                    | `multi`         | Tope de opciones marcables (la app no deja pasar de ahí). Sin tope si falta. |
+| `items`       | `{value,label}[]`         | `ratings`       | **Obligatorio**. Cada elemento se valora de 1 a 5 estrellas, todos en la misma pantalla. `value` es la clave en la respuesta. |
+| `section`     | string                    | todas           | Rótulo de bloque que se enseña junto al contador («3 / 9 · Aspectos prácticos»). Solo presentación. |
+| `showIf`      | `{questionId, equals}`    | todas           | Rutas condicionales: la pregunta solo se enseña (y solo se guarda) si la pregunta `questionId` —que tiene que ir **antes**— está contestada con `equals` (string, o array de strings = cualquiera de ellos; si la respuesta es `multi`, basta con que incluya alguno). Una pregunta que cuelga de otra oculta tampoco se ve. |
 
 ### Cómo se guarda cada respuesta (`answers[id]`)
 
@@ -170,11 +174,15 @@ Tipo: `EvalQuestion` (`constants/evaluation.ts`).
 | `text`  | textarea multilínea (máx. 1000)      | `string` (trim; vacío = no se guarda) |
 | `yesno` | botones Sí / No                      | `boolean` |
 | `single`| lista radio                          | `string` (== `option.value`) |
-| `multi` | lista checkbox                       | `string[]` (`option.value`s; vacío = no se guarda) |
+| `multi` | lista checkbox                       | `string[]` (`option.value`s; vacío = no se guarda; máx. `maxSelect`) |
+| `ratings` | una fila de 5 estrellas por `item` | `{ [item.value]: number 1..5 }` (los elementos sin valorar o a 0 no aparecen) |
 
 > Reglas de limpieza al enviar: las preguntas `text` vacías y las `multi` sin
 > selección **no** se incluyen en `answers`. El resto de tipos contestados sí.
-> Las preguntas opcionales sin contestar no aparecen en `answers`.
+> Las preguntas opcionales sin contestar no aparecen en `answers`. **Las
+> preguntas de una ruta que no se hizo (por `showIf`) tampoco aparecen**: para
+> saber a qué ruta pertenece una respuesta, mira la pregunta de arranque (en el
+> Congreso, `answers.curso`).
 
 ### Validación de "obligatoria"
 
@@ -183,6 +191,7 @@ Tipo: `EvalQuestion` (`constants/evaluation.ts`).
 - `text`: contestada si tras `trim()` no está vacía.
 - `multi`: contestada si hay ≥ 1 opción.
 - `yesno` / `single`: contestada si hay valor.
+- `ratings`: contestada si **todos** los `items` tienen valoración > 0.
 
 ---
 

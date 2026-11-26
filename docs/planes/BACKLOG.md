@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-11-21 noche (repo `mcmespana/mcmcantoral` creado con toda la historia de `main` @ `d4338986`; el plan sigue vivo allí, §L). 2026-11-21 (plan del fork MCM Cantoral escrito, sin empezar, §L). 2026-11-16 (cuatro planes nuevos escritos, ninguno empezado: intercambios y piezas por asistencia del pañuelo, cantos para el domingo y Live Activities, §2.K; Live Activities en rama aparte; tanda «batiburrillo» mergeada en `main`). 2026-10-28 noche (área privada nativa: planes 06 y 07 hechos, 08 y 09 en marcha, sale con la 2.1 en modo alpha, §2.I). 2026-10-28 (paquetes del área privada nativa adelantados a la 2.1, §C.1). 2026-10-21 (área privada nativa: análisis, decisiones tomadas y pasarela sin espejo, §2.I; paquetes nativos a la 2.2, §C-bis). 2026-10-10 (hoja de canción: decisiones confirmadas, pantalla completa y etiquetas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
+> Última actualización: 2026-11-26 (plan de eventos restringidos a los inscritos escrito, sin empezar; **no antes del 1/12**, §M). 2026-11-21 noche (repo `mcmespana/mcmcantoral` creado con toda la historia de `main` @ `d4338986`; el plan sigue vivo allí, §L). 2026-11-21 (plan del fork MCM Cantoral escrito, sin empezar, §L). 2026-11-16 (cuatro planes nuevos escritos, ninguno empezado: intercambios y piezas por asistencia del pañuelo, cantos para el domingo y Live Activities, §2.K; Live Activities en rama aparte; tanda «batiburrillo» mergeada en `main`). 2026-10-28 noche (área privada nativa: planes 06 y 07 hechos, 08 y 09 en marcha, sale con la 2.1 en modo alpha, §2.I). 2026-10-28 (paquetes del área privada nativa adelantados a la 2.1, §C.1). 2026-10-21 (área privada nativa: análisis, decisiones tomadas y pasarela sin espejo, §2.I; paquetes nativos a la 2.2, §C-bis). 2026-10-10 (hoja de canción: decisiones confirmadas, pantalla completa y etiquetas, §2.H). 2026-10-09 (hoja de canción: Fase 1 en rama). 2026-10-08 (estado de la build 2.1: Sentry/Aptabase hechos, diseño verificado). 2026-09-26 (Carismochito hecho y archivado, escondido en el Laboratorio Alpha). 2026-09-24: UI Nativa Fase 2 en pausa. Antes, 2026-09-19 (pestaña de perfil descartada, §3; el plan
 > de widget pasa a ser **tres** widgets — hábitos, racha y evangelio del día).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
@@ -42,6 +42,7 @@
 | **⚠️ Roto y sin dueño**      | 🚨 **Android no muestra las notificaciones con categoría** desde el 2026-08-03: el Panel manda `channelId` y la app de `production` no tiene esos canales. **Decidido (2026-09-26): no se toca `production`, se arregla con la build 2.1** (`mcm-app/TODO.md`, Notificaciones)       |
 | **Después de la build**      | Integración D (UI Nativa Fase 2 **en pausa**; Carismochito ✅, ver §1)                                                                                                                                                                                                               |
 | **Fork MCM Cantoral (21/11)** | 🆕 Plan cerrado, **todas las decisiones contestadas**, en `main`. Sale en modo Navidad para Villancicos Solidarios (**sáb 19/12, Cuatro Esquinas**), **con wifi local** (hay router). **Maqueta A/B hecha** (<https://claude.ai/artifact/TBGfc98GLHTma1vhY1wqHa>); **repo `mcmespana/mcmcantoral` creado (21/11)** con toda la historia de `main` @ `d4338986`; siguiente: **Fase 0 allí** (la ejecuta Izan) y elegir estilo con Izan. Bugs del cantoral de MCM App **arreglados en `main` (21/11)**; Fase 1 de Navidad sin hacer (`mcm-app/TODO.md`). Detalle §L |
+| **Eventos restringidos (26/11)** | 📝 Plan escrito, **sin empezar; no se ejecuta antes del 1/12/2026** (el Congreso M+C ocupa el hueco del evento hasta el 29/11). Toca los tres repos (middleware, panel, app por OTA). Decisiones con recomendación. Detalle §M |
 | **Planes nuevos (16/11)** | En `main`: intercambios del pañuelo (hecho, falta pegar reglas y probar), cantos para el domingo (fases 1-4 hechas) y piezas por asistencia (plan). Live Activities, en su rama aparte. Detalle §K |
 | **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                                                                                           |
 | **Futuro lejano, sin prisa** | Widgets de Contigo (3: hábitos, racha, evangelio)                                                                                                                                                                                                                                   |
@@ -482,6 +483,26 @@ maestros, pedal).
   cantoral está vacía y los bloques de 2025 sin enlazar (`fork-cantoral/07`).
 - Cuando exista el repo del fork, esta carpeta se copia allí y el estado vivo
   pasa a ese repo; aquí queda el registro y lo que haya que portar (Fase 6).
+
+### M. Eventos restringidos a los inscritos (usuario, 26/11/2026)
+
+Plan: [`PLAN_EVENTOS_RESTRINGIDOS.md`](PLAN_EVENTOS_RESTRINGIDOS.md). El usuario quiere
+ejecutarlo **la semana del 1/12/2026**, no antes. Un evento marcado en el panel
+como «solo inscritos» se ve (modo **invisible**) o se puede abrir (modo **con
+aviso**) solo si la sesión de Comunica dice que la persona —o un hijo suyo— está
+inscrita en alguno de los eventos del CRM enlazados. Si hay cuenta de la app con
+el mismo correo, la app entra sola en Comunica.
+
+| Repo | Qué | Despliegue |
+| --- | --- | --- |
+| `comunicaMiddleware` | `GET /v1/me/event-access` + límite de `app-account` por cuenta (no por IP: la wifi de un encuentro) | Vercel, **primero** |
+| `mcmpanel` | Bloque «Acceso al evento» en Actividades (`activities/<id>/_meta.access`) | Vercel |
+| `mcmapp` | Estado de acceso, caché sin conexión, entrada automática, puerta en las pantallas de evento | OTA ✅ |
+
+🔒 Decisiones D1–D8 en el §5 del plan, todas con recomendación (se sigue la
+recomendada mientras no se conteste). **Recordatorio**: desde el 1/12, los
+`CLAUDE.md` de los tres repos piden avisar en una frase de que esto está
+pendiente; se quita al archivar el plan.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
