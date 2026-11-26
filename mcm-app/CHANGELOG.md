@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-26 23:15 — Reglas: nodo `/surveyReports` (informes públicos del panel)
+
+- **Firebase:** nodo nuevo `surveyReports/<slug>` que escribe el panel (pestaña «Informe» de Encuestas): una foto ya agregada de los resultados para enlaces públicos `/informe/<slug>` del panel. La app **no** lo usa. Reglas preparadas en `database.rules.json`: `$slug` legible por cualquiera, la raíz solo con `legacyPanelWrites` (no se lista). Tests en `databaseRules.test.ts`. Contrato: `mcmpanel/docs/INFORMES.md` y §10 de `ENCUESTAS_CONTRATO.md`.
+- El panel ya entiende `ratings`, `maxSelect`, `section` y `showIf`, y espeja las preguntas de evaluación que viven en código (Congreso M+C incluido). Sin cambios en la app.
+
 ## 2026-11-26 16:02 — Comunica: «Eventos que gestionas» (check-in de un evento desde la app)
 
 - **Nuevo (plan 18, `docs/planes/area-nativa/18-gestor-de-evento.md`)**: quien Comunica Tools nombra **gestor/a** de un evento (`Me.managesEvents`, sin necesidad de papel de equipo) ve en la portada del área «Eventos que gestionas» y hace el **check-in**: todos los inscritos del evento (de cualquier delegación), sus fichas, notas y quién ha llegado. Se guarda en el mismo sitio que el check-in de Comunica Tools (Supabase, por comunicaMiddleware): **nada va al CRM** y no es la asistencia por días de «Pasar lista en un evento».
