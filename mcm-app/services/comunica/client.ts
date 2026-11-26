@@ -100,6 +100,13 @@ import {
   type DocumentUploadFields,
   MonitorProfile,
   type MonitorProfileWrite,
+  type CheckinBody,
+  CheckinResult,
+  ManagedCheckins,
+  ManagedEventDetail,
+  ManagedEventsResponse,
+  ManagedPerson,
+  type NoteBody,
 } from './contract';
 import { logger } from '@/utils/logger';
 
@@ -297,6 +304,25 @@ export interface ComunicaApi {
     eventId: string,
     body: EventRollWrite,
   ): Promise<EventRollWriteResult>;
+  // Gestor de un evento (plan 18): el check-in de Comunica Tools. Sin papel
+  // de equipo y sin la delegación de trabajo: lo da el nombramiento.
+  getManagedEvents(opts?: ReadOptions): Promise<ManagedEventsResponse>;
+  getManagedEvent(
+    eventId: string,
+    opts?: ReadOptions,
+  ): Promise<ManagedEventDetail>;
+  /** Lo cambiado desde `since` (solo Supabase: barato, para el sondeo). */
+  getManagedCheckins(eventId: string, since: string): Promise<ManagedCheckins>;
+  /** Por la cola: sin `clientId` (marcar dos veces lo mismo deja lo mismo). */
+  checkinManaged(eventId: string, body: CheckinBody): Promise<CheckinResult>;
+  noteManaged(eventId: string, body: NoteBody): Promise<CheckinResult>;
+  getManagedPerson(
+    eventId: string,
+    personId: string,
+    opts?: ReadOptions,
+  ): Promise<ManagedPerson>;
+  /** Nunca se guarda: solo con conexión. */
+  getManagedHealth(eventId: string, personId: string): Promise<HealthNote>;
   // Avisos en el móvil (plan 08).
   registerDevice(body: DeviceRegistration): Promise<WriteResult>;
   /** Al salir: se borra este móvil (solo el tuyo). */
@@ -797,6 +823,58 @@ export function createHttpClient({
       ),
     saveEventRoll: (id, body) =>
       request('PUT', `/v1/events/${enc(id)}/roll`, EventRollWriteResult, body),
+    getManagedEvents: (opts) =>
+      request(
+        'GET',
+        `/v1/managed-events${q(opts)}`,
+        ManagedEventsResponse,
+        undefined,
+        READ_RETRIES,
+      ),
+    getManagedEvent: (id, opts) =>
+      request(
+        'GET',
+        `/v1/managed-events/${enc(id)}${q(opts)}`,
+        ManagedEventDetail,
+        undefined,
+        READ_RETRIES,
+      ),
+    // El sondeo no se reintenta: en unos segundos vuelve a preguntar.
+    getManagedCheckins: (id, since) =>
+      request(
+        'GET',
+        `/v1/managed-events/${enc(id)}/checkins?since=${enc(since)}`,
+        ManagedCheckins,
+      ),
+    checkinManaged: (id, body) =>
+      request(
+        'POST',
+        `/v1/managed-events/${enc(id)}/checkin`,
+        CheckinResult,
+        body,
+      ),
+    noteManaged: (id, body) =>
+      request(
+        'POST',
+        `/v1/managed-events/${enc(id)}/note`,
+        CheckinResult,
+        body,
+      ),
+    getManagedPerson: (id, pid, opts) =>
+      request(
+        'GET',
+        `/v1/managed-events/${enc(id)}/people/${enc(pid)}${q(opts)}`,
+        ManagedPerson,
+        undefined,
+        READ_RETRIES,
+      ),
+    // La salud no se reintenta ni se registra: o llega, o «sin conexión».
+    getManagedHealth: (id, pid) =>
+      request(
+        'GET',
+        `/v1/managed-events/${enc(id)}/people/${enc(pid)}/health`,
+        HealthNote,
+      ),
     // Por la cola (el alta) o directa con tope (el borrado, al salir).
     registerDevice: (body) => request('POST', '/v1/devices', WriteResult, body),
     unregisterDevice: async (deviceId) => {

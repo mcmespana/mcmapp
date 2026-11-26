@@ -62,7 +62,8 @@ export async function withWriteDelegation<T>(
 
 /**
  * Rutas que NO son de equipo (no llevan la cabecera): entrar, lo personal y el
- * móvil. Las de familias (`/v1/profiles/…`, planes 11-16) tampoco.
+ * móvil. Las de familias (`/v1/profiles/…`, planes 11-16) tampoco, ni las del
+ * gestor de un evento (plan 18): las da el nombramiento, no la delegación.
  */
 const PERSONAL = [
   /^\/v1\/auth\//,
@@ -70,6 +71,7 @@ const PERSONAL = [
   /^\/v1\/devices/,
   /^\/v1\/profiles\//,
   /^\/v1\/web-pass/,
+  /^\/v1\/managed-events/,
 ];
 
 export const isTeamPath = (path: string) =>

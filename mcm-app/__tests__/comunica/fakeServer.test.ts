@@ -98,7 +98,36 @@ describe('servidor falso', () => {
       amountCents: 3500,
       channel: 'sheet',
     });
+    // Gestor de un evento (plan 18): coordinación gestiona el encuentro.
+    const gestor = createFakeServer({
+      latencyMs: 0,
+      persona: 'coordination',
+    });
+    const managed = await gestor.getManagedEvent('f-ge-encuentro');
+    const managedReg = managed.registrations[0];
     const results: Record<keyof typeof ROUTES, unknown> = {
+      managedEvents: await gestor.getManagedEvents(),
+      managedEvent: managed,
+      managedCheckins: await gestor.getManagedCheckins(
+        'f-ge-encuentro',
+        managed.since,
+      ),
+      managedCheckin: await gestor.checkinManaged('f-ge-encuentro', {
+        registrationIds: [managedReg.registrationId],
+        to: 'in',
+      }),
+      managedNote: await gestor.noteManaged('f-ge-encuentro', {
+        registrationId: managedReg.registrationId,
+        note: 'Prueba',
+      }),
+      managedPerson: await gestor.getManagedPerson(
+        'f-ge-encuentro',
+        managedReg.personId,
+      ),
+      managedHealth: await gestor.getManagedHealth(
+        'f-ge-encuentro',
+        managedReg.personId,
+      ),
       myProfiles: await fam.getMyProfiles(),
       profileDetails: await fam.getProfileDetails(famId),
       updateProfileDetails: await fam.updateProfileDetails(famId, {

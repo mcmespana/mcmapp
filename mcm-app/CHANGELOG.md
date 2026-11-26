@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-26 16:02 — Comunica: «Eventos que gestionas» (check-in de un evento desde la app)
+
+- **Nuevo (plan 18, `docs/planes/area-nativa/18-gestor-de-evento.md`)**: quien Comunica Tools nombra **gestor/a** de un evento (`Me.managesEvents`, sin necesidad de papel de equipo) ve en la portada del área «Eventos que gestionas» y hace el **check-in**: todos los inscritos del evento (de cualquier delegación), sus fichas, notas y quién ha llegado. Se guarda en el mismo sitio que el check-in de Comunica Tools (Supabase, por comunicaMiddleware): **nada va al CRM** y no es la asistencia por días de «Pasar lista en un evento».
+- **Pantallas nuevas**: `comunica/gestion` (lista: hoy, próximos y pasados con «llegados/inscritos»), `comunica/gestion/[eventId]` (cifra grande con barra, buscador sin tildes y por trozos, agrupar por nombre, delegación, curso, papel o habitación, chips Todos/Faltan/Están/No vienen/Con nota, «Llega» con deshacer, marcar a varios) y `comunica/gestion/[eventId]/persona/[personId]` (llegada, nota, salud aparte, contacto de la persona y su familia, autorizaciones).
+- **Datos**: contrato copiado del middleware (`managedEvents`, `managedEvent`, `managedCheckins`, `managedCheckin`, `managedNote`, `managedPerson`, `managedHealth`); el evento y la ficha se guardan en el móvil, la salud nunca. Marcar y anotar van por la **cola** (kinds `checkin` y `checkin-note`, con la hora en que se marcó); con la pantalla abierta y la app delante, **sondeo cada 4,5 s** de `checkins?since=` para ver lo que marcan otros. Estas rutas no llevan la delegación de trabajo.
+- Servidor falso con un encuentro de ECE de ejemplo (gestionan `coordination` y `memberNoKids`) y mando `othersCheckIn`. La hoja de salud admite `eventId`. Iconos nuevos en `IconSymbol` (deshacer, nota, habitación, lista, check-in).
 ## 2026-11-26 13:00 — Evaluación del Congreso M+C con dos rutas (Pre-monitores / Despierta)
 
 - **Evaluación propia del Congreso** (`CONGRESO_MC_EVALUATION`): 14 preguntas, cada persona ve 8 según conteste «¿En qué parte del Congreso has participado?». Pre-monitores: valoración 1-8, «con qué te quedas», «qué te ha faltado», formato preferido y MAT Consolación (verano de 2027). Despierta: expectativas 1-8, «¿valió la pena?» y hasta 3 momentos favoritos del horario. Las dos: aspectos prácticos y cierre opcional. Título «Evalúa el Congreso M+C».

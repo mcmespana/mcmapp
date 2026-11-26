@@ -6,7 +6,8 @@
 //
 //   1. «Pasar lista» y la fecha del atajo (o el curso).
 //   2. La cola del móvil: listas guardadas que aún no han subido.
-//   3. Los eventos que empiezan o acaban hoy.
+//   3. Los eventos que empiezan o acaban hoy y, a quien es gestor/a de un
+//      evento (plan 18), «Eventos que gestionas».
 //   4. El atajo: tu grupo y su sesión.
 //   5. «Te faltan N listas» y, a quien es monitor y lo eligió manual, el
 //      aviso del certificado de delitos sexuales (plan 09).
@@ -85,6 +86,7 @@ import { useComunicaTheme } from '../comun/useComunicaTheme';
 import { noticeFor } from './RollScreen';
 import HomeCertificateAlert from '../yo/HomeCertificateAlert';
 import MemberHome from '../inicio/MemberHome';
+import ManagedHomeEntry from '../gestor/ManagedHomeEntry';
 
 /** Listas que se precargan como mucho. */
 const PREFETCH_MAX = 5;
@@ -349,6 +351,9 @@ function HomeContent({
       {homeEvents.map((c) => (
         <TodayEventCard key={c.event.id} item={c} />
       ))}
+
+      {/* Plan 18: el check-in de los eventos que te ha encargado Comunica Tools. */}
+      <ManagedHomeEntry />
 
       {shortcut ? (
         <FeaturedRecordCard

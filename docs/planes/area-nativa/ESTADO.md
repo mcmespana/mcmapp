@@ -5,6 +5,13 @@
 > [`decisiones/`](decisiones/README.md) (todas contestadas). Este documento es
 > la revisión del código del 23-24/10 y la lista de lo que falta, en orden.
 
+## ⭐ 26/11/2026: «Eventos que gestionas» (plan 18)
+
+El gestor de un evento (lo nombra Comunica Tools) hace el check-in desde la app: todos los inscritos del evento, sus
+fichas, notas y quién ha llegado, en el mismo sitio que Comunica Tools (nada al CRM). Hecho contra el servidor falso en
+[`18-gestor-de-evento.md`](18-gestor-de-evento.md). **Falta**: el servidor real (la migración
+`20261126_alojamientos_y_gestores` de Comunica Tools está sin aplicar) y verlo en un móvil.
+
 ## ⭐ 14/11/2026: la nativa pasa a ser el área de TODOS (lanzamiento)
 
 Decisión del propietario: el área nativa es la de todo el mundo y el plugin queda **solo para la web**

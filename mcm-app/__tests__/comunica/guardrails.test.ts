@@ -64,7 +64,10 @@ describe('guardarraíles del área nativa', () => {
     const users = appFiles
       .filter((f) => /^(app|components)\//.test(rel(f)))
       .filter((f) =>
-        /\buseHealth\(|\.getHealth\(/.test(fs.readFileSync(f, 'utf8')),
+        // También la del gestor de un evento (plan 18).
+        /\buse(Managed)?Health\(|\.get(Managed)?Health\(/.test(
+          fs.readFileSync(f, 'utf8'),
+        ),
       )
       .map(rel)
       .sort();
