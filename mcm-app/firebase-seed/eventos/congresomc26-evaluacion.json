@@ -1,0 +1,90 @@
+{
+  "updatedAt": 1795710134260,
+  "data": {
+    "status": "scheduled",
+    "opensAt": 1795942800000,
+    "closesAt": 1796079600000,
+    "title": "Evalúa el Congreso M+C",
+    "intro": "Cuéntanos qué tal ha ido el Congreso y el Curso Despierta. Tu opinión nos ayuda a preparar los próximos. Son un par de minutos 🙏",
+    "thanksTitle": "¡Gracias!",
+    "thanksBody": "Tu opinión nos ayuda a seguir despertando evangelizadores 🧡",
+    "closedTitle": "La evaluación ya está cerrada",
+    "closedBody": "Gracias por haber vivido el Congreso con nosotros.",
+    "questions": [
+      {
+        "id": "general",
+        "type": "stars",
+        "label": "Valoración general del Congreso"
+      },
+      {
+        "id": "participacion",
+        "type": "single",
+        "label": "¿En qué has participado?",
+        "optional": true,
+        "options": [
+          {
+            "value": "despierta",
+            "label": "Curso Despierta"
+          },
+          {
+            "value": "premonitores",
+            "label": "Formación de Pre-monitores"
+          },
+          {
+            "value": "otro",
+            "label": "Otra cosa / un poco de todo"
+          }
+        ]
+      },
+      {
+        "id": "formacion",
+        "type": "stars",
+        "label": "La formación (contenidos y dinámicas)",
+        "optional": true
+      },
+      {
+        "id": "organizacion",
+        "type": "stars",
+        "label": "Organización (horarios, espacios, información)",
+        "optional": true
+      },
+      {
+        "id": "convivencia",
+        "type": "stars",
+        "label": "Convivencia y ambiente",
+        "optional": true
+      },
+      {
+        "id": "recomendarias",
+        "type": "scale",
+        "label": "¿Cuánto recomendarías este congreso a alguien de tu grupo?",
+        "min": 0,
+        "max": 10,
+        "minLabel": "Nada",
+        "maxLabel": "Muchísimo",
+        "optional": true
+      },
+      {
+        "id": "gustado",
+        "type": "text",
+        "label": "¿Qué es lo que más te ha gustado?",
+        "placeholder": "Eso que te llevas de estos días…",
+        "optional": true
+      },
+      {
+        "id": "mejorar",
+        "type": "text",
+        "label": "¿Qué mejorarías?",
+        "placeholder": "Tus sugerencias, con cariño…",
+        "optional": true
+      },
+      {
+        "id": "comentarios",
+        "type": "text",
+        "label": "Comentarios",
+        "placeholder": "Cualquier otra cosa que quieras contarnos…",
+        "optional": true
+      }
+    ]
+  }
+}

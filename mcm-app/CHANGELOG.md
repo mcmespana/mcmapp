@@ -4,6 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-26 12:00 — Evaluación propia del Congreso M+C en Firebase
+
+- Escrito `activities/congresomc26/evaluacion` (9 preguntas propias del Congreso/Curso Despierta, `status: scheduled`, abre dom 29-nov 10:00, cierra mar 1-dic 00:00). Copia en `firebase-seed/eventos/congresomc26-evaluacion.json`. Sin OTA: la app lee las preguntas de Firebase.
+
 ## 2026-11-26 11:00 — Evaluación del Congreso: programada y solo para quien tiene la campanita
 
 - `DEFAULT_EVENT_EVALUATION` pasa a `status: 'scheduled'` con ventana: abre el dom 29-nov-2026 a las 10:00 y se oculta desde el mar 1-dic a las 00:00 (hora de Madrid). Lo que haya en `activities/<evento>/evaluacion/data` sigue mandando sobre esto.
