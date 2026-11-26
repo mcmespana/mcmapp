@@ -9,12 +9,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import {
-  PressableFeedback,
-  SearchField,
-  Skeleton,
-  useToast,
-} from 'heroui-native';
+import { PressableFeedback, Skeleton, useToast } from 'heroui-native';
 import { MaterialIcons } from '@/components/ui/icons';
 import PageContainer from '@/components/ui/PageContainer';
 import ContextMenuSheet from '@/components/ContextMenuSheet';
@@ -22,6 +17,8 @@ import { useContextMenu } from '@/hooks/useContextMenu';
 import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
 import EmptyState from '@/components/ui/EmptyState';
+import SearchBar from '@/components/grupos/SearchBar';
+import { createStyles as createGruposStyles } from '@/components/grupos/gruposStyles';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -149,6 +146,11 @@ export default function ContactosScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  // La misma caja de búsqueda que Grupos (pantalla vecina del evento).
+  const searchStyles = React.useMemo(
+    () => createGruposStyles(scheme),
+    [scheme],
+  );
   const bottomPadding = useTabBarPaddingBottom(24);
   const event = useCurrentEvent();
   const { data: contacts, loading } = useFirebaseData<Contacto[]>(
@@ -205,17 +207,14 @@ export default function ContactosScreen() {
         <ScreenHero title="Contactos" hideOnWeb floatingHeaderInset />
         {showSearch ? (
           <View style={styles.searchContainer}>
-            <SearchField value={query} onChange={setQuery}>
-              <SearchField.Group>
-                <SearchField.SearchIcon />
-                <SearchField.Input
-                  placeholder="Buscar contacto"
-                  autoCorrect={false}
-                  autoCapitalize="words"
-                />
-                <SearchField.ClearButton />
-              </SearchField.Group>
-            </SearchField>
+            <SearchBar
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Buscar contacto"
+              styles={searchStyles}
+              isDark={isDark}
+              autoCapitalize="words"
+            />
             {query.trim().length >= 2 ? (
               <Text style={styles.resultsMeta}>
                 {filtered.length} de {data?.length || 0}
@@ -227,6 +226,8 @@ export default function ContactosScreen() {
     ),
     [
       showSearch,
+      searchStyles,
+      isDark,
       styles.searchContainer,
       styles.resultsMeta,
       query,

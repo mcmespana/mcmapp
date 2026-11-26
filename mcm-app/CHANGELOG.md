@@ -4,6 +4,45 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-26 13:00 — Evaluación del Congreso M+C con dos rutas (Pre-monitores / Despierta)
+
+- **Evaluación propia del Congreso** (`CONGRESO_MC_EVALUATION`): 14 preguntas, cada persona ve 8 según conteste «¿En qué parte del Congreso has participado?». Pre-monitores: valoración 1-8, «con qué te quedas», «qué te ha faltado», formato preferido y MAT Consolación (verano de 2027). Despierta: expectativas 1-8, «¿valió la pena?» y hasta 3 momentos favoritos del horario. Las dos: aspectos prácticos y cierre opcional. Título «Evalúa el Congreso M+C».
+- **Wizard con tipos nuevos** (`EvalQuestion`): `showIf` (rutas condicionales), `section` (rótulo del bloque), `maxSelect` (tope en `multi`) y el tipo `ratings` (varias valoraciones de 1-5 estrellas en una pantalla, respuesta = objeto). Lógica pura y testeada en `constants/evaluation.ts` (`visibleQuestions`, `isQuestionAnswered`, `cleanAnswers`); también sirve a las encuestas genéricas. Contrato para el panel actualizado en `ENCUESTAS_CONTRATO.md` y copia de referencia en `firebase-seed/eventos/congresomc26-evaluacion.json`.
+- **Por evento:** `getEventEvaluationDefault(event.id)` (Home y pantalla); el resto de eventos conservan la genérica.
+- **Firebase:** `activities/congresomc26/evaluacion/data` lleva solo la programación (abre dom 29-nov 10:00, cierra mar 1-dic 00:00). Las preguntas salen del código: **necesita OTA a `production` antes del domingo 10:00.** Solo JS.
+
+## 2026-11-26 11:00 — Evaluación del Congreso: programada y solo para quien tiene la campanita
+
+- `DEFAULT_EVENT_EVALUATION` pasa a `status: 'scheduled'` con ventana: abre el dom 29-nov-2026 a las 10:00 y se oculta desde el mar 1-dic a las 00:00 (hora de Madrid). Lo que haya en `activities/<evento>/evaluacion/data` sigue mandando sobre esto.
+- El banner «Evalúa la actividad» de la Home solo sale si el evento tiene la campanita activa (`useEventSubscriptions().isSubscribed`). Entrar al evento la activa sola; quien la apaga no lo ve.
+
+## 2026-11-26 10:00 — Evaluación del evento: el botón ya no queda tapado por la barra
+
+- `EvaluationWizard` acepta `underTabBar`: la evaluación del evento (`EvaluacionScreen`, que vive dentro de un tab) sube el pie lo que ocupa la barra flotante. La evaluación de la app y las encuestas (ruta raíz, sin barra) no cambian. Solo JS.
+
+## 2026-11-25 00:50 — Versión 2.6.0: dependencias al día, build de tienda y onboarding
+
+- **`version` y `runtimeVersion` a 2.6.0** (`app.json`). Cambian módulos nativos, así que es build de tienda: las 2.5.x dejan de recibir OTA. Cuando la 2.6.0 esté aprobada en App Store y Play, subir la **versión mínima** del Panel a `2.6.0`. Commit con `[skip-ota]`.
+- **Dependencias:** todos los paquetes de Expo a lo último del SDK 58 (`expo` 58.0.26, `expo-router` 58.0.32, `expo-notifications` 58.1.9, `expo-web-browser` 58.1.0…), `react-native-safe-area-context` 5.11.1, `firebase` 13.4, `@tanstack/react-query` 5.108, `react-native-audio-api` 1.0.1, `react-native-nfc-manager` 4.3, `react-native-qrcode-svg`, `react-native-reorderable-list`, `tailwindcss` 4.3.5, `prettier` 3.10. **Se quedan a propósito:** `heroui-native` en 1.0.11 (la 1.1 rehace `BottomSheet` sobre un módulo nativo nuevo, `@lodev09/react-native-true-sheet`, y quita `Portal`/`Overlay`: son 10 pantallas que hay que migrar y probar en el móvil), y las mayores que el SDK 58 no admite o cambian la API (Google Sign-In 17, AsyncStorage 3, `expo-alternate-app-icons` 11, ESLint 10, Reanimated 4.8 / Worklets 0.14).
+- **Onboarding:**
+  - **«No soy del MCM»** en vez de «Otros» en «¿Quién eres?», con «Vienes a un encuentro, eres amigo del movimiento o solo quieres echar un vistazo»; el subtítulo dice «No hace falta ser del MCM». Por dentro sigue siendo `miembro` + `mcm-espana`.
+  - En teléfonos pequeños la **bienvenida cortaba el logo arriba** y en el paso de iniciar sesión **«Entrar sin iniciar sesión» se montaba sobre el botón de Apple**: las dos columnas hacen scroll si no caben (si caben, quedan igual).
+  - El «Continuar» de la localidad era rojo MIC con texto blanco (3,55:1, no llega a AA): ahora azul, como el resto de pasos.
+  - En web, el aviso «Añade esta app a tu pantalla de inicio» ya no sale durante el onboarding (tapaba el «Continuar»).
+
+## 2026-11-25 00:14 — Pantallas de evento: nada tapado arriba y repaso de accesibilidad
+
+- **iOS: Material, Comida y el visor web de Comida ya no salen cortados arriba.** El stack del evento pone `headerTransparent` en iOS (lo necesitan las pantallas con hero propio), y estas tres usan la barra de color con título sin reservar su altura: el título de cada página de Material quedaba debajo de la barra. La rama con título de `eventScreenOptions` fuerza `headerTransparent: false` en iOS. Su texto, además, sigue el tema (era `#1a1a1a` fijo: invisible en modo oscuro).
+- **iOS: el hub del evento abierto desde «Más» o «Eventos pasados»** reserva la altura de la cabecera transparente (`useHeaderHeight`): el logo y la campana quedaban bajo la barra.
+- **Los botones flotantes del evento (Compartiendo + Ajustes) ya no tapan la ✕ de la Evaluación** ni el «abrir fuera» del visor web: los layouts usan `EVENT_ACTION_SLUGS` (`utils/eventRoutes.ts`) en vez de todas las sub-pantallas. El icono «abrir fuera» era blanco fijo (invisible en iOS claro).
+- **Grupos: el «Atrás» del sistema sube un nivel** (grupo → categoría → Grupos) en vez de sacarte de la pantalla (`usePreventRemove`).
+- **Apps:** decía «Para el Jubileo» en cualquier evento; la fila era un botón con otro botón dentro (HTML inválido en web, error en rojo); la última app quedaba bajo la barra de pestañas.
+- **Contactos:** la caja de búsqueda es la de Grupos (`components/grupos/SearchBar`); el `SearchField` de heroui salía sin caja en web.
+- **Eventos pasados:** la cabecera es la de «Más» (heredaba la barra gris `#78909C` en Android y web) y el final del scroll respeta la barra flotante.
+- Hub: las tarjetas llevan un chevron (o «abrir fuera» si son un enlace) en vez de repetir su icono en pequeño; iconos de sección con `tintedGlyph`; campana de 44 pt con `PressableFeedback`.
+- Accesibilidad (pasada con las skills de `.agents/skills`): días del `DateSelector` con nombre y estado elegido, acordeón de Profundiza con `expanded`, botones de mapa de Visitas con rol; el temblor/latido del último día del Horario se para con «reducir movimiento» y cuando la pantalla no está a la vista.
+- Test guardarraíl: `__tests__/eventHeaderOverlap.test.ts`.
+
 ## 2026-11-22 09:16 — Onboarding: se puede saltar desde la bienvenida y la OTA ya no lo interrumpe
 
 - **La OTA espera al onboarding.** Una actualización que quedaba lista con alguien a mitad del onboarding recargaba la app con el «un momentín» y le borraba lo elegido (perfil, localidad): volvía a la bienvenida. Ahora `OTAContext` admite retenciones (`holdAutoApply` / hook `useHoldOTAAutoApply`): el onboarding retiene en cuanto se pasa de la bienvenida, y al terminarlo o saltarlo la OTA pendiente se aplica (`trigger: 'released'` en `utils/otaAutoApply.ts`, aunque ya no esté «recién abierta»; el cortafuegos anti-bucle sigue). En la bienvenida no se retiene: no hay nada que perder. **Ojo:** el primer arranque tras instalar ejecuta el JS de la build de tienda, así que esto solo cubre ese caso a partir de la **próxima build nativa**.

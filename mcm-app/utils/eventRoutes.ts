@@ -111,6 +111,16 @@ export function eventHref(
 /** Trozos de ruta de las sub-pantallas de evento (todo menos el hub). */
 export const EVENT_SUB_SLUGS: readonly string[] = Object.values(EVENT_SLUGS);
 
+/**
+ * Sub-pantallas que llevan los botones flotantes del evento (Compartiendo +
+ * Ajustes, arriba a la derecha). Fuera: la Evaluación, que va sin cabecera y
+ * tiene su propia X de cerrar justo ahí (los botones la tapaban), y el visor
+ * web de Comida, que pone en la cabecera su botón de «abrir fuera».
+ */
+export const EVENT_ACTION_SLUGS: readonly string[] = EVENT_SUB_SLUGS.filter(
+  (slug) => slug !== EVENT_SLUGS.Evaluacion && slug !== EVENT_SLUGS.ComidaWeb,
+);
+
 /** Último trozo de una ruta (`/mas/horario?x=1` → `horario`). */
 export function lastSegment(pathname: string): string {
   const clean = pathname.split(/[?#]/)[0].replace(/\/+$/, '');

@@ -6,14 +6,16 @@ interface SearchBarProps {
   value: string;
   onChangeText: (text: string) => void;
   placeholder: string;
-  styles: GruposStyles;
+  /** Solo usa `searchBar` y `searchInput` (Grupos y Contactos). */
+  styles: Pick<GruposStyles, 'searchBar' | 'searchInput'>;
   isDark: boolean;
   autoCapitalize?: 'none' | 'words' | 'sentences' | 'characters';
 }
 
 // Barra de búsqueda propia (TextInput) en vez del SearchField de heroui:
 // garantiza texto blanco legible en modo oscuro y un alto cómodo idéntico en
-// iOS y Android. Extraído de GruposScreen.
+// iOS y Android (y en web, donde el SearchField de heroui salía sin caja).
+// Extraído de GruposScreen; lo usa también ContactosScreen.
 export default function SearchBar({
   value,
   onChangeText,

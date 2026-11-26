@@ -9,14 +9,15 @@ import {
   useNavigation,
   RouteProp,
 } from 'expo-router/react-navigation';
-import { MasStackParamList } from './eventStackScreens';
+import { MasStackParamList, getTextColor } from './eventStackScreens';
 import spacing from '@/constants/spacing';
-import { Colors as ThemeColors } from '@/constants/colors';
+import { Colors as ThemeColors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 // Usando el mismo CSS que funcionó en comunica.tsx
 import iframeStyles from '../../styles/comunica.module.css';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 type Route = RouteProp<MasStackParamList, 'ComidaWeb'>;
 
 export default function ComidaWebScreen() {
@@ -27,6 +28,14 @@ export default function ComidaWebScreen() {
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const event = useCurrentEvent();
+  // Mismo color que el título y el «Atrás» de la barra: en iOS el del tema
+  // (barra de cristal), en Android/web el que contrasta con el color del
+  // evento. Antes era blanco fijo, invisible sobre la barra clara de iOS.
+  const headerIconColor =
+    Platform.OS === 'ios'
+      ? themeColors(scheme === 'dark').headerTint
+      : getTextColor(event.tintColor);
 
   // URLs que sabemos que no funcionan en iframe por políticas de seguridad
   const isBlockedUrl = (url: string) => {
@@ -52,14 +61,16 @@ export default function ComidaWebScreen() {
       headerRight: () => (
         <PressableFeedback
           onPress={openExternal}
-          style={{ padding: 8, marginRight: 4 }}
+          style={{ padding: 10, marginRight: 4 }}
+          accessibilityRole="link"
+          accessibilityLabel="Abrir en el navegador"
         >
           <PressableFeedback.Highlight />
-          <MaterialIcons name="open-in-new" size={24} color="#fff" />
+          <MaterialIcons name="open-in-new" size={24} color={headerIconColor} />
         </PressableFeedback>
       ),
     });
-  }, [navigation, url, title, openExternal]);
+  }, [navigation, url, title, openExternal, headerIconColor]);
 
   const onLoadEnd = () => setIsLoading(false);
   const onError = () => {

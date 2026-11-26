@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
+import { tintedGlyph } from '@/utils/tintColors';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@/components/ui/icons';
 
@@ -39,6 +41,7 @@ export default function EventosPasadosScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
+  const bottomPadding = useTabBarPaddingBottom(spacing.xl);
 
   const { events: allEvents } = useActiveMeta();
   // Ya vienen con el `_meta` del panel aplicado (incluido el evento en curso,
@@ -55,80 +58,83 @@ export default function EventosPasadosScreen() {
         // El header transparente lo compensa el contentInset automático del
         // ScrollView en iOS (como el cantoral); no añadimos paddingTop manual.
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={
-          Platform.OS === 'ios'
-            ? { paddingBottom: 140, padding: spacing.md }
-            : { paddingBottom: spacing.xl, padding: spacing.md }
-        }
+        contentContainerStyle={{
+          padding: spacing.md,
+          paddingBottom: bottomPadding,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {events.length === 0 ? (
           <EmptyState icon="history" title="Todavía no hay eventos pasados" />
         ) : (
-          events.map((event) => (
-            <PressableFeedback
-              key={event.id}
-              style={[
-                styles.card,
-                { backgroundColor: themeColors(isDark).background },
-                Platform.OS !== 'web'
-                  ? {
-                      shadowColor: event.tintColor,
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: isDark ? 0.3 : 0.15,
-                      shadowRadius: 12,
-                      elevation: 4,
-                    }
-                  : ({
-                      boxShadow: `0 4px 12px ${hexAlpha(event.tintColor, '30')}`,
-                    } as ViewStyle),
-              ]}
-              onPress={() =>
-                router.push(
-                  masHref('JubileoHome', { eventId: event.id }) as never,
-                )
-              }
-              accessibilityRole="button"
-              accessibilityLabel={event.title}
-            >
-              <PressableFeedback.Highlight />
-              <View style={styles.cardBody}>
-                <View
-                  style={[
-                    styles.iconCircle,
-                    { backgroundColor: hexAlpha(event.tintColor, '18') },
-                  ]}
-                >
-                  <MaterialIcons
-                    name="history"
-                    size={26}
-                    color={event.tintColor}
-                  />
+          events.map((event) => {
+            // Glifo legible sobre su pastilla teñida (design.md §5): el
+            // amarillo de la Visita del Papa sobre amarillo pálido no se veía.
+            const surface = themeColors(isDark).background;
+            const icon = tintedGlyph(event.tintColor, surface, '18');
+            const arrow = tintedGlyph(event.tintColor, surface, '15');
+            return (
+              <PressableFeedback
+                key={event.id}
+                style={[
+                  styles.card,
+                  { backgroundColor: themeColors(isDark).background },
+                  Platform.OS !== 'web'
+                    ? {
+                        shadowColor: event.tintColor,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: isDark ? 0.3 : 0.15,
+                        shadowRadius: 12,
+                        elevation: 4,
+                      }
+                    : ({
+                        boxShadow: `0 4px 12px ${hexAlpha(event.tintColor, '30')}`,
+                      } as ViewStyle),
+                ]}
+                onPress={() =>
+                  router.push(
+                    masHref('JubileoHome', { eventId: event.id }) as never,
+                  )
+                }
+                accessibilityRole="button"
+                accessibilityLabel={event.title}
+              >
+                <PressableFeedback.Highlight />
+                <View style={styles.cardBody}>
+                  <View
+                    style={[styles.iconCircle, { backgroundColor: icon.fill }]}
+                  >
+                    <MaterialIcons
+                      name="history"
+                      size={26}
+                      color={icon.glyph}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      styles.cardTitle,
+                      { color: themeColors(isDark).text },
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {event.title}
+                  </Text>
+                  <View
+                    style={[
+                      styles.arrowCircle,
+                      { backgroundColor: arrow.fill },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name="arrow-forward"
+                      size={18}
+                      color={arrow.glyph}
+                    />
+                  </View>
                 </View>
-                <Text
-                  style={[
-                    styles.cardTitle,
-                    { color: themeColors(isDark).text },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {event.title}
-                </Text>
-                <View
-                  style={[
-                    styles.arrowCircle,
-                    { backgroundColor: hexAlpha(event.tintColor, '15') },
-                  ]}
-                >
-                  <MaterialIcons
-                    name="arrow-forward"
-                    size={18}
-                    color={event.tintColor}
-                  />
-                </View>
-              </View>
-            </PressableFeedback>
-          ))
+              </PressableFeedback>
+            );
+          })
         )}
       </ScrollView>
     </SafeAreaView>
@@ -155,7 +161,7 @@ const createStyles = (isDark: boolean) =>
       flex: 1,
     },
     card: {
-      borderRadius: radii.xl,
+      borderRadius: radii.lg,
       marginBottom: spacing.md,
       overflow: 'hidden',
     },

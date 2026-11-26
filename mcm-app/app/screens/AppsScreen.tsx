@@ -8,7 +8,6 @@ import {
   Text,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Chip,
   Button,
@@ -18,7 +17,8 @@ import {
 } from 'heroui-native';
 import { MaterialIcons } from '@/components/ui/icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -44,7 +44,7 @@ interface AppInfo {
 
 export default function AppsScreen() {
   const scheme = useColorScheme();
-  const insets = useSafeAreaInsets();
+  const bottomPadding = useTabBarPaddingBottom(spacing.xl);
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const event = useCurrentEvent();
   const { data: appsData, loading } = useFirebaseData<AppInfo[]>(
@@ -117,12 +117,7 @@ export default function AppsScreen() {
                 paddingBottom: spacing.xl,
               }}
             >
-              <ScreenHero
-                title="Apps"
-                subtitle="Para el evento: algunas necesarias 🌟, otras opcionales ℹ️."
-                hideOnWeb
-                floatingHeaderInset
-              />
+              <ScreenHero title="Apps" hideOnWeb floatingHeaderInset />
               <View style={{ gap: spacing.sm }}>
                 {[0, 1, 2, 3, 4].map((i) => (
                   <Skeleton
@@ -149,32 +144,32 @@ export default function AppsScreen() {
         <ScrollView
           contentContainerStyle={{
             paddingHorizontal: spacing.md,
-            paddingBottom: insets.bottom + spacing.xl,
+            // La barra de pestañas flota: sin esto la última app quedaba
+            // debajo de ella (antes solo reservaba el safe-area).
+            paddingBottom: bottomPadding,
           }}
         >
-          <ScreenHero
-            title="Apps"
-            subtitle="Para el Jubileo: algunas necesarias 🌟, otras opcionales ℹ️."
-            hideOnWeb
-            floatingHeaderInset
-          />
-          <View style={styles.introContainer}>
-            <Text style={styles.introSubtext}>
-              {Platform.OS === 'web'
-                ? 'Toca una app para abrirla, o el botón de al lado para elegir iOS o Android ✨'
-                : 'Toca una app para abrirla o ir a su tienda ✨'}
-            </Text>
-          </View>
+          <ScreenHero title="Apps" hideOnWeb floatingHeaderInset />
+          {/* Antes decía «Para el Jubileo» en cualquier evento. */}
+          <Text style={styles.introSubtext}>
+            {Platform.OS === 'web'
+              ? 'Toca una app para abrirla, o el botón de la derecha para elegir iOS o Android.'
+              : 'Toca una app para abrirla o ir a su tienda.'}{' '}
+            Las marcadas con una estrella son necesarias.
+          </Text>
 
           {apps.map((app, idx) => (
-            <PressableFeedback
-              key={idx}
-              onPress={() => openApp(app)}
-              accessibilityRole="button"
-              accessibilityLabel={app.nombre}
-            >
-              <PressableFeedback.Highlight />
-              <View style={styles.listItemContainer}>
+            // La fila NO es un único botón: dentro va el botón de descargar,
+            // y en web un <button> dentro de otro es HTML inválido (React lo
+            // avisaba en rojo). Dos pulsables hermanos sobre la misma tarjeta.
+            <View key={idx} style={styles.listItemContainer}>
+              <PressableFeedback
+                onPress={() => openApp(app)}
+                accessibilityRole="button"
+                accessibilityLabel={`Abrir ${app.nombre}`}
+                style={styles.rowMain}
+              >
+                <PressableFeedback.Highlight />
                 <View style={styles.iconContainer}>
                   <Image
                     source={{ uri: app.icono }}
@@ -187,28 +182,32 @@ export default function AppsScreen() {
                   <Text style={styles.title}>{app.nombre}</Text>
                   <Text style={styles.description}>{app.descripcion}</Text>
                 </View>
-                <View style={styles.rightContainer}>
-                  {app.tipo.toLowerCase() === 'necesaria' && (
-                    <Chip size="sm" variant="primary" color="warning">
-                      <MaterialIcons name="star" size={12} color="#fff" />
-                    </Chip>
-                  )}
-                  <Button
-                    variant="ghost"
+                {app.tipo.toLowerCase() === 'necesaria' && (
+                  <Chip
                     size="sm"
-                    isIconOnly
-                    onPress={() => setSelected(app)}
-                    accessibilityLabel={`Descargar ${app.nombre}`}
+                    variant="primary"
+                    color="warning"
+                    accessibilityLabel="Necesaria"
                   >
-                    <MaterialIcons
-                      name="add-circle-outline"
-                      size={24}
-                      color={scheme === 'dark' ? '#ccc' : '#555'}
-                    />
-                  </Button>
-                </View>
-              </View>
-            </PressableFeedback>
+                    <MaterialIcons name="star" size={12} color="#fff" />
+                  </Chip>
+                )}
+              </PressableFeedback>
+              <Button
+                variant="ghost"
+                size="sm"
+                isIconOnly
+                onPress={() => setSelected(app)}
+                accessibilityLabel={`Descargar ${app.nombre}`}
+                style={styles.downloadBtn}
+              >
+                <MaterialIcons
+                  name="add-circle-outline"
+                  size={24}
+                  color={themeColors(scheme === 'dark').icon}
+                />
+              </Button>
+            </View>
           ))}
         </ScrollView>
       </PageContainer>
@@ -308,15 +307,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    introContainer: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-      backgroundColor: hexAlpha(colors.accent, '12'),
-      borderColor: hexAlpha(colors.accent, '30'),
-      borderWidth: 1,
-      borderRadius: radii.md,
-      marginBottom: spacing.md,
-    },
     introText: {
       ...typography.body,
       color: theme.text,
@@ -327,16 +317,14 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     introSubtext: {
       ...typography.subhead,
-      color: theme.text,
-      textAlign: 'center',
-      opacity: 0.7,
-      fontStyle: 'italic',
+      color: themeColors(scheme === 'dark').textSecondary,
+      paddingHorizontal: spacing.xs,
+      marginBottom: spacing.md,
     },
     listItemContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.md,
+      paddingRight: spacing.sm,
       backgroundColor: theme.card,
       borderRadius: radii.lg,
       marginBottom: spacing.sm,
@@ -345,7 +333,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     iconContainer: {
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: spacing.md,
       width: 56,
       height: 56,
       borderRadius: radii.md,
@@ -372,11 +359,18 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       ...typography.caption,
       lineHeight: 18,
     },
-    rightContainer: {
+    rowMain: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.xs,
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+      paddingLeft: spacing.md,
+      paddingRight: spacing.xs,
+      borderRadius: radii.lg,
+      overflow: 'hidden',
     },
+    downloadBtn: { minWidth: 44, minHeight: 44 },
     chipRow: { alignItems: 'center', marginBottom: spacing.sm },
     downloadRow: {
       flexDirection: 'row',

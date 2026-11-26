@@ -171,3 +171,34 @@ Requieren más trabajo en la app (siguen siendo OTA salvo que se indique):
 4. **Validación de email/número** como tipos propios (hoy se haría con `text`).
 5. **Cierre/aviso en vivo** (forzar refresco si una encuesta se cierra mientras la
    app está abierta). Hoy el estado se evalúa al entrar en la pantalla.
+
+## 9. Evaluación del Congreso M+C (con rutas)
+
+Primera evaluación con **dos rutas** según lo que se haya hecho en el congreso.
+Vive en código (`CONGRESO_MC_EVALUATION`, `constants/evaluation.ts`) y se
+engancha por evento con `getEventEvaluationDefault(event.id)`: el Congreso usa la
+suya y cualquier otro evento, la genérica. Programada: abre el **dom 29-nov-2026
+10:00** y deja de salir el **mar 1-dic 00:00** (hora de Madrid), y solo se ofrece
+en la Home a quien tiene activa la campanita del evento.
+
+Flujo (14 preguntas; cada persona ve 8):
+
+| Bloque | `id` | Tipo | Ruta |
+| ------ | ---- | ---- | ---- |
+| Arranque | `curso` | `single` (`premonitores` \| `despierta`) | todas |
+| Pre-monitores | `pm_valoracion` (1-8), `pm_quedas`, `pm_falta`, `pm_formato` (`cortas`\|`profundas`\|`mixtas`\|`asi`), `pm_mat` (`si`\|`pensarlo`\|`no`\|`nosequees`) | scale / text / single | `curso = premonitores` |
+| Curso Despierta | `dp_expectativas` (1-8), `dp_valio` (sí/no), `dp_momentos` (hasta 3 charlas del horario) | scale / yesno / multi | `curso = despierta` |
+| Aspectos prácticos | `practicos` → `lugar`, `albergue`, `almuerzos_meriendas`, `comidas_albergue`, `ambiente_grupo` (1-5 cada uno) | `ratings` | todas |
+| Cierre (opcional) | `pm_mejora` · `dp_participacion`, `dp_mejora`, `dp_otra` | text | por ruta |
+
+Los `value` de `dp_momentos` son los nombres del horario del Curso Despierta
+(`activities/congresomc26/horario1`) en minúsculas y con guiones bajos. Las
+respuestas se guardan en `activities/congresomc26/evaluacion/respuestas/<deviceId>`
+con el contrato de siempre (`ENCUESTAS_CONTRATO.md` §3; `practicos` es un objeto).
+
+**Firebase solo lleva la programación** (`data.status/opensAt/closesAt`): las
+preguntas salen del código, así que **hace falta la OTA en `production` antes del
+domingo 10:00**. No importes `firebase-seed/eventos/congresomc26-evaluacion.json`
+mientras tanto: sus `questions` pisarían las del código y las apps sin la OTA no
+entienden `ratings` ni `showIf`. El seed es la referencia para el panel; un test
+(`__tests__/evaluationQuestions.test.ts`) comprueba que coincide con el código.

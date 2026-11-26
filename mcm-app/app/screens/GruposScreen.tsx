@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Button, PressableFeedback, Skeleton } from 'heroui-native';
 import { MaterialIcons } from '@/components/ui/icons';
-import colors from '@/constants/colors';
+import colors, { themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import spacing from '@/constants/spacing';
@@ -34,6 +34,7 @@ import {
 } from '@/components/grupos/gruposHelpers';
 import { createStyles } from '@/components/grupos/gruposStyles';
 import EmptyState from '@/components/ui/EmptyState';
+import { usePreventRemove } from 'expo-router/react-navigation';
 import SearchBar from '@/components/grupos/SearchBar';
 import MemberRow from '@/components/grupos/MemberRow';
 import GrupoCard from '@/components/grupos/GrupoCard';
@@ -212,6 +213,14 @@ export default function GruposScreen() {
     setMemberFilter('');
   }, []);
 
+  // Grupos tiene dos niveles DENTRO de la pantalla (categoría → grupo). El
+  // «Atrás» del sistema (botón de la cabecera, gesto de iOS, botón de Android)
+  // sube un nivel en vez de sacarte de Grupos de golpe.
+  usePreventRemove(!!grupo || !!categoria, () => {
+    if (grupo) goBackFromGroup();
+    else setCategoria(null);
+  });
+
   // "Encuéntrame": búsqueda amplia = nombre + la 1ª letra del apellido.
   // Así "Izan Rivera" → "Izan R", que casa con "Izan Riv.", "Izan Ri.", etc.
   const findMeQuery = useMemo(() => {
@@ -328,7 +337,11 @@ export default function GruposScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Volver"
               >
-                <MaterialIcons name="arrow-back" size={24} color="#888" />
+                <MaterialIcons
+                  name="arrow-back"
+                  size={24}
+                  color={themeColors(isDark).icon}
+                />
               </Pressable>
             }
           />
@@ -340,11 +353,7 @@ export default function GruposScreen() {
             )}
             ListHeaderComponent={ListHeader}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={
-              Platform.OS === 'ios'
-                ? { paddingBottom: 100 }
-                : { paddingBottom: 24 }
-            }
+            contentContainerStyle={{ paddingBottom: bottomPadding }}
             ListEmptyComponent={
               memberFilter.length > 0 ? (
                 <Text style={styles.emptyInline}>
@@ -379,7 +388,11 @@ export default function GruposScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Volver a categorías"
               >
-                <MaterialIcons name="arrow-back" size={24} color="#888" />
+                <MaterialIcons
+                  name="arrow-back"
+                  size={24}
+                  color={themeColors(isDark).icon}
+                />
               </Pressable>
             }
           />
@@ -505,11 +518,7 @@ export default function GruposScreen() {
               />
             }
             stickySectionHeadersEnabled
-            contentContainerStyle={
-              Platform.OS === 'ios'
-                ? { paddingBottom: 100 }
-                : { paddingBottom: 24 }
-            }
+            contentContainerStyle={{ paddingBottom: bottomPadding }}
             initialNumToRender={20}
             windowSize={11}
             removeClippedSubviews={Platform.OS !== 'web'}

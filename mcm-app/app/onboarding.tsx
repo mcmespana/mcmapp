@@ -58,8 +58,12 @@ type Step = 'welcome' | 'profile' | 'delegation' | 'login' | 'success';
 // perfil ni delegación sin tener que extender la taxonomía real.
 const OTROS_PROFILE_ID = 'otros' as const;
 const OTROS_DELEGATION_ID = '__otros__' as const;
+// Para quien no es del MCM (viene a un encuentro, es de la parroquia, tiene
+// curiosidad…): la etiqueta lo dice tal cual, en vez de un «Otros» que no
+// aclaraba si la app era también para él.
+const OTROS_PROFILE_LABEL = 'No soy del MCM';
 const OTROS_PROFILE_DESCRIPTION =
-  'Si no te identificas con ninguno de los anteriores o simplemente quieres probar la app';
+  'Vienes a un encuentro, eres amigo del movimiento o solo quieres echar un vistazo';
 const OTROS_DELEGATION_DESCRIPTION =
   'Si quieres probar la app rápidamente o no perteneces a un grupo local';
 const OTROS_FALLBACK_PROFILE: ProfileType = 'miembro';
@@ -508,8 +512,11 @@ function WelcomeScreen({
           { paddingTop: padTop, paddingBottom: padBottom },
         ]}
       >
+        {/* Siempre con scroll: en un teléfono pequeño (iPhone SE) la columna
+            centrada no cabía y el logo salía cortado arriba. Si cabe, queda
+            igual de centrada. El logo solo se quita con letra grande. */}
         <ScrollWhenLarge
-          large={large}
+          large
           style={welcomeStyles.center}
           largeStyle={{ paddingVertical: 24 }}
         >
@@ -781,7 +788,7 @@ function ProfileScreen({
         large={large}
         icon="person-search"
         title="¿Quién eres? (1 minuto)"
-        sub="Según tu perfil te mostraremos lo más adecuado. Puedes cambiarlo después."
+        sub="No hace falta ser del MCM: según lo que elijas te enseñamos lo más útil, y lo puedes cambiar después."
         inList={false}
       />
 
@@ -794,7 +801,7 @@ function ProfileScreen({
           large={large}
           icon="person-search"
           title="¿Quién eres? (1 minuto)"
-          sub="Según tu perfil te mostraremos lo más adecuado. Puedes cambiarlo después."
+          sub="No hace falta ser del MCM: según lo que elijas te enseñamos lo más útil, y lo puedes cambiar después."
           inList
         />
         {profiles.map((p, i) => {
@@ -1023,7 +1030,6 @@ function DelegationScreen({
           label={finishLabel}
           onPress={onFinish}
           disabled={!selected}
-          color={TT.accent}
         />
       </View>
     </Animated.View>
@@ -1493,8 +1499,11 @@ function LoginOnboardingScreen({
 
       {/* Content — al iniciar sesión esta pantalla pasa a ser el resumen
           final del onboarding, con el CTA centrado verticalmente. */}
+      {/* Siempre con scroll: en un teléfono pequeño el contenido no cabía y
+          «Entrar sin iniciar sesión» se montaba sobre el botón de Apple. Si
+          cabe, queda igual de centrado. */}
       <ScrollWhenLarge
-        large={large}
+        large
         style={[loginOnbStyles.center, isWide && { paddingHorizontal: 48 }]}
         // El botón de volver y los puntos van encima, en absoluto: con scroll
         // el contenido arranca por debajo de ellos.
@@ -1776,7 +1785,7 @@ export default function OnboardingScreen() {
       })),
       {
         id: OTROS_PROFILE_ID,
-        label: 'Otros',
+        label: OTROS_PROFILE_LABEL,
         description: OTROS_PROFILE_DESCRIPTION,
       },
     ],
@@ -1923,7 +1932,7 @@ export default function OnboardingScreen() {
   const profile = useMemo(() => {
     if (!profileType) return null;
     if (profileType === OTROS_PROFILE_ID) {
-      return { id: OTROS_PROFILE_ID, label: 'Otros' };
+      return { id: OTROS_PROFILE_ID, label: OTROS_PROFILE_LABEL };
     }
     return { id: profileType, label: rawConfig.profiles[profileType].label };
   }, [profileType, rawConfig]);

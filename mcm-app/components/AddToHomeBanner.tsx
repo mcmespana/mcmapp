@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Platform, View, Text, StyleSheet } from 'react-native';
+import { usePathname } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
@@ -11,6 +12,9 @@ export default function AddToHomeScreenPrompt() {
   const [visible, setVisible] = useState(false);
   const [installEvent, setInstallEvent] = useState<any>(null);
   const scheme = useColorScheme() || 'light';
+  // Durante el onboarding no: el aviso flota abajo y tapaba justo el botón de
+  // «Continuar» del paso. Sale en cuanto se entra en la app.
+  const onOnboarding = usePathname().startsWith('/onboarding');
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -39,7 +43,7 @@ export default function AddToHomeScreenPrompt() {
     };
   }, []);
 
-  if (!visible) return null;
+  if (!visible || onOnboarding) return null;
   const theme = Colors[scheme ?? 'light'];
 
   const handleInstall = () => {

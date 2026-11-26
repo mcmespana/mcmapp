@@ -227,7 +227,9 @@ const createStyles = (
     introHint: {
       marginTop: spacing.md,
       color: colors.white,
-      fontSize: 10 * scale,
+      // Antes 10 pt: por debajo de `caption`, ilegible a contraluz.
+      fontSize: 13 * scale,
+      fontWeight: '600',
     },
     page: {
       flex: 1,
@@ -266,8 +268,10 @@ const createStyles = (
       borderRadius: radii.xs,
       backgroundColor: scheme === 'dark' ? '#555' : '#ccc',
     },
+    // El punto activo, del color de la actividad (el del resto de la
+    // pantalla), no del rojo MIC.
     dotActive: {
-      backgroundColor: colors.accent,
+      backgroundColor: introColor,
     },
     arrowButton: {
       position: 'absolute',

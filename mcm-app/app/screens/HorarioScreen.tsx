@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import Animated, {
   cancelAnimation,
+  useReducedMotion,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -10,6 +11,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 import { Skeleton } from 'heroui-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useIsFocused } from 'expo-router/react-navigation';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
@@ -105,9 +107,15 @@ function HorarioSheetView({
       evento.nombre?.toLowerCase().includes('despedida'),
     ) || false;
 
-  // Trigger animations for last day
+  // El último día llama la atención con un temblor y un latido. Es un bucle
+  // sin fin: se para si la persona pidió «reducir movimiento» y mientras la
+  // pantalla no está a la vista (debajo de otra del stack o en otra pestaña),
+  // en vez de seguir gastando frames.
+  const reduceMotion = useReducedMotion();
+  const focused = useIsFocused();
+  const animateLastDay = isLastDay && !reduceMotion && focused;
   useEffect(() => {
-    if (isLastDay) {
+    if (animateLastDay) {
       let cancelled = false;
       let fadeTimeout: ReturnType<typeof setTimeout> | undefined;
       // Subtle shake animation
@@ -154,9 +162,11 @@ function HorarioSheetView({
         clearInterval(shakeInterval);
         cancelAnimation(shakeAnim);
         cancelAnimation(fadeAnim);
+        shakeAnim.set(0);
+        fadeAnim.set(1);
       };
     }
-  }, [isLastDay, shakeAnim, fadeAnim]);
+  }, [animateLastDay, shakeAnim, fadeAnim]);
 
   // Todo el acento sale del color del evento (design.md §2, territorio
   // Evento): antes el día elegido era rojo MIC y la cabecera y las horas un

@@ -11,6 +11,15 @@
 > existe. Se compila desde `main`. El nombre del fichero dice "agosto" porque
 > era la fecha prevista; se mantiene para no romper los enlaces.)
 
+## 🆕 Build 2.6.0 (2026-11-25)
+
+Sale desde `main` con todo lo que había (Congreso M+C, pañuelo, cantos para el
+domingo, onboarding que no se corta, pantallas de evento) y las dependencias al
+día dentro del SDK 58. `version` y `runtimeVersion` pasan a **2.6.0** porque
+cambian módulos nativos: las 2.5.x dejan de recibir OTA. Lanzada con el
+workflow «EAS Build (tienda)» (§4.2-bis), `all` + `production` + `submit`.
+Cuando esté aprobada en las dos tiendas: **versión mínima del Panel a 2.6.0**.
+
 ## 📍 Qué falta a 2026-11-01 (marcado por el propietario en la checklist)
 
 La build es la **2.5.1 con SDK 58** (la 2.5.0 salió antes de añadir `react-native-audio-api`; ver «Por qué 2.5.1» más abajo) y lleva el área privada nativa. La lista viva, con las pruebas del móvil punto por punto y comentarios, está en el artefacto «Checklist build 2.5». Resumen de lo marcado el 1/11:

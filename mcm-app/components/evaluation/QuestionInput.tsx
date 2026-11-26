@@ -5,16 +5,17 @@ import StarRating from '@/components/StarRating';
 import { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
-import type { EvalQuestion } from '@/constants/evaluation';
+import type { EvalAnswerValue, EvalQuestion } from '@/constants/evaluation';
 import ScaleInput from './ScaleInput';
+import RatingsInput from './RatingsInput';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 
-type AnswerValue = number | string | boolean | string[];
+type AnswerValue = EvalAnswerValue;
 
 /**
  * Renderiza el control de entrada para una pregunta del wizard según su tipo
- * (stars / text / yesno / scale / single / multi). Extraído de
+ * (stars / text / yesno / scale / single / multi / ratings). Extraído de
  * EvaluationWizard. La pregunta, el valor y los callbacks vienen del padre.
  */
 export default function QuestionInput({
@@ -116,6 +117,26 @@ export default function QuestionInput({
         />
       )}
 
+      {question.type === 'ratings' && (
+        <RatingsInput
+          items={question.items ?? []}
+          value={
+            value && typeof value === 'object' && !Array.isArray(value)
+              ? (value as Record<string, number>)
+              : undefined
+          }
+          onChange={(itemId, n) => {
+            const current =
+              value && typeof value === 'object' && !Array.isArray(value)
+                ? (value as Record<string, number>)
+                : {};
+            onAnswer(question.id, { ...current, [itemId]: n });
+          }}
+          starColor={starColor}
+          theme={theme}
+        />
+      )}
+
       {question.type === 'single' &&
         (question.options ?? []).map((opt) => {
           const selected = value === opt.value;
@@ -150,38 +171,57 @@ export default function QuestionInput({
           );
         })}
 
-      {question.type === 'multi' &&
-        (question.options ?? []).map((opt) => {
-          const arr = Array.isArray(value) ? (value as string[]) : [];
-          const selected = arr.includes(opt.value);
-          return (
-            <Pressable
-              key={opt.value}
-              onPress={() => {
-                h.select();
-                onToggleMulti(question.id, opt.value);
-              }}
-              style={[
-                qStyles.optionRow,
-                {
-                  borderColor: selected ? accent : hexAlpha(theme.icon, '30'),
-                  backgroundColor: selected
-                    ? hexAlpha(accent, '12')
-                    : 'transparent',
-                },
-              ]}
-            >
-              <MaterialIcons
-                name={selected ? 'check-box' : 'check-box-outline-blank'}
-                size={22}
-                color={selected ? accent : theme.icon}
-              />
-              <Text style={[qStyles.optionLabel, { color: theme.text }]}>
-                {opt.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+      {question.type === 'multi' && (
+        <>
+          {question.maxSelect ? (
+            <Text style={[qStyles.hint, { color: theme.icon }]}>
+              Elige hasta {question.maxSelect} ·{' '}
+              {Array.isArray(value) ? value.length : 0}/{question.maxSelect}
+            </Text>
+          ) : null}
+          {(question.options ?? []).map((opt) => {
+            const arr = Array.isArray(value) ? (value as string[]) : [];
+            const selected = arr.includes(opt.value);
+            const blocked =
+              !selected &&
+              !!question.maxSelect &&
+              arr.length >= question.maxSelect;
+            return (
+              <Pressable
+                key={opt.value}
+                onPress={() => {
+                  if (blocked) {
+                    h.tap();
+                    return;
+                  }
+                  h.select();
+                  onToggleMulti(question.id, opt.value);
+                }}
+                accessibilityState={{ checked: selected, disabled: blocked }}
+                style={[
+                  qStyles.optionRow,
+                  {
+                    borderColor: selected ? accent : hexAlpha(theme.icon, '30'),
+                    backgroundColor: selected
+                      ? hexAlpha(accent, '12')
+                      : 'transparent',
+                    opacity: blocked ? 0.45 : 1,
+                  },
+                ]}
+              >
+                <MaterialIcons
+                  name={selected ? 'check-box' : 'check-box-outline-blank'}
+                  size={22}
+                  color={selected ? accent : theme.icon}
+                />
+                <Text style={[qStyles.optionLabel, { color: theme.text }]}>
+                  {opt.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </>
+      )}
     </>
   );
 }
@@ -219,4 +259,5 @@ const qStyles = StyleSheet.create({
     marginBottom: 10,
   },
   optionLabel: { flex: 1, fontSize: 16, fontWeight: '600' },
+  hint: { fontSize: 13, fontWeight: '600', marginBottom: 12 },
 });
