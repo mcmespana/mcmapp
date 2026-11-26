@@ -4,6 +4,15 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-26 11:00 — Evaluación del Congreso: programada y solo para quien tiene la campanita
+
+- `DEFAULT_EVENT_EVALUATION` pasa a `status: 'scheduled'` con ventana: abre el dom 29-nov-2026 a las 10:00 y se oculta desde el mar 1-dic a las 00:00 (hora de Madrid). Lo que haya en `activities/<evento>/evaluacion/data` sigue mandando sobre esto.
+- El banner «Evalúa la actividad» de la Home solo sale si el evento tiene la campanita activa (`useEventSubscriptions().isSubscribed`). Entrar al evento la activa sola; quien la apaga no lo ve.
+
+## 2026-11-26 10:00 — Evaluación del evento: el botón ya no queda tapado por la barra
+
+- `EvaluationWizard` acepta `underTabBar`: la evaluación del evento (`EvaluacionScreen`, que vive dentro de un tab) sube el pie lo que ocupa la barra flotante. La evaluación de la app y las encuestas (ruta raíz, sin barra) no cambian. Solo JS.
+
 ## 2026-11-25 00:50 — Versión 2.6.0: dependencias al día, build de tienda y onboarding
 
 - **`version` y `runtimeVersion` a 2.6.0** (`app.json`). Cambian módulos nativos, así que es build de tienda: las 2.5.x dejan de recibir OTA. Cuando la 2.6.0 esté aprobada en App Store y Play, subir la **versión mínima** del Panel a `2.6.0`. Commit con `[skip-ota]`.

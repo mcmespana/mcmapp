@@ -75,6 +75,7 @@ import {
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useActiveSurveys } from '@/hooks/useActiveSurveys';
 import SurveyBanner from '@/components/SurveyBanner';
+import { useEventSubscriptions } from '@/contexts/EventSubscriptionsContext';
 import SundaySongsCard from '@/components/home/SundaySongsCard';
 import {
   getEventCacheKey,
@@ -341,7 +342,14 @@ export default function Home() {
       };
     }, [activeEvent.id]),
   );
-  const showEvalBanner = hasEventAccess && eventEvalOpen && !evalDone;
+  // Solo a quien «se ha inscrito» al evento: tiene activa la campanita (entrar
+  // al evento la activa sola; quien la apaga deja de ver la petición).
+  const { isSubscribed: isEventSubscribed } = useEventSubscriptions();
+  const showEvalBanner =
+    hasEventAccess &&
+    eventEvalOpen &&
+    !evalDone &&
+    isEventSubscribed(activeEvent.id);
 
   // CTA "Evalúa la app": flag en código (DEFAULT_APP_EVALUATION). No depende del
   // evento (la app se evalúa siempre). Abre la pantalla raíz de Ajustes.

@@ -133,8 +133,15 @@ export type MaterialIconName = ComponentProps<typeof MaterialIcons>['name'];
 // ─── Evaluación del EVENTO ───────────────────────────────────────────
 // `evaluationOpen` enciende el CTA "Evalúa la actividad" en la Home (config
 // en código, no en Firebase). Pon `false` para ocultarlo.
+//
+// Programada para el Congreso M+C: abre el domingo 29-nov-2026 a las 10:00
+// (hora de Madrid) y deja de salir desde el martes 1-dic a las 00:00. El panel
+// puede cambiarlo sin OTA con `status`/`opensAt`/`closesAt` en
+// `activities/<evento>/evaluacion/data`.
 export const DEFAULT_EVENT_EVALUATION: EvaluationConfig = {
-  evaluationOpen: true,
+  status: 'scheduled',
+  opensAt: 1795942800000, // dom 2026-11-29 10:00 Europe/Madrid
+  closesAt: 1796079600000, // mar 2026-12-01 00:00 Europe/Madrid
   title: 'Evalúa la actividad',
   intro:
     'Tu opinión nos ayuda a mejorar los próximos encuentros. Te llevará un par de minutos 🙏',
