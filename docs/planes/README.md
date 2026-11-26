@@ -3,7 +3,7 @@
 > **Lee esto antes de abrir ningún `PLAN_*.md`.** Su único trabajo es que no
 > vuelvas a ejecutar algo que ya está hecho.
 >
-> Última actualización: 2026-11-21.
+> Última actualización: 2026-11-26.
 
 ## La regla, en una línea
 
@@ -34,6 +34,7 @@ El coste de mantener esta tabla al día es mucho menor que el de repetirlo.
 | [`PLAN_PANUELO_ASISTENCIA.md`](PLAN_PANUELO_ASISTENCIA.md) | 📝 **Escrito el 2026-11-16, sin empezar.** Piezas por asistencia a eventos y desvelado una a una. Parte en `comunicaMiddleware` y `mcmpanel`. Tiene decisiones 🔒 | `BACKLOG.md` §2.K |
 | [`PLAN_CANTOS_DOMINGO.md`](PLAN_CANTOS_DOMINGO.md) | 🟡 **Fases 1-4 hechas el 2026-11-16** (pantalla, motor y tarjeta de Inicio). **2026-11-17**: la entrada pasa a Tu selección vacía y el orden mira las lecturas del domingo (salmo con salmo). Quedan: Fase 0 (contar etiquetas), probar en móvil, Fase 5 (salmo) y 6 (opcional). Decisiones contestadas | `BACKLOG.md` §2.K |
 | [`fork-cantoral/`](fork-cantoral/README.md) | 📝 **Plan cerrado el 2026-11-21, decisiones contestadas, sin empezar.** Fork MCM Cantoral (app aparte solo con el cantoral, wifi local y modo Navidad para Villancicos Solidarios del 19/12). **Repo `mcmespana/mcmcantoral` creado el 21/11** (copia con historia de `main` @ `d4338986`): la copia viva del plan está allí; siguiente, Fase 0 allí. Bugs de este repo arreglados (21/11); Fase 1 de Navidad en `mcm-app/TODO.md`, sin hacer | `BACKLOG.md` §2.L |
+| [`PLAN_EVENTOS_RESTRINGIDOS.md`](PLAN_EVENTOS_RESTRINGIDOS.md) | 📝 **Escrito el 2026-11-26, sin empezar. No antes del 1/12/2026.** Eventos que solo ven (o solo abren) los inscritos, según la sesión de Comunica; entrada automática con la cuenta de la app. Toca `comunicaMiddleware` y `mcmpanel`. Decisiones 🔒 con recomendación | `BACKLOG.md` §2.M |
 | [`PLAN_HOJA_CANCION.md`](PLAN_HOJA_CANCION.md)   | 🟡 Hecho y en `main`: hoja, modo atril, onboarding, 258 canciones repasadas, admin fiel a la app, PDF y pantalla completa web. Queda: aplicar las etiquetas aprobadas, mapa de la canción (opcional) y probar el pedal en un iPad | `BACKLOG.md` §2.H                                     |
 
 ## 🔵 Futuro lejano — no se tocan hasta que el usuario lo pida
