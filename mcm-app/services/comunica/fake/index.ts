@@ -97,6 +97,11 @@ import {
   type DetailsLog,
 } from './profileDetails';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
+import {
+  MANAGERS,
+  managedEventsRoutes,
+  type ManagedKeys,
+} from './managedEvents';
 
 export interface FakeControls {
   /** Espera de cada respuesta, en ms. */
@@ -135,6 +140,8 @@ export interface FakeControls {
   alreadyRegisteredElsewhere: boolean;
   /** Pagos (plan 15): cuántas comprobaciones tarda el banco en dar el pago por cobrado tras la vuelta «ok» (0 = al momento). */
   cardConfirmsAfter: number;
+  /** Gestor de un evento (plan 18): en cada sondeo, «Comunica Tools» marca la llegada de alguien que faltaba. */
+  othersCheckIn: boolean;
 }
 
 export const DEFAULT_CONTROLS: FakeControls = {
@@ -153,6 +160,7 @@ export const DEFAULT_CONTROLS: FakeControls = {
   paymentFails: false,
   alreadyRegisteredElsewhere: false,
   cardConfirmsAfter: 0,
+  othersCheckIn: false,
 };
 
 const PERSONA_ROLES: Record<PersonaId, { roles: Role[]; scope: Me['scope'] }> =
@@ -379,6 +387,8 @@ export function createFakeServer(
       roles,
       scope,
       canSeeHealth: true,
+      // Gestor de un evento (plan 18): lo nombra Comunica Tools, sin papel.
+      ...(MANAGERS[persona]?.length ? { managesEvents: true } : {}),
     };
   }
 
@@ -643,6 +653,7 @@ export function createFakeServer(
   const profileRegistrations = profileRegistrationsRoutes(routesCtx); // Inscripciones (plan 14).
   const profilePayments = profilePaymentsRoutes(routesCtx); // Pagos y pagar con tarjeta (plan 15).
   const profileDocs = profileDocsRoutes(routesCtx); // Documentos y calendario (plan 16).
+  const managed = managedEventsRoutes(routesCtx); // Gestor de un evento (plan 18).
 
   // Avisos en el móvil (plan 08): los móviles registrados, en `devices.ts`.
   const devices = fakeDevices.routes(gate, () => current, seenClientIds);
@@ -677,6 +688,7 @@ export function createFakeServer(
     | ProfileRegistrationKeys
     | ProfilePaymentKeys
     | ProfileDocKeys
+    | ManagedKeys
   > = {
     get controls() {
       return controls;
@@ -1416,6 +1428,7 @@ export function createFakeServer(
     profileRegistrations,
     profilePayments,
     profileDocs,
+    managed,
     {
       getEvents: events.getEvents,
       getEventRoll: events.getEventRoll,

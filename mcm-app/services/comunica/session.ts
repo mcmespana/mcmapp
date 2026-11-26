@@ -429,6 +429,14 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     getEvents: authed((o) => api.getEvents(o)),
     getEventRoll: authed((id, o) => api.getEventRoll(id, o)),
     saveEventRoll: authed((id, b) => api.saveEventRoll(id, b)),
+    // Gestor de un evento (plan 18).
+    getManagedEvents: authed((o) => api.getManagedEvents(o)),
+    getManagedEvent: authed((id, o) => api.getManagedEvent(id, o)),
+    getManagedCheckins: authed((id, s) => api.getManagedCheckins(id, s)),
+    checkinManaged: authed((id, b) => api.checkinManaged(id, b)),
+    noteManaged: authed((id, b) => api.noteManaged(id, b)),
+    getManagedPerson: authed((id, pid, o) => api.getManagedPerson(id, pid, o)),
+    getManagedHealth: authed((id, pid) => api.getManagedHealth(id, pid)),
     registerDevice: authed((b) => api.registerDevice(b)),
     unregisterDevice: authed((id) => api.unregisterDevice(id)),
     // Mis datos de monitor (plan 09).

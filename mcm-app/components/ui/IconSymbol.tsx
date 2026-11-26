@@ -80,6 +80,12 @@ type IconMapping = {
   'photo.on.rectangle': 'photo-library';
   paperclip: 'attach-file';
   'checkmark.seal.fill': 'verified';
+  // Gestor de un evento (plan 18)
+  'arrow.uturn.backward': 'undo';
+  'note.text': 'sticky-note-2';
+  'bed.double': 'hotel';
+  checklist: 'checklist';
+  'person.crop.circle.badge.checkmark': 'how-to-reg';
 };
 
 type IconSymbolName = keyof IconMapping;
@@ -164,6 +170,12 @@ const MAPPING: IconMapping = {
   'photo.on.rectangle': 'photo-library',
   paperclip: 'attach-file',
   'checkmark.seal.fill': 'verified',
+  // Gestor de un evento (plan 18)
+  'arrow.uturn.backward': 'undo',
+  'note.text': 'sticky-note-2',
+  'bed.double': 'hotel',
+  checklist: 'checklist',
+  'person.crop.circle.badge.checkmark': 'how-to-reg',
 };
 
 /**
