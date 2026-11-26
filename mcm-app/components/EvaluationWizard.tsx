@@ -30,16 +30,20 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { h } from '@/utils/haptics';
-import type { EvaluationConfig } from '@/constants/evaluation';
+import {
+  cleanAnswers,
+  isQuestionAnswered,
+  visibleQuestions,
+  type EvalAnswers,
+  type EvalAnswerValue,
+  type EvaluationConfig,
+} from '@/constants/evaluation';
 import WelcomePhase from '@/components/evaluation/WelcomePhase';
 import QuestionInput from '@/components/evaluation/QuestionInput';
 import SuccessPhase from '@/components/evaluation/SuccessPhase';
 import { createWizardStyles } from '@/components/evaluation/wizardStyles';
 
-export type EvaluationAnswers = Record<
-  string,
-  number | string | boolean | string[]
->;
+export type EvaluationAnswers = EvalAnswers;
 
 interface EvaluationWizardProps {
   config: EvaluationConfig;
@@ -98,13 +102,17 @@ export default function EvaluationWizard({
   );
   const starColor = colors.yellow;
 
-  const questions = config.questions;
-  const total = questions.length;
-
   // step: -1 = bienvenida; 0..total-1 = preguntas
   const [step, setStep] = useState(-1);
   const [dir, setDir] = useState<'forward' | 'back'>('forward');
   const [answers, setAnswers] = useState<EvaluationAnswers>({});
+  // Solo las preguntas que tocan con lo contestado hasta ahora: las que llevan
+  // `showIf` aparecen o no según la pregunta de la que dependen, que siempre
+  // va antes, así que el paso actual nunca se desplaza al cambiar la lista.
+  const questions = visibleQuestions(config.questions, answers);
+  const total = questions.length;
+  // Con rutas, el total real no se sabe hasta contestar la primera pregunta.
+  const hasBranches = config.questions.some((q) => !!q.showIf);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [alreadyDone, setAlreadyDone] = useState<boolean | null>(null);
@@ -148,18 +156,24 @@ export default function EvaluationWizard({
     width: `${progress.get() * 100}%`,
   }));
 
-  const setAnswer = (id: string, value: number | string | boolean | string[]) =>
+  const setAnswer = (id: string, value: EvalAnswerValue) =>
     setAnswers((prev) => ({ ...prev, [id]: value }));
 
-  /** Alterna una opción en una pregunta `multi` (respuesta = array). */
-  const toggleMulti = (id: string, optionValue: string) =>
+  /**
+   * Alterna una opción en una pregunta `multi` (respuesta = array). Respeta el
+   * tope `maxSelect`: con el tope alcanzado no deja marcar otra.
+   */
+  const toggleMulti = (id: string, optionValue: string) => {
+    const max = config.questions.find((q) => q.id === id)?.maxSelect;
     setAnswers((prev) => {
       const current = Array.isArray(prev[id]) ? (prev[id] as string[]) : [];
-      const next = current.includes(optionValue)
-        ? current.filter((v) => v !== optionValue)
-        : [...current, optionValue];
-      return { ...prev, [id]: next };
+      if (current.includes(optionValue)) {
+        return { ...prev, [id]: current.filter((v) => v !== optionValue) };
+      }
+      if (max && current.length >= max) return prev;
+      return { ...prev, [id]: [...current, optionValue] };
     });
+  };
 
   const goNext = () => {
     h.select();
@@ -200,19 +214,7 @@ export default function EvaluationWizard({
   const finish = async () => {
     setSubmitting(true);
     try {
-      const cleaned: EvaluationAnswers = {};
-      for (const q of questions) {
-        const v = answers[q.id];
-        if (q.type === 'text') {
-          const t = String(v ?? '').trim();
-          if (t) cleaned[q.id] = t;
-        } else if (q.type === 'multi') {
-          // Solo guardamos el array si tiene alguna opción marcada.
-          if (Array.isArray(v) && v.length > 0) cleaned[q.id] = v;
-        } else if (v !== undefined) {
-          cleaned[q.id] = v;
-        }
-      }
+      const cleaned = cleanAnswers(config.questions, answers);
       await onSubmit(cleaned);
       await AsyncStorage.setItem(doneKey, '1');
       h.formSuccess();
@@ -227,16 +229,9 @@ export default function EvaluationWizard({
   // ── Validación de la fase actual ──
   const currentQ = step >= 0 ? questions[step] : null;
   const currentVal = currentQ ? answers[currentQ.id] : undefined;
-  const currentAnswered =
-    currentQ?.type === 'stars'
-      ? typeof currentVal === 'number' && currentVal > 0
-      : currentQ?.type === 'scale'
-        ? typeof currentVal === 'number' // 0 es respuesta válida (p. ej. NPS)
-        : currentQ?.type === 'text'
-          ? !!String(currentVal ?? '').trim()
-          : currentQ?.type === 'multi'
-            ? Array.isArray(currentVal) && currentVal.length > 0
-            : currentVal !== undefined;
+  const currentAnswered = currentQ
+    ? isQuestionAnswered(currentQ, currentVal)
+    : false;
   const canContinue = !currentQ || currentQ.optional || currentAnswered;
   const isLast = step === total - 1;
 
@@ -331,7 +326,7 @@ export default function EvaluationWizard({
           <WelcomePhase
             title={config.title}
             intro={config.intro}
-            total={total}
+            total={hasBranches ? undefined : total}
             accent={accentReadable}
             theme={theme}
           />
@@ -351,6 +346,7 @@ export default function EvaluationWizard({
             >
               <Text style={[styles.stepCount, { color: accentReadable }]}>
                 {step + 1} / {total}
+                {currentQ!.section ? ` · ${currentQ!.section}` : ''}
               </Text>
               <Text style={[styles.question, { color: theme.text }]}>
                 {currentQ!.label}

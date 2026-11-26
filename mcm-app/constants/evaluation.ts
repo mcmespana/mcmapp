@@ -19,10 +19,13 @@ import type { MaterialIcons } from '@/components/ui/icons';
  *  - `yesno`  → booleano (Sí / No).
  *  - `scale`  → escala numérica configurable (p. ej. NPS 0..10).
  *  - `single` → una opción de una lista (radio).
- *  - `multi`  → varias opciones de una lista (checkbox).
+ *  - `multi`  → varias opciones de una lista (checkbox), con tope opcional
+ *               (`maxSelect`).
+ *  - `ratings`→ varias valoraciones 1..5 (estrellas) en UNA misma pantalla,
+ *               una por cada elemento de `items`.
  */
 export type EvalQuestionType =
-  'stars' | 'text' | 'yesno' | 'scale' | 'single' | 'multi';
+  'stars' | 'text' | 'yesno' | 'scale' | 'single' | 'multi' | 'ratings';
 
 /** Opción de una pregunta `single`/`multi`. */
 export interface EvalOption {
@@ -30,6 +33,27 @@ export interface EvalOption {
   value: string;
   /** Texto mostrado al usuario. */
   label: string;
+}
+
+/**
+ * Valor de una respuesta guardada. `ratings` guarda un objeto
+ * `{ [item.value]: 1..5 }`; el resto, un valor plano.
+ */
+export type EvalAnswerValue =
+  number | string | boolean | string[] | Record<string, number>;
+
+/** Respuestas de una evaluación: `question.id` → valor. */
+export type EvalAnswers = Record<string, EvalAnswerValue>;
+
+/** Condición para que una pregunta se enseñe según otra ya contestada. */
+export interface EvalShowIf {
+  /** `id` de una pregunta ANTERIOR (si va después, nunca se cumple). */
+  questionId: string;
+  /**
+   * Valor (o valores) que activan la pregunta. Si la respuesta es un array
+   * (`multi`), basta con que incluya alguno.
+   */
+  equals: string | string[];
 }
 
 export interface EvalQuestion {
@@ -42,6 +66,13 @@ export interface EvalQuestion {
   placeholder?: string;
   /** Si falta o es false, la pregunta es obligatoria para poder enviar. */
   optional?: boolean;
+  /** Rótulo de bloque que se enseña junto al contador («Aspectos prácticos»). */
+  section?: string;
+  /**
+   * Si viene, la pregunta solo se enseña (y solo se guarda) cuando se cumple
+   * la condición. Permite rutas distintas según una pregunta de arranque.
+   */
+  showIf?: EvalShowIf;
   // ── solo `scale` ──
   /** Valor mínimo de la escala (por defecto 0). */
   min?: number;
@@ -54,6 +85,12 @@ export interface EvalQuestion {
   // ── solo `single` / `multi` ──
   /** Opciones disponibles. */
   options?: EvalOption[];
+  // ── solo `multi` ──
+  /** Máximo de opciones que se pueden marcar (sin tope si falta). */
+  maxSelect?: number;
+  // ── solo `ratings` ──
+  /** Elementos a valorar (1..5 estrellas cada uno): `value` es la clave. */
+  items?: EvalOption[];
 }
 
 /** Estado de publicación de una encuesta/evaluación (lo controla el panel). */
@@ -108,6 +145,95 @@ export function isEvaluationOpen(
   return config.evaluationOpen !== false;
 }
 
+// ─── Preguntas condicionales y validación (puro, testeable) ──────────
+
+const answerMatches = (answer: unknown, equals: string | string[]): boolean => {
+  const wanted = Array.isArray(equals) ? equals : [equals];
+  if (Array.isArray(answer)) return answer.some((a) => wanted.includes(a));
+  return typeof answer === 'string' && wanted.includes(answer);
+};
+
+/**
+ * Preguntas que toca enseñar con las respuestas actuales, en su orden. Una
+ * pregunta con `showIf` solo cuenta si la pregunta de la que depende está a su
+ * vez visible y contestada con el valor pedido (así una ruta oculta no arrastra
+ * a las que cuelgan de ella).
+ */
+export function visibleQuestions(
+  questions: EvalQuestion[],
+  answers: EvalAnswers,
+): EvalQuestion[] {
+  const shown = new Set<string>();
+  const out: EvalQuestion[] = [];
+  for (const q of questions) {
+    if (q.showIf) {
+      const { questionId, equals } = q.showIf;
+      if (!shown.has(questionId)) continue;
+      if (!answerMatches(answers[questionId], equals)) continue;
+    }
+    shown.add(q.id);
+    out.push(q);
+  }
+  return out;
+}
+
+/** ¿Está contestada la pregunta (para dejar continuar si es obligatoria)? */
+export function isQuestionAnswered(
+  q: EvalQuestion,
+  value: EvalAnswerValue | undefined,
+): boolean {
+  switch (q.type) {
+    case 'stars':
+      return typeof value === 'number' && value > 0;
+    case 'scale':
+      return typeof value === 'number'; // 0 es respuesta válida (p. ej. NPS)
+    case 'text':
+      return !!String(value ?? '').trim();
+    case 'multi':
+      return Array.isArray(value) && value.length > 0;
+    case 'ratings': {
+      const items = q.items ?? [];
+      if (items.length === 0 || !value || typeof value !== 'object')
+        return false;
+      const rated = value as Record<string, number>;
+      return items.every((it) => (rated[it.value] ?? 0) > 0);
+    }
+    default:
+      return value !== undefined;
+  }
+}
+
+/**
+ * Respuestas listas para guardar: solo las de preguntas visibles, sin textos
+ * vacíos, sin `multi` sin marcar y sin valoraciones a 0.
+ */
+export function cleanAnswers(
+  questions: EvalQuestion[],
+  answers: EvalAnswers,
+): EvalAnswers {
+  const cleaned: EvalAnswers = {};
+  for (const q of visibleQuestions(questions, answers)) {
+    const v = answers[q.id];
+    if (q.type === 'text') {
+      const t = String(v ?? '').trim();
+      if (t) cleaned[q.id] = t;
+    } else if (q.type === 'multi') {
+      if (Array.isArray(v) && v.length > 0) cleaned[q.id] = v;
+    } else if (q.type === 'ratings') {
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        const kept: Record<string, number> = {};
+        for (const [k, n] of Object.entries(v)) {
+          if (typeof n === 'number' && n > 0) kept[k] = n;
+        }
+        if (Object.keys(kept).length > 0) cleaned[q.id] = kept;
+      }
+    } else if (v !== undefined) {
+      cleaned[q.id] = v;
+    }
+  }
+  return cleaned;
+}
+
 /**
  * Combina la config local (fallback en código) con la remota (Firebase). La
  * remota gana campo a campo; si trae `questions` no vacío, sustituye a las del
@@ -131,17 +257,12 @@ export function mergeEvaluationConfig(
 export type MaterialIconName = ComponentProps<typeof MaterialIcons>['name'];
 
 // ─── Evaluación del EVENTO ───────────────────────────────────────────
-// `evaluationOpen` enciende el CTA "Evalúa la actividad" en la Home (config
-// en código, no en Firebase). Pon `false` para ocultarlo.
-//
-// Programada para el Congreso M+C: abre el domingo 29-nov-2026 a las 10:00
-// (hora de Madrid) y deja de salir desde el martes 1-dic a las 00:00. El panel
-// puede cambiarlo sin OTA con `status`/`opensAt`/`closesAt` en
-// `activities/<evento>/evaluacion/data`.
+// Genérica: la usa cualquier evento que no tenga la suya en
+// `EVENT_EVALUATION_DEFAULTS`. `evaluationOpen` enciende el CTA "Evalúa la
+// actividad" en la Home (config en código, no en Firebase). Pon `false` para
+// ocultarlo.
 export const DEFAULT_EVENT_EVALUATION: EvaluationConfig = {
-  status: 'scheduled',
-  opensAt: 1795942800000, // dom 2026-11-29 10:00 Europe/Madrid
-  closesAt: 1796079600000, // mar 2026-12-01 00:00 Europe/Madrid
+  evaluationOpen: true,
   title: 'Evalúa la actividad',
   intro:
     'Tu opinión nos ayuda a mejorar los próximos encuentros. Te llevará un par de minutos 🙏',
@@ -192,6 +313,253 @@ export const DEFAULT_EVENT_EVALUATION: EvaluationConfig = {
     },
   ],
 };
+
+/**
+ * Evaluación del Congreso M+C (27-29 nov 2026), con dos rutas según lo que se
+ * haya hecho: Formación de Pre-monitores o Curso Despierta. Las dos comparten
+ * los aspectos prácticos y el cierre.
+ *
+ * Programada: abre el domingo 29-nov a las 10:00 y deja de salir el martes
+ * 1-dic a las 00:00 (hora de Madrid). El panel/consola puede moverlo sin OTA
+ * con `status`/`opensAt`/`closesAt` en `activities/congresomc26/evaluacion/data`.
+ *
+ * Los `id` son estables (no reciclar). El contrato para el panel, con la forma
+ * de cada respuesta, está en `docs/contratos/ENCUESTAS_CONTRATO.md` y la copia
+ * importable en `firebase-seed/eventos/congresomc26-evaluacion.json` (un test
+ * comprueba que las dos coinciden).
+ */
+export const CONGRESO_MC_EVALUATION: EvaluationConfig = {
+  status: 'scheduled',
+  opensAt: 1795942800000, // dom 2026-11-29 10:00 Europe/Madrid
+  closesAt: 1796079600000, // mar 2026-12-01 00:00 Europe/Madrid
+  title: 'Evalúa el Congreso M+C',
+  intro:
+    'Cuéntanos qué tal ha ido el Congreso. Tu opinión nos ayuda a preparar los próximos. Te llevará un par de minutos 🙏',
+  thanksTitle: '¡Gracias!',
+  thanksBody: 'Tu opinión nos ayuda a seguir despertando evangelizadores 🧡',
+  closedTitle: 'La evaluación ya está cerrada',
+  closedBody: 'Gracias por haber vivido el Congreso con nosotros.',
+  questions: [
+    // ── 1 · Ruta ──
+    {
+      id: 'curso',
+      type: 'single',
+      label: '¿En qué parte del Congreso has participado?',
+      options: [
+        { value: 'premonitores', label: 'Formación de Pre-monitores' },
+        { value: 'despierta', label: 'Curso Despierta' },
+      ],
+    },
+
+    // ── 2a · Pre-monitores ──
+    {
+      id: 'pm_valoracion',
+      type: 'scale',
+      section: 'Pre-monitores',
+      showIf: { questionId: 'curso', equals: 'premonitores' },
+      label: '¿Qué valoración le das al curso?',
+      min: 1,
+      max: 8,
+      minLabel: 'Muy baja',
+      maxLabel: 'Muy alta',
+    },
+    {
+      id: 'pm_quedas',
+      type: 'text',
+      section: 'Pre-monitores',
+      showIf: { questionId: 'curso', equals: 'premonitores' },
+      label:
+        '¿Con qué te quedas? ¿Qué formaciones te han resultado más útiles y por qué? ¿Qué es lo que más te ha gustado?',
+      placeholder: 'Cuéntanos con calma…',
+    },
+    {
+      id: 'pm_falta',
+      type: 'text',
+      section: 'Pre-monitores',
+      showIf: { questionId: 'curso', equals: 'premonitores' },
+      label: 'Respecto a la formación, ¿qué te ha faltado?',
+      placeholder: 'Temas, tiempo, materiales…',
+    },
+    {
+      id: 'pm_formato',
+      type: 'single',
+      section: 'Pre-monitores',
+      showIf: { questionId: 'curso', equals: 'premonitores' },
+      label: 'Para las próximas formaciones, ¿qué prefieres?',
+      options: [
+        {
+          value: 'cortas',
+          label:
+            'Formaciones cortas, de una hora como máximo y variadas: pequeñas pinceladas y profundizar en el futuro',
+        },
+        {
+          value: 'profundas',
+          label:
+            'Centrarnos solo en algunos temas y profundizar mucho más en ellos',
+        },
+        {
+          value: 'mixtas',
+          label:
+            'Mezclar formaciones más largas, de más de una hora, con otras cortas',
+        },
+        {
+          value: 'asi',
+          label: 'Los tiempos de las formaciones han estado bien: dejarlo así',
+        },
+      ],
+    },
+    {
+      id: 'pm_mat',
+      type: 'single',
+      section: 'Pre-monitores',
+      showIf: { questionId: 'curso', equals: 'premonitores' },
+      label:
+        '¿Tienes intención de hacer el MAT Consolación en el verano de 2027?',
+      options: [
+        {
+          value: 'si',
+          label:
+            'Sí, me gustaría hacer el curso oficial de Monitor de Actividades de Tiempo Libre Consolación',
+        },
+        { value: 'pensarlo', label: 'Me lo tengo que pensar mucho' },
+        { value: 'no', label: 'No, no me interesa' },
+        { value: 'nosequees', label: 'MAT… ¿de qué me hablas? No sé qué es' },
+      ],
+    },
+
+    // ── 2b · Curso Despierta ──
+    {
+      id: 'dp_expectativas',
+      type: 'scale',
+      section: 'Curso Despierta',
+      showIf: { questionId: 'curso', equals: 'despierta' },
+      label:
+        'Antes de empezar el curso, ¿qué expectativas traías? ¿Con cuánta motivación llegaste?',
+      min: 1,
+      max: 8,
+      minLabel: 'Muy poca motivación',
+      maxLabel: 'Muchas ganas',
+    },
+    {
+      id: 'dp_valio',
+      type: 'yesno',
+      section: 'Curso Despierta',
+      showIf: { questionId: 'curso', equals: 'despierta' },
+      label:
+        '¿Consideras que ha valido la pena hacer un Curso Despierta como parte de la formación de monitores, dentro de un congreso de monitores?',
+    },
+    {
+      id: 'dp_momentos',
+      type: 'multi',
+      section: 'Curso Despierta',
+      showIf: { questionId: 'curso', equals: 'despierta' },
+      label: '¿Qué momentos del curso te han gustado más? (hasta 3)',
+      maxSelect: 3,
+      options: [
+        {
+          value: 'te_invito_a_despertar',
+          label: 'Viernes · Te invito a despertar',
+        },
+        {
+          value: 'cambiar_la_mentalidad',
+          label: 'Viernes · Cambiar la mentalidad',
+        },
+        { value: 'el_estilo_de_jesus', label: 'Sábado · El estilo de Jesús' },
+        { value: 'proyecto_despierta', label: 'Sábado · Proyecto #Despierta' },
+        {
+          value: 'el_anuncio_del_kerigma',
+          label: 'Sábado · El anuncio del Kerigma',
+        },
+        {
+          value: 'jovenes_destinatarios',
+          label: 'Sábado · Jóvenes: destinatarios/as de la evangelización',
+        },
+        {
+          value: 'la_finalidad_de_la_evangelizacion',
+          label: 'Sábado · La finalidad de la evangelización',
+        },
+        {
+          value: 'adoracion_y_alabanza',
+          label: 'Sábado · Adoración y alabanza',
+        },
+        {
+          value: 'iglesia_tema_candente',
+          label: 'Domingo · Iglesia: tema candente',
+        },
+        {
+          value: 'evangelizacion_conjunta',
+          label: 'Domingo · Evangelización conjunta… ¿y ahora qué?',
+        },
+        {
+          value: 'comparte_tu_despierta',
+          label: 'Domingo · Comparte tu despierta',
+        },
+      ],
+    },
+
+    // ── 3 · Aspectos prácticos (común) ──
+    {
+      id: 'practicos',
+      type: 'ratings',
+      section: 'Aspectos prácticos',
+      label: 'Valora los aspectos prácticos',
+      items: [
+        { value: 'lugar', label: 'El lugar: Benicàssim, zona La Plana' },
+        { value: 'albergue', label: 'El albergue Argentina' },
+        { value: 'almuerzos_meriendas', label: 'Almuerzos y meriendas' },
+        { value: 'comidas_albergue', label: 'Comidas del albergue' },
+        { value: 'ambiente_grupo', label: 'Ambiente en el grupo' },
+      ],
+    },
+
+    // ── 4 · Cierre (opcional) ──
+    {
+      id: 'pm_mejora',
+      type: 'text',
+      optional: true,
+      section: 'Para terminar',
+      showIf: { questionId: 'curso', equals: 'premonitores' },
+      label: '¿Tienes alguna propuesta de mejora para el curso en general?',
+      placeholder: 'Tus ideas, con cariño…',
+    },
+    {
+      id: 'dp_participacion',
+      type: 'text',
+      optional: true,
+      section: 'Para terminar',
+      showIf: { questionId: 'curso', equals: 'despierta' },
+      label:
+        '¿Qué crees que podríamos hacer para incrementar la participación en este tipo de encuentros?',
+      placeholder: 'Tus ideas…',
+    },
+    {
+      id: 'dp_mejora',
+      type: 'text',
+      optional: true,
+      section: 'Para terminar',
+      showIf: { questionId: 'curso', equals: 'despierta' },
+      label: 'Sugerencias de mejora en general',
+      placeholder: 'Tus sugerencias, con cariño…',
+    },
+    {
+      id: 'dp_otra',
+      type: 'text',
+      optional: true,
+      section: 'Para terminar',
+      showIf: { questionId: 'curso', equals: 'despierta' },
+      label: '¿Algo más que quieras decirnos?',
+      placeholder: 'Cualquier otra cosa que quieras contarnos…',
+    },
+  ],
+};
+
+/** Evaluación propia por evento (`event.id` → config). Sin entrada, la genérica. */
+export const EVENT_EVALUATION_DEFAULTS: Record<string, EvaluationConfig> = {
+  congresomc26: CONGRESO_MC_EVALUATION,
+};
+
+export const getEventEvaluationDefault = (eventId: string): EvaluationConfig =>
+  EVENT_EVALUATION_DEFAULTS[eventId] ?? DEFAULT_EVENT_EVALUATION;
 
 // ─── Evaluación de la APP ────────────────────────────────────────────
 // `evaluationOpen` enciende el CTA "Evalúa la app" en la Home.

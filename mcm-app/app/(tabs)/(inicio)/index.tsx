@@ -66,9 +66,9 @@ import GlassActionGroup from '@/components/ui/GlassActionGroup';
 import PressableScale from '@/components/ui/PressableScale';
 import {
   DEFAULT_APP_EVALUATION,
-  DEFAULT_EVENT_EVALUATION,
   EvaluationConfig,
   evaluationDoneKey,
+  getEventEvaluationDefault,
   isEvaluationOpen,
   mergeEvaluationConfig,
 } from '@/constants/evaluation';
@@ -295,8 +295,9 @@ export default function Home() {
     getEventFirebasePath(activeEvent, 'evaluacion'),
     getEventCacheKey(activeEvent, 'evaluacion'),
   );
+  const eventEvalDefault = getEventEvaluationDefault(activeEvent.id);
   const eventEvalOpen = isEvaluationOpen(
-    mergeEvaluationConfig(DEFAULT_EVENT_EVALUATION, eventEvalConfig),
+    mergeEvaluationConfig(eventEvalDefault, eventEvalConfig),
   );
   const { data: appEvalConfig } = useFirebaseData<Partial<EvaluationConfig>>(
     'app/evaluationConfig',
@@ -1046,7 +1047,7 @@ export default function Home() {
                     style={styles.evalCtaTitle}
                     numberOfLines={large ? undefined : 1}
                   >
-                    {DEFAULT_EVENT_EVALUATION.title || 'Evalúa la actividad'}
+                    {eventEvalDefault.title || 'Evalúa la actividad'}
                   </Text>
                   <Text
                     style={styles.evalCtaBody}

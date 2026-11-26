@@ -4,9 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
-## 2026-11-26 12:00 — Evaluación propia del Congreso M+C en Firebase
+## 2026-11-26 13:00 — Evaluación del Congreso M+C con dos rutas (Pre-monitores / Despierta)
 
-- Escrito `activities/congresomc26/evaluacion` (9 preguntas propias del Congreso/Curso Despierta, `status: scheduled`, abre dom 29-nov 10:00, cierra mar 1-dic 00:00). Copia en `firebase-seed/eventos/congresomc26-evaluacion.json`. Sin OTA: la app lee las preguntas de Firebase.
+- **Evaluación propia del Congreso** (`CONGRESO_MC_EVALUATION`): 14 preguntas, cada persona ve 8 según conteste «¿En qué parte del Congreso has participado?». Pre-monitores: valoración 1-8, «con qué te quedas», «qué te ha faltado», formato preferido y MAT Consolación (verano de 2027). Despierta: expectativas 1-8, «¿valió la pena?» y hasta 3 momentos favoritos del horario. Las dos: aspectos prácticos y cierre opcional. Título «Evalúa el Congreso M+C».
+- **Wizard con tipos nuevos** (`EvalQuestion`): `showIf` (rutas condicionales), `section` (rótulo del bloque), `maxSelect` (tope en `multi`) y el tipo `ratings` (varias valoraciones de 1-5 estrellas en una pantalla, respuesta = objeto). Lógica pura y testeada en `constants/evaluation.ts` (`visibleQuestions`, `isQuestionAnswered`, `cleanAnswers`); también sirve a las encuestas genéricas. Contrato para el panel actualizado en `ENCUESTAS_CONTRATO.md` y copia de referencia en `firebase-seed/eventos/congresomc26-evaluacion.json`.
+- **Por evento:** `getEventEvaluationDefault(event.id)` (Home y pantalla); el resto de eventos conservan la genérica.
+- **Firebase:** `activities/congresomc26/evaluacion/data` lleva solo la programación (abre dom 29-nov 10:00, cierra mar 1-dic 00:00). Las preguntas salen del código: **necesita OTA a `production` antes del domingo 10:00.** Solo JS.
 
 ## 2026-11-26 11:00 — Evaluación del Congreso: programada y solo para quien tiene la campanita
 
