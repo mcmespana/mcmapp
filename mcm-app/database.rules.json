@@ -307,6 +307,24 @@
     },
 
     /* ------------------------------------------------------------------ *
+     *  INFORMES PÚBLICOS DE ENCUESTAS  (/surveyReports/<slug>)
+     *  Los crea el panel (pestaña «Informe» de Encuestas): una FOTO ya
+     *  agregada del resultado (medias, repartos y los comentarios elegidos),
+     *  nunca respuestas en bruto. La página pública del panel
+     *  (/informe/<slug>, sin login) lee `<slug>/data`.
+     *  La raíz no es enumerable: el slug lleva un sufijo aleatorio y quien
+     *  no tiene el enlace no puede listar los informes.
+     *  Contrato: mcmpanel/docs/INFORMES.md.
+     * ------------------------------------------------------------------ */
+    "surveyReports": {
+      ".read": "root.child('_config/legacyPanelWrites').val() === true",
+      ".write": "root.child('_config/legacyPanelWrites').val() === true",
+      "$slug": {
+        ".read": true
+      }
+    },
+
+    /* ------------------------------------------------------------------ *
      *  FEEDBACK Y EVALUACIÓN DE LA APP  (/app)
      *  - feedback/<categoria>:   reportes de bugs. Solo escritura desde la
      *                            app; los lee el panel.

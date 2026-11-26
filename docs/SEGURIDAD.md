@@ -79,6 +79,7 @@ o borra el bloque: el resto sigue funcionando.
 | `/scheduledNotifications`            | Bandera | No                                              | `api/` (bandera)        |
 | `/surveys/<id>/data`                 | Pública | No                                              | mcmpanel (bandera)      |
 | `/surveys/<id>/respuestas/<id>`      | **Solo la suya** | Sí (una por dispositivo)               | Usuario                 |
+| `/surveyReports/<slug>`              | Por slug (raíz no enumerable) | No (solo panel)           | mcmpanel (bandera)      |
 | `/_config`                           | **Nadie** | **Nadie** (solo consola / Admin SDK)          | Tú                      |
 | `/wordle/*`                          | Pública | Sí (stats/users/partida); `daily-words` no      | App / Admin SDK         |
 | `/app/feedback`                      |    —    | Sí (reportar bug)                               | Usuario                 |

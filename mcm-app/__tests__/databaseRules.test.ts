@@ -89,6 +89,10 @@ describe('app: lecturas públicas', () => {
       'EvaluacionScreen.checkSubmitted',
     ],
     [`surveys/enc1/respuestas/${DEVICE}`, 'SurveyScreen.checkSubmitted'],
+    [
+      'surveyReports/congreso-x7k2pq/data',
+      'página pública /informe/<slug> del panel',
+    ],
   ];
 
   it.each(reads)('lee %s (%s) con las banderas puestas', (path) => {
@@ -217,6 +221,7 @@ describe('panel: lo que necesita con las banderas puestas', () => {
     'activities',
     'profileConfig',
     'surveys',
+    'surveyReports',
     'choirs',
     'choirSessions/coro-1',
     'playlistShares/1234',
@@ -246,6 +251,7 @@ describe('panel: lo que necesita con las banderas puestas', () => {
     'jubileo/horario',
     'surveys/enc1',
     'surveys/_index',
+    'surveyReports/congreso-x7k2pq',
     'choirs/coro-1',
     'playlistShares/1234',
     'choirSessions/coro-1',
@@ -283,6 +289,16 @@ describe('banderas apagadas: lo que se cierra', () => {
     expect(
       can(`${EV}/evaluacion/respuestas/${DEVICE}`, 'read', FLAGS_OFF),
     ).toBe(true);
+  });
+
+  it('los informes públicos no se listan ni se escriben desde fuera', () => {
+    expect(can('surveyReports', 'read', FLAGS_OFF)).toBe(false);
+    expect(can('surveyReports/congreso-x7k2pq', 'write', FLAGS_OFF)).toBe(
+      false,
+    );
+    expect(can('surveyReports/congreso-x7k2pq/data', 'read', FLAGS_OFF)).toBe(
+      true,
+    );
   });
 
   it('los tokens push dejan de ser enumerables', () => {

@@ -405,7 +405,26 @@ alias). No hace falta nada más en la app.
 
 ---
 
-## 10. Referencias en el repo
+## 10. Informes del panel (`/surveyReports`) — no los lee la app
+
+El panel saca informes de cualquier encuesta (PDF, imágenes para WhatsApp y
+**enlaces públicos** `/informe/<slug>` servidos por el propio panel, sin
+login). Para eso escribe `surveyReports/<slug> = { updatedAt, data, meta }`,
+donde `data` es una **foto ya agregada** (medias, repartos, comentarios
+elegidos), nunca respuestas en bruto. La app no lee ni escribe ese nodo.
+Contrato completo: `mcmpanel/docs/INFORMES.md`.
+
+Dos cosas de este contrato que el panel respeta al analizar:
+
+- **Rutas (`showIf`)**: cada pregunta se mide sobre quien **la vio**
+  (mismo algoritmo que `visibleQuestions`), no sobre el total.
+- **Preguntas en código**: si `data.questions` falta, el panel usa un espejo de
+  `DEFAULT_EVENT_EVALUATION` / `EVENT_EVALUATION_DEFAULTS`
+  (`mcmpanel/src/lib/eventEvaluationDefaults.ts`) y de `DEFAULT_APP_EVALUATION`.
+  **Si cambias esas preguntas en `constants/evaluation.ts`, cópialas allí** (o
+  súbelas a Firebase desde el editor del panel y mandan las de Firebase).
+
+## 11. Referencias en el repo
 
 - Modelo y helpers: `mcm-app/constants/evaluation.ts`, `mcm-app/constants/surveys.ts`.
 - Wizard (render de tipos): `mcm-app/components/EvaluationWizard.tsx`.
