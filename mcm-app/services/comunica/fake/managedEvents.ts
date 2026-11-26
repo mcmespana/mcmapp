@@ -216,7 +216,8 @@ function makePeople(
     const surname = last.split(' ')[0];
     const guardians: Guardian[] = kid
       ? Array.from({ length: r() < 0.6 ? 2 : 1 }, (_, i) => {
-          const name = pick(ADULTS);
+          // Mujer en los pares de `ADULTS`, hombre en los impares: «Madre» no le toca a un Javier.
+          const name = pick(ADULTS.filter((_, k) => k % 2 === i % 2));
           return {
             id: `${pid}-fam-${i + 1}`,
             fullName: `${name} ${surname}`,
