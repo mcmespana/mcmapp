@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-26 23:15 — Reglas: nodo `/surveyReports` (informes públicos del panel)
+
+- **Firebase:** nodo nuevo `surveyReports/<slug>` que escribe el panel (pestaña «Informe» de Encuestas): una foto ya agregada de los resultados para enlaces públicos `/informe/<slug>` del panel. La app **no** lo usa. Reglas preparadas en `database.rules.json`: `$slug` legible por cualquiera, la raíz solo con `legacyPanelWrites` (no se lista). Tests en `databaseRules.test.ts`. Contrato: `mcmpanel/docs/INFORMES.md` y §10 de `ENCUESTAS_CONTRATO.md`.
+- El panel ya entiende `ratings`, `maxSelect`, `section` y `showIf`, y espeja las preguntas de evaluación que viven en código (Congreso M+C incluido). Sin cambios en la app.
+
 ## 2026-11-26 13:00 — Evaluación del Congreso M+C con dos rutas (Pre-monitores / Despierta)
 
 - **Evaluación propia del Congreso** (`CONGRESO_MC_EVALUATION`): 14 preguntas, cada persona ve 8 según conteste «¿En qué parte del Congreso has participado?». Pre-monitores: valoración 1-8, «con qué te quedas», «qué te ha faltado», formato preferido y MAT Consolación (verano de 2027). Despierta: expectativas 1-8, «¿valió la pena?» y hasta 3 momentos favoritos del horario. Las dos: aspectos prácticos y cierre opcional. Título «Evalúa el Congreso M+C».

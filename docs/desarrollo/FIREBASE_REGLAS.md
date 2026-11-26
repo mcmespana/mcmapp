@@ -28,7 +28,7 @@ de Contigo de cada persona) está cerrado y punto.
 
 | Bandera | Qué abre | Cómo se apaga |
 | --- | --- | --- |
-| `_config/legacyPanelWrites` | Lo que el panel lee y escribe de contenido: `albums`, `calendars`, `songs`, `wordle`, `profileConfig`, `activities`, `jubileo`, `surveys`, `app`, `choirs`. También la lectura en bloque de las respuestas de encuestas. | Auth real en el panel (decisión D2) |
+| `_config/legacyPanelWrites` | Lo que el panel lee y escribe de contenido: `albums`, `calendars`, `songs`, `wordle`, `profileConfig`, `activities`, `jubileo`, `surveys`, `surveyReports` (listar/escribir; cada `surveyReports/<slug>` se lee sin bandera), `app`, `choirs`. También la lectura en bloque de las respuestas de encuestas. | Auth real en el panel (decisión D2) |
 | `_config/legacyNotificationsOpen` | `pushTokens` (lectura de la raíz), `notifications` (escritura) y `scheduledNotifications` (ambas). Lo necesitan las funciones `api/` y el contador de destinatarios del composer. | `FIREBASE_DB_SECRET` en Vercel **y** que el panel deje de leer esos nodos desde el navegador |
 
 `/_config` **no es legible ni escribible por ningún cliente**. Las reglas lo
