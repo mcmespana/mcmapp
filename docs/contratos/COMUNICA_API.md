@@ -486,6 +486,33 @@ trabaja con la que elige en un selector. Origen: `sticpa_pl_delegation()`,
   hicieron: la cola guarda la delegación en cada entrada y sube con esa,
   aunque luego se cambie el selector.
 
+### Gestor de un evento (plan 18)
+
+Original: `comunicaMiddleware:src/contract-managed-events.ts`; la app tiene la copia en el bloque «Gestor de un evento» de
+`services/comunica/contract.ts`. Plan: [`18-gestor-de-evento.md`](../planes/area-nativa/18-gestor-de-evento.md).
+
+- **Quién**: quien Comunica Tools ha nombrado gestor/a de ESE evento (`comunicatools.event_managers`) y mientras el evento
+  siga siendo de la delegación con la que se le nombró. **Sin papel de equipo.** `Me.managesEvents: true` si gestiona
+  alguno. Fuera de eso, 403 `event_out_of_scope` (exista o no); una ficha de alguien sin inscripción en ese evento,
+  `person_out_of_scope`; marcar una inscripción de otro evento, `registration_out_of_scope`. Sin la cabecera de la
+  delegación de trabajo.
+- `GET /v1/managed-events` → `{ generatedAt, events: ManagedEventSummary[] }` (`id, name, startDate, endDate,
+  delegation, registered, arrived`); los acabados hace más de 30 días no salen.
+- `GET /v1/managed-events/:id` → `{ generatedAt, event, registrations, checkins, since, rooms }`. `registrations`: una
+  por persona, de cualquier delegación, activas primero y canceladas al final (con `registrationStatus`), sin salud (solo
+  `badges`). `checkins`: `CheckinState { registrationId, arrivedAt?, arrivedBy?, absent?, note?, noteBy?, roomId?,
+  updatedAt }` (sin fila = falta). `rooms`: las habitaciones de los alojamientos del evento. Se guarda en el móvil.
+- `GET /v1/managed-events/:id/checkins?since=` → `{ generatedAt, checkins, since }`: lo cambiado desde `since` con 15 s
+  de margen. Solo lee Supabase: para preguntar cada pocos segundos con la pantalla abierta.
+- `POST /v1/managed-events/:id/checkin` `{ registrationIds (1-500), to: 'in' | 'absent' | 'pending', at? }` →
+  `{ checkins }`. `at` (la hora en que se marcó, si sube luego) se acepta de las últimas 48 h. No toca la nota ni la
+  habitación. La app lo manda por la cola, siempre con `at`.
+- `POST /v1/managed-events/:id/note` `{ registrationId, note }` → `{ checkins }`. Vacía, la borra; se limpia a 300.
+  Nada de salud. No toca la llegada.
+- `GET /v1/managed-events/:id/people/:pid` → `ManagedPerson` (persona, `registrationId`, teléfonos, correo, familia,
+  autorizaciones, marcas; sin salud ni DNI). `…/health` → `HealthNote`, nunca se guarda. `…/photo?v=` → la foto.
+- Errores además: 503 `crm_unavailable` con `reason: 'no_checkin_store'` (sin Supabase).
+
 ### Salud
 
 - `GET /v1/people/:id/health` → `{ generatedAt, personId, items: [{ kind,

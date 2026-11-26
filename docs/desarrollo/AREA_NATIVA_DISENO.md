@@ -22,6 +22,7 @@ Ya existen, en `components/comunica/comun/` (y se usan, no se copian):
 | Bloque de filas en una superficie | `Section` (corta) o `ListCell` con `cellPosition` (en `FlatList`) |
 | Fila de persona | `PersonRow` (con `avatarTone="accent"` para monitores, `subtitleLead` para una pastilla) |
 | Fila de marcar asistencia | `pasar-lista/RollRow` + `MarkSheet` — **no hay otra** (lo vigila un test) |
+| Fila de check-in (la llegada a un evento que se gestiona, plan 18; no va al CRM) | `gestor/CheckinRow` |
 | Recuentos, aviso, «Han venido todos» | `pasar-lista/RollBits` (`Count`, `Notice`, `FillButton`) |
 | Fila que lleva a otra pantalla | `NavRow` |
 | Tarjeta de un registro (hoy, un evento) | `RecordCard` (con `cta` si se toca entera) |

@@ -4,6 +4,13 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-26 16:02 — Comunica: «Eventos que gestionas» (check-in de un evento desde la app)
+
+- **Nuevo (plan 18, `docs/planes/area-nativa/18-gestor-de-evento.md`)**: quien Comunica Tools nombra **gestor/a** de un evento (`Me.managesEvents`, sin necesidad de papel de equipo) ve en la portada del área «Eventos que gestionas» y hace el **check-in**: todos los inscritos del evento (de cualquier delegación), sus fichas, notas y quién ha llegado. Se guarda en el mismo sitio que el check-in de Comunica Tools (Supabase, por comunicaMiddleware): **nada va al CRM** y no es la asistencia por días de «Pasar lista en un evento».
+- **Pantallas nuevas**: `comunica/gestion` (lista: hoy, próximos y pasados con «llegados/inscritos»), `comunica/gestion/[eventId]` (cifra grande con barra, buscador sin tildes y por trozos, agrupar por nombre, delegación, curso, papel o habitación, chips Todos/Faltan/Están/No vienen/Con nota, «Llega» con deshacer, marcar a varios) y `comunica/gestion/[eventId]/persona/[personId]` (llegada, nota, salud aparte, contacto de la persona y su familia, autorizaciones).
+- **Datos**: contrato copiado del middleware (`managedEvents`, `managedEvent`, `managedCheckins`, `managedCheckin`, `managedNote`, `managedPerson`, `managedHealth`); el evento y la ficha se guardan en el móvil, la salud nunca. Marcar y anotar van por la **cola** (kinds `checkin` y `checkin-note`, con la hora en que se marcó); con la pantalla abierta y la app delante, **sondeo cada 4,5 s** de `checkins?since=` para ver lo que marcan otros. Estas rutas no llevan la delegación de trabajo.
+- Servidor falso con un encuentro de ECE de ejemplo (gestionan `coordination` y `memberNoKids`) y mando `othersCheckIn`. La hoja de salud admite `eventId`. Iconos nuevos en `IconSymbol` (deshacer, nota, habitación, lista, check-in).
+
 ## 2026-11-25 00:50 — Versión 2.6.0: dependencias al día, build de tienda y onboarding
 
 - **`version` y `runtimeVersion` a 2.6.0** (`app.json`). Cambian módulos nativos, así que es build de tienda: las 2.5.x dejan de recibir OTA. Cuando la 2.6.0 esté aprobada en App Store y Play, subir la **versión mínima** del Panel a `2.6.0`. Commit con `[skip-ota]`.
