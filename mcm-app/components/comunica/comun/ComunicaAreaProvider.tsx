@@ -42,7 +42,9 @@ import {
   isComunicaApiAvailable,
 } from '@/services/comunica';
 import type {
+  CheckinResult,
   DeviceRegistration,
+  ManagedEventDetail,
   FollowUpsResponse,
   FollowUpWrite,
   FollowUpWriteResult,
@@ -73,6 +75,13 @@ import { dehydrateArea, fitForStorage } from '@/services/comunica/persist';
 import { areaKey } from '@/hooks/comunica/useAreaQuery';
 import { useAreaBridge } from '@/hooks/comunica/useAreaBridge';
 import { logger } from '@/utils/logger';
+import {
+  CHECKIN_KIND,
+  CHECKIN_NOTE_KIND,
+  withCheckins,
+  type CheckinPayload,
+  type NotePayload,
+} from '@/utils/comunica/checkin';
 
 export function createAreaQueryClient() {
   return new QueryClient({
@@ -318,6 +327,19 @@ export default function ComunicaAreaProvider({
             ...(e.payload as Omit<DeviceRegistration, 'clientId'>),
             clientId: e.clientId,
           }),
+        // Gestor de un evento (plan 18): el check-in de Comunica Tools. Sin
+        // `clientId` en el contrato: marcar dos veces lo mismo deja lo mismo, y
+        // la hora en que se marcó (`at`) viaja en la entrada.
+        [CHECKIN_KIND]: (e) =>
+          getComunicaApi().checkinManaged(
+            e.meta.eventId,
+            e.payload as CheckinPayload,
+          ),
+        [CHECKIN_NOTE_KIND]: (e) =>
+          getComunicaApi().noteManaged(
+            e.meta.eventId,
+            e.payload as NotePayload,
+          ),
         // Mis datos de monitor (plan 09): solo lo que difiere de lo confirmado.
         'me-monitor': (e) =>
           getComunicaApi().updateMyMonitorProfile({
@@ -382,6 +404,20 @@ export default function ComunicaAreaProvider({
         if (e.kind === 'event-roll') {
           void qc.invalidateQueries({
             queryKey: areaKey(['events', e.meta.eventId, 'roll']),
+          });
+        }
+        if (e.kind === CHECKIN_KIND || e.kind === CHECKIN_NOTE_KIND) {
+          // Cómo han quedado, al momento en el evento guardado; la lista de
+          // eventos (los «llegados») se relee cuando se vuelva a ella.
+          const { checkins } = result as CheckinResult;
+          qc.setQueryData<ManagedEventDetail>(
+            areaKey(['managed-events', e.meta.eventId]),
+            (old) => (old ? withCheckins(old, checkins) : old),
+          );
+          void qc.invalidateQueries({
+            queryKey: areaKey(['managed-events']),
+            exact: true,
+            refetchType: 'none',
           });
         }
         if (e.kind === 'me-monitor') {

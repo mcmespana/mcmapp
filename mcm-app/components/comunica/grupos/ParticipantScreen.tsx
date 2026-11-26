@@ -517,7 +517,8 @@ function QuickButtons({
   );
 }
 
-function ContactRow({
+/** Una fila de contacto (la persona, un familiar, emergencias). También la usa la ficha del gestor (plan 18). */
+export function ContactRow({
   name,
   tag,
   sub,
@@ -616,7 +617,7 @@ function RoundButton({
   );
 }
 
-function Hint({ text }: { text: string }) {
+export function Hint({ text }: { text: string }) {
   const t = useComunicaTheme();
   return (
     <View style={styles.hint}>

@@ -13,6 +13,8 @@
 //              y la ficha del monitor (plan 06).
 //   eventos, eventos/[eventId] → pasar lista en un evento y sus grupos de
 //            actividad (plan 07).
+//   gestion, gestion/[eventId], …/persona/[personId] → los eventos que
+//            gestionas, su check-in y la ficha de un inscrito (plan 18).
 //   acceso-codigo, acceso-elegir → entrar (plan 02; «Entra en tu área» es la
 //              propia puerta cuando no hay sesión).
 //   yo       → tu cuenta y salir (carpeta: avisos y mis datos de monitor,
@@ -121,6 +123,18 @@ export default function ComunicaLayout() {
           />
           <Stack.Screen
             name="coordinacion/monitor/[id]"
+            options={{ title: 'Ficha' }}
+          />
+          <Stack.Screen
+            name="gestion/index"
+            options={{ title: 'Eventos que gestionas' }}
+          />
+          <Stack.Screen
+            name="gestion/[eventId]/index"
+            options={{ title: 'Check-in' }}
+          />
+          <Stack.Screen
+            name="gestion/[eventId]/persona/[personId]"
             options={{ title: 'Ficha' }}
           />
           <Stack.Screen name="acceso-codigo" options={{ title: 'Código' }} />
