@@ -2,6 +2,7 @@
 //
 //   1. «Viendo a · Lucía ▾» (solo con hijos).
 //   2. El saludo (sin ×: siempre dice a quién se ve). No sale debajo de lo del equipo, que ya empieza con su propio encabezado.
+//   2b. A quien es gestor/a de un evento (plan 18), «Eventos que gestionas» (debajo de lo del equipo ya sale allí).
 //   3. «A quién tienes a cargo» (solo el familiar a secas): las mismas tarjetas de «¿A quién ves?» con «Ver su ficha».
 //   4. «Actividades» (o «Tus pagos» para el familiar a secas), con la descripción de cada sección.
 //   4b. «Próximas actividades» (si hay Calendario y algo cerca) y «Ver calendario».
@@ -37,6 +38,7 @@ import Section from '../comun/Section';
 import ActiveProfileBar from '../perfiles/ActiveProfileBar';
 import ProfileCard from '../perfiles/ProfileCard';
 import UpcomingAgenda from './UpcomingAgenda';
+import ManagedHomeEntry from '../gestor/ManagedHomeEntry';
 
 const ICON: Record<FamilySection, NavIcon> = {
   profile: 'person.crop.circle',
@@ -113,6 +115,9 @@ function Content({ embedded }: { embedded: boolean }) {
           body={greetingIntro(audience, activeFirst)}
         />
       ) : null}
+
+      {/* Plan 18: un gestor puede no ser del equipo. */}
+      {!embedded ? <ManagedHomeEntry /> : null}
 
       {audience === 'guardian' && profiles.children.length > 0 ? (
         <Section title="A quién tienes a tu cargo" bare>
