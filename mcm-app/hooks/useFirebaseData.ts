@@ -315,7 +315,13 @@ export function useFirebaseData<T>(
 
     // Aplica el transform de ESTA instancia a los datos crudos de la caché.
     const applyParsed = (parsed: unknown, isHidden: boolean) => {
-      if (parsed === undefined) return;
+      if (parsed === undefined) {
+        // Nodo sin `data` (sección creada desde el panel solo con `hidden`):
+        // no hay nada que transformar, pero el flag SÍ hay que aplicarlo. Sin
+        // esto la tarjeta oculta seguía saliendo en el hub del evento.
+        if (isMounted) setHidden(isHidden);
+        return;
+      }
       let transformed: T;
       if (lastApplied.current && lastApplied.current.src === parsed) {
         transformed = lastApplied.current.out;
