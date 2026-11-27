@@ -141,19 +141,36 @@ function Chooser({
     if (roomId !== current || target.ids.length > 1) onPick(target, roomId);
     onClose();
   };
-  const tiles = (list: RoomOption[]) => (
-    <View style={styles.grid}>
-      {list.map((o) => (
-        <Tile
-          key={o.use.room.id}
-          o={o}
-          many={many}
-          width={tileWidth}
-          onPick={() => pick(o.use.room.id)}
-        />
-      ))}
-    </View>
-  );
+  // Con varios alojamientos, cada tanda partida por casa (el nombre no cabe
+  // en una ficha de un tercio de pantalla: salía «Albergue Los…»).
+  const tiles = (list: RoomOption[]) => {
+    const groups: { venue: string; list: RoomOption[] }[] = [];
+    for (const o of list) {
+      const g = groups.at(-1);
+      if (g && g.venue === o.use.room.venue) g.list.push(o);
+      else groups.push({ venue: o.use.room.venue, list: [o] });
+    }
+    return groups.map((g, i) => (
+      <View key={`${g.venue}-${i}`} style={styles.venue}>
+        {many ? (
+          <Text style={[styles.venueName, { color: t.textSecondary }]}>
+            {g.venue}
+          </Text>
+        ) : null}
+        <View style={styles.grid}>
+          {g.list.map((o) => (
+            <Tile
+              key={o.use.room.id}
+              o={o}
+              many={many}
+              width={tileWidth}
+              onPick={() => pick(o.use.room.id)}
+            />
+          ))}
+        </View>
+      </View>
+    ));
+  };
 
   return (
     <View style={styles.body}>
@@ -320,14 +337,6 @@ function Tile({
           </Text>
         ) : null}
       </View>
-      {many ? (
-        <Text
-          style={[styles.small, { color: t.textSecondary }]}
-          numberOfLines={1}
-        >
-          {room.venue}
-        </Text>
-      ) : null}
       <View style={[styles.track, { backgroundColor: t.disabledFill }]}>
         <View
           style={[
@@ -377,6 +386,8 @@ const styles = StyleSheet.create({
   list: { gap: 8, paddingBottom: 4 },
   label: { ...typography.sectionLabel, marginTop: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
+  venue: { gap: 6 },
+  venueName: { ...typography.caption, fontWeight: '600' },
   tile: {
     minHeight: 72,
     padding: 10,

@@ -61,7 +61,7 @@ import CardSurface from '../comun/CardSurface';
 import PersonAvatar from '../comun/PersonAvatar';
 import SearchField from '../comun/SearchField';
 import SyncBadge from '../comun/SyncBadge';
-import { ROOM_CHIP } from '../comun/theme';
+import { MARK_FILL, ROOM_CHIP } from '../comun/theme';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import { Notice } from '../pasar-lista/RollBits';
 import { FORBIDDEN_MANAGED } from './CheckinScreen';
@@ -71,12 +71,15 @@ import { useRoomPicker } from './useRoomPicker';
 type Item =
   | { kind: 'head'; key: string }
   | { kind: 'unplaced'; key: string; people: ManagedRegistration[] }
+  | { kind: 'venue'; key: string; title: string }
   | {
       kind: 'floor';
       key: string;
       title: string;
       taken: number;
       capacity: number;
+      /** La primera planta de un alojamiento (va pegada a su nombre). */
+      first: boolean;
     }
   | { kind: 'room'; key: string; use: RoomUse }
   | { kind: 'empty'; key: string }
@@ -163,15 +166,24 @@ function RoomsList({
     if (loose.length > 0) {
       items.push({ kind: 'unplaced', key: 'unplaced', people: loose });
     }
+    // Con varios alojamientos, su nombre una vez y debajo sus plantas.
+    const many = venuesOf(detail.rooms).length > 1;
+    let venue: string | null = null;
     for (const s of roomsByFloor(occ)) {
       const list = q ? s.rooms.filter(roomHit) : s.rooms;
       if (list.length === 0) continue;
+      const first = many && s.venue !== venue;
+      if (first) {
+        venue = s.venue;
+        items.push({ kind: 'venue', key: `v:${s.venue}`, title: s.venue });
+      }
       items.push({
         kind: 'floor',
         key: `f:${s.key}`,
-        title: s.title,
+        title: s.floor,
         taken: s.taken,
         capacity: s.capacity,
+        first,
       });
       for (const u of list) {
         items.push({ kind: 'room', key: `h:${u.room.id}`, use: u });
@@ -276,13 +288,26 @@ function RoomsList({
             </CardSurface>
           </View>
         );
+      case 'venue':
+        return (
+          <View style={[styles.block, styles.venue]}>
+            <SectionTitle title={item.title} />
+          </View>
+        );
       case 'floor':
         return (
-          <View style={[styles.block, styles.floor]}>
-            <SectionTitle
-              title={item.title}
-              trailing={`${item.taken}/${item.capacity} plazas`}
-            />
+          <View style={[styles.block, item.first ? null : styles.floor]}>
+            <View style={styles.floorHead}>
+              <Text
+                accessibilityRole="header"
+                style={[styles.floorTitle, { color: t.textSecondary }]}
+              >
+                {item.title}
+              </Text>
+              <Text style={[styles.floorCount, { color: t.textSecondary }]}>
+                {item.taken}/{item.capacity} plazas
+              </Text>
+            </View>
           </View>
         );
       case 'room':
@@ -487,7 +512,7 @@ function PersonLine({
         styles.person,
         !first && {
           borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: t.separator,
+          borderTopColor: t.cardBorder,
         },
       ]}
     >
@@ -522,7 +547,7 @@ function PersonLine({
         <IconSymbol
           name="checkmark.circle.fill"
           size={18}
-          color={t.chip('positive').text}
+          color={MARK_FILL.yes}
         />
       ) : eff?.status === 'absent' ? (
         <Text style={[styles.small, { color: t.textSecondary }]}>No viene</Text>
@@ -541,7 +566,7 @@ function ExtraLine({ extra }: { extra: RoomExtra }) {
         styles.person,
         {
           borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: t.separator,
+          borderTopColor: t.cardBorder,
         },
       ]}
       accessible
@@ -568,7 +593,16 @@ function ExtraLine({ extra }: { extra: RoomExtra }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   block: { paddingHorizontal: 16, paddingTop: 12, gap: 8 },
-  floor: { paddingTop: 20 },
+  venue: { paddingTop: 24 },
+  floor: { paddingTop: 16 },
+  floorHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    paddingHorizontal: 4,
+  },
+  floorTitle: { ...typography.sectionLabel, flexShrink: 1 },
+  floorCount: { ...typography.caption },
   roomBlock: { paddingTop: 8 },
   meta: { ...typography.subhead },
   figure: { ...typography.h2 },
@@ -579,7 +613,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   sectionTitle: { ...typography.h3, flexShrink: 1 },
-  sectionCount: { ...typography.subhead, fontWeight: '600' },
+  sectionCount: { ...typography.subhead, fontWeight: '600', flexShrink: 0 },
   roomHead: {
     flexDirection: 'row',
     alignItems: 'center',

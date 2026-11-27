@@ -667,8 +667,9 @@ describe('habitaciones', () => {
     const t = texts(tree);
     expect(t).toMatch(/Sin habitación/);
     expect(t.indexOf('Sin habitación')).toBeLessThan(t.indexOf('Planta 1'));
-    expect(t).toMatch(/Albergue Los Pinos · Planta 1/);
-    expect(t).toMatch(/Casa del Huerto · Sin planta/);
+    // Cada alojamiento una vez y, debajo, sus plantas.
+    expect(t).toMatch(/Albergue Los Pinos \| Planta 1/);
+    expect(t).toMatch(/Casa del Huerto \| Sin planta/);
     // Lo puesto a mano ocupa y se ve.
     expect(t).toMatch(/Formador: Juan/);
     expect(t).toMatch(/Reservada para cocina/);

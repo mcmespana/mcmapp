@@ -365,7 +365,7 @@ function Ficha({
                     styles.monGroup,
                     gi > 0 && {
                       borderTopWidth: StyleSheet.hairlineWidth,
-                      borderTopColor: t.separator,
+                      borderTopColor: t.cardBorder,
                     },
                   ]}
                 >
@@ -540,7 +540,7 @@ function RoomRow({
     : '';
   return (
     <View
-      style={[styles.row, { borderTopColor: t.separator }]}
+      style={[styles.row, { borderTopColor: t.cardBorder }]}
       accessible={false}
     >
       <IconSymbol name="bed.double" size={20} color={t.accentText} />
@@ -626,7 +626,7 @@ function NoteRow({
   };
   if (!editing) {
     return (
-      <View style={[styles.row, { borderTopColor: t.separator }]}>
+      <View style={[styles.row, { borderTopColor: t.cardBorder }]}>
         <IconSymbol name="note.text" size={20} color={t.accentText} />
         <View style={styles.flex}>
           {saved ? (
@@ -663,7 +663,7 @@ function NoteRow({
     );
   }
   return (
-    <View style={[styles.note, { borderTopColor: t.separator }]}>
+    <View style={[styles.note, { borderTopColor: t.cardBorder }]}>
       <AppTextField
         value={draft}
         onChangeText={setDraft}
@@ -823,11 +823,18 @@ const styles = StyleSheet.create({
   },
   healthLabel: { ...typography.button },
   list: { borderRadius: radii.lg, overflow: 'hidden' },
-  monGroup: { padding: 16, gap: 8 },
-  monTitle: { ...typography.body, fontWeight: '700' },
-  kv: { gap: 2 },
-  kvLabel: { ...typography.caption },
-  kvValue: { ...typography.body },
+  monGroup: { paddingHorizontal: 16, paddingVertical: 8 },
+  monTitle: { ...typography.body, fontWeight: '700', paddingTop: 8 },
+  // Como las filas de «Datos personales» (`FichaParts`): etiqueta y dato.
+  kv: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    minHeight: 44,
+  },
+  kvLabel: { ...typography.subhead, flexShrink: 1 },
+  kvValue: { ...typography.body, flex: 1, textAlign: 'right' },
   body: { ...typography.body },
   caption: { ...typography.caption },
   flex: { flex: 1 },

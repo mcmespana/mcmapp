@@ -330,6 +330,9 @@ export function roomUndoGroups(
 
 export interface RoomFloorSection {
   key: string;
+  venue: string;
+  /** «Planta 1», «Baja», «Sin planta». */
+  floor: string;
   /** «Planta 1» o, con varios alojamientos, «Casa X · Planta 1». */
   title: string;
   /** Plazas ocupadas y totales de la planta. */
@@ -351,6 +354,8 @@ export function roomsByFloor(
     if (!s || s.key !== key) {
       s = {
         key,
+        venue: room.venue,
+        floor: floorLabel(room.floor),
         title: many
           ? `${room.venue} · ${floorLabel(room.floor)}`
           : floorLabel(room.floor),
