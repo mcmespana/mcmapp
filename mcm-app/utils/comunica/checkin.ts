@@ -13,11 +13,15 @@
 //     no pueda resucitar lo de antes.
 //   · La nota va aparte, una por inscripción (`checkin-note:<evento>:<id>`):
 //     gana la última.
+//   · La habitación, por tandas como la llegada
+//     (`checkin-room:<evento>:<tanda>`): un POST pone la misma habitación (o
+//     ninguna) a varios. Volver a moverlos los saca de las tandas de antes.
 //   · Agrupa y filtra, pero no recalcula: curso, papel y delegación vienen
 //     del servidor.
 
 import type {
   CheckinBody,
+  RoomBody,
   CheckinState,
   CheckinTarget,
   ManagedEventDetail,
@@ -30,6 +34,7 @@ import type { OutboxEntry } from '@/services/comunica/outbox';
 import { NOT_GOING_LABEL } from './activityGroups';
 import { madridTime } from './madrid';
 import { nameKey } from './nameKey';
+import { roomHeading, sortRooms } from './rooms';
 import { levelOrder, levelSectionKey } from './schoolLevels';
 import { fold } from './search';
 
@@ -37,11 +42,15 @@ import { fold } from './search';
 
 export const CHECKIN_KIND = 'checkin';
 export const CHECKIN_NOTE_KIND = 'checkin-note';
+export const CHECKIN_ROOM_KIND = 'checkin-room';
+const KINDS = [CHECKIN_KIND, CHECKIN_NOTE_KIND, CHECKIN_ROOM_KIND];
 
 export const checkinQueueKey = (eventId: string, batch: string) =>
   `checkin:${eventId}:${batch}`;
 export const noteQueueKey = (eventId: string, registrationId: string) =>
   `checkin-note:${eventId}:${registrationId}`;
+export const roomQueueKey = (eventId: string, batch: string) =>
+  `checkin-room:${eventId}:${batch}`;
 
 /** Lo que va en la cola: el cuerpo del POST tal cual, siempre con su hora. */
 export type CheckinPayload = Required<CheckinBody>;
@@ -49,6 +58,8 @@ export interface NotePayload {
   registrationId: string;
   note: string;
 }
+/** La habitación: el cuerpo del POST tal cual (`null` = sin habitación). */
+export type RoomPayload = RoomBody;
 
 const isMine = (e: OutboxEntry, eventId: string) => e.meta.eventId === eventId;
 /** Lo que el servidor rechazó (403, validación): no se reintenta solo ni se pinta como hecho. */
@@ -56,34 +67,37 @@ export const isRejected = (e: OutboxEntry) =>
   e.status === 'failed' && e.error?.auto === false;
 const live = (e: OutboxEntry) => e.status !== 'applied' && !isRejected(e);
 
+type Batch = { registrationIds: string[] };
+
 /** Las tandas de este evento que aún no han subido (en el orden de la cola). */
-export function queuedCheckins(
+export function queuedCheckins<P extends Batch = CheckinPayload>(
   entries: readonly OutboxEntry[],
   eventId: string,
-): OutboxEntry<CheckinPayload>[] {
+  kind: string = CHECKIN_KIND,
+): OutboxEntry<P>[] {
   return entries.filter(
-    (e) =>
-      e.kind === CHECKIN_KIND && isMine(e, eventId) && e.status !== 'applied',
-  ) as OutboxEntry<CheckinPayload>[];
+    (e) => e.kind === kind && isMine(e, eventId) && e.status !== 'applied',
+  ) as OutboxEntry<P>[];
 }
 
 /**
- * Lo que hay que hacer en la cola para marcar `ids`: sacarlos de las tandas
- * que aún no han subido (las que se quedan vacías, fuera) y añadir la tanda
- * nueva al final.
+ * Lo que hay que hacer en la cola para marcar `ids` (o cambiarles la
+ * habitación, con `kind`): sacarlos de las tandas de ese tipo que aún no han
+ * subido (las que se quedan vacías, fuera) y añadir la tanda nueva al final.
  */
-export function planCheckin(
+export function planCheckin<P extends Batch = CheckinPayload>(
   entries: readonly OutboxEntry[],
   eventId: string,
   ids: readonly string[],
+  kind: string = CHECKIN_KIND,
 ): {
-  update: { key: string; payload: CheckinPayload }[];
+  update: { key: string; payload: P }[];
   remove: string[];
 } {
   const wanted = new Set(ids);
-  const update: { key: string; payload: CheckinPayload }[] = [];
+  const update: { key: string; payload: P }[] = [];
   const remove: string[] = [];
-  for (const e of queuedCheckins(entries, eventId)) {
+  for (const e of queuedCheckins<P>(entries, eventId, kind)) {
     const rest = e.payload.registrationIds.filter((id) => !wanted.has(id));
     if (rest.length === e.payload.registrationIds.length) continue;
     if (rest.length === 0) remove.push(e.key);
@@ -101,6 +115,8 @@ export interface PendingChange {
   to?: CheckinTarget;
   at?: string;
   note?: string;
+  /** La habitación que espera para subir (`null` = quitarla). */
+  room?: string | null;
 }
 
 /**
@@ -122,6 +138,11 @@ export function pendingByRegistration(
     } else if (e.kind === CHECKIN_NOTE_KIND) {
       const p = e.payload as NotePayload;
       out.set(p.registrationId, { ...out.get(p.registrationId), note: p.note });
+    } else if (e.kind === CHECKIN_ROOM_KIND) {
+      const p = e.payload as RoomPayload;
+      for (const id of p.registrationIds) {
+        out.set(id, { ...out.get(id), room: p.roomId });
+      }
     }
   }
   return out;
@@ -133,13 +154,10 @@ export const rejectedEntries = (
   eventId: string,
 ) =>
   entries.filter(
-    (e) =>
-      isMine(e, eventId) &&
-      (e.kind === CHECKIN_KIND || e.kind === CHECKIN_NOTE_KIND) &&
-      isRejected(e),
+    (e) => isMine(e, eventId) && KINDS.includes(e.kind) && isRejected(e),
   );
 
-/** Cuántos cambios de este evento esperan para subir (marcas y notas). */
+/** Cuántas personas de este evento tienen cambios esperando para subir (marcas, notas y habitaciones). */
 export function unsentCount(
   entries: readonly OutboxEntry[],
   eventId: string,
@@ -225,6 +243,8 @@ export function effectiveCheckins(
     const arrivedBy =
       status !== 'in' ? undefined : p?.to === 'in' ? me : s?.arrivedBy;
     const note = p && p.note !== undefined ? p.note || undefined : s?.note;
+    const roomId =
+      p && p.room !== undefined ? (p.room ?? undefined) : s?.roomId;
     out.set(id, {
       status,
       ...(arrivedAt ? { arrivedAt } : {}),
@@ -235,7 +255,7 @@ export function effectiveCheckins(
         : note && p?.note && me
           ? { noteBy: me }
           : {}),
-      ...(s?.roomId ? { roomId: s.roomId } : {}),
+      ...(roomId ? { roomId } : {}),
       queued: !!p,
     });
   }
@@ -300,13 +320,8 @@ export function restLine(s: Pick<CheckinStats, 'pending' | 'absent'>) {
 
 // ── Filtros, buscador y grupos ──────────────────────────────────────────────
 
-export const CHECKIN_FILTERS = [
-  'all',
-  'pending',
-  'in',
-  'absent',
-  'note',
-] as const;
+/** Los chips pegados: cómo está su llegada. Lo demás va en la hoja «Filtros». */
+export const CHECKIN_FILTERS = ['all', 'pending', 'in', 'absent'] as const;
 export type CheckinFilter = (typeof CHECKIN_FILTERS)[number];
 
 export const FILTER_LABEL: Record<CheckinFilter, string> = {
@@ -314,8 +329,92 @@ export const FILTER_LABEL: Record<CheckinFilter, string> = {
   pending: 'Faltan',
   in: 'Están',
   absent: 'No vienen',
-  note: 'Con nota',
 };
+
+/**
+ * Lo que se afina en la hoja «Filtros» (encima de los chips): con nota, con
+ * o sin habitación, un papel o una delegación (`''` = sin delegación).
+ */
+export interface CheckinRefine {
+  note?: boolean;
+  room?: 'with' | 'without';
+  role?: ManagedRegistration['role'];
+  delegation?: string;
+}
+
+/** Cuántos filtros de la hoja están puestos (el número del botón). */
+export const refineCount = (f: CheckinRefine) =>
+  (f.note ? 1 : 0) +
+  (f.room ? 1 : 0) +
+  (f.role ? 1 : 0) +
+  (f.delegation !== undefined ? 1 : 0);
+
+const refines = (r: CheckinRowModel, f: CheckinRefine) =>
+  (!f.note || !!r.eff.note) &&
+  (!f.room || (f.room === 'with') === !!r.room) &&
+  (!f.role || r.reg.role === f.role) &&
+  (f.delegation === undefined || (r.reg.delegation?.id ?? '') === f.delegation);
+
+export interface RefineOption<K extends string = string> {
+  key: K;
+  label: string;
+  count: number;
+}
+
+/**
+ * Lo que se puede elegir en la hoja, con cuántos hay (inscripciones activas):
+ * solo los papeles y delegaciones que aparecen (la dueña primero; sin
+ * delegación, al final).
+ */
+export function refineOptions(
+  rows: readonly CheckinRowModel[],
+  event?: Pick<ManagedEventSummary, 'delegation'>,
+): {
+  note: number;
+  withRoom: number;
+  withoutRoom: number;
+  roles: RefineOption<ManagedRegistration['role']>[];
+  delegations: RefineOption[];
+} {
+  const active = rows.filter((r) => !r.out);
+  const roles = (['participant', 'monitor', 'team'] as const)
+    .map((key) => ({
+      key,
+      label: ROLE_SECTION[key],
+      count: active.filter((r) => r.reg.role === key).length,
+    }))
+    .filter((o) => o.count > 0);
+  const by = new Map<string, RefineOption>();
+  for (const r of active) {
+    const k = r.reg.delegation?.id ?? '';
+    const o = by.get(k) ?? {
+      key: k,
+      label: r.reg.delegation?.name ?? 'Sin delegación',
+      count: 0,
+    };
+    o.count += 1;
+    by.set(k, o);
+  }
+  const owner = event?.delegation.id;
+  const delegations = [...by.values()].sort((a, b) =>
+    a.key === owner
+      ? -1
+      : b.key === owner
+        ? 1
+        : !a.key
+          ? 1
+          : !b.key
+            ? -1
+            : a.label.localeCompare(b.label, 'es', { sensitivity: 'base' }),
+  );
+  return {
+    note: rows.filter((r) => r.eff.note).length,
+    withRoom: active.filter((r) => r.room).length,
+    withoutRoom: active.filter((r) => !r.room).length,
+    roles,
+    delegations,
+  };
+}
 
 export const GROUP_BYS = [
   'name',
@@ -369,16 +468,7 @@ export interface CheckinRowModel {
 /** La hora de llegada como se lee en la fila: «10:32». */
 export const arrivedTime = (iso?: string) => (iso ? madridTime(iso) : '');
 
-/** «Habitación 12» (la sección) y «Hab. 12» (al lado del nombre). */
-export const roomHeading = (r: ManagedRoom, manyVenues: boolean) =>
-  [
-    `Habitación ${r.code}`,
-    r.floor ? `planta ${r.floor}` : null,
-    manyVenues ? r.venue : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-export const roomShort = (r: Pick<ManagedRoom, 'code'>) => `Hab. ${r.code}`;
+export { roomHeading, roomShort } from './rooms';
 
 export function checkinRows(
   detail: Pick<ManagedEventDetail, 'registrations' | 'rooms'>,
@@ -433,25 +523,21 @@ export function matchesQuery(haystack: string, query: string): boolean {
 }
 
 const passes = (r: CheckinRowModel, f: CheckinFilter) =>
-  f === 'all' ||
-  (f === 'note'
-    ? !!r.eff.note
-    : !r.out && (f === 'in' ? r.eff.status === 'in' : f === r.eff.status));
+  f === 'all' || (!r.out && f === r.eff.status);
 
-/** Los chips, con cuántos hay en cada uno (las canceladas no cuentan, salvo con nota). */
+/**
+ * Los chips, con cuántos hay en cada uno dentro de lo que deja la hoja
+ * «Filtros» (las canceladas no cuentan).
+ */
 export function filterChips(
   rows: readonly CheckinRowModel[],
+  refine: CheckinRefine = {},
 ): { key: CheckinFilter; label: string; count: number }[] {
-  const active = rows.filter((r) => !r.out);
+  const active = rows.filter((r) => !r.out && refines(r, refine));
   return CHECKIN_FILTERS.map((key) => ({
     key,
     label: FILTER_LABEL[key],
-    count:
-      key === 'all'
-        ? active.length
-        : key === 'note'
-          ? rows.filter((r) => passes(r, key)).length
-          : active.filter((r) => passes(r, key)).length,
+    count: active.filter((r) => passes(r, key)).length,
   }));
 }
 
@@ -468,9 +554,9 @@ const bySort = (a: CheckinRowModel, b: CheckinRowModel) =>
   a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0;
 
 /**
- * Las secciones de la lista: lo que pasa el filtro y el buscador, agrupado.
- * Las inscripciones canceladas, al final y aparte («No van»), solo con
- * «Todos» o «Con nota».
+ * Las secciones de la lista: lo que pasa el chip, la hoja «Filtros» y el
+ * buscador, agrupado. Las inscripciones canceladas, al final y aparte («No
+ * van»), solo con «Todos».
  */
 export function checkinSections(
   rows: readonly CheckinRowModel[],
@@ -480,8 +566,10 @@ export function checkinSections(
     groupBy = 'name',
     event,
     rooms = [],
+    refine = {},
   }: {
     filter?: CheckinFilter;
+    refine?: CheckinRefine;
     query?: string;
     groupBy?: CheckinGroupBy;
     event?: Pick<ManagedEventSummary, 'delegation'>;
@@ -489,7 +577,10 @@ export function checkinSections(
   },
 ): CheckinSection[] {
   const shown = rows.filter(
-    (r) => passes(r, filter) && matchesQuery(r.haystack, query),
+    (r) =>
+      passes(r, filter) &&
+      refines(r, refine) &&
+      matchesQuery(r.haystack, query),
   );
   const going = shown.filter((r) => !r.out).sort(bySort);
   const gone = shown.filter((r) => r.out).sort(bySort);
@@ -556,7 +647,7 @@ export function checkinSections(
     }
   } else {
     const manyVenues = new Set(rooms.map((r) => r.venue)).size > 1;
-    for (const room of rooms) {
+    for (const room of sortRooms(rooms)) {
       push(
         `h:${room.id}`,
         roomHeading(room, manyVenues),
@@ -570,7 +661,7 @@ export function checkinSections(
     );
   }
 
-  if (gone.length > 0 && (filter === 'all' || filter === 'note')) {
+  if (gone.length > 0 && filter === 'all') {
     sections.push({
       key: 'out',
       title: 'No van',

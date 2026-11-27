@@ -1,11 +1,13 @@
 // «Eventos que gestionas» (plan 18): los eventos de los que Comunica Tools te
-// ha nombrado gestor/a. Hoy (en marcha), próximos y los pasados del último
-// mes, cada uno con «llegados/inscritos». Tocar uno abre su check-in.
+// ha nombrado gestor/a. Hoy (en marcha) y próximos arriba, cada uno con
+// «llegados/inscritos»; los pasados del último mes, ABAJO Y PLEGADOS
+// («Pasados (3)», sin peso: ya no se trabaja en ellos, pero a veces se
+// consultan). Tocar uno abre su check-in.
 //
 // La clasificación la hace la app con la fecha de hoy: lo guardado sigue bien
 // al día siguiente sin cobertura.
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -110,6 +112,42 @@ function ManagedRow({
   );
 }
 
+/** «Pasados (3)»: plegado, en gris, al final. */
+function PastFold({
+  count,
+  children,
+}: {
+  count: number;
+  children: React.ReactNode;
+}) {
+  const t = useComunicaTheme();
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={styles.past}>
+      <PressableFeedback
+        onPress={() => {
+          h.toggle();
+          setOpen((o) => !o);
+        }}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`Pasados, ${count}`}
+        style={styles.pastHead}
+      >
+        <Text style={[styles.pastTitle, { color: t.textSecondary }]}>
+          Pasados ({count})
+        </Text>
+        <IconSymbol
+          name={open ? 'chevron.up' : 'chevron.down'}
+          size={14}
+          color={t.textMuted}
+        />
+      </PressableFeedback>
+      {open ? children : null}
+    </View>
+  );
+}
+
 export default function ManagedEventsScreen() {
   const t = useComunicaTheme();
   const q = useManagedEvents();
@@ -161,17 +199,25 @@ export default function ManagedEventsScreen() {
               </Section>
             ) : null}
 
+            {buckets.today.length === 0 && buckets.upcoming.length === 0 ? (
+              <Text style={[styles.intro, { color: t.textSecondary }]}>
+                No tienes ningún evento hoy ni más adelante.
+              </Text>
+            ) : null}
+
             {buckets.past.length > 0 ? (
-              <Section title="Ya pasados">
-                {buckets.past.map((e) => (
-                  <ManagedRow
-                    key={e.id}
-                    event={e}
-                    muted
-                    queued={unsentCount(entries, e.id)}
-                  />
-                ))}
-              </Section>
+              <PastFold count={buckets.past.length}>
+                <Section>
+                  {buckets.past.map((e) => (
+                    <ManagedRow
+                      key={e.id}
+                      event={e}
+                      muted
+                      queued={unsentCount(entries, e.id)}
+                    />
+                  ))}
+                </Section>
+              </PastFold>
             ) : null}
 
             <View style={styles.footer}>
@@ -198,4 +244,14 @@ const styles = StyleSheet.create({
   title: { ...typography.body, fontWeight: '600' },
   sub: { ...typography.caption },
   footer: { alignItems: 'center' },
+  past: { gap: 8 },
+  pastHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 4,
+    alignSelf: 'flex-start',
+  },
+  pastTitle: { ...typography.subhead, fontWeight: '600' },
 });

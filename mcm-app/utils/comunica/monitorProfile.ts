@@ -319,3 +319,105 @@ export function uploadErrorText(code: string, reason?: string): string {
   if (code === 'forbidden') return 'Esta sección es para monitores.';
   return 'No se ha podido subir. Prueba otra vez.';
 }
+
+// ── En solo lectura (la ficha del gestor de un evento, plan 18) ─────────────
+
+export interface MonitorSummaryGroup {
+  title: string;
+  rows: [label: string, value: string][];
+}
+
+/**
+ * Los datos de monitor de otra persona para LEER, con las palabras de «Mis
+ * datos de monitor» y por sus mismas secciones. Solo lo que tiene dato (un
+ * `null` es «sin indicar», no un «no»); las claves de MAT y congresos, con su
+ * etiqueta de `options`. Un grupo sin filas no sale.
+ */
+export function monitorSummary(
+  p: Omit<MonitorProfile, 'generatedAt'>,
+): MonitorSummaryGroup[] {
+  const labelOf = (
+    list: { value: string; label: string }[],
+    key: string | null,
+  ) => (key ? (list.find((o) => o.value === key)?.label ?? key) : null);
+  const yesNo = (v: boolean | null) => (v === null ? null : v ? 'Sí' : 'No');
+  const groups: [string, [string, string | null][]][] = [
+    [
+      'Trayectoria',
+      [
+        ['Monitor/a desde', p.monitorSince ? String(p.monitorSince) : null],
+        ['Monitor/a de', p.monitorOf ? MONITOR_OF_LABEL[p.monitorOf] : null],
+      ],
+    ],
+    [
+      'Formación',
+      [
+        [
+          'Premonitores Año I',
+          p.preMonitors1 ? PRE_MONITOR_LABEL[p.preMonitors1] : null,
+        ],
+        [
+          'Premonitores Año II',
+          p.preMonitors2 ? PRE_MONITOR_LABEL[p.preMonitors2] : null,
+        ],
+        ['Año premonitores', p.preMonitorsYear],
+        ['MAT', p.mat ? COURSE_LABEL[p.mat] : null],
+        ['Año MAT', labelOf(p.options.matCourses, p.matCourse)],
+        ['DAT', p.dat ? COURSE_LABEL[p.dat] : null],
+        ['DAT · Año y escuela', p.datYearAndSchool],
+        ['FA', p.fa ? COURSE_LABEL[p.fa] : null],
+        ['FA · Año y escuela', p.faYearAndSchool],
+        ['Manipulación de alimentos', yesNo(p.foodHandling)],
+        [
+          'Congresos M+C',
+          p.congresses.length
+            ? p.congresses
+                .map((k) => labelOf(p.options.congresses, k))
+                .join(', ')
+            : null,
+        ],
+        ['Formación académica', p.academicBackground],
+      ],
+    ],
+    [
+      'Voluntariado',
+      [
+        ['Descripción de la actividad', p.volunteeringDescription],
+        ['Programas', p.volunteeringPrograms],
+      ],
+    ],
+    [
+      'Certificados',
+      [
+        [
+          'Delitos sexuales',
+          p.sexOffenceCertificateMode === 'automatic'
+            ? 'Automático (lo pide el MCM)'
+            : p.sexOffenceCertificateMode === 'manual'
+              ? p.files.sexOffenceCertificate
+                ? 'Manual · subido'
+                : 'Manual · sin subir'
+              : p.files.sexOffenceCertificate
+                ? 'Subido'
+                : null,
+        ],
+        [
+          'Títulos subidos',
+          [
+            p.files.mat ? 'MAT' : null,
+            p.files.dat ? 'DAT' : null,
+            p.files.otherTraining ? 'otros certificados' : null,
+          ]
+            .filter(Boolean)
+            .join(', ') || null,
+        ],
+      ],
+    ],
+  ];
+  return groups
+    .map(([title, rows]) => ({
+      title,
+      rows: rows.filter((r): r is [string, string] => !!r[1]),
+    }))
+    .filter((g) => g.rows.length > 0);
+}
