@@ -85,6 +85,16 @@ describe('useFirebaseData — hidden', () => {
     expect(getCallsFor('sec_back/data')).toBe(0);
   });
 
+  it('un nodo con hidden:true pero SIN data también se esconde', async () => {
+    // Sección creada desde el panel solo con el flag (p. ej. Apps del Congreso).
+    __setMockNode('sec_nodata', { hidden: true });
+    const { result } = await renderHook(() =>
+      useFirebaseData('sec_nodata', 'sec_nodata_key'),
+    );
+    await waitFor(() => expect(result.current.hidden).toBe(true));
+    expect(result.current.data).toBeNull();
+  });
+
   it('hidden solo cuenta si es exactamente true (un "true" en texto no esconde)', async () => {
     __setMockNode('sec_str', { updatedAt: 1, data: { a: 1 }, hidden: 'true' });
     const { result } = await renderHook(() =>

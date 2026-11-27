@@ -14,6 +14,11 @@
 - **Datos:** campo nuevo **opcional** `tono` en cada reflexión (clave de `REFLEXION_TONES`); las antiguas cogen uno estable por id. Sin el formulario de título (las antiguas lo siguen mostrando). Misma escritura atómica de antes. Modelo puro en `utils/reflexiones.ts`, tests en `reflexiones.test.ts`. Doc: `docs/funcionalidades/COMPARTIENDO.md`.
 - Trinquetes bajados (colores 113/245, `fontSize` 64/155): la paleta de doce hex sueltos de la pantalla vieja se va. Solo JS.
 
+## 2026-11-27 10:30 — Fix: secciones ocultas desde el panel seguían saliendo en el hub del evento
+
+- **Bug:** `useFirebaseData` ignoraba el flag `hidden` cuando el nodo no tenía `data` (sección creada en el panel solo con `hidden: true`, como Apps/Materiales sin contenido en el Congreso M+C). La tarjeta seguía visible. Ahora el flag se aplica aunque no haya datos. Test en `useFirebaseDataEdges.test.ts`.
+- Las secciones que se quieran ver tienen que tener `hidden` en `false` (o sin el campo) en `activities/<evento>/<sección>`.
+
 ## 2026-11-26 23:15 — Reglas: nodo `/surveyReports` (informes públicos del panel)
 
 - **Firebase:** nodo nuevo `surveyReports/<slug>` que escribe el panel (pestaña «Informe» de Encuestas): una foto ya agregada de los resultados para enlaces públicos `/informe/<slug>` del panel. La app **no** lo usa. Reglas preparadas en `database.rules.json`: `$slug` legible por cualquiera, la raíz solo con `legacyPanelWrites` (no se lista). Tests en `databaseRules.test.ts`. Contrato: `mcmpanel/docs/INFORMES.md` y §10 de `ENCUESTAS_CONTRATO.md`.
