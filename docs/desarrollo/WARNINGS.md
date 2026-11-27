@@ -107,8 +107,11 @@ Dos más del área nativa, apagados en su primera línea con
 `services/comunica/contract.ts` (el contrato es UN sitio: partirlo crea
 importaciones circulares con `ROUTES`) y `services/comunica/fake/index.ts` (el
 corazón del falso; lo de cada plan grande ya vive aparte, `coordination.ts`,
-`events.ts`). Un fichero nuevo que pase de 1.000 **no** se apaga así sin
-apuntarlo aquí.
+`events.ts`). El 27/11/2026 (plan 18, habitaciones) se sumó
+`services/comunica/client.ts`: la interfaz `ComunicaApi` y su cliente HTTP van
+juntos a propósito (cada ruta, su firma y su llamada una al lado de la otra),
+y pasó de 1.000 al añadir las dos rutas del gestor. Un fichero nuevo que pase
+de 1.000 **no** se apaga así sin apuntarlo aquí.
 
 ## 4. Código congelado (3) — no se toca por definición
 
