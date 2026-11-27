@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     overflow: 'hidden',
   },
-  dot: { width: 28, height: 28, borderRadius: 14 },
+  dot: { width: 28, height: 28, borderRadius: radii.pillFull },
   optionText: { flex: 1 },
   optionTitle: { ...typography.body, fontWeight: '700' },
   optionHint: { ...typography.caption },
