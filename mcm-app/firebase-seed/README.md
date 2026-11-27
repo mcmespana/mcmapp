@@ -110,7 +110,7 @@ Cada archivo corresponde a una sección del nodo `jubileo/` de Firebase
 | ------------------------------ | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | `congresomc26-materiales.json` | `activities/congresomc26/materiales` | Eucaristías del sábado 28 y del domingo 29: una página por lectura (texto literal de `seccion_oracion/lecturas`) |
 
-⚠️ Importar este nodo **sustituye** el `materiales` entero: si ya hay otros días (p. ej. el viernes), fusiona antes de subirlo.
+Estado a 27/11/2026: el nodo existe pero **vacío** (`{ hidden: true, updatedAt }`, sin `data`), así que no hay otros días que pisar. Para publicarlo: importa el JSON como `data`, pon `updatedAt` a la fecha actual y **quita `hidden`** (o ponlo a `false`); con `hidden: true` la tarjeta «Materiales» del Congreso no se enseña. Las reglas solo dejan escribir ahí al panel/admin.
 Para añadir el enlace al coro, añade al final de `paginas` de cada eucaristía:
 `{"titulo": "Cantos 🎵", "texto": "[btn-primary=https://…]Abrir el coro[/btn-primary]"}`.
 

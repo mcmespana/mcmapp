@@ -8,7 +8,7 @@
 
 - **Seed nuevo** `firebase-seed/eventos/congresomc26/congresomc26-materiales.json` → nodo `activities/congresomc26/materiales` (BBCode, mismo formato que los de la visita del Papa). Dos días: **28/11** «Eucaristía del sábado» (Ap 22,1-7 · Sal 94 · Lc 21,34-36) y **29/11** «Eucaristía del domingo», I de Adviento, ciclo B (Is 63,16b-17.19b; 64,2b-7 · Sal 79 · 1 Cor 1,3-9 · Mc 13,33-37). Una página por lectura, con el responsorio del salmo entre estrofas.
 - Los textos son los mismos que la sección Oración (`seccion_oracion/lecturas/<fecha>`, fuente Dominicos para días futuros), sacados con el scraper del repo sin tocar nada. Solo se han añadido saltos de párrafo y la fórmula «Palabra de Dios / Palabra del Señor»; una errata de la fuente («tu estabas») va corregida a «tú estabas».
-- **Pendiente:** página «Cantos» con el enlace al coro (llega luego). No hay código de la app tocado: se sube al nodo desde el panel/consola.
+- **Pendiente:** página «Cantos» con el enlace al coro (llega luego). Contrastado palabra por palabra con `seccion_oracion/lecturas` en Firebase: idéntico. No hay código de la app tocado: se sube al nodo desde el panel/consola (el nodo hoy está vacío y con `hidden: true`).
 
 ## 2026-11-26 23:15 — Reglas: nodo `/surveyReports` (informes públicos del panel)
 
