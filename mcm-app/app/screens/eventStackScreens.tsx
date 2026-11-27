@@ -82,7 +82,8 @@ export type EventStackParamList = {
   Contactos: EventRouteParams | undefined;
   Apps: EventRouteParams | undefined;
   Wordle: EventRouteParams | undefined;
-  Reflexiones: (EventRouteParams & { openFormNonce?: number }) | undefined;
+  /** `openComposer: '1'` abre el compositor al llegar (botón del hub). */
+  Reflexiones: (EventRouteParams & { openComposer?: string }) | undefined;
   Evaluacion: EventRouteParams | undefined;
 };
 

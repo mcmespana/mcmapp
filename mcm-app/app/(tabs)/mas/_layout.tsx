@@ -16,6 +16,7 @@ import {
   eventHref,
   lastSegment,
 } from '@/utils/eventRoutes';
+import { requestReflexionComposer } from '@/utils/reflexionesComposerRequests';
 import {
   eventStackScreenOptions,
   renderEventScreens,
@@ -174,14 +175,18 @@ export default function MasLayout() {
           }
           showCompartiendo={activeSlug !== EVENT_SLUGS.Reflexiones}
           showAdd={activeSlug === EVENT_SLUGS.Reflexiones}
-          onAdd={() =>
+          // El «+» NO navega: avisa a la pantalla de Compartiendo que se
+          // está viendo para que abra su compositor. Navegar a la misma ruta
+          // apilaba otra copia idéntica a cada toque (el bucle de 2026-11).
+          onAdd={() => {
+            if (requestReflexionComposer()) return;
             router.push(
               eventHref(MAS_BASE, 'Reflexiones', {
                 eventId: activeEventId,
-                openFormNonce: Date.now(),
+                openComposer: '1',
               }) as never,
-            )
-          }
+            );
+          }}
         />
       )}
     </>

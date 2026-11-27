@@ -88,8 +88,11 @@ const BUDGET = {
   // Y a 133 / 275 el 2026-10-17 (pulido de octubre): verdes de Carismochito
   // a `CarismoColors`, accesos rápidos de la Home y tarjetas de Más con el
   // color de su pestaña, grises de la hoja de medios a roles.
-  app: 133,
-  components: 255,
+  // Y a 113 / 245 el 2026-11-27: Compartiendo rehecho con los tonos de marca
+  // (`REFLEXION_TONES`) en vez de su paleta de doce hex sueltos; `components`
+  // ya estaba en 245 sin que nadie bajase el tope.
+  app: 113,
+  components: 245,
 };
 
 describe('no se añaden colores a mano', () => {
@@ -134,8 +137,10 @@ describe('no se añaden colores a mano', () => {
  * hay que migrar uno a uno porque ahí el spread sí puede cambiar el render.
  */
 const FONT_SIZE_BUDGET = {
-  app: 77,
-  components: 164,
+  // 64 / 155 el 2026-11-27: Compartiendo rehecho sobre `typography.*` (y
+  // `components` traía 9 de holgura sin bajar).
+  app: 64,
+  components: 155,
 };
 
 const INLINE_FONT_SIZE = /fontSize: \d+/g;

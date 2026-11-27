@@ -3,7 +3,6 @@ import { Platform, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@/components/ui/icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import colors from '@/constants/colors';
 import { shadows } from '@/constants/uiStyles';
 import GlassSurface from '@/components/ui/GlassSurface';
 
@@ -20,7 +19,8 @@ interface Props {
   /**
    * Muestra un botón "+" (añadir reflexión) en lugar del de Compartiendo —
    * se usa cuando YA estamos en la pantalla Compartiendo. Su acción abre el
-   * formulario (ver `onAdd`).
+   * compositor (ver `onAdd`), SIN navegar: la pide con
+   * `requestReflexionComposer` (`utils/reflexionesComposerRequests.ts`).
    */
   showAdd?: boolean;
   /** Acción del botón "+" (abre el formulario de nueva reflexión). */
@@ -84,7 +84,9 @@ export default function EventActionButtons({
                   accessibilityLabel="Compartir reflexión"
                   hitSlop={6}
                 >
-                  <MaterialIcons name="add" size={24} color={colors.green} />
+                  {/* Tinta neutra, como sus vecinos: el verde COM sobre el
+                      cristal claro se quedaba en 2:1 y no se veía. */}
+                  <MaterialIcons name="add" size={24} color={fg} />
                 </Pressable>
                 <View style={[styles.divider, { backgroundColor: divider }]} />
               </>
