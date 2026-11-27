@@ -211,6 +211,11 @@ referencia de lo que gusta. No se arregla de paso: se piensa en una sesión prop
 lado a lado en móvil, y se decide qué se trae de la web (densidad, tarjetas, jerarquía, color de etapa).
 Piezas y reglas actuales: `docs/desarrollo/AREA_NATIVA_DISENO.md`.
 
+- **Rayas entre filas invisibles en oscuro** (apuntado el 27/11/2026, plan 18): las listas del área que separan
+  filas dentro de una tarjeta con `t.separator` (`ContactRow`, `Section`, `ListCell`…) no se ven en oscuro, porque
+  `separator` y `card` son el mismo gris. Las fichas nuevas del gestor usan `t.cardBorder`; unificar las demás
+  (o subir el `separator` oscuro del área) en el rediseño, mirando capturas.
+
 ### Mejoras, sin prisa
 
 - [ ] **H10. Filas pulsables corridas en web.** En web, una fila con
