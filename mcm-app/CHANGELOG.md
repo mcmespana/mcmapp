@@ -4,6 +4,12 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-27 00:25 — Congreso M+C: materiales de las eucaristías del sábado y del domingo
+
+- **Seed nuevo** `firebase-seed/eventos/congresomc26/congresomc26-materiales.json` → nodo `activities/congresomc26/materiales` (BBCode, mismo formato que los de la visita del Papa). Dos días: **28/11** «Eucaristía del sábado» (Ap 22,1-7 · Sal 94 · Lc 21,34-36) y **29/11** «Eucaristía del domingo», I de Adviento, ciclo B (Is 63,16b-17.19b; 64,2b-7 · Sal 79 · 1 Cor 1,3-9 · Mc 13,33-37). Una página por lectura, con el responsorio del salmo entre estrofas.
+- Los textos son los mismos que la sección Oración (`seccion_oracion/lecturas/<fecha>`, fuente Dominicos para días futuros), sacados con el scraper del repo sin tocar nada. Solo se han añadido saltos de párrafo y la fórmula «Palabra de Dios / Palabra del Señor»; una errata de la fuente («tu estabas») va corregida a «tú estabas».
+- **Pendiente:** página «Cantos» con el enlace al coro (llega luego). No hay código de la app tocado: se sube al nodo desde el panel/consola.
+
 ## 2026-11-26 23:15 — Reglas: nodo `/surveyReports` (informes públicos del panel)
 
 - **Firebase:** nodo nuevo `surveyReports/<slug>` que escribe el panel (pestaña «Informe» de Encuestas): una foto ya agregada de los resultados para enlaces públicos `/informe/<slug>` del panel. La app **no** lo usa. Reglas preparadas en `database.rules.json`: `$slug` legible por cualquiera, la raíz solo con `legacyPanelWrites` (no se lista). Tests en `databaseRules.test.ts`. Contrato: `mcmpanel/docs/INFORMES.md` y §10 de `ENCUESTAS_CONTRATO.md`.

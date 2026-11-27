@@ -104,6 +104,16 @@ Cada archivo corresponde a una sección del nodo `jubileo/` de Firebase
 | `visitapapa-materiales.json` | `activities/visitapapa26/materiales` | Materiales por día con páginas en BBCode                                                              |
 | `visita-misa.json`           | —                                    | Texto fuente del libreto de la misa (no es JSON pese a la extensión; materia prima de los materiales) |
 
+### `eventos/congresomc26/` — Congreso M+C (27–29 nov 2026)
+
+| Archivo                        | Nodo Firebase                        | Qué contiene                                                                                                     |
+| ------------------------------ | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `congresomc26-materiales.json` | `activities/congresomc26/materiales` | Eucaristías del sábado 28 y del domingo 29: una página por lectura (texto literal de `seccion_oracion/lecturas`) |
+
+⚠️ Importar este nodo **sustituye** el `materiales` entero: si ya hay otros días (p. ej. el viernes), fusiona antes de subirlo.
+Para añadir el enlace al coro, añade al final de `paginas` de cada eucaristía:
+`{"titulo": "Cantos 🎵", "texto": "[btn-primary=https://…]Abrir el coro[/btn-primary]"}`.
+
 ## `panuelo.json`
 
 Catálogo de muestra del **pañuelo virtual** (chapas, pines, cintas, parches,
