@@ -24,6 +24,9 @@ import {
   type ScarfDecision,
 } from '@/utils/panuelo';
 
+/** Margen para que Comunica conteste antes de preguntar el color. */
+const FIRST_COLOR_DELAY_MS = 2000;
+
 type Args = {
   panuelo: PanueloValue;
   /** `mcm.scarf` de Comunica (`null`: sin dato). */
@@ -55,6 +58,9 @@ export function usePanueloStage({
   /** Confeti del cambio: el color del pañuelo nuevo. */
   const [burst, setBurst] = useState<PanueloColor | null>(null);
   const asked = useRef(false);
+  /** Primera vez sin color (ni de Comunica ni elegido): se pregunta cuál es. */
+  const [askColor, setAskColor] = useState(false);
+  const askedColor = useRef(false);
 
   const decision: ScarfDecision = useMemo(
     () => decideScarfStage(scarf, state),
@@ -69,6 +75,31 @@ export function usePanueloStage({
   useEffect(() => {
     if (ready && decision.kind === 'assign') setColor(decision.color);
   }, [ready, decision, setColor]);
+
+  // Sin color de Comunica ni guardado: se pregunta de qué color es el suyo,
+  // una vez por apertura. Se espera un momento por si Comunica aún está
+  // contestando (si trae color, se asigna y la pregunta se retira).
+  const needsColor =
+    ready && !busy && decision.kind === 'manual' && state.color === null;
+  useEffect(() => {
+    if (!needsColor || askedColor.current) return;
+    const timer = setTimeout(() => {
+      askedColor.current = true;
+      setAskColor(true);
+    }, FIRST_COLOR_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [needsColor]);
+
+  /** Elegir el color la primera vez: no es un cambio de etapa (sin hoja ni confeti). */
+  const chooseFirstColor = useCallback(
+    (next: PanueloColor) => {
+      h.select();
+      setColor(next);
+      setAskColor(false);
+    },
+    [setColor],
+  );
+  const dismissFirstColor = useCallback(() => setAskColor(false), []);
 
   const openFor = useCallback((to: PanueloColor, isDetected: boolean) => {
     setTarget(to);
@@ -147,6 +178,10 @@ export function usePanueloStage({
     locked,
     pending,
     layoutCount,
+    // Si Comunica contesta con color mientras tanto, la pregunta se retira.
+    askColor: askColor && decision.kind === 'manual' && state.color === null,
+    chooseFirstColor,
+    dismissFirstColor,
     pick,
     reopen,
     close,

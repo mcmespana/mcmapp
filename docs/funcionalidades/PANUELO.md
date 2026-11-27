@@ -52,9 +52,9 @@ sistema no ve el vaivén.
 
 **Hoy: escondido en el Laboratorio Alpha.** El panel «Pañuelo virtual» del
 laboratorio abre la pantalla `/panuelo`. Tiene tres botones: abrir el pañuelo,
-abrirlo con todas las piezas de muestra, y empezar de cero. **Mientras se
-prueba, todas las piezas del catálogo se dan solas al abrir** (`grant: all`);
-cómo se repartirán de verdad (por eventos, códigos…) está por decidir.
+abrirlo con todas las piezas de muestra, y empezar de cero. **El pañuelo nace vacío**: ninguna pieza
+del catálogo se da sola (todas son `grant: manual` en el seed). Se irán dando por
+actividad (código o Panel); la primera, la de este congreso.
 
 El interruptor es `global.panuelo` en `/profileConfig`, igual que Carismochito
 (`utils/panueloGate.ts`, `hooks/usePanueloAvailable.ts`):
@@ -588,3 +588,12 @@ transacción y nada de lo demás cambia.
   animación (la «vuela» de la Fase 6 del plan no está hecha).
 - **Repartir desde el Panel** necesita que el Panel pueda escribir en
   `/users/{uid}` (hoy no puede sin autenticación real: Integración D).
+
+## Color la primera vez
+
+Si no hay color de Comunica ni guardado, al abrir el pañuelo (tras ~2 s por si
+Comunica aún contesta) sale «¿De qué color es tu pañuelo?» con los cuatro
+colores. Elegir ahí **no** es cambio de etapa (sin hoja ni confeti). «Luego» lo
+deja en verde por defecto y se vuelve a preguntar en la siguiente apertura. Si
+Comunica da color mientras tanto, la pregunta se retira y se asigna ese.
+Código: `usePanueloStage` + `PanueloFirstColorSheet`.

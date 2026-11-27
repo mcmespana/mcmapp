@@ -7,7 +7,7 @@
       "origin": "COM",
       "description": "El logo de siempre en verde, con el mundo sonriendo.",
       "grant": {
-        "type": "all"
+        "type": "manual"
       },
       "look": {
         "kind": "chapa",
@@ -26,7 +26,7 @@
       "rarity": "especial",
       "tradeable": false,
       "grant": {
-        "type": "all"
+        "type": "manual"
       },
       "look": {
         "kind": "troncho",
@@ -46,7 +46,7 @@
       "rarity": "especial",
       "tradeable": true,
       "grant": {
-        "type": "all"
+        "type": "manual"
       },
       "look": {
         "kind": "pin",
@@ -65,7 +65,7 @@
       "origin": "Festival vocacional Samuel 2024",
       "description": "«Estoy contigo. Testigos de la esperanza». La chapa del festival vocacional Samuel.",
       "grant": {
-        "type": "all"
+        "type": "manual"
       },
       "look": {
         "kind": "chapa",
@@ -83,7 +83,7 @@
       "description": "La chapa del Jubileo: «Peregrinos de esperanza».",
       "size": 0.8,
       "grant": {
-        "type": "all"
+        "type": "manual"
       },
       "look": {
         "kind": "chapa",
@@ -102,7 +102,7 @@
       "size": 1.5,
       "tradeable": true,
       "grant": {
-        "type": "all"
+        "type": "manual"
       },
       "look": {
         "kind": "pin",
@@ -122,7 +122,7 @@
       "description": "«Yo soy Monitor Consolación». La chapa grande del primer año de congreso de monitores.",
       "size": 1.4,
       "grant": {
-        "type": "all"
+        "type": "manual"
       },
       "look": {
         "kind": "chapa",
@@ -140,7 +140,7 @@
       "description": "El pin pequeño de metal del tercer año de congreso de monitores.",
       "size": 0.85,
       "grant": {
-        "type": "all"
+        "type": "manual"
       },
       "look": {
         "kind": "pin",
@@ -163,7 +163,7 @@
       "rarity": "especial",
       "tradeable": true,
       "grant": {
-        "type": "all"
+        "type": "manual"
       },
       "look": {
         "kind": "chapa",
@@ -182,7 +182,7 @@
       "rarity": "especial",
       "tradeable": true,
       "grant": {
-        "type": "all"
+        "type": "manual"
       },
       "look": {
         "kind": "chapa",
@@ -200,7 +200,7 @@
       "description": "Peregrinos de esperanza.",
       "rarity": "unica",
       "grant": {
-        "type": "all"
+        "type": "manual"
       },
       "look": {
         "kind": "medalla",
@@ -219,7 +219,7 @@
       "origin": "Visita del Papa · 2026",
       "rarity": "unica",
       "grant": {
-        "type": "all"
+        "type": "manual"
       },
       "look": {
         "kind": "medalla",

@@ -4,6 +4,11 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-27 13:00 — Pañuelo: nace vacío y pregunta el color la primera vez
+
+- `firebase-seed/panuelo.json`: todas las piezas pasan de `grant: all` a `manual`; el pañuelo ya no se llena solo al abrir. (Si el nodo `panuelo` de Firebase existe, manda ese catálogo: hay que revisar ahí también los `grant`.)
+- Sin color de Comunica ni guardado, sale la hoja «¿De qué color es tu pañuelo?» (`PanueloFirstColorSheet`, `usePanueloStage`). No es cambio de etapa.
+
 ## 2026-11-27 12:00 — Pañuelo: entrada desde Ajustes
 
 - Nueva fila «Mi pañuelo» en Ajustes, dentro de «Tu perfil en MCM» (`components/SettingsBottomSheet.tsx`). Abre `/panuelo`. Solo aparece si `usePanueloAvailable()` lo permite (misma palanca `global.panuelo`: hoy `alpha` → solo con el Laboratorio Alpha). Cuando se ponga `all`, saldrá a todo el mundo sin build ni OTA.

@@ -92,11 +92,9 @@ describe('el catálogo de muestra', () => {
     );
   });
 
-  it('mientras se prueba, todas las piezas se dan solas al abrir', () => {
+  it('el pañuelo nace vacío: ninguna pieza se da sola al abrir', () => {
     const pending = pendingAutoGrants(DEFAULT_PANUELO_CATALOG, state(), NOW);
-    expect(pending.map((i) => i.id).sort()).toEqual(
-      items.map((i) => i.id).sort(),
-    );
+    expect(pending).toEqual([]);
   });
 
   it('el catálogo de ejemplo tiene una pieza de cada clase cosida', () => {

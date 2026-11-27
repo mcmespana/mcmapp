@@ -57,6 +57,7 @@ import {
   PanueloTutorialHeader,
   PanueloTutorialPanel,
 } from '@/components/panuelo/PanueloTutorial';
+import { PanueloFirstColorSheet } from '@/components/panuelo/PanueloFirstColorSheet';
 import { PanueloStageSheet } from '@/components/panuelo/PanueloStageSheet';
 import { PanueloTradeSheet } from '@/components/panuelo/PanueloTradeSheet';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -909,6 +910,12 @@ function PanueloScreen() {
         catalog={catalog}
         state={state}
         trade={trade}
+      />
+      <PanueloFirstColorSheet
+        visible={stage.askColor}
+        isDark={isDark}
+        onPick={stage.chooseFirstColor}
+        onClose={stage.dismissFirstColor}
       />
       {stage.target ? (
         <PanueloStageSheet
