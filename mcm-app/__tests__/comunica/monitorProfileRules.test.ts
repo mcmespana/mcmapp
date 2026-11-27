@@ -17,6 +17,7 @@ import {
   uploadNameAndType,
   withPending,
   yearFromText,
+  monitorSummary,
 } from '@/utils/comunica/monitorProfile';
 
 const profile: MonitorProfile = {
@@ -179,5 +180,89 @@ describe('enlaces (plan 10)', () => {
     expect(
       nativeHrefFor({ internalpage: 'single_stic_comunica_monitor' }),
     ).toEqual({ pathname: '/comunica/yo/monitor' });
+  });
+});
+
+describe('en solo lectura (la ficha del gestor, plan 18)', () => {
+  const base: Omit<MonitorProfile, 'generatedAt'> = {
+    monitorSince: 2014,
+    monitorOf: 'mic',
+    preMonitors1: 'finished',
+    preMonitors2: null,
+    preMonitorsYear: null,
+    mat: 'certified',
+    matCourse: '2018',
+    dat: null,
+    fa: null,
+    datYearAndSchool: null,
+    faYearAndSchool: null,
+    foodHandling: false,
+    congresses: ['c1', 'nueva'],
+    academicBackground: null,
+    volunteeringDescription: null,
+    volunteeringPrograms: null,
+    sexOffenceCertificateMode: 'manual',
+    files: {
+      sexOffenceCertificate: false,
+      mat: true,
+      dat: false,
+      otherTraining: true,
+    },
+    options: {
+      matCourses: [{ value: '2018', label: 'MAT 2018 - Puerto Alto' }],
+      congresses: [{ value: 'c1', label: '2019 - Monteverde' }],
+    },
+  };
+
+  it('solo lo que tiene dato, con las etiquetas del CRM y de `options`', () => {
+    expect(monitorSummary(base)).toEqual([
+      {
+        title: 'Trayectoria',
+        rows: [
+          ['Monitor/a desde', '2014'],
+          ['Monitor/a de', 'MIC'],
+        ],
+      },
+      {
+        title: 'Formación',
+        rows: [
+          ['Premonitores Año I', 'Finalizado'],
+          ['MAT', 'Titulado'],
+          ['Año MAT', 'MAT 2018 - Puerto Alto'],
+          // `false` es un «no» de verdad: sale.
+          ['Manipulación de alimentos', 'No'],
+          // Una clave sin etiqueta (un congreso nuevo), tal cual.
+          ['Congresos M+C', '2019 - Monteverde, nueva'],
+        ],
+      },
+      {
+        title: 'Certificados',
+        rows: [
+          ['Delitos sexuales', 'Manual · sin subir'],
+          ['Títulos subidos', 'MAT, otros certificados'],
+        ],
+      },
+    ]);
+  });
+
+  it('sin nada rellenado, ningún grupo', () => {
+    const empty = {
+      ...base,
+      monitorSince: null,
+      monitorOf: null,
+      preMonitors1: null,
+      mat: null,
+      matCourse: null,
+      foodHandling: null,
+      congresses: [],
+      sexOffenceCertificateMode: null,
+      files: {
+        sexOffenceCertificate: false,
+        mat: false,
+        dat: false,
+        otherTraining: false,
+      },
+    };
+    expect(monitorSummary(empty)).toEqual([]);
   });
 });

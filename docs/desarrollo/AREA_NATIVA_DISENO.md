@@ -23,6 +23,10 @@ Ya existen, en `components/comunica/comun/` (y se usan, no se copian):
 | Fila de persona | `PersonRow` (con `avatarTone="accent"` para monitores, `subtitleLead` para una pastilla) |
 | Fila de marcar asistencia | `pasar-lista/RollRow` + `MarkSheet` — **no hay otra** (lo vigila un test) |
 | Fila de check-in (la llegada a un evento que se gestiona, plan 18; no va al CRM) | `gestor/CheckinRow` |
+| Elegir habitación (fichas de un toque, la última arriba) y su «Deshacer» | `gestor/RoomSheet` + `gestor/useRoomPicker` |
+| Etiqueta de habitación con el color de su ocupación, que se toca | `gestor/RoomTag` |
+| Filtros y agrupar de una lista larga, fuera de la lista | una hoja como `gestor/CheckinFiltersSheet` (pastillas por grupo) y el número en el botón |
+| Un interruptor que es preferencia del móvil («Asignar grupos», «Habitación al llegar») | `hooks/comunica/useBoolPreference` |
 | Recuentos, aviso, «Han venido todos» | `pasar-lista/RollBits` (`Count`, `Notice`, `FillButton`) |
 | Fila que lleva a otra pantalla | `NavRow` |
 | Tarjeta de un registro (hoy, un evento) | `RecordCard` (con `cta` si se toca entera) |
@@ -118,6 +122,25 @@ el plan 07 iba a duplicar los chips y el buscador de Grupos y fichas; pasaron a
     Para ver una animación, **vídeo y fotogramas** (`recordVideo` de
     Playwright + `ffmpeg -vf fps=10`): las capturas sueltas paran el reloj de
     la animación y engañan.
+
+24. **Lo de cada segundo, en la lista; lo de vez en cuando, en una hoja**
+    (27/11/2026, plan 18). El check-in tenía buscador, «Agrupar por» y dos
+    filas de chips antes de la primera persona. Agrupar y los filtros raros
+    pasaron a la hoja «Filtros»: el botón lleva cuántos hay puestos y, encima
+    de la lista, una línea dice qué se filtra y lo quita (un filtro que no se
+    ve parece gente perdida).
+25. **Un nombre no compite con una etiqueta.** Lo que acompaña al nombre
+    (la habitación) va en la segunda línea; el nombre se queda la línea
+    entera, hasta dos líneas, sin cortarse.
+26. **Con varios alojamientos, el nombre del alojamiento encabeza; no se
+    repite en cada ficha** (en una ficha de un tercio de pantalla salía
+    «Albergue Los…»). En el selector, cada tanda partida por casa; en la
+    vista, la casa como título y sus plantas debajo.
+27. **Las rayas dentro de una tarjeta, en `cardBorder`** (las fichas del
+    plan 18): `separator` en oscuro es el gris de la tarjeta y no se ven
+    (regla 11). Las listas que ya usan `separator` siguen igual; anotado.
+28. **En una ficha, lo desplegado arriba y lo plegado cerrando** (Monitor/a
+    antes que Autorizaciones y Datos personales).
 
 ## 3. Cómo se comprueba (antes de cada commit con pantallas)
 

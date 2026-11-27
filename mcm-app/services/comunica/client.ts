@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- la interfaz y el cliente, en un sitio: docs/desarrollo/WARNINGS.md §3 */
 // services/comunica/client.ts
 //
 // La interfaz `ComunicaApi` (lo que la app puede pedir) y el cliente real, que
@@ -107,6 +108,7 @@ import {
   ManagedEventsResponse,
   ManagedPerson,
   type NoteBody,
+  type RoomBody,
 } from './contract';
 import { logger } from '@/utils/logger';
 
@@ -316,6 +318,8 @@ export interface ComunicaApi {
   /** Por la cola: sin `clientId` (marcar dos veces lo mismo deja lo mismo). */
   checkinManaged(eventId: string, body: CheckinBody): Promise<CheckinResult>;
   noteManaged(eventId: string, body: NoteBody): Promise<CheckinResult>;
+  /** Por la cola, como `checkinManaged`: poner la misma habitación dos veces deja lo mismo. */
+  setManagedRoom(eventId: string, body: RoomBody): Promise<CheckinResult>;
   getManagedPerson(
     eventId: string,
     personId: string,
@@ -323,6 +327,8 @@ export interface ComunicaApi {
   ): Promise<ManagedPerson>;
   /** Nunca se guarda: solo con conexión. */
   getManagedHealth(eventId: string, personId: string): Promise<HealthNote>;
+  /** Con el documento: nunca se guarda, solo con conexión. */
+  getManagedPersonal(eventId: string, personId: string): Promise<PersonalData>;
   // Avisos en el móvil (plan 08).
   registerDevice(body: DeviceRegistration): Promise<WriteResult>;
   /** Al salir: se borra este móvil (solo el tuyo). */
@@ -860,6 +866,13 @@ export function createHttpClient({
         CheckinResult,
         body,
       ),
+    setManagedRoom: (id, body) =>
+      request(
+        'POST',
+        `/v1/managed-events/${enc(id)}/room`,
+        CheckinResult,
+        body,
+      ),
     getManagedPerson: (id, pid, opts) =>
       request(
         'GET',
@@ -874,6 +887,13 @@ export function createHttpClient({
         'GET',
         `/v1/managed-events/${enc(id)}/people/${enc(pid)}/health`,
         HealthNote,
+      ),
+    // Los datos personales, igual: sin reintentos, nunca guardados.
+    getManagedPersonal: (id, pid) =>
+      request(
+        'GET',
+        `/v1/managed-events/${enc(id)}/people/${enc(pid)}/personal`,
+        PersonalData,
       ),
     // Por la cola (el alta) o directa con tope (el borrado, al salir).
     registerDevice: (body) => request('POST', '/v1/devices', WriteResult, body),

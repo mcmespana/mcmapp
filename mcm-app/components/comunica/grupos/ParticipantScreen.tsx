@@ -476,12 +476,19 @@ function Ficha({
   );
 }
 
-function QuickButtons({
+/**
+ * Los dos botones grandes al tutor 1 (WhatsApp y llamar). También en la ficha
+ * del gestor de un evento (plan 18), donde la acción principal es la llegada:
+ * allí, mientras no ha llegado, `primary={false}` los deja los dos en card.
+ */
+export function QuickButtons({
   guardian,
   phone,
+  primary = true,
 }: {
   guardian: Guardian;
   phone: Phone;
+  primary?: boolean;
 }) {
   const t = useComunicaTheme();
   const first =
@@ -506,13 +513,31 @@ function QuickButtons({
         <PressableFeedback.Highlight />
       </PressableFeedback>
       {/* La acción principal de la ficha: el degradado de marca. */}
-      <AreaPrimaryButton
-        label={call}
-        icon="phone.fill"
-        onPress={() => void openUrl(telUrl(phone))}
-        accessibilityLabel={`Llamar a ${guardian.fullName}`}
-        style={styles.quickPrimary}
-      />
+      {primary ? (
+        <AreaPrimaryButton
+          label={call}
+          icon="phone.fill"
+          onPress={() => void openUrl(telUrl(phone))}
+          accessibilityLabel={`Llamar a ${guardian.fullName}`}
+          style={styles.quickPrimary}
+        />
+      ) : (
+        <PressableFeedback
+          onPress={() => {
+            h.tap();
+            void openUrl(telUrl(phone));
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`Llamar a ${guardian.fullName}`}
+          style={[styles.quickButton, { backgroundColor: t.card }]}
+        >
+          <IconSymbol name="phone.fill" size={18} color={t.accentText} />
+          <Text style={[styles.quickLabel, { color: t.accentText }]}>
+            {call}
+          </Text>
+          <PressableFeedback.Highlight />
+        </PressableFeedback>
+      )}
     </View>
   );
 }

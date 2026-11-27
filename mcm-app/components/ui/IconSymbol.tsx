@@ -86,6 +86,8 @@ type IconMapping = {
   'bed.double': 'hotel';
   checklist: 'checklist';
   'person.crop.circle.badge.checkmark': 'how-to-reg';
+  'line.3.horizontal.decrease.circle': 'filter-list';
+  'person.fill': 'person';
 };
 
 type IconSymbolName = keyof IconMapping;
@@ -176,6 +178,8 @@ const MAPPING: IconMapping = {
   'bed.double': 'hotel',
   checklist: 'checklist',
   'person.crop.circle.badge.checkmark': 'how-to-reg',
+  'line.3.horizontal.decrease.circle': 'filter-list',
+  'person.fill': 'person',
 };
 
 /**

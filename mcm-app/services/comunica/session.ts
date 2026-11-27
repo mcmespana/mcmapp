@@ -435,8 +435,10 @@ export function withSession(api: ComunicaApi): ComunicaApi {
     getManagedCheckins: authed((id, s) => api.getManagedCheckins(id, s)),
     checkinManaged: authed((id, b) => api.checkinManaged(id, b)),
     noteManaged: authed((id, b) => api.noteManaged(id, b)),
+    setManagedRoom: authed((id, b) => api.setManagedRoom(id, b)),
     getManagedPerson: authed((id, pid, o) => api.getManagedPerson(id, pid, o)),
     getManagedHealth: authed((id, pid) => api.getManagedHealth(id, pid)),
+    getManagedPersonal: authed((id, pid) => api.getManagedPersonal(id, pid)),
     registerDevice: authed((b) => api.registerDevice(b)),
     unregisterDevice: authed((id) => api.unregisterDevice(id)),
     // Mis datos de monitor (plan 09).

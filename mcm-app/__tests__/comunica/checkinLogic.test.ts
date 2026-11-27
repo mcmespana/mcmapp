@@ -29,6 +29,8 @@ import {
   pendingByRegistration,
   pendingIn,
   planCheckin,
+  refineCount,
+  refineOptions,
   rejectedEntries,
   restLine,
   roomHeading,
@@ -258,8 +260,47 @@ describe('cómo se ve', () => {
       ['pending', 3],
       ['in', 1],
       ['absent', 1],
-      ['note', 1],
     ]);
+    // Con la hoja «Filtros»: dentro de lo que deja.
+    expect(
+      filterChips(rows, { room: 'without' }).map((c) => [c.key, c.count]),
+    ).toEqual([
+      ['all', 3],
+      ['pending', 3],
+      ['in', 0],
+      ['absent', 0],
+    ]);
+  });
+
+  it('la hoja «Filtros»: con nota, habitación, papel y delegación', () => {
+    const o = refineOptions(rows, detail.event);
+    expect(o.note).toBe(1);
+    expect([o.withRoom, o.withoutRoom]).toEqual([2, 3]);
+    expect(o.roles.map((r) => [r.key, r.count])).toEqual([
+      ['participant', 3],
+      ['monitor', 1],
+      ['team', 1],
+    ]);
+    // La dueña primero; sin delegación, al final.
+    expect(o.delegations.map((d) => d.label)).toEqual([
+      'ECE',
+      'Puerto Alto',
+      'Villaclara',
+      'Sin delegación',
+    ]);
+    const ids = (f: Parameters<typeof checkinSections>[1]) =>
+      checkinSections(rows, f)
+        .flatMap((x) => x.rows)
+        .map((r) => r.id)
+        .sort();
+    expect(ids({ refine: { note: true } })).toEqual(['r3']);
+    expect(ids({ refine: { role: 'monitor' } })).toEqual(['r3']);
+    expect(ids({ refine: { delegation: '' } })).toEqual(['r5']);
+    expect(ids({ refine: { room: 'with' } })).toEqual(['r1', 'r2']);
+    // Las canceladas pasan por la hoja como las demás.
+    expect(ids({ refine: { delegation: VC.id } })).toEqual(['r1', 'r3', 'r6']);
+    expect(refineCount({})).toBe(0);
+    expect(refineCount({ note: true, delegation: '' })).toBe(2);
   });
 
   it('por nombre: una sección y «No van» aparte, al final', () => {
@@ -310,13 +351,13 @@ describe('cómo se ve', () => {
       rooms: detail.rooms,
     });
     expect(h.map((x) => [x.title, x.count])).toEqual([
-      ['Habitación 101 · planta 1 · Albergue', 1],
+      ['Habitación 101 · Planta 1 · Albergue', 1],
       ['Habitación A · Casa', 1],
       ['Sin habitación', 3],
       ['No van', 1],
     ]);
     expect(roomHeading(detail.rooms[0], false)).toBe(
-      'Habitación 101 · planta 1',
+      'Habitación 101 · Planta 1',
     );
     expect(groupBysFor([])).not.toContain('room');
     expect(groupBysFor(detail.rooms)).toContain('room');

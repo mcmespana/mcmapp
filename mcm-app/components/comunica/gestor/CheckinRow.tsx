@@ -6,8 +6,11 @@
 //     (marcar varios a la vez). Seleccionando, tocar marca o desmarca.
 //   · A la derecha: «Llega» (falta), la hora y deshacer (ha llegado) o «No
 //     viene» y deshacer. Las canceladas, su estado y nada más.
-//   · Junto al nombre, la habitación («Hab. 12», si el evento tiene) y el
-//     icono de nota; un icono de nube si hay algo suyo sin subir.
+//   · El nombre tiene la línea entera (no se corta: hasta dos líneas). Junto a
+//     él, el icono de nota y una nube si hay algo suyo sin subir.
+//   · Debajo, la HABITACIÓN (si el evento tiene) como etiqueta con el color de
+//     cómo está (con hueco, llena, pasada): se toca y se cambia. Luego papel,
+//     curso, delegación y las marcas.
 //
 // Es `memo` y recibe los callbacks por id: marcar una fila no repinta las
 // otras cien.
@@ -20,16 +23,14 @@ import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
 import { onColor } from '@/utils/colorUtils';
-import {
-  arrivedTime,
-  roomShort,
-  type CheckinRowModel,
-} from '@/utils/comunica/checkin';
+import { arrivedTime, type CheckinRowModel } from '@/utils/comunica/checkin';
+import type { RoomTone } from '@/utils/comunica/rooms';
 import PersonAvatar from '../comun/PersonAvatar';
 import PersonBadges, { badgesLabel } from '../comun/PersonBadges';
 import StatusChip from '../comun/StatusChip';
 import { MARK_FILL } from '../comun/theme';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
+import RoomTag from './RoomTag';
 
 const ARRIVE_FILL = MARK_FILL.yes;
 const ARRIVE_INK = onColor(ARRIVE_FILL);
@@ -38,6 +39,10 @@ interface Props {
   row: CheckinRowModel;
   /** El evento tiene habitaciones: se enseña la de cada uno. */
   showRoom: boolean;
+  /** Cómo está su habitación (el color de la etiqueta). */
+  roomTone?: RoomTone;
+  /** Tocar la etiqueta de habitación (abre el selector). */
+  onRoom?: (id: string) => void;
   /** Se enseña el texto de la nota debajo (filtro «Con nota»). */
   showNote: boolean;
   selecting: boolean;
@@ -52,6 +57,8 @@ interface Props {
 function CheckinRow({
   row,
   showRoom,
+  roomTone,
+  onRoom,
   showNote,
   selecting,
   selected,
@@ -78,7 +85,11 @@ function CheckinRow({
         : 'Falta';
   const label = [
     name,
-    showRoom && row.room ? `habitación ${row.room.code}` : null,
+    showRoom
+      ? row.room
+        ? `habitación ${row.room.code}`
+        : 'sin habitación'
+      : null,
     row.line,
     badgesLabel(reg.badges),
     eff.note ? `con nota: ${eff.note}` : null,
@@ -187,6 +198,9 @@ function CheckinRow({
                 eff.status === 'pending'
                   ? { name: 'arrive', label: 'Llega' }
                   : { name: 'undo', label: 'Deshacer' },
+                ...(showRoom && onRoom
+                  ? [{ name: 'room', label: 'Cambiar habitación' }]
+                  : []),
                 { name: 'select', label: 'Seleccionar varios' },
               ]
             : undefined
@@ -195,6 +209,7 @@ function CheckinRow({
           const a = e.nativeEvent.actionName;
           if (a === 'arrive') onArrive(id);
           else if (a === 'undo') onUndo(id);
+          else if (a === 'room') onRoom?.(id);
           else if (a === 'select') onStartSelect(id);
         }}
         style={[styles.main, row.out && styles.dim]}
@@ -221,18 +236,6 @@ function CheckinRow({
             <Text style={[styles.name, { color: t.text }]} numberOfLines={2}>
               <Text style={styles.first}>{reg.firstName}</Text> {reg.lastName}
             </Text>
-            {showRoom && row.room ? (
-              <View
-                style={[
-                  styles.room,
-                  { backgroundColor: t.chip('info').background },
-                ]}
-              >
-                <Text style={[styles.roomText, { color: t.text }]}>
-                  {roomShort(row.room)}
-                </Text>
-              </View>
-            ) : null}
             {eff.note ? (
               <IconSymbol name="note.text" size={16} color={t.accentText} />
             ) : null}
@@ -244,8 +247,15 @@ function CheckinRow({
               />
             ) : null}
           </View>
-          {row.line || badgesLabel(reg.badges) ? (
+          {row.line || badgesLabel(reg.badges) || (showRoom && !row.out) ? (
             <View style={styles.meta}>
+              {showRoom && !row.out ? (
+                <RoomTag
+                  room={row.room}
+                  tone={roomTone}
+                  onPress={onRoom && !selecting ? () => onRoom(id) : undefined}
+                />
+              ) : null}
               {row.line ? (
                 <Text
                   style={[styles.sub, { color: t.textSecondary }]}
@@ -301,9 +311,14 @@ const styles = StyleSheet.create({
   },
   name: { ...typography.body, flexShrink: 1 },
   first: { fontWeight: '600' },
-  room: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: radii.xs },
-  roomText: { ...typography.footnote, fontWeight: '700' },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  meta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    columnGap: 8,
+    rowGap: 4,
+    marginTop: 2,
+  },
   sub: { ...typography.caption, flexShrink: 1 },
   right: { paddingRight: 12 },
   arrive: {

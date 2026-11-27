@@ -18,10 +18,17 @@
 //     (repite alguna fila: la app lo mezcla por `updatedAt`).
 //   · Mando `othersCheckIn`: en cada sondeo, «Comunica Tools» marca a alguien
 //     que faltaba (para ver llegar lo de otros).
+//   · `room`: solo habitaciones del evento (si no, 422 `room_not_in_event`);
+//     pasarse de plazas se deja. Lo puesto a mano en las habitaciones
+//     (`roomExtras`) lo pone Comunica Tools: aquí viene fijo.
+//   · La ficha lleva los datos de monitor (los monitores; el resto, `null`) y
+//     los datos personales van aparte (`personal`), como en Grupos.
 //
 // Datos inventados: un encuentro en marcha (ECE, con gente de tres
-// delegaciones, monitores, equipo, canceladas, habitaciones en dos casas,
-// llegadas, «no viene» y notas), uno próximo sin habitaciones y uno pasado.
+// delegaciones, monitores, equipo, canceladas, habitaciones en dos casas con
+// algo puesto a mano —un formador, plazas reservadas— y una llena, una pasada
+// y una vacía, llegadas, «no viene» y notas), uno próximo sin habitaciones y
+// uno pasado.
 // El estado vive POR datos (`WeakMap`): `reset()` del falso lo deja como al
 // principio.
 
@@ -34,12 +41,16 @@ import {
   ManagedEventsResponse,
   ManagedPerson,
   NoteBody,
+  PersonalData,
+  RoomBody,
   type CheckinState,
   type Consents,
   type Guardian,
   type HealthKind,
   type ManagedRegistration,
   type ManagedRoom,
+  type MonitorProfile,
+  type RoomExtra,
   type RouteName,
 } from '../contract';
 import { ComunicaApiError, type ComunicaApi } from '../client';
@@ -48,6 +59,7 @@ import { addDays } from '@/utils/comunica/madrid';
 import { schoolLevelFromText } from '@/utils/comunica/schoolLevels';
 import { fold } from '@/utils/comunica/search';
 import { seededRandom, type FakeData, type PersonaId } from './fixtures';
+import { FAKE_CONGRESSES, FAKE_MAT_COURSES } from './myMonitor';
 
 export interface ManagedCtx {
   data: () => FakeData;
@@ -65,8 +77,10 @@ export type ManagedKeys =
   | 'getManagedCheckins'
   | 'checkinManaged'
   | 'noteManaged'
+  | 'setManagedRoom'
   | 'getManagedPerson'
-  | 'getManagedHealth';
+  | 'getManagedHealth'
+  | 'getManagedPersonal';
 type ManagedApi = Pick<ComunicaApi, ManagedKeys>;
 
 /** El encuentro de hoy (con habitaciones), uno próximo y uno pasado. */
@@ -152,6 +166,8 @@ interface FakeManagedPerson {
   guardians: Guardian[];
   consents: Consents;
   health: { kind: HealthKind; text: string }[];
+  monitor: Omit<MonitorProfile, 'generatedAt'> | null;
+  personal: Omit<PersonalData, 'generatedAt' | 'personId'>;
 }
 
 interface FakeManagedEvent {
@@ -161,6 +177,7 @@ interface FakeManagedEvent {
   endDate: string;
   people: FakeManagedPerson[];
   rooms: ManagedRoom[];
+  extras: RoomExtra[];
   checkins: Map<string, CheckinState>;
 }
 
@@ -175,6 +192,42 @@ const phoneOf = (r: () => number) => {
   const d = () => Math.floor(r() * 10);
   return `6${d()}${d()} ${d()}${d()} ${d()}${d()} ${d()}${d()}`;
 };
+
+/** Los datos de monitor de un monitor del falso: unos completos, otros a medias. */
+function monitorOf(
+  seq: number,
+  r: () => number,
+): Omit<MonitorProfile, 'generatedAt'> {
+  const full = seq % 2 === 0;
+  return {
+    monitorSince: 2010 + Math.floor(r() * 15),
+    monitorOf: full ? 'com' : 'mic',
+    preMonitors1: 'finished',
+    preMonitors2: full ? 'finished' : 'in_progress',
+    preMonitorsYear: full ? '2016' : null,
+    mat: full ? 'certified' : 'in_progress',
+    matCourse: full ? '2018' : null,
+    dat: full ? 'pending_certificate' : null,
+    fa: null,
+    datYearAndSchool: full ? '2024, Escuela Valle Verde' : null,
+    faYearAndSchool: null,
+    foodHandling: full ? true : null,
+    congresses: full ? ['2019_monteverde', '2025_valdelagua'] : [],
+    academicBackground: full ? 'Grado en Magisterio' : null,
+    volunteeringDescription: full
+      ? 'Monitor/a de un grupo de COM los sábados.'
+      : null,
+    volunteeringPrograms: null,
+    sexOffenceCertificateMode: full ? 'automatic' : 'manual',
+    files: {
+      sexOffenceCertificate: full,
+      mat: full,
+      dat: false,
+      otherTraining: false,
+    },
+    options: { matCourses: FAKE_MAT_COURSES, congresses: FAKE_CONGRESSES },
+  };
+}
 
 function makePeople(
   eventKey: string,
@@ -232,6 +285,11 @@ function makePeople(
       : [];
     const tri = (rate = 0.25): boolean | null =>
       r() < rate ? null : r() < 0.85;
+    const city = delegation?.name ?? 'Villaclara';
+    const birthDate = kid
+      ? `${2026 - age}-${pad(1 + Math.floor(r() * 12))}-${pad(1 + Math.floor(r() * 28))}`
+      : undefined;
+    const dni = `${String(10_000_000 + Math.floor(r() * 89_999_999))}${'TRWAGMYFPDXBNJZSQVHLCKE'[Math.floor(r() * 23)]}`;
     out.push({
       reg: {
         registrationId: `f-ge-ins-${eventKey}-${pad(seq)}`,
@@ -255,11 +313,7 @@ function makePeople(
         },
         ...(status ? { registrationStatus: status } : {}),
       },
-      ...(kid
-        ? {
-            birthDate: `${2026 - age}-${pad(1 + Math.floor(r() * 12))}-${pad(1 + Math.floor(r() * 28))}`,
-          }
-        : {}),
+      ...(birthDate ? { birthDate } : {}),
       ...(r() < (kid ? 0.4 : 0.95) ? { ownPhone: phoneOf(r) } : {}),
       ...(kid && r() < 0.2 ? { emergency: phoneOf(r) } : {}),
       ...(!kid || r() < 0.3
@@ -287,6 +341,17 @@ function makePeople(
             ]),
           ]
         : [],
+      monitor: role === 'monitor' ? monitorOf(seq, r) : null,
+      personal: {
+        ...(birthDate ? { birthDate } : {}),
+        document: { kindLabel: 'DNI', number: dni },
+        address: `Calle ${pick(LAST)} ${1 + Math.floor(r() * 40)}, 12${pad(Math.floor(r() * 99))}0 ${city}`,
+        city,
+        ...(kid ? { school: `Colegio Consolación de ${city}` } : {}),
+        size: pick(['S', 'M', 'L', 'XL']),
+        ...(kid && levelText ? { stageLabel: 'COM' } : {}),
+        personNumber: String(4000 + seq),
+      },
     });
   };
   for (const p of plan) {
@@ -336,22 +401,47 @@ function build(today: string, nowIso: string): State {
       floor: '2',
       venue: 'Albergue Los Pinos',
     })),
-    ...['A', 'B'].map((code) => ({
+    ...['A', 'B', 'C'].map((code) => ({
       id: `f-ge-hab-casa-${code}`,
       code,
-      capacity: 3,
+      capacity: code === 'C' ? 2 : 4,
       floor: null,
       venue: 'Casa del Huerto',
     })),
+  ];
+  // Lo puesto a mano en Comunica Tools: un formador (103), plazas reservadas
+  // que llenan la 202 y un sacerdote que pasa la B de su capacidad.
+  const extras: RoomExtra[] = [
+    {
+      id: 'f-ge-extra-1',
+      roomId: 'f-ge-hab-103',
+      kind: 'person',
+      label: 'Formador: Juan',
+      seats: 1,
+    },
+    {
+      id: 'f-ge-extra-2',
+      roomId: 'f-ge-hab-202',
+      kind: 'hold',
+      label: 'Reservada para cocina',
+      seats: 1,
+    },
+    {
+      id: 'f-ge-extra-3',
+      roomId: 'f-ge-hab-casa-B',
+      kind: 'person',
+      label: 'Sacerdote: P. Andrés',
+      seats: 1,
+    },
   ];
   const checkins = new Map<string, CheckinState>();
   const active = nowPeople.filter((p) => !p.reg.registrationStatus);
   active.forEach((p, i) => {
     const id = p.reg.registrationId;
     const c: CheckinState = { registrationId: id, updatedAt: stamp(60 - i) };
-    // Habitación a casi todos (los de las dos casas, los del equipo).
-    if (i < rooms.length * 4 && i % 9 !== 8) {
-      c.roomId = rooms[Math.floor(i / 4) % rooms.length].id;
+    // Habitación a casi todos, de cuatro en cuatro (la C de la casa, vacía).
+    if (i < 40 && i % 9 !== 8) {
+      c.roomId = rooms[Math.floor(i / 4)].id;
     }
     if (i % 3 === 0) {
       c.arrivedAt = stamp(120 - i);
@@ -413,6 +503,7 @@ function build(today: string, nowIso: string): State {
         endDate: addDays(today, 1),
         people: nowPeople,
         rooms,
+        extras,
         checkins,
       },
       {
@@ -422,6 +513,7 @@ function build(today: string, nowIso: string): State {
         endDate: addDays(today, 23),
         people: nextPeople,
         rooms: [],
+        extras: [],
         checkins: new Map(),
       },
       {
@@ -431,6 +523,7 @@ function build(today: string, nowIso: string): State {
         endDate: addDays(today, -9),
         people: pastPeople,
         rooms: [],
+        extras: [],
         checkins: pastCheckins,
       },
       {
@@ -440,6 +533,7 @@ function build(today: string, nowIso: string): State {
         endDate: addDays(today, 50),
         people: [],
         rooms: [],
+        extras: [],
         checkins: new Map(),
       },
     ],
@@ -524,6 +618,7 @@ export function managedEventsRoutes(ctx: ManagedCtx): ManagedApi {
         checkins: rows,
         since: lastOf(rows, minuteAgo()),
         rooms: e.rooms,
+        roomExtras: e.extras,
       });
     },
 
@@ -620,6 +715,43 @@ export function managedEventsRoutes(ctx: ManagedCtx): ManagedApi {
       return CheckinResult.parse({ checkins: [e.checkins.get(id)] });
     },
 
+    async setManagedRoom(eventId, body) {
+      const parsed = RoomBody.safeParse(body);
+      if (!parsed.success) {
+        throw validation('No se ha entendido qué habitación poner.');
+      }
+      await ctx.gate('managedRoom', true);
+      const e = mine(eventId);
+      const ids = [...new Set(parsed.data.registrationIds)];
+      const known = new Set(e.people.map((p) => p.reg.registrationId));
+      if (!ids.every((id) => known.has(id))) {
+        throw forbidden('registration_out_of_scope');
+      }
+      const roomId = parsed.data.roomId;
+      if (roomId && !e.rooms.some((x) => x.id === roomId)) {
+        throw new ComunicaApiError(
+          'validation',
+          'Esa habitación no es de este evento.',
+          422,
+          'room_not_in_event',
+        );
+      }
+      for (const id of ids) {
+        const prev = e.checkins.get(id);
+        const { roomId: _old, ...rest } = prev ?? { registrationId: id };
+        void _old;
+        e.checkins.set(id, {
+          ...rest,
+          registrationId: id,
+          ...(roomId ? { roomId } : {}),
+          updatedAt: ctx.nowIso(),
+        });
+      }
+      return CheckinResult.parse({
+        checkins: ids.map((id) => e.checkins.get(id)),
+      });
+    },
+
     async getManagedPerson(eventId, personId) {
       await ctx.gate('managedPerson');
       const e = mine(eventId);
@@ -646,6 +778,7 @@ export function managedEventsRoutes(ctx: ManagedCtx): ManagedApi {
         guardians: p.guardians,
         consents: p.consents,
         badges: reg.badges,
+        monitor: p.monitor,
       });
     },
 
@@ -658,6 +791,19 @@ export function managedEventsRoutes(ctx: ManagedCtx): ManagedApi {
         generatedAt: ctx.nowIso(),
         personId,
         items: p.health,
+      });
+    },
+
+    async getManagedPersonal(eventId, personId) {
+      await ctx.gate('managedPersonal');
+      const e = mine(eventId);
+      const p = e.people.find((x) => x.reg.personId === personId);
+      if (!p) throw forbidden('person_out_of_scope');
+      return PersonalData.parse({
+        generatedAt: ctx.nowIso(),
+        personId,
+        ...p.personal,
+        ...(p.email ? { email: p.email } : {}),
       });
     },
   };

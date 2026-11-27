@@ -10,8 +10,11 @@
 //     cada 4,5 s se pregunta `checkins?since=` (solo Supabase, barato) y se
 //     mezcla en el evento guardado. Así se ve lo que marcan otros, aquí o en
 //     Comunica Tools.
-//   · Marcar y anotar van a la COLA (`utils/comunica/checkin.ts`): se ven al
-//     momento, también sin cobertura, y suben solos con su hora (`at`).
+//   · Marcar, anotar y cambiar de habitación van a la COLA
+//     (`utils/comunica/checkin.ts`): se ven al momento, también sin
+//     cobertura, y suben solos (la llegada, con su hora, `at`).
+//   · Los datos personales (`managedPersonal`), como la salud: NUNCA en el
+//     móvil.
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { AppState } from 'react-native';
@@ -26,6 +29,7 @@ import useNetworkStatus from '@/hooks/useNetworkStatus';
 import {
   CHECKIN_KIND,
   CHECKIN_NOTE_KIND,
+  CHECKIN_ROOM_KIND,
   checkinQueueKey,
   cleanNote,
   effectiveCheckins,
@@ -33,10 +37,13 @@ import {
   pendingByRegistration,
   planCheckin,
   rejectedEntries,
+  roomQueueKey,
   withCheckins,
   type CheckinPayload,
   type NotePayload,
+  type RoomPayload,
 } from '@/utils/comunica/checkin';
+import { roomUndoGroups } from '@/utils/comunica/rooms';
 import { uuidV4 } from '@/utils/comunica/uuid';
 import { areaKey, STALE, useAreaQuery } from './useAreaQuery';
 import { useMe } from './useMe';
@@ -50,6 +57,8 @@ export const MANAGED_KEYS = {
     ['managed-events', id, 'managedPerson', pid] as const,
   health: (id: string, pid: string) =>
     ['managed-events', id, 'managedHealth', pid] as const,
+  personal: (id: string, pid: string) =>
+    ['managed-events', id, 'managedPersonal', pid] as const,
 };
 
 /** Cada cuánto se pregunta por lo nuevo con la pantalla abierta (como Comunica Tools). */
@@ -95,6 +104,23 @@ export function useManagedHealth(
     key: MANAGED_KEYS.health(eventId, personId),
     route: 'managedHealth',
     fetch: () => getComunicaApi().getManagedHealth(eventId, personId),
+    gcTime: SECRET_GC_MS,
+    staleTime: 0,
+    enabled: enabled && !!eventId && !!personId,
+    retry: false,
+  });
+}
+
+/** Los datos personales completos (con el documento): nunca en el móvil. */
+export function useManagedPersonal(
+  eventId: string,
+  personId: string,
+  enabled: boolean,
+) {
+  return useAreaQuery({
+    key: MANAGED_KEYS.personal(eventId, personId),
+    route: 'managedPersonal',
+    fetch: () => getComunicaApi().getManagedPersonal(eventId, personId),
     gcTime: SECRET_GC_MS,
     staleTime: 0,
     enabled: enabled && !!eventId && !!personId,
@@ -193,29 +219,46 @@ export function useCheckin(
     [entries, eventId],
   );
 
-  const latest = useRef({ outbox, entries, detail });
+  const latest = useRef({ outbox, entries, detail, effective });
   useEffect(() => {
-    latest.current = { outbox, entries, detail };
+    latest.current = { outbox, entries, detail, effective };
   });
 
-  /** Marcar a una o varias inscripciones. Devuelve si se ha apuntado. */
-  const mark = useCallback(
-    async (ids: readonly string[], to: CheckinTarget): Promise<boolean> => {
-      const { outbox: box, entries: now, detail: d } = latest.current;
-      if (!box || ids.length === 0) return false;
-      // Quien se vuelve a marcar sale de las tandas que aún no han subido.
-      const plan = planCheckin(now, eventId, ids);
+  /**
+   * Saca a `ids` de las tandas de `kind` que aún no han subido (para que el
+   * orden de subida no resucite lo de antes).
+   */
+  const unqueue = useCallback(
+    async (ids: readonly string[], kind: string) => {
+      const { outbox: box, entries: now } = latest.current;
+      if (!box) return;
+      const plan = planCheckin<{ registrationIds: string[] }>(
+        now,
+        eventId,
+        ids,
+        kind,
+      );
       for (const key of plan.remove) await box.discard(key);
       for (const u of plan.update) {
         const e = now.find((x) => x.key === u.key)!;
         await box.enqueue({
           key: u.key,
-          kind: CHECKIN_KIND,
+          kind,
           clientId: uuidV4(),
           payload: u.payload,
           meta: e.meta,
         });
       }
+    },
+    [eventId],
+  );
+
+  /** Marcar a una o varias inscripciones. Devuelve si se ha apuntado. */
+  const mark = useCallback(
+    async (ids: readonly string[], to: CheckinTarget): Promise<boolean> => {
+      const { outbox: box, detail: d } = latest.current;
+      if (!box || ids.length === 0) return false;
+      await unqueue(ids, CHECKIN_KIND);
       const payload: CheckinPayload = {
         registrationIds: [...ids],
         to,
@@ -230,7 +273,39 @@ export function useCheckin(
       });
       return true;
     },
-    [eventId],
+    [eventId, unqueue],
+  );
+
+  /**
+   * La habitación de una o varias inscripciones (`null` = sin habitación).
+   * Devuelve cómo deshacerlo (cada uno a la suya de antes), o `null` si no
+   * se ha apuntado.
+   */
+  const setRoom = useCallback(
+    async (
+      ids: readonly string[],
+      roomId: string | null,
+    ): Promise<(() => Promise<void>) | null> => {
+      const { outbox: box, detail: d } = latest.current;
+      if (!box || ids.length === 0) return null;
+      const before = roomUndoGroups(ids, latest.current.effective);
+      const put = async (list: readonly string[], to: string | null) => {
+        await unqueue(list, CHECKIN_ROOM_KIND);
+        const payload: RoomPayload = { registrationIds: [...list], roomId: to };
+        await latest.current.outbox?.enqueue({
+          key: roomQueueKey(eventId, uuidV4()),
+          kind: CHECKIN_ROOM_KIND,
+          clientId: uuidV4(),
+          payload,
+          meta: { eventId, label: d?.event.name ?? '' },
+        });
+      };
+      await put(ids, roomId);
+      return async () => {
+        for (const g of before) await put(g.ids, g.roomId);
+      };
+    },
+    [eventId, unqueue],
   );
 
   /** La nota de una inscripción (vacía, la borra). */
@@ -266,6 +341,7 @@ export function useCheckin(
     rejected,
     mark,
     setNote,
+    setRoom,
     discardRejected,
   };
 }
