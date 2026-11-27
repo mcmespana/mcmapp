@@ -2082,157 +2082,6 @@ export const EventRollWriteResult = WriteResult.extend({
 });
 export type EventRollWriteResult = z.infer<typeof EventRollWriteResult>;
 
-// ── Gestor de un evento (plan 18 «Datos») ───────────────────────────────────
-//
-// Copia de `comunicaMiddleware:src/contract-managed-events.ts` (el ORIGINAL;
-// sus comentarios son parte del contrato). En Comunica Tools, la coordinación
-// dueña de un evento nombra GESTORES: personas del CRM que, desde la app, ven a
-// TODOS los inscritos de ESE evento —de su delegación o no—, abren sus fichas,
-// hacen el check-in (llegó / falta / no viene) y escriben notas. Se guarda en
-// el MISMO sitio que el check-in de Comunica Tools (Supabase): lo marcado en la
-// app se ve allí y al revés. **Nada va al CRM** y NO es la asistencia por días
-// de «Pasar lista en un evento» (plan 07). Sin papel de equipo: lo da el
-// nombramiento. Fuera de él, 403 (`event_out_of_scope`,
-// `person_out_of_scope`, `registration_out_of_scope`), exista o no.
-
-export const MANAGED_NOTE_MAX = 300;
-export const MANAGED_CHECKIN_MAX = 500;
-
-/** Un evento que gestiona quien ha entrado. */
-export const ManagedEventSummary = z.object({
-  id: Id,
-  name: z.string(),
-  /** Días en Madrid; sin fin, el de inicio. */
-  startDate: Day,
-  endDate: Day,
-  /** La delegación dueña del evento («ECE», «Castellón»…). */
-  delegation: Delegation,
-  /** Inscripciones activas (sin las canceladas). */
-  registered: z.number().int().nonnegative(),
-  /** De ellas, cuántas han llegado (check-in). */
-  arrived: z.number().int().nonnegative(),
-});
-export type ManagedEventSummary = z.infer<typeof ManagedEventSummary>;
-
-/** `GET /v1/managed-events` — los eventos de los que es gestor (los acabados hace más de 30 días, fuera). */
-export const ManagedEventsResponse = read({
-  events: z.array(ManagedEventSummary),
-});
-export type ManagedEventsResponse = z.infer<typeof ManagedEventsResponse>;
-
-/** El estado de check-in de una inscripción. Sin fila = falta (no ha llegado ni se sabe que no viene). */
-export const CheckinState = z.object({
-  registrationId: Id,
-  /** Cuándo llegó. */
-  arrivedAt: Instant.optional(),
-  /** Quién la marcó (correo de Comunica Tools o nombre de quien la marcó en la app). */
-  arrivedBy: z.string().optional(),
-  /** «No viene». */
-  absent: z.literal(true).optional(),
-  note: z.string().max(MANAGED_NOTE_MAX).optional(),
-  noteBy: z.string().optional(),
-  /** La habitación (de `rooms` del detalle), si se le ha puesto en Comunica Tools. */
-  roomId: Id.optional(),
-  updatedAt: Instant,
-});
-export type CheckinState = z.infer<typeof CheckinState>;
-
-/** Una inscripción del evento (una por persona). Sin salud: solo las marcas (`badges`). */
-export const ManagedRegistration = z.object({
-  registrationId: Id,
-  personId: Id,
-  firstName: z.string(),
-  lastName: z.string(),
-  photoUrl: PhotoUrl.optional(),
-  age: z.number().int().nonnegative().optional(),
-  /** Curso: el de la inscripción o el de su relación de participante. */
-  schoolLevel: SchoolLevel.nullable(),
-  role: EventRole,
-  /** La delegación de su ficha. */
-  delegation: Delegation.nullable(),
-  badges: PersonBadges,
-  /** Solo si la inscripción está cancelada (no va). */
-  registrationStatus: NotGoingStatus.optional(),
-});
-export type ManagedRegistration = z.infer<typeof ManagedRegistration>;
-
-/** Una habitación del alojamiento del evento (Comunica Tools, docs/HABITACIONES.md). */
-export const ManagedRoom = z.object({
-  id: Id,
-  code: z.string(),
-  capacity: z.number().int().nonnegative(),
-  floor: z.string().nullable(),
-  venue: z.string(),
-});
-export type ManagedRoom = z.infer<typeof ManagedRoom>;
-
-/** `GET /v1/managed-events/:id` — el evento entero para el check-in. Se puede guardar en el móvil (no lleva salud). */
-export const ManagedEventDetail = read({
-  event: ManagedEventSummary,
-  /** Activas primero, por apellidos; las canceladas, al final (con `registrationStatus`). */
-  registrations: z.array(ManagedRegistration),
-  checkins: z.array(CheckinState),
-  /** Lo que se pasa como `since` en el siguiente `checkins`. */
-  since: Instant,
-  rooms: z.array(ManagedRoom),
-});
-export type ManagedEventDetail = z.infer<typeof ManagedEventDetail>;
-
-/** `GET /v1/managed-events/:id/checkins?since=` — lo cambiado desde `since` (con margen: puede repetir alguna). Solo Supabase. */
-export const ManagedCheckins = read({
-  checkins: z.array(CheckinState),
-  since: Instant,
-});
-export type ManagedCheckins = z.infer<typeof ManagedCheckins>;
-
-export const CHECKIN_TARGETS = ['in', 'absent', 'pending'] as const;
-export type CheckinTarget = (typeof CHECKIN_TARGETS)[number];
-
-/** `POST /v1/managed-events/:id/checkin` */
-export const CheckinBody = z.object({
-  registrationIds: z.array(Id).min(1).max(MANAGED_CHECKIN_MAX),
-  /** `in` = ha llegado; `absent` = no viene; `pending` = vuelve a «falta». */
-  to: z.enum(CHECKIN_TARGETS),
-  /** La hora en que se marcó, si se mandó luego (sin cobertura). Solo se acepta de las últimas 48 h. */
-  at: Instant.optional(),
-});
-export type CheckinBody = z.infer<typeof CheckinBody>;
-
-/** `POST /v1/managed-events/:id/note` — vacía, la borra. Nada de salud: eso va en el CRM. */
-export const NoteBody = z.object({
-  registrationId: Id,
-  note: z.string().max(2000),
-});
-export type NoteBody = z.infer<typeof NoteBody>;
-
-/** Respuesta de `checkin` y `note`: cómo han quedado esas inscripciones. */
-export const CheckinResult = z.object({ checkins: z.array(CheckinState) });
-export type CheckinResult = z.infer<typeof CheckinResult>;
-
-/** `GET /v1/managed-events/:id/people/:pid` — la ficha de un inscrito, para quien gestiona el evento. Sin salud ni DNI. */
-export const ManagedPerson = read({
-  person: z.object({
-    id: Id,
-    firstName: z.string(),
-    lastName: z.string(),
-    fullName: z.string(),
-    photoUrl: PhotoUrl.optional(),
-    age: z.number().int().nonnegative().optional(),
-    birthDate: Day.optional(),
-  }),
-  /** Su inscripción en el evento (la app la cruza con la lista que ya tiene: curso, papel, delegación). */
-  registrationId: Id,
-  phones: z.object({
-    own: z.string().optional(),
-    emergency: z.string().optional(),
-  }),
-  email: z.string().optional(),
-  guardians: z.array(Guardian),
-  consents: Consents,
-  badges: PersonBadges,
-});
-export type ManagedPerson = z.infer<typeof ManagedPerson>;
-
 // ── Avisos en el móvil (plan 08 «Datos») ────────────────────────────────────
 
 /**
@@ -2422,6 +2271,195 @@ export const DocumentUploadFields = z.object({
   kind: DocumentKind,
 });
 export type DocumentUploadFields = z.infer<typeof DocumentUploadFields>;
+
+// ── Gestor de un evento (plan 18 «Datos») ───────────────────────────────────
+//
+// Copia de `comunicaMiddleware:src/contract-managed-events.ts` (el ORIGINAL;
+// sus comentarios son parte del contrato). En Comunica Tools, la coordinación
+// dueña de un evento nombra GESTORES: personas del CRM que, desde la app, ven a
+// TODOS los inscritos de ESE evento —de su delegación o no—, abren sus fichas,
+// hacen el check-in (llegó / falta / no viene) y escriben notas. Se guarda en
+// el MISMO sitio que el check-in de Comunica Tools (Supabase): lo marcado en la
+// app se ve allí y al revés. **Nada va al CRM** y NO es la asistencia por días
+// de «Pasar lista en un evento» (plan 07). Sin papel de equipo: lo da el
+// nombramiento. Fuera de él, 403 (`event_out_of_scope`,
+// `person_out_of_scope`, `registration_out_of_scope`), exista o no.
+//
+// Va DESPUÉS de «Mis datos de monitor»: la ficha (`ManagedPerson.monitor`)
+// usa `MonitorProfile`. En la app, `roomExtras` y `monitor` llevan un valor
+// por defecto (`[]` y `null`): lo guardado en el móvil antes de que
+// existieran, y un servidor de antes, no los traen.
+
+export const MANAGED_NOTE_MAX = 300;
+export const MANAGED_CHECKIN_MAX = 500;
+
+/** Un evento que gestiona quien ha entrado. */
+export const ManagedEventSummary = z.object({
+  id: Id,
+  name: z.string(),
+  /** Días en Madrid; sin fin, el de inicio. */
+  startDate: Day,
+  endDate: Day,
+  /** La delegación dueña del evento («ECE», «Castellón»…). */
+  delegation: Delegation,
+  /** Inscripciones activas (sin las canceladas). */
+  registered: z.number().int().nonnegative(),
+  /** De ellas, cuántas han llegado (check-in). */
+  arrived: z.number().int().nonnegative(),
+});
+export type ManagedEventSummary = z.infer<typeof ManagedEventSummary>;
+
+/** `GET /v1/managed-events` — los eventos de los que es gestor (los acabados hace más de 30 días, fuera). */
+export const ManagedEventsResponse = read({
+  events: z.array(ManagedEventSummary),
+});
+export type ManagedEventsResponse = z.infer<typeof ManagedEventsResponse>;
+
+/** El estado de check-in de una inscripción. Sin fila = falta (no ha llegado ni se sabe que no viene). */
+export const CheckinState = z.object({
+  registrationId: Id,
+  /** Cuándo llegó. */
+  arrivedAt: Instant.optional(),
+  /** Quién la marcó (correo de Comunica Tools o nombre de quien la marcó en la app). */
+  arrivedBy: z.string().optional(),
+  /** «No viene». */
+  absent: z.literal(true).optional(),
+  note: z.string().max(MANAGED_NOTE_MAX).optional(),
+  noteBy: z.string().optional(),
+  /** La habitación (de `rooms` del detalle), si se le ha puesto en Comunica Tools. */
+  roomId: Id.optional(),
+  updatedAt: Instant,
+});
+export type CheckinState = z.infer<typeof CheckinState>;
+
+/** Una inscripción del evento (una por persona). Sin salud: solo las marcas (`badges`). */
+export const ManagedRegistration = z.object({
+  registrationId: Id,
+  personId: Id,
+  firstName: z.string(),
+  lastName: z.string(),
+  photoUrl: PhotoUrl.optional(),
+  age: z.number().int().nonnegative().optional(),
+  /** Curso: el de la inscripción o el de su relación de participante. */
+  schoolLevel: SchoolLevel.nullable(),
+  role: EventRole,
+  /** La delegación de su ficha. */
+  delegation: Delegation.nullable(),
+  badges: PersonBadges,
+  /** Solo si la inscripción está cancelada (no va). */
+  registrationStatus: NotGoingStatus.optional(),
+});
+export type ManagedRegistration = z.infer<typeof ManagedRegistration>;
+
+/** Una habitación del alojamiento del evento (Comunica Tools, docs/HABITACIONES.md). */
+export const ManagedRoom = z.object({
+  id: Id,
+  code: z.string(),
+  capacity: z.number().int().nonnegative(),
+  floor: z.string().nullable(),
+  venue: z.string(),
+});
+export type ManagedRoom = z.infer<typeof ManagedRoom>;
+
+/**
+ * Lo puesto «a mano» en una habitación en Comunica Tools: alguien que no está inscrito (`person`, p. ej. «Formador: Juan») o
+ * plazas reservadas a propósito (`hold`). Ocupan `seats` plazas.
+ */
+export const RoomExtra = z.object({
+  id: Id,
+  roomId: Id,
+  kind: z.enum(['person', 'hold']),
+  label: z.string(),
+  seats: z.number().int().positive(),
+});
+export type RoomExtra = z.infer<typeof RoomExtra>;
+
+/** `GET /v1/managed-events/:id` — el evento entero para el check-in. Se puede guardar en el móvil (no lleva salud). */
+export const ManagedEventDetail = read({
+  event: ManagedEventSummary,
+  /** Activas primero, por apellidos; las canceladas, al final (con `registrationStatus`). */
+  registrations: z.array(ManagedRegistration),
+  checkins: z.array(CheckinState),
+  /** Lo que se pasa como `since` en el siguiente `checkins`. */
+  since: Instant,
+  rooms: z.array(ManagedRoom),
+  /** Lo puesto a mano en las habitaciones (cuenta en la ocupación). */
+  roomExtras: z.array(RoomExtra).default([]),
+});
+export type ManagedEventDetail = z.infer<typeof ManagedEventDetail>;
+
+/** `GET /v1/managed-events/:id/checkins?since=` — lo cambiado desde `since` (con margen: puede repetir alguna). Solo Supabase. */
+export const ManagedCheckins = read({
+  checkins: z.array(CheckinState),
+  since: Instant,
+});
+export type ManagedCheckins = z.infer<typeof ManagedCheckins>;
+
+export const CHECKIN_TARGETS = ['in', 'absent', 'pending'] as const;
+export type CheckinTarget = (typeof CHECKIN_TARGETS)[number];
+
+/** `POST /v1/managed-events/:id/checkin` */
+export const CheckinBody = z.object({
+  registrationIds: z.array(Id).min(1).max(MANAGED_CHECKIN_MAX),
+  /** `in` = ha llegado; `absent` = no viene; `pending` = vuelve a «falta». */
+  to: z.enum(CHECKIN_TARGETS),
+  /** La hora en que se marcó, si se mandó luego (sin cobertura). Solo se acepta de las últimas 48 h. */
+  at: Instant.optional(),
+});
+export type CheckinBody = z.infer<typeof CheckinBody>;
+
+/** `POST /v1/managed-events/:id/note` — vacía, la borra. Nada de salud: eso va en el CRM. */
+export const NoteBody = z.object({
+  registrationId: Id,
+  note: z.string().max(2000),
+});
+export type NoteBody = z.infer<typeof NoteBody>;
+
+/**
+ * `POST /v1/managed-events/:id/room` — la habitación de una o varias inscripciones (`null` = sin habitación). Tiene que ser de
+ * un alojamiento del evento (si no, 422 `room_not_in_event`). Pasarse de plazas se deja (como en Comunica Tools): lo avisa la
+ * app. No va al CRM.
+ */
+export const RoomBody = z.object({
+  registrationIds: z.array(Id).min(1).max(MANAGED_CHECKIN_MAX),
+  roomId: Id.nullable(),
+});
+export type RoomBody = z.infer<typeof RoomBody>;
+
+/** Respuesta de `checkin`, `note` y `room`: cómo han quedado esas inscripciones. */
+export const CheckinResult = z.object({ checkins: z.array(CheckinState) });
+export type CheckinResult = z.infer<typeof CheckinResult>;
+
+/** `GET /v1/managed-events/:id/people/:pid` — la ficha de un inscrito, para quien gestiona el evento. Sin salud ni DNI. */
+export const ManagedPerson = read({
+  person: z.object({
+    id: Id,
+    firstName: z.string(),
+    lastName: z.string(),
+    fullName: z.string(),
+    photoUrl: PhotoUrl.optional(),
+    age: z.number().int().nonnegative().optional(),
+    birthDate: Day.optional(),
+  }),
+  /** Su inscripción en el evento (la app la cruza con la lista que ya tiene: curso, papel, delegación). */
+  registrationId: Id,
+  phones: z.object({
+    own: z.string().optional(),
+    emergency: z.string().optional(),
+  }),
+  email: z.string().optional(),
+  guardians: z.array(Guardian),
+  consents: Consents,
+  badges: PersonBadges,
+  /** Sus datos de monitor (formación, congresos, certificados subidos, con las opciones para las etiquetas), si tiene alguno; si no, `null`. */
+  monitor: MonitorProfile.omit({ generatedAt: true }).nullable().default(null),
+});
+export type ManagedPerson = z.infer<typeof ManagedPerson>;
+
+/**
+ * `GET /v1/managed-events/:id/people/:pid/personal` — sus datos personales completos (nacimiento, documento, dirección, centro,
+ * talla…), como `PersonalData` de `/v1/people/:id/personal`. Sensible: nunca se guarda en el móvil.
+ */
 
 // ── Rutas ───────────────────────────────────────────────────────────────────
 
@@ -2661,11 +2699,24 @@ export const ROUTES = {
     response: CheckinResult,
     persist: false,
   },
+  managedRoom: {
+    method: 'POST',
+    path: '/v1/managed-events/:id/room',
+    response: CheckinResult,
+    persist: false,
+  },
   managedPerson: {
     method: 'GET',
     path: '/v1/managed-events/:id/people/:pid',
     response: ManagedPerson,
     persist: true,
+  },
+  // Con el documento: como `personal` de Grupos, NUNCA en el móvil.
+  managedPersonal: {
+    method: 'GET',
+    path: '/v1/managed-events/:id/people/:pid/personal',
+    response: PersonalData,
+    persist: false,
   },
   managedHealth: {
     method: 'GET',

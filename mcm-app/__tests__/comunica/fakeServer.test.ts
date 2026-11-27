@@ -128,6 +128,14 @@ describe('servidor falso', () => {
         'f-ge-encuentro',
         managedReg.personId,
       ),
+      managedRoom: await gestor.setManagedRoom('f-ge-encuentro', {
+        registrationIds: [managedReg.registrationId],
+        roomId: managed.rooms[0].id,
+      }),
+      managedPersonal: await gestor.getManagedPersonal(
+        'f-ge-encuentro',
+        managedReg.personId,
+      ),
       myProfiles: await fam.getMyProfiles(),
       profileDetails: await fam.getProfileDetails(famId),
       updateProfileDetails: await fam.updateProfileDetails(famId, {

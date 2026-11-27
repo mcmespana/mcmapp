@@ -50,6 +50,7 @@ import type {
   Stage,
 } from '@/services/comunica/contract';
 import { hexAlpha, onColor, readableOn } from '@/utils/colorUtils';
+import type { RoomTone } from '@/utils/comunica/rooms';
 import { compositeOver, tintedGlyph } from '@/utils/tintColors';
 
 /** Relleno de los estados de una marca. */
@@ -122,6 +123,24 @@ export const GRADIENT_OVERLAY = hexAlpha('#000', '2E');
 
 export type ChipTone =
   'neutral' | 'positive' | 'warning' | 'negative' | 'accent' | 'info';
+
+/**
+ * Una habitación según su ocupación (plan 18), como en Comunica Tools: con
+ * hueco (verde), llena (ámbar) o pasada (rojo); vacía, gris.
+ */
+export const ROOM_CHIP: Record<RoomTone, ChipTone> = {
+  empty: 'neutral',
+  free: 'positive',
+  full: 'warning',
+  over: 'negative',
+};
+/** La barrita de ocupación (vacía no se pinta: mide cero). */
+export const ROOM_BAR: Record<RoomTone, string> = {
+  empty: SwipeColors.add,
+  free: SwipeColors.add,
+  full: ToastColors.warning,
+  over: SwipeColors.remove,
+};
 
 /** Roles de color del área para el modo activo. */
 export function comunicaTheme(isDark: boolean) {

@@ -498,10 +498,13 @@ Original: `comunicaMiddleware:src/contract-managed-events.ts`; la app tiene la c
   delegación de trabajo.
 - `GET /v1/managed-events` → `{ generatedAt, events: ManagedEventSummary[] }` (`id, name, startDate, endDate,
   delegation, registered, arrived`); los acabados hace más de 30 días no salen.
-- `GET /v1/managed-events/:id` → `{ generatedAt, event, registrations, checkins, since, rooms }`. `registrations`: una
+- `GET /v1/managed-events/:id` → `{ generatedAt, event, registrations, checkins, since, rooms, roomExtras }`. `registrations`: una
   por persona, de cualquier delegación, activas primero y canceladas al final (con `registrationStatus`), sin salud (solo
   `badges`). `checkins`: `CheckinState { registrationId, arrivedAt?, arrivedBy?, absent?, note?, noteBy?, roomId?,
-  updatedAt }` (sin fila = falta). `rooms`: las habitaciones de los alojamientos del evento. Se guarda en el móvil.
+  updatedAt }` (sin fila = falta). `rooms`: las habitaciones de los alojamientos del evento (`id, code, capacity, floor,
+  venue`). `roomExtras` (27/11/2026): lo puesto a mano en Comunica Tools, `{ id, roomId, kind: 'person' | 'hold', label,
+  seats }` (alguien no inscrito o plazas reservadas); **cuenta en la ocupación**. Se guarda en el móvil (en la app,
+  `roomExtras` lleva `[]` por defecto: lo guardado antes no lo trae).
 - `GET /v1/managed-events/:id/checkins?since=` → `{ generatedAt, checkins, since }`: lo cambiado desde `since` con 15 s
   de margen. Solo lee Supabase: para preguntar cada pocos segundos con la pantalla abierta.
 - `POST /v1/managed-events/:id/checkin` `{ registrationIds (1-500), to: 'in' | 'absent' | 'pending', at? }` →
@@ -509,8 +512,15 @@ Original: `comunicaMiddleware:src/contract-managed-events.ts`; la app tiene la c
   habitación. La app lo manda por la cola, siempre con `at`.
 - `POST /v1/managed-events/:id/note` `{ registrationId, note }` → `{ checkins }`. Vacía, la borra; se limpia a 300.
   Nada de salud. No toca la llegada.
+- `POST /v1/managed-events/:id/room` `{ registrationIds (1-500), roomId | null }` → `{ checkins }` (27/11/2026). La
+  habitación de una o varias (`null` = sin). Tiene que ser de un alojamiento del evento: si no, 422
+  `room_not_in_event`. Pasarse de plazas se deja (lo avisa la app). No toca la llegada ni la nota. La app lo manda por la
+  cola (`checkin-room`, por tandas, con «Deshacer»).
 - `GET /v1/managed-events/:id/people/:pid` → `ManagedPerson` (persona, `registrationId`, teléfonos, correo, familia,
-  autorizaciones, marcas; sin salud ni DNI). `…/health` → `HealthNote`, nunca se guarda. `…/photo?v=` → la foto.
+  autorizaciones, marcas y `monitor`: sus datos de monitor —`MonitorProfile` sin `generatedAt`— o `null`; sin salud ni
+  DNI). Se guarda como la de Grupos. `…/health` → `HealthNote`, nunca se guarda. `…/photo?v=` → la foto.
+- `GET /v1/managed-events/:id/people/:pid/personal` → `PersonalData` (como `/v1/people/:id/personal`: nacimiento,
+  documento, dirección, centro, talla…). Sensible: `persist: false`, nunca en el móvil.
 - Errores además: 503 `crm_unavailable` con `reason: 'no_checkin_store'` (sin Supabase).
 
 ### Salud

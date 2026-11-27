@@ -1,17 +1,24 @@
-// El check-in de un evento que gestionas (plan 18): quién ha LLEGADO. Es el
-// check-in de Comunica Tools y se guarda en el mismo sitio; nada va al CRM ni
-// es la asistencia por días de «Pasar lista en un evento» (plan 07).
+// El check-in de un evento que gestionas (plan 18): quién ha LLEGADO y en qué
+// habitación duerme. Es el check-in de Comunica Tools y se guarda en el mismo
+// sitio; nada va al CRM ni es la asistencia por días de «Pasar lista en un
+// evento» (plan 07).
 //
-//   · Arriba, la cifra grande («87 / 120 han llegado»), su barra y lo que
-//     falta. Debajo, el buscador (sin tildes y por trozos) y cómo agrupar:
-//     nombre, delegación, curso, papel o habitación (si el evento tiene).
-//   · Chips pegados: Todos / Faltan / Están / No vienen / Con nota.
-//   · Cada persona con «Llega» grande y su deshacer; tocarla abre la ficha y
-//     mantenerla pulsada empieza a seleccionar varios (abajo, «Llegan» y «No
-//     vienen» para todos los elegidos).
+// De arriba abajo, de lo que más se mira a lo que menos:
+//   · La cifra grande («87 / 120 han llegado»), su barra y lo que falta.
+//   · El buscador (sin tildes y por trozos, también por habitación) y dos
+//     botones: «Filtros» (agrupar y afinar, en una hoja, con el número de lo
+//     puesto) y «Habitaciones» (la vista por plantas). Con habitaciones, el
+//     interruptor «Habitación al llegar»: al marcar «Llega» a alguien sin
+//     habitación sale el selector al momento (un toque y listo, con Deshacer).
+//   · Chips pegados de la llegada: Todos / Faltan / Están / No vienen.
+//   · Cada persona: el nombre entero, su habitación (se toca y se cambia) y
+//     «Llega» grande, o la hora y deshacer. Tocarla abre la ficha y
+//     mantenerla pulsada empieza a seleccionar varios (abajo: «No vienen»,
+//     «Habitación» y «Llegan» para todos los elegidos).
 //   · SIN COBERTURA: lo marcado se ve al momento y se queda en la cola con su
-//     hora; sube solo. Con la pantalla a la vista y la app delante, se pregunta
-//     cada pocos segundos lo que han marcado otros (aquí o en Comunica Tools).
+//     hora; sube solo. Con la pantalla a la vista y la app delante, se
+//     pregunta cada pocos segundos lo que han marcado otros (aquí o en
+//     Comunica Tools).
 //
 // Una sola `FlatList` (ciento y pico filas), con los chips como cabecera
 // pegada, como la lista del autobús.
@@ -34,12 +41,14 @@ import {
   useCheckinPolling,
   useManagedEvent,
 } from '@/hooks/comunica/managedEvents';
+import { useBoolPreference } from '@/hooks/comunica/useBoolPreference';
 import { useFlushOutboxOnMount } from '@/hooks/comunica/useOutbox';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import useNetworkStatus from '@/hooks/useNetworkStatus';
 import { h } from '@/utils/haptics';
 import {
   arrivedHeadline,
+  arrivedTime,
   checkinRows,
   checkinSections,
   checkinStats,
@@ -47,16 +56,21 @@ import {
   GROUP_BY_LABEL,
   groupBysFor,
   pendingIn,
+  refineCount,
+  refineOptions,
   restLine,
   type CheckinFilter,
   type CheckinGroupBy,
+  type CheckinRefine,
   type CheckinRowModel,
   type CheckinSection,
 } from '@/utils/comunica/checkin';
 import { eventDates } from '@/utils/comunica/events';
+import { roomOccupancy } from '@/utils/comunica/rooms';
 import AreaPrimaryButton from '../comun/AreaPrimaryButton';
 import AreaScreen from '../comun/AreaScreen';
 import AreaState from '../comun/AreaState';
+import AreaSwitch from '../comun/AreaSwitch';
 import BottomActionBar, {
   BOTTOM_ACTION_BAR_SPACE,
 } from '../comun/BottomActionBar';
@@ -68,13 +82,16 @@ import { MARK_FILL } from '../comun/theme';
 import { useComunicaTheme } from '../comun/useComunicaTheme';
 import { useHeaderGlyph } from '../comun/useHeaderGlyph';
 import { Notice } from '../pasar-lista/RollBits';
+import CheckinFiltersSheet from './CheckinFiltersSheet';
 import CheckinRow from './CheckinRow';
+import RoomSheet, { roomNow } from './RoomSheet';
+import { useRoomPicker } from './useRoomPicker';
 
 type Item =
   | { kind: 'head'; key: string }
   | { kind: 'tools'; key: string }
-  | { kind: 'groupBy'; key: string }
   | { kind: 'chips'; key: string }
+  | { kind: 'refined'; key: string }
   | { kind: 'section'; key: string; section: CheckinSection }
   | { kind: 'row'; key: string; row: CheckinRowModel; position: CellPosition }
   | { kind: 'empty'; key: string; text: string; search: boolean }
@@ -82,6 +99,9 @@ type Item =
 
 export const FORBIDDEN_MANAGED =
   'No gestionas este evento (o ya no eres su gestor/a).';
+
+/** «Habitación al llegar»: preferencia del móvil, como «Asignar grupos». */
+export const ROOM_ON_ARRIVAL_KEY = 'comunica.roomOnArrival';
 
 export default function CheckinScreen({ eventId }: { eventId: string }) {
   const t = useComunicaTheme();
@@ -128,6 +148,51 @@ export default function CheckinScreen({ eventId }: { eventId: string }) {
   );
 }
 
+/** Un botón de la barra de herramientas (Filtros, Habitaciones). */
+function ToolButton({
+  icon,
+  label,
+  badge,
+  onPress,
+  accessibilityLabel,
+}: {
+  icon: 'line.3.horizontal.decrease.circle' | 'bed.double';
+  label: string;
+  badge?: number;
+  onPress: () => void;
+  accessibilityLabel?: string;
+}) {
+  const t = useComunicaTheme();
+  return (
+    <PressableFeedback
+      onPress={() => {
+        h.tap();
+        onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      style={[
+        styles.tool,
+        { backgroundColor: t.card, borderColor: t.cardBorder },
+      ]}
+    >
+      <IconSymbol name={icon} size={18} color={t.accentText} />
+      <Text
+        style={[styles.toolLabel, { color: t.accentText }]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+      {badge ? (
+        <View style={[styles.badge, { backgroundColor: t.accentFill }]}>
+          <Text style={[styles.badgeText, { color: t.onAccent }]}>{badge}</Text>
+        </View>
+      ) : null}
+      <PressableFeedback.Highlight />
+    </PressableFeedback>
+  );
+}
+
 function CheckinList({
   detail,
   stale,
@@ -143,14 +208,18 @@ function CheckinList({
   const glyph = useHeaderGlyph();
   const online = useNetworkStatus();
   const eventId = detail.event.id;
-  const { effective, unsent, rejected, mark, discardRejected } = useCheckin(
-    eventId,
-    detail,
-  );
+  const { effective, unsent, rejected, mark, setRoom, discardRejected } =
+    useCheckin(eventId, detail);
+  const picker = useRoomPicker(detail, setRoom);
+  const [roomOnArrival, setRoomOnArrival] =
+    useBoolPreference(ROOM_ON_ARRIVAL_KEY);
+  const hasRooms = detail.rooms.length > 0;
   const tabClearance = useTabBarClearance();
   const [barHeight, setBarHeight] = useState<number | null>(null);
   const [filter, setFilter] = useState<CheckinFilter>('all');
+  const [refine, setRefine] = useState<CheckinRefine>({});
   const [groupBy, setGroupBy] = useState<CheckinGroupBy>('name');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selection, setSelection] = useState<Set<string> | null>(null);
   const selecting = selection !== null;
@@ -171,39 +240,99 @@ function CheckinList({
     () => checkinRows(detail, effective),
     [detail, effective],
   );
-  const chips = useMemo(() => filterChips(rows), [rows]);
+  const occ = useMemo(
+    () => roomOccupancy(detail, effective),
+    [detail, effective],
+  );
+  const chips = useMemo(() => filterChips(rows, refine), [rows, refine]);
+  const options = useMemo(
+    () => refineOptions(rows, detail.event),
+    [rows, detail.event],
+  );
   const groupBys = groupBysFor(detail.rooms);
   const sections = useMemo(
     () =>
       checkinSections(rows, {
         filter,
+        refine,
         query,
         groupBy,
         event: detail.event,
         rooms: detail.rooms,
       }),
-    [rows, filter, query, groupBy, detail.event, detail.rooms],
+    [rows, filter, refine, query, groupBy, detail.event, detail.rooms],
   );
   const visiblePending = useMemo(() => pendingIn(sections), [sections]);
   const headline = arrivedHeadline(stats);
   const rest = restLine(stats);
+  const refined = refineCount(refine);
+  const filtersBadge = refined + (groupBy !== 'name' ? 1 : 0);
+  const refinedText = [
+    refine.note ? 'Con nota' : null,
+    refine.room === 'with'
+      ? 'Con habitación'
+      : refine.room === 'without'
+        ? 'Sin habitación'
+        : null,
+    refine.role
+      ? options.roles.find((o) => o.key === refine.role)?.label
+      : null,
+    refine.delegation !== undefined
+      ? (options.delegations.find((o) => o.key === refine.delegation)?.label ??
+        'Sin delegación')
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  const regOf = useCallback(
+    (id: string) => detail.registrations.find((r) => r.registrationId === id),
+    [detail.registrations],
+  );
 
   // ── Marcar ──
-  const onArrive = useCallback((id: string) => void mark([id], 'in'), [mark]);
+  const onArrive = useCallback(
+    (id: string) => {
+      void mark([id], 'in');
+      // «Habitación al llegar»: a quien no tiene, el selector al momento.
+      if (roomOnArrival && hasRooms && !effective.get(id)?.roomId) {
+        const reg = regOf(id);
+        if (!reg) return;
+        picker.open({
+          ids: [id],
+          title: `${reg.firstName} ${reg.lastName}`,
+          subtitle: `Ha llegado · ${arrivedTime(new Date().toISOString())}`,
+        });
+      }
+    },
+    [mark, roomOnArrival, hasRooms, effective, regOf, picker],
+  );
   const onUndo = useCallback(
     (id: string) => void mark([id], 'pending'),
     [mark],
   );
+  const onRoom = useCallback(
+    (id: string) => {
+      const reg = regOf(id);
+      if (!reg) return;
+      picker.open({
+        ids: [id],
+        title: `${reg.firstName} ${reg.lastName}`,
+        subtitle: roomNow(detail, effective.get(id)?.roomId),
+      });
+    },
+    [regOf, picker, detail, effective],
+  );
   const onOpen = useCallback(
     (id: string) => {
-      const reg = detail.registrations.find((r) => r.registrationId === id);
+      const reg = regOf(id);
       if (!reg) return;
       router.push({
         pathname: '/comunica/gestion/[eventId]/persona/[personId]',
         params: { eventId, personId: reg.personId },
       });
     },
-    [detail.registrations, eventId, router],
+    [regOf, eventId, router],
   );
   const onSelect = useCallback((id: string) => {
     setSelection((s) => {
@@ -224,10 +353,27 @@ function CheckinList({
       setSelection(null);
     }
   };
+  const roomForSelection = () => {
+    if (!selection || selection.size === 0) return;
+    const ids = [...selection];
+    picker.open({
+      ids,
+      title:
+        ids.length === 1
+          ? (() => {
+              const r = regOf(ids[0]);
+              return r ? `${r.firstName} ${r.lastName}` : '1 persona';
+            })()
+          : `${ids.length} personas`,
+    });
+    setSelection(null);
+  };
 
+  const scrollTop = () =>
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
   const pickFilter = (k: CheckinFilter) => {
     setFilter((cur) => (cur === k && k !== 'all' ? 'all' : k));
-    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    scrollTop();
   };
 
   // ── La lista, aplanada ──
@@ -235,9 +381,9 @@ function CheckinList({
     const items: Item[] = [
       { kind: 'head', key: 'head' },
       { kind: 'tools', key: 'tools' },
+      { kind: 'chips', key: 'chips' },
     ];
-    if (groupBys.length > 1) items.push({ kind: 'groupBy', key: 'groupBy' });
-    items.push({ kind: 'chips', key: 'chips' });
+    if (refined > 0) items.push({ kind: 'refined', key: 'refined' });
     if (detail.registrations.length === 0) {
       items.push({
         kind: 'empty',
@@ -251,7 +397,7 @@ function CheckinList({
         key: 'empty-q',
         text: query
           ? 'Nadie coincide con lo que buscas.'
-          : filter === 'pending'
+          : filter === 'pending' && refined === 0
             ? 'Ya no falta nadie.'
             : 'Aquí no hay nadie.',
         search: !!query,
@@ -270,7 +416,7 @@ function CheckinList({
     }
     items.push({ kind: 'foot', key: 'foot' });
     return items;
-  }, [sections, detail.registrations.length, query, filter, groupBys.length]);
+  }, [sections, detail.registrations.length, query, filter, refined]);
   const stickyIndex = data.findIndex((i) => i.kind === 'chips');
 
   const renderItem = ({ item }: { item: Item }) => {
@@ -336,7 +482,9 @@ function CheckinList({
                   text={
                     rejected[0].error?.reason === 'registration_out_of_scope'
                       ? 'Algún cambio no se ha guardado: esa inscripción ya no es de este evento.'
-                      : `Algún cambio no se ha guardado: ${rejected[0].error?.message ?? 'Comunica lo ha rechazado'}.`
+                      : rejected[0].error?.reason === 'room_not_in_event'
+                        ? 'Algún cambio no se ha guardado: esa habitación ya no es de este evento.'
+                        : `Algún cambio no se ha guardado: ${rejected[0].error?.message ?? 'Comunica lo ha rechazado'}.`
                   }
                 />
                 <PressableFeedback
@@ -359,31 +507,59 @@ function CheckinList({
               value={query}
               onChange={setQuery}
               placeholder={
-                detail.rooms.length > 0
+                hasRooms
                   ? 'Buscar por nombre, curso, habitación…'
                   : 'Buscar por nombre, curso, delegación…'
               }
             />
-          </View>
-        );
-      case 'groupBy':
-        return (
-          <View style={styles.groupBy}>
-            <Text style={[styles.groupByLabel, { color: t.textSecondary }]}>
-              Agrupar por
-            </Text>
-            <FilterChips
-              chips={groupBys.map((g) => ({
-                key: g,
-                label: GROUP_BY_LABEL[g],
-              }))}
-              value={groupBy}
-              onChange={(g) => {
-                setGroupBy(g);
-                listRef.current?.scrollToOffset({ offset: 0, animated: true });
-              }}
-              label="Agrupar por"
-            />
+            <View style={styles.tools}>
+              <ToolButton
+                icon="line.3.horizontal.decrease.circle"
+                label="Filtros"
+                badge={filtersBadge}
+                accessibilityLabel={
+                  filtersBadge > 0
+                    ? `Filtros, ${filtersBadge} puestos${groupBy !== 'name' ? `, agrupado por ${GROUP_BY_LABEL[groupBy].toLowerCase()}` : ''}`
+                    : 'Filtros y agrupar'
+                }
+                onPress={() => setFiltersOpen(true)}
+              />
+              {hasRooms ? (
+                <ToolButton
+                  icon="bed.double"
+                  label="Habitaciones"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/comunica/gestion/[eventId]/habitaciones',
+                      params: { eventId },
+                    })
+                  }
+                />
+              ) : null}
+            </View>
+            {hasRooms ? (
+              <View
+                style={[
+                  styles.switchRow,
+                  { backgroundColor: t.card, borderColor: t.cardBorder },
+                ]}
+              >
+                <IconSymbol name="bed.double" size={18} color={t.accentText} />
+                <View style={styles.flex}>
+                  <Text style={[styles.body, { color: t.text }]}>
+                    Habitación al llegar
+                  </Text>
+                  <Text style={[styles.small, { color: t.textSecondary }]}>
+                    Al marcar «Llega» a quien no tiene, eliges la suya.
+                  </Text>
+                </View>
+                <AreaSwitch
+                  value={roomOnArrival}
+                  onChange={setRoomOnArrival}
+                  label="Habitación al llegar"
+                />
+              </View>
+            ) : null}
           </View>
         );
       case 'chips':
@@ -397,6 +573,35 @@ function CheckinList({
             onChange={pickFilter}
             label="Filtrar por llegada"
           />
+        );
+      case 'refined':
+        return (
+          <View style={styles.refined}>
+            <IconSymbol
+              name="line.3.horizontal.decrease.circle"
+              size={16}
+              color={t.accentText}
+            />
+            <Text
+              style={[styles.refinedText, { color: t.text }]}
+              numberOfLines={2}
+            >
+              {refinedText}
+            </Text>
+            <PressableFeedback
+              onPress={() => {
+                h.remove();
+                setRefine({});
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Quitar los filtros"
+              style={styles.link}
+            >
+              <Text style={[styles.linkText, { color: t.accentText }]}>
+                Quitar
+              </Text>
+            </PressableFeedback>
+          </View>
         );
       case 'section':
         return (
@@ -416,13 +621,16 @@ function CheckinList({
             </Text>
           </View>
         );
-      case 'row':
+      case 'row': {
+        const roomId = item.row.room?.id;
         return (
           <ListCell position={item.position}>
             <CheckinRow
               row={item.row}
-              showRoom={detail.rooms.length > 0 && groupBy !== 'room'}
-              showNote={filter === 'note'}
+              showRoom={hasRooms}
+              roomTone={roomId ? occ.get(roomId)?.tone : undefined}
+              onRoom={onRoom}
+              showNote={!!refine.note}
               selecting={selecting}
               selected={!!selection?.has(item.row.id)}
               onArrive={onArrive}
@@ -433,6 +641,7 @@ function CheckinList({
             />
           </ListCell>
         );
+      }
       case 'empty':
         return (
           <EmptyState
@@ -447,8 +656,9 @@ function CheckinList({
           <View style={[styles.block, styles.foot]}>
             <Text style={[styles.small, { color: t.textSecondary }]}>
               Toca <Text style={styles.bold}>Llega</Text> al verle entrar.
-              Mantén pulsado a alguien para marcar a varios. Lo que marquen
-              otros, aquí o en Comunica Tools, aparece solo.
+              {hasRooms ? ' Toca su habitación para cambiarla.' : ''} Mantén
+              pulsado a alguien para marcar a varios. Lo que marquen otros, aquí
+              o en Comunica Tools, aparece solo.
             </Text>
             <SyncBadge generatedAt={detail.generatedAt} />
           </View>
@@ -457,6 +667,15 @@ function CheckinList({
   };
 
   const count = selection?.size ?? 0;
+  const arrive = (
+    <AreaPrimaryButton
+      label={count > 0 ? `Llegan (${count})` : 'Llegan'}
+      icon="checkmark"
+      disabled={count === 0}
+      onPress={() => void applySelection('in')}
+      style={hasRooms ? styles.primaryWide : styles.primary}
+    />
+  );
   const allVisibleSelected =
     visiblePending.length > 0 &&
     visiblePending.every((id) => selection?.has(id));
@@ -493,7 +712,7 @@ function CheckinList({
         data={data}
         keyExtractor={(i) => i.key}
         renderItem={renderItem}
-        extraData={[selection, filter, groupBy]}
+        extraData={[selection, filter, refine, groupBy, occ]}
         onScroll={onScroll}
         scrollEventThrottle={16}
         stickyHeaderIndices={stickyIndex >= 0 ? [stickyIndex] : undefined}
@@ -543,33 +762,82 @@ function CheckinList({
             ) : null}
           </View>
           <View style={styles.selectActions}>
-            <PressableFeedback
-              onPress={() => void applySelection('absent')}
-              isDisabled={count === 0}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: count === 0 }}
-              style={[
-                styles.secondary,
-                { backgroundColor: t.card, borderColor: t.cardBorder },
-                count === 0 && styles.disabled,
-              ]}
-            >
-              <Text style={[styles.secondaryLabel, { color: t.accentText }]}>
-                No vienen
-              </Text>
-              <PressableFeedback.Highlight />
-            </PressableFeedback>
-            <AreaPrimaryButton
-              label={count > 0 ? `Llegan (${count})` : 'Llegan'}
-              icon="checkmark"
+            <SecondaryAction
+              label="No vienen"
               disabled={count === 0}
-              onPress={() => void applySelection('in')}
-              style={styles.primary}
+              onPress={() => void applySelection('absent')}
             />
+            {hasRooms ? (
+              <SecondaryAction
+                label="Habitación"
+                icon="bed.double"
+                disabled={count === 0}
+                onPress={roomForSelection}
+              />
+            ) : (
+              arrive
+            )}
           </View>
+          {/* Con habitaciones, «Llegan» a lo ancho debajo: tres botones en
+              una fila, a 375 pt, cortaban las palabras. */}
+          {hasRooms ? arrive : null}
         </BottomActionBar>
       ) : null}
+      <CheckinFiltersSheet
+        visible={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        groupBys={groupBys}
+        groupBy={groupBy}
+        onGroupBy={(g) => {
+          setGroupBy(g);
+          scrollTop();
+        }}
+        refine={refine}
+        onRefine={(r) => {
+          setRefine(r);
+          scrollTop();
+        }}
+        options={options}
+        hasRooms={hasRooms}
+      />
+      <RoomSheet detail={detail} effective={effective} {...picker.sheet} />
     </View>
+  );
+}
+
+function SecondaryAction({
+  label,
+  icon,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  icon?: 'bed.double';
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const t = useComunicaTheme();
+  return (
+    <PressableFeedback
+      onPress={onPress}
+      isDisabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      style={[
+        styles.secondary,
+        { backgroundColor: t.card, borderColor: t.cardBorder },
+        disabled && styles.disabled,
+      ]}
+    >
+      {icon ? <IconSymbol name={icon} size={18} color={t.accentText} /> : null}
+      <Text
+        style={[styles.secondaryLabel, { color: t.accentText }]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+      <PressableFeedback.Highlight />
+    </PressableFeedback>
   );
 }
 
@@ -585,12 +853,47 @@ const styles = StyleSheet.create({
   rejected: { gap: 4 },
   link: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   linkText: { ...typography.button },
-  groupBy: { paddingTop: 8 },
-  groupByLabel: {
-    ...typography.caption,
-    fontWeight: '600',
+  tools: { flexDirection: 'row', gap: 8 },
+  tool: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  toolLabel: { ...typography.button, flexShrink: 1 },
+  badge: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: radii.pillFull,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { ...typography.footnote, fontWeight: '700' },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 56,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  flex: { flex: 1 },
+  refined: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     paddingHorizontal: 20,
   },
+  refinedText: { ...typography.subhead, fontWeight: '600', flex: 1 },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -623,14 +926,18 @@ const styles = StyleSheet.create({
   selectActions: { flexDirection: 'row', gap: 12 },
   secondary: {
     flex: 1,
+    flexDirection: 'row',
+    gap: 6,
     minHeight: 52,
     borderRadius: radii.md,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 8,
     overflow: 'hidden',
   },
   secondaryLabel: { ...typography.button },
   primary: { flex: 2, minHeight: 52 },
+  primaryWide: { minHeight: 52 },
   disabled: { opacity: 0.5 },
 });

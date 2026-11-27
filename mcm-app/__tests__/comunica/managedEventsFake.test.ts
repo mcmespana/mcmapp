@@ -196,3 +196,100 @@ describe('la ficha y la salud', () => {
     expect(ROUTES.managedEvents.persist).toBe(true);
   });
 });
+
+describe('habitaciones, datos de monitor y datos personales', () => {
+  it('el detalle trae lo puesto a mano en las habitaciones (de dos casas)', async () => {
+    const d = await server().getManagedEvent(MANAGED_NOW);
+    expect(d.roomExtras.map((x) => x.kind).sort()).toEqual([
+      'hold',
+      'person',
+      'person',
+    ]);
+    const roomIds = new Set(d.rooms.map((r) => r.id));
+    expect(d.roomExtras.every((x) => roomIds.has(x.roomId))).toBe(true);
+    expect((await server().getManagedEvent(MANAGED_NEXT)).roomExtras).toEqual(
+      [],
+    );
+  });
+
+  it('cambiar de habitación: sin tocar la llegada ni la nota; `null` la quita', async () => {
+    const s = server();
+    const d = await s.getManagedEvent(MANAGED_NOW);
+    const withNote = d.checkins.find((c) => c.note)!;
+    const r = await s.setManagedRoom(MANAGED_NOW, {
+      registrationIds: [withNote.registrationId],
+      roomId: 'f-ge-hab-casa-C',
+    });
+    expect(r.checkins[0]).toMatchObject({
+      registrationId: withNote.registrationId,
+      roomId: 'f-ge-hab-casa-C',
+      note: withNote.note,
+    });
+    expect(Date.parse(r.checkins[0].updatedAt)).toBeGreaterThanOrEqual(
+      Date.parse(withNote.updatedAt),
+    );
+    const off = await s.setManagedRoom(MANAGED_NOW, {
+      registrationIds: [withNote.registrationId],
+      roomId: null,
+    });
+    expect(off.checkins[0].roomId).toBeUndefined();
+    expect(off.checkins[0].note).toBe(withNote.note);
+    // Lo ve el sondeo.
+    const polled = await s.getManagedCheckins(MANAGED_NOW, d.since);
+    expect(
+      polled.checkins.find((c) => c.registrationId === withNote.registrationId)
+        ?.roomId,
+    ).toBeUndefined();
+  });
+
+  it('una habitación que no es del evento: 422; una inscripción ajena: 403', async () => {
+    const s = server();
+    const d = await s.getManagedEvent(MANAGED_NOW);
+    const id = d.registrations[0].registrationId;
+    await expect(
+      s.setManagedRoom(MANAGED_NOW, { registrationIds: [id], roomId: 'otra' }),
+    ).rejects.toMatchObject({
+      code: 'validation',
+      reason: 'room_not_in_event',
+    });
+    await expect(
+      s.setManagedRoom(MANAGED_NOW, {
+        registrationIds: ['f-ge-ins-pas-01'],
+        roomId: null,
+      }),
+    ).rejects.toMatchObject({ reason: 'registration_out_of_scope' });
+    expect(ROUTES.managedRoom.persist).toBe(false);
+  });
+
+  it('la ficha de un monitor trae sus datos de monitor; la de un chaval, `null`', async () => {
+    const s = server();
+    const d = await s.getManagedEvent(MANAGED_NOW);
+    const mon = d.registrations.find((r) => r.role === 'monitor')!;
+    const kid = d.registrations.find((r) => r.role === 'participant')!;
+    const pm = await s.getManagedPerson(MANAGED_NOW, mon.personId);
+    expect(pm.monitor?.options.congresses.length).toBeGreaterThan(0);
+    expect(pm.monitor?.files).toBeDefined();
+    expect((await s.getManagedPerson(MANAGED_NOW, kid.personId)).monitor).toBe(
+      null,
+    );
+  });
+
+  it('los datos personales: con documento, solo del evento y nunca guardados', async () => {
+    const s = server();
+    const d = await s.getManagedEvent(MANAGED_NOW);
+    const kid = d.registrations.find((r) => r.role === 'participant')!;
+    const p = await s.getManagedPersonal(MANAGED_NOW, kid.personId);
+    expect(p.personId).toBe(kid.personId);
+    expect(p.document?.number).toMatch(/^\d{8}[A-Z]$/);
+    expect(ROUTES.managedPersonal.persist).toBe(false);
+    await expect(
+      s.getManagedPersonal(MANAGED_NOW, 'f-per-01'),
+    ).rejects.toMatchObject({ reason: 'person_out_of_scope' });
+    await expect(
+      server({ persona: 'monitor' }).getManagedPersonal(
+        MANAGED_NOW,
+        kid.personId,
+      ),
+    ).rejects.toMatchObject({ reason: 'event_out_of_scope' });
+  });
+});

@@ -78,9 +78,11 @@ import { logger } from '@/utils/logger';
 import {
   CHECKIN_KIND,
   CHECKIN_NOTE_KIND,
+  CHECKIN_ROOM_KIND,
   withCheckins,
   type CheckinPayload,
   type NotePayload,
+  type RoomPayload,
 } from '@/utils/comunica/checkin';
 
 export function createAreaQueryClient() {
@@ -340,6 +342,11 @@ export default function ComunicaAreaProvider({
             e.meta.eventId,
             e.payload as NotePayload,
           ),
+        [CHECKIN_ROOM_KIND]: (e) =>
+          getComunicaApi().setManagedRoom(
+            e.meta.eventId,
+            e.payload as RoomPayload,
+          ),
         // Mis datos de monitor (plan 09): solo lo que difiere de lo confirmado.
         'me-monitor': (e) =>
           getComunicaApi().updateMyMonitorProfile({
@@ -406,7 +413,11 @@ export default function ComunicaAreaProvider({
             queryKey: areaKey(['events', e.meta.eventId, 'roll']),
           });
         }
-        if (e.kind === CHECKIN_KIND || e.kind === CHECKIN_NOTE_KIND) {
+        if (
+          e.kind === CHECKIN_KIND ||
+          e.kind === CHECKIN_NOTE_KIND ||
+          e.kind === CHECKIN_ROOM_KIND
+        ) {
           // Cómo han quedado, al momento en el evento guardado; la lista de
           // eventos (los «llegados») se relee cuando se vuelva a ella.
           const { checkins } = result as CheckinResult;

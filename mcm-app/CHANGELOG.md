@@ -12,6 +12,15 @@
 ## 2026-11-27 12:00 — Pañuelo: entrada desde Ajustes
 
 - Nueva fila «Mi pañuelo» en Ajustes, dentro de «Tu perfil en MCM» (`components/SettingsBottomSheet.tsx`). Abre `/panuelo`. Solo aparece si `usePanueloAvailable()` lo permite (misma palanca `global.panuelo`: hoy `alpha` → solo con el Laboratorio Alpha). Cuando se ponga `all`, saldrá a todo el mundo sin build ni OTA.
+## 2026-11-27 08:59 — Gestor de un evento: habitaciones, check-in más claro y ficha como la de Grupos
+
+- **Contrato** (copia de `comunicaMiddleware:src/contract-managed-events.ts`): `POST /v1/managed-events/:id/room` (habitación de una o varias; 422 `room_not_in_event`), `ManagedEventDetail.roomExtras` (lo puesto a mano en Comunica Tools, cuenta en la ocupación), `ManagedPerson.monitor` y `GET …/people/:pid/personal` (datos personales con documento, **nunca** en el móvil). `roomExtras` y `monitor` con valor por defecto en la app. Rutas nuevas en `ROUTES` (`managedRoom`, `managedPersonal`).
+- **Habitaciones** (`utils/comunica/rooms.ts`): orden natural por casa, planta y código; ocupación con los extras; selector en hoja (`gestor/RoomSheet`) con la última usada arriba, luego con hueco y, plegadas, las llenas; búsqueda por código o planta. Cambio por la cola (`checkin-room`, por tandas, sin cobertura también) con «Deshacer» en un aviso. Desde la etiqueta de cada fila, a varios a la vez, «Habitación al llegar» (preferencia del móvil, `useBoolPreference`) y la ficha.
+- **Pantalla nueva** `/comunica/gestion/[eventId]/habitaciones` (`gestor/RoomsScreen`): sin habitación primero, luego por casa y planta con su gente, lo puesto a mano y la ocupación.
+- **Check-in**: agrupar y los filtros raros pasan a la hoja «Filtros» (con número); chips de llegada sin «Con nota»; la habitación como etiqueta con el color de su ocupación, que se toca; nombres enteros.
+- **Ficha del inscrito** con las piezas de la de Grupos: en el evento (llegada, habitación con «Cambiar», nota) → a tener en cuenta → botones al tutor → contacto → **Monitor/a** desplegado (`monitorSummary`) → autorizaciones y datos personales plegados.
+- **Lista de eventos que gestionas**: los pasados, abajo y plegados.
+- `services/comunica/client.ts` pasa de 1.000 líneas: exento como el contrato (`WARNINGS.md` §3). Solo JS.
 
 ## 2026-11-27 02:20 — Compartiendo rehecha: arreglo del «+», tarjeta en el hub, compositor e historias
 
