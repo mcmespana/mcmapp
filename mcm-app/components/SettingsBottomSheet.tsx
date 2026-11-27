@@ -24,6 +24,7 @@ import { useActiveSurveys } from '@/hooks/useActiveSurveys';
 import SurveyBanner from '@/components/SurveyBanner';
 import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { usePanueloAvailable } from '@/hooks/usePanueloAvailable';
 import type { ProfileType } from '@/types/profileConfig';
 import BottomSheet from './BottomSheet';
 import SocialLoginSection from '@/components/SocialLoginSection';
@@ -56,6 +57,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
   const { rawConfig } = useProfileConfigContext();
   const { profile, setProfile } = useUserProfile();
   const settingsSurveys = useActiveSurveys('app-settings');
+  const { available: panueloAvailable } = usePanueloAvailable();
   type PanelView = 'settings' | 'profile' | 'delegation';
   const [panelView, setPanelView] = useState<PanelView>('settings');
 
@@ -313,6 +315,49 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                   style={{ opacity: 0.4 }}
                 />
               </PressableFeedback>
+
+              {/* El pañuelo es «tuyo»: cuelga del perfil. Solo si la palanca
+                  `global.panuelo` lo deja ver (alpha + Laboratorio, o all). */}
+              {panueloAvailable && (
+                <PressableFeedback
+                  style={[
+                    styles.surface,
+                    styles.surfaceClickable,
+                    { backgroundColor: surfaceBg },
+                  ]}
+                  onPress={() => {
+                    handleClose();
+                    router.push('/panuelo');
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Abrir mi pañuelo"
+                >
+                  <PressableFeedback.Highlight />
+                  <View style={[styles.surfaceRow, { flex: 1 }]}>
+                    <MaterialIcons
+                      name="checkroom"
+                      size={20}
+                      color={theme.icon}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[styles.surfaceLabel, { color: theme.text }]}
+                      >
+                        Mi pañuelo
+                      </Text>
+                      <Text style={[styles.surfaceHint, { color: hintColor }]}>
+                        Tus chapas, pines y medallas
+                      </Text>
+                    </View>
+                  </View>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={20}
+                    color={theme.icon}
+                    style={{ opacity: 0.4 }}
+                  />
+                </PressableFeedback>
+              )}
 
               {/* ── Sección: Apariencia ── */}
               <SectionHeader

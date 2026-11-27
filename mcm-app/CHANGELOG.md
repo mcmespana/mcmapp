@@ -4,6 +4,10 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-27 12:00 — Pañuelo: entrada desde Ajustes
+
+- Nueva fila «Mi pañuelo» en Ajustes, dentro de «Tu perfil en MCM» (`components/SettingsBottomSheet.tsx`). Abre `/panuelo`. Solo aparece si `usePanueloAvailable()` lo permite (misma palanca `global.panuelo`: hoy `alpha` → solo con el Laboratorio Alpha). Cuando se ponga `all`, saldrá a todo el mundo sin build ni OTA.
+
 ## 2026-11-27 02:20 — Compartiendo rehecha: arreglo del «+», tarjeta en el hub, compositor e historias
 
 - **Fallo arreglado:** el «+» de arriba en Compartiendo no abría nada y apilaba otra copia idéntica de la pantalla a cada toque (navegaba a la misma ruta con `openFormNonce`; la copia nueva nacía con el nonce ya puesto). Ahora el layout pide el compositor con `requestReflexionComposer()` (`utils/reflexionesComposerRequests.ts`) y lo abre la pantalla **enfocada**, sin navegar. Guardarraíl: `__tests__/reflexionesComposerRequests.test.ts`. El «+» pasa a tinta neutra (el verde sobre el cristal claro no se veía).
