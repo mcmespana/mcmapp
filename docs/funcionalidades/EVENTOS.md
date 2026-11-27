@@ -20,7 +20,7 @@ jubileo/
 ├── grupos/        { updatedAt, data }
 ├── contactos/     { updatedAt, data }
 ├── apps/          { updatedAt, data }
-├── compartiendo/  { updatedAt, data }   (reflexiones)
+├── compartiendo/  { updatedAt, data }   (reflexiones — ver COMPARTIENDO.md)
 └── calendarios/   { updatedAt, data }
 ```
 

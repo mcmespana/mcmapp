@@ -4,6 +4,16 @@
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
 > Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
+## 2026-11-27 02:20 — Compartiendo rehecha: arreglo del «+», tarjeta en el hub, compositor e historias
+
+- **Fallo arreglado:** el «+» de arriba en Compartiendo no abría nada y apilaba otra copia idéntica de la pantalla a cada toque (navegaba a la misma ruta con `openFormNonce`; la copia nueva nacía con el nonce ya puesto). Ahora el layout pide el compositor con `requestReflexionComposer()` (`utils/reflexionesComposerRequests.ts`) y lo abre la pantalla **enfocada**, sin navegar. Guardarraíl: `__tests__/reflexionesComposerRequests.test.ts`. El «+» pasa a tinta neutra (el verde sobre el cristal claro no se veía).
+- **Hub del evento:** tarjeta «Compartiendo» bajo el héroe (`components/reflexiones/CompartiendoHubCard.tsx`): cuántas hay, la última frase, caras de quien ha escrito, «Escribir» (abre el muro con el compositor, param `openComposer: '1'`) y «Ver el muro». Respeta `hidden` del nodo. Antes al muro solo se llegaba desde las sub-pantallas.
+- **Pantalla nueva** (`app/screens/ReflexionesScreen.tsx` + `components/reflexiones/`): escenario con el degradado del evento (pulso del muro, últimas reflexiones rotando, personas, botón Historias), invitación a escribir con arranques, muro agrupado por días con **carteles** (frases cortas, fondo de color, letra grande) y **notas**. Sincroniza cada 20 s mientras se mira (solo `updatedAt`) y con pull-to-refresh; lo que llega nuevo entra con fundido.
+- **Compositor a pantalla completa:** se escribe sobre la propia tarjeta, con su color (seis tonos del logo), firma del perfil editable y día Hoy/Ayer/anteayer (sustituye al selector de fecha). El borrador no se pierde al cerrar; el error de red sale dentro.
+- **Historias:** las reflexiones a pantalla completa una tras otra (tocar para avanzar/volver, mantener para pausar), copiar y **compartir como imagen** 1080×1920 (`utils/reflexionCard.ts`, motor de tarjetas de Contigo, sin paquetes nuevos). Al final, «¿Y tú?» invita a escribir.
+- **Datos:** campo nuevo **opcional** `tono` en cada reflexión (clave de `REFLEXION_TONES`); las antiguas cogen uno estable por id. Sin el formulario de título (las antiguas lo siguen mostrando). Misma escritura atómica de antes. Modelo puro en `utils/reflexiones.ts`, tests en `reflexiones.test.ts`. Doc: `docs/funcionalidades/COMPARTIENDO.md`.
+- Trinquetes bajados (colores 113/245, `fontSize` 64/155): la paleta de doce hex sueltos de la pantalla vieja se va. Solo JS.
+
 ## 2026-11-27 10:30 — Fix: secciones ocultas desde el panel seguían saliendo en el hub del evento
 
 - **Bug:** `useFirebaseData` ignoraba el flag `hidden` cuando el nodo no tenía `data` (sección creada en el panel solo con `hidden: true`, como Apps/Materiales sin contenido en el Congreso M+C). La tarjeta seguía visible. Ahora el flag se aplica aunque no haya datos. Test en `useFirebaseDataEdges.test.ts`.
@@ -5292,7 +5302,7 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
   > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  >      Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`

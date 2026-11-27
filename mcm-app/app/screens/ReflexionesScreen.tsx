@@ -1,622 +1,525 @@
-import { logger } from '@/utils/logger';
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+/**
+ * Compartiendo: el muro de reflexiones de un evento.
+ *
+ *   ┌ ScreenHero «Compartiendo» (kicker: el evento)
+ *   ├ Escenario: el muro en vivo (cita que pasa, quién ha escrito, historias)
+ *   ├ Invitación a escribir (+ arranques)
+ *   └ El muro, por días: carteles (frases cortas, en color) y notas
+ *
+ * Escribir abre el compositor a pantalla completa (`ReflexionComposer`);
+ * tocar una tarjeta, el modo historias (`ReflexionStories`). El «+» del grupo
+ * flotante de arriba llega por `utils/reflexionesComposerRequests.ts`.
+ *
+ * Datos: `<evento>/compartiendo` `{ updatedAt, data }`, sin login. El modelo
+ * está en `utils/reflexiones.ts`; la doc, en
+ * `docs/funcionalidades/COMPARTIENDO.md` (raíz del monorepo).
+ */
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  StyleSheet,
-  ScrollView,
   FlatList,
   Platform,
+  RefreshControl,
+  StyleSheet,
   Text,
-  Pressable,
-  Modal,
+  View,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { MaterialIcons } from '@/components/ui/icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRoute, RouteProp } from 'expo-router/react-navigation';
-import { Spinner, BottomSheet } from 'heroui-native';
-// Toast de la app (mismo API que el de heroui) — el resto del repo usa este.
+import {
+  useFocusEffect,
+  useIsFocused,
+  useRoute,
+  type RouteProp,
+} from 'expo-router/react-navigation';
+import { getDatabase, push, ref, update } from 'firebase/database';
+import { logger } from '@/utils/logger';
 import { useToast } from '@/contexts/AppToastContext';
 import { shareText } from '@/utils/shareText';
 import ContextMenuSheet from '@/components/ContextMenuSheet';
 import CelebrationBurst from '@/components/ui/CelebrationBurst';
 import EmptyState from '@/components/ui/EmptyState';
-import AppTextField from '@/components/ui/AppTextField';
-import { useContextMenu } from '@/hooks/useContextMenu';
-import DateTimePicker, {
-  DateTimePickerAndroid,
-} from '@react-native-community/datetimepicker';
+import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
+import ReflexionCard from '@/components/reflexiones/ReflexionCard';
+import ReflexionesStage, {
+  type StageQuote,
+} from '@/components/reflexiones/ReflexionesStage';
+import ComposerPrompt from '@/components/reflexiones/ComposerPrompt';
+import ReflexionComposer from '@/components/reflexiones/ReflexionComposer';
+import ReflexionStories, {
+  type StoryItem,
+} from '@/components/reflexiones/ReflexionStories';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import colors, { Colors, themeColors } from '@/constants/colors';
+import { themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
-import { radii, shadows } from '@/constants/uiStyles';
-import { useFirebaseData, withRetry } from '@/hooks/useFirebaseData';
+import typography from '@/constants/typography';
+import {
+  revalidateNode,
+  useFirebaseData,
+  withRetry,
+} from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { useTabBarPaddingBottom } from '@/hooks/useTabBarClearance';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
-import { getDatabase, ref, push, update } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import { h } from '@/utils/haptics';
 import { localISO } from '@/utils/localDate';
-import { buildReflexionUpdate } from '@/utils/reflexiones';
+import { readableOn } from '@/utils/colorUtils';
+import { onReflexionComposerRequest } from '@/utils/reflexionesComposerRequests';
+import {
+  buildReflexionUpdate,
+  composerDays,
+  createdAtOf,
+  dayLabel,
+  dayOf,
+  groupByDay,
+  newReflexion,
+  normalizeReflexiones,
+  REFLEXION_TONES,
+  reflexionTone,
+  relativeTime,
+  sortReflexiones,
+  toneColor,
+  wallStats,
+  type Reflexion,
+  type ReflexionTone,
+} from '@/utils/reflexiones';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import PageContainer from '@/components/ui/PageContainer';
-import ScreenHero from '@/components/ui/ScreenHero';
 import type { EventStackParamList } from './eventStackScreens';
-import typography from '@/constants/typography';
-import { onColor, readableOn } from '@/utils/colorUtils';
 
 interface Grupo {
   nombre: string;
   subtitulo?: string;
 }
-interface Reflexion {
-  id: string;
-  titulo?: string;
-  contenido: string;
-  fecha: string;
-  grupal: boolean;
-  grupo?: string;
-  autor?: string;
-}
 
-const MONTHS_ES = [
-  'ene',
-  'feb',
-  'mar',
-  'abr',
-  'may',
-  'jun',
-  'jul',
-  'ago',
-  'sep',
-  'oct',
-  'nov',
-  'dic',
-];
-const WEEKDAYS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+/** Cada cuánto se pregunta a Firebase si hay reflexiones nuevas (solo
+ *  `updatedAt`: si nada cambió, no se descarga nada). */
+const REFRESH_MS = 20_000;
+/** Cuántas reflexiones pasan por el escenario. */
+const STAGE_QUOTES = 8;
 
-// Paleta para las tarjetas de Compartiendo. Colores de media saturación (el
-// blanco se lee encima y combinan bien como tinte de fondo). Se elige uno de
-// forma DETERMINISTA según el id de cada reflexión, así cada tarjeta tiene
-// "su" color estable entre renders.
-const CARD_PALETTE = [
-  colors.accent, // rojo MIC
-  '#3478C7', // azul
-  '#7B9A1E', // verde oliva
-  colors.purple, // morado
-  '#E0702F', // naranja
-  '#2F8FB3', // azul petróleo
-  '#9C4FB0', // violeta
-  '#D24B7E', // rosa
-  '#4E9A51', // verde
-  '#5C6BC0', // índigo
-  '#3A9188', // turquesa
-  '#C2872B', // ámbar
-];
+type Row =
+  | { kind: 'day'; key: string; label: string; count: number }
+  | { kind: 'card'; key: string; r: Reflexion; index: number };
 
-function hashString(s: string): number {
-  let hash = 0;
-  for (let i = 0; i < s.length; i++) {
-    hash = (hash << 5) - hash + s.charCodeAt(i);
-    hash |= 0; // a int32
-  }
-  return Math.abs(hash);
-}
-
-function pickCardColor(seed: string): string {
-  return CARD_PALETTE[hashString(seed || 'x') % CARD_PALETTE.length];
-}
-
-function getInitials(name?: string): string {
-  if (!name) return '';
-  const words = name.trim().split(/\s+/).slice(0, 2);
-  return words
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
-}
-
-/** Wraps children so a long-press (or right-click on web) fires `onLongPress`. */
-function LongPressable({
-  onLongPress,
-  children,
-}: {
-  onLongPress: () => void;
-  children: React.ReactNode;
-}) {
-  const ctx = useContextMenu(onLongPress);
-  return <Pressable {...ctx}>{children}</Pressable>;
-}
+/** Un tono al azar para el borrador nuevo (que no todos empiecen en azul). */
+const randomTone = (): ReflexionTone =>
+  REFLEXION_TONES[Math.floor(Math.random() * REFLEXION_TONES.length)];
 
 export default function ReflexionesScreen() {
-  const scheme = useColorScheme();
-  const insets = useSafeAreaInsets();
-  const theme = Colors[scheme ?? 'light'];
-  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const greenInk = reflexionesGreenInk(scheme);
+  const isDark = useColorScheme() === 'dark';
+  const roles = themeColors(isDark);
   const route = useRoute<RouteProp<EventStackParamList, 'Reflexiones'>>();
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
-
-  const getDefaultAuthor = useCallback(() => {
-    const parts = [];
-    if (profile.name.trim()) {
-      parts.push(profile.name.trim());
-    }
-    if (resolved.delegationLabel.trim()) {
-      parts.push(resolved.delegationLabel.trim());
-    }
-    return parts.join(' · ');
-  }, [profile.name, resolved.delegationLabel]);
+  const { toast } = useToast();
+  const isFocused = useIsFocused();
+  const bottomPad = useTabBarPaddingBottom(spacing.xl);
 
   const event = useCurrentEvent();
+  const tint = event.tintColor;
   const compartiendoPath = getEventFirebasePath(event, 'compartiendo');
-  const { data: dataRef } = useFirebaseData<Reflexion[]>(
-    compartiendoPath,
-    getEventCacheKey(event, 'compartiendo'),
-  );
+  const compartiendoKey = getEventCacheKey(event, 'compartiendo');
+  const {
+    data: rawData,
+    loading,
+    refresh,
+  } = useFirebaseData<unknown>(compartiendoPath, compartiendoKey);
   const { data: gruposData } = useFirebaseData<Record<string, Grupo[]>>(
     getEventFirebasePath(event, 'grupos'),
     getEventCacheKey(event, 'grupos'),
   );
 
-  const grupos = gruposData?.['Conso+'] ?? [];
+  const grupos = useMemo(() => gruposData?.['Conso+'] ?? [], [gruposData]);
+  const authorOf = useCallback(
+    (r: Reflexion) => {
+      if (!r.grupal) return r.autor ?? '';
+      const g = grupos.find((gr) => gr.nombre === r.grupo);
+      if (!g) return r.grupo ?? '';
+      return g.subtitulo ? `${g.nombre} · ${g.subtitulo}` : g.nombre;
+    },
+    [grupos],
+  );
 
-  // Lo que hay en Firebase, normalizado a array (el nodo llega como objeto
-  // indexado por la key de push, o como array en los datos antiguos).
-  const remoteList = useMemo<Reflexion[]>(() => {
-    if (!dataRef) return [];
-    return Array.isArray(dataRef)
-      ? dataRef
-      : Object.values(dataRef as Record<string, Reflexion>);
-  }, [dataRef]);
-
-  // Las que se acaban de publicar desde aquí se pintan al instante, sin esperar
-  // a que Firebase devuelva la lista con ellas dentro. Se dejan de añadir a
-  // mano en cuanto llegan ya en la lista remota (se casan por id).
+  // ── La lista ──
+  const remoteList = useMemo(() => normalizeReflexiones(rawData), [rawData]);
+  // Lo recién publicado se pinta al instante, sin esperar a que Firebase
+  // devuelva la lista con ello dentro (se casan por id).
   const [justPublished, setJustPublished] = useState<Reflexion[]>([]);
-  const list = useMemo(() => {
-    if (justPublished.length === 0) return remoteList;
+  const sorted = useMemo(() => {
     const remoteIds = new Set(remoteList.map((r) => r.id));
     const pending = justPublished.filter((r) => !remoteIds.has(r.id));
-    return pending.length > 0 ? [...pending, ...remoteList] : remoteList;
+    return sortReflexiones([...pending, ...remoteList]);
   }, [justPublished, remoteList]);
 
-  const [showForm, setShowForm] = useState(false);
-  const [titulo, setTitulo] = useState('');
-  const [contenido, setContenido] = useState('');
-  const [fecha, setFecha] = useState(new Date());
-  const [autor, setAutor] = useState(getDefaultAuthor());
-  const [showDateSelector, setShowDateSelector] = useState(false);
+  // Lo que había al abrir NO se anima; lo que llega después, sí (y solo eso).
+  const [baseline, setBaseline] = useState<Set<string> | null>(null);
+  if (baseline === null && (!loading || sorted.length > 0)) {
+    setBaseline(new Set(sorted.map((r) => r.id)));
+  }
+
+  // ── El reloj (tiempos relativos) y la sincronización mientras se mira ──
+  const [now, setNow] = useState(() => Date.now());
+
+  // ── Borrador ──
+  const defaultAuthor = [profile.name.trim(), resolved.delegationLabel.trim()]
+    .filter(Boolean)
+    .join(' · ');
+  const [composerOpen, setComposerOpen] = useState(
+    () => String(route.params?.openComposer ?? '') === '1',
+  );
+  const [draftText, setDraftText] = useState('');
+  const [draftTone, setDraftTone] = useState<ReflexionTone>(randomTone);
+  const [draftAuthor, setDraftAuthor] = useState(defaultAuthor);
+  const [draftDay, setDraftDay] = useState(() => localISO());
   const [saving, setSaving] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
 
-  // El autor por defecto sale del perfil (nombre · delegación). Cuando ese
-  // perfil cambia, el campo se re-siembra; pero el usuario puede editarlo, así
-  // que no vale con derivarlo.
-  //
-  // Se ajusta DURANTE el render, el mismo patrón que usa `openFormNonce` unas
-  // líneas más abajo y que documenta React para "cambiar estado cuando cambia
-  // una prop". Antes era un `useEffect` que llamaba a `setAutor`: además del
-  // render intermedio con el autor viejo, dejaba el componente entero sin
-  // compilar por el React Compiler (leía `setAutor` antes de declararlo).
-  const defaultAuthor = getDefaultAuthor();
+  // La firma sale del perfil; si el perfil cambia, se re-siembra (ajuste
+  // durante el render, el patrón de React para «estado que sigue a una prop»).
   const [lastDefaultAuthor, setLastDefaultAuthor] = useState(defaultAuthor);
   if (defaultAuthor !== lastDefaultAuthor) {
     setLastDefaultAuthor(defaultAuthor);
-    setAutor(defaultAuthor);
+    setDraftAuthor(defaultAuthor);
   }
 
-  // El burst se auto-apaga para poder relanzarse en la siguiente publicación.
-  useEffect(() => {
-    if (!celebrate) return;
-    const t = setTimeout(() => setCelebrate(false), 1600);
-    return () => clearTimeout(t);
-  }, [celebrate]);
+  const days = useMemo(() => composerDays(new Date(now)), [now]);
 
-  // El botón "+" vive ahora en la barra superior (EventActionButtons). Al
-  // pulsarlo, el tab renavega a esta pantalla con un `openFormNonce` nuevo;
-  // ese cambio abre el formulario aquí.
-  // Se ajusta DURANTE el render (el patrón que documenta React para "cambiar
-  // estado cuando cambia una prop"): así el formulario ya sale abierto en el
-  // primer render tras renavegar, sin el parpadeo de un render intermedio.
-  const openFormNonce = route.params?.openFormNonce;
-  const [lastOpenFormNonce, setLastOpenFormNonce] = useState(openFormNonce);
-  if (openFormNonce !== lastOpenFormNonce) {
-    setLastOpenFormNonce(openFormNonce);
-    if (openFormNonce) setShowForm(true);
-  }
-
-  const showDatePicker = () => {
-    if (Platform.OS === 'android') {
-      DateTimePickerAndroid.open({
-        value: fecha,
-        mode: 'date',
-        onChange: (_: any, selected: any) => selected && setFecha(selected),
+  const openComposer = useCallback(
+    (seed?: string) => {
+      h.tap();
+      if (seed) setDraftText((t) => (t.trim() ? t : seed));
+      // Pasada la medianoche, el día elegido puede haberse salido de la lista
+      // (hoy, ayer, anteayer): entonces vuelve a «hoy».
+      setDraftDay((d) => {
+        const valid = composerDays().map((x) => x.iso);
+        return valid.includes(d) ? d : valid[0];
       });
-    } else {
-      setShowDateSelector(true);
-    }
-  };
+      setComposerOpen(true);
+    },
+    [setDraftText, setDraftDay, setComposerOpen],
+  );
 
-  const formatFecha = (f: string | Date) => {
-    const d = typeof f === 'string' ? new Date(f) : f;
-    const weekday = WEEKDAYS_ES[d.getDay()];
-    const day = d.getDate();
-    const month = MONTHS_ES[d.getMonth()];
-    return `${weekday} ${day}-${month}`;
-  };
+  // Al montar, `useFirebaseData` ya pregunta: el primer foco no repite.
+  const focusedOnce = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (focusedOnce.current) {
+        setNow(Date.now());
+        refresh();
+      }
+      focusedOnce.current = true;
+      const tick = setInterval(() => {
+        setNow(Date.now());
+        refresh();
+      }, REFRESH_MS);
+      // El «+» de arriba: solo escucha la pantalla que se está viendo.
+      const off = onReflexionComposerRequest(() => openComposer());
+      return () => {
+        clearInterval(tick);
+        off();
+      };
+    }, [refresh, openComposer]),
+  );
 
-  async function addReflexion() {
-    if (!fecha) return;
-    h.tap();
+  const [refreshing, setRefreshing] = useState(false);
+  const onPullRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refresh();
+    setNow(Date.now());
+    setRefreshing(false);
+  }, [refresh]);
+
+  // ── Publicar ──
+  const [composerError, setComposerError] = useState<string | null>(null);
+  const listRef = useRef<FlatList<Row>>(null);
+  const publish = async () => {
+    if (!draftText.trim() || saving) return;
     setSaving(true);
-    const nuevo: Reflexion = {
-      id: Date.now().toString(),
-      titulo: titulo.trim(),
-      contenido,
-      fecha: localISO(fecha),
-      grupal: false,
-      autor,
-    };
+    setComposerError(null);
+    const nuevo = newReflexion({
+      contenido: draftText,
+      fecha: draftDay,
+      autor: draftAuthor,
+      tono: draftTone,
+      now: Date.now(),
+    });
     try {
       const db = getDatabase(getFirebaseApp());
       const newRef = push(ref(db, `${compartiendoPath}/data`));
       if (!newRef.key) throw new Error('push() sin key');
-      // Un único update() multi-path: data/<key> + updatedAt a la vez. Antes
-      // eran dos set() separados — si el segundo fallaba (o la app moría
-      // entre medias) la reflexión quedaba escrita pero invisible para el
-      // resto de dispositivos, porque useFirebaseData solo redescarga
-      // `data` cuando `updatedAt` cambia. Con retry (Plan 014): la key ya se
-      // generó una vez arriba, así que reintentar solo este update() es
-      // idempotente (misma key, mismo valor).
-      const updatePayload = buildReflexionUpdate(newRef.key, nuevo, Date.now());
-      await withRetry(() => update(ref(db, compartiendoPath), updatePayload), {
+      // Un único update() multi-path: data/<key> + updatedAt a la vez (si
+      // fuesen dos escrituras y fallase la segunda, la reflexión quedaría
+      // invisible para el resto). Reintentarlo es idempotente: la key ya
+      // está generada.
+      const payload = buildReflexionUpdate(newRef.key, nuevo, Date.now());
+      await withRetry(() => update(ref(db, compartiendoPath), payload), {
         op: 'write',
         path: compartiendoPath,
       });
       setJustPublished((prev) => [nuevo, ...prev]);
       h.formSuccess();
+      setComposerOpen(false);
+      setDraftText('');
+      setDraftTone(randomTone());
       setCelebrate(true);
-      setShowForm(false);
-      setTitulo('');
-      setContenido('');
-      setFecha(new Date());
-      setAutor(getDefaultAuthor());
+      setTimeout(() => setCelebrate(false), 1600);
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+      // Que el hub (y cualquier otra pantalla con el nodo) lo vea ya.
+      revalidateNode(compartiendoPath, compartiendoKey).catch(() => {});
     } catch (e) {
       logger.error('Error adding post', e);
-      // No limpiar el formulario: si falla el guardado (offline es habitual
-      // en los eventos donde se usa esta pantalla) el usuario no debe
-      // perder lo que escribió ni creer que se compartió.
-      toast.show({
-        variant: 'danger',
-        label: 'No se pudo compartir. Revisa tu conexión e inténtalo de nuevo.',
-      });
+      // El borrador se queda: en un encuentro la red falla a menudo y nadie
+      // debería perder lo que ha escrito ni creer que se ha compartido.
+      setComposerError('No se ha podido compartir. Revisa la conexión.');
     }
     setSaving(false);
-  }
-
-  const getGrupoLabel = (nombre?: string) => {
-    if (!nombre) return '';
-    const g = grupos.find((gr) => gr.nombre === nombre);
-    return g
-      ? g.subtitulo
-        ? `${g.nombre} - ${g.subtitulo}`
-        : g.nombre
-      : nombre;
   };
 
-  const sortedList = useMemo(
-    () =>
-      [...list].sort(
-        (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
-      ),
-    [list],
+  // ── Vistas derivadas ──
+  const todayISO = localISO(new Date(now));
+  const whenOf = useCallback(
+    (r: Reflexion) => {
+      const rel =
+        dayOf(r) === todayISO ? relativeTime(createdAtOf(r), now) : null;
+      return rel ?? dayLabel(dayOf(r), todayISO).toLowerCase();
+    },
+    [now, todayISO],
   );
 
-  const { toast } = useToast();
-  const [menuReflexion, setMenuReflexion] = useState<Reflexion | null>(null);
+  const rows = useMemo<Row[]>(() => {
+    const out: Row[] = [];
+    let index = 0;
+    for (const g of groupByDay(sorted)) {
+      out.push({
+        kind: 'day',
+        key: `day-${g.day}`,
+        label: dayLabel(g.day, todayISO),
+        count: g.items.length,
+      });
+      for (const r of g.items) {
+        out.push({ kind: 'card', key: r.id, r, index: index++ });
+      }
+    }
+    return out;
+  }, [sorted, todayISO]);
 
-  const reflexionText = (r: Reflexion) => {
-    const lines: string[] = [];
-    if (r.titulo) lines.push(r.titulo);
-    lines.push(r.contenido);
-    const meta = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
-    lines.push(`${formatFecha(r.fecha)}${meta ? ` · ${meta}` : ''}`);
-    return lines.join('\n\n');
+  const stats = useMemo(() => wallStats(sorted, authorOf), [sorted, authorOf]);
+  const quotes = useMemo<StageQuote[]>(
+    () =>
+      sorted.slice(0, STAGE_QUOTES).map((r) => ({
+        id: r.id,
+        text: r.contenido,
+        author: authorOf(r),
+      })),
+    [sorted, authorOf],
+  );
+  const authorTone = useMemo(() => {
+    const map = new Map<string, ReflexionTone>();
+    for (const r of sorted) {
+      const a = authorOf(r);
+      if (a && !map.has(a)) map.set(a, reflexionTone(r));
+    }
+    return map;
+  }, [sorted, authorOf]);
+  const colorFor = useCallback(
+    (name: string) => toneColor(authorTone.get(name) ?? 'primary'),
+    [authorTone],
+  );
+
+  // ── Historias ──
+  const [storyStart, setStoryStart] = useState<number | null>(null);
+  const storyItems = useMemo<StoryItem[]>(
+    () =>
+      sorted.map((r) => ({
+        r,
+        author: authorOf(r),
+        tone: reflexionTone(r),
+        when: whenOf(r),
+      })),
+    [sorted, authorOf, whenOf],
+  );
+
+  // ── Menú de una tarjeta ──
+  const [menuFor, setMenuFor] = useState<Reflexion | null>(null);
+  const plainText = (r: Reflexion) => {
+    const author = authorOf(r);
+    return [r.titulo, r.contenido.trim(), author ? `— ${author}` : '']
+      .filter(Boolean)
+      .join('\n\n');
   };
 
-  const copyReflexion = async (r: Reflexion) => {
-    await Clipboard.setStringAsync(reflexionText(r));
-    toast.show({ variant: 'success', label: 'Reflexión copiada' });
-  };
-  const shareReflexion = (r: Reflexion) => {
-    shareText(reflexionText(r), {
-      notify: (label) => toast.show({ label }),
-    });
-  };
+  const sectionInk = readableOn(tint, roles.backgroundSunken, 4.5);
 
-  // Función normal (no useCallback): recreada cada render, igual que el
-  // `.map` anterior — no memoizamos aquí porque captura `getGrupoLabel` y
-  // `formatFecha`, que tampoco lo están, y forzar deps parciales solo
-  // arriesgaría un closure obsoleto sin ganancia real de perf.
-  const renderReflexion = ({
-    item: r,
-    index: i,
-  }: {
-    item: Reflexion;
-    index: number;
-  }) => {
-    const color = pickCardColor(r.id);
-    // Alterna dos diseños para que el muro "fluya": tarjeta con fondo
-    // tintado (par) y tarjeta limpia con barra de color a la izquierda
-    // (impar). Cada una con su color generado del id.
-    const filled = i % 2 === 0;
-    const name = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
-    const initials = getInitials(name);
-    const fg = onColor(color);
-    return (
-      <LongPressable key={r.id} onLongPress={() => setMenuReflexion(r)}>
-        <View
-          style={[
-            styles.card,
-            filled
-              ? { backgroundColor: color + (scheme === 'dark' ? '26' : '1A') }
-              : styles.cardSurface,
-          ]}
-        >
-          <MaterialIcons
-            name="format-quote"
-            size={66}
-            color={color + (scheme === 'dark' ? '26' : '1F')}
-            style={styles.quoteMark}
-          />
-          <View
-            style={[
-              styles.cardInner,
-              !filled && { paddingLeft: spacing.md + 8 },
-            ]}
-          >
-            <View style={styles.cardHead}>
-              <View style={[styles.avatar, { backgroundColor: color }]}>
-                {initials ? (
-                  <Text style={[styles.avatarText, { color: fg }]}>
-                    {initials}
-                  </Text>
-                ) : (
-                  <MaterialIcons name="auto-stories" size={16} color={fg} />
-                )}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardAuthor} numberOfLines={1}>
-                  {name || 'Anónimo'}
-                </Text>
-                <Text style={styles.cardDate}>{formatFecha(r.fecha)}</Text>
-              </View>
-            </View>
-            {r.titulo ? <Text style={styles.cardTitle}>{r.titulo}</Text> : null}
-            <Text style={styles.cardContent}>{r.contenido}</Text>
-          </View>
-        </View>
-      </LongPressable>
-    );
-  };
+  const header = (
+    <View style={styles.header}>
+      <ScreenHero
+        kicker={event.title}
+        accentColor={sectionInk}
+        title="Compartiendo"
+        subtitle="Lo que nos llevamos de estos días"
+        floatingHeaderInset
+        style={styles.hero}
+      />
+      {stats.total > 0 ? (
+        <ReflexionesStage
+          tint={tint}
+          stats={stats}
+          quotes={quotes}
+          now={now}
+          active={isFocused && storyStart === null && !composerOpen}
+          colorFor={colorFor}
+          onPlay={() => {
+            h.tap();
+            setStoryStart(0);
+          }}
+          onWrite={() => openComposer()}
+        />
+      ) : null}
+      <ComposerPrompt
+        author={draftAuthor || defaultAuthor}
+        tint={tint}
+        isDark={isDark}
+        onOpen={openComposer}
+      />
+    </View>
+  );
 
   return (
-    <View style={styles.container}>
-      <ScreenHero
-        title="Compartiendo"
-        subtitle="Comparte aquí una frase, pensamiento o algo que te llevas de estos días"
-        floatingHeaderInset
-      />
+    <View
+      style={[styles.container, { backgroundColor: roles.backgroundSunken }]}
+    >
       <PageContainer>
         <FlatList
-          data={sortedList}
-          keyExtractor={(r) => r.id}
-          renderItem={renderReflexion}
-          contentContainerStyle={[
-            styles.list,
-            { paddingBottom: insets.bottom + 20 },
-          ]}
+          ref={listRef}
+          data={rows}
+          keyExtractor={(row) => row.key}
+          ListHeaderComponent={header}
+          renderItem={({ item: row }) =>
+            row.kind === 'day' ? (
+              <Text
+                style={[styles.day, { color: roles.textSecondary }]}
+                accessibilityRole="header"
+              >
+                {row.label}
+                <Text style={{ color: roles.textMuted }}>
+                  {`  ·  ${row.count}`}
+                </Text>
+              </Text>
+            ) : (
+              <ReflexionCard
+                r={row.r}
+                author={authorOf(row.r)}
+                tone={reflexionTone(row.r)}
+                isDark={isDark}
+                timeLabel={whenOf(row.r)}
+                isNew={baseline !== null && !baseline.has(row.r.id)}
+                onPress={() => setStoryStart(row.index)}
+                onLongPress={() => {
+                  h.tap();
+                  setMenuFor(row.r);
+                }}
+              />
+            )
+          }
+          ItemSeparatorComponent={Separator}
           ListEmptyComponent={
-            <EmptyState
-              icon="auto-stories"
-              title="Aún no hay reflexiones"
-              subtitle="Pulsa el botón + de arriba para compartir la primera."
-              accentColor={colors.green}
+            loading ? undefined : (
+              <EmptyState
+                icon="forum"
+                title="Aún no hay nada compartido"
+                subtitle="Estrena el muro: lo que escribas lo leerá todo el encuentro."
+                actionLabel="Escribir la primera"
+                onAction={() => openComposer()}
+                accentColor={sectionInk}
+              />
+            )
+          }
+          contentContainerStyle={[styles.list, { paddingBottom: bottomPad }]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onPullRefresh}
+              tintColor={sectionInk}
+              colors={[tint]}
             />
           }
-          initialNumToRender={12}
+          initialNumToRender={10}
           windowSize={9}
-          removeClippedSubviews={Platform.OS !== 'web'}
+          removeClippedSubviews={Platform.OS === 'android'}
+          showsVerticalScrollIndicator={false}
         />
       </PageContainer>
 
-      {/* Form bottom sheet */}
-      <BottomSheet
-        isOpen={showForm}
-        onOpenChange={(open) => {
-          if (!open) setShowForm(false);
+      <ReflexionComposer
+        visible={composerOpen}
+        onClose={() => {
+          setComposerOpen(false);
+          setComposerError(null);
         }}
-      >
-        <BottomSheet.Portal>
-          <BottomSheet.Overlay />
-          <BottomSheet.Content>
-            {/* Todo el contenido vive dentro de un único ScrollView con
-                padding en contentContainerStyle — patrón que sí funciona con
-                el BottomSheet de heroui (ver app/notifications.tsx). El
-                BottomSheet.Content no aplica padding propio. */}
-            <ScrollView
-              contentContainerStyle={styles.sheetScroll}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              <View style={styles.sheetHeader}>
-                <View style={styles.sheetIcon}>
-                  <MaterialIcons
-                    name="auto-stories"
-                    size={20}
-                    color={greenInk}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <BottomSheet.Title>Compartir reflexión</BottomSheet.Title>
-                  <Text style={styles.sheetSubtitle}>
-                    La tuya o la de tu grupo
-                  </Text>
-                </View>
-              </View>
+        eventTitle={event.title}
+        text={draftText}
+        onChangeText={setDraftText}
+        tone={draftTone}
+        onChangeTone={setDraftTone}
+        author={draftAuthor}
+        onChangeAuthor={setDraftAuthor}
+        days={days}
+        day={draftDay}
+        onChangeDay={setDraftDay}
+        saving={saving}
+        error={composerError}
+        onPublish={publish}
+      />
 
-              <View style={styles.field}>
-                <Text style={styles.inputLabel}>Título (opcional)</Text>
-                <AppTextField
-                  value={titulo}
-                  onChangeText={setTitulo}
-                  placeholder="Un título breve"
-                  accentColor={colors.green}
-                  accentWhenFilled
-                />
-              </View>
-
-              <View style={styles.field}>
-                <Text style={styles.inputLabel}>Compartiendo…</Text>
-                <AppTextField
-                  value={contenido}
-                  onChangeText={setContenido}
-                  placeholder="Escribe aquí lo que quieras"
-                  multiline
-                  accentColor={colors.green}
-                  accentWhenFilled
-                />
-              </View>
-
-              <Pressable
-                onPress={showDatePicker}
-                style={({ pressed }) => [
-                  styles.dateField,
-                  pressed && styles.pressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel="Elegir fecha"
-              >
-                <MaterialIcons name="event" size={20} color={greenInk} />
-                <Text style={styles.dateFieldLabel}>Fecha</Text>
-                <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={20}
-                  color={theme.icon}
-                />
-              </Pressable>
-
-              <View style={styles.field}>
-                <Text style={styles.inputLabel}>
-                  ¿Quién la envía? (opcional)
-                </Text>
-                <AppTextField
-                  value={autor}
-                  onChangeText={setAutor}
-                  placeholder="Cómo quieres firmar"
-                  accentColor={colors.green}
-                  accentWhenFilled
-                />
-              </View>
-
-              <Pressable
-                onPress={addReflexion}
-                accessibilityRole="button"
-                accessibilityLabel="Guardar reflexión"
-                style={({ pressed }) => [
-                  styles.saveBtn,
-                  pressed && { opacity: 0.85 },
-                ]}
-              >
-                <MaterialIcons
-                  name="send"
-                  size={18}
-                  color={onColor(colors.green)}
-                />
-                <Text style={styles.saveBtnLabel}>Compartir</Text>
-              </Pressable>
-            </ScrollView>
-          </BottomSheet.Content>
-        </BottomSheet.Portal>
-      </BottomSheet>
-
-      {/* Date selector — modal centrado que aparece por encima de todo
-          (incluido el bottom sheet). Antes se usaba el Dialog de heroui, que
-          al anidarse con el portal del BottomSheet dejaba escapar el spinner
-          nativo a la esquina superior. Un Modal nativo de RN se presenta de
-          forma fiable centrado sobre el resto de la UI. */}
-      <Modal
-        visible={showDateSelector}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDateSelector(false)}
-      >
-        <Pressable
-          style={styles.dateModalOverlay}
-          onPress={() => setShowDateSelector(false)}
-        >
-          {/* Pressable interior que “traga” el toque para no cerrar al
-              interactuar con el selector. */}
-          <Pressable style={styles.dateModalCard} onPress={() => {}}>
-            <Text style={styles.dateModalTitle}>Elige la fecha</Text>
-            <DateTimePicker
-              value={fecha}
-              mode="date"
-              display="spinner"
-              locale="es-ES"
-              themeVariant={scheme === 'dark' ? 'dark' : 'light'}
-              onChange={(_, selected) => {
-                if (selected) setFecha(selected);
-              }}
-              style={styles.datePicker}
-            />
-            <Pressable
-              onPress={() => setShowDateSelector(false)}
-              accessibilityRole="button"
-              accessibilityLabel="Confirmar fecha"
-              style={({ pressed }) => [
-                styles.dateDoneBtn,
-                pressed && { opacity: 0.85 },
-              ]}
-            >
-              <Text style={styles.dateDoneLabel}>Listo</Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      {/* Saving overlay */}
-      {saving && (
-        <View style={[StyleSheet.absoluteFill, styles.modalOverlay]}>
-          <View style={styles.savingModal}>
-            <Spinner size="lg" color={colors.green} />
-            <Text style={styles.savingText}>Enviando...</Text>
-          </View>
-        </View>
-      )}
+      <ReflexionStories
+        visible={storyStart !== null}
+        onClose={() => setStoryStart(null)}
+        items={storyItems}
+        startIndex={storyStart ?? 0}
+        eventTitle={event.title}
+        tint={tint}
+        onCompose={() => {
+          setStoryStart(null);
+          // La hoja de historias se va antes de que suba el compositor: dos
+          // modales a la vez en iOS se pisan.
+          setTimeout(() => openComposer(), 350);
+        }}
+      />
 
       <ContextMenuSheet
-        visible={menuReflexion !== null}
-        onClose={() => setMenuReflexion(null)}
-        title={menuReflexion?.titulo || 'Reflexión'}
+        visible={menuFor !== null}
+        onClose={() => setMenuFor(null)}
+        title={menuFor?.titulo || 'Reflexión'}
         actions={
-          menuReflexion
+          menuFor
             ? [
+                {
+                  key: 'open',
+                  label: 'Ver a pantalla completa',
+                  icon: 'fullscreen',
+                  onPress: () => {
+                    const i = sorted.findIndex((r) => r.id === menuFor.id);
+                    setStoryStart(Math.max(0, i));
+                  },
+                },
                 {
                   key: 'copy',
                   label: 'Copiar',
                   icon: 'content-copy',
-                  onPress: () => copyReflexion(menuReflexion),
+                  onPress: async () => {
+                    await Clipboard.setStringAsync(plainText(menuFor));
+                    toast.show({ variant: 'success', label: 'Copiada' });
+                  },
                 },
                 {
                   key: 'share',
                   label: 'Compartir',
                   icon: 'share',
-                  onPress: () => shareReflexion(menuReflexion),
+                  onPress: () =>
+                    shareText(plainText(menuFor), {
+                      notify: (label) => toast.show({ label }),
+                    }),
                 },
               ]
             : []
@@ -627,187 +530,19 @@ export default function ReflexionesScreen() {
   );
 }
 
-/**
- * El verde COM como TINTA (etiquetas, fecha, iconos sueltos): sobre claro da
- * 2,1:1 (design.md §3), así que se usa su variante legible. Como relleno de
- * botón sigue siendo el verde tal cual, con `onColor` encima.
- */
-const reflexionesGreenInk = (scheme: 'light' | 'dark' | null) =>
-  readableOn(colors.green, themeColors(scheme === 'dark').background);
+function Separator() {
+  return <View style={styles.separator} />;
+}
 
-const createStyles = (scheme: 'light' | 'dark' | null) => {
-  const theme = Colors[scheme ?? 'light'];
-  const greenInk = reflexionesGreenInk(scheme);
-  const onGreen = onColor(colors.green);
-  return StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
-    // El padding del contenido del bottom sheet va aquí (en el ScrollView),
-    // no en BottomSheet.Content — que no aplica padding propio. Sin esto las
-    // etiquetas se recortaban por la izquierda.
-    sheetScroll: {
-      paddingHorizontal: spacing.lg,
-      paddingTop: spacing.sm,
-      paddingBottom: spacing.xl,
-    },
-    list: { padding: spacing.md, paddingTop: spacing.sm },
-    card: {
-      marginBottom: spacing.md,
-      borderRadius: radii.xl,
-      overflow: 'hidden',
-      ...(shadows.card as object),
-    },
-    cardSurface: {
-      backgroundColor: themeColors(scheme === 'dark').background,
-    },
-    quoteMark: {
-      position: 'absolute',
-      top: -10,
-      right: 6,
-      transform: [{ scaleX: -1 }],
-    },
-    cardInner: { padding: spacing.md },
-    cardHead: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      marginBottom: 10,
-    },
-    avatar: {
-      width: 38,
-      height: 38,
-      borderRadius: radii.pillFull,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    avatarText: { fontSize: 14, fontWeight: '800', letterSpacing: 0.3 },
-    cardAuthor: { fontSize: 15, fontWeight: '700', color: theme.text },
-    cardDate: { fontSize: 12, color: theme.icon, marginTop: 1 },
-    cardTitle: {
-      ...typography.body,
-      fontWeight: '700',
-      color: theme.text,
-      marginBottom: 4,
-    },
-    cardContent: { ...typography.body, lineHeight: 24, color: theme.text },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    sheetHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      marginBottom: spacing.md,
-    },
-    sheetIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: radii.xl,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor:
-        scheme === 'dark' ? 'rgba(163,189,49,0.18)' : 'rgba(163,189,49,0.12)',
-    },
-    sheetSubtitle: {
-      ...typography.caption,
-      color: theme.icon,
-      marginTop: 2,
-    },
-    field: { marginBottom: spacing.md },
-    inputLabel: {
-      ...typography.footnote,
-      color: greenInk,
-      fontWeight: '700',
-      letterSpacing: 0.2,
-      marginBottom: 6,
-    },
-    dateField: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      marginBottom: spacing.md,
-      borderWidth: 1,
-      borderColor: scheme === 'dark' ? '#48484A' : '#D8DCC8',
-      borderRadius: radii.md,
-      paddingHorizontal: 14,
-      paddingVertical: 13,
-      backgroundColor: themeColors(scheme === 'dark').background,
-    },
-    pressed: { opacity: 0.7 },
-    dateFieldLabel: {
-      flex: 1,
-      fontSize: 15,
-      fontWeight: '500',
-      color: theme.text,
-    },
-    dateValue: { fontSize: 15, fontWeight: '600', color: greenInk },
-    dateModalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.45)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: spacing.lg,
-    },
-    dateModalCard: {
-      width: '100%',
-      maxWidth: 360,
-      backgroundColor: theme.background,
-      borderRadius: radii.xl,
-      paddingHorizontal: spacing.lg,
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.md,
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.2,
-      shadowRadius: 20,
-      elevation: 8,
-    },
-    dateModalTitle: {
-      fontSize: 17,
-      fontWeight: '700',
-      color: theme.text,
-      marginBottom: spacing.sm,
-    },
-    datePicker: { alignSelf: 'stretch' },
-    dateDoneBtn: {
-      alignSelf: 'stretch',
-      backgroundColor: colors.green,
-      borderRadius: radii.lg,
-      paddingVertical: 13,
-      alignItems: 'center',
-      marginTop: spacing.sm,
-    },
-    dateDoneLabel: { color: onGreen, fontSize: 16, fontWeight: '700' },
-    saveBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-      backgroundColor: colors.green,
-      borderRadius: radii.lg,
-      paddingVertical: 15,
-      marginTop: spacing.md,
-      marginBottom: spacing.lg,
-    },
-    saveBtnLabel: {
-      color: onGreen,
-      ...typography.body,
-      fontWeight: '700',
-      letterSpacing: 0.2,
-    },
-    savingModal: {
-      backgroundColor: theme.background,
-      padding: spacing.lg,
-      margin: spacing.md,
-      borderRadius: radii.sm,
-      alignItems: 'center',
-    },
-    savingText: {
-      marginTop: spacing.md,
-      color: theme.text,
-    },
-  });
-};
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: { gap: spacing.md, marginBottom: spacing.sm },
+  hero: { paddingHorizontal: spacing.xs },
+  list: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
+  separator: { height: spacing.md },
+  day: {
+    ...typography.sectionLabel,
+    marginTop: spacing.md,
+    marginLeft: spacing.xs,
+  },
+});

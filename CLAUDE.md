@@ -93,6 +93,7 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | **OTA: `main` → `preview` → `production`, cuándo no empujar y rollback** | `docs/desarrollo/OTA.md`                                                     |
 | Contrato de notificaciones con el panel                                  | `docs/contratos/NOTIFICACIONES_CONTRATO.md`                                  |
 | Eventos (Jubileo, encuentros, retiros…)                                  | `docs/funcionalidades/EVENTOS.md`                                            |
+| **Compartiendo** (muro de reflexiones de un evento, historias)           | `docs/funcionalidades/COMPARTIENDO.md`                                       |
 | Calendarios ICS y su precacheo (Cloud Function)                          | `docs/funcionalidades/CALENDARIOS.md`                                        |
 | Modo Carismochito y la colección (escondida en el Laboratorio Alpha)     | `docs/funcionalidades/CARISMOCHITO.md`                                       |
 | **Pañuelo virtual en 3D** (piezas, visor, intercambios; en el Laboratorio) | `docs/funcionalidades/PANUELO.md` + `docs/contratos/PANUELO_CONTRATO.md`     |

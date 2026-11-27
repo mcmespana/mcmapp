@@ -4,10 +4,11 @@
 > clasificados abajo uno a uno. La mayoría son falsos positivos estructurales:
 > perseguirlos empeora el código.
 >
-> Estado: **35 warnings, 0 errores** (2026-11-17, `npm run lint`). Es el
+> Estado: **33 warnings, 0 errores** (2026-11-27, `npm run lint`). Es el
 > **techo**: es lo que hay y no debe subir. Historial: 111 (2026-08-15) → 51 →
 > 39 (2026-08-19, la migración de `.value` a `.get()`/`.set()` en los shared
-> values de Reanimated se llevó los falsos positivos) → 38 → 36 → 35 (2026-11-17).
+> values de Reanimated se llevó los falsos positivos) → 38 → 36 → 35 (2026-11-17)
+> → 33 (2026-11-27, Compartiendo rehecha: se van los dos `purity`).
 
 ## Contexto
 
@@ -115,12 +116,10 @@ apuntarlo aquí.
 El Wordle está congelado a propósito como código de referencia (ver
 `mcm-app/CLAUDE.md`): no se refactoriza, no se le añade nada.
 
-## 5. `purity` en `ReflexionesScreen` (2) — mirar si se toca el fichero
+## 5. ~~`purity` en `ReflexionesScreen` (2)~~ — resueltos (2026-11-27)
 
-`Date.now()` / `localISO(fecha)` al construir el payload que se sube a
-Firebase. No es impuro en el sentido que importa (el valor no se pinta, se
-manda), pero si algún día se toca esa pantalla, moverlo al `onPress` en vez de
-al cuerpo del componente lo arregla gratis. No merece un cambio dedicado.
+Se fueron al rehacer la pantalla: el `Date.now()` del payload vive ahora en
+`publish` (un manejador), no en el cuerpo del componente.
 
 ## 6. `set-state-in-effect` sueltos (5) y `preserve-manual-memoization` (2)
 
@@ -135,7 +134,7 @@ ficheros por otro motivo, míralo de paso.**
 
 ## Lo que sí se pide
 
-**No añadas warnings nuevos.** Si tras tu cambio `npm run lint` pasa de 36,
+**No añadas warnings nuevos.** Si tras tu cambio `npm run lint` pasa de 33,
 el nuevo es tuyo y se arregla antes de commitear. Ese es el único guardarraíl
 que se mantiene activo.
 

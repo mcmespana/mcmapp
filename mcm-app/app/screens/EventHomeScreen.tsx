@@ -32,6 +32,7 @@ import { useFirebaseData } from '@/hooks/useFirebaseData';
 import useNetworkStatus from '@/hooks/useNetworkStatus';
 import OfflineBanner from '@/components/OfflineBanner';
 import SurveyBanner from '@/components/SurveyBanner';
+import CompartiendoHubCard from '@/components/reflexiones/CompartiendoHubCard';
 import { useActiveSurveys } from '@/hooks/useActiveSurveys';
 import { useCurrentEvent, useEventNavigation } from '@/hooks/useCurrentEvent';
 import { useEventSubscriptions } from '@/contexts/EventSubscriptionsContext';
@@ -259,6 +260,19 @@ export default function EventHomeScreen() {
             />
           </PressableFeedback>
         </LinearGradient>
+
+        {/* ── Compartiendo: la puerta al muro de reflexiones ── */}
+        <CompartiendoHubCard
+          event={event}
+          isDark={isDark}
+          onOpen={() => openEventScreen('Reflexiones', { eventId: event.id })}
+          onWrite={() =>
+            openEventScreen('Reflexiones', {
+              eventId: event.id,
+              openComposer: '1',
+            })
+          }
+        />
 
         {/* ── Encuestas activas del evento (banner automático) ── */}
         {eventSurveys.map((s) => (
